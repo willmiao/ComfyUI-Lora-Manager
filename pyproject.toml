@@ -1,0 +1,14 @@
+[project]
+name = "lora-manager"
+description = ""
+version = "1.0.0"
+license = {file = "LICENSE"}
+
+[project.urls]
+Repository = "https://github.com/willmiao/ComfyUI-Lora-Manager"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "ComfyUI-Lora-Manager"
+Icon = ""
