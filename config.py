@@ -9,6 +9,12 @@ class Config:
         self.loras_roots = self._init_lora_paths()
         self.templates_path = os.path.join(os.path.dirname(__file__), 'templates')
         self.static_path = os.path.join(os.path.dirname(__file__), 'static')
+        self.metadata_providers = {
+            "civitai": {
+                "enabled": True,
+                "api_key": None  # Optional
+            }
+        }
 
     def _init_lora_paths(self) -> List[str]:
         """Initialize and validate LoRA paths from ComfyUI settings"""

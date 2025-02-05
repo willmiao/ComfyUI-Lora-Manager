@@ -8,6 +8,7 @@ from ..config import config
 from ..services.lora_scanner import LoraScanner
 from operator import itemgetter
 from ..services.websocket_manager import ws_manager
+from services.metadata.providers import MetadataProviderManager
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,7 @@ class ApiRoutes:
         app.router.add_get('/api/loras', routes.get_loras)
         app.router.add_post('/api/fetch-all-civitai', routes.fetch_all_civitai)
         app.router.add_get('/ws/fetch-progress', ws_manager.handle_connection)
+        app.router.add_post('/api/fetch_metadata', routes.fetch_metadata)
 
     async def delete_model(self, request: web.Request) -> web.Response:
         """Handle model deletion request"""
@@ -134,10 +136,6 @@ class ApiRoutes:
                 self._format_lora_response(item) 
                 for item in result['items']
             ]
-            
-            logger.info(f"API response - Total items: {result['total']}, "
-                       f"Page items: {len(formatted_items)}, "
-                       f"Total pages: {result['total_pages']}")
             
             return web.json_response({
                 'items': formatted_items,
@@ -444,3 +442,27 @@ class ApiRoutes:
             return False
         finally:
             await client.close()
+
+    async def fetch_metadata(self, request: web.Request) -> web.Response:
+        """Handle metadata fetch request"""
+        try:
+            data = await request.json()
+            provider_name = data.get("provider", "civitai")
+            
+            provider = await MetadataProviderManager.get_provider(provider_name)
+            metadata = await provider.get_model_by_hash(data["sha256"])
+            
+            if not metadata:
+                return await self._handle_not_found(data["file_path"])
+                
+            formatted_data = provider.format_metadata(metadata)
+            await self._update_model_metadata(data["file_path"], formatted_data)
+            
+            return web.json_response({"success": True})
+            
+        except Exception as e:
+            logger.error(f"Error fetching metadata: {e}")
+            return web.json_response(
+                {"success": False, "error": str(e)},
+                status=500
+            )

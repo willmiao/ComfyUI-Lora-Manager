@@ -244,4 +244,24 @@ export async function refreshLoras() {
         state.loadingManager.hide();
         state.loadingManager.restoreProgressBar();
     }
-} 
+}
+
+export async function fetchMetadata(filePath, sha256, provider = 'civitai') {
+    const response = await fetch('/api/fetch-metadata', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            file_path: filePath,
+            sha256: sha256,
+            provider: provider
+        })
+    });
+    
+    if (!response.ok) {
+        throw new Error('Failed to fetch metadata');
+    }
+    
+    return response.json();
+}
