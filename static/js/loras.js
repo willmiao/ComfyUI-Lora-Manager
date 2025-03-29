@@ -17,6 +17,7 @@ import { LoraContextMenu } from './components/ContextMenu.js';
 import { moveManager } from './managers/MoveManager.js';
 import { updateCardsForBulkMode } from './components/LoraCard.js';
 import { bulkManager } from './managers/BulkManager.js';
+import { setStorageItem, getStorageItem } from './utils/storageHelpers.js';
 
 // Initialize the LoRA page
 class LoraPageManager {
@@ -63,7 +64,7 @@ class LoraPageManager {
     
     async initialize() {
         // Initialize page-specific components
-        initializeEventListeners();
+        this.initEventListeners();
         restoreFolderFilter();
         initFolderTagsVisibility();
         new LoraContextMenu();
@@ -77,22 +78,38 @@ class LoraPageManager {
         // Initialize common page features (lazy loading, infinite scroll)
         appCore.initializePageFeatures();
     }
-}
 
-// Initialize event listeners
-function initializeEventListeners() {
-    const sortSelect = document.getElementById('sortSelect');
-    if (sortSelect) {
-        sortSelect.value = state.sortBy;
-        sortSelect.addEventListener('change', async (e) => {
-            state.sortBy = e.target.value;
-            await resetAndReload();
-        });
+    loadSortPreference() {
+        const savedSort = getStorageItem('loras_sort');
+        if (savedSort) {
+            state.sortBy = savedSort;
+            const sortSelect = document.getElementById('sortSelect');
+            if (sortSelect) {
+                sortSelect.value = savedSort;
+            }
+        }
     }
 
-    document.querySelectorAll('.folder-tags .tag').forEach(tag => {
-        tag.addEventListener('click', toggleFolder);
-    });
+    saveSortPreference(sortValue) {
+        setStorageItem('loras_sort', sortValue);
+    }
+
+	initEventListeners() {
+		const sortSelect = document.getElementById('sortSelect');
+		if (sortSelect) {
+			sortSelect.value = state.sortBy;
+			this.loadSortPreference();
+			sortSelect.addEventListener('change', async (e) => {
+				state.sortBy = e.target.value;
+				this.saveSortPreference(e.target.value);
+				await resetAndReload();
+			});
+		}
+
+		document.querySelectorAll('.folder-tags .tag').forEach(tag => {
+			tag.addEventListener('click', toggleFolder);
+		});
+	}
 }
 
 // Initialize everything when DOM is ready
