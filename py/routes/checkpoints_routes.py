@@ -430,7 +430,7 @@ class CheckpointsRoutes:
         """Get detailed information for a specific checkpoint by name"""
         try:
             name = request.match_info.get('name', '')
-            checkpoint_info = await self.scanner.get_checkpoint_info_by_name(name)
+            checkpoint_info = await self.scanner.get_model_info_by_name(name)
             
             if checkpoint_info:
                 return web.json_response(checkpoint_info)
