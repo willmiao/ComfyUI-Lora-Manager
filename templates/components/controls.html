@@ -103,8 +103,13 @@
 <!-- Add bulk operations panel (initially hidden) -->
 <div id="bulkOperationsPanel" class="bulk-operations-panel hidden">
     <div class="bulk-operations-header">
-        <span id="selectedCount" class="selectable-count" title="Click to view selected items">
-            0 selected <i class="fas fa-caret-down dropdown-caret"></i>
+        <span class="bulk-operations-actions">
+            <span id="selectedCount" class="selectable-count" title="Click to view selected items">
+                0 selected <i class="fas fa-caret-down dropdown-caret"></i>
+            </span>
+            <button onclick="bulkManager.toggleSelectAllLoras()" title="Select/Deselect all filtered LoRAs" class="btn-select-all">
+                <i class="fas fa-solid fa-toggle-off"></i> Toggle All
+            </button>
         </span>
         <div class="bulk-operations-actions">
             <button onclick="bulkManager.sendAllLorasToWorkflow()" title="Send all selected LoRAs to workflow">

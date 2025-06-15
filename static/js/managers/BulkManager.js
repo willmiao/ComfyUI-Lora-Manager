@@ -2,6 +2,7 @@ import { state } from '../state/index.js';
 import { showToast, copyToClipboard, sendLoraToWorkflow } from '../utils/uiHelpers.js';
 import { updateCardsForBulkMode } from '../components/LoraCard.js';
 import { modalManager } from './ModalManager.js';
+import { fetchLorasPage } from '../api/loraApi.js';
 
 export class BulkManager {
     constructor() {
@@ -332,6 +333,42 @@ export class BulkManager {
             // Hide loading indicator
             state.loadingManager.hide();
         }
+    }
+
+    // Select or Deselect all LoRAs on the current page
+    async toggleSelectAllLoras(force) {
+        const toggleBtn = document.querySelector("button.btn-select-all i");
+        const toggleOn = force !== undefined ? force : toggleBtn.classList.contains("fa-toggle-off");
+        const toggleLora = toggleOn ? x => state.selectedLoras.add(x) : x => state.selectedLoras.delete(x);
+
+        // Update button icon
+        toggleBtn.classList.toggle("fa-toggle-on", toggleOn);
+        toggleBtn.classList.toggle("fa-toggle-off", !toggleOn);
+        
+        const oldLoraCount = state.selectedLoras.size;
+        
+        // Fetch and toggle all items
+        let page = 1;
+        while (true) {
+            const result = await fetchLorasPage(page++, 500);
+            for (const item of result.items) {
+                toggleLora(item.file_path);
+            }
+            if (!result.hasMore) break;
+        }
+
+        const delta = state.selectedLoras.size - oldLoraCount;
+        if (delta) {   
+            // Update visual state
+            this.applySelectionState();
+            if (delta < 0) {
+                showToast(`Deselected ${-delta} LoRAs`);
+            } else {
+                showToast(`Selected ${delta} LoRAs`, 'success');
+            }
+        }
+
+        return delta;
     }
 
     // Create and show the thumbnail strip of selected LoRAs
