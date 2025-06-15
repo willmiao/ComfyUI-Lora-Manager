@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 import sys
 import json
@@ -280,10 +281,14 @@ class StandaloneLoraManager(LoraManager):
                 # Display path with forward slashes for consistency
                 display_target = target_path.replace('\\', '/')
                 
-                app.router.add_static(route_path, target_path)
-                logger.info(f"Added static route for link target {route_path} -> {display_target}")
-                config.add_route_mapping(target_path, route_path)
-                added_targets.add(norm_target)
+                try:
+                    app.router.add_static(route_path, Path(target_path).resolve(strict=False))
+                    logger.info(f"Added static route for link target {route_path} -> {display_target}")
+                    config.add_route_mapping(target_path, route_path)
+                    added_targets.add(norm_target)
+                except Exception as e:
+                    logger.warning(f"Failed to add static route on initialization for {target_path}: {e}")
+                    continue
         
         # Add static route for plugin assets
         app.router.add_static('/loras_static', config.static_path)

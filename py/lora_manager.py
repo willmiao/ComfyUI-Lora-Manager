@@ -10,6 +10,7 @@ from .routes.misc_routes import MiscRoutes
 from .routes.example_images_routes import ExampleImagesRoutes
 from .services.service_registry import ServiceRegistry
 from .services.settings_manager import settings
+from pathlib import Path
 import logging
 import sys
 import os
@@ -94,10 +95,14 @@ class LoraManager:
                     route_path = f'/loras_static/link_{link_idx["lora"]}/preview'
                     link_idx["lora"] += 1
                 
-                app.router.add_static(route_path, target_path)
-                logger.info(f"Added static route for link target {route_path} -> {target_path}")
-                config.add_route_mapping(target_path, route_path)
-                added_targets.add(target_path)
+                try:
+                    app.router.add_static(route_path, Path(target_path).resolve(strict=False))
+                    logger.info(f"Added static route for link target {route_path} -> {target_path}")
+                    config.add_route_mapping(target_path, route_path)
+                    added_targets.add(target_path)
+                except Exception as e:
+                    logger.warning(f"Failed to add static route on initialization for {target_path}: {e}")
+                    continue
         
         # Add static route for plugin assets
         app.router.add_static('/loras_static', config.static_path)
