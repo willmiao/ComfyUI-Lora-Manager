@@ -12,3 +12,4 @@ numpy
 torch
 natsort
 msgpack
+diffusers
