@@ -1,7 +1,6 @@
 import { showToast, openCivitai, copyToClipboard, sendLoraToWorkflow, openExampleImagesFolder } from '../../utils/uiHelpers.js';
 import { state, getCurrentPageState } from '../../state/index.js';
 import { showModelModal } from './ModelModal.js';
-import { toggleShowcase } from './showcase/ShowcaseView.js';
 import { bulkManager } from '../../managers/BulkManager.js';
 import { modalManager } from '../../managers/ModalManager.js';
 import { NSFW_LEVELS } from '../../utils/constants.js';
@@ -338,15 +337,6 @@ function showExampleAccessModal(card, modelType) {
                         const tabBtn = document.querySelector('.tab-btn[data-tab="showcase"]');
                         if (tabBtn && !tabBtn.classList.contains('active')) {
                             tabBtn.click();
-                        }
-
-                        // Then toggle showcase if collapsed
-                        const carousel = showcaseTab.querySelector('.carousel');
-                        if (carousel && carousel.classList.contains('collapsed')) {
-                            const scrollIndicator = showcaseTab.querySelector('.scroll-indicator');
-                            if (scrollIndicator) {
-                                toggleShowcase(scrollIndicator);
-                            }
                         }
 
                         // Finally scroll to the import area

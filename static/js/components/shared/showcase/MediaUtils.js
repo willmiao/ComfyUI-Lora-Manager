@@ -182,119 +182,46 @@ export function getRenderedMediaRect(mediaElement, containerWidth, containerHeig
  * @param {HTMLElement} container - Container element with media wrappers
  */
 export function initMetadataPanelHandlers(container) {
-    const mediaWrappers = container.querySelectorAll('.media-wrapper');
+    // Metadata panel interaction is now handled by the info button
+    // Keep the existing copy functionality but remove hover-based visibility
+    const metadataPanel = container.querySelector('.image-metadata-panel');
     
-    mediaWrappers.forEach(wrapper => {
-        // Get the metadata panel and media element (img or video)
-        const metadataPanel = wrapper.querySelector('.image-metadata-panel');
-        const mediaControls = wrapper.querySelector('.media-controls');
-        const mediaElement = wrapper.querySelector('img, video');
-        
-        if (!mediaElement) return;
-        
-        let isOverMetadataPanel = false;
-        
-        // Add event listeners to the wrapper for mouse tracking
-        wrapper.addEventListener('mousemove', (e) => {
-            // Get mouse position relative to wrapper
-            const rect = wrapper.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-            
-            // Get the actual displayed dimensions of the media element
-            const mediaRect = getRenderedMediaRect(mediaElement, rect.width, rect.height);
-            
-            // Check if mouse is over the actual media content
-            const isOverMedia = (
-                mouseX >= mediaRect.left && 
-                mouseX <= mediaRect.right && 
-                mouseY >= mediaRect.top && 
-                mouseY <= mediaRect.bottom
-            );
-            
-            // Show metadata panel and controls when over media content or metadata panel itself
-            if (isOverMedia || isOverMetadataPanel) {
-                if (metadataPanel) metadataPanel.classList.add('visible');
-                if (mediaControls) mediaControls.classList.add('visible');
-            } else {
-                if (metadataPanel) metadataPanel.classList.remove('visible');
-                if (mediaControls) mediaControls.classList.remove('visible');
-            }
+    if (metadataPanel) {
+        // Prevent events from bubbling
+        metadataPanel.addEventListener('click', (e) => {
+            e.stopPropagation();
         });
         
-        wrapper.addEventListener('mouseleave', () => {
-            if (!isOverMetadataPanel) {
-                if (metadataPanel) metadataPanel.classList.remove('visible');
-                if (mediaControls) mediaControls.classList.remove('visible');
-            }
-        });
-        
-        // Add mouse enter/leave events for the metadata panel itself
-        if (metadataPanel) {
-            metadataPanel.addEventListener('mouseenter', () => {
-                isOverMetadataPanel = true;
-                metadataPanel.classList.add('visible');
-                if (mediaControls) mediaControls.classList.add('visible');
-            });
+        // Handle copy prompt buttons
+        const copyBtns = metadataPanel.querySelectorAll('.copy-prompt-btn');
+        copyBtns.forEach(copyBtn => {
+            const promptIndex = copyBtn.dataset.promptIndex;
+            const promptElement = container.querySelector(`#prompt-${promptIndex}`);
             
-            metadataPanel.addEventListener('mouseleave', () => {
-                isOverMetadataPanel = false;
-                // Only hide if mouse is not over the media
-                const rect = wrapper.getBoundingClientRect();
-                const mediaRect = getRenderedMediaRect(mediaElement, rect.width, rect.height);
-                const mouseX = event.clientX - rect.left;
-                const mouseY = event.clientY - rect.top;
-                
-                const isOverMedia = (
-                    mouseX >= mediaRect.left && 
-                    mouseX <= mediaRect.right && 
-                    mouseY >= mediaRect.top && 
-                    mouseY <= mediaRect.bottom
-                );
-                
-                if (!isOverMedia) {
-                    metadataPanel.classList.remove('visible');
-                    if (mediaControls) mediaControls.classList.remove('visible');
-                }
-            });
-            
-            // Prevent events from bubbling
-            metadataPanel.addEventListener('click', (e) => {
+            copyBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
-            });
-            
-            // Handle copy prompt buttons
-            const copyBtns = metadataPanel.querySelectorAll('.copy-prompt-btn');
-            copyBtns.forEach(copyBtn => {
-                const promptIndex = copyBtn.dataset.promptIndex;
-                const promptElement = wrapper.querySelector(`#prompt-${promptIndex}`);
                 
-                copyBtn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    
-                    if (!promptElement) return;
-                    
-                    try {
-                        await copyToClipboard(promptElement.textContent, 'Prompt copied to clipboard');
-                    } catch (err) {
-                        console.error('Copy failed:', err);
-                        showToast('Copy failed', 'error');
-                    }
-                });
-            });
-            
-            // Prevent panel scroll from causing modal scroll
-            metadataPanel.addEventListener('wheel', (e) => {
-                const isAtTop = metadataPanel.scrollTop === 0;
-                const isAtBottom = metadataPanel.scrollHeight - metadataPanel.scrollTop === metadataPanel.clientHeight;
+                if (!promptElement) return;
                 
-                // Only prevent default if scrolling would cause the panel to scroll
-                if ((e.deltaY < 0 && !isAtTop) || (e.deltaY > 0 && !isAtBottom)) {
-                    e.stopPropagation();
+                try {
+                    await copyToClipboard(promptElement.textContent, 'Prompt copied to clipboard');
+                } catch (err) {
+                    console.error('Copy failed:', err);
+                    showToast('Copy failed', 'error');
                 }
-            }, { passive: true });
-        }
-    });
+            });
+        });
+        
+        // Prevent panel scroll from causing modal scroll
+        metadataPanel.addEventListener('wheel', (e) => {
+            const isAtTop = metadataPanel.scrollTop === 0;
+            const isAtBottom = metadataPanel.scrollHeight - metadataPanel.scrollTop === metadataPanel.clientHeight;
+            
+            if ((e.deltaY < 0 && !isAtTop) || (e.deltaY > 0 && !isAtBottom)) {
+                e.stopPropagation();
+            }
+        }, { passive: true });
+    }
 }
 
 /**
@@ -366,9 +293,8 @@ export function initMediaControlHandlers(container) {
         btn.addEventListener('click', async function(e) {
             e.stopPropagation();
             
-            // Explicitly check for disabled state
             if (this.classList.contains('disabled')) {
-                return; // Don't do anything if button is disabled
+                return;
             }
             
             const shortId = this.dataset.shortId;
@@ -376,14 +302,11 @@ export function initMediaControlHandlers(container) {
             
             if (!shortId) return;
             
-            // Handle two-step confirmation
             if (btnState === 'initial') {
-                // First click: show confirmation state
                 this.dataset.state = 'confirm';
                 this.classList.add('confirm');
                 this.title = 'Click again to confirm deletion';
                 
-                // Auto-reset after 3 seconds
                 setTimeout(() => {
                     if (this.dataset.state === 'confirm') {
                         this.dataset.state = 'initial';
@@ -395,19 +318,16 @@ export function initMediaControlHandlers(container) {
                 return;
             }
             
-            // Second click within 3 seconds: proceed with deletion
             if (btnState === 'confirm') {
                 this.disabled = true;
                 this.classList.remove('confirm');
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                 
-                // Get model hash from URL or data attribute
                 const mediaWrapper = this.closest('.media-wrapper');
                 const modelHashAttr = document.querySelector('.showcase-section')?.dataset;
                 const modelHash = modelHashAttr?.modelHash;
                 
                 try {
-                    // Call the API to delete the custom example
                     const response = await fetch('/api/delete-example-image', {
                         method: 'POST',
                         headers: {
@@ -422,32 +342,45 @@ export function initMediaControlHandlers(container) {
                     const result = await response.json();
                     
                     if (result.success) {
-                        // Success: remove the media wrapper from the DOM
-                        mediaWrapper.style.opacity = '0';
-                        mediaWrapper.style.height = '0';
-                        mediaWrapper.style.transition = 'opacity 0.3s ease, height 0.3s ease 0.3s';
+                        // Remove the corresponding thumbnail and update main display
+                        const thumbnailItem = container.querySelector(`.thumbnail-item[data-short-id="${shortId}"]`);
+                        if (thumbnailItem) {
+                            const wasActive = thumbnailItem.classList.contains('active');
+                            thumbnailItem.remove();
+                            
+                            // If the deleted item was active, select next item
+                            if (wasActive) {
+                                const remainingThumbnails = container.querySelectorAll('.thumbnail-item');
+                                if (remainingThumbnails.length > 0) {
+                                    remainingThumbnails[0].click();
+                                } else {
+                                    // No more items, show empty state
+                                    const mainContainer = container.querySelector('#mainMediaContainer');
+                                    if (mainContainer) {
+                                        mainContainer.innerHTML = `
+                                            <div class="empty-state">
+                                                <i class="fas fa-images"></i>
+                                                <h3>No example images available</h3>
+                                                <p>Import images or videos using the sidebar</p>
+                                            </div>
+                                        `;
+                                    }
+                                }
+                            }
+                        }
                         
-                        setTimeout(() => {
-                            mediaWrapper.remove();
-                        }, 600);
-                        
-                        // Show success toast
                         showToast('Example image deleted', 'success');
 
-                        // Create an update object with only the necessary properties
                         const updateData = {
                             civitai: {
                                 customImages: result.custom_images || []
                             }
                         };
                         
-                        // Update the item in the virtual scroller
                         state.virtualScroller.updateSingleItem(result.model_file_path, updateData);
                     } else {
-                        // Show error message
                         showToast(result.error || 'Failed to delete example image', 'error');
                         
-                        // Reset button state
                         this.disabled = false;
                         this.dataset.state = 'initial';
                         this.classList.remove('confirm');
@@ -458,7 +391,6 @@ export function initMediaControlHandlers(container) {
                     console.error('Error deleting example image:', error);
                     showToast('Failed to delete example image', 'error');
                     
-                    // Reset button state
                     this.disabled = false;
                     this.dataset.state = 'initial';
                     this.classList.remove('confirm');
@@ -469,11 +401,7 @@ export function initMediaControlHandlers(container) {
         });
     });
     
-    // Initialize set preview buttons
     initSetPreviewHandlers(container);
-    
-    // Media control visibility is now handled in initMetadataPanelHandlers
-    // Any click handlers or other functionality can still be added here
 }
 
 /**
@@ -543,51 +471,5 @@ function initSetPreviewHandlers(container) {
                 this.disabled = false;
             }
         });
-    });
-}
-
-/**
- * Position media controls within the actual rendered media rectangle
- * @param {HTMLElement} mediaWrapper - The wrapper containing the media and controls
- */
-export function positionMediaControlsInMediaRect(mediaWrapper) {
-    const mediaElement = mediaWrapper.querySelector('img, video');
-    const controlsElement = mediaWrapper.querySelector('.media-controls');
-    
-    if (!mediaElement || !controlsElement) return;
-    
-    // Get wrapper dimensions
-    const wrapperRect = mediaWrapper.getBoundingClientRect();
-    
-    // Calculate the actual rendered media rectangle
-    const mediaRect = getRenderedMediaRect(
-        mediaElement, 
-        wrapperRect.width, 
-        wrapperRect.height
-    );
-    
-    // Calculate the position for controls - place them inside the actual media area
-    const padding = 8; // Padding from the edge of the media
-    
-    // Position at top-right inside the actual media rectangle
-    controlsElement.style.top = `${mediaRect.top + padding}px`;
-    controlsElement.style.right = `${wrapperRect.width - mediaRect.right + padding}px`;
-    
-    // Also position any toggle blur buttons in the same way but on the left
-    const toggleBlurBtn = mediaWrapper.querySelector('.toggle-blur-btn');
-    if (toggleBlurBtn) {
-        toggleBlurBtn.style.top = `${mediaRect.top + padding}px`;
-        toggleBlurBtn.style.left = `${mediaRect.left + padding}px`;
-    }
-}
-
-/**
- * Position all media controls in a container
- * @param {HTMLElement} container - Container with media wrappers
- */
-export function positionAllMediaControls(container) {
-    const mediaWrappers = container.querySelectorAll('.media-wrapper');
-    mediaWrappers.forEach(wrapper => {
-        positionMediaControlsInMediaRect(wrapper);
     });
 }

@@ -23,6 +23,7 @@ export function generateMetadataPanel(hasParams, hasPrompts, prompt, negativePro
     const promptIndex = Math.random().toString(36).substring(2, 15);
     const negPromptIndex = Math.random().toString(36).substring(2, 15);
     
+    // Note: Panel visibility is now controlled by the info button, not hover
     let content = '<div class="image-metadata-panel"><div class="metadata-content">';
     
     if (hasParams) {

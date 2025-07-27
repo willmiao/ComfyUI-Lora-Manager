@@ -1,9 +1,6 @@
 import { showToast, openCivitai } from '../../utils/uiHelpers.js';
 import { modalManager } from '../../managers/ModalManager.js';
 import { 
-    toggleShowcase,
-    setupShowcaseScroll, 
-    scrollToTop,
     loadExampleImages
 } from './showcase/ShowcaseView.js';
 import { setupTabSwitching } from './ModelDescription.js';
@@ -33,7 +30,6 @@ export function showModelModal(model, modelType) {
         model.civitai.trainedWords.map(word => word.replace(/'/g, '\\\'')) : [];
     
     // Generate model type specific content
-    // const typeSpecificContent = modelType === 'loras' ? renderLoraSpecificContent(model, escapedWords) : '';
     let typeSpecificContent;
     if (modelType === 'loras') {
         typeSpecificContent = renderLoraSpecificContent(model, escapedWords);
@@ -184,17 +180,12 @@ export function showModelModal(model, modelType) {
                     <div class="tab-content">
                         ${tabPanesContent}
                     </div>
-                    
-                    <button class="back-to-top" data-action="scroll-to-top">
-                        <i class="fas fa-arrow-up"></i>
-                    </button>
                 </div>
             </div>
         </div>
     `;
     
     const onCloseCallback = function() {
-        // Clean up all handlers when modal closes for LoRA
         const modalElement = document.getElementById(modalId);
         if (modalElement && modalElement._clickHandler) {
             modalElement.removeEventListener('click', modalElement._clickHandler);
@@ -204,7 +195,6 @@ export function showModelModal(model, modelType) {
     
     modalManager.showModal(modalId, content, null, onCloseCallback);
     setupEditableFields(model.file_path, modelType);
-    setupShowcaseScroll(modalId);
     setupTabSwitching();
     setupTagTooltip();
     setupTagEditMode();
@@ -223,10 +213,9 @@ export function showModelModal(model, modelType) {
         }
     }
     
-    // Load example images asynchronously - merge regular and custom images
+    // Load example images asynchronously
     const regularImages = model.civitai?.images || [];
     const customImages = model.civitai?.customImages || [];
-    // Combine images - regular images first, then custom images
     const allImages = [...regularImages, ...customImages];
     loadExampleImages(allImages, model.sha256);
 }
@@ -261,16 +250,14 @@ function renderEmbeddingSpecificContent(embedding, escapedWords) {
 }
 
 /**
- * Sets up event handlers using event delegation for LoRA modal
+ * Sets up event handlers using event delegation for modal
  * @param {string} filePath - Path to the model file
  */
 function setupEventHandlers(filePath) {
     const modalElement = document.getElementById('modelModal');
     
-    // Remove existing event listeners first
     modalElement.removeEventListener('click', handleModalClick);
     
-    // Create and store the handler function
     function handleModalClick(event) {
         const target = event.target.closest('[data-action]');
         if (!target) return;
@@ -280,9 +267,6 @@ function setupEventHandlers(filePath) {
         switch (action) {
             case 'close-modal':
                 modalManager.closeModal('modelModal');
-                break;
-            case 'scroll-to-top':
-                scrollToTop(target);
                 break;
             case 'view-civitai':
                 openCivitai(target.dataset.filepath);
@@ -296,10 +280,7 @@ function setupEventHandlers(filePath) {
         }
     }
     
-    // Add the event listener with the named function
     modalElement.addEventListener('click', handleModalClick);
-    
-    // Store reference to the handler on the element for potential cleanup
     modalElement._clickHandler = handleModalClick;
 }
 
@@ -421,9 +402,7 @@ async function saveNotes(filePath) {
 
 // Export the model modal API
 const modelModal = {
-    show: showModelModal,
-    toggleShowcase,
-    scrollToTop
+    show: showModelModal
 };
 
 export { modelModal };

@@ -123,42 +123,6 @@
     }
 }
 
-/* 修改 back-to-top 按钮样式，使其固定在 modal 内部 */
-.modal-content .back-to-top {
-    position: sticky; /* 改用 sticky 定位 */
-    float: right; /* 使用 float 确保按钮在右侧 */
-    bottom: 20px; /* 距离底部的距离 */
-    margin-right: 20px; /* 右侧间距 */
-    margin-top: -56px; /* 负边距确保不占用额外空间 */
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    color: var(--text-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(10px);
-    transition: all 0.3s ease;
-    z-index: 10;
-}
-
-.modal-content .back-to-top.visible {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
-.modal-content .back-to-top:hover {
-    background: var(--lora-accent);
-    color: white;
-    transform: translateY(-2px);
-}
-
 /* File name copy styles */
 .file-name-wrapper {
     display: flex;
