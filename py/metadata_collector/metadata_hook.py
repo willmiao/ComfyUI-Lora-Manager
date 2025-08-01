@@ -147,7 +147,7 @@ class MetadataHook:
         original_map_node_over_list = getattr(execution, map_node_func_name)
         
         # Define the wrapped async function - NOTE: Updated signature with prompt_id and unique_id!
-        async def async_map_node_over_list_with_metadata(prompt_id, unique_id, obj, input_data_all, func, allow_interrupt=False, execution_block_cb=None, pre_execute_cb=None):
+        async def async_map_node_over_list_with_metadata(prompt_id, unique_id, obj, input_data_all, func, allow_interrupt=False, execution_block_cb=None, pre_execute_cb=None, **kwargs):
             # Only collect metadata when calling the main function of nodes
             if func == obj.FUNCTION and hasattr(obj, '__class__'):
                 try:
@@ -169,7 +169,7 @@ class MetadataHook:
                     print(f"Error collecting metadata (pre-execution): {str(e)}")
             
             # Execute the original async function with ALL parameters in the correct order
-            results = await original_map_node_over_list(prompt_id, unique_id, obj, input_data_all, func, allow_interrupt, execution_block_cb, pre_execute_cb)
+            results = await original_map_node_over_list(prompt_id, unique_id, obj, input_data_all, func, allow_interrupt, execution_block_cb, pre_execute_cb, **kwargs)
             
             # After execution, collect outputs for relevant nodes
             if func == obj.FUNCTION and hasattr(obj, '__class__'):
