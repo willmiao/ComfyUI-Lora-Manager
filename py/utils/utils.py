@@ -1,7 +1,10 @@
 from difflib import SequenceMatcher
 import os
+from typing import Dict
 from ..services.service_registry import ServiceRegistry
 from ..config import config
+from ..services.settings_manager import settings
+from .constants import CIVITAI_MODEL_TAGS
 import asyncio
 
 def get_lora_info(lora_name):
@@ -128,3 +131,56 @@ def calculate_recipe_fingerprint(loras):
     fingerprint = "|".join([f"{hash_value}:{strength}" for hash_value, strength in valid_loras])
     
     return fingerprint
+
+def calculate_relative_path_for_model(model_data: Dict) -> str:
+        """Calculate relative path for existing model using template from settings
+        
+        Args:
+            model_data: Model data from scanner cache
+            
+        Returns:
+            Relative path string (empty string for flat structure)
+        """
+        # Get path template from settings, default to '{base_model}/{first_tag}'
+        path_template = settings.get('download_path_template', '{base_model}/{first_tag}')
+        
+        # If template is empty, return empty path (flat structure)
+        if not path_template:
+            return ''
+        
+        # Get base model name from model metadata
+        civitai_data = model_data.get('civitai', {})
+        
+        # For CivitAI models, prefer civitai data; for non-CivitAI models, use model_data directly
+        if civitai_data:
+            base_model = civitai_data.get('baseModel', '')
+        else:
+            # Fallback to model_data fields for non-CivitAI models
+            base_model = model_data.get('base_model', '')
+
+        model_tags = model_data.get('tags', [])
+        
+        # Apply mapping if available
+        base_model_mappings = settings.get('base_model_path_mappings', {})
+        mapped_base_model = base_model_mappings.get(base_model, base_model)
+        
+        # Find the first Civitai model tag that exists in model_tags
+        first_tag = ''
+        for civitai_tag in CIVITAI_MODEL_TAGS:
+            if civitai_tag in model_tags:
+                first_tag = civitai_tag
+                break
+        
+        # If no Civitai model tag found, fallback to first tag
+        if not first_tag and model_tags:
+            first_tag = model_tags[0]
+
+        if not first_tag:
+            first_tag = 'no tags'  # Default if no tags available
+        
+        # Format the template with available data
+        formatted_path = path_template
+        formatted_path = formatted_path.replace('{base_model}', mapped_base_model)
+        formatted_path = formatted_path.replace('{first_tag}', first_tag)
+        
+        return formatted_path

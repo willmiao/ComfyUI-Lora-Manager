@@ -48,6 +48,9 @@ SUPPORTED_MEDIA_EXTENSIONS = {
 # Valid Lora types
 VALID_LORA_TYPES = ['lora', 'locon', 'dora']
 
+# Auto-organize settings
+AUTO_ORGANIZE_BATCH_SIZE = 50  # Process models in batches to avoid overwhelming the system
+
 # Civitai model tags in priority order for subfolder organization
 CIVITAI_MODEL_TAGS = [
     'character', 'style', 'concept', 'clothing', 
