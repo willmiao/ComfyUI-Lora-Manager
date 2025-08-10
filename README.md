@@ -155,6 +155,7 @@ Enhance your Civitai browsing experience with our companion browser extension! S
 2. Copy the provided `settings.json.example` file to create a new file named `settings.json` in `comfyui-lora-manager` folder
 3. Edit `settings.json` to include your correct model folder paths and CivitAI API key
 4. Run run.bat
+    - To change the startup port, edit `run.bat` and modify the parameter (e.g. `--port 9001`)
 
 ### Option 3: **Manual Installation**
 
