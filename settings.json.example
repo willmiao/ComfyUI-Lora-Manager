@@ -9,6 +9,10 @@
     "checkpoints": [
       "C:/path/to/your/checkpoints_folder",
       "C:/path/to/another/checkpoints_folder"
+    ],
+    "embeddings": [
+      "C:/path/to/your/embeddings_folder",
+      "C:/path/to/another/embeddings_folder"
     ]
   }
 }
