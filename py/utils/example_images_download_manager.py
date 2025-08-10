@@ -24,7 +24,8 @@ download_progress = {
     'start_time': None,
     'end_time': None,
     'processed_models': set(),  # Track models that have been processed
-    'refreshed_models': set()  # Track models that had metadata refreshed
+    'refreshed_models': set(),  # Track models that had metadata refreshed
+    'failed_models': set()  # Track models that failed to download after metadata refresh
 }
 
 class DownloadManager:
@@ -50,6 +51,7 @@ class DownloadManager:
             response_progress = download_progress.copy()
             response_progress['processed_models'] = list(download_progress['processed_models'])
             response_progress['refreshed_models'] = list(download_progress['refreshed_models'])
+            response_progress['failed_models'] = list(download_progress['failed_models'])
             
             return web.json_response({
                 'success': False,
@@ -91,12 +93,15 @@ class DownloadManager:
                     with open(progress_file, 'r', encoding='utf-8') as f:
                         saved_progress = json.load(f)
                         download_progress['processed_models'] = set(saved_progress.get('processed_models', []))
-                        logger.debug(f"Loaded previous progress, {len(download_progress['processed_models'])} models already processed")
+                        download_progress['failed_models'] = set(saved_progress.get('failed_models', []))
+                        logger.debug(f"Loaded previous progress, {len(download_progress['processed_models'])} models already processed, {len(download_progress['failed_models'])} models marked as failed")
                 except Exception as e:
                     logger.error(f"Failed to load progress file: {e}")
                     download_progress['processed_models'] = set()
+                    download_progress['failed_models'] = set()
             else:
                 download_progress['processed_models'] = set()
+                download_progress['failed_models'] = set()
             
             # Start the download task
             is_downloading = True
@@ -113,6 +118,7 @@ class DownloadManager:
             response_progress = download_progress.copy()
             response_progress['processed_models'] = list(download_progress['processed_models'])
             response_progress['refreshed_models'] = list(download_progress['refreshed_models'])
+            response_progress['failed_models'] = list(download_progress['failed_models'])
             
             return web.json_response({
                 'success': True,
@@ -136,6 +142,7 @@ class DownloadManager:
         response_progress = download_progress.copy()
         response_progress['processed_models'] = list(download_progress['processed_models'])
         response_progress['refreshed_models'] = list(download_progress['refreshed_models'])
+        response_progress['failed_models'] = list(download_progress['failed_models'])
         
         return web.json_response({
             'success': True,
@@ -299,6 +306,11 @@ class DownloadManager:
             # Update current model info
             download_progress['current_model'] = f"{model_name} ({model_hash[:8]})"
             
+            # Skip if already in failed models
+            if model_hash in download_progress['failed_models']:
+                logger.debug(f"Skipping known failed model: {model_name}")
+                return False
+            
             # Skip if already processed AND directory exists with files
             if model_hash in download_progress['processed_models']:
                 model_dir = os.path.join(output_dir, model_hash)
@@ -307,7 +319,9 @@ class DownloadManager:
                     logger.debug(f"Skipping already processed model: {model_name}")
                     return False
                 else:
-                    logger.debug(f"Model {model_name} marked as processed but folder empty or missing, reprocessing")
+                    logger.info(f"Model {model_name} marked as processed but folder empty or missing, reprocessing")
+                    # Remove from processed models since we need to reprocess
+                    download_progress['processed_models'].discard(model_hash)
             
             # Create model directory
             model_dir = os.path.join(output_dir, model_hash)
@@ -351,12 +365,23 @@ class DownloadManager:
                         success, _ = await ExampleImagesProcessor.download_model_images(
                             model_hash, model_name, updated_images, model_dir, optimize, independent_session
                         )
+                    
+                    download_progress['refreshed_models'].add(model_hash)
                 
-                # Only mark as processed if all images were downloaded successfully
+                # Mark as processed if successful, or as failed if unsuccessful after refresh
                 if success:
                     download_progress['processed_models'].add(model_hash)
+                else:
+                    # If we refreshed metadata and still failed, mark as permanently failed
+                    if model_hash in download_progress['refreshed_models']:
+                        download_progress['failed_models'].add(model_hash)
+                        logger.info(f"Marking model {model_name} as failed after metadata refresh")
                     
                 return True  # Return True to indicate a remote download happened
+            else:
+                # No civitai data or images available, mark as failed to avoid future attempts
+                download_progress['failed_models'].add(model_hash)
+                logger.debug(f"No civitai images available for model {model_name}, marking as failed")
             
             # Save progress periodically
             if download_progress['completed'] % 10 == 0 or download_progress['completed'] == download_progress['total'] - 1:
@@ -391,6 +416,7 @@ class DownloadManager:
             progress_data = {
                 'processed_models': list(download_progress['processed_models']),
                 'refreshed_models': list(download_progress['refreshed_models']),
+                'failed_models': list(download_progress['failed_models']),
                 'completed': download_progress['completed'],
                 'total': download_progress['total'],
                 'last_update': time.time()
