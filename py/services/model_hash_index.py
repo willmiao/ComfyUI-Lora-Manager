@@ -31,29 +31,34 @@ class ModelHashIndex:
                 if file_path not in self._duplicate_hashes.get(sha256, []):
                     self._duplicate_hashes.setdefault(sha256, []).append(file_path)
         
-        # Track duplicates by filename
+        # Track duplicates by filename - FIXED LOGIC
         if filename in self._filename_to_hash:
-            old_hash = self._filename_to_hash[filename]
-            if old_hash != sha256:  # Different models with the same name
-                old_path = self._hash_to_path.get(old_hash)
-                if old_path:
-                    if filename not in self._duplicate_filenames:
-                        self._duplicate_filenames[filename] = [old_path]
-                    if file_path not in self._duplicate_filenames.get(filename, []):
-                        self._duplicate_filenames.setdefault(filename, []).append(file_path)
+            existing_hash = self._filename_to_hash[filename]
+            existing_path = self._hash_to_path.get(existing_hash)
+            
+            # If this is a different file with the same filename
+            if existing_path and existing_path != file_path:
+                # Initialize duplicates tracking if needed
+                if filename not in self._duplicate_filenames:
+                    self._duplicate_filenames[filename] = [existing_path]
+                
+                # Add current file to duplicates if not already present
+                if file_path not in self._duplicate_filenames[filename]:
+                    self._duplicate_filenames[filename].append(file_path)
         
         # Remove old path mapping if hash exists
         if sha256 in self._hash_to_path:
             old_path = self._hash_to_path[sha256]
             old_filename = self._get_filename_from_path(old_path)
-            if old_filename in self._filename_to_hash:
+            if old_filename in self._filename_to_hash and self._filename_to_hash[old_filename] == sha256:
                 del self._filename_to_hash[old_filename]
         
-        # Remove old hash mapping if filename exists
+        # Remove old hash mapping if filename exists and points to different hash
         if filename in self._filename_to_hash:
             old_hash = self._filename_to_hash[filename]
-            if old_hash in self._hash_to_path:
-                del self._hash_to_path[old_hash]
+            if old_hash != sha256 and old_hash in self._hash_to_path:
+                # Don't delete the old hash mapping, just update filename mapping
+                pass
         
         # Add new mappings
         self._hash_to_path[sha256] = file_path

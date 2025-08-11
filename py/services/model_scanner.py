@@ -302,6 +302,13 @@ class ModelScanner:
                         for tag in model_data['tags']:
                             self._tags_count[tag] = self._tags_count.get(tag, 0) + 1
                 
+                # Log duplicate filename warnings after building the index
+                duplicate_filenames = self._hash_index.get_duplicate_filenames()
+                if duplicate_filenames:
+                    logger.warning(f"Found {len(duplicate_filenames)} filename(s) with duplicates during {self.model_type} cache build:")
+                    for filename, paths in duplicate_filenames.items():
+                        logger.warning(f"  Duplicate filename '{filename}': {paths}")
+                
                 # Update cache
                 self._cache.raw_data = raw_data
                 loop.run_until_complete(self._cache.resort())
@@ -366,6 +373,13 @@ class ModelScanner:
                 if 'tags' in model_data and model_data['tags']:
                     for tag in model_data['tags']:
                         self._tags_count[tag] = self._tags_count.get(tag, 0) + 1
+            
+            # Log duplicate filename warnings after building the index
+            duplicate_filenames = self._hash_index.get_duplicate_filenames()
+            if duplicate_filenames:
+                logger.warning(f"Found {len(duplicate_filenames)} filename(s) with duplicates during {self.model_type} cache build:")
+                for filename, paths in duplicate_filenames.items():
+                    logger.warning(f"  Duplicate filename '{filename}': {paths}")
             
             # Update cache
             self._cache = ModelCache(
@@ -670,6 +684,14 @@ class ModelScanner:
         if model_data.get('exclude', False):
             self._excluded_models.append(model_data['file_path'])
             return None
+        
+        # Check for duplicate filename before adding to hash index
+        filename = os.path.splitext(os.path.basename(file_path))[0]
+        existing_hash = self._hash_index.get_hash_by_filename(filename)
+        if existing_hash and existing_hash != model_data.get('sha256', '').lower():
+            existing_path = self._hash_index.get_path(existing_hash)
+            if existing_path and existing_path != file_path:
+                logger.warning(f"Duplicate filename detected: '{filename}' - files: '{existing_path}' and '{file_path}'")
             
         await self._fetch_missing_metadata(file_path, model_data)
         rel_path = os.path.relpath(file_path, root_path)
