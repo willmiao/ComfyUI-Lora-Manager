@@ -54,15 +54,15 @@ class DownloadManager:
         """Get the checkpoint scanner from registry"""
         return await ServiceRegistry.get_checkpoint_scanner()
     
-    async def download_from_civitai(self, model_id: int, model_version_id: int, 
+    async def download_from_civitai(self, model_id: int = None, model_version_id: int = None, 
                                   save_dir: str = None, relative_path: str = '', 
                                   progress_callback=None, use_default_paths: bool = False,
                                   download_id: str = None) -> Dict:
         """Download model from Civitai with task tracking and concurrency control
         
         Args:
-            model_id: Civitai model ID
-            model_version_id: Civitai model version ID
+            model_id: Civitai model ID (optional if model_version_id is provided)
+            model_version_id: Civitai model version ID (optional if model_id is provided)
             save_dir: Directory to save the model
             relative_path: Relative path within save_dir
             progress_callback: Callback function for progress updates
@@ -72,6 +72,10 @@ class DownloadManager:
         Returns:
             Dict with download result
         """
+        # Validate that at least one identifier is provided
+        if not model_id and not model_version_id:
+            return {'success': False, 'error': 'Either model_id or model_version_id must be provided'}
+        
         # Use provided download_id or generate new one
         task_id = download_id or str(uuid.uuid4())
         
@@ -181,14 +185,19 @@ class DownloadManager:
                 # Check both scanners
                 lora_scanner = await self._get_lora_scanner()
                 checkpoint_scanner = await self._get_checkpoint_scanner()
+                embedding_scanner = await ServiceRegistry.get_embedding_scanner()
                 
                 # Check lora scanner first
-                if await lora_scanner.check_model_version_exists(model_id, model_version_id):
+                if await lora_scanner.check_model_version_exists(model_version_id):
                     return {'success': False, 'error': 'Model version already exists in lora library'}
                 
                 # Check checkpoint scanner
-                if await checkpoint_scanner.check_model_version_exists(model_id, model_version_id):
+                if await checkpoint_scanner.check_model_version_exists(model_version_id):
                     return {'success': False, 'error': 'Model version already exists in checkpoint library'}
+                
+                # Check embedding scanner
+                if await embedding_scanner.check_model_version_exists(model_version_id):
+                    return {'success': False, 'error': 'Model version already exists in embedding library'}
 
             # Get civitai client
             civitai_client = await self._get_civitai_client()
@@ -211,23 +220,22 @@ class DownloadManager:
             
             # Case 2: model_version_id was None, check after getting version_info
             if model_version_id is None:
-                version_model_id = version_info.get('modelId')
                 version_id = version_info.get('id')
                 
                 if model_type == 'lora':
                     # Check lora scanner
                     lora_scanner = await self._get_lora_scanner()
-                    if await lora_scanner.check_model_version_exists(version_model_id, version_id):
+                    if await lora_scanner.check_model_version_exists(version_id):
                         return {'success': False, 'error': 'Model version already exists in lora library'}
                 elif model_type == 'checkpoint':
                     # Check checkpoint scanner
                     checkpoint_scanner = await self._get_checkpoint_scanner()
-                    if await checkpoint_scanner.check_model_version_exists(version_model_id, version_id):
+                    if await checkpoint_scanner.check_model_version_exists(version_id):
                         return {'success': False, 'error': 'Model version already exists in checkpoint library'}
                 elif model_type == 'embedding':
                     # Embeddings are not checked in scanners, but we can still check if it exists
                     embedding_scanner = await ServiceRegistry.get_embedding_scanner()
-                    if await embedding_scanner.check_model_version_exists(version_model_id, version_id):
+                    if await embedding_scanner.check_model_version_exists(version_id):
                         return {'success': False, 'error': 'Model version already exists in embedding library'}
             
             # Handle use_default_paths

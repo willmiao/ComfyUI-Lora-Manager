@@ -654,13 +654,13 @@ class MiscRoutes:
                 exists = False
                 model_type = None
 
-                if await lora_scanner.check_model_version_exists(model_id, model_version_id):
+                if await lora_scanner.check_model_version_exists(model_version_id):
                     exists = True
                     model_type = 'lora'
-                elif checkpoint_scanner and await checkpoint_scanner.check_model_version_exists(model_id, model_version_id):
+                elif checkpoint_scanner and await checkpoint_scanner.check_model_version_exists(model_version_id):
                     exists = True
                     model_type = 'checkpoint'
-                elif embedding_scanner and await embedding_scanner.check_model_version_exists(model_id, model_version_id):
+                elif embedding_scanner and await embedding_scanner.check_model_version_exists(model_version_id):
                     exists = True
                     model_type = 'embedding'
                 

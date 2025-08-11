@@ -1,4 +1,6 @@
 import { showToast } from '../../utils/uiHelpers.js';
+import { getModelApiClient } from '../../api/modelApiFactory.js';
+import { MODEL_TYPES } from '../../api/apiConfig.js';
 
 export class DownloadManager {
     constructor(importManager) {
@@ -199,39 +201,27 @@ export class DownloadManager {
             updateProgress(0, completedDownloads, lora.name);
             
             try {
+                console.log(`lora:`, lora);
                 // Download the LoRA with download ID
-                const response = await fetch('/api/download-model', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        model_id: lora.modelId,
-                        model_version_id: lora.id,
-                        model_root: loraRoot,
-                        relative_path: targetPath.replace(loraRoot + '/', ''),
-                        download_id: batchDownloadId
-                    })
-                });
+                const response = await getModelApiClient(MODEL_TYPES.LORA).downloadModel(
+                    lora.modelId,
+                    lora.modelVersionId,
+                    loraRoot,
+                    targetPath.replace(loraRoot + '/', ''),
+                    batchDownloadId
+                );
                 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error(`Failed to download LoRA ${lora.name}: ${errorText}`);
-                    
-                    // Check if this is an early access error (status 401 is the key indicator)
-                    if (response.status === 401) {
-                        accessFailures++;
-                        this.importManager.loadingManager.setStatus(
-                            `Failed to download ${lora.name}: Access restricted`
-                        );
-                    }
-                    
+                if (!response.success) {
+                    console.error(`Failed to download LoRA ${lora.name}: ${response.error}`);
+
                     failedDownloads++;
                     // Continue with next download
                 } else {
                     completedDownloads++;
-                    
+
                     // Update progress to show completion of current LoRA
                     updateProgress(100, completedDownloads, '');
-                    
+
                     if (completedDownloads + failedDownloads < this.importManager.downloadableLoRAs.length) {
                         this.importManager.loadingManager.setStatus(
                             `Completed ${completedDownloads}/${this.importManager.downloadableLoRAs.length} LoRAs. Starting next download...`

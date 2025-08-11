@@ -580,16 +580,19 @@ class ModelRouteUtils:
                 })
             
             # Check which identifier is provided and convert to int
-            try:
-                model_id = int(data.get('model_id'))
-            except (TypeError, ValueError):
-                return web.json_response({
-                    'success': False,
-                    'error': "Invalid model_id: Must be an integer"
-                }, status=400)
+            model_id = None
+            model_version_id = None
+            
+            if data.get('model_id'):
+                try:
+                    model_id = int(data.get('model_id'))
+                except (TypeError, ValueError):
+                    return web.json_response({
+                        'success': False,
+                        'error': "Invalid model_id: Must be an integer"
+                    }, status=400)
 
             # Convert model_version_id to int if provided
-            model_version_id = None 
             if data.get('model_version_id'):
                 try:
                     model_version_id = int(data.get('model_version_id'))
@@ -599,11 +602,11 @@ class ModelRouteUtils:
                         'error': "Invalid model_version_id: Must be an integer"
                     }, status=400)
             
-            # Only model_id is required, model_version_id is optional
-            if not model_id:
+            # At least one identifier is required
+            if not model_id and not model_version_id:
                 return web.json_response({
                     'success': False,
-                    'error': "Missing required parameter: Please provide 'model_id'"
+                    'error': "Missing required parameter: Please provide either 'model_id' or 'model_version_id'"
                 }, status=400)
             
             use_default_paths = data.get('use_default_paths', False)

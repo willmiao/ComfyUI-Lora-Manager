@@ -1149,13 +1149,12 @@ class ModelScanner:
             if len(self._hash_index._duplicate_filenames[file_name]) <= 1:
                 del self._hash_index._duplicate_filenames[file_name]
 
-    async def check_model_version_exists(self, model_id: int, model_version_id: int) -> bool:
+    async def check_model_version_exists(self, model_version_id: int) -> bool:
         """Check if a specific model version exists in the cache
-        
+
         Args:
-            model_id: Civitai model ID
             model_version_id: Civitai model version ID
-            
+
         Returns:
             bool: True if the model version exists, False otherwise
         """
@@ -1163,13 +1162,11 @@ class ModelScanner:
             cache = await self.get_cached_data()
             if not cache or not cache.raw_data:
                 return False
-                
+
             for item in cache.raw_data:
-                if (item.get('civitai') and 
-                    item['civitai'].get('modelId') == model_id and 
-                    item['civitai'].get('id') == model_version_id):
+                if item.get('civitai') and item['civitai'].get('id') == model_version_id:
                     return True
-                    
+
             return False
         except Exception as e:
             logger.error(f"Error checking model version existence: {e}")

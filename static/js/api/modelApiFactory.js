@@ -17,16 +17,16 @@ export function createModelApiClient(modelType) {
     }
 }
 
-let _singletonClient = null;
+let _singletonClients = new Map();
 
-export function getModelApiClient() {
-    const currentType = state.currentPageType;
+export function getModelApiClient(modelType = null) {
+    const targetType = modelType || state.currentPageType;
     
-    if (!_singletonClient || _singletonClient.modelType !== currentType) {
-        _singletonClient = createModelApiClient(currentType);
+    if (!_singletonClients.has(targetType)) {
+        _singletonClients.set(targetType, createModelApiClient(targetType));
     }
     
-    return _singletonClient;
+    return _singletonClients.get(targetType);
 }
 
 export function resetAndReload(updateFolders = false) {
