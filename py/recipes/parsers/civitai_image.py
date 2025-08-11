@@ -101,6 +101,11 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                     if resource.get("type", "lora") == "lora":
                         lora_hash = resource.get("hash", "")
                         
+                        # Skip LoRAs without proper identification (hash or modelVersionId)
+                        if not lora_hash and not resource.get("modelVersionId"):
+                            logger.debug(f"Skipping LoRA resource '{resource.get('name', 'Unknown')}' - no hash or modelVersionId")
+                            continue
+                        
                         # Skip if we've already added this LoRA by hash
                         if lora_hash and lora_hash in added_loras:
                             continue
