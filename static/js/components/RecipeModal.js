@@ -2,7 +2,6 @@
 import { showToast, copyToClipboard } from '../utils/uiHelpers.js';
 import { state } from '../state/index.js';
 import { setSessionItem, removeSessionItem } from '../utils/storageHelpers.js';
-import { updateRecipeCard } from '../utils/cardUpdater.js';
 import { updateRecipeMetadata } from '../api/recipeApi.js';
 
 class RecipeModal {
@@ -879,7 +878,7 @@ class RecipeModal {
                         
                         // Model identifiers
                         hash: modelFile?.hashes?.SHA256?.toLowerCase() || lora.hash,
-                        modelVersionId: civitaiInfo.id || lora.modelVersionId,
+                        id: civitaiInfo.id || lora.modelVersionId,
                         
                         // Metadata
                         thumbnailUrl: civitaiInfo.images?.[0]?.url || '',

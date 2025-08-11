@@ -201,11 +201,10 @@ export class DownloadManager {
             updateProgress(0, completedDownloads, lora.name);
             
             try {
-                console.log(`lora:`, lora);
                 // Download the LoRA with download ID
                 const response = await getModelApiClient(MODEL_TYPES.LORA).downloadModel(
                     lora.modelId,
-                    lora.modelVersionId,
+                    lora.id,
                     loraRoot,
                     targetPath.replace(loraRoot + '/', ''),
                     batchDownloadId
