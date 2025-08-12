@@ -3,6 +3,7 @@ import { showToast } from '../utils/uiHelpers.js';
 import { LoadingManager } from './LoadingManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
+import { FolderTreeManager } from '../components/FolderTreeManager.js';
 
 export class DownloadManager {
     constructor() {
@@ -17,6 +18,7 @@ export class DownloadManager {
         this.apiClient = null;
 
         this.loadingManager = new LoadingManager();
+        this.folderTreeManager = new FolderTreeManager();
         this.folderClickHandler = null;
         this.updateTargetPath = this.updateTargetPath.bind(this);
         
@@ -106,9 +108,10 @@ export class DownloadManager {
         document.getElementById('modelUrl').value = '';
         document.getElementById('urlError').textContent = '';
         
-        const newFolderInput = document.getElementById('newFolder');
-        if (newFolderInput) {
-            newFolderInput.value = '';
+        // Clear folder path input
+        const folderPathInput = document.getElementById('folderPath');
+        if (folderPathInput) {
+            folderPathInput.value = '';
         }
         
         this.currentVersion = null;
@@ -118,10 +121,10 @@ export class DownloadManager {
         this.modelVersionId = null;
         
         this.selectedFolder = '';
-        const folderBrowser = document.getElementById('folderBrowser');
-        if (folderBrowser) {
-            folderBrowser.querySelectorAll('.folder-item').forEach(f => 
-                f.classList.remove('selected'));
+        
+        // Clear folder tree selection
+        if (this.folderTreeManager) {
+            this.folderTreeManager.clearSelection();
         }
     }
 
@@ -302,15 +305,24 @@ export class DownloadManager {
                 modelRoot.value = defaultRoot;
             }
 
-            // Fetch folders
-            const foldersData = await this.apiClient.fetchModelFolders();
-            const folderBrowser = document.getElementById('folderBrowser');
+            // Initialize folder tree
+            await this.initializeFolderTree();
             
-            folderBrowser.innerHTML = foldersData.folders.map(folder => 
-                `<div class="folder-item" data-folder="${folder}">${folder}</div>`
-            ).join('');
-
-            this.initializeFolderBrowser();
+            // Setup folder tree manager
+            this.folderTreeManager.init({
+                onPathChange: (path) => {
+                    this.selectedFolder = path;
+                    this.updateTargetPath();
+                }
+            });
+            
+            // Setup model root change handler
+            modelRoot.addEventListener('change', async () => {
+                await this.initializeFolderTree();
+                this.updateTargetPath();
+            });
+            
+            this.updateTargetPath();
         } catch (error) {
             showToast(error.message, 'error');
         }
@@ -327,12 +339,15 @@ export class DownloadManager {
     }
 
     closeModal() {
+        // Clean up folder tree manager
+        if (this.folderTreeManager) {
+            this.folderTreeManager.destroy();
+        }
         modalManager.closeModal('downloadModal');
     }
 
     async startDownload() {
         const modelRoot = document.getElementById('modelRoot').value;
-        const newFolder = document.getElementById('newFolder').value.trim();
         const config = this.apiClient.apiConfig.config;
         
         if (!modelRoot) {
@@ -340,15 +355,8 @@ export class DownloadManager {
             return;
         }
 
-        // Construct relative path
-        let targetFolder = '';
-        if (this.selectedFolder) {
-            targetFolder = this.selectedFolder;
-        }
-        if (newFolder) {
-            targetFolder = targetFolder ? 
-                `${targetFolder}/${newFolder}` : newFolder;
-        }
+        // Get selected folder path from folder tree manager
+        const targetFolder = this.folderTreeManager.getSelectedPath();
 
         try {
             const updateProgress = this.loadingManager.showDownloadProgress(1);
@@ -426,6 +434,24 @@ export class DownloadManager {
         }
     }
 
+    async initializeFolderTree() {
+        try {
+            // Fetch unified folder tree
+            const treeData = await this.apiClient.fetchUnifiedFolderTree();
+            
+            if (treeData.success) {
+                // Load tree data into folder tree manager
+                await this.folderTreeManager.loadTree(treeData.tree);
+            } else {
+                console.error('Failed to fetch folder tree:', treeData.error);
+                showToast('Failed to load folder tree', 'error');
+            }
+        } catch (error) {
+            console.error('Error initializing folder tree:', error);
+            showToast('Error loading folder tree', 'error');
+        }
+    }
+
     initializeFolderBrowser() {
         const folderBrowser = document.getElementById('folderBrowser');
         if (!folderBrowser) return;
@@ -479,17 +505,14 @@ export class DownloadManager {
     updateTargetPath() {
         const pathDisplay = document.getElementById('targetPathDisplay');
         const modelRoot = document.getElementById('modelRoot').value;
-        const newFolder = document.getElementById('newFolder').value.trim();
         const config = this.apiClient.apiConfig.config;
         
         let fullPath = modelRoot || `Select a ${config.displayName} root directory`;
         
         if (modelRoot) {
-            if (this.selectedFolder) {
-                fullPath += '/' + this.selectedFolder;
-            }
-            if (newFolder) {
-                fullPath += '/' + newFolder;
+            const selectedPath = this.folderTreeManager ? this.folderTreeManager.getSelectedPath() : '';
+            if (selectedPath) {
+                fullPath += '/' + selectedPath;
             }
         }
 

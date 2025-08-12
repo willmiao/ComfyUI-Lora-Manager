@@ -273,3 +273,61 @@ class BaseModelService(ABC):
     def get_model_roots(self) -> List[str]:
         """Get model root directories"""
         return self.scanner.get_model_roots()
+    
+    async def get_folder_tree(self, model_root: str) -> Dict:
+        """Get hierarchical folder tree for a specific model root"""
+        cache = await self.scanner.get_cached_data()
+        
+        # Build tree structure from folders
+        tree = {}
+        
+        for folder in cache.folders:
+            # Check if this folder belongs to the specified model root
+            folder_belongs_to_root = False
+            for root in self.scanner.get_model_roots():
+                if root == model_root:
+                    folder_belongs_to_root = True
+                    break
+            
+            if not folder_belongs_to_root:
+                continue
+            
+            # Split folder path into components
+            parts = folder.split('/') if folder else []
+            current_level = tree
+            
+            for part in parts:
+                if part not in current_level:
+                    current_level[part] = {}
+                current_level = current_level[part]
+        
+        return tree
+    
+    async def get_unified_folder_tree(self) -> Dict:
+        """Get unified folder tree across all model roots"""
+        cache = await self.scanner.get_cached_data()
+        
+        # Build unified tree structure by analyzing all relative paths
+        unified_tree = {}
+        
+        # Get all model roots for path normalization
+        model_roots = self.scanner.get_model_roots()
+        
+        for folder in cache.folders:
+            if not folder:  # Skip empty folders
+                continue
+            
+            # Find which root this folder belongs to by checking the actual file paths
+            # This is a simplified approach - we'll use the folder as-is since it should already be relative
+            relative_path = folder
+            
+            # Split folder path into components
+            parts = relative_path.split('/')
+            current_level = unified_tree
+            
+            for part in parts:
+                if part not in current_level:
+                    current_level[part] = {}
+                current_level = current_level[part]
+        
+        return unified_tree

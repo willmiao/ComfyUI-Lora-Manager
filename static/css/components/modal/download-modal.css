@@ -150,6 +150,246 @@
     border: 1px solid var(--lora-accent);
 }
 
+/* Path Input Styles */
+.path-input-container {
+    position: relative;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.path-input-container input {
+    flex: 1;
+}
+
+.create-folder-btn {
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xs);
+    background: var(--bg-color);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+}
+
+.create-folder-btn:hover {
+    border-color: var(--lora-accent);
+    background: oklch(var(--lora-accent) / 0.05);
+}
+
+.path-suggestions {
+    position: absolute;
+    top: 42%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    margin: 0 24px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 var(--border-radius-xs) var(--border-radius-xs);
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.path-suggestion {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.path-suggestion:last-child {
+    border-bottom: none;
+}
+
+.path-suggestion:hover {
+    background: var(--lora-surface);
+}
+
+.path-suggestion.active {
+    background: oklch(var(--lora-accent) / 0.1);
+    color: var(--lora-accent);
+}
+
+/* Breadcrumb Navigation Styles */
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: var(--space-2);
+    padding: var(--space-1);
+    background: var(--lora-surface);
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: var(--border-radius-xs);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-color);
+    opacity: 0.7;
+    text-decoration: none;
+}
+
+.breadcrumb-item:hover {
+    background: var(--bg-color);
+    opacity: 1;
+}
+
+.breadcrumb-item.active {
+    background: oklch(var(--lora-accent) / 0.1);
+    color: var(--lora-accent);
+    opacity: 1;
+}
+
+.breadcrumb-separator {
+    color: var(--text-color);
+    opacity: 0.5;
+    margin: 0 4px;
+}
+
+/* Folder Tree Styles */
+.folder-tree-container {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xs);
+    background: var(--bg-color);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.folder-tree {
+    padding: var(--space-1);
+}
+
+.tree-node {
+    user-select: none;
+}
+
+.tree-node-content {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: var(--border-radius-xs);
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.tree-node-content:hover {
+    background: var(--lora-surface);
+}
+
+.tree-node-content.selected {
+    background: oklch(var(--lora-accent) / 0.1);
+    border: 1px solid var(--lora-accent);
+}
+
+.tree-expand-icon {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+}
+
+.tree-expand-icon:hover {
+    background: var(--lora-surface);
+}
+
+.tree-expand-icon.expanded {
+    transform: rotate(90deg);
+}
+
+.tree-folder-icon {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--lora-accent);
+}
+
+.tree-folder-name {
+    flex: 1;
+    font-size: 0.9em;
+    color: var(--text-color);
+}
+
+.tree-children {
+    margin-left: 20px;
+    display: none;
+}
+
+.tree-children.expanded {
+    display: block;
+}
+
+.tree-node.has-children > .tree-node-content .tree-expand-icon {
+    opacity: 1;
+}
+
+.tree-node:not(.has-children) > .tree-node-content .tree-expand-icon {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Create folder inline form */
+.create-folder-form {
+    display: flex;
+    gap: 8px;
+    margin-left: 20px;
+    margin-top: 4px;
+    align-items: center;
+}
+
+.create-folder-form input {
+    flex: 1;
+    padding: 4px 8px;
+    border: 1px solid var(--lora-accent);
+    border-radius: var(--border-radius-xs);
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-size: 0.9em;
+}
+
+.create-folder-form button {
+    padding: 4px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xs);
+    background: var(--bg-color);
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: all 0.2s ease;
+}
+
+.create-folder-form button.confirm {
+    background: var(--lora-accent);
+    color: white;
+    border-color: var(--lora-accent);
+}
+
+.create-folder-form button:hover {
+    background: var(--lora-surface);
+}
+
 /* Path Preview Styles */
 .path-preview {
     margin-bottom: var(--space-3);

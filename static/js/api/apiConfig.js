@@ -83,6 +83,8 @@ export function getApiEndpoints(modelType) {
         baseModels: `/api/${modelType}/base-models`,
         roots: `/api/${modelType}/roots`,
         folders: `/api/${modelType}/folders`,
+        folderTree: `/api/${modelType}/folder-tree`,
+        unifiedFolderTree: `/api/${modelType}/unified-folder-tree`,
         duplicates: `/api/${modelType}/find-duplicates`,
         conflicts: `/api/${modelType}/find-filename-conflicts`,
         verify: `/api/${modelType}/verify-duplicates`,

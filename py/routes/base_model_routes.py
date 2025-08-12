@@ -57,6 +57,8 @@ class BaseModelRoutes(ABC):
         app.router.add_get(f'/api/{prefix}/scan', self.scan_models)
         app.router.add_get(f'/api/{prefix}/roots', self.get_model_roots)
         app.router.add_get(f'/api/{prefix}/folders', self.get_folders)
+        app.router.add_get(f'/api/{prefix}/folder-tree', self.get_folder_tree)
+        app.router.add_get(f'/api/{prefix}/unified-folder-tree', self.get_unified_folder_tree)
         app.router.add_get(f'/api/{prefix}/find-duplicates', self.find_duplicate_models)
         app.router.add_get(f'/api/{prefix}/find-filename-conflicts', self.find_filename_conflicts)
 
@@ -341,6 +343,43 @@ class BaseModelRoutes(ABC):
             })
         except Exception as e:
             logger.error(f"Error getting folders: {e}")
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    async def get_folder_tree(self, request: web.Request) -> web.Response:
+        """Get hierarchical folder tree structure for download modal"""
+        try:
+            model_root = request.query.get('model_root')
+            if not model_root:
+                return web.json_response({
+                    'success': False,
+                    'error': 'model_root parameter is required'
+                }, status=400)
+            
+            folder_tree = await self.service.get_folder_tree(model_root)
+            return web.json_response({
+                'success': True,
+                'tree': folder_tree
+            })
+        except Exception as e:
+            logger.error(f"Error getting folder tree: {e}")
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    async def get_unified_folder_tree(self, request: web.Request) -> web.Response:
+        """Get unified folder tree across all model roots"""
+        try:
+            unified_tree = await self.service.get_unified_folder_tree()
+            return web.json_response({
+                'success': True,
+                'tree': unified_tree
+            })
+        except Exception as e:
+            logger.error(f"Error getting unified folder tree: {e}")
             return web.json_response({
                 'success': False,
                 'error': str(e)

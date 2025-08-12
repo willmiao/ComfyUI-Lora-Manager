@@ -586,6 +586,33 @@ export class BaseModelApiClient {
         }
     }
 
+    async fetchUnifiedFolderTree() {
+        try {
+            const response = await fetch(this.apiConfig.endpoints.unifiedFolderTree);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch unified folder tree`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching unified folder tree:', error);
+            throw error;
+        }
+    }
+
+    async fetchFolderTree(modelRoot) {
+        try {
+            const params = new URLSearchParams({ model_root: modelRoot });
+            const response = await fetch(`${this.apiConfig.endpoints.folderTree}?${params}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch folder tree for root: ${modelRoot}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching folder tree:', error);
+            throw error;
+        }
+    }
+
     async downloadModel(modelId, versionId, modelRoot, relativePath, downloadId) {
         try {
             const response = await fetch(DOWNLOAD_ENDPOINTS.download, {
