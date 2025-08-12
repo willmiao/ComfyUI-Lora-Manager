@@ -214,3 +214,44 @@ export function getMapFromStorage(key) {
         return new Map();
     }
 }
+
+/**
+ * Get stored version info from localStorage
+ * @returns {string|null} The stored version string or null if not found
+ */
+export function getStoredVersionInfo() {
+    return getStorageItem('version_info', null);
+}
+
+/**
+ * Store version info to localStorage
+ * @param {string} versionInfo - The version info string to store
+ */
+export function setStoredVersionInfo(versionInfo) {
+    setStorageItem('version_info', versionInfo);
+}
+
+/**
+ * Check if version info matches between stored and current
+ * @param {string} currentVersionInfo - The current version info from server
+ * @returns {boolean} True if versions match or no stored version exists
+ */
+export function isVersionMatch(currentVersionInfo) {
+    const storedVersion = getStoredVersionInfo();
+    // If we have no stored version yet, consider it a match
+    if (storedVersion === null) {
+        setStoredVersionInfo(currentVersionInfo);
+        return true;
+    }
+    return storedVersion === currentVersionInfo;
+}
+
+/**
+ * Reset the dismissed status of a specific banner
+ * @param {string} bannerId - The ID of the banner to un-dismiss
+ */
+export function resetDismissedBanner(bannerId) {
+    const dismissedBanners = getStorageItem('dismissed_banners', []);
+    const updatedBanners = dismissedBanners.filter(id => id !== bannerId);
+    setStorageItem('dismissed_banners', updatedBanners);
+}

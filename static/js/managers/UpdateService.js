@@ -1,5 +1,13 @@
 import { modalManager } from './ModalManager.js';
-import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
+import { 
+    getStorageItem, 
+    setStorageItem, 
+    getStoredVersionInfo, 
+    setStoredVersionInfo,
+    isVersionMatch,
+    resetDismissedBanner
+} from '../utils/storageHelpers.js';
+import { bannerService } from './BannerService.js';
 
 export class UpdateService {
     constructor() {
@@ -17,6 +25,8 @@ export class UpdateService {
         this.lastCheckTime = parseInt(getStorageItem('last_update_check') || '0');
         this.isUpdating = false;
         this.nightlyMode = getStorageItem('nightly_updates', false);
+        this.currentVersionInfo = null;
+        this.versionMismatch = false;
     }
 
     initialize() {
@@ -59,6 +69,9 @@ export class UpdateService {
 
         // Immediately update modal content with current values (even if from default)
         this.updateModalContent();
+        
+        // Check version info for mismatch after loading basic info
+        this.checkVersionInfo();
     }
     
     updateNightlyWarning() {
@@ -423,6 +436,110 @@ export class UpdateService {
         await this.checkForUpdates();
         // Ensure badge visibility is updated after manual check
         this.updateBadgeVisibility();
+    }
+    
+    async checkVersionInfo() {
+        try {
+            // Call API to get current version info
+            const response = await fetch('/api/version-info');
+            const data = await response.json();
+            
+            if (data.success) {
+                this.currentVersionInfo = data.version;
+                
+                // Check if version matches stored version
+                this.versionMismatch = !isVersionMatch(this.currentVersionInfo);
+                
+                if (this.versionMismatch) {
+                    console.log('Version mismatch detected:', {
+                        current: this.currentVersionInfo,
+                        stored: getStoredVersionInfo()
+                    });
+                    
+                    // Reset dismissed status for version mismatch banner
+                    resetDismissedBanner('version-mismatch');
+                    
+                    // Register and show the version mismatch banner
+                    this.registerVersionMismatchBanner();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to check version info:', error);
+        }
+    }
+    
+    registerVersionMismatchBanner() {
+        // Get stored and current version for display
+        const storedVersion = getStoredVersionInfo() || 'unknown';
+        const currentVersion = this.currentVersionInfo || 'unknown';
+        
+        bannerService.registerBanner('version-mismatch', {
+            id: 'version-mismatch',
+            title: 'Application Update Detected',
+            content: `Your browser is running an outdated version of LoRA Manager (${storedVersion}). The server has been updated to version ${currentVersion}. Please refresh to ensure proper functionality.`,
+            actions: [
+                {
+                    text: 'Refresh Now',
+                    icon: 'fas fa-sync',
+                    action: 'hardRefresh',
+                    type: 'primary'
+                }
+            ],
+            dismissible: false,
+            priority: 10,
+            countdown: 15,
+            onRegister: (bannerElement) => {
+                // Add countdown element
+                const countdownEl = document.createElement('div');
+                countdownEl.className = 'banner-countdown';
+                countdownEl.innerHTML = `<span>Refreshing in <strong>15</strong> seconds...</span>`;
+                bannerElement.querySelector('.banner-content').appendChild(countdownEl);
+                
+                // Start countdown
+                let seconds = 15;
+                const countdownInterval = setInterval(() => {
+                    seconds--;
+                    const strongEl = countdownEl.querySelector('strong');
+                    if (strongEl) strongEl.textContent = seconds;
+                    
+                    if (seconds <= 0) {
+                        clearInterval(countdownInterval);
+                        this.performHardRefresh();
+                    }
+                }, 1000);
+                
+                // Store interval ID for cleanup
+                bannerElement.dataset.countdownInterval = countdownInterval;
+                
+                // Add action button event handler
+                const actionBtn = bannerElement.querySelector('.banner-action[data-action="hardRefresh"]');
+                if (actionBtn) {
+                    actionBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        clearInterval(countdownInterval);
+                        this.performHardRefresh();
+                    });
+                }
+            },
+            onRemove: (bannerElement) => {
+                // Clear any existing interval
+                const intervalId = bannerElement.dataset.countdownInterval;
+                if (intervalId) {
+                    clearInterval(parseInt(intervalId));
+                }
+            }
+        });
+    }
+    
+    performHardRefresh() {
+        // Update stored version info before refreshing
+        setStoredVersionInfo(this.currentVersionInfo);
+        
+        // Force a hard refresh by adding cache-busting parameter
+        const cacheBuster = new Date().getTime();
+        window.location.href = window.location.pathname + 
+            (window.location.search ? window.location.search + '&' : '?') + 
+            `cache=${cacheBuster}`;
     }
 }
 

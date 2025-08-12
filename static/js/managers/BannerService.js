@@ -62,6 +62,12 @@ class BannerService {
      */
     registerBanner(id, bannerConfig) {
         this.banners.set(id, bannerConfig);
+        
+        // If already initialized, render the banner immediately
+        if (this.initialized && !this.isBannerDismissed(id) && this.container) {
+            this.renderBanner(bannerConfig);
+            this.updateContainerVisibility();
+        }
     }
 
     /**
@@ -88,6 +94,12 @@ class BannerService {
         // Remove banner from DOM
         const bannerElement = document.querySelector(`[data-banner-id="${bannerId}"]`);
         if (bannerElement) {
+            // Call onRemove callback if provided
+            const banner = this.banners.get(bannerId);
+            if (banner && typeof banner.onRemove === 'function') {
+                banner.onRemove(bannerElement);
+            }
+            
             bannerElement.style.animation = 'banner-slide-up 0.3s ease-in-out forwards';
             setTimeout(() => {
                 bannerElement.remove();
@@ -122,12 +134,16 @@ class BannerService {
         bannerElement.className = 'banner-item';
         bannerElement.setAttribute('data-banner-id', banner.id);
 
-        const actionsHtml = banner.actions ? banner.actions.map(action => 
-            `<a href="${action.url}" target="_blank" class="banner-action banner-action-${action.type}" rel="noopener noreferrer">
+        const actionsHtml = banner.actions ? banner.actions.map(action => {
+            const actionAttribute = action.action ? `data-action="${action.action}"` : '';
+            const href = action.url ? `href="${action.url}"` : '#';
+            const target = action.url ? 'target="_blank" rel="noopener noreferrer"' : '';
+            
+            return `<a ${href ? `href="${href}"` : ''} ${target} class="banner-action banner-action-${action.type}" ${actionAttribute}>
                 <i class="${action.icon}"></i>
                 <span>${action.text}</span>
-            </a>`
-        ).join('') : '';
+            </a>`;
+        }).join('') : '';
 
         const dismissButtonHtml = banner.dismissible ? 
             `<button class="banner-dismiss" onclick="bannerService.dismissBanner('${banner.id}')" title="Dismiss">
@@ -148,6 +164,11 @@ class BannerService {
         `;
 
         this.container.appendChild(bannerElement);
+        
+        // Call onRegister callback if provided
+        if (typeof banner.onRegister === 'function') {
+            banner.onRegister(bannerElement);
+        }
     }
 
     /**
