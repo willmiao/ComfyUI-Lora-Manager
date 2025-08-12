@@ -13,7 +13,7 @@ class CheckpointScanner(ModelScanner):
     
     def __init__(self):
         # Define supported file extensions
-        file_extensions = {'.safetensors', '.ckpt', '.pt', '.pth', '.sft', '.gguf'}
+        file_extensions = {'.ckpt', '.pt', '.pt2', '.bin', '.pth', '.safetensors', '.pkl', '.sft', '.gguf'}
         super().__init__(
             model_type="checkpoint",
             model_class=CheckpointMetadata,
