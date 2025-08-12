@@ -285,8 +285,6 @@ export class DownloadManager {
         document.getElementById('locationStep').style.display = 'block';
         
         try {
-            const config = this.apiClient.apiConfig.config;
-            
             // Fetch model roots
             const rootsData = await this.apiClient.fetchModelRoots();
             const modelRoot = document.getElementById('modelRoot');

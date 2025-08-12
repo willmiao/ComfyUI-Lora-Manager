@@ -16,7 +16,7 @@
 @import 'components/modal/relink-civitai-modal.css';
 @import 'components/modal/example-access-modal.css';
 @import 'components/modal/support-modal.css';
-@import 'components/download-modal.css';
+@import 'components/modal/download-modal.css';
 @import 'components/toast.css';
 @import 'components/loading.css';
 @import 'components/menu.css';
