@@ -184,7 +184,7 @@ class MiscRoutes:
                         logger.info(f"Example images path changed to {value} - server restart required")
                 
                 # Special handling for base_model_path_mappings - parse JSON string
-                if key == 'base_model_path_mappings' and value:
+                if (key == 'base_model_path_mappings' or key == 'download_path_templates') and value:
                     try:
                         value = json.loads(value)
                     except json.JSONDecodeError:

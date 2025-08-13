@@ -112,6 +112,12 @@ export const DOWNLOAD_PATH_TEMPLATES = {
         description: 'Organize by base model type',
         example: 'Flux.1 D/model-name.safetensors'
     },
+    AUTHOR: {
+        value: '{author}',
+        label: 'By Author',
+        description: 'Organize by model author',
+        example: 'authorname/model-name.safetensors'
+    },
     FIRST_TAG: {
         value: '{first_tag}',
         label: 'By First Tag',
@@ -123,7 +129,46 @@ export const DOWNLOAD_PATH_TEMPLATES = {
         label: 'Base Model + First Tag',
         description: 'Organize by base model and primary tag',
         example: 'Flux.1 D/style/model-name.safetensors'
+    },
+    BASE_MODEL_AUTHOR: {
+        value: '{base_model}/{author}',
+        label: 'Base Model + Author',
+        description: 'Organize by base model and author',
+        example: 'Flux.1 D/authorname/model-name.safetensors'
+    },
+    AUTHOR_TAG: {
+        value: '{author}/{first_tag}',
+        label: 'Author + First Tag',
+        description: 'Organize by author and primary tag',
+        example: 'authorname/style/model-name.safetensors'
+    },
+    CUSTOM: {
+        value: 'custom',
+        label: 'Custom Template',
+        description: 'Create your own path structure',
+        example: 'Enter custom template...'
     }
+};
+
+// Valid placeholders for path templates
+export const PATH_TEMPLATE_PLACEHOLDERS = [
+    '{base_model}',
+    '{author}',
+    '{first_tag}'
+];
+
+// Default templates for each model type
+export const DEFAULT_PATH_TEMPLATES = {
+    lora: '{base_model}/{first_tag}',
+    checkpoint: '{base_model}',
+    embedding: '{first_tag}'
+};
+
+// Model type labels for UI
+export const MODEL_TYPE_LABELS = {
+    lora: 'LoRA Models',
+    checkpoint: 'Checkpoint Models',
+    embedding: 'Embedding Models'
 };
 
 // Base models available for path mapping (for UI selection)
