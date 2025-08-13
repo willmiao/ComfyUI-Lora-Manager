@@ -756,8 +756,8 @@ class BaseModelRoutes(ABC):
                     'error': 'No model roots configured'
                 }, status=400)
             
-            # Check if flat structure is configured
-            path_template = settings.get('download_path_template', '{base_model}/{first_tag}')
+            # Check if flat structure is configured for this model type
+            path_template = settings.get_download_path_template(self.service.model_type)
             is_flat_structure = not path_template
             
             # Prepare results tracking
@@ -832,7 +832,7 @@ class BaseModelRoutes(ABC):
                             target_dir = current_root
                         else:
                             # Calculate new relative path based on settings
-                            new_relative_path = calculate_relative_path_for_model(model)
+                            new_relative_path = calculate_relative_path_for_model(model, self.service.model_type)
                             
                             # If no relative path calculated (insufficient metadata), skip
                             if not new_relative_path:

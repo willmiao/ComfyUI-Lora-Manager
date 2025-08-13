@@ -9,6 +9,7 @@ class SettingsManager:
     def __init__(self):
         self.settings_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'settings.json')
         self.settings = self._load_settings()
+        self._migrate_download_path_template()
         self._auto_set_default_roots()
         self._check_environment_variables()
 
@@ -21,6 +22,24 @@ class SettingsManager:
             except Exception as e:
                 logger.error(f"Error loading settings: {e}")
         return self._get_default_settings()
+
+    def _migrate_download_path_template(self):
+        """Migrate old download_path_template to new download_path_templates"""
+        old_template = self.settings.get('download_path_template')
+        templates = self.settings.get('download_path_templates')
+        
+        # If old template exists and new templates don't exist, migrate
+        if old_template is not None and not templates:
+            logger.info("Migrating download_path_template to download_path_templates")
+            self.settings['download_path_templates'] = {
+                'lora': old_template,
+                'checkpoint': old_template,
+                'embedding': old_template
+            }
+            # Remove old setting
+            del self.settings['download_path_template']
+            self._save_settings()
+            logger.info("Migration completed")
 
     def _auto_set_default_roots(self):
         """Auto set default root paths if only one folder is present and default is empty."""
@@ -80,5 +99,17 @@ class SettingsManager:
                 json.dump(self.settings, f, indent=2)
         except Exception as e:
             logger.error(f"Error saving settings: {e}")
+
+    def get_download_path_template(self, model_type: str) -> str:
+        """Get download path template for specific model type
+        
+        Args:
+            model_type: The type of model ('lora', 'checkpoint', 'embedding')
+            
+        Returns:
+            Template string for the model type, defaults to '{base_model}/{first_tag}'
+        """
+        templates = self.settings.get('download_path_templates', {})
+        return templates.get(model_type, '{base_model}/{first_tag}')
 
 settings = SettingsManager()

@@ -258,7 +258,7 @@ class DownloadManager:
                     save_dir = default_path
                     
                 # Calculate relative path using template
-                relative_path = self._calculate_relative_path(version_info)
+                relative_path = self._calculate_relative_path(version_info, model_type)
 
             # Update save directory with relative path if provided
             if relative_path:
@@ -331,17 +331,18 @@ class DownloadManager:
                 return {'success': False, 'error': f"Early access restriction: {str(e)}. Please ensure you have purchased early access and are logged in to Civitai."}
             return {'success': False, 'error': str(e)}
 
-    def _calculate_relative_path(self, version_info: Dict) -> str:
+    def _calculate_relative_path(self, version_info: Dict, model_type: str = 'lora') -> str:
         """Calculate relative path using template from settings
         
         Args:
             version_info: Version info from Civitai API
+            model_type: Type of model ('lora', 'checkpoint', 'embedding')
             
         Returns:
             Relative path string
         """
-        # Get path template from settings, default to '{base_model}/{first_tag}'
-        path_template = settings.get('download_path_template', '{base_model}/{first_tag}')
+        # Get path template from settings for specific model type
+        path_template = settings.get_download_path_template(model_type)
         
         # If template is empty, return empty path (flat structure)
         if not path_template:
@@ -349,6 +350,9 @@ class DownloadManager:
         
         # Get base model name
         base_model = version_info.get('baseModel', '')
+        
+        # Get author from creator data
+        author = version_info.get('creator', {}).get('username', 'Anonymous')
         
         # Apply mapping if available
         base_model_mappings = settings.get('base_model_path_mappings', {})
@@ -372,6 +376,7 @@ class DownloadManager:
         formatted_path = path_template
         formatted_path = formatted_path.replace('{base_model}', mapped_base_model)
         formatted_path = formatted_path.replace('{first_tag}', first_tag)
+        formatted_path = formatted_path.replace('{author}', author)
         
         return formatted_path
 

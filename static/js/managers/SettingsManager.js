@@ -92,7 +92,7 @@ export class SettingsManager {
 
         // Ensure all model types have templates
         Object.keys(DEFAULT_PATH_TEMPLATES).forEach(modelType => {
-            if (!state.global.settings.download_path_templates[modelType]) {
+            if (typeof state.global.settings.download_path_templates[modelType] === 'undefined') {
                 state.global.settings.download_path_templates[modelType] = DEFAULT_PATH_TEMPLATES[modelType];
             }
         });
@@ -586,7 +586,7 @@ export class SettingsManager {
         // Find matching preset
         const matchingPreset = this.findMatchingPreset(template);
         
-        if (matchingPreset) {
+        if (matchingPreset !== null) {
             presetSelect.value = matchingPreset;
             if (customRow) customRow.style.display = 'none';
         } else {
