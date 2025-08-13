@@ -35,6 +35,7 @@ export const BASE_MODELS = {
     ILLUSTRIOUS: "Illustrious",
     PONY: "Pony",
     HIDREAM: "HiDream",
+    QWEN: "Qwen",
     
     // Video models
     SVD: "SVD",
@@ -93,6 +94,7 @@ export const BASE_MODEL_CLASSES = {
     [BASE_MODELS.ILLUSTRIOUS]: "il",
     [BASE_MODELS.PONY]: "pony",
     [BASE_MODELS.HIDREAM]: "hidream",
+    [BASE_MODELS.QWEN]: "qwen",
     
     // Default
     [BASE_MODELS.UNKNOWN]: "unknown"
