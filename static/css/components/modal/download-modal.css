@@ -351,8 +351,8 @@
     display: flex;
     gap: 8px;
     margin-left: 20px;
-    margin-top: 4px;
     align-items: center;
+    height: 21px;
 }
 
 .create-folder-form input {
