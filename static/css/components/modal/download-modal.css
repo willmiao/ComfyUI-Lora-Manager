@@ -351,8 +351,8 @@
     display: flex;
     gap: 8px;
     margin-left: 20px;
-    margin-top: 4px;
     align-items: center;
+    height: 21px;
 }
 
 .create-folder-form input {
@@ -395,9 +395,16 @@
     border: 1px dashed var(--border-color);
 }
 
-.path-preview label {
-    display: block;
-    margin-bottom: 8px;
+.path-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    gap: var(--space-2);
+}
+
+.path-preview-header label {
+    margin: 0;
     color: var(--text-color);
     font-size: 0.9em;
     opacity: 0.8;
@@ -416,6 +423,70 @@
     border-radius: var(--border-radius-xs);
 }
 
+/* Inline Toggle Styles */
+.inline-toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+
+.inline-toggle-label {
+    font-size: 0.85em;
+    color: var(--text-color);
+    opacity: 0.9;
+    white-space: nowrap;
+}
+
+.inline-toggle-container .toggle-switch {
+    position: relative;
+    width: 36px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.inline-toggle-container .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.inline-toggle-container .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--border-color);
+    transition: all 0.3s ease;
+    border-radius: 18px;
+}
+
+.inline-toggle-container .toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: all 0.3s ease;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.inline-toggle-container .toggle-switch input:checked + .toggle-slider {
+    background-color: var(--lora-accent);
+}
+
+.inline-toggle-container .toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(18px);
+}
+
 /* Dark theme adjustments */
 [data-theme="dark"] .version-item {
     background: var(--lora-surface);
@@ -426,8 +497,18 @@
     border-color: var(--lora-border);
 }
 
+[data-theme="dark"] .toggle-slider:before {
+    background-color: #f0f0f0;
+}
+
 /* Enhance the local badge to make it more noticeable */
 .version-item.exists-locally {
     background: oklch(var(--lora-accent) / 0.05);
     border-left: 4px solid var(--lora-accent);
+}
+
+.manual-path-selection.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    user-select: none;
 }

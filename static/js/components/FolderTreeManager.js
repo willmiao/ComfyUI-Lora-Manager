@@ -175,7 +175,18 @@ export class FolderTreeManager {
     renderTree() {
         const folderTree = document.getElementById(this.getElementId('folderTree'));
         if (!folderTree) return;
-        
+
+        // Show placeholder if treeData is empty
+        if (!this.treeData || Object.keys(this.treeData).length === 0) {
+            folderTree.innerHTML = `
+                <div class="folder-tree-placeholder" style="padding:24px;text-align:center;color:var(--text-color);opacity:0.7;">
+                    <i class="fas fa-folder-open" style="font-size:2em;opacity:0.5;"></i>
+                    <div>No folders found.<br/>You can create a new folder using the button above.</div>
+                </div>
+            `;
+            return;
+        }
+
         folderTree.innerHTML = this.renderTreeNode(this.treeData, '');
     }
 

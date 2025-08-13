@@ -613,7 +613,7 @@ export class BaseModelApiClient {
         }
     }
 
-    async downloadModel(modelId, versionId, modelRoot, relativePath, downloadId) {
+    async downloadModel(modelId, versionId, modelRoot, relativePath, useDefaultPaths = false, downloadId) {
         try {
             const response = await fetch(DOWNLOAD_ENDPOINTS.download, {
                 method: 'POST',
@@ -623,6 +623,7 @@ export class BaseModelApiClient {
                     model_version_id: versionId,
                     model_root: modelRoot,
                     relative_path: relativePath,
+                    use_default_paths: useDefaultPaths,
                     download_id: downloadId
                 })
             });

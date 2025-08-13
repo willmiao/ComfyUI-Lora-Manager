@@ -1,5 +1,6 @@
 import { modalManager } from './ModalManager.js';
 import { showToast } from '../utils/uiHelpers.js';
+import { state } from '../state/index.js';
 import { LoadingManager } from './LoadingManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
@@ -16,7 +17,8 @@ export class DownloadManager {
         this.initialized = false;
         this.selectedFolder = '';
         this.apiClient = null;
-
+        this.useDefaultPath = false;
+        
         this.loadingManager = new LoadingManager();
         this.folderTreeManager = new FolderTreeManager();
         this.folderClickHandler = null;
@@ -29,6 +31,7 @@ export class DownloadManager {
         this.handleBackToUrl = this.backToUrl.bind(this);
         this.handleBackToVersions = this.backToVersions.bind(this);
         this.handleCloseModal = this.closeModal.bind(this);
+        this.handleToggleDefaultPath = this.toggleDefaultPath.bind(this);
     }
 
     showDownloadModal() {
@@ -73,6 +76,9 @@ export class DownloadManager {
         document.getElementById('backToUrlBtn').addEventListener('click', this.handleBackToUrl);
         document.getElementById('backToVersionsBtn').addEventListener('click', this.handleBackToVersions);
         document.getElementById('closeDownloadModal').addEventListener('click', this.handleCloseModal);
+        
+        // Default path toggle handler
+        document.getElementById('useDefaultPath').addEventListener('change', this.handleToggleDefaultPath);
     }
 
     updateModalLabels() {
@@ -126,6 +132,9 @@ export class DownloadManager {
         if (this.folderTreeManager) {
             this.folderTreeManager.clearSelection();
         }
+        
+        // Reset default path toggle
+        this.loadDefaultPathSetting();
     }
 
     async validateAndFetchVersions() {
@@ -329,12 +338,63 @@ export class DownloadManager {
                 this.updateTargetPath();
             });
             
+            // Load default path setting for current model type
+            this.loadDefaultPathSetting();
+            
             this.updateTargetPath();
         } catch (error) {
             showToast(error.message, 'error');
         }
     }
 
+    loadDefaultPathSetting() {
+        const modelType = this.apiClient.modelType;
+        const storageKey = `use_default_path_${modelType}`;
+        this.useDefaultPath = getStorageItem(storageKey, false);
+        
+        const toggleInput = document.getElementById('useDefaultPath');
+        if (toggleInput) {
+            toggleInput.checked = this.useDefaultPath;
+            this.updatePathSelectionUI();
+        }
+    }
+
+    toggleDefaultPath(event) {
+        this.useDefaultPath = event.target.checked;
+        
+        // Save to localStorage per model type
+        const modelType = this.apiClient.modelType;
+        const storageKey = `use_default_path_${modelType}`;
+        setStorageItem(storageKey, this.useDefaultPath);
+        
+        this.updatePathSelectionUI();
+        this.updateTargetPath();
+    }
+
+    updatePathSelectionUI() {
+        const manualSelection = document.getElementById('manualPathSelection');
+        
+        // Always show manual path selection, but disable/enable based on useDefaultPath
+        manualSelection.style.display = 'block';
+        if (this.useDefaultPath) {
+            manualSelection.classList.add('disabled');
+            // Disable all inputs and buttons inside manualSelection
+            manualSelection.querySelectorAll('input, select, button').forEach(el => {
+                el.disabled = true;
+                el.tabIndex = -1;
+            });
+        } else {
+            manualSelection.classList.remove('disabled');
+            manualSelection.querySelectorAll('input, select, button').forEach(el => {
+                el.disabled = false;
+                el.tabIndex = 0;
+            });
+        }
+        
+        // Always update the main path display
+        this.updateTargetPath();
+    }
+    
     backToUrl() {
         document.getElementById('versionStep').style.display = 'none';
         document.getElementById('urlStep').style.display = 'block';
@@ -362,8 +422,16 @@ export class DownloadManager {
             return;
         }
 
-        // Get selected folder path from folder tree manager
-        const targetFolder = this.folderTreeManager.getSelectedPath();
+        // Determine target folder and use_default_paths parameter
+        let targetFolder = '';
+        let useDefaultPaths = false;
+        
+        if (this.useDefaultPath) {
+            useDefaultPaths = true;
+            targetFolder = ''; // Not needed when using default paths
+        } else {
+            targetFolder = this.folderTreeManager.getSelectedPath();
+        }
 
         try {
             const updateProgress = this.loadingManager.showDownloadProgress(1);
@@ -402,12 +470,13 @@ export class DownloadManager {
                 console.error('WebSocket error:', error);
             };
 
-            // Start download
+            // Start download with use_default_paths parameter
             await this.apiClient.downloadModel(
                 this.modelId,
                 this.currentVersion.id,
                 modelRoot,
                 targetFolder,
+                useDefaultPaths,
                 downloadId
             );
 
@@ -418,19 +487,22 @@ export class DownloadManager {
             
             // Update state and trigger reload
             const pageState = this.apiClient.getPageState();
-            pageState.activeFolder = targetFolder;
             
-            // Save the active folder preference
-            setStorageItem(`${this.apiClient.modelType}_activeFolder`, targetFolder);
-            
-            // Update UI folder selection
-            document.querySelectorAll('.folder-tags .tag').forEach(tag => {
-                const isActive = tag.dataset.folder === targetFolder;
-                tag.classList.toggle('active', isActive);
-                if (isActive && !tag.parentNode.classList.contains('collapsed')) {
-                    tag.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-            });
+            if (!useDefaultPaths) {
+                pageState.activeFolder = targetFolder;
+                
+                // Save the active folder preference
+                setStorageItem(`${this.apiClient.modelType}_activeFolder`, targetFolder);
+                
+                // Update UI folder selection
+                document.querySelectorAll('.folder-tags .tag').forEach(tag => {
+                    const isActive = tag.dataset.folder === targetFolder;
+                    tag.classList.toggle('active', isActive);
+                    if (isActive && !tag.parentNode.classList.contains('collapsed')) {
+                        tag.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                });
+            }
 
             await resetAndReload(true);
 
@@ -517,9 +589,23 @@ export class DownloadManager {
         let fullPath = modelRoot || `Select a ${config.displayName} root directory`;
         
         if (modelRoot) {
-            const selectedPath = this.folderTreeManager ? this.folderTreeManager.getSelectedPath() : '';
-            if (selectedPath) {
-                fullPath += '/' + selectedPath;
+            if (this.useDefaultPath) {
+                // Show actual template path
+                try {
+                    const singularType = this.apiClient.modelType.replace(/s$/, '');
+                    const templates = state.global.settings.download_path_templates;
+                    const template = templates[singularType];
+                    fullPath += `/${template}`;
+                } catch (error) {
+                    console.error('Failed to fetch template:', error);
+                    fullPath += '/[Auto-organized by path template]';
+                }
+            } else {
+                // Show manual path selection
+                const selectedPath = this.folderTreeManager ? this.folderTreeManager.getSelectedPath() : '';
+                if (selectedPath) {
+                    fullPath += '/' + selectedPath;
+                }
             }
         }
 

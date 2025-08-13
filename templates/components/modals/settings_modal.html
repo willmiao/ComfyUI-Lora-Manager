@@ -90,6 +90,57 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Add Layout Settings Section -->
+            <div class="settings-section">
+                <h3>Layout Settings</h3>
+                
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="displayDensity">Display Density</label>
+                        </div>
+                        <div class="setting-control select-control">
+                            <select id="displayDensity" onchange="settingsManager.saveSelectSetting('displayDensity', 'display_density')">
+                                <option value="default">Default</option>
+                                <option value="medium">Medium</option>
+                                <option value="compact">Compact</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        Choose how many cards to display per row:
+                        <ul class="list-description">
+                            <li><strong>Default:</strong> 5 (1080p), 6 (2K), 8 (4K)</li>
+                            <li><strong>Medium:</strong> 6 (1080p), 7 (2K), 9 (4K)</li>
+                            <li><strong>Compact:</strong> 7 (1080p), 8 (2K), 10 (4K)</li>
+                        </ul>
+                        <span class="warning-text">Warning: Higher densities may cause performance issues on systems with limited resources.</span>
+                    </div>
+                </div>
+                
+                <!-- Add Card Info Display setting -->
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="cardInfoDisplay">Card Info Display</label>
+                        </div>
+                        <div class="setting-control select-control">
+                            <select id="cardInfoDisplay" onchange="settingsManager.saveSelectSetting('cardInfoDisplay', 'card_info_display')">
+                                <option value="always">Always Visible</option>
+                                <option value="hover">Reveal on Hover</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        Choose when to display model information and action buttons:
+                        <ul class="list-description">
+                            <li><strong>Always Visible:</strong> Headers and footers are always visible</li>
+                            <li><strong>Reveal on Hover:</strong> Headers and footers only appear when hovering over a card</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
             
             <!-- Add Folder Settings Section -->
             <div class="settings-section">
@@ -149,108 +200,121 @@
 
             <!-- Default Path Customization Section -->
             <div class="settings-section">
-                <h3>Default Path Customization</h3>
+                <h3>Download Path Templates</h3>
                 
                 <div class="setting-item">
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <label for="downloadPathTemplate">Download Path Template</label>
-                        </div>
-                        <div class="setting-control select-control">
-                            <select id="downloadPathTemplate" onchange="settingsManager.saveSelectSetting('downloadPathTemplate', 'download_path_template')">
-                                <option value="">Flat Structure</option>
-                                <option value="{base_model}">By Base Model</option>
-                                <option value="{first_tag}">By First Tag</option>
-                                <option value="{base_model}/{first_tag}">Base Model + First Tag</option>
-                            </select>
-                        </div>
-                    </div>
                     <div class="input-help">
-                        Configure path structure for default download locations
-                        <ul class="list-description">
-                            <li><strong>Flat:</strong> All models in root folder</li>
-                            <li><strong>Base Model:</strong> Organized by model type (e.g., Flux.1 D, SDXL)</li>
-                            <li><strong>First Tag:</strong> Organized by primary tag (e.g., style, character)</li>
-                            <li><strong>Base Model + Tag:</strong> Two-level organization for better structure</li>
-                        </ul>
+                        Configure folder structures for different model types when downloading from Civitai.
+                        <div class="placeholder-info">
+                            <strong>Available placeholders:</strong>
+                            <span class="placeholder-tag">{base_model}</span>
+                            <span class="placeholder-tag">{author}</span>
+                            <span class="placeholder-tag">{first_tag}</span>
+                        </div>
                     </div>
-                    <div id="pathTemplatePreview" class="template-preview"></div>
                 </div>
 
+                <!-- LoRA Template Configuration -->
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label>Base Model Path Mappings</label>
-                        </div>
-                        <div class="setting-control">
-                            <button type="button" class="add-mapping-btn" onclick="settingsManager.addMappingRow()">
-                                <i class="fas fa-plus"></i>
-                                <span>Add Mapping</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="input-help">
-                        Customize folder names for specific base models (e.g., "Flux.1 D" → "flux")
-                    </div>
-                    <div class="mappings-container">
-                        <div id="baseModelMappingsContainer">
-                            <!-- Mapping rows will be added dynamically -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Add Layout Settings Section -->
-            <div class="settings-section">
-                <h3>Layout Settings</h3>
-                
-                <div class="setting-item">
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <label for="displayDensity">Display Density</label>
+                            <label for="loraTemplatePreset">LoRA</label>
                         </div>
                         <div class="setting-control select-control">
-                            <select id="displayDensity" onchange="settingsManager.saveSelectSetting('displayDensity', 'display_density')">
-                                <option value="default">Default</option>
-                                <option value="medium">Medium</option>
-                                <option value="compact">Compact</option>
+                            <select id="loraTemplatePreset" onchange="settingsManager.updateTemplatePreset('lora', this.value)">
+                                <option value="">Flat Structure</option>
+                                <option value="{base_model}">By Base Model</option>
+                                <option value="{author}">By Author</option>
+                                <option value="{first_tag}">By First Tag</option>
+                                <option value="{base_model}/{first_tag}">Base Model + First Tag</option>
+                                <option value="{base_model}/{author}">Base Model + Author</option>
+                                <option value="{author}/{first_tag}">Author + First Tag</option>
+                                <option value="custom">Custom Template</option>
                             </select>
                         </div>
                     </div>
-                    <div class="input-help">
-                        Choose how many cards to display per row:
-                        <ul class="list-description">
-                            <li><strong>Default:</strong> 5 (1080p), 6 (2K), 8 (4K)</li>
-                            <li><strong>Medium:</strong> 6 (1080p), 7 (2K), 9 (4K)</li>
-                            <li><strong>Compact:</strong> 7 (1080p), 8 (2K), 10 (4K)</li>
-                        </ul>
-                        <span class="warning-text">Warning: Higher densities may cause performance issues on systems with limited resources.</span>
+                    <div class="template-custom-row" id="loraCustomRow" style="display: none;">
+                        <input type="text" id="loraCustomTemplate" class="template-custom-input" placeholder="Enter custom template (e.g., {base_model}/{author}/{first_tag})" />
+                        <div class="template-validation" id="loraValidation"></div>
                     </div>
+                    <div class="template-preview" id="loraPreview"></div>
                 </div>
-                
-                <!-- Add Card Info Display setting -->
+
+                <!-- Checkpoint Template Configuration -->
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="cardInfoDisplay">Card Info Display</label>
+                            <label for="checkpointTemplatePreset">Checkpoint</label>
                         </div>
                         <div class="setting-control select-control">
-                            <select id="cardInfoDisplay" onchange="settingsManager.saveSelectSetting('cardInfoDisplay', 'card_info_display')">
-                                <option value="always">Always Visible</option>
-                                <option value="hover">Reveal on Hover</option>
+                            <select id="checkpointTemplatePreset" onchange="settingsManager.updateTemplatePreset('checkpoint', this.value)">
+                                <option value="">Flat Structure</option>
+                                <option value="{base_model}">By Base Model</option>
+                                <option value="{author}">By Author</option>
+                                <option value="{first_tag}">By First Tag</option>
+                                <option value="{base_model}/{first_tag}">Base Model + First Tag</option>
+                                <option value="{base_model}/{author}">Base Model + Author</option>
+                                <option value="{author}/{first_tag}">Author + First Tag</option>
+                                <option value="custom">Custom Template</option>
                             </select>
                         </div>
                     </div>
-                    <div class="input-help">
-                        Choose when to display model information and action buttons:
-                        <ul class="list-description">
-                            <li><strong>Always Visible:</strong> Headers and footers are always visible</li>
-                            <li><strong>Reveal on Hover:</strong> Headers and footers only appear when hovering over a card</li>
-                        </ul>
+                    <div class="template-custom-row" id="checkpointCustomRow" style="display: none;">
+                        <input type="text" id="checkpointCustomTemplate" class="template-custom-input" placeholder="Enter custom template (e.g., {base_model}/{author}/{first_tag})" />
+                        <div class="template-validation" id="checkpointValidation"></div>
+                    </div>
+                    <div class="template-preview" id="checkpointPreview"></div>
+                </div>
+
+                <!-- Embedding Template Configuration -->
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="embeddingTemplatePreset">Embedding</label>
+                        </div>
+                        <div class="setting-control select-control">
+                            <select id="embeddingTemplatePreset" onchange="settingsManager.updateTemplatePreset('embedding', this.value)">
+                                <option value="">Flat Structure</option>
+                                <option value="{base_model}">By Base Model</option>
+                                <option value="{author}">By Author</option>
+                                <option value="{first_tag}">By First Tag</option>
+                                <option value="{base_model}/{first_tag}">Base Model + First Tag</option>
+                                <option value="{base_model}/{author}">Base Model + Author</option>
+                                <option value="{author}/{first_tag}">Author + First Tag</option>
+                                <option value="custom">Custom Template</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="template-custom-row" id="embeddingCustomRow" style="display: none;">
+                        <input type="text" id="embeddingCustomTemplate" class="template-custom-input" placeholder="Enter custom template (e.g., {base_model}/{author}/{first_tag})" />
+                        <div class="template-validation" id="embeddingValidation"></div>
+                    </div>
+                    <div class="template-preview" id="embeddingPreview"></div>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <label>Base Model Path Mappings</label>
+                    </div>
+                    <div class="setting-control">
+                        <button type="button" class="add-mapping-btn" onclick="settingsManager.addMappingRow()">
+                            <i class="fas fa-plus"></i>
+                            <span>Add Mapping</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="input-help">
+                    Customize folder names for specific base models (e.g., "Flux.1 D" → "flux")
+                </div>
+                <div class="mappings-container">
+                    <div id="baseModelMappingsContainer">
+                        <!-- Mapping rows will be added dynamically -->
                     </div>
                 </div>
             </div>
-            
+
             <!-- Add Example Images Settings Section -->
             <div class="settings-section">
                 <h3>Example Images</h3>

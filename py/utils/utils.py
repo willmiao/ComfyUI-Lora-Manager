@@ -132,17 +132,18 @@ def calculate_recipe_fingerprint(loras):
     
     return fingerprint
 
-def calculate_relative_path_for_model(model_data: Dict) -> str:
+def calculate_relative_path_for_model(model_data: Dict, model_type: str = 'lora') -> str:
     """Calculate relative path for existing model using template from settings
 
     Args:
         model_data: Model data from scanner cache
+        model_type: Type of model ('lora', 'checkpoint', 'embedding')
 
     Returns:
         Relative path string (empty string for flat structure)
     """
-    # Get path template from settings, default to '{base_model}/{first_tag}'
-    path_template = settings.get('download_path_template', '{base_model}/{first_tag}')
+    # Get path template from settings for specific model type
+    path_template = settings.get_download_path_template(model_type)
 
     # If template is empty, return empty path (flat structure)
     if not path_template:
@@ -154,9 +155,12 @@ def calculate_relative_path_for_model(model_data: Dict) -> str:
     # For CivitAI models, prefer civitai data only if 'id' exists; for non-CivitAI models, use model_data directly
     if civitai_data and civitai_data.get('id') is not None:
         base_model = civitai_data.get('baseModel', '')
+        # Get author from civitai creator data
+        author = civitai_data.get('creator', {}).get('username', 'Anonymous')
     else:
         # Fallback to model_data fields for non-CivitAI models
         base_model = model_data.get('base_model', '')
+        author = 'Anonymous'  # Default for non-CivitAI models
 
     model_tags = model_data.get('tags', [])
 
@@ -182,6 +186,7 @@ def calculate_relative_path_for_model(model_data: Dict) -> str:
     formatted_path = path_template
     formatted_path = formatted_path.replace('{base_model}', mapped_base_model)
     formatted_path = formatted_path.replace('{first_tag}', first_tag)
+    formatted_path = formatted_path.replace('{author}', author)
 
     return formatted_path
 

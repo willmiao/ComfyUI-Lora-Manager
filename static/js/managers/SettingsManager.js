@@ -3,7 +3,7 @@ import { showToast } from '../utils/uiHelpers.js';
 import { state } from '../state/index.js';
 import { resetAndReload } from '../api/modelApiFactory.js';
 import { setStorageItem, getStorageItem } from '../utils/storageHelpers.js';
-import { DOWNLOAD_PATH_TEMPLATES, MAPPABLE_BASE_MODELS } from '../utils/constants.js';
+import { DOWNLOAD_PATH_TEMPLATES, MAPPABLE_BASE_MODELS, PATH_TEMPLATE_PLACEHOLDERS, DEFAULT_PATH_TEMPLATES } from '../utils/constants.js';
 
 export class SettingsManager {
     constructor() {
@@ -73,10 +73,29 @@ export class SettingsManager {
             // We can delete the old setting, but keeping it for backwards compatibility
         }
 
-        // Set default for download path template if undefined
-        if (state.global.settings.download_path_template === undefined) {
-            state.global.settings.download_path_template = DOWNLOAD_PATH_TEMPLATES.BASE_MODEL_TAG.value;
+        // Migrate legacy download_path_template to new structure
+        if (state.global.settings.download_path_template && !state.global.settings.download_path_templates) {
+            const legacyTemplate = state.global.settings.download_path_template;
+            state.global.settings.download_path_templates = {
+                lora: legacyTemplate,
+                checkpoint: legacyTemplate,
+                embedding: legacyTemplate
+            };
+            delete state.global.settings.download_path_template;
+            setStorageItem('settings', state.global.settings);
         }
+
+        // Set default for download path templates if undefined
+        if (state.global.settings.download_path_templates === undefined) {
+            state.global.settings.download_path_templates = { ...DEFAULT_PATH_TEMPLATES };
+        }
+
+        // Ensure all model types have templates
+        Object.keys(DEFAULT_PATH_TEMPLATES).forEach(modelType => {
+            if (typeof state.global.settings.download_path_templates[modelType] === 'undefined') {
+                state.global.settings.download_path_templates[modelType] = DEFAULT_PATH_TEMPLATES[modelType];
+            }
+        });
 
         // Set default for base model path mappings if undefined
         if (state.global.settings.base_model_path_mappings === undefined) {
@@ -105,7 +124,7 @@ export class SettingsManager {
             'default_checkpoint_root',
             'default_embedding_root',
             'base_model_path_mappings',
-            'download_path_template'
+            'download_path_templates'
         ];
 
         // Build payload for syncing
@@ -113,7 +132,7 @@ export class SettingsManager {
 
         fieldsToSync.forEach(key => {
             if (localSettings[key] !== undefined) {
-                if (key === 'base_model_path_mappings') {
+                if (key === 'base_model_path_mappings' || key === 'download_path_templates') {
                     payload[key] = JSON.stringify(localSettings[key]);
                 } else {
                     payload[key] = localSettings[key];
@@ -164,6 +183,30 @@ export class SettingsManager {
         document.querySelectorAll('.toggle-visibility').forEach(button => {
             button.addEventListener('click', () => this.toggleInputVisibility(button));
         });
+
+        ['lora', 'checkpoint', 'embedding'].forEach(modelType => {
+            const customInput = document.getElementById(`${modelType}CustomTemplate`);
+            if (customInput) {
+                customInput.addEventListener('input', (e) => {
+                    const template = e.target.value;
+                    settingsManager.validateTemplate(modelType, template);
+                    settingsManager.updateTemplatePreview(modelType, template);
+                });
+                
+                customInput.addEventListener('blur', (e) => {
+                    const template = e.target.value;
+                    if (settingsManager.validateTemplate(modelType, template)) {
+                        settingsManager.updateTemplate(modelType, template);
+                    }
+                });
+                
+                customInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.target.blur();
+                    }
+                });
+            }
+        });
         
         this.initialized = true;
     }
@@ -211,12 +254,8 @@ export class SettingsManager {
             autoDownloadExampleImagesCheckbox.checked = state.global.settings.autoDownloadExampleImages || false;
         }
 
-        // Set download path template setting
-        const downloadPathTemplateSelect = document.getElementById('downloadPathTemplate');
-        if (downloadPathTemplateSelect) {
-            downloadPathTemplateSelect.value = state.global.settings.download_path_template || '';
-            this.updatePathTemplatePreview();
-        }
+        // Load download path templates
+        this.loadDownloadPathTemplates();
 
         // Set include trigger words setting
         const includeTriggerWordsCheckbox = document.getElementById('includeTriggerWords');
@@ -529,19 +568,184 @@ export class SettingsManager {
         }
     }
 
-    updatePathTemplatePreview() {
-        const templateSelect = document.getElementById('downloadPathTemplate');
-        const previewElement = document.getElementById('pathTemplatePreview');
-        if (!templateSelect || !previewElement) return;
-
-        const template = templateSelect.value;
-        const templateInfo = Object.values(DOWNLOAD_PATH_TEMPLATES).find(t => t.value === template);
+    loadDownloadPathTemplates() {
+        const templates = state.global.settings.download_path_templates || DEFAULT_PATH_TEMPLATES;
         
-        if (templateInfo) {
-            previewElement.textContent = templateInfo.example;
-            previewElement.style.display = 'block';
+        Object.keys(templates).forEach(modelType => {
+            this.loadTemplateForModelType(modelType, templates[modelType]);
+        });
+    }
+
+    loadTemplateForModelType(modelType, template) {
+        const presetSelect = document.getElementById(`${modelType}TemplatePreset`);
+        const customRow = document.getElementById(`${modelType}CustomRow`);
+        const customInput = document.getElementById(`${modelType}CustomTemplate`);
+        
+        if (!presetSelect) return;
+
+        // Find matching preset
+        const matchingPreset = this.findMatchingPreset(template);
+        
+        if (matchingPreset !== null) {
+            presetSelect.value = matchingPreset;
+            if (customRow) customRow.style.display = 'none';
         } else {
-            previewElement.style.display = 'none';
+            // Custom template
+            presetSelect.value = 'custom';
+            if (customRow) customRow.style.display = 'block';
+            if (customInput) {
+                customInput.value = template;
+                this.validateTemplate(modelType, template);
+            }
+        }
+        
+        this.updateTemplatePreview(modelType, template);
+    }
+
+    findMatchingPreset(template) {
+        const presetValues = Object.values(DOWNLOAD_PATH_TEMPLATES)
+            .map(t => t.value)
+            .filter(v => v !== 'custom');
+        
+        return presetValues.includes(template) ? template : null;
+    }
+
+    updateTemplatePreset(modelType, value) {
+        const customRow = document.getElementById(`${modelType}CustomRow`);
+        const customInput = document.getElementById(`${modelType}CustomTemplate`);
+        
+        if (value === 'custom') {
+            if (customRow) customRow.style.display = 'block';
+            if (customInput) customInput.focus();
+            return;
+        } else {
+            if (customRow) customRow.style.display = 'none';
+        }
+        
+        // Update template
+        this.updateTemplate(modelType, value);
+    }
+
+    updateTemplate(modelType, template) {
+        // Validate template if it's custom
+        if (document.getElementById(`${modelType}TemplatePreset`).value === 'custom') {
+            if (!this.validateTemplate(modelType, template)) {
+                return; // Don't save invalid templates
+            }
+        }
+        
+        // Update state
+        if (!state.global.settings.download_path_templates) {
+            state.global.settings.download_path_templates = { ...DEFAULT_PATH_TEMPLATES };
+        }
+        state.global.settings.download_path_templates[modelType] = template;
+        
+        // Update preview
+        this.updateTemplatePreview(modelType, template);
+        
+        // Save settings
+        this.saveDownloadPathTemplates();
+    }
+
+    validateTemplate(modelType, template) {
+        const validationElement = document.getElementById(`${modelType}Validation`);
+        if (!validationElement) return true;
+        
+        // Reset validation state
+        validationElement.innerHTML = '';
+        validationElement.className = 'template-validation';
+        
+        if (!template) {
+            validationElement.innerHTML = '<i class="fas fa-check"></i> Valid (flat structure)';
+            validationElement.classList.add('valid');
+            return true;
+        }
+        
+        // Check for invalid characters
+        const invalidChars = /[<>:"|?*]/;
+        if (invalidChars.test(template)) {
+            validationElement.innerHTML = '<i class="fas fa-times"></i> Invalid characters detected';
+            validationElement.classList.add('invalid');
+            return false;
+        }
+        
+        // Check for double slashes
+        if (template.includes('//')) {
+            validationElement.innerHTML = '<i class="fas fa-times"></i> Double slashes not allowed';
+            validationElement.classList.add('invalid');
+            return false;
+        }
+        
+        // Check if it starts or ends with slash
+        if (template.startsWith('/') || template.endsWith('/')) {
+            validationElement.innerHTML = '<i class="fas fa-times"></i> Cannot start or end with slash';
+            validationElement.classList.add('invalid');
+            return false;
+        }
+        
+        // Extract placeholders
+        const placeholderRegex = /\{([^}]+)\}/g;
+        const matches = template.match(placeholderRegex) || [];
+        
+        // Check for invalid placeholders
+        const invalidPlaceholders = matches.filter(match => 
+            !PATH_TEMPLATE_PLACEHOLDERS.includes(match)
+        );
+        
+        if (invalidPlaceholders.length > 0) {
+            validationElement.innerHTML = `<i class="fas fa-times"></i> Invalid placeholder: ${invalidPlaceholders[0]}`;
+            validationElement.classList.add('invalid');
+            return false;
+        }
+        
+        // Template is valid
+        validationElement.innerHTML = '<i class="fas fa-check"></i> Valid template';
+        validationElement.classList.add('valid');
+        return true;
+    }
+
+    updateTemplatePreview(modelType, template) {
+        const previewElement = document.getElementById(`${modelType}Preview`);
+        if (!previewElement) return;
+        
+        if (!template) {
+            previewElement.textContent = 'model-name.safetensors';
+        } else {
+            // Generate example preview
+            const exampleTemplate = template
+                .replace('{base_model}', 'Flux.1 D')
+                .replace('{author}', 'authorname')
+                .replace('{first_tag}', 'style');
+            previewElement.textContent = `${exampleTemplate}/model-name.safetensors`;
+        }
+        previewElement.style.display = 'block';
+    }
+
+    async saveDownloadPathTemplates() {
+        try {
+            // Save to localStorage
+            setStorageItem('settings', state.global.settings);
+
+            // Save to backend
+            const response = await fetch('/api/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    download_path_templates: JSON.stringify(state.global.settings.download_path_templates)
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save download path templates');
+            }
+
+            showToast('Download path templates updated', 'success');
+
+        } catch (error) {
+            console.error('Error saving download path templates:', error);
+            showToast('Failed to save download path templates: ' + error.message, 'error');
         }
     }
 
@@ -651,9 +855,6 @@ export class SettingsManager {
             state.global.settings.compactMode = (value !== 'default');
         } else if (settingKey === 'card_info_display') {
             state.global.settings.cardInfoDisplay = value;
-        } else if (settingKey === 'download_path_template') {
-            state.global.settings.download_path_template = value;
-            this.updatePathTemplatePreview();
         } else {
             // For any other settings that might be added in the future
             state.global.settings[settingKey] = value;
@@ -664,9 +865,13 @@ export class SettingsManager {
         
         try {
             // For backend settings, make API call
-            if (settingKey === 'default_lora_root' || settingKey === 'default_checkpoint_root' || settingKey === 'default_embedding_root' || settingKey === 'download_path_template') {
+            if (settingKey === 'default_lora_root' || settingKey === 'default_checkpoint_root' || settingKey === 'default_embedding_root' || settingKey === 'download_path_templates') {
                 const payload = {};
-                payload[settingKey] = value;
+                if (settingKey === 'download_path_templates') {
+                    payload[settingKey] = JSON.stringify(state.global.settings.download_path_templates);
+                } else {
+                    payload[settingKey] = value;
+                }
                 
                 const response = await fetch('/api/settings', {
                     method: 'POST',
