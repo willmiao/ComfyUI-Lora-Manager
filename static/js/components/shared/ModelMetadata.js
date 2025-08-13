@@ -183,7 +183,7 @@ export function setupBaseModelEditing(filePath) {
                 BASE_MODELS.PIXART_A, BASE_MODELS.PIXART_E, BASE_MODELS.HUNYUAN_1,
                 BASE_MODELS.LUMINA, BASE_MODELS.KOLORS, BASE_MODELS.NOOBAI,
                 BASE_MODELS.ILLUSTRIOUS, BASE_MODELS.PONY, BASE_MODELS.HIDREAM,
-                BASE_MODELS.UNKNOWN
+                BASE_MODELS.QWEN, BASE_MODELS.UNKNOWN
             ]
         };
         
