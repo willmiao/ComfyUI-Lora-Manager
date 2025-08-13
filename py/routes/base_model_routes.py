@@ -852,7 +852,7 @@ class BaseModelRoutes(ABC):
                         current_dir = os.path.dirname(file_path)
                         
                         # Skip if already in correct location
-                        if os.path.normpath(current_dir) == os.path.normpath(target_dir):
+                        if current_dir.replace(os.sep, '/') == target_dir.replace(os.sep, '/'):
                             skipped_count += 1
                             processed += 1
                             continue
@@ -916,12 +916,32 @@ class BaseModelRoutes(ABC):
             # Send completion message
             await ws_manager.broadcast({
                 'type': 'auto_organize_progress',
+                'status': 'cleaning',
+                'total': total_models,
+                'processed': processed,
+                'success': success_count,
+                'failures': failure_count,
+                'skipped': skipped_count,
+                'message': 'Cleaning up empty directories...'
+            })
+            
+            # Clean up empty directories after organizing
+            from ..utils.utils import remove_empty_dirs
+            cleanup_counts = {}
+            for root in model_roots:
+                removed = remove_empty_dirs(root)
+                cleanup_counts[root] = removed
+                
+            # Send cleanup completed message
+            await ws_manager.broadcast({
+                'type': 'auto_organize_progress',
                 'status': 'completed',
                 'total': total_models,
                 'processed': processed,
                 'success': success_count,
                 'failures': failure_count,
-                'skipped': skipped_count
+                'skipped': skipped_count,
+                'cleanup': cleanup_counts
             })
             
             # Prepare response with limited details
@@ -933,7 +953,8 @@ class BaseModelRoutes(ABC):
                     'success': success_count,
                     'skipped': skipped_count,
                     'failures': failure_count,
-                    'organization_type': 'flat' if is_flat_structure else 'structured'
+                    'organization_type': 'flat' if is_flat_structure else 'structured',
+                    'cleaned_dirs': cleanup_counts
                 }
             }
             
