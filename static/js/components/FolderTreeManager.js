@@ -8,6 +8,8 @@ export class FolderTreeManager {
         this.expandedNodes = new Set();
         this.pathSuggestions = [];
         this.onPathChangeCallback = null;
+        this.activeSuggestionIndex = -1;
+        this.elementsPrefix = '';
         
         // Bind methods
         this.handleTreeClick = this.handleTreeClick.bind(this);
@@ -15,33 +17,31 @@ export class FolderTreeManager {
         this.handlePathSuggestionClick = this.handlePathSuggestionClick.bind(this);
         this.handleCreateFolder = this.handleCreateFolder.bind(this);
         this.handleBreadcrumbClick = this.handleBreadcrumbClick.bind(this);
+        this.handlePathKeyDown = this.handlePathKeyDown.bind(this);
     }
 
     /**
      * Initialize the folder tree manager
      * @param {Object} config - Configuration object
      * @param {Function} config.onPathChange - Callback when path changes
+     * @param {string} config.elementsPrefix - Prefix for element IDs (e.g., 'move' for move modal)
      */
     init(config = {}) {
         this.onPathChangeCallback = config.onPathChange;
+        this.elementsPrefix = config.elementsPrefix || '';
         this.setupEventHandlers();
     }
 
     setupEventHandlers() {
-        const pathInput = document.getElementById('folderPath');
-        const createFolderBtn = document.getElementById('createFolderBtn');
-        const folderTree = document.getElementById('folderTree');
-        const breadcrumbNav = document.getElementById('breadcrumbNav');
-        const pathSuggestions = document.getElementById('pathSuggestions');
+        const pathInput = document.getElementById(this.getElementId('folderPath'));
+        const createFolderBtn = document.getElementById(this.getElementId('createFolderBtn'));
+        const folderTree = document.getElementById(this.getElementId('folderTree'));
+        const breadcrumbNav = document.getElementById(this.getElementId('breadcrumbNav'));
+        const pathSuggestions = document.getElementById(this.getElementId('pathSuggestions'));
 
         if (pathInput) {
             pathInput.addEventListener('input', this.handlePathInput);
-            pathInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.selectCurrentInput();
-                }
-            });
+            pathInput.addEventListener('keydown', this.handlePathKeyDown);
         }
 
         if (createFolderBtn) {
@@ -62,13 +62,81 @@ export class FolderTreeManager {
 
         // Hide suggestions when clicking outside
         document.addEventListener('click', (e) => {
-            const pathInput = document.getElementById('folderPath');
-            const suggestions = document.getElementById('pathSuggestions');
+            const pathInput = document.getElementById(this.getElementId('folderPath'));
+            const suggestions = document.getElementById(this.getElementId('pathSuggestions'));
             
             if (pathInput && suggestions && 
                 !pathInput.contains(e.target) && 
                 !suggestions.contains(e.target)) {
                 suggestions.style.display = 'none';
+                this.activeSuggestionIndex = -1;
+            }
+        });
+    }
+
+    /**
+     * Get element ID with prefix
+     */
+    getElementId(elementName) {
+        return this.elementsPrefix ? `${this.elementsPrefix}${elementName.charAt(0).toUpperCase()}${elementName.slice(1)}` : elementName;
+    }
+
+    /**
+     * Handle path input key events with enhanced keyboard navigation
+     */
+    handlePathKeyDown(event) {
+        const suggestions = document.getElementById(this.getElementId('pathSuggestions'));
+        const isVisible = suggestions && suggestions.style.display !== 'none';
+        
+        if (isVisible) {
+            const suggestionItems = suggestions.querySelectorAll('.path-suggestion');
+            const maxIndex = suggestionItems.length - 1;
+            
+            switch (event.key) {
+                case 'Escape':
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this.hideSuggestions();
+                    this.activeSuggestionIndex = -1;
+                    break;
+                    
+                case 'ArrowDown':
+                    event.preventDefault();
+                    this.activeSuggestionIndex = Math.min(this.activeSuggestionIndex + 1, maxIndex);
+                    this.updateActiveSuggestion(suggestionItems);
+                    break;
+                    
+                case 'ArrowUp':
+                    event.preventDefault();
+                    this.activeSuggestionIndex = Math.max(this.activeSuggestionIndex - 1, -1);
+                    this.updateActiveSuggestion(suggestionItems);
+                    break;
+                    
+                case 'Enter':
+                    event.preventDefault();
+                    if (this.activeSuggestionIndex >= 0 && suggestionItems[this.activeSuggestionIndex]) {
+                        const path = suggestionItems[this.activeSuggestionIndex].dataset.path;
+                        this.selectPath(path);
+                        this.hideSuggestions();
+                    } else {
+                        this.selectCurrentInput();
+                    }
+                    break;
+            }
+        } else if (event.key === 'Enter') {
+            event.preventDefault();
+            this.selectCurrentInput();
+        }
+    }
+
+    /**
+     * Update active suggestion highlighting
+     */
+    updateActiveSuggestion(suggestionItems) {
+        suggestionItems.forEach((item, index) => {
+            item.classList.toggle('active', index === this.activeSuggestionIndex);
+            if (index === this.activeSuggestionIndex) {
+                item.scrollIntoView({ block: 'nearest' });
             }
         });
     }
@@ -105,7 +173,7 @@ export class FolderTreeManager {
      * Render the complete folder tree
      */
     renderTree() {
-        const folderTree = document.getElementById('folderTree');
+        const folderTree = document.getElementById(this.getElementId('folderTree'));
         if (!folderTree) return;
         
         folderTree.innerHTML = this.renderTreeNode(this.treeData, '');
@@ -183,6 +251,8 @@ export class FolderTreeManager {
         const input = event.target;
         const query = input.value.toLowerCase();
         
+        this.activeSuggestionIndex = -1; // Reset active suggestion
+        
         if (query.length === 0) {
             this.hideSuggestions();
             return;
@@ -199,7 +269,7 @@ export class FolderTreeManager {
      * Show path suggestions
      */
     showSuggestions(suggestions, query) {
-        const suggestionsEl = document.getElementById('pathSuggestions');
+        const suggestionsEl = document.getElementById(this.getElementId('pathSuggestions'));
         if (!suggestionsEl) return;
         
         if (suggestions.length === 0) {
@@ -213,13 +283,14 @@ export class FolderTreeManager {
         }).join('');
         
         suggestionsEl.style.display = 'block';
+        this.activeSuggestionIndex = -1; // Reset active index
     }
 
     /**
      * Hide path suggestions
      */
     hideSuggestions() {
-        const suggestionsEl = document.getElementById('pathSuggestions');
+        const suggestionsEl = document.getElementById(this.getElementId('pathSuggestions'));
         if (suggestionsEl) {
             suggestionsEl.style.display = 'none';
         }
@@ -264,7 +335,7 @@ export class FolderTreeManager {
         // Find the parent node in the tree
         const parentNode = parentPath ? 
             document.querySelector(`[data-path="${parentPath}"]`) : 
-            document.getElementById('folderTree');
+            document.getElementById(this.getElementId('folderTree'));
         
         if (!parentNode) return;
         
@@ -369,22 +440,25 @@ export class FolderTreeManager {
         this.selectedPath = path;
         
         // Update path input
-        const pathInput = document.getElementById('folderPath');
+        const pathInput = document.getElementById(this.getElementId('folderPath'));
         if (pathInput) {
             pathInput.value = path;
         }
         
         // Update tree selection
-        document.querySelectorAll('.tree-node-content').forEach(node => {
-            node.classList.remove('selected');
-        });
-        
-        const selectedNode = document.querySelector(`[data-path="${path}"] .tree-node-content`);
-        if (selectedNode) {
-            selectedNode.classList.add('selected');
+        const treeContainer = document.getElementById(this.getElementId('folderTree'));
+        if (treeContainer) {
+            treeContainer.querySelectorAll('.tree-node-content').forEach(node => {
+                node.classList.remove('selected');
+            });
             
-            // Expand parents to show selection
-            this.expandPathParents(path);
+            const selectedNode = treeContainer.querySelector(`[data-path="${path}"] .tree-node-content`);
+            if (selectedNode) {
+                selectedNode.classList.add('selected');
+                
+                // Expand parents to show selection
+                this.expandPathParents(path);
+            }
         }
         
         // Update breadcrumbs
@@ -415,7 +489,7 @@ export class FolderTreeManager {
      * Update breadcrumb navigation
      */
     updateBreadcrumbs(path) {
-        const breadcrumbNav = document.getElementById('breadcrumbNav');
+        const breadcrumbNav = document.getElementById(this.getElementId('breadcrumbNav'));
         if (!breadcrumbNav) return;
         
         const parts = path ? path.split('/') : [];
@@ -449,7 +523,7 @@ export class FolderTreeManager {
      * Select current input value as path
      */
     selectCurrentInput() {
-        const pathInput = document.getElementById('folderPath');
+        const pathInput = document.getElementById(this.getElementId('folderPath'));
         if (pathInput) {
             const path = pathInput.value.trim();
             this.selectPath(path);
@@ -474,14 +548,15 @@ export class FolderTreeManager {
      * Clean up event handlers
      */
     destroy() {
-        const pathInput = document.getElementById('folderPath');
-        const createFolderBtn = document.getElementById('createFolderBtn');
-        const folderTree = document.getElementById('folderTree');
-        const breadcrumbNav = document.getElementById('breadcrumbNav');
-        const pathSuggestions = document.getElementById('pathSuggestions');
+        const pathInput = document.getElementById(this.getElementId('folderPath'));
+        const createFolderBtn = document.getElementById(this.getElementId('createFolderBtn'));
+        const folderTree = document.getElementById(this.getElementId('folderTree'));
+        const breadcrumbNav = document.getElementById(this.getElementId('breadcrumbNav'));
+        const pathSuggestions = document.getElementById(this.getElementId('pathSuggestions'));
 
         if (pathInput) {
             pathInput.removeEventListener('input', this.handlePathInput);
+            pathInput.removeEventListener('keydown', this.handlePathKeyDown);
         }
         if (createFolderBtn) {
             createFolderBtn.removeEventListener('click', this.handleCreateFolder);

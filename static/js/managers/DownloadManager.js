@@ -306,6 +306,12 @@ export class DownloadManager {
                 modelRoot.value = defaultRoot;
             }
 
+            // Set autocomplete="off" on folderPath input
+            const folderPathInput = document.getElementById('folderPath');
+            if (folderPathInput) {
+                folderPathInput.setAttribute('autocomplete', 'off');
+            }
+
             // Initialize folder tree
             await this.initializeFolderTree();
             

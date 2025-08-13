@@ -1,8 +1,10 @@
 <!-- Unified Download Modal for all model types -->
 <div id="downloadModal" class="modal">
     <div class="modal-content">
-        <button class="close" id="closeDownloadModal">&times;</button>
-        <h2 id="downloadModalTitle">Download Model from URL</h2>
+        <div class="modal-header">
+            <button class="close" id="closeDownloadModal">&times;</button>
+            <h2 id="downloadModalTitle">Download Model from URL</h2>
+        </div>
         
         <!-- Step 1: URL Input -->
         <div class="download-step" id="urlStep">
@@ -47,7 +49,7 @@
                 <div class="input-group">
                     <label for="folderPath">Target Folder Path:</label>
                     <div class="path-input-container">
-                        <input type="text" id="folderPath" placeholder="Type folder path or select from tree below..." />
+                        <input type="text" id="folderPath" placeholder="Type folder path or select from tree below..." autocomplete="off" />
                         <button type="button" id="createFolderBtn" class="create-folder-btn" title="Create new folder">
                             <i class="fas fa-plus"></i>
                         </button>

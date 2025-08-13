@@ -4,48 +4,31 @@ import { modalManager } from './ModalManager.js';
 import { bulkManager } from './BulkManager.js';
 import { getStorageItem } from '../utils/storageHelpers.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
+import { FolderTreeManager } from '../components/FolderTreeManager.js';
 
 class MoveManager {
     constructor() {
         this.currentFilePath = null;
         this.bulkFilePaths = null;
-        this.modal = document.getElementById('moveModal');
-        this.modelRootSelect = document.getElementById('moveModelRoot');
-        this.folderBrowser = document.getElementById('moveFolderBrowser');
-        this.newFolderInput = document.getElementById('moveNewFolder');
-        this.pathDisplay = document.getElementById('moveTargetPathDisplay');
-        this.modalTitle = document.getElementById('moveModalTitle');
-        this.rootLabel = document.getElementById('moveRootLabel');
-
-        this.initializeEventListeners();
+        this.folderTreeManager = new FolderTreeManager();
+        this.initialized = false;
+        
+        // Bind methods
+        this.updateTargetPath = this.updateTargetPath.bind(this);
     }
 
     initializeEventListeners() {
+        if (this.initialized) return;
+        
+        const modelRootSelect = document.getElementById('moveModelRoot');
+        
         // Initialize model root directory selector
-        this.modelRootSelect.addEventListener('change', () => this.updatePathPreview());
-
-        // Folder selection event
-        this.folderBrowser.addEventListener('click', (e) => {
-            const folderItem = e.target.closest('.folder-item');
-            if (!folderItem) return;
-
-            // If clicking already selected folder, deselect it
-            if (folderItem.classList.contains('selected')) {
-                folderItem.classList.remove('selected');
-            } else {
-                // Deselect other folders
-                this.folderBrowser.querySelectorAll('.folder-item').forEach(item => {
-                    item.classList.remove('selected');
-                });
-                // Select current folder
-                folderItem.classList.add('selected');
-            }
-            
-            this.updatePathPreview();
+        modelRootSelect.addEventListener('change', async () => {
+            await this.initializeFolderTree();
+            this.updateTargetPath();
         });
-
-        // New folder input event
-        this.newFolderInput.addEventListener('input', () => this.updatePathPreview());
+        
+        this.initialized = true;
     }
 
     async showMoveModal(filePath, modelType = null) {
@@ -65,31 +48,30 @@ class MoveManager {
                 return;
             }
             this.bulkFilePaths = selectedPaths;
-            this.modalTitle.textContent = `Move ${selectedPaths.length} ${modelConfig.displayName}s`;
+            document.getElementById('moveModalTitle').textContent = `Move ${selectedPaths.length} ${modelConfig.displayName}s`;
         } else {
             // Single file mode
             this.currentFilePath = filePath;
-            this.modalTitle.textContent = `Move ${modelConfig.displayName}`;
+            document.getElementById('moveModalTitle').textContent = `Move ${modelConfig.displayName}`;
         }
         
         // Update UI labels based on model type
-        this.rootLabel.textContent = `Select ${modelConfig.displayName} Root:`;
-        this.pathDisplay.querySelector('.path-text').textContent = `Select a ${modelConfig.displayName.toLowerCase()} root directory`;
+        document.getElementById('moveRootLabel').textContent = `Select ${modelConfig.displayName} Root:`;
+        document.getElementById('moveTargetPathDisplay').querySelector('.path-text').textContent = `Select a ${modelConfig.displayName.toLowerCase()} root directory`;
         
-        // Clear previous selections
-        this.folderBrowser.querySelectorAll('.folder-item').forEach(item => {
-            item.classList.remove('selected');
-        });
-        this.newFolderInput.value = '';
+        // Clear folder path input
+        const folderPathInput = document.getElementById('moveFolderPath');
+        if (folderPathInput) {
+            folderPathInput.value = '';
+        }
 
         try {
             // Fetch model roots
+            const modelRootSelect = document.getElementById('moveModelRoot');
             let rootsData;
             if (modelType) {
-                // For checkpoints, use the specific API method that considers modelType
                 rootsData = await apiClient.fetchModelRoots(modelType);
             } else {
-                // For other model types, use the generic method
                 rootsData = await apiClient.fetchModelRoots();
             }
             
@@ -98,27 +80,38 @@ class MoveManager {
             }
 
             // Populate model root selector
-            this.modelRootSelect.innerHTML = rootsData.roots.map(root => 
+            modelRootSelect.innerHTML = rootsData.roots.map(root => 
                 `<option value="${root}">${root}</option>`
             ).join('');
 
             // Set default root if available
-            const settingsKey = `default_${currentPageType.slice(0, -1)}_root`; // Remove 's' from plural
+            const settingsKey = `default_${currentPageType.slice(0, -1)}_root`;
             const defaultRoot = getStorageItem('settings', {})[settingsKey];
             if (defaultRoot && rootsData.roots.includes(defaultRoot)) {
-                this.modelRootSelect.value = defaultRoot;
+                modelRootSelect.value = defaultRoot;
             }
 
-            // Fetch folders dynamically
-            const foldersData = await apiClient.fetchModelFolders();
+            // Initialize event listeners
+            this.initializeEventListeners();
             
-            // Update folder browser with dynamic content
-            this.folderBrowser.innerHTML = foldersData.folders.map(folder => 
-                `<div class="folder-item" data-folder="${folder}">${folder}</div>`
-            ).join('');
+            // Setup folder tree manager
+            this.folderTreeManager.init({
+                onPathChange: (path) => {
+                    this.updateTargetPath();
+                },
+                elementsPrefix: 'move'
+            });
+            
+            // Initialize folder tree
+            await this.initializeFolderTree();
 
-            this.updatePathPreview();
-            modalManager.showModal('moveModal');
+            this.updateTargetPath();
+            modalManager.showModal('moveModal', null, () => {
+                // Cleanup on modal close
+                if (this.folderTreeManager) {
+                    this.folderTreeManager.destroy();
+                }
+            });
             
         } catch (error) {
             console.error(`Error fetching ${modelConfig.displayName.toLowerCase()} roots or folders:`, error);
@@ -126,36 +119,60 @@ class MoveManager {
         }
     }
 
-    updatePathPreview() {
-        const selectedRoot = this.modelRootSelect.value;
-        const selectedFolder = this.folderBrowser.querySelector('.folder-item.selected')?.dataset.folder || '';
-        const newFolder = this.newFolderInput.value.trim();
-
-        let targetPath = selectedRoot;
-        if (selectedFolder) {
-            targetPath = `${targetPath}/${selectedFolder}`;
+    async initializeFolderTree() {
+        try {
+            const apiClient = getModelApiClient();
+            // Fetch unified folder tree
+            const treeData = await apiClient.fetchUnifiedFolderTree();
+            
+            if (treeData.success) {
+                // Load tree data into folder tree manager
+                await this.folderTreeManager.loadTree(treeData.tree);
+            } else {
+                console.error('Failed to fetch folder tree:', treeData.error);
+                showToast('Failed to load folder tree', 'error');
+            }
+        } catch (error) {
+            console.error('Error initializing folder tree:', error);
+            showToast('Error loading folder tree', 'error');
         }
-        if (newFolder) {
-            targetPath = `${targetPath}/${newFolder}`;
+    }
+
+    updateTargetPath() {
+        const pathDisplay = document.getElementById('moveTargetPathDisplay');
+        const modelRoot = document.getElementById('moveModelRoot').value;
+        const apiClient = getModelApiClient();
+        const config = apiClient.apiConfig.config;
+        
+        let fullPath = modelRoot || `Select a ${config.displayName.toLowerCase()} root directory`;
+        
+        if (modelRoot) {
+            const selectedPath = this.folderTreeManager ? this.folderTreeManager.getSelectedPath() : '';
+            if (selectedPath) {
+                fullPath += '/' + selectedPath;
+            }
         }
 
-        this.pathDisplay.querySelector('.path-text').textContent = targetPath;
+        pathDisplay.innerHTML = `<span class="path-text">${fullPath}</span>`;
     }
 
     async moveModel() {
-        const selectedRoot = this.modelRootSelect.value;
-        const selectedFolder = this.folderBrowser.querySelector('.folder-item.selected')?.dataset.folder || '';
-        const newFolder = this.newFolderInput.value.trim();
-
-        let targetPath = selectedRoot;
-        if (selectedFolder) {
-            targetPath = `${targetPath}/${selectedFolder}`;
-        }
-        if (newFolder) {
-            targetPath = `${targetPath}/${newFolder}`;
-        }
-
+        const selectedRoot = document.getElementById('moveModelRoot').value;
         const apiClient = getModelApiClient();
+        const config = apiClient.apiConfig.config;
+        
+        if (!selectedRoot) {
+            showToast(`Please select a ${config.displayName.toLowerCase()} root directory`, 'error');
+            return;
+        }
+
+        // Get selected folder path from folder tree manager
+        const targetFolder = this.folderTreeManager.getSelectedPath();
+        
+        let targetPath = selectedRoot;
+        if (targetFolder) {
+            targetPath = `${targetPath}/${targetFolder}`;
+        }
 
         try {
             if (this.bulkFilePaths) {
