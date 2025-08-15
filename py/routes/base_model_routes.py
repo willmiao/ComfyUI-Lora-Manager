@@ -65,6 +65,9 @@ class BaseModelRoutes(ABC):
         app.router.add_get(f'/api/{prefix}/unified-folder-tree', self.get_unified_folder_tree)
         app.router.add_get(f'/api/{prefix}/find-duplicates', self.find_duplicate_models)
         app.router.add_get(f'/api/{prefix}/find-filename-conflicts', self.find_filename_conflicts)
+        app.router.add_get(f'/api/{prefix}/get-notes', self.get_model_notes)
+        app.router.add_get(f'/api/{prefix}/preview-url', self.get_model_preview_url)
+        app.router.add_get(f'/api/{prefix}/civitai-url', self.get_model_civitai_url)
 
         # Common Download management
         app.router.add_post(f'/api/download-model', self.download_model)
@@ -977,6 +980,84 @@ class BaseModelRoutes(ABC):
                 'error': str(e)
             })
             
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    async def get_model_notes(self, request: web.Request) -> web.Response:
+        """Get notes for a specific model file"""
+        try:
+            model_name = request.query.get('name')
+            if not model_name:
+                return web.Response(text=f'{self.model_type.capitalize()} file name is required', status=400)
+            
+            notes = await self.service.get_model_notes(model_name)
+            if notes is not None:
+                return web.json_response({
+                    'success': True,
+                    'notes': notes
+                })
+            else:
+                return web.json_response({
+                    'success': False,
+                    'error': f'{self.model_type.capitalize()} not found in cache'
+                }, status=404)
+                
+        except Exception as e:
+            logger.error(f"Error getting {self.model_type} notes: {e}", exc_info=True)
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    async def get_model_preview_url(self, request: web.Request) -> web.Response:
+        """Get the static preview URL for a model file"""
+        try:
+            model_name = request.query.get('name')
+            if not model_name:
+                return web.Response(text=f'{self.model_type.capitalize()} file name is required', status=400)
+            
+            preview_url = await self.service.get_model_preview_url(model_name)
+            if preview_url:
+                return web.json_response({
+                    'success': True,
+                    'preview_url': preview_url
+                })
+            else:
+                return web.json_response({
+                    'success': False,
+                    'error': f'No preview URL found for the specified {self.model_type}'
+                }, status=404)
+                
+        except Exception as e:
+            logger.error(f"Error getting {self.model_type} preview URL: {e}", exc_info=True)
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    async def get_model_civitai_url(self, request: web.Request) -> web.Response:
+        """Get the Civitai URL for a model file"""
+        try:
+            model_name = request.query.get('name')
+            if not model_name:
+                return web.Response(text=f'{self.model_type.capitalize()} file name is required', status=400)
+            
+            result = await self.service.get_model_civitai_url(model_name)
+            if result['civitai_url']:
+                return web.json_response({
+                    'success': True,
+                    **result
+                })
+            else:
+                return web.json_response({
+                    'success': False,
+                    'error': f'No Civitai data found for the specified {self.model_type}'
+                }, status=404)
+                
+        except Exception as e:
+            logger.error(f"Error getting {self.model_type} Civitai URL: {e}", exc_info=True)
             return web.json_response({
                 'success': False,
                 'error': str(e)

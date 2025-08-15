@@ -147,16 +147,6 @@ class LoraService(BaseModelService):
                 
         return letters
     
-    async def get_lora_notes(self, lora_name: str) -> Optional[str]:
-        """Get notes for a specific LoRA file"""
-        cache = await self.scanner.get_cached_data()
-        
-        for lora in cache.raw_data:
-            if lora['file_name'] == lora_name:
-                return lora.get('notes', '')
-        
-        return None
-    
     async def get_lora_trigger_words(self, lora_name: str) -> List[str]:
         """Get trigger words for a specific LoRA file"""
         cache = await self.scanner.get_cached_data()
@@ -167,41 +157,6 @@ class LoraService(BaseModelService):
                 return civitai_data.get('trainedWords', [])
         
         return []
-    
-    async def get_lora_preview_url(self, lora_name: str) -> Optional[str]:
-        """Get the static preview URL for a LoRA file"""
-        cache = await self.scanner.get_cached_data()
-        
-        for lora in cache.raw_data:
-            if lora['file_name'] == lora_name:
-                preview_url = lora.get('preview_url')
-                if preview_url:
-                    return config.get_preview_static_url(preview_url)
-        
-        return None
-    
-    async def get_lora_civitai_url(self, lora_name: str) -> Dict[str, Optional[str]]:
-        """Get the Civitai URL for a LoRA file"""
-        cache = await self.scanner.get_cached_data()
-        
-        for lora in cache.raw_data:
-            if lora['file_name'] == lora_name:
-                civitai_data = lora.get('civitai', {})
-                model_id = civitai_data.get('modelId')
-                version_id = civitai_data.get('id')
-                
-                if model_id:
-                    civitai_url = f"https://civitai.com/models/{model_id}"
-                    if version_id:
-                        civitai_url += f"?modelVersionId={version_id}"
-                    
-                    return {
-                        'civitai_url': civitai_url,
-                        'model_id': str(model_id),
-                        'version_id': str(version_id) if version_id else None
-                    }
-        
-        return {'civitai_url': None, 'model_id': None, 'version_id': None}
     
     def find_duplicate_hashes(self) -> Dict:
         """Find LoRAs with duplicate SHA256 hashes"""

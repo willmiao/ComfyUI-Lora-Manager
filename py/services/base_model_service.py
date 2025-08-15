@@ -331,3 +331,49 @@ class BaseModelService(ABC):
                 current_level = current_level[part]
         
         return unified_tree
+
+    async def get_model_notes(self, model_name: str) -> Optional[str]:
+        """Get notes for a specific model file"""
+        cache = await self.scanner.get_cached_data()
+        
+        for model in cache.raw_data:
+            if model['file_name'] == model_name:
+                return model.get('notes', '')
+        
+        return None
+    
+    async def get_model_preview_url(self, model_name: str) -> Optional[str]:
+        """Get the static preview URL for a model file"""
+        cache = await self.scanner.get_cached_data()
+        
+        for model in cache.raw_data:
+            if model['file_name'] == model_name:
+                preview_url = model.get('preview_url')
+                if preview_url:
+                    from ..config import config
+                    return config.get_preview_static_url(preview_url)
+        
+        return None
+    
+    async def get_model_civitai_url(self, model_name: str) -> Dict[str, Optional[str]]:
+        """Get the Civitai URL for a model file"""
+        cache = await self.scanner.get_cached_data()
+        
+        for model in cache.raw_data:
+            if model['file_name'] == model_name:
+                civitai_data = model.get('civitai', {})
+                model_id = civitai_data.get('modelId')
+                version_id = civitai_data.get('id')
+                
+                if model_id:
+                    civitai_url = f"https://civitai.com/models/{model_id}"
+                    if version_id:
+                        civitai_url += f"?modelVersionId={version_id}"
+                    
+                    return {
+                        'civitai_url': civitai_url,
+                        'model_id': str(model_id),
+                        'version_id': str(version_id) if version_id else None
+                    }
+        
+        return {'civitai_url': None, 'model_id': None, 'version_id': None}

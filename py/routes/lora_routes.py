@@ -43,10 +43,7 @@ class LoraRoutes(BaseModelRoutes):
         """Setup LoRA-specific routes"""
         # LoRA-specific query routes
         app.router.add_get(f'/api/{prefix}/letter-counts', self.get_letter_counts)
-        app.router.add_get(f'/api/{prefix}/get-notes', self.get_lora_notes)
         app.router.add_get(f'/api/{prefix}/get-trigger-words', self.get_lora_trigger_words)
-        app.router.add_get(f'/api/{prefix}/preview-url', self.get_lora_preview_url)
-        app.router.add_get(f'/api/{prefix}/civitai-url', self.get_lora_civitai_url)
         app.router.add_get(f'/api/{prefix}/model-description', self.get_lora_model_description)
         
         # CivitAI integration with LoRA-specific validation
