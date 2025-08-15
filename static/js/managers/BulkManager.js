@@ -203,7 +203,6 @@ export class BulkManager {
 
     toggleCardSelection(card) {
         const filepath = card.dataset.filepath;
-        const pageState = getCurrentPageState();
         
         if (card.classList.contains('selected')) {
             card.classList.remove('selected');

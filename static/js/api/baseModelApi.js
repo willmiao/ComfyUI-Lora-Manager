@@ -856,7 +856,7 @@ export class BaseModelApiClient {
         }
     }
 
-    async downloadExampleImages(modelHashes, modelTypes) {
+    async downloadExampleImages(modelHashes, modelTypes = null) {
         let ws = null;
         
         await state.loadingManager.showWithProgress(async (loading) => {

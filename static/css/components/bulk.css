@@ -12,7 +12,9 @@
     z-index: var(--z-overlay);
     display: flex;
     flex-direction: column;
-    min-width: 300px;
+    min-width: 420px;
+    max-width: 900px;
+    width: auto;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     opacity: 0;
 }
@@ -48,6 +50,8 @@
     color: var(--text-color);
     cursor: pointer;
     font-size: 14px;
+    white-space: nowrap;
+    min-height: 36px;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -105,6 +109,8 @@
 @media (max-width: 768px) {
     .bulk-operations-panel {
         width: calc(100% - 40px);
+        min-width: unset;
+        max-width: unset;
         left: 20px;
         transform: none;
         border-radius: var(--border-radius-sm);

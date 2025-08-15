@@ -281,22 +281,14 @@ function showExampleAccessModal(card, modelType) {
                     return;
                 }
                 
-                // Determine model type (singular form)
-                let modelTypeSingular = 'lora';
-                if (modelType === MODEL_TYPES.CHECKPOINT) {
-                    modelTypeSingular = 'checkpoint';
-                } else if (modelType === MODEL_TYPES.EMBEDDING) {
-                    modelTypeSingular = 'embedding';
-                }
-                
                 // Close the modal
                 modalManager.closeModal('exampleAccessModal');
                 
                 try {
                     // Use the appropriate model API client to download examples
                     const apiClient = getModelApiClient(modelType);
-                    await apiClient.downloadExampleImages([modelHash], [modelTypeSingular]);
-                    
+                    await apiClient.downloadExampleImages([modelHash]);
+
                     // Open the example images folder if successful
                     openExampleImagesFolder(modelHash);
                 } catch (error) {
