@@ -435,7 +435,9 @@ export class BaseModelApiClient {
                 }
                 
                 await operationComplete;
-                
+
+                resetAndReload(false);
+                showToast('Metadata update complete', 'success');
             } catch (error) {
                 console.error('Error fetching metadata:', error);
                 showToast('Failed to fetch metadata: ' + error.message, 'error');
