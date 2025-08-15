@@ -6,8 +6,10 @@ import time
 import aiohttp
 from aiohttp import web
 from ..services.service_registry import ServiceRegistry
+from ..utils.metadata_manager import MetadataManager
 from .example_images_processor import ExampleImagesProcessor
 from .example_images_metadata import MetadataUpdater
+from ..services.websocket_manager import ws_manager  # Add this import at the top
 
 logger = logging.getLogger(__name__)
 
@@ -432,3 +434,363 @@ class DownloadManager:
                 json.dump(progress_data, f, indent=2)
         except Exception as e:
             logger.error(f"Failed to save progress file: {e}")
+    
+    @staticmethod
+    async def start_force_download(request):
+        """
+        Force download example images for specific models
+        
+        Expects a JSON body with:
+        {
+            "model_hashes": ["hash1", "hash2", ...],  # List of model hashes to download
+            "output_dir": "path/to/output",           # Base directory to save example images
+            "optimize": true,                         # Whether to optimize images (default: true)
+            "model_types": ["lora", "checkpoint"],    # Model types to process (default: both)
+            "delay": 1.0                              # Delay between downloads (default: 1.0)
+        }
+        """
+        global download_task, is_downloading, download_progress
+
+        if is_downloading:
+            return web.json_response({
+                'success': False,
+                'error': 'Download already in progress'
+            }, status=400)
+
+        try:
+            # Parse the request body
+            data = await request.json()
+            model_hashes = data.get('model_hashes', [])
+            output_dir = data.get('output_dir')
+            optimize = data.get('optimize', True)
+            model_types = data.get('model_types', ['lora', 'checkpoint'])
+            delay = float(data.get('delay', 0.2)) # Default to 0.2 seconds
+            
+            if not model_hashes:
+                return web.json_response({
+                    'success': False,
+                    'error': 'Missing model_hashes parameter'
+                }, status=400)
+                
+            if not output_dir:
+                return web.json_response({
+                    'success': False,
+                    'error': 'Missing output_dir parameter'
+                }, status=400)
+            
+            # Create the output directory
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Initialize progress tracking
+            download_progress['total'] = len(model_hashes)
+            download_progress['completed'] = 0
+            download_progress['current_model'] = ''
+            download_progress['status'] = 'running'
+            download_progress['errors'] = []
+            download_progress['last_error'] = None
+            download_progress['start_time'] = time.time()
+            download_progress['end_time'] = None
+            download_progress['processed_models'] = set()
+            download_progress['refreshed_models'] = set()
+            download_progress['failed_models'] = set()
+
+            # Set download status to downloading
+            is_downloading = True
+
+            # Execute the download function directly instead of creating a background task
+            result = await DownloadManager._download_specific_models_example_images_sync(
+                model_hashes,
+                output_dir, 
+                optimize, 
+                model_types,
+                delay
+            )
+
+            # Set download status to not downloading
+            is_downloading = False
+
+            return web.json_response({
+                'success': True,
+                'message': 'Force download completed',
+                'result': result
+            })
+
+        except Exception as e:
+            # Set download status to not downloading
+            is_downloading = False
+            logger.error(f"Failed during forced example images download: {e}", exc_info=True)
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    @staticmethod
+    async def _download_specific_models_example_images_sync(model_hashes, output_dir, optimize, model_types, delay):
+        """Download example images for specific models only - synchronous version"""
+        global download_progress
+        
+        # Create independent download session
+        connector = aiohttp.TCPConnector(
+            ssl=True,
+            limit=3,
+            force_close=False,
+            enable_cleanup_closed=True
+        )
+        timeout = aiohttp.ClientTimeout(total=None, connect=60, sock_read=60)
+        independent_session = aiohttp.ClientSession(
+            connector=connector,
+            trust_env=True,
+            timeout=timeout
+        )
+        
+        try:
+            # Get scanners
+            scanners = []
+            if 'lora' in model_types:
+                lora_scanner = await ServiceRegistry.get_lora_scanner()
+                scanners.append(('lora', lora_scanner))
+            
+            if 'checkpoint' in model_types:
+                checkpoint_scanner = await ServiceRegistry.get_checkpoint_scanner()
+                scanners.append(('checkpoint', checkpoint_scanner))
+
+            if 'embedding' in model_types:
+                embedding_scanner = await ServiceRegistry.get_embedding_scanner()
+                scanners.append(('embedding', embedding_scanner))
+            
+            # Find the specified models
+            models_to_process = []
+            for scanner_type, scanner in scanners:
+                cache = await scanner.get_cached_data()
+                if cache and cache.raw_data:
+                    for model in cache.raw_data:
+                        if model.get('sha256') in model_hashes:
+                            models_to_process.append((scanner_type, model, scanner))
+            
+            # Update total count based on found models
+            download_progress['total'] = len(models_to_process)
+            logger.debug(f"Found {download_progress['total']} models to process")
+            
+            # Send initial progress via WebSocket
+            await ws_manager.broadcast({
+                'type': 'example_images_progress',
+                'processed': 0,
+                'total': download_progress['total'],
+                'status': 'running',
+                'current_model': ''
+            })
+            
+            # Process each model
+            success_count = 0
+            for i, (scanner_type, model, scanner) in enumerate(models_to_process):
+                # Force process this model regardless of previous status
+                was_successful = await DownloadManager._process_specific_model(
+                    scanner_type, model, scanner, 
+                    output_dir, optimize, independent_session
+                )
+                
+                if was_successful:
+                    success_count += 1
+                
+                # Update progress
+                download_progress['completed'] += 1
+                
+                # Send progress update via WebSocket
+                await ws_manager.broadcast({
+                    'type': 'example_images_progress',
+                    'processed': download_progress['completed'],
+                    'total': download_progress['total'],
+                    'status': 'running',
+                    'current_model': download_progress['current_model']
+                })
+                
+                # Only add delay after remote download, and not after processing the last model
+                if was_successful and i < len(models_to_process) - 1 and download_progress['status'] == 'running':
+                    await asyncio.sleep(delay)
+            
+            # Mark as completed
+            download_progress['status'] = 'completed'
+            download_progress['end_time'] = time.time()
+            logger.debug(f"Forced example images download completed: {download_progress['completed']}/{download_progress['total']} models processed")
+            
+            # Send final progress via WebSocket
+            await ws_manager.broadcast({
+                'type': 'example_images_progress',
+                'processed': download_progress['completed'],
+                'total': download_progress['total'],
+                'status': 'completed',
+                'current_model': ''
+            })
+            
+            return {
+                'total': download_progress['total'],
+                'processed': download_progress['completed'],
+                'successful': success_count,
+                'errors': download_progress['errors']
+            }
+            
+        except Exception as e:
+            error_msg = f"Error during forced example images download: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            download_progress['errors'].append(error_msg)
+            download_progress['last_error'] = error_msg
+            download_progress['status'] = 'error'
+            download_progress['end_time'] = time.time()
+            
+            # Send error status via WebSocket
+            await ws_manager.broadcast({
+                'type': 'example_images_progress',
+                'processed': download_progress['completed'],
+                'total': download_progress['total'],
+                'status': 'error',
+                'error': error_msg,
+                'current_model': ''
+            })
+            
+            raise
+        
+        finally:
+            # Close the independent session
+            try:
+                await independent_session.close()
+            except Exception as e:
+                logger.error(f"Error closing download session: {e}")
+    
+    @staticmethod
+    async def _process_specific_model(scanner_type, model, scanner, output_dir, optimize, independent_session):
+        """Process a specific model for forced download, ignoring previous download status"""
+        global download_progress
+        
+        # Check if download is paused
+        while download_progress['status'] == 'paused':
+            await asyncio.sleep(1)
+        
+        # Check if download should continue
+        if download_progress['status'] != 'running':
+            logger.info(f"Download stopped: {download_progress['status']}")
+            return False
+        
+        model_hash = model.get('sha256', '').lower()
+        model_name = model.get('model_name', 'Unknown')
+        model_file_path = model.get('file_path', '')
+        model_file_name = model.get('file_name', '')
+        
+        try:
+            # Update current model info
+            download_progress['current_model'] = f"{model_name} ({model_hash[:8]})"
+            
+            # Create model directory
+            model_dir = os.path.join(output_dir, model_hash)
+            os.makedirs(model_dir, exist_ok=True)
+            
+            # First check for local example images - local processing doesn't need delay
+            local_images_processed = await ExampleImagesProcessor.process_local_examples(
+                model_file_path, model_file_name, model_name, model_dir, optimize
+            )
+            
+            # If we processed local images, update metadata
+            if local_images_processed:
+                await MetadataUpdater.update_metadata_from_local_examples(
+                    model_hash, model, scanner_type, scanner, model_dir
+                )
+                download_progress['processed_models'].add(model_hash)
+                return False  # Return False to indicate no remote download happened
+            
+            # If no local images, try to download from remote
+            elif model.get('civitai') and model.get('civitai', {}).get('images'):
+                images = model.get('civitai', {}).get('images', [])
+                
+                success, is_stale, failed_images = await ExampleImagesProcessor.download_model_images_with_tracking(
+                    model_hash, model_name, images, model_dir, optimize, independent_session
+                )
+                
+                # If metadata is stale, try to refresh it
+                if is_stale and model_hash not in download_progress['refreshed_models']:
+                    await MetadataUpdater.refresh_model_metadata(
+                        model_hash, model_name, scanner_type, scanner
+                    )
+                    
+                    # Get the updated model data
+                    updated_model = await MetadataUpdater.get_updated_model(
+                        model_hash, scanner
+                    )
+                    
+                    if updated_model and updated_model.get('civitai', {}).get('images'):
+                        # Retry download with updated metadata
+                        updated_images = updated_model.get('civitai', {}).get('images', [])
+                        success, _, additional_failed_images = await ExampleImagesProcessor.download_model_images_with_tracking(
+                            model_hash, model_name, updated_images, model_dir, optimize, independent_session
+                        )
+                        
+                        # Combine failed images from both attempts
+                        failed_images.extend(additional_failed_images)
+                    
+                    download_progress['refreshed_models'].add(model_hash)
+                
+                # For forced downloads, remove failed images from metadata
+                if failed_images:
+                    # Create a copy of images excluding failed ones
+                    await DownloadManager._remove_failed_images_from_metadata(
+                        model_hash, model_name, failed_images, scanner
+                    )
+                
+                # Mark as processed
+                if success or failed_images:  # Mark as processed if we successfully downloaded some images or removed failed ones
+                    download_progress['processed_models'].add(model_hash)
+                    
+                return True  # Return True to indicate a remote download happened
+            else:
+                logger.debug(f"No civitai images available for model {model_name}")
+                return False
+                
+        except Exception as e:
+            error_msg = f"Error processing model {model.get('model_name')}: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            download_progress['errors'].append(error_msg)
+            download_progress['last_error'] = error_msg
+            return False  # Return False on exception
+
+    @staticmethod
+    async def _remove_failed_images_from_metadata(model_hash, model_name, failed_images, scanner):
+        """Remove failed images from model metadata"""
+        try:
+            # Get current model data
+            model_data = await MetadataUpdater.get_updated_model(model_hash, scanner)
+            if not model_data:
+                logger.warning(f"Could not find model data for {model_name} to remove failed images")
+                return
+                
+            if not model_data.get('civitai', {}).get('images'):
+                logger.warning(f"No images in metadata for {model_name}")
+                return
+                
+            # Get current images
+            current_images = model_data['civitai']['images']
+            
+            # Filter out failed images
+            updated_images = [img for img in current_images if img.get('url') not in failed_images]
+            
+            # If images were removed, update metadata
+            if len(updated_images) < len(current_images):
+                removed_count = len(current_images) - len(updated_images)
+                logger.info(f"Removing {removed_count} failed images from metadata for {model_name}")
+                
+                # Update the images list
+                model_data['civitai']['images'] = updated_images
+                
+                # Save metadata to file
+                file_path = model_data.get('file_path')
+                if file_path:
+                    # Create a copy of model data without 'folder' field
+                    model_copy = model_data.copy()
+                    model_copy.pop('folder', None)
+                    
+                    # Write metadata to file
+                    await MetadataManager.save_metadata(file_path, model_copy)
+                    logger.info(f"Saved updated metadata for {model_name} after removing failed images")
+                    
+                    # Update the scanner cache
+                    await scanner.update_single_model_cache(file_path, file_path, model_data)
+                    
+        except Exception as e:
+            logger.error(f"Error removing failed images from metadata for {model_name}: {e}", exc_info=True)

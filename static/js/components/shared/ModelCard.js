@@ -273,18 +273,35 @@ function showExampleAccessModal(card, modelType) {
         if (hasRemoteExamples) {
             downloadBtn.classList.remove('disabled');
             downloadBtn.removeAttribute('title');
-            downloadBtn.onclick = () => {
+            downloadBtn.onclick = async () => {
+                // Get the model hash
+                const modelHash = card.dataset.sha256;
+                if (!modelHash) {
+                    showToast('Missing model hash information.', 'error');
+                    return;
+                }
+                
+                // Determine model type (singular form)
+                let modelTypeSingular = 'lora';
+                if (modelType === MODEL_TYPES.CHECKPOINT) {
+                    modelTypeSingular = 'checkpoint';
+                } else if (modelType === MODEL_TYPES.EMBEDDING) {
+                    modelTypeSingular = 'embedding';
+                }
+                
+                // Close the modal
                 modalManager.closeModal('exampleAccessModal');
-                // Open settings modal and scroll to example images section
-                const settingsModal = document.getElementById('settingsModal');
-                if (settingsModal) {
-                    modalManager.showModal('settingsModal');
-                    setTimeout(() => {
-                        const exampleSection = settingsModal.querySelector('.settings-section:nth-child(7)');
-                        if (exampleSection) {
-                            exampleSection.scrollIntoView({ behavior: 'smooth' });
-                        }
-                    }, 300);
+                
+                try {
+                    // Use the appropriate model API client to download examples
+                    const apiClient = getModelApiClient(modelType);
+                    await apiClient.downloadExampleImages([modelHash], [modelTypeSingular]);
+                    
+                    // Open the example images folder if successful
+                    openExampleImagesFolder(modelHash);
+                } catch (error) {
+                    console.error('Error downloading example images:', error);
+                    // Error already shown by the API client
                 }
             };
         } else {

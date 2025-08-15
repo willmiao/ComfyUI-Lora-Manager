@@ -2,6 +2,7 @@ import logging
 from ..utils.example_images_download_manager import DownloadManager
 from ..utils.example_images_processor import ExampleImagesProcessor
 from ..utils.example_images_file_manager import ExampleImagesFileManager
+from ..services.websocket_manager import ws_manager
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ class ExampleImagesRoutes:
         app.router.add_get('/api/example-image-files', ExampleImagesRoutes.get_example_image_files)
         app.router.add_get('/api/has-example-images', ExampleImagesRoutes.has_example_images)
         app.router.add_post('/api/delete-example-image', ExampleImagesRoutes.delete_example_image)
+        app.router.add_post('/api/force-download-example-images', ExampleImagesRoutes.force_download_example_images)
 
     @staticmethod
     async def download_example_images(request):
@@ -65,3 +67,8 @@ class ExampleImagesRoutes:
     async def delete_example_image(request):
         """Delete a custom example image for a model"""
         return await ExampleImagesProcessor.delete_custom_image(request)
+
+    @staticmethod
+    async def force_download_example_images(request):
+        """Force download example images for specific models"""
+        return await DownloadManager.start_force_download(request)

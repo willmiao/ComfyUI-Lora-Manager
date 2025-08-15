@@ -103,6 +103,78 @@ class ExampleImagesProcessor:
         return model_success, False  # (success, is_metadata_stale)
     
     @staticmethod
+    async def download_model_images_with_tracking(model_hash, model_name, model_images, model_dir, optimize, independent_session):
+        """Download images for a single model with tracking of failed image URLs
+        
+        Returns:
+            tuple: (success, is_stale_metadata, failed_images) - whether download was successful, whether metadata is stale, list of failed image URLs
+        """
+        model_success = True
+        failed_images = []
+        
+        for i, image in enumerate(model_images):
+            image_url = image.get('url')
+            if not image_url:
+                continue
+            
+            # Get image filename from URL
+            image_filename = os.path.basename(image_url.split('?')[0])
+            image_ext = os.path.splitext(image_filename)[1].lower()
+            
+            # Handle images and videos
+            is_image = image_ext in SUPPORTED_MEDIA_EXTENSIONS['images']
+            is_video = image_ext in SUPPORTED_MEDIA_EXTENSIONS['videos']
+            
+            if not (is_image or is_video):
+                logger.debug(f"Skipping unsupported file type: {image_filename}")
+                continue
+            
+            # Use 0-based indexing instead of 1-based indexing
+            save_filename = f"image_{i}{image_ext}"
+            
+            # If optimizing images and this is a Civitai image, use their pre-optimized WebP version
+            if is_image and optimize and 'civitai.com' in image_url:
+                image_url = ExampleImagesProcessor.get_civitai_optimized_url(image_url)
+                save_filename = f"image_{i}.webp"
+            
+            # Check if already downloaded
+            save_path = os.path.join(model_dir, save_filename)
+            if os.path.exists(save_path):
+                logger.debug(f"File already exists: {save_path}")
+                continue
+            
+            # Download the file
+            try:
+                logger.debug(f"Downloading {save_filename} for {model_name}")
+                
+                # Download directly using the independent session
+                async with independent_session.get(image_url, timeout=60) as response:
+                    if response.status == 200:
+                        with open(save_path, 'wb') as f:
+                            async for chunk in response.content.iter_chunked(8192):
+                                if chunk:
+                                    f.write(chunk)
+                    elif response.status == 404:
+                        error_msg = f"Failed to download file: {image_url}, status code: 404 - Model metadata might be stale"
+                        logger.warning(error_msg)
+                        model_success = False  # Mark the model as failed due to 404 error
+                        failed_images.append(image_url)  # Track failed URL
+                        # Return early to trigger metadata refresh attempt
+                        return False, True, failed_images  # (success, is_metadata_stale, failed_images)
+                    else:
+                        error_msg = f"Failed to download file: {image_url}, status code: {response.status}"
+                        logger.warning(error_msg)
+                        model_success = False  # Mark the model as failed
+                        failed_images.append(image_url)  # Track failed URL
+            except Exception as e:
+                error_msg = f"Error downloading file {image_url}: {str(e)}"
+                logger.error(error_msg)
+                model_success = False  # Mark the model as failed
+                failed_images.append(image_url)  # Track failed URL
+        
+        return model_success, False, failed_images  # (success, is_metadata_stale, failed_images)
+    
+    @staticmethod
     async def process_local_examples(model_file_path, model_file_name, model_name, model_dir, optimize):
         """Process local example images
         

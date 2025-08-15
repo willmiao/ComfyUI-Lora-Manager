@@ -165,7 +165,8 @@ export const DOWNLOAD_ENDPOINTS = {
     download: '/api/download-model',
     downloadGet: '/api/download-model-get',
     cancelGet: '/api/cancel-download-get',
-    progress: '/api/download-progress'
+    progress: '/api/download-progress',
+    exampleImages: '/api/force-download-example-images' // New endpoint for downloading example images
 };
 
 // WebSocket endpoints

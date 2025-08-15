@@ -1,6 +1,6 @@
 import { state, getCurrentPageState } from '../state/index.js';
 import { showToast, updateFolderTags } from '../utils/uiHelpers.js';
-import { getSessionItem, saveMapToStorage } from '../utils/storageHelpers.js';
+import { getStorageItem, getSessionItem, saveMapToStorage } from '../utils/storageHelpers.js';
 import { 
     getCompleteApiConfig, 
     getCurrentModelType, 
@@ -854,5 +854,103 @@ export class BaseModelApiClient {
         } finally {
             state.loadingManager.hide();
         }
+    }
+
+    async downloadExampleImages(modelHashes, modelTypes) {
+        let ws = null;
+        
+        await state.loadingManager.showWithProgress(async (loading) => {
+            try {
+                // Connect to WebSocket for progress updates
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+                ws = new WebSocket(`${wsProtocol}${window.location.host}${WS_ENDPOINTS.fetchProgress}`);
+                
+                const operationComplete = new Promise((resolve, reject) => {
+                    ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        
+                        if (data.type !== 'example_images_progress') return;
+                        
+                        switch(data.status) {
+                            case 'running':
+                                const percent = ((data.processed / data.total) * 100).toFixed(1);
+                                loading.setProgress(percent);
+                                loading.setStatus(
+                                    `Processing (${data.processed}/${data.total}) ${data.current_model || ''}`
+                                );
+                                break;
+                                
+                            case 'completed':
+                                loading.setProgress(100);
+                                loading.setStatus(
+                                    `Completed: Downloaded example images for ${data.processed} models`
+                                );
+                                resolve();
+                                break;
+                                
+                            case 'error':
+                                reject(new Error(data.error));
+                                break;
+                        }
+                    };
+                    
+                    ws.onerror = (error) => {
+                        reject(new Error('WebSocket error: ' + error.message));
+                    };
+                });
+                
+                // Wait for WebSocket connection to establish
+                await new Promise((resolve, reject) => {
+                    ws.onopen = resolve;
+                    ws.onerror = reject;
+                });
+                
+                // Get the output directory from storage
+                const outputDir = getStorageItem('example_images_path', '');
+                if (!outputDir) {
+                    throw new Error('Please set the example images path in the settings first.');
+                }
+                
+                // Determine optimize setting
+                const optimize = state.global?.settings?.optimizeExampleImages ?? true;
+                
+                // Make the API request to start the download process
+                const response = await fetch(DOWNLOAD_ENDPOINTS.exampleImages, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model_hashes: modelHashes,
+                        output_dir: outputDir,
+                        optimize: optimize,
+                        model_types: modelTypes || [this.apiConfig.config.singularName]
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Failed to download example images');
+                }
+                
+                // Wait for the operation to complete via WebSocket
+                await operationComplete;
+                
+                showToast('Successfully downloaded example images!', 'success');
+                return true;
+                
+            } catch (error) {
+                console.error('Error downloading example images:', error);
+                showToast(`Failed to download example images: ${error.message}`, 'error');
+                throw error;
+            } finally {
+                if (ws) {
+                    ws.close();
+                }
+            }
+        }, {
+            initialMessage: 'Starting example images download...',
+            completionMessage: 'Example images download complete'
+        });
     }
 }
