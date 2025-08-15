@@ -1,6 +1,7 @@
 import { showToast, getNSFWLevelName, openExampleImagesFolder } from '../../utils/uiHelpers.js';
 import { modalManager } from '../../managers/ModalManager.js';
 import { state } from '../../state/index.js';
+import { getModelApiClient } from '../../api/modelApiFactory.js';
 
 // Mixin with shared functionality for LoraContextMenu and CheckpointContextMenu
 export const ModelContextMenuMixin = {
@@ -202,6 +203,9 @@ export const ModelContextMenuMixin = {
             case 'preview':
                 openExampleImagesFolder(this.currentCard.dataset.sha256);
                 return true;
+            case 'download-examples':
+                this.downloadExampleImages();
+                return true;
             case 'civitai':
                 if (this.currentCard.dataset.from_civitai === 'true') {
                     if (this.currentCard.querySelector('.fa-globe')) {
@@ -221,6 +225,22 @@ export const ModelContextMenuMixin = {
                 return true;
             default:
                 return false;
+        }
+    },
+
+    // Download example images method
+    async downloadExampleImages() {
+        const modelHash = this.currentCard.dataset.sha256;
+        if (!modelHash) {
+            showToast('Model hash not available', 'error');
+            return;
+        }
+
+        try { 
+            const apiClient = getModelApiClient();
+            await apiClient.downloadExampleImages([modelHash]);
+        } catch (error) {
+            console.error('Error downloading example images:', error);
         }
     }
 };
