@@ -45,6 +45,7 @@ class LoraRoutes(BaseModelRoutes):
         app.router.add_get(f'/api/{prefix}/letter-counts', self.get_letter_counts)
         app.router.add_get(f'/api/{prefix}/get-trigger-words', self.get_lora_trigger_words)
         app.router.add_get(f'/api/{prefix}/model-description', self.get_lora_model_description)
+        app.router.add_get(f'/api/{prefix}/usage-tips-by-path', self.get_lora_usage_tips_by_path)
         
         # CivitAI integration with LoRA-specific validation
         app.router.add_get(f'/api/{prefix}/civitai/versions/{{model_id}}', self.get_civitai_versions_lora)
@@ -135,6 +136,26 @@ class LoraRoutes(BaseModelRoutes):
             
         except Exception as e:
             logger.error(f"Error getting lora trigger words: {e}", exc_info=True)
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    async def get_lora_usage_tips_by_path(self, request: web.Request) -> web.Response:
+        """Get usage tips for a LoRA by its relative path"""
+        try:
+            relative_path = request.query.get('relative_path')
+            if not relative_path:
+                return web.Response(text='Relative path is required', status=400)
+            
+            usage_tips = await self.service.get_lora_usage_tips_by_relative_path(relative_path)
+            return web.json_response({
+                'success': True,
+                'usage_tips': usage_tips or ''
+            })
+            
+        except Exception as e:
+            logger.error(f"Error getting lora usage tips by path: {e}", exc_info=True)
             return web.json_response({
                 'success': False,
                 'error': str(e)

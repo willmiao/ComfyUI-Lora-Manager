@@ -5,7 +5,8 @@ import {
     collectActiveLorasFromChain,
     updateConnectedTriggerWords,
     chainCallback,
-    mergeLoras
+    mergeLoras,
+    setupInputWidgetWithAutocomplete
 } from "./utils.js";
 import { addLorasWidget } from "./loras_widget.js";
 
@@ -158,7 +159,8 @@ app.registerExtension({
             const inputWidget = this.widgets[0];
             inputWidget.options.getMaxHeight = () => 100;
             this.inputWidget = inputWidget;
-            inputWidget.callback = (value) => {
+            
+            const originalCallback = (value) => {
               if (isUpdating) return;
               isUpdating = true;
 
@@ -171,6 +173,9 @@ app.registerExtension({
                 isUpdating = false;
               }
             };
+
+            // Setup input widget with autocomplete
+            inputWidget.callback = setupInputWidgetWithAutocomplete(this, inputWidget, originalCallback);
 
             // Register this node with the backend
             this.registerNode = async () => {

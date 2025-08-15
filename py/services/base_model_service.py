@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Type
 import logging
+import os
 
 from ..utils.models import BaseModelMetadata
 from ..utils.constants import NSFW_LEVELS
@@ -377,3 +378,45 @@ class BaseModelService(ABC):
                     }
         
         return {'civitai_url': None, 'model_id': None, 'version_id': None}
+
+    async def search_relative_paths(self, search_term: str, limit: int = 15) -> List[str]:
+        """Search model relative file paths for autocomplete functionality"""
+        cache = await self.scanner.get_cached_data()
+        
+        matching_paths = []
+        search_lower = search_term.lower()
+        
+        # Get model roots for path calculation
+        model_roots = self.scanner.get_model_roots()
+        
+        for model in cache.raw_data:
+            file_path = model.get('file_path', '')
+            if not file_path:
+                continue
+                
+            # Calculate relative path from model root
+            relative_path = None
+            for root in model_roots:
+                # Normalize paths for comparison
+                normalized_root = os.path.normpath(root).replace(os.sep, '/')
+                normalized_file = os.path.normpath(file_path).replace(os.sep, '/')
+                
+                if normalized_file.startswith(normalized_root):
+                    # Remove root and leading slash to get relative path
+                    relative_path = normalized_file[len(normalized_root):].lstrip('/')
+                    break
+            
+            if relative_path and search_lower in relative_path.lower():
+                matching_paths.append(relative_path)
+                
+                if len(matching_paths) >= limit * 2:  # Get more for better sorting
+                    break
+        
+        # Sort by relevance (exact matches first, then by length)
+        matching_paths.sort(key=lambda x: (
+            not x.lower().startswith(search_lower),  # Exact prefix matches first
+            len(x),  # Then by length (shorter first)
+            x.lower()  # Then alphabetically
+        ))
+        
+        return matching_paths[:limit]

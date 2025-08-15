@@ -158,6 +158,21 @@ class LoraService(BaseModelService):
         
         return []
     
+    async def get_lora_usage_tips_by_relative_path(self, relative_path: str) -> Optional[str]:
+        """Get usage tips for a LoRA by its relative path"""
+        cache = await self.scanner.get_cached_data()
+        
+        for lora in cache.raw_data:
+            file_path = lora.get('file_path', '')
+            if file_path:
+                # Convert to forward slashes and extract relative path
+                file_path_normalized = file_path.replace('\\', '/')
+                # Find the relative path part by looking for the relative_path in the full path
+                if file_path_normalized.endswith(relative_path) or relative_path in file_path_normalized:
+                    return lora.get('usage_tips', '')
+        
+        return None
+    
     def find_duplicate_hashes(self) -> Dict:
         """Find LoRAs with duplicate SHA256 hashes"""
         return self.scanner._hash_index.get_duplicate_hashes()

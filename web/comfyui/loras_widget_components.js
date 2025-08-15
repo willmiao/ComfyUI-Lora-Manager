@@ -219,18 +219,26 @@ export class PreviewTooltip {
       display: 'none',
       overflow: 'hidden',
       maxWidth: '300px',
+      pointerEvents: 'none', // Prevent interference with autocomplete
     });
     document.body.appendChild(this.element);
     this.hideTimeout = null;
+    this.isFromAutocomplete = false;
     
-    // Add global click event to hide tooltip
-    document.addEventListener('click', () => this.hide());
+    // Modified event listeners for autocomplete compatibility
+    this.globalClickHandler = (e) => {
+      // Don't hide if click is on autocomplete dropdown
+      if (!e.target.closest('.comfy-autocomplete-dropdown')) {
+        this.hide();
+      }
+    };
+    document.addEventListener('click', this.globalClickHandler);
     
-    // Add scroll event listener
-    document.addEventListener('scroll', () => this.hide(), true);
+    this.globalScrollHandler = () => this.hide();
+    document.addEventListener('scroll', this.globalScrollHandler, true);
   }
 
-  async show(loraName, x, y) {
+  async show(loraName, x, y, fromAutocomplete = false) {
     try {
       // Clear previous hide timer
       if (this.hideTimeout) {
@@ -238,8 +246,12 @@ export class PreviewTooltip {
         this.hideTimeout = null;
       }
 
+      // Track if this is from autocomplete
+      this.isFromAutocomplete = fromAutocomplete;
+
       // Don't redisplay the same lora preview
       if (this.element.style.display === 'block' && this.currentLora === loraName) {
+        this.position(x, y);
         return;
       }
 
@@ -300,7 +312,7 @@ export class PreviewTooltip {
         left: '0',
         right: '0',
         padding: '8px',
-        color: 'rgba(255, 255, 255, 0.95)',
+        color: 'white',
         fontSize: '13px',
         fontFamily: "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif",
         background: 'linear-gradient(transparent, rgba(0, 0, 0, 0.8))',
@@ -349,6 +361,10 @@ export class PreviewTooltip {
       top = y - rect.height - 10;
     }
 
+    // Ensure minimum distance from edges
+    left = Math.max(10, Math.min(left, viewportWidth - rect.width - 10));
+    top = Math.max(10, Math.min(top, viewportHeight - rect.height - 10));
+
     Object.assign(this.element.style, {
       left: `${left}px`,
       top: `${top}px`
@@ -362,6 +378,7 @@ export class PreviewTooltip {
       this.hideTimeout = setTimeout(() => {
         this.element.style.display = 'none';
         this.currentLora = null;
+        this.isFromAutocomplete = false;
         // Stop video playback
         const video = this.element.querySelector('video');
         if (video) {
@@ -376,9 +393,9 @@ export class PreviewTooltip {
     if (this.hideTimeout) {
       clearTimeout(this.hideTimeout);
     }
-    // Remove all event listeners
-    document.removeEventListener('click', () => this.hide());
-    document.removeEventListener('scroll', () => this.hide(), true);
+    // Remove event listeners properly
+    document.removeEventListener('click', this.globalClickHandler);
+    document.removeEventListener('scroll', this.globalScrollHandler, true);
     this.element.remove();
   }
 }

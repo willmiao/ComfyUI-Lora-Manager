@@ -68,6 +68,9 @@ class BaseModelRoutes(ABC):
         app.router.add_get(f'/api/{prefix}/get-notes', self.get_model_notes)
         app.router.add_get(f'/api/{prefix}/preview-url', self.get_model_preview_url)
         app.router.add_get(f'/api/{prefix}/civitai-url', self.get_model_civitai_url)
+        
+        # Autocomplete route
+        app.router.add_get(f'/api/{prefix}/relative-paths', self.get_relative_paths)
 
         # Common Download management
         app.router.add_post(f'/api/download-model', self.download_model)
@@ -1058,6 +1061,26 @@ class BaseModelRoutes(ABC):
                 
         except Exception as e:
             logger.error(f"Error getting {self.model_type} Civitai URL: {e}", exc_info=True)
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    async def get_relative_paths(self, request: web.Request) -> web.Response:
+        """Get model relative file paths for autocomplete functionality"""
+        try:
+            search = request.query.get('search', '').strip()
+            limit = min(int(request.query.get('limit', '15')), 50)  # Max 50 items
+            
+            matching_paths = await self.service.search_relative_paths(search, limit)
+            
+            return web.json_response({
+                'success': True,
+                'relative_paths': matching_paths
+            })
+            
+        except Exception as e:
+            logger.error(f"Error getting relative paths for autocomplete: {e}", exc_info=True)
             return web.json_response({
                 'success': False,
                 'error': str(e)

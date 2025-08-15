@@ -1,4 +1,5 @@
 export const CONVERTED_TYPE = 'converted-widget';
+import { AutoComplete } from "./autocomplete.js";
 
 export function chainCallback(object, property, callback) {
   if (object == undefined) {
@@ -226,4 +227,58 @@ export function mergeLoras(lorasText, lorasArr) {
   }
 
   return result;
+}
+
+/**
+ * Initialize autocomplete for an input widget and setup cleanup
+ * @param {Object} node - The node instance
+ * @param {Object} inputWidget - The input widget to add autocomplete to
+ * @param {Function} originalCallback - The original callback function
+ * @returns {Function} Enhanced callback function with autocomplete
+ */
+export function setupInputWidgetWithAutocomplete(node, inputWidget, originalCallback) {
+    let autocomplete = null;
+    
+    // Enhanced callback that initializes autocomplete and calls original callback
+    const enhancedCallback = (value) => {
+        // Initialize autocomplete on first callback if not already done
+        if (!autocomplete && inputWidget.inputEl) {
+            autocomplete = new AutoComplete(inputWidget.inputEl, 'loras', {
+                maxItems: 15,
+                minChars: 1,
+                debounceDelay: 200
+            });
+            // Store reference for cleanup
+            node.autocomplete = autocomplete;
+        }
+        
+        // Call the original callback
+        if (originalCallback) {
+            originalCallback(value);
+        }
+    };
+    
+    // Setup cleanup on node removal
+    setupAutocompleteCleanup(node);
+    
+    return enhancedCallback;
+}
+
+/**
+ * Setup autocomplete cleanup when node is removed
+ * @param {Object} node - The node instance
+ */
+export function setupAutocompleteCleanup(node) {
+    // Override onRemoved to cleanup autocomplete
+    const originalOnRemoved = node.onRemoved;
+    node.onRemoved = function() {
+        if (this.autocomplete) {
+            this.autocomplete.destroy();
+            this.autocomplete = null;
+        }
+        
+        if (originalOnRemoved) {
+            originalOnRemoved.call(this);
+        }
+    };
 }
