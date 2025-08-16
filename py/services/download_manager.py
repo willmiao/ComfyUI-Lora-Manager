@@ -352,7 +352,7 @@ class DownloadManager:
         base_model = version_info.get('baseModel', '')
         
         # Get author from creator data
-        author = version_info.get('creator', {}).get('username', 'Anonymous')
+        author = version_info.get('creator', {}).get('username') or 'Anonymous'
         
         # Apply mapping if available
         base_model_mappings = settings.get('base_model_path_mappings', {})
