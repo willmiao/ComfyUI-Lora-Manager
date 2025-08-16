@@ -54,6 +54,7 @@ class BaseModelRoutes(ABC):
         app.router.add_post(f'/api/{prefix}/move_model', self.move_model)
         app.router.add_post(f'/api/{prefix}/move_models_bulk', self.move_models_bulk)
         app.router.add_get(f'/api/{prefix}/auto-organize', self.auto_organize_models)
+        app.router.add_get(f'/api/{prefix}/auto-organize-progress', self.get_auto_organize_progress)
         
         # Common query routes
         app.router.add_get(f'/api/{prefix}/top-tags', self.get_top_tags)
@@ -750,6 +751,43 @@ class BaseModelRoutes(ABC):
     async def auto_organize_models(self, request: web.Request) -> web.Response:
         """Auto-organize all models based on current settings"""
         try:
+            # Check if auto-organize is already running
+            if ws_manager.is_auto_organize_running():
+                return web.json_response({
+                    'success': False,
+                    'error': 'Auto-organize is already running. Please wait for it to complete.'
+                }, status=409)
+            
+            # Acquire lock to prevent concurrent auto-organize operations
+            auto_organize_lock = await ws_manager.get_auto_organize_lock()
+            
+            if auto_organize_lock.locked():
+                return web.json_response({
+                    'success': False,
+                    'error': 'Auto-organize is already running. Please wait for it to complete.'
+                }, status=409)
+            
+            async with auto_organize_lock:
+                return await self._perform_auto_organize()
+                
+        except Exception as e:
+            logger.error(f"Error in auto_organize_models: {e}", exc_info=True)
+            
+            # Send error message via WebSocket and cleanup
+            await ws_manager.broadcast_auto_organize_progress({
+                'type': 'auto_organize_progress',
+                'status': 'error',
+                'error': str(e)
+            })
+            
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    async def _perform_auto_organize(self) -> web.Response:
+        """Perform the actual auto-organize operation"""
+        try:
             # Get all models from cache
             cache = await self.service.scanner.get_cached_data()
             all_models = cache.raw_data
@@ -757,6 +795,11 @@ class BaseModelRoutes(ABC):
             # Get model roots for this scanner
             model_roots = self.service.get_model_roots()
             if not model_roots:
+                await ws_manager.broadcast_auto_organize_progress({
+                    'type': 'auto_organize_progress',
+                    'status': 'error',
+                    'error': 'No model roots configured'
+                })
                 return web.json_response({
                     'success': False,
                     'error': 'No model roots configured'
@@ -775,7 +818,7 @@ class BaseModelRoutes(ABC):
             skipped_count = 0
             
             # Send initial progress via WebSocket
-            await ws_manager.broadcast({
+            await ws_manager.broadcast_auto_organize_progress({
                 'type': 'auto_organize_progress',
                 'status': 'started',
                 'total': total_models,
@@ -906,7 +949,7 @@ class BaseModelRoutes(ABC):
                         processed += 1
                 
                 # Send progress update after each batch
-                await ws_manager.broadcast({
+                await ws_manager.broadcast_auto_organize_progress({
                     'type': 'auto_organize_progress',
                     'status': 'processing',
                     'total': total_models,
@@ -920,7 +963,7 @@ class BaseModelRoutes(ABC):
                 await asyncio.sleep(0.1)
             
             # Send completion message
-            await ws_manager.broadcast({
+            await ws_manager.broadcast_auto_organize_progress({
                 'type': 'auto_organize_progress',
                 'status': 'cleaning',
                 'total': total_models,
@@ -939,7 +982,7 @@ class BaseModelRoutes(ABC):
                 cleanup_counts[root] = removed
                 
             # Send cleanup completed message
-            await ws_manager.broadcast({
+            await ws_manager.broadcast_auto_organize_progress({
                 'type': 'auto_organize_progress',
                 'status': 'completed',
                 'total': total_models,
@@ -974,15 +1017,34 @@ class BaseModelRoutes(ABC):
             return web.json_response(response_data)
             
         except Exception as e:
-            logger.error(f"Error in auto_organize_models: {e}", exc_info=True)
+            logger.error(f"Error in _perform_auto_organize: {e}", exc_info=True)
             
             # Send error message via WebSocket
-            await ws_manager.broadcast({
+            await ws_manager.broadcast_auto_organize_progress({
                 'type': 'auto_organize_progress',
                 'status': 'error',
                 'error': str(e)
             })
             
+            raise e
+    
+    async def get_auto_organize_progress(self, request: web.Request) -> web.Response:
+        """Get current auto-organize progress for polling"""
+        try:
+            progress_data = ws_manager.get_auto_organize_progress()
+            
+            if progress_data is None:
+                return web.json_response({
+                    'success': False,
+                    'error': 'No auto-organize operation in progress'
+                }, status=404)
+            
+            return web.json_response({
+                'success': True,
+                'progress': progress_data
+            })
+        except Exception as e:
+            logger.error(f"Error getting auto-organize progress: {e}", exc_info=True)
             return web.json_response({
                 'success': False,
                 'error': str(e)

@@ -16,6 +16,9 @@ class WebSocketManager:
         self._download_websockets: Dict[str, web.WebSocketResponse] = {}  # New dict for download-specific clients
         # Add progress tracking dictionary
         self._download_progress: Dict[str, Dict] = {}
+        # Add auto-organize progress tracking
+        self._auto_organize_progress: Optional[Dict] = None
+        self._auto_organize_lock = asyncio.Lock()
         
     async def handle_connection(self, request: web.Request) -> web.WebSocketResponse:
         """Handle new WebSocket connection"""
@@ -134,6 +137,33 @@ class WebSocketManager:
         except Exception as e:
             logger.error(f"Error sending download progress: {e}")
             
+    async def broadcast_auto_organize_progress(self, data: Dict):
+        """Broadcast auto-organize progress to connected clients"""
+        # Store progress data in memory
+        self._auto_organize_progress = data
+        
+        # Broadcast via WebSocket
+        await self.broadcast(data)
+    
+    def get_auto_organize_progress(self) -> Optional[Dict]:
+        """Get current auto-organize progress"""
+        return self._auto_organize_progress
+    
+    def cleanup_auto_organize_progress(self):
+        """Clear auto-organize progress data"""
+        self._auto_organize_progress = None
+    
+    def is_auto_organize_running(self) -> bool:
+        """Check if auto-organize is currently running"""
+        if not self._auto_organize_progress:
+            return False
+        status = self._auto_organize_progress.get('status')
+        return status in ['started', 'processing', 'cleaning']
+    
+    async def get_auto_organize_lock(self):
+        """Get the auto-organize lock"""
+        return self._auto_organize_lock
+    
     def get_download_progress(self, download_id: str) -> Optional[Dict]:
         """Get progress information for a specific download"""
         return self._download_progress.get(download_id)
