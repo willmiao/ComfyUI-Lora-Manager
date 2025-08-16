@@ -145,8 +145,9 @@ app.registerExtension({
                     }
                   );
 
-                  // Clean up multiple spaces and trim
-                  newText = newText.replace(/\s+/g, " ").trim();
+                  // Clean up multiple spaces, extra commas, and trim; remove trailing comma if it's the only content
+                  newText = newText.replace(/\s+/g, " ").replace(/,\s*,+/g, ",").trim();
+                  if (newText === ",") newText = "";
 
                   inputWidget.value = newText;
                 } finally {
