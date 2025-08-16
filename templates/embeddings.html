@@ -30,27 +30,7 @@
 
 {% block content %}
     {% include 'components/controls.html' %}
-    
-    <!-- Duplicates banner (hidden by default) -->
-    <div id="duplicatesBanner" class="duplicates-banner" style="display: none;">
-        <div class="banner-content">
-          <i class="fas fa-exclamation-triangle"></i>
-          <span id="duplicatesCount">Found 0 duplicate groups</span>
-          <i class="fas fa-question-circle help-icon" id="duplicatesHelp" aria-label="Help information"></i>
-          <div class="banner-actions">
-            <button class="btn-delete-selected disabled" onclick="modelDuplicatesManager.deleteSelectedDuplicates()">
-              Delete Selected (<span id="duplicatesSelectedCount">0</span>)
-            </button>
-            <button class="btn-exit-mode" onclick="modelDuplicatesManager.exitDuplicateMode()">
-              <i class="fas fa-times"></i> Exit Mode
-            </button>
-          </div>
-        </div>
-        <div class="help-tooltip" id="duplicatesHelpTooltip">
-          <p>Identical hashes mean identical model files, even if they have different names or previews.</p>
-          <p>Keep only one version (preferably with better metadata/previews) and safely delete the others.</p>
-        </div>
-    </div>
+    {% include 'components/duplicates_banner.html' %}
     
     <!-- Embedding cards container -->
     <div class="card-grid" id="modelGrid">

@@ -255,3 +255,19 @@ export function resetDismissedBanner(bannerId) {
     const updatedBanners = dismissedBanners.filter(id => id !== bannerId);
     setStorageItem('dismissed_banners', updatedBanners);
 }
+
+/**
+ * Get the show duplicates notification preference
+ * @returns {boolean} True if notification should be shown (default: true)
+ */
+export function getShowDuplicatesNotification() {
+    return getStorageItem('show_duplicates_notification', true);
+}
+
+/**
+ * Set the show duplicates notification preference
+ * @param {boolean} show - Whether to show the notification
+ */
+export function setShowDuplicatesNotification(show) {
+    setStorageItem('show_duplicates_notification', show);
+}

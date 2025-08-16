@@ -3,7 +3,7 @@ import { showToast } from '../utils/uiHelpers.js';
 import { state, getCurrentPageState } from '../state/index.js';
 import { formatDate } from '../utils/formatters.js';
 import { resetAndReload} from '../api/modelApiFactory.js';
-import { LoadingManager } from '../managers/LoadingManager.js';
+import { getShowDuplicatesNotification, setShowDuplicatesNotification } from '../utils/storageHelpers.js';
 
 export class ModelDuplicatesManager {
     constructor(pageManager, modelType = 'loras') {
@@ -12,13 +12,21 @@ export class ModelDuplicatesManager {
         this.inDuplicateMode = false;
         this.selectedForDeletion = new Set();
         this.modelType = modelType; // Use the provided modelType or default to 'loras'
-        
+
         // Verification tracking
         this.verifiedGroups = new Set(); // Track which groups have been verified
         this.mismatchedFiles = new Map(); // Map file paths to actual hashes for mismatched files
         
-        // Loading manager for verification process
-        this.loadingManager = new LoadingManager();
+        // Badge visibility preference
+        this.showBadge = getShowDuplicatesNotification(); // Default to true (show badge)
+        
+        // Event handler references for cleanup
+        this.badgeToggleHandler = null;
+        this.helpTooltipHandlers = {
+            mouseenter: null,
+            mouseleave: null,
+            click: null
+        };
         
         // Bind methods
         this.renderModelCard = this.renderModelCard.bind(this);
@@ -66,7 +74,16 @@ export class ModelDuplicatesManager {
         const badge = document.getElementById('duplicatesBadge');
         if (!badge) return;
         
+        // Check if badge should be hidden based on user preference
+        if (!this.showBadge && !this.inDuplicateMode) {
+            badge.style.display = 'none';
+            badge.textContent = '';
+            badge.classList.remove('pulse');
+            return;
+        }
+        
         if (count > 0) {
+            badge.style.display = 'inline-flex';
             badge.textContent = count;
             badge.classList.add('pulse');
         } else {
@@ -136,6 +153,9 @@ export class ModelDuplicatesManager {
             
             // Setup help tooltip behavior
             this.setupHelpTooltip();
+            
+            // Setup badge toggle control
+            this.setupBadgeToggle();
         }
         
         // Disable virtual scrolling if active
@@ -172,6 +192,9 @@ export class ModelDuplicatesManager {
         // Update state
         const pageState = getCurrentPageState();
         pageState.duplicatesMode = false;
+        
+        // Clean up event handlers before hiding banner
+        this.cleanupEventHandlers();
         
         // Hide duplicates banner
         const banner = document.getElementById('duplicatesBanner');
@@ -672,7 +695,11 @@ export class ModelDuplicatesManager {
       
       if (!helpIcon || !helpTooltip) return;
       
-      helpIcon.addEventListener('mouseenter', (e) => {
+      // Clean up existing handlers first
+      this.cleanupHelpTooltipHandlers();
+      
+      // Create new handler functions and store references
+      this.helpTooltipHandlers.mouseenter = (e) => {
           // Get the container's positioning context
           const bannerContent = helpIcon.closest('.banner-content');
           
@@ -693,18 +720,22 @@ export class ModelDuplicatesManager {
               // Reposition relative to container if too close to right edge
               helpTooltip.style.left = `${bannerContent.offsetWidth - tooltipRect.width - 20}px`;
           }
-      });
+      };
       
-      // Rest of the event listeners remain unchanged
-      helpIcon.addEventListener('mouseleave', () => {
+      this.helpTooltipHandlers.mouseleave = () => {
           helpTooltip.style.display = 'none';
-      });
+      };
       
-      document.addEventListener('click', (e) => {
+      this.helpTooltipHandlers.click = (e) => {
           if (!helpIcon.contains(e.target)) {
               helpTooltip.style.display = 'none';
           }
-      });
+      };
+      
+      // Add event listeners
+      helpIcon.addEventListener('mouseenter', this.helpTooltipHandlers.mouseenter);
+      helpIcon.addEventListener('mouseleave', this.helpTooltipHandlers.mouseleave);
+      document.addEventListener('click', this.helpTooltipHandlers.click);
     }
 
     // Handle verify hashes button click
@@ -719,7 +750,7 @@ export class ModelDuplicatesManager {
             }
             
             // Show loading state
-            this.loadingManager.showSimpleLoading('Verifying hashes...');
+            state.loadingManager.showSimpleLoading('Verifying hashes...');
             
             // Get file paths for all models in the group
             const filePaths = group.models.map(model => model.file_path);
@@ -772,7 +803,87 @@ export class ModelDuplicatesManager {
             showToast('Failed to verify hashes: ' + error.message, 'error');
         } finally {
             // Hide loading state
-            this.loadingManager.hide();
+            state.loadingManager.hide();
+        }
+    }
+    
+    // Add this new method for badge toggle setup
+    setupBadgeToggle() {
+        const toggleControl = document.getElementById('badgeToggleControl');
+        const toggleInput = document.getElementById('badgeToggleInput');
+        
+        if (!toggleControl || !toggleInput) return;
+        
+        // Clean up existing handler first
+        this.cleanupBadgeToggleHandler();
+        
+        // Set initial state based on stored preference (default to true/checked)
+        toggleInput.checked = this.showBadge;
+        
+        // Create and store the handler function
+        this.badgeToggleHandler = (e) => {
+            this.showBadge = e.target.checked;
+            setShowDuplicatesNotification(this.showBadge);
+            
+            // Update badge visibility immediately if not in duplicate mode
+            if (!this.inDuplicateMode) {
+                this.updateDuplicatesBadge(this.duplicateGroups.length);
+            }
+            
+            showToast(
+                this.showBadge ? 'Duplicates notification will be shown' : 'Duplicates notification will be hidden',
+                'info'
+            );
+        };
+        
+        // Add change event listener
+        toggleInput.addEventListener('change', this.badgeToggleHandler);
+    }
+    
+    // Clean up all event handlers
+    cleanupEventHandlers() {
+        this.cleanupBadgeToggleHandler();
+        this.cleanupHelpTooltipHandlers();
+    }
+    
+    // Clean up badge toggle event handler
+    cleanupBadgeToggleHandler() {
+        if (this.badgeToggleHandler) {
+            const toggleInput = document.getElementById('badgeToggleInput');
+            if (toggleInput) {
+                toggleInput.removeEventListener('change', this.badgeToggleHandler);
+            }
+            this.badgeToggleHandler = null;
+        }
+    }
+    
+    // Clean up help tooltip event handlers
+    cleanupHelpTooltipHandlers() {
+        const helpIcon = document.getElementById('duplicatesHelp');
+        
+        if (helpIcon && this.helpTooltipHandlers.mouseenter) {
+            helpIcon.removeEventListener('mouseenter', this.helpTooltipHandlers.mouseenter);
+        }
+        
+        if (helpIcon && this.helpTooltipHandlers.mouseleave) {
+            helpIcon.removeEventListener('mouseleave', this.helpTooltipHandlers.mouseleave);
+        }
+        
+        if (this.helpTooltipHandlers.click) {
+            document.removeEventListener('click', this.helpTooltipHandlers.click);
+        }
+        
+        // Reset handler references
+        this.helpTooltipHandlers = {
+            mouseenter: null,
+            mouseleave: null,
+            click: null
+        };
+        
+        // Hide tooltip if it's visible
+        const helpTooltip = document.getElementById('duplicatesHelpTooltip');
+        if (helpTooltip) {
+            helpTooltip.style.display = 'none';
         }
     }
 }
