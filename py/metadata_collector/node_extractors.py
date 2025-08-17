@@ -656,6 +656,7 @@ NODE_EXTRACTORS = {
     "AlignYourStepsScheduler": BasicSchedulerExtractor,  # Add AlignYourStepsScheduler
     # Loaders
     "CheckpointLoaderSimple": CheckpointLoaderExtractor,
+    "CheckpointLoaderSimpleExtended": CheckpointLoaderExtractor,
     "comfyLoader": CheckpointLoaderExtractor,  # easy comfyLoader
     "CheckpointLoaderSimpleWithImages": CheckpointLoaderExtractor,  # CheckpointLoader|pysssss
     "TSC_EfficientLoader": TSCCheckpointLoaderExtractor,  # Efficient Nodes
