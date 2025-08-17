@@ -642,6 +642,7 @@ NODE_EXTRACTORS = {
     # Sampling
     "KSampler": SamplerExtractor,
     "KSamplerAdvanced": KSamplerAdvancedExtractor,
+    "SamplerCustom": KSamplerAdvancedExtractor,
     "SamplerCustomAdvanced": SamplerCustomAdvancedExtractor,
     "TSC_KSampler": TSCKSamplerExtractor,   # Efficient Nodes
     "TSC_KSamplerAdvanced": TSCKSamplerAdvancedExtractor,  # Efficient Nodes
@@ -652,9 +653,11 @@ NODE_EXTRACTORS = {
     # Sampling Selectors
     "KSamplerSelect": KSamplerSelectExtractor,  # Add KSamplerSelect
     "BasicScheduler": BasicSchedulerExtractor,  # Add BasicScheduler
+    "AlignYourStepsScheduler": BasicSchedulerExtractor,  # Add AlignYourStepsScheduler
     # Loaders
     "CheckpointLoaderSimple": CheckpointLoaderExtractor,
     "comfyLoader": CheckpointLoaderExtractor,  # easy comfyLoader
+    "CheckpointLoaderSimpleWithImages": CheckpointLoaderExtractor,  # CheckpointLoader|pysssss
     "TSC_EfficientLoader": TSCCheckpointLoaderExtractor,  # Efficient Nodes
     "UNETLoader": UNETLoaderExtractor,          # Updated to use dedicated extractor
     "UnetLoaderGGUF": UNETLoaderExtractor,  # Updated to use dedicated extractor
