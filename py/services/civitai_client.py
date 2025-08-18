@@ -33,8 +33,8 @@ class CivitaiClient:
         }
         self._session = None
         self._session_created_at = None
-        # Set default buffer size to 1MB for higher throughput
-        self.chunk_size = 1024 * 1024
+        # Adjust chunk size based on storage type - consider making this configurable
+        self.chunk_size = 4 * 1024 * 1024   # 4MB chunks for better HDD throughput
     
     @property
     async def session(self) -> aiohttp.ClientSession:
@@ -153,10 +153,12 @@ class CivitaiClient:
                 last_progress_report_time = datetime.now()
 
                 # Stream download to file with progress updates using larger buffer
+                loop = asyncio.get_running_loop()
                 with open(save_path, 'wb') as f:
                     async for chunk in response.content.iter_chunked(self.chunk_size):
                         if chunk:
-                            f.write(chunk)
+                            # Run blocking file write in executor
+                            await loop.run_in_executor(None, f.write, chunk)
                             current_size += len(chunk)
                             
                             # Limit progress update frequency to reduce overhead
