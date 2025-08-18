@@ -30,12 +30,12 @@ app.registerExtension({
                 // Restore saved value if exists
                 let existingLoras = [];
                 if (this.widgets_values && this.widgets_values.length > 0) {
-                    // 0 for low_mem_load, 1 for text widget, 2 for loras widget
-                    const savedValue = this.widgets_values[2];
+                    // 0 for low_mem_load, 1 for merge_loras, 2 for text widget, 3 for loras widget
+                    const savedValue = this.widgets_values[3];
                     existingLoras = savedValue || [];
                 }
                 // Merge the loras data
-                const mergedLoras = mergeLoras(this.widgets[1].value, existingLoras);
+                const mergedLoras = mergeLoras(this.widgets[2].value, existingLoras);
                 
                 // Add flag to prevent callback loops
                 let isUpdating = false;
@@ -49,7 +49,7 @@ app.registerExtension({
                     
                     try {
                         // Remove loras that are not in the value array
-                        const inputWidget = this.widgets[1];
+                        const inputWidget = this.widgets[2];
                         const currentLoras = value.map(l => l.name);
                         
                         // Use the constant pattern here as well
@@ -79,7 +79,7 @@ app.registerExtension({
                 this.lorasWidget = result.widget;
 
                 // Update input widget callback
-                const inputWidget = this.widgets[1];
+                const inputWidget = this.widgets[2];
                 inputWidget.options.getMaxHeight = () => 100;
                 this.inputWidget = inputWidget;
                 // Wrap the callback with autocomplete setup

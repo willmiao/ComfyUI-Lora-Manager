@@ -14,7 +14,8 @@ class WanVideoLoraSelect:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "low_mem_load": ("BOOLEAN", {"default": False, "tooltip": "Load the LORA model with less VRAM usage, slower loading"}),
+                "low_mem_load": ("BOOLEAN", {"default": False, "tooltip": "Load LORA models with less VRAM usage, slower loading. This affects ALL LoRAs, not just the current ones. No effect if merge_loras is False"}),
+                "merge_loras": ("BOOLEAN", {"default": True, "tooltip": "Merge LoRAs into the model, otherwise they are loaded on the fly. Always disabled for GGUF and scaled fp8 models. This affects ALL LoRAs, not just the current one"}),
                 "text": (IO.STRING, {
                     "multiline": True, 
                     "dynamicPrompts": True, 
@@ -29,7 +30,7 @@ class WanVideoLoraSelect:
     RETURN_NAMES = ("lora", "trigger_words", "active_loras")
     FUNCTION = "process_loras"
     
-    def process_loras(self, text, low_mem_load=False, **kwargs):
+    def process_loras(self, text, low_mem_load=False, merge_loras=True, **kwargs):
         loras_list = []
         all_trigger_words = []
         active_loras = []
@@ -38,6 +39,9 @@ class WanVideoLoraSelect:
         prev_lora = kwargs.get('prev_lora', None)
         if prev_lora is not None:
             loras_list.extend(prev_lora)
+
+        if not merge_loras:
+            low_mem_load = False  # Unmerged LoRAs don't need low_mem_load
         
         # Get blocks if available
         blocks = kwargs.get('blocks', {})
@@ -65,6 +69,7 @@ class WanVideoLoraSelect:
                 "blocks": selected_blocks,
                 "layer_filter": layer_filter,
                 "low_mem_load": low_mem_load,
+                "merge_loras": merge_loras,
             }
             
             # Add to list and collect active loras
