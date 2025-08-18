@@ -303,11 +303,11 @@ class ModelScanner:
                             self._tags_count[tag] = self._tags_count.get(tag, 0) + 1
                 
                 # Log duplicate filename warnings after building the index
-                duplicate_filenames = self._hash_index.get_duplicate_filenames()
-                if duplicate_filenames:
-                    logger.warning(f"Found {len(duplicate_filenames)} filename(s) with duplicates during {self.model_type} cache build:")
-                    for filename, paths in duplicate_filenames.items():
-                        logger.warning(f"  Duplicate filename '{filename}': {paths}")
+                # duplicate_filenames = self._hash_index.get_duplicate_filenames()
+                # if duplicate_filenames:
+                #     logger.warning(f"Found {len(duplicate_filenames)} filename(s) with duplicates during {self.model_type} cache build:")
+                #     for filename, paths in duplicate_filenames.items():
+                #         logger.warning(f"  Duplicate filename '{filename}': {paths}")
                 
                 # Update cache
                 self._cache.raw_data = raw_data
@@ -375,11 +375,11 @@ class ModelScanner:
                         self._tags_count[tag] = self._tags_count.get(tag, 0) + 1
             
             # Log duplicate filename warnings after building the index
-            duplicate_filenames = self._hash_index.get_duplicate_filenames()
-            if duplicate_filenames:
-                logger.warning(f"Found {len(duplicate_filenames)} filename(s) with duplicates during {self.model_type} cache build:")
-                for filename, paths in duplicate_filenames.items():
-                    logger.warning(f"  Duplicate filename '{filename}': {paths}")
+            # duplicate_filenames = self._hash_index.get_duplicate_filenames()
+            # if duplicate_filenames:
+            #     logger.warning(f"Found {len(duplicate_filenames)} filename(s) with duplicates during {self.model_type} cache build:")
+            #     for filename, paths in duplicate_filenames.items():
+            #         logger.warning(f"  Duplicate filename '{filename}': {paths}")
             
             # Update cache
             self._cache = ModelCache(
