@@ -193,6 +193,7 @@ export function mergeLoras(lorasText, lorasArr) {
         name: lora.name,
         strength: lora.strength !== undefined ? lora.strength : parsedLoras[lora.name].strength,
         active: lora.active !== undefined ? lora.active : true,
+        expanded: lora.expanded !== undefined ? lora.expanded : false,
         clipStrength: lora.clipStrength !== undefined ? lora.clipStrength : parsedLoras[lora.name].clipStrength,
       });
       usedNames.add(lora.name);

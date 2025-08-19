@@ -296,3 +296,6 @@ Join our Discord community for support, discussions, and updates:
 [Discord Server](https://discord.gg/vcqNrWVFvM)
 
 ---
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=willmiao/ComfyUI-Lora-Manager&type=Date)](https://star-history.com/#willmiao/ComfyUI-Lora-Manager&Date)

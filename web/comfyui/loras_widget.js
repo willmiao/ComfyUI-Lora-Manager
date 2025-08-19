@@ -675,25 +675,9 @@ export function addLorasWidget(node, name, opts, callback) {
         // Add the current lora
         return [...filtered, lora];
       }, []);
-
-      // Preserve clip strengths and expanded state when updating the value
-      const oldLoras = parseLoraValue(widgetValue);
       
       // Apply existing clip strength values and transfer them to the new value
-      const updatedValue = uniqueValue.map(lora => {
-        const existingLora = oldLoras.find(oldLora => oldLora.name === lora.name);
-        
-        // If there's an existing lora with the same name, preserve its clip strength and expanded state
-        if (existingLora) {
-          return {
-            ...lora,
-            clipStrength: existingLora.clipStrength || lora.strength,
-            expanded: existingLora.hasOwnProperty('expanded') ? 
-                      existingLora.expanded : 
-                      Number(existingLora.clipStrength || lora.strength) !== Number(lora.strength)
-          };
-        }
-        
+      const updatedValue = uniqueValue.map(lora => {       
         // For new loras, default clip strength to model strength and expanded to false
         // unless clipStrength is already different from strength
         const clipStrength = lora.clipStrength || lora.strength;
