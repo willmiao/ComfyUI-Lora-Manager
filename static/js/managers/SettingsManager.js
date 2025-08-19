@@ -132,11 +132,7 @@ export class SettingsManager {
 
         fieldsToSync.forEach(key => {
             if (localSettings[key] !== undefined) {
-                if (key === 'base_model_path_mappings' || key === 'download_path_templates') {
-                    payload[key] = JSON.stringify(localSettings[key]);
-                } else {
-                    payload[key] = localSettings[key];
-                }
+                payload[key] = localSettings[key];
             }
         });
 
@@ -546,7 +542,7 @@ export class SettingsManager {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    base_model_path_mappings: JSON.stringify(state.global.settings.base_model_path_mappings)
+                    base_model_path_mappings: state.global.settings.base_model_path_mappings
                 })
             });
 
@@ -733,7 +729,7 @@ export class SettingsManager {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    download_path_templates: JSON.stringify(state.global.settings.download_path_templates)
+                    download_path_templates: state.global.settings.download_path_templates
                 })
             });
 
@@ -868,7 +864,7 @@ export class SettingsManager {
             if (settingKey === 'default_lora_root' || settingKey === 'default_checkpoint_root' || settingKey === 'default_embedding_root' || settingKey === 'download_path_templates') {
                 const payload = {};
                 if (settingKey === 'download_path_templates') {
-                    payload[settingKey] = JSON.stringify(state.global.settings.download_path_templates);
+                    payload[settingKey] = state.global.settings.download_path_templates;
                 } else {
                     payload[settingKey] = value;
                 }
