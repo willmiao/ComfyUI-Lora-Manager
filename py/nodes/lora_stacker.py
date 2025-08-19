@@ -17,6 +17,7 @@ class LoraStacker:
             "required": {
                 "text": (IO.STRING, {
                     "multiline": True, 
+                    "pysssss.autocomplete": False, 
                     "dynamicPrompts": True, 
                     "tooltip": "Format: <lora:lora_name:strength> separated by spaces or punctuation",
                     "placeholder": "LoRA syntax input: <lora:name:strength>"

@@ -17,7 +17,8 @@ class LoraManagerLoader:
                 "model": ("MODEL",),
                 # "clip": ("CLIP",),
                 "text": (IO.STRING, {
-                    "multiline": True, 
+                    "multiline": True,
+                    "pysssss.autocomplete": False, 
                     "dynamicPrompts": True, 
                     "tooltip": "Format: <lora:lora_name:strength> separated by spaces or punctuation",
                     "placeholder": "LoRA syntax input: <lora:name:strength>"

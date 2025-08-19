@@ -18,6 +18,7 @@ class WanVideoLoraSelect:
                 "merge_loras": ("BOOLEAN", {"default": True, "tooltip": "Merge LoRAs into the model, otherwise they are loaded on the fly. Always disabled for GGUF and scaled fp8 models. This affects ALL LoRAs, not just the current one"}),
                 "text": (IO.STRING, {
                     "multiline": True, 
+                    "pysssss.autocomplete": False, 
                     "dynamicPrompts": True, 
                     "tooltip": "Format: <lora:lora_name:strength> separated by spaces or punctuation",
                     "placeholder": "LoRA syntax input: <lora:name:strength>"

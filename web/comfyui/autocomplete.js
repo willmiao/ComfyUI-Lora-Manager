@@ -141,11 +141,18 @@ class AutoComplete {
     }
     
     getSearchTerm(value) {
-        const lastCommaIndex = value.lastIndexOf(',');
-        if (lastCommaIndex === -1) {
-            return value.trim();
+        // Use helper to get text before cursor for more accurate positioning
+        const beforeCursor = this.helper.getBeforeCursor();
+        if (!beforeCursor) {
+            return '';
         }
-        return value.substring(lastCommaIndex + 1).trim();
+        
+        // Split on multiple delimiters: comma, space, '>' and other common separators
+        const segments = beforeCursor.split(/[,\s>]+/);
+        
+        // Return the last non-empty segment as search term
+        const lastSegment = segments[segments.length - 1] || '';
+        return lastSegment.trim();
     }
     
     async search(term = '') {
@@ -220,6 +227,13 @@ class AutoComplete {
         // Remove border from last item
         if (this.dropdown.lastChild) {
             this.dropdown.lastChild.style.borderBottom = 'none';
+        }
+        
+        // Auto-select the first item with a small delay
+        if (this.items.length > 0) {
+            setTimeout(() => {
+            this.selectItem(0);
+            }, 100); // 50ms delay
         }
     }
     
