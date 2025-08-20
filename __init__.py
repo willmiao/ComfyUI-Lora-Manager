@@ -1,5 +1,5 @@
 from .py.lora_manager import LoraManager
-from .py.nodes.lora_loader import LoraManagerLoader
+from .py.nodes.lora_loader import LoraManagerLoader, LoraManagerTextLoader
 from .py.nodes.trigger_word_toggle import TriggerWordToggle
 from .py.nodes.lora_stacker import LoraStacker
 from .py.nodes.save_image import SaveImage
@@ -10,6 +10,7 @@ from .py.metadata_collector import init as init_metadata_collector
 
 NODE_CLASS_MAPPINGS = {
     LoraManagerLoader.NAME: LoraManagerLoader,
+    LoraManagerTextLoader.NAME: LoraManagerTextLoader,
     TriggerWordToggle.NAME: TriggerWordToggle,
     LoraStacker.NAME: LoraStacker,
     SaveImage.NAME: SaveImage,
