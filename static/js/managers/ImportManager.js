@@ -4,8 +4,13 @@ import { ImportStepManager } from './import/ImportStepManager.js';
 import { ImageProcessor } from './import/ImageProcessor.js';
 import { RecipeDataManager } from './import/RecipeDataManager.js';
 import { DownloadManager } from './import/DownloadManager.js';
-import { FolderBrowser } from './import/FolderBrowser.js';
+import { FolderTreeManager } from '../components/FolderTreeManager.js';
 import { formatFileSize } from '../utils/formatters.js';
+import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
+import { getModelApiClient } from '../api/modelApiFactory.js';
+import { state } from '../state/index.js';
+import { MODEL_TYPES } from '../api/apiConfig.js';
+import { showToast } from '../utils/uiHelpers.js';
 
 export class ImportManager {
     constructor() {
@@ -20,6 +25,8 @@ export class ImportManager {
         this.downloadableLoRAs = [];
         this.recipeId = null;
         this.importMode = 'url'; // Default mode: 'url' or 'upload'
+        this.useDefaultPath = false;
+        this.apiClient = null;
         
         // Initialize sub-managers
         this.loadingManager = new LoadingManager();
@@ -27,10 +34,12 @@ export class ImportManager {
         this.imageProcessor = new ImageProcessor(this);
         this.recipeDataManager = new RecipeDataManager(this);
         this.downloadManager = new DownloadManager(this);
-        this.folderBrowser = new FolderBrowser(this);
+        this.folderTreeManager = new FolderTreeManager();
         
         // Bind methods
         this.formatFileSize = formatFileSize;
+        this.updateTargetPath = this.updateTargetPath.bind(this);
+        this.handleToggleDefaultPath = this.toggleDefaultPath.bind(this);
     }
 
     showImportModal(recipeData = null, recipeId = null) {
@@ -40,8 +49,12 @@ export class ImportManager {
                 console.error('Import modal element not found');
                 return;
             }
+            this.initializeEventHandlers();
             this.initialized = true;
         }
+        
+        // Get API client for LoRAs
+        this.apiClient = getModelApiClient(MODEL_TYPES.LORA);
         
         // Reset state
         this.resetSteps();
@@ -52,14 +65,12 @@ export class ImportManager {
         
         // Show modal
         modalManager.showModal('importModal', null, () => {
-            this.folderBrowser.cleanup();
+            this.cleanupFolderBrowser();
             this.stepManager.removeInjectedStyles();
         });
-        
+
         // Verify visibility and focus on URL input
-        setTimeout(() => {
-            this.ensureModalVisible();
-            
+        setTimeout(() => {      
             // Ensure URL option is selected and focus on the input
             this.toggleImportMode('url');
             const urlInput = document.getElementById('imageUrlInput');
@@ -67,6 +78,14 @@ export class ImportManager {
                 urlInput.focus();
             }
         }, 50);
+    }
+
+    initializeEventHandlers() {
+        // Default path toggle handler
+        const useDefaultPathToggle = document.getElementById('importUseDefaultPath');
+        if (useDefaultPathToggle) {
+            useDefaultPathToggle.addEventListener('change', this.handleToggleDefaultPath);
+        }
     }
 
     resetSteps() {
@@ -93,6 +112,12 @@ export class ImportManager {
         const tagsContainer = document.getElementById('tagsContainer');
         if (tagsContainer) tagsContainer.innerHTML = '<div class="empty-tags">No tags added</div>';
         
+        // Clear folder path input
+        const folderPathInput = document.getElementById('importFolderPath');
+        if (folderPathInput) {
+            folderPathInput.value = '';
+        }
+        
         // Reset state variables
         this.recipeImage = null;
         this.recipeData = null;
@@ -100,33 +125,19 @@ export class ImportManager {
         this.recipeTags = [];
         this.missingLoras = [];
         this.downloadableLoRAs = [];
+        this.selectedFolder = '';
         
         // Reset import mode
         this.importMode = 'url';
         this.toggleImportMode('url');
         
-        // Reset folder browser
-        this.selectedFolder = '';
-        const folderBrowser = document.getElementById('importFolderBrowser');
-        if (folderBrowser) {
-            folderBrowser.querySelectorAll('.folder-item').forEach(f => 
-                f.classList.remove('selected'));
+        // Clear folder tree selection
+        if (this.folderTreeManager) {
+            this.folderTreeManager.clearSelection();
         }
         
-        // Clear missing LoRAs list
-        const missingLorasList = document.getElementById('missingLorasList');
-        if (missingLorasList) missingLorasList.innerHTML = '';
-        
-        // Reset total download size
-        const totalSizeDisplay = document.getElementById('totalDownloadSize');
-        if (totalSizeDisplay) totalSizeDisplay.textContent = 'Calculating...';
-        
-        // Remove warnings
-        const deletedLorasWarning = document.getElementById('deletedLorasWarning');
-        if (deletedLorasWarning) deletedLorasWarning.remove();
-        
-        const earlyAccessWarning = document.getElementById('earlyAccessWarning');
-        if (earlyAccessWarning) earlyAccessWarning.remove();
+        // Reset default path toggle
+        this.loadDefaultPathSetting();
         
         // Reset duplicate related properties
         this.duplicateRecipes = [];
@@ -204,7 +215,54 @@ export class ImportManager {
     }
 
     async proceedToLocation() {
-        await this.folderBrowser.proceedToLocation();
+        this.stepManager.showStep('locationStep');
+        
+        try {
+            // Fetch LoRA roots
+            const rootsData = await this.apiClient.fetchModelRoots();
+            const loraRoot = document.getElementById('importLoraRoot');
+            loraRoot.innerHTML = rootsData.roots.map(root => 
+                `<option value="${root}">${root}</option>`
+            ).join('');
+
+            // Set default root if available
+            const defaultRootKey = 'default_lora_root';
+            const defaultRoot = getStorageItem('settings', {})[defaultRootKey];
+            if (defaultRoot && rootsData.roots.includes(defaultRoot)) {
+                loraRoot.value = defaultRoot;
+            }
+
+            // Set autocomplete="off" on folderPath input
+            const folderPathInput = document.getElementById('importFolderPath');
+            if (folderPathInput) {
+                folderPathInput.setAttribute('autocomplete', 'off');
+            }
+
+            // Setup folder tree manager
+            this.folderTreeManager.init({
+                elementsPrefix: 'import',
+                onPathChange: (path) => {
+                    this.selectedFolder = path;
+                    this.updateTargetPath();
+                }
+            });
+            
+            // Initialize folder tree
+            await this.initializeFolderTree();
+            
+            // Setup lora root change handler
+            loraRoot.addEventListener('change', async () => {
+                await this.initializeFolderTree();
+                this.updateTargetPath();
+            });
+            
+            // Load default path setting for LoRAs
+            this.loadDefaultPathSetting();
+            
+            this.updateTargetPath();
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
     }
 
     backToUpload() {
@@ -234,25 +292,107 @@ export class ImportManager {
         await this.downloadManager.saveRecipe();
     }
 
-    updateTargetPath() {
-        this.folderBrowser.updateTargetPath();
+    loadDefaultPathSetting() {
+        const storageKey = 'use_default_path_loras';
+        this.useDefaultPath = getStorageItem(storageKey, false);
+        
+        const toggleInput = document.getElementById('importUseDefaultPath');
+        if (toggleInput) {
+            toggleInput.checked = this.useDefaultPath;
+            this.updatePathSelectionUI();
+        }
     }
 
-    ensureModalVisible() {
-        const importModal = document.getElementById('importModal');
-        if (!importModal) {
-            console.error('Import modal element not found');
-            return false;
+    toggleDefaultPath(event) {
+        this.useDefaultPath = event.target.checked;
+        
+        // Save to localStorage for LoRAs
+        const storageKey = 'use_default_path_loras';
+        setStorageItem(storageKey, this.useDefaultPath);
+        
+        this.updatePathSelectionUI();
+        this.updateTargetPath();
+    }
+
+    updatePathSelectionUI() {
+        const manualSelection = document.getElementById('importManualPathSelection');
+        
+        // Always show manual path selection, but disable/enable based on useDefaultPath
+        if (manualSelection) {
+            manualSelection.style.display = 'block';
+            if (this.useDefaultPath) {
+                manualSelection.classList.add('disabled');
+                // Disable all inputs and buttons inside manualSelection
+                manualSelection.querySelectorAll('input, select, button').forEach(el => {
+                    el.disabled = true;
+                    el.tabIndex = -1;
+                });
+            } else {
+                manualSelection.classList.remove('disabled');
+                manualSelection.querySelectorAll('input, select, button').forEach(el => {
+                    el.disabled = false;
+                    el.tabIndex = 0;
+                });
+            }
         }
         
-        // Check if modal is actually visible
-        const modalDisplay = window.getComputedStyle(importModal).display;
-        if (modalDisplay !== 'block') {
-            console.error('Import modal is not visible, display: ' + modalDisplay);
-            return false;
+        // Always update the main path display
+        this.updateTargetPath();
+    }
+
+    async initializeFolderTree() {
+        try {
+            // Fetch unified folder tree
+            const treeData = await this.apiClient.fetchUnifiedFolderTree();
+            
+            if (treeData.success) {
+                // Load tree data into folder tree manager
+                await this.folderTreeManager.loadTree(treeData.tree);
+            } else {
+                console.error('Failed to fetch folder tree:', treeData.error);
+                showToast('Failed to load folder tree', 'error');
+            }
+        } catch (error) {
+            console.error('Error initializing folder tree:', error);
+            showToast('Error loading folder tree', 'error');
         }
+    }
+
+    cleanupFolderBrowser() {
+        if (this.folderTreeManager) {
+            this.folderTreeManager.destroy();
+        }
+    }
+
+    updateTargetPath() {
+        const pathDisplay = document.getElementById('importTargetPathDisplay');
+        const loraRoot = document.getElementById('importLoraRoot').value;
         
-        return true;
+        let fullPath = loraRoot || 'Select a LoRA root directory';
+        
+        if (loraRoot) {
+            if (this.useDefaultPath) {
+                // Show actual template path
+                try {
+                    const templates = state.global.settings.download_path_templates;
+                    const template = templates.lora;
+                    fullPath += `/${template}`;
+                } catch (error) {
+                    console.error('Failed to fetch template:', error);
+                    fullPath += '/[Auto-organized by path template]';
+                }
+            } else {
+                // Show manual path selection
+                const selectedPath = this.folderTreeManager ? this.folderTreeManager.getSelectedPath() : '';
+                if (selectedPath) {
+                    fullPath += '/' + selectedPath;
+                }
+            }
+        }
+
+        if (pathDisplay) {
+            pathDisplay.innerHTML = `<span class="path-text">${fullPath}</span>`;
+        }
     }
 
     /**

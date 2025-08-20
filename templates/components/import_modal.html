@@ -1,7 +1,9 @@
 <div id="importModal" class="modal">
     <div class="modal-content">
-        <button class="close" onclick="modalManager.closeModal('importModal')">&times;</button>
-        <h2>Import Recipe</h2>
+        <div class="modal-header">
+            <button class="close" onclick="modalManager.closeModal('importModal')">&times;</button>
+            <h2>Import Recipe</h2>
+        </div>
         
         <!-- Step 1: Upload Image or Input URL -->
         <div class="import-step" id="uploadStep">
@@ -99,42 +101,59 @@
         <!-- Step 3: Download Location (if needed) -->
         <div class="import-step" id="locationStep" style="display: none;">
             <div class="location-selection">
-                <!-- Improved missing LoRAs summary section -->
-                <div class="missing-loras-summary">
-                    <div class="summary-header">
-                        <h3>Missing LoRAs <span class="lora-count-badge">(0)</span> <span id="totalDownloadSize" class="total-size-badge">Calculating...</span></h3>
-                        <button id="toggleMissingLorasList" class="toggle-list-btn">
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                    </div>
-                    <div id="missingLorasList" class="missing-loras-list collapsed">
-                        <!-- Missing LoRAs will be populated here -->
-                    </div>
-                </div>
-
-                <!-- Move path preview to top -->
+                <!-- Path preview with inline toggle -->
                 <div class="path-preview">
-                    <label>Download Location Preview:</label>
+                    <div class="path-preview-header">
+                        <label>Download Location Preview:</label>
+                        <div class="inline-toggle-container" title="When enabled, files are automatically organized using configured path templates">
+                            <span class="inline-toggle-label">Use Default Path</span>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="importUseDefaultPath">
+                                <label for="importUseDefaultPath" class="toggle-slider"></label>
+                            </div>
+                        </div>
+                    </div>
                     <div class="path-display" id="importTargetPathDisplay">
                         <span class="path-text">Select a LoRA root directory</span>
                     </div>
                 </div>
 
+                <!-- Model Root Selection -->
                 <div class="input-group">
-                    <label>Select LoRA Root:</label>
+                    <label for="importLoraRoot">Select LoRA Root:</label>
                     <select id="importLoraRoot"></select>
                 </div>
-                
-                <div class="input-group">
-                    <label>Target Folder:</label>
-                    <div class="folder-browser" id="importFolderBrowser">
-                        <!-- Folders will be populated here -->
+
+                <!-- Manual Path Selection -->
+                <div class="manual-path-selection" id="importManualPathSelection">
+                    <!-- Path input with autocomplete -->
+                    <div class="input-group">
+                        <label for="importFolderPath">Target Folder Path:</label>
+                        <div class="path-input-container">
+                            <input type="text" id="importFolderPath" placeholder="Type folder path or select from tree below..." autocomplete="off" />
+                            <button type="button" id="importCreateFolderBtn" class="create-folder-btn" title="Create new folder">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="path-suggestions" id="importPathSuggestions" style="display: none;"></div>
                     </div>
-                </div>
-                
-                <div class="input-group">
-                    <label for="importNewFolder">New Folder (optional):</label>
-                    <input type="text" id="importNewFolder" placeholder="Enter folder name">
+                    
+                    <!-- Breadcrumb navigation -->
+                    <div class="breadcrumb-nav" id="importBreadcrumbNav">
+                        <span class="breadcrumb-item root" data-path="">
+                            <i class="fas fa-home"></i> Root
+                        </span>
+                    </div>
+                    
+                    <!-- Hierarchical folder tree -->
+                    <div class="input-group">
+                        <label>Browse Folders:</label>
+                        <div class="folder-tree-container">
+                            <div class="folder-tree" id="importFolderTree">
+                                <!-- Tree will be loaded dynamically -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             

@@ -121,15 +121,6 @@
     gap: 4px;
 }
 
-/* Folder Browser Styles */
-.folder-browser {
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-xs);
-    padding: var(--space-1);
-    max-height: 200px;
-    overflow-y: auto;
-}
-
 .folder-item {
     padding: 8px;
     cursor: pointer;

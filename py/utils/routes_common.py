@@ -628,15 +628,6 @@ class ModelRouteUtils:
             if not result.get('success', False):
                 error_message = result.get('error', 'Unknown error')
                 
-                # Return 401 for early access errors
-                if 'early access' in error_message.lower():
-                    logger.warning(f"Early access download failed: {error_message}")
-                    return web.json_response({
-                        'success': False,
-                        'error': f"Early Access Restriction: {error_message}",
-                        'download_id': download_id
-                    }, status=401)
-                
                 return web.json_response({
                     'success': False,
                     'error': error_message,

@@ -23,7 +23,7 @@ body.modal-open {
     position: relative;
     max-width: 800px;
     height: auto;
-    max-height: calc(90vh - 48px); /* Adjust to account for header height */
+    /* max-height: calc(90vh - 48px); */
     margin: 1rem auto; /* Keep reduced top margin */
     background: var(--lora-surface);
     border-radius: var(--border-radius-base);

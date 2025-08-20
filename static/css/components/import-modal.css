@@ -337,72 +337,7 @@
     margin-left: 8px;
 }
 
-/* Location Selection Styles */
-.location-selection {
-    margin: var(--space-2) 0;
-    padding: var(--space-2);
-    background: var(--lora-surface);
-    border-radius: var(--border-radius-sm);
-}
-
-/* Reuse folder browser and path preview styles from download-modal.css */
-.folder-browser {
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-xs);
-    padding: var(--space-1);
-    max-height: 200px;
-    overflow-y: auto;
-}
-
-.folder-item {
-    padding: 8px;
-    cursor: pointer;
-    border-radius: var(--border-radius-xs);
-    transition: background-color 0.2s;
-}
-
-.folder-item:hover {
-    background: var(--lora-surface);
-}
-
-.folder-item.selected {
-    background: oklch(var(--lora-accent) / 0.1);
-    border: 1px solid var(--lora-accent);
-}
-
-.path-preview {
-    margin-bottom: var(--space-3);
-    padding: var(--space-2);
-    background: var(--bg-color);
-    border-radius: var(--border-radius-sm);
-    border: 1px dashed var(--border-color);
-}
-
-.path-preview label {
-    display: block;
-    margin-bottom: 8px;
-    color: var(--text-color);
-    font-size: 0.9em;
-    opacity: 0.8;
-}
-
-.path-display {
-    padding: var(--space-1);
-    color: var(--text-color);
-    font-family: monospace;
-    font-size: 0.9em;
-    line-height: 1.4;
-    white-space: pre-wrap;
-    word-break: break-all;
-    opacity: 0.85;
-    background: var(--lora-surface);
-    border-radius: var(--border-radius-xs);
-}
-
 /* Input Group Styles */
-.input-group {
-    margin-bottom: var(--space-2);
-}
 
 .input-with-button {
     display: flex;
@@ -428,22 +363,6 @@
 
 .input-with-button button:hover {
     background: oklch(from var(--lora-accent) l c h / 0.9);
-}
-
-.input-group label {
-    display: block;
-    margin-bottom: 8px;
-    color: var(--text-color);
-}
-
-.input-group input,
-.input-group select {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-xs);
-    background: var(--bg-color);
-    color: var(--text-color);
 }
 
 /* Dark theme adjustments */

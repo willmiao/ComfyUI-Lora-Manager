@@ -1,6 +1,7 @@
 import { showToast } from '../../utils/uiHelpers.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { MODEL_TYPES } from '../../api/apiConfig.js';
+import { getStorageItem } from '../../utils/storageHelpers.js';
 
 export class DownloadManager {
     constructor(importManager) {
@@ -120,14 +121,9 @@ export class DownloadManager {
         }
         
         // Build target path
-        let targetPath = loraRoot;
+        let targetPath = '';
         if (this.importManager.selectedFolder) {
-            targetPath += '/' + this.importManager.selectedFolder;
-        }
-        
-        const newFolder = document.getElementById('importNewFolder')?.value?.trim();
-        if (newFolder) {
-            targetPath += '/' + newFolder;
+            targetPath = this.importManager.selectedFolder;
         }
         
         // Generate a unique ID for this batch download
@@ -189,6 +185,8 @@ export class DownloadManager {
                 }
             }
         };
+
+        const useDefaultPaths = getStorageItem('use_default_path_loras', false);
         
         for (let i = 0; i < this.importManager.downloadableLoRAs.length; i++) {
             const lora = this.importManager.downloadableLoRAs[i];
@@ -207,6 +205,7 @@ export class DownloadManager {
                     lora.id,
                     loraRoot,
                     targetPath.replace(loraRoot + '/', ''),
+                    useDefaultPaths,
                     batchDownloadId
                 );
                 
