@@ -274,9 +274,9 @@ class DownloadManager:
                     from datetime import datetime
                     date_obj = datetime.fromisoformat(early_access_date.replace('Z', '+00:00'))
                     formatted_date = date_obj.strftime('%Y-%m-%d')
-                    early_access_msg = f"This model requires early access payment (until {formatted_date}). "
+                    early_access_msg = f"This model requires payment (until {formatted_date}). "
                 except:
-                    early_access_msg = "This model requires early access payment. "
+                    early_access_msg = "This model requires payment. "
                 
                 early_access_msg += "Please ensure you have purchased early access and are logged in to Civitai."
                 logger.warning(f"Early access model detected: {version_info.get('name', 'Unknown')}")
@@ -320,6 +320,10 @@ class DownloadManager:
                 model_type=model_type,
                 download_id=download_id
             )
+
+            # If early_access_msg exists and download failed, replace error message
+            if 'early_access_msg' in locals() and not result.get('success', False):
+                result['error'] = early_access_msg
 
             return result
 
@@ -392,11 +396,13 @@ class DownloadManager:
         try:
             civitai_client = await self._get_civitai_client()
             save_path = metadata.file_path
+            part_path = save_path + '.part'
             metadata_path = os.path.splitext(save_path)[0] + '.metadata.json'
             
-            # Store file path in active_downloads for potential cleanup
+            # Store file paths in active_downloads for potential cleanup
             if download_id and download_id in self._active_downloads:
                 self._active_downloads[download_id]['file_path'] = save_path
+                self._active_downloads[download_id]['part_path'] = part_path
 
             # Download preview image if available
             images = version_info.get('images', [])
@@ -463,10 +469,22 @@ class DownloadManager:
             )
 
             if not success:
-                # Clean up files on failure
-                for path in [save_path, metadata_path, metadata.preview_url]:
+                # Clean up files on failure, but preserve .part file for resume
+                cleanup_files = [metadata_path]
+                if metadata.preview_url and os.path.exists(metadata.preview_url):
+                    cleanup_files.append(metadata.preview_url)
+                
+                for path in cleanup_files:
                     if path and os.path.exists(path):
-                        os.remove(path)
+                        try:
+                            os.remove(path)
+                        except Exception as e:
+                            logger.warning(f"Failed to cleanup file {path}: {e}")
+                
+                # Log but don't remove .part file to allow resume
+                if os.path.exists(part_path):
+                    logger.info(f"Preserving partial download for resume: {part_path}")
+                
                 return {'success': False, 'error': result}
 
             # 4. Update file information (size and modified time)
@@ -502,10 +520,18 @@ class DownloadManager:
 
         except Exception as e:
             logger.error(f"Error in _execute_download: {e}", exc_info=True)
-            # Clean up partial downloads
-            for path in [save_path, metadata_path]:
+            # Clean up partial downloads except .part file
+            cleanup_files = [metadata_path]
+            if hasattr(metadata, 'preview_url') and metadata.preview_url and os.path.exists(metadata.preview_url):
+                cleanup_files.append(metadata.preview_url)
+            
+            for path in cleanup_files:
                 if path and os.path.exists(path):
-                    os.remove(path)
+                    try:
+                        os.remove(path)
+                    except Exception as e:
+                        logger.warning(f"Failed to cleanup file {path}: {e}")
+            
             return {'success': False, 'error': str(e)}
 
     async def _handle_download_progress(self, file_progress: float, progress_callback):
@@ -547,35 +573,48 @@ class DownloadManager:
             except (asyncio.CancelledError, asyncio.TimeoutError):
                 pass
             
-            # Clean up partial downloads
+            # Clean up ALL files including .part when user cancels
             download_info = self._active_downloads.get(download_id)
-            if download_info and 'file_path' in download_info:
-                # Delete the partial file
-                file_path = download_info['file_path']
-                if os.path.exists(file_path):
-                    try:
-                        os.unlink(file_path)
-                        logger.debug(f"Deleted partial download: {file_path}")
-                    except Exception as e:
-                        logger.error(f"Error deleting partial file: {e}")
+            if download_info:
+                # Delete the main file
+                if 'file_path' in download_info:
+                    file_path = download_info['file_path']
+                    if os.path.exists(file_path):
+                        try:
+                            os.unlink(file_path)
+                            logger.debug(f"Deleted cancelled download: {file_path}")
+                        except Exception as e:
+                            logger.error(f"Error deleting file: {e}")
+                
+                # Delete the .part file (only on user cancellation)
+                if 'part_path' in download_info:
+                    part_path = download_info['part_path']
+                    if os.path.exists(part_path):
+                        try:
+                            os.unlink(part_path)
+                            logger.debug(f"Deleted partial download: {part_path}")
+                        except Exception as e:
+                            logger.error(f"Error deleting part file: {e}")
                 
                 # Delete metadata file if exists
-                metadata_path = os.path.splitext(file_path)[0] + '.metadata.json'
-                if os.path.exists(metadata_path):
-                    try:
-                        os.unlink(metadata_path)
-                    except Exception as e:
-                        logger.error(f"Error deleting metadata file: {e}")
-
-                # Delete preview file if exists (.webp or .mp4)
-                for preview_ext in ['.webp', '.mp4']:
-                    preview_path = os.path.splitext(file_path)[0] + preview_ext
-                    if os.path.exists(preview_path):
+                if 'file_path' in download_info:
+                    file_path = download_info['file_path']
+                    metadata_path = os.path.splitext(file_path)[0] + '.metadata.json'
+                    if os.path.exists(metadata_path):
                         try:
-                            os.unlink(preview_path)
-                            logger.debug(f"Deleted preview file: {preview_path}")
+                            os.unlink(metadata_path)
                         except Exception as e:
-                            logger.error(f"Error deleting preview file: {e}")
+                            logger.error(f"Error deleting metadata file: {e}")
+
+                    # Delete preview file if exists (.webp or .mp4)
+                    for preview_ext in ['.webp', '.mp4']:
+                        preview_path = os.path.splitext(file_path)[0] + preview_ext
+                        if os.path.exists(preview_path):
+                            try:
+                                os.unlink(preview_path)
+                                logger.debug(f"Deleted preview file: {preview_path}")
+                            except Exception as e:
+                                logger.error(f"Error deleting preview file: {e}")
             
             return {'success': True, 'message': 'Download cancelled successfully'}
         except Exception as e:
