@@ -6,6 +6,7 @@ import { showToast } from "./utils.js";
 // Define target nodes and their widget configurations
 const PATH_CORRECTION_TARGETS = [
     { comfyClass: "CheckpointLoaderSimple", widgetName: "ckpt_name", modelType: "checkpoints" },
+    { comfyClass: "Checkpoint Loader with Name (Image Saver)", widgetName: "ckpt_name", modelType: "checkpoints" },
     { comfyClass: "UNETLoader", widgetName: "unet_name", modelType: "checkpoints" },
     { comfyClass: "LoraLoader", widgetName: "lora_name", modelType: "loras" },
     { comfyClass: "easy loraStack", widgetNamePattern: "lora_\\d+_name", modelType: "loras" }
