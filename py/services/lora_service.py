@@ -167,6 +167,7 @@ class LoraService(BaseModelService):
             if file_path:
                 # Convert to forward slashes and extract relative path
                 file_path_normalized = file_path.replace('\\', '/')
+                relative_path = relative_path.replace('\\', '/')
                 # Find the relative path part by looking for the relative_path in the full path
                 if file_path_normalized.endswith(relative_path) or relative_path in file_path_normalized:
                     return lora.get('usage_tips', '')

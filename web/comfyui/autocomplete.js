@@ -248,7 +248,7 @@ class AutoComplete {
         if (!this.previewTooltip) return;
         
         // Extract filename without extension for preview
-        const fileName = relativePath.split('/').pop();
+        const fileName = relativePath.split(/[/\\]/).pop();
         const loraName = fileName.replace(/\.(safetensors|ckpt|pt|bin)$/i, '');
         
         // Get item position for tooltip positioning
@@ -380,7 +380,7 @@ class AutoComplete {
     
     async insertSelection(relativePath) {
         // Extract just the filename for LoRA name
-        const fileName = relativePath.split('/').pop().replace(/\.(safetensors|ckpt|pt|bin)$/i, '');
+        const fileName = relativePath.split(/[/\\]/).pop().replace(/\.(safetensors|ckpt|pt|bin)$/i, '');
         
         // Get usage tips and extract strength
         let strength = 1.0; // Default strength

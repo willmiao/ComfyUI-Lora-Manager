@@ -398,12 +398,12 @@ class BaseModelService(ABC):
             relative_path = None
             for root in model_roots:
                 # Normalize paths for comparison
-                normalized_root = os.path.normpath(root).replace(os.sep, '/')
-                normalized_file = os.path.normpath(file_path).replace(os.sep, '/')
+                normalized_root = os.path.normpath(root)
+                normalized_file = os.path.normpath(file_path)
                 
                 if normalized_file.startswith(normalized_root):
-                    # Remove root and leading slash to get relative path
-                    relative_path = normalized_file[len(normalized_root):].lstrip('/')
+                    # Remove root and leading separator to get relative path
+                    relative_path = normalized_file[len(normalized_root):].lstrip(os.sep)
                     break
             
             if relative_path and search_lower in relative_path.lower():
