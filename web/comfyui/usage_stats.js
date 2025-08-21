@@ -1,6 +1,15 @@
 // ComfyUI extension to track model usage statistics
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
+import { showToast } from "./utils.js";
+
+// Define target nodes and their widget configurations
+const PATH_CORRECTION_TARGETS = [
+    { comfyClass: "CheckpointLoaderSimple", widgetName: "ckpt_name", modelType: "checkpoints" },
+    { comfyClass: "UNETLoader", widgetName: "unet_name", modelType: "checkpoints" },
+    { comfyClass: "LoraLoader", widgetName: "lora_name", modelType: "loras" },
+    { comfyClass: "easy loraStack", widgetNamePattern: "lora_\\d+_name", modelType: "loras" }
+];
 
 // Register the extension
 app.registerExtension({
@@ -79,6 +88,101 @@ app.registerExtension({
             }
         } catch (error) {
             console.error("Error refreshing registry:", error);
+        }
+    },
+
+    async loadedGraphNode(node) {
+        // Check if this node type needs path correction
+        const target = PATH_CORRECTION_TARGETS.find(t => t.comfyClass === node.comfyClass);
+        if (!target) {
+            return;
+        }
+        
+        await this.correctNodePaths(node, target);
+    },
+    
+    async correctNodePaths(node, target) {
+        try {
+            if (target.widgetNamePattern) {
+                // Handle pattern-based widget names (like lora_1_name, lora_2_name, etc.)
+                const pattern = new RegExp(target.widgetNamePattern);
+                const widgetIndexes = [];
+                
+                if (node.widgets) {
+                    node.widgets.forEach((widget, index) => {
+                        if (pattern.test(widget.name)) {
+                            widgetIndexes.push(index);
+                        }
+                    });
+                }
+                
+                // Process each matching widget
+                for (const widgetIndex of widgetIndexes) {
+                    await this.correctWidgetPath(node, widgetIndex, target.modelType);
+                }
+            } else {
+                // Handle single widget name
+                if (node.widgets) {
+                    const widgetIndex = node.widgets.findIndex(w => w.name === target.widgetName);
+                    if (widgetIndex !== -1) {
+                        await this.correctWidgetPath(node, widgetIndex, target.modelType);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error correcting node paths:", error);
+        }
+    },
+    
+    async correctWidgetPath(node, widgetIndex, modelType) {
+        if (!node.widgets_values || !node.widgets_values[widgetIndex]) {
+            return;
+        }
+        
+        const currentPath = node.widgets_values[widgetIndex];
+        if (!currentPath || typeof currentPath !== 'string') {
+            return;
+        }
+        
+        // Extract filename from path (after last separator)
+        const fileName = currentPath.split(/[/\\]/).pop();
+        if (!fileName) {
+            return;
+        }
+        
+        try {
+            // Search for current relative path
+            const response = await api.fetchApi(`/${modelType}/relative-paths?search=${encodeURIComponent(fileName)}&limit=2`);
+            const data = await response.json();
+            
+            if (!data.success || !data.relative_paths || data.relative_paths.length === 0) {
+                return;
+            }
+            
+            const foundPaths = data.relative_paths;
+            const firstPath = foundPaths[0];
+            
+            // Check if we need to update the path
+            if (firstPath !== currentPath) {
+                // Update the widget value
+                // node.widgets_values[widgetIndex] = firstPath;
+                node.widgets[widgetIndex].value = firstPath;
+                
+                if (foundPaths.length === 1) {
+                    // Single match found - success
+                    showToast(`Updated path for ${fileName}: ${firstPath}`, 'info');
+                } else {
+                    // Multiple matches found - warning
+                    showToast(`Multiple paths found for ${fileName}, using: ${firstPath}`, 'warning');
+                }
+                
+                // Mark node as modified
+                if (node.setDirtyCanvas) {
+                    node.setDirtyCanvas(true);
+                }
+            }
+        } catch (error) {
+            console.error(`Error correcting path for ${fileName}:`, error);
         }
     }
 });

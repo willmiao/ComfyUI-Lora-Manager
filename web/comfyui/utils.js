@@ -23,6 +23,28 @@ export function getComfyUIFrontendVersion() {
   return window['__COMFYUI_FRONTEND_VERSION__'] || "0.0.0";
 }
 
+/**
+ * Show a toast notification
+ * @param {string} message - The message to display
+ * @param {string} type - The type of toast (success, error, info, warning)
+ */
+export function showToast(message, type = 'info') {
+    if (app && app.extensionManager && app.extensionManager.toast) {
+        app.extensionManager.toast.add({
+            severity: type,
+            summary: type.charAt(0).toUpperCase() + type.slice(1),
+            detail: message,
+            life: 3000
+        });
+    } else {
+        console.log(`${type.toUpperCase()}: ${message}`);
+        // Fallback alert for critical errors only
+        if (type === 'error') {
+            alert(message);
+        }
+    }
+}
+
 // Dynamically import the appropriate widget based on app version
 export async function dynamicImportByVersion(latestModulePath, legacyModulePath) {
   // Parse app version and compare with 1.12.6 (version when tags widget API changed)
