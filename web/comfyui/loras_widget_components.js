@@ -147,15 +147,22 @@ export function createDropIndicator() {
 
 // Function to update entry selection state
 export function updateEntrySelection(entryEl, isSelected) {
-  const baseColor = entryEl.dataset.active === 'true' ? 
+  // Remove any conflicting styles first
+  entryEl.style.removeProperty('border');
+  entryEl.style.removeProperty('box-shadow');
+
+  const baseColor = entryEl.dataset.active === 'true' ?
     "rgba(45, 55, 72, 0.7)" : "rgba(35, 40, 50, 0.5)";
-  const selectedColor = entryEl.dataset.active === 'true' ? 
+  const selectedColor = entryEl.dataset.active === 'true' ?
     "rgba(66, 153, 225, 0.3)" : "rgba(66, 153, 225, 0.2)";
+
+  // Update data attribute to track selection state
+  entryEl.dataset.selected = isSelected ? 'true' : 'false';
   
   if (isSelected) {
-    entryEl.style.backgroundColor = selectedColor;
-    entryEl.style.border = "1px solid rgba(66, 153, 225, 0.6)";
-    entryEl.style.boxShadow = "0 0 0 1px rgba(66, 153, 225, 0.3)";
+    entryEl.style.setProperty('backgroundColor', selectedColor, 'important');
+    entryEl.style.setProperty('border', "1px solid rgba(66, 153, 225, 0.6)", 'important');
+    entryEl.style.setProperty('box-shadow', "0 0 0 1px rgba(66, 153, 225, 0.3)", 'important');
   } else {
     entryEl.style.backgroundColor = baseColor;
     entryEl.style.border = "1px solid transparent";

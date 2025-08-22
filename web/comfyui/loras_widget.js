@@ -452,9 +452,6 @@ export function addLorasWidget(node, name, opts, callback) {
 
       container.appendChild(loraEl);
 
-      // Update selection state
-      updateEntrySelection(loraEl, name === selectedLora);
-
       // If expanded, show the clip entry
       if (isExpanded) {
         totalVisibleEntries++;
@@ -638,6 +635,13 @@ export function addLorasWidget(node, name, opts, callback) {
     // Calculate height based on number of loras and fixed sizes
     const calculatedHeight = CONTAINER_PADDING + HEADER_HEIGHT + (Math.min(totalVisibleEntries, 12) * LORA_ENTRY_HEIGHT);
     updateWidgetHeight(container, calculatedHeight, defaultHeight, node);
+
+    // After all LoRA elements are created, apply selection state as the last step
+    // This ensures the selection state is not overwritten
+    container.querySelectorAll('.comfy-lora-entry').forEach(entry => {
+      const entryLoraName = entry.dataset.loraName;
+      updateEntrySelection(entry, entryLoraName === selectedLora);
+    });
   };
 
   // Store the value in a variable to avoid recursion
