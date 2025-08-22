@@ -45,6 +45,9 @@ export const BASE_MODELS = {
     WAN_VIDEO_14B_T2V: "Wan Video 14B t2v",
     WAN_VIDEO_14B_I2V_480P: "Wan Video 14B i2v 480p",
     WAN_VIDEO_14B_I2V_720P: "Wan Video 14B i2v 720p",
+    WAN_VIDEO_2_2_TI2V_5B: "Wan Video 2.2 TI2V-5B",
+    WAN_VIDEO_2_2_T2V_A14B: "Wan Video 2.2 T2V-A14B",
+    WAN_VIDEO_2_2_I2V_A14B: "Wan Video 2.2 I2V-A14B",
     HUNYUAN_VIDEO: "Hunyuan Video",
     // Default
     UNKNOWN: "Other"
