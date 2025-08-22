@@ -8,6 +8,11 @@ const PATH_CORRECTION_TARGETS = [
     { comfyClass: "CheckpointLoaderSimple", widgetName: "ckpt_name", modelType: "checkpoints" },
     { comfyClass: "Checkpoint Loader with Name (Image Saver)", widgetName: "ckpt_name", modelType: "checkpoints" },
     { comfyClass: "UNETLoader", widgetName: "unet_name", modelType: "checkpoints" },
+    { comfyClass: "easy comfyLoader", widgetName: "ckpt_name", modelType: "checkpoints" },
+    { comfyClass: "CheckpointLoader|pysssss", widgetName: "ckpt_name", modelType: "checkpoints" },
+    { comfyClass: "Efficient Loader", widgetName: "ckpt_name", modelType: "checkpoints" },
+    { comfyClass: "UnetLoaderGGUF", widgetName: "unet_name", modelType: "checkpoints" },
+    { comfyClass: "UnetLoaderGGUFAdvanced", widgetName: "unet_name", modelType: "checkpoints" },
     { comfyClass: "LoraLoader", widgetName: "lora_name", modelType: "loras" },
     { comfyClass: "easy loraStack", widgetNamePattern: "lora_\\d+_name", modelType: "loras" }
 ];
