@@ -115,6 +115,10 @@ export function createDragHandle() {
   handle.onmousedown = () => {
     handle.style.cursor = "grabbing";
   };
+
+  handle.onmouseup = () => {
+    handle.style.cursor = "grab";
+  };
   
   return handle;
 }

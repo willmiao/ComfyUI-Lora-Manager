@@ -291,7 +291,6 @@ export function addLorasWidget(node, name, opts, callback) {
         whiteSpace: "nowrap",
         color: active ? "rgba(226, 232, 240, 0.9)" : "rgba(226, 232, 240, 0.6)",
         fontSize: "13px",
-        cursor: "pointer",
         userSelect: "none",
         WebkitUserSelect: "none",
         MozUserSelect: "none",

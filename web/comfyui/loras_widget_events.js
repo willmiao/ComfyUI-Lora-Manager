@@ -304,6 +304,9 @@ export function initReorderDrag(dragHandle, loraName, widget, renderFunction) {
   });
   
   document.addEventListener('mouseup', (e) => {
+    // Always reset cursor regardless of isDragging state
+    document.body.style.cursor = '';
+    
     if (!isDragging || !draggedElement) return;
     
     const targetIndex = getDropTargetIndex(container, e.clientY);
@@ -356,9 +359,12 @@ export function initReorderDrag(dragHandle, loraName, widget, renderFunction) {
       dropIndicator = null;
     }
     
-    // Reset cursor
-    document.body.style.cursor = '';
     container = null;
+  });
+  
+  // Also reset cursor when mouse leaves the document
+  document.addEventListener('mouseleave', () => {
+    document.body.style.cursor = '';
   });
 }
 
