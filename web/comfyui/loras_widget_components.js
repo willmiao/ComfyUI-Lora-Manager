@@ -403,3 +403,86 @@ export class PreviewTooltip {
     this.element.remove();
   }
 }
+
+// Function to create expand/collapse button
+export function createExpandButton(isExpanded, onClick) {
+  const button = document.createElement("button");
+  button.className = "comfy-lora-expand-button";
+  button.type = "button";
+  
+  Object.assign(button.style, {
+    width: "20px",
+    height: "20px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    userSelect: "none",
+    fontSize: "10px",
+    color: "rgba(226, 232, 240, 0.7)",
+    backgroundColor: "rgba(45, 55, 72, 0.3)",
+    border: "1px solid rgba(226, 232, 240, 0.2)",
+    borderRadius: "3px",
+    transition: "all 0.2s ease",
+    marginLeft: "6px",
+    marginRight: "4px",
+    flexShrink: "0",
+    outline: "none"
+  });
+  
+  // Set icon based on expanded state
+  updateExpandButtonState(button, isExpanded);
+  
+  button.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClick(!isExpanded);
+  });
+  
+  // Add hover effects
+  button.addEventListener("mouseenter", () => {
+    button.style.backgroundColor = "rgba(66, 153, 225, 0.2)";
+    button.style.borderColor = "rgba(66, 153, 225, 0.4)";
+    button.style.color = "rgba(226, 232, 240, 0.9)";
+    button.style.transform = "scale(1.05)";
+  });
+  
+  button.addEventListener("mouseleave", () => {
+    button.style.backgroundColor = "rgba(45, 55, 72, 0.3)";
+    button.style.borderColor = "rgba(226, 232, 240, 0.2)";
+    button.style.color = "rgba(226, 232, 240, 0.7)";
+    button.style.transform = "scale(1)";
+  });
+  
+  // Add active (pressed) state
+  button.addEventListener("mousedown", () => {
+    button.style.transform = "scale(0.95)";
+    button.style.backgroundColor = "rgba(66, 153, 225, 0.3)";
+  });
+  
+  button.addEventListener("mouseup", () => {
+    button.style.transform = "scale(1.05)"; // Return to hover state
+  });
+  
+  // Add focus state for keyboard accessibility
+  button.addEventListener("focus", () => {
+    button.style.boxShadow = "0 0 0 2px rgba(66, 153, 225, 0.5)";
+  });
+  
+  button.addEventListener("blur", () => {
+    button.style.boxShadow = "none";
+  });
+  
+  return button;
+}
+
+// Helper function to update expand button state
+export function updateExpandButtonState(button, isExpanded) {
+  if (isExpanded) {
+    button.innerHTML = "▼"; // Down arrow for expanded
+    button.title = "Collapse clip controls";
+  } else {
+    button.innerHTML = "▶"; // Right arrow for collapsed
+    button.title = "Expand clip controls";
+  }
+}

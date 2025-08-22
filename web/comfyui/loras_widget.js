@@ -1,4 +1,4 @@
-import { createToggle, createArrowButton, PreviewTooltip, createDragHandle, updateEntrySelection } from "./loras_widget_components.js";
+import { createToggle, createArrowButton, PreviewTooltip, createDragHandle, updateEntrySelection, createExpandButton, updateExpandButtonState } from "./loras_widget_components.js";
 import { 
   parseLoraValue, 
   formatLoraValue, 
@@ -215,7 +215,8 @@ export function addLorasWidget(node, name, opts, callback) {
         if (e.target.closest('.comfy-lora-toggle') || 
             e.target.closest('input') || 
             e.target.closest('.comfy-lora-arrow') ||
-            e.target.closest('.comfy-lora-drag-handle')) {
+            e.target.closest('.comfy-lora-drag-handle') ||
+            e.target.closest('.comfy-lora-expand-button')) {
           return;
         }
         
@@ -223,41 +224,6 @@ export function addLorasWidget(node, name, opts, callback) {
         e.stopPropagation();
         selectLora(name);
         container.focus(); // Focus container for keyboard events
-      });
-
-      // Add double-click handler to toggle clip entry
-      loraEl.addEventListener('dblclick', (e) => {
-        // Skip if clicking on toggle or strength control areas
-        if (e.target.closest('.comfy-lora-toggle') || 
-            e.target.closest('input') || 
-            e.target.closest('.comfy-lora-arrow')) {
-          return;
-        }
-        
-        // Prevent default behavior
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Toggle the clip entry expanded state
-        const lorasData = parseLoraValue(widget.value);
-        const loraIndex = lorasData.findIndex(l => l.name === name);
-        
-        if (loraIndex >= 0) {
-          // Explicitly toggle the expansion state
-          const currentExpanded = shouldShowClipEntry(lorasData[loraIndex]);
-          lorasData[loraIndex].expanded = !currentExpanded;
-          
-          // If collapsing, set clipStrength = strength
-          if (!lorasData[loraIndex].expanded) {
-            lorasData[loraIndex].clipStrength = lorasData[loraIndex].strength;
-          } 
-          
-          // Update the widget value
-          widget.value = formatLoraValue(lorasData);
-          
-          // Re-render to show/hide clip entry
-          renderLoras(widget.value, widget);
-        }
       });
 
       // Create drag handle for reordering
@@ -280,11 +246,34 @@ export function addLorasWidget(node, name, opts, callback) {
         }
       });
 
+      // Create expand button
+      const expandButton = createExpandButton(isExpanded, (shouldExpand) => {
+        // Toggle the clip entry expanded state
+        const lorasData = parseLoraValue(widget.value);
+        const loraIndex = lorasData.findIndex(l => l.name === name);
+        
+        if (loraIndex >= 0) {
+          // Set the expansion state
+          lorasData[loraIndex].expanded = shouldExpand;
+          
+          // If collapsing, set clipStrength = strength
+          if (!shouldExpand) {
+            lorasData[loraIndex].clipStrength = lorasData[loraIndex].strength;
+          } 
+          
+          // Update the widget value
+          widget.value = formatLoraValue(lorasData);
+          
+          // Re-render to show/hide clip entry
+          renderLoras(widget.value, widget);
+        }
+      });
+
       // Create name display
       const nameEl = document.createElement("div");
       nameEl.textContent = name;
       Object.assign(nameEl.style, {
-        marginLeft: "10px",
+        marginLeft: "4px",
         flex: "1",
         overflow: "hidden",
         textOverflow: "ellipsis",
@@ -296,14 +285,6 @@ export function addLorasWidget(node, name, opts, callback) {
         MozUserSelect: "none",
         msUserSelect: "none",
       });
-
-      // Add expand indicator to name element
-      const expandIndicator = document.createElement("span");
-      expandIndicator.textContent = isExpanded ? " ▼" : " ▶";
-      expandIndicator.style.opacity = "0.7";
-      expandIndicator.style.fontSize = "9px";
-      expandIndicator.style.marginLeft = "4px";
-      nameEl.appendChild(expandIndicator);
 
       // Move preview tooltip events to nameEl instead of loraEl
       nameEl.addEventListener('mouseenter', async (e) => {
@@ -463,6 +444,7 @@ export function addLorasWidget(node, name, opts, callback) {
       
       leftSection.appendChild(dragHandle); // Add drag handle first
       leftSection.appendChild(toggle);
+      leftSection.appendChild(expandButton); // Add expand button
       leftSection.appendChild(nameEl);
       
       loraEl.appendChild(leftSection);

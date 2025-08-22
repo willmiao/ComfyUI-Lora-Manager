@@ -120,7 +120,9 @@ export function initDrag(dragEl, name, widget, isClipStrength = false, previewTo
     // Skip if clicking on toggle or strength control areas
     if (e.target.closest('.comfy-lora-toggle') || 
         e.target.closest('input') || 
-        e.target.closest('.comfy-lora-arrow')) {
+        e.target.closest('.comfy-lora-arrow') ||
+        e.target.closest('.comfy-lora-drag-handle') ||
+        e.target.closest('.comfy-lora-expand-button')) {
       return;
     }
     
