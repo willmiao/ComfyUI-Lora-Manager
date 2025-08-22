@@ -110,6 +110,43 @@ class SettingsManager:
             Template string for the model type, defaults to '{base_model}/{first_tag}'
         """
         templates = self.settings.get('download_path_templates', {})
+        
+        # Handle edge case where templates might be stored as JSON string
+        if isinstance(templates, str):
+            try:
+                # Try to parse JSON string
+                parsed_templates = json.loads(templates)
+                if isinstance(parsed_templates, dict):
+                    # Update settings with parsed dictionary
+                    self.settings['download_path_templates'] = parsed_templates
+                    self._save_settings()
+                    templates = parsed_templates
+                    logger.info("Successfully parsed download_path_templates from JSON string")
+                else:
+                    raise ValueError("Parsed JSON is not a dictionary")
+            except (json.JSONDecodeError, ValueError) as e:
+                # If parsing fails, set default values
+                logger.warning(f"Failed to parse download_path_templates JSON string: {e}. Setting default values.")
+                default_template = '{base_model}/{first_tag}'
+                templates = {
+                    'lora': default_template,
+                    'checkpoint': default_template,
+                    'embedding': default_template
+                }
+                self.settings['download_path_templates'] = templates
+                self._save_settings()
+        
+        # Ensure templates is a dictionary
+        if not isinstance(templates, dict):
+            default_template = '{base_model}/{first_tag}'
+            templates = {
+                'lora': default_template,
+                'checkpoint': default_template,
+                'embedding': default_template
+            }
+            self.settings['download_path_templates'] = templates
+            self._save_settings()
+        
         return templates.get(model_type, '{base_model}/{first_tag}')
 
 settings = SettingsManager()
