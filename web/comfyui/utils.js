@@ -25,21 +25,53 @@ export function getComfyUIFrontendVersion() {
 
 /**
  * Show a toast notification
- * @param {string} message - The message to display
- * @param {string} type - The type of toast (success, error, info, warning)
+ * @param {Object|string} options - Toast options object or message string for backward compatibility
+ * @param {string} [options.severity] - Message severity level (success, info, warn, error, secondary, contrast)
+ * @param {string} [options.summary] - Short title for the toast
+ * @param {any} [options.detail] - Detailed message content
+ * @param {boolean} [options.closable] - Whether user can close the toast (default: true)
+ * @param {number} [options.life] - Duration in milliseconds before auto-closing
+ * @param {string} [options.group] - Group identifier for managing related toasts
+ * @param {any} [options.styleClass] - Style class of the message
+ * @param {any} [options.contentStyleClass] - Style class of the content
+ * @param {string} [type] - Deprecated: severity type for backward compatibility
  */
-export function showToast(message, type = 'info') {
+export function showToast(options, type = 'info') {
+    // Handle backward compatibility: showToast(message, type)
+    if (typeof options === 'string') {
+        options = {
+            detail: options,
+            severity: type
+        };
+    }
+    
+    // Set defaults
+    const toastOptions = {
+        severity: options.severity || 'info',
+        summary: options.summary,
+        detail: options.detail,
+        closable: options.closable !== false, // default to true
+        life: options.life,
+        group: options.group,
+        styleClass: options.styleClass,
+        contentStyleClass: options.contentStyleClass
+    };
+    
+    // Remove undefined properties
+    Object.keys(toastOptions).forEach(key => {
+        if (toastOptions[key] === undefined) {
+            delete toastOptions[key];
+        }
+    });
+    
     if (app && app.extensionManager && app.extensionManager.toast) {
-        app.extensionManager.toast.add({
-            severity: type,
-            summary: type.charAt(0).toUpperCase() + type.slice(1),
-            detail: message,
-            life: 3000
-        });
+        app.extensionManager.toast.add(toastOptions);
     } else {
-        console.log(`${type.toUpperCase()}: ${message}`);
+        const message = toastOptions.detail || toastOptions.summary || 'No message';
+        const severity = toastOptions.severity.toUpperCase();
+        console.log(`${severity}: ${message}`);
         // Fallback alert for critical errors only
-        if (type === 'error') {
+        if (toastOptions.severity === 'error') {
             alert(message);
         }
     }

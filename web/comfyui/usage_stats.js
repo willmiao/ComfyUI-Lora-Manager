@@ -171,10 +171,20 @@ app.registerExtension({
                 
                 if (foundPaths.length === 1) {
                     // Single match found - success
-                    showToast(`Updated path for ${fileName}: ${firstPath}`, 'info');
+                    showToast({
+                        severity: 'info',
+                        summary: 'LoRA Manager Path Correction',
+                        detail: `Updated path for ${fileName}: ${firstPath}`,
+                        life: 5000
+                    });
                 } else {
                     // Multiple matches found - warning
-                    showToast(`Multiple paths found for ${fileName}, using: ${firstPath}`, 'warning');
+                    showToast({
+                        severity: 'warn',
+                        summary: 'LoRA Manager Path Correction',
+                        detail: `Multiple paths found for ${fileName}, using: ${firstPath}`,
+                        life: 5000
+                    });
                 }
                 
                 // Mark node as modified
