@@ -644,6 +644,7 @@ NODE_EXTRACTORS = {
     "KSamplerAdvanced": KSamplerAdvancedExtractor,
     "SamplerCustom": KSamplerAdvancedExtractor,
     "SamplerCustomAdvanced": SamplerCustomAdvancedExtractor,
+    "ClownsharKSampler_Beta": SamplerExtractor,
     "TSC_KSampler": TSCKSamplerExtractor,   # Efficient Nodes
     "TSC_KSamplerAdvanced": TSCKSamplerAdvancedExtractor,  # Efficient Nodes
     "KSamplerBasicPipe": KSamplerBasicPipeExtractor,    # comfyui-impact-pack
