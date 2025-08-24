@@ -585,6 +585,7 @@ class ModelScanner:
                             if entry.is_file(follow_symlinks=True) and any(entry.name.endswith(ext) for ext in self.file_extensions):
                                 file_path = entry.path.replace(os.sep, "/")
                                 result = await self._process_model_file(file_path, original_root)
+                                # Only add to models if result is not None (skip corrupted metadata)
                                 if result:
                                     models.append(result)
                                 await asyncio.sleep(0)
@@ -624,7 +625,12 @@ class ModelScanner:
 
     async def _process_model_file(self, file_path: str, root_path: str) -> Dict:
         """Process a single model file and return its metadata"""
-        metadata = await MetadataManager.load_metadata(file_path, self.model_class)
+        metadata, should_skip = await MetadataManager.load_metadata(file_path, self.model_class)
+    
+        if should_skip:
+            # Metadata file exists but cannot be parsed - skip this model
+            logger.warning(f"Skipping model {file_path} due to corrupted metadata file")
+            return None
         
         if metadata is None:
             civitai_info_path = f"{os.path.splitext(file_path)[0]}.civitai.info"
@@ -640,7 +646,7 @@ class ModelScanner:
                     
                         metadata = self.model_class.from_civitai_info(version_info, file_info, file_path)
                         metadata.preview_url = find_preview_file(file_name, os.path.dirname(file_path))
-                        await MetadataManager.save_metadata(file_path, metadata, True)
+                        await MetadataManager.save_metadata(file_path, metadata)
                         logger.debug(f"Created metadata from .civitai.info for {file_path}")
                 except Exception as e:
                     logger.error(f"Error creating metadata from .civitai.info for {file_path}: {e}")
@@ -667,7 +673,7 @@ class ModelScanner:
                                 metadata.modelDescription = version_info['model']['description']
                         
                         # Save the updated metadata
-                        await MetadataManager.save_metadata(file_path, metadata, True)
+                        await MetadataManager.save_metadata(file_path, metadata)
                         logger.debug(f"Updated metadata with civitai info for {file_path}")
                     except Exception as e:
                         logger.error(f"Error restoring civitai data from .civitai.info for {file_path}: {e}")
@@ -747,7 +753,7 @@ class ModelScanner:
 
                     model_data['civitai']['creator'] = model_metadata['creator']
                     
-                    await MetadataManager.save_metadata(file_path, model_data, True)
+                    await MetadataManager.save_metadata(file_path, model_data)
         except Exception as e:
             logger.error(f"Failed to update metadata from Civitai for {file_path}: {e}")
 

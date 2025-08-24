@@ -348,7 +348,7 @@ class LoraRoutes(BaseModelRoutes):
                             # Store creator in the civitai nested structure
                             metadata['civitai']['creator'] = creator
                             
-                            await MetadataManager.save_metadata(file_path, metadata, True)
+                            await MetadataManager.save_metadata(file_path, metadata)
                         except Exception as e:
                             logger.error(f"Error saving model metadata: {e}")
             

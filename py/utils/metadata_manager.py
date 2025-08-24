@@ -1,7 +1,6 @@
 from datetime import datetime
 import os
 import json
-import shutil
 import logging
 from typing import Dict, Optional, Type, Union
 
@@ -17,7 +16,7 @@ class MetadataManager:
     
     This class is responsible for:
     1. Loading metadata safely with fallback mechanisms
-    2. Saving metadata with atomic operations and backups
+    2. Saving metadata with atomic operations
     3. Creating default metadata for models
     4. Handling unknown fields gracefully
     """
@@ -25,81 +24,44 @@ class MetadataManager:
     @staticmethod
     async def load_metadata(file_path: str, model_class: Type[BaseModelMetadata] = LoraMetadata) -> Optional[BaseModelMetadata]:
         """
-        Load metadata with robust error handling and data preservation.
+        Load metadata safely.
         
-        Args:
-            file_path: Path to the model file
-            model_class: Class to instantiate (LoraMetadata, CheckpointMetadata, etc.)
-            
         Returns:
-            BaseModelMetadata instance or None if file doesn't exist
+            tuple: (metadata, should_skip)
+            - metadata: BaseModelMetadata instance or None
+            - should_skip: True if corrupted metadata file exists and model should be skipped
         """
         metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
-        backup_path = f"{metadata_path}.bak"
         
-        # Try loading the main metadata file
-        if os.path.exists(metadata_path):
-            try:
-                with open(metadata_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                
-                # Create model instance
-                metadata = model_class.from_dict(data)
-                    
-                # Normalize paths
-                await MetadataManager._normalize_metadata_paths(metadata, file_path)
-                
-                return metadata
-                
-            except json.JSONDecodeError:
-                # JSON parsing error - try to restore from backup
-                logger.warning(f"Invalid JSON in metadata file: {metadata_path}")
-                return await MetadataManager._restore_from_backup(backup_path, file_path, model_class)
-                
-            except Exception as e:
-                # Other errors might be due to unknown fields or schema changes
-                logger.error(f"Error loading metadata from {metadata_path}: {str(e)}")
-                return await MetadataManager._restore_from_backup(backup_path, file_path, model_class)
+        # Check if metadata file exists
+        if not os.path.exists(metadata_path):
+            return None, False
         
-        return None
-    
-    @staticmethod
-    async def _restore_from_backup(backup_path: str, file_path: str, model_class: Type[BaseModelMetadata]) -> Optional[BaseModelMetadata]:
-        """
-        Try to restore metadata from backup file
-        
-        Args:
-            backup_path: Path to backup file
-            file_path: Path to the original model file
-            model_class: Class to instantiate
+        try:
+            with open(metadata_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
             
-        Returns:
-            BaseModelMetadata instance or None if restoration fails
-        """
-        if os.path.exists(backup_path):
-            try:
-                logger.info(f"Attempting to restore metadata from backup: {backup_path}")
-                with open(backup_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
+            # Create model instance
+            metadata = model_class.from_dict(data)
                 
-                # Process data similarly to normal loading
-                metadata = model_class.from_dict(data)
-                await MetadataManager._normalize_metadata_paths(metadata, file_path)
-                return metadata
-            except Exception as e:
-                logger.error(f"Failed to restore from backup: {str(e)}")
-        
-        return None
+            # Normalize paths
+            await MetadataManager._normalize_metadata_paths(metadata, file_path)
+            
+            return metadata, False
+            
+        except (json.JSONDecodeError, Exception) as e:
+            error_type = "Invalid JSON" if isinstance(e, json.JSONDecodeError) else "Parse error"
+            logger.error(f"{error_type} in metadata file: {metadata_path}. Error: {str(e)}. Skipping model to preserve existing data.")
+            return None, True  # should_skip = True
     
     @staticmethod
-    async def save_metadata(path: str, metadata: Union[BaseModelMetadata, Dict], create_backup: bool = False) -> bool:
+    async def save_metadata(path: str, metadata: Union[BaseModelMetadata, Dict]) -> bool:
         """
-        Save metadata with atomic write operations and backup creation.
+        Save metadata with atomic write operations.
         
         Args:
           path: Path to the model file or directly to the metadata file
           metadata: Metadata to save (either BaseModelMetadata object or dict)
-          create_backup: Whether to create a new backup of existing file if a backup doesn't already exist
           
         Returns:
           bool: Success or failure
@@ -112,19 +74,8 @@ class MetadataManager:
             file_path = path
             metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
         temp_path = f"{metadata_path}.tmp"
-        backup_path = f"{metadata_path}.bak"
         
         try:
-            # Create backup if file exists and either:
-            # 1. create_backup is True, OR
-            # 2. backup file doesn't already exist
-            if os.path.exists(metadata_path) and (create_backup or not os.path.exists(backup_path)):
-                try:
-                    shutil.copy2(metadata_path, backup_path)
-                    logger.debug(f"Created metadata backup at: {backup_path}")
-                except Exception as e:
-                    logger.warning(f"Failed to create metadata backup: {str(e)}")
-            
             # Convert to dict if needed
             if isinstance(metadata, BaseModelMetadata):
                 metadata_dict = metadata.to_dict()
@@ -240,7 +191,7 @@ class MetadataManager:
             # await MetadataManager._enrich_metadata(metadata, real_path)
             
             # Save the created metadata
-            await MetadataManager.save_metadata(file_path, metadata, create_backup=False)
+            await MetadataManager.save_metadata(file_path, metadata)
             
             return metadata
             
@@ -310,4 +261,4 @@ class MetadataManager:
         
         # If path attributes were changed, save the metadata back to disk
         if need_update:
-            await MetadataManager.save_metadata(file_path, metadata, create_backup=False)
+            await MetadataManager.save_metadata(file_path, metadata)

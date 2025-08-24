@@ -491,7 +491,7 @@ class DownloadManager:
             metadata.update_file_info(save_path)
 
             # 5. Final metadata update
-            await MetadataManager.save_metadata(save_path, metadata, True)
+            await MetadataManager.save_metadata(save_path, metadata)
 
             # 6. Update cache based on model type
             if model_type == "checkpoint":
