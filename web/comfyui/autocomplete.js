@@ -256,7 +256,7 @@ class AutoComplete {
         const x = rect.right + 10;
         const y = rect.top;
         
-        this.previewTooltip.show(loraName, x, y);
+        this.previewTooltip.show(loraName, x, y, true); // Pass true for fromAutocomplete flag
     }
     
     hidePreview() {

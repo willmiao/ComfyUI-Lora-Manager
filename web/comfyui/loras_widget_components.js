@@ -312,8 +312,6 @@ export class PreviewTooltip {
         mediaElement.controls = false;
       }
 
-      mediaElement.src = data.preview_url;
-
       // Create name label with absolute positioning
       const nameLabel = document.createElement('div');
       nameLabel.textContent = loraName;
@@ -339,12 +337,43 @@ export class PreviewTooltip {
       mediaContainer.appendChild(nameLabel);
       this.element.appendChild(mediaContainer);
       
-      // Add fade-in effect
+      // Show element with opacity 0 first to get dimensions
       this.element.style.opacity = '0';
       this.element.style.display = 'block';
-      this.position(x, y);
       
+      // Wait for media to load before positioning
+      const waitForLoad = () => {
+        return new Promise((resolve) => {
+          if (isVideo) {
+            if (mediaElement.readyState >= 2) { // HAVE_CURRENT_DATA
+              resolve();
+            } else {
+              mediaElement.addEventListener('loadeddata', resolve, { once: true });
+              mediaElement.addEventListener('error', resolve, { once: true });
+            }
+          } else {
+            if (mediaElement.complete) {
+              resolve();
+            } else {
+              mediaElement.addEventListener('load', resolve, { once: true });
+              mediaElement.addEventListener('error', resolve, { once: true });
+            }
+          }
+          
+          // Set a timeout to prevent hanging
+          setTimeout(resolve, 1000);
+        });
+      };
+
+      // Set source after setting up load listeners
+      mediaElement.src = data.preview_url;
+      
+      // Wait for content to load, then position and show
+      await waitForLoad();
+      
+      // Small delay to ensure layout is complete
       requestAnimationFrame(() => {
+        this.position(x, y);
         this.element.style.transition = 'opacity 0.15s ease';
         this.element.style.opacity = '1';
       });
