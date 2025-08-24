@@ -34,6 +34,11 @@ Enhance your Civitai browsing experience with our companion browser extension! S
 
 ## Release Notes
 
+### v0.8.30
+* **Automatic Model Path Correction** - Added auto-correction for model paths in built-in nodes such as Load Checkpoint, Load Diffusion Model, Load LoRA, and other custom nodes with similar functionality. Workflows containing outdated or incorrect model paths will now be automatically updated to reflect the current location of your models.
+* **Node UI Enhancements** - Improved node interface for a smoother and more intuitive user experience.
+* **Bug Fixes** - Addressed various bugs to enhance stability and reliability.
+
 ### v0.8.29
 * **Enhanced Recipe Imports** - Improved recipe importing with new target folder selection, featuring path input autocomplete and interactive folder tree navigation. Added a "Use Default Path" option when downloading missing LoRAs.
 * **WanVideo Lora Select Node Update** - Updated the WanVideo Lora Select node with a 'merge_loras' option to match the counterpart node in the WanVideoWrapper node package.
