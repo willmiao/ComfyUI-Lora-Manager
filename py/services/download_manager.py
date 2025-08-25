@@ -389,13 +389,39 @@ class DownloadManager:
         return formatted_path
 
     async def _execute_download(self, download_url: str, save_dir: str, 
-                              metadata, version_info: Dict, 
-                              relative_path: str, progress_callback=None,
-                              model_type: str = "lora", download_id: str = None) -> Dict:
+                          metadata, version_info: Dict, 
+                          relative_path: str, progress_callback=None,
+                          model_type: str = "lora", download_id: str = None) -> Dict:
         """Execute the actual download process including preview images and model files"""
         try:
             civitai_client = await self._get_civitai_client()
-            save_path = metadata.file_path
+            
+            # Extract original filename details
+            original_filename = os.path.basename(metadata.file_path)
+            base_name, extension = os.path.splitext(original_filename)
+            
+            # Check for filename conflicts and generate unique filename if needed
+            # Use the hash from metadata for conflict resolution
+            def hash_provider():
+                return metadata.sha256
+            
+            unique_filename = metadata.generate_unique_filename(
+                save_dir, 
+                base_name, 
+                extension, 
+                hash_provider=hash_provider
+            )
+            
+            # Update paths if filename changed
+            if unique_filename != original_filename:
+                logger.info(f"Filename conflict detected. Changing '{original_filename}' to '{unique_filename}'")
+                save_path = os.path.join(save_dir, unique_filename)
+                # Update metadata with new file path and name
+                metadata.file_path = save_path.replace(os.sep, '/')
+                metadata.file_name = os.path.splitext(unique_filename)[0]
+            else:
+                save_path = metadata.file_path
+                
             part_path = save_path + '.part'
             metadata_path = os.path.splitext(save_path)[0] + '.metadata.json'
             

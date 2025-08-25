@@ -193,20 +193,6 @@ class CivitaiClient:
                     else:
                         logger.error(f"Download failed for {url} with status {response.status}")
                         return False, f"Download failed with status {response.status}"
-
-                    # Get filename from content-disposition header (only on first attempt)
-                    if retry_count == 0:
-                        content_disposition = response.headers.get('Content-Disposition')
-                        parsed_filename = self._parse_content_disposition(content_disposition)
-                        if parsed_filename:
-                            filename = parsed_filename
-                            # Update paths with correct filename
-                            save_path = os.path.join(save_dir, filename)
-                            new_part_path = save_path + '.part'
-                            # Rename existing part file if filename changed
-                            if part_path != new_part_path and os.path.exists(part_path):
-                                os.rename(part_path, new_part_path)
-                            part_path = new_part_path
                     
                     # Get total file size for progress calculation (if not set from Content-Range)
                     if total_size == 0:
