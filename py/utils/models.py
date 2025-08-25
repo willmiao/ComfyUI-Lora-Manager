@@ -87,14 +87,14 @@ class BaseModelMetadata:
             self.file_name = os.path.splitext(os.path.basename(file_path))[0]
 
     @staticmethod
-    def generate_unique_filename(target_dir: str, base_name: str, extension: str, sha256_hash: str) -> str:
+    def generate_unique_filename(target_dir: str, base_name: str, extension: str, hash_provider: callable = None) -> str:
         """Generate a unique filename to avoid conflicts
         
         Args:
             target_dir: Target directory path
             base_name: Base filename without extension
             extension: File extension including the dot
-            sha256_hash: SHA256 hash of the file for generating short hash
+            hash_provider: A callable that returns the SHA256 hash when needed
             
         Returns:
             str: Unique filename that doesn't conflict with existing files
@@ -106,6 +106,12 @@ class BaseModelMetadata:
         if not os.path.exists(target_path):
             return original_filename
             
+        # Only compute hash when needed
+        if hash_provider:
+            sha256_hash = hash_provider()
+        else:
+            sha256_hash = "0000"
+        
         # Generate short hash (first 4 characters of SHA256)
         short_hash = sha256_hash[:4] if sha256_hash else "0000"
         

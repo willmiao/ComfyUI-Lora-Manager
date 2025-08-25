@@ -817,22 +817,13 @@ class ModelScanner:
             
             os.makedirs(target_path, exist_ok=True)
             
-            # Get SHA256 hash of the source file for conflict resolution
-            source_hash = self.get_hash_by_path(source_path)
-            if not source_hash:
-                # Calculate hash if not in cache
-                try:
-                    import hashlib
-                    with open(source_path, 'rb') as f:
-                        source_hash = hashlib.sha256(f.read()).hexdigest().lower()
-                except Exception as e:
-                    logger.error(f"Failed to calculate hash for {source_path}: {e}")
-                    source_hash = "unknown"
+            def get_source_hash():
+                return self.get_hash_by_path(source_path)
             
             # Check for filename conflicts and auto-rename if necessary
             from ..utils.models import BaseModelMetadata
             final_filename = BaseModelMetadata.generate_unique_filename(
-                target_path, base_name, file_ext, source_hash
+                target_path, base_name, file_ext, get_source_hash
             )
             
             target_file = os.path.join(target_path, final_filename).replace(os.sep, '/')
@@ -977,8 +968,16 @@ class ModelScanner:
         
     def get_hash_by_path(self, file_path: str) -> Optional[str]:
         """Get hash for a model by its file path"""
-        return self._hash_index.get_hash(file_path)
+        if self._cache is None or not self._cache.raw_data:
+            return None
+            
+        # Iterate through cache data to find matching file path
+        for model_data in self._cache.raw_data:
+            if model_data.get('file_path') == file_path:
+                return model_data.get('sha256')
         
+        return None
+    
     def get_hash_by_filename(self, filename: str) -> Optional[str]:
         """Get hash for a model by its filename without path"""
         return self._hash_index.get_hash_by_filename(filename)
