@@ -27,33 +27,34 @@ def find_preview_file(base_name: str, dir_path: str) -> str:
         full_pattern = os.path.join(dir_path, f"{base_name}{ext}")
         if os.path.exists(full_pattern):
             # Check if this is an image and not already webp
-            if ext.lower().endswith(('.jpg', '.jpeg', '.png')) and not ext.lower().endswith('.webp'):
-                try:
-                    # Optimize the image to webp format
-                    webp_path = os.path.join(dir_path, f"{base_name}.webp")
+            # TODO: disable the optimization for now, maybe add a config option later
+            # if ext.lower().endswith(('.jpg', '.jpeg', '.png')) and not ext.lower().endswith('.webp'):
+            #     try:
+            #         # Optimize the image to webp format
+            #         webp_path = os.path.join(dir_path, f"{base_name}.webp")
                     
-                    # Use ExifUtils to optimize the image
-                    with open(full_pattern, 'rb') as f:
-                        image_data = f.read()
+            #         # Use ExifUtils to optimize the image
+            #         with open(full_pattern, 'rb') as f:
+            #             image_data = f.read()
                     
-                    optimized_data, _ = ExifUtils.optimize_image(
-                        image_data=image_data,
-                        target_width=CARD_PREVIEW_WIDTH,
-                        format='webp',
-                        quality=85,
-                        preserve_metadata=False
-                    )
+            #         optimized_data, _ = ExifUtils.optimize_image(
+            #             image_data=image_data,
+            #             target_width=CARD_PREVIEW_WIDTH,
+            #             format='webp',
+            #             quality=85,
+            #             preserve_metadata=False
+            #         )
                     
-                    # Save the optimized webp file
-                    with open(webp_path, 'wb') as f:
-                        f.write(optimized_data)
+            #         # Save the optimized webp file
+            #         with open(webp_path, 'wb') as f:
+            #             f.write(optimized_data)
                     
-                    logger.debug(f"Optimized preview image from {full_pattern} to {webp_path}")
-                    return webp_path.replace(os.sep, "/")
-                except Exception as e:
-                    logger.error(f"Error optimizing preview image {full_pattern}: {e}")
-                    # Fall back to original file if optimization fails
-                    return full_pattern.replace(os.sep, "/")
+            #         logger.debug(f"Optimized preview image from {full_pattern} to {webp_path}")
+            #         return webp_path.replace(os.sep, "/")
+            #     except Exception as e:
+            #         logger.error(f"Error optimizing preview image {full_pattern}: {e}")
+            #         # Fall back to original file if optimization fails
+            #         return full_pattern.replace(os.sep, "/")
             
             # Return the original path for webp images or non-image files
             return full_pattern.replace(os.sep, "/")
