@@ -982,6 +982,7 @@ class ModelRouteUtils:
             # Rename all files
             renamed_files = []
             new_metadata_path = None
+            new_preview = None
             
             for old_path, pattern in existing_files:
                 # Get the file extension like .safetensors or .metadata.json

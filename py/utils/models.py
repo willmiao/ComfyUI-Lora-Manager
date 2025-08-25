@@ -83,6 +83,44 @@ class BaseModelMetadata:
             self.size = os.path.getsize(file_path)
             self.modified = os.path.getmtime(file_path)
             self.file_path = file_path.replace(os.sep, '/')
+            # Update file_name when file_path changes
+            self.file_name = os.path.splitext(os.path.basename(file_path))[0]
+
+    @staticmethod
+    def generate_unique_filename(target_dir: str, base_name: str, extension: str, sha256_hash: str) -> str:
+        """Generate a unique filename to avoid conflicts
+        
+        Args:
+            target_dir: Target directory path
+            base_name: Base filename without extension
+            extension: File extension including the dot
+            sha256_hash: SHA256 hash of the file for generating short hash
+            
+        Returns:
+            str: Unique filename that doesn't conflict with existing files
+        """
+        original_filename = f"{base_name}{extension}"
+        target_path = os.path.join(target_dir, original_filename)
+        
+        # If no conflict, return original filename
+        if not os.path.exists(target_path):
+            return original_filename
+            
+        # Generate short hash (first 4 characters of SHA256)
+        short_hash = sha256_hash[:4] if sha256_hash else "0000"
+        
+        # Try with short hash suffix
+        unique_filename = f"{base_name}-{short_hash}{extension}"
+        unique_path = os.path.join(target_dir, unique_filename)
+        
+        # If still conflicts, add incremental number
+        counter = 1
+        while os.path.exists(unique_path):
+            unique_filename = f"{base_name}-{short_hash}-{counter}{extension}"
+            unique_path = os.path.join(target_dir, unique_filename)
+            counter += 1
+            
+        return unique_filename
 
 @dataclass
 class LoraMetadata(BaseModelMetadata):

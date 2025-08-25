@@ -792,8 +792,16 @@ class ModelScanner:
             logger.error(f"Error adding model to cache: {e}")
             return False
     
-    async def move_model(self, source_path: str, target_path: str) -> bool:
-        """Move a model and its associated files to a new location"""
+    async def move_model(self, source_path: str, target_path: str) -> Optional[str]:
+        """Move a model and its associated files to a new location
+        
+        Args:
+            source_path: Original file path
+            target_path: Target directory path
+            
+        Returns:
+            Optional[str]: New file path if successful, None if failed
+        """
         try:
             source_path = source_path.replace(os.sep, '/')
             target_path = target_path.replace(os.sep, '/')
@@ -802,14 +810,37 @@ class ModelScanner:
             
             if not file_ext or file_ext.lower() not in self.file_extensions:
                 logger.error(f"Invalid file extension for model: {file_ext}")
-                return False
+                return None
                 
             base_name = os.path.splitext(os.path.basename(source_path))[0]
             source_dir = os.path.dirname(source_path)
             
             os.makedirs(target_path, exist_ok=True)
             
-            target_file = os.path.join(target_path, f"{base_name}{file_ext}").replace(os.sep, '/')
+            # Get SHA256 hash of the source file for conflict resolution
+            source_hash = self.get_hash_by_path(source_path)
+            if not source_hash:
+                # Calculate hash if not in cache
+                try:
+                    import hashlib
+                    with open(source_path, 'rb') as f:
+                        source_hash = hashlib.sha256(f.read()).hexdigest().lower()
+                except Exception as e:
+                    logger.error(f"Failed to calculate hash for {source_path}: {e}")
+                    source_hash = "unknown"
+            
+            # Check for filename conflicts and auto-rename if necessary
+            from ..utils.models import BaseModelMetadata
+            final_filename = BaseModelMetadata.generate_unique_filename(
+                target_path, base_name, file_ext, source_hash
+            )
+            
+            target_file = os.path.join(target_path, final_filename).replace(os.sep, '/')
+            final_base_name = os.path.splitext(final_filename)[0]
+            
+            # Log if filename was changed due to conflict
+            if final_filename != f"{base_name}{file_ext}":
+                logger.info(f"Renamed {base_name}{file_ext} to {final_filename} to avoid filename conflict")
 
             real_source = os.path.realpath(source_path)
             real_target = os.path.realpath(target_file)
@@ -826,12 +857,17 @@ class ModelScanner:
                 for file in os.listdir(source_dir):
                     if file.startswith(base_name + ".") and file != os.path.basename(source_path):
                         source_file_path = os.path.join(source_dir, file)
+                        # Generate new filename with the same base name as the model file
+                        file_suffix = file[len(base_name):]  # Get the part after base_name (e.g., ".metadata.json", ".preview.png")
+                        new_associated_filename = f"{final_base_name}{file_suffix}"
+                        target_associated_path = os.path.join(target_path, new_associated_filename)
+                        
                         # Store metadata file path for special handling
                         if file == f"{base_name}.metadata.json":
                             source_metadata = source_file_path
-                            moved_metadata_path = os.path.join(target_path, file)
+                            moved_metadata_path = target_associated_path
                         else:
-                            files_to_move.append((source_file_path, os.path.join(target_path, file)))
+                            files_to_move.append((source_file_path, target_associated_path))
             except Exception as e:
                 logger.error(f"Error listing files in {source_dir}: {e}")
             
@@ -853,11 +889,11 @@ class ModelScanner:
             
             await self.update_single_model_cache(source_path, target_file, metadata)
             
-            return True
+            return target_file
             
         except Exception as e:
             logger.error(f"Error moving model: {e}", exc_info=True)
-            return False
+            return None
     
     async def _update_metadata_paths(self, metadata_path: str, model_path: str) -> Dict:
         """Update file paths in metadata file"""
@@ -866,12 +902,15 @@ class ModelScanner:
                 metadata = json.load(f)
             
             metadata['file_path'] = model_path.replace(os.sep, '/')
+            # Update file_name to match the new filename
+            metadata['file_name'] = os.path.splitext(os.path.basename(model_path))[0]
             
             if 'preview_url' in metadata and metadata['preview_url']:
                 preview_dir = os.path.dirname(model_path)
-                preview_name = os.path.splitext(os.path.basename(metadata['preview_url']))[0]
+                # Update preview filename to match the new base name
+                new_base_name = os.path.splitext(os.path.basename(model_path))[0]
                 preview_ext = os.path.splitext(metadata['preview_url'])[1]
-                new_preview_path = os.path.join(preview_dir, f"{preview_name}{preview_ext}")
+                new_preview_path = os.path.join(preview_dir, f"{new_base_name}{preview_ext}")
                 metadata['preview_url'] = new_preview_path.replace(os.sep, '/')
             
             await MetadataManager.save_metadata(metadata_path, metadata)

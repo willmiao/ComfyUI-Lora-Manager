@@ -684,19 +684,27 @@ class BaseModelRoutes(ABC):
             source_dir = os.path.dirname(file_path)
             if os.path.normpath(source_dir) == os.path.normpath(target_path):
                 logger.info(f"Source and target directories are the same: {source_dir}")
-                return web.json_response({'success': True, 'message': 'Source and target directories are the same'})
-            file_name = os.path.basename(file_path)
-            target_file_path = os.path.join(target_path, file_name).replace(os.sep, '/')
-            if os.path.exists(target_file_path):
                 return web.json_response({
-                    'success': False, 
-                    'error': f"Target file already exists: {target_file_path}"
-                }, status=409)
-            success = await self.service.scanner.move_model(file_path, target_path)
-            if success:
-                return web.json_response({'success': True, 'new_file_path': target_file_path})
+                    'success': True, 
+                    'message': 'Source and target directories are the same',
+                    'original_file_path': file_path,
+                    'new_file_path': file_path
+                })
+
+            new_file_path = await self.service.scanner.move_model(file_path, target_path)
+            if new_file_path:
+                return web.json_response({
+                    'success': True, 
+                    'original_file_path': file_path,
+                    'new_file_path': new_file_path
+                })
             else:
-                return web.Response(text='Failed to move model', status=500)
+                return web.json_response({
+                    'success': False,
+                    'error': 'Failed to move model',
+                    'original_file_path': file_path,
+                    'new_file_path': None
+                }, status=500)
         except Exception as e:
             logger.error(f"Error moving model: {e}", exc_info=True)
             return web.Response(text=str(e), status=500)
@@ -715,26 +723,28 @@ class BaseModelRoutes(ABC):
                 source_dir = os.path.dirname(file_path)
                 if os.path.normpath(source_dir) == os.path.normpath(target_path):
                     results.append({
-                        "path": file_path, 
+                        "original_file_path": file_path,
+                        "new_file_path": file_path,
                         "success": True, 
                         "message": "Source and target directories are the same"
                     })
                     continue
-                file_name = os.path.basename(file_path)
-                target_file_path = os.path.join(target_path, file_name).replace(os.sep, '/')
-                if os.path.exists(target_file_path):
+
+                new_file_path = await self.service.scanner.move_model(file_path, target_path)
+                if new_file_path:
                     results.append({
-                        "path": file_path, 
-                        "success": False, 
-                        "message": f"Target file already exists: {target_file_path}"
+                        "original_file_path": file_path,
+                        "new_file_path": new_file_path,
+                        "success": True,
+                        "message": "Success"
                     })
-                    continue
-                success = await self.service.scanner.move_model(file_path, target_path)
-                results.append({
-                    "path": file_path, 
-                    "success": success,
-                    "message": "Success" if success else "Failed to move model"
-                })
+                else:
+                    results.append({
+                        "original_file_path": file_path,
+                        "new_file_path": None,
+                        "success": False,
+                        "message": "Failed to move model"
+                    })
             success_count = sum(1 for r in results if r["success"])
             failure_count = len(results) - success_count
             return web.json_response({

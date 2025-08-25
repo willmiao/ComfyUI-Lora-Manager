@@ -177,40 +177,48 @@ class MoveManager {
         try {
             if (this.bulkFilePaths) {
                 // Bulk move mode
-                const movedFilePaths = await apiClient.moveBulkModels(this.bulkFilePaths, targetPath);
+                const results = await apiClient.moveBulkModels(this.bulkFilePaths, targetPath);
 
                 // Update virtual scroller if in active folder view
                 const pageState = getCurrentPageState();
                 if (pageState.activeFolder !== null && state.virtualScroller) {
-                    // Remove only successfully moved items
-                    movedFilePaths.forEach(newFilePath => {
-                        // Find original filePath by matching filename
-                        const filename = newFilePath.substring(newFilePath.lastIndexOf('/') + 1);
-                        const originalFilePath = this.bulkFilePaths.find(fp => fp.endsWith('/' + filename));
-                        if (originalFilePath) {
-                            state.virtualScroller.removeItemByFilePath(originalFilePath);
+                    // Remove items that were successfully moved
+                    results.forEach(result => {
+                        if (result.success) {
+                            state.virtualScroller.removeItemByFilePath(result.original_file_path);
                         }
                     });
                 } else {
-                    // Update the model cards' filepath in the DOM
-                    movedFilePaths.forEach(newFilePath => {
-                        const filename = newFilePath.substring(newFilePath.lastIndexOf('/') + 1);
-                        const originalFilePath = this.bulkFilePaths.find(fp => fp.endsWith('/' + filename));
-                        if (originalFilePath) {
-                            state.virtualScroller.updateSingleItem(originalFilePath, {file_path: newFilePath});
+                    // Update the model cards' filepath and filename in the DOM
+                    results.forEach(result => {
+                        if (result.success && result.new_file_path !== result.original_file_path) {
+                            const newFileName = result.new_file_path.substring(result.new_file_path.lastIndexOf('/') + 1);
+                            const baseFileName = newFileName.substring(0, newFileName.lastIndexOf('.'));
+                            
+                            state.virtualScroller.updateSingleItem(result.original_file_path, {
+                                file_path: result.new_file_path,
+                                file_name: baseFileName
+                            });
                         }
                     });
                 }
             } else {
                 // Single move mode
-                const newFilePath = await apiClient.moveSingleModel(this.currentFilePath, targetPath);
+                const result = await apiClient.moveSingleModel(this.currentFilePath, targetPath);
 
                 const pageState = getCurrentPageState();
-                if (newFilePath) {
+                if (result && result.new_file_path) {
                     if (pageState.activeFolder !== null && state.virtualScroller) {
                         state.virtualScroller.removeItemByFilePath(this.currentFilePath);
-                    } else {
-                        state.virtualScroller.updateSingleItem(this.currentFilePath, {file_path: newFilePath});
+                    } else if (result.new_file_path !== this.currentFilePath) {
+                        // Update both file_path and file_name if they changed
+                        const newFileName = result.new_file_path.substring(result.new_file_path.lastIndexOf('/') + 1);
+                        const baseFileName = newFileName.substring(0, newFileName.lastIndexOf('.'));
+                        
+                        state.virtualScroller.updateSingleItem(this.currentFilePath, {
+                            file_path: result.new_file_path,
+                            file_name: baseFileName
+                        });
                     }
                 }
             }

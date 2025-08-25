@@ -419,6 +419,7 @@ export class BaseModelApiClient {
                     };
                 });
                 
+                // Wait for WebSocket connection to establish
                 await new Promise((resolve, reject) => {
                     ws.onopen = resolve;
                     ws.onerror = reject;
@@ -434,6 +435,7 @@ export class BaseModelApiClient {
                     throw new Error('Failed to fetch metadata');
                 }
                 
+                // Wait for the operation to complete via WebSocket
                 await operationComplete;
 
                 resetAndReload(false);
@@ -749,7 +751,10 @@ export class BaseModelApiClient {
         }
 
         if (result.success) {
-            return result.new_file_path;
+            return {
+                original_file_path: result.original_file_path || filePath,
+                new_file_path: result.new_file_path
+            };
         }
         return null;
     }
@@ -785,7 +790,6 @@ export class BaseModelApiClient {
             throw new Error(`Failed to move ${this.apiConfig.config.displayName}s`);
         }
 
-        let successFilePaths = [];
         if (result.success) {
             if (result.failure_count > 0) {
                 showToast(`Moved ${result.success_count} ${this.apiConfig.config.displayName}s, ${result.failure_count} failed`, 'warning');
@@ -793,7 +797,7 @@ export class BaseModelApiClient {
                 const failedFiles = result.results
                     .filter(r => !r.success)
                     .map(r => {
-                        const fileName = r.path.substring(r.path.lastIndexOf('/') + 1);
+                        const fileName = r.original_file_path.substring(r.original_file_path.lastIndexOf('/') + 1);
                         return `${fileName}: ${r.message}`;
                     });
                 if (failedFiles.length > 0) {
@@ -805,13 +809,12 @@ export class BaseModelApiClient {
             } else {
                 showToast(`Successfully moved ${result.success_count} ${this.apiConfig.config.displayName}s`, 'success');
             }
-            successFilePaths = result.results
-                .filter(r => r.success)
-                .map(r => r.path);
+            
+            // Return the results array with original_file_path and new_file_path
+            return result.results || [];
         } else {
             throw new Error(result.message || `Failed to move ${this.apiConfig.config.displayName}s`);
         }
-        return successFilePaths;
     }
 
     async bulkDeleteModels(filePaths) {
