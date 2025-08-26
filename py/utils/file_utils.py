@@ -61,6 +61,24 @@ def find_preview_file(base_name: str, dir_path: str) -> str:
     
     return ""
 
+def get_preview_extension(preview_path: str) -> str:
+    """Get the complete preview extension from a preview file path
+    
+    Args:
+        preview_path: Path to the preview file
+        
+    Returns:
+        str: The complete extension (e.g., '.preview.png', '.png', '.webp')
+    """
+    preview_path_lower = preview_path.lower()
+    
+    # Check for compound extensions first (longer matches first)
+    for ext in sorted(PREVIEW_EXTENSIONS, key=len, reverse=True):
+        if preview_path_lower.endswith(ext.lower()):
+            return ext
+    
+    return os.path.splitext(preview_path)[1]
+
 def normalize_path(path: str) -> str:
     """Normalize file path to use forward slashes"""
     return path.replace(os.sep, "/") if path else path

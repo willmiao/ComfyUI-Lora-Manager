@@ -8,7 +8,7 @@ from typing import List, Dict, Optional, Type, Set
 
 from ..utils.models import BaseModelMetadata
 from ..config import config
-from ..utils.file_utils import find_preview_file
+from ..utils.file_utils import find_preview_file, get_preview_extension
 from ..utils.metadata_manager import MetadataManager
 from .model_cache import ModelCache
 from .model_hash_index import ModelHashIndex
@@ -900,7 +900,7 @@ class ModelScanner:
                 preview_dir = os.path.dirname(model_path)
                 # Update preview filename to match the new base name
                 new_base_name = os.path.splitext(os.path.basename(model_path))[0]
-                preview_ext = os.path.splitext(metadata['preview_url'])[1]
+                preview_ext = get_preview_extension(metadata['preview_url'])
                 new_preview_path = os.path.join(preview_dir, f"{new_base_name}{preview_ext}")
                 metadata['preview_url'] = new_preview_path.replace(os.sep, '/')
             
