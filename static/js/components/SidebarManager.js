@@ -209,34 +209,36 @@ export class SidebarManager {
 
     handleBreadcrumbClick(event) {
         const breadcrumbItem = event.target.closest('.sidebar-breadcrumb-item');
-        const dropdownToggle = event.target.closest('.breadcrumb-dropdown-toggle');
         const dropdownItem = event.target.closest('.breadcrumb-dropdown-item');
         
-        if (dropdownToggle) {
-            // Handle dropdown toggle
-            const dropdown = dropdownToggle.closest('.breadcrumb-dropdown');
-            
-            // Close any open dropdown first
-            if (this.openDropdown && this.openDropdown !== dropdown) {
-                this.openDropdown.classList.remove('open');
-            }
-            
-            // Toggle current dropdown
-            dropdown.classList.toggle('open');
-            
-            // Update open dropdown reference
-            this.openDropdown = dropdown.classList.contains('open') ? dropdown : null;
-            
-            event.stopPropagation();
-        } else if (dropdownItem) {
+        if (dropdownItem) {
             // Handle dropdown item selection
             const path = dropdownItem.dataset.path || '';
             this.selectFolder(path);
             this.closeDropdown();
         } else if (breadcrumbItem) {
-            // Handle direct breadcrumb click
+            // Handle breadcrumb item click
             const path = breadcrumbItem.dataset.path || '';
-            this.selectFolder(path);
+            const isPlaceholder = breadcrumbItem.classList.contains('placeholder');
+            const isActive = breadcrumbItem.classList.contains('active');
+            const dropdown = breadcrumbItem.closest('.breadcrumb-dropdown');
+            
+            if (isPlaceholder || (isActive && path === this.selectedPath)) {
+                // Open dropdown for placeholders or active items
+                // Close any open dropdown first
+                if (this.openDropdown && this.openDropdown !== dropdown) {
+                    this.openDropdown.classList.remove('open');
+                }
+                
+                // Toggle current dropdown
+                dropdown.classList.toggle('open');
+                
+                // Update open dropdown reference
+                this.openDropdown = dropdown.classList.contains('open') ? dropdown : null;
+            } else {
+                // Navigate to the selected path
+                this.selectFolder(path);
+            }
         }
     }
 
@@ -345,25 +347,13 @@ export class SidebarManager {
         const parts = this.selectedPath ? this.selectedPath.split('/') : [];
         let currentPath = '';
         
-        // Start with root breadcrumb with dropdown
+        // Start with root breadcrumb
         const rootSiblings = Object.keys(this.treeData);
         const breadcrumbs = [`
             <div class="breadcrumb-dropdown">
                 <span class="sidebar-breadcrumb-item ${!this.selectedPath ? 'active' : ''}" data-path="">
                     <i class="fas fa-home"></i> ${this.apiClient.apiConfig.config.displayName} root
                 </span>
-                <span class="breadcrumb-dropdown-toggle">
-                    <i class="fas fa-caret-down"></i>
-                </span>
-                <div class="breadcrumb-dropdown-menu">
-                    ${rootSiblings.length > 0 
-                        ? rootSiblings.map(folder => `
-                            <div class="breadcrumb-dropdown-item" data-path="${folder}">
-                                ${folder}
-                            </div>`).join('')
-                        : '<div class="breadcrumb-dropdown-placeholder">No folders available</div>'
-                    }
-                </div>
             </div>
         `];
         
@@ -374,11 +364,11 @@ export class SidebarManager {
                 breadcrumbs.push(`<span class="sidebar-breadcrumb-separator">/</span>`);
                 breadcrumbs.push(`
                     <div class="breadcrumb-dropdown">
-                        <span class="sidebar-breadcrumb-item">
+                        <span class="sidebar-breadcrumb-item placeholder">
                             --
-                        </span>
-                        <span class="breadcrumb-dropdown-toggle">
-                            <i class="fas fa-caret-down"></i>
+                            <span class="breadcrumb-dropdown-indicator">
+                                <i class="fas fa-caret-down"></i>
+                            </span>
                         </span>
                         <div class="breadcrumb-dropdown-menu">
                             ${nextLevelFolders.map(folder => `
@@ -405,18 +395,22 @@ export class SidebarManager {
                 <div class="breadcrumb-dropdown">
                     <span class="sidebar-breadcrumb-item ${isLast ? 'active' : ''}" data-path="${currentPath}">
                         ${part}
+                        ${siblings.length > 1 ? `
+                            <span class="breadcrumb-dropdown-indicator">
+                                <i class="fas fa-caret-down"></i>
+                            </span>
+                        ` : ''}
                     </span>
-                    <span class="breadcrumb-dropdown-toggle">
-                        <i class="fas fa-caret-down"></i>
-                    </span>
-                    <div class="breadcrumb-dropdown-menu">
-                        ${siblings.map(folder => `
-                            <div class="breadcrumb-dropdown-item ${folder === part ? 'active' : ''}" 
-                                 data-path="${currentPath.replace(part, folder)}">
-                                ${folder}
-                            </div>`).join('')
-                        }
-                    </div>
+                    ${siblings.length > 1 ? `
+                        <div class="breadcrumb-dropdown-menu">
+                            ${siblings.map(folder => `
+                                <div class="breadcrumb-dropdown-item ${folder === part ? 'active' : ''}" 
+                                     data-path="${currentPath.replace(part, folder)}">
+                                    ${folder}
+                                </div>`).join('')
+                            }
+                        </div>
+                    ` : ''}
                 </div>
             `);
             
@@ -427,11 +421,11 @@ export class SidebarManager {
                     breadcrumbs.push(`<span class="sidebar-breadcrumb-separator">/</span>`);
                     breadcrumbs.push(`
                         <div class="breadcrumb-dropdown">
-                            <span class="sidebar-breadcrumb-item">
+                            <span class="sidebar-breadcrumb-item placeholder">
                                 --
-                            </span>
-                            <span class="breadcrumb-dropdown-toggle">
-                                <i class="fas fa-caret-down"></i>
+                                <span class="breadcrumb-dropdown-indicator">
+                                    <i class="fas fa-caret-down"></i>
+                                </span>
                             </span>
                             <div class="breadcrumb-dropdown-menu">
                                 ${childFolders.map(folder => `
