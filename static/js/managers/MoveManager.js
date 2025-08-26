@@ -1,10 +1,11 @@
-import { showToast, updateFolderTags } from '../utils/uiHelpers.js';
+import { showToast } from '../utils/uiHelpers.js';
 import { state, getCurrentPageState } from '../state/index.js';
 import { modalManager } from './ModalManager.js';
 import { bulkManager } from './BulkManager.js';
 import { getStorageItem } from '../utils/storageHelpers.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { FolderTreeManager } from '../components/FolderTreeManager.js';
+import { sidebarManager } from '../components/SidebarManager.js';
 
 class MoveManager {
     constructor() {
@@ -224,12 +225,7 @@ class MoveManager {
             }
 
             // Refresh folder tags after successful move
-            try {
-                const foldersData = await apiClient.fetchModelFolders();
-                updateFolderTags(foldersData.folders);
-            } catch (error) {
-                console.error('Error refreshing folder tags:', error);
-            }
+            sidebarManager.refresh();
 
             modalManager.closeModal('moveModal');
             

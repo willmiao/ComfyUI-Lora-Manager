@@ -5,9 +5,9 @@ import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 
 export class SidebarManager {
-    constructor(pageControls) {
-        this.pageControls = pageControls;
-        this.pageType = pageControls.pageType;
+    constructor() {
+        this.pageControls = null;
+        this.pageType = null;
         this.treeData = {};
         this.selectedPath = '';
         this.expandedNodes = new Set();
@@ -17,6 +17,7 @@ export class SidebarManager {
         this.openDropdown = null;
         this.hoverTimeout = null;
         this.isHovering = false;
+        this.isInitialized = false;
         
         // Bind methods
         this.handleTreeClick = this.handleTreeClick.bind(this);
@@ -29,8 +30,95 @@ export class SidebarManager {
         this.handleMouseLeave = this.handleMouseLeave.bind(this);
         this.handleHoverAreaEnter = this.handleHoverAreaEnter.bind(this);
         this.handleHoverAreaLeave = this.handleHoverAreaLeave.bind(this);
+    }
+
+    async initialize(pageControls) {
+        // Clean up previous initialization if exists
+        if (this.isInitialized) {
+            this.cleanup();
+        }
+
+        this.pageControls = pageControls;
+        this.pageType = pageControls.pageType;
+        this.apiClient = getModelApiClient();
         
-        this.init();
+        // Set initial sidebar state immediately (hidden by default)
+        this.setInitialSidebarState();
+        
+        this.setupEventHandlers();
+        this.updateSidebarTitle();
+        this.restoreSidebarState();
+        await this.loadFolderTree();
+        this.restoreSelectedFolder();
+        
+        // Apply final state with animation after everything is loaded
+        this.applyFinalSidebarState();
+        
+        this.isInitialized = true;
+        console.log(`SidebarManager initialized for ${this.pageType} page`);
+    }
+
+    cleanup() {
+        if (!this.isInitialized) return;
+
+        // Clear any pending timeouts
+        if (this.hoverTimeout) {
+            clearTimeout(this.hoverTimeout);
+            this.hoverTimeout = null;
+        }
+        
+        // Clean up event handlers
+        this.removeEventHandlers();
+        
+        // Reset state
+        this.pageControls = null;
+        this.pageType = null;
+        this.treeData = {};
+        this.selectedPath = '';
+        this.expandedNodes = new Set();
+        this.openDropdown = null;
+        this.isHovering = false;
+        this.apiClient = null;
+        this.isInitialized = false;
+        
+        console.log('SidebarManager cleaned up');
+    }
+
+    removeEventHandlers() {
+        const pinToggleBtn = document.getElementById('sidebarPinToggle');
+        const collapseAllBtn = document.getElementById('sidebarCollapseAll');
+        const folderTree = document.getElementById('sidebarFolderTree');
+        const sidebarBreadcrumbNav = document.getElementById('sidebarBreadcrumbNav');
+        const sidebarHeader = document.getElementById('sidebarHeader');
+        const sidebar = document.getElementById('folderSidebar');
+        const hoverArea = document.getElementById('sidebarHoverArea');
+
+        if (pinToggleBtn) {
+            pinToggleBtn.removeEventListener('click', this.handlePinToggle);
+        }
+        if (collapseAllBtn) {
+            collapseAllBtn.removeEventListener('click', this.handleCollapseAll);
+        }
+        if (folderTree) {
+            folderTree.removeEventListener('click', this.handleTreeClick);
+        }
+        if (sidebarBreadcrumbNav) {
+            sidebarBreadcrumbNav.removeEventListener('click', this.handleBreadcrumbClick);
+        }
+        if (sidebarHeader) {
+            sidebarHeader.removeEventListener('click', this.handleSidebarHeaderClick);
+        }
+        if (sidebar) {
+            sidebar.removeEventListener('mouseenter', this.handleMouseEnter);
+            sidebar.removeEventListener('mouseleave', this.handleMouseLeave);
+        }
+        if (hoverArea) {
+            hoverArea.removeEventListener('mouseenter', this.handleHoverAreaEnter);
+            hoverArea.removeEventListener('mouseleave', this.handleHoverAreaLeave);
+        }
+        
+        // Remove document click handler
+        document.removeEventListener('click', this.handleDocumentClick);
     }
 
     async init() {
@@ -692,45 +780,9 @@ export class SidebarManager {
     }
 
     destroy() {
-        // Clear any pending timeouts
-        if (this.hoverTimeout) {
-            clearTimeout(this.hoverTimeout);
-        }
-        
-        // Clean up event handlers
-        const pinToggleBtn = document.getElementById('sidebarPinToggle');
-        const collapseAllBtn = document.getElementById('sidebarCollapseAll');
-        const folderTree = document.getElementById('sidebarFolderTree');
-        const sidebarBreadcrumbNav = document.getElementById('sidebarBreadcrumbNav');
-        const sidebarHeader = document.getElementById('sidebarHeader');
-        const sidebar = document.getElementById('folderSidebar');
-        const hoverArea = document.getElementById('sidebarHoverArea');
-
-        if (pinToggleBtn) {
-            pinToggleBtn.removeEventListener('click', this.handlePinToggle);
-        }
-        if (collapseAllBtn) {
-            collapseAllBtn.removeEventListener('click', this.handleCollapseAll);
-        }
-        if (folderTree) {
-            folderTree.removeEventListener('click', this.handleTreeClick);
-        }
-        if (sidebarBreadcrumbNav) {
-            sidebarBreadcrumbNav.removeEventListener('click', this.handleBreadcrumbClick);
-        }
-        if (sidebarHeader) {
-            sidebarHeader.removeEventListener('click', this.handleSidebarHeaderClick);
-        }
-        if (sidebar) {
-            sidebar.removeEventListener('mouseenter', this.handleMouseEnter);
-            sidebar.removeEventListener('mouseleave', this.handleMouseLeave);
-        }
-        if (hoverArea) {
-            hoverArea.removeEventListener('mouseenter', this.handleHoverAreaEnter);
-            hoverArea.removeEventListener('mouseleave', this.handleHoverAreaLeave);
-        }
-        
-        // Remove document click handler
-        document.removeEventListener('click', this.handleDocumentClick);
+        this.cleanup();
     }
 }
+
+// Create and export global instance
+export const sidebarManager = new SidebarManager();

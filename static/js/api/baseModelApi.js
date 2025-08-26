@@ -1,5 +1,5 @@
 import { state, getCurrentPageState } from '../state/index.js';
-import { showToast, updateFolderTags } from '../utils/uiHelpers.js';
+import { showToast } from '../utils/uiHelpers.js';
 import { getStorageItem, getSessionItem, saveMapToStorage } from '../utils/storageHelpers.js';
 import { 
     getCompleteApiConfig, 
@@ -9,6 +9,7 @@ import {
     WS_ENDPOINTS
 } from './apiConfig.js';
 import { resetAndReload } from './modelApiFactory.js';
+import { sidebarManager } from '../components/SidebarManager.js';
 
 /**
  * Abstract base class for all model API clients
@@ -103,15 +104,7 @@ export class BaseModelApiClient {
             pageState.currentPage = pageState.currentPage + 1;
             
             if (updateFolders) {
-                const response = await fetch(this.apiConfig.endpoints.folders);
-                if (response.ok) {
-                    const data = await response.json();
-                    updateFolderTags(data.folders);
-                } else {
-                    const errorData = await response.json().catch(() => ({}));
-                    const errorMsg = errorData && errorData.error ? errorData.error : response.statusText;
-                    console.error(`Error getting folders: ${errorMsg}`);
-                }
+                sidebarManager.refresh();
             }
             
             return result;

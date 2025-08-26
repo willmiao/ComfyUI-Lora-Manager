@@ -3,6 +3,7 @@ import { getCurrentPageState, setCurrentPageType } from '../../state/index.js';
 import { getStorageItem, setStorageItem, getSessionItem, setSessionItem } from '../../utils/storageHelpers.js';
 import { showToast } from '../../utils/uiHelpers.js';
 import { SidebarManager } from '../SidebarManager.js';
+import { sidebarManager } from '../SidebarManager.js';
 
 /**
  * PageControls class - Unified control management for model pages
@@ -24,8 +25,8 @@ export class PageControls {
         // Store API methods
         this.api = null;
         
-        // Initialize sidebar manager
-        this.sidebarManager = null;
+        // Use global sidebar manager
+        this.sidebarManager = sidebarManager;
         
         // Initialize event listeners
         this.initEventListeners();
@@ -69,7 +70,7 @@ export class PageControls {
      */
     async initSidebarManager() {
         try {
-            this.sidebarManager = new SidebarManager(this);
+            await this.sidebarManager.initialize(this);
             console.log('SidebarManager initialized');
         } catch (error) {
             console.error('Failed to initialize SidebarManager:', error);
@@ -440,8 +441,10 @@ export class PageControls {
      * Clean up resources
      */
     destroy() {
-        if (this.sidebarManager) {
-            this.sidebarManager.destroy();
+        // Note: We don't destroy the global sidebar manager, just clean it up
+        // The global instance will be reused for other page controls
+        if (this.sidebarManager && this.sidebarManager.isInitialized) {
+            this.sidebarManager.cleanup();
         }
     }
 }

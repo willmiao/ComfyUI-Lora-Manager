@@ -666,31 +666,3 @@ export async function openExampleImagesFolder(modelHash) {
     return false;
   }
 }
-
-/**
-     * Update the folder tags display with new folder list
-     * @param {Array} folders - List of folder names
-     */
-export function updateFolderTags(folders) {
-  const folderTagsContainer = document.querySelector('.folder-tags');
-  if (!folderTagsContainer) return;
-
-  // Keep track of currently selected folder
-  const pageState = getCurrentPageState();
-  const currentFolder = pageState.activeFolder;
-
-  // Create HTML for folder tags
-  const tagsHTML = folders.map(folder => {
-      const isActive = folder === currentFolder;
-      return `<div class="tag ${isActive ? 'active' : ''}" data-folder="${folder}">${folder}</div>`;
-  }).join('');
-
-  // Update the container
-  folderTagsContainer.innerHTML = tagsHTML;
-
-  // Scroll active folder into view (no need to reattach click handlers)
-  const activeTag = folderTagsContainer.querySelector(`.tag[data-folder="${currentFolder}"]`);
-  if (activeTag) {
-      activeTag.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
-}
