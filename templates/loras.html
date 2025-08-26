@@ -15,13 +15,35 @@
 
 {% block content %}
     {% include 'components/controls.html' %}
-    {% include 'components/alphabet_bar.html' %}
     {% include 'components/duplicates_banner.html' %}
     
-    <!-- Lora卡片容器 -->
-    <div class="card-grid" id="modelGrid">
-        <!-- Cards will be dynamically inserted here -->
+    <div class="main-layout">
+        <!-- Folder Navigation Sidebar -->
+        <div class="folder-sidebar" id="folderSidebar">
+            <div class="sidebar-header">
+                <h3><i class="fas fa-folder-tree"></i> Folders</h3>
+                <button class="sidebar-close-btn" id="sidebarCloseBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="sidebar-content">
+                <div class="folder-tree-container">
+                    <div class="folder-tree" id="sidebarFolderTree">
+                        <!-- Tree will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div class="content-area">
+            <!-- Lora卡片容器 -->
+            <div class="card-grid" id="modelGrid">
+                <!-- Cards will be dynamically inserted here -->
+            </div>
+        </div>
     </div>
+    
     <!-- Bulk operations panel will be inserted here by JavaScript -->
 {% endblock %}
 

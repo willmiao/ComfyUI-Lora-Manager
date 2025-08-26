@@ -2,6 +2,7 @@
 import { getCurrentPageState, setCurrentPageType } from '../../state/index.js';
 import { getStorageItem, setStorageItem, getSessionItem, setSessionItem } from '../../utils/storageHelpers.js';
 import { showToast } from '../../utils/uiHelpers.js';
+import { SidebarManager } from '../SidebarManager.js';
 
 /**
  * PageControls class - Unified control management for model pages
@@ -22,6 +23,9 @@ export class PageControls {
         
         // Store API methods
         this.api = null;
+        
+        // Initialize sidebar manager
+        this.sidebarManager = null;
         
         // Initialize event listeners
         this.initEventListeners();
@@ -55,6 +59,21 @@ export class PageControls {
     registerAPI(api) {
         this.api = api;
         console.log(`API methods registered for ${this.pageType} page`);
+        
+        // Initialize sidebar manager after API is registered
+        this.initSidebarManager();
+    }
+    
+    /**
+     * Initialize sidebar manager
+     */
+    async initSidebarManager() {
+        try {
+            this.sidebarManager = new SidebarManager(this);
+            console.log('SidebarManager initialized');
+        } catch (error) {
+            console.error('Failed to initialize SidebarManager:', error);
+        }
     }
     
     /**
@@ -72,17 +91,6 @@ export class PageControls {
             });
         }
         
-        // Use event delegation for folder tags - this is the key fix
-        const folderTagsContainer = document.querySelector('.folder-tags-container');
-        if (folderTagsContainer) {
-            folderTagsContainer.addEventListener('click', (e) => {
-                const tag = e.target.closest('.tag');
-                if (tag) {
-                    this.handleFolderClick(tag);
-                }
-            });
-        }
-        
         // Refresh button handler
         const refreshBtn = document.querySelector('[data-action="refresh"]');
         if (refreshBtn) {
@@ -91,12 +99,6 @@ export class PageControls {
         
         // Initialize dropdown functionality
         this.initDropdowns();
-        
-        // Toggle folders button
-        const toggleFoldersBtn = document.querySelector('.toggle-folders-btn');
-        if (toggleFoldersBtn) {
-            toggleFoldersBtn.addEventListener('click', () => this.toggleFolderTags());
-        }
         
         // Clear custom filter handler
         const clearFilterBtn = document.querySelector('.clear-filter');
@@ -200,130 +202,6 @@ export class PageControls {
     }
     
     /**
-     * Toggle folder selection
-     * @param {HTMLElement} tagElement - The folder tag element that was clicked
-     */
-    handleFolderClick(tagElement) {
-        const folder = tagElement.dataset.folder;
-        const wasActive = tagElement.classList.contains('active');
-        
-        document.querySelectorAll('.folder-tags .tag').forEach(t => {
-            t.classList.remove('active');
-        });
-        
-        if (!wasActive) {
-            tagElement.classList.add('active');
-            this.pageState.activeFolder = folder;
-            setStorageItem(`${this.pageType}_activeFolder`, folder);
-        } else {
-            this.pageState.activeFolder = null;
-            setStorageItem(`${this.pageType}_activeFolder`, null);
-        }
-        
-        this.resetAndReload();
-    }
-    
-    /**
-     * Restore folder filter from storage
-     */
-    restoreFolderFilter() {
-        const activeFolder = getStorageItem(`${this.pageType}_activeFolder`);
-        const folderTag = activeFolder && document.querySelector(`.tag[data-folder="${activeFolder}"]`);
-        
-        if (folderTag) {
-            folderTag.classList.add('active');
-            this.pageState.activeFolder = activeFolder;
-            this.filterByFolder(activeFolder);
-        }
-    }
-    
-    /**
-     * Filter displayed cards by folder
-     * @param {string} folderPath - Folder path to filter by
-     */
-    filterByFolder(folderPath) {
-        const cardSelector = this.pageType === 'loras' ? '.model-card' : '.checkpoint-card';
-        document.querySelectorAll(cardSelector).forEach(card => {
-            card.style.display = card.dataset.folder === folderPath ? '' : 'none';
-        });
-    }
-    
-    /**
-     * Update the folder tags display with new folder list
-     * @param {Array} folders - List of folder names
-     */
-    updateFolderTags(folders) {
-        const folderTagsContainer = document.querySelector('.folder-tags');
-        if (!folderTagsContainer) return;
-
-        // Keep track of currently selected folder
-        const currentFolder = this.pageState.activeFolder;
-
-        // Create HTML for folder tags
-        const tagsHTML = folders.map(folder => {
-            const isActive = folder === currentFolder;
-            return `<div class="tag ${isActive ? 'active' : ''}" data-folder="${folder}">${folder}</div>`;
-        }).join('');
-
-        // Update the container
-        folderTagsContainer.innerHTML = tagsHTML;
-
-        // Scroll active folder into view (no need to reattach click handlers)
-        const activeTag = folderTagsContainer.querySelector(`.tag[data-folder="${currentFolder}"]`);
-        if (activeTag) {
-            activeTag.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-    }
-    
-    /**
-     * Toggle visibility of folder tags
-     */
-    toggleFolderTags() {
-        const folderTags = document.querySelector('.folder-tags');
-        const toggleBtn = document.querySelector('.toggle-folders-btn i');
-        
-        if (folderTags) {
-            folderTags.classList.toggle('collapsed');
-            
-            if (folderTags.classList.contains('collapsed')) {
-                // Change icon to indicate folders are hidden
-                toggleBtn.className = 'fas fa-folder-plus';
-                toggleBtn.parentElement.title = 'Show folder tags';
-                setStorageItem('folderTagsCollapsed', 'true');
-            } else {
-                // Change icon to indicate folders are visible
-                toggleBtn.className = 'fas fa-folder-minus';
-                toggleBtn.parentElement.title = 'Hide folder tags';
-                setStorageItem('folderTagsCollapsed', 'false');
-            }
-        }
-    }
-    
-    /**
-     * Initialize folder tags visibility based on stored preference
-     */
-    initFolderTagsVisibility() {
-        const isCollapsed = getStorageItem('folderTagsCollapsed');
-        if (isCollapsed) {
-            const folderTags = document.querySelector('.folder-tags');
-            const toggleBtn = document.querySelector('.toggle-folders-btn i');
-            if (folderTags) {
-                folderTags.classList.add('collapsed');
-            }
-            if (toggleBtn) {
-                toggleBtn.className = 'fas fa-folder-plus';
-                toggleBtn.parentElement.title = 'Show folder tags';
-            }
-        } else {
-            const toggleBtn = document.querySelector('.toggle-folders-btn i');
-            if (toggleBtn) {
-                toggleBtn.className = 'fas fa-folder-minus';
-                toggleBtn.parentElement.title = 'Hide folder tags';
-            }
-        }
-    }
-    
-    /**
      * Load sort preference from storage
      */
     loadSortPreference() {
@@ -408,6 +286,11 @@ export class PageControls {
 
         try {
             await this.api.resetAndReload(updateFolders);
+            
+            // Refresh sidebar after reload if folders were updated
+            if (updateFolders && this.sidebarManager) {
+                await this.sidebarManager.refresh();
+            }
         } catch (error) {
             console.error(`Error reloading ${this.pageType}:`, error);
             showToast(`Failed to reload ${this.pageType}: ${error.message}`, 'error');
@@ -426,6 +309,11 @@ export class PageControls {
 
         try {
             await this.api.refreshModels(fullRebuild);
+            
+            // Refresh sidebar after rebuild
+            if (this.sidebarManager) {
+                await this.sidebarManager.refresh();
+            }
         } catch (error) {
             console.error(`Error ${fullRebuild ? 'rebuilding' : 'refreshing'} ${this.pageType}:`, error);
             showToast(`Failed to ${fullRebuild ? 'rebuild' : 'refresh'} ${this.pageType}: ${error.message}`, 'error');
@@ -545,6 +433,15 @@ export class PageControls {
             window.modelDuplicatesManager.toggleDuplicateMode();
         } else {
             console.error('Model duplicates manager not available');
+        }
+    }
+    
+    /**
+     * Clean up resources
+     */
+    destroy() {
+        if (this.sidebarManager) {
+            this.sidebarManager.destroy();
         }
     }
 }

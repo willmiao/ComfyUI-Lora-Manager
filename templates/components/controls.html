@@ -1,14 +1,4 @@
 <div class="controls">
-    {% if folders|length > 1 %}
-        <div class="folder-tags-container">
-            <div class="folder-tags">
-                {% for folder in folders %}
-                <div class="tag" data-folder="{{ folder }}">{{ folder }}</div>
-                {% endfor %}
-            </div>
-        </div>
-    {% endif %}
-    
     <div class="actions">
         <div class="action-buttons">
             <div title="Sort models by..." class="control-group">
@@ -75,9 +65,9 @@
         </div>
         
         <div class="controls-right">
-            <div class="toggle-folders-container">
-                <button class="toggle-folders-btn icon-only" title="Toggle folder tags">
-                    <i class="fas fa-tags"></i>
+            <div class="sidebar-toggle-container">
+                <button class="sidebar-toggle-btn icon-only" title="Toggle folder sidebar">
+                    <i class="fas fa-folder-tree"></i>
                 </button>
             </div>
             
@@ -106,6 +96,13 @@
                 </span>
             </div>
         </div>
+    </div>
+    
+    <!-- Breadcrumb Navigation -->
+    <div id="breadcrumbContainer" class="breadcrumb-container hidden">
+        <nav class="breadcrumb-nav" id="breadcrumbNav">
+            <!-- Breadcrumbs will be populated by JavaScript -->
+        </nav>
     </div>
 </div>
 

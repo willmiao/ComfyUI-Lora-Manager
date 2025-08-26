@@ -1,0 +1,320 @@
+/* Folder Sidebar Styles */
+.main-layout {
+    display: flex;
+    gap: 0;
+    width: 100%;
+    min-height: calc(100vh - 120px);
+}
+
+.folder-sidebar {
+    width: 280px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-base);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    height: fit-content;
+    max-height: calc(100vh - 140px);
+    position: sticky;
+    top: 20px;
+}
+
+.folder-sidebar.collapsed {
+    width: 0;
+    border: none;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--lora-accent);
+    color: white;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.sidebar-header h3 {
+    margin: 0;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sidebar-close-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.sidebar-close-btn:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-content {
+    height: calc(100% - 45px);
+    overflow: hidden;
+}
+
+.folder-tree-container {
+    height: 100%;
+    max-height: calc(100vh - 185px);
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+/* Tree Node Styles */
+.sidebar-tree-node {
+    position: relative;
+    user-select: none;
+}
+
+.sidebar-tree-node-content {
+    display: flex;
+    align-items: center;
+    padding: 6px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.85em;
+    border-left: 3px solid transparent;
+}
+
+.sidebar-tree-node-content:hover {
+    background: var(--lora-accent);
+    color: white;
+}
+
+.sidebar-tree-node-content.selected {
+    background: var(--lora-accent);
+    color: white;
+    border-left-color: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.8);
+    font-weight: 500;
+}
+
+.sidebar-tree-expand-icon {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 4px;
+    transition: transform 0.2s ease;
+    opacity: 0.6;
+}
+
+.sidebar-tree-expand-icon.expanded {
+    transform: rotate(90deg);
+}
+
+.sidebar-tree-expand-icon i {
+    font-size: 10px;
+}
+
+.sidebar-tree-folder-icon {
+    margin-right: 8px;
+    color: var(--lora-accent);
+    opacity: 0.8;
+}
+
+.sidebar-tree-node-content.selected .sidebar-tree-folder-icon {
+    color: white;
+    opacity: 1;
+}
+
+.sidebar-tree-folder-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sidebar-tree-children {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s ease;
+}
+
+.sidebar-tree-children.expanded {
+    max-height: 1000px;
+}
+
+.sidebar-tree-children .sidebar-tree-node-content {
+    padding-left: 32px;
+}
+
+.sidebar-tree-children .sidebar-tree-children .sidebar-tree-node-content {
+    padding-left: 48px;
+}
+
+.sidebar-tree-children .sidebar-tree-children .sidebar-tree-children .sidebar-tree-node-content {
+    padding-left: 64px;
+}
+
+/* Breadcrumb Styles */
+.breadcrumb-container {
+    margin-top: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--card-bg);
+    border-radius: var(--border-radius-xs);
+}
+
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 0.85em;
+    padding: 0 8px;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: var(--border-radius-xs);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-muted);
+}
+
+.breadcrumb-item:hover {
+    background: var(--lora-accent);
+    color: white;
+}
+
+.breadcrumb-item.active {
+    background: var(--lora-accent);
+    color: white;
+    font-weight: 500;
+}
+
+.breadcrumb-separator {
+    color: var(--text-muted);
+    opacity: 0.6;
+    margin: 0 2px;
+}
+
+/* Content Area */
+.content-area {
+    flex: 1;
+    min-width: 0;
+    margin-left: 16px;
+}
+
+/* Sidebar Toggle Button */
+.sidebar-toggle-container {
+    margin-left: auto;
+}
+
+.sidebar-toggle-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-toggle-btn:hover {
+    background: var(--lora-accent);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-toggle-btn.active {
+    background: var(--lora-accent);
+    color: white;
+}
+
+/* Empty State */
+.sidebar-tree-placeholder {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+.sidebar-tree-placeholder i {
+    font-size: 2em;
+    opacity: 0.5;
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .folder-sidebar {
+        position: fixed;
+        top: 68px;
+        left: 16px;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        max-height: calc(100vh - 88px);
+    }
+    
+    .folder-sidebar.collapsed {
+        left: -300px;
+    }
+    
+    .content-area {
+        margin-left: 0;
+    }
+    
+    .main-layout {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 768px) {
+    .folder-sidebar {
+        width: calc(100vw - 32px);
+        left: 16px;
+        right: 16px;
+    }
+    
+    .breadcrumb-nav {
+        font-size: 0.8em;
+    }
+    
+    .breadcrumb-item {
+        padding: 3px 6px;
+    }
+}
+
+/* Hide scrollbar but keep functionality */
+.folder-tree-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.folder-tree-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.folder-tree-container::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.folder-tree-container::-webkit-scrollbar-thumb:hover {
+    background: var(--lora-accent);
+}
