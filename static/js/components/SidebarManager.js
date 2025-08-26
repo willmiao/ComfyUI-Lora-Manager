@@ -13,12 +13,14 @@ export class SidebarManager {
         this.expandedNodes = new Set();
         this.isVisible = true;
         this.apiClient = null;
+        this.openDropdown = null;
         
         // Bind methods
         this.handleTreeClick = this.handleTreeClick.bind(this);
         this.handleBreadcrumbClick = this.handleBreadcrumbClick.bind(this);
         this.toggleSidebar = this.toggleSidebar.bind(this);
         this.closeSidebar = this.closeSidebar.bind(this);
+        this.handleDocumentClick = this.handleDocumentClick.bind(this);
         
         this.init();
     }
@@ -26,9 +28,17 @@ export class SidebarManager {
     async init() {
         this.apiClient = getModelApiClient();
         this.setupEventHandlers();
+        this.updateSidebarTitle();
         this.restoreSidebarState();
         await this.loadFolderTree();
         this.restoreSelectedFolder();
+    }
+
+    updateSidebarTitle() {
+        const sidebarTitle = document.getElementById('sidebarTitle');
+        if (sidebarTitle) {
+            sidebarTitle.textContent = `${this.apiClient.apiConfig.config.displayName} Root`;
+        }
     }
 
     setupEventHandlers() {
@@ -57,9 +67,9 @@ export class SidebarManager {
         }
 
         // Breadcrumb click handler
-        const breadcrumbNav = document.getElementById('breadcrumbNav');
-        if (breadcrumbNav) {
-            breadcrumbNav.addEventListener('click', this.handleBreadcrumbClick);
+        const sidebarBreadcrumbNav = document.getElementById('sidebarBreadcrumbNav');
+        if (sidebarBreadcrumbNav) {
+            sidebarBreadcrumbNav.addEventListener('click', this.handleBreadcrumbClick);
         }
 
         // Close sidebar when clicking outside on mobile
@@ -84,6 +94,23 @@ export class SidebarManager {
                 }
             }
         });
+
+        // Add document click handler for closing dropdowns
+        document.addEventListener('click', this.handleDocumentClick);
+    }
+
+    handleDocumentClick(event) {
+        // Close open dropdown when clicking outside
+        if (this.openDropdown && !event.target.closest('.breadcrumb-dropdown')) {
+            this.closeDropdown();
+        }
+    }
+
+    closeDropdown() {
+        if (this.openDropdown) {
+            this.openDropdown.classList.remove('open');
+            this.openDropdown = null;
+        }
     }
 
     async loadFolderTree() {
@@ -182,7 +209,32 @@ export class SidebarManager {
 
     handleBreadcrumbClick(event) {
         const breadcrumbItem = event.target.closest('.sidebar-breadcrumb-item');
-        if (breadcrumbItem) {
+        const dropdownToggle = event.target.closest('.breadcrumb-dropdown-toggle');
+        const dropdownItem = event.target.closest('.breadcrumb-dropdown-item');
+        
+        if (dropdownToggle) {
+            // Handle dropdown toggle
+            const dropdown = dropdownToggle.closest('.breadcrumb-dropdown');
+            
+            // Close any open dropdown first
+            if (this.openDropdown && this.openDropdown !== dropdown) {
+                this.openDropdown.classList.remove('open');
+            }
+            
+            // Toggle current dropdown
+            dropdown.classList.toggle('open');
+            
+            // Update open dropdown reference
+            this.openDropdown = dropdown.classList.contains('open') ? dropdown : null;
+            
+            event.stopPropagation();
+        } else if (dropdownItem) {
+            // Handle dropdown item selection
+            const path = dropdownItem.dataset.path || '';
+            this.selectFolder(path);
+            this.closeDropdown();
+        } else if (breadcrumbItem) {
+            // Handle direct breadcrumb click
             const path = breadcrumbItem.dataset.path || '';
             this.selectFolder(path);
         }
@@ -201,11 +253,8 @@ export class SidebarManager {
         this.pageControls.pageState.activeFolder = path || null;
         setStorageItem(`${this.pageType}_activeFolder`, path || null);
         
-        // Show/hide breadcrumb container
-        const breadcrumbContainer = document.getElementById('breadcrumbContainer');
-        if (breadcrumbContainer) {
-            breadcrumbContainer.classList.toggle('hidden', !path);
-        }
+        // Always show breadcrumb container
+        // Removed hiding breadcrumb container code
         
         // Reload models with new filter
         await this.pageControls.resetAndReload();
@@ -251,32 +300,153 @@ export class SidebarManager {
         this.renderTree();
     }
 
+    // Get sibling folders for a given path level
+    getSiblingFolders(pathParts, level) {
+        if (level === 0) {
+            // Root level siblings are top-level folders
+            return Object.keys(this.treeData);
+        }
+        
+        // Navigate to the parent folder to get siblings
+        let currentNode = this.treeData;
+        for (let i = 0; i < level; i++) {
+            if (!currentNode[pathParts[i]]) {
+                return [];
+            }
+            currentNode = currentNode[pathParts[i]];
+        }
+        
+        return Object.keys(currentNode);
+    }
+
+    // Get child folders for a given path
+    getChildFolders(path) {
+        if (!path) {
+            return Object.keys(this.treeData);
+        }
+        
+        const parts = path.split('/');
+        let currentNode = this.treeData;
+        
+        for (const part of parts) {
+            if (!currentNode[part]) {
+                return [];
+            }
+            currentNode = currentNode[part];
+        }
+        
+        return Object.keys(currentNode);
+    }
+
     updateBreadcrumbs() {
-        const breadcrumbNav = document.getElementById('breadcrumbNav');
-        if (!breadcrumbNav) return;
+        const sidebarBreadcrumbNav = document.getElementById('sidebarBreadcrumbNav');
+        if (!sidebarBreadcrumbNav) return;
         
         const parts = this.selectedPath ? this.selectedPath.split('/') : [];
         let currentPath = '';
         
+        // Start with root breadcrumb with dropdown
+        const rootSiblings = Object.keys(this.treeData);
         const breadcrumbs = [`
-            <span class="sidebar-breadcrumb-item ${!this.selectedPath ? 'active' : ''}" data-path="">
-                <i class="fas fa-home"></i> All Folders
-            </span>
+            <div class="breadcrumb-dropdown">
+                <span class="sidebar-breadcrumb-item ${!this.selectedPath ? 'active' : ''}" data-path="">
+                    <i class="fas fa-home"></i> ${this.apiClient.apiConfig.config.displayName} root
+                </span>
+                <span class="breadcrumb-dropdown-toggle">
+                    <i class="fas fa-caret-down"></i>
+                </span>
+                <div class="breadcrumb-dropdown-menu">
+                    ${rootSiblings.length > 0 
+                        ? rootSiblings.map(folder => `
+                            <div class="breadcrumb-dropdown-item" data-path="${folder}">
+                                ${folder}
+                            </div>`).join('')
+                        : '<div class="breadcrumb-dropdown-placeholder">No folders available</div>'
+                    }
+                </div>
+            </div>
         `];
         
+        // Add separator and placeholder for next level if we're at root
+        if (!this.selectedPath) {
+            const nextLevelFolders = rootSiblings;
+            if (nextLevelFolders.length > 0) {
+                breadcrumbs.push(`<span class="sidebar-breadcrumb-separator">/</span>`);
+                breadcrumbs.push(`
+                    <div class="breadcrumb-dropdown">
+                        <span class="sidebar-breadcrumb-item">
+                            --
+                        </span>
+                        <span class="breadcrumb-dropdown-toggle">
+                            <i class="fas fa-caret-down"></i>
+                        </span>
+                        <div class="breadcrumb-dropdown-menu">
+                            ${nextLevelFolders.map(folder => `
+                                <div class="breadcrumb-dropdown-item" data-path="${folder}">
+                                    ${folder}
+                                </div>`).join('')
+                            }
+                        </div>
+                    </div>
+                `);
+            }
+        }
+        
+        // Add breadcrumb items for each path segment
         parts.forEach((part, index) => {
             currentPath = currentPath ? `${currentPath}/${part}` : part;
             const isLast = index === parts.length - 1;
             
+            // Get siblings for this level
+            const siblings = this.getSiblingFolders(parts, index);
+            
             breadcrumbs.push(`<span class="sidebar-breadcrumb-separator">/</span>`);
             breadcrumbs.push(`
-                <span class="sidebar-breadcrumb-item ${isLast ? 'active' : ''}" data-path="${currentPath}">
-                    ${part}
-                </span>
+                <div class="breadcrumb-dropdown">
+                    <span class="sidebar-breadcrumb-item ${isLast ? 'active' : ''}" data-path="${currentPath}">
+                        ${part}
+                    </span>
+                    <span class="breadcrumb-dropdown-toggle">
+                        <i class="fas fa-caret-down"></i>
+                    </span>
+                    <div class="breadcrumb-dropdown-menu">
+                        ${siblings.map(folder => `
+                            <div class="breadcrumb-dropdown-item ${folder === part ? 'active' : ''}" 
+                                 data-path="${currentPath.replace(part, folder)}">
+                                ${folder}
+                            </div>`).join('')
+                        }
+                    </div>
+                </div>
             `);
+            
+            // Add separator and placeholder for next level if not the last item
+            if (isLast) {
+                const childFolders = this.getChildFolders(currentPath);
+                if (childFolders.length > 0) {
+                    breadcrumbs.push(`<span class="sidebar-breadcrumb-separator">/</span>`);
+                    breadcrumbs.push(`
+                        <div class="breadcrumb-dropdown">
+                            <span class="sidebar-breadcrumb-item">
+                                --
+                            </span>
+                            <span class="breadcrumb-dropdown-toggle">
+                                <i class="fas fa-caret-down"></i>
+                            </span>
+                            <div class="breadcrumb-dropdown-menu">
+                                ${childFolders.map(folder => `
+                                    <div class="breadcrumb-dropdown-item" data-path="${currentPath}/${folder}">
+                                        ${folder}
+                                    </div>`).join('')
+                                }
+                            </div>
+                        </div>
+                    `);
+                }
+            }
         });
         
-        breadcrumbNav.innerHTML = breadcrumbs.join('');
+        sidebarBreadcrumbNav.innerHTML = breadcrumbs.join('');
     }
 
     updateSidebarHeader() {
@@ -348,15 +518,11 @@ export class SidebarManager {
             this.updateTreeSelection();
             this.updateBreadcrumbs();
             this.updateSidebarHeader();
-            
-            // Show breadcrumb container
-            const breadcrumbContainer = document.getElementById('breadcrumbContainer');
-            if (breadcrumbContainer) {
-                breadcrumbContainer.classList.remove('hidden');
-            }
         } else {
             this.updateSidebarHeader();
+            this.updateBreadcrumbs(); // Always update breadcrumbs
         }
+        // Removed hidden class toggle since breadcrumbs are always visible now
     }
 
     saveSidebarState() {
@@ -377,7 +543,7 @@ export class SidebarManager {
         const toggleBtn = document.querySelector('.sidebar-toggle-btn');
         const closeBtn = document.getElementById('sidebarToggleClose');
         const folderTree = document.getElementById('sidebarFolderTree');
-        const breadcrumbNav = document.getElementById('breadcrumbNav');
+        const sidebarBreadcrumbNav = document.getElementById('sidebarBreadcrumbNav');
         const sidebarHeader = document.getElementById('sidebarHeader');
 
         if (toggleBtn) {
@@ -389,11 +555,14 @@ export class SidebarManager {
         if (folderTree) {
             folderTree.removeEventListener('click', this.handleTreeClick);
         }
-        if (breadcrumbNav) {
-            breadcrumbNav.removeEventListener('click', this.handleBreadcrumbClick);
+        if (sidebarBreadcrumbNav) {
+            sidebarBreadcrumbNav.removeEventListener('click', this.handleBreadcrumbClick);
         }
         if (sidebarHeader) {
             sidebarHeader.removeEventListener('click', () => this.selectFolder(''));
         }
+        
+        // Remove document click handler
+        document.removeEventListener('click', this.handleDocumentClick);
     }
 }

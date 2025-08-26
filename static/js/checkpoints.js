@@ -30,10 +30,6 @@ class CheckpointsPageManager {
     }
     
     async initialize() {
-        // Initialize page-specific components
-        this.pageControls.restoreFolderFilter();
-        this.pageControls.initFolderTagsVisibility();
-        
         // Initialize context menu
         new CheckpointContextMenu();
         

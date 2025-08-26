@@ -31,11 +31,16 @@
 {% block content %}
     {% include 'components/controls.html' %}
     {% include 'components/duplicates_banner.html' %}
+    {% include 'components/folder_sidebar.html' %}
     
     <!-- Checkpoint cards container -->
     <div class="card-grid" id="modelGrid">
         <!-- Cards will be dynamically inserted here -->
     </div>
+{% endblock %}
+
+{% block overlay %}
+<div class="bulk-mode-overlay"></div>
 {% endblock %}
 
 {% block main_script %}
