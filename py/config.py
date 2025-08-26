@@ -268,19 +268,26 @@ class Config:
             return []
 
     def get_preview_static_url(self, preview_path: str) -> str:
-        """Convert local preview path to static URL"""
         if not preview_path:
             return ""
         
         real_path = os.path.realpath(preview_path).replace(os.sep, '/')
-
+        
+        # Find longest matching path (most specific match)
+        best_match = ""
+        best_route = ""
+        
         for path, route in self._route_mappings.items():
-            if real_path.startswith(path):
-                relative_path = os.path.relpath(real_path, path).replace(os.sep, '/')
-                safe_parts = [urllib.parse.quote(part) for part in relative_path.split('/')]
-                safe_path = '/'.join(safe_parts)
-                return f'{route}/{safe_path}'
-
+            if real_path.startswith(path) and len(path) > len(best_match):
+                best_match = path
+                best_route = route
+        
+        if best_match:
+            relative_path = os.path.relpath(real_path, best_match).replace(os.sep, '/')
+            safe_parts = [urllib.parse.quote(part) for part in relative_path.split('/')]
+            safe_path = '/'.join(safe_parts)
+            return f'{best_route}/{safe_path}'
+        
         return ""
 
 # Global config instance
