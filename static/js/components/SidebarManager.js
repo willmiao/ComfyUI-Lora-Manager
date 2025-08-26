@@ -38,8 +38,14 @@ export class SidebarManager {
             toggleBtn.addEventListener('click', this.toggleSidebar);
         }
 
+        // Sidebar header (root selection)
+        const sidebarHeader = document.getElementById('sidebarHeader');
+        if (sidebarHeader) {
+            sidebarHeader.addEventListener('click', () => this.selectFolder(''));
+        }
+
         // Sidebar close button
-        const closeBtn = document.getElementById('sidebarCloseBtn');
+        const closeBtn = document.getElementById('sidebarToggleClose');
         if (closeBtn) {
             closeBtn.addEventListener('click', this.closeSidebar);
         }
@@ -58,13 +64,12 @@ export class SidebarManager {
 
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', (e) => {
-            if (window.innerWidth <= 1024) {
+            if (window.innerWidth <= 1024 && this.isVisible) {
                 const sidebar = document.getElementById('folderSidebar');
                 const toggleBtn = document.querySelector('.sidebar-toggle-btn');
                 
                 if (sidebar && !sidebar.contains(e.target) && 
-                    toggleBtn && !toggleBtn.contains(e.target) && 
-                    !sidebar.classList.contains('collapsed')) {
+                    toggleBtn && !toggleBtn.contains(e.target)) {
                     this.closeSidebar();
                 }
             }
@@ -121,9 +126,7 @@ export class SidebarManager {
                              style="${hasChildren ? '' : 'opacity: 0; pointer-events: none;'}">
                             <i class="fas fa-chevron-right"></i>
                         </div>
-                        <div class="sidebar-tree-folder-icon">
-                            <i class="fas fa-folder"></i>
-                        </div>
+                        <i class="fas fa-folder sidebar-tree-folder-icon"></i>
                         <div class="sidebar-tree-folder-name" title="${folderName}">${folderName}</div>
                     </div>
                     ${hasChildren ? `
@@ -178,7 +181,7 @@ export class SidebarManager {
     }
 
     handleBreadcrumbClick(event) {
-        const breadcrumbItem = event.target.closest('.breadcrumb-item');
+        const breadcrumbItem = event.target.closest('.sidebar-breadcrumb-item');
         if (breadcrumbItem) {
             const path = breadcrumbItem.dataset.path || '';
             this.selectFolder(path);
@@ -192,6 +195,7 @@ export class SidebarManager {
         // Update UI
         this.updateTreeSelection();
         this.updateBreadcrumbs();
+        this.updateSidebarHeader();
         
         // Update page state
         this.pageControls.pageState.activeFolder = path || null;
@@ -255,7 +259,7 @@ export class SidebarManager {
         let currentPath = '';
         
         const breadcrumbs = [`
-            <span class="breadcrumb-item ${!this.selectedPath ? 'active' : ''}" data-path="">
+            <span class="sidebar-breadcrumb-item ${!this.selectedPath ? 'active' : ''}" data-path="">
                 <i class="fas fa-home"></i> All Folders
             </span>
         `];
@@ -264,15 +268,26 @@ export class SidebarManager {
             currentPath = currentPath ? `${currentPath}/${part}` : part;
             const isLast = index === parts.length - 1;
             
-            breadcrumbs.push(`<span class="breadcrumb-separator">/</span>`);
+            breadcrumbs.push(`<span class="sidebar-breadcrumb-separator">/</span>`);
             breadcrumbs.push(`
-                <span class="breadcrumb-item ${isLast ? 'active' : ''}" data-path="${currentPath}">
+                <span class="sidebar-breadcrumb-item ${isLast ? 'active' : ''}" data-path="${currentPath}">
                     ${part}
                 </span>
             `);
         });
         
         breadcrumbNav.innerHTML = breadcrumbs.join('');
+    }
+
+    updateSidebarHeader() {
+        const sidebarHeader = document.getElementById('sidebarHeader');
+        if (!sidebarHeader) return;
+        
+        if (!this.selectedPath) {
+            sidebarHeader.classList.add('root-selected');
+        } else {
+            sidebarHeader.classList.remove('root-selected');
+        }
     }
 
     toggleSidebar() {
@@ -332,12 +347,15 @@ export class SidebarManager {
             this.selectedPath = activeFolder;
             this.updateTreeSelection();
             this.updateBreadcrumbs();
+            this.updateSidebarHeader();
             
             // Show breadcrumb container
             const breadcrumbContainer = document.getElementById('breadcrumbContainer');
             if (breadcrumbContainer) {
                 breadcrumbContainer.classList.remove('hidden');
             }
+        } else {
+            this.updateSidebarHeader();
         }
     }
 
@@ -357,9 +375,10 @@ export class SidebarManager {
     destroy() {
         // Clean up event handlers
         const toggleBtn = document.querySelector('.sidebar-toggle-btn');
-        const closeBtn = document.getElementById('sidebarCloseBtn');
+        const closeBtn = document.getElementById('sidebarToggleClose');
         const folderTree = document.getElementById('sidebarFolderTree');
         const breadcrumbNav = document.getElementById('breadcrumbNav');
+        const sidebarHeader = document.getElementById('sidebarHeader');
 
         if (toggleBtn) {
             toggleBtn.removeEventListener('click', this.toggleSidebar);
@@ -372,6 +391,9 @@ export class SidebarManager {
         }
         if (breadcrumbNav) {
             breadcrumbNav.removeEventListener('click', this.handleBreadcrumbClick);
+        }
+        if (sidebarHeader) {
+            sidebarHeader.removeEventListener('click', () => this.selectFolder(''));
         }
     }
 }

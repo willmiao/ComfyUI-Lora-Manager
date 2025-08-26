@@ -17,31 +17,26 @@
     {% include 'components/controls.html' %}
     {% include 'components/duplicates_banner.html' %}
     
-    <div class="main-layout">
-        <!-- Folder Navigation Sidebar -->
-        <div class="folder-sidebar" id="folderSidebar">
-            <div class="sidebar-header">
-                <h3><i class="fas fa-folder-tree"></i> Folders</h3>
-                <button class="sidebar-close-btn" id="sidebarCloseBtn">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="sidebar-content">
-                <div class="folder-tree-container">
-                    <div class="folder-tree" id="sidebarFolderTree">
-                        <!-- Tree will be populated by JavaScript -->
-                    </div>
+    <!-- Folder Navigation Sidebar -->
+    <div class="folder-sidebar" id="folderSidebar">
+        <div class="sidebar-header" id="sidebarHeader">
+            <h3><i class="fas fa-home"></i> LoRA Root</h3>
+            <button class="sidebar-toggle-close" id="sidebarToggleClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="sidebar-content">
+            <div class="sidebar-tree-container">
+                <div class="sidebar-tree" id="sidebarFolderTree">
+                    <!-- Tree will be populated by JavaScript -->
                 </div>
             </div>
         </div>
-        
-        <!-- Main Content Area -->
-        <div class="content-area">
-            <!-- Lora卡片容器 -->
-            <div class="card-grid" id="modelGrid">
-                <!-- Cards will be dynamically inserted here -->
-            </div>
-        </div>
+    </div>
+    
+    <!-- Lora卡片容器 -->
+    <div class="card-grid" id="modelGrid">
+        <!-- Cards will be dynamically inserted here -->
     </div>
     
     <!-- Bulk operations panel will be inserted here by JavaScript -->
