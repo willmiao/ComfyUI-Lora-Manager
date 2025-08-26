@@ -29,7 +29,7 @@ export const state = {
             isLoading: false,
             hasMore: true,
             sortBy: 'name',
-            activeFolder: null,
+            activeFolder: getStorageItem(`${MODEL_TYPES.LORA}_activeFolder`),
             activeLetterFilter: null,
             previewVersions: loraPreviewVersions,
             searchManager: null,
@@ -38,7 +38,7 @@ export const state = {
                 modelname: true,
                 tags: false,
                 creator: false,
-                recursive: false
+                recursive: true,
             },
             filters: {
                 baseModel: [],
@@ -78,14 +78,14 @@ export const state = {
             isLoading: false,
             hasMore: true,
             sortBy: 'name',
-            activeFolder: null,
+            activeFolder: getStorageItem(`${MODEL_TYPES.CHECKPOINT}_activeFolder`),
             previewVersions: checkpointPreviewVersions,
             searchManager: null,
             searchOptions: {
                 filename: true,
                 modelname: true,
                 creator: false,
-                recursive: false
+                recursive: true,
             },
             filters: {
                 baseModel: [],
@@ -104,7 +104,7 @@ export const state = {
             isLoading: false,
             hasMore: true,
             sortBy: 'name',
-            activeFolder: null,
+            activeFolder: getStorageItem(`${MODEL_TYPES.EMBEDDING}_activeFolder`),
             activeLetterFilter: null,
             previewVersions: embeddingPreviewVersions,
             searchManager: null,
@@ -113,7 +113,7 @@ export const state = {
                 modelname: true,
                 tags: false,
                 creator: false,
-                recursive: false
+                recursive: true,
             },
             filters: {
                 baseModel: [],

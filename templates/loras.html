@@ -15,13 +15,14 @@
 
 {% block content %}
     {% include 'components/controls.html' %}
-    {% include 'components/alphabet_bar.html' %}
     {% include 'components/duplicates_banner.html' %}
+    {% include 'components/folder_sidebar.html' %}
     
     <!-- Lora卡片容器 -->
     <div class="card-grid" id="modelGrid">
         <!-- Cards will be dynamically inserted here -->
     </div>
+    
     <!-- Bulk operations panel will be inserted here by JavaScript -->
 {% endblock %}
 

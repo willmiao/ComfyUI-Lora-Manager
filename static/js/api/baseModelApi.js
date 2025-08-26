@@ -671,7 +671,6 @@ export class BaseModelApiClient {
                 if (pageState.searchOptions.creator !== undefined) {
                     params.append('search_creator', pageState.searchOptions.creator.toString());
                 }
-                params.append('recursive', (pageState.searchOptions?.recursive ?? false).toString());
             }
         }
         

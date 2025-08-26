@@ -31,7 +31,6 @@
 .controls {
     display: flex;
     flex-direction: column;
-    gap: 8px;
     margin-bottom: var(--space-2);
 }
 
@@ -225,118 +224,12 @@
     display: none !important;
 }
 
-.folder-tags-container {
-    position: relative;
-    width: 100%;
-    margin-bottom: 8px; /* Add margin to ensure space for the button */
-}
-
-.folder-tags {
-    display: flex;
-    gap: 4px;
-    padding: 2px 0;
-    flex-wrap: wrap;
-    transition: max-height 0.3s ease, opacity 0.2s ease;
-    max-height: 150px; /* Limit height to prevent overflow */
-    opacity: 1;
-    overflow-y: auto; /* Enable vertical scrolling */
-    margin-bottom: 5px; /* Add margin below the tags */
-}
-
-.folder-tags.collapsed {
-    max-height: 0;
-    opacity: 0;
-    margin: 0;
-    padding-bottom: 0;
-    overflow: hidden;
-}
-
-.toggle-folders-container {
-    margin-left: auto;
-}
-
-/* Toggle Folders Button */
-.toggle-folders-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    color: var(--text-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.toggle-folders-btn:hover {
-    background: var(--lora-accent);
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-}
-
-.toggle-folders-btn i {
-    transition: transform 0.3s ease;
-}
-
 /* Icon-only button style */
 .icon-only {
     min-width: unset !important;
     width: 32px !important;
     padding: 0 !important;
     height: 32px !important;
-}
-
-/* Rotate icon when folders are collapsed */
-.folder-tags.collapsed ~ .actions .toggle-folders-btn i {
-    transform: rotate(180deg);
-}
-
-/* Add custom scrollbar for better visibility */
-.folder-tags::-webkit-scrollbar {
-    width: 6px;
-}
-
-.folder-tags::-webkit-scrollbar-track {
-    background: var(--card-bg);
-    border-radius: 3px;
-}
-
-.folder-tags::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border-radius: 3px;
-}
-
-.folder-tags::-webkit-scrollbar-thumb:hover {
-    background: var(--lora-accent);
-}
-
-.tag {
-    cursor: pointer;
-    padding: 2px 8px;
-    margin: 2px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-xs);
-    display: inline-block;
-    line-height: 1.2;
-    font-size: 14px;
-    background-color: var(--card-bg);
-    transition: all 0.2s ease;
-}
-
-.tag:hover {
-    border-color: var(--lora-accent);
-    background-color: oklch(var(--lora-accent) / 0.1);
-    transform: translateY(-1px);
-}
-
-.tag.active {
-    background-color: var(--lora-accent);
-    color: white;
-    border-color: var(--lora-accent);
 }
 
 /* Back to Top Button */
@@ -376,10 +269,8 @@
 }
 
 /* Prevent text selection in control and header areas */
-.tag,
 .control-group button,
 .control-group select,
-.toggle-folders-btn,
 .bulk-operations-panel,
 .app-header,
 .header-branding,
@@ -387,8 +278,7 @@
 .main-nav,
 .nav-item,
 .header-actions button,
-.header-controls,
-.toggle-folders-container button {
+.header-controls {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -472,28 +362,12 @@
         justify-content: flex-end;
         margin-top: 8px;
     }
-    
-    .toggle-folders-container {
-        margin-left: 0;
-    }
-    
-    .folder-tags-container {
-        order: -1;
-    }
-    
-    .toggle-folders-btn:hover {
-        transform: none; /* Disable hover effects on mobile */
-    }
 
     .control-group button:hover {
         transform: none; /* Disable hover effects on mobile */
     }
 
     .control-group select:hover {
-        transform: none; /* Disable hover effects on mobile */
-    }
-
-    .tag:hover {
         transform: none; /* Disable hover effects on mobile */
     }
 

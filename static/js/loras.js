@@ -38,8 +38,6 @@ class LoraPageManager {
     
     async initialize() {
         // Initialize page-specific components
-        this.pageControls.restoreFolderFilter();
-        this.pageControls.initFolderTagsVisibility();
         new LoraContextMenu();
         
         // Initialize cards for current bulk mode state (should be false initially)
