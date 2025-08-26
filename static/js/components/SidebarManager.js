@@ -35,12 +35,46 @@ export class SidebarManager {
 
     async init() {
         this.apiClient = getModelApiClient();
+        
+        // Set initial sidebar state immediately (hidden by default)
+        this.setInitialSidebarState();
+        
         this.setupEventHandlers();
         this.updateSidebarTitle();
         this.restoreSidebarState();
         await this.loadFolderTree();
         this.restoreSelectedFolder();
-        this.updateAutoHideState();
+        
+        // Apply final state with animation after everything is loaded
+        this.applyFinalSidebarState();
+    }
+
+    setInitialSidebarState() {
+        const sidebar = document.getElementById('folderSidebar');
+        const hoverArea = document.getElementById('sidebarHoverArea');
+        
+        if (!sidebar || !hoverArea) return;
+        
+        // Get stored pin state
+        const isPinned = getStorageItem(`${this.pageType}_sidebarPinned`, false);
+        this.isPinned = isPinned;
+        
+        // Sidebar starts hidden by default (CSS handles this)
+        // Just set up the hover area state
+        if (window.innerWidth <= 1024) {
+            hoverArea.classList.add('disabled');
+        } else if (this.isPinned) {
+            hoverArea.classList.add('disabled');
+        } else {
+            hoverArea.classList.remove('disabled');
+        }
+    }
+
+    applyFinalSidebarState() {
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
+            this.updateAutoHideState();
+        });
     }
 
     updateSidebarTitle() {
@@ -201,18 +235,19 @@ export class SidebarManager {
         
         if (window.innerWidth <= 1024) {
             // Mobile: always use collapsed state
-            sidebar.classList.remove('auto-hide', 'hover-active');
+            sidebar.classList.remove('auto-hide', 'hover-active', 'visible');
             sidebar.classList.add('collapsed');
             hoverArea.classList.add('disabled');
             this.isVisible = false;
         } else if (this.isPinned) {
             // Desktop pinned: always visible
             sidebar.classList.remove('auto-hide', 'collapsed', 'hover-active');
+            sidebar.classList.add('visible');
             hoverArea.classList.add('disabled');
             this.isVisible = true;
         } else {
             // Desktop auto-hide: use hover detection
-            sidebar.classList.remove('collapsed');
+            sidebar.classList.remove('collapsed', 'visible');
             sidebar.classList.add('auto-hide');
             hoverArea.classList.remove('disabled');
             
@@ -579,7 +614,14 @@ export class SidebarManager {
         if (!sidebar) return;
         
         this.isVisible = !this.isVisible;
-        sidebar.classList.toggle('collapsed', !this.isVisible);
+        
+        if (this.isVisible) {
+            sidebar.classList.remove('collapsed');
+            sidebar.classList.add('visible');
+        } else {
+            sidebar.classList.remove('visible');
+            sidebar.classList.add('collapsed');
+        }
         
         if (toggleBtn) {
             toggleBtn.classList.toggle('active', this.isVisible);
@@ -595,6 +637,7 @@ export class SidebarManager {
         if (!sidebar) return;
         
         this.isVisible = false;
+        sidebar.classList.remove('visible');
         sidebar.classList.add('collapsed');
         
         if (toggleBtn) {
