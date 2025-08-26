@@ -19,7 +19,6 @@ export class SearchManager {
       this.searchOptionsPanel = document.getElementById('searchOptionsPanel');
       this.closeSearchOptions = document.getElementById('closeSearchOptions');
       this.searchOptionTags = document.querySelectorAll('.search-option-tag');
-      this.recursiveSearchToggle = document.getElementById('recursiveSearchToggle');
       
       this.searchTimeout = null;
       this.currentPage = options.page || document.body.dataset.page || 'loras';
@@ -109,14 +108,6 @@ export class SearchManager {
             this.saveSearchPreferences();
             this.performSearch();
           });
-        });
-      }
-      
-      // Recursive search toggle
-      if (this.recursiveSearchToggle) {
-        this.recursiveSearchToggle.addEventListener('change', () => {
-          this.saveSearchPreferences();
-          this.performSearch();
         });
       }
       
@@ -218,11 +209,6 @@ export class SearchManager {
           });
         }
         
-        // Apply recursive search - only if the toggle exists
-        if (this.recursiveSearchToggle && preferences.recursive !== undefined) {
-          this.recursiveSearchToggle.checked = preferences.recursive;
-        }
-        
         // Ensure at least one search option is selected
         this.validateSearchOptions();
       } catch (error) {
@@ -272,11 +258,6 @@ export class SearchManager {
           options
         };
         
-        // Only add recursive option if the toggle exists
-        if (this.recursiveSearchToggle) {
-          preferences.recursive = this.recursiveSearchToggle.checked;
-        }
-        
         setStorageItem(`${this.currentPage}_search_prefs`, preferences);
       } catch (error) {
         console.error('Error saving search preferences:', error);
@@ -294,7 +275,6 @@ export class SearchManager {
     performSearch() {
       const query = this.searchInput.value.trim();
       const options = this.getActiveSearchOptions();
-      const recursive = this.recursiveSearchToggle ? this.recursiveSearchToggle.checked : false;
       
       // Update the state with search parameters
       const pageState = getCurrentPageState();
@@ -318,16 +298,14 @@ export class SearchManager {
             filename: options.filename || false,
             modelname: options.modelname || false,
             tags: options.tags || false,
-            creator: options.creator || false,
-            recursive: recursive
+            creator: options.creator || false
           };
         } else if (this.currentPage === 'checkpoints') {
           pageState.searchOptions = {
             filename: options.filename || false,
             modelname: options.modelname || false,
             tags: options.tags || false,
-            creator: options.creator || false,
-            recursive: recursive
+            creator: options.creator || false
           };
         }
       }

@@ -68,7 +68,7 @@ class BaseModelService(ABC):
                 'filename': True,
                 'modelname': True,
                 'tags': False,
-                'recursive': False,
+                'recursive': True,
             }
 
         # Get the base data set using new sort logic
@@ -139,7 +139,7 @@ class BaseModelService(ABC):
         
         # Apply folder filtering
         if folder is not None:
-            if search_options and search_options.get('recursive', False):
+            if search_options and search_options.get('recursive', True):
                 # Recursive folder filtering - include all subfolders
                 data = [
                     item for item in data

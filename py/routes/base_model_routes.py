@@ -191,7 +191,7 @@ class BaseModelRoutes(ABC):
             'modelname': request.query.get('search_modelname', 'true').lower() == 'true',
             'tags': request.query.get('search_tags', 'false').lower() == 'true',
             'creator': request.query.get('search_creator', 'false').lower() == 'true',
-            'recursive': request.query.get('recursive', 'false').lower() == 'true',
+            'recursive': request.query.get('recursive', 'true').lower() == 'true',
         }
         
         # Parse hash filters if provided
