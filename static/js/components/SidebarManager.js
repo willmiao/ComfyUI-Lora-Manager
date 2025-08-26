@@ -12,15 +12,23 @@ export class SidebarManager {
         this.selectedPath = '';
         this.expandedNodes = new Set();
         this.isVisible = true;
+        this.isPinned = false;
         this.apiClient = null;
         this.openDropdown = null;
+        this.hoverTimeout = null;
+        this.isHovering = false;
         
         // Bind methods
         this.handleTreeClick = this.handleTreeClick.bind(this);
         this.handleBreadcrumbClick = this.handleBreadcrumbClick.bind(this);
-        this.toggleSidebar = this.toggleSidebar.bind(this);
-        this.closeSidebar = this.closeSidebar.bind(this);
         this.handleDocumentClick = this.handleDocumentClick.bind(this);
+        this.handleSidebarHeaderClick = this.handleSidebarHeaderClick.bind(this);
+        this.handlePinToggle = this.handlePinToggle.bind(this);
+        this.handleCollapseAll = this.handleCollapseAll.bind(this);
+        this.handleMouseEnter = this.handleMouseEnter.bind(this);
+        this.handleMouseLeave = this.handleMouseLeave.bind(this);
+        this.handleHoverAreaEnter = this.handleHoverAreaEnter.bind(this);
+        this.handleHoverAreaLeave = this.handleHoverAreaLeave.bind(this);
         
         this.init();
     }
@@ -32,6 +40,7 @@ export class SidebarManager {
         this.restoreSidebarState();
         await this.loadFolderTree();
         this.restoreSelectedFolder();
+        this.updateAutoHideState();
     }
 
     updateSidebarTitle() {
@@ -42,22 +51,22 @@ export class SidebarManager {
     }
 
     setupEventHandlers() {
-        // Sidebar toggle button
-        const toggleBtn = document.querySelector('.sidebar-toggle-btn');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', this.toggleSidebar);
-        }
-
-        // Sidebar header (root selection)
+        // Sidebar header (root selection) - only trigger on title area
         const sidebarHeader = document.getElementById('sidebarHeader');
         if (sidebarHeader) {
-            sidebarHeader.addEventListener('click', () => this.selectFolder(''));
+            sidebarHeader.addEventListener('click', this.handleSidebarHeaderClick);
         }
 
-        // Sidebar close button
-        const closeBtn = document.getElementById('sidebarToggleClose');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', this.closeSidebar);
+        // Pin toggle button
+        const pinToggleBtn = document.getElementById('sidebarPinToggle');
+        if (pinToggleBtn) {
+            pinToggleBtn.addEventListener('click', this.handlePinToggle);
+        }
+
+        // Collapse all button
+        const collapseAllBtn = document.getElementById('sidebarCollapseAll');
+        if (collapseAllBtn) {
+            collapseAllBtn.addEventListener('click', this.handleCollapseAll);
         }
 
         // Tree click handler
@@ -72,27 +81,34 @@ export class SidebarManager {
             sidebarBreadcrumbNav.addEventListener('click', this.handleBreadcrumbClick);
         }
 
+        // Hover detection for auto-hide
+        const sidebar = document.getElementById('folderSidebar');
+        const hoverArea = document.getElementById('sidebarHoverArea');
+        
+        if (sidebar) {
+            sidebar.addEventListener('mouseenter', this.handleMouseEnter);
+            sidebar.addEventListener('mouseleave', this.handleMouseLeave);
+        }
+        
+        if (hoverArea) {
+            hoverArea.addEventListener('mouseenter', this.handleHoverAreaEnter);
+            hoverArea.addEventListener('mouseleave', this.handleHoverAreaLeave);
+        }
+
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', (e) => {
             if (window.innerWidth <= 1024 && this.isVisible) {
                 const sidebar = document.getElementById('folderSidebar');
-                const toggleBtn = document.querySelector('.sidebar-toggle-btn');
                 
-                if (sidebar && !sidebar.contains(e.target) && 
-                    toggleBtn && !toggleBtn.contains(e.target)) {
-                    this.closeSidebar();
+                if (sidebar && !sidebar.contains(e.target)) {
+                    this.hideSidebar();
                 }
             }
         });
 
         // Handle window resize
         window.addEventListener('resize', () => {
-            if (window.innerWidth > 1024 && this.isVisible) {
-                const sidebar = document.getElementById('folderSidebar');
-                if (sidebar) {
-                    sidebar.classList.remove('collapsed');
-                }
-            }
+            this.updateAutoHideState();
         });
 
         // Add document click handler for closing dropdowns
@@ -106,10 +122,115 @@ export class SidebarManager {
         }
     }
 
-    closeDropdown() {
-        if (this.openDropdown) {
-            this.openDropdown.classList.remove('open');
-            this.openDropdown = null;
+    handleSidebarHeaderClick(event) {
+        // Only trigger root selection if clicking on the title area, not the buttons
+        if (!event.target.closest('.sidebar-header-actions')) {
+            this.selectFolder('');
+        }
+    }
+
+    handlePinToggle(event) {
+        event.stopPropagation();
+        this.isPinned = !this.isPinned;
+        this.updateAutoHideState();
+        this.updatePinButton();
+        this.saveSidebarState();
+    }
+
+    handleCollapseAll(event) {
+        event.stopPropagation();
+        this.expandedNodes.clear();
+        this.renderTree();
+        this.saveExpandedState();
+    }
+
+    handleMouseEnter() {
+        this.isHovering = true;
+        if (this.hoverTimeout) {
+            clearTimeout(this.hoverTimeout);
+            this.hoverTimeout = null;
+        }
+        
+        if (!this.isPinned) {
+            this.showSidebar();
+        }
+    }
+
+    handleMouseLeave() {
+        this.isHovering = false;
+        if (!this.isPinned) {
+            this.hoverTimeout = setTimeout(() => {
+                if (!this.isHovering) {
+                    this.hideSidebar();
+                }
+            }, 300);
+        }
+    }
+
+    handleHoverAreaEnter() {
+        if (!this.isPinned) {
+            this.showSidebar();
+        }
+    }
+
+    handleHoverAreaLeave() {
+        // Let the sidebar's mouse leave handler deal with hiding
+    }
+
+    showSidebar() {
+        const sidebar = document.getElementById('folderSidebar');
+        if (sidebar && !this.isPinned) {
+            sidebar.classList.add('hover-active');
+            this.isVisible = true;
+        }
+    }
+
+    hideSidebar() {
+        const sidebar = document.getElementById('folderSidebar');
+        if (sidebar && !this.isPinned) {
+            sidebar.classList.remove('hover-active');
+            this.isVisible = false;
+        }
+    }
+
+    updateAutoHideState() {
+        const sidebar = document.getElementById('folderSidebar');
+        const hoverArea = document.getElementById('sidebarHoverArea');
+        
+        if (!sidebar || !hoverArea) return;
+        
+        if (window.innerWidth <= 1024) {
+            // Mobile: always use collapsed state
+            sidebar.classList.remove('auto-hide', 'hover-active');
+            sidebar.classList.add('collapsed');
+            hoverArea.classList.add('disabled');
+            this.isVisible = false;
+        } else if (this.isPinned) {
+            // Desktop pinned: always visible
+            sidebar.classList.remove('auto-hide', 'collapsed', 'hover-active');
+            hoverArea.classList.add('disabled');
+            this.isVisible = true;
+        } else {
+            // Desktop auto-hide: use hover detection
+            sidebar.classList.remove('collapsed');
+            sidebar.classList.add('auto-hide');
+            hoverArea.classList.remove('disabled');
+            
+            if (this.isHovering) {
+                sidebar.classList.add('hover-active');
+                this.isVisible = true;
+            } else {
+                sidebar.classList.remove('hover-active');
+                this.isVisible = false;
+            }
+        }
+    }
+
+    updatePinButton() {
+        const pinBtn = document.getElementById('sidebarPinToggle');
+        if (pinBtn) {
+            pinBtn.classList.toggle('active', this.isPinned);
+            pinBtn.title = this.isPinned ? 'Unpin Sidebar' : 'Pin Sidebar';
         }
     }
 
@@ -255,15 +376,12 @@ export class SidebarManager {
         this.pageControls.pageState.activeFolder = path || null;
         setStorageItem(`${this.pageType}_activeFolder`, path || null);
         
-        // Always show breadcrumb container
-        // Removed hiding breadcrumb container code
-        
         // Reload models with new filter
         await this.pageControls.resetAndReload();
         
-        // Auto-close sidebar on mobile after selection
+        // Auto-hide sidebar on mobile after selection
         if (window.innerWidth <= 1024) {
-            this.closeSidebar();
+            this.hideSidebar();
         }
     }
 
@@ -487,22 +605,13 @@ export class SidebarManager {
     }
 
     restoreSidebarState() {
-        const isVisible = getStorageItem(`${this.pageType}_sidebarVisible`, true);
+        const isPinned = getStorageItem(`${this.pageType}_sidebarPinned`, false);
         const expandedPaths = getStorageItem(`${this.pageType}_expandedNodes`, []);
         
-        this.isVisible = isVisible;
+        this.isPinned = isPinned;
         this.expandedNodes = new Set(expandedPaths);
         
-        const sidebar = document.getElementById('folderSidebar');
-        const toggleBtn = document.querySelector('.sidebar-toggle-btn');
-        
-        if (sidebar) {
-            sidebar.classList.toggle('collapsed', !this.isVisible);
-        }
-        
-        if (toggleBtn) {
-            toggleBtn.classList.toggle('active', this.isVisible);
-        }
+        this.updatePinButton();
     }
 
     restoreSelectedFolder() {
@@ -520,7 +629,7 @@ export class SidebarManager {
     }
 
     saveSidebarState() {
-        setStorageItem(`${this.pageType}_sidebarVisible`, this.isVisible);
+        setStorageItem(`${this.pageType}_sidebarPinned`, this.isPinned);
     }
 
     saveExpandedState() {
@@ -533,18 +642,25 @@ export class SidebarManager {
     }
 
     destroy() {
+        // Clear any pending timeouts
+        if (this.hoverTimeout) {
+            clearTimeout(this.hoverTimeout);
+        }
+        
         // Clean up event handlers
-        const toggleBtn = document.querySelector('.sidebar-toggle-btn');
-        const closeBtn = document.getElementById('sidebarToggleClose');
+        const pinToggleBtn = document.getElementById('sidebarPinToggle');
+        const collapseAllBtn = document.getElementById('sidebarCollapseAll');
         const folderTree = document.getElementById('sidebarFolderTree');
         const sidebarBreadcrumbNav = document.getElementById('sidebarBreadcrumbNav');
         const sidebarHeader = document.getElementById('sidebarHeader');
+        const sidebar = document.getElementById('folderSidebar');
+        const hoverArea = document.getElementById('sidebarHoverArea');
 
-        if (toggleBtn) {
-            toggleBtn.removeEventListener('click', this.toggleSidebar);
+        if (pinToggleBtn) {
+            pinToggleBtn.removeEventListener('click', this.handlePinToggle);
         }
-        if (closeBtn) {
-            closeBtn.removeEventListener('click', this.closeSidebar);
+        if (collapseAllBtn) {
+            collapseAllBtn.removeEventListener('click', this.handleCollapseAll);
         }
         if (folderTree) {
             folderTree.removeEventListener('click', this.handleTreeClick);
@@ -553,7 +669,15 @@ export class SidebarManager {
             sidebarBreadcrumbNav.removeEventListener('click', this.handleBreadcrumbClick);
         }
         if (sidebarHeader) {
-            sidebarHeader.removeEventListener('click', () => this.selectFolder(''));
+            sidebarHeader.removeEventListener('click', this.handleSidebarHeaderClick);
+        }
+        if (sidebar) {
+            sidebar.removeEventListener('mouseenter', this.handleMouseEnter);
+            sidebar.removeEventListener('mouseleave', this.handleMouseLeave);
+        }
+        if (hoverArea) {
+            hoverArea.removeEventListener('mouseenter', this.handleHoverAreaEnter);
+            hoverArea.removeEventListener('mouseleave', this.handleHoverAreaLeave);
         }
         
         // Remove document click handler

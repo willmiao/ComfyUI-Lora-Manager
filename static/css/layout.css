@@ -224,33 +224,6 @@
     display: none !important;
 }
 
-/* Sidebar Toggle Button */
-.sidebar-toggle-container {
-    margin-left: auto;
-}
-
-.sidebar-toggle-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    color: var(--text-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.sidebar-toggle-btn:hover {
-    background: var(--lora-accent);
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-}
-
 /* Icon-only button style */
 .icon-only {
     min-width: unset !important;
@@ -298,7 +271,6 @@
 /* Prevent text selection in control and header areas */
 .control-group button,
 .control-group select,
-.sidebar-toggle-btn,
 .bulk-operations-panel,
 .app-header,
 .header-branding,
@@ -306,8 +278,7 @@
 .main-nav,
 .nav-item,
 .header-actions button,
-.header-controls,
-.sidebar-toggle-container button {
+.header-controls {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -390,14 +361,6 @@
         width: 100%;
         justify-content: flex-end;
         margin-top: 8px;
-    }
-    
-    .sidebar-toggle-container {
-        margin-left: 0;
-    }
-    
-    .sidebar-toggle-btn:hover {
-        transform: none; /* Disable hover effects on mobile */
     }
 
     .control-group button:hover {

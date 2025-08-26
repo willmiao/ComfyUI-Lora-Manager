@@ -1,10 +1,18 @@
+<!-- Hover detection area -->
+<div class="sidebar-hover-area" id="sidebarHoverArea"></div>
+
 <!-- Folder Navigation Sidebar -->
 <div class="folder-sidebar" id="folderSidebar">
     <div class="sidebar-header" id="sidebarHeader">
         <h3><i class="fas fa-home"></i> <span id="sidebarTitle">Model Root</span></h3>
-        <button class="sidebar-toggle-close" id="sidebarToggleClose">
-            <i class="fas fa-times"></i>
-        </button>
+        <div class="sidebar-header-actions">
+            <button class="sidebar-action-btn" id="sidebarCollapseAll" title="Collapse All Folders">
+                <i class="fas fa-compress-alt"></i>
+            </button>
+            <button class="sidebar-action-btn" id="sidebarPinToggle" title="Pin/Unpin Sidebar">
+                <i class="fas fa-thumbtack"></i>
+            </button>
+        </div>
     </div>
     <div class="sidebar-content">
         <div class="sidebar-tree-container">

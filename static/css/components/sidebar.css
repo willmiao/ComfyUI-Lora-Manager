@@ -1,7 +1,7 @@
 .folder-sidebar {
     position: fixed;
     top: 68px; /* Below header */
-    left: 0px;
+    left: 10px;
     width: 230px;
     height: calc(100vh - 88px);
     background: var(--bg-color);
@@ -17,9 +17,38 @@
     backdrop-filter: blur(8px);
 }
 
+/* Auto-hide states */
+.folder-sidebar.auto-hide {
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.folder-sidebar.auto-hide.hover-active {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: all;
+}
+
 .folder-sidebar.collapsed {
     transform: translateX(-100%);
     opacity: 0;
+    pointer-events: none;
+}
+
+/* Hover detection area for auto-hide */
+.sidebar-hover-area {
+    position: fixed;
+    top: 68px;
+    left: 0;
+    width: 20px;
+    height: calc(100vh - 88px);
+    z-index: calc(var(--z-overlay) - 1);
+    background: transparent;
+    pointer-events: all;
+}
+
+.sidebar-hover-area.disabled {
     pointer-events: none;
 }
 
@@ -54,9 +83,17 @@
     align-items: center;
     gap: 8px;
     font-weight: 500;
+    flex: 1;
+    pointer-events: none;
 }
 
-.sidebar-toggle-close {
+.sidebar-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sidebar-action-btn {
     background: none;
     border: none;
     color: var(--text-muted);
@@ -72,10 +109,21 @@
     justify-content: center;
 }
 
-.sidebar-toggle-close:hover {
+.sidebar-action-btn:hover {
     opacity: 1;
     background: var(--lora-surface);
     color: var(--text-color);
+}
+
+.sidebar-action-btn.active {
+    opacity: 1;
+    background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.15);
+    color: var(--lora-accent);
+}
+
+/* Remove old close button styles */
+.sidebar-toggle-close {
+    display: none;
 }
 
 .sidebar-content {
@@ -326,38 +374,6 @@
         width: 260px;
         left: 16px;
     }
-}
-
-/* Sidebar Toggle Button */
-.sidebar-toggle-container {
-    margin-left: auto;
-}
-
-.sidebar-toggle-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    color: var(--text-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.sidebar-toggle-btn:hover {
-    background: var(--lora-accent);
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-}
-
-.sidebar-toggle-btn.active {
-    background: var(--lora-accent);
-    color: white;
 }
 
 /* Empty State */
