@@ -398,6 +398,13 @@ export class SidebarManager {
         }
     }
 
+    closeDropdown() {
+        if (this.openDropdown) {
+            this.openDropdown.classList.remove('open');
+            this.openDropdown = null;
+        }
+    }
+
     async selectFolder(path) {
         // Update selected path
         this.selectedPath = path;
