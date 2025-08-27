@@ -229,13 +229,13 @@ class ModelRouteUtils:
             await client.close()
     
     @staticmethod
-    def filter_civitai_data(data: Dict) -> Dict:
+    def filter_civitai_data(data: Dict, minimal: bool = False) -> Dict:
         """Filter relevant fields from CivitAI data"""
         if not data:
             return {}
-            
-        fields = [
-            "id", "modelId", "name", "createdAt", "updatedAt", 
+
+        fields = ["name", "trainedWords"] if minimal else [
+            "id", "modelId", "name", "createdAt", "updatedAt",
             "publishedAt", "trainedWords", "baseModel", "description",
             "model", "images", "customImages", "creator"
         ]

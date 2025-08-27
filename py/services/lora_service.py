@@ -34,12 +34,11 @@ class LoraService(BaseModelService):
             "file_size": lora_data.get("size", 0),
             "modified": lora_data.get("modified", ""),
             "tags": lora_data.get("tags", []),
-            "modelDescription": lora_data.get("modelDescription", ""),
             "from_civitai": lora_data.get("from_civitai", True),
             "usage_tips": lora_data.get("usage_tips", ""),
             "notes": lora_data.get("notes", ""),
             "favorite": lora_data.get("favorite", False),
-            "civitai": ModelRouteUtils.filter_civitai_data(lora_data.get("civitai", {}))
+            "civitai": ModelRouteUtils.filter_civitai_data(lora_data.get("civitai", {}), minimal=True)
         }
     
     async def _apply_specific_filters(self, data: List[Dict], **kwargs) -> List[Dict]:

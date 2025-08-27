@@ -34,12 +34,11 @@ class CheckpointService(BaseModelService):
             "file_size": checkpoint_data.get("size", 0),
             "modified": checkpoint_data.get("modified", ""),
             "tags": checkpoint_data.get("tags", []),
-            "modelDescription": checkpoint_data.get("modelDescription", ""),
             "from_civitai": checkpoint_data.get("from_civitai", True),
             "notes": checkpoint_data.get("notes", ""),
             "model_type": checkpoint_data.get("model_type", "checkpoint"),
             "favorite": checkpoint_data.get("favorite", False),
-            "civitai": ModelRouteUtils.filter_civitai_data(checkpoint_data.get("civitai", {}))
+            "civitai": ModelRouteUtils.filter_civitai_data(checkpoint_data.get("civitai", {}), minimal=True)
         }
     
     def find_duplicate_hashes(self) -> Dict:

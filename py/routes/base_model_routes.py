@@ -69,6 +69,7 @@ class BaseModelRoutes(ABC):
         app.router.add_get(f'/api/{prefix}/get-notes', self.get_model_notes)
         app.router.add_get(f'/api/{prefix}/preview-url', self.get_model_preview_url)
         app.router.add_get(f'/api/{prefix}/civitai-url', self.get_model_civitai_url)
+        app.router.add_get(f'/api/{prefix}/metadata', self.get_model_metadata)
         
         # Autocomplete route
         app.router.add_get(f'/api/{prefix}/relative-paths', self.get_relative_paths)
@@ -1133,6 +1134,32 @@ class BaseModelRoutes(ABC):
                 
         except Exception as e:
             logger.error(f"Error getting {self.model_type} Civitai URL: {e}", exc_info=True)
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    async def get_model_metadata(self, request: web.Request) -> web.Response:
+        """Get filtered CivitAI metadata for a model by file path"""
+        try:
+            file_path = request.query.get('file_path')
+            if not file_path:
+                return web.Response(text='File path is required', status=400)
+            
+            metadata = await self.service.get_model_metadata(file_path)
+            if metadata is not None:
+                return web.json_response({
+                    'success': True,
+                    'metadata': metadata
+                })
+            else:
+                return web.json_response({
+                    'success': False,
+                    'error': f'{self.model_type.capitalize()} not found or no CivitAI metadata available'
+                }, status=404)
+                
+        except Exception as e:
+            logger.error(f"Error getting {self.model_type} metadata: {e}", exc_info=True)
             return web.json_response({
                 'success': False,
                 'error': str(e)

@@ -948,4 +948,26 @@ export class BaseModelApiClient {
             completionMessage: 'Example images download complete'
         });
     }
+
+    async fetchModelMetadata(filePath) {
+        try {
+            const params = new URLSearchParams({ file_path: filePath });
+            const response = await fetch(`${this.apiConfig.endpoints.metadata}?${params}`);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch ${this.apiConfig.config.singularName} metadata: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                return data.metadata;
+            } else {
+                throw new Error(data.error || `No metadata found for ${this.apiConfig.config.singularName}`);
+            }
+        } catch (error) {
+            console.error(`Error fetching ${this.apiConfig.config.singularName} metadata:`, error);
+            throw error;
+        }
+    }
 }

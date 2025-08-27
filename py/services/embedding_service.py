@@ -34,12 +34,11 @@ class EmbeddingService(BaseModelService):
             "file_size": embedding_data.get("size", 0),
             "modified": embedding_data.get("modified", ""),
             "tags": embedding_data.get("tags", []),
-            "modelDescription": embedding_data.get("modelDescription", ""),
             "from_civitai": embedding_data.get("from_civitai", True),
             "notes": embedding_data.get("notes", ""),
             "model_type": embedding_data.get("model_type", "embedding"),
             "favorite": embedding_data.get("favorite", False),
-            "civitai": ModelRouteUtils.filter_civitai_data(embedding_data.get("civitai", {}))
+            "civitai": ModelRouteUtils.filter_civitai_data(embedding_data.get("civitai", {}), minimal=True)
         }
     
     def find_duplicate_hashes(self) -> Dict:

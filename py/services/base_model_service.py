@@ -4,6 +4,7 @@ import logging
 import os
 
 from ..utils.models import BaseModelMetadata
+from ..utils.routes_common import ModelRouteUtils
 from ..utils.constants import NSFW_LEVELS
 from .settings_manager import settings
 from ..utils.utils import fuzzy_match
@@ -378,6 +379,16 @@ class BaseModelService(ABC):
                     }
         
         return {'civitai_url': None, 'model_id': None, 'version_id': None}
+
+    async def get_model_metadata(self, file_path: str) -> Optional[Dict]:
+        """Get filtered CivitAI metadata for a model by file path"""
+        cache = await self.scanner.get_cached_data()
+        
+        for model in cache.raw_data:
+            if model.get('file_path') == file_path:
+                return ModelRouteUtils.filter_civitai_data(model.get("civitai", {}))
+        
+        return None
 
     async def search_relative_paths(self, search_term: str, limit: int = 15) -> List[str]:
         """Search model relative file paths for autocomplete functionality"""

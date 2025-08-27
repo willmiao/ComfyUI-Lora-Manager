@@ -88,6 +88,7 @@ export function getApiEndpoints(modelType) {
         duplicates: `/api/${modelType}/find-duplicates`,
         conflicts: `/api/${modelType}/find-filename-conflicts`,
         verify: `/api/${modelType}/verify-duplicates`,
+        metadata: `/api/${modelType}/metadata`,
         
         // Model-specific endpoints (will be merged with specific configs)
         specific: {}
@@ -104,6 +105,7 @@ export const MODEL_SPECIFIC_ENDPOINTS = {
         triggerWords: `/api/${MODEL_TYPES.LORA}/get-trigger-words`,
         previewUrl: `/api/${MODEL_TYPES.LORA}/preview-url`,
         civitaiUrl: `/api/${MODEL_TYPES.LORA}/civitai-url`,
+        metadata: `/api/${MODEL_TYPES.LORA}/metadata`,
         modelDescription: `/api/${MODEL_TYPES.LORA}/model-description`,
         getTriggerWordsPost: `/api/${MODEL_TYPES.LORA}/get_trigger_words`,
         civitaiModelByVersion: `/api/${MODEL_TYPES.LORA}/civitai/model/version`,
@@ -113,8 +115,10 @@ export const MODEL_SPECIFIC_ENDPOINTS = {
         info: `/api/${MODEL_TYPES.CHECKPOINT}/info`,
         checkpoints_roots: `/api/${MODEL_TYPES.CHECKPOINT}/checkpoints_roots`,
         unet_roots: `/api/${MODEL_TYPES.CHECKPOINT}/unet_roots`,
+        metadata: `/api/${MODEL_TYPES.CHECKPOINT}/metadata`,
     },
     [MODEL_TYPES.EMBEDDING]: {
+        metadata: `/api/${MODEL_TYPES.EMBEDDING}/metadata`,
     }
 };
 
