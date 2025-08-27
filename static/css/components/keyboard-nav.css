@@ -40,10 +40,10 @@
     border-radius: var(--border-radius-xs);
     padding: 8px;
     position: absolute;
-    z-index: 9999; /* 确保在卡片上方显示 */
-    left: 120%; /* 将tooltip显示在图标右侧 */
-    top: 50%; /* 垂直居中 */
-    transform: translateY(-50%); /* 垂直居中 */
+    z-index: 9999; /* Ensure tooltip appears above cards */
+    left: 120%; /* Position tooltip to the right of the icon */
+    top: 50%; /* Vertically center */
+    transform: translateY(-15%); /* Vertically center */
     opacity: 0;
     transition: opacity 0.3s;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
@@ -55,12 +55,12 @@
 .tooltip .tooltiptext::after {
     content: "";
     position: absolute;
-    top: 50%; /* 箭头垂直居中 */
-    right: 100%; /* 箭头在左侧 */
+    top: 50%; /* Vertically center arrow */
+    right: 100%; /* Arrow on the left side */
     margin-top: -5px;
     border-width: 5px;
     border-style: solid;
-    border-color: transparent var(--lora-border) transparent transparent; /* 箭头指向左侧 */
+    border-color: transparent var(--lora-border) transparent transparent; /* Arrow points left */
 }
 
 .tooltip:hover .tooltiptext {
