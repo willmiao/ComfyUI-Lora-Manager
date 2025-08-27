@@ -779,27 +779,37 @@ export class VirtualScroller {
         console.log('Virtual scroller enabled');
     }
 
-    // Helper function for deep merging objects
+    // Helper function for deep merging objects - only updates existing keys in target
     deepMerge(target, source) {
-        if (!source) return target;
-        
+        if (!source || !target) return target;
+
         const result = { ...target };
-        
-        Object.keys(source).forEach(key => {
-            if (source[key] !== null && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-                // If property exists in target and is an object, recursively merge
-                if (target[key] && typeof target[key] === 'object' && !Array.isArray(target[key])) {
-                    result[key] = this.deepMerge(target[key], source[key]);
+
+        // Only iterate over keys that exist in target
+        Object.keys(target).forEach(key => {
+            // Check if source has this key
+            if (source.hasOwnProperty(key)) {
+                const targetValue = target[key];
+                const sourceValue = source[key];
+
+                // If both values are non-null objects and not arrays, merge recursively
+                if (
+                    targetValue !== null &&
+                    typeof targetValue === 'object' &&
+                    !Array.isArray(targetValue) &&
+                    sourceValue !== null &&
+                    typeof sourceValue === 'object' &&
+                    !Array.isArray(sourceValue)
+                ) {
+                    result[key] = this.deepMerge(targetValue, sourceValue);
                 } else {
-                    // Otherwise just assign the source value
-                    result[key] = source[key];
+                    // For primitive types, arrays, or null, use the value from source
+                    result[key] = sourceValue;
                 }
-            } else {
-                // For non-objects (including arrays), just assign the value
-                result[key] = source[key];
             }
+            // If source does not have this key, keep the original value from target
         });
-        
+
         return result;
     }
 
