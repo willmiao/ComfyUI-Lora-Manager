@@ -6,7 +6,7 @@ import {
     scrollToTop,
     loadExampleImages
 } from './showcase/ShowcaseView.js';
-import { setupTabSwitching, setupModelDescriptionEditing } from './ModelDescription.js';
+import { setupTabSwitching } from './ModelDescription.js';
 import { 
     setupModelNameEditing, 
     setupBaseModelEditing, 
@@ -24,31 +24,49 @@ import { loadRecipesForLora } from './RecipeTab.js';
  * @param {Object} model - Model data object
  * @param {string} modelType - Type of model ('lora' or 'checkpoint')
  */
-export function showModelModal(model, modelType) {
+export async function showModelModal(model, modelType) {
     const modalId = 'modelModal';
     const modalTitle = model.model_name;
+        
+    // Fetch complete civitai metadata
+    let completeCivitaiData = model.civitai || {};
+    if (model.file_path) {
+        try {
+            const fullMetadata = await getModelApiClient().fetchModelMetadata(model.file_path);
+            completeCivitaiData = fullMetadata || model.civitai || {};
+        } catch (error) {
+            console.warn('Failed to fetch complete metadata, using existing data:', error);
+            // Continue with existing data if fetch fails
+        }
+    }
     
-    // Prepare LoRA specific data
-    const escapedWords = (modelType === 'loras' || modelType === 'embeddings') && model.civitai?.trainedWords?.length ? 
-        model.civitai.trainedWords.map(word => word.replace(/'/g, '\\\'')) : [];
+    // Update model with complete civitai data
+    const modelWithFullData = {
+        ...model,
+        civitai: completeCivitaiData
+    };
     
+    // Prepare LoRA specific data with complete civitai data
+    const escapedWords = (modelType === 'loras' || modelType === 'embeddings') && modelWithFullData.civitai?.trainedWords?.length ? 
+        modelWithFullData.civitai.trainedWords.map(word => word.replace(/'/g, '\\\'')) : [];
+
     // Generate model type specific content
     let typeSpecificContent;
     if (modelType === 'loras') {
-        typeSpecificContent = renderLoraSpecificContent(model, escapedWords);
+        typeSpecificContent = renderLoraSpecificContent(modelWithFullData, escapedWords);
     } else if (modelType === 'embeddings') {
-        typeSpecificContent = renderEmbeddingSpecificContent(model, escapedWords);
+        typeSpecificContent = renderEmbeddingSpecificContent(modelWithFullData, escapedWords);
     } else {
         typeSpecificContent = '';
     }
-    
+
     // Generate tabs based on model type
     const tabsContent = modelType === 'loras' ? 
         `<button class="tab-btn active" data-tab="showcase">Examples</button>
-         <button class="tab-btn" data-tab="description">Model Description</button>
-         <button class="tab-btn" data-tab="recipes">Recipes</button>` :
+            <button class="tab-btn" data-tab="description">Model Description</button>
+            <button class="tab-btn" data-tab="recipes">Recipes</button>` :
         `<button class="tab-btn active" data-tab="showcase">Examples</button>
-         <button class="tab-btn" data-tab="description">Model Description</button>`;
+            <button class="tab-btn" data-tab="description">Model Description</button>`;
     
     const tabPanesContent = modelType === 'loras' ? 
         `<div id="showcase-tab" class="tab-pane active">
@@ -100,26 +118,26 @@ export function showModelModal(model, modelType) {
                 </div>
 
                 <div class="creator-actions">
-                    ${model.from_civitai ? `
-                    <div class="civitai-view" title="View on Civitai" data-action="view-civitai" data-filepath="${model.file_path}">
+                    ${modelWithFullData.from_civitai ? `
+                    <div class="civitai-view" title="View on Civitai" data-action="view-civitai" data-filepath="${modelWithFullData.file_path}">
                         <i class="fas fa-globe"></i> View on Civitai
                     </div>` : ''}
 
-                    ${model.civitai?.creator ? `
-                    <div class="creator-info" data-username="${model.civitai.creator.username}" data-action="view-creator" title="View Creator Profile">
-                        ${model.civitai.creator.image ? 
+                    ${modelWithFullData.civitai?.creator ? `
+                    <div class="creator-info" data-username="${modelWithFullData.civitai.creator.username}" data-action="view-creator" title="View Creator Profile">
+                        ${modelWithFullData.civitai.creator.image ? 
                             `<div class="creator-avatar">
-                                <img src="${model.civitai.creator.image}" alt="${model.civitai.creator.username}" onerror="this.onerror=null; this.src='static/icons/user-placeholder.png';">
+                                <img src="${modelWithFullData.civitai.creator.image}" alt="${modelWithFullData.civitai.creator.username}" onerror="this.onerror=null; this.src='static/icons/user-placeholder.png';">
                             </div>` : 
                             `<div class="creator-avatar creator-placeholder">
                                 <i class="fas fa-user"></i>
                             </div>`
                         }
-                        <span class="creator-username">${model.civitai.creator.username}</span>
+                        <span class="creator-username">${modelWithFullData.civitai.creator.username}</span>
                     </div>` : ''}
                 </div>
 
-                ${renderCompactTags(model.tags || [], model.file_path)}
+                ${renderCompactTags(modelWithFullData.tags || [], modelWithFullData.file_path)}
             </header>
 
             <div class="modal-body">
@@ -127,12 +145,12 @@ export function showModelModal(model, modelType) {
                     <div class="info-grid">
                         <div class="info-item">
                             <label>Version</label>
-                            <span>${model.civitai?.name || 'N/A'}</span>
+                            <span>${modelWithFullData.civitai?.name || 'N/A'}</span>
                         </div>
                         <div class="info-item">
                             <label>File Name</label>
                             <div class="file-name-wrapper">
-                                <span id="file-name" class="file-name-content">${model.file_name || 'N/A'}</span>
+                                <span id="file-name" class="file-name-content">${modelWithFullData.file_name || 'N/A'}</span>
                                 <button class="edit-file-name-btn" title="Edit file name">
                                     <i class="fas fa-pencil-alt"></i>
                                 </button>
@@ -141,14 +159,14 @@ export function showModelModal(model, modelType) {
                         <div class="info-item location-size">
                             <div class="location-wrapper">
                                 <label>Location</label>
-                                <span class="file-path">${model.file_path.replace(/[^/]+$/, '') || 'N/A'}</span>
+                                <span class="file-path">${modelWithFullData.file_path.replace(/[^/]+$/, '') || 'N/A'}</span>
                             </div>
                         </div>
                         <div class="info-item base-size">
                             <div class="base-wrapper">
                                 <label>Base Model</label>
                                 <div class="base-model-display">
-                                    <span class="base-model-content">${model.base_model || 'Unknown'}</span>
+                                    <span class="base-model-content">${modelWithFullData.base_model || 'Unknown'}</span>
                                     <button class="edit-base-model-btn" title="Edit base model">
                                         <i class="fas fa-pencil-alt"></i>
                                     </button>
@@ -156,24 +174,24 @@ export function showModelModal(model, modelType) {
                             </div>
                             <div class="size-wrapper">
                                 <label>Size</label>
-                                <span>${formatFileSize(model.file_size)}</span>
+                                <span>${formatFileSize(modelWithFullData.file_size)}</span>
                             </div>
                         </div>
                         ${typeSpecificContent}
                         <div class="info-item notes">
                             <label>Additional Notes <i class="fas fa-info-circle notes-hint" title="Press Enter to save, Shift+Enter for new line"></i></label>
                             <div class="editable-field">
-                                <div class="notes-content" contenteditable="true" spellcheck="false">${model.notes || 'Add your notes here...'}</div>
+                                <div class="notes-content" contenteditable="true" spellcheck="false">${modelWithFullData.notes || 'Add your notes here...'}</div>
                             </div>
                         </div>
                         <div class="info-item full-width">
                             <label>About this version</label>
-                            <div class="description-text">${model.civitai?.description || 'N/A'}</div>
+                            <div class="description-text">${modelWithFullData.civitai?.description || 'N/A'}</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="showcase-section" data-model-hash="${model.sha256 || ''}" data-filepath="${model.file_path}">
+                <div class="showcase-section" data-model-hash="${modelWithFullData.sha256 || ''}" data-filepath="${modelWithFullData.file_path}">
                     <div class="showcase-tabs">
                         ${tabsContent}
                     </div>
@@ -200,16 +218,15 @@ export function showModelModal(model, modelType) {
     };
     
     modalManager.showModal(modalId, content, null, onCloseCallback);
-    setupEditableFields(model.file_path, modelType);
+    setupEditableFields(modelWithFullData.file_path, modelType);
     setupShowcaseScroll(modalId);
     setupTabSwitching();
     setupTagTooltip();
     setupTagEditMode();
-    setupModelNameEditing(model.file_path);
-    setupBaseModelEditing(model.file_path);
-    setupFileNameEditing(model.file_path);
-    // Remove setupModelDescriptionEditing from here - it will be called lazily
-    setupEventHandlers(model.file_path);
+    setupModelNameEditing(modelWithFullData.file_path);
+    setupBaseModelEditing(modelWithFullData.file_path);
+    setupFileNameEditing(modelWithFullData.file_path);
+    setupEventHandlers(modelWithFullData.file_path);
     
     // LoRA specific setup
     if (modelType === 'loras' || modelType === 'embeddings') {
@@ -217,16 +234,16 @@ export function showModelModal(model, modelType) {
         
         if (modelType == 'loras') {
             // Load recipes for this LoRA
-            loadRecipesForLora(model.model_name, model.sha256);
+            loadRecipesForLora(modelWithFullData.model_name, modelWithFullData.sha256);
         }
     }
     
     // Load example images asynchronously - merge regular and custom images
-    const regularImages = model.civitai?.images || [];
-    const customImages = model.civitai?.customImages || [];
+    const regularImages = modelWithFullData.civitai?.images || [];
+    const customImages = modelWithFullData.civitai?.customImages || [];
     // Combine images - regular images first, then custom images
     const allImages = [...regularImages, ...customImages];
-    loadExampleImages(allImages, model.sha256);
+    loadExampleImages(allImages, modelWithFullData.sha256);
 }
 
 function renderLoraSpecificContent(lora, escapedWords) {

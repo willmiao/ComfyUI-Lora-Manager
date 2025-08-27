@@ -214,7 +214,7 @@ function handleCardClick(card, modelType) {
     }
 }
 
-function showModelModalFromCard(card, modelType) {
+async function showModelModalFromCard(card, modelType) {
     // Get the appropriate preview versions map
     const previewVersionsKey = modelType;
     const previewVersions = state.pages[previewVersionsKey]?.previewVersions || new Map();
@@ -246,7 +246,7 @@ function showModelModalFromCard(card, modelType) {
         })
     };
     
-    showModelModal(modelMeta, modelType);
+    await showModelModal(modelMeta, modelType);
 }
 
 // Function to show the example access modal (generalized for lora and checkpoint)
@@ -306,7 +306,7 @@ function showExampleAccessModal(card, modelType) {
     // Set up import button
     const importBtn = modal.querySelector('#importExamplesBtn');
     if (importBtn) {
-        importBtn.onclick = () => {
+        importBtn.onclick = async () => {
             modalManager.closeModal('exampleAccessModal');
 
             // Get the model data from card dataset (works for both lora and checkpoint)
@@ -333,7 +333,7 @@ function showExampleAccessModal(card, modelType) {
             }
 
             // Show the model modal
-            showModelModal(modelMeta, modelType);
+            await showModelModal(modelMeta, modelType);
 
             // Scroll to import area after modal is visible
             setTimeout(() => {
