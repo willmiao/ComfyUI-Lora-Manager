@@ -1,5 +1,4 @@
 import { BaseModelApiClient } from './baseModelApi.js';
-import { showToast } from '../utils/uiHelpers.js';
 import { getSessionItem } from '../utils/storageHelpers.js';
 
 /**

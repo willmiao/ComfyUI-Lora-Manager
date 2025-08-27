@@ -390,6 +390,16 @@ class BaseModelService(ABC):
         
         return None
 
+    async def get_model_description(self, file_path: str) -> Optional[str]:
+        """Get model description by file path"""
+        cache = await self.scanner.get_cached_data()
+        
+        for model in cache.raw_data:
+            if model.get('file_path') == file_path:
+                return model.get('modelDescription', '')
+        
+        return None
+
     async def search_relative_paths(self, search_term: str, limit: int = 15) -> List[str]:
         """Search model relative file paths for autocomplete functionality"""
         cache = await self.scanner.get_cached_data()

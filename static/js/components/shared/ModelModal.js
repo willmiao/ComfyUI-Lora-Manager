@@ -62,8 +62,7 @@ export function showModelModal(model, modelType) {
                 <div class="model-description-loading">
                     <i class="fas fa-spinner fa-spin"></i> Loading model description...
                 </div>
-                <div class="model-description-content">
-                    ${model.modelDescription || ''}
+                <div class="model-description-content hidden">
                 </div>
             </div>
         </div>
@@ -84,8 +83,7 @@ export function showModelModal(model, modelType) {
                 <div class="model-description-loading">
                     <i class="fas fa-spinner fa-spin"></i> Loading model description...
                 </div>
-                <div class="model-description-content">
-                    ${model.modelDescription || ''}
+                <div class="model-description-content hidden">
                 </div>
             </div>
         </div>`;
@@ -210,7 +208,7 @@ export function showModelModal(model, modelType) {
     setupModelNameEditing(model.file_path);
     setupBaseModelEditing(model.file_path);
     setupFileNameEditing(model.file_path);
-    setupModelDescriptionEditing(model.file_path, model.modelDescription || '');
+    // Remove setupModelDescriptionEditing from here - it will be called lazily
     setupEventHandlers(model.file_path);
     
     // LoRA specific setup

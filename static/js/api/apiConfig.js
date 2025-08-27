@@ -89,6 +89,7 @@ export function getApiEndpoints(modelType) {
         conflicts: `/api/${modelType}/find-filename-conflicts`,
         verify: `/api/${modelType}/verify-duplicates`,
         metadata: `/api/${modelType}/metadata`,
+        modelDescription: `/api/${modelType}/model-description`,
         
         // Model-specific endpoints (will be merged with specific configs)
         specific: {}
@@ -106,7 +107,6 @@ export const MODEL_SPECIFIC_ENDPOINTS = {
         previewUrl: `/api/${MODEL_TYPES.LORA}/preview-url`,
         civitaiUrl: `/api/${MODEL_TYPES.LORA}/civitai-url`,
         metadata: `/api/${MODEL_TYPES.LORA}/metadata`,
-        modelDescription: `/api/${MODEL_TYPES.LORA}/model-description`,
         getTriggerWordsPost: `/api/${MODEL_TYPES.LORA}/get_trigger_words`,
         civitaiModelByVersion: `/api/${MODEL_TYPES.LORA}/civitai/model/version`,
         civitaiModelByHash: `/api/${MODEL_TYPES.LORA}/civitai/model/hash`,

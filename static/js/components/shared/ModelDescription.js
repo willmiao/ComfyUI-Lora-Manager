@@ -12,7 +12,7 @@ export function setupTabSwitching() {
     const tabButtons = document.querySelectorAll('.showcase-tabs .tab-btn');
     
     tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
+        button.addEventListener('click', async () => {
             // Remove active class from all tabs
             document.querySelectorAll('.showcase-tabs .tab-btn').forEach(btn => 
                 btn.classList.remove('active')
@@ -26,22 +26,56 @@ export function setupTabSwitching() {
             const tabId = `${button.dataset.tab}-tab`;
             document.getElementById(tabId).classList.add('active');
             
-            // If switching to description tab, make sure content is properly sized
+            // If switching to description tab, load content lazily
             if (button.dataset.tab === 'description') {
-                const descriptionContent = document.querySelector('.model-description-content');
-                if (descriptionContent) {
-                    const hasContent = descriptionContent.innerHTML.trim() !== '';
-                    document.querySelector('.model-description-loading')?.classList.add('hidden');
-                    
-                    // If no content, show a message
-                    if (!hasContent) {
-                        descriptionContent.innerHTML = '<div class="no-description">No model description available</div>';
-                        descriptionContent.classList.remove('hidden');
-                    }
-                }
+                await loadModelDescription();
             }
         });
     });
+}
+
+/**
+ * Load model description lazily
+ */
+async function loadModelDescription() {
+    const descriptionContent = document.querySelector('.model-description-content');
+    const descriptionLoading = document.querySelector('.model-description-loading');
+    const showcaseSection = document.querySelector('.showcase-section');
+    
+    if (!descriptionContent || !showcaseSection) return;
+    
+    // Check if already loaded
+    if (descriptionContent.dataset.loaded === 'true') {
+        return;
+    }
+    
+    const filePath = showcaseSection.dataset.filepath;
+    if (!filePath) return;
+    
+    try {
+        // Show loading state
+        descriptionLoading?.classList.remove('hidden');
+        descriptionContent.classList.add('hidden');
+        
+        // Fetch description from API
+        const { getModelApiClient } = await import('../../api/modelApiFactory.js');
+        const description = await getModelApiClient().fetchModelDescription(filePath);
+        
+        // Update content
+        descriptionContent.innerHTML = description || '<div class="no-description">No model description available</div>';
+        descriptionContent.dataset.loaded = 'true';
+        
+        // Set up editing functionality
+        setupModelDescriptionEditing(filePath);
+        
+    } catch (error) {
+        console.error('Error loading model description:', error);
+        descriptionContent.innerHTML = '<div class="no-description">Failed to load model description</div>';
+    } finally {
+        // Hide loading state
+        descriptionLoading?.classList.add('hidden');
+        descriptionContent.classList.remove('hidden');
+    }
 }
 
 /**

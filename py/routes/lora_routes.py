@@ -44,7 +44,6 @@ class LoraRoutes(BaseModelRoutes):
         # LoRA-specific query routes
         app.router.add_get(f'/api/{prefix}/letter-counts', self.get_letter_counts)
         app.router.add_get(f'/api/{prefix}/get-trigger-words', self.get_lora_trigger_words)
-        app.router.add_get(f'/api/{prefix}/model-description', self.get_lora_model_description)
         app.router.add_get(f'/api/{prefix}/usage-tips-by-path', self.get_lora_usage_tips_by_path)
         
         # CivitAI integration with LoRA-specific validation
@@ -296,74 +295,6 @@ class LoraRoutes(BaseModelRoutes):
             return web.json_response({
                 "success": False,
                 "error": str(e)
-            }, status=500)
-    
-    async def get_lora_model_description(self, request: web.Request) -> web.Response:
-        """Get model description for a Lora model"""
-        try:
-            # Get parameters
-            model_id = request.query.get('model_id')
-            file_path = request.query.get('file_path')
-            
-            if not model_id:
-                return web.json_response({
-                    'success': False, 
-                    'error': 'Model ID is required'
-                }, status=400)
-            
-            # Check if we already have the description stored in metadata
-            description = None
-            tags = []
-            creator = {}
-            if file_path:
-                import os
-                from ..utils.metadata_manager import MetadataManager
-                metadata_path = os.path.splitext(file_path)[0] + '.metadata.json'
-                metadata = await ModelRouteUtils.load_local_metadata(metadata_path)
-                description = metadata.get('modelDescription')
-                tags = metadata.get('tags', [])
-                creator = metadata.get('creator', {})
-            
-            # If description is not in metadata, fetch from CivitAI
-            if not description:
-                logger.info(f"Fetching model metadata for model ID: {model_id}")
-                model_metadata, _ = await self.civitai_client.get_model_metadata(model_id)
-                
-                if model_metadata:
-                    description = model_metadata.get('description')
-                    tags = model_metadata.get('tags', [])
-                    creator = model_metadata.get('creator', {})
-                
-                    # Save the metadata to file if we have a file path and got metadata
-                    if file_path:
-                        try:
-                            metadata_path = os.path.splitext(file_path)[0] + '.metadata.json'
-                            metadata = await ModelRouteUtils.load_local_metadata(metadata_path)
-                            
-                            metadata['modelDescription'] = description
-                            metadata['tags'] = tags
-                            # Ensure the civitai dict exists
-                            if 'civitai' not in metadata:
-                                metadata['civitai'] = {}
-                            # Store creator in the civitai nested structure
-                            metadata['civitai']['creator'] = creator
-                            
-                            await MetadataManager.save_metadata(file_path, metadata)
-                        except Exception as e:
-                            logger.error(f"Error saving model metadata: {e}")
-            
-            return web.json_response({
-                'success': True,
-                'description': description or "<p>No model description available.</p>",
-                'tags': tags,
-                'creator': creator
-            })
-            
-        except Exception as e:
-            logger.error(f"Error getting model metadata: {e}")
-            return web.json_response({
-                'success': False,
-                'error': str(e)
             }, status=500)
     
     async def get_trigger_words(self, request: web.Request) -> web.Response:
