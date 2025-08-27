@@ -9,10 +9,20 @@
 
 .container {
     max-width: 1400px;
-    margin: 20px auto;
+    margin: 0 auto;
     padding: 0 15px;
     position: relative;
     z-index: var(--z-base);
+}
+
+/* Sticky controls container */
+.controls {
+    position: sticky;
+    top: -54px;
+    z-index: calc(var(--z-header) - 1);
+    background: var(--bg-color);
+    padding: var(--space-2) 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 /* Responsive container for larger screens */
@@ -26,12 +36,6 @@
     .container {
         max-width: 2400px;
     }
-}
-
-.controls {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: var(--space-2);
 }
 
 .controls-right {
@@ -378,5 +382,10 @@
     .dropdown-menu {
         left: auto;
         right: 0; /* Align to right on mobile */
+    }
+
+    /* Adjust controls padding on mobile */
+    .controls {
+        padding: 10px 0;
     }
 }
