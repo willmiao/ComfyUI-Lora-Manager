@@ -142,10 +142,18 @@ class BaseModelService(ABC):
         if folder is not None:
             if search_options and search_options.get('recursive', True):
                 # Recursive folder filtering - include all subfolders
-                data = [
-                    item for item in data
-                    if item['folder'].startswith(folder)
-                ]
+                # Ensure we match exact folder or its subfolders by checking path boundaries
+                if folder == "":
+                    # Empty folder means root - include all items
+                    pass  # Don't filter anything
+                else:
+                    # Add trailing slash to ensure we match folder boundaries correctly
+                    folder_with_separator = folder + "/"
+                    data = [
+                        item for item in data
+                        if (item['folder'] == folder or 
+                            item['folder'].startswith(folder_with_separator))
+                    ]
             else:
                 # Exact folder filtering
                 data = [
