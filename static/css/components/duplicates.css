@@ -27,7 +27,7 @@
 }
 
 /* Responsive container for larger screens - match container in layout.css */
-@media (min-width: 2000px) {
+@media (min-width: 2150px) {
     .duplicates-banner .banner-content {
         max-width: 1800px;
     }
@@ -130,7 +130,7 @@
 }
 
 /* Add responsive container adjustments for duplicate groups - match container in banner */
-@media (min-width: 2000px) {
+@media (min-width: 2150px) {
     .duplicate-group {
         max-width: 1800px;
     }

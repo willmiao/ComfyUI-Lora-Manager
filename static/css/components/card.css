@@ -41,7 +41,7 @@
 }
 
 /* Responsive adjustments for 1440p screens (2K) */
-@media (min-width: 2000px) {
+@media (min-width: 2150px) {
     .card-grid {
         max-width: 1800px; /* Increased for 2K screens */
         grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
@@ -525,7 +525,7 @@
 }
 
 /* For larger screens, allow more space for the cards */
-@media (min-width: 2000px) {
+@media (min-width: 2150px) {
     .card-grid.virtual-scroll {
         max-width: 1800px;
     }

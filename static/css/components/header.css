@@ -20,7 +20,7 @@
 }
 
 /* Responsive header container for larger screens */
-@media (min-width: 2000px) {
+@media (min-width: 2150px) {
   .header-container {
     max-width: 1800px;
   }

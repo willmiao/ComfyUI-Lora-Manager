@@ -366,7 +366,7 @@
 }
 
 /* Responsive Design */
-@media (min-width: 2000px) {
+@media (min-width: 2150px) {
     .folder-sidebar {
         width: 280px;
         left: 0px;

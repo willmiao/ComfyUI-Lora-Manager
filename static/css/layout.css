@@ -16,7 +16,7 @@
 }
 
 /* Responsive container for larger screens */
-@media (min-width: 2000px) {
+@media (min-width: 2150px) {
     .container {
         max-width: 1800px;
     }

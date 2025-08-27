@@ -117,7 +117,7 @@ export class VirtualScroller {
                 maxColumns = 10;
             }
             maxGridWidth = 2400; // Match exact CSS container width for 4K
-        } else if (window.innerWidth >= 2000) { // 2K/1440p
+        } else if (window.innerWidth >= 2150) { // 2K/1440p
             if (displayDensity === 'default') {
                 maxColumns = 6;
             } else if (displayDensity === 'medium') {
