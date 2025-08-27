@@ -1,7 +1,7 @@
 .folder-sidebar {
     position: fixed;
     top: 68px; /* Below header */
-    left: 10px;
+    left: 0px;
     width: 230px;
     height: calc(100vh - 88px);
     background: var(--bg-color);
@@ -369,21 +369,21 @@
 @media (min-width: 2000px) {
     .folder-sidebar {
         width: 280px;
-        left: 24px;
+        left: 0px;
     }
 }
 
 @media (min-width: 3000px) {
     .folder-sidebar {
         width: 320px;
-        left: 32px;
+        left: 0px;
     }
 }
 
 @media (max-width: 1400px) {
     .folder-sidebar {
         width: 260px;
-        left: 16px;
+        left: 0px;
     }
 }
 
@@ -435,7 +435,7 @@
 @media (max-width: 1024px) {
     .folder-sidebar {
         top: 68px;
-        left: 16px;
+        left: 0px;
         width: calc(100vw - 32px);
         max-width: 320px;
         height: calc(100vh - 88px);
@@ -464,7 +464,7 @@
     .folder-sidebar {
         width: calc(100vw - 32px);
         max-width: 280px;
-        left: 16px;
+        left: 0px;
     }
     
     .sidebar-breadcrumb-nav {
