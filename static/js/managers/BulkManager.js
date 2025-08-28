@@ -5,6 +5,7 @@ import { modalManager } from './ModalManager.js';
 import { moveManager } from './MoveManager.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
+import { updateBulkSelectionCount } from '../utils/i18nHelpers.js';
 
 export class BulkManager {
     constructor() {
@@ -182,11 +183,10 @@ export class BulkManager {
 
     updateSelectedCount() {
         const countElement = document.getElementById('selectedCount');
-        const currentConfig = MODEL_CONFIG[state.currentPageType];
-        const displayName = currentConfig?.displayName || 'Models';
         
         if (countElement) {
-            countElement.textContent = `${state.selectedModels.size} ${displayName.toLowerCase()}(s) selected `;
+            // Use i18n helper to update the count text
+            updateBulkSelectionCount(state.selectedModels.size);
             
             const existingCaret = countElement.querySelector('.dropdown-caret');
             if (existingCaret) {

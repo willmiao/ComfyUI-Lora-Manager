@@ -3,6 +3,7 @@ import { toggleTheme } from '../utils/uiHelpers.js';
 import { SearchManager } from '../managers/SearchManager.js';
 import { FilterManager } from '../managers/FilterManager.js';
 import { initPageState } from '../state/index.js';
+import { updateSearchPlaceholder } from '../utils/i18nHelpers.js';
 
 /**
  * Header.js - Manages the application header behavior across different pages
@@ -51,17 +52,14 @@ export class HeaderManager {
         const currentTheme = localStorage.getItem('lm_theme') || 'auto';
         themeToggle.classList.add(`theme-${currentTheme}`);
         
+        // Set initial tooltip text
+        this.updateThemeTooltip(themeToggle, currentTheme);
+        
         themeToggle.addEventListener('click', () => {
           if (typeof toggleTheme === 'function') {
             const newTheme = toggleTheme();
             // Update tooltip based on next toggle action
-            if (newTheme === 'light') {
-              themeToggle.title = "Switch to dark theme";
-            } else if (newTheme === 'dark') {
-              themeToggle.title = "Switch to auto theme";
-            } else {
-              themeToggle.title = "Switch to light theme";
-            }
+            this.updateThemeTooltip(themeToggle, newTheme);
           }
         });
       }
@@ -136,7 +134,7 @@ export class HeaderManager {
         const searchButtons = headerSearch.querySelectorAll('button');
         if (searchInput) {
           searchInput.disabled = true;
-          searchInput.placeholder = 'Search not available on statistics page';
+          searchInput.placeholder = window.i18n?.t('header.search.notAvailable') || 'Search not available on statistics page';
         }
         searchButtons.forEach(btn => btn.disabled = true);
       } else if (headerSearch) {
@@ -146,8 +144,22 @@ export class HeaderManager {
         const searchButtons = headerSearch.querySelectorAll('button');
         if (searchInput) {
           searchInput.disabled = false;
+          // Update placeholder based on current page
+          updateSearchPlaceholder(window.location.pathname);
         }
         searchButtons.forEach(btn => btn.disabled = false);
+      }
+    }
+    
+    updateThemeTooltip(themeToggle, currentTheme) {
+      if (!window.i18n) return;
+      
+      if (currentTheme === 'light') {
+        themeToggle.title = window.i18n.t('header.theme.switchToDark');
+      } else if (currentTheme === 'dark') {
+        themeToggle.title = window.i18n.t('header.theme.switchToAuto');
+      } else {
+        themeToggle.title = window.i18n.t('header.theme.switchToLight');
       }
     }
 }

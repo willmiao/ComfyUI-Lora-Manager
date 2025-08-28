@@ -1,59 +1,59 @@
 <div class="controls">
     <div class="actions">
         <div class="action-buttons">
-            <div title="Sort models by..." class="control-group">
+            <div data-i18n="loras.controls.sort.title" data-i18n-target="title" title="Sort models by..." class="control-group">
                 <select id="sortSelect">
-                    <optgroup label="Name">
-                        <option value="name:asc">A - Z</option>
-                        <option value="name:desc">Z - A</option>
+                    <optgroup data-i18n="loras.controls.sort.name" label="Name">
+                        <option value="name:asc" data-i18n="loras.controls.sort.nameAsc">A - Z</option>
+                        <option value="name:desc" data-i18n="loras.controls.sort.nameDesc">Z - A</option>
                     </optgroup>
-                    <optgroup label="Date Added">
-                        <option value="date:desc">Newest</option>
-                        <option value="date:asc">Oldest</option>
+                    <optgroup data-i18n="loras.controls.sort.date" label="Date Added">
+                        <option value="date:desc" data-i18n="loras.controls.sort.dateDesc">Newest</option>
+                        <option value="date:asc" data-i18n="loras.controls.sort.dateAsc">Oldest</option>
                     </optgroup>
-                    <optgroup label="File Size">
-                        <option value="size:desc">Largest</option>
-                        <option value="size:asc">Smallest</option>
+                    <optgroup data-i18n="loras.controls.sort.size" label="File Size">
+                        <option value="size:desc" data-i18n="loras.controls.sort.sizeDesc">Largest</option>
+                        <option value="size:asc" data-i18n="loras.controls.sort.sizeAsc">Smallest</option>
                     </optgroup>
                 </select>
             </div>
-            <div title="Refresh model list" class="control-group dropdown-group">
-                <button data-action="refresh" class="dropdown-main"><i class="fas fa-sync"></i> Refresh</button>
+            <div data-i18n="loras.controls.refresh.title" data-i18n-target="title" title="Refresh model list" class="control-group dropdown-group">
+                <button data-action="refresh" class="dropdown-main"><i class="fas fa-sync"></i> <span data-i18n="common.actions.refresh">Refresh</span></button>
                 <button class="dropdown-toggle" aria-label="Show refresh options">
                     <i class="fas fa-caret-down"></i>
                 </button>
                 <div class="dropdown-menu">
                     <div class="dropdown-item" data-action="quick-refresh">
-                        <i class="fas fa-bolt"></i> Quick Refresh (incremental)
+                        <i class="fas fa-bolt"></i> <span data-i18n="loras.controls.refresh.quick">Quick Refresh (incremental)</span>
                     </div>
                     <div class="dropdown-item" data-action="full-rebuild">
-                        <i class="fas fa-tools"></i> Full Rebuild (complete)
+                        <i class="fas fa-tools"></i> <span data-i18n="loras.controls.refresh.full">Full Rebuild (complete)</span>
                     </div>
                 </div>
             </div>
             
             <div class="control-group">
-                <button data-action="fetch" title="Fetch from Civitai"><i class="fas fa-download"></i> Fetch</button>
+                <button data-action="fetch" data-i18n="loras.controls.fetch" data-i18n-target="title" title="Fetch from Civitai"><i class="fas fa-download"></i> <span data-i18n="loras.controls.fetch">Fetch</span></button>
             </div>
             <div class="control-group">
-                <button data-action="download" title="Download from URL">
-                    <i class="fas fa-cloud-download-alt"></i> Download
+                <button data-action="download" data-i18n="loras.controls.download" data-i18n-target="title" title="Download from URL">
+                    <i class="fas fa-cloud-download-alt"></i> <span data-i18n="loras.controls.download">Download</span>
                 </button>
             </div>
             <div class="control-group">
-                <button id="bulkOperationsBtn" data-action="bulk" title="Bulk Operations (Press B)">
-                    <i class="fas fa-th-large"></i> <span>Bulk <div class="shortcut-key">B</div></span>
+                <button id="bulkOperationsBtn" data-action="bulk" data-i18n="loras.controls.bulk" data-i18n-target="title" title="Bulk Operations (Press B)">
+                    <i class="fas fa-th-large"></i> <span><span data-i18n="loras.controls.bulk">Bulk</span> <div class="shortcut-key">B</div></span>
                 </button>
             </div>
             <div class="control-group">
-                <button id="findDuplicatesBtn" data-action="find-duplicates" title="Find duplicate models">
-                    <i class="fas fa-clone"></i> Duplicates
+                <button id="findDuplicatesBtn" data-action="find-duplicates" data-i18n="loras.controls.duplicates" data-i18n-target="title" title="Find duplicate models">
+                    <i class="fas fa-clone"></i> <span data-i18n="loras.controls.duplicates">Duplicates</span>
                     <span id="duplicatesBadge" class="badge"></span>
                 </button>
             </div>
             <div class="control-group">
-                <button id="favoriteFilterBtn" data-action="toggle-favorites" class="favorite-filter" title="Show favorites only">
-                    <i class="fas fa-star"></i> Favorites
+                <button id="favoriteFilterBtn" data-action="toggle-favorites" class="favorite-filter" data-i18n="loras.controls.favorites" data-i18n-target="title" title="Show favorites only">
+                    <i class="fas fa-star"></i> <span data-i18n="loras.controls.favorites">Favorites</span>
                 </button>
             </div>
             <div id="customFilterIndicator" class="control-group hidden">
@@ -68,23 +68,23 @@
             <div class="keyboard-nav-hint tooltip">
                 <i class="fas fa-keyboard"></i>
                 <span class="tooltiptext">
-                    Keyboard Navigation:
+                    <span data-i18n="keyboard.navigation">Keyboard Navigation:</span>
                     <table class="keyboard-shortcuts">
                         <tr>
                             <td><span class="key">Page Up</span></td>
-                            <td>Scroll up one page</td>
+                            <td data-i18n="keyboard.shortcuts.pageUp">Scroll up one page</td>
                         </tr>
                         <tr>
                             <td><span class="key">Page Down</span></td>
-                            <td>Scroll down one page</td>
+                            <td data-i18n="keyboard.shortcuts.pageDown">Scroll down one page</td>
                         </tr>
                         <tr>
                             <td><span class="key">Home</span></td>
-                            <td>Jump to top</td>
+                            <td data-i18n="keyboard.shortcuts.home">Jump to top</td>
                         </tr>
                         <tr>
                             <td><span class="key">End</span></td>
-                            <td>Jump to bottom</td>
+                            <td data-i18n="keyboard.shortcuts.end">Jump to bottom</td>
                         </tr>
                     </table>
                 </span>
@@ -107,23 +107,23 @@
             0 selected <i class="fas fa-caret-down dropdown-caret"></i>
         </span>
         <div class="bulk-operations-actions">
-            <button data-action="send-to-workflow" title="Send all selected LoRAs to workflow">
-                <i class="fas fa-arrow-right"></i> Send to Workflow
+            <button data-action="send-to-workflow" data-i18n="loras.bulkOperations.sendToWorkflow" data-i18n-target="title" title="Send all selected LoRAs to workflow">
+                <i class="fas fa-arrow-right"></i> <span data-i18n="loras.bulkOperations.sendToWorkflow">Send to Workflow</span>
             </button>
-            <button data-action="copy-all" title="Copy all selected LoRAs syntax">
-                <i class="fas fa-copy"></i> Copy All
+            <button data-action="copy-all" data-i18n="loras.bulkOperations.copyAll" data-i18n-target="title" title="Copy all selected LoRAs syntax">
+                <i class="fas fa-copy"></i> <span data-i18n="loras.bulkOperations.copyAll">Copy All</span>
             </button>
-            <button data-action="refresh-all" title="Refresh CivitAI metadata for selected models">
-                <i class="fas fa-sync-alt"></i> Refresh All
+            <button data-action="refresh-all" data-i18n="loras.bulkOperations.refreshAll" data-i18n-target="title" title="Refresh CivitAI metadata for selected models">
+                <i class="fas fa-sync-alt"></i> <span data-i18n="loras.bulkOperations.refreshAll">Refresh All</span>
             </button>
-            <button data-action="move-all" title="Move selected models to folder">
-                <i class="fas fa-folder-open"></i> Move All
+            <button data-action="move-all" data-i18n="loras.bulkOperations.moveAll" data-i18n-target="title" title="Move selected models to folder">
+                <i class="fas fa-folder-open"></i> <span data-i18n="loras.bulkOperations.moveAll">Move All</span>
             </button>
-            <button data-action="delete-all" title="Delete selected models" class="danger-btn">
-                <i class="fas fa-trash"></i> Delete All
+            <button data-action="delete-all" data-i18n="loras.bulkOperations.deleteAll" data-i18n-target="title" title="Delete selected models" class="danger-btn">
+                <i class="fas fa-trash"></i> <span data-i18n="loras.bulkOperations.deleteAll">Delete All</span>
             </button>
-            <button data-action="clear" title="Clear selection">
-                <i class="fas fa-times"></i> Clear
+            <button data-action="clear" data-i18n="loras.bulkOperations.clear" data-i18n-target="title" title="Clear selection">
+                <i class="fas fa-times"></i> <span data-i18n="loras.bulkOperations.clear">Clear</span>
             </button>
         </div>
     </div>

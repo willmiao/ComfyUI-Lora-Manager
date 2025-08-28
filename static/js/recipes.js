@@ -8,6 +8,7 @@ import { RecipeContextMenu } from './components/ContextMenu/index.js';
 import { DuplicatesManager } from './components/DuplicatesManager.js';
 import { refreshVirtualScroll } from './utils/infiniteScroll.js';
 import { refreshRecipes } from './api/recipeApi.js';
+import { initializePageI18n } from './utils/i18nHelpers.js';
 
 class RecipeManager {
     constructor() {
@@ -54,6 +55,9 @@ class RecipeManager {
         
         // Initialize common page features
         appCore.initializePageFeatures();
+        
+        // Initialize i18n for the page
+        initializePageI18n();
     }
     
     _initSearchOptions() {

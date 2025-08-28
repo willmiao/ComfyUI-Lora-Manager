@@ -13,6 +13,7 @@ import { bannerService } from './managers/BannerService.js';
 import { showToast, initTheme, initBackToTop } from './utils/uiHelpers.js';
 import { initializeInfiniteScroll } from './utils/infiniteScroll.js';
 import { migrateStorageItems } from './utils/storageHelpers.js';
+import { i18n } from './i18n/index.js';
 
 // Core application class
 export class AppCore {
@@ -25,6 +26,10 @@ export class AppCore {
         if (this.initialized) return;
 
         console.log('AppCore: Initializing...');
+        
+        // Initialize i18n first
+        window.i18n = i18n;
+        console.log(`AppCore: Language detected: ${i18n.getCurrentLocale()}`);
         
         // Initialize managers
         state.loadingManager = new LoadingManager();
