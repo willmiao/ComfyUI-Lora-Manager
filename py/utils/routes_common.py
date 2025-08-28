@@ -234,7 +234,7 @@ class ModelRouteUtils:
         if not data:
             return {}
 
-        fields = ["name", "trainedWords"] if minimal else [
+        fields = ["id", "modelId", "name", "trainedWords"] if minimal else [
             "id", "modelId", "name", "createdAt", "updatedAt",
             "publishedAt", "trainedWords", "baseModel", "description",
             "model", "images", "customImages", "creator"
