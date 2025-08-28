@@ -24,6 +24,7 @@ export const BASE_MODELS = {
     // Other models
     FLUX_1_D: "Flux.1 D",
     FLUX_1_S: "Flux.1 S",
+    FLUX_1_KREA: "Flux.1 Krea",
     FLUX_1_KONTEXT: "Flux.1 Kontext",
     AURAFLOW: "AuraFlow",
     PIXART_A: "PixArt a",
@@ -51,56 +52,6 @@ export const BASE_MODELS = {
     HUNYUAN_VIDEO: "Hunyuan Video",
     // Default
     UNKNOWN: "Other"
-};
-
-// Base model display names and their corresponding class names (for styling)
-export const BASE_MODEL_CLASSES = {
-    // Stable Diffusion 1.x models
-    [BASE_MODELS.SD_1_4]: "sd-1-4",
-    [BASE_MODELS.SD_1_5]: "sd-1-5",
-    [BASE_MODELS.SD_1_5_LCM]: "sd-1-5-lcm",
-    [BASE_MODELS.SD_1_5_HYPER]: "sd-1-5-hyper",
-    
-    // Stable Diffusion 2.x models
-    [BASE_MODELS.SD_2_0]: "sd-2-0",
-    [BASE_MODELS.SD_2_1]: "sd-2-1",
-    
-    // Stable Diffusion 3.x models
-    [BASE_MODELS.SD_3]: "sd-3",
-    [BASE_MODELS.SD_3_5]: "sd-3-5",
-    [BASE_MODELS.SD_3_5_MEDIUM]: "sd-3-5-medium",
-    [BASE_MODELS.SD_3_5_LARGE]: "sd-3-5-large",
-    [BASE_MODELS.SD_3_5_LARGE_TURBO]: "sd-3-5-large-turbo",
-    
-    // SDXL models
-    [BASE_MODELS.SDXL]: "sdxl",
-    [BASE_MODELS.SDXL_LIGHTNING]: "sdxl-lightning",
-    [BASE_MODELS.SDXL_HYPER]: "sdxl-hyper",
-    
-    // Video models
-    [BASE_MODELS.SVD]: "svd",
-    [BASE_MODELS.LTXV]: "ltxv",
-    [BASE_MODELS.WAN_VIDEO]: "wan-video",
-    [BASE_MODELS.HUNYUAN_VIDEO]: "hunyuan-video",
-    
-    // Other models
-    [BASE_MODELS.FLUX_1_D]: "flux-d",
-    [BASE_MODELS.FLUX_1_S]: "flux-s",
-    [BASE_MODELS.FLUX_1_KONTEXT]: "flux-kontext",
-    [BASE_MODELS.AURAFLOW]: "auraflow",
-    [BASE_MODELS.PIXART_A]: "pixart-a",
-    [BASE_MODELS.PIXART_E]: "pixart-e",
-    [BASE_MODELS.HUNYUAN_1]: "hunyuan-1",
-    [BASE_MODELS.LUMINA]: "lumina",
-    [BASE_MODELS.KOLORS]: "kolors",
-    [BASE_MODELS.NOOBAI]: "noobai",
-    [BASE_MODELS.ILLUSTRIOUS]: "il",
-    [BASE_MODELS.PONY]: "pony",
-    [BASE_MODELS.HIDREAM]: "hidream",
-    [BASE_MODELS.QWEN]: "qwen",
-    
-    // Default
-    [BASE_MODELS.UNKNOWN]: "unknown"
 };
 
 // Path template constants for download organization
