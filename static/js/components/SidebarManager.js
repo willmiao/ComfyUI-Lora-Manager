@@ -30,6 +30,7 @@ export class SidebarManager {
         this.handleMouseLeave = this.handleMouseLeave.bind(this);
         this.handleHoverAreaEnter = this.handleHoverAreaEnter.bind(this);
         this.handleHoverAreaLeave = this.handleHoverAreaLeave.bind(this);
+        this.updateContainerMargin = this.updateContainerMargin.bind(this);
     }
 
     async initialize(pageControls) {
@@ -53,6 +54,9 @@ export class SidebarManager {
         
         // Apply final state with animation after everything is loaded
         this.applyFinalSidebarState();
+        
+        // Update container margin based on initial sidebar state
+        this.updateContainerMargin();
         
         this.isInitialized = true;
         console.log(`SidebarManager initialized for ${this.pageType} page`);
@@ -80,6 +84,15 @@ export class SidebarManager {
         this.isHovering = false;
         this.apiClient = null;
         this.isInitialized = false;
+        
+        // Reset container margin
+        const container = document.querySelector('.container');
+        if (container) {
+            container.style.marginLeft = '';
+        }
+        
+        // Remove resize event listener
+        window.removeEventListener('resize', this.updateContainerMargin);
         
         console.log('SidebarManager cleaned up');
     }
@@ -119,6 +132,9 @@ export class SidebarManager {
         
         // Remove document click handler
         document.removeEventListener('click', this.handleDocumentClick);
+        
+        // Remove resize event handler
+        window.removeEventListener('resize', this.updateContainerMargin);
     }
 
     async init() {
@@ -135,6 +151,9 @@ export class SidebarManager {
         
         // Apply final state with animation after everything is loaded
         this.applyFinalSidebarState();
+        
+        // Update container margin based on initial sidebar state
+        this.updateContainerMargin();
     }
 
     setInitialSidebarState() {
@@ -231,10 +250,14 @@ export class SidebarManager {
         // Handle window resize
         window.addEventListener('resize', () => {
             this.updateAutoHideState();
+            this.updateContainerMargin();
         });
 
         // Add document click handler for closing dropdowns
         document.addEventListener('click', this.handleDocumentClick);
+        
+        // Add dedicated resize listener for container margin updates
+        window.addEventListener('resize', this.updateContainerMargin);
     }
 
     handleDocumentClick(event) {
@@ -257,6 +280,7 @@ export class SidebarManager {
         this.updateAutoHideState();
         this.updatePinButton();
         this.saveSidebarState();
+        this.updateContainerMargin();
     }
 
     handleCollapseAll(event) {
@@ -304,6 +328,7 @@ export class SidebarManager {
         if (sidebar && !this.isPinned) {
             sidebar.classList.add('hover-active');
             this.isVisible = true;
+            this.updateContainerMargin();
         }
     }
 
@@ -312,6 +337,7 @@ export class SidebarManager {
         if (sidebar && !this.isPinned) {
             sidebar.classList.remove('hover-active');
             this.isVisible = false;
+            this.updateContainerMargin();
         }
     }
 
@@ -345,6 +371,34 @@ export class SidebarManager {
             } else {
                 sidebar.classList.remove('hover-active');
                 this.isVisible = false;
+            }
+        }
+        
+        // Update container margin when sidebar state changes
+        this.updateContainerMargin();
+    }
+
+    // New method to update container margin based on sidebar state
+    updateContainerMargin() {
+        const container = document.querySelector('.container');
+        const sidebar = document.getElementById('folderSidebar');
+        
+        if (!container || !sidebar) return;
+        
+        // Reset margin to default
+        container.style.marginLeft = '';
+        
+        // Only adjust margin if sidebar is visible and pinned
+        if ((this.isPinned || this.isHovering) && this.isVisible) {
+            const sidebarWidth = sidebar.offsetWidth;
+            const viewportWidth = window.innerWidth;
+            const containerWidth = container.offsetWidth;
+            
+            // Check if there's enough space for both sidebar and container
+            // We need: sidebar width + container width + some padding < viewport width
+            if (sidebarWidth + containerWidth + sidebarWidth > viewportWidth) {
+                // Not enough space, push container to the right
+                container.style.marginLeft = `${sidebarWidth + 10}px`;
             }
         }
     }
