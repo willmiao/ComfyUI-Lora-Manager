@@ -754,12 +754,13 @@ export class SidebarManager {
 
     restoreSelectedFolder() {
         const activeFolder = getStorageItem(`${this.pageType}_activeFolder`);
-        if (activeFolder) {
+        if (activeFolder && typeof activeFolder === 'string') {
             this.selectedPath = activeFolder;
             this.updateTreeSelection();
             this.updateBreadcrumbs();
             this.updateSidebarHeader();
         } else {
+            this.selectedPath = '';
             this.updateSidebarHeader();
             this.updateBreadcrumbs(); // Always update breadcrumbs
         }
