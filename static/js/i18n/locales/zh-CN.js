@@ -73,12 +73,12 @@ export const zhCN = {
     
     // 头部和导航
     header: {
-        appTitle: 'LoRA 管理器',
+        appTitle: 'LoRA',
         navigation: {
-            loras: 'LoRA 模型',
+            loras: 'LoRA',
             recipes: '配方',
-            checkpoints: '检查点',
-            embeddings: '嵌入模型',
+            checkpoints: '大模型',
+            embeddings: 'Embedding',
             statistics: '统计'
         },
         search: {
@@ -86,8 +86,8 @@ export const zhCN = {
             placeholders: {
                 loras: '搜索 LoRA...',
                 recipes: '搜索配方...',
-                checkpoints: '搜索检查点...',
-                embeddings: '搜索嵌入模型...'
+                checkpoints: '搜索大模型...',
+                embeddings: '搜索 Embedding...'
             },
             options: '搜索选项',
             searchIn: '搜索范围：',
@@ -118,7 +118,7 @@ export const zhCN = {
     
     // LoRA 页面
     loras: {
-        title: 'LoRA 模型',
+        title: 'LoRA',
         controls: {
             sort: {
                 title: '排序方式...',
@@ -145,12 +145,12 @@ export const zhCN = {
         },
         bulkOperations: {
             title: '批量操作',
-            selected: '已选择 {count} 项',
-            sendToWorkflow: '将所有选中的 LoRA 发送到工作流',
-            copyAll: '复制所有选中 LoRA 的语法',
-            refreshAll: '刷新选中模型的 CivitAI 元数据',
-            moveAll: '将选中模型移动到文件夹',
-            deleteAll: '删除选中的模型',
+            selected: '已选择{count}项',
+            sendToWorkflow: '发送到工作流',
+            copyAll: '复制LoRA语法',
+            refreshAll: '刷新元数据',
+            moveAll: '移动',
+            deleteAll: '删除',
             clear: '清除选择'
         },
         contextMenu: {
@@ -221,9 +221,9 @@ export const zhCN = {
         }
     },
     
-    // 检查点页面
+    // 大模型页面
     checkpoints: {
-        title: '检查点模型',
+        title: '大模型',
         info: {
             filename: '文件名',
             modelName: '模型名称',
@@ -235,7 +235,7 @@ export const zhCN = {
     
     // 嵌入模型页面
     embeddings: {
-        title: '嵌入模型',
+        title: 'Embedding',
         info: {
             filename: '文件名',
             modelName: '模型名称',
@@ -251,8 +251,8 @@ export const zhCN = {
         overview: {
             title: '概览',
             totalLoras: 'LoRA 总数',
-            totalCheckpoints: '检查点总数',
-            totalEmbeddings: '嵌入模型总数',
+            totalCheckpoints: '大模型总数',
+            totalEmbeddings: 'Embedding 总数',
             totalSize: '总大小',
             favoriteModels: '收藏模型'
         },
