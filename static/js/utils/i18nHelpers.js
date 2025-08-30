@@ -8,45 +8,38 @@ import { i18n } from '../i18n/index.js';
  * Uses data-i18n attribute to specify translation keys
  */
 export function translateDOM() {
-    // Find all elements with data-i18n attribute
+    if (!window.i18n) return;
+    
+    // Select all elements with data-i18n attributes, including optgroups and options
     const elements = document.querySelectorAll('[data-i18n]');
     
     elements.forEach(element => {
         const key = element.getAttribute('data-i18n');
-        const params = element.getAttribute('data-i18n-params');
-        
-        let parsedParams = {};
-        if (params) {
-            try {
-                parsedParams = JSON.parse(params);
-            } catch (e) {
-                console.warn(`Invalid JSON in data-i18n-params for key ${key}:`, params);
-            }
-        }
-        
-        // Get translated text
-        const translatedText = i18n.t(key, parsedParams);
-        
-        // Handle different translation targets
         const target = element.getAttribute('data-i18n-target') || 'textContent';
         
-        switch (target) {
-            case 'placeholder':
-                element.placeholder = translatedText;
-                break;
-            case 'title':
-                element.title = translatedText;
-                break;
-            case 'alt':
-                element.alt = translatedText;
-                break;
-            case 'innerHTML':
-                element.innerHTML = translatedText;
-                break;
-            case 'textContent':
-            default:
-                element.textContent = translatedText;
-                break;
+        if (key) {
+            const translation = window.i18n.t(key);
+            
+            // Handle different target attributes
+            switch (target) {
+                case 'placeholder':
+                    element.placeholder = translation;
+                    break;
+                case 'title':
+                    element.title = translation;
+                    break;
+                case 'label':
+                    // For optgroup elements
+                    element.label = translation;
+                    break;
+                case 'value':
+                    element.value = translation;
+                    break;
+                case 'textContent':
+                default:
+                    element.textContent = translation;
+                    break;
+            }
         }
     });
 }

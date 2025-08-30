@@ -3,6 +3,7 @@ import { toggleTheme } from '../utils/uiHelpers.js';
 import { SearchManager } from '../managers/SearchManager.js';
 import { FilterManager } from '../managers/FilterManager.js';
 import { initPageState } from '../state/index.js';
+import { getStorageItem } from '../utils/storageHelpers.js';
 import { updateSearchPlaceholder } from '../utils/i18nHelpers.js';
 
 /**
@@ -49,7 +50,7 @@ export class HeaderManager {
       const themeToggle = document.querySelector('.theme-toggle');
       if (themeToggle) {
         // Set initial state based on current theme
-        const currentTheme = localStorage.getItem('lm_theme') || 'auto';
+        const currentTheme = getStorageItem('theme') || 'auto';
         themeToggle.classList.add(`theme-${currentTheme}`);
         
         // Set initial tooltip text
@@ -157,8 +158,6 @@ export class HeaderManager {
       if (currentTheme === 'light') {
         themeToggle.title = window.i18n.t('header.theme.switchToDark');
       } else if (currentTheme === 'dark') {
-        themeToggle.title = window.i18n.t('header.theme.switchToAuto');
-      } else {
         themeToggle.title = window.i18n.t('header.theme.switchToLight');
       }
     }

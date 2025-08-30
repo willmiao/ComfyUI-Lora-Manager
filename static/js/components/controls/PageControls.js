@@ -2,7 +2,6 @@
 import { getCurrentPageState, setCurrentPageType } from '../../state/index.js';
 import { getStorageItem, setStorageItem, getSessionItem, setSessionItem } from '../../utils/storageHelpers.js';
 import { showToast } from '../../utils/uiHelpers.js';
-import { SidebarManager } from '../SidebarManager.js';
 import { sidebarManager } from '../SidebarManager.js';
 
 /**
