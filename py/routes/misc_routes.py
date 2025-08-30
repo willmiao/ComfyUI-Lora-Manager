@@ -112,10 +112,6 @@ class MiscRoutes:
         
         # Add new route for checking if a model exists in the library
         app.router.add_get('/api/check-model-exists', MiscRoutes.check_model_exists)
-        
-        # Language settings endpoints
-        app.router.add_post('/api/set-language', MiscRoutes.set_language)
-        app.router.add_get('/api/get-language', MiscRoutes.get_language)
 
     @staticmethod
     async def clear_cache(request):
@@ -697,72 +693,6 @@ class MiscRoutes:
             
         except Exception as e:
             logger.error(f"Failed to check model existence: {e}", exc_info=True)
-            return web.json_response({
-                'success': False,
-                'error': str(e)
-            }, status=500)
-
-    @staticmethod
-    async def set_language(request):
-        """
-        Set user language preference
-        
-        Expects a JSON body with:
-        {
-            "language": "en" | "zh-CN" | "zh-TW" | "ru" | "de" | "ja" | "ko" | "fr" | "es"
-        }
-        """
-        try:
-            data = await request.json()
-            language = data.get('language')
-            
-            if not language:
-                return web.json_response({
-                    'success': False,
-                    'error': 'Missing language parameter'
-                }, status=400)
-            
-            # Validate language code
-            supported_languages = ['en', 'zh-CN', 'zh-TW', 'ru', 'de', 'ja', 'ko', 'fr', 'es']
-            if language not in supported_languages:
-                return web.json_response({
-                    'success': False,
-                    'error': f'Unsupported language: {language}. Supported languages: {", ".join(supported_languages)}'
-                }, status=400)
-            
-            # Save language setting
-            settings.set('language', language)
-            
-            return web.json_response({
-                'success': True,
-                'message': f'Language set to {language}',
-                'language': language
-            })
-            
-        except Exception as e:
-            logger.error(f"Failed to set language: {e}", exc_info=True)
-            return web.json_response({
-                'success': False,
-                'error': str(e)
-            }, status=500)
-    
-    @staticmethod
-    async def get_language(request):
-        """
-        Get current user language preference
-        
-        Returns the current language setting from settings
-        """
-        try:
-            current_language = settings.get('language', 'en')
-            
-            return web.json_response({
-                'success': True,
-                'language': current_language
-            })
-            
-        except Exception as e:
-            logger.error(f"Failed to get language: {e}", exc_info=True)
             return web.json_response({
                 'success': False,
                 'error': str(e)

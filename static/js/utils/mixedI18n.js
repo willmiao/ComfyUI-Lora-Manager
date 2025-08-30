@@ -102,46 +102,6 @@ class MixedI18nHandler {
     }
     
     /**
-     * Switch language (triggers page reload for server-side re-rendering)
-     */
-    async switchLanguage(languageCode) {
-        try {
-            // Update server-side setting
-            const response = await fetch('/api/set-language', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ language: languageCode })
-            });
-            
-            if (response.ok) {
-                // Reload page to get server-rendered content in new language
-                window.location.reload();
-            } else {
-                const error = await response.json();
-                console.error('Failed to set language:', error.error);
-                
-                // Fallback to client-side only language change
-                if (this.clientI18n) {
-                    this.clientI18n.setLanguage(languageCode);
-                    this.currentLanguage = languageCode;
-                    this.translateRemainingElements();
-                }
-            }
-        } catch (error) {
-            console.error('Error switching language:', error);
-            
-            // Fallback to client-side only language change
-            if (this.clientI18n) {
-                this.clientI18n.setLanguage(languageCode);
-                this.currentLanguage = languageCode;
-                this.translateRemainingElements();
-            }
-        }
-    }
-    
-    /**
      * Get current language
      */
     getCurrentLanguage() {
