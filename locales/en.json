@@ -291,7 +291,30 @@
             "totalSize": "Total Size",
             "favoriteModels": "Favorite Models"
         },
+        "usage": {
+            "mostUsedLoras": "Most Used LoRAs",
+            "mostUsedCheckpoints": "Most Used Checkpoints",
+            "mostUsedEmbeddings": "Most Used Embeddings"
+        },
+        "collection": {
+            "popularTags": "Popular Tags",
+            "modelTypes": "Model Types",
+            "collectionAnalysis": "Collection Analysis"
+        },
+        "storage": {
+            "storageUsage": "Storage Usage",
+            "largestModels": "Largest Models",
+            "storageEfficiency": "Storage vs Usage Efficiency"
+        },
+        "insights": {
+            "smartInsights": "Smart Insights",
+            "recommendations": "Recommendations"
+        },
         "charts": {
+            "collectionOverview": "Collection Overview",
+            "baseModelDistribution": "Base Model Distribution",
+            "usageTrends": "Usage Trends (Last 30 Days)",
+            "usageDistribution": "Usage Distribution",
             "modelsByType": "Models by Type",
             "modelsByBaseModel": "Models by Base Model",
             "modelsBySize": "Models by File Size",
@@ -320,6 +343,12 @@
             "useDefaultPath": "Use Default Path",
             "useDefaultPathTooltip": "When enabled, files are automatically organized using configured path templates",
             "selectRootDirectory": "Select a root directory",
+            "selectModelRoot": "Select Model Root:",
+            "targetFolderPath": "Target Folder Path:",
+            "browseFolders": "Browse Folders:",
+            "createNewFolder": "Create new folder",
+            "pathPlaceholder": "Type folder path or select from tree below...",
+            "root": "Root",
             "download": "Download",
             "cancel": "Cancel"
         },
@@ -341,6 +370,79 @@
                 "x": "X",
                 "xxx": "XXX"
             }
+        },
+        "deleteModel": {
+            "title": "Delete Model",
+            "message": "Are you sure you want to delete this model and all associated files?"
+        },
+        "excludeModel": {
+            "title": "Exclude Model",
+            "message": "Are you sure you want to exclude this model? Excluded models won't appear in searches or model lists."
+        },
+        "deleteDuplicateRecipes": {
+            "title": "Delete Duplicate Recipes",
+            "message": "Are you sure you want to delete the selected duplicate recipes?",
+            "countMessage": "recipes will be permanently deleted."
+        },
+        "deleteDuplicateModels": {
+            "title": "Delete Duplicate Models",
+            "message": "Are you sure you want to delete the selected duplicate models?",
+            "countMessage": "models will be permanently deleted."
+        },
+        "clearCache": {
+            "title": "Clear Cache Files",
+            "message": "Are you sure you want to clear all cache files?",
+            "description": "This will remove all cached model data. The system will need to rebuild the cache on next startup, which may take some time depending on your model collection size.",
+            "action": "Clear Cache"
+        },
+        "bulkDelete": {
+            "title": "Delete Multiple Models",
+            "message": "Are you sure you want to delete all selected models and their associated files?",
+            "countMessage": "models will be permanently deleted.",
+            "action": "Delete All"
+        },
+        "exampleAccess": {
+            "title": "Local Example Images",
+            "message": "No local example images found for this model. View options:",
+            "downloadOption": {
+                "title": "Download from Civitai",
+                "description": "Save remote examples locally for offline use and faster loading"
+            },
+            "importOption": {
+                "title": "Import Your Own",
+                "description": "Add your own custom examples for this model"
+            },
+            "footerNote": "Remote examples are still viewable in the model details even without local copies"
+        },
+        "moveModel": {
+            "targetLocationPreview": "Target Location Preview:",
+            "selectModelRoot": "Select Model Root:",
+            "targetFolderPath": "Target Folder Path:",
+            "browseFolders": "Browse Folders:",
+            "createNewFolder": "Create new folder",
+            "pathPlaceholder": "Type folder path or select from tree below...",
+            "root": "Root"
+        },
+        "relinkCivitai": {
+            "title": "Re-link to Civitai",
+            "warning": "Warning:",
+            "warningText": "This is a potentially destructive operation. Re-linking will:",
+            "warningList": {
+                "overrideMetadata": "Override existing metadata",
+                "modifyHash": "Potentially modify the model hash",
+                "unintendedConsequences": "May have other unintended consequences"
+            },
+            "proceedText": "Only proceed if you're sure this is what you want.",
+            "urlLabel": "Civitai Model URL:",
+            "urlPlaceholder": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+            "helpText": {
+                "title": "Paste any Civitai model URL. Supported formats:",
+                "format1": "https://civitai.com/models/649516",
+                "format2": "https://civitai.com/models/649516?modelVersionId=726676",
+                "format3": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+                "note": "Note: If no modelVersionId is provided, the latest version will be used."
+            },
+            "confirmAction": "Confirm Re-link"
         }
     },
     "errors": {
@@ -472,13 +574,36 @@
         },
         "gettingStarted": {
             "title": "Getting Started with LoRA Manager"
+        },
+        "updateVlogs": {
+            "title": "Latest Updates",
+            "watchOnYouTube": "Watch on YouTube",
+            "playlistTitle": "LoRA Manager Updates Playlist",
+            "playlistDescription": "Watch all update videos showcasing the latest features and improvements."
+        },
+        "documentation": {
+            "title": "Documentation",
+            "general": "General",
+            "troubleshooting": "Troubleshooting",
+            "modelManagement": "Model Management",
+            "recipes": "Recipes",
+            "settings": "Settings & Configuration",
+            "extensions": "Extensions",
+            "newBadge": "NEW"
         }
     },
     "update": {
         "title": "Check for Updates",
         "currentVersion": "Current Version",
         "newVersion": "New Version",
-        "commit": "Commit"
+        "commit": "Commit",
+        "viewOnGitHub": "View on GitHub",
+        "updateNow": "Update Now",
+        "preparingUpdate": "Preparing update...",
+        "changelog": "Changelog",
+        "checkingUpdates": "Checking for updates...",
+        "checkingMessage": "Please wait while we check for the latest version.",
+        "showNotifications": "Show update notifications"
     },
     "support": {
         "title": "Support the Project",

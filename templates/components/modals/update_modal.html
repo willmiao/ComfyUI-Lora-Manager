@@ -22,11 +22,11 @@
                 
                 <div class="update-actions">
                     <a href="https://github.com/willmiao/ComfyUI-Lora-Manager" target="_blank" class="update-link">
-                        <i class="fas fa-external-link-alt"></i> View on GitHub
+                        <i class="fas fa-external-link-alt"></i> {{ t('update.viewOnGitHub') }}
                     </a>
                     <button id="updateBtn" class="primary-btn disabled">
                         <i class="fas fa-download"></i>
-                        <span id="updateBtnText">Update Now</span>
+                        <span id="updateBtnText">{{ t('update.updateNow') }}</span>
                     </button>
                 </div>
             </div>
@@ -34,7 +34,7 @@
             <!-- Update Progress Section -->
             <div class="update-progress" id="updateProgress" style="display: none;">
                 <div class="progress-info">
-                    <div class="progress-text" id="updateProgressText">Preparing update...</div>
+                    <div class="progress-text" id="updateProgressText">{{ t('update.preparingUpdate') }}</div>
                     <div class="update-progress-bar">
                         <div class="progress-fill" id="updateProgressFill"></div>
                     </div>
@@ -42,12 +42,12 @@
             </div>
             
             <div class="changelog-section">
-                <h3>Changelog</h3>
+                <h3>{{ t('update.changelog') }}</h3>
                 <div class="changelog-content">
                     <!-- Dynamic changelog content will be inserted here -->
                     <div class="changelog-item">
-                        <h4>Checking for updates...</h4>
-                        <p>Please wait while we check for the latest version.</p>
+                        <h4>{{ t('update.checkingUpdates') }}</h4>
+                        <p>{{ t('update.checkingMessage') }}</p>
                     </div>
                 </div>
             </div>
@@ -56,7 +56,7 @@
                 <label class="toggle-switch">
                     <input type="checkbox" id="updateNotifications" checked>
                     <span class="toggle-slider"></span>
-                    <span class="toggle-label">Show update notifications</span>
+                    <span class="toggle-label">{{ t('update.showNotifications') }}</span>
                 </label>
             </div>
         </div>

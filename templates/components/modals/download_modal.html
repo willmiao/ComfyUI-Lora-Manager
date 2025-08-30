@@ -51,7 +51,7 @@
 
                 <!-- Model Root Selection (always visible) -->
                 <div class="input-group">
-                    <label for="modelRoot" id="modelRootLabel">Select Model Root:</label>
+                    <label for="modelRoot" id="modelRootLabel">{{ t('modals.download.selectModelRoot') }}</label>
                     <select id="modelRoot"></select>
                 </div>
 
@@ -59,10 +59,10 @@
                 <div class="manual-path-selection" id="manualPathSelection">
                     <!-- Path input with autocomplete -->
                     <div class="input-group">
-                        <label for="folderPath">Target Folder Path:</label>
+                        <label for="folderPath">{{ t('modals.download.targetFolderPath') }}</label>
                         <div class="path-input-container">
-                            <input type="text" id="folderPath" placeholder="Type folder path or select from tree below..." autocomplete="off" />
-                            <button type="button" id="createFolderBtn" class="create-folder-btn" title="Create new folder">
+                            <input type="text" id="folderPath" placeholder="{{ t('modals.download.pathPlaceholder') }}" autocomplete="off" />
+                            <button type="button" id="createFolderBtn" class="create-folder-btn" title="{{ t('modals.download.createNewFolder') }}">
                                 <i class="fas fa-plus"></i>
                             </button>
                         </div>
@@ -72,13 +72,13 @@
                     <!-- Breadcrumb navigation -->
                     <div class="breadcrumb-nav" id="breadcrumbNav">
                         <span class="breadcrumb-item root" data-path="">
-                            <i class="fas fa-home"></i> Root
+                            <i class="fas fa-home"></i> {{ t('modals.download.root') }}
                         </span>
                     </div>
                     
                     <!-- Hierarchical folder tree -->
                     <div class="input-group">
-                        <label>Browse Folders:</label>
+                        <label>{{ t('modals.download.browseFolders') }}</label>
                         <div class="folder-tree-container">
                             <div class="folder-tree" id="folderTree">
                                 <!-- Tree will be loaded dynamically -->
@@ -88,8 +88,8 @@
                 </div>
             </div>
             <div class="modal-actions">
-                <button class="secondary-btn" id="backToVersionsBtn">Back</button>
-                <button class="primary-btn" id="startDownloadBtn">Download</button>
+                <button class="secondary-btn" id="backToVersionsBtn">{{ t('common.actions.back') }}</button>
+                <button class="primary-btn" id="startDownloadBtn">{{ t('modals.download.download') }}</button>
             </div>
         </div>
     </div>

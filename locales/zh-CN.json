@@ -160,10 +160,10 @@
             "selectedSuffix": "已选择",
             "viewSelected": "点击查看选中项目",
             "sendToWorkflow": "发送到工作流",
-            "copyAll": "复制所有选中的LoRA语法",
-            "refreshAll": "刷新选中模型的Civitai元数据",
-            "moveAll": "移动选中模型到文件夹",
-            "deleteAll": "删除选中模型",
+            "copyAll": "复制LoRA语法",
+            "refreshAll": "刷新元数据",
+            "moveAll": "移动到文件夹",
+            "deleteAll": "删除",
             "clear": "清除选择"
         },
         "contextMenu": {
@@ -291,7 +291,30 @@
             "totalSize": "总大小",
             "favoriteModels": "收藏模型"
         },
+        "usage": {
+            "mostUsedLoras": "最常用的 LoRA",
+            "mostUsedCheckpoints": "最常用的 Checkpoint",
+            "mostUsedEmbeddings": "最常用的 Embedding"
+        },
+        "collection": {
+            "popularTags": "热门标签",
+            "modelTypes": "模型类型",
+            "collectionAnalysis": "收藏分析"
+        },
+        "storage": {
+            "storageUsage": "存储使用",
+            "largestModels": "最大的模型",
+            "storageEfficiency": "存储与使用效率"
+        },
+        "insights": {
+            "smartInsights": "智能洞察",
+            "recommendations": "建议"
+        },
         "charts": {
+            "collectionOverview": "收藏概览",
+            "baseModelDistribution": "基础模型分布",
+            "usageTrends": "使用趋势（最近30天）",
+            "usageDistribution": "使用分布",
             "modelsByType": "按类型统计模型",
             "modelsByBaseModel": "按基础模型统计",
             "modelsBySize": "按文件大小统计",
@@ -320,6 +343,12 @@
             "useDefaultPath": "使用默认路径",
             "useDefaultPathTooltip": "启用时，文件会使用配置的路径模板自动组织",
             "selectRootDirectory": "选择根目录",
+            "selectModelRoot": "选择模型根目录：",
+            "targetFolderPath": "目标文件夹路径：",
+            "browseFolders": "浏览文件夹：",
+            "createNewFolder": "创建新文件夹",
+            "pathPlaceholder": "输入文件夹路径或从下面的树中选择...",
+            "root": "根目录",
             "download": "下载",
             "cancel": "取消"
         },
@@ -341,6 +370,79 @@
                 "x": "成人级",
                 "xxx": "重口级"
             }
+        },
+        "deleteModel": {
+            "title": "删除模型",
+            "message": "确定要删除此模型及其所有关联文件吗？"
+        },
+        "excludeModel": {
+            "title": "排除模型",
+            "message": "确定要排除此模型吗？被排除的模型不会出现在搜索或模型列表中。"
+        },
+        "deleteDuplicateRecipes": {
+            "title": "删除重复配方",
+            "message": "确定要删除选中的重复配方吗？",
+            "countMessage": "个配方将被永久删除。"
+        },
+        "deleteDuplicateModels": {
+            "title": "删除重复模型",
+            "message": "确定要删除选中的重复模型吗？",
+            "countMessage": "个模型将被永久删除。"
+        },
+        "clearCache": {
+            "title": "清理缓存文件",
+            "message": "确定要清理所有缓存文件吗？",
+            "description": "这将删除所有缓存的模型数据。系统需要在下次启动时重建缓存，这可能需要一些时间，具体取决于您的模型收藏规模。",
+            "action": "清理缓存"
+        },
+        "bulkDelete": {
+            "title": "删除多个模型",
+            "message": "确定要删除所有选中的模型及其关联文件吗？",
+            "countMessage": "个模型将被永久删除。",
+            "action": "全部删除"
+        },
+        "exampleAccess": {
+            "title": "本地示例图片",
+            "message": "未找到此模型的本地示例图片。查看选项：",
+            "downloadOption": {
+                "title": "从 Civitai 下载",
+                "description": "将远程示例保存到本地，供离线使用和快速加载"
+            },
+            "importOption": {
+                "title": "导入您自己的",
+                "description": "为此模型添加您自己的自定义示例"
+            },
+            "footerNote": "即使没有本地副本，仍可在模型详情中查看远程示例"
+        },
+        "moveModel": {
+            "targetLocationPreview": "目标位置预览：",
+            "selectModelRoot": "选择模型根目录：",
+            "targetFolderPath": "目标文件夹路径：",
+            "browseFolders": "浏览文件夹：",
+            "createNewFolder": "创建新文件夹",
+            "pathPlaceholder": "输入文件夹路径或从下面的树中选择...",
+            "root": "根目录"
+        },
+        "relinkCivitai": {
+            "title": "重新链接到 Civitai",
+            "warning": "警告：",
+            "warningText": "这是一个可能具有破坏性的操作。重新链接将：",
+            "warningList": {
+                "overrideMetadata": "覆盖现有元数据",
+                "modifyHash": "可能修改模型哈希值",
+                "unintendedConsequences": "可能有其他意想不到的后果"
+            },
+            "proceedText": "只有在您确定这是您想要的操作时才继续。",
+            "urlLabel": "Civitai 模型 URL：",
+            "urlPlaceholder": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+            "helpText": {
+                "title": "粘贴任何 Civitai 模型 URL。支持的格式：",
+                "format1": "https://civitai.com/models/649516",
+                "format2": "https://civitai.com/models/649516?modelVersionId=726676",
+                "format3": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+                "note": "注意：如果未提供 modelVersionId，将使用最新版本。"
+            },
+            "confirmAction": "确认重新链接"
         }
     },
     "errors": {
@@ -472,13 +574,36 @@
         },
         "gettingStarted": {
             "title": "LoRA 管理器快速入门"
+        },
+        "updateVlogs": {
+            "title": "最新更新",
+            "watchOnYouTube": "在 YouTube 上观看",
+            "playlistTitle": "LoRA 管理器更新播放列表",
+            "playlistDescription": "观看所有展示最新功能和改进的更新视频。"
+        },
+        "documentation": {
+            "title": "文档",
+            "general": "一般",
+            "troubleshooting": "故障排除",
+            "modelManagement": "模型管理",
+            "recipes": "配方",
+            "settings": "设置和配置",
+            "extensions": "扩展",
+            "newBadge": "新功能"
         }
     },
     "update": {
         "title": "检查更新",
         "currentVersion": "当前版本",
         "newVersion": "新版本",
-        "commit": "提交"
+        "commit": "提交",
+        "viewOnGitHub": "在 GitHub 上查看",
+        "updateNow": "立即更新",
+        "preparingUpdate": "准备更新...",
+        "changelog": "更新日志",
+        "checkingUpdates": "检查更新中...",
+        "checkingMessage": "请稍候，我们正在检查最新版本。",
+        "showNotifications": "显示更新通知"
     },
     "support": {
         "title": "支持项目",

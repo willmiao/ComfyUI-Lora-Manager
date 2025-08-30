@@ -55,7 +55,7 @@
                 <div class="panel-grid">
                     <!-- Collection Overview Chart -->
                     <div class="chart-container">
-                        <h3><i class="fas fa-pie-chart"></i> Collection Overview</h3>
+                        <h3><i class="fas fa-pie-chart"></i> {{ t('statistics.charts.collectionOverview') }}</h3>
                         <div class="chart-wrapper">
                             <canvas id="collectionPieChart"></canvas>
                         </div>
@@ -63,7 +63,7 @@
 
                     <!-- Base Model Distribution -->
                     <div class="chart-container">
-                        <h3><i class="fas fa-layer-group"></i> Base Model Distribution</h3>
+                        <h3><i class="fas fa-layer-group"></i> {{ t('statistics.charts.baseModelDistribution') }}</h3>
                         <div class="chart-wrapper">
                             <canvas id="baseModelChart"></canvas>
                         </div>
@@ -71,7 +71,7 @@
 
                     <!-- Usage Timeline -->
                     <div class="chart-container full-width">
-                        <h3><i class="fas fa-chart-line"></i> Usage Trends (Last 30 Days)</h3>
+                        <h3><i class="fas fa-chart-line"></i> {{ t('statistics.charts.usageTrends') }}</h3>
                         <div class="chart-wrapper">
                             <canvas id="usageTimelineChart"></canvas>
                         </div>
@@ -84,7 +84,7 @@
                 <div class="panel-grid">
                     <!-- Top Used LoRAs -->
                     <div class="list-container">
-                        <h3><i class="fas fa-star"></i> Most Used LoRAs</h3>
+                        <h3><i class="fas fa-star"></i> {{ t('statistics.usage.mostUsedLoras') }}</h3>
                         <div class="model-list" id="topLorasList">
                             <!-- List will be populated by JavaScript -->
                         </div>
@@ -92,7 +92,7 @@
 
                     <!-- Top Used Checkpoints -->
                     <div class="list-container">
-                        <h3><i class="fas fa-check-circle"></i> Most Used Checkpoints</h3>
+                        <h3><i class="fas fa-check-circle"></i> {{ t('statistics.usage.mostUsedCheckpoints') }}</h3>
                         <div class="model-list" id="topCheckpointsList">
                             <!-- List will be populated by JavaScript -->
                         </div>
@@ -100,7 +100,7 @@
 
                     <!-- Top Used Embeddings -->
                     <div class="list-container">
-                        <h3><i class="fas fa-code"></i> Most Used Embeddings</h3>
+                        <h3><i class="fas fa-code"></i> {{ t('statistics.usage.mostUsedEmbeddings') }}</h3>
                         <div class="model-list" id="topEmbeddingsList">
                             <!-- List will be populated by JavaScript -->
                         </div>
@@ -108,7 +108,7 @@
 
                     <!-- Usage Distribution Chart -->
                     <div class="chart-container full-width">
-                        <h3><i class="fas fa-chart-bar"></i> Usage Distribution</h3>
+                        <h3><i class="fas fa-chart-bar"></i> {{ t('statistics.charts.usageDistribution') }}</h3>
                         <div class="chart-wrapper">
                             <canvas id="usageDistributionChart"></canvas>
                         </div>
@@ -121,7 +121,7 @@
                 <div class="panel-grid">
                     <!-- Tag Cloud -->
                     <div class="chart-container">
-                        <h3><i class="fas fa-tags"></i> Popular Tags</h3>
+                        <h3><i class="fas fa-tags"></i> {{ t('statistics.collection.popularTags') }}</h3>
                         <div class="tag-cloud" id="tagCloud">
                             <!-- Tag cloud will be populated by JavaScript -->
                         </div>
@@ -129,7 +129,7 @@
 
                     <!-- Base Model Timeline -->
                     <div class="chart-container">
-                        <h3><i class="fas fa-history"></i> Model Types</h3>
+                        <h3><i class="fas fa-history"></i> {{ t('statistics.collection.modelTypes') }}</h3>
                         <div class="chart-wrapper">
                             <canvas id="modelTypesChart"></canvas>
                         </div>
@@ -137,7 +137,7 @@
 
                     <!-- Collection Growth -->
                     <div class="chart-container full-width">
-                        <h3><i class="fas fa-chart-area"></i> Collection Analysis</h3>
+                        <h3><i class="fas fa-chart-area"></i> {{ t('statistics.collection.collectionAnalysis') }}</h3>
                         <div class="analysis-cards" id="collectionAnalysis">
                             <!-- Analysis cards will be populated by JavaScript -->
                         </div>
@@ -150,7 +150,7 @@
                 <div class="panel-grid">
                     <!-- Storage by Model Type -->
                     <div class="chart-container">
-                        <h3><i class="fas fa-database"></i> Storage Usage</h3>
+                        <h3><i class="fas fa-database"></i> {{ t('statistics.storage.storageUsage') }}</h3>
                         <div class="chart-wrapper">
                             <canvas id="storageChart"></canvas>
                         </div>
@@ -158,7 +158,7 @@
 
                     <!-- Largest Models -->
                     <div class="list-container">
-                        <h3><i class="fas fa-weight-hanging"></i> Largest Models</h3>
+                        <h3><i class="fas fa-weight-hanging"></i> {{ t('statistics.storage.largestModels') }}</h3>
                         <div class="model-list" id="largestModelsList">
                             <!-- List will be populated by JavaScript -->
                         </div>
@@ -166,7 +166,7 @@
 
                     <!-- Storage Efficiency -->
                     <div class="chart-container full-width">
-                        <h3><i class="fas fa-chart-scatter"></i> Storage vs Usage Efficiency</h3>
+                        <h3><i class="fas fa-chart-scatter"></i> {{ t('statistics.storage.storageEfficiency') }}</h3>
                         <div class="chart-wrapper">
                             <canvas id="storageEfficiencyChart"></canvas>
                         </div>
@@ -177,14 +177,14 @@
             <!-- Insights Tab -->
             <div class="tab-panel" id="insights-panel">
                 <div class="insights-container">
-                    <h3><i class="fas fa-lightbulb"></i> Smart Insights</h3>
+                    <h3><i class="fas fa-lightbulb"></i> {{ t('statistics.insights.smartInsights') }}</h3>
                     <div class="insights-list" id="insightsList">
                         <!-- Insights will be populated by JavaScript -->
                     </div>
 
                     <!-- Recommendations -->
                     <div class="recommendations-section">
-                        <h4><i class="fas fa-tasks"></i> Recommendations</h4>
+                        <h4><i class="fas fa-tasks"></i> {{ t('statistics.insights.recommendations') }}</h4>
                         <div class="recommendations-list" id="recommendationsList">
                             <!-- Recommendations will be populated by JavaScript -->
                         </div>
