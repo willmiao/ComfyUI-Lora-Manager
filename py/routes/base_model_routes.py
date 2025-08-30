@@ -131,9 +131,7 @@ class BaseModelRoutes(ABC):
                 'settings': settings,
                 'request': request,
                 'folders': [],
-                # 添加服务端翻译函数
                 't': server_i18n.get_translation,
-                'server_i18n': server_i18n,
             }
 
             if not is_initializing:

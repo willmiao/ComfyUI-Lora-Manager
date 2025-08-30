@@ -75,9 +75,7 @@ class StatsRoutes:
                 is_initializing=is_initializing,
                 settings=settings,
                 request=request,
-                # 添加服务端翻译函数
                 t=server_i18n.get_translation,
-                server_i18n=server_i18n,
             )
             
             return web.Response(

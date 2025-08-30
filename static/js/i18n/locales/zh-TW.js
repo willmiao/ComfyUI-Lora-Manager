@@ -93,7 +93,7 @@ export const zhTW = {
         navigation: {
             loras: 'LoRA',
             recipes: '配方',
-            checkpoints: '大模型',
+            checkpoints: 'Checkpoint',
             embeddings: 'Embedding',
             statistics: '統計'
         },
@@ -102,7 +102,7 @@ export const zhTW = {
             placeholders: {
                 loras: '搜尋 LoRA...',
                 recipes: '搜尋配方...',
-                checkpoints: '搜尋大模型...',
+                checkpoints: '搜尋Checkpoint...',
                 embeddings: '搜尋 Embedding...'
             },
             options: '搜尋選項',
@@ -241,9 +241,9 @@ export const zhTW = {
         }
     },
     
-    // 大模型頁面
+    // Checkpoint頁面
     checkpoints: {
-        title: '大模型',
+        title: 'Checkpoint',
         info: {
             filename: '檔案名稱',
             modelName: '模型名稱',

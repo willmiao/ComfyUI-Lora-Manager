@@ -93,7 +93,7 @@ export const zhCN = {
         navigation: {
             loras: 'LoRA',
             recipes: '配方',
-            checkpoints: '大模型',
+            checkpoints: 'Checkpoint',
             embeddings: 'Embedding',
             statistics: '统计'
         },
@@ -102,7 +102,7 @@ export const zhCN = {
             placeholders: {
                 loras: '搜索 LoRA...',
                 recipes: '搜索配方...',
-                checkpoints: '搜索大模型...',
+                checkpoints: '搜索Checkpoint...',
                 embeddings: '搜索 Embedding...'
             },
             options: '搜索选项',
@@ -237,9 +237,9 @@ export const zhCN = {
         }
     },
     
-    // 大模型页面
+    // Checkpoint页面
     checkpoints: {
-        title: '大模型',
+        title: 'Checkpoint',
         info: {
             filename: '文件名',
             modelName: '模型名称',
@@ -267,7 +267,7 @@ export const zhCN = {
         overview: {
             title: '概览',
             totalLoras: 'LoRA 总数',
-            totalCheckpoints: '大模型总数',
+            totalCheckpoints: 'Checkpoint总数',
             totalEmbeddings: 'Embedding 总数',
             totalSize: '总大小',
             favoriteModels: '收藏模型'
@@ -378,8 +378,8 @@ export const zhCN = {
             message: '正在扫描并构建 LoRA 缓存，这可能需要几分钟时间...'
         },
         checkpoints: {
-            title: '初始化大模型管理器',
-            message: '正在扫描并构建大模型缓存，这可能需要几分钟时间...'
+            title: '初始化Checkpoint管理器',
+            message: '正在扫描并构建Checkpoint缓存，这可能需要几分钟时间...'
         },
         embeddings: {
             title: '初始化 Embedding 管理器',

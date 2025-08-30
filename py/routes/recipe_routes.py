@@ -151,7 +151,6 @@ class RecipeRoutes:
                     request=request,
                     # 添加服务端翻译函数
                     t=server_i18n.get_translation,
-                    server_i18n=server_i18n,
                 )
             except Exception as cache_error:
                 logger.error(f"Error loading recipe cache data: {cache_error}")
@@ -163,7 +162,6 @@ class RecipeRoutes:
                     request=request,
                     # 添加服务端翻译函数
                     t=server_i18n.get_translation,
-                    server_i18n=server_i18n,
                 )
                 logger.info("Recipe cache error, returning initialization page")
             
