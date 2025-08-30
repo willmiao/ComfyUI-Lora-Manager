@@ -1,0 +1,453 @@
+{
+    "common": {
+        "file": "ファイル",
+        "folder": "フォルダ",
+        "name": "名前",
+        "size": "サイズ",
+        "date": "日付",
+        "type": "種類",
+        "path": "パス",
+        "fileSize": {
+            "zero": "0 バイト",
+            "bytes": "バイト",
+            "kb": "KB",
+            "mb": "MB",
+            "gb": "GB",
+            "tb": "TB"
+        },
+        "actions": {
+            "save": "保存",
+            "cancel": "キャンセル",
+            "delete": "削除",
+            "edit": "編集",
+            "copy": "コピー",
+            "move": "移動",
+            "refresh": "更新",
+            "download": "ダウンロード",
+            "upload": "アップロード",
+            "search": "検索",
+            "filter": "フィルター",
+            "sort": "ソート",
+            "select": "選択",
+            "selectAll": "すべて選択",
+            "deselectAll": "選択解除",
+            "confirm": "確認",
+            "close": "閉じる",
+            "back": "戻る",
+            "next": "次へ",
+            "previous": "前へ",
+            "view": "表示",
+            "preview": "プレビュー",
+            "details": "詳細",
+            "backToTop": "トップに戻る",
+            "settings": "設定",
+            "help": "ヘルプ",
+            "about": "について"
+        },
+        "status": {
+            "loading": "読み込み中...",
+            "saving": "保存中...",
+            "saved": "保存済み",
+            "error": "エラー",
+            "success": "成功",
+            "warning": "警告",
+            "info": "情報",
+            "processing": "処理中...",
+            "completed": "完了",
+            "failed": "失敗",
+            "cancelled": "キャンセル",
+            "pending": "待機中",
+            "ready": "準備完了"
+        },
+        "language": {
+            "current": "言語",
+            "select": "言語を選択",
+            "select_help": "インターフェース言語を選択してください",
+            "english": "英語",
+            "chinese_simplified": "中国語（簡体字）",
+            "chinese_traditional": "中国語（繁体字）",
+            "russian": "ロシア語",
+            "german": "ドイツ語",
+            "japanese": "日本語",
+            "korean": "韓国語",
+            "french": "フランス語",
+            "spanish": "スペイン語"
+        }
+    },
+    "header": {
+        "appTitle": "LoRA マネージャー",
+        "navigation": {
+            "loras": "LoRA",
+            "recipes": "レシピ",
+            "checkpoints": "チェックポイント",
+            "embeddings": "エンベディング",
+            "statistics": "統計"
+        },
+        "search": {
+            "placeholder": "検索...",
+            "placeholders": {
+                "loras": "LoRAを検索...",
+                "recipes": "レシピを検索...",
+                "checkpoints": "チェックポイントを検索...",
+                "embeddings": "エンベディングを検索..."
+            },
+            "options": "検索オプション",
+            "searchIn": "検索対象:",
+            "notAvailable": "統計ページでは検索は利用できません",
+            "filters": {
+                "filename": "ファイル名",
+                "modelname": "モデル名",
+                "tags": "タグ",
+                "creator": "作成者",
+                "title": "レシピタイトル",
+                "loraName": "LoRAファイル名",
+                "loraModel": "LoRAモデル名"
+            }
+        },
+        "filter": {
+            "title": "モデルをフィルター",
+            "baseModel": "ベースモデル",
+            "modelTags": "タグ（トップ20）",
+            "clearAll": "すべてのフィルターをクリア"
+        },
+        "theme": {
+            "toggle": "テーマ切り替え",
+            "switchToLight": "ライトテーマに切り替え",
+            "switchToDark": "ダークテーマに切り替え",
+            "switchToAuto": "オートテーマに切り替え"
+        }
+    },
+    "loras": {
+        "title": "LoRAモデル",
+        "controls": {
+            "sort": {
+                "title": "モデルをソート...",
+                "name": "名前",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "追加日",
+                "dateDesc": "新しい順",
+                "dateAsc": "古い順",
+                "size": "ファイルサイズ",
+                "sizeDesc": "大きい順",
+                "sizeAsc": "小さい順"
+            },
+            "refresh": {
+                "title": "モデルリストを更新",
+                "quick": "クイック更新（増分）",
+                "full": "完全再構築（完全）"
+            },
+            "fetch": "Civitaiから取得",
+            "download": "URLからダウンロード",
+            "bulk": "一括操作",
+            "duplicates": "重複を検索",
+            "favorites": "お気に入りのみ表示"
+        },
+        "bulkOperations": {
+            "title": "一括操作",
+            "selected": "{count}個選択中",
+            "sendToWorkflow": "選択したLoRAをワークフローに送信",
+            "copyAll": "選択したLoRA構文をコピー",
+            "refreshAll": "選択したモデルのCivitAIメタデータを更新",
+            "moveAll": "選択したモデルをフォルダに移動",
+            "deleteAll": "選択したモデルを削除",
+            "clear": "選択をクリア"
+        },
+        "contextMenu": {
+            "refreshMetadata": "Civitaiデータを更新",
+            "relinkCivitai": "Civitaiに再リンク",
+            "copySyntax": "LoRA構文をコピー",
+            "copyFilename": "モデルファイル名をコピー",
+            "copyRecipeSyntax": "レシピ構文をコピー",
+            "sendToWorkflowAppend": "ワークフローに送信（追加）",
+            "sendToWorkflowReplace": "ワークフローに送信（置換）",
+            "openExamplesFolder": "サンプルフォルダを開く",
+            "downloadExamples": "サンプル画像をダウンロード",
+            "replacePreview": "プレビューを置換",
+            "setContentRating": "コンテンツレーティングを設定",
+            "moveToFolder": "フォルダに移動",
+            "excludeModel": "モデルを除外",
+            "deleteModel": "モデルを削除",
+            "shareRecipe": "レシピを共有",
+            "viewAllLoras": "すべてのLoRAを表示",
+            "downloadMissingLoras": "不足しているLoRAをダウンロード",
+            "deleteRecipe": "レシピを削除"
+        },
+        "modal": {
+            "title": "LoRA詳細",
+            "tabs": {
+                "examples": "サンプル",
+                "description": "モデル説明",
+                "recipes": "レシピ"
+            },
+            "info": {
+                "filename": "ファイル名",
+                "modelName": "モデル名",
+                "baseModel": "ベースモデル",
+                "fileSize": "ファイルサイズ",
+                "dateAdded": "追加日",
+                "triggerWords": "トリガーワード",
+                "description": "説明",
+                "tags": "タグ",
+                "rating": "評価",
+                "downloads": "ダウンロード数",
+                "likes": "いいね数",
+                "version": "バージョン"
+            },
+            "actions": {
+                "copyTriggerWords": "トリガーワードをコピー",
+                "copyLoraName": "LoRA名をコピー",
+                "sendToWorkflow": "ワークフローに送信",
+                "viewOnCivitai": "Civitaiで表示",
+                "downloadExamples": "サンプル画像をダウンロード"
+            }
+        }
+    },
+    "recipes": {
+        "title": "LoRAレシピ",
+        "controls": {
+            "import": "レシピをインポート",
+            "refresh": {
+                "title": "レシピリストを更新"
+            },
+            "duplicates": {
+                "title": "重複レシピを検索"
+            },
+            "filteredByLora": "LoRAでフィルタ",
+            "create": "レシピを作成",
+            "export": "選択項目をエクスポート",
+            "downloadMissing": "不足しているLoRAをダウンロード"
+        },
+        "duplicates": {
+            "found": "{count}個の重複グループが見つかりました",
+            "keepLatest": "最新バージョンを保持",
+            "deleteSelected": "選択項目を削除"
+        },
+        "card": {
+            "author": "作者",
+            "loras": "{count}個のLoRA",
+            "tags": "タグ",
+            "actions": {
+                "sendToWorkflow": "ワークフローに送信",
+                "edit": "レシピを編集",
+                "duplicate": "レシピを複製",
+                "export": "レシピをエクスポート",
+                "delete": "レシピを削除"
+            }
+        }
+    },
+    "checkpoints": {
+        "title": "チェックポイントモデル",
+        "info": {
+            "filename": "ファイル名",
+            "modelName": "モデル名",
+            "baseModel": "ベースモデル",
+            "fileSize": "ファイルサイズ",
+            "dateAdded": "追加日"
+        }
+    },
+    "embeddings": {
+        "title": "エンベディングモデル",
+        "info": {
+            "filename": "ファイル名",
+            "modelName": "モデル名",
+            "triggerWords": "トリガーワード",
+            "fileSize": "ファイルサイズ",
+            "dateAdded": "追加日"
+        }
+    },
+    "sidebar": {
+        "modelRoot": "モデルルート",
+        "collapseAll": "すべてのフォルダを折りたたむ",
+        "pinToggle": "サイドバーをピン留め/解除"
+    },
+    "statistics": {
+        "title": "統計",
+        "tabs": {
+            "overview": "概要",
+            "usage": "使用分析",
+            "collection": "コレクション",
+            "storage": "ストレージ",
+            "insights": "インサイト"
+        },
+        "overview": {
+            "title": "概要",
+            "totalLoras": "LoRA総数",
+            "totalCheckpoints": "チェックポイント総数",
+            "totalEmbeddings": "エンベディング総数",
+            "totalSize": "総サイズ",
+            "favoriteModels": "お気に入りモデル"
+        },
+        "charts": {
+            "modelsByType": "タイプ別モデル",
+            "modelsByBaseModel": "ベースモデル別",
+            "modelsBySize": "ファイルサイズ別",
+            "modelsAddedOverTime": "時系列追加モデル"
+        }
+    },
+    "modals": {
+        "delete": {
+            "title": "削除の確認",
+            "message": "このモデルを削除してもよろしいですか？",
+            "warningMessage": "この操作は元に戻せません。",
+            "confirm": "削除",
+            "cancel": "キャンセル"
+        },
+        "exclude": {
+            "title": "モデルを除外",
+            "message": "このモデルをライブラリから除外してもよろしいですか？",
+            "confirm": "除外",
+            "cancel": "キャンセル"
+        },
+        "download": {
+            "title": "URLからモデルをダウンロード",
+            "url": "Civitai URL",
+            "placeholder": "https://civitai.com/models/...",
+            "locationPreview": "ダウンロード場所プレビュー",
+            "useDefaultPath": "デフォルトパスを使用",
+            "useDefaultPathTooltip": "有効にすると、設定されたパステンプレートを使用してファイルが自動的に整理されます",
+            "selectRootDirectory": "ルートディレクトリを選択",
+            "download": "ダウンロード",
+            "cancel": "キャンセル"
+        },
+        "move": {
+            "title": "モデルを移動",
+            "selectFolder": "移動先フォルダを選択",
+            "createFolder": "新しいフォルダを作成",
+            "folderName": "フォルダ名",
+            "move": "移動",
+            "cancel": "キャンセル"
+        },
+        "contentRating": {
+            "title": "コンテンツレーティングを設定",
+            "current": "現在",
+            "levels": {
+                "pg": "全年齢",
+                "pg13": "13歳以上",
+                "r": "制限あり",
+                "x": "成人向け",
+                "xxx": "露骨"
+            }
+        }
+    },
+    "errors": {
+        "general": "エラーが発生しました",
+        "networkError": "ネットワークエラー。接続を確認してください。",
+        "serverError": "サーバーエラー。後でもう一度試してください。",
+        "fileNotFound": "ファイルが見つかりません",
+        "invalidFile": "無効なファイル形式",
+        "uploadFailed": "アップロードに失敗しました",
+        "downloadFailed": "ダウンロードに失敗しました",
+        "saveFailed": "保存に失敗しました",
+        "loadFailed": "読み込みに失敗しました",
+        "deleteFailed": "削除に失敗しました",
+        "moveFailed": "移動に失敗しました",
+        "copyFailed": "コピーに失敗しました",
+        "fetchFailed": "Civitaiからデータを取得できませんでした",
+        "invalidUrl": "無効なURL形式",
+        "missingPermissions": "権限が不足しています"
+    },
+    "success": {
+        "saved": "正常に保存されました",
+        "deleted": "正常に削除されました",
+        "moved": "正常に移動されました",
+        "copied": "正常にコピーされました",
+        "downloaded": "正常にダウンロードされました",
+        "uploaded": "正常にアップロードされました",
+        "refreshed": "正常に更新されました",
+        "exported": "正常にエクスポートされました",
+        "imported": "正常にインポートされました"
+    },
+    "keyboard": {
+        "navigation": "キーボードナビゲーション:",
+        "shortcuts": {
+            "pageUp": "1ページ上にスクロール",
+            "pageDown": "1ページ下にスクロール",
+            "home": "トップにジャンプ",
+            "end": "ボトムにジャンプ",
+            "bulkMode": "一括モードを切り替え",
+            "search": "検索にフォーカス",
+            "escape": "モーダル/パネルを閉じる"
+        }
+    },
+    "initialization": {
+        "title": "初期化中",
+        "message": "ワークスペースを準備中...",
+        "status": "初期化中...",
+        "estimatingTime": "時間を見積もり中...",
+        "loras": {
+            "title": "LoRAマネージャーを初期化中",
+            "message": "LoRAキャッシュをスキャンして構築中です。数分かかる場合があります..."
+        },
+        "checkpoints": {
+            "title": "チェックポイントマネージャーを初期化中",
+            "message": "チェックポイントキャッシュをスキャンして構築中です。数分かかる場合があります..."
+        },
+        "embeddings": {
+            "title": "エンベディングマネージャーを初期化中",
+            "message": "エンベディングキャッシュをスキャンして構築中です。数分かかる場合があります..."
+        },
+        "recipes": {
+            "title": "レシピマネージャーを初期化中",
+            "message": "レシピを読み込んで処理中です。数分かかる場合があります..."
+        },
+        "statistics": {
+            "title": "統計を初期化中",
+            "message": "統計用のモデルデータを処理中です。数分かかる場合があります..."
+        },
+        "tips": {
+            "title": "ヒントとコツ",
+            "civitai": {
+                "title": "Civitai統合",
+                "description": "Civitaiアカウントを接続：プロフィールアバター → 設定 → APIキー → APIキーを追加し、Loraマネージャー設定に貼り付けてください。",
+                "alt": "Civitai API設定"
+            },
+            "download": {
+                "title": "簡単ダウンロード",
+                "description": "Civitai URLを使用して新しいモデルを素早くダウンロードおよびインストールします。",
+                "alt": "Civitaiダウンロード"
+            },
+            "recipes": {
+                "title": "レシピを保存",
+                "description": "お気に入りのモデルの組み合わせを将来使用するためにレシピを作成します。",
+                "alt": "レシピ"
+            },
+            "filter": {
+                "title": "高速フィルタリング",
+                "description": "ヘッダーのフィルターボタンを使用してタグやベースモデルタイプでモデルをフィルタリングします。",
+                "alt": "モデルをフィルター"
+            },
+            "search": {
+                "title": "クイック検索",
+                "description": "Ctrl+F（MacではCmd+F）を押して現在のビュー内を素早く検索します。",
+                "alt": "クイック検索"
+            }
+        },
+        "steps": {
+            "scanning": "モデルファイルをスキャン中...",
+            "processing": "メタデータを処理中...",
+            "building": "キャッシュを構築中...",
+            "finalizing": "完了中..."
+        }
+    },
+    "duplicates": {
+        "found": "{count}個の重複グループが見つかりました",
+        "showNotification": "重複通知を表示",
+        "deleteSelected": "選択項目を削除",
+        "exitMode": "モードを終了",
+        "help": {
+            "identicalHashes": "同一のハッシュは、名前やプレビューが異なっていても同一のモデルファイルを意味します。",
+            "keepOne": "1つのバージョンのみを保持し（より良いメタデータ/プレビューを持つもの）、他は安全に削除してください。"
+        }
+    },
+    "tooltips": {
+        "refresh": "モデルリストを更新",
+        "bulkOperations": "複数のモデルを選択してバッチ操作",
+        "favorites": "お気に入りモデルのみ表示",
+        "duplicates": "重複モデルを検索・管理",
+        "search": "名前、タグ、その他の条件でモデルを検索",
+        "filter": "様々な条件でモデルをフィルター",
+        "sort": "異なる属性でモデルをソート",
+        "backToTop": "ページトップにスクロール"
+    }
+}

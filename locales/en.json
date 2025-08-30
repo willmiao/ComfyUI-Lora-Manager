@@ -1,0 +1,453 @@
+{
+    "common": {
+        "file": "File",
+        "folder": "Folder",
+        "name": "Name",
+        "size": "Size",
+        "date": "Date",
+        "type": "Type",
+        "path": "Path",
+        "fileSize": {
+            "zero": "0 Bytes",
+            "bytes": "Bytes",
+            "kb": "KB",
+            "mb": "MB",
+            "gb": "GB",
+            "tb": "TB"
+        },
+        "actions": {
+            "save": "Save",
+            "cancel": "Cancel",
+            "delete": "Delete",
+            "edit": "Edit",
+            "copy": "Copy",
+            "move": "Move",
+            "refresh": "Refresh",
+            "download": "Download",
+            "upload": "Upload",
+            "search": "Search",
+            "filter": "Filter",
+            "sort": "Sort",
+            "select": "Select",
+            "selectAll": "Select All",
+            "deselectAll": "Deselect All",
+            "confirm": "Confirm",
+            "close": "Close",
+            "back": "Back",
+            "next": "Next",
+            "previous": "Previous",
+            "view": "View",
+            "preview": "Preview",
+            "details": "Details",
+            "backToTop": "Back to top",
+            "settings": "Settings",
+            "help": "Help",
+            "about": "About"
+        },
+        "status": {
+            "loading": "Loading...",
+            "saving": "Saving...",
+            "saved": "Saved",
+            "error": "Error",
+            "success": "Success",
+            "warning": "Warning",
+            "info": "Information",
+            "processing": "Processing...",
+            "completed": "Completed",
+            "failed": "Failed",
+            "cancelled": "Cancelled",
+            "pending": "Pending",
+            "ready": "Ready"
+        },
+        "language": {
+            "current": "Language",
+            "select": "Select Language",
+            "select_help": "Choose your preferred language for the interface",
+            "english": "English",
+            "chinese_simplified": "Chinese (Simplified)",
+            "chinese_traditional": "Chinese (Traditional)",
+            "russian": "Russian",
+            "german": "German",
+            "japanese": "Japanese",
+            "korean": "Korean",
+            "french": "French",
+            "spanish": "Spanish"
+        }
+    },
+    "header": {
+        "appTitle": "LoRA Manager",
+        "navigation": {
+            "loras": "LoRAs",
+            "recipes": "Recipes",
+            "checkpoints": "Checkpoints",
+            "embeddings": "Embeddings",
+            "statistics": "Stats"
+        },
+        "search": {
+            "placeholder": "Search...",
+            "placeholders": {
+                "loras": "Search LoRAs...",
+                "recipes": "Search recipes...",
+                "checkpoints": "Search checkpoints...",
+                "embeddings": "Search embeddings..."
+            },
+            "options": "Search Options",
+            "searchIn": "Search In:",
+            "notAvailable": "Search not available on statistics page",
+            "filters": {
+                "filename": "Filename",
+                "modelname": "Model Name",
+                "tags": "Tags",
+                "creator": "Creator",
+                "title": "Recipe Title",
+                "loraName": "LoRA Filename",
+                "loraModel": "LoRA Model Name"
+            }
+        },
+        "filter": {
+            "title": "Filter Models",
+            "baseModel": "Base Model",
+            "modelTags": "Tags (Top 20)",
+            "clearAll": "Clear All Filters"
+        },
+        "theme": {
+            "toggle": "Toggle theme",
+            "switchToLight": "Switch to light theme",
+            "switchToDark": "Switch to dark theme",
+            "switchToAuto": "Switch to auto theme"
+        }
+    },
+    "loras": {
+        "title": "LoRA Models",
+        "controls": {
+            "sort": {
+                "title": "Sort models by...",
+                "name": "Name",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "Date Added",
+                "dateDesc": "Newest",
+                "dateAsc": "Oldest",
+                "size": "File Size",
+                "sizeDesc": "Largest",
+                "sizeAsc": "Smallest"
+            },
+            "refresh": {
+                "title": "Refresh model list",
+                "quick": "Quick Refresh (incremental)",
+                "full": "Full Rebuild (complete)"
+            },
+            "fetch": "Fetch from Civitai",
+            "download": "Download from URL",
+            "bulk": "Bulk Operations",
+            "duplicates": "Find Duplicates",
+            "favorites": "Show Favorites Only"
+        },
+        "bulkOperations": {
+            "title": "Bulk Operations",
+            "selected": "{count} selected",
+            "sendToWorkflow": "Send all selected LoRAs to workflow",
+            "copyAll": "Copy all selected LoRAs syntax",
+            "refreshAll": "Refresh CivitAI metadata for selected models",
+            "moveAll": "Move selected models to folder",
+            "deleteAll": "Delete selected models",
+            "clear": "Clear selection"
+        },
+        "contextMenu": {
+            "refreshMetadata": "Refresh Civitai Data",
+            "relinkCivitai": "Re-link to Civitai",
+            "copySyntax": "Copy LoRA Syntax",
+            "copyFilename": "Copy Model Filename",
+            "copyRecipeSyntax": "Copy Recipe Syntax",
+            "sendToWorkflowAppend": "Send to Workflow (Append)",
+            "sendToWorkflowReplace": "Send to Workflow (Replace)",
+            "openExamplesFolder": "Open Examples Folder",
+            "downloadExamples": "Download Example Images",
+            "replacePreview": "Replace Preview",
+            "setContentRating": "Set Content Rating",
+            "moveToFolder": "Move to Folder",
+            "excludeModel": "Exclude Model",
+            "deleteModel": "Delete Model",
+            "shareRecipe": "Share Recipe",
+            "viewAllLoras": "View All LoRAs",
+            "downloadMissingLoras": "Download Missing LoRAs",
+            "deleteRecipe": "Delete Recipe"
+        },
+        "modal": {
+            "title": "LoRA Details",
+            "tabs": {
+                "examples": "Examples",
+                "description": "Model Description",
+                "recipes": "Recipes"
+            },
+            "info": {
+                "filename": "Filename",
+                "modelName": "Model Name",
+                "baseModel": "Base Model",
+                "fileSize": "File Size",
+                "dateAdded": "Date Added",
+                "triggerWords": "Trigger Words",
+                "description": "Description",
+                "tags": "Tags",
+                "rating": "Rating",
+                "downloads": "Downloads",
+                "likes": "Likes",
+                "version": "Version"
+            },
+            "actions": {
+                "copyTriggerWords": "Copy trigger words",
+                "copyLoraName": "Copy LoRA name",
+                "sendToWorkflow": "Send to Workflow",
+                "viewOnCivitai": "View on Civitai",
+                "downloadExamples": "Download example images"
+            }
+        }
+    },
+    "recipes": {
+        "title": "LoRA Recipes",
+        "controls": {
+            "import": "Import Recipe",
+            "refresh": {
+                "title": "Refresh recipe list"
+            },
+            "duplicates": {
+                "title": "Find duplicate recipes"
+            },
+            "filteredByLora": "Filtered by LoRA",
+            "create": "Create Recipe",
+            "export": "Export Selected",
+            "downloadMissing": "Download Missing LoRAs"
+        },
+        "duplicates": {
+            "found": "Found {count} duplicate groups",
+            "keepLatest": "Keep Latest Versions",
+            "deleteSelected": "Delete Selected"
+        },
+        "card": {
+            "author": "Author",
+            "loras": "{count} LoRAs",
+            "tags": "Tags",
+            "actions": {
+                "sendToWorkflow": "Send to Workflow",
+                "edit": "Edit Recipe",
+                "duplicate": "Duplicate Recipe",
+                "export": "Export Recipe",
+                "delete": "Delete Recipe"
+            }
+        }
+    },
+    "checkpoints": {
+        "title": "Checkpoint Models",
+        "info": {
+            "filename": "Filename",
+            "modelName": "Model Name",
+            "baseModel": "Base Model",
+            "fileSize": "File Size",
+            "dateAdded": "Date Added"
+        }
+    },
+    "embeddings": {
+        "title": "Embedding Models",
+        "info": {
+            "filename": "Filename",
+            "modelName": "Model Name",
+            "triggerWords": "Trigger Words",
+            "fileSize": "File Size",
+            "dateAdded": "Date Added"
+        }
+    },
+    "sidebar": {
+        "modelRoot": "Model Root",
+        "collapseAll": "Collapse All Folders",
+        "pinToggle": "Pin/Unpin Sidebar"
+    },
+    "statistics": {
+        "title": "Statistics",
+        "tabs": {
+            "overview": "Overview",
+            "usage": "Usage Analysis",
+            "collection": "Collection",
+            "storage": "Storage",
+            "insights": "Insights"
+        },
+        "overview": {
+            "title": "Overview",
+            "totalLoras": "Total LoRAs",
+            "totalCheckpoints": "Total Checkpoints",
+            "totalEmbeddings": "Total Embeddings",
+            "totalSize": "Total Size",
+            "favoriteModels": "Favorite Models"
+        },
+        "charts": {
+            "modelsByType": "Models by Type",
+            "modelsByBaseModel": "Models by Base Model",
+            "modelsBySize": "Models by File Size",
+            "modelsAddedOverTime": "Models Added Over Time"
+        }
+    },
+    "modals": {
+        "delete": {
+            "title": "Confirm Deletion",
+            "message": "Are you sure you want to delete this model?",
+            "warningMessage": "This action cannot be undone.",
+            "confirm": "Delete",
+            "cancel": "Cancel"
+        },
+        "exclude": {
+            "title": "Exclude Model",
+            "message": "Are you sure you want to exclude this model from the library?",
+            "confirm": "Exclude",
+            "cancel": "Cancel"
+        },
+        "download": {
+            "title": "Download Model from URL",
+            "url": "Civitai URL",
+            "placeholder": "https://civitai.com/models/...",
+            "locationPreview": "Download Location Preview",
+            "useDefaultPath": "Use Default Path",
+            "useDefaultPathTooltip": "When enabled, files are automatically organized using configured path templates",
+            "selectRootDirectory": "Select a root directory",
+            "download": "Download",
+            "cancel": "Cancel"
+        },
+        "move": {
+            "title": "Move Models",
+            "selectFolder": "Select destination folder",
+            "createFolder": "Create new folder",
+            "folderName": "Folder name",
+            "move": "Move",
+            "cancel": "Cancel"
+        },
+        "contentRating": {
+            "title": "Set Content Rating",
+            "current": "Current",
+            "levels": {
+                "pg": "PG",
+                "pg13": "PG13",
+                "r": "R",
+                "x": "X",
+                "xxx": "XXX"
+            }
+        }
+    },
+    "errors": {
+        "general": "An error occurred",
+        "networkError": "Network error. Please check your connection.",
+        "serverError": "Server error. Please try again later.",
+        "fileNotFound": "File not found",
+        "invalidFile": "Invalid file format",
+        "uploadFailed": "Upload failed",
+        "downloadFailed": "Download failed",
+        "saveFailed": "Save failed",
+        "loadFailed": "Load failed",
+        "deleteFailed": "Delete failed",
+        "moveFailed": "Move failed",
+        "copyFailed": "Copy failed",
+        "fetchFailed": "Failed to fetch data from Civitai",
+        "invalidUrl": "Invalid URL format",
+        "missingPermissions": "Insufficient permissions"
+    },
+    "success": {
+        "saved": "Successfully saved",
+        "deleted": "Successfully deleted",
+        "moved": "Successfully moved",
+        "copied": "Successfully copied",
+        "downloaded": "Successfully downloaded",
+        "uploaded": "Successfully uploaded",
+        "refreshed": "Successfully refreshed",
+        "exported": "Successfully exported",
+        "imported": "Successfully imported"
+    },
+    "keyboard": {
+        "navigation": "Keyboard Navigation:",
+        "shortcuts": {
+            "pageUp": "Scroll up one page",
+            "pageDown": "Scroll down one page",
+            "home": "Jump to top",
+            "end": "Jump to bottom",
+            "bulkMode": "Toggle bulk mode",
+            "search": "Focus search",
+            "escape": "Close modal/panel"
+        }
+    },
+    "initialization": {
+        "title": "Initializing",
+        "message": "Preparing your workspace...",
+        "status": "Initializing...",
+        "estimatingTime": "Estimating time...",
+        "loras": {
+            "title": "Initializing LoRA Manager",
+            "message": "Scanning and building LoRA cache. This may take a few minutes..."
+        },
+        "checkpoints": {
+            "title": "Initializing Checkpoint Manager",
+            "message": "Scanning and building checkpoint cache. This may take a few minutes..."
+        },
+        "embeddings": {
+            "title": "Initializing Embedding Manager",
+            "message": "Scanning and building embedding cache. This may take a few minutes..."
+        },
+        "recipes": {
+            "title": "Initializing Recipe Manager",
+            "message": "Loading and processing recipes. This may take a few minutes..."
+        },
+        "statistics": {
+            "title": "Initializing Statistics",
+            "message": "Processing model data for statistics. This may take a few minutes..."
+        },
+        "tips": {
+            "title": "Tips & Tricks",
+            "civitai": {
+                "title": "Civitai Integration",
+                "description": "Connect your Civitai account: Visit Profile Avatar → Settings → API Keys → Add API Key, then paste it in Lora Manager settings.",
+                "alt": "Civitai API Setup"
+            },
+            "download": {
+                "title": "Easy Download",
+                "description": "Use Civitai URLs to quickly download and install new models.",
+                "alt": "Civitai Download"
+            },
+            "recipes": {
+                "title": "Save Recipes",
+                "description": "Create recipes to save your favorite model combinations for future use.",
+                "alt": "Recipes"
+            },
+            "filter": {
+                "title": "Fast Filtering",
+                "description": "Filter models by tags or base model type using the filter button in the header.",
+                "alt": "Filter Models"
+            },
+            "search": {
+                "title": "Quick Search",
+                "description": "Press Ctrl+F (Cmd+F on Mac) to quickly search within your current view.",
+                "alt": "Quick Search"
+            }
+        },
+        "steps": {
+            "scanning": "Scanning model files...",
+            "processing": "Processing metadata...",
+            "building": "Building cache...",
+            "finalizing": "Finalizing..."
+        }
+    },
+    "duplicates": {
+        "found": "Found {count} duplicate groups",
+        "showNotification": "Show Duplicates Notification",
+        "deleteSelected": "Delete Selected",
+        "exitMode": "Exit Mode",
+        "help": {
+            "identicalHashes": "Identical hashes mean identical model files, even if they have different names or previews.",
+            "keepOne": "Keep only one version (preferably with better metadata/previews) and safely delete the others."
+        }
+    },
+    "tooltips": {
+        "refresh": "Refresh the model list",
+        "bulkOperations": "Select multiple models for batch operations",
+        "favorites": "Show only favorite models",
+        "duplicates": "Find and manage duplicate models",
+        "search": "Search models by name, tags, or other criteria",
+        "filter": "Filter models by various criteria",
+        "sort": "Sort models by different attributes",
+        "backToTop": "Scroll back to top of page"
+    }
+}

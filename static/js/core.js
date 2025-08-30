@@ -30,8 +30,6 @@ export class AppCore {
         // Initialize i18n first
         window.i18n = i18n;
         
-        // Load language from settings
-        await i18n.initializeFromSettings();
         console.log(`AppCore: Language set: ${i18n.getCurrentLocale()}`);
         
         // Initialize managers

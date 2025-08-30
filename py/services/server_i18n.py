@@ -14,10 +14,10 @@ class ServerI18nManager:
         self._load_translations()
     
     def _load_translations(self):
-        """Load all translation files from the static/js/i18n directory"""
+        """Load all translation files from the locales directory"""
         i18n_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
-            'static', 'js', 'i18n', 'locales'
+            'locales'
         )
         
         if not os.path.exists(i18n_path):
@@ -26,72 +26,26 @@ class ServerI18nManager:
         
         # Load all available locale files
         for filename in os.listdir(i18n_path):
-            if filename.endswith('.js'):
-                locale_code = filename[:-3]  # Remove .js extension
+            if filename.endswith('.json'):
+                locale_code = filename[:-5]  # Remove .json extension
                 try:
                     self._load_locale_file(i18n_path, filename, locale_code)
                 except Exception as e:
                     logger.error(f"Error loading locale file {filename}: {e}")
     
     def _load_locale_file(self, path: str, filename: str, locale_code: str):
-        """Load a single locale file and extract translation data"""
+        """Load a single locale JSON file"""
         file_path = os.path.join(path, filename)
         
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
+                translations = json.load(f)
                 
-            # Look for export const pattern like: export const en = { ... }
-            import re
-            
-            # Extract the variable name and object
-            export_pattern = r'export\s+const\s+(\w+)\s*=\s*(\{.*\});?\s*$'
-            match = re.search(export_pattern, content, re.DOTALL | re.MULTILINE)
-            
-            if not match:
-                logger.warning(f"No export const found in {filename}")
-                return
-            
-            var_name = match.group(1)
-            js_object = match.group(2)
-            
-            # Convert JS object to JSON
-            json_str = self._js_object_to_json(js_object)
-            
-            # Parse as JSON
-            translations = json.loads(json_str)
             self.translations[locale_code] = translations
-            
-            logger.debug(f"Loaded translations for {locale_code} (variable: {var_name})")
+            logger.debug(f"Loaded translations for {locale_code} from {filename}")
             
         except Exception as e:
             logger.error(f"Error parsing locale file {filename}: {e}")
-    
-    def _js_object_to_json(self, js_obj: str) -> str:
-        """Convert JavaScript object to JSON string"""
-        import re
-        
-        # Remove comments (single line and multi-line)
-        js_obj = re.sub(r'//.*?$', '', js_obj, flags=re.MULTILINE)
-        js_obj = re.sub(r'/\*.*?\*/', '', js_obj, flags=re.DOTALL)
-        
-        # Replace unquoted object keys with quoted keys
-        js_obj = re.sub(r'(\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:', r'\1"\2":', js_obj)
-        
-        # Handle strings more robustly using regex
-        # First, find all single-quoted strings and replace them with double-quoted ones
-        def replace_single_quotes(match):
-            content = match.group(1)
-            # Escape any double quotes in the content
-            content = content.replace('"', '\\"')
-            # Handle escaped single quotes
-            content = content.replace("\\'", "'")
-            return f'"{content}"'
-        
-        # Replace single-quoted strings with double-quoted strings
-        js_obj = re.sub(r"'([^'\\]*(?:\\.[^'\\]*)*)'", replace_single_quotes, js_obj)
-        
-        return js_obj
     
     def set_locale(self, locale: str):
         """Set the current locale"""
@@ -101,8 +55,14 @@ class ServerI18nManager:
             logger.warning(f"Locale {locale} not found, using 'en'")
             self.current_locale = 'en'
     
-    def get_translation(self, key: str, params: Dict[str, Any] = None) -> str:
-        """Get translation for a key with optional parameters"""
+    def get_translation(self, key: str, params: Dict[str, Any] = None, **kwargs) -> str:
+        """Get translation for a key with optional parameters (supports both dict and keyword args)"""
+        # Merge kwargs into params for convenience
+        if params is None:
+            params = {}
+        if kwargs:
+            params = {**params, **kwargs}
+        
         if self.current_locale not in self.translations:
             return key
         

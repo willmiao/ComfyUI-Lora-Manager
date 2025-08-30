@@ -1,0 +1,453 @@
+{
+    "common": {
+        "file": "파일",
+        "folder": "폴더",
+        "name": "이름",
+        "size": "크기",
+        "date": "날짜",
+        "type": "유형",
+        "path": "경로",
+        "fileSize": {
+            "zero": "0 바이트",
+            "bytes": "바이트",
+            "kb": "KB",
+            "mb": "MB",
+            "gb": "GB",
+            "tb": "TB"
+        },
+        "actions": {
+            "save": "저장",
+            "cancel": "취소",
+            "delete": "삭제",
+            "edit": "편집",
+            "copy": "복사",
+            "move": "이동",
+            "refresh": "새로고침",
+            "download": "다운로드",
+            "upload": "업로드",
+            "search": "검색",
+            "filter": "필터",
+            "sort": "정렬",
+            "select": "선택",
+            "selectAll": "모두 선택",
+            "deselectAll": "모두 선택 해제",
+            "confirm": "확인",
+            "close": "닫기",
+            "back": "뒤로",
+            "next": "다음",
+            "previous": "이전",
+            "view": "보기",
+            "preview": "미리보기",
+            "details": "세부사항",
+            "backToTop": "맨 위로",
+            "settings": "설정",
+            "help": "도움말",
+            "about": "정보"
+        },
+        "status": {
+            "loading": "로딩 중...",
+            "saving": "저장 중...",
+            "saved": "저장됨",
+            "error": "오류",
+            "success": "성공",
+            "warning": "경고",
+            "info": "정보",
+            "processing": "처리 중...",
+            "completed": "완료",
+            "failed": "실패",
+            "cancelled": "취소됨",
+            "pending": "대기 중",
+            "ready": "준비됨"
+        },
+        "language": {
+            "current": "언어",
+            "select": "언어 선택",
+            "select_help": "인터페이스 언어를 선택하세요",
+            "english": "영어",
+            "chinese_simplified": "중국어 (간체)",
+            "chinese_traditional": "중국어 (번체)",
+            "russian": "러시아어",
+            "german": "독일어",
+            "japanese": "일본어",
+            "korean": "한국어",
+            "french": "프랑스어",
+            "spanish": "스페인어"
+        }
+    },
+    "header": {
+        "appTitle": "LoRA 매니저",
+        "navigation": {
+            "loras": "LoRA",
+            "recipes": "레시피",
+            "checkpoints": "체크포인트",
+            "embeddings": "임베딩",
+            "statistics": "통계"
+        },
+        "search": {
+            "placeholder": "검색...",
+            "placeholders": {
+                "loras": "LoRA 검색...",
+                "recipes": "레시피 검색...",
+                "checkpoints": "체크포인트 검색...",
+                "embeddings": "임베딩 검색..."
+            },
+            "options": "검색 옵션",
+            "searchIn": "검색 범위:",
+            "notAvailable": "통계 페이지에서는 검색을 사용할 수 없습니다",
+            "filters": {
+                "filename": "파일명",
+                "modelname": "모델명",
+                "tags": "태그",
+                "creator": "제작자",
+                "title": "레시피 제목",
+                "loraName": "LoRA 파일명",
+                "loraModel": "LoRA 모델명"
+            }
+        },
+        "filter": {
+            "title": "모델 필터",
+            "baseModel": "베이스 모델",
+            "modelTags": "태그 (상위 20개)",
+            "clearAll": "모든 필터 지우기"
+        },
+        "theme": {
+            "toggle": "테마 전환",
+            "switchToLight": "라이트 테마로 전환",
+            "switchToDark": "다크 테마로 전환",
+            "switchToAuto": "자동 테마로 전환"
+        }
+    },
+    "loras": {
+        "title": "LoRA 모델",
+        "controls": {
+            "sort": {
+                "title": "모델 정렬...",
+                "name": "이름",
+                "nameAsc": "가나다순",
+                "nameDesc": "가나다 역순",
+                "date": "추가 날짜",
+                "dateDesc": "최신순",
+                "dateAsc": "오래된 순",
+                "size": "파일 크기",
+                "sizeDesc": "큰 순",
+                "sizeAsc": "작은 순"
+            },
+            "refresh": {
+                "title": "모델 목록 새로고침",
+                "quick": "빠른 새로고침 (증분)",
+                "full": "전체 재구성 (완전)"
+            },
+            "fetch": "Civitai에서 가져오기",
+            "download": "URL에서 다운로드",
+            "bulk": "일괄 작업",
+            "duplicates": "중복 찾기",
+            "favorites": "즐겨찾기만 보기"
+        },
+        "bulkOperations": {
+            "title": "일괄 작업",
+            "selected": "{count}개 선택됨",
+            "sendToWorkflow": "선택된 모든 LoRA를 워크플로우로 전송",
+            "copyAll": "선택된 모든 LoRA 구문 복사",
+            "refreshAll": "선택된 모델의 CivitAI 메타데이터 새로고침",
+            "moveAll": "선택된 모델을 폴더로 이동",
+            "deleteAll": "선택된 모델 삭제",
+            "clear": "선택 지우기"
+        },
+        "contextMenu": {
+            "refreshMetadata": "Civitai 데이터 새로고침",
+            "relinkCivitai": "Civitai에 다시 연결",
+            "copySyntax": "LoRA 구문 복사",
+            "copyFilename": "모델 파일명 복사",
+            "copyRecipeSyntax": "레시피 구문 복사",
+            "sendToWorkflowAppend": "워크플로우로 전송 (추가)",
+            "sendToWorkflowReplace": "워크플로우로 전송 (교체)",
+            "openExamplesFolder": "예제 폴더 열기",
+            "downloadExamples": "예제 이미지 다운로드",
+            "replacePreview": "미리보기 교체",
+            "setContentRating": "콘텐츠 등급 설정",
+            "moveToFolder": "폴더로 이동",
+            "excludeModel": "모델 제외",
+            "deleteModel": "모델 삭제",
+            "shareRecipe": "레시피 공유",
+            "viewAllLoras": "모든 LoRA 보기",
+            "downloadMissingLoras": "누락된 LoRA 다운로드",
+            "deleteRecipe": "레시피 삭제"
+        },
+        "modal": {
+            "title": "LoRA 세부사항",
+            "tabs": {
+                "examples": "예제",
+                "description": "모델 설명",
+                "recipes": "레시피"
+            },
+            "info": {
+                "filename": "파일명",
+                "modelName": "모델명",
+                "baseModel": "베이스 모델",
+                "fileSize": "파일 크기",
+                "dateAdded": "추가 날짜",
+                "triggerWords": "트리거 워드",
+                "description": "설명",
+                "tags": "태그",
+                "rating": "평점",
+                "downloads": "다운로드",
+                "likes": "좋아요",
+                "version": "버전"
+            },
+            "actions": {
+                "copyTriggerWords": "트리거 워드 복사",
+                "copyLoraName": "LoRA 이름 복사",
+                "sendToWorkflow": "워크플로우로 전송",
+                "viewOnCivitai": "Civitai에서 보기",
+                "downloadExamples": "예제 이미지 다운로드"
+            }
+        }
+    },
+    "recipes": {
+        "title": "LoRA 레시피",
+        "controls": {
+            "import": "레시피 가져오기",
+            "refresh": {
+                "title": "레시피 목록 새로고침"
+            },
+            "duplicates": {
+                "title": "중복 레시피 찾기"
+            },
+            "filteredByLora": "LoRA로 필터됨",
+            "create": "레시피 만들기",
+            "export": "선택 항목 내보내기",
+            "downloadMissing": "누락된 LoRA 다운로드"
+        },
+        "duplicates": {
+            "found": "{count}개의 중복 그룹을 찾았습니다",
+            "keepLatest": "최신 버전 유지",
+            "deleteSelected": "선택 항목 삭제"
+        },
+        "card": {
+            "author": "작성자",
+            "loras": "{count}개 LoRA",
+            "tags": "태그",
+            "actions": {
+                "sendToWorkflow": "워크플로우로 전송",
+                "edit": "레시피 편집",
+                "duplicate": "레시피 복제",
+                "export": "레시피 내보내기",
+                "delete": "레시피 삭제"
+            }
+        }
+    },
+    "checkpoints": {
+        "title": "체크포인트 모델",
+        "info": {
+            "filename": "파일명",
+            "modelName": "모델명",
+            "baseModel": "베이스 모델",
+            "fileSize": "파일 크기",
+            "dateAdded": "추가 날짜"
+        }
+    },
+    "embeddings": {
+        "title": "임베딩 모델",
+        "info": {
+            "filename": "파일명",
+            "modelName": "모델명",
+            "triggerWords": "트리거 워드",
+            "fileSize": "파일 크기",
+            "dateAdded": "추가 날짜"
+        }
+    },
+    "sidebar": {
+        "modelRoot": "모델 루트",
+        "collapseAll": "모든 폴더 접기",
+        "pinToggle": "사이드바 고정/해제"
+    },
+    "statistics": {
+        "title": "통계",
+        "tabs": {
+            "overview": "개요",
+            "usage": "사용 분석",
+            "collection": "컬렉션",
+            "storage": "저장소",
+            "insights": "인사이트"
+        },
+        "overview": {
+            "title": "개요",
+            "totalLoras": "총 LoRA 수",
+            "totalCheckpoints": "총 체크포인트 수",
+            "totalEmbeddings": "총 임베딩 수",
+            "totalSize": "총 크기",
+            "favoriteModels": "즐겨찾기 모델"
+        },
+        "charts": {
+            "modelsByType": "유형별 모델",
+            "modelsByBaseModel": "베이스 모델별",
+            "modelsBySize": "파일 크기별",
+            "modelsAddedOverTime": "시간별 추가된 모델"
+        }
+    },
+    "modals": {
+        "delete": {
+            "title": "삭제 확인",
+            "message": "이 모델을 삭제하시겠습니까?",
+            "warningMessage": "이 작업은 되돌릴 수 없습니다.",
+            "confirm": "삭제",
+            "cancel": "취소"
+        },
+        "exclude": {
+            "title": "모델 제외",
+            "message": "이 모델을 라이브러리에서 제외하시겠습니까?",
+            "confirm": "제외",
+            "cancel": "취소"
+        },
+        "download": {
+            "title": "URL에서 모델 다운로드",
+            "url": "Civitai URL",
+            "placeholder": "https://civitai.com/models/...",
+            "locationPreview": "다운로드 위치 미리보기",
+            "useDefaultPath": "기본 경로 사용",
+            "useDefaultPathTooltip": "활성화되면 구성된 경로 템플릿을 사용하여 파일이 자동으로 정리됩니다",
+            "selectRootDirectory": "루트 디렉터리 선택",
+            "download": "다운로드",
+            "cancel": "취소"
+        },
+        "move": {
+            "title": "모델 이동",
+            "selectFolder": "대상 폴더 선택",
+            "createFolder": "새 폴더 만들기",
+            "folderName": "폴더 이름",
+            "move": "이동",
+            "cancel": "취소"
+        },
+        "contentRating": {
+            "title": "콘텐츠 등급 설정",
+            "current": "현재",
+            "levels": {
+                "pg": "전체 이용가",
+                "pg13": "13세 이상",
+                "r": "제한됨",
+                "x": "성인 전용",
+                "xxx": "성인 노골적"
+            }
+        }
+    },
+    "errors": {
+        "general": "오류가 발생했습니다",
+        "networkError": "네트워크 오류입니다. 연결을 확인해주세요.",
+        "serverError": "서버 오류입니다. 나중에 다시 시도해주세요.",
+        "fileNotFound": "파일을 찾을 수 없습니다",
+        "invalidFile": "잘못된 파일 형식입니다",
+        "uploadFailed": "업로드 실패",
+        "downloadFailed": "다운로드 실패",
+        "saveFailed": "저장 실패",
+        "loadFailed": "로드 실패",
+        "deleteFailed": "삭제 실패",
+        "moveFailed": "이동 실패",
+        "copyFailed": "복사 실패",
+        "fetchFailed": "Civitai에서 데이터를 가져오는데 실패했습니다",
+        "invalidUrl": "잘못된 URL 형식입니다",
+        "missingPermissions": "권한이 부족합니다"
+    },
+    "success": {
+        "saved": "성공적으로 저장되었습니다",
+        "deleted": "성공적으로 삭제되었습니다",
+        "moved": "성공적으로 이동되었습니다",
+        "copied": "성공적으로 복사되었습니다",
+        "downloaded": "성공적으로 다운로드되었습니다",
+        "uploaded": "성공적으로 업로드되었습니다",
+        "refreshed": "성공적으로 새로고침되었습니다",
+        "exported": "성공적으로 내보냈습니다",
+        "imported": "성공적으로 가져왔습니다"
+    },
+    "keyboard": {
+        "navigation": "키보드 탐색:",
+        "shortcuts": {
+            "pageUp": "한 페이지 위로 스크롤",
+            "pageDown": "한 페이지 아래로 스크롤",
+            "home": "맨 위로 이동",
+            "end": "맨 아래로 이동",
+            "bulkMode": "일괄 모드 전환",
+            "search": "검색 포커스",
+            "escape": "모달/패널 닫기"
+        }
+    },
+    "initialization": {
+        "title": "초기화 중",
+        "message": "작업공간을 준비하고 있습니다...",
+        "status": "초기화 중...",
+        "estimatingTime": "시간 추정 중...",
+        "loras": {
+            "title": "LoRA 매니저 초기화 중",
+            "message": "LoRA 캐시를 스캔하고 구축하고 있습니다. 몇 분 정도 걸릴 수 있습니다..."
+        },
+        "checkpoints": {
+            "title": "체크포인트 매니저 초기화 중",
+            "message": "체크포인트 캐시를 스캔하고 구축하고 있습니다. 몇 분 정도 걸릴 수 있습니다..."
+        },
+        "embeddings": {
+            "title": "임베딩 매니저 초기화 중",
+            "message": "임베딩 캐시를 스캔하고 구축하고 있습니다. 몇 분 정도 걸릴 수 있습니다..."
+        },
+        "recipes": {
+            "title": "레시피 매니저 초기화 중",
+            "message": "레시피를 로드하고 처리하고 있습니다. 몇 분 정도 걸릴 수 있습니다..."
+        },
+        "statistics": {
+            "title": "통계 초기화 중",
+            "message": "통계를 위한 모델 데이터를 처리하고 있습니다. 몇 분 정도 걸릴 수 있습니다..."
+        },
+        "tips": {
+            "title": "팁과 요령",
+            "civitai": {
+                "title": "Civitai 통합",
+                "description": "Civitai 계정을 연결하세요: 프로필 아바타 → 설정 → API 키 → API 키 추가로 이동한 후, Lora Manager 설정에 붙여넣으세요.",
+                "alt": "Civitai API 설정"
+            },
+            "download": {
+                "title": "쉬운 다운로드",
+                "description": "Civitai URL을 사용하여 새 모델을 빠르게 다운로드하고 설치하세요.",
+                "alt": "Civitai 다운로드"
+            },
+            "recipes": {
+                "title": "레시피 저장",
+                "description": "좋아하는 모델 조합을 나중에 사용하기 위해 레시피를 만드세요.",
+                "alt": "레시피"
+            },
+            "filter": {
+                "title": "빠른 필터링",
+                "description": "헤더의 필터 버튼을 사용하여 태그나 베이스 모델 유형으로 모델을 필터링하세요.",
+                "alt": "모델 필터"
+            },
+            "search": {
+                "title": "빠른 검색",
+                "description": "Ctrl+F (Mac에서는 Cmd+F)를 눌러 현재 보기에서 빠르게 검색하세요.",
+                "alt": "빠른 검색"
+            }
+        },
+        "steps": {
+            "scanning": "모델 파일 스캔 중...",
+            "processing": "메타데이터 처리 중...",
+            "building": "캐시 구축 중...",
+            "finalizing": "완료 중..."
+        }
+    },
+    "duplicates": {
+        "found": "{count}개의 중복 그룹을 찾았습니다",
+        "showNotification": "중복 알림 표시",
+        "deleteSelected": "선택 항목 삭제",
+        "exitMode": "모드 종료",
+        "help": {
+            "identicalHashes": "동일한 해시는 이름이나 미리보기가 다르더라도 동일한 모델 파일을 의미합니다.",
+            "keepOne": "하나의 버전만 유지하고 (더 나은 메타데이터/미리보기가 있는 것을 선호) 나머지는 안전하게 삭제하세요."
+        }
+    },
+    "tooltips": {
+        "refresh": "모델 목록 새로고침",
+        "bulkOperations": "배치 작업을 위해 여러 모델 선택",
+        "favorites": "즐겨찾기 모델만 표시",
+        "duplicates": "중복 모델 찾기 및 관리",
+        "search": "이름, 태그 또는 기타 기준으로 모델 검색",
+        "filter": "다양한 기준으로 모델 필터링",
+        "sort": "다양한 속성으로 모델 정렬",
+        "backToTop": "페이지 맨 위로 스크롤"
+    }
+}

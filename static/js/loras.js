@@ -5,7 +5,6 @@ import { LoraContextMenu } from './components/ContextMenu/index.js';
 import { createPageControls } from './components/controls/index.js';
 import { confirmDelete, closeDeleteModal, confirmExclude, closeExcludeModal } from './utils/modalUtils.js';
 import { ModelDuplicatesManager } from './components/ModelDuplicatesManager.js';
-import { initializePageI18n } from './utils/i18nHelpers.js';
 
 // Initialize the LoRA page
 class LoraPageManager {
@@ -46,9 +45,6 @@ class LoraPageManager {
         
         // Initialize common page features (virtual scroll)
         appCore.initializePageFeatures();
-        
-        // Initialize i18n for the page
-        initializePageI18n();
     }
 }
 

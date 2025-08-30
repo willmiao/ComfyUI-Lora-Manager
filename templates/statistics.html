@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Statistics - LoRA Manager{% endblock %}
+{% block title %}{{ t('statistics.title') }} - {{ t('header.appTitle') }}{% endblock %}
 {% block page_id %}statistics{% endblock %}
 
 {% block preload %}
@@ -14,8 +14,8 @@
 <script src="/loras_static/vendor/chart.js/chart.umd.js"></script>
 {% endblock %}
 
-{% block init_title %}Initializing Statistics{% endblock %}
-{% block init_message %}Loading model data and usage statistics. This may take a moment...{% endblock %}
+{% block init_title %}{{ t('initialization.statistics.title') }}{% endblock %}
+{% block init_message %}{{ t('initialization.statistics.message') }}{% endblock %}
 {% block init_check_url %}/api/stats/collection-overview{% endblock %}
 
 {% block content %}
@@ -32,19 +32,19 @@
         <!-- Navigation Tabs -->
         <div class="dashboard-tabs">
             <button class="tab-button active" data-tab="overview">
-                <i class="fas fa-chart-bar"></i> Overview
+                <i class="fas fa-chart-bar"></i> {{ t('statistics.tabs.overview') }}
             </button>
             <button class="tab-button" data-tab="usage">
-                <i class="fas fa-chart-line"></i> Usage Analysis
+                <i class="fas fa-chart-line"></i> {{ t('statistics.tabs.usage') }}
             </button>
             <button class="tab-button" data-tab="collection">
-                <i class="fas fa-layer-group"></i> Collection
+                <i class="fas fa-layer-group"></i> {{ t('statistics.tabs.collection') }}
             </button>
             <button class="tab-button" data-tab="storage">
-                <i class="fas fa-hdd"></i> Storage
+                <i class="fas fa-hdd"></i> {{ t('statistics.tabs.storage') }}
             </button>
             <button class="tab-button" data-tab="insights">
-                <i class="fas fa-lightbulb"></i> Insights
+                <i class="fas fa-lightbulb"></i> {{ t('statistics.tabs.insights') }}
             </button>
         </div>
 

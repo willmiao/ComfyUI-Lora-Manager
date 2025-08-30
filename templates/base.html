@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>{% block title %}LoRA Manager{% endblock %}</title>
+    <title>{% block title %}{{ t('header.appTitle') }}{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/loras_static/css/style.css">
     {% block page_css %}{% endblock %}
@@ -77,7 +77,7 @@
         {% block additional_components %}{% endblock %}
 
         <!-- Add back-to-top button here -->
-        <button id="backToTopBtn" class="back-to-top" title="Back to top">
+        <button id="backToTopBtn" class="back-to-top" title="{{ t('common.actions.backToTop') }}">
             <i class="fas fa-chevron-up"></i>
         </button>
 

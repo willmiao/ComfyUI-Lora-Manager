@@ -1,0 +1,453 @@
+{
+    "common": {
+        "file": "檔案",
+        "folder": "資料夾",
+        "name": "名稱",
+        "size": "大小",
+        "date": "日期",
+        "type": "類型",
+        "path": "路徑",
+        "fileSize": {
+            "zero": "0 位元組",
+            "bytes": "位元組",
+            "kb": "KB",
+            "mb": "MB",
+            "gb": "GB",
+            "tb": "TB"
+        },
+        "actions": {
+            "save": "儲存",
+            "cancel": "取消",
+            "delete": "刪除",
+            "edit": "編輯",
+            "copy": "複製",
+            "move": "移動",
+            "refresh": "重新整理",
+            "download": "下載",
+            "upload": "上傳",
+            "search": "搜尋",
+            "filter": "篩選",
+            "sort": "排序",
+            "select": "選擇",
+            "selectAll": "全選",
+            "deselectAll": "取消全選",
+            "confirm": "確認",
+            "close": "關閉",
+            "back": "返回",
+            "next": "下一步",
+            "previous": "上一步",
+            "view": "檢視",
+            "preview": "預覽",
+            "details": "詳情",
+            "backToTop": "返回頂部",
+            "settings": "設定",
+            "help": "說明",
+            "about": "關於"
+        },
+        "status": {
+            "loading": "載入中...",
+            "saving": "儲存中...",
+            "saved": "已儲存",
+            "error": "錯誤",
+            "success": "成功",
+            "warning": "警告",
+            "info": "資訊",
+            "processing": "處理中...",
+            "completed": "已完成",
+            "failed": "失敗",
+            "cancelled": "已取消",
+            "pending": "等待中",
+            "ready": "就緒"
+        },
+        "language": {
+            "current": "語言",
+            "select": "選擇語言",
+            "select_help": "選擇您偏好的介面語言",
+            "english": "英語",
+            "chinese_simplified": "中文（簡體）",
+            "chinese_traditional": "中文（繁體）",
+            "russian": "俄語",
+            "german": "德語",
+            "japanese": "日語",
+            "korean": "韓語",
+            "french": "法語",
+            "spanish": "西班牙語"
+        }
+    },
+    "header": {
+        "appTitle": "LoRA 管理器",
+        "navigation": {
+            "loras": "LoRA",
+            "recipes": "配方",
+            "checkpoints": "Checkpoint",
+            "embeddings": "Embedding",
+            "statistics": "統計"
+        },
+        "search": {
+            "placeholder": "搜尋...",
+            "placeholders": {
+                "loras": "搜尋 LoRA...",
+                "recipes": "搜尋配方...",
+                "checkpoints": "搜尋 Checkpoint...",
+                "embeddings": "搜尋 Embedding..."
+            },
+            "options": "搜尋選項",
+            "searchIn": "搜尋範圍：",
+            "notAvailable": "統計頁面不支援搜尋",
+            "filters": {
+                "filename": "檔案名稱",
+                "modelname": "模型名稱",
+                "tags": "標籤",
+                "creator": "創作者",
+                "title": "配方標題",
+                "loraName": "LoRA 檔案名稱",
+                "loraModel": "LoRA 模型名稱"
+            }
+        },
+        "filter": {
+            "title": "篩選模型",
+            "baseModel": "基礎模型",
+            "modelTags": "標籤（前20個）",
+            "clearAll": "清除所有篩選"
+        },
+        "theme": {
+            "toggle": "切換主題",
+            "switchToLight": "切換到淺色主題",
+            "switchToDark": "切換到深色主題",
+            "switchToAuto": "切換到自動主題"
+        }
+    },
+    "loras": {
+        "title": "LoRA 模型",
+        "controls": {
+            "sort": {
+                "title": "排序方式...",
+                "name": "名稱",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "新增日期",
+                "dateDesc": "最新",
+                "dateAsc": "最舊",
+                "size": "檔案大小",
+                "sizeDesc": "最大",
+                "sizeAsc": "最小"
+            },
+            "refresh": {
+                "title": "重新整理模型清單",
+                "quick": "快速重新整理（增量）",
+                "full": "完全重建（完整）"
+            },
+            "fetch": "從 Civitai 取得",
+            "download": "從 URL 下載",
+            "bulk": "批次操作",
+            "duplicates": "尋找重複項",
+            "favorites": "僅顯示收藏"
+        },
+        "bulkOperations": {
+            "title": "批次操作",
+            "selected": "已選擇{count}項",
+            "sendToWorkflow": "傳送到工作流程",
+            "copyAll": "複製LoRA語法",
+            "refreshAll": "重新整理中繼資料",
+            "moveAll": "移動",
+            "deleteAll": "刪除",
+            "clear": "清除選擇"
+        },
+        "contextMenu": {
+            "refreshMetadata": "重新整理 Civitai 資料",
+            "relinkCivitai": "重新連結到 Civitai",
+            "copySyntax": "複製 LoRA 語法",
+            "copyFilename": "複製模型檔案名稱",
+            "copyRecipeSyntax": "複製配方語法",
+            "sendToWorkflowAppend": "傳送到工作流程（附加）",
+            "sendToWorkflowReplace": "傳送到工作流程（取代）",
+            "openExamplesFolder": "開啟範例資料夾",
+            "downloadExamples": "下載範例圖片",
+            "replacePreview": "取代預覽圖",
+            "setContentRating": "設定內容評級",
+            "moveToFolder": "移動到資料夾",
+            "excludeModel": "排除模型",
+            "deleteModel": "刪除模型",
+            "shareRecipe": "分享配方",
+            "viewAllLoras": "檢視所有 LoRA",
+            "downloadMissingLoras": "下載缺少的 LoRA",
+            "deleteRecipe": "刪除配方"
+        },
+        "modal": {
+            "title": "LoRA 詳情",
+            "tabs": {
+                "examples": "範例",
+                "description": "模型描述",
+                "recipes": "配方"
+            },
+            "info": {
+                "filename": "檔案名稱",
+                "modelName": "模型名稱",
+                "baseModel": "基礎模型",
+                "fileSize": "檔案大小",
+                "dateAdded": "新增日期",
+                "triggerWords": "觸發詞",
+                "description": "描述",
+                "tags": "標籤",
+                "rating": "評分",
+                "downloads": "下載量",
+                "likes": "按讚數",
+                "version": "版本"
+            },
+            "actions": {
+                "copyTriggerWords": "複製觸發詞",
+                "copyLoraName": "複製 LoRA 名稱",
+                "sendToWorkflow": "傳送到工作流程",
+                "viewOnCivitai": "在 Civitai 上檢視",
+                "downloadExamples": "下載範例圖片"
+            }
+        }
+    },
+    "recipes": {
+        "title": "LoRA 配方",
+        "controls": {
+            "import": "匯入配方",
+            "refresh": {
+                "title": "重新整理配方清單"
+            },
+            "duplicates": {
+                "title": "尋找重複配方"
+            },
+            "filteredByLora": "按 LoRA 篩選",
+            "create": "建立配方",
+            "export": "匯出已選",
+            "downloadMissing": "下載缺少的 LoRA"
+        },
+        "duplicates": {
+            "found": "發現 {count} 個重複群組",
+            "keepLatest": "保留最新版本",
+            "deleteSelected": "刪除已選"
+        },
+        "card": {
+            "author": "作者",
+            "loras": "{count} 個 LoRA",
+            "tags": "標籤",
+            "actions": {
+                "sendToWorkflow": "傳送到工作流程",
+                "edit": "編輯配方",
+                "duplicate": "複製配方",
+                "export": "匯出配方",
+                "delete": "刪除配方"
+            }
+        }
+    },
+    "checkpoints": {
+        "title": "Checkpoint 模型",
+        "info": {
+            "filename": "檔案名稱",
+            "modelName": "模型名稱",
+            "baseModel": "基礎模型",
+            "fileSize": "檔案大小",
+            "dateAdded": "新增日期"
+        }
+    },
+    "embeddings": {
+        "title": "Embedding 模型",
+        "info": {
+            "filename": "檔案名稱",
+            "modelName": "模型名稱",
+            "triggerWords": "觸發詞",
+            "fileSize": "檔案大小",
+            "dateAdded": "新增日期"
+        }
+    },
+    "sidebar": {
+        "modelRoot": "模型根目錄",
+        "collapseAll": "摺疊所有資料夾",
+        "pinToggle": "釘選/取消釘選側邊欄"
+    },
+    "statistics": {
+        "title": "統計資訊",
+        "tabs": {
+            "overview": "概覽",
+            "usage": "使用分析",
+            "collection": "收藏",
+            "storage": "儲存",
+            "insights": "洞察"
+        },
+        "overview": {
+            "title": "概覽",
+            "totalLoras": "LoRA 總數",
+            "totalCheckpoints": "Checkpoint 總數",
+            "totalEmbeddings": "Embedding 總數",
+            "totalSize": "總大小",
+            "favoriteModels": "收藏模型"
+        },
+        "charts": {
+            "modelsByType": "按類型統計模型",
+            "modelsByBaseModel": "按基礎模型統計",
+            "modelsBySize": "按檔案大小統計",
+            "modelsAddedOverTime": "模型新增時間分佈"
+        }
+    },
+    "modals": {
+        "delete": {
+            "title": "確認刪除",
+            "message": "確定要刪除這個模型嗎？",
+            "warningMessage": "此操作無法復原。",
+            "confirm": "刪除",
+            "cancel": "取消"
+        },
+        "exclude": {
+            "title": "排除模型",
+            "message": "確定要從資料庫中排除這個模型嗎？",
+            "confirm": "排除",
+            "cancel": "取消"
+        },
+        "download": {
+            "title": "從 URL 下載模型",
+            "url": "Civitai URL",
+            "placeholder": "https://civitai.com/models/...",
+            "locationPreview": "下載位置預覽",
+            "useDefaultPath": "使用預設路徑",
+            "useDefaultPathTooltip": "啟用時，檔案會使用設定的路徑範本自動組織",
+            "selectRootDirectory": "選擇根目錄",
+            "download": "下載",
+            "cancel": "取消"
+        },
+        "move": {
+            "title": "移動模型",
+            "selectFolder": "選擇目標資料夾",
+            "createFolder": "建立新資料夾",
+            "folderName": "資料夾名稱",
+            "move": "移動",
+            "cancel": "取消"
+        },
+        "contentRating": {
+            "title": "設定內容評級",
+            "current": "目前",
+            "levels": {
+                "pg": "普通級",
+                "pg13": "輔導級",
+                "r": "限制級",
+                "x": "成人級",
+                "xxx": "重口級"
+            }
+        }
+    },
+    "errors": {
+        "general": "發生錯誤",
+        "networkError": "網路錯誤，請檢查您的連線。",
+        "serverError": "伺服器錯誤，請稍後重試。",
+        "fileNotFound": "找不到檔案",
+        "invalidFile": "無效的檔案格式",
+        "uploadFailed": "上傳失敗",
+        "downloadFailed": "下載失敗",
+        "saveFailed": "儲存失敗",
+        "loadFailed": "載入失敗",
+        "deleteFailed": "刪除失敗",
+        "moveFailed": "移動失敗",
+        "copyFailed": "複製失敗",
+        "fetchFailed": "從 Civitai 取得資料失敗",
+        "invalidUrl": "無效的 URL 格式",
+        "missingPermissions": "權限不足"
+    },
+    "success": {
+        "saved": "儲存成功",
+        "deleted": "刪除成功",
+        "moved": "移動成功",
+        "copied": "複製成功",
+        "downloaded": "下載成功",
+        "uploaded": "上傳成功",
+        "refreshed": "重新整理成功",
+        "exported": "匯出成功",
+        "imported": "匯入成功"
+    },
+    "keyboard": {
+        "navigation": "鍵盤導覽：",
+        "shortcuts": {
+            "pageUp": "向上捲動一頁",
+            "pageDown": "向下捲動一頁",
+            "home": "跳轉到頂部",
+            "end": "跳轉到底部",
+            "bulkMode": "切換批次模式",
+            "search": "聚焦搜尋框",
+            "escape": "關閉對話方塊/面板"
+        }
+    },
+    "initialization": {
+        "title": "正在初始化",
+        "message": "正在準備您的工作空間...",
+        "status": "初始化中...",
+        "estimatingTime": "正在估算時間...",
+        "loras": {
+            "title": "初始化 LoRA 管理器",
+            "message": "正在掃描並建立 LoRA 快取，這可能需要幾分鐘時間..."
+        },
+        "checkpoints": {
+            "title": "初始化 Checkpoint 管理器",
+            "message": "正在掃描並建立 Checkpoint 快取，這可能需要幾分鐘時間..."
+        },
+        "embeddings": {
+            "title": "初始化 Embedding 管理器",
+            "message": "正在掃描並建立 Embedding 快取，這可能需要幾分鐘時間..."
+        },
+        "recipes": {
+            "title": "初始化配方管理器",
+            "message": "正在載入和處理配方，這可能需要幾分鐘時間..."
+        },
+        "statistics": {
+            "title": "初始化統計資訊",
+            "message": "正在處理模型資料以產生統計資訊，這可能需要幾分鐘時間..."
+        },
+        "tips": {
+            "title": "提示與技巧",
+            "civitai": {
+                "title": "Civitai 整合",
+                "description": "連接您的 Civitai 帳戶：造訪頭像 → 設定 → API 金鑰 → 新增 API 金鑰，然後將其貼上到 Lora 管理器設定中。",
+                "alt": "Civitai API 設定"
+            },
+            "download": {
+                "title": "輕鬆下載",
+                "description": "使用 Civitai URL 快速下載和安裝新模型。",
+                "alt": "Civitai 下載"
+            },
+            "recipes": {
+                "title": "儲存配方",
+                "description": "建立配方以儲存您喜歡的模型組合供將來使用。",
+                "alt": "配方"
+            },
+            "filter": {
+                "title": "快速篩選",
+                "description": "使用標題中的篩選按鈕按標籤或基礎模型類型篩選模型。",
+                "alt": "篩選模型"
+            },
+            "search": {
+                "title": "快速搜尋",
+                "description": "按 Ctrl+F（Mac 上為 Cmd+F）快速搜尋目前檢視中的內容。",
+                "alt": "快速搜尋"
+            }
+        },
+        "steps": {
+            "scanning": "掃描模型檔案...",
+            "processing": "處理中繼資料...",
+            "building": "建立快取...",
+            "finalizing": "完成中..."
+        }
+    },
+    "duplicates": {
+        "found": "發現 {count} 個重複群組",
+        "showNotification": "顯示重複項通知",
+        "deleteSelected": "刪除已選",
+        "exitMode": "結束模式",
+        "help": {
+            "identicalHashes": "相同的雜湊值表示相同的模型檔案，即使它們的名稱或預覽圖不同。",
+            "keepOne": "只保留一個版本（最好是有更好中繼資料/預覽圖的版本），安全刪除其他版本。"
+        }
+    },
+    "tooltips": {
+        "refresh": "重新整理模型清單",
+        "bulkOperations": "選擇多個模型進行批次操作",
+        "favorites": "僅顯示收藏的模型",
+        "duplicates": "尋找和管理重複的模型",
+        "search": "按名稱、標籤或其他條件搜尋模型",
+        "filter": "按各種條件篩選模型",
+        "sort": "按不同屬性排序模型",
+        "backToTop": "捲動回頁面頂部"
+    }
+}

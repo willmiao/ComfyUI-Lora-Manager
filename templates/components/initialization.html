@@ -2,80 +2,79 @@
 <div class="initialization-container" id="initializationContainer">
     <div class="initialization-content">
         <div class="initialization-header">
-            <h2 id="initTitle">{% block init_title %}Initializing{% endblock %}</h2>
-            <p class="init-subtitle" id="initSubtitle">{% block init_message %}Preparing your workspace...{% endblock %}
+            <h2 id="initTitle">{% block init_title %}{{ t('initialization.title') }}{% endblock %}</h2>
+            <p class="init-subtitle" id="initSubtitle">{% block init_message %}{{ t('initialization.message') }}{% endblock %}
             </p>
         </div>
 
         <div class="loading-content">
             <div class="loading-spinner"></div>
-            <div class="loading-status" id="progressStatus">Initializing...</div>
+            <div class="loading-status" id="progressStatus">{{ t('initialization.status') }}</div>
             <!-- Use initialization-specific classes for the progress bar -->
             <div class="init-progress-container">
                 <div class="init-progress-bar" id="initProgressBar"></div>
             </div>
             <div class="progress-details">
                 <span id="progressPercentage">0%</span>
-                <span id="remainingTime">Estimating time...</span>
+                <span id="remainingTime">{{ t('initialization.estimatingTime') }}</span>
             </div>
         </div>
 
         <div class="tips-container">
             <div class="tips-header">
                 <i class="fas fa-lightbulb"></i>
-                <h3>Tips & Tricks</h3>
+                <h3>{{ t('initialization.tips.title') }}</h3>
             </div>
             <div class="tips-content">
                 <div class="tip-carousel" id="tipCarousel">
                     <div class="tip-item active">
                         <div class="tip-image">
-                            <img src="/loras_static/images/tips/civitai-api.png" alt="Civitai API Setup"
+                            <img src="/loras_static/images/tips/civitai-api.png" alt="{{ t('initialization.tips.civitai.alt') }}"
                                 onerror="this.src='/loras_static/images/no-preview.png'">
                         </div>
                         <div class="tip-text">
-                            <h4>Civitai Integration</h4>
-                            <p>Connect your Civitai account: Visit Profile Avatar → Settings → API Keys → Add API Key,
-                                then paste it in Lora Manager settings.</p>
+                            <h4>{{ t('initialization.tips.civitai.title') }}</h4>
+                            <p>{{ t('initialization.tips.civitai.description') }}</p>
                         </div>
                     </div>
                     <div class="tip-item">
                         <div class="tip-image">
-                            <img src="/loras_static/images/tips/civitai-download.png" alt="Civitai Download"
+                            <img src="/loras_static/images/tips/civitai-download.png" alt="{{ t('initialization.tips.download.alt') }}"
                                 onerror="this.src='/loras_static/images/no-preview.png'">
                         </div>
                         <div class="tip-text">
-                            <h4>Easy Download</h4>
-                            <p>Use Civitai URLs to quickly download and install new models.</p>
+                            <h4>{{ t('initialization.tips.download.title') }}</h4>
+                            <p>{{ t('initialization.tips.download.description') }}</p>
                         </div>
                     </div>
                     <div class="tip-item">
                         <div class="tip-image">
-                            <img src="/loras_static/images/tips/recipes.png" alt="Recipes"
+                            <img src="/loras_static/images/tips/recipes.png" alt="{{ t('initialization.tips.recipes.alt') }}"
                                 onerror="this.src='/loras_static/images/no-preview.png'">
                         </div>
                         <div class="tip-text">
-                            <h4>Save Recipes</h4>
-                            <p>Create recipes to save your favorite model combinations for future use.</p>
+                            <h4>{{ t('initialization.tips.recipes.title') }}</h4>
+                            <p>{{ t('initialization.tips.recipes.description') }}</p>
                         </div>
                     </div>
                     <div class="tip-item">
                         <div class="tip-image">
-                            <img src="/loras_static/images/tips/filter.png" alt="Filter Models"
+                            <img src="/loras_static/images/tips/filter.png" alt="{{ t('initialization.tips.filter.alt') }}"
                                 onerror="this.src='/loras_static/images/no-preview.png'">
                         </div>
                         <div class="tip-text">
-                            <h4>Fast Filtering</h4>
-                            <p>Filter models by tags or base model type using the filter button in the header.</p>
+                            <h4>{{ t('initialization.tips.filter.title') }}</h4>
+                            <p>{{ t('initialization.tips.filter.description') }}</p>
                         </div>
                     </div>
                     <div class="tip-item">
                         <div class="tip-image">
-                            <img src="/loras_static/images/tips/search.webp" alt="Quick Search"
+                            <img src="/loras_static/images/tips/search.webp" alt="{{ t('initialization.tips.search.alt') }}"
                                 onerror="this.src='/loras_static/images/no-preview.png'">
                         </div>
                         <div class="tip-text">
-                            <h4>Quick Search</h4>
-                            <p>Press Ctrl+F (Cmd+F on Mac) to quickly search within your current view.</p>
+                            <h4>{{ t('initialization.tips.search.title') }}</h4>
+                            <p>{{ t('initialization.tips.search.description') }}</p>
                         </div>
                     </div>
                 </div>

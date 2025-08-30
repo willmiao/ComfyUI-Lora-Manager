@@ -3,18 +3,18 @@
     <div class="modal-content">
         <div class="modal-header">
             <button class="close" id="closeDownloadModal">&times;</button>
-            <h2 id="downloadModalTitle">Download Model from URL</h2>
+            <h2 id="downloadModalTitle">{{ t('modals.download.title') }}</h2>
         </div>
         
         <!-- Step 1: URL Input -->
         <div class="download-step" id="urlStep">
             <div class="input-group">
-                <label for="modelUrl" id="modelUrlLabel">Civitai URL:</label>
-                <input type="text" id="modelUrl" placeholder="https://civitai.com/models/..." />
+                <label for="modelUrl" id="modelUrlLabel">{{ t('modals.download.url') }}:</label>
+                <input type="text" id="modelUrl" placeholder="{{ t('modals.download.placeholder') }}" />
                 <div class="error-message" id="urlError"></div>
             </div>
             <div class="modal-actions">
-                <button class="primary-btn" id="nextFromUrl">Next</button>
+                <button class="primary-btn" id="nextFromUrl">{{ t('common.actions.next') }}</button>
             </div>
         </div>
 
@@ -24,8 +24,8 @@
                 <!-- Versions will be inserted here dynamically -->
             </div>
             <div class="modal-actions">
-                <button class="secondary-btn" id="backToUrlBtn">Back</button>
-                <button class="primary-btn" id="nextFromVersion">Next</button>
+                <button class="secondary-btn" id="backToUrlBtn">{{ t('common.actions.back') }}</button>
+                <button class="primary-btn" id="nextFromVersion">{{ t('common.actions.next') }}</button>
             </div>
         </div>
 
@@ -35,9 +35,9 @@
                 <!-- Path preview with inline toggle -->
                 <div class="path-preview">
                     <div class="path-preview-header">
-                        <label>Download Location Preview:</label>
-                        <div class="inline-toggle-container" title="When enabled, files are automatically organized using configured path templates">
-                            <span class="inline-toggle-label">Use Default Path</span>
+                        <label>{{ t('modals.download.locationPreview') }}:</label>
+                        <div class="inline-toggle-container" title="{{ t('modals.download.useDefaultPathTooltip') }}">
+                            <span class="inline-toggle-label">{{ t('modals.download.useDefaultPath') }}</span>
                             <div class="toggle-switch">
                                 <input type="checkbox" id="useDefaultPath">
                                 <label for="useDefaultPath" class="toggle-slider"></label>
@@ -45,7 +45,7 @@
                         </div>
                     </div>
                     <div class="path-display" id="targetPathDisplay">
-                        <span class="path-text">Select a root directory</span>
+                        <span class="path-text">{{ t('modals.download.selectRootDirectory') }}</span>
                     </div>
                 </div>
 

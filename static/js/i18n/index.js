@@ -1,37 +1,89 @@
 /**
  * Internationalization (i18n) system for LoRA Manager
  * Uses user-selected language from settings with fallback to English
+ * Loads JSON translation files dynamically
  */
-
-import { en } from './locales/en.js';
-import { zhCN } from './locales/zh-CN.js';
-import { zhTW } from './locales/zh-TW.js';
-import { ru } from './locales/ru.js';
-import { de } from './locales/de.js';
-import { ja } from './locales/ja.js';
-import { ko } from './locales/ko.js';
-import { fr } from './locales/fr.js';
-import { es } from './locales/es.js';
 
 class I18nManager {
     constructor() {
-        this.locales = {
-            'en': en,
-            'zh-CN': zhCN,
-            'zh-TW': zhTW,
-            'zh': zhCN, // Fallback for 'zh' to 'zh-CN'
-            'ru': ru,
-            'de': de,
-            'ja': ja,
-            'ko': ko,
-            'fr': fr,
-            'es': es
+        this.locales = {};
+        this.translations = {};
+        this.loadedLocales = new Set();
+        
+        // Available locales configuration
+        this.availableLocales = {
+            'en': { name: 'English', nativeName: 'English' },
+            'zh-CN': { name: 'Chinese (Simplified)', nativeName: '简体中文' },
+            'zh-TW': { name: 'Chinese (Traditional)', nativeName: '繁體中文' },
+            'zh': { name: 'Chinese (Simplified)', nativeName: '简体中文' }, // Fallback to zh-CN
+            'ru': { name: 'Russian', nativeName: 'Русский' },
+            'de': { name: 'German', nativeName: 'Deutsch' },
+            'ja': { name: 'Japanese', nativeName: '日本語' },
+            'ko': { name: 'Korean', nativeName: '한국어' },
+            'fr': { name: 'French', nativeName: 'Français' },
+            'es': { name: 'Spanish', nativeName: 'Español' }
         };
         
         this.currentLocale = this.getLanguageFromSettings();
-        this.translations = this.locales[this.currentLocale] || this.locales['en'];
+        // Initialize with current locale
+        this.initializeWithLocale(this.currentLocale);
     }
     
+    /**
+     * Load translations for a specific locale from JSON file
+     * @param {string} locale - The locale to load
+     * @returns {Promise<Object>} Promise that resolves to the translation data
+     */
+    async loadLocale(locale) {
+        // Handle fallback for 'zh' to 'zh-CN'
+        const normalizedLocale = locale === 'zh' ? 'zh-CN' : locale;
+        
+        if (this.loadedLocales.has(normalizedLocale)) {
+            return this.locales[normalizedLocale];
+        }
+        
+        try {
+            const response = await fetch(`/locales/${normalizedLocale}.json`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const translations = await response.json();
+            this.locales[normalizedLocale] = translations;
+            this.loadedLocales.add(normalizedLocale);
+            
+            // Also set for 'zh' alias
+            if (normalizedLocale === 'zh-CN') {
+                this.locales['zh'] = translations;
+                this.loadedLocales.add('zh');
+            }
+            
+            return translations;
+        } catch (error) {
+            console.warn(`Failed to load locale ${normalizedLocale}:`, error);
+            // Fallback to English if current locale fails and it's not English
+            if (normalizedLocale !== 'en') {
+                return this.loadLocale('en');
+            }
+            // Return empty object if even English fails
+            return {};
+        }
+    }
+    
+    /**
+     * Initialize with a specific locale
+     * @param {string} locale - The locale to initialize with
+     */
+    async initializeWithLocale(locale) {
+        try {
+            this.translations = await this.loadLocale(locale);
+            this.currentLocale = locale;
+        } catch (error) {
+            console.warn(`Failed to initialize with locale ${locale}, falling back to English`, error);
+            this.translations = await this.loadLocale('en');
+            this.currentLocale = 'en';
+        }
+    }
     /**
      * Get language from user settings with fallback to English
      * @returns {string} Language code
@@ -52,7 +104,7 @@ class I18nManager {
         }
         
         // If user has selected a language, use it
-        if (userLanguage && this.locales[userLanguage]) {
+        if (userLanguage && this.availableLocales[userLanguage]) {
             return userLanguage;
         }
         
@@ -63,20 +115,20 @@ class I18nManager {
     /**
      * Set the current language and save to settings
      * @param {string} languageCode - The language code to set
-     * @returns {boolean} True if language was successfully set
+     * @returns {Promise<boolean>} True if language was successfully set
      */
-    setLanguage(languageCode) {
-        if (!this.locales[languageCode]) {
+    async setLanguage(languageCode) {
+        if (!this.availableLocales[languageCode]) {
             console.warn(`Language '${languageCode}' is not supported`);
             return false;
         }
         
-        this.currentLocale = languageCode;
-        this.translations = this.locales[languageCode];
-        
-        // Save to localStorage
-        const STORAGE_PREFIX = 'lora_manager_';
         try {
+            // Load the new locale
+            await this.initializeWithLocale(languageCode);
+            
+            // Save to localStorage
+            const STORAGE_PREFIX = 'lora_manager_';
             const currentSettings = localStorage.getItem(STORAGE_PREFIX + 'settings');
             let settings = {};
             
@@ -88,9 +140,15 @@ class I18nManager {
             localStorage.setItem(STORAGE_PREFIX + 'settings', JSON.stringify(settings));
             
             console.log(`Language changed to: ${languageCode}`);
+            
+            // Dispatch event to notify components of language change
+            window.dispatchEvent(new CustomEvent('languageChanged', { 
+                detail: { language: languageCode } 
+            }));
+            
             return true;
         } catch (e) {
-            console.error('Failed to save language setting:', e);
+            console.error('Failed to set language:', e);
             return false;
         }
     }
@@ -100,17 +158,11 @@ class I18nManager {
      * @returns {Array} Array of language objects
      */
     getAvailableLanguages() {
-        return [
-            { code: 'en', name: 'English', nativeName: 'English' },
-            { code: 'zh-CN', name: 'Chinese (Simplified)', nativeName: '简体中文' },
-            { code: 'zh-TW', name: 'Chinese (Traditional)', nativeName: '繁體中文' },
-            { code: 'ru', name: 'Russian', nativeName: 'Русский' },
-            { code: 'de', name: 'German', nativeName: 'Deutsch' },
-            { code: 'ja', name: 'Japanese', nativeName: '日本語' },
-            { code: 'ko', name: 'Korean', nativeName: '한국어' },
-            { code: 'fr', name: 'French', nativeName: 'Français' },
-            { code: 'es', name: 'Spanish', nativeName: 'Español' }
-        ];
+        return Object.entries(this.availableLocales).map(([code, info]) => ({
+            code,
+            name: info.name,
+            nativeName: info.nativeName
+        }));
     }
     
     /**
@@ -129,14 +181,20 @@ class I18nManager {
                 value = value[k];
             } else {
                 // Fallback to English if key not found in current locale
-                value = this.locales['en'];
-                for (const fallbackKey of keys) {
-                    if (value && typeof value === 'object' && fallbackKey in value) {
-                        value = value[fallbackKey];
-                    } else {
-                        console.warn(`Translation key not found: ${key}`);
-                        return key; // Return key as fallback
+                if (this.currentLocale !== 'en' && this.locales['en']) {
+                    let fallbackValue = this.locales['en'];
+                    for (const fallbackKey of keys) {
+                        if (fallbackValue && typeof fallbackValue === 'object' && fallbackKey in fallbackValue) {
+                            fallbackValue = fallbackValue[fallbackKey];
+                        } else {
+                            console.warn(`Translation key not found: ${key}`);
+                            return key; // Return key as fallback
+                        }
                     }
+                    value = fallbackValue;
+                } else {
+                    console.warn(`Translation key not found: ${key}`);
+                    return key; // Return key as fallback
                 }
                 break;
             }
