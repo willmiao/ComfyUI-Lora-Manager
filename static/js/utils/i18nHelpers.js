@@ -195,3 +195,36 @@ export function initializePageI18n() {
 export function t(key, params = {}) {
     return i18n.t(key, params);
 }
+
+/**
+ * Switch language and retranslate the page
+ * @param {string} languageCode - The language code to switch to
+ * @returns {boolean} True if language switch was successful
+ */
+export function switchLanguage(languageCode) {
+    if (i18n.setLanguage(languageCode)) {
+        // Retranslate the entire page
+        translateDOM();
+        
+        // Update search placeholder based on current page
+        const currentPath = window.location.pathname;
+        updateSearchPlaceholder(currentPath);
+        
+        // Set document direction for RTL languages
+        if (i18n.isRTL()) {
+            document.documentElement.setAttribute('dir', 'rtl');
+            document.body.classList.add('rtl');
+        } else {
+            document.documentElement.setAttribute('dir', 'ltr');
+            document.body.classList.remove('rtl');
+        }
+        
+        // Dispatch a custom event for other components to react to language change
+        window.dispatchEvent(new CustomEvent('languageChanged', { 
+            detail: { language: languageCode } 
+        }));
+        
+        return true;
+    }
+    return false;
+}

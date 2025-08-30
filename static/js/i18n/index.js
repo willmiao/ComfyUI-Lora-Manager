@@ -1,25 +1,125 @@
 /**
  * Internationalization (i18n) system for LoRA Manager
- * Automatically detects browser language and provides fallback to English
+ * Uses user-selected language from settings with fallback to English
  */
 
 import { en } from './locales/en.js';
 import { zhCN } from './locales/zh-CN.js';
+import { zhTW } from './locales/zh-TW.js';
+import { ru } from './locales/ru.js';
+import { de } from './locales/de.js';
+import { ja } from './locales/ja.js';
+import { ko } from './locales/ko.js';
+import { fr } from './locales/fr.js';
+import { es } from './locales/es.js';
 
 class I18nManager {
     constructor() {
         this.locales = {
             'en': en,
             'zh-CN': zhCN,
+            'zh-TW': zhTW,
             'zh': zhCN, // Fallback for 'zh' to 'zh-CN'
+            'ru': ru,
+            'de': de,
+            'ja': ja,
+            'ko': ko,
+            'fr': fr,
+            'es': es
         };
         
-        this.currentLocale = this.detectLanguage();
+        this.currentLocale = this.getLanguageFromSettings();
         this.translations = this.locales[this.currentLocale] || this.locales['en'];
     }
     
     /**
-     * Detect browser language with fallback to English
+     * Get language from user settings with fallback to browser detection
+     * @returns {string} Language code
+     */
+    getLanguageFromSettings() {
+        // 优先使用后端传递的初始语言
+        if (window.__INITIAL_LANGUAGE__ && this.locales[window.__INITIAL_LANGUAGE__]) {
+            return window.__INITIAL_LANGUAGE__;
+        }
+        
+        // Check localStorage for user-selected language
+        const STORAGE_PREFIX = 'lora_manager_';
+        let userLanguage = null;
+        
+        try {
+            const settings = localStorage.getItem(STORAGE_PREFIX + 'settings');
+            if (settings) {
+                const parsedSettings = JSON.parse(settings);
+                userLanguage = parsedSettings.language;
+            }
+        } catch (e) {
+            console.warn('Failed to parse settings from localStorage:', e);
+        }
+        
+        // If user has selected a language, use it
+        if (userLanguage && this.locales[userLanguage]) {
+            return userLanguage;
+        }
+        
+        // Fallback to browser language detection for first-time users
+        return this.detectLanguage();
+    }
+    
+    /**
+     * Set the current language and save to settings
+     * @param {string} languageCode - The language code to set
+     * @returns {boolean} True if language was successfully set
+     */
+    setLanguage(languageCode) {
+        if (!this.locales[languageCode]) {
+            console.warn(`Language '${languageCode}' is not supported`);
+            return false;
+        }
+        
+        this.currentLocale = languageCode;
+        this.translations = this.locales[languageCode];
+        
+        // Save to localStorage
+        const STORAGE_PREFIX = 'lora_manager_';
+        try {
+            const currentSettings = localStorage.getItem(STORAGE_PREFIX + 'settings');
+            let settings = {};
+            
+            if (currentSettings) {
+                settings = JSON.parse(currentSettings);
+            }
+            
+            settings.language = languageCode;
+            localStorage.setItem(STORAGE_PREFIX + 'settings', JSON.stringify(settings));
+            
+            console.log(`Language changed to: ${languageCode}`);
+            return true;
+        } catch (e) {
+            console.error('Failed to save language setting:', e);
+            return false;
+        }
+    }
+    
+    /**
+     * Get list of available languages with their native names
+     * @returns {Array} Array of language objects
+     */
+    getAvailableLanguages() {
+        return [
+            { code: 'en', name: 'English', nativeName: 'English' },
+            { code: 'zh-CN', name: 'Chinese (Simplified)', nativeName: '简体中文' },
+            { code: 'zh-TW', name: 'Chinese (Traditional)', nativeName: '繁體中文' },
+            { code: 'ru', name: 'Russian', nativeName: 'Русский' },
+            { code: 'de', name: 'German', nativeName: 'Deutsch' },
+            { code: 'ja', name: 'Japanese', nativeName: '日本語' },
+            { code: 'ko', name: 'Korean', nativeName: '한국어' },
+            { code: 'fr', name: 'French', nativeName: 'Français' },
+            { code: 'es', name: 'Spanish', nativeName: 'Español' }
+        ];
+    }
+    
+    /**
+     * Detect browser language with fallback to English (for first-time users)
      * @returns {string} Language code
      */
     detectLanguage() {
@@ -147,6 +247,23 @@ class I18nManager {
         const size = parseFloat((bytes / Math.pow(k, i)).toFixed(dm));
         
         return `${this.formatNumber(size)} ${this.t(`common.fileSize.${sizes[i]}`)}`;
+    }
+    
+    /**
+     * Initialize i18n from user settings instead of browser detection
+     * This prevents language flashing on page load
+     */
+    async initializeFromSettings() {
+        const targetLanguage = this.getLanguageFromSettings();
+        
+        // Set language immediately without animation/transition
+        this.currentLocale = targetLanguage;
+        this.translations = this.locales[targetLanguage] || this.locales['en'];
+        
+        // Dispatch event to notify that language has been initialized
+        window.dispatchEvent(new CustomEvent('languageInitialized', { 
+            detail: { language: targetLanguage } 
+        }));
     }
 }
 

@@ -50,6 +50,12 @@
     </script>
     <script>
       (function() {
+        // 直接从后端获取语言设置，避免闪烁
+        const userLanguage = '{{ user_language or "en" }}';
+        
+        // 设置初始语言到全局变量，供i18n系统使用
+        window.__INITIAL_LANGUAGE__ = userLanguage;
+
         // Apply theme immediately based on stored preference
         const STORAGE_PREFIX = 'lora_manager_';
         const savedTheme = localStorage.getItem(STORAGE_PREFIX + 'theme') || 'auto';

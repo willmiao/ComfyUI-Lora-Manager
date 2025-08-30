@@ -140,6 +140,31 @@
                         </ul>
                     </div>
                 </div>
+                
+                <!-- Language Selection -->
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="languageSelect" data-translate="common.language.select">Select Language</label>
+                        </div>
+                        <div class="setting-control select-control">
+                            <select id="languageSelect" onchange="settingsManager.saveLanguageSetting()">
+                                <option value="en" data-translate="common.language.english">English</option>
+                                <option value="zh-CN" data-translate="common.language.chinese_simplified">中文（简体）</option>
+                                <option value="zh-TW" data-translate="common.language.chinese_traditional">中文（繁體）</option>
+                                <option value="ru" data-translate="common.language.russian">Русский</option>
+                                <option value="de" data-translate="common.language.german">Deutsch</option>
+                                <option value="ja" data-translate="common.language.japanese">日本語</option>
+                                <option value="ko" data-translate="common.language.korean">한국어</option>
+                                <option value="fr" data-translate="common.language.french">Français</option>
+                                <option value="es" data-translate="common.language.spanish">Español</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-help" data-translate="common.language.select_help">
+                        Choose your preferred language for the interface
+                    </div>
+                </div>
             </div>
             
             <!-- Add Folder Settings Section -->

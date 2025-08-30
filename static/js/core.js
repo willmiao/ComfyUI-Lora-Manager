@@ -29,7 +29,10 @@ export class AppCore {
         
         // Initialize i18n first
         window.i18n = i18n;
-        console.log(`AppCore: Language detected: ${i18n.getCurrentLocale()}`);
+        
+        // Load language from settings
+        await i18n.initializeFromSettings();
+        console.log(`AppCore: Language set: ${i18n.getCurrentLocale()}`);
         
         // Initialize managers
         state.loadingManager = new LoadingManager();

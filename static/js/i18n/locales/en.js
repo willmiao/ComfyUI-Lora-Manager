@@ -68,6 +68,22 @@ export const en = {
             cancelled: 'Cancelled',
             pending: 'Pending',
             ready: 'Ready'
+        },
+        
+        // Languages
+        language: {
+            current: 'Language',
+            select: 'Select Language',
+            select_help: 'Choose your preferred language for the interface',
+            english: 'English',
+            chinese_simplified: 'Chinese (Simplified)',
+            chinese_traditional: 'Chinese (Traditional)',
+            russian: 'Russian',
+            german: 'German',
+            japanese: 'Japanese',
+            korean: 'Korean',
+            french: 'French',
+            spanish: 'Spanish'
         }
     },
     

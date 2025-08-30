@@ -4,6 +4,7 @@ import { state } from '../state/index.js';
 import { resetAndReload } from '../api/modelApiFactory.js';
 import { setStorageItem, getStorageItem } from '../utils/storageHelpers.js';
 import { DOWNLOAD_PATH_TEMPLATES, MAPPABLE_BASE_MODELS, PATH_TEMPLATE_PLACEHOLDERS, DEFAULT_PATH_TEMPLATES } from '../utils/constants.js';
+import { switchLanguage } from '../utils/i18nHelpers.js';
 
 export class SettingsManager {
     constructor() {
@@ -270,6 +271,13 @@ export class SettingsManager {
 
         // Load default embedding root
         await this.loadEmbeddingRoots();
+
+        // Load language setting
+        const languageSelect = document.getElementById('languageSelect');
+        if (languageSelect) {
+            const currentLanguage = state.global.settings.language || 'en';
+            languageSelect.value = currentLanguage;
+        }
     }
 
     async loadLoraRoots() {
@@ -942,6 +950,44 @@ export class SettingsManager {
             
         } catch (error) {
             showToast('Failed to save setting: ' + error.message, 'error');
+        }
+    }
+
+    async saveLanguageSetting() {
+        const element = document.getElementById('languageSelect');
+        if (!element) return;
+        
+        const selectedLanguage = element.value;
+        
+        try {
+            // Update local state
+            state.global.settings.language = selectedLanguage;
+            
+            // Save to localStorage
+            setStorageItem('settings', state.global.settings);
+            
+            // 保存到后端
+            const response = await fetch('/api/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    language: selectedLanguage
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save language setting to backend');
+            }
+            
+            // Switch language immediately
+            switchLanguage(selectedLanguage);
+            
+            showToast('Language changed successfully.', 'success');
+            
+        } catch (error) {
+            showToast('Failed to change language: ' + error.message, 'error');
         }
     }
 

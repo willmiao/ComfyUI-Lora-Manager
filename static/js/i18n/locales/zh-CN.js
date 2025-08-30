@@ -53,6 +53,22 @@ export const zhCN = {
             about: '关于'
         },
         
+        // 语言设置
+        language: {
+            current: '语言',
+            select: '选择语言',
+            select_help: '选择您偏好的界面语言',
+            english: '英语',
+            chinese_simplified: '中文（简体）',
+            chinese_traditional: '中文（繁体）',
+            russian: '俄语',
+            german: '德语',
+            japanese: '日语',
+            korean: '韩语',
+            french: '法语',
+            spanish: '西班牙语'
+        },
+        
         // 状态信息
         status: {
             loading: '加载中...',
@@ -73,7 +89,7 @@ export const zhCN = {
     
     // 头部和导航
     header: {
-        appTitle: 'LoRA',
+        appTitle: 'LoRA 管理器',
         navigation: {
             loras: 'LoRA',
             recipes: '配方',
