@@ -4,14 +4,14 @@
         <button class="close" onclick="modalManager.closeModal('supportModal')">&times;</button>
         <div class="support-header">
             <i class="fas fa-heart support-icon"></i>
-            <h2>Support the Project</h2>
+            <h2>{{ t('support.title') }}</h2>
         </div>
         <div class="support-content">
-            <p>If you find LoRA Manager useful, I'd really appreciate your support! 🙌</p>
+            <p>{{ t('support.message') }}</p>
             
             <div class="support-section">
-                <h3><i class="fas fa-comment"></i> Provide Feedback</h3>
-                <p>Your feedback helps shape future updates! Share your thoughts:</p>
+                <h3><i class="fas fa-comment"></i> {{ t('support.feedback.title') }}</h3>
+                <p>{{ t('support.feedback.description') }}</p>
                 <div class="support-links">
                     <a href="https://github.com/willmiao/ComfyUI-Lora-Manager/issues/new" class="social-link" target="_blank">
                         <i class="fab fa-github"></i>

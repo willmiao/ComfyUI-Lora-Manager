@@ -3,19 +3,19 @@
     <div class="modal-content help-modal">
         <button class="close" onclick="modalManager.closeModal('helpModal')">&times;</button>
         <div class="help-header">
-            <h2>Help & Tutorials</h2>
+            <h2>{{ t('help.title') }}</h2>
         </div>
         
         <div class="help-tabs">
-            <button class="tab-btn active" data-tab="getting-started">Getting Started</button>
-            <button class="tab-btn" data-tab="update-vlogs">Update Vlogs</button>
-            <button class="tab-btn" data-tab="documentation">Documentation</button>
+            <button class="tab-btn active" data-tab="getting-started">{{ t('help.tabs.gettingStarted') }}</button>
+            <button class="tab-btn" data-tab="update-vlogs">{{ t('help.tabs.updateVlogs') }}</button>
+            <button class="tab-btn" data-tab="documentation">{{ t('help.tabs.documentation') }}</button>
         </div>
         
         <div class="help-content">
             <!-- Getting Started Tab -->
             <div class="tab-pane active" id="getting-started">
-                <h3>Getting Started with LoRA Manager</h3>
+                <h3>{{ t('help.gettingStarted.title') }}</h3>
                 <div class="video-container">
                     <div class="video-thumbnail" data-video-id="hvKw31YpE-U">
                         <img src="/loras_static/images/video-thumbnails/getting-started.jpg" alt="Getting Started with LoRA Manager">

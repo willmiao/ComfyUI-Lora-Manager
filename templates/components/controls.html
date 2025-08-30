@@ -1,59 +1,59 @@
 <div class="controls">
     <div class="actions">
         <div class="action-buttons">
-            <div data-i18n="loras.controls.sort.title" data-i18n-target="title" title="Sort models by..." class="control-group">
+            <div title="{{ t('loras.controls.sort.title') }}" class="control-group">
                 <select id="sortSelect">
-                    <optgroup data-i18n="loras.controls.sort.name" data-i18n-target="label" label="Name">
-                        <option value="name:asc" data-i18n="loras.controls.sort.nameAsc">A - Z</option>
-                        <option value="name:desc" data-i18n="loras.controls.sort.nameDesc">Z - A</option>
+                    <optgroup label="{{ t('loras.controls.sort.name') }}">
+                        <option value="name:asc">{{ t('loras.controls.sort.nameAsc') }}</option>
+                        <option value="name:desc">{{ t('loras.controls.sort.nameDesc') }}</option>
                     </optgroup>
-                    <optgroup data-i18n="loras.controls.sort.date" data-i18n-target="label" label="Date Added">
-                        <option value="date:desc" data-i18n="loras.controls.sort.dateDesc">Newest</option>
-                        <option value="date:asc" data-i18n="loras.controls.sort.dateAsc">Oldest</option>
+                    <optgroup label="{{ t('loras.controls.sort.date') }}">
+                        <option value="date:desc">{{ t('loras.controls.sort.dateDesc') }}</option>
+                        <option value="date:asc">{{ t('loras.controls.sort.dateAsc') }}</option>
                     </optgroup>
-                    <optgroup data-i18n="loras.controls.sort.size" data-i18n-target="label" label="File Size">
-                        <option value="size:desc" data-i18n="loras.controls.sort.sizeDesc">Largest</option>
-                        <option value="size:asc" data-i18n="loras.controls.sort.sizeAsc">Smallest</option>
+                    <optgroup label="{{ t('loras.controls.sort.size') }}">
+                        <option value="size:desc">{{ t('loras.controls.sort.sizeDesc') }}</option>
+                        <option value="size:asc">{{ t('loras.controls.sort.sizeAsc') }}</option>
                     </optgroup>
                 </select>
             </div>
-            <div data-i18n="loras.controls.refresh.title" data-i18n-target="title" title="Refresh model list" class="control-group dropdown-group">
-                <button data-action="refresh" class="dropdown-main"><i class="fas fa-sync"></i> <span data-i18n="common.actions.refresh">Refresh</span></button>
+            <div title="{{ t('loras.controls.refresh.title') }}" class="control-group dropdown-group">
+                <button data-action="refresh" class="dropdown-main"><i class="fas fa-sync"></i> <span>{{ t('common.actions.refresh') }}</span></button>
                 <button class="dropdown-toggle" aria-label="Show refresh options">
                     <i class="fas fa-caret-down"></i>
                 </button>
                 <div class="dropdown-menu">
                     <div class="dropdown-item" data-action="quick-refresh">
-                        <i class="fas fa-bolt"></i> <span data-i18n="loras.controls.refresh.quick">Quick Refresh (incremental)</span>
+                        <i class="fas fa-bolt"></i> <span>{{ t('loras.controls.refresh.quick') }}</span>
                     </div>
                     <div class="dropdown-item" data-action="full-rebuild">
-                        <i class="fas fa-tools"></i> <span data-i18n="loras.controls.refresh.full">Full Rebuild (complete)</span>
+                        <i class="fas fa-tools"></i> <span>{{ t('loras.controls.refresh.full') }}</span>
                     </div>
                 </div>
             </div>
             
             <div class="control-group">
-                <button data-action="fetch" data-i18n="loras.controls.fetch" data-i18n-target="title" title="Fetch from Civitai"><i class="fas fa-download"></i> <span data-i18n="loras.controls.fetch">Fetch</span></button>
+                <button data-action="fetch" title="{{ t('loras.controls.fetch') }}"><i class="fas fa-download"></i> <span>{{ t('loras.controls.fetch') }}</span></button>
             </div>
             <div class="control-group">
-                <button data-action="download" data-i18n="loras.controls.download" data-i18n-target="title" title="Download from URL">
-                    <i class="fas fa-cloud-download-alt"></i> <span data-i18n="loras.controls.download">Download</span>
+                <button data-action="download" title="{{ t('loras.controls.download') }}">
+                    <i class="fas fa-cloud-download-alt"></i> <span>{{ t('loras.controls.download') }}</span>
                 </button>
             </div>
             <div class="control-group">
-                <button id="bulkOperationsBtn" data-action="bulk" data-i18n="loras.controls.bulk" data-i18n-target="title" title="Bulk Operations (Press B)">
-                    <i class="fas fa-th-large"></i> <span><span data-i18n="loras.controls.bulk">Bulk</span> <div class="shortcut-key">B</div></span>
+                <button id="bulkOperationsBtn" data-action="bulk" title="{{ t('loras.controls.bulk') }}">
+                    <i class="fas fa-th-large"></i> <span><span>{{ t('loras.controls.bulk') }}</span> <div class="shortcut-key">B</div></span>
                 </button>
             </div>
             <div class="control-group">
-                <button id="findDuplicatesBtn" data-action="find-duplicates" data-i18n="loras.controls.duplicates" data-i18n-target="title" title="Find duplicate models">
-                    <i class="fas fa-clone"></i> <span data-i18n="loras.controls.duplicates">Duplicates</span>
+                <button id="findDuplicatesBtn" data-action="find-duplicates" title="{{ t('loras.controls.duplicates') }}">
+                    <i class="fas fa-clone"></i> <span>{{ t('loras.controls.duplicates') }}</span>
                     <span id="duplicatesBadge" class="badge"></span>
                 </button>
             </div>
             <div class="control-group">
-                <button id="favoriteFilterBtn" data-action="toggle-favorites" class="favorite-filter" data-i18n="loras.controls.favorites" data-i18n-target="title" title="Show favorites only">
-                    <i class="fas fa-star"></i> <span data-i18n="loras.controls.favorites">Favorites</span>
+                <button id="favoriteFilterBtn" data-action="toggle-favorites" class="favorite-filter" title="{{ t('loras.controls.favorites') }}">
+                    <i class="fas fa-star"></i> <span>{{ t('loras.controls.favorites') }}</span>
                 </button>
             </div>
             <div id="customFilterIndicator" class="control-group hidden">
@@ -68,23 +68,23 @@
             <div class="keyboard-nav-hint tooltip">
                 <i class="fas fa-keyboard"></i>
                 <span class="tooltiptext">
-                    <span data-i18n="keyboard.navigation">Keyboard Navigation:</span>
+                    <span>{{ t('keyboard.navigation') }}</span>
                     <table class="keyboard-shortcuts">
                         <tr>
                             <td><span class="key">Page Up</span></td>
-                            <td data-i18n="keyboard.shortcuts.pageUp">Scroll up one page</td>
+                            <td>{{ t('keyboard.shortcuts.pageUp') }}</td>
                         </tr>
                         <tr>
                             <td><span class="key">Page Down</span></td>
-                            <td data-i18n="keyboard.shortcuts.pageDown">Scroll down one page</td>
+                            <td>{{ t('keyboard.shortcuts.pageDown') }}</td>
                         </tr>
                         <tr>
                             <td><span class="key">Home</span></td>
-                            <td data-i18n="keyboard.shortcuts.home">Jump to top</td>
+                            <td>{{ t('keyboard.shortcuts.home') }}</td>
                         </tr>
                         <tr>
                             <td><span class="key">End</span></td>
-                            <td data-i18n="keyboard.shortcuts.end">Jump to bottom</td>
+                            <td>{{ t('keyboard.shortcuts.end') }}</td>
                         </tr>
                     </table>
                 </span>
@@ -103,27 +103,27 @@
 <!-- Add bulk operations panel (initially hidden) -->
 <div id="bulkOperationsPanel" class="bulk-operations-panel hidden">
     <div class="bulk-operations-header">
-        <span id="selectedCount" class="selectable-count" title="Click to view selected items">
-            0 selected <i class="fas fa-caret-down dropdown-caret"></i>
+        <span id="selectedCount" class="selectable-count" title="{{ t('loras.bulkOperations.viewSelected') }}">
+            0 {{ t('loras.bulkOperations.selectedSuffix') }} <i class="fas fa-caret-down dropdown-caret"></i>
         </span>
         <div class="bulk-operations-actions">
-            <button data-action="send-to-workflow" data-i18n="loras.bulkOperations.sendToWorkflow" data-i18n-target="title" title="Send all selected LoRAs to workflow">
-                <i class="fas fa-arrow-right"></i> <span data-i18n="loras.bulkOperations.sendToWorkflow">Send to Workflow</span>
+            <button data-action="send-to-workflow" title="{{ t('loras.bulkOperations.sendToWorkflow') }}">
+                <i class="fas fa-arrow-right"></i> <span>{{ t('loras.bulkOperations.sendToWorkflow') }}</span>
             </button>
-            <button data-action="copy-all" data-i18n="loras.bulkOperations.copyAll" data-i18n-target="title" title="Copy all selected LoRAs syntax">
-                <i class="fas fa-copy"></i> <span data-i18n="loras.bulkOperations.copyAll">Copy All</span>
+            <button data-action="copy-all" title="{{ t('loras.bulkOperations.copyAll') }}">
+                <i class="fas fa-copy"></i> <span>{{ t('loras.bulkOperations.copyAll') }}</span>
             </button>
-            <button data-action="refresh-all" data-i18n="loras.bulkOperations.refreshAll" data-i18n-target="title" title="Refresh CivitAI metadata for selected models">
-                <i class="fas fa-sync-alt"></i> <span data-i18n="loras.bulkOperations.refreshAll">Refresh All</span>
+            <button data-action="refresh-all" title="{{ t('loras.bulkOperations.refreshAll') }}">
+                <i class="fas fa-sync-alt"></i> <span>{{ t('loras.bulkOperations.refreshAll') }}</span>
             </button>
-            <button data-action="move-all" data-i18n="loras.bulkOperations.moveAll" data-i18n-target="title" title="Move selected models to folder">
-                <i class="fas fa-folder-open"></i> <span data-i18n="loras.bulkOperations.moveAll">Move All</span>
+            <button data-action="move-all" title="{{ t('loras.bulkOperations.moveAll') }}">
+                <i class="fas fa-folder-open"></i> <span>{{ t('loras.bulkOperations.moveAll') }}</span>
             </button>
-            <button data-action="delete-all" data-i18n="loras.bulkOperations.deleteAll" data-i18n-target="title" title="Delete selected models" class="danger-btn">
-                <i class="fas fa-trash"></i> <span data-i18n="loras.bulkOperations.deleteAll">Delete All</span>
+            <button data-action="delete-all" title="{{ t('loras.bulkOperations.deleteAll') }}" class="danger-btn">
+                <i class="fas fa-trash"></i> <span>{{ t('loras.bulkOperations.deleteAll') }}</span>
             </button>
-            <button data-action="clear" data-i18n="loras.bulkOperations.clear" data-i18n-target="title" title="Clear selection">
-                <i class="fas fa-times"></i> <span data-i18n="loras.bulkOperations.clear">Clear</span>
+            <button data-action="clear" title="{{ t('loras.bulkOperations.clear') }}">
+                <i class="fas fa-times"></i> <span>{{ t('loras.bulkOperations.clear') }}</span>
             </button>
         </div>
     </div>

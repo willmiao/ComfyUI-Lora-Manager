@@ -4,18 +4,18 @@
         <button class="close" onclick="modalManager.closeModal('updateModal')">&times;</button>
         <div class="update-header">
             <i class="fas fa-bell update-icon"></i>
-            <h2>Check for Updates</h2>
+            <h2>{{ t('update.title') }}</h2>
         </div>
         <div class="update-content">
             <div class="update-info">
                 <div class="version-info">
                     <div class="current-version">
-                        <span class="label">Current Version:</span>
+                        <span class="label">{{ t('update.currentVersion') }}:</span>
                         <span class="version-number">v0.0.0</span>
                     </div>
-                    <div class="git-info" style="display:none;">Commit: unknown</div>
+                    <div class="git-info" style="display:none;">{{ t('update.commit') }}: unknown</div>
                     <div class="new-version">
-                        <span class="label">New Version:</span>
+                        <span class="label">{{ t('update.newVersion') }}:</span>
                         <span class="version-number">v0.0.0</span>
                     </div>
                 </div>

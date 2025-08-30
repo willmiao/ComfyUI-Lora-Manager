@@ -57,7 +57,8 @@
             "failed": "失败",
             "cancelled": "已取消",
             "pending": "等待中",
-            "ready": "就绪"
+            "ready": "就绪",
+            "unknown": "未知"
         },
         "language": {
             "current": "语言",
@@ -115,7 +116,16 @@
             "switchToLight": "切换到浅色主题",
             "switchToDark": "切换到深色主题",
             "switchToAuto": "切换到自动主题"
+        },
+        "actions": {
+            "checkUpdates": "检查更新",
+            "support": "支持"
         }
+    },
+    "settings": {
+        "civitaiApiKey": "Civitai API 密钥",
+        "civitaiApiKeyPlaceholder": "输入您的 Civitai API 密钥",
+        "civitaiApiKeyHelp": "用于从 Civitai 下载模型时的身份验证"
     },
     "loras": {
         "title": "LoRA",
@@ -141,16 +151,19 @@
             "download": "从 URL 下载",
             "bulk": "批量操作",
             "duplicates": "查找重复项",
-            "favorites": "仅显示收藏"
+            "favorites": "仅显示收藏",
+            "filterActive": "筛选器已激活"
         },
         "bulkOperations": {
             "title": "批量操作",
             "selected": "已选择{count}项",
+            "selectedSuffix": "已选择",
+            "viewSelected": "点击查看选中项目",
             "sendToWorkflow": "发送到工作流",
-            "copyAll": "复制LoRA语法",
-            "refreshAll": "刷新元数据",
-            "moveAll": "移动",
-            "deleteAll": "删除",
+            "copyAll": "复制所有选中的LoRA语法",
+            "refreshAll": "刷新选中模型的Civitai元数据",
+            "moveAll": "移动选中模型到文件夹",
+            "deleteAll": "删除选中模型",
             "clear": "清除选择"
         },
         "contextMenu": {
@@ -161,7 +174,7 @@
             "copyRecipeSyntax": "复制配方语法",
             "sendToWorkflowAppend": "发送到工作流（追加）",
             "sendToWorkflowReplace": "发送到工作流（替换）",
-            "openExamplesFolder": "打开示例文件夹",
+            "openExamples": "打开示例文件夹",
             "downloadExamples": "下载示例图片",
             "replacePreview": "替换预览图",
             "setContentRating": "设置内容评级",
@@ -449,5 +462,30 @@
         "filter": "按各种条件筛选模型",
         "sort": "按不同属性排序模型",
         "backToTop": "滚动回页面顶部"
+    },
+    "help": {
+        "title": "帮助与教程",
+        "tabs": {
+            "gettingStarted": "快速入门",
+            "updateVlogs": "更新日志",
+            "documentation": "文档"
+        },
+        "gettingStarted": {
+            "title": "LoRA 管理器快速入门"
+        }
+    },
+    "update": {
+        "title": "检查更新",
+        "currentVersion": "当前版本",
+        "newVersion": "新版本",
+        "commit": "提交"
+    },
+    "support": {
+        "title": "支持项目",
+        "message": "如果您觉得 LoRA 管理器有用，我会非常感谢您的支持！🙌",
+        "feedback": {
+            "title": "提供反馈",
+            "description": "您的反馈有助于塑造未来的更新！分享您的想法："
+        }
     }
 }

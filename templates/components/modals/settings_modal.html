@@ -2,18 +2,18 @@
 <div id="settingsModal" class="modal">
     <div class="modal-content settings-modal">
         <button class="close" onclick="modalManager.closeModal('settingsModal')">&times;</button>
-        <h2>Settings</h2>
+        <h2>{{ t('common.actions.settings') }}</h2>
         <div class="settings-form">
             <div class="setting-item api-key-item">
                 <div class="setting-row">
                     <div class="setting-info">
-                        <label for="civitaiApiKey">Civitai API Key:</label>
+                        <label for="civitaiApiKey">{{ t('settings.civitaiApiKey') }}:</label>
                     </div>
                     <div class="setting-control">
                         <div class="api-key-input">
                             <input type="password" 
                                 id="civitaiApiKey" 
-                                placeholder="Enter your Civitai API key"
+                                placeholder="{{ t('settings.civitaiApiKeyPlaceholder') }}"
                                 value="{{ settings.get('civitai_api_key', '') }}"
                                 onblur="settingsManager.saveInputSetting('civitaiApiKey', 'civitai_api_key')"
                                 onkeydown="if(event.key === 'Enter') { this.blur(); }" />
@@ -24,7 +24,7 @@
                     </div>
                 </div>
                 <div class="input-help">
-                    Used for authentication when downloading models from Civitai
+                    {{ t('settings.civitaiApiKeyHelp') }}
                 </div>
             </div>
             
@@ -145,24 +145,24 @@
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="languageSelect" data-translate="common.language.select">Select Language</label>
+                            <label for="languageSelect">{{ t('common.language.select') }}</label>
                         </div>
                         <div class="setting-control select-control">
                             <select id="languageSelect" onchange="settingsManager.saveLanguageSetting()">
-                                <option value="en" data-translate="common.language.english">English</option>
-                                <option value="zh-CN" data-translate="common.language.chinese_simplified">中文（简体）</option>
-                                <option value="zh-TW" data-translate="common.language.chinese_traditional">中文（繁體）</option>
-                                <option value="ru" data-translate="common.language.russian">Русский</option>
-                                <option value="de" data-translate="common.language.german">Deutsch</option>
-                                <option value="ja" data-translate="common.language.japanese">日本語</option>
-                                <option value="ko" data-translate="common.language.korean">한국어</option>
-                                <option value="fr" data-translate="common.language.french">Français</option>
-                                <option value="es" data-translate="common.language.spanish">Español</option>
+                                <option value="en">{{ t('common.language.english') }}</option>
+                                <option value="zh-CN">{{ t('common.language.chinese_simplified') }}</option>
+                                <option value="zh-TW">{{ t('common.language.chinese_traditional') }}</option>
+                                <option value="ru">{{ t('common.language.russian') }}</option>
+                                <option value="de">{{ t('common.language.german') }}</option>
+                                <option value="ja">{{ t('common.language.japanese') }}</option>
+                                <option value="ko">{{ t('common.language.korean') }}</option>
+                                <option value="fr">{{ t('common.language.french') }}</option>
+                                <option value="es">{{ t('common.language.spanish') }}</option>
                             </select>
                         </div>
                     </div>
-                    <div class="input-help" data-translate="common.language.select_help">
-                        Choose your preferred language for the interface
+                    <div class="input-help">
+                        {{ t('common.language.select_help') }}
                     </div>
                 </div>
             </div>

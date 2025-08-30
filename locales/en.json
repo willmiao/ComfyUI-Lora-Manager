@@ -57,7 +57,8 @@
             "failed": "Failed",
             "cancelled": "Cancelled",
             "pending": "Pending",
-            "ready": "Ready"
+            "ready": "Ready",
+            "unknown": "Unknown"
         },
         "language": {
             "current": "Language",
@@ -115,7 +116,16 @@
             "switchToLight": "Switch to light theme",
             "switchToDark": "Switch to dark theme",
             "switchToAuto": "Switch to auto theme"
+        },
+        "actions": {
+            "checkUpdates": "Check Updates",
+            "support": "Support"
         }
+    },
+    "settings": {
+        "civitaiApiKey": "Civitai API Key",
+        "civitaiApiKeyPlaceholder": "Enter your Civitai API key",
+        "civitaiApiKeyHelp": "Used for authentication when downloading models from Civitai"
     },
     "loras": {
         "title": "LoRA Models",
@@ -141,11 +151,14 @@
             "download": "Download from URL",
             "bulk": "Bulk Operations",
             "duplicates": "Find Duplicates",
-            "favorites": "Show Favorites Only"
+            "favorites": "Show Favorites Only",
+            "filterActive": "Filter Active"
         },
         "bulkOperations": {
             "title": "Bulk Operations",
             "selected": "{count} selected",
+            "selectedSuffix": "selected",
+            "viewSelected": "Click to view selected items",
             "sendToWorkflow": "Send all selected LoRAs to workflow",
             "copyAll": "Copy all selected LoRAs syntax",
             "refreshAll": "Refresh CivitAI metadata for selected models",
@@ -161,7 +174,7 @@
             "copyRecipeSyntax": "Copy Recipe Syntax",
             "sendToWorkflowAppend": "Send to Workflow (Append)",
             "sendToWorkflowReplace": "Send to Workflow (Replace)",
-            "openExamplesFolder": "Open Examples Folder",
+            "openExamples": "Open Examples Folder",
             "downloadExamples": "Download Example Images",
             "replacePreview": "Replace Preview",
             "setContentRating": "Set Content Rating",
@@ -448,6 +461,31 @@
         "search": "Search models by name, tags, or other criteria",
         "filter": "Filter models by various criteria",
         "sort": "Sort models by different attributes",
-        "backToTop": "Scroll back to top of page"
+                "tooltiptext": "Scroll back to top of page"
+    },
+    "help": {
+        "title": "Help & Tutorials",
+        "tabs": {
+            "gettingStarted": "Getting Started",
+            "updateVlogs": "Update Vlogs",
+            "documentation": "Documentation"
+        },
+        "gettingStarted": {
+            "title": "Getting Started with LoRA Manager"
+        }
+    },
+    "update": {
+        "title": "Check for Updates",
+        "currentVersion": "Current Version",
+        "newVersion": "New Version",
+        "commit": "Commit"
+    },
+    "support": {
+        "title": "Support the Project",
+        "message": "If you find LoRA Manager useful, I'd really appreciate your support! 🙌",
+        "feedback": {
+            "title": "Provide Feedback",
+            "description": "Your feedback helps shape future updates! Share your thoughts:"
+        }
     }
 }
