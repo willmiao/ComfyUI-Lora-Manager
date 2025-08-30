@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}LoRA Manager{% endblock %}
+{% block title %}{{ t('header.appTitle') }}{% endblock %}
 {% block page_id %}loras{% endblock %}
 
 {% block preload %}
@@ -9,8 +9,8 @@
 {% endif %}
 {% endblock %}
 
-{% block init_title %}Initializing LoRA Manager{% endblock %}
-{% block init_message %}Scanning and building LoRA cache. This may take a few minutes...{% endblock %}
+{% block init_title %}{{ t('initialization.loras.title') }}{% endblock %}
+{% block init_message %}{{ t('initialization.loras.message') }}{% endblock %}
 {% block init_check_url %}/api/loras/list?page=1&page_size=1{% endblock %}
 
 {% block content %}

@@ -11,6 +11,7 @@ import jinja2
 from ..utils.routes_common import ModelRouteUtils
 from ..services.websocket_manager import ws_manager
 from ..services.settings_manager import settings
+from ..services.server_i18n import server_i18n
 from ..utils.utils import calculate_relative_path_for_model
 from ..utils.constants import AUTO_ORGANIZE_BATCH_SIZE
 from ..config import config
@@ -116,13 +117,31 @@ class BaseModelRoutes(ABC):
             # 获取用户语言设置
             user_language = settings.get('language', 'en')
             
+            # 设置服务端i18n语言
+            server_i18n.set_locale(user_language)
+            
+            # 为模板环境添加i18n过滤器
+            if not hasattr(self.template_env, '_i18n_filter_added'):
+                self.template_env.filters['t'] = server_i18n.create_template_filter()
+                self.template_env._i18n_filter_added = True
+            
             # 准备模板上下文
             template_context = {
                 'is_initializing': is_initializing,
                 'settings': settings,
                 'request': request,
                 'user_language': user_language,  # 传递语言设置到模板
-                'folders': []
+                'folders': [],
+                # 添加服务端翻译函数
+                't': server_i18n.get_translation,
+                'server_i18n': server_i18n,
+                # 添加一些常用的翻译到上下文，避免在模板中频繁调用
+                'common_translations': {
+                    'loading': server_i18n.get_translation('common.status.loading'),
+                    'error': server_i18n.get_translation('common.status.error'),
+                    'refresh': server_i18n.get_translation('common.actions.refresh'),
+                    'search': server_i18n.get_translation('common.actions.search'),
+                }
             }
 
             if not is_initializing:

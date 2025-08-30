@@ -169,8 +169,19 @@ export function formatNumber(number, options = {}) {
  * This should be called after DOM content is loaded
  */
 export function initializePageI18n() {
-    // Translate all elements with data-i18n attributes
-    translateDOM();
+    // 优先使用服务端传递的翻译数据，避免闪烁
+    if (window.__SERVER_TRANSLATIONS__ && window.__SERVER_TRANSLATIONS__.language) {
+        // 设置客户端i18n的语言为服务端传递的语言
+        if (window.i18n && window.i18n.setLanguage) {
+            window.i18n.setLanguage(window.__SERVER_TRANSLATIONS__.language);
+        }
+        
+        // 对于剩余的需要动态翻译的元素，仍使用客户端翻译
+        translateDOM();
+    } else {
+        // 回退到完整的客户端翻译
+        translateDOM();
+    }
     
     // Update search placeholder based on current page
     const currentPath = window.location.pathname;

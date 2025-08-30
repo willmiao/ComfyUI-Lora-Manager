@@ -373,6 +373,26 @@ export const zhCN = {
     initialization: {
         title: '初始化 LoRA 管理器',
         message: '正在扫描并构建 LoRA 缓存，这可能需要几分钟时间...',
+        loras: {
+            title: '初始化 LoRA 管理器',
+            message: '正在扫描并构建 LoRA 缓存，这可能需要几分钟时间...'
+        },
+        checkpoints: {
+            title: '初始化大模型管理器',
+            message: '正在扫描并构建大模型缓存，这可能需要几分钟时间...'
+        },
+        embeddings: {
+            title: '初始化 Embedding 管理器',
+            message: '正在扫描并构建 Embedding 缓存，这可能需要几分钟时间...'
+        },
+        recipes: {
+            title: '初始化配方管理器',
+            message: '正在加载和处理配方，这可能需要几分钟时间...'
+        },
+        statistics: {
+            title: '初始化统计信息',
+            message: '正在处理模型数据以生成统计信息，这可能需要几分钟时间...'
+        },
         steps: {
             scanning: '扫描模型文件...',
             processing: '处理元数据...',

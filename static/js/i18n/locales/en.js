@@ -373,6 +373,26 @@ export const en = {
     initialization: {
         title: 'Initializing LoRA Manager',
         message: 'Scanning and building LoRA cache. This may take a few minutes...',
+        loras: {
+            title: 'Initializing LoRA Manager',
+            message: 'Scanning and building LoRA cache. This may take a few minutes...'
+        },
+        checkpoints: {
+            title: 'Initializing Checkpoint Manager',
+            message: 'Scanning and building checkpoint cache. This may take a few minutes...'
+        },
+        embeddings: {
+            title: 'Initializing Embedding Manager',
+            message: 'Scanning and building embedding cache. This may take a few minutes...'
+        },
+        recipes: {
+            title: 'Initializing Recipe Manager',
+            message: 'Loading and processing recipes. This may take a few minutes...'
+        },
+        statistics: {
+            title: 'Initializing Statistics',
+            message: 'Processing model data for statistics. This may take a few minutes...'
+        },
         steps: {
             scanning: 'Scanning model files...',
             processing: 'Processing metadata...',

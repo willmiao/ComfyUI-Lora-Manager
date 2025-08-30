@@ -3,36 +3,36 @@
     <div class="header-branding">
       <a href="/loras" class="logo-link">
         <img src="/loras_static/images/favicon-32x32.png" alt="LoRA Manager" class="app-logo">
-        <span class="app-title" data-i18n="header.appTitle">LoRA Manager</span>
+        <span class="app-title">{{ t('header.appTitle') }}</span>
       </a>
     </div>
     <nav class="main-nav">
       <a href="/loras" class="nav-item" id="lorasNavItem">
-        <i class="fas fa-layer-group"></i> <span data-i18n="header.navigation.loras">LoRAs</span>
+        <i class="fas fa-layer-group"></i> <span>{{ t('header.navigation.loras') }}</span>
       </a>
       <a href="/loras/recipes" class="nav-item" id="recipesNavItem">
-        <i class="fas fa-book-open"></i> <span data-i18n="header.navigation.recipes">Recipes</span>
+        <i class="fas fa-book-open"></i> <span>{{ t('header.navigation.recipes') }}</span>
       </a>
       <a href="/checkpoints" class="nav-item" id="checkpointsNavItem">
-        <i class="fas fa-check-circle"></i> <span data-i18n="header.navigation.checkpoints">Checkpoints</span>
+        <i class="fas fa-check-circle"></i> <span>{{ t('header.navigation.checkpoints') }}</span>
       </a>
       <a href="/embeddings" class="nav-item" id="embeddingsNavItem">
-        <i class="fas fa-code"></i> <span data-i18n="header.navigation.embeddings">Embeddings</span>
+        <i class="fas fa-code"></i> <span>{{ t('header.navigation.embeddings') }}</span>
       </a>
       <a href="/statistics" class="nav-item" id="statisticsNavItem">
-        <i class="fas fa-chart-bar"></i> <span data-i18n="header.navigation.statistics">Stats</span>
+        <i class="fas fa-chart-bar"></i> <span>{{ t('header.navigation.statistics') }}</span>
       </a>
     </nav>
     
     <!-- Context-aware search container -->
     <div class="header-search" id="headerSearch">
       <div class="search-container">
-        <input type="text" id="searchInput" data-i18n="header.search.placeholder" data-i18n-target="placeholder" placeholder="Search..." />
+        <input type="text" id="searchInput" placeholder="{{ t('header.search.placeholder') }}" />
         <i class="fas fa-search search-icon"></i>
-        <button class="search-options-toggle" id="searchOptionsToggle" data-i18n="header.search.options" data-i18n-target="title" title="Search Options">
+        <button class="search-options-toggle" id="searchOptionsToggle" title="{{ t('header.search.options') }}">
           <i class="fas fa-sliders-h"></i>
         </button>
-        <button class="search-filter-toggle" id="filterButton" data-i18n="header.filter.title" data-i18n-target="title" title="Filter models">
+        <button class="search-filter-toggle" id="filterButton" title="{{ t('header.filter.title') }}">
           <i class="fas fa-filter"></i>
           <span class="filter-badge" id="activeFiltersCount" style="display: none">0</span>
         </button>
@@ -69,35 +69,35 @@
 <!-- Add search options panel with context-aware options -->
 <div id="searchOptionsPanel" class="search-options-panel hidden">
   <div class="options-header">
-    <h3 data-i18n="header.search.options">Search Options</h3>
+    <h3>{{ t('header.search.options') }}</h3>
     <button class="close-options-btn" id="closeSearchOptions">
       <i class="fas fa-times"></i>
     </button>
   </div>
   <div class="options-section">
-    <h4 data-i18n="header.search.searchIn">Search In:</h4>
+    <h4>{{ t('header.search.searchIn') }}</h4>
     <div class="search-option-tags">
       {% if request.path == '/loras/recipes' %}
-      <div class="search-option-tag active" data-option="title" data-i18n="header.search.filters.title">Recipe Title</div>
-      <div class="search-option-tag active" data-option="tags" data-i18n="header.search.filters.tags">Tags</div>
-      <div class="search-option-tag active" data-option="loraName" data-i18n="header.search.filters.loraName">LoRA Filename</div>
-      <div class="search-option-tag active" data-option="loraModel" data-i18n="header.search.filters.loraModel">LoRA Model Name</div>
+      <div class="search-option-tag active" data-option="title">{{ t('header.search.filters.title') }}</div>
+      <div class="search-option-tag active" data-option="tags">{{ t('header.search.filters.tags') }}</div>
+      <div class="search-option-tag active" data-option="loraName">{{ t('header.search.filters.loraName') }}</div>
+      <div class="search-option-tag active" data-option="loraModel">{{ t('header.search.filters.loraModel') }}</div>
       {% elif request.path == '/checkpoints' %}
-      <div class="search-option-tag active" data-option="filename" data-i18n="header.search.filters.filename">Filename</div>
-      <div class="search-option-tag active" data-option="modelname" data-i18n="header.search.filters.modelname">Checkpoint Name</div>
-      <div class="search-option-tag active" data-option="tags" data-i18n="header.search.filters.tags">Tags</div>
-      <div class="search-option-tag" data-option="creator" data-i18n="header.search.filters.creator">Creator</div>
+      <div class="search-option-tag active" data-option="filename">{{ t('header.search.filters.filename') }}</div>
+      <div class="search-option-tag active" data-option="modelname">{{ t('header.search.filters.modelname') }}</div>
+      <div class="search-option-tag active" data-option="tags">{{ t('header.search.filters.tags') }}</div>
+      <div class="search-option-tag" data-option="creator">{{ t('header.search.filters.creator') }}</div>
       {% elif request.path == '/embeddings' %}
-      <div class="search-option-tag active" data-option="filename" data-i18n="header.search.filters.filename">Filename</div>
-      <div class="search-option-tag active" data-option="modelname" data-i18n="header.search.filters.modelname">Embedding Name</div>
-      <div class="search-option-tag active" data-option="tags" data-i18n="header.search.filters.tags">Tags</div>
-      <div class="search-option-tag" data-option="creator" data-i18n="header.search.filters.creator">Creator</div>
+      <div class="search-option-tag active" data-option="filename">{{ t('header.search.filters.filename') }}</div>
+      <div class="search-option-tag active" data-option="modelname">{{ t('header.search.filters.modelname') }}</div>
+      <div class="search-option-tag active" data-option="tags">{{ t('header.search.filters.tags') }}</div>
+      <div class="search-option-tag" data-option="creator">{{ t('header.search.filters.creator') }}</div>
       {% else %}
       <!-- Default options for LoRAs page -->
-      <div class="search-option-tag active" data-option="filename" data-i18n="header.search.filters.filename">Filename</div>
-      <div class="search-option-tag active" data-option="modelname" data-i18n="header.search.filters.modelname">Model Name</div>
-      <div class="search-option-tag active" data-option="tags" data-i18n="header.search.filters.tags">Tags</div>
-      <div class="search-option-tag" data-option="creator" data-i18n="header.search.filters.creator">Creator</div>
+      <div class="search-option-tag active" data-option="filename">{{ t('header.search.filters.filename') }}</div>
+      <div class="search-option-tag active" data-option="modelname">{{ t('header.search.filters.modelname') }}</div>
+      <div class="search-option-tag active" data-option="tags">{{ t('header.search.filters.tags') }}</div>
+      <div class="search-option-tag" data-option="creator">{{ t('header.search.filters.creator') }}</div>
       {% endif %}
     </div>
   </div>
@@ -106,27 +106,27 @@
 <!-- Add filter panel -->
 <div id="filterPanel" class="filter-panel hidden">
   <div class="filter-header">
-    <h3 data-i18n="header.filter.title">Filter Models</h3>
+    <h3>{{ t('header.filter.title') }}</h3>
     <button class="close-filter-btn" onclick="filterManager.closeFilterPanel()">
       <i class="fas fa-times"></i>
     </button>
   </div>
   <div class="filter-section">
-    <h4 data-i18n="header.filter.baseModel">Base Model</h4>
+    <h4>{{ t('header.filter.baseModel') }}</h4>
     <div class="filter-tags" id="baseModelTags">
       <!-- Tags will be dynamically inserted here -->
     </div>
   </div>
   <div class="filter-section">
-    <h4 data-i18n="header.filter.modelTags">Tags (Top 20)</h4>
+    <h4>{{ t('header.filter.modelTags') }}</h4>
     <div class="filter-tags" id="modelTagsFilter">
       <!-- Top tags will be dynamically inserted here -->
-      <div class="tags-loading" data-i18n="common.status.loading">Loading tags...</div>
+      <div class="tags-loading">{{ t('common.status.loading') }}</div>
     </div>
   </div>
   <div class="filter-actions">
-    <button class="clear-filters-btn" onclick="filterManager.clearFilters()" data-i18n="header.filter.clearAll">
-      Clear All Filters
+    <button class="clear-filters-btn" onclick="filterManager.clearFilters()">
+      {{ t('header.filter.clearAll') }}
     </button>
   </div>
 </div>

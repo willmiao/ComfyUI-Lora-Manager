@@ -55,6 +55,17 @@
         
         // 设置初始语言到全局变量，供i18n系统使用
         window.__INITIAL_LANGUAGE__ = userLanguage;
+        
+        // 预设服务端翻译的内容，避免初始渲染时的闪烁
+        window.__SERVER_TRANSLATIONS__ = {
+          language: userLanguage,
+          common: {
+            loading: '{{ t("common.status.loading") }}',
+            error: '{{ t("common.status.error") }}',
+            refresh: '{{ t("common.actions.refresh") }}',
+            search: '{{ t("common.actions.search") }}'
+          }
+        };
 
         // Apply theme immediately based on stored preference
         const STORAGE_PREFIX = 'lora_manager_';
@@ -109,6 +120,8 @@
         <!-- Load initialization JavaScript -->
         <script type="module" src="/loras_static/js/components/initialization.js"></script>
     {% else %}
+        <!-- Load mixed i18n handler first for better coordination -->
+        <script type="module" src="/loras_static/js/utils/mixedI18n.js"></script>
         {% block main_script %}{% endblock %}
     {% endif %}
 

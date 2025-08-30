@@ -42,6 +42,11 @@ class I18nManager {
             return window.__INITIAL_LANGUAGE__;
         }
         
+        // 检查服务端传递的翻译数据
+        if (window.__SERVER_TRANSLATIONS__ && window.__SERVER_TRANSLATIONS__.language && this.locales[window.__SERVER_TRANSLATIONS__.language]) {
+            return window.__SERVER_TRANSLATIONS__.language;
+        }
+        
         // Check localStorage for user-selected language
         const STORAGE_PREFIX = 'lora_manager_';
         let userLanguage = null;
