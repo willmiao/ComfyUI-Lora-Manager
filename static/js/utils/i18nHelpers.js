@@ -9,14 +9,14 @@ import { i18n } from '../i18n/index.js';
  */
 export function translateDOM() {
     if (!window.i18n) return;
-    
+
     // Select all elements with data-i18n attributes, including optgroups and options
     const elements = document.querySelectorAll('[data-i18n]');
-    
+
     elements.forEach(element => {
         const key = element.getAttribute('data-i18n');
         const target = element.getAttribute('data-i18n-target') || 'textContent';
-        
+
         if (key) {
             const translation = window.i18n.t(key);
             
@@ -162,31 +162,23 @@ export function formatNumber(number, options = {}) {
  * This should be called after DOM content is loaded
  */
 export function initializePageI18n() {
-    // 优先使用服务端传递的翻译数据，避免闪烁
-    if (window.__SERVER_TRANSLATIONS__ && window.__SERVER_TRANSLATIONS__.language) {
-        // 设置客户端i18n的语言为服务端传递的语言
-        if (window.i18n && window.i18n.setLanguage) {
-            window.i18n.setLanguage(window.__SERVER_TRANSLATIONS__.language);
-        }
+    // Always use the client-side i18n with user settings
+    if (window.i18n) {
+        // Translate DOM elements
+        translateDOM();
         
-        // 对于剩余的需要动态翻译的元素，仍使用客户端翻译
-        translateDOM();
-    } else {
-        // 回退到完整的客户端翻译
-        translateDOM();
-    }
-    
-    // Update search placeholder based on current page
-    const currentPath = window.location.pathname;
-    updateSearchPlaceholder(currentPath);
-    
-    // Set document direction for RTL languages
-    if (i18n.isRTL()) {
-        document.documentElement.setAttribute('dir', 'rtl');
-        document.body.classList.add('rtl');
-    } else {
-        document.documentElement.setAttribute('dir', 'ltr');
-        document.body.classList.remove('rtl');
+        // Update search placeholder based on current page
+        const currentPath = window.location.pathname;
+        updateSearchPlaceholder(currentPath);
+        
+        // Set document direction for RTL languages
+        if (i18n.isRTL()) {
+            document.documentElement.setAttribute('dir', 'rtl');
+            document.body.classList.add('rtl');
+        } else {
+            document.documentElement.setAttribute('dir', 'ltr');
+            document.body.classList.remove('rtl');
+        }
     }
 }
 

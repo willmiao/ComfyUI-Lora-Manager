@@ -149,17 +149,9 @@ class RecipeRoutes:
                     is_initializing=False,
                     settings=settings,
                     request=request,
-                    user_language=user_language,
                     # 添加服务端翻译函数
                     t=server_i18n.get_translation,
                     server_i18n=server_i18n,
-                    # 添加一些常用的翻译到上下文
-                    common_translations={
-                        'loading': server_i18n.get_translation('common.status.loading'),
-                        'error': server_i18n.get_translation('common.status.error'),
-                        'refresh': server_i18n.get_translation('common.actions.refresh'),
-                        'search': server_i18n.get_translation('common.actions.search'),
-                    }
                 )
             except Exception as cache_error:
                 logger.error(f"Error loading recipe cache data: {cache_error}")
@@ -169,15 +161,9 @@ class RecipeRoutes:
                     is_initializing=True,
                     settings=settings,
                     request=request,
-                    user_language=user_language,
                     # 添加服务端翻译函数
                     t=server_i18n.get_translation,
                     server_i18n=server_i18n,
-                    # 添加一些常用的翻译到上下文
-                    common_translations={
-                        'loading': server_i18n.get_translation('common.status.loading'),
-                        'error': server_i18n.get_translation('common.status.error'),
-                    }
                 )
                 logger.info("Recipe cache error, returning initialization page")
             

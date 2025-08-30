@@ -130,18 +130,10 @@ class BaseModelRoutes(ABC):
                 'is_initializing': is_initializing,
                 'settings': settings,
                 'request': request,
-                'user_language': user_language,  # 传递语言设置到模板
                 'folders': [],
                 # 添加服务端翻译函数
                 't': server_i18n.get_translation,
                 'server_i18n': server_i18n,
-                # 添加一些常用的翻译到上下文，避免在模板中频繁调用
-                'common_translations': {
-                    'loading': server_i18n.get_translation('common.status.loading'),
-                    'error': server_i18n.get_translation('common.status.error'),
-                    'refresh': server_i18n.get_translation('common.actions.refresh'),
-                    'search': server_i18n.get_translation('common.actions.search'),
-                }
             }
 
             if not is_initializing:

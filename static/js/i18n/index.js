@@ -33,20 +33,10 @@ class I18nManager {
     }
     
     /**
-     * Get language from user settings with fallback to browser detection
+     * Get language from user settings with fallback to English
      * @returns {string} Language code
      */
     getLanguageFromSettings() {
-        // 优先使用后端传递的初始语言
-        if (window.__INITIAL_LANGUAGE__ && this.locales[window.__INITIAL_LANGUAGE__]) {
-            return window.__INITIAL_LANGUAGE__;
-        }
-        
-        // 检查服务端传递的翻译数据
-        if (window.__SERVER_TRANSLATIONS__ && window.__SERVER_TRANSLATIONS__.language && this.locales[window.__SERVER_TRANSLATIONS__.language]) {
-            return window.__SERVER_TRANSLATIONS__.language;
-        }
-        
         // Check localStorage for user-selected language
         const STORAGE_PREFIX = 'lora_manager_';
         let userLanguage = null;
@@ -66,8 +56,8 @@ class I18nManager {
             return userLanguage;
         }
         
-        // Fallback to browser language detection for first-time users
-        return this.detectLanguage();
+        // Fallback to English
+        return 'en';
     }
     
     /**
@@ -121,29 +111,6 @@ class I18nManager {
             { code: 'fr', name: 'French', nativeName: 'Français' },
             { code: 'es', name: 'Spanish', nativeName: 'Español' }
         ];
-    }
-    
-    /**
-     * Detect browser language with fallback to English (for first-time users)
-     * @returns {string} Language code
-     */
-    detectLanguage() {
-        // Get browser language
-        const browserLang = navigator.language || navigator.languages[0] || 'en';
-        
-        // Check if we have exact match
-        if (this.locales[browserLang]) {
-            return browserLang;
-        }
-        
-        // Check for language without region (e.g., 'zh' from 'zh-CN')
-        const langCode = browserLang.split('-')[0];
-        if (this.locales[langCode]) {
-            return langCode;
-        }
-        
-        // Fallback to English
-        return 'en';
     }
     
     /**
@@ -255,7 +222,7 @@ class I18nManager {
     }
     
     /**
-     * Initialize i18n from user settings instead of browser detection
+     * Initialize i18n from user settings
      * This prevents language flashing on page load
      */
     async initializeFromSettings() {
