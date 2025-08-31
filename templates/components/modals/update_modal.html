@@ -4,7 +4,7 @@
         <button class="close" onclick="modalManager.closeModal('updateModal')">&times;</button>
         <div class="update-header">
             <i class="fas fa-bell update-icon"></i>
-            <h2>{{ t('update.title') }}</h2>
+            <h2 data-i18n="update.title">{{ t('update.title') }}</h2>
         </div>
         <div class="update-content">
             <div class="update-info">
@@ -26,7 +26,7 @@
                     </a>
                     <button id="updateBtn" class="primary-btn disabled">
                         <i class="fas fa-download"></i>
-                        <span id="updateBtnText">{{ t('update.updateNow') }}</span>
+                        <span id="updateBtnText" data-i18n="update.updateNow">{{ t('update.updateNow') }}</span>
                     </button>
                 </div>
             </div>
@@ -34,7 +34,7 @@
             <!-- Update Progress Section -->
             <div class="update-progress" id="updateProgress" style="display: none;">
                 <div class="progress-info">
-                    <div class="progress-text" id="updateProgressText">{{ t('update.preparingUpdate') }}</div>
+                    <div class="progress-text" id="updateProgressText" data-i18n="update.preparingUpdate">{{ t('update.preparingUpdate') }}</div>
                     <div class="update-progress-bar">
                         <div class="progress-fill" id="updateProgressFill"></div>
                     </div>

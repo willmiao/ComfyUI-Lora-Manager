@@ -14,7 +14,9 @@
         },
         "status": {
             "loading": "加载中...",
-            "unknown": "未知"
+            "unknown": "未知",
+            "date": "日期",
+            "version": "版本"
         },
         "language": {
             "select": "选择语言",
@@ -697,6 +699,8 @@
     "update": {
         "title": "检查更新",
         "currentVersion": "当前版本",
+        "updateAvailable": "更新可用",
+        "noChangelogAvailable": "没有详细的更新日志可用。请查看 GitHub 以获取更多信息。",
         "newVersion": "新版本",
         "commit": "提交",
         "viewOnGitHub": "在 GitHub 查看",
@@ -705,7 +709,27 @@
         "changelog": "更新日志",
         "checkingUpdates": "正在检查更新...",
         "checkingMessage": "请稍候，正在检查最新版本。",
-        "showNotifications": "显示更新通知"
+        "showNotifications": "显示更新通知",
+        "updateProgress": {
+            "preparing": "正在准备更新...",
+            "installing": "正在安装更新...",
+            "completed": "更新已成功完成！",
+            "failed": "更新失败：{error}"
+        },
+        "status": {
+            "updating": "正在更新...",
+            "updated": "已更新！",
+            "updateFailed": "更新失败"
+        },
+        "completion": {
+            "successMessage": "已成功更新到 {version}！",
+            "restartMessage": "请重启 ComfyUI 或 LoRA 管理器以应用更新。",
+            "reloadMessage": "请确保刷新浏览器以加载最新的 LoRA 管理器和 ComfyUI。"
+        },
+        "nightly": {
+            "warning": "警告：Nightly 版本可能包含实验性功能，可能不稳定。",
+            "enable": "启用 Nightly 更新"
+        }
     },
     "support": {
         "title": "支持项目",
@@ -713,7 +737,27 @@
         "feedback": {
             "title": "反馈建议",
             "description": "你的反馈有助于未来更新！欢迎分享你的想法："
-        }
+        },
+        "links": {
+            "submitGithubIssue": "提交 GitHub 问题",
+            "joinDiscord": "加入 Discord",
+            "youtubeChannel": "YouTube 频道",
+            "civitaiProfile": "Civitai 个人资料",
+            "supportKofi": "支持 Ko-fi",
+            "supportPatreon": "支持 Patreon"
+        },
+        "sections": {
+            "followUpdates": "关注更新",
+            "buyMeCoffee": "请我喝杯咖啡",
+            "coffeeDescription": "如果你想直接支持我的工作：",
+            "becomePatron": "成为赞助人",
+            "patronDescription": "通过每月捐款支持持续开发：",
+            "wechatSupport": "微信支持",
+            "wechatDescription": "对于中国用户，你可以通过微信支持：",
+            "showWechatQR": "显示微信二维码",
+            "hideWechatQR": "隐藏微信二维码"
+        },
+        "footer": "感谢使用 LoRA 管理器！❤️"
     },
     "toast": {
         "general": {
@@ -923,6 +967,15 @@
             "bulkMoveSuccess": "成功移动 {successCount} 个 {type}",
             "exampleImagesDownloadSuccess": "示例图片下载成功！",
             "exampleImagesDownloadFailed": "示例图片下载失败：{message}"
+        }
+    },
+    "banners": {
+        "versionMismatch": {
+            "title": "检测到应用更新",
+            "content": "你的浏览器正在运行过时的 LoRA 管理器版本（{storedVersion}）。服务器已更新到版本 {currentVersion}。请刷新以确保正常使用。",
+            "refreshNow": "立即刷新",
+            "refreshingIn": "将在",
+            "seconds": "秒后刷新"
         }
     }
 }

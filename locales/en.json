@@ -14,7 +14,9 @@
         },
         "status": {
             "loading": "Loading...",
-            "unknown": "Unknown"
+            "unknown": "Unknown",
+            "date": "Date",
+            "version": "Version"
         },
         "language": {
             "select": "Select Language",
@@ -696,6 +698,8 @@
     },
     "update": {
         "title": "Check for Updates",
+        "updateAvailable": "Update Available",
+        "noChangelogAvailable": "No detailed changelog available. Check GitHub for more information.",
         "currentVersion": "Current Version",
         "newVersion": "New Version",
         "commit": "Commit",
@@ -705,7 +709,27 @@
         "changelog": "Changelog",
         "checkingUpdates": "Checking for updates...",
         "checkingMessage": "Please wait while we check for the latest version.",
-        "showNotifications": "Show update notifications"
+        "showNotifications": "Show update notifications",
+        "updateProgress": {
+            "preparing": "Preparing update...",
+            "installing": "Installing update...",
+            "completed": "Update completed successfully!",
+            "failed": "Update failed: {error}"
+        },
+        "status": {
+            "updating": "Updating...",
+            "updated": "Updated!",
+            "updateFailed": "Update Failed"
+        },
+        "completion": {
+            "successMessage": "Successfully updated to {version}!",
+            "restartMessage": "Please restart ComfyUI or LoRA Manager to apply update.",
+            "reloadMessage": "Make sure to reload your browser for both LoRA Manager and ComfyUI."
+        },
+        "nightly": {
+            "warning": "Warning: Nightly builds may contain experimental features and could be unstable.",
+            "enable": "Enable Nightly Updates"
+        }
     },
     "support": {
         "title": "Support the Project",
@@ -713,7 +737,27 @@
         "feedback": {
             "title": "Provide Feedback",
             "description": "Your feedback helps shape future updates! Share your thoughts:"
-        }
+        },
+        "links": {
+            "submitGithubIssue": "Submit GitHub Issue",
+            "joinDiscord": "Join Discord",
+            "youtubeChannel": "YouTube Channel",
+            "civitaiProfile": "Civitai Profile",
+            "supportKofi": "Support on Ko-fi",
+            "supportPatreon": "Support on Patreon"
+        },
+        "sections": {
+            "followUpdates": "Follow for Updates",
+            "buyMeCoffee": "Buy me a coffee",
+            "coffeeDescription": "If you'd like to support my work directly:",
+            "becomePatron": "Become a Patron",
+            "patronDescription": "Support ongoing development with monthly contributions:",
+            "wechatSupport": "WeChat Support",
+            "wechatDescription": "For users in China, you can support via WeChat:",
+            "showWechatQR": "Show WeChat QR Code",
+            "hideWechatQR": "Hide WeChat QR Code"
+        },
+        "footer": "Thank you for using LoRA Manager! ❤️"
     },
     "toast": {
         "general": {
@@ -923,6 +967,15 @@
             "bulkMoveSuccess": "Successfully moved {successCount} {type}s",
             "exampleImagesDownloadSuccess": "Successfully downloaded example images!",
             "exampleImagesDownloadFailed": "Failed to download example images: {message}"
+        }
+    },
+    "banners": {
+        "versionMismatch": {
+            "title": "Application Update Detected",
+            "content": "Your browser is running an outdated version of LoRA Manager ({storedVersion}). The server has been updated to version {currentVersion}. Please refresh to ensure proper functionality.",
+            "refreshNow": "Refresh Now",
+            "refreshingIn": "Refreshing in",
+            "seconds": "seconds"
         }
     }
 }

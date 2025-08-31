@@ -52,13 +52,13 @@ export class HeaderManager {
         const currentTheme = getStorageItem('theme') || 'auto';
         themeToggle.classList.add(`theme-${currentTheme}`);
 
-        // 使用i18nHelpers更新themeToggle的title
+        // Use i18nHelpers to update themeToggle's title
         this.updateThemeTooltip(themeToggle, currentTheme);
 
         themeToggle.addEventListener('click', async () => {
           if (typeof toggleTheme === 'function') {
             const newTheme = toggleTheme();
-            // 使用i18nHelpers更新themeToggle的title
+            // Use i18nHelpers to update themeToggle's title
             this.updateThemeTooltip(themeToggle, newTheme);
           }
         });
