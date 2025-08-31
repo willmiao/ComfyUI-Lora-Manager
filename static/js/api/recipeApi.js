@@ -89,7 +89,7 @@ export async function fetchRecipesPage(page = 1, pageSize = 100) {
         };
     } catch (error) {
         console.error('Error fetching recipes:', error);
-        showToast(`Failed to fetch recipes: ${error.message}`, 'error');
+        showToast('toast.recipes.fetchFailed', { message: error.message }, 'error');
         throw error;
     }
 }
@@ -131,7 +131,7 @@ export async function resetAndReloadWithVirtualScroll(options = {}) {
         return result;
     } catch (error) {
         console.error(`Error reloading ${modelType}s:`, error);
-        showToast(`Failed to reload ${modelType}s: ${error.message}`, 'error');
+        showToast('toast.recipes.reloadFailed', { modelType: modelType, message: error.message }, 'error');
         throw error;
     } finally {
         pageState.isLoading = false;
@@ -179,7 +179,7 @@ export async function loadMoreWithVirtualScroll(options = {}) {
         return result;
     } catch (error) {
         console.error(`Error loading ${modelType}s:`, error);
-        showToast(`Failed to load ${modelType}s: ${error.message}`, 'error');
+        showToast('toast.recipes.loadFailed', { modelType: modelType, message: error.message }, 'error');
         throw error;
     } finally {
         pageState.isLoading = false;
@@ -217,10 +217,10 @@ export async function refreshRecipes() {
         // After successful cache rebuild, reload the recipes
         await resetAndReload();
         
-        showToast('Refresh complete', 'success');
+        showToast('toast.recipes.refreshComplete', {}, 'success');
     } catch (error) {
         console.error('Error refreshing recipes:', error);
-        showToast(error.message || 'Failed to refresh recipes', 'error');
+        showToast('toast.recipes.refreshFailed', { message: error.message }, 'error');
     } finally {
         state.loadingManager.hide();
         state.loadingManager.restoreProgressBar();
@@ -285,7 +285,7 @@ export async function updateRecipeMetadata(filePath, updates) {
         const data = await response.json();
 
         if (!data.success) {
-            showToast(`Failed to update recipe: ${data.error}`, 'error');
+            showToast('toast.recipes.updateFailed', { error: data.error }, 'error');
             throw new Error(data.error || 'Failed to update recipe');
         }
 
@@ -294,7 +294,7 @@ export async function updateRecipeMetadata(filePath, updates) {
         return data;
     } catch (error) {
         console.error('Error updating recipe:', error);
-        showToast(`Error updating recipe: ${error.message}`, 'error');
+        showToast('toast.recipes.updateError', { message: error.message }, 'error');
         throw error;
     } finally {
         state.loadingManager.hide();

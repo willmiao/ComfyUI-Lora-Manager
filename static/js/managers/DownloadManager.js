@@ -283,13 +283,13 @@ export class DownloadManager {
 
     async proceedToLocation() {
         if (!this.currentVersion) {
-            showToast('Please select a version', 'error');
+            showToast('toast.loras.pleaseSelectVersion', {}, 'error');
             return;
         }
         
         const existsLocally = this.currentVersion.existsLocally;
         if (existsLocally) {
-            showToast('This version already exists in your library', 'info');
+            showToast('toast.loras.versionExists', {}, 'info');
             return;
         }
 
@@ -480,7 +480,7 @@ export class DownloadManager {
                 downloadId
             );
 
-            showToast('Download completed successfully', 'success');
+            showToast('toast.loras.downloadCompleted', {}, 'success');
             modalManager.closeModal('downloadModal');
             
             ws.close();
@@ -523,11 +523,11 @@ export class DownloadManager {
                 await this.folderTreeManager.loadTree(treeData.tree);
             } else {
                 console.error('Failed to fetch folder tree:', treeData.error);
-                showToast('Failed to load folder tree', 'error');
+                showToast('toast.import.folderTreeFailed', {}, 'error');
             }
         } catch (error) {
             console.error('Error initializing folder tree:', error);
-            showToast('Error loading folder tree', 'error');
+            showToast('toast.import.folderTreeError', {}, 'error');
         }
     }
 

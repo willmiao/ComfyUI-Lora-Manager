@@ -786,9 +786,20 @@
             "syntaxCopiedWithGroups": "LoRA syntax with trigger word groups copied to clipboard",
             "downloadSuccessful": "LoRAs downloaded successfully",
             "allDownloadSuccessful": "All {count} LoRAs downloaded successfully",
-            "downloadPartialSuccess": "Downloaded {completed} of {total} LoRAs"
+            "downloadPartialSuccess": "Downloaded {completed} of {total} LoRAs",
+            "downloadPartialWithAccess": "Downloaded {completed} of {total} LoRAs. {accessFailures} failed due to access restrictions. Check your API key in settings or early access status.",
+            "pleaseSelectVersion": "Please select a version",
+            "versionExists": "This version already exists in your library",
+            "downloadCompleted": "Download completed successfully"
         },
         "recipes": {
+            "fetchFailed": "Failed to fetch recipes: {message}",
+            "reloadFailed": "Failed to reload {modelType}s: {message}",
+            "loadFailed": "Failed to load {modelType}s: {message}",
+            "refreshComplete": "Refresh complete",
+            "refreshFailed": "Failed to refresh recipes: {message}",
+            "updateFailed": "Failed to update recipe: {error}",
+            "updateError": "Error updating recipe: {message}",
             "nameSaved": "Recipe \"{name}\" saved successfully",
             "nameUpdated": "Recipe name updated successfully",
             "tagsUpdated": "Recipe tags updated successfully",
@@ -923,7 +934,19 @@
         "exampleImages": {
             "checkError": "Error checking for example images",
             "missingHash": "Missing model hash information.",
-            "noRemoteImages": "No remote example images available for this model on Civitai"
+            "noRemoteImages": "No remote example images available for this model on Civitai",
+            "pathUpdated": "Example images path updated successfully",
+            "downloadInProgress": "Download already in progress",
+            "enterLocationFirst": "Please enter a download location first",
+            "downloadStarted": "Example images download started",
+            "downloadStartFailed": "Failed to start download",
+            "downloadPaused": "Download paused",
+            "pauseFailed": "Failed to pause download",
+            "downloadResumed": "Download resumed",
+            "resumeFailed": "Failed to resume download",
+            "deleted": "Example image deleted",
+            "deleteFailed": "Failed to delete example image",
+            "setPreviewFailed": "Failed to set preview image"
         },
         "api": {
             "fetchFailed": "Failed to fetch {type}s: {message}",

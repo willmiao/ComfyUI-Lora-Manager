@@ -13,7 +13,7 @@ export class DownloadManager {
         const isDownloadOnly = !!this.importManager.recipeId;
         
         if (!isDownloadOnly && !this.importManager.recipeName) {
-            showToast('Please enter a recipe name', 'error');
+            showToast('toast.import.enterRecipeName', {}, 'error');
             return;
         }
         
@@ -93,10 +93,10 @@ export class DownloadManager {
             // Show success message
             if (isDownloadOnly) {
                 if (failedDownloads === 0) {    
-                    showToast('LoRAs downloaded successfully', 'success');
+                    showToast('toast.loras.downloadSuccessful', {}, 'success');
                 }
             } else {
-                showToast(`Recipe "${this.importManager.recipeName}" saved successfully`, 'success');
+                showToast('toast.recipes.nameSaved', { name: this.importManager.recipeName }, 'success');
             }
             
             // Close modal
@@ -238,15 +238,19 @@ export class DownloadManager {
         
         // Show appropriate completion message based on results
         if (failedDownloads === 0) {
-            showToast(`All ${completedDownloads} LoRAs downloaded successfully`, 'success');
+            showToast('toast.loras.allDownloadSuccessful', { count: completedDownloads }, 'success');
         } else {
             if (accessFailures > 0) {
-                showToast(
-                    `Downloaded ${completedDownloads} of ${this.importManager.downloadableLoRAs.length} LoRAs. ${accessFailures} failed due to access restrictions. Check your API key in settings or early access status.`,
-                    'error'
-                );
+                showToast('toast.loras.downloadPartialWithAccess', { 
+                    completed: completedDownloads, 
+                    total: this.importManager.downloadableLoRAs.length,
+                    accessFailures: accessFailures
+                }, 'error');
             } else {
-                showToast(`Downloaded ${completedDownloads} of ${this.importManager.downloadableLoRAs.length} LoRAs`, 'error');
+                showToast('toast.loras.downloadPartialSuccess', { 
+                    completed: completedDownloads, 
+                    total: this.importManager.downloadableLoRAs.length 
+                }, 'error');
             }
         }
         

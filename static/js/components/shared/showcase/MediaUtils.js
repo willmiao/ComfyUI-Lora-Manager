@@ -278,7 +278,7 @@ export function initMetadataPanelHandlers(container) {
                         await copyToClipboard(promptElement.textContent, 'Prompt copied to clipboard');
                     } catch (err) {
                         console.error('Copy failed:', err);
-                        showToast('Copy failed', 'error');
+                        showToast('toast.triggerWords.copyFailed', {}, 'error');
                     }
                 });
             });
@@ -432,7 +432,7 @@ export function initMediaControlHandlers(container) {
                         }, 600);
                         
                         // Show success toast
-                        showToast('Example image deleted', 'success');
+                        showToast('toast.exampleImages.deleted', {}, 'success');
 
                         // Create an update object with only the necessary properties
                         const updateData = {
@@ -456,7 +456,7 @@ export function initMediaControlHandlers(container) {
                     }
                 } catch (error) {
                     console.error('Error deleting example image:', error);
-                    showToast('Failed to delete example image', 'error');
+                    showToast('toast.exampleImages.deleteFailed', {}, 'error');
                     
                     // Reset button state
                     this.disabled = false;
@@ -536,7 +536,7 @@ function initSetPreviewHandlers(container) {
                 }
             } catch (error) {
                 console.error('Error setting preview:', error);
-                showToast('Failed to set preview image', 'error');
+                showToast('toast.exampleImages.setPreviewFailed', {}, 'error');
             } finally {
                 // Restore button state
                 this.innerHTML = '<i class="fas fa-image"></i>';

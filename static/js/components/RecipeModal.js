@@ -526,7 +526,7 @@ class RecipeModal {
                 updateRecipeMetadata(this.filePath, { title: newTitle })
                     .then(data => {
                         // Show success toast
-                        showToast('Recipe name updated successfully', 'success');
+                        showToast('toast.recipes.nameUpdated', {}, 'success');
                         
                         // Update the current recipe object
                         this.currentRecipe.title = newTitle;
@@ -596,7 +596,7 @@ class RecipeModal {
                 updateRecipeMetadata(this.filePath, { tags: newTags })
                     .then(data => {
                         // Show success toast
-                        showToast('Recipe tags updated successfully', 'success');
+                        showToast('toast.recipes.tagsUpdated', {}, 'success');
                         
                         // Update the current recipe object
                         this.currentRecipe.tags = newTags;
@@ -717,7 +717,7 @@ class RecipeModal {
                 updateRecipeMetadata(this.filePath, { source_path: newSourceUrl })
                     .then(data => {
                         // Show success toast
-                        showToast('Source URL updated successfully', 'success');
+                        showToast('toast.recipes.sourceUrlUpdated', {}, 'success');
                         
                         // Update source URL in the UI
                         sourceUrlText.textContent = newSourceUrl || 'No source URL';
@@ -778,7 +778,7 @@ class RecipeModal {
     // Fetch recipe syntax from backend and copy to clipboard
     async fetchAndCopyRecipeSyntax() {
         if (!this.recipeId) {
-            showToast('No recipe ID available', 'error');
+            showToast('toast.recipes.noRecipeId', {}, 'error');
             return;
         }
         
@@ -800,7 +800,7 @@ class RecipeModal {
             }
         } catch (error) {
             console.error('Error fetching recipe syntax:', error);
-            showToast(`Error copying recipe syntax: ${error.message}`, 'error');
+            showToast('toast.recipes.copyFailed', { message: error.message }, 'error');
         }
     }
     
@@ -817,7 +817,7 @@ class RecipeModal {
         console.log("missingLoras", missingLoras);
         
         if (missingLoras.length === 0) {
-            showToast('No missing LoRAs to download', 'info');
+            showToast('toast.recipes.noMissingLoras', {}, 'info');
             return;
         }
 
@@ -856,7 +856,7 @@ class RecipeModal {
             const validLoras = lorasWithVersionInfo.filter(lora => lora !== null);
             
             if (validLoras.length === 0) {
-                showToast('Failed to get information for missing LoRAs', 'error');
+                showToast('toast.recipes.missingLorasInfoFailed', {}, 'error');
                 return;
             }
             
@@ -902,7 +902,7 @@ class RecipeModal {
             window.importManager.downloadMissingLoras(recipeData, this.currentRecipe.id);
         } catch (error) {
             console.error("Error downloading missing LoRAs:", error);
-            showToast('Error preparing LoRAs for download', 'error');
+            showToast('toast.recipes.preparingForDownloadFailed', {}, 'error');
         } finally {
             state.loadingManager.hide();
         }
@@ -988,7 +988,7 @@ class RecipeModal {
     
     async reconnectLora(loraIndex, inputValue) {
         if (!inputValue || !inputValue.trim()) {
-            showToast('Please enter a LoRA name or syntax', 'error');
+            showToast('toast.recipes.enterLoraName', {}, 'error');
             return;
         }
         
@@ -1026,7 +1026,7 @@ class RecipeModal {
                 this.currentRecipe.loras[loraIndex] = result.updated_lora;
                 
                 // Show success message
-                showToast('LoRA reconnected successfully', 'success');
+                showToast('toast.recipes.reconnectedSuccessfully', {}, 'success');
                 
                 // Refresh modal to show updated content
                 setTimeout(() => {
@@ -1037,11 +1037,11 @@ class RecipeModal {
                     loras: this.currentRecipe.loras
                 });
             } else {
-                showToast(`Error: ${result.error}`, 'error');
+                showToast('toast.recipes.reconnectFailed', { message: result.error }, 'error');
             }
         } catch (error) {
             console.error('Error reconnecting LoRA:', error);
-            showToast(`Error reconnecting LoRA: ${error.message}`, 'error');
+            showToast('toast.recipes.reconnectFailed', { message: error.message }, 'error');
         } finally {
             state.loadingManager.hide();
         }

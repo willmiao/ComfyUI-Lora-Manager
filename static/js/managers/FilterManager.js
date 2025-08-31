@@ -287,7 +287,7 @@ export class FilterManager {
         } else {
             this.filterButton.classList.remove('active');
             if (showToastNotification) {
-                showToast('Filters cleared', 'info');
+                showToast('toast.filters.cleared', {}, 'info');
             }
         }
     }
