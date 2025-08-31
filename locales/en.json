@@ -152,12 +152,12 @@
             "selected": "{count} selected",
             "selectedSuffix": "selected",
             "viewSelected": "Click to view selected items",
-            "sendToWorkflow": "Send all selected LoRAs to workflow",
-            "copyAll": "Copy all selected LoRAs syntax",
-            "refreshAll": "Refresh CivitAI metadata for selected models",
-            "moveAll": "Move selected models to folder",
-            "deleteAll": "Delete selected models",
-            "clear": "Clear selection"
+            "sendToWorkflow": "Send to Workflow",
+            "copyAll": "Copy All",
+            "refreshAll": "Refresh All",
+            "moveAll": "Move All",
+            "deleteAll": "Delete All",
+            "clear": "Clear"
         },
         "contextMenu": {
             "refreshMetadata": "Refresh Civitai Data",
