@@ -76,8 +76,8 @@ export class AppCore {
     }
     
     // Show toast messages
-    showToast(message, type = 'info') {
-        showToast(message, type);
+    showToast(key, params = {}, type = 'info') {
+        showToast(key, params, type);
     }
     
     // Initialize common UI features based on page type

@@ -34,18 +34,18 @@ export async function copyToClipboard(text, successMessage = null) {
         }
         
         if (defaultSuccessMessage) {
-            showToast(defaultSuccessMessage, 'success');
+            showToast('uiHelpers.clipboard.copied', {}, 'success');
         }
         return true;
     } catch (err) {
         console.error('Copy failed:', err);
-        const errorMessage = translate('uiHelpers.clipboard.copyFailed', {}, 'Copy failed');
-        showToast(errorMessage, 'error');
+        showToast('uiHelpers.clipboard.copyFailed', {}, 'error');
         return false;
     }
 }
 
-export function showToast(message, type = 'info') {
+export function showToast(key, params = {}, type = 'info') {
+    const message = translate(key, params);
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.textContent = message;
@@ -376,11 +376,11 @@ export async function sendLoraToWorkflow(loraSyntax, replaceMode = false, syntax
       // Handle specific error cases
       if (registryData.error === 'Standalone Mode Active') {
         // Standalone mode - show warning with specific message
-        showToast(registryData.message || 'Cannot interact with ComfyUI in standalone mode', 'warning');
+        showToast('toast.general.cannotInteractStandalone', {}, 'warning');
         return false;
       } else {
         // Other errors - show error toast
-        showToast(registryData.message || registryData.error || 'Failed to get workflow information', 'error');
+        showToast('toast.general.failedWorkflowInfo', {}, 'error');
         return false;
       }
     }
@@ -388,8 +388,7 @@ export async function sendLoraToWorkflow(loraSyntax, replaceMode = false, syntax
     // Success case - check node count
     if (registryData.data.node_count === 0) {
       // No nodes found - show warning
-      const message = translate('uiHelpers.workflow.noSupportedNodes', {}, 'No supported target nodes found in workflow');
-      showToast(message, 'warning');
+      showToast('uiHelpers.workflow.noSupportedNodes', {}, 'warning');
       return false;
     } else if (registryData.data.node_count > 1) {
       // Multiple nodes - show selector
@@ -402,8 +401,7 @@ export async function sendLoraToWorkflow(loraSyntax, replaceMode = false, syntax
     }
   } catch (error) {
     console.error('Failed to get registry:', error);
-    const message = translate('uiHelpers.workflow.communicationFailed', {}, 'Failed to communicate with ComfyUI');
-    showToast(message, 'error');
+    showToast('uiHelpers.workflow.communicationFailed', {}, 'error');
     return false;
   }
 }
@@ -435,31 +433,30 @@ async function sendToSpecificNode(nodeIds, loraSyntax, replaceMode, syntaxType) 
     if (result.success) {
       // Use different toast messages based on syntax type
       if (syntaxType === 'recipe') {
-        const message = replaceMode ? 
-          translate('uiHelpers.workflow.recipeReplaced', {}, 'Recipe replaced in workflow') :
-          translate('uiHelpers.workflow.recipeAdded', {}, 'Recipe added to workflow');
-        showToast(message, 'success');
+        const messageKey = replaceMode ? 
+          'uiHelpers.workflow.recipeReplaced' :
+          'uiHelpers.workflow.recipeAdded';
+        showToast(messageKey, {}, 'success');
       } else {
-        const message = replaceMode ? 
-          translate('uiHelpers.workflow.loraReplaced', {}, 'LoRA replaced in workflow') :
-          translate('uiHelpers.workflow.loraAdded', {}, 'LoRA added to workflow');
-        showToast(message, 'success');
+        const messageKey = replaceMode ? 
+          'uiHelpers.workflow.loraReplaced' :
+          'uiHelpers.workflow.loraAdded';
+        showToast(messageKey, {}, 'success');
       }
       return true;
     } else {
-      const errorMessage = result.error || 
-        (syntaxType === 'recipe' ? 
-          translate('uiHelpers.workflow.recipeFailedToSend', {}, 'Failed to send recipe to workflow') :
-          translate('uiHelpers.workflow.loraFailedToSend', {}, 'Failed to send LoRA to workflow'));
-      showToast(errorMessage, 'error');
+      const messageKey = syntaxType === 'recipe' ? 
+        'uiHelpers.workflow.recipeFailedToSend' :
+        'toast.workflow.failedToSend';
+      showToast(messageKey, {}, 'error');
       return false;
     }
   } catch (error) {
     console.error('Failed to send to workflow:', error);
-    const message = syntaxType === 'recipe' ? 
-      translate('uiHelpers.workflow.recipeFailedToSend', {}, 'Failed to send recipe to workflow') :
-      translate('uiHelpers.workflow.loraFailedToSend', {}, 'Failed to send LoRA to workflow');
-    showToast(message, 'error');
+    const messageKey = syntaxType === 'recipe' ? 
+      'uiHelpers.workflow.recipeFailedToSend' :
+      'toast.workflow.failedToSend';
+    showToast(messageKey, {}, 'error');
     return false;
   }
 }
@@ -680,17 +677,15 @@ export async function openExampleImagesFolder(modelHash) {
     
     if (result.success) {
       const message = translate('uiHelpers.exampleImages.openingFolder', {}, 'Opening example images folder');
-      showToast(message, 'success');
+      showToast('uiHelpers.exampleImages.opened', {}, 'success');
       return true;
     } else {
-      const message = result.error || translate('uiHelpers.exampleImages.failedToOpen', {}, 'Failed to open example images folder');
-      showToast(message, 'error');
+      showToast('uiHelpers.exampleImages.failedToOpen', {}, 'error');
       return false;
     }
   } catch (error) {
     console.error('Failed to open example images folder:', error);
-    const message = translate('uiHelpers.exampleImages.failedToOpen', {}, 'Failed to open example images folder');
-    showToast(message, 'error');
+    showToast('uiHelpers.exampleImages.failedToOpen', {}, 'error');
     return false;
   }
 }

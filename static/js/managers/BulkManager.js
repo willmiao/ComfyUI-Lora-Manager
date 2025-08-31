@@ -283,12 +283,12 @@ export class BulkManager {
 
     async copyAllModelsSyntax() {
         if (state.currentPageType !== MODEL_TYPES.LORA) {
-            showToast('Copy syntax is only available for LoRAs', 'warning');
+            showToast('toast.loras.copyOnlyForLoras', {}, 'warning');
             return;
         }
         
         if (state.selectedModels.size === 0) {
-            showToast('No LoRAs selected', 'warning');
+            showToast('toast.loras.noLorasSelected', {}, 'warning');
             return;
         }
         
@@ -310,11 +310,11 @@ export class BulkManager {
         
         if (missingLoras.length > 0) {
             console.warn('Missing metadata for some selected loras:', missingLoras);
-            showToast(`Missing data for ${missingLoras.length} LoRAs`, 'warning');
+            showToast('toast.loras.missingDataForLoras', { count: missingLoras.length }, 'warning');
         }
         
         if (loraSyntaxes.length === 0) {
-            showToast('No valid LoRAs to copy', 'error');
+            showToast('toast.loras.noValidLorasToCopy', {}, 'error');
             return;
         }
         
@@ -323,12 +323,12 @@ export class BulkManager {
     
     async sendAllModelsToWorkflow() {
         if (state.currentPageType !== MODEL_TYPES.LORA) {
-            showToast('Send to workflow is only available for LoRAs', 'warning');
+            showToast('toast.loras.sendOnlyForLoras', {}, 'warning');
             return;
         }
         
         if (state.selectedModels.size === 0) {
-            showToast('No LoRAs selected', 'warning');
+            showToast('toast.loras.noLorasSelected', {}, 'warning');
             return;
         }
         

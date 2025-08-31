@@ -730,5 +730,71 @@
             "title": "提供反馈",
             "description": "您的反馈有助于塑造未来的更新！分享您的想法："
         }
+    },
+    "uiHelpers": {
+        "clipboard": {
+            "copied": "已复制到剪贴板",
+            "copyFailed": "复制失败"
+        },
+        "workflow": {
+            "noSupportedNodes": "工作流中未找到支持的目标节点",
+            "communicationFailed": "与 ComfyUI 通信失败",
+            "loraAdded": "LoRA 已添加到工作流",
+            "loraReplaced": "LoRA 已在工作流中替换",
+            "recipeAdded": "配方已添加到工作流",
+            "recipeReplaced": "配方已在工作流中替换",
+            "loraFailedToSend": "发送 LoRA 到工作流失败",
+            "recipeFailedToSend": "发送配方到工作流失败"
+        },
+        "nodeSelector": {
+            "recipe": "配方",
+            "lora": "LoRA",
+            "replace": "替换",
+            "append": "追加",
+            "selectTargetNode": "选择目标节点",
+            "sendToAll": "发送到全部"
+        },
+        "exampleImages": {
+            "opened": "示例图片文件夹已打开",
+            "openingFolder": "正在打开示例图片文件夹",
+            "failedToOpen": "打开示例图片文件夹失败"
+        }
+    },
+    "toast": {
+        "general": {
+            "cannotInteractStandalone": "无法在独立模式下与 ComfyUI 交互",
+            "failedWorkflowInfo": "获取工作流信息失败",
+            "pageInitFailed": "初始化 {pageType} 页面失败。请重新加载。",
+            "statisticsLoadFailed": "加载统计数据失败",
+            "unexpectedError": "发生意外错误"
+        },
+        "loras": {
+            "copyOnlyForLoras": "复制语法仅适用于 LoRA",
+            "noLorasSelected": "未选择任何 LoRA",
+            "missingDataForLoras": "{count} 个 LoRA 缺少数据",
+            "noValidLorasToCopy": "没有有效的 LoRA 可复制",
+            "sendOnlyForLoras": "发送到工作流仅适用于 LoRA",
+            "noValidLorasToSend": "没有有效的 LoRA 可发送",
+            "syntaxCopiedWithGroups": "LoRA 语法与触发词组已复制到剪贴板",
+            "downloadSuccessful": "LoRA 下载成功",
+            "allDownloadSuccessful": "所有 {count} 个 LoRA 下载成功",
+            "downloadPartialSuccess": "已下载 {completed} / {total} 个 LoRA"
+        },
+        "models": {
+            "noModelsSelected": "未选择任何模型",
+            "deletedSuccessfully": "成功删除 {count} 个{type}",
+            "deleteFailed": "错误：{error}",
+            "deleteFailedGeneral": "删除模型失败",
+            "selectedAdditional": "额外选择了 {count} 个{type}",
+            "refreshMetadataFailed": "刷新元数据失败"
+        },
+        "search": {
+            "atLeastOneOption": "至少需要选择一个搜索选项"
+        },
+        "virtual": {
+            "loadFailed": "加载项目失败",
+            "loadMoreFailed": "加载更多项目失败",
+            "loadPositionFailed": "在此位置加载项目失败"
+        }
     }
 }

@@ -703,6 +703,7 @@
             "sendToAll": "Send to All"
         },
         "exampleImages": {
+            "opened": "Example images folder opened",
             "openingFolder": "Opening example images folder",
             "failedToOpen": "Failed to open example images folder"
         }
@@ -763,6 +764,165 @@
         "feedback": {
             "title": "Provide Feedback",
             "description": "Your feedback helps shape future updates! Share your thoughts:"
+        }
+    },
+    "toast": {
+        "general": {
+            "cannotInteractStandalone": "Cannot interact with ComfyUI in standalone mode",
+            "failedWorkflowInfo": "Failed to get workflow information",
+            "pageInitFailed": "Failed to initialize {pageType} page. Please reload.",
+            "statisticsLoadFailed": "Failed to load statistics data",
+            "unexpectedError": "An unexpected error occurred"
+        },
+        "loras": {
+            "fetchFromCivitai": "Fetch from Civitai",
+            "downloadFromUrl": "Download from URL",
+            "copyOnlyForLoras": "Copy syntax is only available for LoRAs",
+            "noLorasSelected": "No LoRAs selected",
+            "missingDataForLoras": "Missing data for {count} LoRAs",
+            "noValidLorasToCopy": "No valid LoRAs to copy",
+            "sendOnlyForLoras": "Send to workflow is only available for LoRAs",
+            "noValidLorasToSend": "No valid LoRAs to send",
+            "syntaxCopiedWithGroups": "LoRA syntax with trigger word groups copied to clipboard",
+            "downloadSuccessful": "LoRAs downloaded successfully",
+            "allDownloadSuccessful": "All {count} LoRAs downloaded successfully",
+            "downloadPartialSuccess": "Downloaded {completed} of {total} LoRAs"
+        },
+        "recipes": {
+            "nameSaved": "Recipe \"{name}\" saved successfully",
+            "nameUpdated": "Recipe name updated successfully",
+            "tagsUpdated": "Recipe tags updated successfully",
+            "sourceUrlUpdated": "Source URL updated successfully",
+            "noRecipeId": "No recipe ID available",
+            "copyFailed": "Error copying recipe syntax: {message}",
+            "noMissingLoras": "No missing LoRAs to download",
+            "missingLorasInfoFailed": "Failed to get information for missing LoRAs",
+            "preparingForDownloadFailed": "Error preparing LoRAs for download",
+            "enterLoraName": "Please enter a LoRA name or syntax",
+            "reconnectedSuccessfully": "LoRA reconnected successfully",
+            "reconnectFailed": "Error reconnecting LoRA: {message}",
+            "cannotSend": "Cannot send recipe: Missing recipe ID",
+            "sendFailed": "Failed to send recipe to workflow",
+            "sendError": "Error sending recipe to workflow",
+            "cannotDelete": "Cannot delete recipe: Missing recipe ID",
+            "deleteConfirmationError": "Error showing delete confirmation",
+            "deletedSuccessfully": "Recipe deleted successfully",
+            "deleteFailed": "Error deleting recipe: {message}",
+            "cannotShare": "Cannot share recipe: Missing recipe ID",
+            "preparingForSharing": "Preparing recipe for sharing...",
+            "downloadStarted": "Recipe download started",
+            "shareError": "Error sharing recipe: {message}",
+            "sharePreparationError": "Error preparing recipe for sharing"
+        },
+        "models": {
+            "noModelsSelected": "No models selected",
+            "deletedSuccessfully": "Successfully deleted {count} {type}(s)",
+            "deleteFailed": "Error: {error}",
+            "deleteFailedGeneral": "Failed to delete models",
+            "selectedAdditional": "Selected {count} additional {type}(s)",
+            "refreshMetadataFailed": "Failed to refresh metadata",
+            "nameCannotBeEmpty": "Model name cannot be empty",
+            "nameUpdatedSuccessfully": "Model name updated successfully",
+            "nameUpdateFailed": "Failed to update model name",
+            "baseModelUpdated": "Base model updated successfully",
+            "baseModelUpdateFailed": "Failed to update base model",
+            "invalidCharactersRemoved": "Invalid characters removed from filename",
+            "filenameCannotBeEmpty": "File name cannot be empty",
+            "renameFailed": "Failed to rename file: {message}",
+            "moveFailed": "Failed to move model(s): {message}",
+            "pleaseSelectRoot": "Please select a {type} root directory"
+        },
+        "search": {
+            "atLeastOneOption": "At least one search option must be selected"
+        },
+        "settings": {
+            "loraRootsFailed": "Failed to load LoRA roots: {message}",
+            "checkpointRootsFailed": "Failed to load checkpoint roots: {message}",
+            "embeddingRootsFailed": "Failed to load embedding roots: {message}",
+            "mappingsUpdated": "Base model path mappings updated ({count} mapping{plural})",
+            "mappingsCleared": "Base model path mappings cleared",
+            "mappingSaveFailed": "Failed to save base model mappings: {message}",
+            "downloadTemplatesUpdated": "Download path templates updated",
+            "downloadTemplatesFailed": "Failed to save download path templates: {message}",
+            "settingsUpdated": "Settings updated: {setting}",
+            "compactModeToggled": "Compact Mode {state}",
+            "compactModeEnabled": "enabled",
+            "compactModeDisabled": "disabled",
+            "settingSaveFailed": "Failed to save setting: {message}",
+            "displayDensitySet": "Display Density set to {density}",
+            "languageChangeFailed": "Failed to change language: {message}",
+            "cacheCleared": "Cache files have been cleared successfully. Cache will rebuild on next action.",
+            "cacheClearFailed": "Failed to clear cache: {error}",
+            "cacheClearError": "Error clearing cache: {message}"
+        },
+        "filters": {
+            "applied": "Filters applied - showing {count} {type}",
+            "cleared": "Filters cleared"
+        },
+        "downloads": {
+            "selectVersion": "Please select a version",
+            "versionExists": "This version already exists in your library",
+            "completed": "Download completed successfully",
+            "alreadyInProgress": "Download already in progress",
+            "enterLocationFirst": "Please enter a download location first",
+            "started": "Example images download started",
+            "startFailed": "Failed to start download",
+            "paused": "Download paused",
+            "pauseFailed": "Failed to pause download",
+            "resumed": "Download resumed",
+            "resumeFailed": "Failed to resume download",
+            "imagesCompleted": "Example images {action} completed",
+            "imagesFailed": "Example images {action} failed"
+        },
+        "import": {
+            "enterRecipeName": "Please enter a recipe name",
+            "selectImageFirst": "Please select an image first",
+            "folderTreeFailed": "Failed to load folder tree",
+            "folderTreeError": "Error loading folder tree",
+            "imagesImported": "Example images imported successfully",
+            "importFailed": "Failed to import example images: {message}"
+        },
+        "triggerWords": {
+            "loadFailed": "Could not load trained words",
+            "tooLong": "Trigger word should not exceed 30 words",
+            "tooMany": "Maximum 30 trigger words allowed",
+            "alreadyExists": "This trigger word already exists",
+            "updated": "Trigger words updated successfully",
+            "updateFailed": "Failed to update trigger words",
+            "copyFailed": "Copy failed"
+        },
+        "examples": {
+            "pathUpdated": "Example images path updated successfully",
+            "deleted": "Example image deleted",
+            "deleteFailed": "Failed to delete example image",
+            "setPreviewFailed": "Failed to set preview image"
+        },
+        "virtual": {
+            "loadFailed": "Failed to load items",
+            "loadMoreFailed": "Failed to load more items",
+            "loadPositionFailed": "Failed to load items at this position"
+        },
+        "bulk": {
+            "unableToSelectAll": "Unable to select all items"
+        },
+        "tags": {
+            "tagTooLong": "Tag is too long (max {max} characters)",
+            "tooManyTags": "Too many tags (max {max} tags)",
+            "tagAlreadyExists": "Tag already exists"
+        },
+        "favorites": {
+            "added": "Added to favorites",
+            "removed": "Removed from favorites",
+            "updateFailed": "Failed to update favorite status"
+        },
+        "workflow": {
+            "checkpointNotImplemented": "Send checkpoint to workflow - feature to be implemented",
+            "failedToSend": "Failed to send LoRA to workflow"
+        },
+        "exampleImages": {
+            "checkError": "Error checking for example images",
+            "missingHash": "Missing model hash information.",
+            "noRemoteImages": "No remote example images available for this model on Civitai"
         }
     }
 }
