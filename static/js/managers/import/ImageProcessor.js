@@ -1,4 +1,5 @@
 import { showToast } from '../../utils/uiHelpers.js';
+import { translate } from '../../utils/i18nHelpers.js';
 
 export class ImageProcessor {
     constructor(importManager) {
@@ -13,7 +14,7 @@ export class ImageProcessor {
         
         // Validate file type
         if (!file.type.match('image.*')) {
-            errorElement.textContent = 'Please select an image file';
+            errorElement.textContent = translate('recipes.controls.import.errors.selectImageFile', {}, 'Please select an image file');
             return;
         }
         
@@ -32,7 +33,7 @@ export class ImageProcessor {
         
         // Validate input
         if (!input) {
-            errorElement.textContent = 'Please enter a URL or file path';
+            errorElement.textContent = translate('recipes.controls.import.errors.enterUrlOrPath', {}, 'Please enter a URL or file path');
             return;
         }
         
@@ -40,7 +41,7 @@ export class ImageProcessor {
         errorElement.textContent = '';
         
         // Show loading indicator
-        this.importManager.loadingManager.showSimpleLoading('Processing input...');
+        this.importManager.loadingManager.showSimpleLoading(translate('recipes.controls.import.processingInput', {}, 'Processing input...'));
         
         try {
             // Check if it's a URL or a local file path
@@ -156,12 +157,12 @@ export class ImageProcessor {
 
     async uploadAndAnalyzeImage() {
         if (!this.importManager.recipeImage) {
-            showToast('toast.import.selectImageFirst', {}, 'error');
+            showToast('toast.recipes.selectImageFirst', {}, 'error');
             return;
         }
         
         try {
-            this.importManager.loadingManager.showSimpleLoading('Analyzing image metadata...');
+            this.importManager.loadingManager.showSimpleLoading(translate('recipes.controls.import.analyzingMetadata', {}, 'Analyzing image metadata...'));
             
             // Create form data for upload
             const formData = new FormData();

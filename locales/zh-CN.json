@@ -290,7 +290,59 @@
         "controls": {
             "import": {
                 "action": "导入配方",
-                "title": "从图片或 URL 导入配方"
+                "title": "从图片或 URL 导入配方",
+                "urlLocalPath": "URL / 本地路径",
+                "uploadImage": "上传图片",
+                "urlSectionDescription": "输入 Civitai 图片 URL 或本地文件路径以导入为配方。",
+                "imageUrlOrPath": "图片 URL 或文件路径：",
+                "urlPlaceholder": "https://civitai.com/images/... 或 C:/path/to/image.png",
+                "fetchImage": "获取图片",
+                "uploadSectionDescription": "上传带有 LoRA 元数据的图片以导入为配方。",
+                "selectImage": "选择图片",
+                "recipeName": "配方名称",
+                "recipeNamePlaceholder": "输入配方名称",
+                "tagsOptional": "标签（可选）",
+                "addTagPlaceholder": "添加标签",
+                "addTag": "添加",
+                "noTagsAdded": "未添加标签",
+                "lorasInRecipe": "此配方中的 LoRA",
+                "downloadLocationPreview": "下载位置预览：{path}",
+                "useDefaultPath": "使用默认路径",
+                "useDefaultPathTooltip": "启用后，文件将自动使用配置的路径模板进行组织",
+                "selectLoraRoot": "选择 LoRA 根目录",
+                "targetFolderPath": "目标文件夹路径：",
+                "folderPathPlaceholder": "输入文件夹路径或从下面的树中选择...",
+                "createNewFolder": "创建新文件夹",
+                "root": "根目录",
+                "browseFolders": "浏览文件夹：",
+                "downloadAndSaveRecipe": "下载并保存配方",
+                "downloadMissingLoras": "下载缺失的 LoRA",
+                "saveRecipe": "保存配方",
+                "loraCountInfo": "({existing}/{total} in library)",
+                "processingInput": "处理输入...",
+                "analyzingMetadata": "分析图像元数据...",
+                "downloadingLoras": "下载 LoRA...",
+                "savingRecipe": "保存配方...",
+                "startingDownload": "开始下载 LoRA {current}/{total}",
+                "deletedFromCivitai": "从 Civitai 中删除",
+                "inLibrary": "在库中",
+                "notInLibrary": "不在库中",
+                "earlyAccessRequired": "此 LoRA 需要提前访问权限才能下载。",
+                "earlyAccessEnds": "提前访问权限将于 {date} 结束。",
+                "earlyAccess": "提前访问",
+                "verifyEarlyAccess": "在下载之前，请验证您是否已购买提前访问权限。",
+                "duplicateRecipesFound": "在您的库中找到 {count} 个相同的配方。",
+                "duplicateRecipesDescription": "这些配方包含相同的 LoRA，权重完全相同。",
+                "showDuplicates": "显示重复项",
+                "hideDuplicates": "隐藏重复项",
+                "loraCount": "{count} LoRA",
+                "recipePreviewAlt": "配方预览",
+                "loraPreviewAlt": "LoRA 预览",
+                "errors": {
+                    "selectImageFile": "请选择一个图像文件",
+                    "enterUrlOrPath": "请输入 URL 或文件路径",
+                    "selectLoraRoot": "请选择 LoRA 根目录"
+                }
             },
             "refresh": {
                 "title": "刷新配方列表"
@@ -832,7 +884,15 @@
             "preparingForSharing": "正在准备分享配方...",
             "downloadStarted": "配方下载已开始",
             "shareError": "分享配方出错：{message}",
-            "sharePreparationError": "准备分享配方出错"
+            "sharePreparationError": "准备分享配方出错",
+            "selectImageFirst": "请先选择图片",
+            "enterRecipeName": "请输入配方名称",
+            "processingError": "处理出错：{message}",
+            "folderBrowserError": "加载文件夹浏览器出错：{message}",
+            "recipeSaveFailed": "保存配方失败：{error}",
+            "importFailed": "导入失败：{message}",
+            "folderTreeFailed": "加载文件夹树失败",
+            "folderTreeError": "加载文件夹树出错"
         },
         "models": {
             "noModelsSelected": "未选中模型",
@@ -890,15 +950,10 @@
             "downloadError": "下载错误：{message}"
         },
         "import": {
-            "enterRecipeName": "请输入配方名称",
-            "selectImageFirst": "请先选择图片",
             "folderTreeFailed": "加载文件夹树失败",
             "folderTreeError": "加载文件夹树出错",
             "imagesImported": "示例图片导入成功",
-            "importFailed": "导入示例图片失败：{message}",
-            "recipeSaveFailed": "保存配方失败：{error}",
-            "processingError": "处理出错：{message}",
-            "folderBrowserError": "文件夹浏览器出错：{message}"
+            "importFailed": "导入示例图片失败：{message}"
         },
         "triggerWords": {
             "loadFailed": "无法加载训练词",

@@ -290,7 +290,59 @@
         "controls": {
             "import": {
                 "action": "Import Recipe",
-                "title": "Import a recipe from image or URL"
+                "title": "Import a recipe from image or URL",
+                "urlLocalPath": "URL / Local Path",
+                "uploadImage": "Upload Image",
+                "urlSectionDescription": "Input a Civitai image URL or local file path to import as a recipe.",
+                "imageUrlOrPath": "Image URL or File Path:",
+                "urlPlaceholder": "https://civitai.com/images/... or C:/path/to/image.png",
+                "fetchImage": "Fetch Image",
+                "uploadSectionDescription": "Upload an image with LoRA metadata to import as a recipe.",
+                "selectImage": "Select Image",
+                "recipeName": "Recipe Name",
+                "recipeNamePlaceholder": "Enter recipe name",
+                "tagsOptional": "Tags (optional)",
+                "addTagPlaceholder": "Add a tag",
+                "addTag": "Add",
+                "noTagsAdded": "No tags added",
+                "lorasInRecipe": "LoRAs in this Recipe",
+                "downloadLocationPreview": "Download Location Preview:",
+                "useDefaultPath": "Use Default Path",
+                "useDefaultPathTooltip": "When enabled, files are automatically organized using configured path templates",
+                "selectLoraRoot": "Select a LoRA root directory",
+                "targetFolderPath": "Target Folder Path:",
+                "folderPathPlaceholder": "Type folder path or select from tree below...",
+                "createNewFolder": "Create new folder",
+                "root": "Root",
+                "browseFolders": "Browse Folders:",
+                "downloadAndSaveRecipe": "Download & Save Recipe",
+                "downloadMissingLoras": "Download Missing LoRAs",
+                "saveRecipe": "Save Recipe",
+                "loraCountInfo": "({existing}/{total} in library)",
+                "processingInput": "Processing input...",
+                "analyzingMetadata": "Analyzing image metadata...",
+                "downloadingLoras": "Downloading LoRAs...",
+                "savingRecipe": "Saving recipe...",
+                "startingDownload": "Starting download for LoRA {current}/{total}",
+                "deletedFromCivitai": "Deleted from Civitai",
+                "inLibrary": "In Library",
+                "notInLibrary": "Not in Library",
+                "earlyAccessRequired": "This LoRA requires early access payment to download.",
+                "earlyAccessEnds": "Early access ends on {date}.",
+                "earlyAccess": "Early Access",
+                "verifyEarlyAccess": "Verify that you have purchased early access before downloading.",
+                "duplicateRecipesFound": "{count} identical recipe(s) found in your library",
+                "duplicateRecipesDescription": "These recipes contain the same LoRAs with identical weights.",
+                "showDuplicates": "Show duplicates",
+                "hideDuplicates": "Hide duplicates",
+                "loraCount": "{count} LoRAs",
+                "recipePreviewAlt": "Recipe preview",
+                "loraPreviewAlt": "LoRA preview",
+                "errors": {
+                    "selectImageFile": "Please select an image file",
+                    "enterUrlOrPath": "Please enter a URL or file path",
+                    "selectLoraRoot": "Please select a LoRA root directory"
+                }
             },
             "refresh": {
                 "title": "Refresh recipe list"
@@ -832,7 +884,15 @@
             "preparingForSharing": "Preparing recipe for sharing...",
             "downloadStarted": "Recipe download started",
             "shareError": "Error sharing recipe: {message}",
-            "sharePreparationError": "Error preparing recipe for sharing"
+            "sharePreparationError": "Error preparing recipe for sharing",
+            "selectImageFirst": "Please select an image first",
+            "enterRecipeName": "Please enter a recipe name",
+            "processingError": "Processing error: {message}",
+            "folderBrowserError": "Error loading folder browser: {message}",
+            "recipeSaveFailed": "Failed to save recipe: {error}",
+            "importFailed": "Import failed: {message}",
+            "folderTreeFailed": "Failed to load folder tree",
+            "folderTreeError": "Error loading folder tree"
         },
         "models": {
             "noModelsSelected": "No models selected",
@@ -890,15 +950,10 @@
             "downloadError": "Download error: {message}"
         },
         "import": {
-            "enterRecipeName": "Please enter a recipe name",
-            "selectImageFirst": "Please select an image first",
             "folderTreeFailed": "Failed to load folder tree",
             "folderTreeError": "Error loading folder tree",
             "imagesImported": "Example images imported successfully",
-            "importFailed": "Failed to import example images: {message}",
-            "recipeSaveFailed": "Failed to save recipe: {error}",
-            "processingError": "Processing error: {message}",
-            "folderBrowserError": "Folder browser error: {message}"
+            "importFailed": "Failed to import example images: {message}"
         },
         "triggerWords": {
             "loadFailed": "Could not load trained words",
