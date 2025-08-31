@@ -3,10 +3,6 @@
 {% block title %}{{ t('checkpoints.title') }}{% endblock %}
 {% block page_id %}checkpoints{% endblock %}
 
-{% block preload %}
-<link rel="preload" href="/loras_static/js/checkpoints.js" as="script" crossorigin="anonymous">
-{% endblock %}
-
 {% block init_title %}{{ t('initialization.checkpoints.title') }}{% endblock %}
 {% block init_message %}{{ t('initialization.checkpoints.message') }}{% endblock %}
 {% block init_check_url %}/api/checkpoints/list?page=1&page_size=1{% endblock %}

@@ -3,12 +3,6 @@
 {% block title %}{{ t('statistics.title') }} - {{ t('header.appTitle') }}{% endblock %}
 {% block page_id %}statistics{% endblock %}
 
-{% block preload %}
-{% if not is_initializing %}
-<link rel="preload" href="/loras_static/js/statistics.js" as="script" crossorigin="anonymous">
-{% endif %}
-{% endblock %}
-
 {% block head_scripts %}
 <!-- Add Chart.js for statistics page -->
 <script src="/loras_static/vendor/chart.js/chart.umd.js"></script>

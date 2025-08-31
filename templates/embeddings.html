@@ -3,10 +3,6 @@
 {% block title %}{{ t('embeddings.title') }}{% endblock %}
 {% block page_id %}embeddings{% endblock %}
 
-{% block preload %}
-<link rel="preload" href="/loras_static/js/embeddings.js" as="script" crossorigin="anonymous">
-{% endblock %}
-
 {% block init_title %}{{ t('initialization.embeddings.title') }}{% endblock %}
 {% block init_message %}{{ t('initialization.embeddings.message') }}{% endblock %}
 {% block init_check_url %}/api/embeddings/list?page=1&page_size=1{% endblock %}

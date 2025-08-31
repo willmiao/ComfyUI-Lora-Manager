@@ -12,14 +12,6 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/loras_static/images/favicon-16x16.png">
     <link rel="manifest" href="/loras_static/images/site.webmanifest">
 
-    <!-- 预加载关键资源 -->
-    <link rel="preload" href="/loras_static/css/style.css" as="style">
-    {% block preload %}{% endblock %}
-
-    <!-- 优化字体加载 -->
-    <link rel="preload" href="/loras_static/vendor/font-awesome/webfonts/fa-solid-900.woff2"
-        as="font" type="font/woff2" crossorigin>
-
     <!-- 添加性能监控 -->
     <script>
         performance.mark('page-start');

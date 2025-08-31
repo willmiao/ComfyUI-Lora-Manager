@@ -3,12 +3,6 @@
 {% block title %}{{ t('header.appTitle') }}{% endblock %}
 {% block page_id %}loras{% endblock %}
 
-{% block preload %}
-{% if not is_initializing %}
-<link rel="preload" href="/loras_static/js/loras.js" as="script" crossorigin="anonymous">
-{% endif %}
-{% endblock %}
-
 {% block init_title %}{{ t('initialization.loras.title') }}{% endblock %}
 {% block init_message %}{{ t('initialization.loras.message') }}{% endblock %}
 {% block init_check_url %}/api/loras/list?page=1&page_size=1{% endblock %}
