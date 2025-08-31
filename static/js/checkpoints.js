@@ -4,7 +4,6 @@ import { createPageControls } from './components/controls/index.js';
 import { CheckpointContextMenu } from './components/ContextMenu/index.js';
 import { ModelDuplicatesManager } from './components/ModelDuplicatesManager.js';
 import { MODEL_TYPES } from './api/apiConfig.js';
-import { initializePageI18n } from './utils/i18nHelpers.js';
 
 // Initialize the Checkpoints page
 class CheckpointsPageManager {
@@ -36,9 +35,6 @@ class CheckpointsPageManager {
         
         // Initialize common page features
         appCore.initializePageFeatures();
-        
-        // Initialize i18n for the page
-        initializePageI18n();
         
         console.log('Checkpoints Manager initialized');
     }

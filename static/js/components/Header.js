@@ -4,7 +4,7 @@ import { SearchManager } from '../managers/SearchManager.js';
 import { FilterManager } from '../managers/FilterManager.js';
 import { initPageState } from '../state/index.js';
 import { getStorageItem } from '../utils/storageHelpers.js';
-import { updateSearchPlaceholder } from '../utils/i18nHelpers.js';
+import { updateElementAttribute } from '../utils/i18nHelpers.js';
 
 /**
  * Header.js - Manages the application header behavior across different pages
@@ -49,18 +49,17 @@ export class HeaderManager {
       // Handle theme toggle
       const themeToggle = document.querySelector('.theme-toggle');
       if (themeToggle) {
-        // Set initial state based on current theme
         const currentTheme = getStorageItem('theme') || 'auto';
         themeToggle.classList.add(`theme-${currentTheme}`);
-        
-        // Set initial tooltip text
+
+        // 使用i18nHelpers更新themeToggle的title
         this.updateThemeTooltip(themeToggle, currentTheme);
-        
-        themeToggle.addEventListener('click', () => {
+
+        themeToggle.addEventListener('click', async () => {
           if (typeof toggleTheme === 'function') {
             const newTheme = toggleTheme();
-            // Update tooltip based on next toggle action
-            this.updateThemeTooltip(themeToggle, newTheme);
+            // 使用i18nHelpers更新themeToggle的title
+            await this.updateThemeTooltip(themeToggle, newTheme);
           }
         });
       }
@@ -124,41 +123,43 @@ export class HeaderManager {
       // Hide search functionality on Statistics page
       this.updateHeaderForPage();
     }
-    
-    updateHeaderForPage() {
+
+    async updateHeaderForPage() {
       const headerSearch = document.getElementById('headerSearch');
-      
+      const searchInput = headerSearch?.querySelector('#searchInput');
+      const searchButtons = headerSearch?.querySelectorAll('button');
+      const placeholderKey = 'header.search.placeholders.' + this.currentPage;
+
       if (this.currentPage === 'statistics' && headerSearch) {
         headerSearch.classList.add('disabled');
-        // Disable search functionality
-        const searchInput = headerSearch.querySelector('#searchInput');
-        const searchButtons = headerSearch.querySelectorAll('button');
         if (searchInput) {
           searchInput.disabled = true;
-          searchInput.placeholder = window.i18n?.t('header.search.notAvailable') || 'Search not available on statistics page';
+          // 使用i18nHelpers更新placeholder
+          await updateElementAttribute(searchInput, 'placeholder', 'header.search.notAvailable', {}, 'Search not available on statistics page');
         }
-        searchButtons.forEach(btn => btn.disabled = true);
+        searchButtons?.forEach(btn => btn.disabled = true);
       } else if (headerSearch) {
         headerSearch.classList.remove('disabled');
-        // Re-enable search functionality
-        const searchInput = headerSearch.querySelector('#searchInput');
-        const searchButtons = headerSearch.querySelectorAll('button');
         if (searchInput) {
           searchInput.disabled = false;
-          // Update placeholder based on current page
-          updateSearchPlaceholder(window.location.pathname);
+          // 使用i18nHelpers更新placeholder
+          await updateElementAttribute(searchInput, 'placeholder', placeholderKey, {}, '');
         }
-        searchButtons.forEach(btn => btn.disabled = false);
+        searchButtons?.forEach(btn => btn.disabled = false);
       }
     }
-    
-    updateThemeTooltip(themeToggle, currentTheme) {
-      if (!window.i18n) return;
-      
+
+    async updateThemeTooltip(themeToggle, currentTheme) {
+      if (!themeToggle) return;
+      let key;
       if (currentTheme === 'light') {
-        themeToggle.title = window.i18n.t('header.theme.switchToDark');
+        key = 'header.theme.switchToDark';
       } else if (currentTheme === 'dark') {
-        themeToggle.title = window.i18n.t('header.theme.switchToLight');
+        key = 'header.theme.switchToLight';
+      } else {
+        key = 'header.theme.toggle';
       }
+      // 使用i18nHelpers更新title
+      await updateElementAttribute(themeToggle, 'title', key, {}, '');
     }
 }

@@ -9,6 +9,8 @@ class I18nManager {
         this.locales = {};
         this.translations = {};
         this.loadedLocales = new Set();
+        this.ready = false;
+        this.readyPromise = null;
         
         // Available locales configuration
         this.availableLocales = {
@@ -25,8 +27,9 @@ class I18nManager {
         };
         
         this.currentLocale = this.getLanguageFromSettings();
-        // Initialize with current locale
-        this.initializeWithLocale(this.currentLocale);
+        
+        // Initialize with current locale and create ready promise
+        this.readyPromise = this.initializeWithLocale(this.currentLocale);
     }
     
     /**
@@ -78,12 +81,43 @@ class I18nManager {
         try {
             this.translations = await this.loadLocale(locale);
             this.currentLocale = locale;
+            this.ready = true;
+            
+            // Dispatch ready event
+            window.dispatchEvent(new CustomEvent('i18nReady', { 
+                detail: { language: locale } 
+            }));
         } catch (error) {
             console.warn(`Failed to initialize with locale ${locale}, falling back to English`, error);
             this.translations = await this.loadLocale('en');
             this.currentLocale = 'en';
+            this.ready = true;
+            
+            window.dispatchEvent(new CustomEvent('i18nReady', { 
+                detail: { language: 'en' } 
+            }));
         }
     }
+    
+    /**
+     * Wait for i18n to be ready
+     * @returns {Promise} Promise that resolves when i18n is ready
+     */
+    async waitForReady() {
+        if (this.ready) {
+            return Promise.resolve();
+        }
+        return this.readyPromise;
+    }
+    
+    /**
+     * Check if i18n is ready
+     * @returns {boolean} True if ready
+     */
+    isReady() {
+        return this.ready && this.translations && Object.keys(this.translations).length > 0;
+    }
+    
     /**
      * Get language from user settings with fallback to English
      * @returns {string} Language code
@@ -124,8 +158,12 @@ class I18nManager {
         }
         
         try {
+            // Reset ready state
+            this.ready = false;
+            
             // Load the new locale
-            await this.initializeWithLocale(languageCode);
+            this.readyPromise = this.initializeWithLocale(languageCode);
+            await this.readyPromise;
             
             // Save to localStorage
             const STORAGE_PREFIX = 'lora_manager_';
@@ -172,6 +210,12 @@ class I18nManager {
      * @returns {string} Translated text
      */
     t(key, params = {}) {
+        // If not ready, return key as fallback
+        if (!this.isReady()) {
+            console.warn(`i18n not ready, returning key: ${key}`);
+            return key;
+        }
+        
         const keys = key.split('.');
         let value = this.translations;
         
@@ -282,18 +326,11 @@ class I18nManager {
     /**
      * Initialize i18n from user settings
      * This prevents language flashing on page load
+     * @deprecated Use waitForReady() instead
      */
     async initializeFromSettings() {
-        const targetLanguage = this.getLanguageFromSettings();
-        
-        // Set language immediately without animation/transition
-        this.currentLocale = targetLanguage;
-        this.translations = this.locales[targetLanguage] || this.locales['en'];
-        
-        // Dispatch event to notify that language has been initialized
-        window.dispatchEvent(new CustomEvent('languageInitialized', { 
-            detail: { language: targetLanguage } 
-        }));
+        console.warn('initializeFromSettings() is deprecated, use waitForReady() instead');
+        return this.waitForReady();
     }
 }
 

@@ -1,7 +1,6 @@
 // Statistics page functionality
 import { appCore } from './core.js';
 import { showToast } from './utils/uiHelpers.js';
-import { initializePageI18n } from './utils/i18nHelpers.js';
 
 // Chart.js import (assuming it's available globally or via CDN)
 // If Chart.js isn't available, we'll need to add it to the project
@@ -26,9 +25,6 @@ class StatisticsManager {
         
         // Initialize charts and visualizations
         this.initializeVisualizations();
-        
-        // Initialize i18n for the page
-        initializePageI18n();
         
         this.initialized = true;
     }

@@ -89,7 +89,7 @@
             "placeholders": {
                 "loras": "搜索 LoRA...",
                 "recipes": "搜索配方...",
-                "checkpoints": "搜索Checkpoint...",
+                "checkpoints": "搜索 Checkpoint...",
                 "embeddings": "搜索 Embedding..."
             },
             "options": "搜索选项",

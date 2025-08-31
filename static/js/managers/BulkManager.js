@@ -5,7 +5,7 @@ import { modalManager } from './ModalManager.js';
 import { moveManager } from './MoveManager.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
-import { updateBulkSelectionCount } from '../utils/i18nHelpers.js';
+import { updateElementText } from '../utils/i18nHelpers.js';
 
 export class BulkManager {
     constructor() {
@@ -185,9 +185,9 @@ export class BulkManager {
         const countElement = document.getElementById('selectedCount');
         
         if (countElement) {
-            // Use i18n helper to update the count text
-            updateBulkSelectionCount(state.selectedModels.size);
-            
+            // Use i18nHelpers.js to update the count text
+            updateElementText(countElement, 'loras.bulkOperations.selected', { count: state.selectedModels.size });
+
             const existingCaret = countElement.querySelector('.dropdown-caret');
             if (existingCaret) {
                 existingCaret.className = `fas fa-caret-${this.isStripVisible ? 'down' : 'up'} dropdown-caret`;

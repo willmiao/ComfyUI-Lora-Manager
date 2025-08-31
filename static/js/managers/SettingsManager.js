@@ -4,7 +4,7 @@ import { state } from '../state/index.js';
 import { resetAndReload } from '../api/modelApiFactory.js';
 import { setStorageItem, getStorageItem } from '../utils/storageHelpers.js';
 import { DOWNLOAD_PATH_TEMPLATES, MAPPABLE_BASE_MODELS, PATH_TEMPLATE_PLACEHOLDERS, DEFAULT_PATH_TEMPLATES } from '../utils/constants.js';
-import { switchLanguage } from '../utils/i18nHelpers.js';
+// import { switchLanguage } from '../utils/i18nHelpers.js';
 
 export class SettingsManager {
     constructor() {
@@ -982,7 +982,7 @@ export class SettingsManager {
             }
             
             // Switch language immediately
-            switchLanguage(selectedLanguage);
+            // switchLanguage(selectedLanguage);
             
             showToast('Language changed successfully.', 'success');
             
