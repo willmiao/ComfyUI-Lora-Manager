@@ -543,6 +543,27 @@
                 "valuePlaceholder": "值",
                 "add": "添加"
             },
+            "triggerWords": {
+                "label": "触发词",
+                "noTriggerWordsNeeded": "无需触发词",
+                "edit": "编辑触发词",
+                "cancel": "取消编辑",
+                "save": "保存更改",
+                "addPlaceholder": "输入以添加或点击下方建议",
+                "copyWord": "复制触发词",
+                "deleteWord": "删除触发词",
+                "suggestions": {
+                    "noSuggestions": "暂无可用建议",
+                    "noTrainedWords": "此模型未找到训练词或类别标记。您可以手动输入触发词。",
+                    "classToken": "类别标记",
+                    "classTokenDescription": "添加到提示词以获得最佳效果",
+                    "wordSuggestions": "词语建议",
+                    "wordsFound": "已找到 {count} 个词",
+                    "loading": "正在加载建议...",
+                    "frequency": "出现频率",
+                    "alreadyAdded": "已添加"
+                }
+            },
             "description": {
                 "noDescription": "无模型描述信息",
                 "failedToLoad": "加载模型描述失败",

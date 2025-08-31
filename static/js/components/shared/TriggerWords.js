@@ -4,6 +4,7 @@
  * Moved to shared directory for consistency
  */
 import { showToast, copyToClipboard } from '../../utils/uiHelpers.js';
+import { translate } from '../../utils/i18nHelpers.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 
 /**
@@ -48,9 +49,9 @@ function createSuggestionDropdown(trainedWords, classTokens, existingWords = [])
     
     // No suggestions case
     if ((!trainedWords || trainedWords.length === 0) && !classTokens) {
-        header.innerHTML = '<span>No suggestions available</span>';
+        header.innerHTML = `<span>${translate('modals.model.triggerWords.suggestions.noSuggestions')}</span>`;
         dropdown.appendChild(header);
-        dropdown.innerHTML += '<div class="no-suggestions">No trained words or class tokens found in this model. You can manually enter trigger words.</div>';
+        dropdown.innerHTML += `<div class="no-suggestions">${translate('modals.model.triggerWords.suggestions.noTrainedWords')}</div>`;
         return dropdown;
     }
     
@@ -65,8 +66,8 @@ function createSuggestionDropdown(trainedWords, classTokens, existingWords = [])
         const classTokensHeader = document.createElement('div');
         classTokensHeader.className = 'metadata-suggestions-header';
         classTokensHeader.innerHTML = `
-            <span>Class Token</span>
-            <small>Add to your prompt for best results</small>
+            <span>${translate('modals.model.triggerWords.suggestions.classToken')}</span>
+            <small>${translate('modals.model.triggerWords.suggestions.classTokenDescription')}</small>
         `;
         dropdown.appendChild(classTokensHeader);
         
@@ -77,13 +78,13 @@ function createSuggestionDropdown(trainedWords, classTokens, existingWords = [])
         // Create a special item for the class token
         const tokenItem = document.createElement('div');
         tokenItem.className = `metadata-suggestion-item class-token-item ${existingWords.includes(classTokens) ? 'already-added' : ''}`;
-        tokenItem.title = `Class token: ${classTokens}`;
+        tokenItem.title = `${translate('modals.model.triggerWords.suggestions.classToken')}: ${classTokens}`;
         tokenItem.innerHTML = `
             <span class="metadata-suggestion-text">${classTokens}</span>
             <div class="metadata-suggestion-meta">
-                <span class="token-badge">Class Token</span>
+                <span class="token-badge">${translate('modals.model.triggerWords.suggestions.classToken')}</span>
                 ${existingWords.includes(classTokens) ? 
-                    '<span class="added-indicator"><i class="fas fa-check"></i></span>' : ''}
+                    `<span class="added-indicator"><i class="fas fa-check"></i></span>` : ''}
             </div>
         `;
         
@@ -119,8 +120,8 @@ function createSuggestionDropdown(trainedWords, classTokens, existingWords = [])
     // Add trained words header if we have any
     if (trainedWords && trainedWords.length > 0) {
         header.innerHTML = `
-            <span>Word Suggestions</span>
-            <small>${trainedWords.length} words found</small>
+            <span>${translate('modals.model.triggerWords.suggestions.wordSuggestions')}</span>
+            <small>${translate('modals.model.triggerWords.suggestions.wordsFound', { count: trainedWords.length })}</small>
         `;
         dropdown.appendChild(header);
         
@@ -139,7 +140,7 @@ function createSuggestionDropdown(trainedWords, classTokens, existingWords = [])
                 <span class="metadata-suggestion-text">${word}</span>
                 <div class="metadata-suggestion-meta">
                     <span class="trained-word-freq">${frequency}</span>
-                    ${isAdded ? '<span class="added-indicator"><i class="fas fa-check"></i></span>' : ''}
+                    ${isAdded ? `<span class="added-indicator"><i class="fas fa-check"></i></span>` : ''}
                 </div>
             `;
             
@@ -166,7 +167,7 @@ function createSuggestionDropdown(trainedWords, classTokens, existingWords = [])
         dropdown.appendChild(container);
     } else if (!classTokens) {
         // If we have neither class tokens nor trained words
-        dropdown.innerHTML += '<div class="no-suggestions">No word suggestions found in this model. You can manually enter trigger words.</div>';
+        dropdown.innerHTML += `<div class="no-suggestions">${translate('modals.model.triggerWords.suggestions.noTrainedWords')}</div>`;
     }
     
     return dropdown;
@@ -182,22 +183,22 @@ export function renderTriggerWords(words, filePath) {
     if (!words.length) return `
         <div class="info-item full-width trigger-words">
             <div class="trigger-words-header">
-                <label>Trigger Words</label>
-                <button class="edit-trigger-words-btn metadata-edit-btn" data-file-path="${filePath}" title="Edit trigger words">
+                <label>${translate('modals.model.triggerWords.label')}</label>
+                <button class="edit-trigger-words-btn metadata-edit-btn" data-file-path="${filePath}" title="${translate('modals.model.triggerWords.edit')}">
                     <i class="fas fa-pencil-alt"></i>
                 </button>
             </div>
             <div class="trigger-words-content">
-                <span class="no-trigger-words">No trigger word needed</span>
+                <span class="no-trigger-words">${translate('modals.model.triggerWords.noTriggerWordsNeeded')}</span>
                 <div class="trigger-words-tags" style="display:none;"></div>
             </div>
             <div class="metadata-edit-controls" style="display:none;">
-                <button class="metadata-save-btn" title="Save changes">
-                    <i class="fas fa-save"></i> Save
+                <button class="metadata-save-btn" title="${translate('modals.model.triggerWords.save')}">
+                    <i class="fas fa-save"></i> ${translate('common.actions.save')}
                 </button>
             </div>
             <div class="metadata-add-form" style="display:none;">
-                <input type="text" class="metadata-input" placeholder="Type to add or click suggestions below">
+                <input type="text" class="metadata-input" placeholder="${translate('modals.model.triggerWords.addPlaceholder')}">
             </div>
         </div>
     `;
@@ -205,20 +206,20 @@ export function renderTriggerWords(words, filePath) {
     return `
         <div class="info-item full-width trigger-words">
             <div class="trigger-words-header">
-                <label>Trigger Words</label>
-                <button class="edit-trigger-words-btn metadata-edit-btn" data-file-path="${filePath}" title="Edit trigger words">
+                <label>${translate('modals.model.triggerWords.label')}</label>
+                <button class="edit-trigger-words-btn metadata-edit-btn" data-file-path="${filePath}" title="${translate('modals.model.triggerWords.edit')}">
                     <i class="fas fa-pencil-alt"></i>
                 </button>
             </div>
             <div class="trigger-words-content">
                 <div class="trigger-words-tags">
                     ${words.map(word => `
-                        <div class="trigger-word-tag" data-word="${word}" onclick="copyTriggerWord('${word}')">
+                        <div class="trigger-word-tag" data-word="${word}" onclick="copyTriggerWord('${word}')" title="${translate('modals.model.triggerWords.copyWord')}">
                             <span class="trigger-word-content">${word}</span>
                             <span class="trigger-word-copy">
                                 <i class="fas fa-copy"></i>
                             </span>
-                            <button class="metadata-delete-btn" style="display:none;" onclick="event.stopPropagation();">
+                            <button class="metadata-delete-btn" style="display:none;" onclick="event.stopPropagation();" title="${translate('modals.model.triggerWords.deleteWord')}">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
@@ -226,12 +227,12 @@ export function renderTriggerWords(words, filePath) {
                 </div>
             </div>
             <div class="metadata-edit-controls" style="display:none;">
-                <button class="metadata-save-btn" title="Save changes">
-                    <i class="fas fa-save"></i> Save
+                <button class="metadata-save-btn" title="${translate('modals.model.triggerWords.save')}">
+                    <i class="fas fa-save"></i> ${translate('common.actions.save')}
                 </button>
             </div>
             <div class="metadata-add-form" style="display:none;">
-                <input type="text" class="metadata-input" placeholder="Type to add or click suggestions below">
+                <input type="text" class="metadata-input" placeholder="${translate('modals.model.triggerWords.addPlaceholder')}">
             </div>
         </div>
     `;
@@ -265,7 +266,7 @@ export function setupTriggerWordsEditMode() {
         
         if (isEditMode) {
             this.innerHTML = '<i class="fas fa-times"></i>'; // Change to cancel icon
-            this.title = "Cancel editing";
+            this.title = translate('modals.model.triggerWords.cancel');
             
             // Store original trigger words for potential restoration
             originalTriggerWords = Array.from(triggerWordTags).map(tag => tag.dataset.word);
@@ -302,7 +303,7 @@ export function setupTriggerWordsEditMode() {
             // Add loading indicator
             const loadingIndicator = document.createElement('div');
             loadingIndicator.className = 'metadata-loading';
-            loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading suggestions...';
+            loadingIndicator.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${translate('modals.model.triggerWords.suggestions.loading')}`;
             addForm.appendChild(loadingIndicator);
             
             // Get currently added trigger words
@@ -329,7 +330,7 @@ export function setupTriggerWordsEditMode() {
             
         } else {
             this.innerHTML = '<i class="fas fa-pencil-alt"></i>'; // Change back to edit icon
-            this.title = "Edit trigger words";
+            this.title = translate('modals.model.triggerWords.edit');
             
             // Hide edit controls and input form
             editControls.style.display = 'none';

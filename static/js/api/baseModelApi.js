@@ -1,6 +1,6 @@
 import { state, getCurrentPageState } from '../state/index.js';
 import { showToast } from '../utils/uiHelpers.js';
-import { translate } from '../utils/i18n.js';
+import { translate } from '../utils/i18nHelpers.js';
 import { getStorageItem, getSessionItem, saveMapToStorage } from '../utils/storageHelpers.js';
 import { 
     getCompleteApiConfig, 

@@ -543,6 +543,27 @@
                 "valuePlaceholder": "Value",
                 "add": "Add"
             },
+            "triggerWords": {
+                "label": "Trigger Words",
+                "noTriggerWordsNeeded": "No trigger word needed",
+                "edit": "Edit trigger words",
+                "cancel": "Cancel editing",
+                "save": "Save changes",
+                "addPlaceholder": "Type to add or click suggestions below",
+                "copyWord": "Copy trigger word",
+                "deleteWord": "Delete trigger word",
+                "suggestions": {
+                    "noSuggestions": "No suggestions available",
+                    "noTrainedWords": "No trained words or class tokens found in this model. You can manually enter trigger words.",
+                    "classToken": "Class Token",
+                    "classTokenDescription": "Add to your prompt for best results",
+                    "wordSuggestions": "Word Suggestions",
+                    "wordsFound": "{count} words found",
+                    "loading": "Loading suggestions...",
+                    "frequency": "Frequency",
+                    "alreadyAdded": "Already added"
+                }
+            },
             "description": {
                 "noDescription": "No model description available",
                 "failedToLoad": "Failed to load model description",
