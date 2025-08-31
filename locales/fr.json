@@ -63,15 +63,15 @@
             "current": "Langue",
             "select": "Sélectionner la langue",
             "select_help": "Choisissez votre langue préférée pour l'interface",
-            "english": "Anglais",
-            "chinese_simplified": "Chinois (simplifié)",
-            "chinese_traditional": "Chinois (traditionnel)",
-            "russian": "Russe",
-            "german": "Allemand",
-            "japanese": "Japonais",
-            "korean": "Coréen",
+            "english": "English",
+            "chinese_simplified": "中文（简体）",
+            "chinese_traditional": "中文（繁体）",
+            "russian": "Русский",
+            "german": "Deutsch",
+            "japanese": "日本語",
+            "korean": "한국어",
             "french": "Français",
-            "spanish": "Espagnol"
+            "spanish": "Español"
         }
     },
     "header": {

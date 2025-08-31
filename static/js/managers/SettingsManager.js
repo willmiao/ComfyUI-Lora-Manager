@@ -4,7 +4,6 @@ import { state } from '../state/index.js';
 import { resetAndReload } from '../api/modelApiFactory.js';
 import { setStorageItem, getStorageItem } from '../utils/storageHelpers.js';
 import { DOWNLOAD_PATH_TEMPLATES, MAPPABLE_BASE_MODELS, PATH_TEMPLATE_PLACEHOLDERS, DEFAULT_PATH_TEMPLATES } from '../utils/constants.js';
-// import { switchLanguage } from '../utils/i18nHelpers.js';
 
 export class SettingsManager {
     constructor() {
@@ -981,11 +980,9 @@ export class SettingsManager {
                 throw new Error('Failed to save language setting to backend');
             }
             
-            // Switch language immediately
-            // switchLanguage(selectedLanguage);
-            
-            showToast('Language changed successfully.', 'success');
-            
+            // Reload the page to apply the new language
+            window.location.reload();
+
         } catch (error) {
             showToast('Failed to change language: ' + error.message, 'error');
         }

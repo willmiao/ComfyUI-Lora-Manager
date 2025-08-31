@@ -63,15 +63,15 @@
             "current": "語言",
             "select": "選擇語言",
             "select_help": "選擇您偏好的介面語言",
-            "english": "英語",
-            "chinese_simplified": "中文（簡體）",
-            "chinese_traditional": "中文（繁體）",
-            "russian": "俄語",
-            "german": "德語",
-            "japanese": "日語",
-            "korean": "韓語",
-            "french": "法語",
-            "spanish": "西班牙語"
+            "english": "English",
+            "chinese_simplified": "中文（简体）",
+            "chinese_traditional": "中文（繁体）",
+            "russian": "Русский",
+            "german": "Deutsch",
+            "japanese": "日本語",
+            "korean": "한국어",
+            "french": "Français",
+            "spanish": "Español"
         }
     },
     "header": {
