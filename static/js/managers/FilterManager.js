@@ -282,7 +282,7 @@ export class FilterManager {
                     message = `Filtering by ${tagsCount} tag${tagsCount > 1 ? 's' : ''}`;
                 }
                 
-                showToast('filters.applied', { message }, 'success');
+                showToast('toast.filters.applied', { message }, 'success');
             }
         } else {
             this.filterButton.classList.remove('active');

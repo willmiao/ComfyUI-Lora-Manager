@@ -253,7 +253,7 @@ def test_static_code_analysis():
         'checkpoint', 'civitai_api_key', 'div', 'embedding', 'lora', 'show_only_sfw',
         'model', 'type', 'name', 'value', 'id', 'class', 'style', 'src', 'href',
         'data', 'width', 'height', 'size', 'format', 'version', 'url', 'path',
-        'file', 'folder', 'image', 'text', 'number', 'boolean', 'array', 'object'
+        'file', 'folder', 'image', 'text', 'number', 'boolean', 'array', 'object', 'non.existent.key'
     }
     
     # Extract keys from JavaScript files

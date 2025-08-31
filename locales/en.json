@@ -28,6 +28,14 @@
             "korean": "한국어",
             "french": "Français",
             "spanish": "Español"
+        },
+        "fileSize": {
+            "zero": "0 Bytes",
+            "bytes": "Bytes",
+            "kb": "KB",
+            "mb": "MB",
+            "gb": "GB",
+            "tb": "TB"
         }
     },
     "modelCard": {
@@ -74,8 +82,15 @@
         },
         "search": {
             "placeholder": "Search...",
+            "placeholders": {
+                "loras": "Search LoRAs...",
+                "recipes": "Search recipes...",
+                "checkpoints": "Search checkpoints...",
+                "embeddings": "Search embeddings..."
+            },
             "options": "Search Options",
             "searchIn": "Search In:",
+            "notAvailable": "Search not available on statistics page",
             "filters": {
                 "filename": "Filename",
                 "modelname": "Model Name",
@@ -93,7 +108,10 @@
             "clearAll": "Clear All Filters"
         },
         "theme": {
-            "toggle": "Toggle theme"
+            "toggle": "Toggle theme",
+            "switchToLight": "Switch to light theme",
+            "switchToDark": "Switch to dark theme",
+            "switchToAuto": "Switch to auto theme"
         },
         "actions": {
             "checkUpdates": "Check Updates",
@@ -165,7 +183,10 @@
     "recipes": {
         "title": "LoRA Recipes",
         "controls": {
-            "import": "Import Recipe",
+            "import": {
+                "action": "Import Recipe",
+                "title": "Import a recipe from image or URL"
+            },
             "refresh": {
                 "title": "Refresh recipe list"
             },
@@ -691,6 +712,7 @@
             "cacheClearError": "Error clearing cache: {message}"
         },
         "filters": {
+            "applied": "{message}",
             "cleared": "Filters cleared"
         },
         "downloads": {
