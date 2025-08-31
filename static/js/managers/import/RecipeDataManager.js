@@ -406,7 +406,7 @@ export class RecipeDataManager {
     proceedFromDetails() {
         // Validate recipe name
         if (!this.importManager.recipeName) {
-            showToast('Please enter a recipe name', 'error');
+            showToast('toast.import.enterRecipeName', {}, 'error');
             return;
         }
         

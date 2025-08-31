@@ -83,8 +83,7 @@ export function setupModelNameEditing(filePath) {
             sel.removeAllRanges();
             sel.addRange(range);
             
-            const text = translate('modelMetadata.validation.nameTooLong', {}, 'Model name is limited to 100 characters');
-            showToast(text, 'warning');
+            showToast('toast.models.nameTooLong', {}, 'warning');
         }
     });
     
@@ -99,7 +98,7 @@ export function setupModelNameEditing(filePath) {
         if (!newModelName) {
             // Restore original value if empty
             this.textContent = originalValue;
-            showToast('Model name cannot be empty', 'error');
+            showToast('toast.models.nameCannotBeEmpty', {}, 'error');
             exitEditMode();
             return;
         }
@@ -116,11 +115,11 @@ export function setupModelNameEditing(filePath) {
             
             await getModelApiClient().saveModelMetadata(filePath, { model_name: newModelName });
             
-            showToast('Model name updated successfully', 'success');
+            showToast('toast.models.nameUpdatedSuccessfully', {}, 'success');
         } catch (error) {
             console.error('Error updating model name:', error);
             this.textContent = originalValue; // Restore original model name
-            showToast('Failed to update model name', 'error');
+            showToast('toast.models.nameUpdateFailed', {}, 'error');
         } finally {
             exitEditMode();
         }
@@ -302,9 +301,9 @@ async function saveBaseModel(filePath, originalValue) {
     try {
         await getModelApiClient().saveModelMetadata(filePath, { base_model: newBaseModel });
         
-        showToast('Base model updated successfully', 'success');
+        showToast('toast.models.baseModelUpdated', {}, 'success');
     } catch (error) {
-        showToast('Failed to update base model', 'error');
+        showToast('toast.models.baseModelUpdateFailed', {}, 'error');
     }
 }
 
@@ -390,7 +389,7 @@ export function setupFileNameEditing(filePath) {
                 sel.addRange(range);
             }
             
-            showToast('Invalid characters removed from filename', 'warning');
+            showToast('toast.models.invalidCharactersRemoved', {}, 'warning');
         }
     });
     
@@ -405,7 +404,7 @@ export function setupFileNameEditing(filePath) {
         if (!newFileName) {
             // Restore original value if empty
             this.textContent = originalValue;
-            showToast('File name cannot be empty', 'error');
+            showToast('toast.models.filenameCannotBeEmpty', {}, 'error');
             exitEditMode();
             return;
         }
@@ -424,7 +423,7 @@ export function setupFileNameEditing(filePath) {
         } catch (error) {
             console.error('Error renaming file:', error);
             this.textContent = originalValue; // Restore original file name
-            showToast(`Failed to rename file: ${error.message}`, 'error');
+            showToast('toast.models.renameFailed', { message: error.message }, 'error');
         } finally {
             exitEditMode();
         }

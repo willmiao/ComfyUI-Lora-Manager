@@ -314,7 +314,7 @@ export class SettingsManager {
             
         } catch (error) {
             console.error('Error loading LoRA roots:', error);
-            showToast('Failed to load LoRA roots: ' + error.message, 'error');
+            showToast('toast.settings.loraRootsFailed', { message: error.message }, 'error');
         }
     }
 
@@ -353,7 +353,7 @@ export class SettingsManager {
             
         } catch (error) {
             console.error('Error loading checkpoint roots:', error);
-            showToast('Failed to load checkpoint roots: ' + error.message, 'error');
+            showToast('toast.settings.checkpointRootsFailed', { message: error.message }, 'error');
         }
     }
 
@@ -392,7 +392,7 @@ export class SettingsManager {
 
         } catch (error) {
             console.error('Error loading embedding roots:', error);
-            showToast('Failed to load embedding roots: ' + error.message, 'error');
+            showToast('toast.settings.embeddingRootsFailed', { message: error.message }, 'error');
         }
     }
 
@@ -560,14 +560,17 @@ export class SettingsManager {
             // Show success toast
             const mappingCount = Object.keys(state.global.settings.base_model_path_mappings).length;
             if (mappingCount > 0) {
-                showToast(`Base model path mappings updated (${mappingCount} mapping${mappingCount !== 1 ? 's' : ''})`, 'success');
+                showToast('toast.settings.mappingsUpdated', { 
+                    count: mappingCount,
+                    plural: mappingCount !== 1 ? 's' : ''
+                }, 'success');
             } else {
-                showToast('Base model path mappings cleared', 'success');
+                showToast('toast.settings.mappingsCleared', {}, 'success');
             }
 
         } catch (error) {
             console.error('Error saving base model mappings:', error);
-            showToast('Failed to save base model mappings: ' + error.message, 'error');
+            showToast('toast.settings.mappingSaveFailed', { message: error.message }, 'error');
         }
     }
 
@@ -744,11 +747,11 @@ export class SettingsManager {
                 throw new Error('Failed to save download path templates');
             }
 
-            showToast('Download path templates updated', 'success');
+            showToast('toast.settings.downloadTemplatesUpdated', {}, 'success');
 
         } catch (error) {
             console.error('Error saving download path templates:', error);
-            showToast('Failed to save download path templates: ' + error.message, 'error');
+            showToast('toast.settings.downloadTemplatesFailed', { message: error.message }, 'error');
         }
     }
 
@@ -809,7 +812,7 @@ export class SettingsManager {
                 }
             }
                 
-            showToast(`Settings updated: ${settingKey.replace(/_/g, ' ')}`, 'success');
+            showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
             
             // Apply frontend settings immediately
             this.applyFrontendSettings();
@@ -830,11 +833,13 @@ export class SettingsManager {
             // Recalculate layout when compact mode changes
             if (settingKey === 'compact_mode' && state.virtualScroller) {
                 state.virtualScroller.calculateLayout();
-                showToast(`Compact Mode ${value ? 'enabled' : 'disabled'}`, 'success');
+                showToast('toast.settings.compactModeToggled', { 
+                    state: value ? 'toast.settings.compactModeEnabled' : 'toast.settings.compactModeDisabled' 
+                }, 'success');
             }
             
         } catch (error) {
-            showToast('Failed to save setting: ' + error.message, 'error');
+            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
         }
     }
     
@@ -888,7 +893,7 @@ export class SettingsManager {
                     throw new Error('Failed to save setting');
                 }
                 
-                showToast(`Settings updated: ${settingKey.replace(/_/g, ' ')}`, 'success');
+                showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
             }
             
             // Apply frontend settings immediately
@@ -902,11 +907,11 @@ export class SettingsManager {
                 if (value === 'medium') densityName = "Medium";
                 if (value === 'compact') densityName = "Compact";
                 
-                showToast(`Display Density set to ${densityName}`, 'success');
+                showToast('toast.settings.displayDensitySet', { density: densityName }, 'success');
             }
             
         } catch (error) {
-            showToast('Failed to save setting: ' + error.message, 'error');
+            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
         }
     }
     
@@ -945,10 +950,10 @@ export class SettingsManager {
                 throw new Error('Failed to save setting');
             }
             
-            showToast(`Settings updated: ${settingKey.replace(/_/g, ' ')}`, 'success');
+            showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
             
         } catch (error) {
-            showToast('Failed to save setting: ' + error.message, 'error');
+            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
         }
     }
 
@@ -984,7 +989,7 @@ export class SettingsManager {
             window.location.reload();
 
         } catch (error) {
-            showToast('Failed to change language: ' + error.message, 'error');
+            showToast('toast.settings.languageChangeFailed', { message: error.message }, 'error');
         }
     }
 
@@ -1019,15 +1024,15 @@ export class SettingsManager {
             const result = await response.json();
             
             if (result.success) {
-                showToast('Cache files have been cleared successfully. Cache will rebuild on next action.', 'success');
+                showToast('toast.settings.cacheCleared', {}, 'success');
             } else {
-                showToast(`Failed to clear cache: ${result.error}`, 'error');
+                showToast('toast.settings.cacheClearFailed', { error: result.error }, 'error');
             }
             
             // Close the confirmation modal
             modalManager.closeModal('clearCacheModal');
         } catch (error) {
-            showToast(`Error clearing cache: ${error.message}`, 'error');
+            showToast('toast.settings.cacheClearError', { message: error.message }, 'error');
             modalManager.closeModal('clearCacheModal');
         }
     }

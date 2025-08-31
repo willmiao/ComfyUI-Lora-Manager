@@ -786,15 +786,91 @@
             "deleteFailed": "错误：{error}",
             "deleteFailedGeneral": "删除模型失败",
             "selectedAdditional": "额外选择了 {count} 个{type}",
-            "refreshMetadataFailed": "刷新元数据失败"
+            "refreshMetadataFailed": "刷新元数据失败",
+            "nameCannotBeEmpty": "模型名称不能为空",
+            "nameUpdatedSuccessfully": "模型名称更新成功",
+            "nameUpdateFailed": "模型名称更新失败",
+            "baseModelUpdated": "基础模型更新成功",
+            "baseModelUpdateFailed": "基础模型更新失败",
+            "invalidCharactersRemoved": "文件名中的无效字符已移除",
+            "filenameCannotBeEmpty": "文件名不能为空",
+            "renameFailed": "重命名文件失败：{message}",
+            "moveFailed": "移动模型失败：{message}",
+            "pleaseSelectRoot": "请选择 {type} 根目录",
+            "nameTooLong": "模型名称限制为100个字符"
         },
         "search": {
             "atLeastOneOption": "至少需要选择一个搜索选项"
+        },
+        "settings": {
+            "loraRootsFailed": "加载 LoRA 根目录失败：{message}",
+            "checkpointRootsFailed": "加载检查点根目录失败：{message}",
+            "embeddingRootsFailed": "加载嵌入根目录失败：{message}",
+            "mappingsUpdated": "基础模型路径映射已更新 ({count} 个映射{plural})",
+            "mappingsCleared": "基础模型路径映射已清除",
+            "mappingSaveFailed": "保存基础模型映射失败：{message}",
+            "downloadTemplatesUpdated": "下载路径模板已更新",
+            "downloadTemplatesFailed": "保存下载路径模板失败：{message}",
+            "settingsUpdated": "设置已更新：{setting}",
+            "compactModeToggled": "紧凑模式 {state}",
+            "compactModeEnabled": "已启用",
+            "compactModeDisabled": "已禁用",
+            "settingSaveFailed": "保存设置失败：{message}",
+            "displayDensitySet": "显示密度设置为 {density}",
+            "languageChangeFailed": "更改语言失败：{message}",
+            "cacheCleared": "缓存文件已成功清除。缓存将在下次操作时重建。",
+            "cacheClearFailed": "清除缓存失败：{error}",
+            "cacheClearError": "清除缓存错误：{message}"
+        },
+        "import": {
+            "enterRecipeName": "请输入配方名称",
+            "selectImageFirst": "请先选择图像",
+            "folderTreeFailed": "加载文件夹树失败",
+            "folderTreeError": "加载文件夹树错误",
+            "imagesImported": "示例图片导入成功",
+            "importFailed": "导入示例图片失败：{message}"
         },
         "virtual": {
             "loadFailed": "加载项目失败",
             "loadMoreFailed": "加载更多项目失败",
             "loadPositionFailed": "在此位置加载项目失败"
+        },
+        "triggerWords": {
+            "loadFailed": "无法加载训练词汇",
+            "tooLong": "触发词不应超过30个单词",
+            "tooMany": "最多允许30个触发词",
+            "alreadyExists": "此触发词已存在",
+            "updateSuccess": "触发词更新成功",
+            "updateFailed": "触发词更新失败",
+            "copyFailed": "复制失败"
+        },
+        "api": {
+            "fetchFailed": "获取 {type} 失败：{message}",
+            "reloadFailed": "重新加载 {type} 失败：{message}",
+            "deleteSuccess": "{type} 删除成功",
+            "deleteFailed": "删除 {type} 失败：{message}",
+            "excludeSuccess": "{type} 排除成功",
+            "excludeFailed": "排除 {type} 失败：{message}",
+            "fileNameUpdated": "文件名更新成功",
+            "fileRenameFailed": "重命名文件失败：{error}",
+            "previewUpdated": "预览图更新成功",
+            "previewUploadFailed": "上传预览图失败",
+            "refreshComplete": "{action} 完成",
+            "refreshFailed": "{action} {type} 失败",
+            "metadataUpdateComplete": "元数据更新完成",
+            "metadataFetchFailed": "获取元数据失败：{message}",
+            "bulkMetadataFailed": "刷新元数据失败：{message}",
+            "moveNotSupported": "不支持移动 {type}",
+            "alreadyInFolder": "{type} 已在所选文件夹中",
+            "moveInfo": "{message}",
+            "moveSuccess": "{type} 移动成功",
+            "bulkMoveNotSupported": "不支持移动 {type}",
+            "allAlreadyInFolder": "所选的所有 {type} 已在目标文件夹中",
+            "bulkMovePartial": "已移动 {successCount} 个 {type}，{failureCount} 个失败",
+            "bulkMoveFailures": "移动失败：\n{failures}",
+            "bulkMoveSuccess": "成功移动 {successCount} 个 {type}",
+            "exampleImagesDownloadSuccess": "示例图片下载成功！",
+            "exampleImagesDownloadFailed": "示例图片下载失败：{message}"
         }
     }
 }

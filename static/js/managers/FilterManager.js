@@ -321,7 +321,7 @@ export class FilterManager {
             await getModelApiClient().loadMoreWithVirtualScroll(true, true);
         }
         
-        showToast(`Filters cleared`, 'info');
+        showToast('toast.filters.cleared', {}, 'info');
     }
     
     loadFiltersFromStorage() {

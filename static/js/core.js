@@ -10,7 +10,7 @@ import { bulkManager } from './managers/BulkManager.js';
 import { exampleImagesManager } from './managers/ExampleImagesManager.js';
 import { helpManager } from './managers/HelpManager.js';
 import { bannerService } from './managers/BannerService.js';
-import { showToast, initTheme, initBackToTop } from './utils/uiHelpers.js';
+import { initTheme, initBackToTop } from './utils/uiHelpers.js';
 import { initializeInfiniteScroll } from './utils/infiniteScroll.js';
 import { migrateStorageItems } from './utils/storageHelpers.js';
 import { i18n } from './i18n/index.js';
@@ -73,11 +73,6 @@ export class AppCore {
     getPageType() {
         const body = document.body;
         return body.dataset.page || 'unknown';
-    }
-    
-    // Show toast messages
-    showToast(key, params = {}, type = 'info') {
-        showToast(key, params, type);
     }
     
     // Initialize common UI features based on page type

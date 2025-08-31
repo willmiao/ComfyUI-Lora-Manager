@@ -830,7 +830,8 @@
             "filenameCannotBeEmpty": "File name cannot be empty",
             "renameFailed": "Failed to rename file: {message}",
             "moveFailed": "Failed to move model(s): {message}",
-            "pleaseSelectRoot": "Please select a {type} root directory"
+            "pleaseSelectRoot": "Please select a {type} root directory",
+            "nameTooLong": "Model name is limited to 100 characters"
         },
         "search": {
             "atLeastOneOption": "At least one search option must be selected"
@@ -887,7 +888,7 @@
             "tooLong": "Trigger word should not exceed 30 words",
             "tooMany": "Maximum 30 trigger words allowed",
             "alreadyExists": "This trigger word already exists",
-            "updated": "Trigger words updated successfully",
+            "updateSuccess": "Trigger words updated successfully",
             "updateFailed": "Failed to update trigger words",
             "copyFailed": "Copy failed"
         },
@@ -923,6 +924,34 @@
             "checkError": "Error checking for example images",
             "missingHash": "Missing model hash information.",
             "noRemoteImages": "No remote example images available for this model on Civitai"
+        },
+        "api": {
+            "fetchFailed": "Failed to fetch {type}s: {message}",
+            "reloadFailed": "Failed to reload {type}s: {message}",
+            "deleteSuccess": "{type} deleted successfully",
+            "deleteFailed": "Failed to delete {type}: {message}",
+            "excludeSuccess": "{type} excluded successfully",
+            "excludeFailed": "Failed to exclude {type}: {message}",
+            "fileNameUpdated": "File name updated successfully",
+            "fileRenameFailed": "Failed to rename file: {error}",
+            "previewUpdated": "Preview updated successfully",
+            "previewUploadFailed": "Failed to upload preview image",
+            "refreshComplete": "{action} complete",
+            "refreshFailed": "Failed to {action} {type}s",
+            "metadataUpdateComplete": "Metadata update complete",
+            "metadataFetchFailed": "Failed to fetch metadata: {message}",
+            "bulkMetadataFailed": "Failed to refresh metadata: {message}",
+            "moveNotSupported": "Moving {type}s is not supported",
+            "alreadyInFolder": "{type} is already in the selected folder",
+            "moveInfo": "{message}",
+            "moveSuccess": "{type} moved successfully",
+            "bulkMoveNotSupported": "Moving {type}s is not supported",
+            "allAlreadyInFolder": "All selected {type}s are already in the target folder",
+            "bulkMovePartial": "Moved {successCount} {type}s, {failureCount} failed",
+            "bulkMoveFailures": "Failed moves:\n{failures}",
+            "bulkMoveSuccess": "Successfully moved {successCount} {type}s",
+            "exampleImagesDownloadSuccess": "Successfully downloaded example images!",
+            "exampleImagesDownloadFailed": "Failed to download example images: {message}"
         }
     }
 }

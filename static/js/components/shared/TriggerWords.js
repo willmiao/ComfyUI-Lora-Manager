@@ -26,7 +26,7 @@ async function fetchTrainedWords(filePath) {
         }
     } catch (error) {
         console.error('Error fetching trained words:', error);
-        showToast('Could not load trained words', 'error');
+        showToast('toast.triggerWords.loadFailed', {}, 'error');
         return { trainedWords: [], classTokens: null };
     }
 }
@@ -499,21 +499,21 @@ function addNewTriggerWord(word) {
     
     // Validation: Check length
     if (word.split(/\s+/).length > 30) {
-        showToast('Trigger word should not exceed 30 words', 'error');
+        showToast('toast.triggerWords.tooLong', {}, 'error');
         return;
     }
     
     // Validation: Check total number
     const currentTags = tagsContainer.querySelectorAll('.trigger-word-tag');
     if (currentTags.length >= 30) {
-        showToast('Maximum 30 trigger words allowed', 'error');
+        showToast('toast.triggerWords.tooMany', {}, 'error');
         return;
     }
     
     // Validation: Check for duplicates
     const existingWords = Array.from(currentTags).map(tag => tag.dataset.word);
     if (existingWords.includes(word)) {
-        showToast('This trigger word already exists', 'error');
+        showToast('toast.triggerWords.alreadyExists', {}, 'error');
         return;
     }
     
@@ -628,10 +628,10 @@ async function saveTriggerWords() {
             if (tagsContainer) tagsContainer.style.display = 'none';
         }
         
-        showToast('Trigger words updated successfully', 'success');
+        showToast('toast.triggerWords.updateSuccess', {}, 'success');
     } catch (error) {
         console.error('Error saving trigger words:', error);
-        showToast('Failed to update trigger words', 'error');
+        showToast('toast.triggerWords.updateFailed', {}, 'error');
     }
 }
 
@@ -644,6 +644,6 @@ window.copyTriggerWord = async function(word) {
         await copyToClipboard(word, 'Trigger word copied');
     } catch (err) {
         console.error('Copy failed:', err);
-        showToast('Copy failed', 'error');
+        showToast('toast.triggerWords.copyFailed', {}, 'error');
     }
 };

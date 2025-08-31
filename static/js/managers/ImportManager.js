@@ -261,7 +261,7 @@ export class ImportManager {
             
             this.updateTargetPath();
         } catch (error) {
-            showToast(error.message, 'error');
+            showToast('toast.import.importFailed', { message: error.message }, 'error');
         }
     }
 
@@ -350,11 +350,11 @@ export class ImportManager {
                 await this.folderTreeManager.loadTree(treeData.tree);
             } else {
                 console.error('Failed to fetch folder tree:', treeData.error);
-                showToast('Failed to load folder tree', 'error');
+                showToast('toast.import.folderTreeFailed', {}, 'error');
             }
         } catch (error) {
             console.error('Error initializing folder tree:', error);
-            showToast('Error loading folder tree', 'error');
+            showToast('toast.import.folderTreeError', {}, 'error');
         }
     }
 

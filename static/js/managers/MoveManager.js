@@ -45,7 +45,7 @@ class MoveManager {
         if (filePath === 'bulk') {
             const selectedPaths = Array.from(state.selectedModels);
             if (selectedPaths.length === 0) {
-                showToast('No models selected', 'warning');
+                showToast('toast.models.noModelsSelected', {}, 'warning');
                 return;
             }
             this.bulkFilePaths = selectedPaths;
@@ -116,7 +116,7 @@ class MoveManager {
             
         } catch (error) {
             console.error(`Error fetching ${modelConfig.displayName.toLowerCase()} roots or folders:`, error);
-            showToast(error.message, 'error');
+            showToast('toast.models.moveFailed', { message: error.message }, 'error');
         }
     }
 
@@ -131,11 +131,11 @@ class MoveManager {
                 await this.folderTreeManager.loadTree(treeData.tree);
             } else {
                 console.error('Failed to fetch folder tree:', treeData.error);
-                showToast('Failed to load folder tree', 'error');
+                showToast('toast.import.folderTreeFailed', {}, 'error');
             }
         } catch (error) {
             console.error('Error initializing folder tree:', error);
-            showToast('Error loading folder tree', 'error');
+            showToast('toast.import.folderTreeError', {}, 'error');
         }
     }
 
@@ -163,7 +163,7 @@ class MoveManager {
         const config = apiClient.apiConfig.config;
         
         if (!selectedRoot) {
-            showToast(`Please select a ${config.displayName.toLowerCase()} root directory`, 'error');
+            showToast('toast.models.pleaseSelectRoot', { type: config.displayName.toLowerCase() }, 'error');
             return;
         }
 
@@ -236,7 +236,7 @@ class MoveManager {
 
         } catch (error) {
             console.error('Error moving model(s):', error);
-            showToast('Failed to move model(s): ' + error.message, 'error');
+            showToast('toast.models.moveFailed', { message: error.message }, 'error');
         }
     }
 }

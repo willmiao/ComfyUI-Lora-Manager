@@ -156,7 +156,7 @@ export class ImageProcessor {
 
     async uploadAndAnalyzeImage() {
         if (!this.importManager.recipeImage) {
-            showToast('Please select an image first', 'error');
+            showToast('toast.import.selectImageFirst', {}, 'error');
             return;
         }
         

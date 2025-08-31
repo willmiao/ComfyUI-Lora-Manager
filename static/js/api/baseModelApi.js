@@ -76,7 +76,7 @@ export class BaseModelApiClient {
             
         } catch (error) {
             console.error(`Error fetching ${this.apiConfig.config.displayName}s:`, error);
-            showToast(`Failed to fetch ${this.apiConfig.config.displayName}s: ${error.message}`, 'error');
+            showToast('toast.api.fetchFailed', { type: this.apiConfig.config.displayName, message: error.message }, 'error');
             throw error;
         }
     }
@@ -110,7 +110,7 @@ export class BaseModelApiClient {
             return result;
         } catch (error) {
             console.error(`Error reloading ${this.apiConfig.config.displayName}s:`, error);
-            showToast(`Failed to reload ${this.apiConfig.config.displayName}s: ${error.message}`, 'error');
+            showToast('toast.api.reloadFailed', { type: this.apiConfig.config.displayName, message: error.message }, 'error');
             throw error;
         } finally {
             pageState.isLoading = false;
@@ -138,14 +138,14 @@ export class BaseModelApiClient {
                 if (state.virtualScroller) {
                     state.virtualScroller.removeItemByFilePath(filePath);
                 }
-                showToast(`${this.apiConfig.config.displayName} deleted successfully`, 'success');
+                showToast('toast.api.deleteSuccess', { type: this.apiConfig.config.displayName }, 'success');
                 return true;
             } else {
                 throw new Error(data.error || `Failed to delete ${this.apiConfig.config.singularName}`);
             }
         } catch (error) {
             console.error(`Error deleting ${this.apiConfig.config.singularName}:`, error);
-            showToast(`Failed to delete ${this.apiConfig.config.singularName}: ${error.message}`, 'error');
+            showToast('toast.api.deleteFailed', { type: this.apiConfig.config.singularName, message: error.message }, 'error');
             return false;
         } finally {
             state.loadingManager.hide();
@@ -172,14 +172,14 @@ export class BaseModelApiClient {
                 if (state.virtualScroller) {
                     state.virtualScroller.removeItemByFilePath(filePath);
                 }
-                showToast(`${this.apiConfig.config.displayName} excluded successfully`, 'success');
+                showToast('toast.api.excludeSuccess', { type: this.apiConfig.config.displayName }, 'success');
                 return true;
             } else {
                 throw new Error(data.error || `Failed to exclude ${this.apiConfig.config.singularName}`);
             }
         } catch (error) {
             console.error(`Error excluding ${this.apiConfig.config.singularName}:`, error);
-            showToast(`Failed to exclude ${this.apiConfig.config.singularName}: ${error.message}`, 'error');
+            showToast('toast.api.excludeFailed', { type: this.apiConfig.config.singularName, message: error.message }, 'error');
             return false;
         } finally {
             state.loadingManager.hide();
@@ -208,9 +208,9 @@ export class BaseModelApiClient {
                     preview_url: result.new_preview_path
                 });
     
-                showToast('File name updated successfully', 'success');
+                showToast('toast.api.fileNameUpdated', {}, 'success');
             } else {
-                showToast('Failed to rename file: ' + (result.error || 'Unknown error'), 'error');
+                showToast('toast.api.fileRenameFailed', { error: result.error || 'Unknown error' }, 'error');
             }
 
             return result;
@@ -272,10 +272,10 @@ export class BaseModelApiClient {
             };
 
             state.virtualScroller.updateSingleItem(filePath, updateData);
-            showToast('Preview updated successfully', 'success');
+            showToast('toast.api.previewUpdated', {}, 'success');
         } catch (error) {
             console.error('Error uploading preview:', error);
-            showToast('Failed to upload preview image', 'error');
+            showToast('toast.api.previewUploadFailed', {}, 'error');
         } finally {
             state.loadingManager.hide();
         }
@@ -322,10 +322,10 @@ export class BaseModelApiClient {
 
             resetAndReload(true);
             
-            showToast(`${fullRebuild ? 'Full rebuild' : 'Refresh'} complete`, 'success');
+            showToast('toast.api.refreshComplete', { action: fullRebuild ? 'Full rebuild' : 'Refresh' }, 'success');
         } catch (error) {
             console.error('Refresh failed:', error);
-            showToast(`Failed to ${fullRebuild ? 'rebuild' : 'refresh'} ${this.apiConfig.config.displayName}s`, 'error');
+            showToast('toast.api.refreshFailed', { action: fullRebuild ? 'rebuild' : 'refresh', type: this.apiConfig.config.displayName }, 'error');
         } finally {
             state.loadingManager.hide();
             state.loadingManager.restoreProgressBar();
@@ -353,14 +353,14 @@ export class BaseModelApiClient {
                     state.virtualScroller.updateSingleItem(filePath, data.metadata);
                 }
 
-                showToast('Metadata refreshed successfully', 'success');
+                showToast('toast.api.metadataRefreshed', {}, 'success');
                 return true;
             } else {
                 throw new Error(data.error || 'Failed to refresh metadata');
             }
         } catch (error) {
             console.error('Error refreshing metadata:', error);
-            showToast(error.message, 'error');
+            showToast('toast.api.metadataRefreshFailed', { message: error.message }, 'error');
             return false;
         } finally {
             state.loadingManager.hide();
@@ -432,10 +432,10 @@ export class BaseModelApiClient {
                 await operationComplete;
 
                 resetAndReload(false);
-                showToast('Metadata update complete', 'success');
+                showToast('toast.api.metadataUpdateComplete', {}, 'success');
             } catch (error) {
                 console.error('Error fetching metadata:', error);
-                showToast('Failed to fetch metadata: ' + error.message, 'error');
+                showToast('toast.api.metadataFetchFailed', { message: error.message }, 'error');
             } finally {
                 if (ws) {
                     ws.close();
@@ -534,7 +534,7 @@ export class BaseModelApiClient {
 
         } catch (error) {
             console.error('Error in bulk metadata refresh:', error);
-            showToast(`Failed to refresh metadata: ${error.message}`, 'error');
+            showToast('toast.api.bulkMetadataFailed', { message: error.message }, 'error');
             await progressController.complete('Operation failed');
             throw error;
         }
@@ -708,11 +708,11 @@ export class BaseModelApiClient {
     async moveSingleModel(filePath, targetPath) {
         // Only allow move if supported
         if (!this.apiConfig.config.supportsMove) {
-            showToast(`Moving ${this.apiConfig.config.displayName}s is not supported`, 'warning');
+            showToast('toast.api.moveNotSupported', { type: this.apiConfig.config.displayName }, 'warning');
             return null;
         }
         if (filePath.substring(0, filePath.lastIndexOf('/')) === targetPath) {
-            showToast(`${this.apiConfig.config.displayName} is already in the selected folder`, 'info');
+            showToast('toast.api.alreadyInFolder', { type: this.apiConfig.config.displayName }, 'info');
             return null;
         }
 
@@ -737,9 +737,9 @@ export class BaseModelApiClient {
         }
 
         if (result && result.message) {
-            showToast(result.message, 'info');
+            showToast('toast.api.moveInfo', { message: result.message }, 'info');
         } else {
-            showToast(`${this.apiConfig.config.displayName} moved successfully`, 'success');
+            showToast('toast.api.moveSuccess', { type: this.apiConfig.config.displayName }, 'success');
         }
 
         if (result.success) {
@@ -753,7 +753,7 @@ export class BaseModelApiClient {
 
     async moveBulkModels(filePaths, targetPath) {
         if (!this.apiConfig.config.supportsMove) {
-            showToast(`Moving ${this.apiConfig.config.displayName}s is not supported`, 'warning');
+            showToast('toast.api.bulkMoveNotSupported', { type: this.apiConfig.config.displayName }, 'warning');
             return [];
         }
         const movedPaths = filePaths.filter(path => {
@@ -761,7 +761,7 @@ export class BaseModelApiClient {
         });
 
         if (movedPaths.length === 0) {
-            showToast(`All selected ${this.apiConfig.config.displayName}s are already in the target folder`, 'info');
+            showToast('toast.api.allAlreadyInFolder', { type: this.apiConfig.config.displayName }, 'info');
             return [];
         }
 
@@ -784,7 +784,11 @@ export class BaseModelApiClient {
 
         if (result.success) {
             if (result.failure_count > 0) {
-                showToast(`Moved ${result.success_count} ${this.apiConfig.config.displayName}s, ${result.failure_count} failed`, 'warning');
+                showToast('toast.api.bulkMovePartial', { 
+                    successCount: result.success_count, 
+                    type: this.apiConfig.config.displayName, 
+                    failureCount: result.failure_count 
+                }, 'warning');
                 console.log('Move operation results:', result.results);
                 const failedFiles = result.results
                     .filter(r => !r.success)
@@ -796,10 +800,13 @@ export class BaseModelApiClient {
                     const failureMessage = failedFiles.length <= 3 
                         ? failedFiles.join('\n')
                         : failedFiles.slice(0, 3).join('\n') + `\n(and ${failedFiles.length - 3} more)`;
-                    showToast(`Failed moves:\n${failureMessage}`, 'warning', 6000);
+                    showToast('toast.api.bulkMoveFailures', { failures: failureMessage }, 'warning', 6000);
                 }
             } else {
-                showToast(`Successfully moved ${result.success_count} ${this.apiConfig.config.displayName}s`, 'success');
+                showToast('toast.api.bulkMoveSuccess', { 
+                    successCount: result.success_count, 
+                    type: this.apiConfig.config.displayName 
+                }, 'success');
             }
             
             // Return the results array with original_file_path and new_file_path
@@ -931,12 +938,12 @@ export class BaseModelApiClient {
                 // Wait for the operation to complete via WebSocket
                 await operationComplete;
                 
-                showToast('Successfully downloaded example images!', 'success');
+                showToast('toast.api.exampleImagesDownloadSuccess', {}, 'success');
                 return true;
                 
             } catch (error) {
                 console.error('Error downloading example images:', error);
-                showToast(`Failed to download example images: ${error.message}`, 'error');
+                showToast('toast.api.exampleImagesDownloadFailed', { message: error.message }, 'error');
                 throw error;
             } finally {
                 if (ws) {
