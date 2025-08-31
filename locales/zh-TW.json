@@ -74,6 +74,39 @@
             "spanish": "Español"
         }
     },
+    "modelCard": {
+        "actions": {
+            "addToFavorites": "新增到收藏",
+            "removeFromFavorites": "從收藏中移除",
+            "viewOnCivitai": "在 Civitai 上檢視",
+            "notAvailableFromCivitai": "Civitai 上不可用",
+            "sendToWorkflow": "傳送到 ComfyUI（點擊：附加，Shift+點擊：取代）",
+            "copyLoRASyntax": "複製 LoRA 語法",
+            "checkpointNameCopied": "Checkpoint 名稱已複製",
+            "toggleBlur": "切換模糊",
+            "show": "顯示",
+            "openExampleImages": "開啟範例圖片資料夾"
+        },
+        "nsfw": {
+            "matureContent": "成人內容",
+            "xxxRated": "XXX 級內容",
+            "xRated": "X 級內容",
+            "rRated": "R 級內容"
+        },
+        "favorites": {
+            "added": "已新增到收藏",
+            "removed": "已從收藏中移除",
+            "updateFailed": "更新收藏狀態失敗"
+        },
+        "sendToWorkflow": {
+            "checkpointNotImplemented": "傳送 Checkpoint 到工作流程 - 功能待實作"
+        },
+        "exampleImages": {
+            "checkError": "檢查範例圖片時出錯",
+            "missingHash": "缺少模型雜湊資訊。",
+            "noRemoteImagesAvailable": "該模型在 Civitai 上沒有可用的遠端範例圖片"
+        }
+    },
     "header": {
         "appTitle": "LoRA 管理器",
         "navigation": {
@@ -341,6 +374,77 @@
                     "updated": "模型描述已更新",
                     "updateFailed": "更新模型描述失敗"
                 }
+            },
+            "actions": {
+                "editModelName": "編輯模型名稱",
+                "editFileName": "編輯檔案名稱",
+                "editBaseModel": "編輯基礎模型",
+                "viewOnCivitai": "在 Civitai 上檢視",
+                "viewOnCivitaiText": "在 Civitai 上檢視",
+                "viewCreatorProfile": "檢視創作者資料"
+            },
+            "metadata": {
+                "version": "版本",
+                "fileName": "檔案名稱",
+                "location": "位置",
+                "baseModel": "基礎模型",
+                "size": "大小",
+                "unknown": "未知",
+                "usageTips": "使用技巧",
+                "additionalNotes": "附加說明",
+                "notesHint": "按 Enter 儲存，Shift+Enter 換行",
+                "addNotesPlaceholder": "在此新增您的說明...",
+                "aboutThisVersion": "關於此版本",
+                "validation": {
+                    "nameTooLong": "模型名稱最多100個字元",
+                    "nameEmpty": "模型名稱不能為空"
+                },
+                "messages": {
+                    "nameUpdated": "模型名稱更新成功",
+                    "nameUpdateFailed": "更新模型名稱失敗",
+                    "baseModelUpdated": "基礎模型更新成功",
+                    "baseModelUpdateFailed": "更新基礎模型失敗"
+                }
+            },
+            "notes": {
+                "saved": "說明儲存成功",
+                "saveFailed": "儲存說明失敗"
+            },
+            "usageTips": {
+                "addPresetParameter": "新增預設參數...",
+                "strengthMin": "強度最小值",
+                "strengthMax": "強度最大值",
+                "strength": "強度",
+                "clipSkip": "Clip Skip",
+                "valuePlaceholder": "值",
+                "add": "新增"
+            },
+            "tabs": {
+                "examples": "範例圖片",
+                "description": "模型描述",
+                "recipes": "配方"
+            },
+            "loading": {
+                "exampleImages": "正在載入範例圖片...",
+                "description": "正在載入模型描述...",
+                "recipes": "正在載入配方...",
+                "examples": "正在載入範例..."
+            },
+            "tags": {
+                "messages": {
+                    "updated": "標籤更新成功",
+                    "updateFailed": "更新標籤失敗"
+                },
+                "validation": {
+                    "maxLength": "標籤長度不能超過30個字元",
+                    "maxCount": "最多允許30個標籤",
+                    "duplicate": "該標籤已存在"
+                }
+            },
+            "recipeTab": {
+                "noRecipesFound": "未找到使用此 LoRA 的配方。",
+                "loadingRecipes": "正在載入配方...",
+                "errorLoadingRecipes": "載入配方失敗。請稍後重試。"
             }
         }
     },

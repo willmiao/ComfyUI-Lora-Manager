@@ -341,6 +341,66 @@
                     "updated": "Modellbeschreibung aktualisiert",
                     "updateFailed": "Fehler beim Aktualisieren der Modellbeschreibung"
                 }
+            },
+            "actions": {
+                "editModelName": "Modellname bearbeiten",
+                "editFileName": "Dateiname bearbeiten",
+                "editBaseModel": "Basismodell bearbeiten",
+                "viewOnCivitai": "Auf Civitai anzeigen",
+                "viewOnCivitaiText": "Auf Civitai anzeigen",
+                "viewCreatorProfile": "Ersteller-Profil anzeigen"
+            },
+            "metadata": {
+                "version": "Version",
+                "fileName": "Dateiname",
+                "location": "Standort",
+                "baseModel": "Basismodell",
+                "size": "Größe",
+                "unknown": "Unbekannt",
+                "usageTips": "Verwendungstipps",
+                "additionalNotes": "Zusätzliche Notizen",
+                "notesHint": "Enter zum Speichern, Shift+Enter für neue Zeile",
+                "addNotesPlaceholder": "Fügen Sie hier Ihre Notizen hinzu...",
+                "aboutThisVersion": "Über diese Version",
+                "validation": {
+                    "nameTooLong": "Modellname ist auf 100 Zeichen begrenzt",
+                    "nameEmpty": "Modellname darf nicht leer sein"
+                },
+                "messages": {
+                    "nameUpdated": "Modellname erfolgreich aktualisiert",
+                    "nameUpdateFailed": "Aktualisierung des Modellnamens fehlgeschlagen",
+                    "baseModelUpdated": "Basismodell erfolgreich aktualisiert",
+                    "baseModelUpdateFailed": "Aktualisierung des Basismodells fehlgeschlagen"
+                }
+            },
+            "notes": {
+                "saved": "Notizen erfolgreich gespeichert",
+                "saveFailed": "Speichern der Notizen fehlgeschlagen"
+            },
+            "usageTips": {
+                "addPresetParameter": "Voreingestellten Parameter hinzufügen...",
+                "strengthMin": "Stärke Min",
+                "strengthMax": "Stärke Max",
+                "strength": "Stärke",
+                "clipSkip": "Clip Skip",
+                "valuePlaceholder": "Wert",
+                "add": "Hinzufügen"
+            },
+            "tags": {
+                "messages": {
+                    "updated": "Tags erfolgreich aktualisiert",
+                    "updateFailed": "Aktualisierung der Tags fehlgeschlagen"
+                },
+                "validation": {
+                    "maxLength": "Tag sollte 30 Zeichen nicht überschreiten",
+                    "maxCount": "Maximal 30 Tags erlaubt",
+                    "duplicate": "Dieser Tag existiert bereits"
+                }
+            },
+            "recipeTab": {
+                "noRecipesFound": "Keine Rezepte gefunden, die diese LoRA verwenden.",
+                "loadingRecipes": "Rezepte werden geladen...",
+                "errorLoadingRecipes": "Fehler beim Laden der Rezepte. Bitte versuchen Sie es später erneut."
             }
         }
     },
@@ -463,5 +523,38 @@
         "filter": "Modelle nach verschiedenen Kriterien filtern",
         "sort": "Modelle nach verschiedenen Attributen sortieren",
         "backToTop": "Zurück zum Seitenanfang scrollen"
+    },
+    "modelCard": {
+        "actions": {
+            "addToFavorites": "Zu Favoriten hinzufügen",
+            "removeFromFavorites": "Aus Favoriten entfernen",
+            "viewOnCivitai": "Auf Civitai anzeigen",
+            "notAvailableFromCivitai": "Nicht verfügbar auf Civitai",
+            "sendToWorkflow": "An ComfyUI senden (Klick: Anhängen, Shift+Klick: Ersetzen)",
+            "copyLoRASyntax": "LoRA-Syntax kopieren",
+            "checkpointNameCopied": "Checkpoint-Name kopiert",
+            "toggleBlur": "Unschärfe umschalten",
+            "show": "Anzeigen",
+            "openExampleImages": "Beispielbilder-Ordner öffnen"
+        },
+        "nsfw": {
+            "matureContent": "Erwachseneninhalte",
+            "xxxRated": "XXX-bewertete Inhalte",
+            "xRated": "X-bewertete Inhalte",
+            "rRated": "R-bewertete Inhalte"
+        },
+        "favorites": {
+            "added": "Zu Favoriten hinzugefügt",
+            "removed": "Aus Favoriten entfernt",
+            "updateFailed": "Favoriten-Status aktualisierung fehlgeschlagen"
+        },
+        "sendToWorkflow": {
+            "checkpointNotImplemented": "Checkpoint an Workflow senden - Funktion noch zu implementieren"
+        },
+        "exampleImages": {
+            "checkError": "Fehler beim Überprüfen der Beispielbilder",
+            "missingHash": "Fehlende Modell-Hash-Informationen.",
+            "noRemoteImagesAvailable": "Keine Remote-Beispielbilder für dieses Modell auf Civitai verfügbar"
+        }
     }
 }

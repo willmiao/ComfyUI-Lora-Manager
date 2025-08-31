@@ -5,7 +5,7 @@
 import { showToast } from '../../utils/uiHelpers.js';
 import { BASE_MODELS } from '../../utils/constants.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
-import { safeTranslate } from '../../utils/i18nHelpers.js';
+import { translate } from '../../utils/i18nHelpers.js';
 
 /**
  * Set up model name editing functionality
@@ -83,7 +83,7 @@ export function setupModelNameEditing(filePath) {
             sel.removeAllRanges();
             sel.addRange(range);
             
-            const text = safeTranslate('modelMetadata.validation.nameTooLong', {}, 'Model name is limited to 100 characters');
+            const text = translate('modelMetadata.validation.nameTooLong', {}, 'Model name is limited to 100 characters');
             showToast(text, 'warning');
         }
     });

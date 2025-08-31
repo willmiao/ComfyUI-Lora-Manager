@@ -341,6 +341,66 @@
                     "updated": "モデルの説明を更新しました",
                     "updateFailed": "モデルの説明の更新に失敗しました"
                 }
+            },
+            "actions": {
+                "editModelName": "モデル名を編集",
+                "editFileName": "ファイル名を編集",
+                "editBaseModel": "ベースモデルを編集",
+                "viewOnCivitai": "Civitaiで表示",
+                "viewOnCivitaiText": "Civitaiで表示",
+                "viewCreatorProfile": "クリエイタープロフィールを表示"
+            },
+            "metadata": {
+                "version": "バージョン",
+                "fileName": "ファイル名",
+                "location": "場所",
+                "baseModel": "ベースモデル",
+                "size": "サイズ",
+                "unknown": "不明",
+                "usageTips": "使用のコツ",
+                "additionalNotes": "追加メモ",
+                "notesHint": "Enterで保存、Shift+Enterで改行",
+                "addNotesPlaceholder": "ここにメモを追加...",
+                "aboutThisVersion": "このバージョンについて",
+                "validation": {
+                    "nameTooLong": "モデル名は100文字以内に制限されています",
+                    "nameEmpty": "モデル名を空にすることはできません"
+                },
+                "messages": {
+                    "nameUpdated": "モデル名が正常に更新されました",
+                    "nameUpdateFailed": "モデル名の更新に失敗しました",
+                    "baseModelUpdated": "ベースモデルが正常に更新されました",
+                    "baseModelUpdateFailed": "ベースモデルの更新に失敗しました"
+                }
+            },
+            "notes": {
+                "saved": "メモが正常に保存されました",
+                "saveFailed": "メモの保存に失敗しました"
+            },
+            "usageTips": {
+                "addPresetParameter": "プリセットパラメータを追加...",
+                "strengthMin": "強度最小",
+                "strengthMax": "強度最大",
+                "strength": "強度",
+                "clipSkip": "Clip Skip",
+                "valuePlaceholder": "値",
+                "add": "追加"
+            },
+            "tags": {
+                "messages": {
+                    "updated": "タグが正常に更新されました",
+                    "updateFailed": "タグの更新に失敗しました"
+                },
+                "validation": {
+                    "maxLength": "タグは30文字を超えてはいけません",
+                    "maxCount": "最大30個のタグが許可されています",
+                    "duplicate": "このタグは既に存在します"
+                }
+            },
+            "recipeTab": {
+                "noRecipesFound": "このLoRAを使用するレシピが見つかりません。",
+                "loadingRecipes": "レシピを読み込み中...",
+                "errorLoadingRecipes": "レシピの読み込みに失敗しました。後でもう一度お試しください。"
             }
         }
     },
@@ -463,5 +523,38 @@
         "filter": "様々な条件でモデルをフィルター",
         "sort": "異なる属性でモデルをソート",
         "backToTop": "ページトップにスクロール"
+    },
+    "modelCard": {
+        "actions": {
+            "addToFavorites": "お気に入りに追加",
+            "removeFromFavorites": "お気に入りから削除",
+            "viewOnCivitai": "Civitaiで表示",
+            "notAvailableFromCivitai": "Civitaiで利用不可",
+            "sendToWorkflow": "ComfyUIに送信（クリック：追加、Shift+クリック：置換）",
+            "copyLoRASyntax": "LoRA構文をコピー",
+            "checkpointNameCopied": "チェックポイント名をコピーしました",
+            "toggleBlur": "ぼかしを切り替え",
+            "show": "表示",
+            "openExampleImages": "サンプル画像フォルダを開く"
+        },
+        "nsfw": {
+            "matureContent": "成人向けコンテンツ",
+            "xxxRated": "XXX指定コンテンツ",
+            "xRated": "X指定コンテンツ",
+            "rRated": "R指定コンテンツ"
+        },
+        "favorites": {
+            "added": "お気に入りに追加しました",
+            "removed": "お気に入りから削除しました",
+            "updateFailed": "お気に入り状態の更新に失敗しました"
+        },
+        "sendToWorkflow": {
+            "checkpointNotImplemented": "チェックポイントをワークフローに送信 - 機能実装予定"
+        },
+        "exampleImages": {
+            "checkError": "サンプル画像の確認でエラーが発生しました",
+            "missingHash": "モデルハッシュ情報が不足しています。",
+            "noRemoteImagesAvailable": "このモデルのリモートサンプル画像はCivitaiで利用できません"
+        }
     }
 }

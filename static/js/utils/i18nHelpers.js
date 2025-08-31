@@ -23,29 +23,6 @@ export function translate(key, params = {}, fallback = null) {
 }
 
 /**
- * Safe translation function. Assumes i18n is already ready.
- * @param {string} key - Translation key
- * @param {Object} params - Parameters for interpolation
- * @param {string} fallback - Fallback text if translation fails
- * @returns {string} Translated text
- */
-export function safeTranslate(key, params = {}, fallback = null) {
-    if (!window.i18n) {
-        console.warn('i18n not available');
-        return fallback || key;
-    }
-    
-    const translation = window.i18n.t(key, params);
-    
-    // If translation returned the key (meaning not found), use fallback
-    if (translation === key && fallback) {
-        return fallback;
-    }
-    
-    return translation;
-}
-
-/**
  * Update element text with translation
  * @param {HTMLElement|string} element - Element or selector
  * @param {string} key - Translation key
@@ -56,7 +33,7 @@ export function updateElementText(element, key, params = {}, fallback = null) {
     const el = typeof element === 'string' ? document.querySelector(element) : element;
     if (!el) return;
     
-    const text = safeTranslate(key, params, fallback);
+    const text = translate(key, params, fallback);
     el.textContent = text;
 }
 
@@ -72,7 +49,7 @@ export function updateElementAttribute(element, attribute, key, params = {}, fal
     const el = typeof element === 'string' ? document.querySelector(element) : element;
     if (!el) return;
     
-    const text = safeTranslate(key, params, fallback);
+    const text = translate(key, params, fallback);
     el.setAttribute(attribute, text);
 }
 

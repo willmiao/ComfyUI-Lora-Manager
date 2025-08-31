@@ -8,7 +8,7 @@ import { NSFW_LEVELS } from '../../utils/constants.js';
 import { MODEL_TYPES } from '../../api/apiConfig.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { showDeleteModal } from '../../utils/modalUtils.js';
-import { safeTranslate } from '../../utils/i18nHelpers.js';
+import { translate } from '../../utils/i18nHelpers.js';
 
 // Add global event delegation handlers
 export function setupModelCardEventDelegation(modelType) {
@@ -143,15 +143,15 @@ async function toggleFavorite(card) {
         });
 
         if (newFavoriteState) {
-            const addedText = safeTranslate('modelCard.favorites.added', {}, 'Added to favorites');
+            const addedText = translate('modelCard.favorites.added', {}, 'Added to favorites');
             showToast(addedText, 'success');
         } else {
-            const removedText = safeTranslate('modelCard.favorites.removed', {}, 'Removed from favorites');
+            const removedText = translate('modelCard.favorites.removed', {}, 'Removed from favorites');
             showToast(removedText, 'success');
         }
     } catch (error) {
         console.error('Failed to update favorite status:', error);
-        const errorText = safeTranslate('modelCard.favorites.updateFailed', {}, 'Failed to update favorite status');
+        const errorText = translate('modelCard.favorites.updateFailed', {}, 'Failed to update favorite status');
         showToast(errorText, 'error');
     }
 }
@@ -164,7 +164,7 @@ function handleSendToWorkflow(card, replaceMode, modelType) {
         sendLoraToWorkflow(loraSyntax, replaceMode, 'lora');
     } else {
         // Checkpoint send functionality - to be implemented
-        const text = safeTranslate('modelCard.sendToWorkflow.checkpointNotImplemented', {}, 'Send checkpoint to workflow - feature to be implemented');
+        const text = translate('modelCard.sendToWorkflow.checkpointNotImplemented', {}, 'Send checkpoint to workflow - feature to be implemented');
         showToast(text, 'info');
     }
 }
@@ -175,7 +175,8 @@ function handleCopyAction(card, modelType) {
     } else if (modelType === MODEL_TYPES.CHECKPOINT) {
         // Checkpoint copy functionality - copy checkpoint name
         const checkpointName = card.dataset.file_name;
-        copyToClipboard(checkpointName, 'Checkpoint name copied');
+        const message = translate('modelCard.actions.checkpointNameCopied', {}, 'Checkpoint name copied');
+        copyToClipboard(checkpointName, message);
     } else if (modelType === MODEL_TYPES.EMBEDDING) {
         const embeddingName = card.dataset.file_name;
         copyToClipboard(embeddingName, 'Embedding name copied');
@@ -200,7 +201,7 @@ async function handleExampleImagesAccess(card, modelType) {
         }
     } catch (error) {
         console.error('Error checking for example images:', error);
-        const text = safeTranslate('modelCard.exampleImages.checkError', {}, 'Error checking for example images');
+        const text = translate('modelCard.exampleImages.checkError', {}, 'Error checking for example images');
         showToast(text, 'error');
     }
 }
@@ -283,7 +284,7 @@ function showExampleAccessModal(card, modelType) {
                 // Get the model hash
                 const modelHash = card.dataset.sha256;
                 if (!modelHash) {
-                    const text = safeTranslate('modelCard.exampleImages.missingHash', {}, 'Missing model hash information.');
+                    const text = translate('modelCard.exampleImages.missingHash', {}, 'Missing model hash information.');
                     showToast(text, 'error');
                     return;
                 }
@@ -305,7 +306,8 @@ function showExampleAccessModal(card, modelType) {
             };
         } else {
             downloadBtn.classList.add('disabled');
-            downloadBtn.setAttribute('title', 'No remote example images available for this model on Civitai');
+            const noRemoteImagesTitle = translate('modelCard.exampleImages.noRemoteImagesAvailable', {}, 'No remote example images available for this model on Civitai');
+            downloadBtn.setAttribute('title', noRemoteImagesTitle);
             downloadBtn.onclick = null;
         }
     }
@@ -436,14 +438,14 @@ export function createModelCard(model, modelType) {
     const previewUrl = model.preview_url || '/loras_static/images/no-preview.png';
     const versionedPreviewUrl = version ? `${previewUrl}?t=${version}` : previewUrl;
 
-    // Determine NSFW warning text based on level
-    let nsfwText = "Mature Content";
+    // Determine NSFW warning text based on level with i18n support
+    let nsfwText = translate('modelCard.nsfw.matureContent', {}, 'Mature Content');
     if (nsfwLevel >= NSFW_LEVELS.XXX) {
-        nsfwText = "XXX-rated Content";
+        nsfwText = translate('modelCard.nsfw.xxxRated', {}, 'XXX-rated Content');
     } else if (nsfwLevel >= NSFW_LEVELS.X) {
-        nsfwText = "X-rated Content";
+        nsfwText = translate('modelCard.nsfw.xRated', {}, 'X-rated Content');
     } else if (nsfwLevel >= NSFW_LEVELS.R) {
-        nsfwText = "R-rated Content";
+        nsfwText = translate('modelCard.nsfw.rRated', {}, 'R-rated Content');
     }
 
     // Check if autoplayOnHover is enabled for video previews
@@ -454,21 +456,35 @@ export function createModelCard(model, modelType) {
     // Get favorite status from model data
     const isFavorite = model.favorite === true;
 
-    // Generate action icons based on model type
+    // Generate action icons based on model type with i18n support
+    const favoriteTitle = isFavorite ? 
+        translate('modelCard.actions.removeFromFavorites', {}, 'Remove from favorites') :
+        translate('modelCard.actions.addToFavorites', {}, 'Add to favorites');
+    const globeTitle = model.from_civitai ? 
+        translate('modelCard.actions.viewOnCivitai', {}, 'View on Civitai') :
+        translate('modelCard.actions.notAvailableFromCivitai', {}, 'Not available from Civitai');
+    const sendTitle = translate('modelCard.actions.sendToWorkflow', {}, 'Send to ComfyUI (Click: Append, Shift+Click: Replace)');
+    const copyTitle = translate('modelCard.actions.copyLoRASyntax', {}, 'Copy LoRA Syntax');
+
     const actionIcons = `
         <i class="${isFavorite ? 'fas fa-star favorite-active' : 'far fa-star'}" 
-           title="${isFavorite ? 'Remove from favorites' : 'Add to favorites'}">
+           title="${favoriteTitle}">
         </i>
         <i class="fas fa-globe" 
-           title="${model.from_civitai ? 'View on Civitai' : 'Not available from Civitai'}"
+           title="${globeTitle}"
            ${!model.from_civitai ? 'style="opacity: 0.5; cursor: not-allowed"' : ''}>
         </i>
         <i class="fas fa-paper-plane" 
-           title="Send to ComfyUI (Click: Append, Shift+Click: Replace)">
+           title="${sendTitle}">
         </i>
         <i class="fas fa-copy" 
-           title="Copy LoRA Syntax">
+           title="${copyTitle}">
         </i>`;
+
+    // Generate UI text with i18n support
+    const toggleBlurTitle = translate('modelCard.actions.toggleBlur', {}, 'Toggle blur');
+    const showButtonText = translate('modelCard.actions.show', {}, 'Show');
+    const openExampleImagesTitle = translate('modelCard.actions.openExampleImages', {}, 'Open Example Images Folder');
 
     card.innerHTML = `
         <div class="card-preview ${shouldBlur ? 'blurred' : ''}">
@@ -480,7 +496,7 @@ export function createModelCard(model, modelType) {
             }
             <div class="card-header">
                 ${shouldBlur ? 
-                  `<button class="toggle-blur-btn" title="Toggle blur">
+                  `<button class="toggle-blur-btn" title="${toggleBlurTitle}">
                       <i class="fas fa-eye"></i>
                   </button>` : ''}
                 <span class="base-model-label ${shouldBlur ? 'with-toggle' : ''}" title="${model.base_model}">
@@ -494,7 +510,7 @@ export function createModelCard(model, modelType) {
                 <div class="nsfw-overlay">
                     <div class="nsfw-warning">
                         <p>${nsfwText}</p>
-                        <button class="show-content-btn">Show</button>
+                        <button class="show-content-btn">${showButtonText}</button>
                     </div>
                 </div>
             ` : ''}
@@ -505,7 +521,7 @@ export function createModelCard(model, modelType) {
                 </div>
                 <div class="card-actions">
                     <i class="fas fa-folder-open" 
-                       title="Open Example Images Folder">
+                       title="${openExampleImagesTitle}">
                     </i>
                 </div>
             </div>

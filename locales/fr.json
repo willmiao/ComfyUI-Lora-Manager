@@ -341,6 +341,66 @@
                     "updated": "Description du modèle mise à jour",
                     "updateFailed": "Échec de la mise à jour de la description du modèle"
                 }
+            },
+            "actions": {
+                "editModelName": "Modifier le nom du modèle",
+                "editFileName": "Modifier le nom du fichier",
+                "editBaseModel": "Modifier le modèle de base",
+                "viewOnCivitai": "Voir sur Civitai",
+                "viewOnCivitaiText": "Voir sur Civitai",
+                "viewCreatorProfile": "Voir le profil du créateur"
+            },
+            "metadata": {
+                "version": "Version",
+                "fileName": "Nom du fichier",
+                "location": "Emplacement",
+                "baseModel": "Modèle de base",
+                "size": "Taille",
+                "unknown": "Inconnu",
+                "usageTips": "Conseils d'utilisation",
+                "additionalNotes": "Notes supplémentaires",
+                "notesHint": "Appuyez sur Entrée pour sauvegarder, Shift+Entrée pour nouvelle ligne",
+                "addNotesPlaceholder": "Ajoutez vos notes ici...",
+                "aboutThisVersion": "À propos de cette version",
+                "validation": {
+                    "nameTooLong": "Le nom du modèle est limité à 100 caractères",
+                    "nameEmpty": "Le nom du modèle ne peut pas être vide"
+                },
+                "messages": {
+                    "nameUpdated": "Nom du modèle mis à jour avec succès",
+                    "nameUpdateFailed": "Échec de la mise à jour du nom du modèle",
+                    "baseModelUpdated": "Modèle de base mis à jour avec succès",
+                    "baseModelUpdateFailed": "Échec de la mise à jour du modèle de base"
+                }
+            },
+            "notes": {
+                "saved": "Notes sauvegardées avec succès",
+                "saveFailed": "Échec de la sauvegarde des notes"
+            },
+            "usageTips": {
+                "addPresetParameter": "Ajouter un paramètre prédéfini...",
+                "strengthMin": "Force Min",
+                "strengthMax": "Force Max",
+                "strength": "Force",
+                "clipSkip": "Clip Skip",
+                "valuePlaceholder": "Valeur",
+                "add": "Ajouter"
+            },
+            "tags": {
+                "messages": {
+                    "updated": "Étiquettes mises à jour avec succès",
+                    "updateFailed": "Échec de la mise à jour des étiquettes"
+                },
+                "validation": {
+                    "maxLength": "L'étiquette ne doit pas dépasser 30 caractères",
+                    "maxCount": "Maximum 30 étiquettes autorisées",
+                    "duplicate": "Cette étiquette existe déjà"
+                }
+            },
+            "recipeTab": {
+                "noRecipesFound": "Aucune recette trouvée utilisant cette LoRA.",
+                "loadingRecipes": "Chargement des recettes...",
+                "errorLoadingRecipes": "Échec du chargement des recettes. Veuillez réessayer plus tard."
             }
         }
     },
@@ -463,5 +523,38 @@
         "filter": "Filtrer les modèles selon divers critères",
         "sort": "Trier les modèles selon différents attributs",
         "backToTop": "Remonter en haut de la page"
+    },
+    "modelCard": {
+        "actions": {
+            "addToFavorites": "Ajouter aux favoris",
+            "removeFromFavorites": "Retirer des favoris",
+            "viewOnCivitai": "Voir sur Civitai",
+            "notAvailableFromCivitai": "Non disponible sur Civitai",
+            "sendToWorkflow": "Envoyer vers ComfyUI (Clic: Ajouter, Shift+Clic: Remplacer)",
+            "copyLoRASyntax": "Copier la syntaxe LoRA",
+            "checkpointNameCopied": "Nom du checkpoint copié",
+            "toggleBlur": "Basculer le flou",
+            "show": "Afficher",
+            "openExampleImages": "Ouvrir le dossier d'images d'exemple"
+        },
+        "nsfw": {
+            "matureContent": "Contenu pour adultes",
+            "xxxRated": "Contenu XXX",
+            "xRated": "Contenu X",
+            "rRated": "Contenu R"
+        },
+        "favorites": {
+            "added": "Ajouté aux favoris",
+            "removed": "Retiré des favoris",
+            "updateFailed": "Échec de la mise à jour du statut favori"
+        },
+        "sendToWorkflow": {
+            "checkpointNotImplemented": "Envoyer checkpoint vers workflow - fonctionnalité à implémenter"
+        },
+        "exampleImages": {
+            "checkError": "Erreur lors de la vérification des images d'exemple",
+            "missingHash": "Informations de hachage du modèle manquantes.",
+            "noRemoteImagesAvailable": "Aucune image d'exemple distante disponible pour ce modèle sur Civitai"
+        }
     }
 }

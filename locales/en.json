@@ -73,48 +73,39 @@
             "korean": "한국어",
             "french": "Français",
             "spanish": "Español"
+        }
+    },
+    "modelCard": {
+        "actions": {
+            "addToFavorites": "Add to favorites",
+            "removeFromFavorites": "Remove from favorites",
+            "viewOnCivitai": "View on Civitai",
+            "notAvailableFromCivitai": "Not available from Civitai",
+            "sendToWorkflow": "Send to ComfyUI (Click: Append, Shift+Click: Replace)",
+            "copyLoRASyntax": "Copy LoRA Syntax",
+            "checkpointNameCopied": "Checkpoint name copied",
+            "toggleBlur": "Toggle blur",
+            "show": "Show",
+            "openExampleImages": "Open Example Images Folder"
         },
-        "modelCard": {
-            "favorites": {
-                "added": "Added to favorites",
-                "removed": "Removed from favorites",
-                "updateFailed": "Failed to update favorite status"
-            },
-            "sendToWorkflow": {
-                "checkpointNotImplemented": "Send checkpoint to workflow - feature to be implemented"
-            },
-            "exampleImages": {
-                "checkError": "Error checking for example images",
-                "missingHash": "Missing model hash information."
-            }
+        "nsfw": {
+            "matureContent": "Mature Content",
+            "xxxRated": "XXX-rated Content",
+            "xRated": "X-rated Content",
+            "rRated": "R-rated Content"
         },
-        "modelTags": {
-            "messages": {
-                "updated": "Tags updated successfully",
-                "updateFailed": "Failed to update tags"
-            },
-            "validation": {
-                "maxLength": "Tag should not exceed 30 characters",
-                "maxCount": "Maximum 30 tags allowed",
-                "duplicate": "This tag already exists"
-            }
+        "favorites": {
+            "added": "Added to favorites",
+            "removed": "Removed from favorites",
+            "updateFailed": "Failed to update favorite status"
         },
-        "modelMetadata": {
-            "validation": {
-                "nameTooLong": "Model name is limited to 100 characters",
-                "nameEmpty": "Model name cannot be empty"
-            },
-            "messages": {
-                "nameUpdated": "Model name updated successfully",
-                "nameUpdateFailed": "Failed to update model name",
-                "baseModelUpdated": "Base model updated successfully",
-                "baseModelUpdateFailed": "Failed to update base model"
-            }
+        "sendToWorkflow": {
+            "checkpointNotImplemented": "Send checkpoint to workflow - feature to be implemented"
         },
-        "recipeTab": {
-            "noRecipesFound": "No recipes found that use this Lora.",
-            "loadingRecipes": "Loading recipes...",
-            "errorLoadingRecipes": "Failed to load recipes. Please try again later."
+        "exampleImages": {
+            "checkError": "Error checking for example images",
+            "missingHash": "Missing model hash information.",
+            "noRemoteImagesAvailable": "No remote example images available for this model on Civitai"
         }
     },
     "header": {
@@ -487,6 +478,50 @@
             "confirmAction": "Confirm Re-link"
         },
         "model": {
+            "actions": {
+                "editModelName": "Edit model name",
+                "editFileName": "Edit file name",
+                "editBaseModel": "Edit base model",
+                "viewOnCivitai": "View on Civitai",
+                "viewOnCivitaiText": "View on Civitai",
+                "viewCreatorProfile": "View Creator Profile"
+            },
+            "metadata": {
+                "version": "Version",
+                "fileName": "File Name",
+                "location": "Location",
+                "baseModel": "Base Model",
+                "size": "Size",
+                "unknown": "Unknown",
+                "usageTips": "Usage Tips",
+                "additionalNotes": "Additional Notes",
+                "notesHint": "Press Enter to save, Shift+Enter for new line",
+                "addNotesPlaceholder": "Add your notes here...",
+                "aboutThisVersion": "About this version",
+                "validation": {
+                    "nameTooLong": "Model name is limited to 100 characters",
+                    "nameEmpty": "Model name cannot be empty"
+                },
+                "messages": {
+                    "nameUpdated": "Model name updated successfully",
+                    "nameUpdateFailed": "Failed to update model name",
+                    "baseModelUpdated": "Base model updated successfully",
+                    "baseModelUpdateFailed": "Failed to update base model"
+                }
+            },
+            "notes": {
+                "saved": "Notes saved successfully",
+                "saveFailed": "Failed to save notes"
+            },
+            "usageTips": {
+                "addPresetParameter": "Add preset parameter...",
+                "strengthMin": "Strength Min",
+                "strengthMax": "Strength Max",
+                "strength": "Strength",
+                "clipSkip": "Clip Skip",
+                "valuePlaceholder": "Value",
+                "add": "Add"
+            },
             "description": {
                 "noDescription": "No model description available",
                 "failedToLoad": "Failed to load model description",
@@ -509,6 +544,22 @@
                 "description": "Loading model description...",
                 "recipes": "Loading recipes...",
                 "examples": "Loading examples..."
+            },
+            "tags": {
+                "messages": {
+                    "updated": "Tags updated successfully",
+                    "updateFailed": "Failed to update tags"
+                },
+                "validation": {
+                    "maxLength": "Tag should not exceed 30 characters",
+                    "maxCount": "Maximum 30 tags allowed",
+                    "duplicate": "This tag already exists"
+                }
+            },
+            "recipeTab": {
+                "noRecipesFound": "No recipes found that use this Lora.",
+                "loadingRecipes": "Loading recipes...",
+                "errorLoadingRecipes": "Failed to load recipes. Please try again later."
             }
         }
     },
@@ -620,6 +671,40 @@
         "help": {
             "identicalHashes": "Identical hashes mean identical model files, even if they have different names or previews.",
             "keepOne": "Keep only one version (preferably with better metadata/previews) and safely delete the others."
+        }
+    },
+    "uiHelpers": {
+        "clipboard": {
+            "copied": "Copied to clipboard",
+            "copyFailed": "Copy failed"
+        },
+        "lora": {
+            "syntaxCopied": "LoRA syntax copied to clipboard",
+            "syntaxCopiedNoTriggerWords": "LoRA syntax copied to clipboard (no trigger words found)",
+            "syntaxCopiedWithTriggerWords": "LoRA syntax with trigger words copied to clipboard",
+            "syntaxCopiedWithTriggerWordGroups": "LoRA syntax with trigger word groups copied to clipboard"
+        },
+        "workflow": {
+            "noSupportedNodes": "No supported target nodes found in workflow",
+            "communicationFailed": "Failed to communicate with ComfyUI",
+            "recipeReplaced": "Recipe replaced in workflow",
+            "recipeAdded": "Recipe added to workflow",
+            "loraReplaced": "LoRA replaced in workflow",
+            "loraAdded": "LoRA added to workflow",
+            "recipeFailedToSend": "Failed to send recipe to workflow",
+            "loraFailedToSend": "Failed to send LoRA to workflow"
+        },
+        "nodeSelector": {
+            "recipe": "Recipe",
+            "lora": "LoRA",
+            "replace": "Replace",
+            "append": "Append",
+            "selectTargetNode": "Select target node",
+            "sendToAll": "Send to All"
+        },
+        "exampleImages": {
+            "openingFolder": "Opening example images folder",
+            "failedToOpen": "Failed to open example images folder"
         }
     },
     "tooltips": {

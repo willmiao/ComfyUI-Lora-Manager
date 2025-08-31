@@ -341,6 +341,66 @@
                     "updated": "Описание модели обновлено",
                     "updateFailed": "Не удалось обновить описание модели"
                 }
+            },
+            "actions": {
+                "editModelName": "Редактировать имя модели",
+                "editFileName": "Редактировать имя файла",
+                "editBaseModel": "Редактировать базовую модель",
+                "viewOnCivitai": "Посмотреть на Civitai",
+                "viewOnCivitaiText": "Посмотреть на Civitai",
+                "viewCreatorProfile": "Посмотреть профиль создателя"
+            },
+            "metadata": {
+                "version": "Версия",
+                "fileName": "Имя файла",
+                "location": "Расположение",
+                "baseModel": "Базовая модель",
+                "size": "Размер",
+                "unknown": "Неизвестно",
+                "usageTips": "Советы по использованию",
+                "additionalNotes": "Дополнительные заметки",
+                "notesHint": "Enter для сохранения, Shift+Enter для новой строки",
+                "addNotesPlaceholder": "Добавьте свои заметки здесь...",
+                "aboutThisVersion": "О данной версии",
+                "validation": {
+                    "nameTooLong": "Имя модели ограничено 100 символами",
+                    "nameEmpty": "Имя модели не может быть пустым"
+                },
+                "messages": {
+                    "nameUpdated": "Имя модели успешно обновлено",
+                    "nameUpdateFailed": "Не удалось обновить имя модели",
+                    "baseModelUpdated": "Базовая модель успешно обновлена",
+                    "baseModelUpdateFailed": "Не удалось обновить базовую модель"
+                }
+            },
+            "notes": {
+                "saved": "Заметки успешно сохранены",
+                "saveFailed": "Не удалось сохранить заметки"
+            },
+            "usageTips": {
+                "addPresetParameter": "Добавить предустановленный параметр...",
+                "strengthMin": "Мин. сила",
+                "strengthMax": "Макс. сила",
+                "strength": "Сила",
+                "clipSkip": "Clip Skip",
+                "valuePlaceholder": "Значение",
+                "add": "Добавить"
+            },
+            "tags": {
+                "messages": {
+                    "updated": "Теги успешно обновлены",
+                    "updateFailed": "Не удалось обновить теги"
+                },
+                "validation": {
+                    "maxLength": "Тег не должен превышать 30 символов",
+                    "maxCount": "Разрешено максимум 30 тегов",
+                    "duplicate": "Этот тег уже существует"
+                }
+            },
+            "recipeTab": {
+                "noRecipesFound": "Не найдено рецептов, использующих эту LoRA.",
+                "loadingRecipes": "Загрузка рецептов...",
+                "errorLoadingRecipes": "Не удалось загрузить рецепты. Пожалуйста, попробуйте позже."
             }
         }
     },
@@ -463,5 +523,38 @@
         "filter": "Фильтровать модели по различным критериям",
         "sort": "Сортировать модели по разным атрибутам",
         "backToTop": "Прокрутить обратно наверх страницы"
+    },
+    "modelCard": {
+        "actions": {
+            "addToFavorites": "Добавить в избранное",
+            "removeFromFavorites": "Удалить из избранного",
+            "viewOnCivitai": "Посмотреть на Civitai",
+            "notAvailableFromCivitai": "Недоступно на Civitai",
+            "sendToWorkflow": "Отправить в ComfyUI (Клик: Добавить, Shift+Клик: Заменить)",
+            "copyLoRASyntax": "Копировать синтаксис LoRA",
+            "checkpointNameCopied": "Имя чекпоинта скопировано",
+            "toggleBlur": "Переключить размытие",
+            "show": "Показать",
+            "openExampleImages": "Открыть папку с примерами изображений"
+        },
+        "nsfw": {
+            "matureContent": "Контент для взрослых",
+            "xxxRated": "XXX-контент",
+            "xRated": "X-контент",
+            "rRated": "R-контент"
+        },
+        "favorites": {
+            "added": "Добавлено в избранное",
+            "removed": "Удалено из избранного",
+            "updateFailed": "Не удалось обновить статус избранного"
+        },
+        "sendToWorkflow": {
+            "checkpointNotImplemented": "Отправка чекпоинта в рабочий процесс - функция в разработке"
+        },
+        "exampleImages": {
+            "checkError": "Ошибка при проверке примеров изображений",
+            "missingHash": "Отсутствует информация о хэше модели.",
+            "noRemoteImagesAvailable": "Для этой модели нет удалённых примеров изображений на Civitai"
+        }
     }
 }

@@ -341,6 +341,66 @@
                     "updated": "모델 설명이 업데이트되었습니다",
                     "updateFailed": "모델 설명 업데이트에 실패했습니다"
                 }
+            },
+            "actions": {
+                "editModelName": "모델명 편집",
+                "editFileName": "파일명 편집",
+                "editBaseModel": "베이스 모델 편집",
+                "viewOnCivitai": "Civitai에서 보기",
+                "viewOnCivitaiText": "Civitai에서 보기",
+                "viewCreatorProfile": "제작자 프로필 보기"
+            },
+            "metadata": {
+                "version": "버전",
+                "fileName": "파일명",
+                "location": "위치",
+                "baseModel": "베이스 모델",
+                "size": "크기",
+                "unknown": "알 수 없음",
+                "usageTips": "사용 팁",
+                "additionalNotes": "추가 메모",
+                "notesHint": "Enter로 저장, Shift+Enter로 줄바꿈",
+                "addNotesPlaceholder": "여기에 메모를 추가하세요...",
+                "aboutThisVersion": "이 버전에 대해",
+                "validation": {
+                    "nameTooLong": "모델명은 100자로 제한됩니다",
+                    "nameEmpty": "모델명은 비워둘 수 없습니다"
+                },
+                "messages": {
+                    "nameUpdated": "모델명이 성공적으로 업데이트됨",
+                    "nameUpdateFailed": "모델명 업데이트 실패",
+                    "baseModelUpdated": "베이스 모델이 성공적으로 업데이트됨",
+                    "baseModelUpdateFailed": "베이스 모델 업데이트 실패"
+                }
+            },
+            "notes": {
+                "saved": "메모가 성공적으로 저장됨",
+                "saveFailed": "메모 저장 실패"
+            },
+            "usageTips": {
+                "addPresetParameter": "프리셋 매개변수 추가...",
+                "strengthMin": "강도 최소",
+                "strengthMax": "강도 최대",
+                "strength": "강도",
+                "clipSkip": "Clip Skip",
+                "valuePlaceholder": "값",
+                "add": "추가"
+            },
+            "tags": {
+                "messages": {
+                    "updated": "태그가 성공적으로 업데이트됨",
+                    "updateFailed": "태그 업데이트 실패"
+                },
+                "validation": {
+                    "maxLength": "태그는 30자를 초과할 수 없습니다",
+                    "maxCount": "최대 30개의 태그가 허용됩니다",
+                    "duplicate": "이 태그는 이미 존재합니다"
+                }
+            },
+            "recipeTab": {
+                "noRecipesFound": "이 LoRA를 사용하는 레시피를 찾을 수 없습니다.",
+                "loadingRecipes": "레시피 로딩 중...",
+                "errorLoadingRecipes": "레시피 로딩에 실패했습니다. 나중에 다시 시도해주세요."
             }
         }
     },
@@ -463,5 +523,38 @@
         "filter": "다양한 기준으로 모델 필터링",
         "sort": "다양한 속성으로 모델 정렬",
         "backToTop": "페이지 맨 위로 스크롤"
+    },
+    "modelCard": {
+        "actions": {
+            "addToFavorites": "즐겨찾기에 추가",
+            "removeFromFavorites": "즐겨찾기에서 제거",
+            "viewOnCivitai": "Civitai에서 보기",
+            "notAvailableFromCivitai": "Civitai에서 사용할 수 없음",
+            "sendToWorkflow": "ComfyUI로 전송 (클릭: 추가, Shift+클릭: 교체)",
+            "copyLoRASyntax": "LoRA 문법 복사",
+            "checkpointNameCopied": "체크포인트 이름이 복사됨",
+            "toggleBlur": "흐림 효과 전환",
+            "show": "표시",
+            "openExampleImages": "예제 이미지 폴더 열기"
+        },
+        "nsfw": {
+            "matureContent": "성인 콘텐츠",
+            "xxxRated": "XXX 등급 콘텐츠",
+            "xRated": "X 등급 콘텐츠",
+            "rRated": "R 등급 콘텐츠"
+        },
+        "favorites": {
+            "added": "즐겨찾기에 추가됨",
+            "removed": "즐겨찾기에서 제거됨",
+            "updateFailed": "즐겨찾기 상태 업데이트 실패"
+        },
+        "sendToWorkflow": {
+            "checkpointNotImplemented": "워크플로우로 체크포인트 전송 - 기능 구현 예정"
+        },
+        "exampleImages": {
+            "checkError": "예제 이미지 확인 중 오류 발생",
+            "missingHash": "모델 해시 정보 누락.",
+            "noRemoteImagesAvailable": "이 모델에 대한 원격 예제 이미지가 Civitai에서 사용할 수 없습니다"
+        }
     }
 }

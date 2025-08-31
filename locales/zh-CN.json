@@ -73,48 +73,39 @@
             "korean": "한국어",
             "french": "Français",
             "spanish": "Español"
+        }
+    },
+    "modelCard": {
+        "actions": {
+            "addToFavorites": "添加到收藏",
+            "removeFromFavorites": "从收藏中移除",
+            "viewOnCivitai": "在 Civitai 上查看",
+            "notAvailableFromCivitai": "Civitai 上不可用",
+            "sendToWorkflow": "发送到 ComfyUI（点击：追加，Shift+点击：替换）",
+            "copyLoRASyntax": "复制 LoRA 语法",
+            "checkpointNameCopied": "Checkpoint 名称已复制",
+            "toggleBlur": "切换模糊",
+            "show": "显示",
+            "openExampleImages": "打开示例图片文件夹"
         },
-        "modelCard": {
-            "favorites": {
-                "added": "已添加到收藏",
-                "removed": "已从收藏中移除",
-                "updateFailed": "更新收藏状态失败"
-            },
-            "sendToWorkflow": {
-                "checkpointNotImplemented": "发送 Checkpoint 到工作流 - 功能待实现"
-            },
-            "exampleImages": {
-                "checkError": "检查示例图片时出错",
-                "missingHash": "缺少模型哈希信息。"
-            }
+        "nsfw": {
+            "matureContent": "成人内容",
+            "xxxRated": "XXX 级内容",
+            "xRated": "X 级内容",
+            "rRated": "R 级内容"
         },
-        "modelTags": {
-            "messages": {
-                "updated": "标签更新成功",
-                "updateFailed": "更新标签失败"
-            },
-            "validation": {
-                "maxLength": "标签长度不能超过30个字符",
-                "maxCount": "最多允许30个标签",
-                "duplicate": "该标签已存在"
-            }
+        "favorites": {
+            "added": "已添加到收藏",
+            "removed": "已从收藏中移除",
+            "updateFailed": "更新收藏状态失败"
         },
-        "modelMetadata": {
-            "validation": {
-                "nameTooLong": "模型名称最多100个字符",
-                "nameEmpty": "模型名称不能为空"
-            },
-            "messages": {
-                "nameUpdated": "模型名称更新成功",
-                "nameUpdateFailed": "更新模型名称失败",
-                "baseModelUpdated": "基础模型更新成功",
-                "baseModelUpdateFailed": "更新基础模型失败"
-            }
+        "sendToWorkflow": {
+            "checkpointNotImplemented": "发送 Checkpoint 到工作流 - 功能待实现"
         },
-        "recipeTab": {
-            "noRecipesFound": "未找到使用此 LoRA 的配方。",
-            "loadingRecipes": "正在加载配方...",
-            "errorLoadingRecipes": "加载配方失败。请稍后重试。"
+        "exampleImages": {
+            "checkError": "检查示例图片时出错",
+            "missingHash": "缺少模型哈希信息。",
+            "noRemoteImagesAvailable": "该模型在 Civitai 上没有可用的远程示例图片"
         }
     },
     "header": {
@@ -487,6 +478,50 @@
             "confirmAction": "确认重新链接"
         },
         "model": {
+            "actions": {
+                "editModelName": "编辑模型名称",
+                "editFileName": "编辑文件名",
+                "editBaseModel": "编辑基础模型",
+                "viewOnCivitai": "在 Civitai 上查看",
+                "viewOnCivitaiText": "在 Civitai 上查看",
+                "viewCreatorProfile": "查看创作者资料"
+            },
+            "metadata": {
+                "version": "版本",
+                "fileName": "文件名",
+                "location": "位置",
+                "baseModel": "基础模型",
+                "size": "大小",
+                "unknown": "未知",
+                "usageTips": "使用技巧",
+                "additionalNotes": "附加说明",
+                "notesHint": "按 Enter 保存，Shift+Enter 换行",
+                "addNotesPlaceholder": "在此添加您的说明...",
+                "aboutThisVersion": "关于此版本",
+                "validation": {
+                    "nameTooLong": "模型名称最多100个字符",
+                    "nameEmpty": "模型名称不能为空"
+                },
+                "messages": {
+                    "nameUpdated": "模型名称更新成功",
+                    "nameUpdateFailed": "更新模型名称失败",
+                    "baseModelUpdated": "基础模型更新成功",
+                    "baseModelUpdateFailed": "更新基础模型失败"
+                }
+            },
+            "notes": {
+                "saved": "说明保存成功",
+                "saveFailed": "保存说明失败"
+            },
+            "usageTips": {
+                "addPresetParameter": "添加预设参数...",
+                "strengthMin": "强度最小值",
+                "strengthMax": "强度最大值",
+                "strength": "强度",
+                "clipSkip": "Clip Skip",
+                "valuePlaceholder": "值",
+                "add": "添加"
+            },
             "description": {
                 "noDescription": "无模型描述信息",
                 "failedToLoad": "加载模型描述失败",
@@ -509,6 +544,22 @@
                 "description": "正在加载模型描述...",
                 "recipes": "正在加载配方...",
                 "examples": "正在加载示例..."
+            },
+            "tags": {
+                "messages": {
+                    "updated": "标签更新成功",
+                    "updateFailed": "更新标签失败"
+                },
+                "validation": {
+                    "maxLength": "标签长度不能超过30个字符",
+                    "maxCount": "最多允许30个标签",
+                    "duplicate": "该标签已存在"
+                }
+            },
+            "recipeTab": {
+                "noRecipesFound": "未找到使用此 LoRA 的配方。",
+                "loadingRecipes": "正在加载配方...",
+                "errorLoadingRecipes": "加载配方失败。请稍后重试。"
             }
         }
     },
