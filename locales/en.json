@@ -74,15 +74,8 @@
         },
         "search": {
             "placeholder": "Search...",
-            "placeholders": {
-                "loras": "Search LoRAs...",
-                "recipes": "Search recipes...",
-                "checkpoints": "Search checkpoints...",
-                "embeddings": "Search embeddings..."
-            },
             "options": "Search Options",
             "searchIn": "Search In:",
-            "notAvailable": "Search not available on statistics page",
             "filters": {
                 "filename": "Filename",
                 "modelname": "Model Name",
@@ -100,10 +93,7 @@
             "clearAll": "Clear All Filters"
         },
         "theme": {
-            "toggle": "Toggle theme",
-            "switchToLight": "Switch to light theme",
-            "switchToDark": "Switch to dark theme",
-            "switchToAuto": "Switch to auto theme"
+            "toggle": "Toggle theme"
         },
         "actions": {
             "checkUpdates": "Check Updates",
@@ -116,7 +106,6 @@
         "civitaiApiKeyHelp": "Used for authentication when downloading models from Civitai"
     },
     "loras": {
-        "title": "LoRA Models",
         "controls": {
             "sort": {
                 "title": "Sort models by...",
@@ -139,11 +128,9 @@
             "download": "Download from URL",
             "bulk": "Bulk Operations",
             "duplicates": "Find Duplicates",
-            "favorites": "Show Favorites Only",
-            "filterActive": "Filter Active"
+            "favorites": "Show Favorites Only"
         },
         "bulkOperations": {
-            "title": "Bulk Operations",
             "selected": "{count} selected",
             "selectedSuffix": "selected",
             "viewSelected": "Click to view selected items",
@@ -173,35 +160,6 @@
             "viewAllLoras": "View All LoRAs",
             "downloadMissingLoras": "Download Missing LoRAs",
             "deleteRecipe": "Delete Recipe"
-        },
-        "modal": {
-            "title": "LoRA Details",
-            "tabs": {
-                "examples": "Examples",
-                "description": "Model Description",
-                "recipes": "Recipes"
-            },
-            "info": {
-                "filename": "Filename",
-                "modelName": "Model Name",
-                "baseModel": "Base Model",
-                "fileSize": "File Size",
-                "dateAdded": "Date Added",
-                "triggerWords": "Trigger Words",
-                "description": "Description",
-                "tags": "Tags",
-                "rating": "Rating",
-                "downloads": "Downloads",
-                "likes": "Likes",
-                "version": "Version"
-            },
-            "actions": {
-                "copyTriggerWords": "Copy trigger words",
-                "copyLoraName": "Copy LoRA name",
-                "sendToWorkflow": "Send to Workflow",
-                "viewOnCivitai": "View on Civitai",
-                "downloadExamples": "Download example images"
-            }
         }
     },
     "recipes": {
@@ -211,30 +169,12 @@
             "refresh": {
                 "title": "Refresh recipe list"
             },
-            "duplicates": {
-                "title": "Find duplicate recipes"
-            },
-            "filteredByLora": "Filtered by LoRA",
-            "create": "Create Recipe",
-            "export": "Export Selected",
-            "downloadMissing": "Download Missing LoRAs"
+            "filteredByLora": "Filtered by LoRA"
         },
         "duplicates": {
             "found": "Found {count} duplicate groups",
             "keepLatest": "Keep Latest Versions",
             "deleteSelected": "Delete Selected"
-        },
-        "card": {
-            "author": "Author",
-            "loras": "{count} LoRAs",
-            "tags": "Tags",
-            "actions": {
-                "sendToWorkflow": "Send to Workflow",
-                "edit": "Edit Recipe",
-                "duplicate": "Duplicate Recipe",
-                "export": "Export Recipe",
-                "delete": "Delete Recipe"
-            }
         },
         "contextMenu": {
             "copyRecipe": {
@@ -278,14 +218,6 @@
             "storage": "Storage",
             "insights": "Insights"
         },
-        "overview": {
-            "title": "Overview",
-            "totalLoras": "Total LoRAs",
-            "totalCheckpoints": "Total Checkpoints",
-            "totalEmbeddings": "Total Embeddings",
-            "totalSize": "Total Size",
-            "favoriteModels": "Favorite Models"
-        },
         "usage": {
             "mostUsedLoras": "Most Used LoRAs",
             "mostUsedCheckpoints": "Most Used Checkpoints",
@@ -309,26 +241,12 @@
             "collectionOverview": "Collection Overview",
             "baseModelDistribution": "Base Model Distribution",
             "usageTrends": "Usage Trends (Last 30 Days)",
-            "usageDistribution": "Usage Distribution",
-            "modelsByType": "Models by Type",
-            "modelsByBaseModel": "Models by Base Model",
-            "modelsBySize": "Models by File Size",
-            "modelsAddedOverTime": "Models Added Over Time"
+            "usageDistribution": "Usage Distribution"
         }
     },
     "modals": {
-        "delete": {
-            "title": "Confirm Deletion",
-            "message": "Are you sure you want to delete this model?",
-            "warningMessage": "This action cannot be undone.",
-            "confirm": "Delete",
-            "cancel": "Cancel"
-        },
         "exclude": {
-            "title": "Exclude Model",
-            "message": "Are you sure you want to exclude this model from the library?",
-            "confirm": "Exclude",
-            "cancel": "Cancel"
+            "confirm": "Exclude"
         },
         "download": {
             "title": "Download Model from URL",
@@ -344,16 +262,10 @@
             "createNewFolder": "Create new folder",
             "pathPlaceholder": "Type folder path or select from tree below...",
             "root": "Root",
-            "download": "Download",
-            "cancel": "Cancel"
+            "download": "Download"
         },
         "move": {
-            "title": "Move Models",
-            "selectFolder": "Select destination folder",
-            "createFolder": "Create new folder",
-            "folderName": "Folder name",
-            "move": "Move",
-            "cancel": "Cancel"
+            "title": "Move Models"
         },
         "contentRating": {
             "title": "Set Content Rating",
@@ -459,17 +371,7 @@
                 "additionalNotes": "Additional Notes",
                 "notesHint": "Press Enter to save, Shift+Enter for new line",
                 "addNotesPlaceholder": "Add your notes here...",
-                "aboutThisVersion": "About this version",
-                "validation": {
-                    "nameTooLong": "Model name is limited to 100 characters",
-                    "nameEmpty": "Model name cannot be empty"
-                },
-                "messages": {
-                    "nameUpdated": "Model name updated successfully",
-                    "nameUpdateFailed": "Failed to update model name",
-                    "baseModelUpdated": "Base model updated successfully",
-                    "baseModelUpdateFailed": "Failed to update base model"
-                }
+                "aboutThisVersion": "About this version"
             },
             "notes": {
                 "saved": "Notes saved successfully",
@@ -500,9 +402,7 @@
                     "classTokenDescription": "Add to your prompt for best results",
                     "wordSuggestions": "Word Suggestions",
                     "wordsFound": "{count} words found",
-                    "loading": "Loading suggestions...",
-                    "frequency": "Frequency",
-                    "alreadyAdded": "Already added"
+                    "loading": "Loading suggestions..."
                 }
             },
             "description": {
@@ -527,11 +427,6 @@
                 "description": "Loading model description...",
                 "recipes": "Loading recipes...",
                 "examples": "Loading examples..."
-            },
-            "recipeTab": {
-                "noRecipesFound": "No recipes found that use this Lora.",
-                "loadingRecipes": "Loading recipes...",
-                "errorLoadingRecipes": "Failed to load recipes. Please try again later."
             }
         }
     },
@@ -546,44 +441,13 @@
             "duplicate": "This tag already exists"
         }
     },
-    "errors": {
-        "general": "An error occurred",
-        "networkError": "Network error. Please check your connection.",
-        "serverError": "Server error. Please try again later.",
-        "fileNotFound": "File not found",
-        "invalidFile": "Invalid file format",
-        "uploadFailed": "Upload failed",
-        "downloadFailed": "Download failed",
-        "saveFailed": "Save failed",
-        "loadFailed": "Load failed",
-        "deleteFailed": "Delete failed",
-        "moveFailed": "Move failed",
-        "copyFailed": "Copy failed",
-        "fetchFailed": "Failed to fetch data from Civitai",
-        "invalidUrl": "Invalid URL format",
-        "missingPermissions": "Insufficient permissions"
-    },
-    "success": {
-        "saved": "Successfully saved",
-        "deleted": "Successfully deleted",
-        "moved": "Successfully moved",
-        "copied": "Successfully copied",
-        "downloaded": "Successfully downloaded",
-        "uploaded": "Successfully uploaded",
-        "refreshed": "Successfully refreshed",
-        "exported": "Successfully exported",
-        "imported": "Successfully imported"
-    },
     "keyboard": {
         "navigation": "Keyboard Navigation:",
         "shortcuts": {
             "pageUp": "Scroll up one page",
             "pageDown": "Scroll down one page",
             "home": "Jump to top",
-            "end": "Jump to bottom",
-            "bulkMode": "Toggle bulk mode",
-            "search": "Focus search",
-            "escape": "Close modal/panel"
+            "end": "Jump to bottom"
         }
     },
     "initialization": {
@@ -638,12 +502,6 @@
                 "description": "Press Ctrl+F (Cmd+F on Mac) to quickly search within your current view.",
                 "alt": "Quick Search"
             }
-        },
-        "steps": {
-            "scanning": "Scanning model files...",
-            "processing": "Processing metadata...",
-            "building": "Building cache...",
-            "finalizing": "Finalizing..."
         }
     },
     "duplicates": {
@@ -669,13 +527,7 @@
         },
         "workflow": {
             "noSupportedNodes": "No supported target nodes found in workflow",
-            "communicationFailed": "Failed to communicate with ComfyUI",
-            "recipeReplaced": "Recipe replaced in workflow",
-            "recipeAdded": "Recipe added to workflow",
-            "loraReplaced": "LoRA replaced in workflow",
-            "loraAdded": "LoRA added to workflow",
-            "recipeFailedToSend": "Failed to send recipe to workflow",
-            "loraFailedToSend": "Failed to send LoRA to workflow"
+            "communicationFailed": "Failed to communicate with ComfyUI"
         },
         "nodeSelector": {
             "recipe": "Recipe",
@@ -690,16 +542,6 @@
             "openingFolder": "Opening example images folder",
             "failedToOpen": "Failed to open example images folder"
         }
-    },
-    "tooltips": {
-        "refresh": "Refresh the model list",
-        "bulkOperations": "Select multiple models for batch operations",
-        "favorites": "Show only favorite models",
-        "duplicates": "Find and manage duplicate models",
-        "search": "Search models by name, tags, or other criteria",
-        "filter": "Filter models by various criteria",
-        "sort": "Sort models by different attributes",
-                "tooltiptext": "Scroll back to top of page"
     },
     "help": {
         "title": "Help & Tutorials",
@@ -754,19 +596,15 @@
             "cannotInteractStandalone": "Cannot interact with ComfyUI in standalone mode",
             "failedWorkflowInfo": "Failed to get workflow information",
             "pageInitFailed": "Failed to initialize {pageType} page. Please reload.",
-            "statisticsLoadFailed": "Failed to load statistics data",
-            "unexpectedError": "An unexpected error occurred"
+            "statisticsLoadFailed": "Failed to load statistics data"
         },
         "loras": {
-            "fetchFromCivitai": "Fetch from Civitai",
-            "downloadFromUrl": "Download from URL",
             "copyOnlyForLoras": "Copy syntax is only available for LoRAs",
             "noLorasSelected": "No LoRAs selected",
             "missingDataForLoras": "Missing data for {count} LoRAs",
             "noValidLorasToCopy": "No valid LoRAs to copy",
             "sendOnlyForLoras": "Send to workflow is only available for LoRAs",
             "noValidLorasToSend": "No valid LoRAs to send",
-            "syntaxCopiedWithGroups": "LoRA syntax with trigger word groups copied to clipboard",
             "downloadSuccessful": "LoRAs downloaded successfully",
             "allDownloadSuccessful": "All {count} LoRAs downloaded successfully",
             "downloadPartialSuccess": "Downloaded {completed} of {total} LoRAs",
@@ -845,8 +683,6 @@
             "downloadTemplatesFailed": "Failed to save download path templates: {message}",
             "settingsUpdated": "Settings updated: {setting}",
             "compactModeToggled": "Compact Mode {state}",
-            "compactModeEnabled": "enabled",
-            "compactModeDisabled": "disabled",
             "settingSaveFailed": "Failed to save setting: {message}",
             "displayDensitySet": "Display Density set to {density}",
             "languageChangeFailed": "Failed to change language: {message}",
@@ -855,7 +691,6 @@
             "cacheClearError": "Error clearing cache: {message}"
         },
         "filters": {
-            "applied": "{message}",
             "cleared": "Filters cleared"
         },
         "downloads": {
@@ -916,9 +751,6 @@
             "missingHash": "Model hash not available"
         },
         "exampleImages": {
-            "checkError": "Error checking for example images",
-            "missingHash": "Missing model hash information.",
-            "noRemoteImages": "No remote example images available for this model on Civitai",
             "pathUpdated": "Example images path updated successfully",
             "downloadInProgress": "Download already in progress",
             "enterLocationFirst": "Please enter a download location first",

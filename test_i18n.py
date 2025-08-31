@@ -209,14 +209,29 @@ def extract_i18n_keys_from_html(file_path: str) -> Set[str]:
     return keys
 
 
-def get_all_translation_keys(data: dict, prefix: str = '') -> Set[str]:
-    """Recursively get all translation keys from nested dictionary."""
-    keys = set()
+def get_all_translation_keys(data: dict, prefix: str = '', include_containers: bool = False) -> Set[str]:
+    """
+    Recursively collect translation keys.
+    By default only leaf keys (where the value is NOT a dict) are returned so that
+    structural/container nodes (e.g. 'common', 'common.actions') are not treated
+    as real translation entries and won't appear in the 'unused' list.
+    
+    Set include_containers=True to also include container/object nodes.
+    """
+    keys: Set[str] = set()
+    if not isinstance(data, dict):
+        return keys
     for key, value in data.items():
         full_key = f"{prefix}.{key}" if prefix else key
-        keys.add(full_key)
         if isinstance(value, dict):
-            keys.update(get_all_translation_keys(value, full_key))
+            # Recurse first
+            keys.update(get_all_translation_keys(value, full_key, include_containers))
+            # Optionally include container nodes
+            if include_containers:
+                keys.add(full_key)
+        else:
+            # Leaf node: actual translatable value
+            keys.add(full_key)
     return keys
 
 
