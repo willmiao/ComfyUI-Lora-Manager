@@ -587,17 +587,6 @@
                 "recipes": "正在加载配方...",
                 "examples": "正在加载示例..."
             },
-            "tags": {
-                "messages": {
-                    "updated": "标签更新成功",
-                    "updateFailed": "更新标签失败"
-                },
-                "validation": {
-                    "maxLength": "标签长度不能超过30个字符",
-                    "maxCount": "最多允许30个标签",
-                    "duplicate": "该标签已存在"
-                }
-            },
             "recipeTab": {
                 "noRecipesFound": "未找到使用此 LoRA 的配方。",
                 "loadingRecipes": "正在加载配方...",
@@ -897,7 +886,11 @@
             "renameFailed": "重命名文件失败：{message}",
             "moveFailed": "移动模型失败：{message}",
             "pleaseSelectRoot": "请选择 {type} 根目录",
-            "nameTooLong": "模型名称限制为100个字符"
+            "nameTooLong": "模型名称限制为100个字符",
+            "verificationAlreadyDone": "This group has already been verified",
+            "verificationCompleteMismatch": "Verification complete. {count} file(s) have different actual hashes.",
+            "verificationCompleteSuccess": "Verification complete. All files are confirmed duplicates.",
+            "verificationFailed": "Failed to verify hashes: {message}"
         },
         "search": {
             "atLeastOneOption": "至少需要选择一个搜索选项"

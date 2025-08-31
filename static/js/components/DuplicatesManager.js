@@ -26,7 +26,7 @@ export class DuplicatesManager {
             this.duplicateGroups = data.duplicate_groups || [];
             
             if (this.duplicateGroups.length === 0) {
-                showToast('No duplicate recipes found', 'info');
+                showToast('toast.duplicates.noDuplicatesFound', { type: 'recipes' }, 'info');
                 return false;
             }
             
@@ -34,7 +34,7 @@ export class DuplicatesManager {
             return true;
         } catch (error) {
             console.error('Error finding duplicates:', error);
-            showToast('Failed to find duplicates: ' + error.message, 'error');
+            showToast('toast.duplicates.findFailed', { message: error.message }, 'error');
             return false;
         }
     }
@@ -325,7 +325,7 @@ export class DuplicatesManager {
     
     async deleteSelectedDuplicates() {
         if (this.selectedForDeletion.size === 0) {
-            showToast('No recipes selected for deletion', 'info');
+            showToast('toast.duplicates.noItemsSelected', { type: 'recipes' }, 'info');
             return;
         }
         
@@ -340,7 +340,7 @@ export class DuplicatesManager {
             modalManager.showModal('duplicateDeleteModal');
         } catch (error) {
             console.error('Error preparing delete:', error);
-            showToast('Error: ' + error.message, 'error');
+            showToast('toast.duplicates.deleteError', { message: error.message }, 'error');
         }
     }
     
@@ -371,7 +371,7 @@ export class DuplicatesManager {
                 throw new Error(data.error || 'Unknown error deleting recipes');
             }
             
-            showToast(`Successfully deleted ${data.total_deleted} recipes`, 'success');
+            showToast('toast.duplicates.deleteSuccess', { count: data.total_deleted, type: 'recipes' }, 'success');
             
             // Exit duplicate mode if deletions were successful
             if (data.total_deleted > 0) {
@@ -380,7 +380,7 @@ export class DuplicatesManager {
             
         } catch (error) {
             console.error('Error deleting recipes:', error);
-            showToast('Failed to delete recipes: ' + error.message, 'error');
+            showToast('toast.duplicates.deleteFailed', { type: 'recipes', message: error.message }, 'error');
         }
     }
 }

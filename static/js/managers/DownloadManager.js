@@ -343,7 +343,7 @@ export class DownloadManager {
             
             this.updateTargetPath();
         } catch (error) {
-            showToast('downloads.loadError', { message: error.message }, 'error');
+            showToast('toast.downloads.loadError', { message: error.message }, 'error');
         }
     }
 
@@ -418,7 +418,7 @@ export class DownloadManager {
         const config = this.apiClient.apiConfig.config;
         
         if (!modelRoot) {
-            showToast(`Please select a ${config.displayName} root directory`, 'error');
+            showToast('models.pleaseSelectRoot', { type: config.displayName }, 'error');
             return;
         }
 
@@ -507,7 +507,7 @@ export class DownloadManager {
             await resetAndReload(true);
 
         } catch (error) {
-            showToast('downloads.downloadError', { message: error.message }, 'error');
+            showToast('toast.downloads.downloadError', { message: error.message }, 'error');
         } finally {
             this.loadingManager.hide();
         }

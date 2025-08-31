@@ -445,7 +445,7 @@ export function initMediaControlHandlers(container) {
                         state.virtualScroller.updateSingleItem(result.model_file_path, updateData);
                     } else {
                         // Show error message
-                        showToast('showcase.exampleImages.deleteFailed', { error: result.error }, 'error');
+                        showToast('toast.exampleImages.deleteFailed', { error: result.error }, 'error');
                         
                         // Reset button state
                         this.disabled = false;

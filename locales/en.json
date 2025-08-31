@@ -587,17 +587,6 @@
                 "recipes": "Loading recipes...",
                 "examples": "Loading examples..."
             },
-            "tags": {
-                "messages": {
-                    "updated": "Tags updated successfully",
-                    "updateFailed": "Failed to update tags"
-                },
-                "validation": {
-                    "maxLength": "Tag should not exceed 30 characters",
-                    "maxCount": "Maximum 30 tags allowed",
-                    "duplicate": "This tag already exists"
-                }
-            },
             "recipeTab": {
                 "noRecipesFound": "No recipes found that use this Lora.",
                 "loadingRecipes": "Loading recipes...",
@@ -714,11 +703,6 @@
             "processing": "Processing metadata...",
             "building": "Building cache...",
             "finalizing": "Finalizing..."
-        }
-    },
-    "showcase": {
-        "exampleImages": {
-            "deleteFailed": "Failed to delete example image: {error}"
         }
     },
     "duplicates": {
@@ -900,7 +884,11 @@
             "renameFailed": "Failed to rename file: {message}",
             "moveFailed": "Failed to move model(s): {message}",
             "pleaseSelectRoot": "Please select a {type} root directory",
-            "nameTooLong": "Model name is limited to 100 characters"
+            "nameTooLong": "Model name is limited to 100 characters",
+            "verificationAlreadyDone": "This group has already been verified",
+            "verificationCompleteMismatch": "Verification complete. {count} file(s) have different actual hashes.",
+            "verificationCompleteSuccess": "Verification complete. All files are confirmed duplicates.",
+            "verificationFailed": "Failed to verify hashes: {message}"
         },
         "search": {
             "atLeastOneOption": "At least one search option must be selected"
@@ -930,17 +918,6 @@
             "cleared": "Filters cleared"
         },
         "downloads": {
-            "selectVersion": "Please select a version",
-            "versionExists": "This version already exists in your library",
-            "completed": "Download completed successfully",
-            "alreadyInProgress": "Download already in progress",
-            "enterLocationFirst": "Please enter a download location first",
-            "started": "Example images download started",
-            "startFailed": "Failed to start download",
-            "paused": "Download paused",
-            "pauseFailed": "Failed to pause download",
-            "resumed": "Download resumed",
-            "resumeFailed": "Failed to resume download",
             "imagesCompleted": "Example images {action} completed",
             "imagesFailed": "Example images {action} failed",
             "loadError": "Error loading downloads: {message}",
@@ -966,12 +943,6 @@
             "updateFailed": "Failed to update trigger words",
             "copyFailed": "Copy failed"
         },
-        "examples": {
-            "pathUpdated": "Example images path updated successfully",
-            "deleted": "Example image deleted",
-            "deleteFailed": "Failed to delete example image",
-            "setPreviewFailed": "Failed to set preview image"
-        },
         "virtual": {
             "loadFailed": "Failed to load items",
             "loadMoreFailed": "Failed to load more items",
@@ -980,19 +951,28 @@
         "bulk": {
             "unableToSelectAll": "Unable to select all items"
         },
-        "tags": {
-            "tagTooLong": "Tag is too long (max {max} characters)",
-            "tooManyTags": "Too many tags (max {max} tags)",
-            "tagAlreadyExists": "Tag already exists"
+        "duplicates": {
+            "findFailed": "Failed to find duplicates: {message}",
+            "noDuplicatesFound": "No duplicate {type} found",
+            "noItemsSelected": "No {type} selected for deletion",
+            "deleteError": "Error: {message}",
+            "deleteSuccess": "Successfully deleted {count} {type}",
+            "deleteFailed": "Failed to delete {type}: {message}"
         },
-        "favorites": {
-            "added": "Added to favorites",
-            "removed": "Removed from favorites",
-            "updateFailed": "Failed to update favorite status"
+        "controls": {
+            "reloadFailed": "Failed to reload {pageType}: {message}",
+            "refreshFailed": "Failed to {action} {pageType}: {message}",
+            "fetchMetadataFailed": "Failed to fetch metadata: {message}",
+            "clearFilterFailed": "Failed to clear custom filter: {message}"
         },
-        "workflow": {
-            "checkpointNotImplemented": "Send checkpoint to workflow - feature to be implemented",
-            "failedToSend": "Failed to send LoRA to workflow"
+        "contextMenu": {
+            "contentRatingSet": "Content rating set to {level}",
+            "contentRatingFailed": "Failed to set content rating: {message}",
+            "relinkSuccess": "Model successfully re-linked to Civitai",
+            "relinkFailed": "Error: {message}",
+            "fetchMetadataFirst": "Please fetch metadata from CivitAI first",
+            "noCivitaiInfo": "No CivitAI information available",
+            "missingHash": "Model hash not available"
         },
         "exampleImages": {
             "checkError": "Error checking for example images",

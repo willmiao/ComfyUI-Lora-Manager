@@ -447,7 +447,7 @@ async function sendToSpecificNode(nodeIds, loraSyntax, replaceMode, syntaxType) 
     } else {
       const messageKey = syntaxType === 'recipe' ? 
         'uiHelpers.workflow.recipeFailedToSend' :
-        'toast.workflow.failedToSend';
+        'uiHelpers.workflow.loraFailedToSend';
       showToast(messageKey, {}, 'error');
       return false;
     }
@@ -455,7 +455,7 @@ async function sendToSpecificNode(nodeIds, loraSyntax, replaceMode, syntaxType) 
     console.error('Failed to send to workflow:', error);
     const messageKey = syntaxType === 'recipe' ? 
       'uiHelpers.workflow.recipeFailedToSend' :
-      'toast.workflow.failedToSend';
+      'uiHelpers.workflow.loraFailedToSend';
     showToast(messageKey, {}, 'error');
     return false;
   }

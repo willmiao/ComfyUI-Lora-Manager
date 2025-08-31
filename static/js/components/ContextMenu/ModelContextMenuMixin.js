@@ -25,10 +25,10 @@ export const ModelContextMenuMixin = {
                 try {
                     await this.saveModelMetadata(filePath, { preview_nsfw_level: level });
                     
-                    showToast(`Content rating set to ${getNSFWLevelName(level)}`, 'success');
+                    showToast('toast.contextMenu.contentRatingSet', { level: getNSFWLevelName(level) }, 'success');
                     this.nsfwSelector.style.display = 'none';
                 } catch (error) {
-                    showToast(`Failed to set content rating: ${error.message}`, 'error');
+                    showToast('toast.contextMenu.contentRatingFailed', { message: error.message }, 'error');
                 }
             });
         });
@@ -147,7 +147,7 @@ export const ModelContextMenuMixin = {
                 const data = await response.json();
                 
                 if (data.success) {
-                    showToast('Model successfully re-linked to Civitai', 'success');
+                    showToast('toast.contextMenu.relinkSuccess', {}, 'success');
                     // Reload the current view to show updated data
                     await this.resetAndReload();
                 } else {
@@ -155,7 +155,7 @@ export const ModelContextMenuMixin = {
                 }
             } catch (error) {
                 console.error('Error re-linking model:', error);
-                showToast(`Error: ${error.message}`, 'error');
+                showToast('toast.contextMenu.relinkFailed', { message: error.message }, 'error');
             } finally {
                 state.loadingManager.hide();
             }
@@ -211,10 +211,10 @@ export const ModelContextMenuMixin = {
                     if (this.currentCard.querySelector('.fa-globe')) {
                         this.currentCard.querySelector('.fa-globe').click();
                     } else {
-                        showToast('Please fetch metadata from CivitAI first', 'info');
+                        showToast('toast.contextMenu.fetchMetadataFirst', {}, 'info');
                     }
                 } else {
-                    showToast('No CivitAI information available', 'info');
+                    showToast('toast.contextMenu.noCivitaiInfo', {}, 'info');
                 }
                 return true;
             case 'relink-civitai':
@@ -232,7 +232,7 @@ export const ModelContextMenuMixin = {
     async downloadExampleImages() {
         const modelHash = this.currentCard.dataset.sha256;
         if (!modelHash) {
-            showToast('Model hash not available', 'error');
+            showToast('toast.contextMenu.missingHash', {}, 'error');
             return;
         }
 

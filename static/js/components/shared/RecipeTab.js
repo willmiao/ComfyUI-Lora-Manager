@@ -162,7 +162,7 @@ function getLoraStatusTitle(totalCount, missingCount) {
  */
 function copyRecipeSyntax(recipeId) {
     if (!recipeId) {
-        showToast('Cannot copy recipe syntax: Missing recipe ID', 'error');
+        showToast('recipeTab.noRecipeId', {}, 'error');
         return;
     }
 
@@ -177,7 +177,7 @@ function copyRecipeSyntax(recipeId) {
         })
         .catch(err => {
             console.error('Failed to copy: ', err);
-            showToast('Failed to copy recipe syntax', 'error');
+            showToast('recipeTab.copyFailed', {}, 'error');
         });
 }
 

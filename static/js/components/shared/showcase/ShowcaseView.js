@@ -430,7 +430,7 @@ async function handleImportFiles(files, modelHash, importContainer) {
         }
     } catch (error) {
         console.error('Error importing examples:', error);
-        showToast(`Failed to import example images: ${error.message}`, 'error');
+        showToast('import.importFailed', { message: error.message }, 'error');
     }
 }
 

@@ -122,7 +122,7 @@ export class ModelDuplicatesManager {
             this.updateDuplicatesBadge(this.duplicateGroups.length);
             
             if (this.duplicateGroups.length === 0) {
-                showToast('No duplicate models found', 'info');
+                showToast('toast.duplicates.noDuplicatesFound', { type: this.modelType }, 'info');
                 return false;
             }
             
@@ -130,7 +130,7 @@ export class ModelDuplicatesManager {
             return true;
         } catch (error) {
             console.error('Error finding duplicates:', error);
-            showToast('Failed to find duplicates: ' + error.message, 'error');
+            showToast('toast.duplicates.findFailed', { message: error.message }, 'error');
             return false;
         }
     }
@@ -594,7 +594,7 @@ export class ModelDuplicatesManager {
     
     async deleteSelectedDuplicates() {
         if (this.selectedForDeletion.size === 0) {
-            showToast('No models selected for deletion', 'info');
+            showToast('toast.duplicates.noItemsSelected', { type: this.modelType }, 'info');
             return;
         }
         
@@ -609,7 +609,7 @@ export class ModelDuplicatesManager {
             modalManager.showModal('modelDuplicateDeleteModal');
         } catch (error) {
             console.error('Error preparing delete:', error);
-            showToast('Error: ' + error.message, 'error');
+            showToast('toast.duplicates.deleteError', { message: error.message }, 'error');
         }
     }
     
@@ -640,7 +640,7 @@ export class ModelDuplicatesManager {
                 throw new Error(data.error || 'Unknown error deleting models');
             }
             
-            showToast(`Successfully deleted ${data.total_deleted} models`, 'success');
+            showToast('toast.duplicates.deleteSuccess', { count: data.total_deleted, type: this.modelType }, 'success');
             
             // If models were successfully deleted
             if (data.total_deleted > 0) {
@@ -678,7 +678,7 @@ export class ModelDuplicatesManager {
             
         } catch (error) {
             console.error('Error deleting models:', error);
-            showToast('Failed to delete models: ' + error.message, 'error');
+            showToast('toast.duplicates.deleteFailed', { type: this.modelType, message: error.message }, 'error');
         }
     }
     
@@ -745,7 +745,7 @@ export class ModelDuplicatesManager {
             
             // Check if already verified
             if (this.verifiedGroups.has(groupHash)) {
-                showToast('This group has already been verified', 'info');
+                showToast('toast.models.verificationAlreadyDone', {}, 'info');
                 return;
             }
             
@@ -793,14 +793,14 @@ export class ModelDuplicatesManager {
             
             // Show appropriate toast message
             if (mismatchedFiles.length > 0) {
-                showToast(`Verification complete. ${mismatchedFiles.length} file(s) have different actual hashes.`, 'warning');
+                showToast('toast.models.verificationCompleteMismatch', { count: mismatchedFiles.length }, 'warning');
             } else {
-                showToast('Verification complete. All files are confirmed duplicates.', 'success');
+                showToast('toast.models.verificationCompleteSuccess', {}, 'success');
             }
             
         } catch (error) {
             console.error('Error verifying hashes:', error);
-            showToast('Failed to verify hashes: ' + error.message, 'error');
+            showToast('toast.models.verificationFailed', { message: error.message }, 'error');
         } finally {
             // Hide loading state
             state.loadingManager.hide();
