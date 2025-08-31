@@ -22,12 +22,12 @@
             "english": "English",
             "chinese_simplified": "中文（简体）",
             "chinese_traditional": "中文（繁体）",
-            "russian": "Русский",
-            "german": "Deutsch",
-            "japanese": "日本語",
-            "korean": "한국어",
-            "french": "Français",
-            "spanish": "Español"
+            "russian": "俄语",
+            "german": "德语",
+            "japanese": "日语",
+            "korean": "韩语",
+            "french": "法语",
+            "spanish": "西班牙语"
         },
         "fileSize": {
             "zero": "0 字节",
@@ -121,7 +121,110 @@
     "settings": {
         "civitaiApiKey": "Civitai API 密钥",
         "civitaiApiKeyPlaceholder": "请输入你的 Civitai API 密钥",
-        "civitaiApiKeyHelp": "用于从 Civitai 下载模型时的身份验证"
+        "civitaiApiKeyHelp": "用于从 Civitai 下载模型时的身份验证",
+        "sections": {
+            "contentFiltering": "内容过滤",
+            "videoSettings": "视频设置",
+            "layoutSettings": "布局设置",
+            "folderSettings": "文件夹设置",
+            "downloadPathTemplates": "下载路径模板",
+            "exampleImages": "示例图片",
+            "misc": "其他"
+        },
+        "contentFiltering": {
+            "blurNsfwContent": "模糊 NSFW 内容",
+            "blurNsfwContentHelp": "模糊成熟（NSFW）内容预览图片",
+            "showOnlySfw": "仅显示 SFW 结果",
+            "showOnlySfwHelp": "浏览和搜索时过滤所有 NSFW 内容"
+        },
+        "videoSettings": {
+            "autoplayOnHover": "悬停时自动播放视频",
+            "autoplayOnHoverHelp": "仅在悬停时播放视频预览"
+        },
+        "layoutSettings": {
+            "displayDensity": "显示密度",
+            "displayDensityOptions": {
+                "default": "默认",
+                "medium": "中等",
+                "compact": "紧凑"
+            },
+            "displayDensityHelp": "选择每行显示卡片数量：",
+            "displayDensityDetails": {
+                "default": "默认：5（1080p），6（2K），8（4K）",
+                "medium": "中等：6（1080p），7（2K），9（4K）",
+                "compact": "紧凑：7（1080p），8（2K），10（4K）"
+            },
+            "displayDensityWarning": "警告：高密度可能导致资源有限的系统性能下降。",
+            "cardInfoDisplay": "卡片信息显示",
+            "cardInfoDisplayOptions": {
+                "always": "始终可见",
+                "hover": "悬停时显示"
+            },
+            "cardInfoDisplayHelp": "选择何时显示模型信息和操作按钮：",
+            "cardInfoDisplayDetails": {
+                "always": "始终可见：标题和底部始终显示",
+                "hover": "悬停时显示：仅在悬停卡片时显示标题和底部"
+            }
+        },
+        "folderSettings": {
+            "defaultLoraRoot": "默认 LoRA 根目录",
+            "defaultLoraRootHelp": "设置下载、导入和移动时的默认 LoRA 根目录",
+            "defaultCheckpointRoot": "默认 Checkpoint 根目录",
+            "defaultCheckpointRootHelp": "设置下载、导入和移动时的默认 Checkpoint 根目录",
+            "defaultEmbeddingRoot": "默认 Embedding 根目录",
+            "defaultEmbeddingRootHelp": "设置下载、导入和移动时的默认 Embedding 根目录",
+            "noDefault": "无默认"
+        },
+        "downloadPathTemplates": {
+            "title": "下载路径模板",
+            "help": "配置从 Civitai 下载不同模型类型的文件夹结构。",
+            "availablePlaceholders": "可用占位符：",
+            "templateOptions": {
+                "flatStructure": "扁平结构",
+                "byBaseModel": "按基础模型",
+                "byAuthor": "按作者",
+                "byFirstTag": "按首标签",
+                "baseModelFirstTag": "基础模型 + 首标签",
+                "baseModelAuthor": "基础模型 + 作者",
+                "authorFirstTag": "作者 + 首标签",
+                "customTemplate": "自定义模板"
+            },
+            "customTemplatePlaceholder": "输入自定义模板（如：{base_model}/{author}/{first_tag}）",
+            "modelTypes": {
+                "lora": "LoRA",
+                "checkpoint": "Checkpoint",
+                "embedding": "Embedding"
+            },
+            "baseModelPathMappings": "基础模型路径映射",
+            "baseModelPathMappingsHelp": "为特定基础模型自定义文件夹名称（如“Flux.1 D”→“flux”）",
+            "addMapping": "添加映射",
+            "selectBaseModel": "选择基础模型",
+            "customPathPlaceholder": "自定义路径（如：flux）",
+            "removeMapping": "移除映射",
+            "validation": {
+                "validFlat": "有效（扁平结构）",
+                "invalidChars": "检测到无效字符",
+                "doubleSlashes": "不允许双斜杠",
+                "leadingTrailingSlash": "不能以斜杠开始或结束",
+                "invalidPlaceholder": "无效占位符：{placeholder}",
+                "validTemplate": "有效模板"
+            }
+        },
+        "exampleImages": {
+            "downloadLocation": "下载位置",
+            "downloadLocationPlaceholder": "输入示例图片文件夹路径",
+            "downloadLocationHelp": "输入保存从 Civitai 下载的示例图片的文件夹路径",
+            "autoDownload": "自动下载示例图片",
+            "autoDownloadHelp": "自动为没有示例图片的模型下载示例图片（需设置下载位置）",
+            "optimizeImages": "优化下载图片",
+            "optimizeImagesHelp": "优化示例图片以减少文件大小并提升加载速度（保留元数据）",
+            "download": "下载",
+            "restartRequired": "需要重启"
+        },
+        "misc": {
+            "includeTriggerWords": "复制 LoRA 语法时包含触发词",
+            "includeTriggerWordsHelp": "复制 LoRA 语法到剪贴板时包含训练触发词"
+        }
     },
     "loras": {
         "controls": {

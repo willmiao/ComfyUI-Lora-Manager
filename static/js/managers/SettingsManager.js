@@ -4,6 +4,7 @@ import { state } from '../state/index.js';
 import { resetAndReload } from '../api/modelApiFactory.js';
 import { setStorageItem, getStorageItem } from '../utils/storageHelpers.js';
 import { DOWNLOAD_PATH_TEMPLATES, MAPPABLE_BASE_MODELS, PATH_TEMPLATE_PLACEHOLDERS, DEFAULT_PATH_TEMPLATES } from '../utils/constants.js';
+import { translate } from '../utils/i18nHelpers.js';
 
 export class SettingsManager {
     constructor() {
@@ -431,13 +432,13 @@ export class SettingsManager {
         row.innerHTML = `
             <div class="mapping-controls">
                 <select class="base-model-select">
-                    <option value="">Select Base Model</option>
+                    <option value="">${translate('settings.downloadPathTemplates.selectBaseModel', {}, 'Select Base Model')}</option>
                     ${availableModels.map(model => 
                         `<option value="${model}" ${model === baseModel ? 'selected' : ''}>${model}</option>`
                     ).join('')}
                 </select>
-                <input type="text" class="path-value-input" placeholder="Custom path (e.g., flux)" value="${pathValue}">
-                <button type="button" class="remove-mapping-btn" title="Remove mapping">
+                <input type="text" class="path-value-input" placeholder="${translate('settings.downloadPathTemplates.customPathPlaceholder', {}, 'Custom path (e.g., flux)')}" value="${pathValue}">
+                <button type="button" class="remove-mapping-btn" title="${translate('settings.downloadPathTemplates.removeMapping', {}, 'Remove mapping')}">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -530,7 +531,7 @@ export class SettingsManager {
             );
 
             // Rebuild options
-            select.innerHTML = '<option value="">Select Base Model</option>' +
+            select.innerHTML = `<option value="">${translate('settings.downloadPathTemplates.selectBaseModel', {}, 'Select Base Model')}</option>` +
                 availableModels.map(model => 
                     `<option value="${model}" ${model === currentValue ? 'selected' : ''}>${model}</option>`
                 ).join('');
@@ -662,7 +663,7 @@ export class SettingsManager {
         validationElement.className = 'template-validation';
         
         if (!template) {
-            validationElement.innerHTML = '<i class="fas fa-check"></i> Valid (flat structure)';
+            validationElement.innerHTML = `<i class="fas fa-check"></i> ${translate('settings.downloadPathTemplates.validation.validFlat', {}, 'Valid (flat structure)')}`;
             validationElement.classList.add('valid');
             return true;
         }
@@ -670,21 +671,21 @@ export class SettingsManager {
         // Check for invalid characters
         const invalidChars = /[<>:"|?*]/;
         if (invalidChars.test(template)) {
-            validationElement.innerHTML = '<i class="fas fa-times"></i> Invalid characters detected';
+            validationElement.innerHTML = `<i class="fas fa-times"></i> ${translate('settings.downloadPathTemplates.validation.invalidChars', {}, 'Invalid characters detected')}`;
             validationElement.classList.add('invalid');
             return false;
         }
         
         // Check for double slashes
         if (template.includes('//')) {
-            validationElement.innerHTML = '<i class="fas fa-times"></i> Double slashes not allowed';
+            validationElement.innerHTML = `<i class="fas fa-times"></i> ${translate('settings.downloadPathTemplates.validation.doubleSlashes', {}, 'Double slashes not allowed')}`;
             validationElement.classList.add('invalid');
             return false;
         }
         
         // Check if it starts or ends with slash
         if (template.startsWith('/') || template.endsWith('/')) {
-            validationElement.innerHTML = '<i class="fas fa-times"></i> Cannot start or end with slash';
+            validationElement.innerHTML = `<i class="fas fa-times"></i> ${translate('settings.downloadPathTemplates.validation.leadingTrailingSlash', {}, 'Cannot start or end with slash')}`;
             validationElement.classList.add('invalid');
             return false;
         }
@@ -699,13 +700,13 @@ export class SettingsManager {
         );
         
         if (invalidPlaceholders.length > 0) {
-            validationElement.innerHTML = `<i class="fas fa-times"></i> Invalid placeholder: ${invalidPlaceholders[0]}`;
+            validationElement.innerHTML = `<i class="fas fa-times"></i> ${translate('settings.downloadPathTemplates.validation.invalidPlaceholder', { placeholder: invalidPlaceholders[0] }, `Invalid placeholder: ${invalidPlaceholders[0]}`)}`;
             validationElement.classList.add('invalid');
             return false;
         }
         
         // Template is valid
-        validationElement.innerHTML = '<i class="fas fa-check"></i> Valid template';
+        validationElement.innerHTML = `<i class="fas fa-check"></i> ${translate('settings.downloadPathTemplates.validation.validTemplate', {}, 'Valid template')}`;
         validationElement.classList.add('valid');
         return true;
     }

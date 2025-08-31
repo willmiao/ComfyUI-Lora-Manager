@@ -121,7 +121,110 @@
     "settings": {
         "civitaiApiKey": "Civitai API Key",
         "civitaiApiKeyPlaceholder": "Enter your Civitai API key",
-        "civitaiApiKeyHelp": "Used for authentication when downloading models from Civitai"
+        "civitaiApiKeyHelp": "Used for authentication when downloading models from Civitai",
+        "sections": {
+            "contentFiltering": "Content Filtering",
+            "videoSettings": "Video Settings",
+            "layoutSettings": "Layout Settings",
+            "folderSettings": "Folder Settings",
+            "downloadPathTemplates": "Download Path Templates",
+            "exampleImages": "Example Images",
+            "misc": "Misc."
+        },
+        "contentFiltering": {
+            "blurNsfwContent": "Blur NSFW Content",
+            "blurNsfwContentHelp": "Blur mature (NSFW) content preview images",
+            "showOnlySfw": "Show Only SFW Results",
+            "showOnlySfwHelp": "Filter out all NSFW content when browsing and searching"
+        },
+        "videoSettings": {
+            "autoplayOnHover": "Autoplay Videos on Hover",
+            "autoplayOnHoverHelp": "Only play video previews when hovering over them"
+        },
+        "layoutSettings": {
+            "displayDensity": "Display Density",
+            "displayDensityOptions": {
+                "default": "Default",
+                "medium": "Medium", 
+                "compact": "Compact"
+            },
+            "displayDensityHelp": "Choose how many cards to display per row:",
+            "displayDensityDetails": {
+                "default": "Default: 5 (1080p), 6 (2K), 8 (4K)",
+                "medium": "Medium: 6 (1080p), 7 (2K), 9 (4K)",
+                "compact": "Compact: 7 (1080p), 8 (2K), 10 (4K)"
+            },
+            "displayDensityWarning": "Warning: Higher densities may cause performance issues on systems with limited resources.",
+            "cardInfoDisplay": "Card Info Display",
+            "cardInfoDisplayOptions": {
+                "always": "Always Visible",
+                "hover": "Reveal on Hover"
+            },
+            "cardInfoDisplayHelp": "Choose when to display model information and action buttons:",
+            "cardInfoDisplayDetails": {
+                "always": "Always Visible: Headers and footers are always visible",
+                "hover": "Reveal on Hover: Headers and footers only appear when hovering over a card"
+            }
+        },
+        "folderSettings": {
+            "defaultLoraRoot": "Default LoRA Root",
+            "defaultLoraRootHelp": "Set the default LoRA root directory for downloads, imports and moves",
+            "defaultCheckpointRoot": "Default Checkpoint Root",
+            "defaultCheckpointRootHelp": "Set the default checkpoint root directory for downloads, imports and moves",
+            "defaultEmbeddingRoot": "Default Embedding Root",
+            "defaultEmbeddingRootHelp": "Set the default embedding root directory for downloads, imports and moves",
+            "noDefault": "No Default"
+        },
+        "downloadPathTemplates": {
+            "title": "Download Path Templates",
+            "help": "Configure folder structures for different model types when downloading from Civitai.",
+            "availablePlaceholders": "Available placeholders:",
+            "templateOptions": {
+                "flatStructure": "Flat Structure",
+                "byBaseModel": "By Base Model",
+                "byAuthor": "By Author", 
+                "byFirstTag": "By First Tag",
+                "baseModelFirstTag": "Base Model + First Tag",
+                "baseModelAuthor": "Base Model + Author",
+                "authorFirstTag": "Author + First Tag",
+                "customTemplate": "Custom Template"
+            },
+            "customTemplatePlaceholder": "Enter custom template (e.g., {base_model}/{author}/{first_tag})",
+            "modelTypes": {
+                "lora": "LoRA",
+                "checkpoint": "Checkpoint", 
+                "embedding": "Embedding"
+            },
+            "baseModelPathMappings": "Base Model Path Mappings",
+            "baseModelPathMappingsHelp": "Customize folder names for specific base models (e.g., \"Flux.1 D\" → \"flux\")",
+            "addMapping": "Add Mapping",
+            "selectBaseModel": "Select Base Model",
+            "customPathPlaceholder": "Custom path (e.g., flux)",
+            "removeMapping": "Remove mapping",
+            "validation": {
+                "validFlat": "Valid (flat structure)",
+                "invalidChars": "Invalid characters detected",
+                "doubleSlashes": "Double slashes not allowed",
+                "leadingTrailingSlash": "Cannot start or end with slash",
+                "invalidPlaceholder": "Invalid placeholder: {placeholder}",
+                "validTemplate": "Valid template"
+            }
+        },
+        "exampleImages": {
+            "downloadLocation": "Download Location",
+            "downloadLocationPlaceholder": "Enter folder path for example images",
+            "downloadLocationHelp": "Enter the folder path where example images from Civitai will be saved",
+            "autoDownload": "Auto Download Example Images",
+            "autoDownloadHelp": "Automatically download example images for models that don't have them (requires download location to be set)",
+            "optimizeImages": "Optimize Downloaded Images",
+            "optimizeImagesHelp": "Optimize example images to reduce file size and improve loading speed (metadata will be preserved)",
+            "download": "Download",
+            "restartRequired": "Requires restart"
+        },
+        "misc": {
+            "includeTriggerWords": "Include Trigger Words in LoRA Syntax",
+            "includeTriggerWordsHelp": "Include trained trigger words when copying LoRA syntax to clipboard"
+        }
     },
     "loras": {
         "controls": {
