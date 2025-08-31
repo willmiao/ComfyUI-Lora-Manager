@@ -77,7 +77,7 @@ export class DownloadManager {
                 if (!result.success) {
                     // Handle save error
                     console.error("Failed to save recipe:", result.error);
-                    showToast('import.recipeSaveFailed', { error: result.error }, 'error');
+                    showToast('toast.import.recipeSaveFailed', { error: result.error }, 'error');
                     // Close modal
                     modalManager.closeModal('importModal');
                     return;
@@ -107,7 +107,7 @@ export class DownloadManager {
             
         } catch (error) {
             console.error('Error:', error);
-            showToast('import.processingError', { message: error.message }, 'error');
+            showToast('toast.import.processingError', { message: error.message }, 'error');
         } finally {
             this.importManager.loadingManager.hide();
         }

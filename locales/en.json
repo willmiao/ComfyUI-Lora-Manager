@@ -1,67 +1,22 @@
 {
     "common": {
-        "file": "File",
-        "folder": "Folder",
-        "name": "Name",
-        "size": "Size",
-        "date": "Date",
-        "type": "Type",
-        "path": "Path",
-        "fileSize": {
-            "zero": "0 Bytes",
-            "bytes": "Bytes",
-            "kb": "KB",
-            "mb": "MB",
-            "gb": "GB",
-            "tb": "TB"
-        },
         "actions": {
             "save": "Save",
             "cancel": "Cancel",
             "delete": "Delete",
-            "edit": "Edit",
-            "copy": "Copy",
             "move": "Move",
             "refresh": "Refresh",
-            "download": "Download",
-            "upload": "Upload",
-            "search": "Search",
-            "filter": "Filter",
-            "sort": "Sort",
-            "select": "Select",
-            "selectAll": "Select All",
-            "deselectAll": "Deselect All",
-            "confirm": "Confirm",
-            "close": "Close",
             "back": "Back",
             "next": "Next",
-            "previous": "Previous",
-            "view": "View",
-            "preview": "Preview",
-            "details": "Details",
             "backToTop": "Back to top",
             "settings": "Settings",
-            "help": "Help",
-            "about": "About"
+            "help": "Help"
         },
         "status": {
             "loading": "Loading...",
-            "saving": "Saving...",
-            "saved": "Saved",
-            "error": "Error",
-            "success": "Success",
-            "warning": "Warning",
-            "info": "Information",
-            "processing": "Processing...",
-            "completed": "Completed",
-            "failed": "Failed",
-            "cancelled": "Cancelled",
-            "pending": "Pending",
-            "ready": "Ready",
             "unknown": "Unknown"
         },
         "language": {
-            "current": "Language",
             "select": "Select Language",
             "select_help": "Choose your preferred language for the interface",
             "english": "English",
@@ -304,24 +259,10 @@
         }
     },
     "checkpoints": {
-        "title": "Checkpoint Models",
-        "info": {
-            "filename": "Filename",
-            "modelName": "Model Name",
-            "baseModel": "Base Model",
-            "fileSize": "File Size",
-            "dateAdded": "Date Added"
-        }
+        "title": "Checkpoint Models"
     },
     "embeddings": {
-        "title": "Embedding Models",
-        "info": {
-            "filename": "Filename",
-            "modelName": "Model Name",
-            "triggerWords": "Trigger Words",
-            "fileSize": "File Size",
-            "dateAdded": "Date Added"
-        }
+        "title": "Embedding Models"
     },
     "sidebar": {
         "modelRoot": "Model Root",

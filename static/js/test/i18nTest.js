@@ -5,6 +5,7 @@
 
 import { i18n } from '../i18n/index.js';
 import { initializePageI18n, t, formatFileSize, formatDate, formatNumber } from '../utils/i18nHelpers.js';
+import { findUnusedTranslationKeys, findMissingTranslationKeys, extractLeafKeys } from '../i18n/validator.js';
 
 // Mock DOM elements for testing
 function createMockDOM() {
@@ -96,6 +97,35 @@ function testLanguageDetection() {
     console.log(`Browser language: ${navigator.language}`);
 }
 
+// Test unused translations detection
+function testUnusedTranslationsDetection() {
+    console.log('=== Testing Unused Translations Detection ===');
+    
+    // Mock used keys
+    const mockUsedKeys = [
+        'common.actions.save',
+        'common.actions.cancel',
+        'header.appTitle'
+    ];
+    
+    // Get all translations
+    const allTranslations = i18n.getTranslations();
+    
+    // Find unused keys (only considering leaf nodes)
+    const unusedKeys = findUnusedTranslationKeys(allTranslations, mockUsedKeys);
+    
+    console.log(`Found ${unusedKeys.length} unused translation keys`);
+    console.log('First 5 unused keys:', unusedKeys.slice(0, 5));
+    
+    // Find missing keys
+    const missingKeys = findMissingTranslationKeys(allTranslations, [
+        ...mockUsedKeys,
+        'non.existent.key'
+    ]);
+    
+    console.log(`Found ${missingKeys.length} missing translation keys:`, missingKeys);
+}
+
 // Run all tests
 function runTests() {
     console.log('Starting i18n System Tests...');
@@ -109,6 +139,9 @@ function runTests() {
     if (typeof document !== 'undefined') {
         testDOMTranslation();
     }
+    
+    // Test unused translations detection
+    testUnusedTranslationsDetection();
     
     console.log('=====================================');
     console.log('i18n System Tests Completed!');

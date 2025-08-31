@@ -418,7 +418,7 @@ export class DownloadManager {
         const config = this.apiClient.apiConfig.config;
         
         if (!modelRoot) {
-            showToast('models.pleaseSelectRoot', { type: config.displayName }, 'error');
+            showToast('toast.models.pleaseSelectRoot', { type: config.displayName }, 'error');
             return;
         }
 
