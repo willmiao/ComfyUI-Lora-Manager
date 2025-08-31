@@ -328,6 +328,20 @@
                 "x": "성인 전용",
                 "xxx": "성인 노골적"
             }
+        },
+        "model": {
+            "description": {
+                "noDescription": "모델 설명이 없습니다",
+                "failedToLoad": "모델 설명 로드에 실패했습니다",
+                "editTitle": "모델 설명 편집",
+                "validation": {
+                    "cannotBeEmpty": "설명은 비어있을 수 없습니다"
+                },
+                "messages": {
+                    "updated": "모델 설명이 업데이트되었습니다",
+                    "updateFailed": "모델 설명 업데이트에 실패했습니다"
+                }
+            }
         }
     },
     "errors": {

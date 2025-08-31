@@ -18,6 +18,7 @@ import { renderCompactTags, setupTagTooltip, formatFileSize } from './utils.js';
 import { renderTriggerWords, setupTriggerWordsEditMode } from './TriggerWords.js';
 import { parsePresets, renderPresetTags } from './PresetTags.js';
 import { loadRecipesForLora } from './RecipeTab.js';
+import { safeTranslate } from '../../utils/i18nHelpers.js';
 
 /**
  * Display the model modal with the given model data
@@ -61,24 +62,33 @@ export async function showModelModal(model, modelType) {
     }
 
     // Generate tabs based on model type
+    const examplesText = await safeTranslate('modals.model.tabs.examples', {}, 'Examples');
+    const descriptionText = await safeTranslate('modals.model.tabs.description', {}, 'Model Description');
+    const recipesText = await safeTranslate('modals.model.tabs.recipes', {}, 'Recipes');
+    
     const tabsContent = modelType === 'loras' ? 
-        `<button class="tab-btn active" data-tab="showcase">Examples</button>
-            <button class="tab-btn" data-tab="description">Model Description</button>
-            <button class="tab-btn" data-tab="recipes">Recipes</button>` :
-        `<button class="tab-btn active" data-tab="showcase">Examples</button>
-            <button class="tab-btn" data-tab="description">Model Description</button>`;
+        `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
+            <button class="tab-btn" data-tab="description">${descriptionText}</button>
+            <button class="tab-btn" data-tab="recipes">${recipesText}</button>` :
+        `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
+            <button class="tab-btn" data-tab="description">${descriptionText}</button>`;
+    
+    const loadingExampleImagesText = await safeTranslate('modals.model.loading.exampleImages', {}, 'Loading example images...');
+    const loadingDescriptionText = await safeTranslate('modals.model.loading.description', {}, 'Loading model description...');
+    const loadingRecipesText = await safeTranslate('modals.model.loading.recipes', {}, 'Loading recipes...');
+    const loadingExamplesText = await safeTranslate('modals.model.loading.examples', {}, 'Loading examples...');
     
     const tabPanesContent = modelType === 'loras' ? 
         `<div id="showcase-tab" class="tab-pane active">
             <div class="example-images-loading">
-                <i class="fas fa-spinner fa-spin"></i> Loading example images...
+                <i class="fas fa-spinner fa-spin"></i> ${loadingExampleImagesText}
             </div>
         </div>
         
         <div id="description-tab" class="tab-pane">
             <div class="model-description-container">
                 <div class="model-description-loading">
-                    <i class="fas fa-spinner fa-spin"></i> Loading model description...
+                    <i class="fas fa-spinner fa-spin"></i> ${loadingDescriptionText}
                 </div>
                 <div class="model-description-content hidden">
                 </div>
@@ -87,19 +97,19 @@ export async function showModelModal(model, modelType) {
         
         <div id="recipes-tab" class="tab-pane">
             <div class="recipes-loading">
-                <i class="fas fa-spinner fa-spin"></i> Loading recipes...
+                <i class="fas fa-spinner fa-spin"></i> ${loadingRecipesText}
             </div>
         </div>` :
         `<div id="showcase-tab" class="tab-pane active">
             <div class="recipes-loading">
-                <i class="fas fa-spinner fa-spin"></i> Loading examples...
+                <i class="fas fa-spinner fa-spin"></i> ${loadingExamplesText}
             </div>
         </div>
         
         <div id="description-tab" class="tab-pane">
             <div class="model-description-container">
                 <div class="model-description-loading">
-                    <i class="fas fa-spinner fa-spin"></i> Loading model description...
+                    <i class="fas fa-spinner fa-spin"></i> ${loadingDescriptionText}
                 </div>
                 <div class="model-description-content hidden">
                 </div>

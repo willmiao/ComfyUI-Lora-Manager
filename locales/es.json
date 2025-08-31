@@ -328,6 +328,20 @@
                 "x": "Solo adultos",
                 "xxx": "Explícito"
             }
+        },
+        "model": {
+            "description": {
+                "noDescription": "No hay descripción del modelo disponible",
+                "failedToLoad": "Error al cargar la descripción del modelo",
+                "editTitle": "Editar descripción del modelo",
+                "validation": {
+                    "cannotBeEmpty": "La descripción no puede estar vacía"
+                },
+                "messages": {
+                    "updated": "Descripción del modelo actualizada",
+                    "updateFailed": "Error al actualizar la descripción del modelo"
+                }
+            }
         }
     },
     "errors": {

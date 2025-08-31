@@ -3,6 +3,26 @@
  */
 
 /**
+ * Synchronous translation function.
+ * Assumes window.i18n is ready.
+ * @param {string} key - Translation key
+ * @param {Object} params - Parameters for interpolation
+ * @param {string} fallback - Fallback text if translation fails
+ * @returns {string} Translated text
+ */
+export function translate(key, params = {}, fallback = null) {
+    if (!window.i18n) {
+        console.warn('i18n not available');
+        return fallback || key;
+    }
+    const translation = window.i18n.t(key, params);
+    if (translation === key && fallback) {
+        return fallback;
+    }
+    return translation;
+}
+
+/**
  * Safe translation function that waits for i18n to be ready
  * @param {string} key - Translation key
  * @param {Object} params - Parameters for interpolation

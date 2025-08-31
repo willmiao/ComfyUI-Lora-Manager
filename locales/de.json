@@ -328,6 +328,20 @@
                 "x": "Nur Erwachsene",
                 "xxx": "Explizit"
             }
+        },
+        "model": {
+            "description": {
+                "noDescription": "Keine Modellbeschreibung verfügbar",
+                "failedToLoad": "Fehler beim Laden der Modellbeschreibung",
+                "editTitle": "Modellbeschreibung bearbeiten",
+                "validation": {
+                    "cannotBeEmpty": "Beschreibung darf nicht leer sein"
+                },
+                "messages": {
+                    "updated": "Modellbeschreibung aktualisiert",
+                    "updateFailed": "Fehler beim Aktualisieren der Modellbeschreibung"
+                }
+            }
         }
     },
     "errors": {

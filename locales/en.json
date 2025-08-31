@@ -73,6 +73,48 @@
             "korean": "한국어",
             "french": "Français",
             "spanish": "Español"
+        },
+        "modelCard": {
+            "favorites": {
+                "added": "Added to favorites",
+                "removed": "Removed from favorites",
+                "updateFailed": "Failed to update favorite status"
+            },
+            "sendToWorkflow": {
+                "checkpointNotImplemented": "Send checkpoint to workflow - feature to be implemented"
+            },
+            "exampleImages": {
+                "checkError": "Error checking for example images",
+                "missingHash": "Missing model hash information."
+            }
+        },
+        "modelTags": {
+            "messages": {
+                "updated": "Tags updated successfully",
+                "updateFailed": "Failed to update tags"
+            },
+            "validation": {
+                "maxLength": "Tag should not exceed 30 characters",
+                "maxCount": "Maximum 30 tags allowed",
+                "duplicate": "This tag already exists"
+            }
+        },
+        "modelMetadata": {
+            "validation": {
+                "nameTooLong": "Model name is limited to 100 characters",
+                "nameEmpty": "Model name cannot be empty"
+            },
+            "messages": {
+                "nameUpdated": "Model name updated successfully",
+                "nameUpdateFailed": "Failed to update model name",
+                "baseModelUpdated": "Base model updated successfully",
+                "baseModelUpdateFailed": "Failed to update base model"
+            }
+        },
+        "recipeTab": {
+            "noRecipesFound": "No recipes found that use this Lora.",
+            "loadingRecipes": "Loading recipes...",
+            "errorLoadingRecipes": "Failed to load recipes. Please try again later."
         }
     },
     "header": {
@@ -443,6 +485,31 @@
                 "note": "Note: If no modelVersionId is provided, the latest version will be used."
             },
             "confirmAction": "Confirm Re-link"
+        },
+        "model": {
+            "description": {
+                "noDescription": "No model description available",
+                "failedToLoad": "Failed to load model description",
+                "editTitle": "Edit model description",
+                "validation": {
+                    "cannotBeEmpty": "Description cannot be empty"
+                },
+                "messages": {
+                    "updated": "Model description updated",
+                    "updateFailed": "Failed to update model description"
+                }
+            },
+            "tabs": {
+                "examples": "Examples",
+                "description": "Model Description",
+                "recipes": "Recipes"
+            },
+            "loading": {
+                "exampleImages": "Loading example images...",
+                "description": "Loading model description...",
+                "recipes": "Loading recipes...",
+                "examples": "Loading examples..."
+            }
         }
     },
     "errors": {

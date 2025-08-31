@@ -328,6 +328,20 @@
                 "x": "成人級",
                 "xxx": "重口級"
             }
+        },
+        "model": {
+            "description": {
+                "noDescription": "無模型描述資訊",
+                "failedToLoad": "載入模型描述失敗",
+                "editTitle": "編輯模型描述",
+                "validation": {
+                    "cannotBeEmpty": "描述不能為空"
+                },
+                "messages": {
+                    "updated": "模型描述已更新",
+                    "updateFailed": "更新模型描述失敗"
+                }
+            }
         }
     },
     "errors": {

@@ -328,6 +328,20 @@
                 "x": "Adultes seulement",
                 "xxx": "Explicite"
             }
+        },
+        "model": {
+            "description": {
+                "noDescription": "Aucune description de modèle disponible",
+                "failedToLoad": "Échec du chargement de la description du modèle",
+                "editTitle": "Modifier la description du modèle",
+                "validation": {
+                    "cannotBeEmpty": "La description ne peut pas être vide"
+                },
+                "messages": {
+                    "updated": "Description du modèle mise à jour",
+                    "updateFailed": "Échec de la mise à jour de la description du modèle"
+                }
+            }
         }
     },
     "errors": {

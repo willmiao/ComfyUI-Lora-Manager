@@ -4,6 +4,7 @@
  */
 import { showToast } from '../../utils/uiHelpers.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
+import { safeTranslate } from '../../utils/i18nHelpers.js';
 
 // Preset tag suggestions
 const PRESET_TAGS = [
@@ -216,10 +217,10 @@ async function saveTags() {
         // Exit edit mode
         editBtn.click();
         
-        showToast('Tags updated successfully', 'success');
+        showToast(await safeTranslate('modelTags.messages.updated', {}, 'Tags updated successfully'), 'success');
     } catch (error) {
         console.error('Error saving tags:', error);
-        showToast('Failed to update tags', 'error');
+        showToast(await safeTranslate('modelTags.messages.updateFailed', {}, 'Failed to update tags'), 'error');
     }
 }
 
@@ -361,21 +362,24 @@ function addNewTag(tag) {
     
     // Validation: Check length
     if (tag.length > 30) {
-        showToast('Tag should not exceed 30 characters', 'error');
+        safeTranslate('modelTags.validation.maxLength', {}, 'Tag should not exceed 30 characters')
+            .then(text => showToast(text, 'error'));
         return;
     }
     
     // Validation: Check total number
     const currentTags = tagsContainer.querySelectorAll('.metadata-item');
     if (currentTags.length >= 30) {
-        showToast('Maximum 30 tags allowed', 'error');
+        safeTranslate('modelTags.validation.maxCount', {}, 'Maximum 30 tags allowed')
+            .then(text => showToast(text, 'error'));
         return;
     }
     
     // Validation: Check for duplicates
     const existingTags = Array.from(currentTags).map(tag => tag.dataset.tag);
     if (existingTags.includes(tag)) {
-        showToast('This tag already exists', 'error');
+        safeTranslate('modelTags.validation.duplicate', {}, 'This tag already exists')
+            .then(text => showToast(text, 'error'));
         return;
     }
     

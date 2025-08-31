@@ -328,6 +328,20 @@
                 "x": "成人向け",
                 "xxx": "露骨"
             }
+        },
+        "model": {
+            "description": {
+                "noDescription": "モデルの説明がありません",
+                "failedToLoad": "モデルの説明の読み込みに失敗しました",
+                "editTitle": "モデルの説明を編集",
+                "validation": {
+                    "cannotBeEmpty": "説明を空にすることはできません"
+                },
+                "messages": {
+                    "updated": "モデルの説明を更新しました",
+                    "updateFailed": "モデルの説明の更新に失敗しました"
+                }
+            }
         }
     },
     "errors": {

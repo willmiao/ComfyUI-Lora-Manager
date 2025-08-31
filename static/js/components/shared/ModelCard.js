@@ -8,6 +8,7 @@ import { NSFW_LEVELS } from '../../utils/constants.js';
 import { MODEL_TYPES } from '../../api/apiConfig.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { showDeleteModal } from '../../utils/modalUtils.js';
+import { safeTranslate } from '../../utils/i18nHelpers.js';
 
 // Add global event delegation handlers
 export function setupModelCardEventDelegation(modelType) {
@@ -142,13 +143,16 @@ async function toggleFavorite(card) {
         });
 
         if (newFavoriteState) {
-            showToast('Added to favorites', 'success');
+            const addedText = await safeTranslate('modelCard.favorites.added', {}, 'Added to favorites');
+            showToast(addedText, 'success');
         } else {
-            showToast('Removed from favorites', 'success');
+            const removedText = await safeTranslate('modelCard.favorites.removed', {}, 'Removed from favorites');
+            showToast(removedText, 'success');
         }
     } catch (error) {
         console.error('Failed to update favorite status:', error);
-        showToast('Failed to update favorite status', 'error');
+        const errorText = await safeTranslate('modelCard.favorites.updateFailed', {}, 'Failed to update favorite status');
+        showToast(errorText, 'error');
     }
 }
 
@@ -160,7 +164,8 @@ function handleSendToWorkflow(card, replaceMode, modelType) {
         sendLoraToWorkflow(loraSyntax, replaceMode, 'lora');
     } else {
         // Checkpoint send functionality - to be implemented
-        showToast('Send checkpoint to workflow - feature to be implemented', 'info');
+        safeTranslate('modelCard.sendToWorkflow.checkpointNotImplemented', {}, 'Send checkpoint to workflow - feature to be implemented')
+            .then(text => showToast(text, 'info'));
     }
 }
 
@@ -195,7 +200,8 @@ async function handleExampleImagesAccess(card, modelType) {
         }
     } catch (error) {
         console.error('Error checking for example images:', error);
-        showToast('Error checking for example images', 'error');
+        safeTranslate('modelCard.exampleImages.checkError', {}, 'Error checking for example images')
+            .then(text => showToast(text, 'error'));
     }
 }
 
@@ -277,7 +283,8 @@ function showExampleAccessModal(card, modelType) {
                 // Get the model hash
                 const modelHash = card.dataset.sha256;
                 if (!modelHash) {
-                    showToast('Missing model hash information.', 'error');
+                    safeTranslate('modelCard.exampleImages.missingHash', {}, 'Missing model hash information.')
+                        .then(text => showToast(text, 'error'));
                     return;
                 }
                 

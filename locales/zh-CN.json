@@ -73,6 +73,48 @@
             "korean": "한국어",
             "french": "Français",
             "spanish": "Español"
+        },
+        "modelCard": {
+            "favorites": {
+                "added": "已添加到收藏",
+                "removed": "已从收藏中移除",
+                "updateFailed": "更新收藏状态失败"
+            },
+            "sendToWorkflow": {
+                "checkpointNotImplemented": "发送 Checkpoint 到工作流 - 功能待实现"
+            },
+            "exampleImages": {
+                "checkError": "检查示例图片时出错",
+                "missingHash": "缺少模型哈希信息。"
+            }
+        },
+        "modelTags": {
+            "messages": {
+                "updated": "标签更新成功",
+                "updateFailed": "更新标签失败"
+            },
+            "validation": {
+                "maxLength": "标签长度不能超过30个字符",
+                "maxCount": "最多允许30个标签",
+                "duplicate": "该标签已存在"
+            }
+        },
+        "modelMetadata": {
+            "validation": {
+                "nameTooLong": "模型名称最多100个字符",
+                "nameEmpty": "模型名称不能为空"
+            },
+            "messages": {
+                "nameUpdated": "模型名称更新成功",
+                "nameUpdateFailed": "更新模型名称失败",
+                "baseModelUpdated": "基础模型更新成功",
+                "baseModelUpdateFailed": "更新基础模型失败"
+            }
+        },
+        "recipeTab": {
+            "noRecipesFound": "未找到使用此 LoRA 的配方。",
+            "loadingRecipes": "正在加载配方...",
+            "errorLoadingRecipes": "加载配方失败。请稍后重试。"
         }
     },
     "header": {
@@ -443,6 +485,31 @@
                 "note": "注意：如果未提供 modelVersionId，将使用最新版本。"
             },
             "confirmAction": "确认重新链接"
+        },
+        "model": {
+            "description": {
+                "noDescription": "无模型描述信息",
+                "failedToLoad": "加载模型描述失败",
+                "editTitle": "编辑模型描述",
+                "validation": {
+                    "cannotBeEmpty": "描述不能为空"
+                },
+                "messages": {
+                    "updated": "模型描述已更新",
+                    "updateFailed": "更新模型描述失败"
+                }
+            },
+            "tabs": {
+                "examples": "示例图片",
+                "description": "模型描述",
+                "recipes": "配方"
+            },
+            "loading": {
+                "exampleImages": "正在加载示例图片...",
+                "description": "正在加载模型描述...",
+                "recipes": "正在加载配方...",
+                "examples": "正在加载示例..."
+            }
         }
     },
     "errors": {
