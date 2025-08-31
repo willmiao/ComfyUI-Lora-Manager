@@ -713,7 +713,8 @@
         },
         "filters": {
             "applied": "{message}",
-            "cleared": "Filters cleared"
+            "cleared": "Filters cleared",
+            "noCustomFilterToClear": "No custom filter to clear"
         },
         "downloads": {
             "imagesCompleted": "Example images {action} completed",

@@ -162,7 +162,7 @@ function getLoraStatusTitle(totalCount, missingCount) {
  */
 function copyRecipeSyntax(recipeId) {
     if (!recipeId) {
-        showToast('recipeTab.noRecipeId', {}, 'error');
+        showToast('toast.recipes.noRecipeId', {}, 'error');
         return;
     }
 
@@ -177,7 +177,7 @@ function copyRecipeSyntax(recipeId) {
         })
         .catch(err => {
             console.error('Failed to copy: ', err);
-            showToast('recipeTab.copyFailed', {}, 'error');
+            showToast('toast.recipes.copyFailed', { message: err.message }, 'error');
         });
 }
 
