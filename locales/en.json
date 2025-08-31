@@ -376,19 +376,39 @@
         },
         "download": {
             "title": "Download Model from URL",
+            "titleWithType": "Download {type} from URL",
             "url": "Civitai URL",
+            "civitaiUrl": "Civitai URL:",
             "placeholder": "https://civitai.com/models/...",
             "locationPreview": "Download Location Preview",
             "useDefaultPath": "Use Default Path",
             "useDefaultPathTooltip": "When enabled, files are automatically organized using configured path templates",
             "selectRootDirectory": "Select a root directory",
             "selectModelRoot": "Select Model Root:",
+            "selectTypeRoot": "Select {type} Root:",
             "targetFolderPath": "Target Folder Path:",
             "browseFolders": "Browse Folders:",
             "createNewFolder": "Create new folder",
             "pathPlaceholder": "Type folder path or select from tree below...",
             "root": "Root",
-            "download": "Download"
+            "download": "Download",
+            "fetchingVersions": "Fetching model versions...",
+            "versionPreview": "Version preview",
+            "earlyAccess": "Early Access",
+            "earlyAccessTooltip": "Early access required",
+            "inLibrary": "In Library",
+            "alreadyInLibrary": "Already in Library",
+            "autoOrganizedPath": "[Auto-organized by path template]",
+            "errors": {
+                "invalidUrl": "Invalid Civitai URL format",
+                "noVersions": "No versions available for this model"
+            },
+            "status": {
+                "preparing": "Preparing download...",
+                "downloadedPreview": "Downloaded preview image",
+                "downloadingFile": "Downloading {type} file",
+                "finalizing": "Finalizing download..."
+            }
         },
         "move": {
             "title": "Move Models"

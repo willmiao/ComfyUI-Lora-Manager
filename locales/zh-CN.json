@@ -376,19 +376,39 @@
         },
         "download": {
             "title": "从 URL 下载模型",
+            "titleWithType": "从 URL 下载 {type}",
             "url": "Civitai URL",
+            "civitaiUrl": "Civitai URL:",
             "placeholder": "https://civitai.com/models/...",
             "locationPreview": "下载位置预览",
             "useDefaultPath": "使用默认路径",
             "useDefaultPathTooltip": "启用后，文件将自动按配置的路径模板进行整理",
             "selectRootDirectory": "选择根目录",
             "selectModelRoot": "选择模型根目录：",
+            "selectTypeRoot": "选择 {type} 根目录：",
             "targetFolderPath": "目标文件夹路径：",
             "browseFolders": "浏览文件夹：",
             "createNewFolder": "新建文件夹",
             "pathPlaceholder": "输入文件夹路径或从下方树中选择...",
             "root": "根目录",
-            "download": "下载"
+            "download": "下载",
+            "fetchingVersions": "正在获取模型版本...",
+            "versionPreview": "版本预览",
+            "earlyAccess": "早期访问",
+            "earlyAccessTooltip": "需要早期访问权限",
+            "inLibrary": "已在库中",
+            "alreadyInLibrary": "已存在于库中",
+            "autoOrganizedPath": "【已按路径模板自动整理】",
+            "errors": {
+                "invalidUrl": "无效的 Civitai URL 格式",
+                "noVersions": "此模型没有可用版本"
+            },
+            "status": {
+                "preparing": "正在准备下载...",
+                "downloadedPreview": "预览图片已下载",
+                "downloadingFile": "正在下载 {type} 文件",
+                "finalizing": "正在完成下载..."
+            }
         },
         "move": {
             "title": "移动模型"

@@ -5,6 +5,7 @@ import { LoadingManager } from './LoadingManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 import { FolderTreeManager } from '../components/FolderTreeManager.js';
+import { translate } from '../utils/i18nHelpers.js';
 
 export class DownloadManager {
     constructor() {
@@ -85,26 +86,26 @@ export class DownloadManager {
         const config = this.apiClient.apiConfig.config;
         
         // Update modal title
-        document.getElementById('downloadModalTitle').textContent = `Download ${config.displayName} from URL`;
+        document.getElementById('downloadModalTitle').textContent = translate('modals.download.titleWithType', { type: config.displayName });
         
         // Update URL label
-        document.getElementById('modelUrlLabel').textContent = 'Civitai URL:';
+        document.getElementById('modelUrlLabel').textContent = translate('modals.download.civitaiUrl');
         
         // Update root selection label
-        document.getElementById('modelRootLabel').textContent = `Select ${config.displayName} Root:`;
+        document.getElementById('modelRootLabel').textContent = translate('modals.download.selectTypeRoot', { type: config.displayName });
         
         // Update path preview labels
         const pathLabels = document.querySelectorAll('.path-preview label');
         pathLabels.forEach(label => {
             if (label.textContent.includes('Location Preview')) {
-                label.textContent = 'Download Location Preview:';
+                label.textContent = translate('modals.download.locationPreview') + ':';
             }
         });
         
         // Update initial path text
         const pathText = document.querySelector('#targetPathDisplay .path-text');
         if (pathText) {
-            pathText.textContent = `Select a ${config.displayName} root directory`;
+            pathText.textContent = translate('modals.download.selectTypeRoot', { type: config.displayName });
         }
     }
 
@@ -142,17 +143,17 @@ export class DownloadManager {
         const errorElement = document.getElementById('urlError');
         
         try {
-            this.loadingManager.showSimpleLoading('Fetching model versions...');
+            this.loadingManager.showSimpleLoading(translate('modals.download.fetchingVersions'));
             
             this.modelId = this.extractModelId(url);
             if (!this.modelId) {
-                throw new Error('Invalid Civitai URL format');
+                throw new Error(translate('modals.download.errors.invalidUrl'));
             }
 
             this.versions = await this.apiClient.fetchCivitaiVersions(this.modelId);
             
             if (!this.versions.length) {
-                throw new Error('No versions available for this model');
+                throw new Error(translate('modals.download.errors.noVersions'));
             }
             
             // If we have a version ID from URL, pre-select it
@@ -199,15 +200,15 @@ export class DownloadManager {
             let earlyAccessBadge = '';
             if (isEarlyAccess) {
                 earlyAccessBadge = `
-                    <div class="early-access-badge" title="Early access required">
-                        <i class="fas fa-clock"></i> Early Access
+                    <div class="early-access-badge" title="${translate('modals.download.earlyAccessTooltip')}">
+                        <i class="fas fa-clock"></i> ${translate('modals.download.earlyAccess')}
                     </div>
                 `;
             }
             
             const localStatus = existsLocally ? 
                 `<div class="local-badge">
-                    <i class="fas fa-check"></i> In Library
+                    <i class="fas fa-check"></i> ${translate('modals.download.inLibrary')}
                     <div class="local-path">${localPath || ''}</div>
                  </div>` : '';
 
@@ -217,7 +218,7 @@ export class DownloadManager {
                      ${isEarlyAccess ? 'is-early-access' : ''}"
                      data-version-id="${version.id}">
                     <div class="version-thumbnail">
-                        <img src="${thumbnailUrl}" alt="Version preview">
+                        <img src="${thumbnailUrl}" alt="${translate('modals.download.versionPreview')}">
                     </div>
                     <div class="version-content">
                         <div class="version-header">
@@ -273,11 +274,11 @@ export class DownloadManager {
         if (existsLocally) {
             nextButton.disabled = true;
             nextButton.classList.add('disabled');
-            nextButton.textContent = 'Already in Library';
+            nextButton.textContent = translate('modals.download.alreadyInLibrary');
         } else {
             nextButton.disabled = false;
             nextButton.classList.remove('disabled');
-            nextButton.textContent = 'Next';
+            nextButton.textContent = translate('common.actions.next');
         }
     }
 
@@ -455,13 +456,13 @@ export class DownloadManager {
                     updateProgress(data.progress, 0, this.currentVersion.name);
                     
                     if (data.progress < 3) {
-                        this.loadingManager.setStatus(`Preparing download...`);
+                        this.loadingManager.setStatus(translate('modals.download.status.preparing'));
                     } else if (data.progress === 3) {
-                        this.loadingManager.setStatus(`Downloaded preview image`);
+                        this.loadingManager.setStatus(translate('modals.download.status.downloadedPreview'));
                     } else if (data.progress > 3 && data.progress < 100) {
-                        this.loadingManager.setStatus(`Downloading ${config.singularName} file`);
+                        this.loadingManager.setStatus(translate('modals.download.status.downloadingFile', { type: config.singularName }));
                     } else {
-                        this.loadingManager.setStatus(`Finalizing download...`);
+                        this.loadingManager.setStatus(translate('modals.download.status.finalizing'));
                     }
                 }
             };
@@ -586,7 +587,7 @@ export class DownloadManager {
         const modelRoot = document.getElementById('modelRoot').value;
         const config = this.apiClient.apiConfig.config;
         
-        let fullPath = modelRoot || `Select a ${config.displayName} root directory`;
+        let fullPath = modelRoot || translate('modals.download.selectTypeRoot', { type: config.displayName });
         
         if (modelRoot) {
             if (this.useDefaultPath) {
@@ -598,7 +599,7 @@ export class DownloadManager {
                     fullPath += `/${template}`;
                 } catch (error) {
                     console.error('Failed to fetch template:', error);
-                    fullPath += '/[Auto-organized by path template]';
+                    fullPath += '/' + translate('modals.download.autoOrganizedPath');
                 }
             } else {
                 // Show manual path selection
