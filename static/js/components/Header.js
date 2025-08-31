@@ -59,7 +59,7 @@ export class HeaderManager {
           if (typeof toggleTheme === 'function') {
             const newTheme = toggleTheme();
             // 使用i18nHelpers更新themeToggle的title
-            await this.updateThemeTooltip(themeToggle, newTheme);
+            this.updateThemeTooltip(themeToggle, newTheme);
           }
         });
       }
@@ -124,7 +124,7 @@ export class HeaderManager {
       this.updateHeaderForPage();
     }
 
-    async updateHeaderForPage() {
+    updateHeaderForPage() {
       const headerSearch = document.getElementById('headerSearch');
       const searchInput = headerSearch?.querySelector('#searchInput');
       const searchButtons = headerSearch?.querySelectorAll('button');
@@ -134,22 +134,22 @@ export class HeaderManager {
         headerSearch.classList.add('disabled');
         if (searchInput) {
           searchInput.disabled = true;
-          // 使用i18nHelpers更新placeholder
-          await updateElementAttribute(searchInput, 'placeholder', 'header.search.notAvailable', {}, 'Search not available on statistics page');
+          // Use i18nHelpers to update placeholder
+          updateElementAttribute(searchInput, 'placeholder', 'header.search.notAvailable', {}, 'Search not available on statistics page');
         }
         searchButtons?.forEach(btn => btn.disabled = true);
       } else if (headerSearch) {
         headerSearch.classList.remove('disabled');
         if (searchInput) {
           searchInput.disabled = false;
-          // 使用i18nHelpers更新placeholder
-          await updateElementAttribute(searchInput, 'placeholder', placeholderKey, {}, '');
+          // Use i18nHelpers to update placeholder
+          updateElementAttribute(searchInput, 'placeholder', placeholderKey, {}, '');
         }
         searchButtons?.forEach(btn => btn.disabled = false);
       }
     }
 
-    async updateThemeTooltip(themeToggle, currentTheme) {
+    updateThemeTooltip(themeToggle, currentTheme) {
       if (!themeToggle) return;
       let key;
       if (currentTheme === 'light') {
@@ -159,7 +159,7 @@ export class HeaderManager {
       } else {
         key = 'header.theme.toggle';
       }
-      // 使用i18nHelpers更新title
-      await updateElementAttribute(themeToggle, 'title', key, {}, '');
+      // Use i18nHelpers to update title
+      updateElementAttribute(themeToggle, 'title', key, {}, '');
     }
 }

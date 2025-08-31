@@ -29,6 +29,8 @@ export class AppCore {
         
         // Initialize i18n first
         window.i18n = i18n;
+        // Wait for i18n to be ready
+        await window.i18n.waitForReady();
         
         console.log(`AppCore: Language set: ${i18n.getCurrentLocale()}`);
         

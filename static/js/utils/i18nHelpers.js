@@ -23,20 +23,17 @@ export function translate(key, params = {}, fallback = null) {
 }
 
 /**
- * Safe translation function that waits for i18n to be ready
+ * Safe translation function. Assumes i18n is already ready.
  * @param {string} key - Translation key
  * @param {Object} params - Parameters for interpolation
  * @param {string} fallback - Fallback text if translation fails
- * @returns {Promise<string>} Translated text
+ * @returns {string} Translated text
  */
-export async function safeTranslate(key, params = {}, fallback = null) {
+export function safeTranslate(key, params = {}, fallback = null) {
     if (!window.i18n) {
         console.warn('i18n not available');
         return fallback || key;
     }
-    
-    // Wait for i18n to be ready
-    await window.i18n.waitForReady();
     
     const translation = window.i18n.t(key, params);
     
@@ -55,11 +52,11 @@ export async function safeTranslate(key, params = {}, fallback = null) {
  * @param {Object} params - Parameters for interpolation
  * @param {string} fallback - Fallback text
  */
-export async function updateElementText(element, key, params = {}, fallback = null) {
+export function updateElementText(element, key, params = {}, fallback = null) {
     const el = typeof element === 'string' ? document.querySelector(element) : element;
     if (!el) return;
     
-    const text = await safeTranslate(key, params, fallback);
+    const text = safeTranslate(key, params, fallback);
     el.textContent = text;
 }
 
@@ -71,11 +68,11 @@ export async function updateElementText(element, key, params = {}, fallback = nu
  * @param {Object} params - Parameters for interpolation
  * @param {string} fallback - Fallback text
  */
-export async function updateElementAttribute(element, attribute, key, params = {}, fallback = null) {
+export function updateElementAttribute(element, attribute, key, params = {}, fallback = null) {
     const el = typeof element === 'string' ? document.querySelector(element) : element;
     if (!el) return;
     
-    const text = await safeTranslate(key, params, fallback);
+    const text = safeTranslate(key, params, fallback);
     el.setAttribute(attribute, text);
 }
 
@@ -88,10 +85,9 @@ export async function updateElementAttribute(element, attribute, key, params = {
 export function createReactiveTranslation(key, params = {}, callback) {
     let currentLanguage = null;
     
-    const updateTranslation = async () => {
+    const updateTranslation = () => {
         if (!window.i18n) return;
         
-        await window.i18n.waitForReady();
         const newLanguage = window.i18n.getCurrentLocale();
         
         // Only update if language changed or first time
@@ -121,18 +117,16 @@ export function createReactiveTranslation(key, params = {}, callback) {
  * @param {Array} updates - Array of update configurations
  * Each update should have: { element, key, type: 'text'|'attribute', attribute?, params?, fallback? }
  */
-export async function batchUpdateTranslations(updates) {
+export function batchUpdateTranslations(updates) {
     if (!window.i18n) return;
-    
-    await window.i18n.waitForReady();
     
     for (const update of updates) {
         const { element, key, type = 'text', attribute, params = {}, fallback } = update;
         
         if (type === 'text') {
-            await updateElementText(element, key, params, fallback);
+            updateElementText(element, key, params, fallback);
         } else if (type === 'attribute' && attribute) {
-            await updateElementAttribute(element, attribute, key, params, fallback);
+            updateElementAttribute(element, attribute, key, params, fallback);
         }
     }
 }

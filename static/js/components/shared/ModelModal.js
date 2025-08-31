@@ -62,9 +62,9 @@ export async function showModelModal(model, modelType) {
     }
 
     // Generate tabs based on model type
-    const examplesText = await safeTranslate('modals.model.tabs.examples', {}, 'Examples');
-    const descriptionText = await safeTranslate('modals.model.tabs.description', {}, 'Model Description');
-    const recipesText = await safeTranslate('modals.model.tabs.recipes', {}, 'Recipes');
+    const examplesText = safeTranslate('modals.model.tabs.examples', {}, 'Examples');
+    const descriptionText = safeTranslate('modals.model.tabs.description', {}, 'Model Description');
+    const recipesText = safeTranslate('modals.model.tabs.recipes', {}, 'Recipes');
     
     const tabsContent = modelType === 'loras' ? 
         `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
@@ -73,10 +73,10 @@ export async function showModelModal(model, modelType) {
         `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
             <button class="tab-btn" data-tab="description">${descriptionText}</button>`;
     
-    const loadingExampleImagesText = await safeTranslate('modals.model.loading.exampleImages', {}, 'Loading example images...');
-    const loadingDescriptionText = await safeTranslate('modals.model.loading.description', {}, 'Loading model description...');
-    const loadingRecipesText = await safeTranslate('modals.model.loading.recipes', {}, 'Loading recipes...');
-    const loadingExamplesText = await safeTranslate('modals.model.loading.examples', {}, 'Loading examples...');
+    const loadingExampleImagesText = safeTranslate('modals.model.loading.exampleImages', {}, 'Loading example images...');
+    const loadingDescriptionText = safeTranslate('modals.model.loading.description', {}, 'Loading model description...');
+    const loadingRecipesText = safeTranslate('modals.model.loading.recipes', {}, 'Loading recipes...');
+    const loadingExamplesText = safeTranslate('modals.model.loading.examples', {}, 'Loading examples...');
     
     const tabPanesContent = modelType === 'loras' ? 
         `<div id="showcase-tab" class="tab-pane active">

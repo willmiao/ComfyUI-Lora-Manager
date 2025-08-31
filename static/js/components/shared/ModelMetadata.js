@@ -83,8 +83,8 @@ export function setupModelNameEditing(filePath) {
             sel.removeAllRanges();
             sel.addRange(range);
             
-            safeTranslate('modelMetadata.validation.nameTooLong', {}, 'Model name is limited to 100 characters')
-                .then(text => showToast(text, 'warning'));
+            const text = safeTranslate('modelMetadata.validation.nameTooLong', {}, 'Model name is limited to 100 characters');
+            showToast(text, 'warning');
         }
     });
     
