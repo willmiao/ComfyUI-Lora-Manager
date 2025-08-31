@@ -438,11 +438,9 @@ async function saveNotes(filePath) {
     try {
         await getModelApiClient().saveModelMetadata(filePath, { notes: content });
 
-        const successMessage = translate('modals.model.notes.saved', {}, 'Notes saved successfully');
-        showToast(successMessage, 'success');
+        showToast('modals.model.notes.saved', {}, 'success');
     } catch (error) {
-        const errorMessage = translate('modals.model.notes.saveFailed', {}, 'Failed to save notes');
-        showToast(errorMessage, 'error');
+        showToast('modals.model.notes.saveFailed', {}, 'error');
     }
 }
 

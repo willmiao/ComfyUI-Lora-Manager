@@ -154,8 +154,7 @@ export async function setupModelDescriptionEditing(filePath) {
         }
         if (!newValue) {
             this.innerHTML = originalValue;
-            const emptyErrorText = translate('modals.model.description.validation.cannotBeEmpty', {}, 'Description cannot be empty');
-            showToast(emptyErrorText, 'error');
+            showToast('modals.model.description.validation.cannotBeEmpty', {}, 'error');
             exitEditMode();
             return;
         }
@@ -163,12 +162,10 @@ export async function setupModelDescriptionEditing(filePath) {
             // Save to backend
             const { getModelApiClient } = await import('../../api/modelApiFactory.js');
             await getModelApiClient().saveModelMetadata(filePath, { modelDescription: newValue });
-            const successText = translate('modals.model.description.messages.updated', {}, 'Model description updated');
-            showToast(successText, 'success');
+            showToast('modals.model.description.messages.updated', {}, 'success');
         } catch (err) {
             this.innerHTML = originalValue;
-            const errorText = translate('modals.model.description.messages.updateFailed', {}, 'Failed to update model description');
-            showToast(errorText, 'error');
+            showToast('modals.model.description.messages.updateFailed', {}, 'error');
         } finally {
             exitEditMode();
         }

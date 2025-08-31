@@ -285,7 +285,7 @@ class ExampleImagesManager {
                 // Close settings modal
                 modalManager.closeModal('settingsModal');
             } else {
-                showToast(data.error || 'Failed to start download', 'error');
+                showToast('exampleImages.downloadStartFailed', { error: data.error }, 'error');
             }
         } catch (error) {
             console.error('Failed to start download:', error);
@@ -321,7 +321,7 @@ class ExampleImagesManager {
                 this.updateDownloadButtonText();
                 showToast('toast.exampleImages.downloadPaused', {}, 'info');
             } else {
-                showToast(data.error || 'Failed to pause download', 'error');
+                showToast('exampleImages.pauseFailed', { error: data.error }, 'error');
             }
         } catch (error) {
             console.error('Failed to pause download:', error);
@@ -357,7 +357,7 @@ class ExampleImagesManager {
                 this.updateDownloadButtonText();
                 showToast('toast.exampleImages.downloadResumed', {}, 'success');
             } else {
-                showToast(data.error || 'Failed to resume download', 'error');
+                showToast('exampleImages.resumeFailed', { error: data.error }, 'error');
             }
         } catch (error) {
             console.error('Failed to resume download:', error);

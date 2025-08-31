@@ -136,7 +136,7 @@ export class FolderBrowser {
             this.initializeFolderBrowser();
         } catch (error) {
             console.error('Error in API calls:', error);
-            showToast(error.message, 'error');
+            showToast('import.folderBrowserError', { message: error.message }, 'error');
         }
     }
 

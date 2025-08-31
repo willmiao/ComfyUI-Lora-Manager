@@ -217,10 +217,10 @@ async function saveTags() {
         // Exit edit mode
         editBtn.click();
         
-        showToast(translate('modelTags.messages.updated', {}, 'Tags updated successfully'), 'success');
+        showToast('modelTags.messages.updated', {}, 'success');
     } catch (error) {
         console.error('Error saving tags:', error);
-        showToast(translate('modelTags.messages.updateFailed', {}, 'Failed to update tags'), 'error');
+        showToast('modelTags.messages.updateFailed', {}, 'error');
     }
 }
 
@@ -362,24 +362,21 @@ function addNewTag(tag) {
     
     // Validation: Check length
     if (tag.length > 30) {
-        const text = translate('modelTags.validation.maxLength', {}, 'Tag should not exceed 30 characters');
-        showToast(text, 'error');
+        showToast('modelTags.validation.maxLength', {}, 'error');
         return;
     }
     
     // Validation: Check total number
     const currentTags = tagsContainer.querySelectorAll('.metadata-item');
     if (currentTags.length >= 30) {
-        const text = translate('modelTags.validation.maxCount', {}, 'Maximum 30 tags allowed');
-        showToast(text, 'error');
+        showToast('modelTags.validation.maxCount', {}, 'error');
         return;
     }
     
     // Validation: Check for duplicates
     const existingTags = Array.from(currentTags).map(tag => tag.dataset.tag);
     if (existingTags.includes(tag)) {
-        const text = translate('modelTags.validation.duplicate', {}, 'This tag already exists');
-        showToast(text, 'error');
+        showToast('modelTags.validation.duplicate', {}, 'error');
         return;
     }
     

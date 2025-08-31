@@ -280,6 +280,27 @@
                 "export": "导出配方",
                 "delete": "删除配方"
             }
+        },
+        "contextMenu": {
+            "copyRecipe": {
+                "missingId": "无法复制配方：缺少配方 ID",
+                "failed": "复制配方语法失败"
+            },
+            "sendRecipe": {
+                "missingId": "无法发送配方：缺少配方 ID",
+                "failed": "发送配方到工作流失败"
+            },
+            "viewLoras": {
+                "missingId": "无法查看 LoRA：缺少配方 ID",
+                "noLorasFound": "在此配方中未找到 LoRA",
+                "loadError": "加载配方 LoRA 错误：{message}"
+            },
+            "downloadMissing": {
+                "missingId": "无法下载 LoRA：缺少配方 ID",
+                "noMissingLoras": "没有缺失的 LoRA 需要下载",
+                "getInfoFailed": "获取缺失 LoRA 信息失败",
+                "prepareError": "准备下载 LoRA 时出错：{message}"
+            }
         }
     },
     "checkpoints": {
@@ -561,6 +582,22 @@
                 "loadingRecipes": "正在加载配方...",
                 "errorLoadingRecipes": "加载配方失败。请稍后重试。"
             }
+        }
+    },
+    "showcase": {
+        "exampleImages": {
+            "deleteFailed": "删除示例图片失败：{error}"
+        }
+    },
+    "modelTags": {
+        "messages": {
+            "updated": "标签更新成功",
+            "updateFailed": "更新标签失败"
+        },
+        "validation": {
+            "maxLength": "标签长度不应超过 30 个字符",
+            "maxCount": "最多允许 30 个标签",
+            "duplicate": "此标签已存在"
         }
     },
     "errors": {
@@ -899,8 +936,14 @@
             "previewUploadFailed": "上传预览图失败",
             "refreshComplete": "{action} 完成",
             "refreshFailed": "{action} {type} 失败",
+            "metadataRefreshed": "元数据刷新成功",
+            "metadataRefreshFailed": "刷新元数据失败：{message}",
             "metadataUpdateComplete": "元数据更新完成",
             "metadataFetchFailed": "获取元数据失败：{message}",
+            "bulkMetadataCompleteAll": "成功刷新了所有 {count} 个 {type}",
+            "bulkMetadataCompletePartial": "已刷新 {success} / {total} 个 {type}",
+            "bulkMetadataCompleteNone": "刷新任何 {type} 的元数据都失败了",
+            "bulkMetadataFailureDetails": "刷新失败：\n{failures}",
             "bulkMetadataFailed": "刷新元数据失败：{message}",
             "moveNotSupported": "不支持移动 {type}",
             "alreadyInFolder": "{type} 已在所选文件夹中",

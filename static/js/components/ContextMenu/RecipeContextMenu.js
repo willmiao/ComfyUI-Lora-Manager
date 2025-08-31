@@ -99,7 +99,7 @@ export class RecipeContextMenu extends BaseContextMenu {
     copyRecipeSyntax() {
         const recipeId = this.currentCard.dataset.id;
         if (!recipeId) {
-            showToast('Cannot copy recipe: Missing recipe ID', 'error');
+            showToast('recipes.contextMenu.copyRecipe.missingId', {}, 'error');
             return;
         }
 
@@ -114,7 +114,7 @@ export class RecipeContextMenu extends BaseContextMenu {
             })
             .catch(err => {
                 console.error('Failed to copy recipe syntax: ', err);
-                showToast('Failed to copy recipe syntax', 'error');
+                showToast('recipes.contextMenu.copyRecipe.failed', {}, 'error');
             });
     }
     
@@ -122,7 +122,7 @@ export class RecipeContextMenu extends BaseContextMenu {
     sendRecipeToWorkflow(replaceMode) {
         const recipeId = this.currentCard.dataset.id;
         if (!recipeId) {
-            showToast('Cannot send recipe: Missing recipe ID', 'error');
+            showToast('recipes.contextMenu.sendRecipe.missingId', {}, 'error');
             return;
         }
 
@@ -137,14 +137,14 @@ export class RecipeContextMenu extends BaseContextMenu {
             })
             .catch(err => {
                 console.error('Failed to send recipe to workflow: ', err);
-                showToast('Failed to send recipe to workflow', 'error');
+                showToast('recipes.contextMenu.sendRecipe.failed', {}, 'error');
             });
     }
     
     // View all LoRAs in the recipe
     viewRecipeLoRAs(recipeId) {
         if (!recipeId) {
-            showToast('Cannot view LoRAs: Missing recipe ID', 'error');
+            showToast('recipes.contextMenu.viewLoras.missingId', {}, 'error');
             return;
         }
         
@@ -171,19 +171,19 @@ export class RecipeContextMenu extends BaseContextMenu {
                     // Navigate to the LoRAs page
                     window.location.href = '/loras';
                 } else {
-                    showToast('No LoRAs found in this recipe', 'info');
+                    showToast('recipes.contextMenu.viewLoras.noLorasFound', {}, 'info');
                 }
             })
             .catch(error => {
                 console.error('Error loading recipe LoRAs:', error);
-                showToast('Error loading recipe LoRAs: ' + error.message, 'error');
+                showToast('recipes.contextMenu.viewLoras.loadError', { message: error.message }, 'error');
             });
     }
     
     // Download missing LoRAs
     async downloadMissingLoRAs(recipeId) {
         if (!recipeId) {
-            showToast('Cannot download LoRAs: Missing recipe ID', 'error');
+            showToast('recipes.contextMenu.downloadMissing.missingId', {}, 'error');
             return;
         }
         
@@ -196,7 +196,7 @@ export class RecipeContextMenu extends BaseContextMenu {
             const missingLoras = recipe.loras.filter(lora => !lora.inLibrary && !lora.isDeleted);
             
             if (missingLoras.length === 0) {
-                showToast('No missing LoRAs to download', 'info');
+                showToast('recipes.contextMenu.downloadMissing.noMissingLoras', {}, 'info');
                 return;
             }
             
@@ -234,7 +234,7 @@ export class RecipeContextMenu extends BaseContextMenu {
             const validLoras = lorasWithVersionInfo.filter(lora => lora !== null);
             
             if (validLoras.length === 0) {
-                showToast('Failed to get information for missing LoRAs', 'error');
+                showToast('recipes.contextMenu.downloadMissing.getInfoFailed', {}, 'error');
                 return;
             }
             
@@ -275,7 +275,7 @@ export class RecipeContextMenu extends BaseContextMenu {
             window.importManager.downloadMissingLoras(recipeData, recipeId);
         } catch (error) {
             console.error('Error downloading missing LoRAs:', error);
-            showToast('Error preparing LoRAs for download: ' + error.message, 'error');
+            showToast('recipes.contextMenu.downloadMissing.prepareError', { message: error.message }, 'error');
         } finally {
             if (state.loadingManager) {
                 state.loadingManager.hide();

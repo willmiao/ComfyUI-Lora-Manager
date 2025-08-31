@@ -143,16 +143,13 @@ async function toggleFavorite(card) {
         });
 
         if (newFavoriteState) {
-            const addedText = translate('modelCard.favorites.added', {}, 'Added to favorites');
-            showToast(addedText, 'success');
+            showToast('modelCard.favorites.added', {}, 'success');
         } else {
-            const removedText = translate('modelCard.favorites.removed', {}, 'Removed from favorites');
-            showToast(removedText, 'success');
+            showToast('modelCard.favorites.removed', {}, 'success');
         }
     } catch (error) {
         console.error('Failed to update favorite status:', error);
-        const errorText = translate('modelCard.favorites.updateFailed', {}, 'Failed to update favorite status');
-        showToast(errorText, 'error');
+        showToast('modelCard.favorites.updateFailed', {}, 'error');
     }
 }
 
@@ -164,8 +161,7 @@ function handleSendToWorkflow(card, replaceMode, modelType) {
         sendLoraToWorkflow(loraSyntax, replaceMode, 'lora');
     } else {
         // Checkpoint send functionality - to be implemented
-        const text = translate('modelCard.sendToWorkflow.checkpointNotImplemented', {}, 'Send checkpoint to workflow - feature to be implemented');
-        showToast(text, 'info');
+        showToast('modelCard.sendToWorkflow.checkpointNotImplemented', {}, 'info');
     }
 }
 
@@ -201,8 +197,7 @@ async function handleExampleImagesAccess(card, modelType) {
         }
     } catch (error) {
         console.error('Error checking for example images:', error);
-        const text = translate('modelCard.exampleImages.checkError', {}, 'Error checking for example images');
-        showToast(text, 'error');
+        showToast('modelCard.exampleImages.checkError', {}, 'error');
     }
 }
 
@@ -284,8 +279,7 @@ function showExampleAccessModal(card, modelType) {
                 // Get the model hash
                 const modelHash = card.dataset.sha256;
                 if (!modelHash) {
-                    const text = translate('modelCard.exampleImages.missingHash', {}, 'Missing model hash information.');
-                    showToast(text, 'error');
+                    showToast('modelCard.exampleImages.missingHash', {}, 'error');
                     return;
                 }
                 

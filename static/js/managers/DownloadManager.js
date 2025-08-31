@@ -343,7 +343,7 @@ export class DownloadManager {
             
             this.updateTargetPath();
         } catch (error) {
-            showToast(error.message, 'error');
+            showToast('downloads.loadError', { message: error.message }, 'error');
         }
     }
 
@@ -507,7 +507,7 @@ export class DownloadManager {
             await resetAndReload(true);
 
         } catch (error) {
-            showToast(error.message, 'error');
+            showToast('downloads.downloadError', { message: error.message }, 'error');
         } finally {
             this.loadingManager.hide();
         }

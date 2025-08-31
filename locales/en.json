@@ -280,6 +280,27 @@
                 "export": "Export Recipe",
                 "delete": "Delete Recipe"
             }
+        },
+        "contextMenu": {
+            "copyRecipe": {
+                "missingId": "Cannot copy recipe: Missing recipe ID",
+                "failed": "Failed to copy recipe syntax"
+            },
+            "sendRecipe": {
+                "missingId": "Cannot send recipe: Missing recipe ID",
+                "failed": "Failed to send recipe to workflow"
+            },
+            "viewLoras": {
+                "missingId": "Cannot view LoRAs: Missing recipe ID",
+                "noLorasFound": "No LoRAs found in this recipe",
+                "loadError": "Error loading recipe LoRAs: {message}"
+            },
+            "downloadMissing": {
+                "missingId": "Cannot download LoRAs: Missing recipe ID",
+                "noMissingLoras": "No missing LoRAs to download",
+                "getInfoFailed": "Failed to get information for missing LoRAs",
+                "prepareError": "Error preparing LoRAs for download: {message}"
+            }
         }
     },
     "checkpoints": {
@@ -563,6 +584,17 @@
             }
         }
     },
+    "modelTags": {
+        "messages": {
+            "updated": "Tags updated successfully",
+            "updateFailed": "Failed to update tags"
+        },
+        "validation": {
+            "maxLength": "Tag should not exceed 30 characters",
+            "maxCount": "Maximum 30 tags allowed",
+            "duplicate": "This tag already exists"
+        }
+    },
     "errors": {
         "general": "An error occurred",
         "networkError": "Network error. Please check your connection.",
@@ -661,6 +693,11 @@
             "processing": "Processing metadata...",
             "building": "Building cache...",
             "finalizing": "Finalizing..."
+        }
+    },
+    "showcase": {
+        "exampleImages": {
+            "deleteFailed": "Failed to delete example image: {error}"
         }
     },
     "duplicates": {
@@ -868,7 +905,7 @@
             "cacheClearError": "Error clearing cache: {message}"
         },
         "filters": {
-            "applied": "Filters applied - showing {count} {type}",
+            "applied": "{message}",
             "cleared": "Filters cleared"
         },
         "downloads": {
@@ -884,7 +921,9 @@
             "resumed": "Download resumed",
             "resumeFailed": "Failed to resume download",
             "imagesCompleted": "Example images {action} completed",
-            "imagesFailed": "Example images {action} failed"
+            "imagesFailed": "Example images {action} failed",
+            "loadError": "Error loading downloads: {message}",
+            "downloadError": "Download error: {message}"
         },
         "import": {
             "enterRecipeName": "Please enter a recipe name",
@@ -892,7 +931,10 @@
             "folderTreeFailed": "Failed to load folder tree",
             "folderTreeError": "Error loading folder tree",
             "imagesImported": "Example images imported successfully",
-            "importFailed": "Failed to import example images: {message}"
+            "importFailed": "Failed to import example images: {message}",
+            "recipeSaveFailed": "Failed to save recipe: {error}",
+            "processingError": "Processing error: {message}",
+            "folderBrowserError": "Folder browser error: {message}"
         },
         "triggerWords": {
             "loadFailed": "Could not load trained words",
@@ -939,11 +981,11 @@
             "downloadInProgress": "Download already in progress",
             "enterLocationFirst": "Please enter a download location first",
             "downloadStarted": "Example images download started",
-            "downloadStartFailed": "Failed to start download",
+            "downloadStartFailed": "Failed to start download: {error}",
             "downloadPaused": "Download paused",
-            "pauseFailed": "Failed to pause download",
+            "pauseFailed": "Failed to pause download: {error}",
             "downloadResumed": "Download resumed",
-            "resumeFailed": "Failed to resume download",
+            "resumeFailed": "Failed to resume download: {error}",
             "deleted": "Example image deleted",
             "deleteFailed": "Failed to delete example image",
             "setPreviewFailed": "Failed to set preview image"
@@ -961,8 +1003,14 @@
             "previewUploadFailed": "Failed to upload preview image",
             "refreshComplete": "{action} complete",
             "refreshFailed": "Failed to {action} {type}s",
+            "metadataRefreshed": "Metadata refreshed successfully",
+            "metadataRefreshFailed": "Failed to refresh metadata: {message}",
             "metadataUpdateComplete": "Metadata update complete",
             "metadataFetchFailed": "Failed to fetch metadata: {message}",
+            "bulkMetadataCompleteAll": "Successfully refreshed all {count} {type}s",
+            "bulkMetadataCompletePartial": "Refreshed {success} of {total} {type}s",
+            "bulkMetadataCompleteNone": "Failed to refresh metadata for any {type}s",
+            "bulkMetadataFailureDetails": "Failed refreshes:\n{failures}",
             "bulkMetadataFailed": "Failed to refresh metadata: {message}",
             "moveNotSupported": "Moving {type}s is not supported",
             "alreadyInFolder": "{type} is already in the selected folder",

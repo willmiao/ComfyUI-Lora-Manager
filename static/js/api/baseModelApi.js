@@ -1,5 +1,6 @@
 import { state, getCurrentPageState } from '../state/index.js';
 import { showToast } from '../utils/uiHelpers.js';
+import { translate } from '../utils/i18n.js';
 import { getStorageItem, getSessionItem, saveMapToStorage } from '../utils/storageHelpers.js';
 import { 
     getCompleteApiConfig, 
@@ -503,22 +504,22 @@ export class BaseModelApiClient {
 
             let completionMessage;
             if (successCount === totalItems) {
-                completionMessage = `Successfully refreshed all ${successCount} ${this.apiConfig.config.displayName}s`;
-                showToast(completionMessage, 'success');
+                completionMessage = translate('toast.api.bulkMetadataCompleteAll', { count: successCount, type: this.apiConfig.config.displayName }, `Successfully refreshed all ${successCount} ${this.apiConfig.config.displayName}s`);
+                showToast('toast.api.bulkMetadataCompleteAll', { count: successCount, type: this.apiConfig.config.displayName }, 'success');
             } else if (successCount > 0) {
-                completionMessage = `Refreshed ${successCount} of ${totalItems} ${this.apiConfig.config.displayName}s`;
-                showToast(completionMessage, 'warning');
+                completionMessage = translate('toast.api.bulkMetadataCompletePartial', { success: successCount, total: totalItems, type: this.apiConfig.config.displayName }, `Refreshed ${successCount} of ${totalItems} ${this.apiConfig.config.displayName}s`);
+                showToast('toast.api.bulkMetadataCompletePartial', { success: successCount, total: totalItems, type: this.apiConfig.config.displayName }, 'warning');
                 
                 if (failedItems.length > 0) {
                     const failureMessage = failedItems.length <= 3 
                         ? failedItems.map(item => `${item.fileName}: ${item.error}`).join('\n')
                         : failedItems.slice(0, 3).map(item => `${item.fileName}: ${item.error}`).join('\n') + 
                           `\n(and ${failedItems.length - 3} more)`;
-                    showToast(`Failed refreshes:\n${failureMessage}`, 'warning', 6000);
+                    showToast('toast.api.bulkMetadataFailureDetails', { failures: failureMessage }, 'warning', 6000);
                 }
             } else {
-                completionMessage = `Failed to refresh metadata for any ${this.apiConfig.config.displayName}s`;
-                showToast(completionMessage, 'error');
+                completionMessage = translate('toast.api.bulkMetadataCompleteNone', { type: this.apiConfig.config.displayName }, `Failed to refresh metadata for any ${this.apiConfig.config.displayName}s`);
+                showToast('toast.api.bulkMetadataCompleteNone', { type: this.apiConfig.config.displayName }, 'error');
             }
 
             await progressController.complete(completionMessage);
