@@ -247,11 +247,26 @@
                 "quick": "クイック更新（増分）",
                 "full": "完全再構築（完全）"
             },
-            "fetch": "Civitaiから取得",
-            "download": "URLからダウンロード",
-            "bulk": "一括操作",
-            "duplicates": "重複を検索",
-            "favorites": "お気に入りのみ表示"
+            "fetch": {
+                "title": "Civitaiからメタデータを取得",
+                "action": "取得"
+            },
+            "download": {
+                "title": "URLからダウンロード",
+                "action": "ダウンロード"
+            },
+            "bulk": {
+                "title": "一括操作",
+                "action": "一括"
+            },
+            "duplicates": {
+                "title": "重複を検索",
+                "action": "重複"
+            },
+            "favorites": {
+                "title": "お気に入りのみ表示",
+                "action": "お気に入り"
+            }
         },
         "bulkOperations": {
             "selected": "{count} 選択中",
@@ -289,7 +304,7 @@
         "title": "LoRAレシピ",
         "controls": {
             "import": {
-                "action": "レシピをインポート",
+                "action": "インポート",
                 "title": "画像またはURLからレシピをインポート",
                 "urlLocalPath": "URL / ローカルパス",
                 "uploadImage": "画像をアップロード",

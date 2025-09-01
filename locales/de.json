@@ -247,11 +247,26 @@
                 "quick": "Schnelle Aktualisierung (inkrementell)",
                 "full": "Vollständiger Neuaufbau (komplett)"
             },
-            "fetch": "Von Civitai abrufen",
-            "download": "Von URL herunterladen",
-            "bulk": "Massenoperationen",
-            "duplicates": "Duplikate finden",
-            "favorites": "Nur Favoriten anzeigen"
+            "fetch": {
+                "title": "Metadaten von Civitai abrufen",
+                "action": "Abrufen"
+            },
+            "download": {
+                "title": "Von URL herunterladen",
+                "action": "Herunterladen"
+            },
+            "bulk": {
+                "title": "Massenoperationen",
+                "action": "Massen"
+            },
+            "duplicates": {
+                "title": "Duplikate finden",
+                "action": "Duplikate"
+            },
+            "favorites": {
+                "title": "Nur Favoriten anzeigen",
+                "action": "Favoriten"
+            }
         },
         "bulkOperations": {
             "selected": "{count} ausgewählt",
@@ -289,7 +304,7 @@
         "title": "LoRA-Rezepte",
         "controls": {
             "import": {
-                "action": "Rezept importieren",
+                "action": "Importieren",
                 "title": "Ein Rezept aus Bild oder URL importieren",
                 "urlLocalPath": "URL / Lokaler Pfad",
                 "uploadImage": "Bild hochladen",

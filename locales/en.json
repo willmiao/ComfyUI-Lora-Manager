@@ -247,11 +247,26 @@
                 "quick": "Quick Refresh (incremental)",
                 "full": "Full Rebuild (complete)"
             },
-            "fetch": "Fetch from Civitai",
-            "download": "Download from URL",
-            "bulk": "Bulk Operations",
-            "duplicates": "Find Duplicates",
-            "favorites": "Show Favorites Only"
+            "fetch": {
+                "title": "Fetch metadata from Civitai",
+                "action": "Fetch"
+            },
+            "download": {
+                "title": "Download from URL",
+                "action": "Download"
+            },
+            "bulk": {
+                "title": "Bulk Operations",
+                "action": "Bulk"
+            },
+            "duplicates": {
+                "title": "Find Duplicates",
+                "action": "Duplicates"
+            },
+            "favorites": {
+                "title": "Show Favorites Only",
+                "action": "Favorites"
+            }
         },
         "bulkOperations": {
             "selected": "{count} selected",
@@ -289,7 +304,7 @@
         "title": "LoRA Recipes",
         "controls": {
             "import": {
-                "action": "Import Recipe",
+                "action": "Import",
                 "title": "Import a recipe from image or URL",
                 "urlLocalPath": "URL / Local Path",
                 "uploadImage": "Upload Image",

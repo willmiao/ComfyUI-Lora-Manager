@@ -247,11 +247,26 @@
                 "quick": "快速刷新（增量）",
                 "full": "完整重建（全部）"
             },
-            "fetch": "從 Civitai 取得",
-            "download": "從網址下載",
-            "bulk": "批次操作",
-            "duplicates": "尋找重複項",
-            "favorites": "僅顯示收藏"
+            "fetch": {
+                "title": "從 Civitai 取得 metadata",
+                "action": "取得"
+            },
+            "download": {
+                "title": "從網址下載",
+                "action": "下載"
+            },
+            "bulk": {
+                "title": "批次操作",
+                "action": "批次"
+            },
+            "duplicates": {
+                "title": "尋找重複項",
+                "action": "重複項"
+            },
+            "favorites": {
+                "title": "僅顯示收藏",
+                "action": "收藏"
+            }
         },
         "bulkOperations": {
             "selected": "已選擇 {count} 項",
@@ -289,7 +304,7 @@
         "title": "LoRA 配方",
         "controls": {
             "import": {
-                "action": "匯入配方",
+                "action": "匯入",
                 "title": "從圖片或網址匯入配方",
                 "urlLocalPath": "網址 / 本機路徑",
                 "uploadImage": "上傳圖片",

@@ -247,11 +247,26 @@
                 "quick": "Actualisation rapide (incrémentale)",
                 "full": "Reconstruction complète"
             },
-            "fetch": "Récupérer depuis Civitai",
-            "download": "Télécharger depuis une URL",
-            "bulk": "Opérations en lot",
-            "duplicates": "Trouver les doublons",
-            "favorites": "Afficher uniquement les favoris"
+            "fetch": {
+                "title": "Récupérer les métadonnées depuis Civitai",
+                "action": "Récupérer"
+            },
+            "download": {
+                "title": "Télécharger depuis une URL",
+                "action": "Télécharger"
+            },
+            "bulk": {
+                "title": "Opérations groupées",
+                "action": "Groupé"
+            },
+            "duplicates": {
+                "title": "Trouver les doublons",
+                "action": "Doublons"
+            },
+            "favorites": {
+                "title": "Afficher uniquement les favoris",
+                "action": "Favoris"
+            }
         },
         "bulkOperations": {
             "selected": "{count} sélectionné(s)",
@@ -289,7 +304,7 @@
         "title": "Recettes LoRA",
         "controls": {
             "import": {
-                "action": "Importer une recette",
+                "action": "Importer",
                 "title": "Importer une recette depuis une image ou une URL",
                 "urlLocalPath": "URL / Chemin local",
                 "uploadImage": "Téléverser une image",

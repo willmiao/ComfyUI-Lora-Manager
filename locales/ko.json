@@ -247,11 +247,26 @@
                 "quick": "빠른 새로고침 (증분)",
                 "full": "전체 재구성 (완전)"
             },
-            "fetch": "Civitai에서 가져오기",
-            "download": "URL에서 다운로드",
-            "bulk": "일괄 작업",
-            "duplicates": "중복 찾기",
-            "favorites": "즐겨찾기만 표시"
+            "fetch": {
+                "title": "Civitai에서 메타데이터 가져오기",
+                "action": "가져오기"
+            },
+            "download": {
+                "title": "URL에서 다운로드",
+                "action": "다운로드"
+            },
+            "bulk": {
+                "title": "일괄 작업",
+                "action": "일괄"
+            },
+            "duplicates": {
+                "title": "중복 찾기",
+                "action": "중복"
+            },
+            "favorites": {
+                "title": "즐겨찾기만 보기",
+                "action": "즐겨찾기"
+            }
         },
         "bulkOperations": {
             "selected": "{count}개 선택됨",
@@ -289,7 +304,7 @@
         "title": "LoRA 레시피",
         "controls": {
             "import": {
-                "action": "레시피 가져오기",
+                "action": "가져오기",
                 "title": "이미지 또는 URL에서 레시피 가져오기",
                 "urlLocalPath": "URL / 로컬 경로",
                 "uploadImage": "이미지 업로드",
