@@ -1,66 +1,24 @@
 {
     "common": {
-        "file": "Fichier",
-        "folder": "Dossier",
-        "name": "Nom",
-        "size": "Taille",
-        "date": "Date",
-        "type": "Type",
-        "path": "Chemin",
-        "fileSize": {
-            "zero": "0 Octets",
-            "bytes": "Octets",
-            "kb": "Ko",
-            "mb": "Mo",
-            "gb": "Go",
-            "tb": "To"
-        },
         "actions": {
             "save": "Enregistrer",
             "cancel": "Annuler",
             "delete": "Supprimer",
-            "edit": "Modifier",
-            "copy": "Copier",
             "move": "Déplacer",
             "refresh": "Actualiser",
-            "download": "Télécharger",
-            "upload": "Téléverser",
-            "search": "Rechercher",
-            "filter": "Filtrer",
-            "sort": "Trier",
-            "select": "Sélectionner",
-            "selectAll": "Tout sélectionner",
-            "deselectAll": "Tout désélectionner",
-            "confirm": "Confirmer",
-            "close": "Fermer",
             "back": "Retour",
             "next": "Suivant",
-            "previous": "Précédent",
-            "view": "Voir",
-            "preview": "Aperçu",
-            "details": "Détails",
             "backToTop": "Retour en haut",
             "settings": "Paramètres",
-            "help": "Aide",
-            "about": "À propos"
+            "help": "Aide"
         },
         "status": {
             "loading": "Chargement...",
-            "saving": "Enregistrement...",
-            "saved": "Enregistré",
-            "error": "Erreur",
-            "success": "Succès",
-            "warning": "Avertissement",
-            "info": "Information",
-            "processing": "Traitement...",
-            "completed": "Terminé",
-            "failed": "Échec",
-            "cancelled": "Annulé",
-            "pending": "En attente",
-            "ready": "Prêt"
+            "unknown": "Inconnu",
+            "date": "Date",
+            "version": "Version"
         },
         "language": {
-            "current": "Langue",
             "select": "Sélectionner la langue",
             "select_help": "Choisissez votre langue préférée pour l'interface",
             "english": "English",
@@ -72,6 +30,47 @@
             "korean": "한국어",
             "french": "Français",
             "spanish": "Español"
+        },
+        "fileSize": {
+            "zero": "0 Octets",
+            "bytes": "Octets",
+            "kb": "Ko",
+            "mb": "Mo",
+            "gb": "Go",
+            "tb": "To"
+        }
+    },
+    "modelCard": {
+        "actions": {
+            "addToFavorites": "Ajouter aux favoris",
+            "removeFromFavorites": "Retirer des favoris",
+            "viewOnCivitai": "Voir sur Civitai",
+            "notAvailableFromCivitai": "Non disponible sur Civitai",
+            "sendToWorkflow": "Envoyer vers ComfyUI (Clic: Ajouter, Maj+Clic: Remplacer)",
+            "copyLoRASyntax": "Copier la syntaxe LoRA",
+            "checkpointNameCopied": "Nom du checkpoint copié",
+            "toggleBlur": "Basculer le flou",
+            "show": "Afficher",
+            "openExampleImages": "Ouvrir le dossier d'images d'exemple"
+        },
+        "nsfw": {
+            "matureContent": "Contenu pour adultes",
+            "xxxRated": "Contenu classé XXX",
+            "xRated": "Contenu classé X",
+            "rRated": "Contenu classé R"
+        },
+        "favorites": {
+            "added": "Ajouté aux favoris",
+            "removed": "Retiré des favoris",
+            "updateFailed": "Échec de la mise à jour du statut des favoris"
+        },
+        "sendToWorkflow": {
+            "checkpointNotImplemented": "Envoyer le checkpoint vers le workflow - fonctionnalité à implémenter"
+        },
+        "exampleImages": {
+            "checkError": "Erreur lors de la vérification des images d'exemple",
+            "missingHash": "Informations de hachage du modèle manquantes.",
+            "noRemoteImagesAvailable": "Aucune image d'exemple distante disponible pour ce modèle sur Civitai"
         }
     },
     "header": {
@@ -93,14 +92,14 @@
             },
             "options": "Options de recherche",
             "searchIn": "Rechercher dans :",
-            "notAvailable": "Recherche non disponible sur la page statistiques",
+            "notAvailable": "Recherche non disponible sur la page de statistiques",
             "filters": {
                 "filename": "Nom de fichier",
                 "modelname": "Nom du modèle",
                 "tags": "Tags",
                 "creator": "Créateur",
                 "title": "Titre de la recette",
-                "loraName": "Nom du fichier LoRA",
+                "loraName": "Nom de fichier LoRA",
                 "loraModel": "Nom du modèle LoRA"
             }
         },
@@ -115,10 +114,121 @@
             "switchToLight": "Passer au thème clair",
             "switchToDark": "Passer au thème sombre",
             "switchToAuto": "Passer au thème automatique"
+        },
+        "actions": {
+            "checkUpdates": "Vérifier les mises à jour",
+            "support": "Support"
+        }
+    },
+    "settings": {
+        "civitaiApiKey": "Clé API Civitai",
+        "civitaiApiKeyPlaceholder": "Entrez votre clé API Civitai",
+        "civitaiApiKeyHelp": "Utilisée pour l'authentification lors du téléchargement de modèles depuis Civitai",
+        "sections": {
+            "contentFiltering": "Filtrage du contenu",
+            "videoSettings": "Paramètres vidéo",
+            "layoutSettings": "Paramètres d'affichage",
+            "folderSettings": "Paramètres des dossiers",
+            "downloadPathTemplates": "Modèles de chemin de téléchargement",
+            "exampleImages": "Images d'exemple",
+            "misc": "Divers"
+        },
+        "contentFiltering": {
+            "blurNsfwContent": "Flouter le contenu NSFW",
+            "blurNsfwContentHelp": "Flouter les images d'aperçu de contenu pour adultes (NSFW)",
+            "showOnlySfw": "Afficher uniquement les résultats SFW",
+            "showOnlySfwHelp": "Filtrer tout le contenu NSFW lors de la navigation et de la recherche"
+        },
+        "videoSettings": {
+            "autoplayOnHover": "Lecture automatique vidéo au survol",
+            "autoplayOnHoverHelp": "Lire les aperçus vidéo uniquement lors du survol"
+        },
+        "layoutSettings": {
+            "displayDensity": "Densité d'affichage",
+            "displayDensityOptions": {
+                "default": "Par défaut",
+                "medium": "Moyen", 
+                "compact": "Compact"
+            },
+            "displayDensityHelp": "Choisissez combien de cartes afficher par ligne :",
+            "displayDensityDetails": {
+                "default": "Par défaut : 5 (1080p), 6 (2K), 8 (4K)",
+                "medium": "Moyen : 6 (1080p), 7 (2K), 9 (4K)",
+                "compact": "Compact : 7 (1080p), 8 (2K), 10 (4K)"
+            },
+            "displayDensityWarning": "Attention : Des densités plus élevées peuvent causer des problèmes de performance sur les systèmes avec des ressources limitées.",
+            "cardInfoDisplay": "Affichage des informations de carte",
+            "cardInfoDisplayOptions": {
+                "always": "Toujours visible",
+                "hover": "Révéler au survol"
+            },
+            "cardInfoDisplayHelp": "Choisissez quand afficher les informations du modèle et les boutons d'action :",
+            "cardInfoDisplayDetails": {
+                "always": "Toujours visible : Les en-têtes et pieds de page sont toujours visibles",
+                "hover": "Révéler au survol : Les en-têtes et pieds de page n'apparaissent qu'au survol d'une carte"
+            }
+        },
+        "folderSettings": {
+            "defaultLoraRoot": "Racine LoRA par défaut",
+            "defaultLoraRootHelp": "Définir le répertoire racine LoRA par défaut pour les téléchargements, imports et déplacements",
+            "defaultCheckpointRoot": "Racine Checkpoint par défaut",
+            "defaultCheckpointRootHelp": "Définir le répertoire racine checkpoint par défaut pour les téléchargements, imports et déplacements",
+            "defaultEmbeddingRoot": "Racine Embedding par défaut",
+            "defaultEmbeddingRootHelp": "Définir le répertoire racine embedding par défaut pour les téléchargements, imports et déplacements",
+            "noDefault": "Aucun par défaut"
+        },
+        "downloadPathTemplates": {
+            "title": "Modèles de chemin de téléchargement",
+            "help": "Configurer les structures de dossiers pour différents types de modèles lors du téléchargement depuis Civitai.",
+            "availablePlaceholders": "Espaces réservés disponibles :",
+            "templateOptions": {
+                "flatStructure": "Structure plate",
+                "byBaseModel": "Par modèle de base",
+                "byAuthor": "Par auteur", 
+                "byFirstTag": "Par premier tag",
+                "baseModelFirstTag": "Modèle de base + Premier tag",
+                "baseModelAuthor": "Modèle de base + Auteur",
+                "authorFirstTag": "Auteur + Premier tag",
+                "customTemplate": "Modèle personnalisé"
+            },
+            "customTemplatePlaceholder": "Entrez un modèle personnalisé (ex: {base_model}/{author}/{first_tag})",
+            "modelTypes": {
+                "lora": "LoRA",
+                "checkpoint": "Checkpoint", 
+                "embedding": "Embedding"
+            },
+            "baseModelPathMappings": "Mappages de chemin de modèle de base",
+            "baseModelPathMappingsHelp": "Personnaliser les noms de dossiers pour des modèles de base spécifiques (ex: \"Flux.1 D\" → \"flux\")",
+            "addMapping": "Ajouter un mappage",
+            "selectBaseModel": "Sélectionner un modèle de base",
+            "customPathPlaceholder": "Chemin personnalisé (ex: flux)",
+            "removeMapping": "Supprimer le mappage",
+            "validation": {
+                "validFlat": "Valide (structure plate)",
+                "invalidChars": "Caractères invalides détectés",
+                "doubleSlashes": "Double barres obliques non autorisées",
+                "leadingTrailingSlash": "Ne peut pas commencer ou finir par une barre oblique",
+                "invalidPlaceholder": "Espace réservé invalide : {placeholder}",
+                "validTemplate": "Modèle valide"
+            }
+        },
+        "exampleImages": {
+            "downloadLocation": "Emplacement de téléchargement",
+            "downloadLocationPlaceholder": "Entrez le chemin du dossier pour les images d'exemple",
+            "downloadLocationHelp": "Entrez le chemin du dossier où les images d'exemple de Civitai seront sauvegardées",
+            "autoDownload": "Téléchargement automatique des images d'exemple",
+            "autoDownloadHelp": "Télécharger automatiquement les images d'exemple pour les modèles qui n'en ont pas (nécessite que l'emplacement de téléchargement soit défini)",
+            "optimizeImages": "Optimiser les images téléchargées",
+            "optimizeImagesHelp": "Optimiser les images d'exemple pour réduire la taille du fichier et améliorer la vitesse de chargement (les métadonnées seront préservées)",
+            "download": "Télécharger",
+            "restartRequired": "Redémarrage requis"
+        },
+        "misc": {
+            "includeTriggerWords": "Inclure les mots-clés dans la syntaxe LoRA",
+            "includeTriggerWordsHelp": "Inclure les mots-clés d'entraînement lors de la copie de la syntaxe LoRA dans le presse-papiers"
         }
     },
     "loras": {
-        "title": "Modèles LoRA",
         "controls": {
             "sort": {
                 "title": "Trier les modèles par...",
@@ -134,24 +244,25 @@
             },
             "refresh": {
                 "title": "Actualiser la liste des modèles",
-                "quick": "Actualisation rapide (incrémentielle)",
-                "full": "Reconstruction complète (complète)"
+                "quick": "Actualisation rapide (incrémentale)",
+                "full": "Reconstruction complète"
             },
             "fetch": "Récupérer depuis Civitai",
-            "download": "Télécharger depuis l'URL",
+            "download": "Télécharger depuis une URL",
             "bulk": "Opérations en lot",
             "duplicates": "Trouver les doublons",
             "favorites": "Afficher uniquement les favoris"
         },
         "bulkOperations": {
-            "title": "Opérations en lot",
             "selected": "{count} sélectionné(s)",
-            "sendToWorkflow": "Envoyer tous les LoRAs sélectionnés au workflow",
-            "copyAll": "Copier la syntaxe de tous les LoRAs sélectionnés",
-            "refreshAll": "Actualiser les métadonnées CivitAI pour les modèles sélectionnés",
-            "moveAll": "Déplacer les modèles sélectionnés vers un dossier",
-            "deleteAll": "Supprimer les modèles sélectionnés",
-            "clear": "Effacer la sélection"
+            "selectedSuffix": "sélectionné(s)",
+            "viewSelected": "Cliquez pour voir les éléments sélectionnés",
+            "sendToWorkflow": "Envoyer vers le workflow",
+            "copyAll": "Tout copier",
+            "refreshAll": "Tout actualiser",
+            "moveAll": "Tout déplacer",
+            "deleteAll": "Tout supprimer",
+            "clear": "Effacer"
         },
         "contextMenu": {
             "refreshMetadata": "Actualiser les données Civitai",
@@ -159,106 +270,121 @@
             "copySyntax": "Copier la syntaxe LoRA",
             "copyFilename": "Copier le nom de fichier du modèle",
             "copyRecipeSyntax": "Copier la syntaxe de la recette",
-            "sendToWorkflowAppend": "Envoyer au workflow (ajouter)",
-            "sendToWorkflowReplace": "Envoyer au workflow (remplacer)",
-            "openExamplesFolder": "Ouvrir le dossier d'exemples",
+            "sendToWorkflowAppend": "Envoyer vers le workflow (Ajouter)",
+            "sendToWorkflowReplace": "Envoyer vers le workflow (Remplacer)",
+            "openExamples": "Ouvrir le dossier d'exemples",
             "downloadExamples": "Télécharger les images d'exemple",
             "replacePreview": "Remplacer l'aperçu",
             "setContentRating": "Définir la classification du contenu",
-            "moveToFolder": "Déplacer vers le dossier",
+            "moveToFolder": "Déplacer vers un dossier",
             "excludeModel": "Exclure le modèle",
             "deleteModel": "Supprimer le modèle",
             "shareRecipe": "Partager la recette",
             "viewAllLoras": "Voir tous les LoRAs",
             "downloadMissingLoras": "Télécharger les LoRAs manquants",
             "deleteRecipe": "Supprimer la recette"
-        },
-        "modal": {
-            "title": "Détails LoRA",
-            "tabs": {
-                "examples": "Exemples",
-                "description": "Description du modèle",
-                "recipes": "Recettes"
-            },
-            "info": {
-                "filename": "Nom de fichier",
-                "modelName": "Nom du modèle",
-                "baseModel": "Modèle de base",
-                "fileSize": "Taille du fichier",
-                "dateAdded": "Date d'ajout",
-                "triggerWords": "Mots déclencheurs",
-                "description": "Description",
-                "tags": "Tags",
-                "rating": "Évaluation",
-                "downloads": "Téléchargements",
-                "likes": "J'aime",
-                "version": "Version"
-            },
-            "actions": {
-                "copyTriggerWords": "Copier les mots déclencheurs",
-                "copyLoraName": "Copier le nom LoRA",
-                "sendToWorkflow": "Envoyer au workflow",
-                "viewOnCivitai": "Voir sur Civitai",
-                "downloadExamples": "Télécharger les images d'exemple"
-            }
         }
     },
     "recipes": {
         "title": "Recettes LoRA",
         "controls": {
-            "import": "Importer une recette",
+            "import": {
+                "action": "Importer une recette",
+                "title": "Importer une recette depuis une image ou une URL",
+                "urlLocalPath": "URL / Chemin local",
+                "uploadImage": "Téléverser une image",
+                "urlSectionDescription": "Saisissez une URL d'image Civitai ou un chemin de fichier local pour l'importer comme recette.",
+                "imageUrlOrPath": "URL d'image ou chemin de fichier :",
+                "urlPlaceholder": "https://civitai.com/images/... ou C:/chemin/vers/image.png",
+                "fetchImage": "Récupérer l'image",
+                "uploadSectionDescription": "Téléversez une image avec des métadonnées LoRA pour l'importer comme recette.",
+                "selectImage": "Sélectionner une image",
+                "recipeName": "Nom de la recette",
+                "recipeNamePlaceholder": "Entrez le nom de la recette",
+                "tagsOptional": "Tags (optionnel)",
+                "addTagPlaceholder": "Ajouter un tag",
+                "addTag": "Ajouter",
+                "noTagsAdded": "Aucun tag ajouté",
+                "lorasInRecipe": "LoRAs dans cette recette",
+                "downloadLocationPreview": "Aperçu de l'emplacement de téléchargement :",
+                "useDefaultPath": "Utiliser le chemin par défaut",
+                "useDefaultPathTooltip": "Lorsque activé, les fichiers sont automatiquement organisés selon les modèles de chemin configurés",
+                "selectLoraRoot": "Sélectionner un répertoire racine LoRA",
+                "targetFolderPath": "Chemin du dossier cible :",
+                "folderPathPlaceholder": "Tapez le chemin du dossier ou sélectionnez dans l'arbre ci-dessous...",
+                "createNewFolder": "Créer un nouveau dossier",
+                "root": "Racine",
+                "browseFolders": "Parcourir les dossiers :",
+                "downloadAndSaveRecipe": "Télécharger et sauvegarder la recette",
+                "downloadMissingLoras": "Télécharger les LoRAs manquants",
+                "saveRecipe": "Sauvegarder la recette",
+                "loraCountInfo": "({existing}/{total} dans la bibliothèque)",
+                "processingInput": "Traitement de l'entrée...",
+                "analyzingMetadata": "Analyse des métadonnées de l'image...",
+                "downloadingLoras": "Téléchargement des LoRAs...",
+                "savingRecipe": "Sauvegarde de la recette...",
+                "startingDownload": "Début du téléchargement pour le LoRA {current}/{total}",
+                "deletedFromCivitai": "Supprimé de Civitai",
+                "inLibrary": "Dans la bibliothèque",
+                "notInLibrary": "Pas dans la bibliothèque",
+                "earlyAccessRequired": "Ce LoRA nécessite un paiement d'accès anticipé pour le téléchargement.",
+                "earlyAccessEnds": "L'accès anticipé se termine le {date}.",
+                "earlyAccess": "Accès anticipé",
+                "verifyEarlyAccess": "Vérifiez que vous avez acheté l'accès anticipé avant de télécharger.",
+                "duplicateRecipesFound": "{count} recette(s) identique(s) trouvée(s) dans votre bibliothèque",
+                "duplicateRecipesDescription": "Ces recettes contiennent les mêmes LoRAs avec des poids identiques.",
+                "showDuplicates": "Afficher les doublons",
+                "hideDuplicates": "Masquer les doublons",
+                "loraCount": "{count} LoRAs",
+                "recipePreviewAlt": "Aperçu de la recette",
+                "loraPreviewAlt": "Aperçu LoRA",
+                "errors": {
+                    "selectImageFile": "Veuillez sélectionner un fichier image",
+                    "enterUrlOrPath": "Veuillez entrer une URL ou un chemin de fichier",
+                    "selectLoraRoot": "Veuillez sélectionner un répertoire racine LoRA"
+                }
+            },
             "refresh": {
                 "title": "Actualiser la liste des recettes"
             },
-            "duplicates": {
-                "title": "Trouver les recettes en double"
-            },
-            "filteredByLora": "Filtré par LoRA",
-            "create": "Créer une recette",
-            "export": "Exporter la sélection",
-            "downloadMissing": "Télécharger les LoRAs manquants"
+            "filteredByLora": "Filtré par LoRA"
         },
         "duplicates": {
-            "found": "{count} groupes de doublons trouvés",
+            "found": "Trouvé {count} groupes de doublons",
             "keepLatest": "Garder les dernières versions",
             "deleteSelected": "Supprimer la sélection"
         },
-        "card": {
-            "author": "Auteur",
-            "loras": "{count} LoRAs",
-            "tags": "Tags",
-            "actions": {
-                "sendToWorkflow": "Envoyer au workflow",
-                "edit": "Modifier la recette",
-                "duplicate": "Dupliquer la recette",
-                "export": "Exporter la recette",
-                "delete": "Supprimer la recette"
+        "contextMenu": {
+            "copyRecipe": {
+                "missingId": "Impossible de copier la recette : ID de recette manquant",
+                "failed": "Échec de la copie de la syntaxe de la recette"
+            },
+            "sendRecipe": {
+                "missingId": "Impossible d'envoyer la recette : ID de recette manquant",
+                "failed": "Échec de l'envoi de la recette vers le workflow"
+            },
+            "viewLoras": {
+                "missingId": "Impossible de voir les LoRAs : ID de recette manquant",
+                "noLorasFound": "Aucun LoRA trouvé dans cette recette",
+                "loadError": "Erreur lors du chargement des LoRAs de la recette : {message}"
+            },
+            "downloadMissing": {
+                "missingId": "Impossible de télécharger les LoRAs : ID de recette manquant",
+                "noMissingLoras": "Aucun LoRA manquant à télécharger",
+                "getInfoFailed": "Échec de l'obtention des informations pour les LoRAs manquants",
+                "prepareError": "Erreur lors de la préparation des LoRAs pour le téléchargement : {message}"
             }
         }
     },
     "checkpoints": {
-        "title": "Modèles Checkpoint",
-        "info": {
-            "filename": "Nom de fichier",
-            "modelName": "Nom du modèle",
-            "baseModel": "Modèle de base",
-            "fileSize": "Taille du fichier",
-            "dateAdded": "Date d'ajout"
-        }
+        "title": "Modèles Checkpoint"
     },
     "embeddings": {
-        "title": "Modèles Embedding",
-        "info": {
-            "filename": "Nom de fichier",
-            "modelName": "Nom du modèle",
-            "triggerWords": "Mots déclencheurs",
-            "fileSize": "Taille du fichier",
-            "dateAdded": "Date d'ajout"
-        }
+        "title": "Modèles Embedding"
     },
     "sidebar": {
-        "modelRoot": "Racine des modèles",
-        "collapseAll": "Replier tous les dossiers",
+        "modelRoot": "Racine du modèle",
+        "collapseAll": "Réduire tous les dossiers",
         "pinToggle": "Épingler/Désépingler la barre latérale"
     },
     "statistics": {
@@ -268,83 +394,165 @@
             "usage": "Analyse d'utilisation",
             "collection": "Collection",
             "storage": "Stockage",
-            "insights": "Analyses"
+            "insights": "Aperçus"
         },
-        "overview": {
-            "title": "Aperçu",
-            "totalLoras": "Total LoRAs",
-            "totalCheckpoints": "Total Checkpoints",
-            "totalEmbeddings": "Total Embeddings",
-            "totalSize": "Taille totale",
-            "favoriteModels": "Modèles favoris"
+        "usage": {
+            "mostUsedLoras": "LoRAs les plus utilisés",
+            "mostUsedCheckpoints": "Checkpoints les plus utilisés",
+            "mostUsedEmbeddings": "Embeddings les plus utilisés"
+        },
+        "collection": {
+            "popularTags": "Tags populaires",
+            "modelTypes": "Types de modèles",
+            "collectionAnalysis": "Analyse de la collection"
+        },
+        "storage": {
+            "storageUsage": "Utilisation du stockage",
+            "largestModels": "Plus gros modèles",
+            "storageEfficiency": "Efficacité stockage vs utilisation"
+        },
+        "insights": {
+            "smartInsights": "Aperçus intelligents",
+            "recommendations": "Recommandations"
         },
         "charts": {
-            "modelsByType": "Modèles par type",
-            "modelsByBaseModel": "Modèles par modèle de base",
-            "modelsBySize": "Modèles par taille de fichier",
-            "modelsAddedOverTime": "Modèles ajoutés au fil du temps"
+            "collectionOverview": "Aperçu de la collection",
+            "baseModelDistribution": "Distribution des modèles de base",
+            "usageTrends": "Tendances d'utilisation (30 derniers jours)",
+            "usageDistribution": "Distribution de l'utilisation"
         }
     },
     "modals": {
-        "delete": {
-            "title": "Confirmer la suppression",
-            "message": "Êtes-vous sûr de vouloir supprimer ce modèle ?",
-            "warningMessage": "Cette action ne peut pas être annulée.",
-            "confirm": "Supprimer",
-            "cancel": "Annuler"
-        },
         "exclude": {
-            "title": "Exclure le modèle",
-            "message": "Êtes-vous sûr de vouloir exclure ce modèle de la bibliothèque ?",
-            "confirm": "Exclure",
-            "cancel": "Annuler"
+            "confirm": "Exclure"
         },
         "download": {
-            "title": "Télécharger le modèle depuis l'URL",
+            "title": "Télécharger un modèle depuis une URL",
+            "titleWithType": "Télécharger {type} depuis une URL",
             "url": "URL Civitai",
+            "civitaiUrl": "URL Civitai :",
             "placeholder": "https://civitai.com/models/...",
             "locationPreview": "Aperçu de l'emplacement de téléchargement",
             "useDefaultPath": "Utiliser le chemin par défaut",
-            "useDefaultPathTooltip": "Quand activé, les fichiers sont automatiquement organisés en utilisant les modèles de chemin configurés",
+            "useDefaultPathTooltip": "Lorsque activé, les fichiers sont automatiquement organisés selon les modèles de chemin configurés",
             "selectRootDirectory": "Sélectionner un répertoire racine",
+            "selectModelRoot": "Sélectionner la racine du modèle :",
+            "selectTypeRoot": "Sélectionner la racine {type} :",
+            "targetFolderPath": "Chemin du dossier cible :",
+            "browseFolders": "Parcourir les dossiers :",
+            "createNewFolder": "Créer un nouveau dossier",
+            "pathPlaceholder": "Tapez le chemin du dossier ou sélectionnez dans l'arbre ci-dessous...",
+            "root": "Racine",
             "download": "Télécharger",
-            "cancel": "Annuler"
+            "fetchingVersions": "Récupération des versions du modèle...",
+            "versionPreview": "Aperçu de la version",
+            "earlyAccess": "Accès anticipé",
+            "earlyAccessTooltip": "Accès anticipé requis",
+            "inLibrary": "Dans la bibliothèque",
+            "alreadyInLibrary": "Déjà dans la bibliothèque",
+            "autoOrganizedPath": "[Auto-organisé par modèle de chemin]",
+            "errors": {
+                "invalidUrl": "Format d'URL Civitai invalide",
+                "noVersions": "Aucune version disponible pour ce modèle"
+            },
+            "status": {
+                "preparing": "Préparation du téléchargement...",
+                "downloadedPreview": "Image d'aperçu téléchargée",
+                "downloadingFile": "Téléchargement du fichier {type}",
+                "finalizing": "Finalisation du téléchargement..."
+            }
         },
         "move": {
-            "title": "Déplacer les modèles",
-            "selectFolder": "Sélectionner le dossier de destination",
-            "createFolder": "Créer un nouveau dossier",
-            "folderName": "Nom du dossier",
-            "move": "Déplacer",
-            "cancel": "Annuler"
+            "title": "Déplacer les modèles"
         },
         "contentRating": {
             "title": "Définir la classification du contenu",
             "current": "Actuel",
             "levels": {
-                "pg": "Tout public",
-                "pg13": "13 ans et plus",
-                "r": "Restreint",
-                "x": "Adultes seulement",
-                "xxx": "Explicite"
+                "pg": "PG",
+                "pg13": "PG13",
+                "r": "R",
+                "x": "X",
+                "xxx": "XXX"
             }
         },
-        "model": {
-            "description": {
-                "noDescription": "Aucune description de modèle disponible",
-                "failedToLoad": "Échec du chargement de la description du modèle",
-                "editTitle": "Modifier la description du modèle",
-                "validation": {
-                    "cannotBeEmpty": "La description ne peut pas être vide"
-                },
-                "messages": {
-                    "updated": "Description du modèle mise à jour",
-                    "updateFailed": "Échec de la mise à jour de la description du modèle"
-                }
+        "deleteModel": {
+            "title": "Supprimer le modèle",
+            "message": "Êtes-vous sûr de vouloir supprimer ce modèle et tous les fichiers associés ?"
+        },
+        "excludeModel": {
+            "title": "Exclure le modèle",
+            "message": "Êtes-vous sûr de vouloir exclure ce modèle ? Les modèles exclus n'apparaîtront pas dans les recherches ou listes de modèles."
+        },
+        "deleteDuplicateRecipes": {
+            "title": "Supprimer les recettes dupliquées",
+            "message": "Êtes-vous sûr de vouloir supprimer les recettes dupliquées sélectionnées ?",
+            "countMessage": "recettes seront définitivement supprimées."
+        },
+        "deleteDuplicateModels": {
+            "title": "Supprimer les modèles dupliqués",
+            "message": "Êtes-vous sûr de vouloir supprimer les modèles dupliqués sélectionnés ?",
+            "countMessage": "modèles seront définitivement supprimés."
+        },
+        "clearCache": {
+            "title": "Vider les fichiers de cache",
+            "message": "Êtes-vous sûr de vouloir vider tous les fichiers de cache ?",
+            "description": "Cela supprimera toutes les données de modèle mises en cache. Le système devra reconstruire le cache au prochain démarrage, ce qui peut prendre du temps selon la taille de votre collection de modèles.",
+            "action": "Vider le cache"
+        },
+        "bulkDelete": {
+            "title": "Supprimer plusieurs modèles",
+            "message": "Êtes-vous sûr de vouloir supprimer tous les modèles sélectionnés et leurs fichiers associés ?",
+            "countMessage": "modèles seront définitivement supprimés.",
+            "action": "Tout supprimer"
+        },
+        "exampleAccess": {
+            "title": "Images d'exemple locales",
+            "message": "Aucune image d'exemple locale trouvée pour ce modèle. Options d'affichage :",
+            "downloadOption": {
+                "title": "Télécharger depuis Civitai",
+                "description": "Sauvegarder les exemples distants localement pour un usage hors ligne et un chargement plus rapide"
             },
+            "importOption": {
+                "title": "Importer vos propres",
+                "description": "Ajouter vos propres exemples personnalisés pour ce modèle"
+            },
+            "footerNote": "Les exemples distants sont toujours visibles dans les détails du modèle même sans copies locales"
+        },
+        "moveModel": {
+            "targetLocationPreview": "Aperçu de l'emplacement cible :",
+            "selectModelRoot": "Sélectionner la racine du modèle :",
+            "targetFolderPath": "Chemin du dossier cible :",
+            "browseFolders": "Parcourir les dossiers :",
+            "createNewFolder": "Créer un nouveau dossier",
+            "pathPlaceholder": "Tapez le chemin du dossier ou sélectionnez dans l'arbre ci-dessous...",
+            "root": "Racine"
+        },
+        "relinkCivitai": {
+            "title": "Relier à nouveau à Civitai",
+            "warning": "Attention :",
+            "warningText": "Il s'agit d'une opération potentiellement destructrice. Relier à nouveau va :",
+            "warningList": {
+                "overrideMetadata": "Remplacer les métadonnées existantes",
+                "modifyHash": "Potentiellement modifier le hash du modèle",
+                "unintendedConsequences": "Peut avoir d'autres conséquences non prévues"
+            },
+            "proceedText": "Ne procédez que si vous êtes sûr que c'est ce que vous voulez.",
+            "urlLabel": "URL du modèle Civitai :",
+            "urlPlaceholder": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+            "helpText": {
+                "title": "Collez n'importe quelle URL de modèle Civitai. Formats supportés :",
+                "format1": "https://civitai.com/models/649516",
+                "format2": "https://civitai.com/models/649516?modelVersionId=726676",
+                "format3": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+                "note": "Note : Si aucun modelVersionId n'est fourni, la dernière version sera utilisée."
+            },
+            "confirmAction": "Confirmer la re-liaison"
+        },
+        "model": {
             "actions": {
                 "editModelName": "Modifier le nom du modèle",
-                "editFileName": "Modifier le nom du fichier",
+                "editFileName": "Modifier le nom de fichier",
                 "editBaseModel": "Modifier le modèle de base",
                 "viewOnCivitai": "Voir sur Civitai",
                 "viewOnCivitaiText": "Voir sur Civitai",
@@ -352,26 +560,16 @@
             },
             "metadata": {
                 "version": "Version",
-                "fileName": "Nom du fichier",
+                "fileName": "Nom de fichier",
                 "location": "Emplacement",
                 "baseModel": "Modèle de base",
                 "size": "Taille",
                 "unknown": "Inconnu",
                 "usageTips": "Conseils d'utilisation",
                 "additionalNotes": "Notes supplémentaires",
-                "notesHint": "Appuyez sur Entrée pour sauvegarder, Shift+Entrée pour nouvelle ligne",
+                "notesHint": "Appuyez sur Entrée pour sauvegarder, Maj+Entrée pour nouvelle ligne",
                 "addNotesPlaceholder": "Ajoutez vos notes ici...",
-                "aboutThisVersion": "À propos de cette version",
-                "validation": {
-                    "nameTooLong": "Le nom du modèle est limité à 100 caractères",
-                    "nameEmpty": "Le nom du modèle ne peut pas être vide"
-                },
-                "messages": {
-                    "nameUpdated": "Nom du modèle mis à jour avec succès",
-                    "nameUpdateFailed": "Échec de la mise à jour du nom du modèle",
-                    "baseModelUpdated": "Modèle de base mis à jour avec succès",
-                    "baseModelUpdateFailed": "Échec de la mise à jour du modèle de base"
-                }
+                "aboutThisVersion": "À propos de cette version"
             },
             "notes": {
                 "saved": "Notes sauvegardées avec succès",
@@ -386,62 +584,68 @@
                 "valuePlaceholder": "Valeur",
                 "add": "Ajouter"
             },
-            "tags": {
-                "messages": {
-                    "updated": "Étiquettes mises à jour avec succès",
-                    "updateFailed": "Échec de la mise à jour des étiquettes"
-                },
-                "validation": {
-                    "maxLength": "L'étiquette ne doit pas dépasser 30 caractères",
-                    "maxCount": "Maximum 30 étiquettes autorisées",
-                    "duplicate": "Cette étiquette existe déjà"
+            "triggerWords": {
+                "label": "Mots-clés",
+                "noTriggerWordsNeeded": "Aucun mot-clé nécessaire",
+                "edit": "Modifier les mots-clés",
+                "cancel": "Annuler la modification",
+                "save": "Sauvegarder les modifications",
+                "addPlaceholder": "Tapez pour ajouter ou cliquez sur les suggestions ci-dessous",
+                "copyWord": "Copier le mot-clé",
+                "deleteWord": "Supprimer le mot-clé",
+                "suggestions": {
+                    "noSuggestions": "Aucune suggestion disponible",
+                    "noTrainedWords": "Aucun mot entraîné ou token de classe trouvé dans ce modèle. Vous pouvez saisir manuellement les mots-clés.",
+                    "classToken": "Token de classe",
+                    "classTokenDescription": "Ajoutez à votre prompt pour de meilleurs résultats",
+                    "wordSuggestions": "Suggestions de mots",
+                    "wordsFound": "{count} mots trouvés",
+                    "loading": "Chargement des suggestions..."
                 }
             },
-            "recipeTab": {
-                "noRecipesFound": "Aucune recette trouvée utilisant cette LoRA.",
-                "loadingRecipes": "Chargement des recettes...",
-                "errorLoadingRecipes": "Échec du chargement des recettes. Veuillez réessayer plus tard."
+            "description": {
+                "noDescription": "Aucune description de modèle disponible",
+                "failedToLoad": "Échec du chargement de la description du modèle",
+                "editTitle": "Modifier la description du modèle",
+                "validation": {
+                    "cannotBeEmpty": "La description ne peut pas être vide"
+                },
+                "messages": {
+                    "updated": "Description du modèle mise à jour",
+                    "updateFailed": "Échec de la mise à jour de la description du modèle"
+                }
+            },
+            "tabs": {
+                "examples": "Exemples",
+                "description": "Description du modèle",
+                "recipes": "Recettes"
+            },
+            "loading": {
+                "exampleImages": "Chargement des images d'exemple...",
+                "description": "Chargement de la description du modèle...",
+                "recipes": "Chargement des recettes...",
+                "examples": "Chargement des exemples..."
             }
         }
     },
-    "errors": {
-        "general": "Une erreur s'est produite",
-        "networkError": "Erreur réseau. Veuillez vérifier votre connexion.",
-        "serverError": "Erreur serveur. Veuillez réessayer plus tard.",
-        "fileNotFound": "Fichier non trouvé",
-        "invalidFile": "Format de fichier invalide",
-        "uploadFailed": "Échec du téléversement",
-        "downloadFailed": "Échec du téléchargement",
-        "saveFailed": "Échec de l'enregistrement",
-        "loadFailed": "Échec du chargement",
-        "deleteFailed": "Échec de la suppression",
-        "moveFailed": "Échec du déplacement",
-        "copyFailed": "Échec de la copie",
-        "fetchFailed": "Échec de récupération des données depuis Civitai",
-        "invalidUrl": "Format d'URL invalide",
-        "missingPermissions": "Permissions insuffisantes"
-    },
-    "success": {
-        "saved": "Enregistré avec succès",
-        "deleted": "Supprimé avec succès",
-        "moved": "Déplacé avec succès",
-        "copied": "Copié avec succès",
-        "downloaded": "Téléchargé avec succès",
-        "uploaded": "Téléversé avec succès",
-        "refreshed": "Actualisé avec succès",
-        "exported": "Exporté avec succès",
-        "imported": "Importé avec succès"
+    "modelTags": {
+        "messages": {
+            "updated": "Tags mis à jour avec succès",
+            "updateFailed": "Échec de la mise à jour des tags"
+        },
+        "validation": {
+            "maxLength": "Le tag ne doit pas dépasser 30 caractères",
+            "maxCount": "Maximum 30 tags autorisés",
+            "duplicate": "Ce tag existe déjà"
+        }
     },
     "keyboard": {
         "navigation": "Navigation au clavier :",
         "shortcuts": {
-            "pageUp": "Faire défiler d'une page vers le haut",
-            "pageDown": "Faire défiler d'une page vers le bas",
+            "pageUp": "Défiler d'une page vers le haut",
+            "pageDown": "Défiler d'une page vers le bas",
             "home": "Aller en haut",
-            "end": "Aller en bas",
-            "bulkMode": "Basculer le mode lot",
-            "search": "Focuser la recherche",
-            "escape": "Fermer modal/panneau"
+            "end": "Aller en bas"
         }
     },
     "initialization": {
@@ -451,15 +655,15 @@
         "estimatingTime": "Estimation du temps...",
         "loras": {
             "title": "Initialisation du gestionnaire LoRA",
-            "message": "Analyse et construction du cache LoRA. Cela peut prendre quelques minutes..."
+            "message": "Scan et construction du cache LoRA. Cela peut prendre quelques minutes..."
         },
         "checkpoints": {
             "title": "Initialisation du gestionnaire Checkpoint",
-            "message": "Analyse et construction du cache checkpoint. Cela peut prendre quelques minutes..."
+            "message": "Scan et construction du cache checkpoint. Cela peut prendre quelques minutes..."
         },
         "embeddings": {
             "title": "Initialisation du gestionnaire Embedding",
-            "message": "Analyse et construction du cache embedding. Cela peut prendre quelques minutes..."
+            "message": "Scan et construction du cache embedding. Cela peut prendre quelques minutes..."
         },
         "recipes": {
             "title": "Initialisation du gestionnaire de recettes",
@@ -470,10 +674,10 @@
             "message": "Traitement des données de modèle pour les statistiques. Cela peut prendre quelques minutes..."
         },
         "tips": {
-            "title": "Conseils et astuces",
+            "title": "Astuces et conseils",
             "civitai": {
                 "title": "Intégration Civitai",
-                "description": "Connectez votre compte Civitai : Visitez Avatar de profil → Paramètres → Clés API → Ajouter une clé API, puis collez-la dans les paramètres de Lora Manager.",
+                "description": "Connectez votre compte Civitai : Visitez Avatar de profil → Paramètres → Clés API → Ajouter une clé API, puis collez-la dans les paramètres du gestionnaire LoRA.",
                 "alt": "Configuration API Civitai"
             },
             "download": {
@@ -496,65 +700,357 @@
                 "description": "Appuyez sur Ctrl+F (Cmd+F sur Mac) pour rechercher rapidement dans votre vue actuelle.",
                 "alt": "Recherche rapide"
             }
-        },
-        "steps": {
-            "scanning": "Analyse des fichiers de modèle...",
-            "processing": "Traitement des métadonnées...",
-            "building": "Construction du cache...",
-            "finalizing": "Finalisation..."
         }
     },
     "duplicates": {
-        "found": "{count} groupes de doublons trouvés",
-        "showNotification": "Afficher la notification des doublons",
+        "found": "Trouvé {count} groupes de doublons",
+        "showNotification": "Afficher la notification de doublons",
         "deleteSelected": "Supprimer la sélection",
         "exitMode": "Quitter le mode",
         "help": {
-            "identicalHashes": "Des hachages identiques signifient des fichiers de modèle identiques, même s'ils ont des noms ou des aperçus différents.",
+            "identicalHashes": "Des hash identiques signifient des fichiers de modèle identiques, même s'ils ont des noms ou aperçus différents.",
             "keepOne": "Gardez seulement une version (de préférence avec de meilleures métadonnées/aperçus) et supprimez les autres en toute sécurité."
         }
     },
-    "tooltips": {
-        "refresh": "Actualiser la liste des modèles",
-        "bulkOperations": "Sélectionner plusieurs modèles pour les opérations par lot",
-        "favorites": "Afficher uniquement les modèles favoris",
-        "duplicates": "Trouver et gérer les modèles en double",
-        "search": "Rechercher des modèles par nom, tags ou autres critères",
-        "filter": "Filtrer les modèles selon divers critères",
-        "sort": "Trier les modèles selon différents attributs",
-        "backToTop": "Remonter en haut de la page"
-    },
-    "modelCard": {
-        "actions": {
-            "addToFavorites": "Ajouter aux favoris",
-            "removeFromFavorites": "Retirer des favoris",
-            "viewOnCivitai": "Voir sur Civitai",
-            "notAvailableFromCivitai": "Non disponible sur Civitai",
-            "sendToWorkflow": "Envoyer vers ComfyUI (Clic: Ajouter, Shift+Clic: Remplacer)",
-            "copyLoRASyntax": "Copier la syntaxe LoRA",
-            "checkpointNameCopied": "Nom du checkpoint copié",
-            "toggleBlur": "Basculer le flou",
-            "show": "Afficher",
-            "openExampleImages": "Ouvrir le dossier d'images d'exemple"
+    "uiHelpers": {
+        "clipboard": {
+            "copied": "Copié dans le presse-papiers",
+            "copyFailed": "Échec de la copie"
         },
-        "nsfw": {
-            "matureContent": "Contenu pour adultes",
-            "xxxRated": "Contenu XXX",
-            "xRated": "Contenu X",
-            "rRated": "Contenu R"
+        "lora": {
+            "syntaxCopied": "Syntaxe LoRA copiée dans le presse-papiers",
+            "syntaxCopiedNoTriggerWords": "Syntaxe LoRA copiée dans le presse-papiers (aucun mot-clé trouvé)",
+            "syntaxCopiedWithTriggerWords": "Syntaxe LoRA avec mots-clés copiée dans le presse-papiers",
+            "syntaxCopiedWithTriggerWordGroups": "Syntaxe LoRA avec groupes de mots-clés copiée dans le presse-papiers"
         },
-        "favorites": {
-            "added": "Ajouté aux favoris",
-            "removed": "Retiré des favoris",
-            "updateFailed": "Échec de la mise à jour du statut favori"
+        "workflow": {
+            "noSupportedNodes": "Aucun nœud cible supporté trouvé dans le workflow",
+            "communicationFailed": "Échec de la communication avec ComfyUI"
         },
-        "sendToWorkflow": {
-            "checkpointNotImplemented": "Envoyer checkpoint vers workflow - fonctionnalité à implémenter"
+        "nodeSelector": {
+            "recipe": "Recette",
+            "lora": "LoRA",
+            "replace": "Remplacer",
+            "append": "Ajouter",
+            "selectTargetNode": "Sélectionner le nœud cible",
+            "sendToAll": "Envoyer à tous"
         },
         "exampleImages": {
-            "checkError": "Erreur lors de la vérification des images d'exemple",
-            "missingHash": "Informations de hachage du modèle manquantes.",
-            "noRemoteImagesAvailable": "Aucune image d'exemple distante disponible pour ce modèle sur Civitai"
+            "opened": "Dossier d'images d'exemple ouvert",
+            "openingFolder": "Ouverture du dossier d'images d'exemple",
+            "failedToOpen": "Échec de l'ouverture du dossier d'images d'exemple"
+        }
+    },
+    "help": {
+        "title": "Aide et tutoriels",
+        "tabs": {
+            "gettingStarted": "Commencer",
+            "updateVlogs": "Vlogs de mise à jour",
+            "documentation": "Documentation"
+        },
+        "gettingStarted": {
+            "title": "Premiers pas avec le Gestionnaire LoRA"
+        },
+        "updateVlogs": {
+            "title": "Dernières mises à jour",
+            "watchOnYouTube": "Regarder sur YouTube",
+            "playlistTitle": "Playlist des mises à jour du Gestionnaire LoRA",
+            "playlistDescription": "Regardez toutes les vidéos de mise à jour présentant les dernières fonctionnalités et améliorations."
+        },
+        "documentation": {
+            "title": "Documentation",
+            "general": "Général",
+            "troubleshooting": "Dépannage",
+            "modelManagement": "Gestion des modèles",
+            "recipes": "Recettes",
+            "settings": "Paramètres & Configuration",
+            "extensions": "Extensions",
+            "newBadge": "NOUVEAU"
+        }
+    },
+    "update": {
+        "title": "Vérifier les mises à jour",
+        "updateAvailable": "Mise à jour disponible",
+        "noChangelogAvailable": "Aucun journal des modifications détaillé disponible. Consultez GitHub pour plus d'informations.",
+        "currentVersion": "Version actuelle",
+        "newVersion": "Nouvelle version",
+        "commit": "Commit",
+        "viewOnGitHub": "Voir sur GitHub",
+        "updateNow": "Mettre à jour maintenant",
+        "preparingUpdate": "Préparation de la mise à jour...",
+        "changelog": "Journal des modifications",
+        "checkingUpdates": "Vérification des mises à jour...",
+        "checkingMessage": "Veuillez patienter pendant la vérification de la dernière version.",
+        "showNotifications": "Afficher les notifications de mise à jour",
+        "updateProgress": {
+            "preparing": "Préparation de la mise à jour...",
+            "installing": "Installation de la mise à jour...",
+            "completed": "Mise à jour terminée avec succès !",
+            "failed": "Échec de la mise à jour : {error}"
+        },
+        "status": {
+            "updating": "Mise à jour...",
+            "updated": "Mis à jour !",
+            "updateFailed": "Échec de la mise à jour"
+        },
+        "completion": {
+            "successMessage": "Mise à jour réussie vers {version} !",
+            "restartMessage": "Veuillez redémarrer ComfyUI ou le Gestionnaire LoRA pour appliquer la mise à jour.",
+            "reloadMessage": "Assurez-vous de recharger votre navigateur pour le Gestionnaire LoRA et ComfyUI."
+        },
+        "nightly": {
+            "warning": "Attention : Les versions nightly peuvent contenir des fonctionnalités expérimentales et être instables.",
+            "enable": "Activer les mises à jour nightly"
+        }
+    },
+    "support": {
+        "title": "Soutenir le projet",
+        "message": "Si vous trouvez le Gestionnaire LoRA utile, votre soutien serait grandement apprécié ! 🙌",
+        "feedback": {
+            "title": "Donner votre avis",
+            "description": "Vos retours aident à façonner les futures mises à jour ! Partagez vos idées :"
+        },
+        "links": {
+            "submitGithubIssue": "Soumettre un problème sur GitHub",
+            "joinDiscord": "Rejoindre Discord",
+            "youtubeChannel": "Chaîne YouTube",
+            "civitaiProfile": "Profil Civitai",
+            "supportKofi": "Soutenir sur Ko-fi",
+            "supportPatreon": "Soutenir sur Patreon"
+        },
+        "sections": {
+            "followUpdates": "Suivre les mises à jour",
+            "buyMeCoffee": "Offrez-moi un café",
+            "coffeeDescription": "Si vous souhaitez soutenir mon travail directement :",
+            "becomePatron": "Devenir un mécène",
+            "patronDescription": "Soutenez le développement continu avec des contributions mensuelles :",
+            "wechatSupport": "Soutien WeChat",
+            "wechatDescription": "Pour les utilisateurs en Chine, vous pouvez soutenir via WeChat :",
+            "showWechatQR": "Afficher le QR Code WeChat",
+            "hideWechatQR": "Masquer le QR Code WeChat"
+        },
+        "footer": "Merci d'utiliser le Gestionnaire LoRA ! ❤️"
+    },
+    "toast": {
+        "general": {
+            "cannotInteractStandalone": "Impossible d'interagir avec ComfyUI en mode autonome",
+            "failedWorkflowInfo": "Échec de l'obtention des informations du workflow",
+            "pageInitFailed": "Échec de l'initialisation de la page {pageType}. Veuillez recharger.",
+            "statisticsLoadFailed": "Échec du chargement des données statistiques"
+        },
+        "loras": {
+            "copyOnlyForLoras": "La copie de la syntaxe est disponible uniquement pour les LoRAs",
+            "noLorasSelected": "Aucun LoRA sélectionné",
+            "missingDataForLoras": "Données manquantes pour {count} LoRAs",
+            "noValidLorasToCopy": "Aucun LoRA valide à copier",
+            "sendOnlyForLoras": "L'envoi vers le workflow est disponible uniquement pour les LoRAs",
+            "noValidLorasToSend": "Aucun LoRA valide à envoyer",
+            "downloadSuccessful": "LoRAs téléchargés avec succès",
+            "allDownloadSuccessful": "Tous les {count} LoRAs ont été téléchargés avec succès",
+            "downloadPartialSuccess": "{completed} sur {total} LoRAs téléchargés",
+            "downloadPartialWithAccess": "{completed} sur {total} LoRAs téléchargés. {accessFailures} ont échoué en raison de restrictions d'accès. Vérifiez votre clé API dans les paramètres ou le statut d'accès anticipé.",
+            "pleaseSelectVersion": "Veuillez sélectionner une version",
+            "versionExists": "Cette version existe déjà dans votre bibliothèque",
+            "downloadCompleted": "Téléchargement terminé avec succès"
+        },
+        "recipes": {
+            "fetchFailed": "Échec de la récupération des recettes : {message}",
+            "reloadFailed": "Échec du rechargement des {modelType}s : {message}",
+            "loadFailed": "Échec du chargement des {modelType}s : {message}",
+            "refreshComplete": "Actualisation terminée",
+            "refreshFailed": "Échec de l'actualisation des recettes : {message}",
+            "updateFailed": "Échec de la mise à jour de la recette : {error}",
+            "updateError": "Erreur lors de la mise à jour de la recette : {message}",
+            "nameSaved": "Recette \"{name}\" sauvegardée avec succès",
+            "nameUpdated": "Nom de la recette mis à jour avec succès",
+            "tagsUpdated": "Tags de la recette mis à jour avec succès",
+            "sourceUrlUpdated": "URL source mise à jour avec succès",
+            "noRecipeId": "Aucun ID de recette disponible",
+            "copyFailed": "Erreur lors de la copie de la syntaxe de la recette : {message}",
+            "noMissingLoras": "Aucun LoRA manquant à télécharger",
+            "missingLorasInfoFailed": "Échec de l'obtention des informations pour les LoRAs manquants",
+            "preparingForDownloadFailed": "Erreur lors de la préparation des LoRAs pour le téléchargement",
+            "enterLoraName": "Veuillez entrer un nom ou une syntaxe LoRA",
+            "reconnectedSuccessfully": "LoRA reconnecté avec succès",
+            "reconnectFailed": "Erreur lors de la reconnexion du LoRA : {message}",
+            "cannotSend": "Impossible d'envoyer la recette : ID de recette manquant",
+            "sendFailed": "Échec de l'envoi de la recette vers le workflow",
+            "sendError": "Erreur lors de l'envoi de la recette vers le workflow",
+            "cannotDelete": "Impossible de supprimer la recette : ID de recette manquant",
+            "deleteConfirmationError": "Erreur lors de l'affichage de la confirmation de suppression",
+            "deletedSuccessfully": "Recette supprimée avec succès",
+            "deleteFailed": "Erreur lors de la suppression de la recette : {message}",
+            "cannotShare": "Impossible de partager la recette : ID de recette manquant",
+            "preparingForSharing": "Préparation de la recette pour le partage...",
+            "downloadStarted": "Téléchargement de la recette démarré",
+            "shareError": "Erreur lors du partage de la recette : {message}",
+            "sharePreparationError": "Erreur lors de la préparation de la recette pour le partage",
+            "selectImageFirst": "Veuillez d'abord sélectionner une image",
+            "enterRecipeName": "Veuillez entrer un nom de recette",
+            "processingError": "Erreur de traitement : {message}",
+            "folderBrowserError": "Erreur lors du chargement du navigateur de dossiers : {message}",
+            "recipeSaveFailed": "Échec de la sauvegarde de la recette : {error}",
+            "importFailed": "Échec de l'importation : {message}",
+            "folderTreeFailed": "Échec du chargement de l'arborescence des dossiers",
+            "folderTreeError": "Erreur lors du chargement de l'arborescence des dossiers"
+        },
+        "models": {
+            "noModelsSelected": "Aucun modèle sélectionné",
+            "deletedSuccessfully": "{count} {type}(s) supprimé(s) avec succès",
+            "deleteFailed": "Erreur : {error}",
+            "deleteFailedGeneral": "Échec de la suppression des modèles",
+            "selectedAdditional": "{count} {type}(s) supplémentaire(s) sélectionné(s)",
+            "refreshMetadataFailed": "Échec de l'actualisation des métadonnées",
+            "nameCannotBeEmpty": "Le nom du modèle ne peut pas être vide",
+            "nameUpdatedSuccessfully": "Nom du modèle mis à jour avec succès",
+            "nameUpdateFailed": "Échec de la mise à jour du nom du modèle",
+            "baseModelUpdated": "Modèle de base mis à jour avec succès",
+            "baseModelUpdateFailed": "Échec de la mise à jour du modèle de base",
+            "invalidCharactersRemoved": "Caractères invalides supprimés du nom de fichier",
+            "filenameCannotBeEmpty": "Le nom de fichier ne peut pas être vide",
+            "renameFailed": "Échec du renommage du fichier : {message}",
+            "moveFailed": "Échec du déplacement du/des modèle(s) : {message}",
+            "pleaseSelectRoot": "Veuillez sélectionner un répertoire racine {type}",
+            "nameTooLong": "Le nom du modèle est limité à 100 caractères",
+            "verificationAlreadyDone": "Ce groupe a déjà été vérifié",
+            "verificationCompleteMismatch": "Vérification terminée. {count} fichier(s) ont des hash différents.",
+            "verificationCompleteSuccess": "Vérification terminée. Tous les fichiers sont confirmés comme doublons.",
+            "verificationFailed": "Échec de la vérification des hash : {message}"
+        },
+        "search": {
+            "atLeastOneOption": "Au moins une option de recherche doit être sélectionnée"
+        },
+        "settings": {
+            "loraRootsFailed": "Échec du chargement des racines LoRA : {message}",
+            "checkpointRootsFailed": "Échec du chargement des racines checkpoint : {message}",
+            "embeddingRootsFailed": "Échec du chargement des racines embedding : {message}",
+            "mappingsUpdated": "Mappages de chemin de modèle de base mis à jour ({count} mappage{plural})",
+            "mappingsCleared": "Mappages de chemin de modèle de base effacés",
+            "mappingSaveFailed": "Échec de la sauvegarde des mappages de modèle de base : {message}",
+            "downloadTemplatesUpdated": "Modèles de chemin de téléchargement mis à jour",
+            "downloadTemplatesFailed": "Échec de la sauvegarde des modèles de chemin de téléchargement : {message}",
+            "settingsUpdated": "Paramètres mis à jour : {setting}",
+            "compactModeToggled": "Mode compact {state}",
+            "settingSaveFailed": "Échec de la sauvegarde du paramètre : {message}",
+            "displayDensitySet": "Densité d'affichage définie sur {density}",
+            "languageChangeFailed": "Échec du changement de langue : {message}",
+            "cacheCleared": "Les fichiers de cache ont été vidés avec succès. Le cache sera reconstruit à la prochaine action.",
+            "cacheClearFailed": "Échec du vidage du cache : {error}",
+            "cacheClearError": "Erreur lors du vidage du cache : {message}"
+        },
+        "filters": {
+            "applied": "{message}",
+            "cleared": "Filtres effacés",
+            "noCustomFilterToClear": "Aucun filtre personnalisé à effacer"
+        },
+        "downloads": {
+            "imagesCompleted": "Images d'exemple {action} terminées",
+            "imagesFailed": "Images d'exemple {action} échouées",
+            "loadError": "Erreur lors du chargement des téléchargements : {message}",
+            "downloadError": "Erreur de téléchargement : {message}"
+        },
+        "import": {
+            "folderTreeFailed": "Échec du chargement de l'arborescence des dossiers",
+            "folderTreeError": "Erreur lors du chargement de l'arborescence des dossiers",
+            "imagesImported": "Images d'exemple importées avec succès",
+            "importFailed": "Échec de l'importation des images d'exemple : {message}"
+        },
+        "triggerWords": {
+            "loadFailed": "Impossible de charger les mots entraînés",
+            "tooLong": "Le mot-clé ne doit pas dépasser 30 mots",
+            "tooMany": "Maximum 30 mots-clés autorisés",
+            "alreadyExists": "Ce mot-clé existe déjà",
+            "updateSuccess": "Mots-clés mis à jour avec succès",
+            "updateFailed": "Échec de la mise à jour des mots-clés",
+            "copyFailed": "Échec de la copie"
+        },
+        "virtual": {
+            "loadFailed": "Échec du chargement des éléments",
+            "loadMoreFailed": "Échec du chargement de plus d'éléments",
+            "loadPositionFailed": "Échec du chargement des éléments à cette position"
+        },
+        "bulk": {
+            "unableToSelectAll": "Impossible de sélectionner tous les éléments"
+        },
+        "duplicates": {
+            "findFailed": "Échec de la recherche de doublons : {message}",
+            "noDuplicatesFound": "Aucun doublon {type} trouvé",
+            "noItemsSelected": "Aucun {type} sélectionné pour la suppression",
+            "deleteError": "Erreur : {message}",
+            "deleteSuccess": "{count} {type} supprimé(s) avec succès",
+            "deleteFailed": "Échec de la suppression de {type} : {message}"
+        },
+        "controls": {
+            "reloadFailed": "Échec du rechargement de {pageType} : {message}",
+            "refreshFailed": "Échec de {action} {pageType} : {message}",
+            "fetchMetadataFailed": "Échec de la récupération des métadonnées : {message}",
+            "clearFilterFailed": "Échec de l'effacement du filtre personnalisé : {message}"
+        },
+        "contextMenu": {
+            "contentRatingSet": "Classification du contenu définie sur {level}",
+            "contentRatingFailed": "Échec de la définition de la classification du contenu : {message}",
+            "relinkSuccess": "Modèle relié à Civitai avec succès",
+            "relinkFailed": "Erreur : {message}",
+            "fetchMetadataFirst": "Veuillez d'abord récupérer les métadonnées depuis CivitAI",
+            "noCivitaiInfo": "Aucune information CivitAI disponible",
+            "missingHash": "Hash du modèle non disponible"
+        },
+        "exampleImages": {
+            "pathUpdated": "Chemin des images d'exemple mis à jour avec succès",
+            "downloadInProgress": "Téléchargement déjà en cours",
+            "enterLocationFirst": "Veuillez d'abord entrer un emplacement de téléchargement",
+            "downloadStarted": "Téléchargement des images d'exemple démarré",
+            "downloadStartFailed": "Échec du démarrage du téléchargement : {error}",
+            "downloadPaused": "Téléchargement en pause",
+            "pauseFailed": "Échec de la mise en pause du téléchargement : {error}",
+            "downloadResumed": "Téléchargement repris",
+            "resumeFailed": "Échec de la reprise du téléchargement : {error}",
+            "deleted": "Image d'exemple supprimée",
+            "deleteFailed": "Échec de la suppression de l'image d'exemple",
+            "setPreviewFailed": "Échec de la définition de l'image d'aperçu"
+        },
+        "api": {
+            "fetchFailed": "Échec de la récupération des {type}s : {message}",
+            "reloadFailed": "Échec du rechargement des {type}s : {message}",
+            "deleteSuccess": "{type} supprimé avec succès",
+            "deleteFailed": "Échec de la suppression de {type} : {message}",
+            "excludeSuccess": "{type} exclu avec succès",
+            "excludeFailed": "Échec de l'exclusion de {type} : {message}",
+            "fileNameUpdated": "Nom de fichier mis à jour avec succès",
+            "fileRenameFailed": "Échec du renommage du fichier : {error}",
+            "previewUpdated": "Aperçu mis à jour avec succès",
+            "previewUploadFailed": "Échec du téléchargement de l'image d'aperçu",
+            "refreshComplete": "{action} terminé",
+            "refreshFailed": "Échec de {action} des {type}s",
+            "metadataRefreshed": "Métadonnées actualisées avec succès",
+            "metadataRefreshFailed": "Échec de l'actualisation des métadonnées : {message}",
+            "metadataUpdateComplete": "Mise à jour des métadonnées terminée",
+            "metadataFetchFailed": "Échec de la récupération des métadonnées : {message}",
+            "bulkMetadataCompleteAll": "Actualisation réussie de tous les {count} {type}s",
+            "bulkMetadataCompletePartial": "{success} sur {total} {type}s actualisés",
+            "bulkMetadataCompleteNone": "Échec de l'actualisation des métadonnées pour tous les {type}s",
+            "bulkMetadataFailureDetails": "Échecs d'actualisation :\n{failures}",
+            "bulkMetadataFailed": "Échec de l'actualisation des métadonnées : {message}",
+            "moveNotSupported": "Le déplacement des {type}s n'est pas pris en charge",
+            "alreadyInFolder": "{type} est déjà dans le dossier sélectionné",
+            "moveInfo": "{message}",
+            "moveSuccess": "{type} déplacé avec succès",
+            "bulkMoveNotSupported": "Le déplacement des {type}s n'est pas pris en charge",
+            "allAlreadyInFolder": "Tous les {type}s sélectionnés sont déjà dans le dossier cible",
+            "bulkMovePartial": "{successCount} {type}s déplacés, {failureCount} ont échoué",
+            "bulkMoveFailures": "Échecs de déplacement :\n{failures}",
+            "bulkMoveSuccess": "{successCount} {type}s déplacés avec succès",
+            "exampleImagesDownloadSuccess": "Images d'exemple téléchargées avec succès !",
+            "exampleImagesDownloadFailed": "Échec du téléchargement des images d'exemple : {message}"
+        }
+    },
+    "banners": {
+        "versionMismatch": {
+            "title": "Mise à jour de l'application détectée",
+            "content": "Votre navigateur utilise une version obsolète du Gestionnaire LoRA ({storedVersion}). Le serveur a été mis à jour vers la version {currentVersion}. Veuillez actualiser pour garantir le bon fonctionnement.",
+            "refreshNow": "Actualiser maintenant",
+            "refreshingIn": "Actualisation dans",
+            "seconds": "secondes"
         }
     }
 }

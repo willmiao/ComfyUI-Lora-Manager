@@ -1,66 +1,24 @@
 {
     "common": {
-        "file": "Файл",
-        "folder": "Папка",
-        "name": "Имя",
-        "size": "Размер",
-        "date": "Дата",
-        "type": "Тип",
-        "path": "Путь",
-        "fileSize": {
-            "zero": "0 Байт",
-            "bytes": "Байт",
-            "kb": "КБ",
-            "mb": "МБ",
-            "gb": "ГБ",
-            "tb": "ТБ"
-        },
         "actions": {
             "save": "Сохранить",
             "cancel": "Отмена",
             "delete": "Удалить",
-            "edit": "Редактировать",
-            "copy": "Копировать",
             "move": "Переместить",
             "refresh": "Обновить",
-            "download": "Скачать",
-            "upload": "Загрузить",
-            "search": "Поиск",
-            "filter": "Фильтр",
-            "sort": "Сортировка",
-            "select": "Выбрать",
-            "selectAll": "Выбрать всё",
-            "deselectAll": "Отменить выбор",
-            "confirm": "Подтвердить",
-            "close": "Закрыть",
             "back": "Назад",
             "next": "Далее",
-            "previous": "Предыдущий",
-            "view": "Просмотр",
-            "preview": "Предварительный просмотр",
-            "details": "Детали",
             "backToTop": "Наверх",
             "settings": "Настройки",
-            "help": "Помощь",
-            "about": "О программе"
+            "help": "Справка"
         },
         "status": {
             "loading": "Загрузка...",
-            "saving": "Сохранение...",
-            "saved": "Сохранено",
-            "error": "Ошибка",
-            "success": "Успешно",
-            "warning": "Предупреждение",
-            "info": "Информация",
-            "processing": "Обработка...",
-            "completed": "Завершено",
-            "failed": "Неудачно",
-            "cancelled": "Отменено",
-            "pending": "Ожидание",
-            "ready": "Готово"
+            "unknown": "Неизвестно",
+            "date": "Дата",
+            "version": "Версия"
         },
         "language": {
-            "current": "Язык",
             "select": "Выбрать язык",
             "select_help": "Выберите предпочитаемый язык интерфейса",
             "english": "English",
@@ -72,42 +30,83 @@
             "korean": "한국어",
             "french": "Français",
             "spanish": "Español"
+        },
+        "fileSize": {
+            "zero": "0 Байт",
+            "bytes": "Байт",
+            "kb": "КБ",
+            "mb": "МБ",
+            "gb": "ГБ",
+            "tb": "ТБ"
+        }
+    },
+    "modelCard": {
+        "actions": {
+            "addToFavorites": "Добавить в избранное",
+            "removeFromFavorites": "Удалить из избранного",
+            "viewOnCivitai": "Посмотреть на Civitai",
+            "notAvailableFromCivitai": "Недоступно на Civitai",
+            "sendToWorkflow": "Отправить в ComfyUI (Клик: Добавить, Shift+Клик: Заменить)",
+            "copyLoRASyntax": "Копировать синтаксис LoRA",
+            "checkpointNameCopied": "Имя checkpoint скопировано",
+            "toggleBlur": "Переключить размытие",
+            "show": "Показать",
+            "openExampleImages": "Открыть папку с примерами"
+        },
+        "nsfw": {
+            "matureContent": "Контент для взрослых",
+            "xxxRated": "XXX-контент",
+            "xRated": "X-контент",
+            "rRated": "R-контент"
+        },
+        "favorites": {
+            "added": "Добавлено в избранное",
+            "removed": "Удалено из избранного",
+            "updateFailed": "Не удалось обновить статус избранного"
+        },
+        "sendToWorkflow": {
+            "checkpointNotImplemented": "Отправка checkpoint в workflow - функция будет реализована"
+        },
+        "exampleImages": {
+            "checkError": "Ошибка проверки примеров изображений",
+            "missingHash": "Отсутствует хеш модели.",
+            "noRemoteImagesAvailable": "Нет удаленных примеров изображений для этой модели на Civitai"
         }
     },
     "header": {
-        "appTitle": "LoRA Менеджер",
+        "appTitle": "LoRA Manager",
         "navigation": {
-            "loras": "LoRA",
+            "loras": "LoRAs",
             "recipes": "Рецепты",
-            "checkpoints": "Чекпойнты",
-            "embeddings": "Эмбеддинги",
+            "checkpoints": "Checkpoints",
+            "embeddings": "Embeddings",
             "statistics": "Статистика"
         },
         "search": {
             "placeholder": "Поиск...",
             "placeholders": {
-                "loras": "Поиск LoRA...",
+                "loras": "Поиск LoRAs...",
                 "recipes": "Поиск рецептов...",
-                "checkpoints": "Поиск чекпойнтов...",
-                "embeddings": "Поиск эмбеддингов..."
+                "checkpoints": "Поиск checkpoints...",
+                "embeddings": "Поиск embeddings..."
             },
-            "options": "Параметры поиска",
-            "searchIn": "Поиск в:",
+            "options": "Опции поиска",
+            "searchIn": "Искать в:",
             "notAvailable": "Поиск недоступен на странице статистики",
             "filters": {
                 "filename": "Имя файла",
-                "modelname": "Имя модели",
+                "modelname": "Название модели",
                 "tags": "Теги",
-                "creator": "Создатель",
+                "creator": "Автор",
                 "title": "Название рецепта",
                 "loraName": "Имя файла LoRA",
-                "loraModel": "Имя модели LoRA"
+                "loraModel": "Название модели LoRA"
             }
         },
         "filter": {
             "title": "Фильтр моделей",
             "baseModel": "Базовая модель",
-            "modelTags": "Теги (топ 20)",
+            "modelTags": "Теги (Топ 20)",
             "clearAll": "Очистить все фильтры"
         },
         "theme": {
@@ -115,146 +114,273 @@
             "switchToLight": "Переключить на светлую тему",
             "switchToDark": "Переключить на тёмную тему",
             "switchToAuto": "Переключить на автоматическую тему"
+        },
+        "actions": {
+            "checkUpdates": "Проверить обновления",
+            "support": "Поддержка"
+        }
+    },
+    "settings": {
+        "civitaiApiKey": "Ключ API Civitai",
+        "civitaiApiKeyPlaceholder": "Введите ваш ключ API Civitai",
+        "civitaiApiKeyHelp": "Используется для аутентификации при загрузке моделей с Civitai",
+        "sections": {
+            "contentFiltering": "Фильтрация контента",
+            "videoSettings": "Настройки видео",
+            "layoutSettings": "Настройки макета",
+            "folderSettings": "Настройки папок",
+            "downloadPathTemplates": "Шаблоны путей загрузки",
+            "exampleImages": "Примеры изображений",
+            "misc": "Разное"
+        },
+        "contentFiltering": {
+            "blurNsfwContent": "Размывать NSFW контент",
+            "blurNsfwContentHelp": "Размывать превью изображений контента для взрослых (NSFW)",
+            "showOnlySfw": "Показывать только SFW результаты",
+            "showOnlySfwHelp": "Фильтровать весь NSFW контент при просмотре и поиске"
+        },
+        "videoSettings": {
+            "autoplayOnHover": "Автовоспроизведение видео при наведении",
+            "autoplayOnHoverHelp": "Воспроизводить превью видео только при наведении курсора"
+        },
+        "layoutSettings": {
+            "displayDensity": "Плотность отображения",
+            "displayDensityOptions": {
+                "default": "По умолчанию",
+                "medium": "Средняя", 
+                "compact": "Компактная"
+            },
+            "displayDensityHelp": "Выберите количество карточек для отображения в ряду:",
+            "displayDensityDetails": {
+                "default": "По умолчанию: 5 (1080p), 6 (2K), 8 (4K)",
+                "medium": "Средняя: 6 (1080p), 7 (2K), 9 (4K)",
+                "compact": "Компактная: 7 (1080p), 8 (2K), 10 (4K)"
+            },
+            "displayDensityWarning": "Предупреждение: Высокая плотность может вызвать проблемы с производительностью на системах с ограниченными ресурсами.",
+            "cardInfoDisplay": "Отображение информации карточки",
+            "cardInfoDisplayOptions": {
+                "always": "Всегда видимо",
+                "hover": "Показать при наведении"
+            },
+            "cardInfoDisplayHelp": "Выберите когда отображать информацию о модели и кнопки действий:",
+            "cardInfoDisplayDetails": {
+                "always": "Всегда видимо: Заголовки и подписи всегда видны",
+                "hover": "Показать при наведении: Заголовки и подписи появляются только при наведении на карточку"
+            }
+        },
+        "folderSettings": {
+            "defaultLoraRoot": "Корневая папка LoRA по умолчанию",
+            "defaultLoraRootHelp": "Установить корневую папку LoRA по умолчанию для загрузок, импорта и перемещений",
+            "defaultCheckpointRoot": "Корневая папка Checkpoint по умолчанию",
+            "defaultCheckpointRootHelp": "Установить корневую папку checkpoint по умолчанию для загрузок, импорта и перемещений",
+            "defaultEmbeddingRoot": "Корневая папка Embedding по умолчанию",
+            "defaultEmbeddingRootHelp": "Установить корневую папку embedding по умолчанию для загрузок, импорта и перемещений",
+            "noDefault": "Не задано"
+        },
+        "downloadPathTemplates": {
+            "title": "Шаблоны путей загрузки",
+            "help": "Настройте структуру папок для разных типов моделей при загрузке с Civitai.",
+            "availablePlaceholders": "Доступные заполнители:",
+            "templateOptions": {
+                "flatStructure": "Плоская структура",
+                "byBaseModel": "По базовой модели",
+                "byAuthor": "По автору", 
+                "byFirstTag": "По первому тегу",
+                "baseModelFirstTag": "Базовая модель + Первый тег",
+                "baseModelAuthor": "Базовая модель + Автор",
+                "authorFirstTag": "Автор + Первый тег",
+                "customTemplate": "Пользовательский шаблон"
+            },
+            "customTemplatePlaceholder": "Введите пользовательский шаблон (например, {base_model}/{author}/{first_tag})",
+            "modelTypes": {
+                "lora": "LoRA",
+                "checkpoint": "Checkpoint", 
+                "embedding": "Embedding"
+            },
+            "baseModelPathMappings": "Сопоставления путей базовых моделей",
+            "baseModelPathMappingsHelp": "Настройте имена папок для конкретных базовых моделей (например, \"Flux.1 D\" → \"flux\")",
+            "addMapping": "Добавить сопоставление",
+            "selectBaseModel": "Выбрать базовую модель",
+            "customPathPlaceholder": "Пользовательский путь (например, flux)",
+            "removeMapping": "Удалить сопоставление",
+            "validation": {
+                "validFlat": "Действительный (плоская структура)",
+                "invalidChars": "Обнаружены недопустимые символы",
+                "doubleSlashes": "Двойные слеши не разрешены",
+                "leadingTrailingSlash": "Не может начинаться или заканчиваться слешем",
+                "invalidPlaceholder": "Недопустимый заполнитель: {placeholder}",
+                "validTemplate": "Действительный шаблон"
+            }
+        },
+        "exampleImages": {
+            "downloadLocation": "Место загрузки",
+            "downloadLocationPlaceholder": "Введите путь к папке для примеров изображений",
+            "downloadLocationHelp": "Введите путь к папке, где будут сохраняться примеры изображений с Civitai",
+            "autoDownload": "Автозагрузка примеров изображений",
+            "autoDownloadHelp": "Автоматически загружать примеры изображений для моделей, у которых их нет (требует настройки места загрузки)",
+            "optimizeImages": "Оптимизировать загруженные изображения",
+            "optimizeImagesHelp": "Оптимизировать примеры изображений для уменьшения размера файла и улучшения скорости загрузки (метаданные будут сохранены)",
+            "download": "Загрузить",
+            "restartRequired": "Требует перезапуска"
+        },
+        "misc": {
+            "includeTriggerWords": "Включать триггерные слова в синтаксис LoRA",
+            "includeTriggerWordsHelp": "Включать обученные триггерные слова при копировании синтаксиса LoRA в буфер обмена"
         }
     },
     "loras": {
-        "title": "LoRA Модели",
         "controls": {
             "sort": {
                 "title": "Сортировать модели по...",
-                "name": "Имя",
+                "name": "Имени",
                 "nameAsc": "А - Я",
                 "nameDesc": "Я - А",
-                "date": "Дата добавления",
-                "dateDesc": "Новые",
-                "dateAsc": "Старые",
-                "size": "Размер файла",
-                "sizeDesc": "Самые большие",
-                "sizeAsc": "Самые маленькие"
+                "date": "Дате добавления",
+                "dateDesc": "Новейшим",
+                "dateAsc": "Старейшим",
+                "size": "Размеру файла",
+                "sizeDesc": "Наибольшим",
+                "sizeAsc": "Наименьшим"
             },
             "refresh": {
                 "title": "Обновить список моделей",
-                "quick": "Быстрое обновление (инкрементное)",
-                "full": "Полная перестройка (полная)"
+                "quick": "Быстрое обновление (инкрементальное)",
+                "full": "Полная перестройка (полное)"
             },
-            "fetch": "Получить с Civitai",
-            "download": "Скачать по URL",
+            "fetch": "Загрузить с Civitai",
+            "download": "Загрузить по URL",
             "bulk": "Массовые операции",
             "duplicates": "Найти дубликаты",
             "favorites": "Показать только избранные"
         },
         "bulkOperations": {
-            "title": "Массовые операции",
             "selected": "Выбрано {count}",
-            "sendToWorkflow": "Отправить все выбранные LoRA в рабочий процесс",
-            "copyAll": "Копировать синтаксис всех выбранных LoRA",
-            "refreshAll": "Обновить метаданные CivitAI для выбранных моделей",
-            "moveAll": "Переместить выбранные модели в папку",
-            "deleteAll": "Удалить выбранные модели",
-            "clear": "Очистить выбор"
+            "selectedSuffix": "выбрано",
+            "viewSelected": "Нажмите для просмотра выбранных элементов",
+            "sendToWorkflow": "Отправить в Workflow",
+            "copyAll": "Копировать все",
+            "refreshAll": "Обновить все",
+            "moveAll": "Переместить все",
+            "deleteAll": "Удалить все",
+            "clear": "Очистить"
         },
         "contextMenu": {
             "refreshMetadata": "Обновить данные Civitai",
-            "relinkCivitai": "Переподключить к Civitai",
+            "relinkCivitai": "Пересвязать с Civitai",
             "copySyntax": "Копировать синтаксис LoRA",
             "copyFilename": "Копировать имя файла модели",
             "copyRecipeSyntax": "Копировать синтаксис рецепта",
-            "sendToWorkflowAppend": "Отправить в рабочий процесс (добавить)",
-            "sendToWorkflowReplace": "Отправить в рабочий процесс (заменить)",
-            "openExamplesFolder": "Открыть папку с примерами",
-            "downloadExamples": "Скачать примеры изображений",
+            "sendToWorkflowAppend": "Отправить в Workflow (Добавить)",
+            "sendToWorkflowReplace": "Отправить в Workflow (Заменить)",
+            "openExamples": "Открыть папку примеров",
+            "downloadExamples": "Загрузить примеры изображений",
             "replacePreview": "Заменить превью",
-            "setContentRating": "Установить возрастной рейтинг",
+            "setContentRating": "Установить рейтинг контента",
             "moveToFolder": "Переместить в папку",
             "excludeModel": "Исключить модель",
             "deleteModel": "Удалить модель",
             "shareRecipe": "Поделиться рецептом",
-            "viewAllLoras": "Просмотреть все LoRA",
-            "downloadMissingLoras": "Скачать недостающие LoRA",
+            "viewAllLoras": "Посмотреть все LoRAs",
+            "downloadMissingLoras": "Загрузить отсутствующие LoRAs",
             "deleteRecipe": "Удалить рецепт"
-        },
-        "modal": {
-            "title": "Детали LoRA",
-            "tabs": {
-                "examples": "Примеры",
-                "description": "Описание модели",
-                "recipes": "Рецепты"
-            },
-            "info": {
-                "filename": "Имя файла",
-                "modelName": "Имя модели",
-                "baseModel": "Базовая модель",
-                "fileSize": "Размер файла",
-                "dateAdded": "Дата добавления",
-                "triggerWords": "Ключевые слова",
-                "description": "Описание",
-                "tags": "Теги",
-                "rating": "Рейтинг",
-                "downloads": "Загрузки",
-                "likes": "Лайки",
-                "version": "Версия"
-            },
-            "actions": {
-                "copyTriggerWords": "Копировать ключевые слова",
-                "copyLoraName": "Копировать имя LoRA",
-                "sendToWorkflow": "Отправить в рабочий процесс",
-                "viewOnCivitai": "Просмотреть на Civitai",
-                "downloadExamples": "Скачать примеры изображений"
-            }
         }
     },
     "recipes": {
-        "title": "LoRA Рецепты",
+        "title": "Рецепты LoRA",
         "controls": {
-            "import": "Импортировать рецепт",
+            "import": {
+                "action": "Импортировать рецепт",
+                "title": "Импортировать рецепт из изображения или URL",
+                "urlLocalPath": "URL / Локальный путь",
+                "uploadImage": "Загрузить изображение",
+                "urlSectionDescription": "Введите URL изображения Civitai или локальный путь к файлу для импорта в качестве рецепта.",
+                "imageUrlOrPath": "URL изображения или путь к файлу:",
+                "urlPlaceholder": "https://civitai.com/images/... или C:/path/to/image.png",
+                "fetchImage": "Получить изображение",
+                "uploadSectionDescription": "Загрузите изображение с метаданными LoRA для импорта в качестве рецепта.",
+                "selectImage": "Выбрать изображение",
+                "recipeName": "Название рецепта",
+                "recipeNamePlaceholder": "Введите название рецепта",
+                "tagsOptional": "Теги (необязательно)",
+                "addTagPlaceholder": "Добавить тег",
+                "addTag": "Добавить",
+                "noTagsAdded": "Теги не добавлены",
+                "lorasInRecipe": "LoRAs в этом рецепте",
+                "downloadLocationPreview": "Предпросмотр места загрузки:",
+                "useDefaultPath": "Использовать путь по умолчанию",
+                "useDefaultPathTooltip": "При включении файлы автоматически организуются с использованием настроенных шаблонов путей",
+                "selectLoraRoot": "Выберите корневую папку LoRA",
+                "targetFolderPath": "Путь к целевой папке:",
+                "folderPathPlaceholder": "Введите путь к папке или выберите из дерева ниже...",
+                "createNewFolder": "Создать новую папку",
+                "root": "Корень",
+                "browseFolders": "Обзор папок:",
+                "downloadAndSaveRecipe": "Скачать и сохранить рецепт",
+                "downloadMissingLoras": "Скачать отсутствующие LoRAs",
+                "saveRecipe": "Сохранить рецепт",
+                "loraCountInfo": "({existing}/{total} в библиотеке)",
+                "processingInput": "Обработка ввода...",
+                "analyzingMetadata": "Анализ метаданных изображения...",
+                "downloadingLoras": "Загрузка LoRAs...",
+                "savingRecipe": "Сохранение рецепта...",
+                "startingDownload": "Начало загрузки LoRA {current}/{total}",
+                "deletedFromCivitai": "Удалено с Civitai",
+                "inLibrary": "В библиотеке",
+                "notInLibrary": "Не в библиотеке",
+                "earlyAccessRequired": "Для загрузки этой LoRA требуется платный ранний доступ.",
+                "earlyAccessEnds": "Ранний доступ заканчивается {date}.",
+                "earlyAccess": "Ранний доступ",
+                "verifyEarlyAccess": "Убедитесь, что вы приобрели ранний доступ перед загрузкой.",
+                "duplicateRecipesFound": "Найдено {count} идентичных рецептов в вашей библиотеке",
+                "duplicateRecipesDescription": "Эти рецепты содержат одинаковые LoRAs с идентичными весами.",
+                "showDuplicates": "Показать дубликаты",
+                "hideDuplicates": "Скрыть дубликаты",
+                "loraCount": "{count} LoRAs",
+                "recipePreviewAlt": "Предпросмотр рецепта",
+                "loraPreviewAlt": "Предпросмотр LoRA",
+                "errors": {
+                    "selectImageFile": "Пожалуйста, выберите файл изображения",
+                    "enterUrlOrPath": "Пожалуйста, введите URL или путь к файлу",
+                    "selectLoraRoot": "Пожалуйста, выберите корневую папку LoRA"
+                }
+            },
             "refresh": {
                 "title": "Обновить список рецептов"
             },
-            "duplicates": {
-                "title": "Найти дублирующиеся рецепты"
-            },
-            "filteredByLora": "Отфильтровано по LoRA",
-            "create": "Создать рецепт",
-            "export": "Экспортировать выбранные",
-            "downloadMissing": "Скачать недостающие LoRA"
+            "filteredByLora": "Фильтр по LoRA"
         },
         "duplicates": {
-            "found": "Найдено {count} дублирующихся групп",
-            "keepLatest": "Сохранить последние версии",
+            "found": "Найдено {count} групп дубликатов",
+            "keepLatest": "Оставить последние версии",
             "deleteSelected": "Удалить выбранные"
         },
-        "card": {
-            "author": "Автор",
-            "loras": "{count} LoRA",
-            "tags": "Теги",
-            "actions": {
-                "sendToWorkflow": "Отправить в рабочий процесс",
-                "edit": "Редактировать рецепт",
-                "duplicate": "Дублировать рецепт",
-                "export": "Экспортировать рецепт",
-                "delete": "Удалить рецепт"
+        "contextMenu": {
+            "copyRecipe": {
+                "missingId": "Невозможно скопировать рецепт: отсутствует ID рецепта",
+                "failed": "Не удалось скопировать синтаксис рецепта"
+            },
+            "sendRecipe": {
+                "missingId": "Невозможно отправить рецепт: отсутствует ID рецепта",
+                "failed": "Не удалось отправить рецепт в workflow"
+            },
+            "viewLoras": {
+                "missingId": "Невозможно просмотреть LoRAs: отсутствует ID рецепта",
+                "noLorasFound": "В этом рецепте не найдено LoRAs",
+                "loadError": "Ошибка загрузки LoRAs рецепта: {message}"
+            },
+            "downloadMissing": {
+                "missingId": "Невозможно загрузить LoRAs: отсутствует ID рецепта",
+                "noMissingLoras": "Нет отсутствующих LoRAs для загрузки",
+                "getInfoFailed": "Не удалось получить информацию для отсутствующих LoRAs",
+                "prepareError": "Ошибка подготовки LoRAs для загрузки: {message}"
             }
         }
     },
     "checkpoints": {
-        "title": "Модели чекпойнтов",
-        "info": {
-            "filename": "Имя файла",
-            "modelName": "Имя модели",
-            "baseModel": "Базовая модель",
-            "fileSize": "Размер файла",
-            "dateAdded": "Дата добавления"
-        }
+        "title": "Модели Checkpoint"
     },
     "embeddings": {
-        "title": "Модели эмбеддингов",
-        "info": {
-            "filename": "Имя файла",
-            "modelName": "Имя модели",
-            "triggerWords": "Ключевые слова",
-            "fileSize": "Размер файла",
-            "dateAdded": "Дата добавления"
-        }
+        "title": "Модели Embedding"
     },
     "sidebar": {
         "modelRoot": "Корень моделей",
@@ -267,83 +393,165 @@
             "overview": "Обзор",
             "usage": "Анализ использования",
             "collection": "Коллекция",
-            "storage": "Хранилище",
+            "storage": "Хранение",
             "insights": "Аналитика"
         },
-        "overview": {
-            "title": "Обзор",
-            "totalLoras": "Всего LoRA",
-            "totalCheckpoints": "Всего чекпойнтов",
-            "totalEmbeddings": "Всего эмбеддингов",
-            "totalSize": "Общий размер",
-            "favoriteModels": "Избранные модели"
+        "usage": {
+            "mostUsedLoras": "Наиболее используемые LoRAs",
+            "mostUsedCheckpoints": "Наиболее используемые Checkpoints",
+            "mostUsedEmbeddings": "Наиболее используемые Embeddings"
+        },
+        "collection": {
+            "popularTags": "Популярные теги",
+            "modelTypes": "Типы моделей",
+            "collectionAnalysis": "Анализ коллекции"
+        },
+        "storage": {
+            "storageUsage": "Использование хранилища",
+            "largestModels": "Самые большие модели",
+            "storageEfficiency": "Эффективность хранения против использования"
+        },
+        "insights": {
+            "smartInsights": "Умная аналитика",
+            "recommendations": "Рекомендации"
         },
         "charts": {
-            "modelsByType": "Модели по типу",
-            "modelsByBaseModel": "Модели по базовой модели",
-            "modelsBySize": "Модели по размеру файла",
-            "modelsAddedOverTime": "Модели, добавленные со временем"
+            "collectionOverview": "Обзор коллекции",
+            "baseModelDistribution": "Распределение базовых моделей",
+            "usageTrends": "Тенденции использования (за последние 30 дней)",
+            "usageDistribution": "Распределение использования"
         }
     },
     "modals": {
-        "delete": {
-            "title": "Подтвердить удаление",
-            "message": "Вы уверены, что хотите удалить эту модель?",
-            "warningMessage": "Это действие нельзя отменить.",
-            "confirm": "Удалить",
-            "cancel": "Отмена"
-        },
         "exclude": {
-            "title": "Исключить модель",
-            "message": "Вы уверены, что хотите исключить эту модель из библиотеки?",
-            "confirm": "Исключить",
-            "cancel": "Отмена"
+            "confirm": "Исключить"
         },
         "download": {
             "title": "Скачать модель по URL",
+            "titleWithType": "Скачать {type} по URL",
             "url": "Civitai URL",
+            "civitaiUrl": "Civitai URL:",
             "placeholder": "https://civitai.com/models/...",
-            "locationPreview": "Предварительный просмотр места загрузки",
+            "locationPreview": "Предпросмотр места загрузки",
             "useDefaultPath": "Использовать путь по умолчанию",
             "useDefaultPathTooltip": "При включении файлы автоматически организуются с использованием настроенных шаблонов путей",
-            "selectRootDirectory": "Выбрать корневую директорию",
+            "selectRootDirectory": "Выберите корневую папку",
+            "selectModelRoot": "Выберите корень моделей:",
+            "selectTypeRoot": "Выберите корень {type}:",
+            "targetFolderPath": "Путь к целевой папке:",
+            "browseFolders": "Обзор папок:",
+            "createNewFolder": "Создать новую папку",
+            "pathPlaceholder": "Введите путь к папке или выберите из дерева ниже...",
+            "root": "Корень",
             "download": "Скачать",
-            "cancel": "Отмена"
-        },
-        "move": {
-            "title": "Переместить модели",
-            "selectFolder": "Выбрать папку назначения",
-            "createFolder": "Создать новую папку",
-            "folderName": "Имя папки",
-            "move": "Переместить",
-            "cancel": "Отмена"
-        },
-        "contentRating": {
-            "title": "Установить возрастной рейтинг",
-            "current": "Текущий",
-            "levels": {
-                "pg": "Для всех",
-                "pg13": "13+",
-                "r": "Ограничено",
-                "x": "Только для взрослых",
-                "xxx": "Откровенное содержание"
+            "fetchingVersions": "Получение версий модели...",
+            "versionPreview": "Предпросмотр версии",
+            "earlyAccess": "Ранний доступ",
+            "earlyAccessTooltip": "Требуется ранний доступ",
+            "inLibrary": "В библиотеке",
+            "alreadyInLibrary": "Уже в библиотеке",
+            "autoOrganizedPath": "[Автоматически организовано по шаблону пути]",
+            "errors": {
+                "invalidUrl": "Неверный формат URL Civitai",
+                "noVersions": "Нет доступных версий для этой модели"
+            },
+            "status": {
+                "preparing": "Подготовка загрузки...",
+                "downloadedPreview": "Превью изображение загружено",
+                "downloadingFile": "Загрузка файла {type}",
+                "finalizing": "Завершение загрузки..."
             }
         },
-        "model": {
-            "description": {
-                "noDescription": "Описание модели недоступно",
-                "failedToLoad": "Не удалось загрузить описание модели",
-                "editTitle": "Редактировать описание модели",
-                "validation": {
-                    "cannotBeEmpty": "Описание не может быть пустым"
-                },
-                "messages": {
-                    "updated": "Описание модели обновлено",
-                    "updateFailed": "Не удалось обновить описание модели"
-                }
+        "move": {
+            "title": "Переместить модели"
+        },
+        "contentRating": {
+            "title": "Установить рейтинг контента",
+            "current": "Текущий",
+            "levels": {
+                "pg": "PG",
+                "pg13": "PG13",
+                "r": "R",
+                "x": "X",
+                "xxx": "XXX"
+            }
+        },
+        "deleteModel": {
+            "title": "Удалить модель",
+            "message": "Вы уверены, что хотите удалить эту модель и все связанные файлы?"
+        },
+        "excludeModel": {
+            "title": "Исключить модель",
+            "message": "Вы уверены, что хотите исключить эту модель? Исключенные модели не будут отображаться в поиске или списках моделей."
+        },
+        "deleteDuplicateRecipes": {
+            "title": "Удалить дублирующиеся рецепты",
+            "message": "Вы уверены, что хотите удалить выбранные дублирующиеся рецепты?",
+            "countMessage": "рецептов будут удалены навсегда."
+        },
+        "deleteDuplicateModels": {
+            "title": "Удалить дублирующиеся модели",
+            "message": "Вы уверены, что хотите удалить выбранные дублирующиеся модели?",
+            "countMessage": "моделей будут удалены навсегда."
+        },
+        "clearCache": {
+            "title": "Очистить файлы кэша",
+            "message": "Вы уверены, что хотите очистить все файлы кэша?",
+            "description": "Это удалит все кэшированные данные моделей. Системе потребуется пересобрать кэш при следующем запуске, что может занять некоторое время в зависимости от размера вашей коллекции моделей.",
+            "action": "Очистить кэш"
+        },
+        "bulkDelete": {
+            "title": "Удалить несколько моделей",
+            "message": "Вы уверены, что хотите удалить все выбранные модели и связанные с ними файлы?",
+            "countMessage": "моделей будут удалены навсегда.",
+            "action": "Удалить все"
+        },
+        "exampleAccess": {
+            "title": "Локальные примеры изображений",
+            "message": "Локальные примеры изображений для этой модели не найдены. Варианты просмотра:",
+            "downloadOption": {
+                "title": "Скачать с Civitai",
+                "description": "Сохранить удаленные примеры локально для использования офлайн и более быстрой загрузки"
             },
+            "importOption": {
+                "title": "Импортировать свои",
+                "description": "Добавить собственные примеры для этой модели"
+            },
+            "footerNote": "Удаленные примеры все еще можно просматривать в деталях модели даже без локальных копий"
+        },
+        "moveModel": {
+            "targetLocationPreview": "Предпросмотр целевого расположения:",
+            "selectModelRoot": "Выберите корень моделей:",
+            "targetFolderPath": "Путь к целевой папке:",
+            "browseFolders": "Обзор папок:",
+            "createNewFolder": "Создать новую папку",
+            "pathPlaceholder": "Введите путь к папке или выберите из дерева ниже...",
+            "root": "Корень"
+        },
+        "relinkCivitai": {
+            "title": "Пересвязать с Civitai",
+            "warning": "Предупреждение:",
+            "warningText": "Это потенциально разрушительная операция. Пересвязывание:",
+            "warningList": {
+                "overrideMetadata": "Перезапишет существующие метаданные",
+                "modifyHash": "Потенциально изменит хеш модели",
+                "unintendedConsequences": "Может иметь другие непредвиденные последствия"
+            },
+            "proceedText": "Продолжайте только если вы уверены, что это то, что вам нужно.",
+            "urlLabel": "URL модели Civitai:",
+            "urlPlaceholder": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+            "helpText": {
+                "title": "Вставьте любой URL модели Civitai. Поддерживаемые форматы:",
+                "format1": "https://civitai.com/models/649516",
+                "format2": "https://civitai.com/models/649516?modelVersionId=726676",
+                "format3": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+                "note": "Примечание: Если modelVersionId не указан, будет использована последняя версия."
+            },
+            "confirmAction": "Подтвердить пересвязывание"
+        },
+        "model": {
             "actions": {
-                "editModelName": "Редактировать имя модели",
+                "editModelName": "Редактировать название модели",
                 "editFileName": "Редактировать имя файла",
                 "editBaseModel": "Редактировать базовую модель",
                 "viewOnCivitai": "Посмотреть на Civitai",
@@ -359,19 +567,9 @@
                 "unknown": "Неизвестно",
                 "usageTips": "Советы по использованию",
                 "additionalNotes": "Дополнительные заметки",
-                "notesHint": "Enter для сохранения, Shift+Enter для новой строки",
-                "addNotesPlaceholder": "Добавьте свои заметки здесь...",
-                "aboutThisVersion": "О данной версии",
-                "validation": {
-                    "nameTooLong": "Имя модели ограничено 100 символами",
-                    "nameEmpty": "Имя модели не может быть пустым"
-                },
-                "messages": {
-                    "nameUpdated": "Имя модели успешно обновлено",
-                    "nameUpdateFailed": "Не удалось обновить имя модели",
-                    "baseModelUpdated": "Базовая модель успешно обновлена",
-                    "baseModelUpdateFailed": "Не удалось обновить базовую модель"
-                }
+                "notesHint": "Нажмите Enter для сохранения, Shift+Enter для новой строки",
+                "addNotesPlaceholder": "Добавьте ваши заметки здесь...",
+                "aboutThisVersion": "Об этой версии"
             },
             "notes": {
                 "saved": "Заметки успешно сохранены",
@@ -386,175 +584,473 @@
                 "valuePlaceholder": "Значение",
                 "add": "Добавить"
             },
-            "tags": {
-                "messages": {
-                    "updated": "Теги успешно обновлены",
-                    "updateFailed": "Не удалось обновить теги"
-                },
-                "validation": {
-                    "maxLength": "Тег не должен превышать 30 символов",
-                    "maxCount": "Разрешено максимум 30 тегов",
-                    "duplicate": "Этот тег уже существует"
+            "triggerWords": {
+                "label": "Триггерные слова",
+                "noTriggerWordsNeeded": "Триггерные слова не нужны",
+                "edit": "Редактировать триггерные слова",
+                "cancel": "Отменить редактирование",
+                "save": "Сохранить изменения",
+                "addPlaceholder": "Введите для добавления или нажмите на предложения ниже",
+                "copyWord": "Копировать триггерное слово",
+                "deleteWord": "Удалить триггерное слово",
+                "suggestions": {
+                    "noSuggestions": "Предложения недоступны",
+                    "noTrainedWords": "В этой модели не найдено обученных слов или токенов классов. Вы можете вручную ввести триггерные слова.",
+                    "classToken": "Токен класса",
+                    "classTokenDescription": "Добавьте в ваш промпт для лучших результатов",
+                    "wordSuggestions": "Предложения слов",
+                    "wordsFound": "найдено {count} слов",
+                    "loading": "Загрузка предложений..."
                 }
             },
-            "recipeTab": {
-                "noRecipesFound": "Не найдено рецептов, использующих эту LoRA.",
-                "loadingRecipes": "Загрузка рецептов...",
-                "errorLoadingRecipes": "Не удалось загрузить рецепты. Пожалуйста, попробуйте позже."
+            "description": {
+                "noDescription": "Описание модели недоступно",
+                "failedToLoad": "Не удалось загрузить описание модели",
+                "editTitle": "Редактировать описание модели",
+                "validation": {
+                    "cannotBeEmpty": "Описание не может быть пустым"
+                },
+                "messages": {
+                    "updated": "Описание модели обновлено",
+                    "updateFailed": "Не удалось обновить описание модели"
+                }
+            },
+            "tabs": {
+                "examples": "Примеры",
+                "description": "Описание модели",
+                "recipes": "Рецепты"
+            },
+            "loading": {
+                "exampleImages": "Загрузка примеров изображений...",
+                "description": "Загрузка описания модели...",
+                "recipes": "Загрузка рецептов...",
+                "examples": "Загрузка примеров..."
             }
         }
     },
-    "errors": {
-        "general": "Произошла ошибка",
-        "networkError": "Ошибка сети. Проверьте подключение.",
-        "serverError": "Ошибка сервера. Попробуйте ещё раз позже.",
-        "fileNotFound": "Файл не найден",
-        "invalidFile": "Неверный формат файла",
-        "uploadFailed": "Загрузка не удалась",
-        "downloadFailed": "Скачивание не удалось",
-        "saveFailed": "Сохранение не удалось",
-        "loadFailed": "Загрузка не удалась",
-        "deleteFailed": "Удаление не удалось",
-        "moveFailed": "Перемещение не удалось",
-        "copyFailed": "Копирование не удалось",
-        "fetchFailed": "Не удалось получить данные с Civitai",
-        "invalidUrl": "Неверный формат URL",
-        "missingPermissions": "Недостаточно прав"
-    },
-    "success": {
-        "saved": "Успешно сохранено",
-        "deleted": "Успешно удалено",
-        "moved": "Успешно перемещено",
-        "copied": "Успешно скопировано",
-        "downloaded": "Успешно скачано",
-        "uploaded": "Успешно загружено",
-        "refreshed": "Успешно обновлено",
-        "exported": "Успешно экспортировано",
-        "imported": "Успешно импортировано"
+    "modelTags": {
+        "messages": {
+            "updated": "Теги успешно обновлены",
+            "updateFailed": "Не удалось обновить теги"
+        },
+        "validation": {
+            "maxLength": "Тег не должен превышать 30 символов",
+            "maxCount": "Максимум 30 тегов разрешено",
+            "duplicate": "Этот тег уже существует"
+        }
     },
     "keyboard": {
         "navigation": "Навигация с клавиатуры:",
         "shortcuts": {
-            "pageUp": "Прокрутить вверх на одну страницу",
-            "pageDown": "Прокрутить вниз на одну страницу",
-            "home": "Перейти наверх",
-            "end": "Перейти вниз",
-            "bulkMode": "Переключить массовый режим",
-            "search": "Фокус на поиске",
-            "escape": "Закрыть модальное окно/панель"
+            "pageUp": "Прокрутить на страницу вверх",
+            "pageDown": "Прокрутить на страницу вниз",
+            "home": "Перейти к началу",
+            "end": "Перейти к концу"
         }
     },
     "initialization": {
         "title": "Инициализация",
-        "message": "Подготовка рабочего пространства...",
+        "message": "Подготовка вашего рабочего пространства...",
         "status": "Инициализация...",
-        "estimatingTime": "Оценка времени...",
+        "estimatingTime": "Расчет времени...",
         "loras": {
-            "title": "Инициализация LoRA Менеджера",
-            "message": "Сканирование и создание кэша LoRA. Это может занять несколько минут..."
+            "title": "Инициализация LoRA Manager",
+            "message": "Сканирование и построение кэша LoRA. Это может занять несколько минут..."
         },
         "checkpoints": {
-            "title": "Инициализация менеджера чекпойнтов",
-            "message": "Сканирование и создание кэша чекпойнтов. Это может занять несколько минут..."
+            "title": "Инициализация Checkpoint Manager",
+            "message": "Сканирование и построение кэша checkpoint. Это может занять несколько минут..."
         },
         "embeddings": {
-            "title": "Инициализация менеджера эмбеддингов",
-            "message": "Сканирование и создание кэша эмбеддингов. Это может занять несколько минут..."
+            "title": "Инициализация Embedding Manager",
+            "message": "Сканирование и построение кэша embedding. Это может занять несколько минут..."
         },
         "recipes": {
-            "title": "Инициализация менеджера рецептов",
+            "title": "Инициализация Recipe Manager",
             "message": "Загрузка и обработка рецептов. Это может занять несколько минут..."
         },
         "statistics": {
             "title": "Инициализация статистики",
-            "message": "Обработка данных модели для статистики. Это может занять несколько минут..."
+            "message": "Обработка данных моделей для статистики. Это может занять несколько минут..."
         },
         "tips": {
             "title": "Советы и хитрости",
             "civitai": {
                 "title": "Интеграция с Civitai",
-                "description": "Подключите аккаунт Civitai: Перейдите в Аватар профиля → Настройки → API ключи → Добавить API ключ, затем вставьте его в настройки Lora Manager.",
-                "alt": "Настройка Civitai API"
+                "description": "Подключите ваш аккаунт Civitai: Перейдите в Аватар профиля → Настройки → API ключи → Добавить API ключ, затем вставьте его в настройки Lora Manager.",
+                "alt": "Настройка API Civitai"
             },
             "download": {
-                "title": "Простое скачивание",
-                "description": "Используйте URL Civitai для быстрого скачивания и установки новых моделей.",
-                "alt": "Скачивание с Civitai"
+                "title": "Легкая загрузка",
+                "description": "Используйте URL Civitai для быстрой загрузки и установки новых моделей.",
+                "alt": "Загрузка с Civitai"
             },
             "recipes": {
                 "title": "Сохранение рецептов",
-                "description": "Создавайте рецепты для сохранения любимых комбинаций моделей для будущего использования.",
+                "description": "Создавайте рецепты для сохранения ваших любимых комбинаций моделей для будущего использования.",
                 "alt": "Рецепты"
             },
             "filter": {
                 "title": "Быстрая фильтрация",
                 "description": "Фильтруйте модели по тегам или типу базовой модели, используя кнопку фильтра в заголовке.",
-                "alt": "Фильтр моделей"
+                "alt": "Фильтрация моделей"
             },
             "search": {
                 "title": "Быстрый поиск",
                 "description": "Нажмите Ctrl+F (Cmd+F на Mac) для быстрого поиска в текущем представлении.",
                 "alt": "Быстрый поиск"
             }
-        },
-        "steps": {
-            "scanning": "Сканирование файлов моделей...",
-            "processing": "Обработка метаданных...",
-            "building": "Создание кэша...",
-            "finalizing": "Завершение..."
         }
     },
     "duplicates": {
-        "found": "Найдено {count} дублирующихся групп",
+        "found": "Найдено {count} групп дубликатов",
         "showNotification": "Показать уведомление о дубликатах",
         "deleteSelected": "Удалить выбранные",
         "exitMode": "Выйти из режима",
         "help": {
-            "identicalHashes": "Одинаковые хэши означают одинаковые файлы моделей, даже если у них разные имена или превью.",
+            "identicalHashes": "Идентичные хеши означают идентичные файлы моделей, даже если у них разные названия или превью.",
             "keepOne": "Оставьте только одну версию (предпочтительно с лучшими метаданными/превью) и безопасно удалите остальные."
         }
     },
-    "tooltips": {
-        "refresh": "Обновить список моделей",
-        "bulkOperations": "Выбрать несколько моделей для пакетных операций",
-        "favorites": "Показать только избранные модели",
-        "duplicates": "Найти и управлять дублирующимися моделями",
-        "search": "Поиск моделей по имени, тегам или другим критериям",
-        "filter": "Фильтровать модели по различным критериям",
-        "sort": "Сортировать модели по разным атрибутам",
-        "backToTop": "Прокрутить обратно наверх страницы"
-    },
-    "modelCard": {
-        "actions": {
-            "addToFavorites": "Добавить в избранное",
-            "removeFromFavorites": "Удалить из избранного",
-            "viewOnCivitai": "Посмотреть на Civitai",
-            "notAvailableFromCivitai": "Недоступно на Civitai",
-            "sendToWorkflow": "Отправить в ComfyUI (Клик: Добавить, Shift+Клик: Заменить)",
-            "copyLoRASyntax": "Копировать синтаксис LoRA",
-            "checkpointNameCopied": "Имя чекпоинта скопировано",
-            "toggleBlur": "Переключить размытие",
-            "show": "Показать",
-            "openExampleImages": "Открыть папку с примерами изображений"
+    "uiHelpers": {
+        "clipboard": {
+            "copied": "Скопировано в буфер обмена",
+            "copyFailed": "Копирование не удалось"
         },
-        "nsfw": {
-            "matureContent": "Контент для взрослых",
-            "xxxRated": "XXX-контент",
-            "xRated": "X-контент",
-            "rRated": "R-контент"
+        "lora": {
+            "syntaxCopied": "Синтаксис LoRA скопирован в буфер обмена",
+            "syntaxCopiedNoTriggerWords": "Синтаксис LoRA скопирован в буфер обмена (триггерные слова не найдены)",
+            "syntaxCopiedWithTriggerWords": "Синтаксис LoRA с триггерными словами скопирован в буфер обмена",
+            "syntaxCopiedWithTriggerWordGroups": "Синтаксис LoRA с группами триггерных слов скопирован в буфер обмена"
         },
-        "favorites": {
-            "added": "Добавлено в избранное",
-            "removed": "Удалено из избранного",
-            "updateFailed": "Не удалось обновить статус избранного"
+        "workflow": {
+            "noSupportedNodes": "В workflow не найдены поддерживаемые целевые узлы",
+            "communicationFailed": "Не удалось установить связь с ComfyUI"
         },
-        "sendToWorkflow": {
-            "checkpointNotImplemented": "Отправка чекпоинта в рабочий процесс - функция в разработке"
+        "nodeSelector": {
+            "recipe": "Рецепт",
+            "lora": "LoRA",
+            "replace": "Заменить",
+            "append": "Добавить",
+            "selectTargetNode": "Выберите целевой узел",
+            "sendToAll": "Отправить во все"
         },
         "exampleImages": {
-            "checkError": "Ошибка при проверке примеров изображений",
-            "missingHash": "Отсутствует информация о хэше модели.",
-            "noRemoteImagesAvailable": "Для этой модели нет удалённых примеров изображений на Civitai"
+            "opened": "Папка с примерами изображений открыта",
+            "openingFolder": "Открытие папки с примерами изображений",
+            "failedToOpen": "Не удалось открыть папку с примерами изображений"
+        }
+    },
+    "help": {
+        "title": "Справка и учебные материалы",
+        "tabs": {
+            "gettingStarted": "Начало работы",
+            "updateVlogs": "Видео обновлений",
+            "documentation": "Документация"
+        },
+        "gettingStarted": {
+            "title": "Начало работы с LoRA Manager"
+        },
+        "updateVlogs": {
+            "title": "Последние обновления",
+            "watchOnYouTube": "Смотреть на YouTube",
+            "playlistTitle": "Плейлист обновлений LoRA Manager",
+            "playlistDescription": "Смотрите все видео обновлений, демонстрирующие новейшие функции и улучшения."
+        },
+        "documentation": {
+            "title": "Документация",
+            "general": "Общие",
+            "troubleshooting": "Устранение неполадок",
+            "modelManagement": "Управление моделями",
+            "recipes": "Рецепты",
+            "settings": "Настройки и конфигурация",
+            "extensions": "Расширения",
+            "newBadge": "НОВОЕ"
+        }
+    },
+    "update": {
+        "title": "Проверить обновления",
+        "updateAvailable": "Доступно обновление",
+        "noChangelogAvailable": "Подробный список изменений недоступен. Проверьте GitHub для получения дополнительной информации.",
+        "currentVersion": "Текущая версия",
+        "newVersion": "Новая версия",
+        "commit": "Коммит",
+        "viewOnGitHub": "Посмотреть на GitHub",
+        "updateNow": "Обновить сейчас",
+        "preparingUpdate": "Подготовка обновления...",
+        "changelog": "Список изменений",
+        "checkingUpdates": "Проверка обновлений...",
+        "checkingMessage": "Пожалуйста, подождите, пока мы проверяем последнюю версию.",
+        "showNotifications": "Показывать уведомления об обновлениях",
+        "updateProgress": {
+            "preparing": "Подготовка обновления...",
+            "installing": "Установка обновления...",
+            "completed": "Обновление успешно завершено!",
+            "failed": "Обновление не удалось: {error}"
+        },
+        "status": {
+            "updating": "Обновление...",
+            "updated": "Обновлено!",
+            "updateFailed": "Обновление не удалось"
+        },
+        "completion": {
+            "successMessage": "Успешно обновлено до {version}!",
+            "restartMessage": "Пожалуйста, перезапустите ComfyUI или LoRA Manager для применения обновления.",
+            "reloadMessage": "Обязательно перезагрузите ваш браузер как для LoRA Manager, так и для ComfyUI."
+        },
+        "nightly": {
+            "warning": "Предупреждение: Ночные сборки могут содержать экспериментальные функции и могут быть нестабильными.",
+            "enable": "Включить ночные обновления"
+        }
+    },
+    "support": {
+        "title": "Поддержать проект",
+        "message": "Если вы находите LoRA Manager полезным, я буду очень признателен за вашу поддержку! 🙌",
+        "feedback": {
+            "title": "Оставить отзыв",
+            "description": "Ваш отзыв помогает формировать будущие обновления! Поделитесь своими мыслями:"
+        },
+        "links": {
+            "submitGithubIssue": "Создать issue на GitHub",
+            "joinDiscord": "Присоединиться к Discord",
+            "youtubeChannel": "YouTube канал",
+            "civitaiProfile": "Профиль на Civitai",
+            "supportKofi": "Поддержать на Ko-fi",
+            "supportPatreon": "Поддержать на Patreon"
+        },
+        "sections": {
+            "followUpdates": "Следить за обновлениями",
+            "buyMeCoffee": "Купите мне кофе",
+            "coffeeDescription": "Если вы хотите поддержать мою работу напрямую:",
+            "becomePatron": "Стать покровителем",
+            "patronDescription": "Поддержите постоянную разработку ежемесячными взносами:",
+            "wechatSupport": "Поддержка через WeChat",
+            "wechatDescription": "Для пользователей в Китае вы можете поддержать через WeChat:",
+            "showWechatQR": "Показать QR-код WeChat",
+            "hideWechatQR": "Скрыть QR-код WeChat"
+        },
+        "footer": "Спасибо за использование LoRA Manager! ❤️"
+    },
+    "toast": {
+        "general": {
+            "cannotInteractStandalone": "Невозможно взаимодействовать с ComfyUI в автономном режиме",
+            "failedWorkflowInfo": "Не удалось получить информацию о workflow",
+            "pageInitFailed": "Не удалось инициализировать страницу {pageType}. Пожалуйста, перезагрузите.",
+            "statisticsLoadFailed": "Не удалось загрузить данные статистики"
+        },
+        "loras": {
+            "copyOnlyForLoras": "Копирование синтаксиса доступно только для LoRAs",
+            "noLorasSelected": "LoRAs не выбраны",
+            "missingDataForLoras": "Отсутствуют данные для {count} LoRAs",
+            "noValidLorasToCopy": "Нет валидных LoRAs для копирования",
+            "sendOnlyForLoras": "Отправка в workflow доступна только для LoRAs",
+            "noValidLorasToSend": "Нет валидных LoRAs для отправки",
+            "downloadSuccessful": "LoRAs успешно загружены",
+            "allDownloadSuccessful": "Все {count} LoRAs успешно загружены",
+            "downloadPartialSuccess": "Загружено {completed} из {total} LoRAs",
+            "downloadPartialWithAccess": "Загружено {completed} из {total} LoRAs. {accessFailures} не удалось из-за ограничений доступа. Проверьте ваш API ключ в настройках или статус раннего доступа.",
+            "pleaseSelectVersion": "Пожалуйста, выберите версию",
+            "versionExists": "Эта версия уже существует в вашей библиотеке",
+            "downloadCompleted": "Загрузка успешно завершена"
+        },
+        "recipes": {
+            "fetchFailed": "Не удалось получить рецепты: {message}",
+            "reloadFailed": "Не удалось перезагрузить {modelType}s: {message}",
+            "loadFailed": "Не удалось загрузить {modelType}s: {message}",
+            "refreshComplete": "Обновление завершено",
+            "refreshFailed": "Не удалось обновить рецепты: {message}",
+            "updateFailed": "Не удалось обновить рецепт: {error}",
+            "updateError": "Ошибка обновления рецепта: {message}",
+            "nameSaved": "Рецепт \"{name}\" успешно сохранен",
+            "nameUpdated": "Название рецепта успешно обновлено",
+            "tagsUpdated": "Теги рецепта успешно обновлены",
+            "sourceUrlUpdated": "Исходный URL успешно обновлен",
+            "noRecipeId": "ID рецепта недоступен",
+            "copyFailed": "Ошибка копирования синтаксиса рецепта: {message}",
+            "noMissingLoras": "Нет отсутствующих LoRAs для загрузки",
+            "missingLorasInfoFailed": "Не удалось получить информацию для отсутствующих LoRAs",
+            "preparingForDownloadFailed": "Ошибка подготовки LoRAs для загрузки",
+            "enterLoraName": "Пожалуйста, введите название LoRA или синтаксис",
+            "reconnectedSuccessfully": "LoRA успешно переподключена",
+            "reconnectFailed": "Ошибка переподключения LoRA: {message}",
+            "cannotSend": "Невозможно отправить рецепт: отсутствует ID рецепта",
+            "sendFailed": "Не удалось отправить рецепт в workflow",
+            "sendError": "Ошибка отправки рецепта в workflow",
+            "cannotDelete": "Невозможно удалить рецепт: отсутствует ID рецепта",
+            "deleteConfirmationError": "Ошибка отображения подтверждения удаления",
+            "deletedSuccessfully": "Рецепт успешно удален",
+            "deleteFailed": "Ошибка удаления рецепта: {message}",
+            "cannotShare": "Невозможно поделиться рецептом: отсутствует ID рецепта",
+            "preparingForSharing": "Подготовка рецепта для общего доступа...",
+            "downloadStarted": "Загрузка рецепта начата",
+            "shareError": "Ошибка при предоставлении общего доступа к рецепту: {message}",
+            "sharePreparationError": "Ошибка подготовки рецепта для общего доступа",
+            "selectImageFirst": "Пожалуйста, сначала выберите изображение",
+            "enterRecipeName": "Пожалуйста, введите название рецепта",
+            "processingError": "Ошибка обработки: {message}",
+            "folderBrowserError": "Ошибка загрузки браузера папок: {message}",
+            "recipeSaveFailed": "Не удалось сохранить рецепт: {error}",
+            "importFailed": "Импорт не удался: {message}",
+            "folderTreeFailed": "Не удалось загрузить дерево папок",
+            "folderTreeError": "Ошибка загрузки дерева папок"
+        },
+        "models": {
+            "noModelsSelected": "Модели не выбраны",
+            "deletedSuccessfully": "Успешно удалено {count} {type}(ей)",
+            "deleteFailed": "Ошибка: {error}",
+            "deleteFailedGeneral": "Не удалось удалить модели",
+            "selectedAdditional": "Выбрано дополнительно {count} {type}(ей)",
+            "refreshMetadataFailed": "Не удалось обновить метаданные",
+            "nameCannotBeEmpty": "Название модели не может быть пустым",
+            "nameUpdatedSuccessfully": "Название модели успешно обновлено",
+            "nameUpdateFailed": "Не удалось обновить название модели",
+            "baseModelUpdated": "Базовая модель успешно обновлена",
+            "baseModelUpdateFailed": "Не удалось обновить базовую модель",
+            "invalidCharactersRemoved": "Недопустимые символы удалены из имени файла",
+            "filenameCannotBeEmpty": "Имя файла не может быть пустым",
+            "renameFailed": "Не удалось переименовать файл: {message}",
+            "moveFailed": "Не удалось переместить модель(и): {message}",
+            "pleaseSelectRoot": "Пожалуйста, выберите корневую папку {type}",
+            "nameTooLong": "Название модели ограничено 100 символами",
+            "verificationAlreadyDone": "Эта группа уже была проверена",
+            "verificationCompleteMismatch": "Проверка завершена. {count} файл(ов) имеют разные фактические хеши.",
+            "verificationCompleteSuccess": "Проверка завершена. Все файлы подтверждены как дубликаты.",
+            "verificationFailed": "Не удалось проверить хеши: {message}"
+        },
+        "search": {
+            "atLeastOneOption": "Должен быть выбран хотя бы один вариант поиска"
+        },
+        "settings": {
+            "loraRootsFailed": "Не удалось загрузить корни LoRA: {message}",
+            "checkpointRootsFailed": "Не удалось загрузить корни checkpoint: {message}",
+            "embeddingRootsFailed": "Не удалось загрузить корни embedding: {message}",
+            "mappingsUpdated": "Сопоставления путей базовых моделей обновлены ({count} сопоставлени{plural})",
+            "mappingsCleared": "Сопоставления путей базовых моделей очищены",
+            "mappingSaveFailed": "Не удалось сохранить сопоставления базовых моделей: {message}",
+            "downloadTemplatesUpdated": "Шаблоны путей загрузки обновлены",
+            "downloadTemplatesFailed": "Не удалось сохранить шаблоны путей загрузки: {message}",
+            "settingsUpdated": "Настройки обновлены: {setting}",
+            "compactModeToggled": "Компактный режим {state}",
+            "settingSaveFailed": "Не удалось сохранить настройку: {message}",
+            "displayDensitySet": "Плотность отображения установлена на {density}",
+            "languageChangeFailed": "Не удалось изменить язык: {message}",
+            "cacheCleared": "Файлы кэша успешно очищены. Кэш будет пересобран при следующем действии.",
+            "cacheClearFailed": "Не удалось очистить кэш: {error}",
+            "cacheClearError": "Ошибка очистки кэша: {message}"
+        },
+        "filters": {
+            "applied": "{message}",
+            "cleared": "Фильтры очищены",
+            "noCustomFilterToClear": "Нет пользовательского фильтра для очистки"
+        },
+        "downloads": {
+            "imagesCompleted": "Примеры изображений {action} завершены",
+            "imagesFailed": "Примеры изображений {action} не удались",
+            "loadError": "Ошибка загрузки downloads: {message}",
+            "downloadError": "Ошибка загрузки: {message}"
+        },
+        "import": {
+            "folderTreeFailed": "Не удалось загрузить дерево папок",
+            "folderTreeError": "Ошибка загрузки дерева папок",
+            "imagesImported": "Примеры изображений успешно импортированы",
+            "importFailed": "Не удалось импортировать примеры изображений: {message}"
+        },
+        "triggerWords": {
+            "loadFailed": "Не удалось загрузить обученные слова",
+            "tooLong": "Триггерное слово не должно превышать 30 слов",
+            "tooMany": "Максимум 30 триггерных слов разрешено",
+            "alreadyExists": "Это триггерное слово уже существует",
+            "updateSuccess": "Триггерные слова успешно обновлены",
+            "updateFailed": "Не удалось обновить триггерные слова",
+            "copyFailed": "Копирование не удалось"
+        },
+        "virtual": {
+            "loadFailed": "Не удалось загрузить элементы",
+            "loadMoreFailed": "Не удалось загрузить больше элементов",
+            "loadPositionFailed": "Не удалось загрузить элементы в этой позиции"
+        },
+        "bulk": {
+            "unableToSelectAll": "Невозможно выбрать все элементы"
+        },
+        "duplicates": {
+            "findFailed": "Не удалось найти дубликаты: {message}",
+            "noDuplicatesFound": "Дубликаты {type} не найдены",
+            "noItemsSelected": "Не выбрано {type} для удаления",
+            "deleteError": "Ошибка: {message}",
+            "deleteSuccess": "Успешно удалено {count} {type}",
+            "deleteFailed": "Не удалось удалить {type}: {message}"
+        },
+        "controls": {
+            "reloadFailed": "Не удалось перезагрузить {pageType}: {message}",
+            "refreshFailed": "Не удалось {action} {pageType}: {message}",
+            "fetchMetadataFailed": "Не удалось получить метаданные: {message}",
+            "clearFilterFailed": "Не удалось очистить пользовательский фильтр: {message}"
+        },
+        "contextMenu": {
+            "contentRatingSet": "Рейтинг контента установлен на {level}",
+            "contentRatingFailed": "Не удалось установить рейтинг контента: {message}",
+            "relinkSuccess": "Модель успешно пересвязана с Civitai",
+            "relinkFailed": "Ошибка: {message}",
+            "fetchMetadataFirst": "Пожалуйста, сначала получите метаданные с CivitAI",
+            "noCivitaiInfo": "Информация CivitAI недоступна",
+            "missingHash": "Хеш модели недоступен"
+        },
+        "exampleImages": {
+            "pathUpdated": "Путь к примерам изображений успешно обновлен",
+            "downloadInProgress": "Загрузка уже в процессе",
+            "enterLocationFirst": "Пожалуйста, сначала введите место загрузки",
+            "downloadStarted": "Загрузка примеров изображений начата",
+            "downloadStartFailed": "Не удалось начать загрузку: {error}",
+            "downloadPaused": "Загрузка приостановлена",
+            "pauseFailed": "Не удалось приостановить загрузку: {error}",
+            "downloadResumed": "Загрузка возобновлена",
+            "resumeFailed": "Не удалось возобновить загрузку: {error}",
+            "deleted": "Пример изображения удален",
+            "deleteFailed": "Не удалось удалить пример изображения",
+            "setPreviewFailed": "Не удалось установить превью изображение"
+        },
+        "api": {
+            "fetchFailed": "Не удалось получить {type}s: {message}",
+            "reloadFailed": "Не удалось перезагрузить {type}s: {message}",
+            "deleteSuccess": "{type} успешно удален",
+            "deleteFailed": "Не удалось удалить {type}: {message}",
+            "excludeSuccess": "{type} успешно исключен",
+            "excludeFailed": "Не удалось исключить {type}: {message}",
+            "fileNameUpdated": "Имя файла успешно обновлено",
+            "fileRenameFailed": "Не удалось переименовать файл: {error}",
+            "previewUpdated": "Превью успешно обновлено",
+            "previewUploadFailed": "Не удалось загрузить превью изображение",
+            "refreshComplete": "{action} завершено",
+            "refreshFailed": "Не удалось {action} {type}s",
+            "metadataRefreshed": "Метаданные успешно обновлены",
+            "metadataRefreshFailed": "Не удалось обновить метаданные: {message}",
+            "metadataUpdateComplete": "Обновление метаданных завершено",
+            "metadataFetchFailed": "Не удалось получить метаданные: {message}",
+            "bulkMetadataCompleteAll": "Успешно обновлены все {count} {type}s",
+            "bulkMetadataCompletePartial": "Обновлено {success} из {total} {type}s",
+            "bulkMetadataCompleteNone": "Не удалось обновить метаданные ни для одного {type}s",
+            "bulkMetadataFailureDetails": "Неудачные обновления:\n{failures}",
+            "bulkMetadataFailed": "Не удалось обновить метаданные: {message}",
+            "moveNotSupported": "Перемещение {type}s не поддерживается",
+            "alreadyInFolder": "{type} уже находится в выбранной папке",
+            "moveInfo": "{message}",
+            "moveSuccess": "{type} успешно перемещен",
+            "bulkMoveNotSupported": "Перемещение {type}s не поддерживается",
+            "allAlreadyInFolder": "Все выбранные {type}s уже находятся в целевой папке",
+            "bulkMovePartial": "Перемещено {successCount} {type}s, {failureCount} не удалось",
+            "bulkMoveFailures": "Неудачные перемещения:\n{failures}",
+            "bulkMoveSuccess": "Успешно перемещено {successCount} {type}s",
+            "exampleImagesDownloadSuccess": "Примеры изображений успешно загружены!",
+            "exampleImagesDownloadFailed": "Не удалось загрузить примеры изображений: {message}"
+        }
+    },
+    "banners": {
+        "versionMismatch": {
+            "title": "Обнаружено обновление приложения",
+            "content": "Ваш браузер работает с устаревшей версией LoRA Manager ({storedVersion}). Сервер был обновлен до версии {currentVersion}. Пожалуйста, обновите страницу для обеспечения правильной работы.",
+            "refreshNow": "Обновить сейчас",
+            "refreshingIn": "Обновление через",
+            "seconds": "секунд"
         }
     }
 }

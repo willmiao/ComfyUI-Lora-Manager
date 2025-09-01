@@ -1,68 +1,26 @@
 {
     "common": {
-        "file": "ファイル",
-        "folder": "フォルダ",
-        "name": "名前",
-        "size": "サイズ",
-        "date": "日付",
-        "type": "種類",
-        "path": "パス",
-        "fileSize": {
-            "zero": "0 バイト",
-            "bytes": "バイト",
-            "kb": "KB",
-            "mb": "MB",
-            "gb": "GB",
-            "tb": "TB"
-        },
         "actions": {
             "save": "保存",
             "cancel": "キャンセル",
             "delete": "削除",
-            "edit": "編集",
-            "copy": "コピー",
             "move": "移動",
             "refresh": "更新",
-            "download": "ダウンロード",
-            "upload": "アップロード",
-            "search": "検索",
-            "filter": "フィルター",
-            "sort": "ソート",
-            "select": "選択",
-            "selectAll": "すべて選択",
-            "deselectAll": "選択解除",
-            "confirm": "確認",
-            "close": "閉じる",
             "back": "戻る",
             "next": "次へ",
-            "previous": "前へ",
-            "view": "表示",
-            "preview": "プレビュー",
-            "details": "詳細",
             "backToTop": "トップに戻る",
             "settings": "設定",
-            "help": "ヘルプ",
-            "about": "について"
+            "help": "ヘルプ"
         },
         "status": {
             "loading": "読み込み中...",
-            "saving": "保存中...",
-            "saved": "保存済み",
-            "error": "エラー",
-            "success": "成功",
-            "warning": "警告",
-            "info": "情報",
-            "processing": "処理中...",
-            "completed": "完了",
-            "failed": "失敗",
-            "cancelled": "キャンセル",
-            "pending": "待機中",
-            "ready": "準備完了"
+            "unknown": "不明",
+            "date": "日付",
+            "version": "バージョン"
         },
         "language": {
-            "current": "言語",
             "select": "言語を選択",
-            "select_help": "インターフェース言語を選択してください",
+            "select_help": "インターフェースの言語を選択してください",
             "english": "English",
             "chinese_simplified": "中文（简体）",
             "chinese_traditional": "中文（繁体）",
@@ -72,15 +30,56 @@
             "korean": "한국어",
             "french": "Français",
             "spanish": "Español"
+        },
+        "fileSize": {
+            "zero": "0バイト",
+            "bytes": "バイト",
+            "kb": "KB",
+            "mb": "MB",
+            "gb": "GB",
+            "tb": "TB"
+        }
+    },
+    "modelCard": {
+        "actions": {
+            "addToFavorites": "お気に入りに追加",
+            "removeFromFavorites": "お気に入りから削除",
+            "viewOnCivitai": "Civitaiで表示",
+            "notAvailableFromCivitai": "Civitaiでは利用できません",
+            "sendToWorkflow": "ComfyUIに送信（クリック：追加、Shift+クリック：置換）",
+            "copyLoRASyntax": "LoRA構文をコピー",
+            "checkpointNameCopied": "checkpointの名前をコピーしました",
+            "toggleBlur": "ぼかしの切り替え",
+            "show": "表示",
+            "openExampleImages": "例画像フォルダを開く"
+        },
+        "nsfw": {
+            "matureContent": "成人向けコンテンツ",
+            "xxxRated": "XXX指定コンテンツ",
+            "xRated": "X指定コンテンツ",
+            "rRated": "R指定コンテンツ"
+        },
+        "favorites": {
+            "added": "お気に入りに追加されました",
+            "removed": "お気に入りから削除されました",
+            "updateFailed": "お気に入り状態の更新に失敗しました"
+        },
+        "sendToWorkflow": {
+            "checkpointNotImplemented": "checkpointをワークフローに送信 - 実装予定の機能"
+        },
+        "exampleImages": {
+            "checkError": "例画像の確認中にエラーが発生しました",
+            "missingHash": "モデルハッシュ情報がありません。",
+            "noRemoteImagesAvailable": "このモデルのCivitaiでのリモート例画像は利用できません"
         }
     },
     "header": {
-        "appTitle": "LoRA マネージャー",
+        "appTitle": "LoRA Manager",
         "navigation": {
             "loras": "LoRA",
             "recipes": "レシピ",
-            "checkpoints": "チェックポイント",
-            "embeddings": "エンベディング",
+            "checkpoints": "Checkpoint",
+            "embeddings": "Embedding",
             "statistics": "統計"
         },
         "search": {
@@ -88,11 +87,11 @@
             "placeholders": {
                 "loras": "LoRAを検索...",
                 "recipes": "レシピを検索...",
-                "checkpoints": "チェックポイントを検索...",
-                "embeddings": "エンベディングを検索..."
+                "checkpoints": "checkpointを検索...",
+                "embeddings": "embeddingを検索..."
             },
             "options": "検索オプション",
-            "searchIn": "検索対象:",
+            "searchIn": "検索対象：",
             "notAvailable": "統計ページでは検索は利用できません",
             "filters": {
                 "filename": "ファイル名",
@@ -105,23 +104,134 @@
             }
         },
         "filter": {
-            "title": "モデルをフィルター",
+            "title": "モデルをフィルタ",
             "baseModel": "ベースモデル",
-            "modelTags": "タグ（トップ20）",
-            "clearAll": "すべてのフィルターをクリア"
+            "modelTags": "タグ（上位20）",
+            "clearAll": "すべてのフィルタをクリア"
         },
         "theme": {
-            "toggle": "テーマ切り替え",
+            "toggle": "テーマの切り替え",
             "switchToLight": "ライトテーマに切り替え",
             "switchToDark": "ダークテーマに切り替え",
-            "switchToAuto": "オートテーマに切り替え"
+            "switchToAuto": "自動テーマに切り替え"
+        },
+        "actions": {
+            "checkUpdates": "更新確認",
+            "support": "サポート"
+        }
+    },
+    "settings": {
+        "civitaiApiKey": "Civitai APIキー",
+        "civitaiApiKeyPlaceholder": "Civitai APIキーを入力してください",
+        "civitaiApiKeyHelp": "Civitaiからモデルをダウンロードするときの認証に使用されます",
+        "sections": {
+            "contentFiltering": "コンテンツフィルタリング",
+            "videoSettings": "動画設定",
+            "layoutSettings": "レイアウト設定",
+            "folderSettings": "フォルダ設定",
+            "downloadPathTemplates": "ダウンロードパステンプレート",
+            "exampleImages": "例画像",
+            "misc": "その他"
+        },
+        "contentFiltering": {
+            "blurNsfwContent": "NSFWコンテンツをぼかす",
+            "blurNsfwContentHelp": "成人向け（NSFW）コンテンツのプレビュー画像をぼかします",
+            "showOnlySfw": "SFWコンテンツのみ表示",
+            "showOnlySfwHelp": "閲覧と検索時にすべてのNSFWコンテンツを除外します"
+        },
+        "videoSettings": {
+            "autoplayOnHover": "ホバー時に動画を自動再生",
+            "autoplayOnHoverHelp": "動画プレビューはホバー時にのみ再生されます"
+        },
+        "layoutSettings": {
+            "displayDensity": "表示密度",
+            "displayDensityOptions": {
+                "default": "デフォルト",
+                "medium": "中",
+                "compact": "コンパクト"
+            },
+            "displayDensityHelp": "1行に表示するカード数を選択：",
+            "displayDensityDetails": {
+                "default": "デフォルト：5（1080p）、6（2K）、8（4K）",
+                "medium": "中：6（1080p）、7（2K）、9（4K）",
+                "compact": "コンパクト：7（1080p）、8（2K）、10（4K）"
+            },
+            "displayDensityWarning": "警告：高密度設定は、リソースが限られたシステムでパフォーマンスの問題を引き起こす可能性があります。",
+            "cardInfoDisplay": "カード情報表示",
+            "cardInfoDisplayOptions": {
+                "always": "常に表示",
+                "hover": "ホバー時に表示"
+            },
+            "cardInfoDisplayHelp": "モデル情報とアクションボタンの表示タイミングを選択：",
+            "cardInfoDisplayDetails": {
+                "always": "常に表示：ヘッダーとフッターが常に表示されます",
+                "hover": "ホバー時に表示：カードにホバーしたときのみヘッダーとフッターが表示されます"
+            }
+        },
+        "folderSettings": {
+            "defaultLoraRoot": "デフォルトLoRAルート",
+            "defaultLoraRootHelp": "ダウンロード、インポート、移動用のデフォルトLoRAルートディレクトリを設定",
+            "defaultCheckpointRoot": "デフォルトCheckpointルート",
+            "defaultCheckpointRootHelp": "ダウンロード、インポート、移動用のデフォルトcheckpointルートディレクトリを設定",
+            "defaultEmbeddingRoot": "デフォルトEmbeddingルート",
+            "defaultEmbeddingRootHelp": "ダウンロード、インポート、移動用のデフォルトembeddingルートディレクトリを設定",
+            "noDefault": "デフォルトなし"
+        },
+        "downloadPathTemplates": {
+            "title": "ダウンロードパステンプレート",
+            "help": "Civitaiからダウンロードする際の異なるモデルタイプのフォルダ構造を設定します。",
+            "availablePlaceholders": "利用可能なプレースホルダー：",
+            "templateOptions": {
+                "flatStructure": "フラット構造",
+                "byBaseModel": "ベースモデル別",
+                "byAuthor": "作成者別",
+                "byFirstTag": "最初のタグ別",
+                "baseModelFirstTag": "ベースモデル + 最初のタグ",
+                "baseModelAuthor": "ベースモデル + 作成者",
+                "authorFirstTag": "作成者 + 最初のタグ",
+                "customTemplate": "カスタムテンプレート"
+            },
+            "customTemplatePlaceholder": "カスタムテンプレートを入力（例：{base_model}/{author}/{first_tag}）",
+            "modelTypes": {
+                "lora": "LoRA",
+                "checkpoint": "Checkpoint",
+                "embedding": "Embedding"
+            },
+            "baseModelPathMappings": "ベースモデルパスマッピング",
+            "baseModelPathMappingsHelp": "特定のベースモデルのフォルダ名をカスタマイズ（例：\"Flux.1 D\" → \"flux\"）",
+            "addMapping": "マッピングを追加",
+            "selectBaseModel": "ベースモデルを選択",
+            "customPathPlaceholder": "カスタムパス（例：flux）",
+            "removeMapping": "マッピングを削除",
+            "validation": {
+                "validFlat": "有効（フラット構造）",
+                "invalidChars": "無効な文字が検出されました",
+                "doubleSlashes": "二重スラッシュは許可されていません",
+                "leadingTrailingSlash": "スラッシュで開始または終了することはできません",
+                "invalidPlaceholder": "無効なプレースホルダー：{placeholder}",
+                "validTemplate": "有効なテンプレート"
+            }
+        },
+        "exampleImages": {
+            "downloadLocation": "ダウンロード場所",
+            "downloadLocationPlaceholder": "例画像のフォルダパスを入力",
+            "downloadLocationHelp": "Civitaiからの例画像を保存するフォルダパスを入力してください",
+            "autoDownload": "例画像の自動ダウンロード",
+            "autoDownloadHelp": "例画像がないモデルの例画像を自動的にダウンロードします（ダウンロード場所の設定が必要）",
+            "optimizeImages": "ダウンロード画像の最適化",
+            "optimizeImagesHelp": "例画像を最適化してファイルサイズを縮小し、読み込み速度を向上させます（メタデータは保持されます）",
+            "download": "ダウンロード",
+            "restartRequired": "再起動が必要"
+        },
+        "misc": {
+            "includeTriggerWords": "LoRA構文にトリガーワードを含める",
+            "includeTriggerWordsHelp": "LoRA構文をクリップボードにコピーする際、学習済みトリガーワードを含めます"
         }
     },
     "loras": {
-        "title": "LoRAモデル",
         "controls": {
             "sort": {
-                "title": "モデルをソート...",
+                "title": "モデルの並び順...",
                 "name": "名前",
                 "nameAsc": "A - Z",
                 "nameDesc": "Z - A",
@@ -144,14 +254,15 @@
             "favorites": "お気に入りのみ表示"
         },
         "bulkOperations": {
-            "title": "一括操作",
-            "selected": "{count}個選択中",
-            "sendToWorkflow": "選択したLoRAをワークフローに送信",
-            "copyAll": "選択したLoRA構文をコピー",
-            "refreshAll": "選択したモデルのCivitAIメタデータを更新",
-            "moveAll": "選択したモデルをフォルダに移動",
-            "deleteAll": "選択したモデルを削除",
-            "clear": "選択をクリア"
+            "selected": "{count} 選択中",
+            "selectedSuffix": "選択中",
+            "viewSelected": "選択したアイテムを表示するにはクリック",
+            "sendToWorkflow": "ワークフローに送信",
+            "copyAll": "すべてコピー",
+            "refreshAll": "すべて更新",
+            "moveAll": "すべて移動",
+            "deleteAll": "すべて削除",
+            "clear": "クリア"
         },
         "contextMenu": {
             "refreshMetadata": "Civitaiデータを更新",
@@ -161,8 +272,8 @@
             "copyRecipeSyntax": "レシピ構文をコピー",
             "sendToWorkflowAppend": "ワークフローに送信（追加）",
             "sendToWorkflowReplace": "ワークフローに送信（置換）",
-            "openExamplesFolder": "サンプルフォルダを開く",
-            "downloadExamples": "サンプル画像をダウンロード",
+            "openExamples": "例画像フォルダを開く",
+            "downloadExamples": "例画像をダウンロード",
             "replacePreview": "プレビューを置換",
             "setContentRating": "コンテンツレーティングを設定",
             "moveToFolder": "フォルダに移動",
@@ -172,183 +283,280 @@
             "viewAllLoras": "すべてのLoRAを表示",
             "downloadMissingLoras": "不足しているLoRAをダウンロード",
             "deleteRecipe": "レシピを削除"
-        },
-        "modal": {
-            "title": "LoRA詳細",
-            "tabs": {
-                "examples": "サンプル",
-                "description": "モデル説明",
-                "recipes": "レシピ"
-            },
-            "info": {
-                "filename": "ファイル名",
-                "modelName": "モデル名",
-                "baseModel": "ベースモデル",
-                "fileSize": "ファイルサイズ",
-                "dateAdded": "追加日",
-                "triggerWords": "トリガーワード",
-                "description": "説明",
-                "tags": "タグ",
-                "rating": "評価",
-                "downloads": "ダウンロード数",
-                "likes": "いいね数",
-                "version": "バージョン"
-            },
-            "actions": {
-                "copyTriggerWords": "トリガーワードをコピー",
-                "copyLoraName": "LoRA名をコピー",
-                "sendToWorkflow": "ワークフローに送信",
-                "viewOnCivitai": "Civitaiで表示",
-                "downloadExamples": "サンプル画像をダウンロード"
-            }
         }
     },
     "recipes": {
         "title": "LoRAレシピ",
         "controls": {
-            "import": "レシピをインポート",
+            "import": {
+                "action": "レシピをインポート",
+                "title": "画像またはURLからレシピをインポート",
+                "urlLocalPath": "URL / ローカルパス",
+                "uploadImage": "画像をアップロード",
+                "urlSectionDescription": "Civitai画像URLまたはローカルファイルパスを入力してレシピとしてインポートします。",
+                "imageUrlOrPath": "画像URLまたはファイルパス：",
+                "urlPlaceholder": "https://civitai.com/images/... または C:/path/to/image.png",
+                "fetchImage": "画像を取得",
+                "uploadSectionDescription": "LoRAメタデータを含む画像をアップロードしてレシピとしてインポートします。",
+                "selectImage": "画像を選択",
+                "recipeName": "レシピ名",
+                "recipeNamePlaceholder": "レシピ名を入力",
+                "tagsOptional": "タグ（任意）",
+                "addTagPlaceholder": "タグを追加",
+                "addTag": "追加",
+                "noTagsAdded": "タグが追加されていません",
+                "lorasInRecipe": "このレシピのLoRA",
+                "downloadLocationPreview": "ダウンロード場所プレビュー：",
+                "useDefaultPath": "デフォルトパスを使用",
+                "useDefaultPathTooltip": "有効にすると、設定されたパステンプレートを使用してファイルが自動的に整理されます",
+                "selectLoraRoot": "LoRAルートディレクトリを選択",
+                "targetFolderPath": "ターゲットフォルダパス：",
+                "folderPathPlaceholder": "フォルダパスを入力するか、下のツリーから選択...",
+                "createNewFolder": "新しいフォルダを作成",
+                "root": "ルート",
+                "browseFolders": "フォルダを参照：",
+                "downloadAndSaveRecipe": "ダウンロード & レシピ保存",
+                "downloadMissingLoras": "不足しているLoRAをダウンロード",
+                "saveRecipe": "レシピを保存",
+                "loraCountInfo": "（{existing}/{total} ライブラリ内）",
+                "processingInput": "入力を処理中...",
+                "analyzingMetadata": "画像メタデータを解析中...",
+                "downloadingLoras": "LoRAをダウンロード中...",
+                "savingRecipe": "レシピを保存中...",
+                "startingDownload": "LoRA {current}/{total} のダウンロードを開始",
+                "deletedFromCivitai": "Civitaiから削除済み",
+                "inLibrary": "ライブラリ内",
+                "notInLibrary": "ライブラリ外",
+                "earlyAccessRequired": "このLoRAはダウンロードにアーリーアクセス料金が必要です。",
+                "earlyAccessEnds": "アーリーアクセスは {date} に終了します。",
+                "earlyAccess": "アーリーアクセス",
+                "verifyEarlyAccess": "ダウンロード前にアーリーアクセスを購入済みであることを確認してください。",
+                "duplicateRecipesFound": "ライブラリ内に {count} 個の同一レシピが見つかりました",
+                "duplicateRecipesDescription": "これらのレシピは同じLoRAを同じ重みで含んでいます。",
+                "showDuplicates": "重複を表示",
+                "hideDuplicates": "重複を非表示",
+                "loraCount": "{count} LoRA",
+                "recipePreviewAlt": "レシピプレビュー",
+                "loraPreviewAlt": "LoRAプレビュー",
+                "errors": {
+                    "selectImageFile": "画像ファイルを選択してください",
+                    "enterUrlOrPath": "URLまたはファイルパスを入力してください",
+                    "selectLoraRoot": "LoRAルートディレクトリを選択してください"
+                }
+            },
             "refresh": {
                 "title": "レシピリストを更新"
             },
-            "duplicates": {
-                "title": "重複レシピを検索"
-            },
-            "filteredByLora": "LoRAでフィルタ",
-            "create": "レシピを作成",
-            "export": "選択項目をエクスポート",
-            "downloadMissing": "不足しているLoRAをダウンロード"
+            "filteredByLora": "LoRAでフィルタ済み"
         },
         "duplicates": {
-            "found": "{count}個の重複グループが見つかりました",
+            "found": "{count} 個の重複グループが見つかりました",
             "keepLatest": "最新バージョンを保持",
-            "deleteSelected": "選択項目を削除"
+            "deleteSelected": "選択したものを削除"
         },
-        "card": {
-            "author": "作者",
-            "loras": "{count}個のLoRA",
-            "tags": "タグ",
-            "actions": {
-                "sendToWorkflow": "ワークフローに送信",
-                "edit": "レシピを編集",
-                "duplicate": "レシピを複製",
-                "export": "レシピをエクスポート",
-                "delete": "レシピを削除"
+        "contextMenu": {
+            "copyRecipe": {
+                "missingId": "レシピをコピーできません：レシピIDがありません",
+                "failed": "レシピ構文のコピーに失敗しました"
+            },
+            "sendRecipe": {
+                "missingId": "レシピを送信できません：レシピIDがありません",
+                "failed": "レシピのワークフローへの送信に失敗しました"
+            },
+            "viewLoras": {
+                "missingId": "LoRAを表示できません：レシピIDがありません",
+                "noLorasFound": "このレシピにLoRAが見つかりませんでした",
+                "loadError": "レシピLoRAの読み込みエラー：{message}"
+            },
+            "downloadMissing": {
+                "missingId": "LoRAをダウンロードできません：レシピIDがありません",
+                "noMissingLoras": "ダウンロードする不足LoRAがありません",
+                "getInfoFailed": "不足LoRAの情報取得に失敗しました",
+                "prepareError": "ダウンロード用LoRAの準備中にエラー：{message}"
             }
         }
     },
     "checkpoints": {
-        "title": "チェックポイントモデル",
-        "info": {
-            "filename": "ファイル名",
-            "modelName": "モデル名",
-            "baseModel": "ベースモデル",
-            "fileSize": "ファイルサイズ",
-            "dateAdded": "追加日"
-        }
+        "title": "Checkpointモデル"
     },
     "embeddings": {
-        "title": "エンベディングモデル",
-        "info": {
-            "filename": "ファイル名",
-            "modelName": "モデル名",
-            "triggerWords": "トリガーワード",
-            "fileSize": "ファイルサイズ",
-            "dateAdded": "追加日"
-        }
+        "title": "Embeddingモデル"
     },
     "sidebar": {
         "modelRoot": "モデルルート",
         "collapseAll": "すべてのフォルダを折りたたむ",
-        "pinToggle": "サイドバーをピン留め/解除"
+        "pinToggle": "サイドバーの固定/固定解除"
     },
     "statistics": {
         "title": "統計",
         "tabs": {
             "overview": "概要",
-            "usage": "使用分析",
+            "usage": "使用状況分析",
             "collection": "コレクション",
             "storage": "ストレージ",
             "insights": "インサイト"
         },
-        "overview": {
-            "title": "概要",
-            "totalLoras": "LoRA総数",
-            "totalCheckpoints": "チェックポイント総数",
-            "totalEmbeddings": "エンベディング総数",
-            "totalSize": "総サイズ",
-            "favoriteModels": "お気に入りモデル"
+        "usage": {
+            "mostUsedLoras": "最も使用されているLoRA",
+            "mostUsedCheckpoints": "最も使用されているCheckpoint",
+            "mostUsedEmbeddings": "最も使用されているEmbedding"
+        },
+        "collection": {
+            "popularTags": "人気のタグ",
+            "modelTypes": "モデルタイプ",
+            "collectionAnalysis": "コレクション分析"
+        },
+        "storage": {
+            "storageUsage": "ストレージ使用量",
+            "largestModels": "最大のモデル",
+            "storageEfficiency": "ストレージ対使用効率"
+        },
+        "insights": {
+            "smartInsights": "スマートインサイト",
+            "recommendations": "推奨事項"
         },
         "charts": {
-            "modelsByType": "タイプ別モデル",
-            "modelsByBaseModel": "ベースモデル別",
-            "modelsBySize": "ファイルサイズ別",
-            "modelsAddedOverTime": "時系列追加モデル"
+            "collectionOverview": "コレクション概要",
+            "baseModelDistribution": "ベースモデル分布",
+            "usageTrends": "使用傾向（過去30日）",
+            "usageDistribution": "使用分布"
         }
     },
     "modals": {
-        "delete": {
-            "title": "削除の確認",
-            "message": "このモデルを削除してもよろしいですか？",
-            "warningMessage": "この操作は元に戻せません。",
-            "confirm": "削除",
-            "cancel": "キャンセル"
-        },
         "exclude": {
-            "title": "モデルを除外",
-            "message": "このモデルをライブラリから除外してもよろしいですか？",
-            "confirm": "除外",
-            "cancel": "キャンセル"
+            "confirm": "除外"
         },
         "download": {
             "title": "URLからモデルをダウンロード",
+            "titleWithType": "URLから{type}をダウンロード",
             "url": "Civitai URL",
+            "civitaiUrl": "Civitai URL：",
             "placeholder": "https://civitai.com/models/...",
             "locationPreview": "ダウンロード場所プレビュー",
             "useDefaultPath": "デフォルトパスを使用",
             "useDefaultPathTooltip": "有効にすると、設定されたパステンプレートを使用してファイルが自動的に整理されます",
             "selectRootDirectory": "ルートディレクトリを選択",
+            "selectModelRoot": "モデルルートを選択：",
+            "selectTypeRoot": "{type}ルートを選択：",
+            "targetFolderPath": "ターゲットフォルダパス：",
+            "browseFolders": "フォルダを参照：",
+            "createNewFolder": "新しいフォルダを作成",
+            "pathPlaceholder": "フォルダパスを入力するか、下のツリーから選択...",
+            "root": "ルート",
             "download": "ダウンロード",
-            "cancel": "キャンセル"
+            "fetchingVersions": "モデルバージョンを取得中...",
+            "versionPreview": "バージョンプレビュー",
+            "earlyAccess": "アーリーアクセス",
+            "earlyAccessTooltip": "アーリーアクセスが必要",
+            "inLibrary": "ライブラリ内",
+            "alreadyInLibrary": "既にライブラリ内",
+            "autoOrganizedPath": "[パステンプレートによる自動整理]",
+            "errors": {
+                "invalidUrl": "無効なCivitai URL形式",
+                "noVersions": "このモデルの利用可能なバージョンがありません"
+            },
+            "status": {
+                "preparing": "ダウンロードを準備中...",
+                "downloadedPreview": "プレビュー画像をダウンロードしました",
+                "downloadingFile": "{type}ファイルをダウンロード中",
+                "finalizing": "ダウンロードを完了中..."
+            }
         },
         "move": {
-            "title": "モデルを移動",
-            "selectFolder": "移動先フォルダを選択",
-            "createFolder": "新しいフォルダを作成",
-            "folderName": "フォルダ名",
-            "move": "移動",
-            "cancel": "キャンセル"
+            "title": "モデルを移動"
         },
         "contentRating": {
             "title": "コンテンツレーティングを設定",
             "current": "現在",
             "levels": {
-                "pg": "全年齢",
-                "pg13": "13歳以上",
-                "r": "制限あり",
-                "x": "成人向け",
-                "xxx": "露骨"
+                "pg": "PG",
+                "pg13": "PG13",
+                "r": "R",
+                "x": "X",
+                "xxx": "XXX"
             }
         },
-        "model": {
-            "description": {
-                "noDescription": "モデルの説明がありません",
-                "failedToLoad": "モデルの説明の読み込みに失敗しました",
-                "editTitle": "モデルの説明を編集",
-                "validation": {
-                    "cannotBeEmpty": "説明を空にすることはできません"
-                },
-                "messages": {
-                    "updated": "モデルの説明を更新しました",
-                    "updateFailed": "モデルの説明の更新に失敗しました"
-                }
+        "deleteModel": {
+            "title": "モデルを削除",
+            "message": "このモデルと関連するすべてのファイルを削除してもよろしいですか？"
+        },
+        "excludeModel": {
+            "title": "モデルを除外",
+            "message": "このモデルを除外してもよろしいですか？除外されたモデルは検索やモデルリストに表示されません。"
+        },
+        "deleteDuplicateRecipes": {
+            "title": "重複レシピを削除",
+            "message": "選択した重複レシピを削除してもよろしいですか？",
+            "countMessage": "レシピが完全に削除されます。"
+        },
+        "deleteDuplicateModels": {
+            "title": "重複モデルを削除",
+            "message": "選択した重複モデルを削除してもよろしいですか？",
+            "countMessage": "モデルが完全に削除されます。"
+        },
+        "clearCache": {
+            "title": "キャッシュファイルをクリア",
+            "message": "すべてのキャッシュファイルをクリアしてもよろしいですか？",
+            "description": "これにより、キャッシュされたすべてのモデルデータが削除されます。システムは次回起動時にキャッシュを再構築する必要があり、モデルコレクションのサイズによっては時間がかかる場合があります。",
+            "action": "キャッシュをクリア"
+        },
+        "bulkDelete": {
+            "title": "複数のモデルを削除",
+            "message": "選択したすべてのモデルと関連ファイルを削除してもよろしいですか？",
+            "countMessage": "モデルが完全に削除されます。",
+            "action": "すべて削除"
+        },
+        "exampleAccess": {
+            "title": "ローカル例画像",
+            "message": "このモデルのローカル例画像が見つかりませんでした。表示オプション：",
+            "downloadOption": {
+                "title": "Civitaiからダウンロード",
+                "description": "リモート例画像をローカルに保存して、オフライン使用と高速読み込みを可能にします"
             },
+            "importOption": {
+                "title": "独自のものをインポート",
+                "description": "このモデル用の独自のカスタム例画像を追加します"
+            },
+            "footerNote": "ローカルコピーがなくても、モデル詳細でリモート例画像は表示可能です"
+        },
+        "moveModel": {
+            "targetLocationPreview": "ターゲット場所プレビュー：",
+            "selectModelRoot": "モデルルートを選択：",
+            "targetFolderPath": "ターゲットフォルダパス：",
+            "browseFolders": "フォルダを参照：",
+            "createNewFolder": "新しいフォルダを作成",
+            "pathPlaceholder": "フォルダパスを入力するか、下のツリーから選択...",
+            "root": "ルート"
+        },
+        "relinkCivitai": {
+            "title": "Civitaiに再リンク",
+            "warning": "警告：",
+            "warningText": "これは破壊的な操作になる可能性があります。再リンクは以下を行います：",
+            "warningList": {
+                "overrideMetadata": "既存のメタデータを上書き",
+                "modifyHash": "モデルハッシュを変更する可能性",
+                "unintendedConsequences": "その他の意図しない結果を引き起こす可能性"
+            },
+            "proceedText": "これが本当に必要な場合のみ続行してください。",
+            "urlLabel": "CivitaiモデルURL：",
+            "urlPlaceholder": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+            "helpText": {
+                "title": "CivitaiモデルURLを貼り付けてください。対応形式：",
+                "format1": "https://civitai.com/models/649516",
+                "format2": "https://civitai.com/models/649516?modelVersionId=726676",
+                "format3": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+                "note": "注：modelVersionIdが提供されていない場合、最新バージョンが使用されます。"
+            },
+            "confirmAction": "再リンクを確認"
+        },
+        "model": {
             "actions": {
                 "editModelName": "モデル名を編集",
                 "editFileName": "ファイル名を編集",
                 "editBaseModel": "ベースモデルを編集",
                 "viewOnCivitai": "Civitaiで表示",
                 "viewOnCivitaiText": "Civitaiで表示",
-                "viewCreatorProfile": "クリエイタープロフィールを表示"
+                "viewCreatorProfile": "作成者プロフィールを表示"
             },
             "metadata": {
                 "version": "バージョン",
@@ -357,21 +565,11 @@
                 "baseModel": "ベースモデル",
                 "size": "サイズ",
                 "unknown": "不明",
-                "usageTips": "使用のコツ",
+                "usageTips": "使用のヒント",
                 "additionalNotes": "追加メモ",
                 "notesHint": "Enterで保存、Shift+Enterで改行",
-                "addNotesPlaceholder": "ここにメモを追加...",
-                "aboutThisVersion": "このバージョンについて",
-                "validation": {
-                    "nameTooLong": "モデル名は100文字以内に制限されています",
-                    "nameEmpty": "モデル名を空にすることはできません"
-                },
-                "messages": {
-                    "nameUpdated": "モデル名が正常に更新されました",
-                    "nameUpdateFailed": "モデル名の更新に失敗しました",
-                    "baseModelUpdated": "ベースモデルが正常に更新されました",
-                    "baseModelUpdateFailed": "ベースモデルの更新に失敗しました"
-                }
+                "addNotesPlaceholder": "メモをここに追加...",
+                "aboutThisVersion": "このバージョンについて"
             },
             "notes": {
                 "saved": "メモが正常に保存されました",
@@ -386,175 +584,473 @@
                 "valuePlaceholder": "値",
                 "add": "追加"
             },
-            "tags": {
-                "messages": {
-                    "updated": "タグが正常に更新されました",
-                    "updateFailed": "タグの更新に失敗しました"
-                },
-                "validation": {
-                    "maxLength": "タグは30文字を超えてはいけません",
-                    "maxCount": "最大30個のタグが許可されています",
-                    "duplicate": "このタグは既に存在します"
+            "triggerWords": {
+                "label": "トリガーワード",
+                "noTriggerWordsNeeded": "トリガーワードは不要",
+                "edit": "トリガーワードを編集",
+                "cancel": "編集をキャンセル",
+                "save": "変更を保存",
+                "addPlaceholder": "入力して追加するか、下の提案をクリック",
+                "copyWord": "トリガーワードをコピー",
+                "deleteWord": "トリガーワードを削除",
+                "suggestions": {
+                    "noSuggestions": "提案はありません",
+                    "noTrainedWords": "このモデルには学習済みワードやクラストークンが見つかりませんでした。手動でトリガーワードを入力できます。",
+                    "classToken": "クラストークン",
+                    "classTokenDescription": "最良の結果を得るためにプロンプトに追加",
+                    "wordSuggestions": "ワード提案",
+                    "wordsFound": "{count} ワードが見つかりました",
+                    "loading": "提案を読み込み中..."
                 }
             },
-            "recipeTab": {
-                "noRecipesFound": "このLoRAを使用するレシピが見つかりません。",
-                "loadingRecipes": "レシピを読み込み中...",
-                "errorLoadingRecipes": "レシピの読み込みに失敗しました。後でもう一度お試しください。"
+            "description": {
+                "noDescription": "モデルの説明がありません",
+                "failedToLoad": "モデルの説明の読み込みに失敗しました",
+                "editTitle": "モデルの説明を編集",
+                "validation": {
+                    "cannotBeEmpty": "説明を空にすることはできません"
+                },
+                "messages": {
+                    "updated": "モデルの説明が更新されました",
+                    "updateFailed": "モデルの説明の更新に失敗しました"
+                }
+            },
+            "tabs": {
+                "examples": "例",
+                "description": "モデル説明",
+                "recipes": "レシピ"
+            },
+            "loading": {
+                "exampleImages": "例画像を読み込み中...",
+                "description": "モデル説明を読み込み中...",
+                "recipes": "レシピを読み込み中...",
+                "examples": "例を読み込み中..."
             }
         }
     },
-    "errors": {
-        "general": "エラーが発生しました",
-        "networkError": "ネットワークエラー。接続を確認してください。",
-        "serverError": "サーバーエラー。後でもう一度試してください。",
-        "fileNotFound": "ファイルが見つかりません",
-        "invalidFile": "無効なファイル形式",
-        "uploadFailed": "アップロードに失敗しました",
-        "downloadFailed": "ダウンロードに失敗しました",
-        "saveFailed": "保存に失敗しました",
-        "loadFailed": "読み込みに失敗しました",
-        "deleteFailed": "削除に失敗しました",
-        "moveFailed": "移動に失敗しました",
-        "copyFailed": "コピーに失敗しました",
-        "fetchFailed": "Civitaiからデータを取得できませんでした",
-        "invalidUrl": "無効なURL形式",
-        "missingPermissions": "権限が不足しています"
-    },
-    "success": {
-        "saved": "正常に保存されました",
-        "deleted": "正常に削除されました",
-        "moved": "正常に移動されました",
-        "copied": "正常にコピーされました",
-        "downloaded": "正常にダウンロードされました",
-        "uploaded": "正常にアップロードされました",
-        "refreshed": "正常に更新されました",
-        "exported": "正常にエクスポートされました",
-        "imported": "正常にインポートされました"
+    "modelTags": {
+        "messages": {
+            "updated": "タグが正常に更新されました",
+            "updateFailed": "タグの更新に失敗しました"
+        },
+        "validation": {
+            "maxLength": "タグは30文字を超えることはできません",
+            "maxCount": "最大30タグまで許可されています",
+            "duplicate": "このタグは既に存在します"
+        }
     },
     "keyboard": {
-        "navigation": "キーボードナビゲーション:",
+        "navigation": "キーボードナビゲーション：",
         "shortcuts": {
             "pageUp": "1ページ上にスクロール",
             "pageDown": "1ページ下にスクロール",
             "home": "トップにジャンプ",
-            "end": "ボトムにジャンプ",
-            "bulkMode": "一括モードを切り替え",
-            "search": "検索にフォーカス",
-            "escape": "モーダル/パネルを閉じる"
+            "end": "ボトムにジャンプ"
         }
     },
     "initialization": {
         "title": "初期化中",
         "message": "ワークスペースを準備中...",
         "status": "初期化中...",
-        "estimatingTime": "時間を見積もり中...",
+        "estimatingTime": "時間を推定中...",
         "loras": {
-            "title": "LoRAマネージャーを初期化中",
-            "message": "LoRAキャッシュをスキャンして構築中です。数分かかる場合があります..."
+            "title": "LoRA Managerを初期化中",
+            "message": "LoRAキャッシュをスキャンして構築中。数分かかる場合があります..."
         },
         "checkpoints": {
-            "title": "チェックポイントマネージャーを初期化中",
-            "message": "チェックポイントキャッシュをスキャンして構築中です。数分かかる場合があります..."
+            "title": "Checkpoint Managerを初期化中",
+            "message": "checkpointキャッシュをスキャンして構築中。数分かかる場合があります..."
         },
         "embeddings": {
-            "title": "エンベディングマネージャーを初期化中",
-            "message": "エンベディングキャッシュをスキャンして構築中です。数分かかる場合があります..."
+            "title": "Embedding Managerを初期化中",
+            "message": "embeddingキャッシュをスキャンして構築中。数分かかる場合があります..."
         },
         "recipes": {
-            "title": "レシピマネージャーを初期化中",
-            "message": "レシピを読み込んで処理中です。数分かかる場合があります..."
+            "title": "Recipe Managerを初期化中",
+            "message": "レシピを読み込んで処理中。数分かかる場合があります..."
         },
         "statistics": {
             "title": "統計を初期化中",
-            "message": "統計用のモデルデータを処理中です。数分かかる場合があります..."
+            "message": "統計用のモデルデータを処理中。数分かかる場合があります..."
         },
         "tips": {
-            "title": "ヒントとコツ",
+            "title": "ヒント&コツ",
             "civitai": {
                 "title": "Civitai統合",
-                "description": "Civitaiアカウントを接続：プロフィールアバター → 設定 → APIキー → APIキーを追加し、Loraマネージャー設定に貼り付けてください。",
+                "description": "Civitaiアカウントを接続：プロフィールアバター → 設定 → APIキー → APIキーを追加し、LoRA Manager設定に貼り付けてください。",
                 "alt": "Civitai API設定"
             },
             "download": {
                 "title": "簡単ダウンロード",
-                "description": "Civitai URLを使用して新しいモデルを素早くダウンロードおよびインストールします。",
+                "description": "Civitai URLを使用して新しいモデルを素早くダウンロードしてインストールできます。",
                 "alt": "Civitaiダウンロード"
             },
             "recipes": {
                 "title": "レシピを保存",
-                "description": "お気に入りのモデルの組み合わせを将来使用するためにレシピを作成します。",
+                "description": "お気に入りのモデル組み合わせを将来使用するためにレシピを作成できます。",
                 "alt": "レシピ"
             },
             "filter": {
                 "title": "高速フィルタリング",
-                "description": "ヘッダーのフィルターボタンを使用してタグやベースモデルタイプでモデルをフィルタリングします。",
-                "alt": "モデルをフィルター"
+                "description": "ヘッダーのフィルタボタンを使用してタグやベースモデルタイプでモデルをフィルタできます。",
+                "alt": "モデルフィルタ"
             },
             "search": {
                 "title": "クイック検索",
-                "description": "Ctrl+F（MacではCmd+F）を押して現在のビュー内を素早く検索します。",
+                "description": "Ctrl+F（MacではCmd+F）を押して、現在のビュー内を素早く検索できます。",
                 "alt": "クイック検索"
             }
-        },
-        "steps": {
-            "scanning": "モデルファイルをスキャン中...",
-            "processing": "メタデータを処理中...",
-            "building": "キャッシュを構築中...",
-            "finalizing": "完了中..."
         }
     },
     "duplicates": {
-        "found": "{count}個の重複グループが見つかりました",
+        "found": "{count} 個の重複グループが見つかりました",
         "showNotification": "重複通知を表示",
-        "deleteSelected": "選択項目を削除",
+        "deleteSelected": "選択したものを削除",
         "exitMode": "モードを終了",
         "help": {
-            "identicalHashes": "同一のハッシュは、名前やプレビューが異なっていても同一のモデルファイルを意味します。",
-            "keepOne": "1つのバージョンのみを保持し（より良いメタデータ/プレビューを持つもの）、他は安全に削除してください。"
+            "identicalHashes": "同一のハッシュは、名前やプレビューが異なっていても、同一のモデルファイルを意味します。",
+            "keepOne": "1つのバージョンのみを保持し（より良いメタデータ/プレビューを持つものが望ましい）、他は安全に削除してください。"
         }
     },
-    "tooltips": {
-        "refresh": "モデルリストを更新",
-        "bulkOperations": "複数のモデルを選択してバッチ操作",
-        "favorites": "お気に入りモデルのみ表示",
-        "duplicates": "重複モデルを検索・管理",
-        "search": "名前、タグ、その他の条件でモデルを検索",
-        "filter": "様々な条件でモデルをフィルター",
-        "sort": "異なる属性でモデルをソート",
-        "backToTop": "ページトップにスクロール"
-    },
-    "modelCard": {
-        "actions": {
-            "addToFavorites": "お気に入りに追加",
-            "removeFromFavorites": "お気に入りから削除",
-            "viewOnCivitai": "Civitaiで表示",
-            "notAvailableFromCivitai": "Civitaiで利用不可",
-            "sendToWorkflow": "ComfyUIに送信（クリック：追加、Shift+クリック：置換）",
-            "copyLoRASyntax": "LoRA構文をコピー",
-            "checkpointNameCopied": "チェックポイント名をコピーしました",
-            "toggleBlur": "ぼかしを切り替え",
-            "show": "表示",
-            "openExampleImages": "サンプル画像フォルダを開く"
+    "uiHelpers": {
+        "clipboard": {
+            "copied": "クリップボードにコピーされました",
+            "copyFailed": "コピーに失敗しました"
         },
-        "nsfw": {
-            "matureContent": "成人向けコンテンツ",
-            "xxxRated": "XXX指定コンテンツ",
-            "xRated": "X指定コンテンツ",
-            "rRated": "R指定コンテンツ"
+        "lora": {
+            "syntaxCopied": "LoRA構文がクリップボードにコピーされました",
+            "syntaxCopiedNoTriggerWords": "LoRA構文がクリップボードにコピーされました（トリガーワードが見つかりません）",
+            "syntaxCopiedWithTriggerWords": "トリガーワード付きLoRA構文がクリップボードにコピーされました",
+            "syntaxCopiedWithTriggerWordGroups": "トリガーワードグループ付きLoRA構文がクリップボードにコピーされました"
         },
-        "favorites": {
-            "added": "お気に入りに追加しました",
-            "removed": "お気に入りから削除しました",
-            "updateFailed": "お気に入り状態の更新に失敗しました"
+        "workflow": {
+            "noSupportedNodes": "ワークフローで対応するターゲットノードが見つかりません",
+            "communicationFailed": "ComfyUIとの通信に失敗しました"
         },
-        "sendToWorkflow": {
-            "checkpointNotImplemented": "チェックポイントをワークフローに送信 - 機能実装予定"
+        "nodeSelector": {
+            "recipe": "レシピ",
+            "lora": "LoRA",
+            "replace": "置換",
+            "append": "追加",
+            "selectTargetNode": "ターゲットノードを選択",
+            "sendToAll": "すべてに送信"
         },
         "exampleImages": {
-            "checkError": "サンプル画像の確認でエラーが発生しました",
-            "missingHash": "モデルハッシュ情報が不足しています。",
-            "noRemoteImagesAvailable": "このモデルのリモートサンプル画像はCivitaiで利用できません"
+            "opened": "例画像フォルダが開かれました",
+            "openingFolder": "例画像フォルダを開いています",
+            "failedToOpen": "例画像フォルダを開くのに失敗しました"
+        }
+    },
+    "help": {
+        "title": "ヘルプ & チュートリアル",
+        "tabs": {
+            "gettingStarted": "はじめに",
+            "updateVlogs": "更新Vlog",
+            "documentation": "ドキュメント"
+        },
+        "gettingStarted": {
+            "title": "LoRA Managerを始める"
+        },
+        "updateVlogs": {
+            "title": "最新の更新",
+            "watchOnYouTube": "YouTubeで視聴",
+            "playlistTitle": "LoRA Manager更新プレイリスト",
+            "playlistDescription": "最新の機能と改善を紹介するすべての更新動画を視聴できます。"
+        },
+        "documentation": {
+            "title": "ドキュメント",
+            "general": "一般",
+            "troubleshooting": "トラブルシューティング",
+            "modelManagement": "モデル管理",
+            "recipes": "レシピ",
+            "settings": "設定&構成",
+            "extensions": "拡張機能",
+            "newBadge": "新着"
+        }
+    },
+    "update": {
+        "title": "更新確認",
+        "updateAvailable": "更新が利用可能",
+        "noChangelogAvailable": "詳細な変更ログは利用できません。詳細はGitHubでご確認ください。",
+        "currentVersion": "現在のバージョン",
+        "newVersion": "新しいバージョン",
+        "commit": "コミット",
+        "viewOnGitHub": "GitHubで表示",
+        "updateNow": "今すぐ更新",
+        "preparingUpdate": "更新を準備中...",
+        "changelog": "変更ログ",
+        "checkingUpdates": "更新を確認中...",
+        "checkingMessage": "最新バージョンを確認しています。お待ちください。",
+        "showNotifications": "更新通知を表示",
+        "updateProgress": {
+            "preparing": "更新を準備中...",
+            "installing": "更新をインストール中...",
+            "completed": "更新が正常に完了しました！",
+            "failed": "更新に失敗しました：{error}"
+        },
+        "status": {
+            "updating": "更新中...",
+            "updated": "更新済み！",
+            "updateFailed": "更新失敗"
+        },
+        "completion": {
+            "successMessage": "{version}への更新が成功しました！",
+            "restartMessage": "更新を適用するためにComfyUIまたはLoRA Managerを再起動してください。",
+            "reloadMessage": "LoRA ManagerとComfyUIの両方でブラウザを再読み込みしてください。"
+        },
+        "nightly": {
+            "warning": "警告：ナイトリービルドには実験的機能が含まれており、不安定な場合があります。",
+            "enable": "ナイトリー更新を有効にする"
+        }
+    },
+    "support": {
+        "title": "プロジェクトをサポート",
+        "message": "LoRA Managerが役に立ったら、ぜひサポートをお願いします！ 🙌",
+        "feedback": {
+            "title": "フィードバックを提供",
+            "description": "あなたのフィードバックが将来の更新を形作ります！ご意見をお聞かせください："
+        },
+        "links": {
+            "submitGithubIssue": "GitHub Issueを提出",
+            "joinDiscord": "Discordに参加",
+            "youtubeChannel": "YouTubeチャンネル",
+            "civitaiProfile": "Civitaiプロフィール",
+            "supportKofi": "Ko-fiでサポート",
+            "supportPatreon": "Patreonでサポート"
+        },
+        "sections": {
+            "followUpdates": "更新をフォロー",
+            "buyMeCoffee": "コーヒーをおごる",
+            "coffeeDescription": "私の仕事を直接サポートしたい場合：",
+            "becomePatron": "パトロンになる",
+            "patronDescription": "月額寄付で継続的な開発をサポート：",
+            "wechatSupport": "WeChatサポート",
+            "wechatDescription": "中国のユーザーはWeChatでサポートできます：",
+            "showWechatQR": "WeChat QRコードを表示",
+            "hideWechatQR": "WeChat QRコードを非表示"
+        },
+        "footer": "LoRA Managerをご利用いただきありがとうございます！ ❤️"
+    },
+    "toast": {
+        "general": {
+            "cannotInteractStandalone": "スタンドアロンモードではComfyUIと連携できません",
+            "failedWorkflowInfo": "ワークフロー情報の取得に失敗しました",
+            "pageInitFailed": "{pageType}ページの初期化に失敗しました。再読み込みしてください。",
+            "statisticsLoadFailed": "統計データの読み込みに失敗しました"
+        },
+        "loras": {
+            "copyOnlyForLoras": "構文のコピーはLoRAのみ利用可能です",
+            "noLorasSelected": "LoRAが選択されていません",
+            "missingDataForLoras": "{count} LoRAのデータが不足しています",
+            "noValidLorasToCopy": "コピーする有効なLoRAがありません",
+            "sendOnlyForLoras": "ワークフローへの送信はLoRAのみ利用可能です",
+            "noValidLorasToSend": "送信する有効なLoRAがありません",
+            "downloadSuccessful": "LoRAが正常にダウンロードされました",
+            "allDownloadSuccessful": "{count} LoRAすべてが正常にダウンロードされました",
+            "downloadPartialSuccess": "{total} LoRAのうち {completed} がダウンロードされました",
+            "downloadPartialWithAccess": "{total} LoRAのうち {completed} がダウンロードされました。{accessFailures} はアクセス制限により失敗しました。設定でAPIキーまたはアーリーアクセス状況を確認してください。",
+            "pleaseSelectVersion": "バージョンを選択してください",
+            "versionExists": "このバージョンは既にライブラリに存在します",
+            "downloadCompleted": "ダウンロードが正常に完了しました"
+        },
+        "recipes": {
+            "fetchFailed": "レシピの取得に失敗しました：{message}",
+            "reloadFailed": "{modelType}の再読み込みに失敗しました：{message}",
+            "loadFailed": "{modelType}の読み込みに失敗しました：{message}",
+            "refreshComplete": "更新完了",
+            "refreshFailed": "レシピの更新に失敗しました：{message}",
+            "updateFailed": "レシピの更新に失敗しました：{error}",
+            "updateError": "レシピ更新エラー：{message}",
+            "nameSaved": "レシピ\"{name}\"が正常に保存されました",
+            "nameUpdated": "レシピ名が正常に更新されました",
+            "tagsUpdated": "レシピタグが正常に更新されました",
+            "sourceUrlUpdated": "ソースURLが正常に更新されました",
+            "noRecipeId": "レシピIDが利用できません",
+            "copyFailed": "レシピ構文のコピーエラー：{message}",
+            "noMissingLoras": "ダウンロードする不足LoRAがありません",
+            "missingLorasInfoFailed": "不足LoRAの情報取得に失敗しました",
+            "preparingForDownloadFailed": "ダウンロード用LoRAの準備中にエラーが発生しました",
+            "enterLoraName": "LoRA名または構文を入力してください",
+            "reconnectedSuccessfully": "LoRAが正常に再接続されました",
+            "reconnectFailed": "LoRA再接続エラー：{message}",
+            "cannotSend": "レシピを送信できません：レシピIDがありません",
+            "sendFailed": "レシピのワークフローへの送信に失敗しました",
+            "sendError": "レシピのワークフロー送信エラー",
+            "cannotDelete": "レシピを削除できません：レシピIDがありません",
+            "deleteConfirmationError": "削除確認の表示中にエラーが発生しました",
+            "deletedSuccessfully": "レシピが正常に削除されました",
+            "deleteFailed": "レシピ削除エラー：{message}",
+            "cannotShare": "レシピを共有できません：レシピIDがありません",
+            "preparingForSharing": "レシピの共有を準備中...",
+            "downloadStarted": "レシピのダウンロードが開始されました",
+            "shareError": "レシピ共有エラー：{message}",
+            "sharePreparationError": "レシピ共有準備エラー",
+            "selectImageFirst": "最初に画像を選択してください",
+            "enterRecipeName": "レシピ名を入力してください",
+            "processingError": "処理エラー：{message}",
+            "folderBrowserError": "フォルダブラウザの読み込みエラー：{message}",
+            "recipeSaveFailed": "レシピの保存に失敗しました：{error}",
+            "importFailed": "インポートに失敗しました：{message}",
+            "folderTreeFailed": "フォルダツリーの読み込みに失敗しました",
+            "folderTreeError": "フォルダツリー読み込みエラー"
+        },
+        "models": {
+            "noModelsSelected": "モデルが選択されていません",
+            "deletedSuccessfully": "{count} {type}が正常に削除されました",
+            "deleteFailed": "エラー：{error}",
+            "deleteFailedGeneral": "モデルの削除に失敗しました",
+            "selectedAdditional": "{count} 追加{type}が選択されました",
+            "refreshMetadataFailed": "メタデータの更新に失敗しました",
+            "nameCannotBeEmpty": "モデル名を空にすることはできません",
+            "nameUpdatedSuccessfully": "モデル名が正常に更新されました",
+            "nameUpdateFailed": "モデル名の更新に失敗しました",
+            "baseModelUpdated": "ベースモデルが正常に更新されました",
+            "baseModelUpdateFailed": "ベースモデルの更新に失敗しました",
+            "invalidCharactersRemoved": "ファイル名から無効な文字が削除されました",
+            "filenameCannotBeEmpty": "ファイル名を空にすることはできません",
+            "renameFailed": "ファイル名の変更に失敗しました：{message}",
+            "moveFailed": "モデルの移動に失敗しました：{message}",
+            "pleaseSelectRoot": "{type}ルートディレクトリを選択してください",
+            "nameTooLong": "モデル名は100文字に制限されています",
+            "verificationAlreadyDone": "このグループは既に検証済みです",
+            "verificationCompleteMismatch": "検証完了。{count} ファイルの実際のハッシュが異なります。",
+            "verificationCompleteSuccess": "検証完了。すべてのファイルが重複であることが確認されました。",
+            "verificationFailed": "ハッシュの検証に失敗しました：{message}"
+        },
+        "search": {
+            "atLeastOneOption": "少なくとも1つの検索オプションを選択する必要があります"
+        },
+        "settings": {
+            "loraRootsFailed": "LoRAルートの読み込みに失敗しました：{message}",
+            "checkpointRootsFailed": "checkpointルートの読み込みに失敗しました：{message}",
+            "embeddingRootsFailed": "embeddingルートの読み込みに失敗しました：{message}",
+            "mappingsUpdated": "ベースモデルパスマッピングが更新されました（{count} マッピング{plural}）",
+            "mappingsCleared": "ベースモデルパスマッピングがクリアされました",
+            "mappingSaveFailed": "ベースモデルマッピングの保存に失敗しました：{message}",
+            "downloadTemplatesUpdated": "ダウンロードパステンプレートが更新されました",
+            "downloadTemplatesFailed": "ダウンロードパステンプレートの保存に失敗しました：{message}",
+            "settingsUpdated": "設定が更新されました：{setting}",
+            "compactModeToggled": "コンパクトモード {state}",
+            "settingSaveFailed": "設定の保存に失敗しました：{message}",
+            "displayDensitySet": "表示密度が {density} に設定されました",
+            "languageChangeFailed": "言語の変更に失敗しました：{message}",
+            "cacheCleared": "キャッシュファイルが正常にクリアされました。次回のアクションでキャッシュが再構築されます。",
+            "cacheClearFailed": "キャッシュのクリアに失敗しました：{error}",
+            "cacheClearError": "キャッシュクリアエラー：{message}"
+        },
+        "filters": {
+            "applied": "{message}",
+            "cleared": "フィルタがクリアされました",
+            "noCustomFilterToClear": "クリアするカスタムフィルタがありません"
+        },
+        "downloads": {
+            "imagesCompleted": "例画像 {action} が完了しました",
+            "imagesFailed": "例画像 {action} が失敗しました",
+            "loadError": "ダウンロード読み込みエラー：{message}",
+            "downloadError": "ダウンロードエラー：{message}"
+        },
+        "import": {
+            "folderTreeFailed": "フォルダツリーの読み込みに失敗しました",
+            "folderTreeError": "フォルダツリー読み込みエラー",
+            "imagesImported": "例画像が正常にインポートされました",
+            "importFailed": "例画像のインポートに失敗しました：{message}"
+        },
+        "triggerWords": {
+            "loadFailed": "学習済みワードを読み込めませんでした",
+            "tooLong": "トリガーワードは30ワードを超えてはいけません",
+            "tooMany": "最大30トリガーワードまで許可されています",
+            "alreadyExists": "このトリガーワードは既に存在します",
+            "updateSuccess": "トリガーワードが正常に更新されました",
+            "updateFailed": "トリガーワードの更新に失敗しました",
+            "copyFailed": "コピーに失敗しました"
+        },
+        "virtual": {
+            "loadFailed": "アイテムの読み込みに失敗しました",
+            "loadMoreFailed": "追加アイテムの読み込みに失敗しました",
+            "loadPositionFailed": "この位置のアイテムの読み込みに失敗しました"
+        },
+        "bulk": {
+            "unableToSelectAll": "すべてのアイテムを選択できません"
+        },
+        "duplicates": {
+            "findFailed": "重複の検索に失敗しました：{message}",
+            "noDuplicatesFound": "重複 {type} が見つかりませんでした",
+            "noItemsSelected": "削除する {type} が選択されていません",
+            "deleteError": "エラー：{message}",
+            "deleteSuccess": "{count} {type} が正常に削除されました",
+            "deleteFailed": "{type} の削除に失敗しました：{message}"
+        },
+        "controls": {
+            "reloadFailed": "{pageType}の再読み込みに失敗しました：{message}",
+            "refreshFailed": "{pageType}の{action}に失敗しました：{message}",
+            "fetchMetadataFailed": "メタデータの取得に失敗しました：{message}",
+            "clearFilterFailed": "カスタムフィルタのクリアに失敗しました：{message}"
+        },
+        "contextMenu": {
+            "contentRatingSet": "コンテンツレーティングが {level} に設定されました",
+            "contentRatingFailed": "コンテンツレーティングの設定に失敗しました：{message}",
+            "relinkSuccess": "モデルがCivitaiに正常に再リンクされました",
+            "relinkFailed": "エラー：{message}",
+            "fetchMetadataFirst": "最初にCivitAIからメタデータを取得してください",
+            "noCivitaiInfo": "CivitAI情報が利用できません",
+            "missingHash": "モデルハッシュが利用できません"
+        },
+        "exampleImages": {
+            "pathUpdated": "例画像パスが正常に更新されました",
+            "downloadInProgress": "ダウンロードは既に進行中です",
+            "enterLocationFirst": "最初にダウンロード場所を入力してください",
+            "downloadStarted": "例画像のダウンロードが開始されました",
+            "downloadStartFailed": "ダウンロードの開始に失敗しました：{error}",
+            "downloadPaused": "ダウンロードが一時停止されました",
+            "pauseFailed": "ダウンロードの一時停止に失敗しました：{error}",
+            "downloadResumed": "ダウンロードが再開されました",
+            "resumeFailed": "ダウンロードの再開に失敗しました：{error}",
+            "deleted": "例画像が削除されました",
+            "deleteFailed": "例画像の削除に失敗しました",
+            "setPreviewFailed": "プレビュー画像の設定に失敗しました"
+        },
+        "api": {
+            "fetchFailed": "{type}の取得に失敗しました：{message}",
+            "reloadFailed": "{type}の再読み込みに失敗しました：{message}",
+            "deleteSuccess": "{type}が正常に削除されました",
+            "deleteFailed": "{type}の削除に失敗しました：{message}",
+            "excludeSuccess": "{type}が正常に除外されました",
+            "excludeFailed": "{type}の除外に失敗しました：{message}",
+            "fileNameUpdated": "ファイル名が正常に更新されました",
+            "fileRenameFailed": "ファイル名の変更に失敗しました：{error}",
+            "previewUpdated": "プレビューが正常に更新されました",
+            "previewUploadFailed": "プレビュー画像のアップロードに失敗しました",
+            "refreshComplete": "{action} 完了",
+            "refreshFailed": "{type}の{action}に失敗しました",
+            "metadataRefreshed": "メタデータが正常に更新されました",
+            "metadataRefreshFailed": "メタデータの更新に失敗しました：{message}",
+            "metadataUpdateComplete": "メタデータ更新完了",
+            "metadataFetchFailed": "メタデータの取得に失敗しました：{message}",
+            "bulkMetadataCompleteAll": "{count} {type}すべてが正常に更新されました",
+            "bulkMetadataCompletePartial": "{total} {type}のうち {success} が更新されました",
+            "bulkMetadataCompleteNone": "{type}のメタデータ更新に失敗しました",
+            "bulkMetadataFailureDetails": "失敗した更新：\n{failures}",
+            "bulkMetadataFailed": "メタデータの更新に失敗しました：{message}",
+            "moveNotSupported": "{type}の移動はサポートされていません",
+            "alreadyInFolder": "{type}は既に選択されたフォルダにあります",
+            "moveInfo": "{message}",
+            "moveSuccess": "{type}が正常に移動されました",
+            "bulkMoveNotSupported": "{type}の移動はサポートされていません",
+            "allAlreadyInFolder": "選択されたすべての{type}は既にターゲットフォルダにあります",
+            "bulkMovePartial": "{successCount} {type}が移動され、{failureCount} が失敗しました",
+            "bulkMoveFailures": "失敗した移動：\n{failures}",
+            "bulkMoveSuccess": "{successCount} {type}が正常に移動されました",
+            "exampleImagesDownloadSuccess": "例画像が正常にダウンロードされました！",
+            "exampleImagesDownloadFailed": "例画像のダウンロードに失敗しました：{message}"
+        }
+    },
+    "banners": {
+        "versionMismatch": {
+            "title": "アプリケーション更新が検出されました",
+            "content": "ブラウザは古いバージョンのLoRA Manager（{storedVersion}）を実行しています。サーバーはバージョン{currentVersion}に更新されました。正常な機能を確保するため再読み込みしてください。",
+            "refreshNow": "今すぐ更新",
+            "refreshingIn": "更新まで",
+            "seconds": "秒"
         }
     }
 }
