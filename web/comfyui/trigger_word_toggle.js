@@ -70,8 +70,13 @@ app.registerExtension({
                 // Add callback for default_active widget
                 const defaultActiveWidget = node.widgets[1];
                 defaultActiveWidget.callback = (value) => {
-                    if (node.widgets[3].value) {
-                        this.updateTagsBasedOnMode(node, node.widgets[3].value, groupModeWidget.value);
+                    // Set all existing tags' active state to the new value
+                    if (node.tagWidget && node.tagWidget.value) {
+                        const updatedTags = node.tagWidget.value.map(tag => ({
+                            ...tag,
+                            active: value
+                        }));
+                        node.tagWidget.value = updatedTags;
                     }
                 }
             });
