@@ -770,9 +770,9 @@
     },
     "update": {
         "title": "检查更新",
-        "currentVersion": "当前版本",
         "updateAvailable": "更新可用",
         "noChangelogAvailable": "没有详细的更新日志可用。请查看 GitHub 以获取更多信息。",
+        "currentVersion": "当前版本",
         "newVersion": "新版本",
         "commit": "提交",
         "viewOnGitHub": "在 GitHub 查看",

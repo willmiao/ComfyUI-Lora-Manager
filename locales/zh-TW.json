@@ -182,20 +182,20 @@
             "help": "設定從 Civitai 下載時不同模型類型的資料夾結構。",
             "availablePlaceholders": "可用佔位符：",
             "templateOptions": {
-            "flatStructure": "扁平結構",
-            "byBaseModel": "依基礎模型",
-            "byAuthor": "依作者",
-            "byFirstTag": "依第一標籤",
-            "baseModelFirstTag": "基礎模型 + 第一標籤",
-            "baseModelAuthor": "基礎模型 + 作者",
-            "authorFirstTag": "作者 + 第一標籤",
-            "customTemplate": "自訂範本"
+                "flatStructure": "扁平結構",
+                "byBaseModel": "依基礎模型",
+                "byAuthor": "依作者",
+                "byFirstTag": "依第一標籤",
+                "baseModelFirstTag": "基礎模型 + 第一標籤",
+                "baseModelAuthor": "基礎模型 + 作者",
+                "authorFirstTag": "作者 + 第一標籤",
+                "customTemplate": "自訂範本"
             },
             "customTemplatePlaceholder": "輸入自訂範本（例如：{base_model}/{author}/{first_tag}）",
             "modelTypes": {
-            "lora": "LoRA",
-            "checkpoint": "Checkpoint",
-            "embedding": "Embedding"
+                "lora": "LoRA",
+                "checkpoint": "Checkpoint",
+                "embedding": "Embedding"
             },
             "baseModelPathMappings": "基礎模型路徑對應",
             "baseModelPathMappingsHelp": "自訂特定基礎模型的資料夾名稱（例如：「Flux.1 D」→「flux」）",
@@ -204,12 +204,12 @@
             "customPathPlaceholder": "自訂路徑（例如：flux）",
             "removeMapping": "移除對應",
             "validation": {
-            "validFlat": "有效（扁平結構）",
-            "invalidChars": "偵測到無效字元",
-            "doubleSlashes": "不允許連續斜線",
-            "leadingTrailingSlash": "不能以斜線開始或結束",
-            "invalidPlaceholder": "無效佔位符：{placeholder}",
-            "validTemplate": "範本有效"
+                "validFlat": "有效（扁平結構）",
+                "invalidChars": "偵測到無效字元",
+                "doubleSlashes": "不允許連續斜線",
+                "leadingTrailingSlash": "不能以斜線開始或結束",
+                "invalidPlaceholder": "無效佔位符：{placeholder}",
+                "validTemplate": "範本有效"
             }
         },
         "exampleImages": {
@@ -469,11 +469,11 @@
             "title": "設定內容分級",
             "current": "目前",
             "levels": {
-            "pg": "PG",
-            "pg13": "PG13",
-            "r": "R",
-            "x": "X",
-            "xxx": "XXX"
+                "pg": "PG",
+                "pg13": "PG13",
+                "r": "R",
+                "x": "X",
+                "xxx": "XXX"
             }
         },
         "deleteModel": {
