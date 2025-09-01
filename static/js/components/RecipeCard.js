@@ -199,7 +199,7 @@ class RecipeCard {
             // Get recipe ID
             const recipeId = this.recipe.id;
             if (!recipeId) {
-                showToast('Cannot send recipe: Missing recipe ID', 'error');
+                showToast('toast.recipes.cannotSend', {}, 'error');
                 return;
             }
 
@@ -214,11 +214,11 @@ class RecipeCard {
                 })
                 .catch(err => {
                     console.error('Failed to send recipe to workflow: ', err);
-                    showToast('Failed to send recipe to workflow', 'error');
+                    showToast('toast.recipes.sendFailed', {}, 'error');
                 });
         } catch (error) {
             console.error('Error sending recipe to workflow:', error);
-            showToast('Error sending recipe to workflow', 'error');
+            showToast('toast.recipes.sendError', {}, 'error');
         }
     }
     
@@ -228,7 +228,7 @@ class RecipeCard {
             const recipeId = this.recipe.id;
             const filePath = this.recipe.file_path;
             if (!recipeId) {
-                showToast('Cannot delete recipe: Missing recipe ID', 'error');
+                showToast('toast.recipes.cannotDelete', {}, 'error');
                 return;
             }
             
@@ -278,7 +278,7 @@ class RecipeCard {
             
         } catch (error) {
             console.error('Error showing delete confirmation:', error);
-            showToast('Error showing delete confirmation', 'error');
+            showToast('toast.recipes.deleteConfirmationError', {}, 'error');
         }
     }
 
@@ -287,7 +287,7 @@ class RecipeCard {
         const recipeId = deleteModal.dataset.recipeId;
         
         if (!recipeId) {
-            showToast('Cannot delete recipe: Missing recipe ID', 'error');
+            showToast('toast.recipes.cannotDelete', {}, 'error');
             modalManager.closeModal('deleteModal');
             return;
         }
@@ -312,7 +312,7 @@ class RecipeCard {
             return response.json();
         })
         .then(data => {
-            showToast('Recipe deleted successfully', 'success');
+            showToast('toast.recipes.deletedSuccessfully', {}, 'success');
             
             state.virtualScroller.removeItemByFilePath(deleteModal.dataset.filePath);
             
@@ -320,7 +320,7 @@ class RecipeCard {
         })
         .catch(error => {
             console.error('Error deleting recipe:', error);
-            showToast('Error deleting recipe: ' + error.message, 'error');
+            showToast('toast.recipes.deleteFailed', { message: error.message }, 'error');
             
             // Reset button state
             deleteBtn.textContent = originalText;
@@ -333,12 +333,12 @@ class RecipeCard {
             // Get recipe ID
             const recipeId = this.recipe.id;
             if (!recipeId) {
-                showToast('Cannot share recipe: Missing recipe ID', 'error');
+                showToast('toast.recipes.cannotShare', {}, 'error');
                 return;
             }
             
             // Show loading toast
-            showToast('Preparing recipe for sharing...', 'info');
+            showToast('toast.recipes.preparingForSharing', {}, 'info');
             
             // Call the API to process the image with metadata
             fetch(`/api/recipe/${recipeId}/share`)
@@ -363,15 +363,15 @@ class RecipeCard {
                     downloadLink.click();
                     document.body.removeChild(downloadLink);
                     
-                    showToast('Recipe download started', 'success');
+                    showToast('toast.recipes.downloadStarted', {}, 'success');
                 })
                 .catch(error => {
                     console.error('Error sharing recipe:', error);
-                    showToast('Error sharing recipe: ' + error.message, 'error');
+                    showToast('toast.recipes.shareError', { message: error.message }, 'error');
                 });
         } catch (error) {
             console.error('Error sharing recipe:', error);
-            showToast('Error preparing recipe for sharing', 'error');
+            showToast('toast.recipes.sharePreparationError', {}, 'error');
         }
     }
 }

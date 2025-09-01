@@ -1,4 +1,4 @@
-import { updatePanelPositions } from "../utils/uiHelpers.js";
+import { updatePanelPositions, showToast } from "../utils/uiHelpers.js";
 import { getCurrentPageState } from "../state/index.js";
 import { getModelApiClient } from "../api/modelApiFactory.js";
 import { setStorageItem, getStorageItem } from "../utils/storageHelpers.js";
@@ -97,10 +97,7 @@ export class SearchManager {
             // Check if clicking would deselect the last active option
             const activeOptions = document.querySelectorAll('.search-option-tag.active');
             if (activeOptions.length === 1 && activeOptions[0] === tag) {
-              // Don't allow deselecting the last option
-              if (typeof showToast === 'function') {
-                showToast('At least one search option must be selected', 'info');
-              }
+                showToast('toast.search.atLeastOneOption', {}, 'info');
               return;
             }
             

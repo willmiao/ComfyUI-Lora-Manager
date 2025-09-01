@@ -8,6 +8,7 @@ import {
     resetDismissedBanner
 } from '../utils/storageHelpers.js';
 import { bannerService } from './BannerService.js';
+import { translate } from '../utils/i18nHelpers.js';
 
 export class UpdateService {
     constructor() {
@@ -165,8 +166,8 @@ export class UpdateService {
         
         if (updateToggle) {
             updateToggle.title = this.updateNotificationsEnabled && this.updateAvailable 
-                ? "Update Available" 
-                : "Check Updates";
+                ? translate('update.updateAvailable') 
+                : translate('update.title');
         }
         
         // Force updating badges visibility based on current state
@@ -185,7 +186,9 @@ export class UpdateService {
         // Update title based on update availability
         const headerTitle = modal.querySelector('.update-header h2');
         if (headerTitle) {
-            headerTitle.textContent = this.updateAvailable ? "Update Available" : "Check for Updates";
+            headerTitle.textContent = this.updateAvailable ? 
+                translate('update.updateAvailable') : 
+                translate('update.title');
         }
         
         // Always update version information, even if updateInfo is null
@@ -209,9 +212,9 @@ export class UpdateService {
         const gitInfoEl = modal.querySelector('.git-info');
         if (gitInfoEl && this.gitInfo) {
             if (this.gitInfo.short_hash !== 'unknown') {
-                let gitText = `Commit: ${this.gitInfo.short_hash}`;
+                let gitText = `${translate('update.commit')}: ${this.gitInfo.short_hash}`;
                 if (this.gitInfo.commit_date !== 'unknown') {
-                    gitText += ` - Date: ${this.gitInfo.commit_date}`;
+                    gitText += ` - ${translate('common.status.date', {}, 'Date')}: ${this.gitInfo.commit_date}`;
                 }
                 gitInfoEl.textContent = gitText;
                 gitInfoEl.style.display = 'block';
@@ -231,7 +234,7 @@ export class UpdateService {
                 changelogItem.className = 'changelog-item';
                 
                 const versionHeader = document.createElement('h4');
-                versionHeader.textContent = `Version ${this.latestVersion}`;
+                versionHeader.textContent = `${translate('common.status.version', {}, 'Version')} ${this.latestVersion}`;
                 changelogItem.appendChild(versionHeader);
                 
                 // Create changelog list
@@ -247,7 +250,7 @@ export class UpdateService {
                 } else {
                     // If no changelog items available
                     const listItem = document.createElement('li');
-                    listItem.textContent = "No detailed changelog available. Check GitHub for more information.";
+                    listItem.textContent = translate('update.noChangelogAvailable', {}, 'No detailed changelog available. Check GitHub for more information.');
                     changelogList.appendChild(listItem);
                 }
                 
@@ -271,11 +274,11 @@ export class UpdateService {
         
         try {
             this.isUpdating = true;
-            this.updateUpdateUI('updating', 'Updating...');
+            this.updateUpdateUI('updating', translate('update.status.updating'));
             this.showUpdateProgress(true);
             
             // Update progress
-            this.updateProgress(10, 'Preparing update...');
+            this.updateProgress(10, translate('update.updateProgress.preparing'));
             
             const response = await fetch('/api/perform-update', {
                 method: 'POST',
@@ -287,13 +290,13 @@ export class UpdateService {
                 })
             });
             
-            this.updateProgress(50, 'Installing update...');
+            this.updateProgress(50, translate('update.updateProgress.installing'));
             
             const data = await response.json();
             
             if (data.success) {
-                this.updateProgress(100, 'Update completed successfully!');
-                this.updateUpdateUI('success', 'Updated!');
+                this.updateProgress(100, translate('update.updateProgress.completed'));
+                this.updateUpdateUI('success', translate('update.status.updated'));
                 
                 // Show success message and suggest restart
                 setTimeout(() => {
@@ -301,13 +304,13 @@ export class UpdateService {
                 }, 1000);
                 
             } else {
-                throw new Error(data.error || 'Update failed');
+                throw new Error(data.error || translate('update.status.updateFailed'));
             }
             
         } catch (error) {
             console.error('Update failed:', error);
-            this.updateUpdateUI('error', 'Update Failed');
-            this.updateProgress(0, `Update failed: ${error.message}`);
+            this.updateUpdateUI('error', translate('update.status.updateFailed'));
+            this.updateProgress(0, translate('update.updateProgress.failed', { error: error.message }));
             
             // Hide progress after error
             setTimeout(() => {
@@ -369,11 +372,11 @@ export class UpdateService {
             progressText.innerHTML = `
                 <div style="text-align: center; color: var(--lora-success);">
                     <i class="fas fa-check-circle" style="margin-right: 8px;"></i>
-                    Successfully updated to ${newVersion}!
+                    ${translate('update.completion.successMessage', { version: newVersion })}
                     <br><br>
                     <div style="opacity: 0.95; color: var(--lora-error); font-size: 1em;">
-                        Please restart ComfyUI or LoRA Manager to apply update.<br>
-                        Make sure to reload your browser for both LoRA Manager and ComfyUI.
+                        ${translate('update.completion.restartMessage')}<br>
+                        ${translate('update.completion.reloadMessage')}
                     </div>
                 </div>
             `;
@@ -470,16 +473,19 @@ export class UpdateService {
     
     registerVersionMismatchBanner() {
         // Get stored and current version for display
-        const storedVersion = getStoredVersionInfo() || 'unknown';
-        const currentVersion = this.currentVersionInfo || 'unknown';
+        const storedVersion = getStoredVersionInfo() || translate('common.status.unknown');
+        const currentVersion = this.currentVersionInfo || translate('common.status.unknown');
         
         bannerService.registerBanner('version-mismatch', {
             id: 'version-mismatch',
-            title: 'Application Update Detected',
-            content: `Your browser is running an outdated version of LoRA Manager (${storedVersion}). The server has been updated to version ${currentVersion}. Please refresh to ensure proper functionality.`,
+            title: translate('banners.versionMismatch.title', {}, 'Application Update Detected'),
+            content: translate('banners.versionMismatch.content', { 
+                storedVersion, 
+                currentVersion 
+            }, `Your browser is running an outdated version of LoRA Manager (${storedVersion}). The server has been updated to version ${currentVersion}. Please refresh to ensure proper functionality.`),
             actions: [
                 {
-                    text: 'Refresh Now',
+                    text: translate('banners.versionMismatch.refreshNow', {}, 'Refresh Now'),
                     icon: 'fas fa-sync',
                     action: 'hardRefresh',
                     type: 'primary'
@@ -492,7 +498,7 @@ export class UpdateService {
                 // Add countdown element
                 const countdownEl = document.createElement('div');
                 countdownEl.className = 'banner-countdown';
-                countdownEl.innerHTML = `<span>Refreshing in <strong>15</strong> seconds...</span>`;
+                countdownEl.innerHTML = `<span>${translate('banners.versionMismatch.refreshingIn', {}, 'Refreshing in')} <strong>15</strong> ${translate('banners.versionMismatch.seconds', {}, 'seconds')}...</span>`;
                 bannerElement.querySelector('.banner-content').appendChild(countdownEl);
                 
                 // Start countdown

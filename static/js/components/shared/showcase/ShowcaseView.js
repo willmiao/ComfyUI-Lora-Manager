@@ -412,7 +412,7 @@ async function handleImportFiles(files, modelHash, importContainer) {
             // Initialize the import UI for the new content
             initExampleImport(modelHash, showcaseTab);
             
-            showToast('Example images imported successfully', 'success');
+            showToast('toast.import.imagesImported', {}, 'success');
             
             // Update VirtualScroller if available
             if (state.virtualScroller && result.model_file_path) {
@@ -430,7 +430,7 @@ async function handleImportFiles(files, modelHash, importContainer) {
         }
     } catch (error) {
         console.error('Error importing examples:', error);
-        showToast(`Failed to import example images: ${error.message}`, 'error');
+        showToast('toast.import.importFailed', { message: error.message }, 'error');
     }
 }
 

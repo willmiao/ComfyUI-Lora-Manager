@@ -6,57 +6,57 @@
         <i class="fas fa-external-link-alt"></i> View on Civitai
     </div> -->
     <div class="context-menu-item" data-action="refresh-metadata">
-        <i class="fas fa-sync"></i> Refresh Civitai Data
+        <i class="fas fa-sync"></i> <span>{{ t('loras.contextMenu.refreshMetadata') }}</span>
     </div>
     <div class="context-menu-item" data-action="relink-civitai">
-        <i class="fas fa-link"></i> Re-link to Civitai
+        <i class="fas fa-link"></i> <span>{{ t('loras.contextMenu.relinkCivitai') }}</span>
     </div>
     <div class="context-menu-item" data-action="copyname">
-        <i class="fas fa-copy"></i> Copy LoRA Syntax
+        <i class="fas fa-copy"></i> <span>{{ t('loras.contextMenu.copySyntax') }}</span>
     </div>
     <div class="context-menu-item" data-action="sendappend">
-        <i class="fas fa-paper-plane"></i> Send to Workflow (Append)
+        <i class="fas fa-paper-plane"></i> <span>{{ t('loras.contextMenu.sendToWorkflowAppend') }}</span>
     </div>
     <div class="context-menu-item" data-action="sendreplace">
-        <i class="fas fa-exchange-alt"></i> Send to Workflow (Replace)
+        <i class="fas fa-exchange-alt"></i> <span>{{ t('loras.contextMenu.sendToWorkflowReplace') }}</span>
     </div>
     <div class="context-menu-item" data-action="preview">
-        <i class="fas fa-folder-open"></i> Open Examples Folder
+        <i class="fas fa-folder-open"></i> <span>{{ t('loras.contextMenu.openExamples') }}</span>
     </div>
     <div class="context-menu-item" data-action="download-examples">
-        <i class="fas fa-download"></i> Download Example Images
+        <i class="fas fa-download"></i> <span>{{ t('loras.contextMenu.downloadExamples') }}</span>
     </div>
     <div class="context-menu-item" data-action="replace-preview">
-        <i class="fas fa-image"></i> Replace Preview
+        <i class="fas fa-image"></i> <span>{{ t('loras.contextMenu.replacePreview') }}</span>
     </div>
     <div class="context-menu-item" data-action="set-nsfw">
-        <i class="fas fa-exclamation-triangle"></i> Set Content Rating
+        <i class="fas fa-exclamation-triangle"></i> <span>{{ t('loras.contextMenu.setContentRating') }}</span>
     </div>
     <div class="context-menu-separator"></div>
     <div class="context-menu-item" data-action="move">
-        <i class="fas fa-folder-open"></i> Move to Folder
+        <i class="fas fa-folder-open"></i> <span>{{ t('loras.contextMenu.moveToFolder') }}</span>
     </div>
     <div class="context-menu-item" data-action="exclude">
-        <i class="fas fa-eye-slash"></i> Exclude Model
+        <i class="fas fa-eye-slash"></i> <span>{{ t('loras.contextMenu.excludeModel') }}</span>
     </div>
     <div class="context-menu-item delete-item" data-action="delete">
-        <i class="fas fa-trash"></i> Delete Model
+        <i class="fas fa-trash"></i> <span>{{ t('loras.contextMenu.deleteModel') }}</span>
     </div>
 </div>
 
 <div id="nsfwLevelSelector" class="nsfw-level-selector">
     <div class="nsfw-level-header">
-        <h3>Set Content Rating</h3>
+        <h3>{{ t('modals.contentRating.title') }}</h3>
         <button class="close-nsfw-selector"><i class="fas fa-times"></i></button>
     </div>
     <div class="nsfw-level-content">
-        <div class="current-level">Current: <span id="currentNSFWLevel">Unknown</span></div>
+        <div class="current-level"><span>{{ t('modals.contentRating.current') }}:</span> <span id="currentNSFWLevel">{{ t('common.status.unknown') }}</span></div>
         <div class="nsfw-level-options">
-            <button class="nsfw-level-btn" data-level="1">PG</button>
-            <button class="nsfw-level-btn" data-level="2">PG13</button>
-            <button class="nsfw-level-btn" data-level="4">R</button>
-            <button class="nsfw-level-btn" data-level="8">X</button>
-            <button class="nsfw-level-btn" data-level="16">XXX</button>
+            <button class="nsfw-level-btn" data-level="1">{{ t('modals.contentRating.levels.pg') }}</button>
+            <button class="nsfw-level-btn" data-level="2">{{ t('modals.contentRating.levels.pg13') }}</button>
+            <button class="nsfw-level-btn" data-level="4">{{ t('modals.contentRating.levels.r') }}</button>
+            <button class="nsfw-level-btn" data-level="8">{{ t('modals.contentRating.levels.x') }}</button>
+            <button class="nsfw-level-btn" data-level="16">{{ t('modals.contentRating.levels.xxx') }}</button>
         </div>
     </div>
 </div>

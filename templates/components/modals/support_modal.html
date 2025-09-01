@@ -4,32 +4,32 @@
         <button class="close" onclick="modalManager.closeModal('supportModal')">&times;</button>
         <div class="support-header">
             <i class="fas fa-heart support-icon"></i>
-            <h2>Support the Project</h2>
+            <h2>{{ t('support.title') }}</h2>
         </div>
         <div class="support-content">
-            <p>If you find LoRA Manager useful, I'd really appreciate your support! 🙌</p>
+            <p>{{ t('support.message') }}</p>
             
             <div class="support-section">
-                <h3><i class="fas fa-comment"></i> Provide Feedback</h3>
-                <p>Your feedback helps shape future updates! Share your thoughts:</p>
+                <h3><i class="fas fa-comment"></i> {{ t('support.feedback.title') }}</h3>
+                <p>{{ t('support.feedback.description') }}</p>
                 <div class="support-links">
                     <a href="https://github.com/willmiao/ComfyUI-Lora-Manager/issues/new" class="social-link" target="_blank">
                         <i class="fab fa-github"></i>
-                        <span>Submit GitHub Issue</span>
+                        <span>{{ t('support.links.submitGithubIssue') }}</span>
                     </a>
                     <a href="https://discord.gg/vcqNrWVFvM" class="social-link" target="_blank">
                         <i class="fab fa-discord"></i>
-                        <span>Join Discord</span>
+                        <span>{{ t('support.links.joinDiscord') }}</span>
                     </a>
                 </div>
             </div>
             
             <div class="support-section">
-                <h3><i class="fas fa-rss"></i> Follow for Updates</h3>
+                <h3><i class="fas fa-rss"></i> {{ t('support.sections.followUpdates') }}</h3>
                 <div class="support-links">
                     <a href="https://www.youtube.com/@pixelpaws-ai" class="social-link" target="_blank">
                         <i class="fab fa-youtube"></i>
-                        <span>YouTube Channel</span>
+                        <span>{{ t('support.links.youtubeChannel') }}</span>
                     </a>
                     <a href="https://civitai.com/user/PixelPawsAI" class="social-link civitai-link" target="_blank">
                         <svg class="civitai-icon" viewBox="0 0 225 225" width="20" height="20">
@@ -45,37 +45,37 @@
                                 95 c91 52 167 94 169 94 2 0 78 -42 168 -92z"/>
                             </g>
                         </svg>
-                        <span>Civitai Profile</span>
+                        <span>{{ t('support.links.civitaiProfile') }}</span>
                     </a>
                 </div>
             </div>
             
             <div class="support-section">
-                <h3><i class="fas fa-coffee"></i> Buy me a coffee</h3>
-                <p>If you'd like to support my work directly:</p>
+                <h3><i class="fas fa-coffee"></i> {{ t('support.sections.buyMeCoffee') }}</h3>
+                <p>{{ t('support.sections.coffeeDescription') }}</p>
                 <a href="https://ko-fi.com/pixelpawsai" class="kofi-button" target="_blank">
                     <i class="fas fa-mug-hot"></i>
-                    <span>Support on Ko-fi</span>
+                    <span>{{ t('support.links.supportKofi') }}</span>
                 </a>
             </div>
 
             <!-- Patreon Support Section -->
             <div class="support-section">
-                <h3><i class="fab fa-patreon"></i> Become a Patron</h3>
-                <p>Support ongoing development with monthly contributions:</p>
+                <h3><i class="fab fa-patreon"></i> {{ t('support.sections.becomePatron') }}</h3>
+                <p>{{ t('support.sections.patronDescription') }}</p>
                 <a href="https://patreon.com/PixelPawsAI" class="patreon-button" target="_blank">
                     <i class="fab fa-patreon"></i>
-                    <span>Support on Patreon</span>
+                    <span>{{ t('support.links.supportPatreon') }}</span>
                 </a>
             </div>
 
             <!-- New section for Chinese payment methods -->
             <div class="support-section">
-                <h3><i class="fas fa-qrcode"></i> WeChat Support</h3>
-                <p>For users in China, you can support via WeChat:</p>
+                <h3><i class="fas fa-qrcode"></i> {{ t('support.sections.wechatSupport') }}</h3>
+                <p>{{ t('support.sections.wechatDescription') }}</p>
                 <button class="secondary-btn qrcode-toggle" id="toggleQRCode">
                     <i class="fas fa-qrcode"></i>
-                    <span class="toggle-text">Show WeChat QR Code</span>
+                    <span class="toggle-text">{{ t('support.sections.showWechatQR') }}</span>
                     <i class="fas fa-chevron-down toggle-icon"></i>
                 </button>
                 <div class="qrcode-container" id="qrCodeContainer">
@@ -84,7 +84,7 @@
             </div>
             
             <div class="support-footer">
-                <p>Thank you for using LoRA Manager! ❤️</p>
+                <p>{{ t('support.footer') }}</p>
             </div>
         </div>
     </div>

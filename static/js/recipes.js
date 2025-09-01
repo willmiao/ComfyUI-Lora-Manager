@@ -2,7 +2,7 @@
 import { appCore } from './core.js';
 import { ImportManager } from './managers/ImportManager.js';
 import { RecipeModal } from './components/RecipeModal.js';
-import { getCurrentPageState, state } from './state/index.js';
+import { getCurrentPageState } from './state/index.js';
 import { getSessionItem, removeSessionItem } from './utils/storageHelpers.js';
 import { RecipeContextMenu } from './components/ContextMenu/index.js';
 import { DuplicatesManager } from './components/DuplicatesManager.js';

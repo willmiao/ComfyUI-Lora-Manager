@@ -142,7 +142,7 @@ class ExampleImagesManager {
                         if (!data.success) {
                             console.error('Failed to update example images path in backend:', data.error);
                         } else {
-                            showToast('Example images path updated successfully', 'success');
+                            showToast('toast.exampleImages.pathUpdated', {}, 'success');
                         }
                     } catch (error) {
                         console.error('Failed to update example images path:', error);
@@ -187,7 +187,7 @@ class ExampleImagesManager {
             this.startDownload();
         } else {
             // If download is in progress, show info toast
-            showToast('Download already in progress', 'info');
+            showToast('toast.exampleImages.downloadInProgress', {}, 'info');
         }
     }
     
@@ -243,7 +243,7 @@ class ExampleImagesManager {
     
     async startDownload() {
         if (this.isDownloading) {
-            showToast('Download already in progress', 'warning');
+            showToast('toast.exampleImages.downloadInProgress', {}, 'warning');
             return;
         }
         
@@ -251,7 +251,7 @@ class ExampleImagesManager {
             const outputDir = document.getElementById('exampleImagesPath').value || '';
             
             if (!outputDir) {
-                showToast('Please enter a download location first', 'warning');
+                showToast('toast.exampleImages.enterLocationFirst', {}, 'warning');
                 return;
             }
             
@@ -280,16 +280,16 @@ class ExampleImagesManager {
                 this.showProgressPanel();
                 this.startProgressUpdates();
                 this.updateDownloadButtonText();
-                showToast('Example images download started', 'success');
+                showToast('toast.exampleImages.downloadStarted', {}, 'success');
                 
                 // Close settings modal
                 modalManager.closeModal('settingsModal');
             } else {
-                showToast(data.error || 'Failed to start download', 'error');
+                showToast('toast.exampleImages.downloadStartFailed', { error: data.error }, 'error');
             }
         } catch (error) {
             console.error('Failed to start download:', error);
-            showToast('Failed to start download', 'error');
+            showToast('toast.exampleImages.downloadStartFailed', {}, 'error');
         }
     }
     
@@ -319,13 +319,13 @@ class ExampleImagesManager {
                 }
                 
                 this.updateDownloadButtonText();
-                showToast('Download paused', 'info');
+                showToast('toast.exampleImages.downloadPaused', {}, 'info');
             } else {
-                showToast(data.error || 'Failed to pause download', 'error');
+                showToast('toast.exampleImages.pauseFailed', { error: data.error }, 'error');
             }
         } catch (error) {
             console.error('Failed to pause download:', error);
-            showToast('Failed to pause download', 'error');
+            showToast('toast.exampleImages.pauseFailed', {}, 'error');
         }
     }
     
@@ -355,13 +355,13 @@ class ExampleImagesManager {
                 }
                 
                 this.updateDownloadButtonText();
-                showToast('Download resumed', 'success');
+                showToast('toast.exampleImages.downloadResumed', {}, 'success');
             } else {
-                showToast(data.error || 'Failed to resume download', 'error');
+                showToast('toast.exampleImages.resumeFailed', { error: data.error }, 'error');
             }
         } catch (error) {
             console.error('Failed to resume download:', error);
-            showToast('Failed to resume download', 'error');
+            showToast('toast.exampleImages.resumeFailed', {}, 'error');
         }
     }
     
@@ -399,7 +399,7 @@ class ExampleImagesManager {
                     
                     if (data.status.status === 'completed' && !this.hasShownCompletionToast) {
                         const actionType = this.isMigrating ? 'migration' : 'download';
-                        showToast(`Example images ${actionType} completed`, 'success');
+                        showToast('toast.downloads.imagesCompleted', { action: actionType }, 'success');
                         // Mark as shown to prevent duplicate toasts
                         this.hasShownCompletionToast = true;
                         // Reset migration flag
@@ -408,7 +408,7 @@ class ExampleImagesManager {
                         setTimeout(() => this.hideProgressPanel(), 5000);
                     } else if (data.status.status === 'error') {
                         const actionType = this.isMigrating ? 'migration' : 'download';
-                        showToast(`Example images ${actionType} failed`, 'error');
+                        showToast('toast.downloads.imagesFailed', { action: actionType }, 'error');
                         this.isMigrating = false;
                     }
                 }

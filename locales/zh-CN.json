@@ -1,0 +1,1056 @@
+{
+    "common": {
+        "actions": {
+            "save": "保存",
+            "cancel": "取消",
+            "delete": "删除",
+            "move": "移动",
+            "refresh": "刷新",
+            "back": "返回",
+            "next": "下一步",
+            "backToTop": "返回顶部",
+            "settings": "设置",
+            "help": "帮助"
+        },
+        "status": {
+            "loading": "加载中...",
+            "unknown": "未知",
+            "date": "日期",
+            "version": "版本"
+        },
+        "language": {
+            "select": "选择语言",
+            "select_help": "选择你喜欢的界面语言",
+            "english": "English",
+            "chinese_simplified": "中文（简体）",
+            "chinese_traditional": "中文（繁体）",
+            "russian": "俄语",
+            "german": "德语",
+            "japanese": "日语",
+            "korean": "韩语",
+            "french": "法语",
+            "spanish": "西班牙语"
+        },
+        "fileSize": {
+            "zero": "0 字节",
+            "bytes": "字节",
+            "kb": "KB",
+            "mb": "MB",
+            "gb": "GB",
+            "tb": "TB"
+        }
+    },
+    "modelCard": {
+        "actions": {
+            "addToFavorites": "添加到收藏",
+            "removeFromFavorites": "从收藏移除",
+            "viewOnCivitai": "在 Civitai 查看",
+            "notAvailableFromCivitai": "Civitai 上不可用",
+            "sendToWorkflow": "发送到 ComfyUI（点击：追加，Shift+点击：替换）",
+            "copyLoRASyntax": "复制 LoRA 语法",
+            "checkpointNameCopied": "检查点名称已复制",
+            "toggleBlur": "切换模糊",
+            "show": "显示",
+            "openExampleImages": "打开示例图片文件夹"
+        },
+        "nsfw": {
+            "matureContent": "成熟内容",
+            "xxxRated": "XXX级内容",
+            "xRated": "X级内容",
+            "rRated": "R级内容"
+        },
+        "favorites": {
+            "added": "已添加到收藏",
+            "removed": "已从收藏移除",
+            "updateFailed": "收藏状态更新失败"
+        },
+        "sendToWorkflow": {
+            "checkpointNotImplemented": "发送检查点到工作流 - 功能待实现"
+        },
+        "exampleImages": {
+            "checkError": "检查示例图片时出错",
+            "missingHash": "缺少模型哈希信息。",
+            "noRemoteImagesAvailable": "此模型在 Civitai 上没有远程示例图片"
+        }
+    },
+    "header": {
+        "appTitle": "LoRA 管理器",
+        "navigation": {
+            "loras": "LoRA",
+            "recipes": "配方",
+            "checkpoints": "Checkpoint",
+            "embeddings": "Embedding",
+            "statistics": "统计"
+        },
+        "search": {
+            "placeholder": "搜索...",
+            "placeholders": {
+                "loras": "搜索 LoRA...",
+                "recipes": "搜索配方...",
+                "checkpoints": "搜索 Checkpoint...",
+                "embeddings": "搜索 Embedding..."
+            },
+            "options": "搜索选项",
+            "searchIn": "搜索范围：",
+            "notAvailable": "统计页面不可用搜索",
+            "filters": {
+                "filename": "文件名",
+                "modelname": "模型名称",
+                "tags": "标签",
+                "creator": "创作者",
+                "title": "配方标题",
+                "loraName": "LoRA 文件名",
+                "loraModel": "LoRA 模型名称"
+            }
+        },
+        "filter": {
+            "title": "筛选模型",
+            "baseModel": "基础模型",
+            "modelTags": "标签（前20）",
+            "clearAll": "清除所有筛选"
+        },
+        "theme": {
+            "toggle": "切换主题",
+            "switchToLight": "切换到浅色主题",
+            "switchToDark": "切换到深色主题",
+            "switchToAuto": "切换到自动主题"
+        },
+        "actions": {
+            "checkUpdates": "检查更新",
+            "support": "支持"
+        }
+    },
+    "settings": {
+        "civitaiApiKey": "Civitai API 密钥",
+        "civitaiApiKeyPlaceholder": "请输入你的 Civitai API 密钥",
+        "civitaiApiKeyHelp": "用于从 Civitai 下载模型时的身份验证",
+        "sections": {
+            "contentFiltering": "内容过滤",
+            "videoSettings": "视频设置",
+            "layoutSettings": "布局设置",
+            "folderSettings": "文件夹设置",
+            "downloadPathTemplates": "下载路径模板",
+            "exampleImages": "示例图片",
+            "misc": "其他"
+        },
+        "contentFiltering": {
+            "blurNsfwContent": "模糊 NSFW 内容",
+            "blurNsfwContentHelp": "模糊成熟（NSFW）内容预览图片",
+            "showOnlySfw": "仅显示 SFW 结果",
+            "showOnlySfwHelp": "浏览和搜索时过滤所有 NSFW 内容"
+        },
+        "videoSettings": {
+            "autoplayOnHover": "悬停时自动播放视频",
+            "autoplayOnHoverHelp": "仅在悬停时播放视频预览"
+        },
+        "layoutSettings": {
+            "displayDensity": "显示密度",
+            "displayDensityOptions": {
+                "default": "默认",
+                "medium": "中等",
+                "compact": "紧凑"
+            },
+            "displayDensityHelp": "选择每行显示卡片数量：",
+            "displayDensityDetails": {
+                "default": "默认：5（1080p），6（2K），8（4K）",
+                "medium": "中等：6（1080p），7（2K），9（4K）",
+                "compact": "紧凑：7（1080p），8（2K），10（4K）"
+            },
+            "displayDensityWarning": "警告：高密度可能导致资源有限的系统性能下降。",
+            "cardInfoDisplay": "卡片信息显示",
+            "cardInfoDisplayOptions": {
+                "always": "始终可见",
+                "hover": "悬停时显示"
+            },
+            "cardInfoDisplayHelp": "选择何时显示模型信息和操作按钮：",
+            "cardInfoDisplayDetails": {
+                "always": "始终可见：标题和底部始终显示",
+                "hover": "悬停时显示：仅在悬停卡片时显示标题和底部"
+            }
+        },
+        "folderSettings": {
+            "defaultLoraRoot": "默认 LoRA 根目录",
+            "defaultLoraRootHelp": "设置下载、导入和移动时的默认 LoRA 根目录",
+            "defaultCheckpointRoot": "默认 Checkpoint 根目录",
+            "defaultCheckpointRootHelp": "设置下载、导入和移动时的默认 Checkpoint 根目录",
+            "defaultEmbeddingRoot": "默认 Embedding 根目录",
+            "defaultEmbeddingRootHelp": "设置下载、导入和移动时的默认 Embedding 根目录",
+            "noDefault": "无默认"
+        },
+        "downloadPathTemplates": {
+            "title": "下载路径模板",
+            "help": "配置从 Civitai 下载不同模型类型的文件夹结构。",
+            "availablePlaceholders": "可用占位符：",
+            "templateOptions": {
+                "flatStructure": "扁平结构",
+                "byBaseModel": "按基础模型",
+                "byAuthor": "按作者",
+                "byFirstTag": "按首标签",
+                "baseModelFirstTag": "基础模型 + 首标签",
+                "baseModelAuthor": "基础模型 + 作者",
+                "authorFirstTag": "作者 + 首标签",
+                "customTemplate": "自定义模板"
+            },
+            "customTemplatePlaceholder": "输入自定义模板（如：{base_model}/{author}/{first_tag}）",
+            "modelTypes": {
+                "lora": "LoRA",
+                "checkpoint": "Checkpoint",
+                "embedding": "Embedding"
+            },
+            "baseModelPathMappings": "基础模型路径映射",
+            "baseModelPathMappingsHelp": "为特定基础模型自定义文件夹名称（如“Flux.1 D”→“flux”）",
+            "addMapping": "添加映射",
+            "selectBaseModel": "选择基础模型",
+            "customPathPlaceholder": "自定义路径（如：flux）",
+            "removeMapping": "移除映射",
+            "validation": {
+                "validFlat": "有效（扁平结构）",
+                "invalidChars": "检测到无效字符",
+                "doubleSlashes": "不允许双斜杠",
+                "leadingTrailingSlash": "不能以斜杠开始或结束",
+                "invalidPlaceholder": "无效占位符：{placeholder}",
+                "validTemplate": "有效模板"
+            }
+        },
+        "exampleImages": {
+            "downloadLocation": "下载位置",
+            "downloadLocationPlaceholder": "输入示例图片文件夹路径",
+            "downloadLocationHelp": "输入保存从 Civitai 下载的示例图片的文件夹路径",
+            "autoDownload": "自动下载示例图片",
+            "autoDownloadHelp": "自动为没有示例图片的模型下载示例图片（需设置下载位置）",
+            "optimizeImages": "优化下载图片",
+            "optimizeImagesHelp": "优化示例图片以减少文件大小并提升加载速度（保留元数据）",
+            "download": "下载",
+            "restartRequired": "需要重启"
+        },
+        "misc": {
+            "includeTriggerWords": "复制 LoRA 语法时包含触发词",
+            "includeTriggerWordsHelp": "复制 LoRA 语法到剪贴板时包含训练触发词"
+        }
+    },
+    "loras": {
+        "controls": {
+            "sort": {
+                "title": "模型排序方式...",
+                "name": "名称",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "添加日期",
+                "dateDesc": "最新",
+                "dateAsc": "最旧",
+                "size": "文件大小",
+                "sizeDesc": "最大",
+                "sizeAsc": "最小"
+            },
+            "refresh": {
+                "title": "刷新模型列表",
+                "quick": "快速刷新（增量）",
+                "full": "完全重建（完整）"
+            },
+            "fetch": "从 Civitai 获取",
+            "download": "从 URL 下载",
+            "bulk": "批量操作",
+            "duplicates": "查找重复项",
+            "favorites": "仅显示收藏"
+        },
+        "bulkOperations": {
+            "selected": "已选中 {count} 项",
+            "selectedSuffix": "已选中",
+            "viewSelected": "点击查看已选项目",
+            "sendToWorkflow": "发送到工作流",
+            "copyAll": "全部复制",
+            "refreshAll": "全部刷新",
+            "moveAll": "全部移动",
+            "deleteAll": "全部删除",
+            "clear": "清除"
+        },
+        "contextMenu": {
+            "refreshMetadata": "刷新 Civitai 数据",
+            "relinkCivitai": "重新关联到 Civitai",
+            "copySyntax": "复制 LoRA 语法",
+            "copyFilename": "复制模型文件名",
+            "copyRecipeSyntax": "复制配方语法",
+            "sendToWorkflowAppend": "发送到工作流（追加）",
+            "sendToWorkflowReplace": "发送到工作流（替换）",
+            "openExamples": "打开示例文件夹",
+            "downloadExamples": "下载示例图片",
+            "replacePreview": "替换预览",
+            "setContentRating": "设置内容评级",
+            "moveToFolder": "移动到文件夹",
+            "excludeModel": "排除模型",
+            "deleteModel": "删除模型",
+            "shareRecipe": "分享配方",
+            "viewAllLoras": "查看所有 LoRA",
+            "downloadMissingLoras": "下载缺失的 LoRA",
+            "deleteRecipe": "删除配方"
+        }
+    },
+    "recipes": {
+        "title": "LoRA 配方",
+        "controls": {
+            "import": {
+                "action": "导入配方",
+                "title": "从图片或 URL 导入配方",
+                "urlLocalPath": "URL / 本地路径",
+                "uploadImage": "上传图片",
+                "urlSectionDescription": "输入 Civitai 图片 URL 或本地文件路径以导入为配方。",
+                "imageUrlOrPath": "图片 URL 或文件路径：",
+                "urlPlaceholder": "https://civitai.com/images/... 或 C:/path/to/image.png",
+                "fetchImage": "获取图片",
+                "uploadSectionDescription": "上传带有 LoRA 元数据的图片以导入为配方。",
+                "selectImage": "选择图片",
+                "recipeName": "配方名称",
+                "recipeNamePlaceholder": "输入配方名称",
+                "tagsOptional": "标签（可选）",
+                "addTagPlaceholder": "添加标签",
+                "addTag": "添加",
+                "noTagsAdded": "未添加标签",
+                "lorasInRecipe": "此配方中的 LoRA",
+                "downloadLocationPreview": "下载位置预览：{path}",
+                "useDefaultPath": "使用默认路径",
+                "useDefaultPathTooltip": "启用后，文件将自动使用配置的路径模板进行组织",
+                "selectLoraRoot": "选择 LoRA 根目录",
+                "targetFolderPath": "目标文件夹路径：",
+                "folderPathPlaceholder": "输入文件夹路径或从下面的树中选择...",
+                "createNewFolder": "创建新文件夹",
+                "root": "根目录",
+                "browseFolders": "浏览文件夹：",
+                "downloadAndSaveRecipe": "下载并保存配方",
+                "downloadMissingLoras": "下载缺失的 LoRA",
+                "saveRecipe": "保存配方",
+                "loraCountInfo": "({existing}/{total} in library)",
+                "processingInput": "处理输入...",
+                "analyzingMetadata": "分析图像元数据...",
+                "downloadingLoras": "下载 LoRA...",
+                "savingRecipe": "保存配方...",
+                "startingDownload": "开始下载 LoRA {current}/{total}",
+                "deletedFromCivitai": "从 Civitai 中删除",
+                "inLibrary": "在库中",
+                "notInLibrary": "不在库中",
+                "earlyAccessRequired": "此 LoRA 需要提前访问权限才能下载。",
+                "earlyAccessEnds": "提前访问权限将于 {date} 结束。",
+                "earlyAccess": "提前访问",
+                "verifyEarlyAccess": "在下载之前，请验证您是否已购买提前访问权限。",
+                "duplicateRecipesFound": "在您的库中找到 {count} 个相同的配方。",
+                "duplicateRecipesDescription": "这些配方包含相同的 LoRA，权重完全相同。",
+                "showDuplicates": "显示重复项",
+                "hideDuplicates": "隐藏重复项",
+                "loraCount": "{count} LoRA",
+                "recipePreviewAlt": "配方预览",
+                "loraPreviewAlt": "LoRA 预览",
+                "errors": {
+                    "selectImageFile": "请选择一个图像文件",
+                    "enterUrlOrPath": "请输入 URL 或文件路径",
+                    "selectLoraRoot": "请选择 LoRA 根目录"
+                }
+            },
+            "refresh": {
+                "title": "刷新配方列表"
+            },
+            "filteredByLora": "按 LoRA 筛选"
+        },
+        "duplicates": {
+            "found": "发现 {count} 个重复组",
+            "keepLatest": "保留最新版本",
+            "deleteSelected": "删除已选"
+        },
+        "contextMenu": {
+            "copyRecipe": {
+                "missingId": "无法复制配方：缺少配方 ID",
+                "failed": "复制配方语法失败"
+            },
+            "sendRecipe": {
+                "missingId": "无法发送配方：缺少配方 ID",
+                "failed": "发送配方到工作流失败"
+            },
+            "viewLoras": {
+                "missingId": "无法查看 LoRA：缺少配方 ID",
+                "noLorasFound": "此配方未找到 LoRA",
+                "loadError": "加载配方 LoRA 时出错：{message}"
+            },
+            "downloadMissing": {
+                "missingId": "无法下载 LoRA：缺少配方 ID",
+                "noMissingLoras": "没有缺失的 LoRA 可下载",
+                "getInfoFailed": "获取缺失 LoRA 信息失败",
+                "prepareError": "准备下载 LoRA 时出错：{message}"
+            }
+        }
+    },
+    "checkpoints": {
+        "title": "Checkpoint 模型"
+    },
+    "embeddings": {
+        "title": "Embedding 模型"
+    },
+    "sidebar": {
+        "modelRoot": "模型根目录",
+        "collapseAll": "折叠所有文件夹",
+        "pinToggle": "固定/取消固定侧边栏"
+    },
+    "statistics": {
+        "title": "统计",
+        "tabs": {
+            "overview": "概览",
+            "usage": "使用分析",
+            "collection": "收藏",
+            "storage": "存储",
+            "insights": "洞察"
+        },
+        "usage": {
+            "mostUsedLoras": "最常用 LoRA",
+            "mostUsedCheckpoints": "最常用 Checkpoint",
+            "mostUsedEmbeddings": "最常用 Embedding"
+        },
+        "collection": {
+            "popularTags": "热门标签",
+            "modelTypes": "模型类型",
+            "collectionAnalysis": "收藏分析"
+        },
+        "storage": {
+            "storageUsage": "存储使用情况",
+            "largestModels": "最大模型",
+            "storageEfficiency": "存储与使用效率"
+        },
+        "insights": {
+            "smartInsights": "智能洞察",
+            "recommendations": "推荐"
+        },
+        "charts": {
+            "collectionOverview": "收藏概览",
+            "baseModelDistribution": "基础模型分布",
+            "usageTrends": "使用趋势（最近30天）",
+            "usageDistribution": "使用分布"
+        }
+    },
+    "modals": {
+        "exclude": {
+            "confirm": "排除"
+        },
+        "download": {
+            "title": "从 URL 下载模型",
+            "titleWithType": "从 URL 下载 {type}",
+            "url": "Civitai URL",
+            "civitaiUrl": "Civitai URL:",
+            "placeholder": "https://civitai.com/models/...",
+            "locationPreview": "下载位置预览",
+            "useDefaultPath": "使用默认路径",
+            "useDefaultPathTooltip": "启用后，文件将自动按配置的路径模板进行整理",
+            "selectRootDirectory": "选择根目录",
+            "selectModelRoot": "选择模型根目录：",
+            "selectTypeRoot": "选择 {type} 根目录：",
+            "targetFolderPath": "目标文件夹路径：",
+            "browseFolders": "浏览文件夹：",
+            "createNewFolder": "新建文件夹",
+            "pathPlaceholder": "输入文件夹路径或从下方树中选择...",
+            "root": "根目录",
+            "download": "下载",
+            "fetchingVersions": "正在获取模型版本...",
+            "versionPreview": "版本预览",
+            "earlyAccess": "早期访问",
+            "earlyAccessTooltip": "需要早期访问权限",
+            "inLibrary": "已在库中",
+            "alreadyInLibrary": "已存在于库中",
+            "autoOrganizedPath": "【已按路径模板自动整理】",
+            "errors": {
+                "invalidUrl": "无效的 Civitai URL 格式",
+                "noVersions": "此模型没有可用版本"
+            },
+            "status": {
+                "preparing": "正在准备下载...",
+                "downloadedPreview": "预览图片已下载",
+                "downloadingFile": "正在下载 {type} 文件",
+                "finalizing": "正在完成下载..."
+            }
+        },
+        "move": {
+            "title": "移动模型"
+        },
+        "contentRating": {
+            "title": "设置内容评级",
+            "current": "当前",
+            "levels": {
+                "pg": "PG",
+                "pg13": "PG13",
+                "r": "R",
+                "x": "X",
+                "xxx": "XXX"
+            }
+        },
+        "deleteModel": {
+            "title": "删除模型",
+            "message": "你确定要删除此模型及所有相关文件吗？"
+        },
+        "excludeModel": {
+            "title": "排除模型",
+            "message": "你确定要排除此模型吗？被排除的模型不会出现在搜索或模型列表中。"
+        },
+        "deleteDuplicateRecipes": {
+            "title": "删除重复配方",
+            "message": "你确定要删除选中的重复配方吗？",
+            "countMessage": "配方将被永久删除。"
+        },
+        "deleteDuplicateModels": {
+            "title": "删除重复模型",
+            "message": "你确定要删除选中的重复模型吗？",
+            "countMessage": "模型将被永久删除。"
+        },
+        "clearCache": {
+            "title": "清除缓存文件",
+            "message": "你确定要清除所有缓存文件吗？",
+            "description": "这将移除所有模型缓存数据。系统将在下次启动时重建缓存，具体时间取决于你的模型数量。",
+            "action": "清除缓存"
+        },
+        "bulkDelete": {
+            "title": "删除多个模型",
+            "message": "你确定要删除所有选中的模型及其相关文件吗？",
+            "countMessage": "模型将被永久删除。",
+            "action": "全部删除"
+        },
+        "exampleAccess": {
+            "title": "本地示例图片",
+            "message": "未找到此模型的本地示例图片。可选操作：",
+            "downloadOption": {
+                "title": "从 Civitai 下载",
+                "description": "将远程示例保存到本地，便于离线使用和更快加载"
+            },
+            "importOption": {
+                "title": "导入自定义图片",
+                "description": "为此模型添加你自己的示例图片"
+            },
+            "footerNote": "即使没有本地副本，远程示例仍可在模型详情中查看"
+        },
+        "moveModel": {
+            "targetLocationPreview": "目标位置预览：",
+            "selectModelRoot": "选择模型根目录：",
+            "targetFolderPath": "目标文件夹路径：",
+            "browseFolders": "浏览文件夹：",
+            "createNewFolder": "新建文件夹",
+            "pathPlaceholder": "输入文件夹路径或从下方树中选择...",
+            "root": "根目录"
+        },
+        "relinkCivitai": {
+            "title": "重新关联到 Civitai",
+            "warning": "警告：",
+            "warningText": "这是一个有潜在风险的操作。重新关联将：",
+            "warningList": {
+                "overrideMetadata": "覆盖现有元数据",
+                "modifyHash": "可能修改模型哈希",
+                "unintendedConsequences": "可能有其他不可预期的后果"
+            },
+            "proceedText": "仅在你确定需要此操作时继续。",
+            "urlLabel": "Civitai 模型 URL：",
+            "urlPlaceholder": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+            "helpText": {
+                "title": "粘贴任意 Civitai 模型 URL。支持格式：",
+                "format1": "https://civitai.com/models/649516",
+                "format2": "https://civitai.com/models/649516?modelVersionId=726676",
+                "format3": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+                "note": "注意：如果未提供 modelVersionId，将使用最新版本。"
+            },
+            "confirmAction": "确认重新关联"
+        },
+        "model": {
+            "actions": {
+                "editModelName": "编辑模型名称",
+                "editFileName": "编辑文件名",
+                "editBaseModel": "编辑基础模型",
+                "viewOnCivitai": "在 Civitai 查看",
+                "viewOnCivitaiText": "在 Civitai 查看",
+                "viewCreatorProfile": "查看创作者主页"
+            },
+            "metadata": {
+                "version": "版本",
+                "fileName": "文件名",
+                "location": "位置",
+                "baseModel": "基础模型",
+                "size": "大小",
+                "unknown": "未知",
+                "usageTips": "使用提示",
+                "additionalNotes": "附加备注",
+                "notesHint": "回车保存，Shift+回车换行",
+                "addNotesPlaceholder": "在此添加你的备注...",
+                "aboutThisVersion": "关于此版本"
+            },
+            "notes": {
+                "saved": "备注保存成功",
+                "saveFailed": "备注保存失败"
+            },
+            "usageTips": {
+                "addPresetParameter": "添加预设参数...",
+                "strengthMin": "最小强度",
+                "strengthMax": "最大强度",
+                "strength": "强度",
+                "clipSkip": "Clip Skip",
+                "valuePlaceholder": "数值",
+                "add": "添加"
+            },
+            "triggerWords": {
+                "label": "触发词",
+                "noTriggerWordsNeeded": "无需触发词",
+                "edit": "编辑触发词",
+                "cancel": "取消编辑",
+                "save": "保存更改",
+                "addPlaceholder": "输入或点击下方建议添加",
+                "copyWord": "复制触发词",
+                "deleteWord": "删除触发词",
+                "suggestions": {
+                    "noSuggestions": "暂无建议",
+                    "noTrainedWords": "此模型未找到训练词或类别标记。你可以手动输入触发词。",
+                    "classToken": "类别标记",
+                    "classTokenDescription": "在提示词中添加以获得最佳效果",
+                    "wordSuggestions": "词语建议",
+                    "wordsFound": "找到 {count} 个词",
+                    "loading": "正在加载建议..."
+                }
+            },
+            "description": {
+                "noDescription": "暂无模型描述",
+                "failedToLoad": "加载模型描述失败",
+                "editTitle": "编辑模型描述",
+                "validation": {
+                    "cannotBeEmpty": "描述不能为空"
+                },
+                "messages": {
+                    "updated": "模型描述已更新",
+                    "updateFailed": "模型描述更新失败"
+                }
+            },
+            "tabs": {
+                "examples": "示例",
+                "description": "模型描述",
+                "recipes": "配方"
+            },
+            "loading": {
+                "exampleImages": "正在加载示例图片...",
+                "description": "正在加载模型描述...",
+                "recipes": "正在加载配方...",
+                "examples": "正在加载示例..."
+            }
+        }
+    },
+    "modelTags": {
+        "messages": {
+            "updated": "标签更新成功",
+            "updateFailed": "标签更新失败"
+        },
+        "validation": {
+            "maxLength": "标签不能超过30个字符",
+            "maxCount": "最多允许30个标签",
+            "duplicate": "该标签已存在"
+        }
+    },
+    "keyboard": {
+        "navigation": "键盘导航：",
+        "shortcuts": {
+            "pageUp": "向上一页滚动",
+            "pageDown": "向下一页滚动",
+            "home": "跳到顶部",
+            "end": "跳到底部"
+        }
+    },
+    "initialization": {
+        "title": "初始化",
+        "message": "正在准备你的工作空间...",
+        "status": "初始化中...",
+        "estimatingTime": "正在估算时间...",
+        "loras": {
+            "title": "初始化 LoRA 管理器",
+            "message": "正在扫描并构建 LoRA 缓存。这可能需要几分钟..."
+        },
+        "checkpoints": {
+            "title": "初始化 Checkpoint 管理器",
+            "message": "正在扫描并构建 Checkpoint 缓存。这可能需要几分钟..."
+        },
+        "embeddings": {
+            "title": "初始化 Embedding 管理器",
+            "message": "正在扫描并构建 Embedding 缓存。这可能需要几分钟..."
+        },
+        "recipes": {
+            "title": "初始化配方管理器",
+            "message": "正在加载和处理配方。这可能需要几分钟..."
+        },
+        "statistics": {
+            "title": "初始化统计",
+            "message": "正在处理模型数据以生成统计信息。这可能需要几分钟..."
+        },
+        "tips": {
+            "title": "技巧与提示",
+            "civitai": {
+                "title": "Civitai 集成",
+                "description": "连接你的 Civitai 账号：访问头像 → 设置 → API 密钥 → 添加密钥，然后粘贴到 LoRA 管理器设置中。",
+                "alt": "Civitai API 设置"
+            },
+            "download": {
+                "title": "便捷下载",
+                "description": "使用 Civitai URL 快速下载和安装新模型。",
+                "alt": "Civitai 下载"
+            },
+            "recipes": {
+                "title": "保存配方",
+                "description": "创建配方，保存你喜欢的模型组合，方便以后使用。",
+                "alt": "配方"
+            },
+            "filter": {
+                "title": "快速筛选",
+                "description": "通过头部筛选按钮按标签或基础模型类型筛选模型。",
+                "alt": "筛选模型"
+            },
+            "search": {
+                "title": "快速搜索",
+                "description": "按 Ctrl+F（Mac 上为 Cmd+F）可快速在当前视图内搜索。",
+                "alt": "快速搜索"
+            }
+        }
+    },
+    "duplicates": {
+        "found": "发现 {count} 个重复组",
+        "showNotification": "显示重复项通知",
+        "deleteSelected": "删除已选",
+        "exitMode": "退出模式",
+        "help": {
+            "identicalHashes": "哈希相同表示模型文件完全一致，即使文件名或预览不同。",
+            "keepOne": "只保留一个版本（建议保留元数据/预览更好的），安全删除其他版本。"
+        }
+    },
+    "uiHelpers": {
+        "clipboard": {
+            "copied": "已复制到剪贴板",
+            "copyFailed": "复制失败"
+        },
+        "lora": {
+            "syntaxCopied": "LoRA 语法已复制到剪贴板",
+            "syntaxCopiedNoTriggerWords": "LoRA 语法已复制到剪贴板（未找到触发词）",
+            "syntaxCopiedWithTriggerWords": "LoRA 语法和触发词已复制到剪贴板",
+            "syntaxCopiedWithTriggerWordGroups": "LoRA 语法和触发词组已复制到剪贴板"
+        },
+        "workflow": {
+            "noSupportedNodes": "工作流中未找到支持的目标节点",
+            "communicationFailed": "与 ComfyUI 通信失败"
+        },
+        "nodeSelector": {
+            "recipe": "配方",
+            "lora": "LoRA",
+            "replace": "替换",
+            "append": "追加",
+            "selectTargetNode": "选择目标节点",
+            "sendToAll": "全部发送"
+        },
+        "exampleImages": {
+            "opened": "示例图片文件夹已打开",
+            "openingFolder": "正在打开示例图片文件夹",
+            "failedToOpen": "打开示例图片文件夹失败"
+        }
+    },
+    "help": {
+        "title": "帮助与教程",
+        "tabs": {
+            "gettingStarted": "新手入门",
+            "updateVlogs": "更新日志",
+            "documentation": "文档"
+        },
+        "gettingStarted": {
+            "title": "LoRA 管理器新手入门"
+        },
+        "updateVlogs": {
+            "title": "最新更新",
+            "watchOnYouTube": "在 YouTube 上观看",
+            "playlistTitle": "LoRA 管理器更新播放列表",
+            "playlistDescription": "观看所有更新视频，了解最新功能和改进。"
+        },
+        "documentation": {
+            "title": "文档",
+            "general": "通用",
+            "troubleshooting": "故障排查",
+            "modelManagement": "模型管理",
+            "recipes": "配方",
+            "settings": "设置与配置",
+            "extensions": "扩展",
+            "newBadge": "新"
+        }
+    },
+    "update": {
+        "title": "检查更新",
+        "currentVersion": "当前版本",
+        "updateAvailable": "更新可用",
+        "noChangelogAvailable": "没有详细的更新日志可用。请查看 GitHub 以获取更多信息。",
+        "newVersion": "新版本",
+        "commit": "提交",
+        "viewOnGitHub": "在 GitHub 查看",
+        "updateNow": "立即更新",
+        "preparingUpdate": "正在准备更新...",
+        "changelog": "更新日志",
+        "checkingUpdates": "正在检查更新...",
+        "checkingMessage": "请稍候，正在检查最新版本。",
+        "showNotifications": "显示更新通知",
+        "updateProgress": {
+            "preparing": "正在准备更新...",
+            "installing": "正在安装更新...",
+            "completed": "更新已成功完成！",
+            "failed": "更新失败：{error}"
+        },
+        "status": {
+            "updating": "正在更新...",
+            "updated": "已更新！",
+            "updateFailed": "更新失败"
+        },
+        "completion": {
+            "successMessage": "已成功更新到 {version}！",
+            "restartMessage": "请重启 ComfyUI 或 LoRA 管理器以应用更新。",
+            "reloadMessage": "请确保刷新浏览器以加载最新的 LoRA 管理器和 ComfyUI。"
+        },
+        "nightly": {
+            "warning": "警告：Nightly 版本可能包含实验性功能，可能不稳定。",
+            "enable": "启用 Nightly 更新"
+        }
+    },
+    "support": {
+        "title": "支持项目",
+        "message": "如果你觉得 LoRA 管理器有用，非常欢迎你的支持！🙌",
+        "feedback": {
+            "title": "反馈建议",
+            "description": "你的反馈有助于未来更新！欢迎分享你的想法："
+        },
+        "links": {
+            "submitGithubIssue": "提交 GitHub 问题",
+            "joinDiscord": "加入 Discord",
+            "youtubeChannel": "YouTube 频道",
+            "civitaiProfile": "Civitai 个人资料",
+            "supportKofi": "支持 Ko-fi",
+            "supportPatreon": "支持 Patreon"
+        },
+        "sections": {
+            "followUpdates": "关注更新",
+            "buyMeCoffee": "请我喝杯咖啡",
+            "coffeeDescription": "如果你想直接支持我的工作：",
+            "becomePatron": "成为赞助人",
+            "patronDescription": "通过每月捐款支持持续开发：",
+            "wechatSupport": "微信支持",
+            "wechatDescription": "对于中国用户，你可以通过微信支持：",
+            "showWechatQR": "显示微信二维码",
+            "hideWechatQR": "隐藏微信二维码"
+        },
+        "footer": "感谢使用 LoRA 管理器！❤️"
+    },
+    "toast": {
+        "general": {
+            "cannotInteractStandalone": "独立模式下无法与 ComfyUI 交互",
+            "failedWorkflowInfo": "获取工作流信息失败",
+            "pageInitFailed": "{pageType} 页面初始化失败，请刷新。",
+            "statisticsLoadFailed": "统计数据加载失败"
+        },
+        "loras": {
+            "copyOnlyForLoras": "仅 LoRA 支持复制语法",
+            "noLorasSelected": "未选中 LoRA",
+            "missingDataForLoras": "缺少 {count} 个 LoRA 的数据",
+            "noValidLorasToCopy": "没有可复制的有效 LoRA",
+            "sendOnlyForLoras": "仅 LoRA 支持发送到工作流",
+            "noValidLorasToSend": "没有可发送的有效 LoRA",
+            "downloadSuccessful": "LoRA 下载成功",
+            "allDownloadSuccessful": "全部 {count} 个 LoRA 下载成功",
+            "downloadPartialSuccess": "已下载 {completed}/{total} 个 LoRA",
+            "downloadPartialWithAccess": "已下载 {completed}/{total} 个 LoRA。{accessFailures} 个因访问限制失败。请检查设置中的 API 密钥或早期访问状态。",
+            "pleaseSelectVersion": "请选择版本",
+            "versionExists": "该版本已存在于你的库中",
+            "downloadCompleted": "下载成功完成"
+        },
+        "recipes": {
+            "fetchFailed": "获取配方失败：{message}",
+            "reloadFailed": "重新加载 {modelType} 失败：{message}",
+            "loadFailed": "加载 {modelType} 失败：{message}",
+            "refreshComplete": "刷新完成",
+            "refreshFailed": "刷新配方失败：{message}",
+            "updateFailed": "更新配方失败：{error}",
+            "updateError": "更新配方出错：{message}",
+            "nameSaved": "配方“{name}”保存成功",
+            "nameUpdated": "配方名称更新成功",
+            "tagsUpdated": "配方标签更新成功",
+            "sourceUrlUpdated": "来源 URL 更新成功",
+            "noRecipeId": "无配方 ID",
+            "copyFailed": "复制配方语法出错：{message}",
+            "noMissingLoras": "没有缺失的 LoRA 可下载",
+            "missingLorasInfoFailed": "获取缺失 LoRA 信息失败",
+            "preparingForDownloadFailed": "准备下载 LoRA 时出错",
+            "enterLoraName": "请输入 LoRA 名称或语法",
+            "reconnectedSuccessfully": "LoRA 重新连接成功",
+            "reconnectFailed": "LoRA 重新连接出错：{message}",
+            "cannotSend": "无法发送配方：缺少配方 ID",
+            "sendFailed": "发送配方到工作流失败",
+            "sendError": "发送配方到工作流出错",
+            "cannotDelete": "无法删除配方：缺少配方 ID",
+            "deleteConfirmationError": "显示删除确认出错",
+            "deletedSuccessfully": "配方删除成功",
+            "deleteFailed": "删除配方出错：{message}",
+            "cannotShare": "无法分享配方：缺少配方 ID",
+            "preparingForSharing": "正在准备分享配方...",
+            "downloadStarted": "配方下载已开始",
+            "shareError": "分享配方出错：{message}",
+            "sharePreparationError": "准备分享配方出错",
+            "selectImageFirst": "请先选择图片",
+            "enterRecipeName": "请输入配方名称",
+            "processingError": "处理出错：{message}",
+            "folderBrowserError": "加载文件夹浏览器出错：{message}",
+            "recipeSaveFailed": "保存配方失败：{error}",
+            "importFailed": "导入失败：{message}",
+            "folderTreeFailed": "加载文件夹树失败",
+            "folderTreeError": "加载文件夹树出错"
+        },
+        "models": {
+            "noModelsSelected": "未选中模型",
+            "deletedSuccessfully": "成功删除 {count} 个 {type}",
+            "deleteFailed": "错误：{error}",
+            "deleteFailedGeneral": "删除模型失败",
+            "selectedAdditional": "已选中 {count} 个额外 {type}",
+            "refreshMetadataFailed": "刷新元数据失败",
+            "nameCannotBeEmpty": "模型名称不能为空",
+            "nameUpdatedSuccessfully": "模型名称更新成功",
+            "nameUpdateFailed": "模型名称更新失败",
+            "baseModelUpdated": "基础模型更新成功",
+            "baseModelUpdateFailed": "基础模型更新失败",
+            "invalidCharactersRemoved": "文件名中的无效字符已移除",
+            "filenameCannotBeEmpty": "文件名不能为空",
+            "renameFailed": "重命名文件失败：{message}",
+            "moveFailed": "移动模型失败：{message}",
+            "pleaseSelectRoot": "请选择 {type} 根目录",
+            "nameTooLong": "模型名称最多100个字符",
+            "verificationAlreadyDone": "此组已验证过",
+            "verificationCompleteMismatch": "验证完成。{count} 个文件实际哈希不同。",
+            "verificationCompleteSuccess": "验证完成。所有文件均为重复项。",
+            "verificationFailed": "验证哈希失败：{message}"
+        },
+        "search": {
+            "atLeastOneOption": "至少选择一个搜索选项"
+        },
+        "settings": {
+            "loraRootsFailed": "加载 LoRA 根目录失败：{message}",
+            "checkpointRootsFailed": "加载 Checkpoint 根目录失败：{message}",
+            "embeddingRootsFailed": "加载 Embedding 根目录失败：{message}",
+            "mappingsUpdated": "基础模型路径映射已更新（{count} 条映射{plural}）",
+            "mappingsCleared": "基础模型路径映射已清除",
+            "mappingSaveFailed": "保存基础模型映射失败：{message}",
+            "downloadTemplatesUpdated": "下载路径模板已更新",
+            "downloadTemplatesFailed": "保存下载路径模板失败：{message}",
+            "settingsUpdated": "设置已更新：{setting}",
+            "compactModeToggled": "紧凑模式 {state}",
+            "settingSaveFailed": "保存设置失败：{message}",
+            "displayDensitySet": "显示密度已设置为 {density}",
+            "languageChangeFailed": "切换语言失败：{message}",
+            "cacheCleared": "缓存文件已成功清除。下次操作将重建缓存。",
+            "cacheClearFailed": "清除缓存失败：{error}",
+            "cacheClearError": "清除缓存出错：{message}"
+        },
+        "filters": {
+            "applied": "{message}",
+            "cleared": "筛选已清除",
+            "noCustomFilterToClear": "没有自定义筛选可清除"
+        },
+        "downloads": {
+            "imagesCompleted": "示例图片{action}完成",
+            "imagesFailed": "示例图片{action}失败",
+            "loadError": "加载下载项出错：{message}",
+            "downloadError": "下载错误：{message}"
+        },
+        "import": {
+            "folderTreeFailed": "加载文件夹树失败",
+            "folderTreeError": "加载文件夹树出错",
+            "imagesImported": "示例图片导入成功",
+            "importFailed": "导入示例图片失败：{message}"
+        },
+        "triggerWords": {
+            "loadFailed": "无法加载训练词",
+            "tooLong": "触发词不能超过30个词",
+            "tooMany": "最多允许30个触发词",
+            "alreadyExists": "该触发词已存在",
+            "updateSuccess": "触发词更新成功",
+            "updateFailed": "触发词更新失败",
+            "copyFailed": "复制失败"
+        },
+        "virtual": {
+            "loadFailed": "加载项目失败",
+            "loadMoreFailed": "加载更多项目失败",
+            "loadPositionFailed": "加载当前位置项目失败"
+        },
+        "bulk": {
+            "unableToSelectAll": "无法全选项目"
+        },
+        "duplicates": {
+            "findFailed": "查找重复项失败：{message}",
+            "noDuplicatesFound": "未找到重复的 {type}",
+            "noItemsSelected": "未选中要删除的 {type}",
+            "deleteError": "错误：{message}",
+            "deleteSuccess": "成功删除 {count} 个 {type}",
+            "deleteFailed": "删除 {type} 失败：{message}"
+        },
+        "controls": {
+            "reloadFailed": "重新加载 {pageType} 失败：{message}",
+            "refreshFailed": "{action} {pageType} 失败：{message}",
+            "fetchMetadataFailed": "获取元数据失败：{message}",
+            "clearFilterFailed": "清除自定义筛选失败：{message}"
+        },
+        "contextMenu": {
+            "contentRatingSet": "内容评级已设置为 {level}",
+            "contentRatingFailed": "设置内容评级失败：{message}",
+            "relinkSuccess": "模型已成功重新关联到 Civitai",
+            "relinkFailed": "错误：{message}",
+            "fetchMetadataFirst": "请先从 CivitAI 获取元数据",
+            "noCivitaiInfo": "无 CivitAI 信息",
+            "missingHash": "模型哈希不可用"
+        },
+        "exampleImages": {
+            "pathUpdated": "示例图片路径更新成功",
+            "downloadInProgress": "下载已在进行中",
+            "enterLocationFirst": "请先输入下载位置",
+            "downloadStarted": "示例图片下载已开始",
+            "downloadStartFailed": "开始下载失败：{error}",
+            "downloadPaused": "下载已暂停",
+            "pauseFailed": "暂停下载失败：{error}",
+            "downloadResumed": "下载已恢复",
+            "resumeFailed": "恢复下载失败：{error}",
+            "deleted": "示例图片已删除",
+            "deleteFailed": "删除示例图片失败",
+            "setPreviewFailed": "设置预览图片失败"
+        },
+        "api": {
+            "fetchFailed": "获取 {type} 失败：{message}",
+            "reloadFailed": "重新加载 {type} 失败：{message}",
+            "deleteSuccess": "{type} 删除成功",
+            "deleteFailed": "删除 {type} 失败：{message}",
+            "excludeSuccess": "{type} 排除成功",
+            "excludeFailed": "排除 {type} 失败：{message}",
+            "fileNameUpdated": "文件名更新成功",
+            "fileRenameFailed": "重命名文件失败：{error}",
+            "previewUpdated": "预览图片更新成功",
+            "previewUploadFailed": "上传预览图片失败",
+            "refreshComplete": "{action} 完成",
+            "refreshFailed": "{action} {type} 失败",
+            "metadataRefreshed": "元数据刷新成功",
+            "metadataRefreshFailed": "刷新元数据失败：{message}",
+            "metadataUpdateComplete": "元数据更新完成",
+            "metadataFetchFailed": "获取元数据失败：{message}",
+            "bulkMetadataCompleteAll": "全部 {count} 个 {type} 元数据刷新成功",
+            "bulkMetadataCompletePartial": "已刷新 {success}/{total} 个 {type} 元数据",
+            "bulkMetadataCompleteNone": "所有 {type} 元数据刷新失败",
+            "bulkMetadataFailureDetails": "刷新失败：\n{failures}",
+            "bulkMetadataFailed": "刷新元数据失败：{message}",
+            "moveNotSupported": "不支持移动 {type}",
+            "alreadyInFolder": "{type} 已在选定文件夹中",
+            "moveInfo": "{message}",
+            "moveSuccess": "{type} 移动成功",
+            "bulkMoveNotSupported": "不支持批量移动 {type}",
+            "allAlreadyInFolder": "所有选中的 {type} 已在目标文件夹中",
+            "bulkMovePartial": "已移动 {successCount} 个 {type}，{failureCount} 个失败",
+            "bulkMoveFailures": "移动失败：\n{failures}",
+            "bulkMoveSuccess": "成功移动 {successCount} 个 {type}",
+            "exampleImagesDownloadSuccess": "示例图片下载成功！",
+            "exampleImagesDownloadFailed": "示例图片下载失败：{message}"
+        }
+    },
+    "banners": {
+        "versionMismatch": {
+            "title": "检测到应用更新",
+            "content": "你的浏览器正在运行过时的 LoRA 管理器版本（{storedVersion}）。服务器已更新到版本 {currentVersion}。请刷新以确保正常使用。",
+            "refreshNow": "立即刷新",
+            "refreshingIn": "将在",
+            "seconds": "秒后刷新"
+        }
+    }
+}

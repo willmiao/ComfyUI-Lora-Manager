@@ -2,29 +2,29 @@
     <div class="modal-content">
         <div class="modal-header">
             <button class="close" onclick="modalManager.closeModal('importModal')">&times;</button>
-            <h2>Import Recipe</h2>
+            <h2>{{ t('recipes.controls.import.action') }}</h2>
         </div>
         
         <!-- Step 1: Upload Image or Input URL -->
         <div class="import-step" id="uploadStep">
             <div class="import-mode-toggle">
                 <button class="toggle-btn active" data-mode="url" onclick="importManager.toggleImportMode('url')">
-                    <i class="fas fa-link"></i> URL / Local Path
+                    <i class="fas fa-link"></i> {{ t('recipes.controls.import.urlLocalPath') }}
                 </button>
                 <button class="toggle-btn" data-mode="upload" onclick="importManager.toggleImportMode('upload')">
-                    <i class="fas fa-upload"></i> Upload Image
+                    <i class="fas fa-upload"></i> {{ t('recipes.controls.import.uploadImage') }}
                 </button>
             </div>
             
             <!-- Input URL/Path Section -->
             <div class="import-section" id="urlSection">
-                <p>Input a Civitai image URL or local file path to import as a recipe.</p>
+                <p>{{ t('recipes.controls.import.urlSectionDescription') }}</p>
                 <div class="input-group">
-                    <label for="imageUrlInput">Image URL or File Path:</label>
+                    <label for="imageUrlInput">{{ t('recipes.controls.import.imageUrlOrPath') }}</label>
                     <div class="input-with-button">
-                        <input type="text" id="imageUrlInput" placeholder="https://civitai.com/images/... or C:/path/to/image.png">
+                        <input type="text" id="imageUrlInput" placeholder="{{ t('recipes.controls.import.urlPlaceholder') }}">
                         <button class="primary-btn" onclick="importManager.handleUrlInput()">
-                            <i class="fas fa-download"></i> Fetch Image
+                            <i class="fas fa-download"></i> {{ t('recipes.controls.import.fetchImage') }}
                         </button>
                     </div>
                     <div class="error-message" id="importUrlError"></div>
@@ -33,13 +33,13 @@
             
             <!-- Upload Image Section -->
             <div class="import-section" id="uploadSection">
-                <p>Upload an image with LoRA metadata to import as a recipe.</p>
+                <p>{{ t('recipes.controls.import.uploadSectionDescription') }}</p>
                 <div class="input-group">
-                    <label for="recipeImageUpload">Select Image:</label>
+                    <label for="recipeImageUpload">{{ t('recipes.controls.import.selectImage') }}</label>
                     <div class="file-input-wrapper">
                         <input type="file" id="recipeImageUpload" accept="image/*" onchange="importManager.handleImageUpload(event)">
                         <div class="file-input-button">
-                            <i class="fas fa-upload"></i> Select Image
+                            <i class="fas fa-upload"></i> {{ t('recipes.controls.import.selectImage') }}
                         </div>
                     </div>
                     <div class="error-message" id="uploadError"></div>
@@ -47,7 +47,7 @@
             </div>
             
             <div class="modal-actions">
-                <button class="secondary-btn" onclick="modalManager.closeModal('importModal')">Cancel</button>
+                <button class="secondary-btn" onclick="modalManager.closeModal('importModal')">{{ t('common.actions.cancel') }}</button>
             </div>
         </div>
         
@@ -60,28 +60,28 @@
                 
                 <div class="recipe-form-container">
                     <div class="input-group">
-                        <label for="recipeName">Recipe Name</label>
-                        <input type="text" id="recipeName" placeholder="Enter recipe name" 
+                        <label for="recipeName">{{ t('recipes.controls.import.recipeName') }}</label>
+                        <input type="text" id="recipeName" placeholder="{{ t('recipes.controls.import.recipeNamePlaceholder') }}" 
                                onchange="importManager.handleRecipeNameChange(event)">
                     </div>
                     
                     <div class="input-group">
-                        <label>Tags (optional)</label>
+                        <label>{{ t('recipes.controls.import.tagsOptional') }}</label>
                         <div class="tag-input-container">
-                            <input type="text" id="tagInput" placeholder="Add a tag">
+                            <input type="text" id="tagInput" placeholder="{{ t('recipes.controls.import.addTagPlaceholder') }}">
                             <button class="secondary-btn" onclick="importManager.addTag()">
-                                <i class="fas fa-plus"></i> Add
+                                <i class="fas fa-plus"></i> {{ t('recipes.controls.import.addTag') }}
                             </button>
                         </div>
                         <div id="tagsContainer" class="tags-container">
-                            <div class="empty-tags">No tags added</div>
+                            <div class="empty-tags">{{ t('recipes.controls.import.noTagsAdded') }}</div>
                         </div>
                     </div>
                 </div>
             </div>
             
             <div class="input-group">
-                <label>LoRAs in this Recipe <span id="loraCountInfo" class="lora-count-info">(0/0 in library)</span></label>
+                <label>{{ t('recipes.controls.import.lorasInRecipe') }} <span id="loraCountInfo" class="lora-count-info">(0/0 in library)</span></label>
                 <div id="lorasList" class="loras-list">
                     <!-- LoRAs will be populated here -->
                 </div>
@@ -93,8 +93,8 @@
             </div>
             
             <div class="modal-actions">
-                <button class="secondary-btn" onclick="importManager.backToUpload()">Back</button>
-                <button class="primary-btn" onclick="importManager.proceedFromDetails()">Next</button>
+                <button class="secondary-btn" onclick="importManager.backToUpload()">{{ t('common.actions.back') }}</button>
+                <button class="primary-btn" onclick="importManager.proceedFromDetails()">{{ t('common.actions.next') }}</button>
             </div>
         </div>
         
@@ -104,9 +104,9 @@
                 <!-- Path preview with inline toggle -->
                 <div class="path-preview">
                     <div class="path-preview-header">
-                        <label>Download Location Preview:</label>
-                        <div class="inline-toggle-container" title="When enabled, files are automatically organized using configured path templates">
-                            <span class="inline-toggle-label">Use Default Path</span>
+                        <label>{{ t('recipes.controls.import.downloadLocationPreview') }}</label>
+                        <div class="inline-toggle-container" title="{{ t('recipes.controls.import.useDefaultPathTooltip') }}">
+                            <span class="inline-toggle-label">{{ t('recipes.controls.import.useDefaultPath') }}</span>
                             <div class="toggle-switch">
                                 <input type="checkbox" id="importUseDefaultPath">
                                 <label for="importUseDefaultPath" class="toggle-slider"></label>
@@ -114,13 +114,13 @@
                         </div>
                     </div>
                     <div class="path-display" id="importTargetPathDisplay">
-                        <span class="path-text">Select a LoRA root directory</span>
+                        <span class="path-text">{{ t('recipes.controls.import.selectLoraRoot') }}</span>
                     </div>
                 </div>
 
                 <!-- Model Root Selection -->
                 <div class="input-group">
-                    <label for="importLoraRoot">Select LoRA Root:</label>
+                    <label for="importLoraRoot">{{ t('recipes.controls.import.selectLoraRoot') }}</label>
                     <select id="importLoraRoot"></select>
                 </div>
 
@@ -128,10 +128,10 @@
                 <div class="manual-path-selection" id="importManualPathSelection">
                     <!-- Path input with autocomplete -->
                     <div class="input-group">
-                        <label for="importFolderPath">Target Folder Path:</label>
+                        <label for="importFolderPath">{{ t('recipes.controls.import.targetFolderPath') }}</label>
                         <div class="path-input-container">
-                            <input type="text" id="importFolderPath" placeholder="Type folder path or select from tree below..." autocomplete="off" />
-                            <button type="button" id="importCreateFolderBtn" class="create-folder-btn" title="Create new folder">
+                            <input type="text" id="importFolderPath" placeholder="{{ t('recipes.controls.import.folderPathPlaceholder') }}" autocomplete="off" />
+                            <button type="button" id="importCreateFolderBtn" class="create-folder-btn" title="{{ t('recipes.controls.import.createNewFolder') }}">
                                 <i class="fas fa-plus"></i>
                             </button>
                         </div>
@@ -141,13 +141,13 @@
                     <!-- Breadcrumb navigation -->
                     <div class="breadcrumb-nav" id="importBreadcrumbNav">
                         <span class="breadcrumb-item root" data-path="">
-                            <i class="fas fa-home"></i> Root
+                            <i class="fas fa-home"></i> {{ t('recipes.controls.import.root') }}
                         </span>
                     </div>
                     
                     <!-- Hierarchical folder tree -->
                     <div class="input-group">
-                        <label>Browse Folders:</label>
+                        <label>{{ t('recipes.controls.import.browseFolders') }}</label>
                         <div class="folder-tree-container">
                             <div class="folder-tree" id="importFolderTree">
                                 <!-- Tree will be loaded dynamically -->
@@ -158,8 +158,8 @@
             </div>
             
             <div class="modal-actions">
-                <button class="secondary-btn" onclick="importManager.backToDetails()">Back</button>
-                <button class="primary-btn" onclick="importManager.saveRecipe()">Download & Save Recipe</button>
+                <button class="secondary-btn" onclick="importManager.backToDetails()">{{ t('common.actions.back') }}</button>
+                <button class="primary-btn" onclick="importManager.saveRecipe()">{{ t('recipes.controls.import.downloadAndSaveRecipe') }}</button>
             </div>
         </div>
     </div>

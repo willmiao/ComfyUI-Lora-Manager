@@ -1,3 +1,4 @@
+import { translate } from './i18nHelpers.js';
 import { state, getCurrentPageState } from '../state/index.js';
 import { getStorageItem, setStorageItem } from './storageHelpers.js';
 import { NODE_TYPE_ICONS, DEFAULT_NODE_COLOR } from './constants.js';
@@ -7,8 +8,15 @@ import { NODE_TYPE_ICONS, DEFAULT_NODE_COLOR } from './constants.js';
  * @param {string} text - The text to copy to clipboard
  * @param {string} successMessage - Optional success message to show in toast
  * @returns {Promise<boolean>} - Promise that resolves to true if copy was successful
+/**
+ * Utility function to copy text to clipboard with fallback for older browsers
+ * @param {string} text - The text to copy to clipboard
+ * @param {string} successMessage - Optional success message to show in toast
+ * @returns {Promise<boolean>} - Promise that resolves to true if copy was successful
  */
-export async function copyToClipboard(text, successMessage = 'Copied to clipboard') {
+export async function copyToClipboard(text, successMessage = null) {
+    const defaultSuccessMessage = successMessage || translate('uiHelpers.clipboard.copied', {}, 'Copied to clipboard');
+    
     try {
         // Modern clipboard API
         if (navigator.clipboard && window.isSecureContext) {
@@ -25,18 +33,19 @@ export async function copyToClipboard(text, successMessage = 'Copied to clipboar
             document.body.removeChild(textarea);
         }
         
-        if (successMessage) {
-            showToast(successMessage, 'success');
+        if (defaultSuccessMessage) {
+            showToast('uiHelpers.clipboard.copied', {}, 'success');
         }
         return true;
     } catch (err) {
         console.error('Copy failed:', err);
-        showToast('Copy failed', 'error');
+        showToast('uiHelpers.clipboard.copyFailed', {}, 'error');
         return false;
     }
 }
 
-export function showToast(message, type = 'info') {
+export function showToast(key, params = {}, type = 'info') {
+    const message = translate(key, params);
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.textContent = message;
@@ -294,7 +303,8 @@ export function copyLoraSyntax(card) {
   const includeTriggerWords = state.global.settings.includeTriggerWords;
 
   if (!includeTriggerWords) {
-    copyToClipboard(baseSyntax, "LoRA syntax copied to clipboard");
+    const message = translate('uiHelpers.lora.syntaxCopied', {}, 'LoRA syntax copied to clipboard');
+    copyToClipboard(baseSyntax, message);
     return;
   }
 
@@ -307,10 +317,8 @@ export function copyLoraSyntax(card) {
     !Array.isArray(trainedWords) ||
     trainedWords.length === 0
   ) {
-    copyToClipboard(
-      baseSyntax,
-      "LoRA syntax copied to clipboard (no trigger words found)"
-    );
+    const message = translate('uiHelpers.lora.syntaxCopiedNoTriggerWords', {}, 'LoRA syntax copied to clipboard (no trigger words found)');
+    copyToClipboard(baseSyntax, message);
     return;
   }
 
@@ -325,10 +333,8 @@ export function copyLoraSyntax(card) {
     if (triggers.length > 0) {
       finalSyntax = `${baseSyntax}, ${triggers.join(", ")}`;
     }
-    copyToClipboard(
-      finalSyntax,
-      "LoRA syntax with trigger words copied to clipboard"
-    );
+    const message = translate('uiHelpers.lora.syntaxCopiedWithTriggerWords', {}, 'LoRA syntax with trigger words copied to clipboard');
+    copyToClipboard(finalSyntax, message);
   } else {
     // Multiple groups: format with separators
     const groups = trainedWords
@@ -348,10 +354,8 @@ export function copyLoraSyntax(card) {
         finalSyntax += `\n${"-".repeat(17)}\n${groups[i]}`;
       }
     }
-    copyToClipboard(
-      finalSyntax,
-      "LoRA syntax with trigger word groups copied to clipboard"
-    );
+    const message = translate('uiHelpers.lora.syntaxCopiedWithTriggerWordGroups', {}, 'LoRA syntax with trigger word groups copied to clipboard');
+    copyToClipboard(finalSyntax, message);
   }
 }
 
@@ -372,11 +376,11 @@ export async function sendLoraToWorkflow(loraSyntax, replaceMode = false, syntax
       // Handle specific error cases
       if (registryData.error === 'Standalone Mode Active') {
         // Standalone mode - show warning with specific message
-        showToast(registryData.message || 'Cannot interact with ComfyUI in standalone mode', 'warning');
+        showToast('toast.general.cannotInteractStandalone', {}, 'warning');
         return false;
       } else {
         // Other errors - show error toast
-        showToast(registryData.message || registryData.error || 'Failed to get workflow information', 'error');
+        showToast('toast.general.failedWorkflowInfo', {}, 'error');
         return false;
       }
     }
@@ -384,7 +388,7 @@ export async function sendLoraToWorkflow(loraSyntax, replaceMode = false, syntax
     // Success case - check node count
     if (registryData.data.node_count === 0) {
       // No nodes found - show warning
-      showToast('No supported target nodes found in workflow', 'warning');
+      showToast('uiHelpers.workflow.noSupportedNodes', {}, 'warning');
       return false;
     } else if (registryData.data.node_count > 1) {
       // Multiple nodes - show selector
@@ -397,7 +401,7 @@ export async function sendLoraToWorkflow(loraSyntax, replaceMode = false, syntax
     }
   } catch (error) {
     console.error('Failed to get registry:', error);
-    showToast('Failed to communicate with ComfyUI', 'error');
+    showToast('uiHelpers.workflow.communicationFailed', {}, 'error');
     return false;
   }
 }
@@ -429,18 +433,30 @@ async function sendToSpecificNode(nodeIds, loraSyntax, replaceMode, syntaxType) 
     if (result.success) {
       // Use different toast messages based on syntax type
       if (syntaxType === 'recipe') {
-        showToast(`Recipe ${replaceMode ? 'replaced' : 'added'} to workflow`, 'success');
+        const messageKey = replaceMode ? 
+          'uiHelpers.workflow.recipeReplaced' :
+          'uiHelpers.workflow.recipeAdded';
+        showToast(messageKey, {}, 'success');
       } else {
-        showToast(`LoRA ${replaceMode ? 'replaced' : 'added'} to workflow`, 'success');
+        const messageKey = replaceMode ? 
+          'uiHelpers.workflow.loraReplaced' :
+          'uiHelpers.workflow.loraAdded';
+        showToast(messageKey, {}, 'success');
       }
       return true;
     } else {
-      showToast(result.error || `Failed to send ${syntaxType === 'recipe' ? 'recipe' : 'LoRA'} to workflow`, 'error');
+      const messageKey = syntaxType === 'recipe' ? 
+        'uiHelpers.workflow.recipeFailedToSend' :
+        'uiHelpers.workflow.loraFailedToSend';
+      showToast(messageKey, {}, 'error');
       return false;
     }
   } catch (error) {
     console.error('Failed to send to workflow:', error);
-    showToast(`Failed to send ${syntaxType === 'recipe' ? 'recipe' : 'LoRA'} to workflow`, 'error');
+    const messageKey = syntaxType === 'recipe' ? 
+      'uiHelpers.workflow.recipeFailedToSend' :
+      'uiHelpers.workflow.loraFailedToSend';
+    showToast(messageKey, {}, 'error');
     return false;
   }
 }
@@ -482,20 +498,26 @@ function showNodeSelector(nodes, loraSyntax, replaceMode, syntaxType) {
   }).join('');
   
   // Add header with action mode indicator
-  const actionType = syntaxType === 'recipe' ? 'Recipe' : 'LoRA';
-  const actionMode = replaceMode ? 'Replace' : 'Append';
+  const actionType = syntaxType === 'recipe' ? 
+    translate('uiHelpers.nodeSelector.recipe', {}, 'Recipe') :
+    translate('uiHelpers.nodeSelector.lora', {}, 'LoRA');
+  const actionMode = replaceMode ? 
+    translate('uiHelpers.nodeSelector.replace', {}, 'Replace') :
+    translate('uiHelpers.nodeSelector.append', {}, 'Append');
+  const selectTargetNodeText = translate('uiHelpers.nodeSelector.selectTargetNode', {}, 'Select target node');
+  const sendToAllText = translate('uiHelpers.nodeSelector.sendToAll', {}, 'Send to All');
   
   selector.innerHTML = `
     <div class="node-selector-header">
       <span class="selector-action-type">${actionMode} ${actionType}</span>
-      <span class="selector-instruction">Select target node</span>
+      <span class="selector-instruction">${selectTargetNodeText}</span>
     </div>
     ${nodeItems}
     <div class="node-item send-all-item" data-action="send-all">
       <div class="node-icon-indicator all-nodes">
         <i class="fas fa-broadcast-tower"></i>
       </div>
-      <span>Send to All</span>
+      <span>${sendToAllText}</span>
     </div>
   `;
   
@@ -654,15 +676,16 @@ export async function openExampleImagesFolder(modelHash) {
     const result = await response.json();
     
     if (result.success) {
-      showToast('Opening example images folder', 'success');
+      const message = translate('uiHelpers.exampleImages.openingFolder', {}, 'Opening example images folder');
+      showToast('uiHelpers.exampleImages.opened', {}, 'success');
       return true;
     } else {
-      showToast(result.error || 'Failed to open example images folder', 'error');
+      showToast('uiHelpers.exampleImages.failedToOpen', {}, 'error');
       return false;
     }
   } catch (error) {
     console.error('Failed to open example images folder:', error);
-    showToast('Failed to open example images folder', 'error');
+    showToast('uiHelpers.exampleImages.failedToOpen', {}, 'error');
     return false;
   }
 }

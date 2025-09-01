@@ -85,7 +85,7 @@ class StatisticsManager {
             console.log('Statistics data loaded:', this.data);
         } catch (error) {
             console.error('Error loading statistics data:', error);
-            showToast('Failed to load statistics data', 'error');
+            showToast('toast.general.statisticsLoadFailed', {}, 'error');
         }
     }
 

@@ -1,4 +1,5 @@
 import { showToast } from '../../utils/uiHelpers.js';
+import { translate } from '../../utils/i18nHelpers.js';
 
 export class RecipeDataManager {
     constructor(importManager) {
@@ -62,17 +63,17 @@ export class RecipeDataManager {
                 // For file upload mode
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    imagePreview.innerHTML = `<img src="${e.target.result}" alt="Recipe preview">`;
+                    imagePreview.innerHTML = `<img src="${e.target.result}" alt="${translate('recipes.controls.import.recipePreviewAlt', {}, 'Recipe preview')}">`;
                 };
                 reader.readAsDataURL(this.importManager.recipeImage);
             } else if (this.importManager.recipeData && this.importManager.recipeData.image_base64) {
                 // For URL mode - use the base64 image data returned from the backend
-                imagePreview.innerHTML = `<img src="data:image/jpeg;base64,${this.importManager.recipeData.image_base64}" alt="Recipe preview">`;
+                imagePreview.innerHTML = `<img src="data:image/jpeg;base64,${this.importManager.recipeData.image_base64}" alt="${translate('recipes.controls.import.recipePreviewAlt', {}, 'Recipe preview')}">`;
             } else if (this.importManager.importMode === 'url') {
                 // Fallback for URL mode if no base64 data
                 const urlInput = document.getElementById('imageUrlInput');
                 if (urlInput && urlInput.value) {
-                    imagePreview.innerHTML = `<img src="${urlInput.value}" alt="Recipe preview" crossorigin="anonymous">`;
+                    imagePreview.innerHTML = `<img src="${urlInput.value}" alt="${translate('recipes.controls.import.recipePreviewAlt', {}, 'Recipe preview')}" crossorigin="anonymous">`;
                 }
             }
         }
@@ -82,7 +83,7 @@ export class RecipeDataManager {
         const existingLoras = this.importManager.recipeData.loras.filter(lora => lora.existsLocally).length;
         const loraCountInfo = document.getElementById('loraCountInfo');
         if (loraCountInfo) {
-            loraCountInfo.textContent = `(${existingLoras}/${totalLoras} in library)`;
+            loraCountInfo.textContent = translate('recipes.controls.import.loraCountInfo', { existing: existingLoras, total: totalLoras }, `(${existingLoras}/${totalLoras} in library)`);
         }
         
         // Display LoRAs list
@@ -98,16 +99,16 @@ export class RecipeDataManager {
                 let statusBadge;
                 if (isDeleted) {
                     statusBadge = `<div class="deleted-badge">
-                        <i class="fas fa-exclamation-circle"></i> Deleted from Civitai
+                        <i class="fas fa-exclamation-circle"></i> ${translate('recipes.controls.import.deletedFromCivitai', {}, 'Deleted from Civitai')}
                     </div>`;
                 } else {
                     statusBadge = existsLocally ? 
                         `<div class="local-badge">
-                            <i class="fas fa-check"></i> In Library
+                            <i class="fas fa-check"></i> ${translate('recipes.controls.import.inLibrary', {}, 'In Library')}
                             <div class="local-path">${localPath}</div>
                         </div>` :
                         `<div class="missing-badge">
-                            <i class="fas fa-exclamation-triangle"></i> Not in Library
+                            <i class="fas fa-exclamation-triangle"></i> ${translate('recipes.controls.import.notInLibrary', {}, 'Not in Library')}
                         </div>`;
                 }
 
@@ -115,20 +116,20 @@ export class RecipeDataManager {
                 let earlyAccessBadge = '';
                 if (isEarlyAccess) {
                     // Format the early access end date if available
-                    let earlyAccessInfo = 'This LoRA requires early access payment to download.';
+                    let earlyAccessInfo = translate('recipes.controls.import.earlyAccessRequired', {}, 'This LoRA requires early access payment to download.');
                     if (lora.earlyAccessEndsAt) {
                         try {
                             const endDate = new Date(lora.earlyAccessEndsAt);
                             const formattedDate = endDate.toLocaleDateString();
-                            earlyAccessInfo += ` Early access ends on ${formattedDate}.`;
+                            earlyAccessInfo += ` ${translate('recipes.controls.import.earlyAccessEnds', { date: formattedDate }, `Early access ends on ${formattedDate}.`)}`;
                         } catch (e) {
                             console.warn('Failed to format early access date', e);
                         }
                     }
                     
                     earlyAccessBadge = `<div class="early-access-badge">
-                        <i class="fas fa-clock"></i> Early Access
-                        <div class="early-access-info">${earlyAccessInfo} Verify that you have purchased early access before downloading.</div>
+                        <i class="fas fa-clock"></i> ${translate('recipes.controls.import.earlyAccess', {}, 'Early Access')}
+                        <div class="early-access-info">${earlyAccessInfo} ${translate('recipes.controls.import.verifyEarlyAccess', {}, 'Verify that you have purchased early access before downloading.')}</div>
                     </div>`;
                 }
 
@@ -139,7 +140,7 @@ export class RecipeDataManager {
                 return `
                     <div class="lora-item ${existsLocally ? 'exists-locally' : isDeleted ? 'is-deleted' : 'missing-locally'} ${isEarlyAccess ? 'is-early-access' : ''}">
                         <div class="lora-thumbnail">
-                            <img src="${lora.thumbnailUrl || '/loras_static/images/no-preview.png'}" alt="LoRA preview">
+                            <img src="${lora.thumbnailUrl || '/loras_static/images/no-preview.png'}" alt="${translate('recipes.controls.import.loraPreviewAlt', {}, 'LoRA preview')}">
                         </div>
                         <div class="lora-content">
                             <div class="lora-header">
@@ -232,12 +233,12 @@ export class RecipeDataManager {
                     <div class="warning-icon"><i class="fas fa-clone"></i></div>
                     <div class="warning-content">
                         <div class="warning-title">
-                            ${this.importManager.duplicateRecipes.length} identical ${this.importManager.duplicateRecipes.length === 1 ? 'recipe' : 'recipes'} found in your library
+                            ${translate('recipes.controls.import.duplicateRecipesFound', { count: this.importManager.duplicateRecipes.length }, `${this.importManager.duplicateRecipes.length} identical ${this.importManager.duplicateRecipes.length === 1 ? 'recipe' : 'recipes'} found in your library`)}
                         </div>
                         <div class="warning-text">
-                            These recipes contain the same LoRAs with identical weights.
+                            ${translate('recipes.controls.import.duplicateRecipesDescription', {}, 'These recipes contain the same LoRAs with identical weights.')}
                             <button id="toggleDuplicatesList" class="toggle-duplicates-btn">
-                                Show duplicates <i class="fas fa-chevron-down"></i>
+                                ${translate('recipes.controls.import.showDuplicates', {}, 'Show duplicates')} <i class="fas fa-chevron-down"></i>
                             </button>
                         </div>
                     </div>
@@ -246,7 +247,7 @@ export class RecipeDataManager {
                     ${this.importManager.duplicateRecipes.map((recipe) => `
                         <div class="duplicate-recipe-card">
                             <div class="duplicate-recipe-preview">
-                                <img src="${recipe.file_url}" alt="Recipe preview">
+                                <img src="${recipe.file_url}" alt="${translate('recipes.controls.import.recipePreviewAlt', {}, 'Recipe preview')}">
                                 <div class="duplicate-recipe-title">${recipe.title}</div>
                             </div>
                             <div class="duplicate-recipe-details">
@@ -254,7 +255,7 @@ export class RecipeDataManager {
                                     <i class="fas fa-calendar-alt"></i> ${formatDate(recipe.modified)}
                                 </div>
                                 <div class="duplicate-recipe-lora-count">
-                                    <i class="fas fa-layer-group"></i> ${recipe.lora_count} LoRAs
+                                    <i class="fas fa-layer-group"></i> ${translate('recipes.controls.import.loraCount', { count: recipe.lora_count }, `${recipe.lora_count} LoRAs`)}
                                 </div>
                             </div>
                         </div>
@@ -275,9 +276,9 @@ export class RecipeDataManager {
                         const icon = toggleButton.querySelector('i');
                         if (icon) {
                             if (list.classList.contains('collapsed')) {
-                                toggleButton.innerHTML = `Show duplicates <i class="fas fa-chevron-down"></i>`;
+                                toggleButton.innerHTML = `${translate('recipes.controls.import.showDuplicates', {}, 'Show duplicates')} <i class="fas fa-chevron-down"></i>`;
                             } else {
-                                toggleButton.innerHTML = `Hide duplicates <i class="fas fa-chevron-up"></i>`;
+                                toggleButton.innerHTML = `${translate('recipes.controls.import.hideDuplicates', {}, 'Hide duplicates')} <i class="fas fa-chevron-up"></i>`;
                             }
                         }
                     }
@@ -362,9 +363,9 @@ export class RecipeDataManager {
         nextButton.classList.remove('warning-btn');
         
         if (missingNotDeleted > 0) {
-            nextButton.textContent = 'Download Missing LoRAs';
+            nextButton.textContent = translate('recipes.controls.import.downloadMissingLoras', {}, 'Download Missing LoRAs');
         } else {
-            nextButton.textContent = 'Save Recipe';
+            nextButton.textContent = translate('recipes.controls.import.saveRecipe', {}, 'Save Recipe');
         }
     }
 
@@ -391,7 +392,7 @@ export class RecipeDataManager {
         const tagsContainer = document.getElementById('tagsContainer');
         
         if (this.importManager.recipeTags.length === 0) {
-            tagsContainer.innerHTML = '<div class="empty-tags">No tags added</div>';
+            tagsContainer.innerHTML = `<div class="empty-tags">${translate('recipes.controls.import.noTagsAdded', {}, 'No tags added')}</div>`;
             return;
         }
         
@@ -406,7 +407,7 @@ export class RecipeDataManager {
     proceedFromDetails() {
         // Validate recipe name
         if (!this.importManager.recipeName) {
-            showToast('Please enter a recipe name', 'error');
+            showToast('toast.recipes.enterRecipeName', {}, 'error');
             return;
         }
         

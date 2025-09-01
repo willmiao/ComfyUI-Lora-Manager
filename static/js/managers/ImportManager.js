@@ -11,6 +11,7 @@ import { getModelApiClient } from '../api/modelApiFactory.js';
 import { state } from '../state/index.js';
 import { MODEL_TYPES } from '../api/apiConfig.js';
 import { showToast } from '../utils/uiHelpers.js';
+import { translate } from '../utils/i18nHelpers.js';
 
 export class ImportManager {
     constructor() {
@@ -110,7 +111,7 @@ export class ImportManager {
         if (recipeName) recipeName.value = '';
         
         const tagsContainer = document.getElementById('tagsContainer');
-        if (tagsContainer) tagsContainer.innerHTML = '<div class="empty-tags">No tags added</div>';
+        if (tagsContainer) tagsContainer.innerHTML = `<div class="empty-tags">${translate('recipes.controls.import.noTagsAdded', {}, 'No tags added')}</div>`;
         
         // Clear folder path input
         const folderPathInput = document.getElementById('importFolderPath');
@@ -261,7 +262,7 @@ export class ImportManager {
             
             this.updateTargetPath();
         } catch (error) {
-            showToast(error.message, 'error');
+            showToast('toast.recipes.importFailed', { message: error.message }, 'error');
         }
     }
 
@@ -350,11 +351,11 @@ export class ImportManager {
                 await this.folderTreeManager.loadTree(treeData.tree);
             } else {
                 console.error('Failed to fetch folder tree:', treeData.error);
-                showToast('Failed to load folder tree', 'error');
+                showToast('toast.recipes.folderTreeFailed', {}, 'error');
             }
         } catch (error) {
             console.error('Error initializing folder tree:', error);
-            showToast('Error loading folder tree', 'error');
+            showToast('toast.recipes.folderTreeError', {}, 'error');
         }
     }
 
@@ -368,9 +369,7 @@ export class ImportManager {
         const pathDisplay = document.getElementById('importTargetPathDisplay');
         const loraRoot = document.getElementById('importLoraRoot').value;
         
-        let fullPath = loraRoot || 'Select a LoRA root directory';
-        
-        if (loraRoot) {
+        let fullPath = loraRoot || translate('recipes.controls.import.selectLoraRoot', {}, 'Select a LoRA root directory');         if (loraRoot) {
             if (this.useDefaultPath) {
                 // Show actual template path
                 try {
@@ -425,11 +424,11 @@ export class ImportManager {
         
         // Update the modal title
         const modalTitle = document.querySelector('#importModal h2');
-        if (modalTitle) modalTitle.textContent = 'Download Missing LoRAs';
+        if (modalTitle) modalTitle.textContent = translate('recipes.controls.import.downloadMissingLoras', {}, 'Download Missing LoRAs');
         
         // Update the save button text
         const saveButton = document.querySelector('#locationStep .primary-btn');
-        if (saveButton) saveButton.textContent = 'Download Missing LoRAs';
+        if (saveButton) saveButton.textContent = translate('recipes.controls.import.downloadMissingLoras', {}, 'Download Missing LoRAs');
         
         // Hide the back button
         const backButton = document.querySelector('#locationStep .secondary-btn');

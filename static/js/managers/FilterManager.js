@@ -282,12 +282,12 @@ export class FilterManager {
                     message = `Filtering by ${tagsCount} tag${tagsCount > 1 ? 's' : ''}`;
                 }
                 
-                showToast(message, 'success');
+                showToast('toast.filters.applied', { message }, 'success');
             }
         } else {
             this.filterButton.classList.remove('active');
             if (showToastNotification) {
-                showToast('Filters cleared', 'info');
+                showToast('toast.filters.cleared', {}, 'info');
             }
         }
     }
@@ -321,7 +321,7 @@ export class FilterManager {
             await getModelApiClient().loadMoreWithVirtualScroll(true, true);
         }
         
-        showToast(`Filters cleared`, 'info');
+        showToast('toast.filters.cleared', {}, 'info');
     }
     
     loadFiltersFromStorage() {

@@ -17,6 +17,7 @@ from ..recipes import RecipeParserFactory
 from ..utils.constants import CARD_PREVIEW_WIDTH
 
 from ..services.settings_manager import settings
+from ..services.server_i18n import server_i18n
 from ..config import config
 
 # Check if running in standalone mode
@@ -127,6 +128,17 @@ class RecipeRoutes:
             # Ensure services are initialized
             await self.init_services()
             
+            # 获取用户语言设置
+            user_language = settings.get('language', 'en')
+            
+            # 设置服务端i18n语言
+            server_i18n.set_locale(user_language)
+            
+            # 为模板环境添加i18n过滤器
+            if not hasattr(self.template_env, '_i18n_filter_added'):
+                self.template_env.filters['t'] = server_i18n.create_template_filter()
+                self.template_env._i18n_filter_added = True
+            
             # Skip initialization check and directly try to get cached data
             try:
                 # Recipe scanner will initialize cache if needed
@@ -136,7 +148,9 @@ class RecipeRoutes:
                     recipes=[],  # Frontend will load recipes via API
                     is_initializing=False,
                     settings=settings,
-                    request=request
+                    request=request,
+                    # 添加服务端翻译函数
+                    t=server_i18n.get_translation,
                 )
             except Exception as cache_error:
                 logger.error(f"Error loading recipe cache data: {cache_error}")
@@ -145,7 +159,9 @@ class RecipeRoutes:
                 rendered = template.render(
                     is_initializing=True,
                     settings=settings,
-                    request=request
+                    request=request,
+                    # 添加服务端翻译函数
+                    t=server_i18n.get_translation,
                 )
                 logger.info("Recipe cache error, returning initialization page")
             

@@ -1,4 +1,5 @@
 import { showToast } from '../../utils/uiHelpers.js';
+import { translate } from '../../utils/i18nHelpers.js';
 import { getStorageItem } from '../../utils/storageHelpers.js';
 
 export class FolderBrowser {
@@ -136,7 +137,7 @@ export class FolderBrowser {
             this.initializeFolderBrowser();
         } catch (error) {
             console.error('Error in API calls:', error);
-            showToast(error.message, 'error');
+            showToast('toast.recipes.folderBrowserError', { message: error.message }, 'error');
         }
     }
 
@@ -204,7 +205,7 @@ export class FolderBrowser {
         const loraRoot = document.getElementById('importLoraRoot')?.value || '';
         const newFolder = document.getElementById('importNewFolder')?.value?.trim() || '';
         
-        let fullPath = loraRoot || 'Select a LoRA root directory'; 
+        let fullPath = loraRoot || translate('recipes.controls.import.selectLoraRoot', {}, 'Select a LoRA root directory'); 
         
         if (loraRoot) {
             if (this.importManager.selectedFolder) {

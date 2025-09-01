@@ -10,9 +10,10 @@ import { bulkManager } from './managers/BulkManager.js';
 import { exampleImagesManager } from './managers/ExampleImagesManager.js';
 import { helpManager } from './managers/HelpManager.js';
 import { bannerService } from './managers/BannerService.js';
-import { showToast, initTheme, initBackToTop } from './utils/uiHelpers.js';
+import { initTheme, initBackToTop } from './utils/uiHelpers.js';
 import { initializeInfiniteScroll } from './utils/infiniteScroll.js';
 import { migrateStorageItems } from './utils/storageHelpers.js';
+import { i18n } from './i18n/index.js';
 
 // Core application class
 export class AppCore {
@@ -25,6 +26,13 @@ export class AppCore {
         if (this.initialized) return;
 
         console.log('AppCore: Initializing...');
+        
+        // Initialize i18n first
+        window.i18n = i18n;
+        // Wait for i18n to be ready
+        await window.i18n.waitForReady();
+        
+        console.log(`AppCore: Language set: ${i18n.getCurrentLocale()}`);
         
         // Initialize managers
         state.loadingManager = new LoadingManager();
@@ -65,11 +73,6 @@ export class AppCore {
     getPageType() {
         const body = document.body;
         return body.dataset.page || 'unknown';
-    }
-    
-    // Show toast messages
-    showToast(message, type = 'info') {
-        showToast(message, type);
     }
     
     // Initialize common UI features based on page type

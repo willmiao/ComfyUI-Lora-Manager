@@ -2,18 +2,18 @@
 <div id="settingsModal" class="modal">
     <div class="modal-content settings-modal">
         <button class="close" onclick="modalManager.closeModal('settingsModal')">&times;</button>
-        <h2>Settings</h2>
+        <h2>{{ t('common.actions.settings') }}</h2>
         <div class="settings-form">
             <div class="setting-item api-key-item">
                 <div class="setting-row">
                     <div class="setting-info">
-                        <label for="civitaiApiKey">Civitai API Key:</label>
+                        <label for="civitaiApiKey">{{ t('settings.civitaiApiKey') }}:</label>
                     </div>
                     <div class="setting-control">
                         <div class="api-key-input">
                             <input type="password" 
                                 id="civitaiApiKey" 
-                                placeholder="Enter your Civitai API key"
+                                placeholder="{{ t('settings.civitaiApiKeyPlaceholder') }}"
                                 value="{{ settings.get('civitai_api_key', '') }}"
                                 onblur="settingsManager.saveInputSetting('civitaiApiKey', 'civitai_api_key')"
                                 onkeydown="if(event.key === 'Enter') { this.blur(); }" />
@@ -24,17 +24,17 @@
                     </div>
                 </div>
                 <div class="input-help">
-                    Used for authentication when downloading models from Civitai
+                    {{ t('settings.civitaiApiKeyHelp') }}
                 </div>
             </div>
             
             <div class="settings-section">
-                <h3>Content Filtering</h3>
+                <h3>{{ t('settings.sections.contentFiltering') }}</h3>
                 
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="blurMatureContent">Blur NSFW Content</label>
+                            <label for="blurMatureContent">{{ t('settings.contentFiltering.blurNsfwContent') }}</label>
                         </div>
                         <div class="setting-control">
                             <label class="toggle-switch">
@@ -45,14 +45,14 @@
                         </div>
                     </div>
                     <div class="input-help">
-                        Blur mature (NSFW) content preview images
+                        {{ t('settings.contentFiltering.blurNsfwContentHelp') }}
                     </div>
                 </div>
                 
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="showOnlySFW">Show Only SFW Results</label>
+                            <label for="showOnlySFW">{{ t('settings.contentFiltering.showOnlySfw') }}</label>
                         </div>
                         <div class="setting-control">
                             <label class="toggle-switch">
@@ -63,19 +63,19 @@
                         </div>
                     </div>
                     <div class="input-help">
-                        Filter out all NSFW content when browsing and searching
+                        {{ t('settings.contentFiltering.showOnlySfwHelp') }}
                     </div>
                 </div>
             </div>
             
             <!-- Add Video Settings Section -->
             <div class="settings-section">
-                <h3>Video Settings</h3>
+                <h3>{{ t('settings.sections.videoSettings') }}</h3>
                 
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="autoplayOnHover">Autoplay Videos on Hover</label>
+                            <label for="autoplayOnHover">{{ t('settings.videoSettings.autoplayOnHover') }}</label>
                         </div>
                         <div class="setting-control">
                             <label class="toggle-switch">
@@ -86,36 +86,36 @@
                         </div>
                     </div>
                     <div class="input-help">
-                        Only play video previews when hovering over them
+                        {{ t('settings.videoSettings.autoplayOnHoverHelp') }}
                     </div>
                 </div>
             </div>
 
             <!-- Add Layout Settings Section -->
             <div class="settings-section">
-                <h3>Layout Settings</h3>
+                <h3>{{ t('settings.sections.layoutSettings') }}</h3>
                 
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="displayDensity">Display Density</label>
+                            <label for="displayDensity">{{ t('settings.layoutSettings.displayDensity') }}</label>
                         </div>
                         <div class="setting-control select-control">
                             <select id="displayDensity" onchange="settingsManager.saveSelectSetting('displayDensity', 'display_density')">
-                                <option value="default">Default</option>
-                                <option value="medium">Medium</option>
-                                <option value="compact">Compact</option>
+                                <option value="default">{{ t('settings.layoutSettings.displayDensityOptions.default') }}</option>
+                                <option value="medium">{{ t('settings.layoutSettings.displayDensityOptions.medium') }}</option>
+                                <option value="compact">{{ t('settings.layoutSettings.displayDensityOptions.compact') }}</option>
                             </select>
                         </div>
                     </div>
                     <div class="input-help">
-                        Choose how many cards to display per row:
+                        {{ t('settings.layoutSettings.displayDensityHelp') }}
                         <ul class="list-description">
-                            <li><strong>Default:</strong> 5 (1080p), 6 (2K), 8 (4K)</li>
-                            <li><strong>Medium:</strong> 6 (1080p), 7 (2K), 9 (4K)</li>
-                            <li><strong>Compact:</strong> 7 (1080p), 8 (2K), 10 (4K)</li>
+                            <li><strong>{{ t('settings.layoutSettings.displayDensityOptions.default') }}:</strong> {{ t('settings.layoutSettings.displayDensityDetails.default') }}</li>
+                            <li><strong>{{ t('settings.layoutSettings.displayDensityOptions.medium') }}:</strong> {{ t('settings.layoutSettings.displayDensityDetails.medium') }}</li>
+                            <li><strong>{{ t('settings.layoutSettings.displayDensityOptions.compact') }}:</strong> {{ t('settings.layoutSettings.displayDensityDetails.compact') }}</li>
                         </ul>
-                        <span class="warning-text">Warning: Higher densities may cause performance issues on systems with limited resources.</span>
+                        <span class="warning-text">{{ t('settings.layoutSettings.displayDensityWarning') }}</span>
                     </div>
                 </div>
                 
@@ -123,90 +123,115 @@
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="cardInfoDisplay">Card Info Display</label>
+                            <label for="cardInfoDisplay">{{ t('settings.layoutSettings.cardInfoDisplay') }}</label>
                         </div>
                         <div class="setting-control select-control">
                             <select id="cardInfoDisplay" onchange="settingsManager.saveSelectSetting('cardInfoDisplay', 'card_info_display')">
-                                <option value="always">Always Visible</option>
-                                <option value="hover">Reveal on Hover</option>
+                                <option value="always">{{ t('settings.layoutSettings.cardInfoDisplayOptions.always') }}</option>
+                                <option value="hover">{{ t('settings.layoutSettings.cardInfoDisplayOptions.hover') }}</option>
                             </select>
                         </div>
                     </div>
                     <div class="input-help">
-                        Choose when to display model information and action buttons:
+                        {{ t('settings.layoutSettings.cardInfoDisplayHelp') }}
                         <ul class="list-description">
-                            <li><strong>Always Visible:</strong> Headers and footers are always visible</li>
-                            <li><strong>Reveal on Hover:</strong> Headers and footers only appear when hovering over a card</li>
+                            <li><strong>{{ t('settings.layoutSettings.cardInfoDisplayOptions.always') }}:</strong> {{ t('settings.layoutSettings.cardInfoDisplayDetails.always') }}</li>
+                            <li><strong>{{ t('settings.layoutSettings.cardInfoDisplayOptions.hover') }}:</strong> {{ t('settings.layoutSettings.cardInfoDisplayDetails.hover') }}</li>
                         </ul>
+                    </div>
+                </div>
+                
+                <!-- Language Selection -->
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="languageSelect">{{ t('common.language.select') }}</label>
+                        </div>
+                        <div class="setting-control select-control">
+                            <select id="languageSelect" onchange="settingsManager.saveLanguageSetting()">
+                                <option value="en">{{ t('common.language.english') }}</option>
+                                <option value="zh-CN">{{ t('common.language.chinese_simplified') }}</option>
+                                <option value="zh-TW">{{ t('common.language.chinese_traditional') }}</option>
+                                <option value="ru">{{ t('common.language.russian') }}</option>
+                                <option value="de">{{ t('common.language.german') }}</option>
+                                <option value="ja">{{ t('common.language.japanese') }}</option>
+                                <option value="ko">{{ t('common.language.korean') }}</option>
+                                <option value="fr">{{ t('common.language.french') }}</option>
+                                <option value="es">{{ t('common.language.spanish') }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('common.language.select_help') }}
                     </div>
                 </div>
             </div>
             
             <!-- Add Folder Settings Section -->
             <div class="settings-section">
-                <h3>Folder Settings</h3>
+                <h3>{{ t('settings.sections.folderSettings') }}</h3>
                 
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="defaultLoraRoot">Default LoRA Root</label>
+                            <label for="defaultLoraRoot">{{ t('settings.folderSettings.defaultLoraRoot') }}</label>
                         </div>
                         <div class="setting-control select-control">
                             <select id="defaultLoraRoot" onchange="settingsManager.saveSelectSetting('defaultLoraRoot', 'default_lora_root')">
-                                <option value="">No Default</option>
+                                <option value="">{{ t('settings.folderSettings.noDefault') }}</option>
                                 <!-- Options will be loaded dynamically -->
                             </select>
                         </div>
                     </div>
                     <div class="input-help">
-                        Set the default LoRA root directory for downloads, imports and moves
+                        {{ t('settings.folderSettings.defaultLoraRootHelp') }}
                     </div>
                 </div>
                 
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="defaultCheckpointRoot">Default Checkpoint Root</label>
+                            <label for="defaultCheckpointRoot">{{ t('settings.folderSettings.defaultCheckpointRoot') }}</label>
                         </div>
                         <div class="setting-control select-control">
                             <select id="defaultCheckpointRoot" onchange="settingsManager.saveSelectSetting('defaultCheckpointRoot', 'default_checkpoint_root')">
-                                <option value="">No Default</option>
+                                <option value="">{{ t('settings.folderSettings.noDefault') }}</option>
                                 <!-- Options will be loaded dynamically -->
                             </select>
                         </div>
                     </div>
                     <div class="input-help">
-                        Set the default checkpoint root directory for downloads, imports and moves
+                        {{ t('settings.folderSettings.defaultCheckpointRootHelp') }}
                     </div>
                 </div>
 
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="defaultEmbeddingRoot">Default Embedding Root</label>
+                            <label for="defaultEmbeddingRoot">{{ t('settings.folderSettings.defaultEmbeddingRoot') }}</label>
                         </div>
                         <div class="setting-control select-control">
                             <select id="defaultEmbeddingRoot" onchange="settingsManager.saveSelectSetting('defaultEmbeddingRoot', 'default_embedding_root')">
-                                <option value="">No Default</option>
+                                <option value="">{{ t('settings.folderSettings.noDefault') }}</option>
                                 <!-- Options will be loaded dynamically -->
                             </select>
                         </div>
                     </div>
                     <div class="input-help">
-                        Set the default embedding root directory for downloads, imports and moves
+                        {{ t('settings.folderSettings.defaultEmbeddingRootHelp') }}
                     </div>
                 </div>
             </div>
 
             <!-- Default Path Customization Section -->
             <div class="settings-section">
-                <h3>Download Path Templates</h3>
+                <h3>{{ t('settings.downloadPathTemplates.title') }}</h3>
                 
                 <div class="setting-item">
                     <div class="input-help">
-                        Configure folder structures for different model types when downloading from Civitai.
+                        {{ t('settings.downloadPathTemplates.help') }}
                         <div class="placeholder-info">
-                            <strong>Available placeholders:</strong>
+                            <strong>{{ t('settings.downloadPathTemplates.availablePlaceholders') }}</strong>
                             <span class="placeholder-tag">{base_model}</span>
                             <span class="placeholder-tag">{author}</span>
                             <span class="placeholder-tag">{first_tag}</span>
@@ -218,23 +243,23 @@
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="loraTemplatePreset">LoRA</label>
+                            <label for="loraTemplatePreset">{{ t('settings.downloadPathTemplates.modelTypes.lora') }}</label>
                         </div>
                         <div class="setting-control select-control">
                             <select id="loraTemplatePreset" onchange="settingsManager.updateTemplatePreset('lora', this.value)">
-                                <option value="">Flat Structure</option>
-                                <option value="{base_model}">By Base Model</option>
-                                <option value="{author}">By Author</option>
-                                <option value="{first_tag}">By First Tag</option>
-                                <option value="{base_model}/{first_tag}">Base Model + First Tag</option>
-                                <option value="{base_model}/{author}">Base Model + Author</option>
-                                <option value="{author}/{first_tag}">Author + First Tag</option>
-                                <option value="custom">Custom Template</option>
+                                <option value="">{{ t('settings.downloadPathTemplates.templateOptions.flatStructure') }}</option>
+                                <option value="{base_model}">{{ t('settings.downloadPathTemplates.templateOptions.byBaseModel') }}</option>
+                                <option value="{author}">{{ t('settings.downloadPathTemplates.templateOptions.byAuthor') }}</option>
+                                <option value="{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.byFirstTag') }}</option>
+                                <option value="{base_model}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelFirstTag') }}</option>
+                                <option value="{base_model}/{author}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelAuthor') }}</option>
+                                <option value="{author}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.authorFirstTag') }}</option>
+                                <option value="custom">{{ t('settings.downloadPathTemplates.templateOptions.customTemplate') }}</option>
                             </select>
                         </div>
                     </div>
                     <div class="template-custom-row" id="loraCustomRow" style="display: none;">
-                        <input type="text" id="loraCustomTemplate" class="template-custom-input" placeholder="Enter custom template (e.g., {base_model}/{author}/{first_tag})" />
+                        <input type="text" id="loraCustomTemplate" class="template-custom-input" placeholder="{{ t('settings.downloadPathTemplates.customTemplatePlaceholder') }}" />
                         <div class="template-validation" id="loraValidation"></div>
                     </div>
                     <div class="template-preview" id="loraPreview"></div>
@@ -244,23 +269,23 @@
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="checkpointTemplatePreset">Checkpoint</label>
+                            <label for="checkpointTemplatePreset">{{ t('settings.downloadPathTemplates.modelTypes.checkpoint') }}</label>
                         </div>
                         <div class="setting-control select-control">
                             <select id="checkpointTemplatePreset" onchange="settingsManager.updateTemplatePreset('checkpoint', this.value)">
-                                <option value="">Flat Structure</option>
-                                <option value="{base_model}">By Base Model</option>
-                                <option value="{author}">By Author</option>
-                                <option value="{first_tag}">By First Tag</option>
-                                <option value="{base_model}/{first_tag}">Base Model + First Tag</option>
-                                <option value="{base_model}/{author}">Base Model + Author</option>
-                                <option value="{author}/{first_tag}">Author + First Tag</option>
-                                <option value="custom">Custom Template</option>
+                                <option value="">{{ t('settings.downloadPathTemplates.templateOptions.flatStructure') }}</option>
+                                <option value="{base_model}">{{ t('settings.downloadPathTemplates.templateOptions.byBaseModel') }}</option>
+                                <option value="{author}">{{ t('settings.downloadPathTemplates.templateOptions.byAuthor') }}</option>
+                                <option value="{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.byFirstTag') }}</option>
+                                <option value="{base_model}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelFirstTag') }}</option>
+                                <option value="{base_model}/{author}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelAuthor') }}</option>
+                                <option value="{author}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.authorFirstTag') }}</option>
+                                <option value="custom">{{ t('settings.downloadPathTemplates.templateOptions.customTemplate') }}</option>
                             </select>
                         </div>
                     </div>
                     <div class="template-custom-row" id="checkpointCustomRow" style="display: none;">
-                        <input type="text" id="checkpointCustomTemplate" class="template-custom-input" placeholder="Enter custom template (e.g., {base_model}/{author}/{first_tag})" />
+                        <input type="text" id="checkpointCustomTemplate" class="template-custom-input" placeholder="{{ t('settings.downloadPathTemplates.customTemplatePlaceholder') }}" />
                         <div class="template-validation" id="checkpointValidation"></div>
                     </div>
                     <div class="template-preview" id="checkpointPreview"></div>
@@ -270,23 +295,23 @@
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="embeddingTemplatePreset">Embedding</label>
+                            <label for="embeddingTemplatePreset">{{ t('settings.downloadPathTemplates.modelTypes.embedding') }}</label>
                         </div>
                         <div class="setting-control select-control">
                             <select id="embeddingTemplatePreset" onchange="settingsManager.updateTemplatePreset('embedding', this.value)">
-                                <option value="">Flat Structure</option>
-                                <option value="{base_model}">By Base Model</option>
-                                <option value="{author}">By Author</option>
-                                <option value="{first_tag}">By First Tag</option>
-                                <option value="{base_model}/{first_tag}">Base Model + First Tag</option>
-                                <option value="{base_model}/{author}">Base Model + Author</option>
-                                <option value="{author}/{first_tag}">Author + First Tag</option>
-                                <option value="custom">Custom Template</option>
+                                <option value="">{{ t('settings.downloadPathTemplates.templateOptions.flatStructure') }}</option>
+                                <option value="{base_model}">{{ t('settings.downloadPathTemplates.templateOptions.byBaseModel') }}</option>
+                                <option value="{author}">{{ t('settings.downloadPathTemplates.templateOptions.byAuthor') }}</option>
+                                <option value="{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.byFirstTag') }}</option>
+                                <option value="{base_model}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelFirstTag') }}</option>
+                                <option value="{base_model}/{author}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelAuthor') }}</option>
+                                <option value="{author}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.authorFirstTag') }}</option>
+                                <option value="custom">{{ t('settings.downloadPathTemplates.templateOptions.customTemplate') }}</option>
                             </select>
                         </div>
                     </div>
                     <div class="template-custom-row" id="embeddingCustomRow" style="display: none;">
-                        <input type="text" id="embeddingCustomTemplate" class="template-custom-input" placeholder="Enter custom template (e.g., {base_model}/{author}/{first_tag})" />
+                        <input type="text" id="embeddingCustomTemplate" class="template-custom-input" placeholder="{{ t('settings.downloadPathTemplates.customTemplatePlaceholder') }}" />
                         <div class="template-validation" id="embeddingValidation"></div>
                     </div>
                     <div class="template-preview" id="embeddingPreview"></div>
@@ -296,17 +321,17 @@
             <div class="setting-item">
                 <div class="setting-row">
                     <div class="setting-info">
-                        <label>Base Model Path Mappings</label>
+                        <label>{{ t('settings.downloadPathTemplates.baseModelPathMappings') }}</label>
                     </div>
                     <div class="setting-control">
                         <button type="button" class="add-mapping-btn" onclick="settingsManager.addMappingRow()">
                             <i class="fas fa-plus"></i>
-                            <span>Add Mapping</span>
+                            <span>{{ t('settings.downloadPathTemplates.addMapping') }}</span>
                         </button>
                     </div>
                 </div>
                 <div class="input-help">
-                    Customize folder names for specific base models (e.g., "Flux.1 D" → "flux")
+                    {{ t('settings.downloadPathTemplates.baseModelPathMappingsHelp') }}
                 </div>
                 <div class="mappings-container">
                     <div id="baseModelMappingsContainer">
@@ -317,29 +342,29 @@
 
             <!-- Add Example Images Settings Section -->
             <div class="settings-section">
-                <h3>Example Images</h3>
+                <h3>{{ t('settings.sections.exampleImages') }}</h3>
                 
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="exampleImagesPath">Download Location <i class="fas fa-sync-alt restart-required-icon" title="Requires restart"></i></label>
+                            <label for="exampleImagesPath">{{ t('settings.exampleImages.downloadLocation') }} <i class="fas fa-sync-alt restart-required-icon" title="{{ t('settings.exampleImages.restartRequired') }}"></i></label>
                         </div>
                         <div class="setting-control path-control">
-                            <input type="text" id="exampleImagesPath" placeholder="Enter folder path for example images" />
+                            <input type="text" id="exampleImagesPath" placeholder="{{ t('settings.exampleImages.downloadLocationPlaceholder') }}" />
                             <button id="exampleImagesDownloadBtn" class="primary-btn">
-                                <i class="fas fa-download"></i> <span id="exampleDownloadBtnText">Download</span>
+                                <i class="fas fa-download"></i> <span id="exampleDownloadBtnText">{{ t('settings.exampleImages.download') }}</span>
                             </button>
                         </div>
                     </div>
                     <div class="input-help">
-                        Enter the folder path where example images from Civitai will be saved
+                        {{ t('settings.exampleImages.downloadLocationHelp') }}
                     </div>
                 </div>
                 
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="autoDownloadExampleImages">Auto Download Example Images</label>
+                            <label for="autoDownloadExampleImages">{{ t('settings.exampleImages.autoDownload') }}</label>
                         </div>
                         <div class="setting-control">
                             <label class="toggle-switch">
@@ -350,14 +375,14 @@
                         </div>
                     </div>
                     <div class="input-help">
-                        Automatically download example images for models that don't have them (requires download location to be set)
+                        {{ t('settings.exampleImages.autoDownloadHelp') }}
                     </div>
                 </div>
                 
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="optimizeExampleImages">Optimize Downloaded Images</label>
+                            <label for="optimizeExampleImages">{{ t('settings.exampleImages.optimizeImages') }}</label>
                         </div>
                         <div class="setting-control">
                             <label class="toggle-switch">
@@ -368,18 +393,18 @@
                         </div>
                     </div>
                     <div class="input-help">
-                        Optimize example images to reduce file size and improve loading speed (metadata will be preserved)
+                        {{ t('settings.exampleImages.optimizeImagesHelp') }}
                     </div>
                 </div>
             </div>
             
             <!-- Misc. Section -->
             <div class="settings-section">
-                <h3>Misc.</h3>
+                <h3>{{ t('settings.sections.misc') }}</h3>
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <label for="includeTriggerWords">Include Trigger Words in LoRA Syntax</label>
+                            <label for="includeTriggerWords">{{ t('settings.misc.includeTriggerWords') }}</label>
                         </div>
                         <div class="setting-control">
                             <label class="toggle-switch">
@@ -390,7 +415,7 @@
                         </div>
                     </div>
                     <div class="input-help">
-                        Include trained trigger words when copying LoRA syntax to clipboard
+                        {{ t('settings.misc.includeTriggerWordsHelp') }}
                     </div>
                 </div>
             </div>

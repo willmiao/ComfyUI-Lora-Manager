@@ -18,6 +18,7 @@ import { renderCompactTags, setupTagTooltip, formatFileSize } from './utils.js';
 import { renderTriggerWords, setupTriggerWordsEditMode } from './TriggerWords.js';
 import { parsePresets, renderPresetTags } from './PresetTags.js';
 import { loadRecipesForLora } from './RecipeTab.js';
+import { translate } from '../../utils/i18nHelpers.js';
 
 /**
  * Display the model modal with the given model data
@@ -61,24 +62,33 @@ export async function showModelModal(model, modelType) {
     }
 
     // Generate tabs based on model type
+    const examplesText = translate('modals.model.tabs.examples', {}, 'Examples');
+    const descriptionText = translate('modals.model.tabs.description', {}, 'Model Description');
+    const recipesText = translate('modals.model.tabs.recipes', {}, 'Recipes');
+    
     const tabsContent = modelType === 'loras' ? 
-        `<button class="tab-btn active" data-tab="showcase">Examples</button>
-            <button class="tab-btn" data-tab="description">Model Description</button>
-            <button class="tab-btn" data-tab="recipes">Recipes</button>` :
-        `<button class="tab-btn active" data-tab="showcase">Examples</button>
-            <button class="tab-btn" data-tab="description">Model Description</button>`;
+        `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
+            <button class="tab-btn" data-tab="description">${descriptionText}</button>
+            <button class="tab-btn" data-tab="recipes">${recipesText}</button>` :
+        `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
+            <button class="tab-btn" data-tab="description">${descriptionText}</button>`;
+    
+    const loadingExampleImagesText = translate('modals.model.loading.exampleImages', {}, 'Loading example images...');
+    const loadingDescriptionText = translate('modals.model.loading.description', {}, 'Loading model description...');
+    const loadingRecipesText = translate('modals.model.loading.recipes', {}, 'Loading recipes...');
+    const loadingExamplesText = translate('modals.model.loading.examples', {}, 'Loading examples...');
     
     const tabPanesContent = modelType === 'loras' ? 
         `<div id="showcase-tab" class="tab-pane active">
             <div class="example-images-loading">
-                <i class="fas fa-spinner fa-spin"></i> Loading example images...
+                <i class="fas fa-spinner fa-spin"></i> ${loadingExampleImagesText}
             </div>
         </div>
         
         <div id="description-tab" class="tab-pane">
             <div class="model-description-container">
                 <div class="model-description-loading">
-                    <i class="fas fa-spinner fa-spin"></i> Loading model description...
+                    <i class="fas fa-spinner fa-spin"></i> ${loadingDescriptionText}
                 </div>
                 <div class="model-description-content hidden">
                 </div>
@@ -87,19 +97,19 @@ export async function showModelModal(model, modelType) {
         
         <div id="recipes-tab" class="tab-pane">
             <div class="recipes-loading">
-                <i class="fas fa-spinner fa-spin"></i> Loading recipes...
+                <i class="fas fa-spinner fa-spin"></i> ${loadingRecipesText}
             </div>
         </div>` :
         `<div id="showcase-tab" class="tab-pane active">
             <div class="recipes-loading">
-                <i class="fas fa-spinner fa-spin"></i> Loading examples...
+                <i class="fas fa-spinner fa-spin"></i> ${loadingExamplesText}
             </div>
         </div>
         
         <div id="description-tab" class="tab-pane">
             <div class="model-description-container">
                 <div class="model-description-loading">
-                    <i class="fas fa-spinner fa-spin"></i> Loading model description...
+                    <i class="fas fa-spinner fa-spin"></i> ${loadingDescriptionText}
                 </div>
                 <div class="model-description-content hidden">
                 </div>
@@ -112,19 +122,19 @@ export async function showModelModal(model, modelType) {
             <header class="modal-header">
                 <div class="model-name-header">
                     <h2 class="model-name-content">${modalTitle}</h2>
-                    <button class="edit-model-name-btn" title="Edit model name">
+                    <button class="edit-model-name-btn" title="${translate('modals.model.actions.editModelName', {}, 'Edit model name')}">
                         <i class="fas fa-pencil-alt"></i>
                     </button>
                 </div>
 
                 <div class="creator-actions">
                     ${modelWithFullData.from_civitai ? `
-                    <div class="civitai-view" title="View on Civitai" data-action="view-civitai" data-filepath="${modelWithFullData.file_path}">
-                        <i class="fas fa-globe"></i> View on Civitai
+                    <div class="civitai-view" title="${translate('modals.model.actions.viewOnCivitai', {}, 'View on Civitai')}" data-action="view-civitai" data-filepath="${modelWithFullData.file_path}">
+                        <i class="fas fa-globe"></i> ${translate('modals.model.actions.viewOnCivitaiText', {}, 'View on Civitai')}
                     </div>` : ''}
 
                     ${modelWithFullData.civitai?.creator ? `
-                    <div class="creator-info" data-username="${modelWithFullData.civitai.creator.username}" data-action="view-creator" title="View Creator Profile">
+                    <div class="creator-info" data-username="${modelWithFullData.civitai.creator.username}" data-action="view-creator" title="${translate('modals.model.actions.viewCreatorProfile', {}, 'View Creator Profile')}">
                         ${modelWithFullData.civitai.creator.image ? 
                             `<div class="creator-avatar">
                                 <img src="${modelWithFullData.civitai.creator.image}" alt="${modelWithFullData.civitai.creator.username}" onerror="this.onerror=null; this.src='static/icons/user-placeholder.png';">
@@ -144,48 +154,48 @@ export async function showModelModal(model, modelType) {
                 <div class="info-section">
                     <div class="info-grid">
                         <div class="info-item">
-                            <label>Version</label>
+                            <label>${translate('modals.model.metadata.version', {}, 'Version')}</label>
                             <span>${modelWithFullData.civitai?.name || 'N/A'}</span>
                         </div>
                         <div class="info-item">
-                            <label>File Name</label>
+                            <label>${translate('modals.model.metadata.fileName', {}, 'File Name')}</label>
                             <div class="file-name-wrapper">
                                 <span id="file-name" class="file-name-content">${modelWithFullData.file_name || 'N/A'}</span>
-                                <button class="edit-file-name-btn" title="Edit file name">
+                                <button class="edit-file-name-btn" title="${translate('modals.model.actions.editFileName', {}, 'Edit file name')}">
                                     <i class="fas fa-pencil-alt"></i>
                                 </button>
                             </div>
                         </div>
                         <div class="info-item location-size">
                             <div class="location-wrapper">
-                                <label>Location</label>
+                                <label>${translate('modals.model.metadata.location', {}, 'Location')}</label>
                                 <span class="file-path">${modelWithFullData.file_path.replace(/[^/]+$/, '') || 'N/A'}</span>
                             </div>
                         </div>
                         <div class="info-item base-size">
                             <div class="base-wrapper">
-                                <label>Base Model</label>
+                                <label>${translate('modals.model.metadata.baseModel', {}, 'Base Model')}</label>
                                 <div class="base-model-display">
-                                    <span class="base-model-content">${modelWithFullData.base_model || 'Unknown'}</span>
-                                    <button class="edit-base-model-btn" title="Edit base model">
+                                    <span class="base-model-content">${modelWithFullData.base_model || translate('modals.model.metadata.unknown', {}, 'Unknown')}</span>
+                                    <button class="edit-base-model-btn" title="${translate('modals.model.actions.editBaseModel', {}, 'Edit base model')}">
                                         <i class="fas fa-pencil-alt"></i>
                                     </button>
                                 </div>
                             </div>
                             <div class="size-wrapper">
-                                <label>Size</label>
+                                <label>${translate('modals.model.metadata.size', {}, 'Size')}</label>
                                 <span>${formatFileSize(modelWithFullData.file_size)}</span>
                             </div>
                         </div>
                         ${typeSpecificContent}
                         <div class="info-item notes">
-                            <label>Additional Notes <i class="fas fa-info-circle notes-hint" title="Press Enter to save, Shift+Enter for new line"></i></label>
+                            <label>${translate('modals.model.metadata.additionalNotes', {}, 'Additional Notes')} <i class="fas fa-info-circle notes-hint" title="${translate('modals.model.metadata.notesHint', {}, 'Press Enter to save, Shift+Enter for new line')}"></i></label>
                             <div class="editable-field">
-                                <div class="notes-content" contenteditable="true" spellcheck="false">${modelWithFullData.notes || 'Add your notes here...'}</div>
+                                <div class="notes-content" contenteditable="true" spellcheck="false">${modelWithFullData.notes || translate('modals.model.metadata.addNotesPlaceholder', {}, 'Add your notes here...')}</div>
                             </div>
                         </div>
                         <div class="info-item full-width">
-                            <label>About this version</label>
+                            <label>${translate('modals.model.metadata.aboutThisVersion', {}, 'About this version')}</label>
                             <div class="description-text">${modelWithFullData.civitai?.description || 'N/A'}</div>
                         </div>
                     </div>
@@ -249,18 +259,18 @@ export async function showModelModal(model, modelType) {
 function renderLoraSpecificContent(lora, escapedWords) {
     return `
         <div class="info-item usage-tips">
-            <label>Usage Tips</label>
+            <label>${translate('modals.model.metadata.usageTips', {}, 'Usage Tips')}</label>
             <div class="editable-field">
                 <div class="preset-controls">
                     <select id="preset-selector">
-                        <option value="">Add preset parameter...</option>
-                        <option value="strength_min">Strength Min</option>
-                        <option value="strength_max">Strength Max</option>
-                        <option value="strength">Strength</option>
-                        <option value="clip_skip">Clip Skip</option>
+                        <option value="">${translate('modals.model.usageTips.addPresetParameter', {}, 'Add preset parameter...')}</option>
+                        <option value="strength_min">${translate('modals.model.usageTips.strengthMin', {}, 'Strength Min')}</option>
+                        <option value="strength_max">${translate('modals.model.usageTips.strengthMax', {}, 'Strength Max')}</option>
+                        <option value="strength">${translate('modals.model.usageTips.strength', {}, 'Strength')}</option>
+                        <option value="clip_skip">${translate('modals.model.usageTips.clipSkip', {}, 'Clip Skip')}</option>
                     </select>
-                    <input type="number" id="preset-value" step="0.01" placeholder="Value" style="display:none;">
-                    <button class="add-preset-btn">Add</button>
+                    <input type="number" id="preset-value" step="0.01" placeholder="${translate('modals.model.usageTips.valuePlaceholder', {}, 'Value')}" style="display:none;">
+                    <button class="add-preset-btn">${translate('modals.model.usageTips.add', {}, 'Add')}</button>
                 </div>
                 <div class="preset-tags">
                     ${renderPresetTags(parsePresets(lora.usage_tips))}
@@ -428,9 +438,9 @@ async function saveNotes(filePath) {
     try {
         await getModelApiClient().saveModelMetadata(filePath, { notes: content });
 
-        showToast('Notes saved successfully', 'success');
+        showToast('modals.model.notes.saved', {}, 'success');
     } catch (error) {
-        showToast('Failed to save notes', 'error');
+        showToast('modals.model.notes.saveFailed', {}, 'error');
     }
 }
 

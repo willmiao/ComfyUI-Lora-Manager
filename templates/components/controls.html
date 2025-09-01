@@ -1,59 +1,59 @@
 <div class="controls">
     <div class="actions">
         <div class="action-buttons">
-            <div title="Sort models by..." class="control-group">
+            <div title="{{ t('loras.controls.sort.title') }}" class="control-group">
                 <select id="sortSelect">
-                    <optgroup label="Name">
-                        <option value="name:asc">A - Z</option>
-                        <option value="name:desc">Z - A</option>
+                    <optgroup label="{{ t('loras.controls.sort.name') }}">
+                        <option value="name:asc">{{ t('loras.controls.sort.nameAsc') }}</option>
+                        <option value="name:desc">{{ t('loras.controls.sort.nameDesc') }}</option>
                     </optgroup>
-                    <optgroup label="Date Added">
-                        <option value="date:desc">Newest</option>
-                        <option value="date:asc">Oldest</option>
+                    <optgroup label="{{ t('loras.controls.sort.date') }}">
+                        <option value="date:desc">{{ t('loras.controls.sort.dateDesc') }}</option>
+                        <option value="date:asc">{{ t('loras.controls.sort.dateAsc') }}</option>
                     </optgroup>
-                    <optgroup label="File Size">
-                        <option value="size:desc">Largest</option>
-                        <option value="size:asc">Smallest</option>
+                    <optgroup label="{{ t('loras.controls.sort.size') }}">
+                        <option value="size:desc">{{ t('loras.controls.sort.sizeDesc') }}</option>
+                        <option value="size:asc">{{ t('loras.controls.sort.sizeAsc') }}</option>
                     </optgroup>
                 </select>
             </div>
-            <div title="Refresh model list" class="control-group dropdown-group">
-                <button data-action="refresh" class="dropdown-main"><i class="fas fa-sync"></i> Refresh</button>
+            <div title="{{ t('loras.controls.refresh.title') }}" class="control-group dropdown-group">
+                <button data-action="refresh" class="dropdown-main"><i class="fas fa-sync"></i> <span>{{ t('common.actions.refresh') }}</span></button>
                 <button class="dropdown-toggle" aria-label="Show refresh options">
                     <i class="fas fa-caret-down"></i>
                 </button>
                 <div class="dropdown-menu">
                     <div class="dropdown-item" data-action="quick-refresh">
-                        <i class="fas fa-bolt"></i> Quick Refresh (incremental)
+                        <i class="fas fa-bolt"></i> <span>{{ t('loras.controls.refresh.quick') }}</span>
                     </div>
                     <div class="dropdown-item" data-action="full-rebuild">
-                        <i class="fas fa-tools"></i> Full Rebuild (complete)
+                        <i class="fas fa-tools"></i> <span>{{ t('loras.controls.refresh.full') }}</span>
                     </div>
                 </div>
             </div>
             
             <div class="control-group">
-                <button data-action="fetch" title="Fetch from Civitai"><i class="fas fa-download"></i> Fetch</button>
+                <button data-action="fetch" title="{{ t('loras.controls.fetch') }}"><i class="fas fa-download"></i> <span>{{ t('loras.controls.fetch') }}</span></button>
             </div>
             <div class="control-group">
-                <button data-action="download" title="Download from URL">
-                    <i class="fas fa-cloud-download-alt"></i> Download
+                <button data-action="download" title="{{ t('loras.controls.download') }}">
+                    <i class="fas fa-cloud-download-alt"></i> <span>{{ t('loras.controls.download') }}</span>
                 </button>
             </div>
             <div class="control-group">
-                <button id="bulkOperationsBtn" data-action="bulk" title="Bulk Operations (Press B)">
-                    <i class="fas fa-th-large"></i> <span>Bulk <div class="shortcut-key">B</div></span>
+                <button id="bulkOperationsBtn" data-action="bulk" title="{{ t('loras.controls.bulk') }}">
+                    <i class="fas fa-th-large"></i> <span><span>{{ t('loras.controls.bulk') }}</span> <div class="shortcut-key">B</div></span>
                 </button>
             </div>
             <div class="control-group">
-                <button id="findDuplicatesBtn" data-action="find-duplicates" title="Find duplicate models">
-                    <i class="fas fa-clone"></i> Duplicates
+                <button id="findDuplicatesBtn" data-action="find-duplicates" title="{{ t('loras.controls.duplicates') }}">
+                    <i class="fas fa-clone"></i> <span>{{ t('loras.controls.duplicates') }}</span>
                     <span id="duplicatesBadge" class="badge"></span>
                 </button>
             </div>
             <div class="control-group">
-                <button id="favoriteFilterBtn" data-action="toggle-favorites" class="favorite-filter" title="Show favorites only">
-                    <i class="fas fa-star"></i> Favorites
+                <button id="favoriteFilterBtn" data-action="toggle-favorites" class="favorite-filter" title="{{ t('loras.controls.favorites') }}">
+                    <i class="fas fa-star"></i> <span>{{ t('loras.controls.favorites') }}</span>
                 </button>
             </div>
             <div id="customFilterIndicator" class="control-group hidden">
@@ -68,23 +68,23 @@
             <div class="keyboard-nav-hint tooltip">
                 <i class="fas fa-keyboard"></i>
                 <span class="tooltiptext">
-                    Keyboard Navigation:
+                    <span>{{ t('keyboard.navigation') }}</span>
                     <table class="keyboard-shortcuts">
                         <tr>
                             <td><span class="key">Page Up</span></td>
-                            <td>Scroll up one page</td>
+                            <td>{{ t('keyboard.shortcuts.pageUp') }}</td>
                         </tr>
                         <tr>
                             <td><span class="key">Page Down</span></td>
-                            <td>Scroll down one page</td>
+                            <td>{{ t('keyboard.shortcuts.pageDown') }}</td>
                         </tr>
                         <tr>
                             <td><span class="key">Home</span></td>
-                            <td>Jump to top</td>
+                            <td>{{ t('keyboard.shortcuts.home') }}</td>
                         </tr>
                         <tr>
                             <td><span class="key">End</span></td>
-                            <td>Jump to bottom</td>
+                            <td>{{ t('keyboard.shortcuts.end') }}</td>
                         </tr>
                     </table>
                 </span>
@@ -103,27 +103,27 @@
 <!-- Add bulk operations panel (initially hidden) -->
 <div id="bulkOperationsPanel" class="bulk-operations-panel hidden">
     <div class="bulk-operations-header">
-        <span id="selectedCount" class="selectable-count" title="Click to view selected items">
-            0 selected <i class="fas fa-caret-down dropdown-caret"></i>
+        <span id="selectedCount" class="selectable-count" title="{{ t('loras.bulkOperations.viewSelected') }}">
+            0 {{ t('loras.bulkOperations.selectedSuffix') }} <i class="fas fa-caret-down dropdown-caret"></i>
         </span>
         <div class="bulk-operations-actions">
-            <button data-action="send-to-workflow" title="Send all selected LoRAs to workflow">
-                <i class="fas fa-arrow-right"></i> Send to Workflow
+            <button data-action="send-to-workflow" title="{{ t('loras.bulkOperations.sendToWorkflow') }}">
+                <i class="fas fa-arrow-right"></i> <span>{{ t('loras.bulkOperations.sendToWorkflow') }}</span>
             </button>
-            <button data-action="copy-all" title="Copy all selected LoRAs syntax">
-                <i class="fas fa-copy"></i> Copy All
+            <button data-action="copy-all" title="{{ t('loras.bulkOperations.copyAll') }}">
+                <i class="fas fa-copy"></i> <span>{{ t('loras.bulkOperations.copyAll') }}</span>
             </button>
-            <button data-action="refresh-all" title="Refresh CivitAI metadata for selected models">
-                <i class="fas fa-sync-alt"></i> Refresh All
+            <button data-action="refresh-all" title="{{ t('loras.bulkOperations.refreshAll') }}">
+                <i class="fas fa-sync-alt"></i> <span>{{ t('loras.bulkOperations.refreshAll') }}</span>
             </button>
-            <button data-action="move-all" title="Move selected models to folder">
-                <i class="fas fa-folder-open"></i> Move All
+            <button data-action="move-all" title="{{ t('loras.bulkOperations.moveAll') }}">
+                <i class="fas fa-folder-open"></i> <span>{{ t('loras.bulkOperations.moveAll') }}</span>
             </button>
-            <button data-action="delete-all" title="Delete selected models" class="danger-btn">
-                <i class="fas fa-trash"></i> Delete All
+            <button data-action="delete-all" title="{{ t('loras.bulkOperations.deleteAll') }}" class="danger-btn">
+                <i class="fas fa-trash"></i> <span>{{ t('loras.bulkOperations.deleteAll') }}</span>
             </button>
-            <button data-action="clear" title="Clear selection">
-                <i class="fas fa-times"></i> Clear
+            <button data-action="clear" title="{{ t('loras.bulkOperations.clear') }}">
+                <i class="fas fa-times"></i> <span>{{ t('loras.bulkOperations.clear') }}</span>
             </button>
         </div>
     </div>

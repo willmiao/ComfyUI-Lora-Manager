@@ -2,7 +2,6 @@
 import { getCurrentPageState, setCurrentPageType } from '../../state/index.js';
 import { getStorageItem, setStorageItem, getSessionItem, setSessionItem } from '../../utils/storageHelpers.js';
 import { showToast } from '../../utils/uiHelpers.js';
-import { SidebarManager } from '../SidebarManager.js';
 import { sidebarManager } from '../SidebarManager.js';
 
 /**
@@ -294,7 +293,7 @@ export class PageControls {
             }
         } catch (error) {
             console.error(`Error reloading ${this.pageType}:`, error);
-            showToast(`Failed to reload ${this.pageType}: ${error.message}`, 'error');
+            showToast('toast.controls.reloadFailed', { pageType: this.pageType, message: error.message }, 'error');
         }
     }
     
@@ -317,7 +316,7 @@ export class PageControls {
             }
         } catch (error) {
             console.error(`Error ${fullRebuild ? 'rebuilding' : 'refreshing'} ${this.pageType}:`, error);
-            showToast(`Failed to ${fullRebuild ? 'rebuild' : 'refresh'} ${this.pageType}: ${error.message}`, 'error');
+            showToast('toast.controls.refreshFailed', { action: fullRebuild ? 'rebuild' : 'refresh', pageType: this.pageType, message: error.message }, 'error');
         }
 
         if (window.modelDuplicatesManager) {
@@ -339,7 +338,7 @@ export class PageControls {
             await this.api.fetchFromCivitai();
         } catch (error) {
             console.error('Error fetching metadata:', error);
-            showToast('Failed to fetch metadata: ' + error.message, 'error');
+            showToast('toast.controls.fetchMetadataFailed', { message: error.message }, 'error');
         }
     }
     
@@ -375,7 +374,7 @@ export class PageControls {
             await this.api.clearCustomFilter();
         } catch (error) {
             console.error('Error clearing custom filter:', error);
-            showToast('Failed to clear custom filter: ' + error.message, 'error');
+            showToast('toast.controls.clearFilterFailed', { message: error.message }, 'error');
         }
     }
     

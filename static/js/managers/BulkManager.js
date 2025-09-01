@@ -5,6 +5,7 @@ import { modalManager } from './ModalManager.js';
 import { moveManager } from './MoveManager.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
+import { updateElementText } from '../utils/i18nHelpers.js';
 
 export class BulkManager {
     constructor() {
@@ -182,12 +183,11 @@ export class BulkManager {
 
     updateSelectedCount() {
         const countElement = document.getElementById('selectedCount');
-        const currentConfig = MODEL_CONFIG[state.currentPageType];
-        const displayName = currentConfig?.displayName || 'Models';
         
         if (countElement) {
-            countElement.textContent = `${state.selectedModels.size} ${displayName.toLowerCase()}(s) selected `;
-            
+            // Use i18nHelpers.js to update the count text
+            updateElementText(countElement, 'loras.bulkOperations.selected', { count: state.selectedModels.size });
+
             const existingCaret = countElement.querySelector('.dropdown-caret');
             if (existingCaret) {
                 existingCaret.className = `fas fa-caret-${this.isStripVisible ? 'down' : 'up'} dropdown-caret`;
@@ -283,12 +283,12 @@ export class BulkManager {
 
     async copyAllModelsSyntax() {
         if (state.currentPageType !== MODEL_TYPES.LORA) {
-            showToast('Copy syntax is only available for LoRAs', 'warning');
+            showToast('toast.loras.copyOnlyForLoras', {}, 'warning');
             return;
         }
         
         if (state.selectedModels.size === 0) {
-            showToast('No LoRAs selected', 'warning');
+            showToast('toast.loras.noLorasSelected', {}, 'warning');
             return;
         }
         
@@ -310,11 +310,11 @@ export class BulkManager {
         
         if (missingLoras.length > 0) {
             console.warn('Missing metadata for some selected loras:', missingLoras);
-            showToast(`Missing data for ${missingLoras.length} LoRAs`, 'warning');
+            showToast('toast.loras.missingDataForLoras', { count: missingLoras.length }, 'warning');
         }
         
         if (loraSyntaxes.length === 0) {
-            showToast('No valid LoRAs to copy', 'error');
+            showToast('toast.loras.noValidLorasToCopy', {}, 'error');
             return;
         }
         
@@ -323,12 +323,12 @@ export class BulkManager {
     
     async sendAllModelsToWorkflow() {
         if (state.currentPageType !== MODEL_TYPES.LORA) {
-            showToast('Send to workflow is only available for LoRAs', 'warning');
+            showToast('toast.loras.sendOnlyForLoras', {}, 'warning');
             return;
         }
         
         if (state.selectedModels.size === 0) {
-            showToast('No LoRAs selected', 'warning');
+            showToast('toast.loras.noLorasSelected', {}, 'warning');
             return;
         }
         
@@ -350,11 +350,11 @@ export class BulkManager {
         
         if (missingLoras.length > 0) {
             console.warn('Missing metadata for some selected loras:', missingLoras);
-            showToast(`Missing data for ${missingLoras.length} LoRAs`, 'warning');
+            showToast('toast.loras.missingDataForLoras', { count: missingLoras.length }, 'warning');
         }
         
         if (loraSyntaxes.length === 0) {
-            showToast('No valid LoRAs to send', 'error');
+            showToast('toast.loras.noValidLorasToSend', {}, 'error');
             return;
         }
         
@@ -363,7 +363,7 @@ export class BulkManager {
     
     showBulkDeleteModal() {
         if (state.selectedModels.size === 0) {
-            showToast('No models selected', 'warning');
+            showToast('toast.models.noModelsSelected', {}, 'warning');
             return;
         }
         
@@ -377,7 +377,7 @@ export class BulkManager {
     
     async confirmBulkDelete() {
         if (state.selectedModels.size === 0) {
-            showToast('No models selected', 'warning');
+            showToast('toast.models.noModelsSelected', {}, 'warning');
             modalManager.closeModal('bulkDeleteModal');
             return;
         }
@@ -392,7 +392,10 @@ export class BulkManager {
             
             if (result.success) {
                 const currentConfig = MODEL_CONFIG[state.currentPageType];
-                showToast(`Successfully deleted ${result.deleted_count} ${currentConfig.displayName.toLowerCase()}(s)`, 'success');
+                showToast('toast.models.deletedSuccessfully', { 
+                    count: result.deleted_count, 
+                    type: currentConfig.displayName.toLowerCase() 
+                }, 'success');
                 
                 filePaths.forEach(path => {
                     state.virtualScroller.removeItemByFilePath(path);
@@ -403,11 +406,11 @@ export class BulkManager {
                     window.modelDuplicatesManager.updateDuplicatesBadgeAfterRefresh();
                 }
             } else {
-                showToast(`Error: ${result.error || 'Failed to delete models'}`, 'error');
+                showToast('toast.models.deleteFailed', { error: result.error || 'Failed to delete models' }, 'error');
             }
         } catch (error) {
             console.error('Error during bulk delete:', error);
-            showToast('Failed to delete models', 'error');
+            showToast('toast.models.deleteFailedGeneral', {}, 'error');
         }
     }
 
@@ -538,7 +541,7 @@ export class BulkManager {
 
     selectAllVisibleModels() {
         if (!state.virtualScroller || !state.virtualScroller.items) {
-            showToast('Unable to select all items', 'error');
+            showToast('toast.bulk.unableToSelectAll', {}, 'error');
             return;
         }
         
@@ -565,7 +568,10 @@ export class BulkManager {
         
         const newlySelected = state.selectedModels.size - oldCount;
         const currentConfig = MODEL_CONFIG[state.currentPageType];
-        showToast(`Selected ${newlySelected} additional ${currentConfig.displayName.toLowerCase()}(s)`, 'success');
+        showToast('toast.models.selectedAdditional', { 
+            count: newlySelected, 
+            type: currentConfig.displayName.toLowerCase() 
+        }, 'success');
         
         if (this.isStripVisible) {
             this.updateThumbnailStrip();
@@ -574,7 +580,7 @@ export class BulkManager {
 
     async refreshAllMetadata() {
         if (state.selectedModels.size === 0) {
-            showToast('No models selected', 'warning');
+            showToast('toast.models.noModelsSelected', {}, 'warning');
             return;
         }
         
@@ -610,7 +616,7 @@ export class BulkManager {
             
         } catch (error) {
             console.error('Error during bulk metadata refresh:', error);
-            showToast('Failed to refresh metadata', 'error');
+            showToast('toast.models.refreshMetadataFailed', {}, 'error');
         }
     }
 }

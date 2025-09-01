@@ -3,19 +3,19 @@
     <div class="modal-content help-modal">
         <button class="close" onclick="modalManager.closeModal('helpModal')">&times;</button>
         <div class="help-header">
-            <h2>Help & Tutorials</h2>
+            <h2>{{ t('help.title') }}</h2>
         </div>
         
         <div class="help-tabs">
-            <button class="tab-btn active" data-tab="getting-started">Getting Started</button>
-            <button class="tab-btn" data-tab="update-vlogs">Update Vlogs</button>
-            <button class="tab-btn" data-tab="documentation">Documentation</button>
+            <button class="tab-btn active" data-tab="getting-started">{{ t('help.tabs.gettingStarted') }}</button>
+            <button class="tab-btn" data-tab="update-vlogs">{{ t('help.tabs.updateVlogs') }}</button>
+            <button class="tab-btn" data-tab="documentation">{{ t('help.tabs.documentation') }}</button>
         </div>
         
         <div class="help-content">
             <!-- Getting Started Tab -->
             <div class="tab-pane active" id="getting-started">
-                <h3>Getting Started with LoRA Manager</h3>
+                <h3>{{ t('help.gettingStarted.title') }}</h3>
                 <div class="video-container">
                     <div class="video-thumbnail" data-video-id="hvKw31YpE-U">
                         <img src="/loras_static/images/video-thumbnails/getting-started.jpg" alt="Getting Started with LoRA Manager">
@@ -44,7 +44,7 @@
             <!-- Update Vlogs Tab -->
             <div class="tab-pane" id="update-vlogs">
                 <h3>
-                    Latest Updates
+                    {{ t('help.updateVlogs.title') }}
                     <span class="update-date-badge">
                         <i class="fas fa-calendar-alt"></i>
                         Apr 28, 2025
@@ -58,14 +58,14 @@
                                 <div class="video-play-overlay">
                                     <a href="https://www.youtube.com/playlist?list=PLU2fMdHNl8ohz1u7Ke3ooOuMbU5Y4sgoj" target="_blank" class="external-link-btn">
                                         <i class="fas fa-external-link-alt"></i>
-                                        <span>Watch on YouTube</span>
+                                        <span>{{ t('help.updateVlogs.watchOnYouTube') }}</span>
                                     </a>
                                 </div>
                             </div>
                         </div>
                         <div class="video-info">
-                            <h4>LoRA Manager Updates Playlist</h4>
-                            <p>Watch all update videos showcasing the latest features and improvements.</p>
+                            <h4>{{ t('help.updateVlogs.playlistTitle') }}</h4>
+                            <p>{{ t('help.updateVlogs.playlistDescription') }}</p>
                         </div>
                     </div>
                 </div>
@@ -73,10 +73,10 @@
 
             <!-- Documentation Tab -->
             <div class="tab-pane" id="documentation">
-                <h3>Documentation</h3>
+                <h3>{{ t('help.documentation.title') }}</h3>
                 
                 <div class="docs-section">
-                    <h4><i class="fas fa-book"></i> General</h4>
+                    <h4><i class="fas fa-book"></i> {{ t('help.documentation.general') }}</h4>
                     <ul class="docs-links">
                         <li><a href="https://github.com/willmiao/ComfyUI-Lora-Manager/wiki" target="_blank">Wiki Home</a></li>
                         <li><a href="https://github.com/willmiao/ComfyUI-Lora-Manager/blob/main/README.md" target="_blank">README</a></li>
@@ -84,28 +84,28 @@
                 </div>
                 
                 <div class="docs-section">
-                    <h4><i class="fas fa-tools"></i> Troubleshooting</h4>
+                    <h4><i class="fas fa-tools"></i> {{ t('help.documentation.troubleshooting') }}</h4>
                     <ul class="docs-links">
                         <li><a href="https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/FAQ-(Frequently-Asked-Questions)" target="_blank">FAQ (Frequently Asked Questions)</a></li>
                     </ul>
                 </div>
                 
                 <div class="docs-section">
-                    <h4><i class="fas fa-layer-group"></i> Model Management</h4>
+                    <h4><i class="fas fa-layer-group"></i> {{ t('help.documentation.modelManagement') }}</h4>
                     <ul class="docs-links">
                         <li><a href="https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/Example-Images" target="_blank">Example Images (WIP)</a></li>
                     </ul>
                 </div>
                 
                 <div class="docs-section">
-                    <h4><i class="fas fa-book-open"></i> Recipes</h4>
+                    <h4><i class="fas fa-book-open"></i> {{ t('help.documentation.recipes') }}</h4>
                     <ul class="docs-links">
                         <li><a href="https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/Recipes-Feature-Tutorial-%E2%80%93-ComfyUI-LoRA-Manager" target="_blank">Recipes Tutorial</a></li>
                     </ul>
                 </div>
                 
                 <div class="docs-section">
-                    <h4><i class="fas fa-cog"></i> Settings & Configuration</h4>
+                    <h4><i class="fas fa-cog"></i> {{ t('help.documentation.settings') }}</h4>
                     <ul class="docs-links">
                         <li><a href="https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/Configuration" target="_blank">Configuration Options (WIP)</a></li>
                     </ul>
@@ -113,14 +113,14 @@
                 
                 <div class="docs-section">
                     <h4>
-                        <i class="fas fa-puzzle-piece"></i> Extensions
-                        <span class="new-content-badge">NEW</span>
+                        <i class="fas fa-puzzle-piece"></i> {{ t('help.documentation.extensions') }}
+                        <span class="new-content-badge">{{ t('help.documentation.newBadge') }}</span>
                     </h4>
                     <ul class="docs-links">
                         <li>
                             <a href="https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/LoRA-Manager-Civitai-Extension-(Chrome-Extension)" target="_blank">
                                 LM Civitai Extension
-                                <span class="new-content-badge inline">NEW</span>
+                                <span class="new-content-badge inline">{{ t('help.documentation.newBadge') }}</span>
                             </a>
                         </li>
                     </ul>

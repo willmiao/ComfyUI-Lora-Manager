@@ -4,29 +4,29 @@
         <button class="close" onclick="modalManager.closeModal('updateModal')">&times;</button>
         <div class="update-header">
             <i class="fas fa-bell update-icon"></i>
-            <h2>Check for Updates</h2>
+            <h2 data-i18n="update.title">{{ t('update.title') }}</h2>
         </div>
         <div class="update-content">
             <div class="update-info">
                 <div class="version-info">
                     <div class="current-version">
-                        <span class="label">Current Version:</span>
+                        <span class="label">{{ t('update.currentVersion') }}:</span>
                         <span class="version-number">v0.0.0</span>
                     </div>
-                    <div class="git-info" style="display:none;">Commit: unknown</div>
+                    <div class="git-info" style="display:none;">{{ t('update.commit') }}: unknown</div>
                     <div class="new-version">
-                        <span class="label">New Version:</span>
+                        <span class="label">{{ t('update.newVersion') }}:</span>
                         <span class="version-number">v0.0.0</span>
                     </div>
                 </div>
                 
                 <div class="update-actions">
                     <a href="https://github.com/willmiao/ComfyUI-Lora-Manager" target="_blank" class="update-link">
-                        <i class="fas fa-external-link-alt"></i> View on GitHub
+                        <i class="fas fa-external-link-alt"></i> {{ t('update.viewOnGitHub') }}
                     </a>
                     <button id="updateBtn" class="primary-btn disabled">
                         <i class="fas fa-download"></i>
-                        <span id="updateBtnText">Update Now</span>
+                        <span id="updateBtnText" data-i18n="update.updateNow">{{ t('update.updateNow') }}</span>
                     </button>
                 </div>
             </div>
@@ -34,7 +34,7 @@
             <!-- Update Progress Section -->
             <div class="update-progress" id="updateProgress" style="display: none;">
                 <div class="progress-info">
-                    <div class="progress-text" id="updateProgressText">Preparing update...</div>
+                    <div class="progress-text" id="updateProgressText" data-i18n="update.preparingUpdate">{{ t('update.preparingUpdate') }}</div>
                     <div class="update-progress-bar">
                         <div class="progress-fill" id="updateProgressFill"></div>
                     </div>
@@ -42,12 +42,12 @@
             </div>
             
             <div class="changelog-section">
-                <h3>Changelog</h3>
+                <h3>{{ t('update.changelog') }}</h3>
                 <div class="changelog-content">
                     <!-- Dynamic changelog content will be inserted here -->
                     <div class="changelog-item">
-                        <h4>Checking for updates...</h4>
-                        <p>Please wait while we check for the latest version.</p>
+                        <h4>{{ t('update.checkingUpdates') }}</h4>
+                        <p>{{ t('update.checkingMessage') }}</p>
                     </div>
                 </div>
             </div>
@@ -56,7 +56,7 @@
                 <label class="toggle-switch">
                     <input type="checkbox" id="updateNotifications" checked>
                     <span class="toggle-slider"></span>
-                    <span class="toggle-label">Show update notifications</span>
+                    <span class="toggle-label">{{ t('update.showNotifications') }}</span>
                 </label>
             </div>
         </div>

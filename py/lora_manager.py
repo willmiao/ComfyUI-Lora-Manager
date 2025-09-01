@@ -145,7 +145,12 @@ class LoraManager:
                 except Exception as e:
                     logger.warning(f"Failed to add static route on initialization for {target_path}: {e}")
                     continue
-        
+
+        # Add static route for locales JSON files
+        if os.path.exists(config.i18n_path):
+            app.router.add_static('/locales', config.i18n_path)
+            logger.info(f"Added static route for locales: /locales -> {config.i18n_path}")
+
         # Add static route for plugin assets
         app.router.add_static('/loras_static', config.static_path)
         

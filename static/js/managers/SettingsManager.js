@@ -4,6 +4,7 @@ import { state } from '../state/index.js';
 import { resetAndReload } from '../api/modelApiFactory.js';
 import { setStorageItem, getStorageItem } from '../utils/storageHelpers.js';
 import { DOWNLOAD_PATH_TEMPLATES, MAPPABLE_BASE_MODELS, PATH_TEMPLATE_PLACEHOLDERS, DEFAULT_PATH_TEMPLATES } from '../utils/constants.js';
+import { translate } from '../utils/i18nHelpers.js';
 
 export class SettingsManager {
     constructor() {
@@ -270,6 +271,13 @@ export class SettingsManager {
 
         // Load default embedding root
         await this.loadEmbeddingRoots();
+
+        // Load language setting
+        const languageSelect = document.getElementById('languageSelect');
+        if (languageSelect) {
+            const currentLanguage = state.global.settings.language || 'en';
+            languageSelect.value = currentLanguage;
+        }
     }
 
     async loadLoraRoots() {
@@ -307,7 +315,7 @@ export class SettingsManager {
             
         } catch (error) {
             console.error('Error loading LoRA roots:', error);
-            showToast('Failed to load LoRA roots: ' + error.message, 'error');
+            showToast('toast.settings.loraRootsFailed', { message: error.message }, 'error');
         }
     }
 
@@ -346,7 +354,7 @@ export class SettingsManager {
             
         } catch (error) {
             console.error('Error loading checkpoint roots:', error);
-            showToast('Failed to load checkpoint roots: ' + error.message, 'error');
+            showToast('toast.settings.checkpointRootsFailed', { message: error.message }, 'error');
         }
     }
 
@@ -385,7 +393,7 @@ export class SettingsManager {
 
         } catch (error) {
             console.error('Error loading embedding roots:', error);
-            showToast('Failed to load embedding roots: ' + error.message, 'error');
+            showToast('toast.settings.embeddingRootsFailed', { message: error.message }, 'error');
         }
     }
 
@@ -424,13 +432,13 @@ export class SettingsManager {
         row.innerHTML = `
             <div class="mapping-controls">
                 <select class="base-model-select">
-                    <option value="">Select Base Model</option>
+                    <option value="">${translate('settings.downloadPathTemplates.selectBaseModel', {}, 'Select Base Model')}</option>
                     ${availableModels.map(model => 
                         `<option value="${model}" ${model === baseModel ? 'selected' : ''}>${model}</option>`
                     ).join('')}
                 </select>
-                <input type="text" class="path-value-input" placeholder="Custom path (e.g., flux)" value="${pathValue}">
-                <button type="button" class="remove-mapping-btn" title="Remove mapping">
+                <input type="text" class="path-value-input" placeholder="${translate('settings.downloadPathTemplates.customPathPlaceholder', {}, 'Custom path (e.g., flux)')}" value="${pathValue}">
+                <button type="button" class="remove-mapping-btn" title="${translate('settings.downloadPathTemplates.removeMapping', {}, 'Remove mapping')}">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -523,7 +531,7 @@ export class SettingsManager {
             );
 
             // Rebuild options
-            select.innerHTML = '<option value="">Select Base Model</option>' +
+            select.innerHTML = `<option value="">${translate('settings.downloadPathTemplates.selectBaseModel', {}, 'Select Base Model')}</option>` +
                 availableModels.map(model => 
                     `<option value="${model}" ${model === currentValue ? 'selected' : ''}>${model}</option>`
                 ).join('');
@@ -553,14 +561,17 @@ export class SettingsManager {
             // Show success toast
             const mappingCount = Object.keys(state.global.settings.base_model_path_mappings).length;
             if (mappingCount > 0) {
-                showToast(`Base model path mappings updated (${mappingCount} mapping${mappingCount !== 1 ? 's' : ''})`, 'success');
+                showToast('toast.settings.mappingsUpdated', { 
+                    count: mappingCount,
+                    plural: mappingCount !== 1 ? 's' : ''
+                }, 'success');
             } else {
-                showToast('Base model path mappings cleared', 'success');
+                showToast('toast.settings.mappingsCleared', {}, 'success');
             }
 
         } catch (error) {
             console.error('Error saving base model mappings:', error);
-            showToast('Failed to save base model mappings: ' + error.message, 'error');
+            showToast('toast.settings.mappingSaveFailed', { message: error.message }, 'error');
         }
     }
 
@@ -652,7 +663,7 @@ export class SettingsManager {
         validationElement.className = 'template-validation';
         
         if (!template) {
-            validationElement.innerHTML = '<i class="fas fa-check"></i> Valid (flat structure)';
+            validationElement.innerHTML = `<i class="fas fa-check"></i> ${translate('settings.downloadPathTemplates.validation.validFlat', {}, 'Valid (flat structure)')}`;
             validationElement.classList.add('valid');
             return true;
         }
@@ -660,21 +671,21 @@ export class SettingsManager {
         // Check for invalid characters
         const invalidChars = /[<>:"|?*]/;
         if (invalidChars.test(template)) {
-            validationElement.innerHTML = '<i class="fas fa-times"></i> Invalid characters detected';
+            validationElement.innerHTML = `<i class="fas fa-times"></i> ${translate('settings.downloadPathTemplates.validation.invalidChars', {}, 'Invalid characters detected')}`;
             validationElement.classList.add('invalid');
             return false;
         }
         
         // Check for double slashes
         if (template.includes('//')) {
-            validationElement.innerHTML = '<i class="fas fa-times"></i> Double slashes not allowed';
+            validationElement.innerHTML = `<i class="fas fa-times"></i> ${translate('settings.downloadPathTemplates.validation.doubleSlashes', {}, 'Double slashes not allowed')}`;
             validationElement.classList.add('invalid');
             return false;
         }
         
         // Check if it starts or ends with slash
         if (template.startsWith('/') || template.endsWith('/')) {
-            validationElement.innerHTML = '<i class="fas fa-times"></i> Cannot start or end with slash';
+            validationElement.innerHTML = `<i class="fas fa-times"></i> ${translate('settings.downloadPathTemplates.validation.leadingTrailingSlash', {}, 'Cannot start or end with slash')}`;
             validationElement.classList.add('invalid');
             return false;
         }
@@ -689,13 +700,13 @@ export class SettingsManager {
         );
         
         if (invalidPlaceholders.length > 0) {
-            validationElement.innerHTML = `<i class="fas fa-times"></i> Invalid placeholder: ${invalidPlaceholders[0]}`;
+            validationElement.innerHTML = `<i class="fas fa-times"></i> ${translate('settings.downloadPathTemplates.validation.invalidPlaceholder', { placeholder: invalidPlaceholders[0] }, `Invalid placeholder: ${invalidPlaceholders[0]}`)}`;
             validationElement.classList.add('invalid');
             return false;
         }
         
         // Template is valid
-        validationElement.innerHTML = '<i class="fas fa-check"></i> Valid template';
+        validationElement.innerHTML = `<i class="fas fa-check"></i> ${translate('settings.downloadPathTemplates.validation.validTemplate', {}, 'Valid template')}`;
         validationElement.classList.add('valid');
         return true;
     }
@@ -737,11 +748,11 @@ export class SettingsManager {
                 throw new Error('Failed to save download path templates');
             }
 
-            showToast('Download path templates updated', 'success');
+            showToast('toast.settings.downloadTemplatesUpdated', {}, 'success');
 
         } catch (error) {
             console.error('Error saving download path templates:', error);
-            showToast('Failed to save download path templates: ' + error.message, 'error');
+            showToast('toast.settings.downloadTemplatesFailed', { message: error.message }, 'error');
         }
     }
 
@@ -802,7 +813,7 @@ export class SettingsManager {
                 }
             }
                 
-            showToast(`Settings updated: ${settingKey.replace(/_/g, ' ')}`, 'success');
+            showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
             
             // Apply frontend settings immediately
             this.applyFrontendSettings();
@@ -823,11 +834,13 @@ export class SettingsManager {
             // Recalculate layout when compact mode changes
             if (settingKey === 'compact_mode' && state.virtualScroller) {
                 state.virtualScroller.calculateLayout();
-                showToast(`Compact Mode ${value ? 'enabled' : 'disabled'}`, 'success');
+                showToast('toast.settings.compactModeToggled', { 
+                    state: value ? 'toast.settings.compactModeEnabled' : 'toast.settings.compactModeDisabled' 
+                }, 'success');
             }
             
         } catch (error) {
-            showToast('Failed to save setting: ' + error.message, 'error');
+            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
         }
     }
     
@@ -881,7 +894,7 @@ export class SettingsManager {
                     throw new Error('Failed to save setting');
                 }
                 
-                showToast(`Settings updated: ${settingKey.replace(/_/g, ' ')}`, 'success');
+                showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
             }
             
             // Apply frontend settings immediately
@@ -895,11 +908,11 @@ export class SettingsManager {
                 if (value === 'medium') densityName = "Medium";
                 if (value === 'compact') densityName = "Compact";
                 
-                showToast(`Display Density set to ${densityName}`, 'success');
+                showToast('toast.settings.displayDensitySet', { density: densityName }, 'success');
             }
             
         } catch (error) {
-            showToast('Failed to save setting: ' + error.message, 'error');
+            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
         }
     }
     
@@ -938,10 +951,46 @@ export class SettingsManager {
                 throw new Error('Failed to save setting');
             }
             
-            showToast(`Settings updated: ${settingKey.replace(/_/g, ' ')}`, 'success');
+            showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
             
         } catch (error) {
-            showToast('Failed to save setting: ' + error.message, 'error');
+            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
+        }
+    }
+
+    async saveLanguageSetting() {
+        const element = document.getElementById('languageSelect');
+        if (!element) return;
+        
+        const selectedLanguage = element.value;
+        
+        try {
+            // Update local state
+            state.global.settings.language = selectedLanguage;
+            
+            // Save to localStorage
+            setStorageItem('settings', state.global.settings);
+            
+            // 保存到后端
+            const response = await fetch('/api/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    language: selectedLanguage
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save language setting to backend');
+            }
+            
+            // Reload the page to apply the new language
+            window.location.reload();
+
+        } catch (error) {
+            showToast('toast.settings.languageChangeFailed', { message: error.message }, 'error');
         }
     }
 
@@ -976,15 +1025,15 @@ export class SettingsManager {
             const result = await response.json();
             
             if (result.success) {
-                showToast('Cache files have been cleared successfully. Cache will rebuild on next action.', 'success');
+                showToast('toast.settings.cacheCleared', {}, 'success');
             } else {
-                showToast(`Failed to clear cache: ${result.error}`, 'error');
+                showToast('toast.settings.cacheClearFailed', { error: result.error }, 'error');
             }
             
             // Close the confirmation modal
             modalManager.closeModal('clearCacheModal');
         } catch (error) {
-            showToast(`Error clearing cache: ${error.message}`, 'error');
+            showToast('toast.settings.cacheClearError', { message: error.message }, 'error');
             modalManager.closeModal('clearCacheModal');
         }
     }

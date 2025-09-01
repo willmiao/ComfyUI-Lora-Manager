@@ -1,0 +1,1056 @@
+{
+    "common": {
+        "actions": {
+            "save": "저장",
+            "cancel": "취소",
+            "delete": "삭제",
+            "move": "이동",
+            "refresh": "새로고침",
+            "back": "뒤로",
+            "next": "다음",
+            "backToTop": "맨 위로",
+            "settings": "설정",
+            "help": "도움말"
+        },
+        "status": {
+            "loading": "로딩 중...",
+            "unknown": "알 수 없음",
+            "date": "날짜",
+            "version": "버전"
+        },
+        "language": {
+            "select": "언어 선택",
+            "select_help": "인터페이스에 사용할 언어를 선택하세요",
+            "english": "English",
+            "chinese_simplified": "中文（简体）",
+            "chinese_traditional": "中文（繁体）",
+            "russian": "Русский",
+            "german": "Deutsch",
+            "japanese": "日本語",
+            "korean": "한국어",
+            "french": "Français",
+            "spanish": "Español"
+        },
+        "fileSize": {
+            "zero": "0 바이트",
+            "bytes": "바이트",
+            "kb": "KB",
+            "mb": "MB",
+            "gb": "GB",
+            "tb": "TB"
+        }
+    },
+    "modelCard": {
+        "actions": {
+            "addToFavorites": "즐겨찾기에 추가",
+            "removeFromFavorites": "즐겨찾기에서 제거",
+            "viewOnCivitai": "Civitai에서 보기",
+            "notAvailableFromCivitai": "Civitai에서 사용할 수 없음",
+            "sendToWorkflow": "ComfyUI로 전송 (클릭: 추가, Shift+클릭: 교체)",
+            "copyLoRASyntax": "LoRA 문법 복사",
+            "checkpointNameCopied": "Checkpoint 이름 복사됨",
+            "toggleBlur": "블러 토글",
+            "show": "보기",
+            "openExampleImages": "예시 이미지 폴더 열기"
+        },
+        "nsfw": {
+            "matureContent": "성인 콘텐츠",
+            "xxxRated": "XXX 등급 콘텐츠",
+            "xRated": "X 등급 콘텐츠",
+            "rRated": "R 등급 콘텐츠"
+        },
+        "favorites": {
+            "added": "즐겨찾기에 추가됨",
+            "removed": "즐겨찾기에서 제거됨",
+            "updateFailed": "즐겨찾기 상태 업데이트 실패"
+        },
+        "sendToWorkflow": {
+            "checkpointNotImplemented": "Checkpoint을 워크플로로 전송 - 구현 예정 기능"
+        },
+        "exampleImages": {
+            "checkError": "예시 이미지 확인 중 오류",
+            "missingHash": "모델 해시 정보가 없습니다.",
+            "noRemoteImagesAvailable": "Civitai에서 이 모델의 원격 예시 이미지를 사용할 수 없습니다"
+        }
+    },
+    "header": {
+        "appTitle": "LoRA Manager",
+        "navigation": {
+            "loras": "LoRA",
+            "recipes": "레시피",
+            "checkpoints": "Checkpoint",
+            "embeddings": "Embedding",
+            "statistics": "통계"
+        },
+        "search": {
+            "placeholder": "검색...",
+            "placeholders": {
+                "loras": "LoRA 검색...",
+                "recipes": "레시피 검색...",
+                "checkpoints": "Checkpoint 검색...",
+                "embeddings": "Embedding 검색..."
+            },
+            "options": "검색 옵션",
+            "searchIn": "검색 범위:",
+            "notAvailable": "통계 페이지에서는 검색을 사용할 수 없습니다",
+            "filters": {
+                "filename": "파일명",
+                "modelname": "모델명",
+                "tags": "태그",
+                "creator": "제작자",
+                "title": "레시피 제목",
+                "loraName": "LoRA 파일명",
+                "loraModel": "LoRA 모델명"
+            }
+        },
+        "filter": {
+            "title": "모델 필터",
+            "baseModel": "베이스 모델",
+            "modelTags": "태그 (상위 20개)",
+            "clearAll": "모든 필터 지우기"
+        },
+        "theme": {
+            "toggle": "테마 토글",
+            "switchToLight": "라이트 테마로 전환",
+            "switchToDark": "다크 테마로 전환",
+            "switchToAuto": "자동 테마로 전환"
+        },
+        "actions": {
+            "checkUpdates": "업데이트 확인",
+            "support": "지원"
+        }
+    },
+    "settings": {
+        "civitaiApiKey": "Civitai API 키",
+        "civitaiApiKeyPlaceholder": "Civitai API 키를 입력하세요",
+        "civitaiApiKeyHelp": "Civitai에서 모델을 다운로드할 때 인증에 사용됩니다",
+        "sections": {
+            "contentFiltering": "콘텐츠 필터링",
+            "videoSettings": "비디오 설정",
+            "layoutSettings": "레이아웃 설정",
+            "folderSettings": "폴더 설정",
+            "downloadPathTemplates": "다운로드 경로 템플릿",
+            "exampleImages": "예시 이미지",
+            "misc": "기타"
+        },
+        "contentFiltering": {
+            "blurNsfwContent": "NSFW 콘텐츠 블러 처리",
+            "blurNsfwContentHelp": "성인(NSFW) 콘텐츠 미리보기 이미지를 블러 처리합니다",
+            "showOnlySfw": "SFW 결과만 표시",
+            "showOnlySfwHelp": "탐색 및 검색 시 모든 NSFW 콘텐츠를 필터링합니다"
+        },
+        "videoSettings": {
+            "autoplayOnHover": "호버 시 비디오 자동 재생",
+            "autoplayOnHoverHelp": "마우스를 올렸을 때만 비디오 미리보기를 재생합니다"
+        },
+        "layoutSettings": {
+            "displayDensity": "표시 밀도",
+            "displayDensityOptions": {
+                "default": "기본",
+                "medium": "중간", 
+                "compact": "조밀"
+            },
+            "displayDensityHelp": "한 줄에 표시할 카드 수를 선택하세요:",
+            "displayDensityDetails": {
+                "default": "기본: 5개 (1080p), 6개 (2K), 8개 (4K)",
+                "medium": "중간: 6개 (1080p), 7개 (2K), 9개 (4K)",
+                "compact": "조밀: 7개 (1080p), 8개 (2K), 10개 (4K)"
+            },
+            "displayDensityWarning": "경고: 높은 밀도는 리소스가 제한된 시스템에서 성능 문제를 일으킬 수 있습니다.",
+            "cardInfoDisplay": "카드 정보 표시",
+            "cardInfoDisplayOptions": {
+                "always": "항상 표시",
+                "hover": "호버 시 표시"
+            },
+            "cardInfoDisplayHelp": "모델 정보 및 액션 버튼을 언제 표시할지 선택하세요:",
+            "cardInfoDisplayDetails": {
+                "always": "항상 표시: 헤더와 푸터가 항상 보입니다",
+                "hover": "호버 시 표시: 카드에 마우스를 올렸을 때만 헤더와 푸터가 나타납니다"
+            }
+        },
+        "folderSettings": {
+            "defaultLoraRoot": "기본 LoRA 루트",
+            "defaultLoraRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 LoRA 루트 디렉토리를 설정합니다",
+            "defaultCheckpointRoot": "기본 Checkpoint 루트",
+            "defaultCheckpointRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 Checkpoint 루트 디렉토리를 설정합니다",
+            "defaultEmbeddingRoot": "기본 Embedding 루트",
+            "defaultEmbeddingRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 Embedding 루트 디렉토리를 설정합니다",
+            "noDefault": "기본값 없음"
+        },
+        "downloadPathTemplates": {
+            "title": "다운로드 경로 템플릿",
+            "help": "Civitai에서 다운로드할 때 다양한 모델 유형의 폴더 구조를 구성합니다.",
+            "availablePlaceholders": "사용 가능한 플레이스홀더:",
+            "templateOptions": {
+                "flatStructure": "플랫 구조",
+                "byBaseModel": "베이스 모델별",
+                "byAuthor": "제작자별", 
+                "byFirstTag": "첫 번째 태그별",
+                "baseModelFirstTag": "베이스 모델 + 첫 번째 태그",
+                "baseModelAuthor": "베이스 모델 + 제작자",
+                "authorFirstTag": "제작자 + 첫 번째 태그",
+                "customTemplate": "사용자 정의 템플릿"
+            },
+            "customTemplatePlaceholder": "사용자 정의 템플릿 입력 (예: {base_model}/{author}/{first_tag})",
+            "modelTypes": {
+                "lora": "LoRA",
+                "checkpoint": "Checkpoint", 
+                "embedding": "Embedding"
+            },
+            "baseModelPathMappings": "베이스 모델 경로 매핑",
+            "baseModelPathMappingsHelp": "특정 베이스 모델의 폴더 이름을 사용자 정의합니다 (예: \"Flux.1 D\" → \"flux\")",
+            "addMapping": "매핑 추가",
+            "selectBaseModel": "베이스 모델 선택",
+            "customPathPlaceholder": "사용자 정의 경로 (예: flux)",
+            "removeMapping": "매핑 제거",
+            "validation": {
+                "validFlat": "유효함 (플랫 구조)",
+                "invalidChars": "잘못된 문자가 감지됨",
+                "doubleSlashes": "이중 슬래시는 허용되지 않습니다",
+                "leadingTrailingSlash": "슬래시로 시작하거나 끝날 수 없습니다",
+                "invalidPlaceholder": "잘못된 플레이스홀더: {placeholder}",
+                "validTemplate": "유효한 템플릿"
+            }
+        },
+        "exampleImages": {
+            "downloadLocation": "다운로드 위치",
+            "downloadLocationPlaceholder": "예시 이미지 폴더 경로를 입력하세요",
+            "downloadLocationHelp": "Civitai의 예시 이미지가 저장될 폴더 경로를 입력하세요",
+            "autoDownload": "예시 이미지 자동 다운로드",
+            "autoDownloadHelp": "예시 이미지가 없는 모델의 예시 이미지를 자동으로 다운로드합니다 (다운로드 위치 설정 필요)",
+            "optimizeImages": "다운로드된 이미지 최적화",
+            "optimizeImagesHelp": "파일 크기를 줄이고 로딩 속도를 향상시키기 위해 예시 이미지를 최적화합니다 (메타데이터는 보존됨)",
+            "download": "다운로드",
+            "restartRequired": "재시작 필요"
+        },
+        "misc": {
+            "includeTriggerWords": "LoRA 문법에 트리거 단어 포함",
+            "includeTriggerWordsHelp": "LoRA 문법을 클립보드에 복사할 때 학습된 트리거 단어를 포함합니다"
+        }
+    },
+    "loras": {
+        "controls": {
+            "sort": {
+                "title": "모델 정렬 기준...",
+                "name": "이름",
+                "nameAsc": "가나다순",
+                "nameDesc": "역순",
+                "date": "추가 날짜",
+                "dateDesc": "최신순",
+                "dateAsc": "오래된순",
+                "size": "파일 크기",
+                "sizeDesc": "큰 순서",
+                "sizeAsc": "작은 순서"
+            },
+            "refresh": {
+                "title": "모델 목록 새로고침",
+                "quick": "빠른 새로고침 (증분)",
+                "full": "전체 재구성 (완전)"
+            },
+            "fetch": "Civitai에서 가져오기",
+            "download": "URL에서 다운로드",
+            "bulk": "일괄 작업",
+            "duplicates": "중복 찾기",
+            "favorites": "즐겨찾기만 표시"
+        },
+        "bulkOperations": {
+            "selected": "{count}개 선택됨",
+            "selectedSuffix": "개 선택됨",
+            "viewSelected": "선택된 항목 보기",
+            "sendToWorkflow": "워크플로로 전송",
+            "copyAll": "모두 복사",
+            "refreshAll": "모두 새로고침",
+            "moveAll": "모두 이동",
+            "deleteAll": "모두 삭제",
+            "clear": "지우기"
+        },
+        "contextMenu": {
+            "refreshMetadata": "Civitai 데이터 새로고침",
+            "relinkCivitai": "Civitai에 다시 연결",
+            "copySyntax": "LoRA 문법 복사",
+            "copyFilename": "모델 파일명 복사",
+            "copyRecipeSyntax": "레시피 문법 복사",
+            "sendToWorkflowAppend": "워크플로로 전송 (추가)",
+            "sendToWorkflowReplace": "워크플로로 전송 (교체)",
+            "openExamples": "예시 폴더 열기",
+            "downloadExamples": "예시 이미지 다운로드",
+            "replacePreview": "미리보기 교체",
+            "setContentRating": "콘텐츠 등급 설정",
+            "moveToFolder": "폴더로 이동",
+            "excludeModel": "모델 제외",
+            "deleteModel": "모델 삭제",
+            "shareRecipe": "레시피 공유",
+            "viewAllLoras": "모든 LoRA 보기",
+            "downloadMissingLoras": "누락된 LoRA 다운로드",
+            "deleteRecipe": "레시피 삭제"
+        }
+    },
+    "recipes": {
+        "title": "LoRA 레시피",
+        "controls": {
+            "import": {
+                "action": "레시피 가져오기",
+                "title": "이미지 또는 URL에서 레시피 가져오기",
+                "urlLocalPath": "URL / 로컬 경로",
+                "uploadImage": "이미지 업로드",
+                "urlSectionDescription": "Civitai 이미지 URL 또는 로컬 파일 경로를 입력하여 레시피로 가져옵니다.",
+                "imageUrlOrPath": "이미지 URL 또는 파일 경로:",
+                "urlPlaceholder": "https://civitai.com/images/... 또는 C:/path/to/image.png",
+                "fetchImage": "이미지 가져오기",
+                "uploadSectionDescription": "LoRA 메타데이터가 포함된 이미지를 업로드하여 레시피로 가져옵니다.",
+                "selectImage": "이미지 선택",
+                "recipeName": "레시피 이름",
+                "recipeNamePlaceholder": "레시피 이름을 입력하세요",
+                "tagsOptional": "태그 (선택사항)",
+                "addTagPlaceholder": "태그 추가",
+                "addTag": "추가",
+                "noTagsAdded": "추가된 태그 없음",
+                "lorasInRecipe": "이 레시피의 LoRA",
+                "downloadLocationPreview": "다운로드 위치 미리보기:",
+                "useDefaultPath": "기본 경로 사용",
+                "useDefaultPathTooltip": "활성화하면 구성된 경로 템플릿을 사용하여 파일이 자동으로 정리됩니다",
+                "selectLoraRoot": "LoRA 루트 디렉토리를 선택하세요",
+                "targetFolderPath": "대상 폴더 경로:",
+                "folderPathPlaceholder": "폴더 경로를 입력하거나 아래 트리에서 선택하세요...",
+                "createNewFolder": "새 폴더 만들기",
+                "root": "루트",
+                "browseFolders": "폴더 탐색:",
+                "downloadAndSaveRecipe": "다운로드 및 레시피 저장",
+                "downloadMissingLoras": "누락된 LoRA 다운로드",
+                "saveRecipe": "레시피 저장",
+                "loraCountInfo": "({existing}/{total} 라이브러리에 있음)",
+                "processingInput": "입력 처리 중...",
+                "analyzingMetadata": "이미지 메타데이터 분석 중...",
+                "downloadingLoras": "LoRA 다운로드 중...",
+                "savingRecipe": "레시피 저장 중...",
+                "startingDownload": "LoRA {current}/{total} 다운로드 시작",
+                "deletedFromCivitai": "Civitai에서 삭제됨",
+                "inLibrary": "라이브러리에 있음",
+                "notInLibrary": "라이브러리에 없음",
+                "earlyAccessRequired": "이 LoRA는 얼리 액세스 결제가 필요합니다.",
+                "earlyAccessEnds": "얼리 액세스는 {date}에 종료됩니다.",
+                "earlyAccess": "얼리 액세스",
+                "verifyEarlyAccess": "다운로드 전에 얼리 액세스를 구매했는지 확인하세요.",
+                "duplicateRecipesFound": "라이브러리에서 {count}개의 동일한 레시피가 발견됨",
+                "duplicateRecipesDescription": "이 레시피들은 동일한 가중치의 같은 LoRA를 포함합니다.",
+                "showDuplicates": "중복 표시",
+                "hideDuplicates": "중복 숨기기",
+                "loraCount": "{count}개 LoRA",
+                "recipePreviewAlt": "레시피 미리보기",
+                "loraPreviewAlt": "LoRA 미리보기",
+                "errors": {
+                    "selectImageFile": "이미지 파일을 선택해주세요",
+                    "enterUrlOrPath": "URL 또는 파일 경로를 입력해주세요",
+                    "selectLoraRoot": "LoRA 루트 디렉토리를 선택해주세요"
+                }
+            },
+            "refresh": {
+                "title": "레시피 목록 새로고침"
+            },
+            "filteredByLora": "LoRA로 필터링됨"
+        },
+        "duplicates": {
+            "found": "{count}개의 중복 그룹 발견",
+            "keepLatest": "최신 버전 유지",
+            "deleteSelected": "선택된 항목 삭제"
+        },
+        "contextMenu": {
+            "copyRecipe": {
+                "missingId": "레시피를 복사할 수 없습니다: 레시피 ID 누락",
+                "failed": "레시피 문법 복사 실패"
+            },
+            "sendRecipe": {
+                "missingId": "레시피를 전송할 수 없습니다: 레시피 ID 누락",
+                "failed": "레시피를 워크플로로 전송하는데 실패했습니다"
+            },
+            "viewLoras": {
+                "missingId": "LoRA를 볼 수 없습니다: 레시피 ID 누락",
+                "noLorasFound": "이 레시피에서 LoRA를 찾을 수 없습니다",
+                "loadError": "레시피 LoRA 로딩 오류: {message}"
+            },
+            "downloadMissing": {
+                "missingId": "LoRA를 다운로드할 수 없습니다: 레시피 ID 누락",
+                "noMissingLoras": "다운로드할 누락된 LoRA가 없습니다",
+                "getInfoFailed": "누락된 LoRA 정보를 가져오는데 실패했습니다",
+                "prepareError": "LoRA 다운로드 준비 중 오류: {message}"
+            }
+        }
+    },
+    "checkpoints": {
+        "title": "Checkpoint 모델"
+    },
+    "embeddings": {
+        "title": "Embedding 모델"
+    },
+    "sidebar": {
+        "modelRoot": "모델 루트",
+        "collapseAll": "모든 폴더 접기",
+        "pinToggle": "사이드바 고정/해제"
+    },
+    "statistics": {
+        "title": "통계",
+        "tabs": {
+            "overview": "개요",
+            "usage": "사용량 분석",
+            "collection": "컬렉션",
+            "storage": "저장소",
+            "insights": "인사이트"
+        },
+        "usage": {
+            "mostUsedLoras": "가장 많이 사용된 LoRA",
+            "mostUsedCheckpoints": "가장 많이 사용된 Checkpoint",
+            "mostUsedEmbeddings": "가장 많이 사용된 Embedding"
+        },
+        "collection": {
+            "popularTags": "인기 태그",
+            "modelTypes": "모델 유형",
+            "collectionAnalysis": "컬렉션 분석"
+        },
+        "storage": {
+            "storageUsage": "저장소 사용량",
+            "largestModels": "가장 큰 모델",
+            "storageEfficiency": "저장소 대비 사용 효율성"
+        },
+        "insights": {
+            "smartInsights": "스마트 인사이트",
+            "recommendations": "추천"
+        },
+        "charts": {
+            "collectionOverview": "컬렉션 개요",
+            "baseModelDistribution": "베이스 모델 분포",
+            "usageTrends": "사용량 트렌드 (최근 30일)",
+            "usageDistribution": "사용량 분포"
+        }
+    },
+    "modals": {
+        "exclude": {
+            "confirm": "제외"
+        },
+        "download": {
+            "title": "URL에서 모델 다운로드",
+            "titleWithType": "URL에서 {type} 다운로드",
+            "url": "Civitai URL",
+            "civitaiUrl": "Civitai URL:",
+            "placeholder": "https://civitai.com/models/...",
+            "locationPreview": "다운로드 위치 미리보기",
+            "useDefaultPath": "기본 경로 사용",
+            "useDefaultPathTooltip": "활성화하면 구성된 경로 템플릿을 사용하여 파일이 자동으로 정리됩니다",
+            "selectRootDirectory": "루트 디렉토리를 선택하세요",
+            "selectModelRoot": "모델 루트 선택:",
+            "selectTypeRoot": "{type} 루트 선택:",
+            "targetFolderPath": "대상 폴더 경로:",
+            "browseFolders": "폴더 탐색:",
+            "createNewFolder": "새 폴더 만들기",
+            "pathPlaceholder": "폴더 경로를 입력하거나 아래 트리에서 선택하세요...",
+            "root": "루트",
+            "download": "다운로드",
+            "fetchingVersions": "모델 버전 가져오는 중...",
+            "versionPreview": "버전 미리보기",
+            "earlyAccess": "얼리 액세스",
+            "earlyAccessTooltip": "얼리 액세스 필요",
+            "inLibrary": "라이브러리에 있음",
+            "alreadyInLibrary": "이미 라이브러리에 있음",
+            "autoOrganizedPath": "[경로 템플릿으로 자동 정리됨]",
+            "errors": {
+                "invalidUrl": "잘못된 Civitai URL 형식",
+                "noVersions": "이 모델에 사용 가능한 버전이 없습니다"
+            },
+            "status": {
+                "preparing": "다운로드 준비 중...",
+                "downloadedPreview": "미리보기 이미지 다운로드됨",
+                "downloadingFile": "{type} 파일 다운로드 중",
+                "finalizing": "다운로드 완료 중..."
+            }
+        },
+        "move": {
+            "title": "모델 이동"
+        },
+        "contentRating": {
+            "title": "콘텐츠 등급 설정",
+            "current": "현재",
+            "levels": {
+                "pg": "PG",
+                "pg13": "PG13",
+                "r": "R",
+                "x": "X",
+                "xxx": "XXX"
+            }
+        },
+        "deleteModel": {
+            "title": "모델 삭제",
+            "message": "이 모델과 모든 관련 파일을 삭제하시겠습니까?"
+        },
+        "excludeModel": {
+            "title": "모델 제외",
+            "message": "이 모델을 제외하시겠습니까? 제외된 모델은 검색이나 모델 목록에 나타나지 않습니다."
+        },
+        "deleteDuplicateRecipes": {
+            "title": "중복 레시피 삭제",
+            "message": "선택된 중복 레시피를 삭제하시겠습니까?",
+            "countMessage": "개의 레시피가 영구적으로 삭제됩니다."
+        },
+        "deleteDuplicateModels": {
+            "title": "중복 모델 삭제",
+            "message": "선택된 중복 모델을 삭제하시겠습니까?",
+            "countMessage": "개의 모델이 영구적으로 삭제됩니다."
+        },
+        "clearCache": {
+            "title": "캐시 파일 지우기",
+            "message": "모든 캐시 파일을 지우시겠습니까?",
+            "description": "이렇게 하면 모든 캐시된 모델 데이터가 제거됩니다. 시스템은 다음 시작 시 캐시를 다시 구축해야 하며, 모델 컬렉션 크기에 따라 시간이 걸릴 수 있습니다.",
+            "action": "캐시 지우기"
+        },
+        "bulkDelete": {
+            "title": "여러 모델 삭제",
+            "message": "선택된 모든 모델과 관련 파일을 삭제하시겠습니까?",
+            "countMessage": "개의 모델이 영구적으로 삭제됩니다.",
+            "action": "모두 삭제"
+        },
+        "exampleAccess": {
+            "title": "로컬 예시 이미지",
+            "message": "이 모델의 로컬 예시 이미지를 찾을 수 없습니다. 보기 옵션:",
+            "downloadOption": {
+                "title": "Civitai에서 다운로드",
+                "description": "오프라인 사용 및 빠른 로딩을 위해 원격 예시를 로컬에 저장"
+            },
+            "importOption": {
+                "title": "직접 가져오기",
+                "description": "이 모델을 위한 사용자 정의 예시 추가"
+            },
+            "footerNote": "로컬 복사본이 없어도 원격 예시는 모델 세부 정보에서 여전히 볼 수 있습니다"
+        },
+        "moveModel": {
+            "targetLocationPreview": "대상 위치 미리보기:",
+            "selectModelRoot": "모델 루트 선택:",
+            "targetFolderPath": "대상 폴더 경로:",
+            "browseFolders": "폴더 탐색:",
+            "createNewFolder": "새 폴더 만들기",
+            "pathPlaceholder": "폴더 경로를 입력하거나 아래 트리에서 선택하세요...",
+            "root": "루트"
+        },
+        "relinkCivitai": {
+            "title": "Civitai에 다시 연결",
+            "warning": "경고:",
+            "warningText": "이것은 잠재적으로 파괴적인 작업입니다. 다시 연결하면:",
+            "warningList": {
+                "overrideMetadata": "기존 메타데이터 덮어쓰기",
+                "modifyHash": "모델 해시를 잠재적으로 수정",
+                "unintendedConsequences": "기타 의도하지 않은 결과가 있을 수 있음"
+            },
+            "proceedText": "원하는 작업이 확실한 경우에만 진행하세요.",
+            "urlLabel": "Civitai 모델 URL:",
+            "urlPlaceholder": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+            "helpText": {
+                "title": "모든 Civitai 모델 URL을 붙여넣으세요. 지원되는 형식:",
+                "format1": "https://civitai.com/models/649516",
+                "format2": "https://civitai.com/models/649516?modelVersionId=726676",
+                "format3": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+                "note": "참고: modelVersionId가 제공되지 않으면 최신 버전이 사용됩니다."
+            },
+            "confirmAction": "다시 연결 확인"
+        },
+        "model": {
+            "actions": {
+                "editModelName": "모델명 편집",
+                "editFileName": "파일명 편집",
+                "editBaseModel": "베이스 모델 편집",
+                "viewOnCivitai": "Civitai에서 보기",
+                "viewOnCivitaiText": "Civitai에서 보기",
+                "viewCreatorProfile": "제작자 프로필 보기"
+            },
+            "metadata": {
+                "version": "버전",
+                "fileName": "파일명",
+                "location": "위치",
+                "baseModel": "베이스 모델",
+                "size": "크기",
+                "unknown": "알 수 없음",
+                "usageTips": "사용 팁",
+                "additionalNotes": "추가 메모",
+                "notesHint": "Enter로 저장, Shift+Enter로 줄바꿈",
+                "addNotesPlaceholder": "메모를 여기에 추가하세요...",
+                "aboutThisVersion": "이 버전에 대해"
+            },
+            "notes": {
+                "saved": "메모가 성공적으로 저장됨",
+                "saveFailed": "메모 저장 실패"
+            },
+            "usageTips": {
+                "addPresetParameter": "프리셋 매개변수 추가...",
+                "strengthMin": "최소 강도",
+                "strengthMax": "최대 강도",
+                "strength": "강도",
+                "clipSkip": "클립 스킵",
+                "valuePlaceholder": "값",
+                "add": "추가"
+            },
+            "triggerWords": {
+                "label": "트리거 단어",
+                "noTriggerWordsNeeded": "트리거 단어가 필요하지 않음",
+                "edit": "트리거 단어 편집",
+                "cancel": "편집 취소",
+                "save": "변경사항 저장",
+                "addPlaceholder": "입력하거나 아래 제안을 클릭하세요",
+                "copyWord": "트리거 단어 복사",
+                "deleteWord": "트리거 단어 삭제",
+                "suggestions": {
+                    "noSuggestions": "사용 가능한 제안이 없습니다",
+                    "noTrainedWords": "이 모델에서 학습된 단어나 클래스 토큰을 찾을 수 없습니다. 수동으로 트리거 단어를 입력할 수 있습니다.",
+                    "classToken": "클래스 토큰",
+                    "classTokenDescription": "최상의 결과를 위해 프롬프트에 추가하세요",
+                    "wordSuggestions": "단어 제안",
+                    "wordsFound": "{count}개 단어 발견",
+                    "loading": "제안 로딩 중..."
+                }
+            },
+            "description": {
+                "noDescription": "사용 가능한 모델 설명이 없습니다",
+                "failedToLoad": "모델 설명 로딩 실패",
+                "editTitle": "모델 설명 편집",
+                "validation": {
+                    "cannotBeEmpty": "설명은 비어있을 수 없습니다"
+                },
+                "messages": {
+                    "updated": "모델 설명이 업데이트됨",
+                    "updateFailed": "모델 설명 업데이트 실패"
+                }
+            },
+            "tabs": {
+                "examples": "예시",
+                "description": "모델 설명",
+                "recipes": "레시피"
+            },
+            "loading": {
+                "exampleImages": "예시 이미지 로딩 중...",
+                "description": "모델 설명 로딩 중...",
+                "recipes": "레시피 로딩 중...",
+                "examples": "예시 로딩 중..."
+            }
+        }
+    },
+    "modelTags": {
+        "messages": {
+            "updated": "태그가 성공적으로 업데이트됨",
+            "updateFailed": "태그 업데이트 실패"
+        },
+        "validation": {
+            "maxLength": "태그는 30자를 초과할 수 없습니다",
+            "maxCount": "최대 30개의 태그만 허용됩니다",
+            "duplicate": "이 태그는 이미 존재합니다"
+        }
+    },
+    "keyboard": {
+        "navigation": "키보드 내비게이션:",
+        "shortcuts": {
+            "pageUp": "한 페이지 위로 스크롤",
+            "pageDown": "한 페이지 아래로 스크롤",
+            "home": "맨 위로 이동",
+            "end": "맨 아래로 이동"
+        }
+    },
+    "initialization": {
+        "title": "초기화 중",
+        "message": "작업공간을 준비하고 있습니다...",
+        "status": "초기화 중...",
+        "estimatingTime": "시간 추정 중...",
+        "loras": {
+            "title": "LoRA Manager 초기화 중",
+            "message": "LoRA 캐시를 스캔하고 구축하고 있습니다. 몇 분이 걸릴 수 있습니다..."
+        },
+        "checkpoints": {
+            "title": "Checkpoint Manager 초기화 중",
+            "message": "Checkpoint 캐시를 스캔하고 구축하고 있습니다. 몇 분이 걸릴 수 있습니다..."
+        },
+        "embeddings": {
+            "title": "Embedding Manager 초기화 중",
+            "message": "Embedding 캐시를 스캔하고 구축하고 있습니다. 몇 분이 걸릴 수 있습니다..."
+        },
+        "recipes": {
+            "title": "Recipe Manager 초기화 중",
+            "message": "레시피를 로딩하고 처리하고 있습니다. 몇 분이 걸릴 수 있습니다..."
+        },
+        "statistics": {
+            "title": "통계 초기화 중",
+            "message": "통계를 위한 모델 데이터를 처리하고 있습니다. 몇 분이 걸릴 수 있습니다..."
+        },
+        "tips": {
+            "title": "팁 & 요령",
+            "civitai": {
+                "title": "Civitai 통합",
+                "description": "Civitai 계정 연결: 프로필 아바타 → 설정 → API 키 → API 키 추가를 방문한 후 LoRA Manager 설정에 붙여넣으세요.",
+                "alt": "Civitai API 설정"
+            },
+            "download": {
+                "title": "간편 다운로드",
+                "description": "Civitai URL을 사용하여 새로운 모델을 빠르게 다운로드하고 설치하세요.",
+                "alt": "Civitai 다운로드"
+            },
+            "recipes": {
+                "title": "레시피 저장",
+                "description": "향후 사용을 위해 좋아하는 모델 조합을 저장할 레시피를 생성하세요.",
+                "alt": "레시피"
+            },
+            "filter": {
+                "title": "빠른 필터링",
+                "description": "헤더의 필터 버튼을 사용하여 태그나 베이스 모델 유형별로 모델을 필터링하세요.",
+                "alt": "모델 필터"
+            },
+            "search": {
+                "title": "빠른 검색",
+                "description": "Ctrl+F (Mac에서는 Cmd+F)를 눌러 현재 뷰에서 빠르게 검색하세요.",
+                "alt": "빠른 검색"
+            }
+        }
+    },
+    "duplicates": {
+        "found": "{count}개의 중복 그룹 발견",
+        "showNotification": "중복 알림 표시",
+        "deleteSelected": "선택된 항목 삭제",
+        "exitMode": "모드 종료",
+        "help": {
+            "identicalHashes": "동일한 해시는 이름이나 미리보기가 다르더라도 동일한 모델 파일을 의미합니다.",
+            "keepOne": "하나의 버전만 유지하고 (더 나은 메타데이터/미리보기가 있는 것이 바람직) 나머지는 안전하게 삭제하세요."
+        }
+    },
+    "uiHelpers": {
+        "clipboard": {
+            "copied": "클립보드에 복사됨",
+            "copyFailed": "복사 실패"
+        },
+        "lora": {
+            "syntaxCopied": "LoRA 문법이 클립보드에 복사됨",
+            "syntaxCopiedNoTriggerWords": "LoRA 문법이 클립보드에 복사됨 (트리거 단어를 찾을 수 없음)",
+            "syntaxCopiedWithTriggerWords": "트리거 단어가 포함된 LoRA 문법이 클립보드에 복사됨",
+            "syntaxCopiedWithTriggerWordGroups": "트리거 단어 그룹이 포함된 LoRA 문법이 클립보드에 복사됨"
+        },
+        "workflow": {
+            "noSupportedNodes": "워크플로에서 지원되는 대상 노드를 찾을 수 없습니다",
+            "communicationFailed": "ComfyUI와의 통신에 실패했습니다"
+        },
+        "nodeSelector": {
+            "recipe": "레시피",
+            "lora": "LoRA",
+            "replace": "교체",
+            "append": "추가",
+            "selectTargetNode": "대상 노드 선택",
+            "sendToAll": "모두에게 전송"
+        },
+        "exampleImages": {
+            "opened": "예시 이미지 폴더가 열렸습니다",
+            "openingFolder": "예시 이미지 폴더를 여는 중",
+            "failedToOpen": "예시 이미지 폴더 열기 실패"
+        }
+    },
+    "help": {
+        "title": "도움말 & 튜토리얼",
+        "tabs": {
+            "gettingStarted": "시작하기",
+            "updateVlogs": "업데이트 영상",
+            "documentation": "문서"
+        },
+        "gettingStarted": {
+            "title": "LoRA Manager 시작하기"
+        },
+        "updateVlogs": {
+            "title": "최신 업데이트",
+            "watchOnYouTube": "YouTube에서 보기",
+            "playlistTitle": "LoRA Manager 업데이트 재생목록",
+            "playlistDescription": "최신 기능과 개선사항을 보여주는 모든 업데이트 비디오를 시청하세요."
+        },
+        "documentation": {
+            "title": "문서",
+            "general": "일반",
+            "troubleshooting": "문제 해결",
+            "modelManagement": "모델 관리",
+            "recipes": "레시피",
+            "settings": "설정 & 구성",
+            "extensions": "확장",
+            "newBadge": "신규"
+        }
+    },
+    "update": {
+        "title": "업데이트 확인",
+        "updateAvailable": "업데이트 사용 가능",
+        "noChangelogAvailable": "상세한 변경 로그가 없습니다. 더 많은 정보는 GitHub를 확인하세요.",
+        "currentVersion": "현재 버전",
+        "newVersion": "새 버전",
+        "commit": "커밋",
+        "viewOnGitHub": "GitHub에서 보기",
+        "updateNow": "지금 업데이트",
+        "preparingUpdate": "업데이트 준비 중...",
+        "changelog": "변경 로그",
+        "checkingUpdates": "업데이트 확인 중...",
+        "checkingMessage": "최신 버전을 확인하는 동안 잠시 기다려주세요.",
+        "showNotifications": "업데이트 알림 표시",
+        "updateProgress": {
+            "preparing": "업데이트 준비 중...",
+            "installing": "업데이트 설치 중...",
+            "completed": "업데이트가 성공적으로 완료되었습니다!",
+            "failed": "업데이트 실패: {error}"
+        },
+        "status": {
+            "updating": "업데이트 중...",
+            "updated": "업데이트됨!",
+            "updateFailed": "업데이트 실패"
+        },
+        "completion": {
+            "successMessage": "{version}로 성공적으로 업데이트되었습니다!",
+            "restartMessage": "업데이트를 적용하려면 ComfyUI 또는 LoRA Manager를 재시작해주세요.",
+            "reloadMessage": "LoRA Manager와 ComfyUI 모두에 대해 브라우저를 새로고침해야 합니다."
+        },
+        "nightly": {
+            "warning": "경고: 나이틀리 빌드는 실험적 기능을 포함할 수 있으며 불안정할 수 있습니다.",
+            "enable": "나이틀리 업데이트 활성화"
+        }
+    },
+    "support": {
+        "title": "프로젝트 지원",
+        "message": "LoRA Manager가 유용하다고 생각하신다면, 지원해주시면 정말 감사하겠습니다! 🙌",
+        "feedback": {
+            "title": "피드백 제공",
+            "description": "여러분의 피드백이 향후 업데이트를 만드는 데 도움이 됩니다! 의견을 공유해주세요:"
+        },
+        "links": {
+            "submitGithubIssue": "GitHub 이슈 제출",
+            "joinDiscord": "Discord 참여",
+            "youtubeChannel": "YouTube 채널",
+            "civitaiProfile": "Civitai 프로필",
+            "supportKofi": "Ko-fi에서 지원",
+            "supportPatreon": "Patreon에서 지원"
+        },
+        "sections": {
+            "followUpdates": "업데이트 팔로우",
+            "buyMeCoffee": "커피 사주기",
+            "coffeeDescription": "제 작업을 직접 지원하고 싶으시다면:",
+            "becomePatron": "후원자 되기",
+            "patronDescription": "월간 기여로 지속적인 개발을 지원하세요:",
+            "wechatSupport": "WeChat 지원",
+            "wechatDescription": "중국 사용자의 경우, WeChat을 통해 지원할 수 있습니다:",
+            "showWechatQR": "WeChat QR 코드 표시",
+            "hideWechatQR": "WeChat QR 코드 숨기기"
+        },
+        "footer": "LoRA Manager를 사용해주셔서 감사합니다! ❤️"
+    },
+    "toast": {
+        "general": {
+            "cannotInteractStandalone": "독립 실행 모드에서는 ComfyUI와 상호작용할 수 없습니다",
+            "failedWorkflowInfo": "워크플로 정보를 가져오는데 실패했습니다",
+            "pageInitFailed": "{pageType} 페이지 초기화에 실패했습니다. 새로고침해주세요.",
+            "statisticsLoadFailed": "통계 데이터 로딩에 실패했습니다"
+        },
+        "loras": {
+            "copyOnlyForLoras": "문법 복사는 LoRA에서만 사용할 수 있습니다",
+            "noLorasSelected": "선택된 LoRA가 없습니다",
+            "missingDataForLoras": "{count}개 LoRA의 데이터가 누락되었습니다",
+            "noValidLorasToCopy": "복사할 유효한 LoRA가 없습니다",
+            "sendOnlyForLoras": "워크플로로 전송은 LoRA에서만 사용할 수 있습니다",
+            "noValidLorasToSend": "전송할 유효한 LoRA가 없습니다",
+            "downloadSuccessful": "LoRA가 성공적으로 다운로드되었습니다",
+            "allDownloadSuccessful": "모든 {count}개 LoRA가 성공적으로 다운로드되었습니다",
+            "downloadPartialSuccess": "{total}개 중 {completed}개 LoRA가 다운로드되었습니다",
+            "downloadPartialWithAccess": "{total}개 중 {completed}개 LoRA가 다운로드되었습니다. {accessFailures}개는 액세스 제한으로 실패했습니다. 설정에서 API 키 또는 얼리 액세스 상태를 확인하세요.",
+            "pleaseSelectVersion": "버전을 선택해주세요",
+            "versionExists": "이 버전은 이미 라이브러리에 있습니다",
+            "downloadCompleted": "다운로드가 성공적으로 완료되었습니다"
+        },
+        "recipes": {
+            "fetchFailed": "레시피 가져오기 실패: {message}",
+            "reloadFailed": "{modelType} 다시 로딩 실패: {message}",
+            "loadFailed": "{modelType} 로딩 실패: {message}",
+            "refreshComplete": "새로고침 완료",
+            "refreshFailed": "레시피 새로고침 실패: {message}",
+            "updateFailed": "레시피 업데이트 실패: {error}",
+            "updateError": "레시피 업데이트 오류: {message}",
+            "nameSaved": "레시피 \"{name}\"이 성공적으로 저장되었습니다",
+            "nameUpdated": "레시피 이름이 성공적으로 업데이트되었습니다",
+            "tagsUpdated": "레시피 태그가 성공적으로 업데이트되었습니다",
+            "sourceUrlUpdated": "소스 URL이 성공적으로 업데이트되었습니다",
+            "noRecipeId": "사용 가능한 레시피 ID가 없습니다",
+            "copyFailed": "레시피 문법 복사 오류: {message}",
+            "noMissingLoras": "다운로드할 누락된 LoRA가 없습니다",
+            "missingLorasInfoFailed": "누락된 LoRA 정보를 가져오는데 실패했습니다",
+            "preparingForDownloadFailed": "LoRA 다운로드 준비 오류",
+            "enterLoraName": "LoRA 이름 또는 문법을 입력해주세요",
+            "reconnectedSuccessfully": "LoRA가 성공적으로 다시 연결되었습니다",
+            "reconnectFailed": "LoRA 다시 연결 오류: {message}",
+            "cannotSend": "레시피를 전송할 수 없습니다: 레시피 ID 누락",
+            "sendFailed": "레시피를 워크플로로 전송하는데 실패했습니다",
+            "sendError": "레시피를 워크플로로 전송하는 중 오류",
+            "cannotDelete": "레시피를 삭제할 수 없습니다: 레시피 ID 누락",
+            "deleteConfirmationError": "삭제 확인 표시 오류",
+            "deletedSuccessfully": "레시피가 성공적으로 삭제되었습니다",
+            "deleteFailed": "레시피 삭제 오류: {message}",
+            "cannotShare": "레시피를 공유할 수 없습니다: 레시피 ID 누락",
+            "preparingForSharing": "공유를 위한 레시피 준비 중...",
+            "downloadStarted": "레시피 다운로드가 시작되었습니다",
+            "shareError": "레시피 공유 오류: {message}",
+            "sharePreparationError": "레시피 공유 준비 오류",
+            "selectImageFirst": "먼저 이미지를 선택해주세요",
+            "enterRecipeName": "레시피 이름을 입력해주세요",
+            "processingError": "처리 오류: {message}",
+            "folderBrowserError": "폴더 브라우저 로딩 오류: {message}",
+            "recipeSaveFailed": "레시피 저장 실패: {error}",
+            "importFailed": "가져오기 실패: {message}",
+            "folderTreeFailed": "폴더 트리 로딩 실패",
+            "folderTreeError": "폴더 트리 로딩 오류"
+        },
+        "models": {
+            "noModelsSelected": "선택된 모델이 없습니다",
+            "deletedSuccessfully": "{count}개의 {type}이(가) 성공적으로 삭제되었습니다",
+            "deleteFailed": "오류: {error}",
+            "deleteFailedGeneral": "모델 삭제에 실패했습니다",
+            "selectedAdditional": "추가로 {count}개의 {type}이(가) 선택되었습니다",
+            "refreshMetadataFailed": "메타데이터 새로고침에 실패했습니다",
+            "nameCannotBeEmpty": "모델 이름은 비어있을 수 없습니다",
+            "nameUpdatedSuccessfully": "모델 이름이 성공적으로 업데이트되었습니다",
+            "nameUpdateFailed": "모델 이름 업데이트에 실패했습니다",
+            "baseModelUpdated": "베이스 모델이 성공적으로 업데이트되었습니다",
+            "baseModelUpdateFailed": "베이스 모델 업데이트에 실패했습니다",
+            "invalidCharactersRemoved": "파일명에서 잘못된 문자가 제거되었습니다",
+            "filenameCannotBeEmpty": "파일 이름은 비어있을 수 없습니다",
+            "renameFailed": "파일 이름 변경 실패: {message}",
+            "moveFailed": "모델 이동 실패: {message}",
+            "pleaseSelectRoot": "{type} 루트 디렉토리를 선택해주세요",
+            "nameTooLong": "모델 이름은 100자로 제한됩니다",
+            "verificationAlreadyDone": "이 그룹은 이미 검증되었습니다",
+            "verificationCompleteMismatch": "검증 완료. {count}개 파일의 실제 해시가 다릅니다.",
+            "verificationCompleteSuccess": "검증 완료. 모든 파일이 중복임을 확인했습니다.",
+            "verificationFailed": "해시 검증 실패: {message}"
+        },
+        "search": {
+            "atLeastOneOption": "최소 하나의 검색 옵션을 선택해야 합니다"
+        },
+        "settings": {
+            "loraRootsFailed": "LoRA 루트 로딩 실패: {message}",
+            "checkpointRootsFailed": "Checkpoint 루트 로딩 실패: {message}",
+            "embeddingRootsFailed": "Embedding 루트 로딩 실패: {message}",
+            "mappingsUpdated": "베이스 모델 경로 매핑이 업데이트되었습니다 ({count}개 매핑)",
+            "mappingsCleared": "베이스 모델 경로 매핑이 지워졌습니다",
+            "mappingSaveFailed": "베이스 모델 매핑 저장 실패: {message}",
+            "downloadTemplatesUpdated": "다운로드 경로 템플릿이 업데이트되었습니다",
+            "downloadTemplatesFailed": "다운로드 경로 템플릿 저장 실패: {message}",
+            "settingsUpdated": "설정 업데이트됨: {setting}",
+            "compactModeToggled": "컴팩트 모드 {state}",
+            "settingSaveFailed": "설정 저장 실패: {message}",
+            "displayDensitySet": "표시 밀도가 {density}로 설정되었습니다",
+            "languageChangeFailed": "언어 변경 실패: {message}",
+            "cacheCleared": "캐시 파일이 성공적으로 지워졌습니다. 다음 작업 시 캐시가 재구축됩니다.",
+            "cacheClearFailed": "캐시 지우기 실패: {error}",
+            "cacheClearError": "캐시 지우기 오류: {message}"
+        },
+        "filters": {
+            "applied": "{message}",
+            "cleared": "필터가 지워졌습니다",
+            "noCustomFilterToClear": "지울 사용자 정의 필터가 없습니다"
+        },
+        "downloads": {
+            "imagesCompleted": "예시 이미지 {action}이(가) 완료되었습니다",
+            "imagesFailed": "예시 이미지 {action}이(가) 실패했습니다",
+            "loadError": "다운로드 로딩 오류: {message}",
+            "downloadError": "다운로드 오류: {message}"
+        },
+        "import": {
+            "folderTreeFailed": "폴더 트리 로딩 실패",
+            "folderTreeError": "폴더 트리 로딩 오류",
+            "imagesImported": "예시 이미지가 성공적으로 가져와졌습니다",
+            "importFailed": "예시 이미지 가져오기 실패: {message}"
+        },
+        "triggerWords": {
+            "loadFailed": "학습된 단어를 로딩할 수 없습니다",
+            "tooLong": "트리거 단어는 30단어를 초과할 수 없습니다",
+            "tooMany": "최대 30개의 트리거 단어만 허용됩니다",
+            "alreadyExists": "이 트리거 단어는 이미 존재합니다",
+            "updateSuccess": "트리거 단어가 성공적으로 업데이트되었습니다",
+            "updateFailed": "트리거 단어 업데이트에 실패했습니다",
+            "copyFailed": "복사 실패"
+        },
+        "virtual": {
+            "loadFailed": "항목 로딩 실패",
+            "loadMoreFailed": "더 많은 항목 로딩 실패",
+            "loadPositionFailed": "이 위치의 항목 로딩 실패"
+        },
+        "bulk": {
+            "unableToSelectAll": "모든 항목을 선택할 수 없습니다"
+        },
+        "duplicates": {
+            "findFailed": "중복 찾기 실패: {message}",
+            "noDuplicatesFound": "중복 {type}을(를) 찾을 수 없습니다",
+            "noItemsSelected": "삭제할 {type}이(가) 선택되지 않았습니다",
+            "deleteError": "오류: {message}",
+            "deleteSuccess": "{count}개의 {type}이(가) 성공적으로 삭제되었습니다",
+            "deleteFailed": "{type} 삭제 실패: {message}"
+        },
+        "controls": {
+            "reloadFailed": "{pageType} 다시 로딩 실패: {message}",
+            "refreshFailed": "{pageType} {action} 실패: {message}",
+            "fetchMetadataFailed": "메타데이터 가져오기 실패: {message}",
+            "clearFilterFailed": "사용자 정의 필터 지우기 실패: {message}"
+        },
+        "contextMenu": {
+            "contentRatingSet": "콘텐츠 등급이 {level}로 설정되었습니다",
+            "contentRatingFailed": "콘텐츠 등급 설정 실패: {message}",
+            "relinkSuccess": "모델이 Civitai에 성공적으로 다시 연결되었습니다",
+            "relinkFailed": "오류: {message}",
+            "fetchMetadataFirst": "먼저 CivitAI에서 메타데이터를 가져와주세요",
+            "noCivitaiInfo": "사용 가능한 CivitAI 정보가 없습니다",
+            "missingHash": "모델 해시를 사용할 수 없습니다"
+        },
+        "exampleImages": {
+            "pathUpdated": "예시 이미지 경로가 성공적으로 업데이트되었습니다",
+            "downloadInProgress": "이미 다운로드가 진행 중입니다",
+            "enterLocationFirst": "먼저 다운로드 위치를 입력해주세요",
+            "downloadStarted": "예시 이미지 다운로드가 시작되었습니다",
+            "downloadStartFailed": "다운로드 시작 실패: {error}",
+            "downloadPaused": "다운로드가 일시정지되었습니다",
+            "pauseFailed": "다운로드 일시정지 실패: {error}",
+            "downloadResumed": "다운로드가 재개되었습니다",
+            "resumeFailed": "다운로드 재개 실패: {error}",
+            "deleted": "예시 이미지가 삭제되었습니다",
+            "deleteFailed": "예시 이미지 삭제 실패",
+            "setPreviewFailed": "미리보기 이미지 설정 실패"
+        },
+        "api": {
+            "fetchFailed": "{type} 가져오기 실패: {message}",
+            "reloadFailed": "{type} 다시 로딩 실패: {message}",
+            "deleteSuccess": "{type}이(가) 성공적으로 삭제되었습니다",
+            "deleteFailed": "{type} 삭제 실패: {message}",
+            "excludeSuccess": "{type}이(가) 성공적으로 제외되었습니다",
+            "excludeFailed": "{type} 제외 실패: {message}",
+            "fileNameUpdated": "파일명이 성공적으로 업데이트되었습니다",
+            "fileRenameFailed": "파일 이름 변경 실패: {error}",
+            "previewUpdated": "미리보기가 성공적으로 업데이트되었습니다",
+            "previewUploadFailed": "미리보기 이미지 업로드 실패",
+            "refreshComplete": "{action} 완료",
+            "refreshFailed": "{type} {action} 실패",
+            "metadataRefreshed": "메타데이터가 성공적으로 새로고침되었습니다",
+            "metadataRefreshFailed": "메타데이터 새로고침 실패: {message}",
+            "metadataUpdateComplete": "메타데이터 업데이트 완료",
+            "metadataFetchFailed": "메타데이터 가져오기 실패: {message}",
+            "bulkMetadataCompleteAll": "모든 {count}개 {type}이(가) 성공적으로 새로고침되었습니다",
+            "bulkMetadataCompletePartial": "{total}개 중 {success}개 {type}이(가) 새로고침되었습니다",
+            "bulkMetadataCompleteNone": "어떤 {type}의 메타데이터도 새로고침하지 못했습니다",
+            "bulkMetadataFailureDetails": "실패한 새로고침:\n{failures}",
+            "bulkMetadataFailed": "메타데이터 새로고침 실패: {message}",
+            "moveNotSupported": "{type} 이동은 지원되지 않습니다",
+            "alreadyInFolder": "{type}이(가) 이미 선택된 폴더에 있습니다",
+            "moveInfo": "{message}",
+            "moveSuccess": "{type}이(가) 성공적으로 이동되었습니다",
+            "bulkMoveNotSupported": "{type} 이동은 지원되지 않습니다",
+            "allAlreadyInFolder": "선택된 모든 {type}이(가) 이미 대상 폴더에 있습니다",
+            "bulkMovePartial": "{successCount}개 {type}이(가) 이동되었고, {failureCount}개가 실패했습니다",
+            "bulkMoveFailures": "실패한 이동:\n{failures}",
+            "bulkMoveSuccess": "{successCount}개 {type}이(가) 성공적으로 이동되었습니다",
+            "exampleImagesDownloadSuccess": "예시 이미지가 성공적으로 다운로드되었습니다!",
+            "exampleImagesDownloadFailed": "예시 이미지 다운로드 실패: {message}"
+        }
+    },
+    "banners": {
+        "versionMismatch": {
+            "title": "애플리케이션 업데이트 감지",
+            "content": "브라우저에서 구버전의 LoRA Manager ({storedVersion})를 실행하고 있습니다. 서버가 버전 {currentVersion}로 업데이트되었습니다. 올바른 기능을 위해 새로고침해주세요.",
+            "refreshNow": "지금 새로고침",
+            "refreshingIn": "새로고침까지",
+            "seconds": "초"
+        }
+    }
+}

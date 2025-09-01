@@ -3,6 +3,8 @@ import { toggleTheme } from '../utils/uiHelpers.js';
 import { SearchManager } from '../managers/SearchManager.js';
 import { FilterManager } from '../managers/FilterManager.js';
 import { initPageState } from '../state/index.js';
+import { getStorageItem } from '../utils/storageHelpers.js';
+import { updateElementAttribute } from '../utils/i18nHelpers.js';
 
 /**
  * Header.js - Manages the application header behavior across different pages
@@ -47,21 +49,17 @@ export class HeaderManager {
       // Handle theme toggle
       const themeToggle = document.querySelector('.theme-toggle');
       if (themeToggle) {
-        // Set initial state based on current theme
-        const currentTheme = localStorage.getItem('lm_theme') || 'auto';
+        const currentTheme = getStorageItem('theme') || 'auto';
         themeToggle.classList.add(`theme-${currentTheme}`);
-        
-        themeToggle.addEventListener('click', () => {
+
+        // Use i18nHelpers to update themeToggle's title
+        this.updateThemeTooltip(themeToggle, currentTheme);
+
+        themeToggle.addEventListener('click', async () => {
           if (typeof toggleTheme === 'function') {
             const newTheme = toggleTheme();
-            // Update tooltip based on next toggle action
-            if (newTheme === 'light') {
-              themeToggle.title = "Switch to dark theme";
-            } else if (newTheme === 'dark') {
-              themeToggle.title = "Switch to auto theme";
-            } else {
-              themeToggle.title = "Switch to light theme";
-            }
+            // Use i18nHelpers to update themeToggle's title
+            this.updateThemeTooltip(themeToggle, newTheme);
           }
         });
       }
@@ -125,29 +123,43 @@ export class HeaderManager {
       // Hide search functionality on Statistics page
       this.updateHeaderForPage();
     }
-    
+
     updateHeaderForPage() {
       const headerSearch = document.getElementById('headerSearch');
-      
+      const searchInput = headerSearch?.querySelector('#searchInput');
+      const searchButtons = headerSearch?.querySelectorAll('button');
+      const placeholderKey = 'header.search.placeholders.' + this.currentPage;
+
       if (this.currentPage === 'statistics' && headerSearch) {
         headerSearch.classList.add('disabled');
-        // Disable search functionality
-        const searchInput = headerSearch.querySelector('#searchInput');
-        const searchButtons = headerSearch.querySelectorAll('button');
         if (searchInput) {
           searchInput.disabled = true;
-          searchInput.placeholder = 'Search not available on statistics page';
+          // Use i18nHelpers to update placeholder
+          updateElementAttribute(searchInput, 'placeholder', 'header.search.notAvailable', {}, 'Search not available on statistics page');
         }
-        searchButtons.forEach(btn => btn.disabled = true);
+        searchButtons?.forEach(btn => btn.disabled = true);
       } else if (headerSearch) {
         headerSearch.classList.remove('disabled');
-        // Re-enable search functionality
-        const searchInput = headerSearch.querySelector('#searchInput');
-        const searchButtons = headerSearch.querySelectorAll('button');
         if (searchInput) {
           searchInput.disabled = false;
+          // Use i18nHelpers to update placeholder
+          updateElementAttribute(searchInput, 'placeholder', placeholderKey, {}, '');
         }
-        searchButtons.forEach(btn => btn.disabled = false);
+        searchButtons?.forEach(btn => btn.disabled = false);
       }
+    }
+
+    updateThemeTooltip(themeToggle, currentTheme) {
+      if (!themeToggle) return;
+      let key;
+      if (currentTheme === 'light') {
+        key = 'header.theme.switchToDark';
+      } else if (currentTheme === 'dark') {
+        key = 'header.theme.switchToLight';
+      } else {
+        key = 'header.theme.toggle';
+      }
+      // Use i18nHelpers to update title
+      updateElementAttribute(themeToggle, 'title', key, {}, '');
     }
 }

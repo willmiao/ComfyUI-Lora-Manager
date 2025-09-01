@@ -80,7 +80,8 @@ class SettingsManager:
         """Return default settings"""
         return {
             "civitai_api_key": "",
-            "show_only_sfw": False
+            "show_only_sfw": False,
+            "language": "en"  # 添加默认语言设置
         }
 
     def get(self, key: str, default: Any = None) -> Any:

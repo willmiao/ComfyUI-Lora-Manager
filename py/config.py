@@ -18,6 +18,7 @@ class Config:
     def __init__(self):
         self.templates_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates')
         self.static_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')
+        self.i18n_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'locales')
         # Path mapping dictionary, target to link mapping
         self._path_mappings = {}
         # Static route mapping dictionary, target to route mapping

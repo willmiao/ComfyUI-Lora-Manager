@@ -2,32 +2,32 @@
 <div id="relinkCivitaiModal" class="modal">
     <div class="modal-content">
         <button class="close" onclick="modalManager.closeModal('relinkCivitaiModal')">&times;</button>
-        <h2>Re-link to Civitai</h2>
+        <h2>{{ t('modals.relinkCivitai.title') }}</h2>
         <div class="warning-box">
             <i class="fas fa-exclamation-triangle"></i>
-            <p><strong>Warning:</strong> This is a potentially destructive operation. Re-linking will:</p>
+            <p><strong>{{ t('modals.relinkCivitai.warning') }}</strong> {{ t('modals.relinkCivitai.warningText') }}</p>
             <ul>
-                <li>Override existing metadata</li>
-                <li>Potentially modify the model hash</li>
-                <li>May have other unintended consequences</li>
+                <li>{{ t('modals.relinkCivitai.warningList.overrideMetadata') }}</li>
+                <li>{{ t('modals.relinkCivitai.warningList.modifyHash') }}</li>
+                <li>{{ t('modals.relinkCivitai.warningList.unintendedConsequences') }}</li>
             </ul>
-            <p>Only proceed if you're sure this is what you want.</p>
+            <p>{{ t('modals.relinkCivitai.proceedText') }}</p>
         </div>
         <div class="input-group">
-            <label for="civitaiModelUrl">Civitai Model URL:</label>
-            <input type="text" id="civitaiModelUrl" placeholder="https://civitai.com/models/649516/model-name?modelVersionId=726676" />
+            <label for="civitaiModelUrl">{{ t('modals.relinkCivitai.urlLabel') }}</label>
+            <input type="text" id="civitaiModelUrl" placeholder="{{ t('modals.relinkCivitai.urlPlaceholder') }}" />
             <div class="input-error" id="civitaiModelUrlError"></div>
             <div class="input-help">
-                Paste any Civitai model URL. Supported formats:<br>
-                • https://civitai.com/models/649516<br>
-                • https://civitai.com/models/649516?modelVersionId=726676<br>
-                • https://civitai.com/models/649516/model-name?modelVersionId=726676<br>
-                <em>Note: If no modelVersionId is provided, the latest version will be used.</em>
+                {{ t('modals.relinkCivitai.helpText.title') }}<br>
+                • {{ t('modals.relinkCivitai.helpText.format1') }}<br>
+                • {{ t('modals.relinkCivitai.helpText.format2') }}<br>
+                • {{ t('modals.relinkCivitai.helpText.format3') }}<br>
+                <em>{{ t('modals.relinkCivitai.helpText.note') }}</em>
             </div>
         </div>
         <div class="modal-actions">
-            <button class="cancel-btn" onclick="modalManager.closeModal('relinkCivitaiModal')">Cancel</button>
-            <button class="confirm-btn" id="confirmRelinkBtn">Confirm Re-link</button>
+            <button class="cancel-btn" onclick="modalManager.closeModal('relinkCivitaiModal')">{{ t('common.actions.cancel') }}</button>
+            <button class="confirm-btn" id="confirmRelinkBtn">{{ t('modals.relinkCivitai.confirmAction') }}</button>
         </div>
     </div>
 </div>

@@ -210,7 +210,7 @@ export class VirtualScroller {
             this.scheduleRender();
         } catch (err) {
             console.error('Failed to initialize virtual scroller:', err);
-            showToast('Failed to load items', 'error');
+            showToast('toast.virtual.loadFailed', {}, 'error');
         }
     }
 
@@ -293,7 +293,7 @@ export class VirtualScroller {
             return items;
         } catch (err) {
             console.error('Failed to load more items:', err);
-            showToast('Failed to load more items', 'error');
+            showToast('toast.virtual.loadMoreFailed', {}, 'error');
         } finally {
             this.isLoading = false;
             pageState.isLoading = false;
@@ -571,7 +571,7 @@ export class VirtualScroller {
             }
         } catch (err) {
             console.error('Failed to fetch data window:', err);
-            showToast('Failed to load items at this position', 'error');
+            showToast('toast.virtual.loadPositionFailed', {}, 'error');
         } finally {
             this.fetchingWindow = false;
         }

@@ -1,4 +1,5 @@
 import { showToast } from '../../utils/uiHelpers.js';
+import { translate } from '../../utils/i18nHelpers.js';
 
 /**
  * ModelDescription.js
@@ -62,15 +63,17 @@ async function loadModelDescription() {
         const description = await getModelApiClient().fetchModelDescription(filePath);
         
         // Update content
-        descriptionContent.innerHTML = description || '<div class="no-description">No model description available</div>';
+        const noDescriptionText = translate('modals.model.description.noDescription', {}, 'No model description available');
+        descriptionContent.innerHTML = description || `<div class="no-description">${noDescriptionText}</div>`;
         descriptionContent.dataset.loaded = 'true';
         
         // Set up editing functionality
-        setupModelDescriptionEditing(filePath);
+        await setupModelDescriptionEditing(filePath);
         
     } catch (error) {
         console.error('Error loading model description:', error);
-        descriptionContent.innerHTML = '<div class="no-description">Failed to load model description</div>';
+        const failedText = translate('modals.model.description.failedToLoad', {}, 'Failed to load model description');
+        descriptionContent.innerHTML = `<div class="no-description">${failedText}</div>`;
     } finally {
         // Hide loading state
         descriptionLoading?.classList.add('hidden');
@@ -82,7 +85,7 @@ async function loadModelDescription() {
  * Set up model description editing functionality
  * @param {string} filePath - File path
  */
-export function setupModelDescriptionEditing(filePath) {
+export async function setupModelDescriptionEditing(filePath) {
     const descContent = document.querySelector('.model-description-content');
     const descContainer = document.querySelector('.model-description-container');
     if (!descContent || !descContainer) return;
@@ -92,7 +95,9 @@ export function setupModelDescriptionEditing(filePath) {
     if (!editBtn) {
         editBtn = document.createElement('button');
         editBtn.className = 'edit-model-description-btn';
-        editBtn.title = 'Edit model description';
+        // Set title using i18n
+        const editTitle = translate('modals.model.description.editTitle', {}, 'Edit model description');
+        editBtn.title = editTitle;
         editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i>';
         descContainer.insertBefore(editBtn, descContent);
     }
@@ -149,7 +154,7 @@ export function setupModelDescriptionEditing(filePath) {
         }
         if (!newValue) {
             this.innerHTML = originalValue;
-            showToast('Description cannot be empty', 'error');
+            showToast('modals.model.description.validation.cannotBeEmpty', {}, 'error');
             exitEditMode();
             return;
         }
@@ -157,10 +162,10 @@ export function setupModelDescriptionEditing(filePath) {
             // Save to backend
             const { getModelApiClient } = await import('../../api/modelApiFactory.js');
             await getModelApiClient().saveModelMetadata(filePath, { modelDescription: newValue });
-            showToast('Model description updated', 'success');
+            showToast('modals.model.description.messages.updated', {}, 'success');
         } catch (err) {
             this.innerHTML = originalValue;
-            showToast('Failed to update model description', 'error');
+            showToast('modals.model.description.messages.updateFailed', {}, 'error');
         } finally {
             exitEditMode();
         }

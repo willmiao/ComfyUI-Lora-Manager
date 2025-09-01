@@ -129,7 +129,7 @@ async function initializeVirtualScroll(pageType) {
         
     } catch (error) {
         console.error(`Error initializing virtual scroller for ${pageType}:`, error);
-        showToast(`Failed to initialize ${pageType} page. Please reload.`, 'error');
+        showToast('toast.general.pageInitFailed', { pageType }, 'error');
         
         // Fallback: show a message in the grid
         grid.innerHTML = `

@@ -11,6 +11,7 @@ import jinja2
 from ..utils.routes_common import ModelRouteUtils
 from ..services.websocket_manager import ws_manager
 from ..services.settings_manager import settings
+from ..services.server_i18n import server_i18n
 from ..utils.utils import calculate_relative_path_for_model
 from ..utils.constants import AUTO_ORGANIZE_BATCH_SIZE
 from ..config import config
@@ -113,30 +114,36 @@ class BaseModelRoutes(ABC):
             if not self.template_env or not template_name:
                 return web.Response(text="Template environment or template name not set", status=500)
 
-            if is_initializing:
-                rendered = self.template_env.get_template(template_name).render(
-                    folders=[],
-                    is_initializing=True,
-                    settings=settings,
-                    request=request
-                )
-            else:
+            # 获取用户语言设置
+            user_language = settings.get('language', 'en')
+            
+            # 设置服务端i18n语言
+            server_i18n.set_locale(user_language)
+            
+            # 为模板环境添加i18n过滤器
+            if not hasattr(self.template_env, '_i18n_filter_added'):
+                self.template_env.filters['t'] = server_i18n.create_template_filter()
+                self.template_env._i18n_filter_added = True
+            
+            # 准备模板上下文
+            template_context = {
+                'is_initializing': is_initializing,
+                'settings': settings,
+                'request': request,
+                'folders': [],
+                't': server_i18n.get_translation,
+            }
+
+            if not is_initializing:
                 try:
                     cache = await self.service.scanner.get_cached_data(force_refresh=False)
-                    rendered = self.template_env.get_template(template_name).render(
-                        folders=getattr(cache, "folders", []),
-                        is_initializing=False,
-                        settings=settings,
-                        request=request
-                    )
+                    template_context['folders'] = getattr(cache, "folders", [])
                 except Exception as cache_error:
                     logger.error(f"Error loading cache data: {cache_error}")
-                    rendered = self.template_env.get_template(template_name).render(
-                        folders=[],
-                        is_initializing=True,
-                        settings=settings,
-                        request=request
-                    )
+                    template_context['is_initializing'] = True
+
+            rendered = self.template_env.get_template(template_name).render(**template_context)
+            
             return web.Response(
                 text=rendered,
                 content_type='text/html'

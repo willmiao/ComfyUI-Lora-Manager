@@ -47,7 +47,7 @@ export class CheckpointsControls extends PageControls {
             // No clearCustomFilter implementation is needed for checkpoints
             // as custom filters are currently only used for LoRAs
             clearCustomFilter: async () => {
-                showToast('No custom filter to clear', 'info');
+                showToast('toast.filters.noCustomFilterToClear', {}, 'info');
             }
         };
         
