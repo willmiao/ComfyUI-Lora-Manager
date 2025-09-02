@@ -74,7 +74,7 @@
         }
     },
     "header": {
-        "appTitle": "oRA Manager",
+        "appTitle": "LoRA Manager",
         "navigation": {
             "loras": "LoRAs",
             "recipes": "Rezepte",
