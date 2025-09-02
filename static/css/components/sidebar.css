@@ -132,6 +132,11 @@
     color: var(--lora-accent);
 }
 
+.sidebar-action-btn.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
 /* Remove old close button styles */
 .sidebar-toggle-close {
     display: none;
@@ -363,6 +368,60 @@
     background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
     color: var(--lora-accent);
     font-weight: 500;
+}
+
+/* Folder List Mode Styles */
+.sidebar-folder-item {
+    position: relative;
+    user-select: none;
+}
+
+.sidebar-node-content {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.85em;
+    border-left: 3px solid transparent;
+    color: var(--text-color);
+}
+
+.sidebar-node-content:hover {
+    background: var(--lora-surface);
+    color: var(--text-color);
+}
+
+.sidebar-folder-item.selected .sidebar-node-content {
+    background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
+    color: var(--lora-accent);
+    border-left-color: var(--lora-accent);
+    font-weight: 500;
+}
+
+.sidebar-folder-icon {
+    margin-right: 8px;
+    color: var(--text-muted);
+    opacity: 0.7;
+    width: 16px;
+    text-align: center;
+}
+
+.sidebar-folder-item.selected .sidebar-folder-icon {
+    color: var(--lora-accent);
+    opacity: 1;
+}
+
+.sidebar-node-content:hover .sidebar-folder-icon {
+    color: var(--text-color);
+    opacity: 0.9;
+}
+
+.sidebar-folder-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Responsive Design */

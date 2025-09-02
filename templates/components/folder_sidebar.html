@@ -6,6 +6,9 @@
     <div class="sidebar-header" id="sidebarHeader">
         <h3><i class="fas fa-home"></i> <span id="sidebarTitle">{{ t('sidebar.modelRoot') }}</span></h3>
         <div class="sidebar-header-actions">
+            <button class="sidebar-action-btn" id="sidebarDisplayModeToggle" title="{{ t('sidebar.switchToListView') }}">
+                <i class="fas fa-sitemap"></i>
+            </button>
             <button class="sidebar-action-btn" id="sidebarCollapseAll" title="{{ t('sidebar.collapseAll') }}">
                 <i class="fas fa-compress-alt"></i>
             </button>
@@ -17,7 +20,7 @@
     <div class="sidebar-content">
         <div class="sidebar-tree-container">
             <div class="sidebar-tree" id="sidebarFolderTree">
-                <!-- Tree will be populated by JavaScript -->
+                <!-- Tree/List will be populated by JavaScript -->
             </div>
         </div>
     </div>

@@ -400,7 +400,11 @@
     "sidebar": {
         "modelRoot": "模型根目錄",
         "collapseAll": "全部摺疊資料夾",
-        "pinToggle": "釘選/取消釘選側邊欄"
+        "pinSidebar": "固定側邊欄",
+        "unpinSidebar": "取消固定側邊欄",
+        "switchToListView": "切換至列表檢視",
+        "switchToTreeView": "切換至樹狀檢視",
+        "collapseAllDisabled": "列表檢視下不可用"
     },
     "statistics": {
         "title": "統計",

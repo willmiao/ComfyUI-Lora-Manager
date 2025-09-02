@@ -400,7 +400,11 @@
     "sidebar": {
         "modelRoot": "모델 루트",
         "collapseAll": "모든 폴더 접기",
-        "pinToggle": "사이드바 고정/해제"
+        "pinSidebar": "사이드바 고정",
+        "unpinSidebar": "사이드바 고정 해제",
+        "switchToListView": "목록 보기로 전환",
+        "switchToTreeView": "트리 보기로 전환",
+        "collapseAllDisabled": "목록 보기에서는 사용할 수 없습니다"
     },
     "statistics": {
         "title": "통계",

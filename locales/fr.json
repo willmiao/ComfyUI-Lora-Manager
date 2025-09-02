@@ -400,7 +400,11 @@
     "sidebar": {
         "modelRoot": "Racine du modèle",
         "collapseAll": "Réduire tous les dossiers",
-        "pinToggle": "Épingler/Désépingler la barre latérale"
+        "pinSidebar": "Épingler la barre latérale",
+        "unpinSidebar": "Désépingler la barre latérale",
+        "switchToListView": "Passer en vue liste",
+        "switchToTreeView": "Passer en vue arborescence",
+        "collapseAllDisabled": "Non disponible en vue liste"
     },
     "statistics": {
         "title": "Statistiques",

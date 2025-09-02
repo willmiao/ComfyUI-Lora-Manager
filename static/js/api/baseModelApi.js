@@ -667,6 +667,8 @@ export class BaseModelApiClient {
                 }
             }
         }
+
+        params.append('recursive', pageState.searchOptions.recursive ? 'true' : 'false');
         
         if (pageState.filters) {
             if (pageState.filters.tags && pageState.filters.tags.length > 0) {

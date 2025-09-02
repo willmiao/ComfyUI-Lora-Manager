@@ -3,6 +3,7 @@
  */
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
+import { translate } from '../utils/i18nHelpers.js';
 
 export class SidebarManager {
     constructor() {
@@ -18,6 +19,8 @@ export class SidebarManager {
         this.hoverTimeout = null;
         this.isHovering = false;
         this.isInitialized = false;
+        this.displayMode = 'tree'; // 'tree' or 'list'
+        this.foldersList = [];
         
         // Bind methods
         this.handleTreeClick = this.handleTreeClick.bind(this);
@@ -31,6 +34,8 @@ export class SidebarManager {
         this.handleHoverAreaEnter = this.handleHoverAreaEnter.bind(this);
         this.handleHoverAreaLeave = this.handleHoverAreaLeave.bind(this);
         this.updateContainerMargin = this.updateContainerMargin.bind(this);
+        this.handleDisplayModeToggle = this.handleDisplayModeToggle.bind(this);
+        this.handleFolderListClick = this.handleFolderListClick.bind(this);
     }
 
     async initialize(pageControls) {
@@ -105,6 +110,7 @@ export class SidebarManager {
         const sidebarHeader = document.getElementById('sidebarHeader');
         const sidebar = document.getElementById('folderSidebar');
         const hoverArea = document.getElementById('sidebarHoverArea');
+        const displayModeToggleBtn = document.getElementById('sidebarDisplayModeToggle');
 
         if (pinToggleBtn) {
             pinToggleBtn.removeEventListener('click', this.handlePinToggle);
@@ -135,6 +141,10 @@ export class SidebarManager {
         
         // Remove resize event handler
         window.removeEventListener('resize', this.updateContainerMargin);
+
+        if (displayModeToggleBtn) {
+            displayModeToggleBtn.removeEventListener('click', this.handleDisplayModeToggle);
+        }
     }
 
     async init() {
@@ -258,6 +268,12 @@ export class SidebarManager {
         
         // Add dedicated resize listener for container margin updates
         window.addEventListener('resize', this.updateContainerMargin);
+
+        // Display mode toggle button
+        const displayModeToggleBtn = document.getElementById('sidebarDisplayModeToggle');
+        if (displayModeToggleBtn) {
+            displayModeToggleBtn.addEventListener('click', this.handleDisplayModeToggle);
+        }
     }
 
     handleDocumentClick(event) {
@@ -270,7 +286,7 @@ export class SidebarManager {
     handleSidebarHeaderClick(event) {
         // Only trigger root selection if clicking on the title area, not the buttons
         if (!event.target.closest('.sidebar-header-actions')) {
-            this.selectFolder('');
+            this.selectFolder(null);
         }
     }
 
@@ -286,7 +302,7 @@ export class SidebarManager {
     handleCollapseAll(event) {
         event.stopPropagation();
         this.expandedNodes.clear();
-        this.renderTree();
+        this.renderFolderDisplay();
         this.saveExpandedState();
     }
 
@@ -407,18 +423,33 @@ export class SidebarManager {
         const pinBtn = document.getElementById('sidebarPinToggle');
         if (pinBtn) {
             pinBtn.classList.toggle('active', this.isPinned);
-            pinBtn.title = this.isPinned ? 'Unpin Sidebar' : 'Pin Sidebar';
+            pinBtn.title = this.isPinned 
+                ? translate('sidebar.unpinSidebar') 
+                : translate('sidebar.pinSidebar');
         }
     }
 
     async loadFolderTree() {
         try {
-            const response = await this.apiClient.fetchUnifiedFolderTree();
-            this.treeData = response.tree || {};
-            this.renderTree();
+            if (this.displayMode === 'tree') {
+                const response = await this.apiClient.fetchUnifiedFolderTree();
+                this.treeData = response.tree || {};
+            } else {
+                const response = await this.apiClient.fetchModelFolders();
+                this.foldersList = response.folders || [];
+            }
+            this.renderFolderDisplay();
         } catch (error) {
-            console.error('Failed to load folder tree:', error);
+            console.error('Failed to load folder data:', error);
             this.renderEmptyState();
+        }
+    }
+
+    renderFolderDisplay() {
+        if (this.displayMode === 'tree') {
+            this.renderTree();
+        } else {
+            this.renderFolderList();
         }
     }
 
@@ -476,7 +507,38 @@ export class SidebarManager {
         `;
     }
 
+    renderFolderList() {
+        const folderTree = document.getElementById('sidebarFolderTree');
+        if (!folderTree) return;
+
+        if (!this.foldersList || this.foldersList.length === 0) {
+            this.renderEmptyState();
+            return;
+        }
+
+        const foldersHtml = this.foldersList.map(folder => {
+            const displayName = folder === '' ? '/' : folder;
+            const isSelected = this.selectedPath === folder;
+            
+            return `
+                <div class="sidebar-folder-item ${isSelected ? 'selected' : ''}" data-path="${folder}">
+                    <div class="sidebar-node-content">
+                        <i class="fas fa-folder sidebar-folder-icon"></i>
+                        <div class="sidebar-folder-name" title="${displayName}">${displayName}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        folderTree.innerHTML = foldersHtml;
+    }
+
     handleTreeClick(event) {
+        if (this.displayMode === 'list') {
+            this.handleFolderListClick(event);
+            return;
+        }
+
         const expandIcon = event.target.closest('.sidebar-tree-expand-icon');
         const nodeContent = event.target.closest('.sidebar-tree-node-content');
         
@@ -516,7 +578,7 @@ export class SidebarManager {
             this.closeDropdown();
         } else if (breadcrumbItem) {
             // Handle breadcrumb item click
-            const path = breadcrumbItem.dataset.path || '';
+            const path = breadcrumbItem.dataset.path || null;   // null for showing all models
             const isPlaceholder = breadcrumbItem.classList.contains('placeholder');
             const isActive = breadcrumbItem.classList.contains('active');
             const dropdown = breadcrumbItem.closest('.breadcrumb-dropdown');
@@ -557,8 +619,8 @@ export class SidebarManager {
         this.updateSidebarHeader();
         
         // Update page state
-        this.pageControls.pageState.activeFolder = path || null;
-        setStorageItem(`${this.pageType}_activeFolder`, path || null);
+        this.pageControls.pageState.activeFolder = path;
+        setStorageItem(`${this.pageType}_activeFolder`, path);
         
         // Reload models with new filter
         await this.pageControls.resetAndReload();
@@ -569,23 +631,87 @@ export class SidebarManager {
         }
     }
 
+    handleFolderListClick(event) {
+        const folderItem = event.target.closest('.sidebar-folder-item');
+        
+        if (folderItem) {
+            const path = folderItem.dataset.path;
+            this.selectFolder(path);
+        }
+    }
+
+    handleDisplayModeToggle(event) {
+        event.stopPropagation();
+        this.displayMode = this.displayMode === 'tree' ? 'list' : 'tree';
+        this.updateDisplayModeButton();
+        this.updateCollapseAllButton();
+        this.updateSearchRecursiveOption();
+        this.saveDisplayMode();
+        this.loadFolderTree(); // Reload with new display mode
+    }
+
+    updateDisplayModeButton() {
+        const displayModeBtn = document.getElementById('sidebarDisplayModeToggle');
+        if (displayModeBtn) {
+            const icon = displayModeBtn.querySelector('i');
+            if (this.displayMode === 'tree') {
+                icon.className = 'fas fa-sitemap';
+                displayModeBtn.title = translate('sidebar.switchToListView');
+            } else {
+                icon.className = 'fas fa-list';
+                displayModeBtn.title = translate('sidebar.switchToTreeView');
+            }
+        }
+    }
+
+    updateCollapseAllButton() {
+        const collapseAllBtn = document.getElementById('sidebarCollapseAll');
+        if (collapseAllBtn) {
+            if (this.displayMode === 'list') {
+                collapseAllBtn.disabled = true;
+                collapseAllBtn.classList.add('disabled');
+                collapseAllBtn.title = translate('sidebar.collapseAllDisabled');
+            } else {
+                collapseAllBtn.disabled = false;
+                collapseAllBtn.classList.remove('disabled');
+                collapseAllBtn.title = translate('sidebar.collapseAll');
+            }
+        }
+    }
+
+    updateSearchRecursiveOption() {
+        this.pageControls.pageState.searchOptions.recursive = this.displayMode === 'tree';
+    }
+
     updateTreeSelection() {
         const folderTree = document.getElementById('sidebarFolderTree');
         if (!folderTree) return;
         
-        // Remove all selections
-        folderTree.querySelectorAll('.sidebar-tree-node-content').forEach(node => {
-            node.classList.remove('selected');
-        });
-        
-        // Add selection to current path
-        if (this.selectedPath) {
-            const selectedNode = folderTree.querySelector(`[data-path="${this.selectedPath}"] .sidebar-tree-node-content`);
-            if (selectedNode) {
-                selectedNode.classList.add('selected');
-                
-                // Expand parents to show selection
-                this.expandPathParents(this.selectedPath);
+        if (this.displayMode === 'list') {
+            // Remove all selections in list mode
+            folderTree.querySelectorAll('.sidebar-folder-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // Add selection to current path
+            if (this.selectedPath !== null) {
+                const selectedItem = folderTree.querySelector(`[data-path="${this.selectedPath}"]`);
+                if (selectedItem) {
+                    selectedItem.classList.add('selected');
+                }
+            }
+        } else {
+            // ...existing tree selection logic...
+            folderTree.querySelectorAll('.sidebar-tree-node-content').forEach(node => {
+                node.classList.remove('selected');
+            });
+            
+            if (this.selectedPath) {
+                const selectedNode = folderTree.querySelector(`[data-path="${this.selectedPath}"] .sidebar-tree-node-content`);
+                if (selectedNode) {
+                    selectedNode.classList.add('selected');
+                    this.expandPathParents(this.selectedPath);
+                }
             }
         }
     }
@@ -799,11 +925,16 @@ export class SidebarManager {
     restoreSidebarState() {
         const isPinned = getStorageItem(`${this.pageType}_sidebarPinned`, false);
         const expandedPaths = getStorageItem(`${this.pageType}_expandedNodes`, []);
+        const displayMode = getStorageItem(`${this.pageType}_displayMode`, 'tree');
         
         this.isPinned = isPinned;
         this.expandedNodes = new Set(expandedPaths);
+        this.displayMode = displayMode;
         
         this.updatePinButton();
+        this.updateDisplayModeButton();
+        this.updateCollapseAllButton();
+        this.updateSearchRecursiveOption();
     }
 
     restoreSelectedFolder() {
@@ -827,6 +958,10 @@ export class SidebarManager {
 
     saveExpandedState() {
         setStorageItem(`${this.pageType}_expandedNodes`, Array.from(this.expandedNodes));
+    }
+
+    saveDisplayMode() {
+        setStorageItem(`${this.pageType}_displayMode`, this.displayMode);
     }
 
     async refresh() {

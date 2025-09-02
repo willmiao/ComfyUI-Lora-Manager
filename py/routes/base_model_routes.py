@@ -114,18 +114,18 @@ class BaseModelRoutes(ABC):
             if not self.template_env or not template_name:
                 return web.Response(text="Template environment or template name not set", status=500)
 
-            # 获取用户语言设置
+            # Get user's language setting
             user_language = settings.get('language', 'en')
             
-            # 设置服务端i18n语言
+            # Set server-side i18n locale
             server_i18n.set_locale(user_language)
             
-            # 为模板环境添加i18n过滤器
+            # Add i18n filter to the template environment if not already added
             if not hasattr(self.template_env, '_i18n_filter_added'):
                 self.template_env.filters['t'] = server_i18n.create_template_filter()
                 self.template_env._i18n_filter_added = True
             
-            # 准备模板上下文
+            # Prepare template context
             template_context = {
                 'is_initializing': is_initializing,
                 'settings': settings,
