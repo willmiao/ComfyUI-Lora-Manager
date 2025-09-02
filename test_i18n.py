@@ -759,6 +759,16 @@ def test_static_code_analysis():
         'data', 'width', 'height', 'size', 'format', 'version', 'url', 'path',
         'file', 'folder', 'image', 'text', 'number', 'boolean', 'array', 'object', 'non.existent.key'
     }
+
+    # Special translation keys used in uiHelpers.js but not detected by regex
+    uihelpers_special_keys = {
+        'uiHelpers.workflow.loraAdded',
+        'uiHelpers.workflow.loraReplaced',
+        'uiHelpers.workflow.loraFailedToSend',
+        'uiHelpers.workflow.recipeAdded',
+        'uiHelpers.workflow.recipeReplaced',
+        'uiHelpers.workflow.recipeFailedToSend',
+    }
     
     # Extract keys from JavaScript files
     js_dir = os.path.join(os.path.dirname(__file__), 'static', 'js')
@@ -808,6 +818,8 @@ def test_static_code_analysis():
     
     # Combine all used keys
     all_used_keys = js_keys.union(html_keys)
+    # Add special keys from uiHelpers.js
+    all_used_keys.update(uihelpers_special_keys)
     # print(f"Total unique keys used in code: {len(all_used_keys)}")
     
     # Check for missing keys

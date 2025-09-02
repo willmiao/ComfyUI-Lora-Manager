@@ -740,7 +740,13 @@
         },
         "workflow": {
             "noSupportedNodes": "В workflow не найдены поддерживаемые целевые узлы",
-            "communicationFailed": "Не удалось установить связь с ComfyUI"
+            "communicationFailed": "Не удалось установить связь с ComfyUI",
+            "loraAdded": "LoRA добавлена в workflow",
+            "loraReplaced": "LoRA заменена в workflow",
+            "loraFailedToSend": "Не удалось отправить LoRA в workflow",
+            "recipeAdded": "Рецепт добавлен в workflow",
+            "recipeReplaced": "Рецепт заменён в workflow",
+            "recipeFailedToSend": "Не удалось отправить рецепт в workflow"
         },
         "nodeSelector": {
             "recipe": "Рецепт",

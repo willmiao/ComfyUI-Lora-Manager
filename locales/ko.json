@@ -740,7 +740,13 @@
         },
         "workflow": {
             "noSupportedNodes": "워크플로에서 지원되는 대상 노드를 찾을 수 없습니다",
-            "communicationFailed": "ComfyUI와의 통신에 실패했습니다"
+            "communicationFailed": "ComfyUI와의 통신에 실패했습니다",
+            "loraAdded": "LoRA가 워크플로에 추가되었습니다",
+            "loraReplaced": "LoRA가 워크플로에서 교체되었습니다",
+            "loraFailedToSend": "LoRA를 워크플로로 전송하지 못했습니다",
+            "recipeAdded": "레시피가 워크플로에 추가되었습니다",
+            "recipeReplaced": "레시피가 워크플로에서 교체되었습니다",
+            "recipeFailedToSend": "레시피를 워크플로로 전송하지 못했습니다"
         },
         "nodeSelector": {
             "recipe": "레시피",

@@ -740,7 +740,13 @@
         },
         "workflow": {
             "noSupportedNodes": "No se encontraron nodos de destino compatibles en el flujo de trabajo",
-            "communicationFailed": "Error al comunicarse con ComfyUI"
+            "communicationFailed": "Error al comunicarse con ComfyUI",
+            "loraAdded": "LoRA añadido al flujo de trabajo",
+            "loraReplaced": "LoRA reemplazado en el flujo de trabajo",
+            "loraFailedToSend": "Error al enviar LoRA al flujo de trabajo",
+            "recipeAdded": "Receta añadida al flujo de trabajo",
+            "recipeReplaced": "Receta reemplazada en el flujo de trabajo",
+            "recipeFailedToSend": "Error al enviar receta al flujo de trabajo"
         },
         "nodeSelector": {
             "recipe": "Receta",

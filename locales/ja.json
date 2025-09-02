@@ -740,7 +740,13 @@
         },
         "workflow": {
             "noSupportedNodes": "ワークフローで対応するターゲットノードが見つかりません",
-            "communicationFailed": "ComfyUIとの通信に失敗しました"
+            "communicationFailed": "ComfyUIとの通信に失敗しました",
+            "loraAdded": "LoRAがワークフローに追加されました",
+            "loraReplaced": "LoRAがワークフローで置換されました",
+            "loraFailedToSend": "LoRAをワークフローに送信できませんでした",
+            "recipeAdded": "レシピがワークフローに追加されました",
+            "recipeReplaced": "レシピがワークフローで置換されました",
+            "recipeFailedToSend": "レシピをワークフローに送信できませんでした"
         },
         "nodeSelector": {
             "recipe": "レシピ",

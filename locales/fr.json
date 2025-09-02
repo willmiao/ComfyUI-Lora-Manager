@@ -740,7 +740,13 @@
         },
         "workflow": {
             "noSupportedNodes": "Aucun nœud cible supporté trouvé dans le workflow",
-            "communicationFailed": "Échec de la communication avec ComfyUI"
+            "communicationFailed": "Échec de la communication avec ComfyUI",
+            "loraAdded": "LoRA ajouté au workflow",
+            "loraReplaced": "LoRA remplacé dans le workflow",
+            "loraFailedToSend": "Échec de l'envoi du LoRA au workflow",
+            "recipeAdded": "Recette ajoutée au workflow",
+            "recipeReplaced": "Recette remplacée dans le workflow",
+            "recipeFailedToSend": "Échec de l'envoi de la recette au workflow"
         },
         "nodeSelector": {
             "recipe": "Recette",

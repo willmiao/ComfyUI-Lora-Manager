@@ -740,7 +740,13 @@
         },
         "workflow": {
             "noSupportedNodes": "工作流中未找到支援的目標節點",
-            "communicationFailed": "與 ComfyUI 通訊失敗"
+            "communicationFailed": "與 ComfyUI 通訊失敗",
+            "loraAdded": "LoRA 已附加到工作流",
+            "loraReplaced": "LoRA 已取代於工作流",
+            "loraFailedToSend": "傳送 LoRA 到工作流失敗",
+            "recipeAdded": "配方已附加到工作流",
+            "recipeReplaced": "配方已取代於工作流",
+            "recipeFailedToSend": "傳送配方到工作流失敗"
         },
         "nodeSelector": {
             "recipe": "配方",
