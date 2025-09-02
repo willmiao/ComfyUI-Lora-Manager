@@ -68,6 +68,7 @@ class DownloadManager:
             optimize = data.get('optimize', True)
             model_types = data.get('model_types', ['lora', 'checkpoint'])
             delay = float(data.get('delay', 0.2)) # Default to 0.2 seconds
+            delay = 0 # Temporary: Disable delay to speed up downloads
             
             if not output_dir:
                 return web.json_response({
