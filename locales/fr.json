@@ -19,7 +19,7 @@
             "version": "Version"
         },
         "language": {
-            "select": "Sélectionner la langue",
+            "select": "Langue",
             "select_help": "Choisissez votre langue préférée pour l'interface",
             "english": "English",
             "chinese_simplified": "中文（简体）",
@@ -74,7 +74,7 @@
         }
     },
     "header": {
-        "appTitle": "Gestionnaire LoRA",
+        "appTitle": "oRA Manager",
         "navigation": {
             "loras": "LoRAs",
             "recipes": "Recettes",
