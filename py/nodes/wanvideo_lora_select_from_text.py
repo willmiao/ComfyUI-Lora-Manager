@@ -127,4 +127,3 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "WanVideoLoraSelectFromText": "WanVideo Lora Select From Text (LoraManager)"
 }
-，
