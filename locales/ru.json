@@ -400,7 +400,11 @@
     "sidebar": {
         "modelRoot": "Корень моделей",
         "collapseAll": "Свернуть все папки",
-        "pinToggle": "Закрепить/Открепить боковую панель"
+        "pinSidebar": "Закрепить боковую панель",
+        "unpinSidebar": "Открепить боковую панель",
+        "switchToListView": "Переключить на вид списка",
+        "switchToTreeView": "Переключить на древовидный вид",
+        "collapseAllDisabled": "Недоступно в виде списка"
     },
     "statistics": {
         "title": "Статистика",

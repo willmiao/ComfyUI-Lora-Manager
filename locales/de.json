@@ -400,7 +400,11 @@
     "sidebar": {
         "modelRoot": "Modell-Stammverzeichnis",
         "collapseAll": "Alle Ordner einklappen",
-        "pinToggle": "Seitenleiste anheften/lösen"
+        "pinSidebar": "Sidebar anheften",
+        "unpinSidebar": "Sidebar lösen",
+        "switchToListView": "Zur Listenansicht wechseln",
+        "switchToTreeView": "Zur Baumansicht wechseln",
+        "collapseAllDisabled": "Im Listenmodus nicht verfügbar"
     },
     "statistics": {
         "title": "Statistiken",

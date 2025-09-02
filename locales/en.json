@@ -400,7 +400,11 @@
     "sidebar": {
         "modelRoot": "Model Root",
         "collapseAll": "Collapse All Folders",
-        "pinToggle": "Pin/Unpin Sidebar"
+        "pinSidebar": "Pin Sidebar",
+        "unpinSidebar": "Unpin Sidebar",
+        "switchToListView": "Switch to List View",
+        "switchToTreeView": "Switch to Tree View",
+        "collapseAllDisabled": "Not available in list view"
     },
     "statistics": {
         "title": "Statistics",

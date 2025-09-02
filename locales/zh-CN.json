@@ -400,7 +400,11 @@
     "sidebar": {
         "modelRoot": "模型根目录",
         "collapseAll": "折叠所有文件夹",
-        "pinToggle": "固定/取消固定侧边栏"
+        "pinSidebar": "固定侧边栏",
+        "unpinSidebar": "取消固定侧边栏",
+        "switchToListView": "切换到列表视图",
+        "switchToTreeView": "切换到树状视图",
+        "collapseAllDisabled": "列表视图下不可用"
     },
     "statistics": {
         "title": "统计",

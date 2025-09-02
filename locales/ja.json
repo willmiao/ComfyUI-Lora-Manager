@@ -400,7 +400,11 @@
     "sidebar": {
         "modelRoot": "モデルルート",
         "collapseAll": "すべてのフォルダを折りたたむ",
-        "pinToggle": "サイドバーの固定/固定解除"
+        "pinSidebar": "サイドバーを固定",
+        "unpinSidebar": "サイドバーの固定を解除",
+        "switchToListView": "リストビューに切り替え",
+        "switchToTreeView": "ツリービューに切り替え",
+        "collapseAllDisabled": "リストビューでは利用できません"
     },
     "statistics": {
         "title": "統計",
