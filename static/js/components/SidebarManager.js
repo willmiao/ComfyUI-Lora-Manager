@@ -701,7 +701,6 @@ export class SidebarManager {
                 }
             }
         } else {
-            // ...existing tree selection logic...
             folderTree.querySelectorAll('.sidebar-tree-node-content').forEach(node => {
                 node.classList.remove('selected');
             });
@@ -779,7 +778,7 @@ export class SidebarManager {
         const rootSiblings = Object.keys(this.treeData);
         const breadcrumbs = [`
             <div class="breadcrumb-dropdown">
-                <span class="sidebar-breadcrumb-item ${!this.selectedPath ? 'active' : ''}" data-path="">
+                <span class="sidebar-breadcrumb-item ${this.selectedPath == null ? 'active' : ''}" data-path="">
                     <i class="fas fa-home"></i> ${this.apiClient.apiConfig.config.displayName} root
                 </span>
             </div>
@@ -875,7 +874,7 @@ export class SidebarManager {
         const sidebarHeader = document.getElementById('sidebarHeader');
         if (!sidebarHeader) return;
         
-        if (!this.selectedPath) {
+        if (this.selectedPath == null) {
             sidebarHeader.classList.add('root-selected');
         } else {
             sidebarHeader.classList.remove('root-selected');
@@ -925,7 +924,7 @@ export class SidebarManager {
     restoreSidebarState() {
         const isPinned = getStorageItem(`${this.pageType}_sidebarPinned`, false);
         const expandedPaths = getStorageItem(`${this.pageType}_expandedNodes`, []);
-        const displayMode = getStorageItem(`${this.pageType}_displayMode`, 'tree');
+        const displayMode = getStorageItem(`${this.pageType}_displayMode`, 'tree'); // 'tree' or 'list', default to 'tree'
         
         this.isPinned = isPinned;
         this.expandedNodes = new Set(expandedPaths);
