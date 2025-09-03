@@ -10,17 +10,17 @@ export class OnboardingManager {
         this.spotlight = null;
         this.popup = null;
         
-        // Available languages with flag emojis
+        // Available languages with SVG flags (using flag-icons)
         this.languages = [
-            { code: 'en', name: 'English', flag: '🇺🇸' },
-            { code: 'zh-cn', name: '简体中文', flag: '🇨🇳' },
-            { code: 'zh-tw', name: '繁體中文', flag: '🇹🇼' },
-            { code: 'ja', name: '日本語', flag: '🇯🇵' },
-            { code: 'ko', name: '한국어', flag: '🇰🇷' },
-            { code: 'es', name: 'Español', flag: '🇪🇸' },
-            { code: 'fr', name: 'Français', flag: '🇫🇷' },
-            { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-            { code: 'ru', name: 'Русский', flag: '🇷🇺' }
+            { code: 'en', name: 'English', flag: 'us' },
+            { code: 'zh-cn', name: '简体中文', flag: 'cn' },
+            { code: 'zh-tw', name: '繁體中文', flag: 'hk' },
+            { code: 'ja', name: '日本語', flag: 'jp' },
+            { code: 'ko', name: '한국어', flag: 'kr' },
+            { code: 'es', name: 'Español', flag: 'es' },
+            { code: 'fr', name: 'Français', flag: 'fr' },
+            { code: 'de', name: 'Deutsch', flag: 'de' },
+            { code: 'ru', name: 'Русский', flag: 'ru' }
         ];
         
         // Tutorial steps configuration
@@ -28,25 +28,19 @@ export class OnboardingManager {
             {
                 target: '.controls .action-buttons [data-action="fetch"]',
                 title: 'Fetch Models Metadata',
-                content: 'Click the <strong>Fetch</strong> button to download model metadata and preview images from Civitai. This enriches your local models with detailed information.',
+                content: 'Click the <strong>Fetch</strong> button to download model metadata and preview images from Civitai.',
                 position: 'bottom'
             },
             {
                 target: '.controls .action-buttons [data-action="download"]',
                 title: 'Download New Models',
-                content: 'Use the <strong>Download</strong> button to download models directly from Civitai URLs. Simply paste a model URL and choose your download location.',
+                content: 'Use the <strong>Download</strong> button to download models directly from Civitai URLs.',
                 position: 'bottom'
             },
             {
                 target: '.controls .action-buttons [data-action="bulk"]',
                 title: 'Bulk Operations',
                 content: 'Enter bulk mode by clicking this button or pressing <span class="onboarding-shortcut">B</span>. Select multiple models and perform batch operations. Use <span class="onboarding-shortcut">Ctrl+A</span> to select all visible models.',
-                position: 'bottom'
-            },
-            {
-                target: '#searchInput',
-                title: 'Search Your Models',
-                content: 'Use the search bar to quickly find models by filename, model name, tags, or creator. Type your search terms here.',
                 position: 'bottom'
             },
             {
@@ -58,15 +52,8 @@ export class OnboardingManager {
             {
                 target: '#filterButton',
                 title: 'Filter Models',
-                content: 'Use filters to narrow down models by base model type (SD1.5, SDXL, Flux, etc.) or by specific tags. Great for organizing large collections.',
+                content: 'Use filters to narrow down models by base model type (SD1.5, SDXL, Flux, etc.) or by specific tags.',
                 position: 'bottom'
-            },
-            {
-                target: 'body',
-                title: 'Folder Navigation',
-                content: 'Move your mouse to the <strong>left edge</strong> of the window to reveal the folder sidebar. You can pin it for permanent access and navigate through your model directories.',
-                position: 'center',
-                customPosition: { top: '20%', left: '50%' }
             },
             {
                 target: '#breadcrumbContainer',
@@ -79,14 +66,14 @@ export class OnboardingManager {
                 title: 'Model Cards',
                 content: '<strong>Single-click</strong> a model card to view detailed information and edit metadata. Look for the pencil icon when hovering over editable fields.',
                 position: 'top',
-                customPosition: { top: '10%', left: '50%' }
+                customPosition: { top: '20%', left: '50%' }
             },
             {
                 target: '.card-grid',
-                title: 'Context Menu & Quick Actions',
-                content: '<strong>Right-click</strong> any model card for a context menu with additional actions. Click the <strong>airplane icon</strong> to send to ComfyUI workflow (hold <span class="onboarding-shortcut">Shift</span> to replace existing content).',
+                title: 'Context Menu',
+                content: '<strong>Right-click</strong> any model card for a context menu with additional actions.',
                 position: 'top',
-                customPosition: { top: '10%', left: '50%' }
+                customPosition: { top: '20%', left: '50%' }
             }
         ];
     }
@@ -120,7 +107,9 @@ export class OnboardingManager {
                     <div class="language-grid">
                         ${this.languages.map(lang => `
                             <div class="language-option" data-language="${lang.code}">
-                                <span class="language-flag">${lang.flag}</span>
+                                <span class="language-flag">
+                                    <span class="fi fi-${lang.flag}"></span>
+                                </span>
                                 <span class="language-name">${lang.name}</span>
                             </div>
                         `).join('')}
