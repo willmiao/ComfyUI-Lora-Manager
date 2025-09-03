@@ -5,7 +5,7 @@ export class OnboardingManager {
     constructor() {
         this.isActive = false;
         this.currentStep = 0;
-        this.selectedLanguage = 'en';
+        this.selectedLanguage = 'en'; // Will be updated from state
         this.overlay = null;
         this.spotlight = null;
         this.popup = null;
@@ -13,8 +13,8 @@ export class OnboardingManager {
         // Available languages with SVG flags (using flag-icons)
         this.languages = [
             { code: 'en', name: 'English', flag: 'us' },
-            { code: 'zh-cn', name: '简体中文', flag: 'cn' },
-            { code: 'zh-tw', name: '繁體中文', flag: 'hk' },
+            { code: 'zh-CN', name: '简体中文', flag: 'cn' },
+            { code: 'zh-TW', name: '繁體中文', flag: 'hk' },
             { code: 'ja', name: '日本語', flag: 'jp' },
             { code: 'ko', name: '한국어', flag: 'kr' },
             { code: 'es', name: 'Español', flag: 'es' },
@@ -98,6 +98,9 @@ export class OnboardingManager {
     // Show language selection modal
     showLanguageSelection() {
         return new Promise((resolve) => {
+            // Initialize selected language from current settings
+            this.selectedLanguage = state.global.settings.language || 'en';
+            
             const modal = document.createElement('div');
             modal.className = 'language-selection-modal';
             modal.innerHTML = `
@@ -134,24 +137,33 @@ export class OnboardingManager {
 
             // Handle continue button
             document.getElementById('continueLanguageBtn').addEventListener('click', async () => {
-                if (this.selectedLanguage !== 'en') {
-                    // Save language and reload page
+                const currentLanguage = state.global.settings.language || 'en';
+                
+                // Only change language if it's different from current setting
+                if (this.selectedLanguage !== currentLanguage) {
                     await this.changeLanguage(this.selectedLanguage);
+                } else {
+                    document.body.removeChild(modal);
+                    this.startTutorial();
+                    resolve();
                 }
-                document.body.removeChild(modal);
-                this.startTutorial();
-                resolve();
             });
 
-            // Handle skip button
+            // Handle skip button - skip entire tutorial
             document.getElementById('skipLanguageBtn').addEventListener('click', () => {
                 document.body.removeChild(modal);
-                this.startTutorial();
+                this.skip(); // Skip entire tutorial instead of just language selection
                 resolve();
             });
 
-            // Select English by default
-            modal.querySelector('[data-language="en"]').classList.add('selected');
+            // Select current language by default
+            const currentLanguageOption = modal.querySelector(`[data-language="${this.selectedLanguage}"]`);
+            if (currentLanguageOption) {
+                currentLanguageOption.classList.add('selected');
+            } else {
+                // Fallback to English if current language not found
+                modal.querySelector('[data-language="en"]').classList.add('selected');
+            }
         });
     }
 
