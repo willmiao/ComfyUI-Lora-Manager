@@ -43,7 +43,6 @@
     "onboarding": {
         "languageSelection": {
             "title": "LoRA Managerへようこそ",
-            "skip": "スキップ",
             "continue": "続行",
             "changeFailed": "言語の変更に失敗しました：{message}"
         },

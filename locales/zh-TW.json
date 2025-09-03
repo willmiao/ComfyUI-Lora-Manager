@@ -43,7 +43,6 @@
     "onboarding": {
         "languageSelection": {
             "title": "歡迎使用 LoRA 管理器",
-            "skip": "跳過",
             "continue": "繼續",
             "changeFailed": "切換語言失敗：{message}"
         },

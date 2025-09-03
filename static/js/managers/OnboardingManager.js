@@ -127,7 +127,7 @@ export class OnboardingManager {
                         `).join('')}
                     </div>
                     <div class="language-actions">
-                        <button class="onboarding-btn" id="skipLanguageBtn">${translate('onboarding.languageSelection.skip', {}, 'Skip')}</button>
+                        <button class="onboarding-btn" id="skipLanguageBtn">${translate('onboarding.tutorial.skipTutorial', {}, 'Skip Tutorial')}</button>
                         <button class="onboarding-btn primary" id="continueLanguageBtn">${translate('onboarding.languageSelection.continue', {}, 'Continue')}</button>
                     </div>
                 </div>
@@ -231,13 +231,6 @@ export class OnboardingManager {
         this.popup = document.createElement('div');
         this.popup.className = 'onboarding-popup';
         document.body.appendChild(this.popup);
-
-        // Handle clicks outside popup
-        this.overlay.addEventListener('click', (e) => {
-            if (e.target === this.overlay) {
-                this.skip();
-            }
-        });
     }
 
     // Show specific step
@@ -412,8 +405,10 @@ export class OnboardingManager {
 
     // Clear overlay mask
     clearOverlayMask() {
-        this.overlay.style.mask = 'none';
-        this.overlay.style.webkitMask = 'none';
+        if (this.overlay) {
+            this.overlay.style.mask = 'none';
+            this.overlay.style.webkitMask = 'none';
+        }
         
         const maskSvg = document.getElementById('onboarding-mask');
         if (maskSvg) {
@@ -482,6 +477,7 @@ export class OnboardingManager {
         localStorage.removeItem('lora_manager_onboarding_completed');
         localStorage.removeItem('lora_manager_onboarding_skipped');
         localStorage.removeItem('lora_manager_onboarding_language_set');
+        localStorage.setItem('lora_manager_version_info', '0.8.30-2546581');
     }
 }
 
