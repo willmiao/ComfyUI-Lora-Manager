@@ -117,7 +117,7 @@
     border: 1px solid var(--lora-border);
     border-radius: var(--border-radius-base);
     padding: var(--space-3);
-    min-width: 400px;
+    min-width: 510px;
     text-align: center;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(10px);

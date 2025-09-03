@@ -91,6 +91,12 @@ export class OnboardingManager {
             return;
         }
 
+        // If language has already been set, skip language selection
+        if (getStorageItem('onboarding_language_set')) {
+            this.startTutorial();
+            return;
+        }
+
         // Show language selection first
         await this.showLanguageSelection();
     }
@@ -106,7 +112,7 @@ export class OnboardingManager {
             modal.innerHTML = `
                 <div class="language-selection-content">
                     <h2>Welcome to LoRA Manager</h2>
-                    <p>Choose your preferred language to get started, or continue with English.</p>
+                    <p>Choose Your Language / 选择语言 / 言語を選択</p>
                     <div class="language-grid">
                         ${this.languages.map(lang => `
                             <div class="language-option" data-language="${lang.code}">
