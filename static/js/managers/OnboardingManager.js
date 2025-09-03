@@ -9,6 +9,7 @@ export class OnboardingManager {
         this.overlay = null;
         this.spotlight = null;
         this.popup = null;
+        this.currentTarget = null; // Track current highlighted element
         
         // Available languages with SVG flags (using flag-icons)
         this.languages = [
@@ -252,16 +253,15 @@ export class OnboardingManager {
             return;
         }
 
-        // Position spotlight
+        // Clear previous target highlighting
+        this.clearTargetHighlight();
+
+        // Position spotlight and create mask
         if (target && step.target !== 'body') {
-            const rect = target.getBoundingClientRect();
-            this.spotlight.style.left = `${rect.left - 5}px`;
-            this.spotlight.style.top = `${rect.top - 5}px`;
-            this.spotlight.style.width = `${rect.width + 10}px`;
-            this.spotlight.style.height = `${rect.height + 10}px`;
-            this.spotlight.style.display = 'block';
+            this.highlightTarget(target);
         } else {
             this.spotlight.style.display = 'none';
+            this.clearOverlayMask();
         }
 
         // Update popup content
@@ -344,6 +344,92 @@ export class OnboardingManager {
         popup.style.transform = 'none';
     }
 
+    // Highlight target element with mask approach
+    highlightTarget(target) {
+        const rect = target.getBoundingClientRect();
+        const padding = 4; // Padding around the target element
+        const offset = 3; // Shift spotlight up and left by 3px
+
+        // Position spotlight
+        this.spotlight.style.left = `${rect.left - padding - offset}px`;
+        this.spotlight.style.top = `${rect.top - padding - offset}px`;
+        this.spotlight.style.width = `${rect.width + padding * 2}px`;
+        this.spotlight.style.height = `${rect.height + padding * 2}px`;
+        this.spotlight.style.display = 'block';
+
+        // Create mask for overlay to cut out the highlighted area
+        this.createOverlayMask(rect, padding, offset);
+
+        // Add highlight class to target and ensure it's interactive
+        target.classList.add('onboarding-target-highlight');
+        this.currentTarget = target;
+        
+        // Add pulsing animation
+        this.spotlight.classList.add('onboarding-highlight');
+    }
+
+    // Create mask for overlay to cut out highlighted area
+    createOverlayMask(rect, padding, offset = 0) {
+        const x = rect.left - padding - offset;
+        const y = rect.top - padding - offset;
+        const width = rect.width + padding * 2;
+        const height = rect.height + padding * 2;
+        
+        // Create SVG mask
+        const maskId = 'onboarding-mask';
+        let maskSvg = document.getElementById(maskId);
+        
+        if (!maskSvg) {
+            maskSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            maskSvg.id = maskId;
+            maskSvg.style.position = 'absolute';
+            maskSvg.style.top = '0';
+            maskSvg.style.left = '0';
+            maskSvg.style.width = '100%';
+            maskSvg.style.height = '100%';
+            maskSvg.style.pointerEvents = 'none';
+            document.body.appendChild(maskSvg);
+        }
+        
+        // Clear existing mask content
+        maskSvg.innerHTML = `
+            <defs>
+                <mask id="overlay-mask">
+                    <rect width="100%" height="100%" fill="white"/>
+                    <rect x="${x}" y="${y}" width="${width}" height="${height}" 
+                          rx="8" ry="8" fill="black"/>
+                </mask>
+            </defs>
+        `;
+        
+        // Apply mask to overlay
+        this.overlay.style.mask = 'url(#overlay-mask)';
+        this.overlay.style.webkitMask = 'url(#overlay-mask)';
+    }
+
+    // Clear overlay mask
+    clearOverlayMask() {
+        this.overlay.style.mask = 'none';
+        this.overlay.style.webkitMask = 'none';
+        
+        const maskSvg = document.getElementById('onboarding-mask');
+        if (maskSvg) {
+            maskSvg.remove();
+        }
+    }
+
+    // Clear target highlighting
+    clearTargetHighlight() {
+        if (this.currentTarget) {
+            this.currentTarget.classList.remove('onboarding-target-highlight');
+            this.currentTarget = null;
+        }
+        
+        if (this.spotlight) {
+            this.spotlight.classList.remove('onboarding-highlight');
+        }
+    }
+
     // Navigate to next step
     nextStep() {
         this.showStep(this.currentStep + 1);
@@ -370,6 +456,9 @@ export class OnboardingManager {
 
     // Clean up overlay elements
     cleanup() {
+        this.clearTargetHighlight();
+        this.clearOverlayMask();
+        
         if (this.overlay) {
             document.body.removeChild(this.overlay);
             this.overlay = null;

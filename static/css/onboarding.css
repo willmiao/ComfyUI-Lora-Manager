@@ -8,6 +8,9 @@
     background: rgba(0, 0, 0, 0.8);
     z-index: var(--z-overlay);
     display: none;
+    /* Use mask to create cutout for highlighted element */
+    mask-composite: subtract;
+    -webkit-mask-composite: subtract;
 }
 
 .onboarding-overlay.active {
@@ -19,10 +22,26 @@
     background: transparent;
     border: 3px solid var(--lora-accent);
     border-radius: var(--border-radius-base);
-    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.8);
     z-index: calc(var(--z-overlay) + 1);
     pointer-events: none;
     transition: all 0.3s ease;
+    /* Add glow effect */
+    box-shadow: 
+        0 0 0 2px rgba(24, 144, 255, 0.3),
+        0 0 20px rgba(24, 144, 255, 0.2),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Target element highlighting */
+.onboarding-target-highlight {
+    position: relative;
+    z-index: calc(var(--z-overlay) + 2) !important;
+    pointer-events: auto !important;
+}
+
+/* Ensure highlighted elements are interactive */
+.onboarding-target-highlight * {
+    pointer-events: auto !important;
 }
 
 .onboarding-popup {
@@ -33,7 +52,7 @@
     padding: var(--space-3);
     min-width: 320px;
     max-width: 400px;
-    z-index: calc(var(--z-overlay) + 2);
+    z-index: calc(var(--z-overlay) + 3);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
 }
@@ -201,10 +220,16 @@
 
 @keyframes onboarding-pulse {
     0%, 100% {
-        box-shadow: 0 0 0 0 var(--lora-accent);
+        box-shadow: 
+            0 0 0 2px rgba(24, 144, 255, 0.4),
+            0 0 20px rgba(24, 144, 255, 0.3),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.1);
     }
     50% {
-        box-shadow: 0 0 0 8px transparent;
+        box-shadow: 
+            0 0 0 4px rgba(24, 144, 255, 0.6),
+            0 0 30px rgba(24, 144, 255, 0.4),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.2);
     }
 }
 
