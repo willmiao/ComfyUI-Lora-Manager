@@ -173,7 +173,7 @@ export class SidebarManager {
         if (!sidebar || !hoverArea) return;
         
         // Get stored pin state
-        const isPinned = getStorageItem(`${this.pageType}_sidebarPinned`, false);
+        const isPinned = getStorageItem(`${this.pageType}_sidebarPinned`, true);
         this.isPinned = isPinned;
         
         // Sidebar starts hidden by default (CSS handles this)
@@ -922,7 +922,7 @@ export class SidebarManager {
     }
 
     restoreSidebarState() {
-        const isPinned = getStorageItem(`${this.pageType}_sidebarPinned`, false);
+        const isPinned = getStorageItem(`${this.pageType}_sidebarPinned`, true);
         const expandedPaths = getStorageItem(`${this.pageType}_expandedNodes`, []);
         const displayMode = getStorageItem(`${this.pageType}_displayMode`, 'tree'); // 'tree' or 'list', default to 'tree'
         

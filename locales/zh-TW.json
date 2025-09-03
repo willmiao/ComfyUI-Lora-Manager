@@ -40,6 +40,53 @@
             "tb": "TB"
         }
     },
+    "onboarding": {
+        "languageSelection": {
+            "title": "歡迎使用 LoRA 管理器",
+            "continue": "繼續",
+            "changeFailed": "切換語言失敗：{message}"
+        },
+        "tutorial": {
+            "skipTutorial": "跳過教學",
+            "back": "返回",
+            "next": "下一步",
+            "finish": "完成"
+        },
+        "steps": {
+            "fetch": {
+                "title": "取得模型 metadata",
+                "content": "點擊 <strong>取得</strong> 按鈕，從 Civitai 下載模型 metadata 與預覽圖片。"
+            },
+            "download": {
+                "title": "下載新模型",
+                "content": "使用 <strong>下載</strong> 按鈕，直接從 Civitai 網址下載模型。"
+            },
+            "bulk": {
+                "title": "批次操作",
+                "content": "點擊此按鈕或按下 <span class=\"onboarding-shortcut\">B</span> 進入批次模式。可選取多個模型並執行批量操作。使用 <span class=\"onboarding-shortcut\">Ctrl+A</span> 選取所有可見模型。"
+            },
+            "searchOptions": {
+                "title": "搜尋選項",
+                "content": "點擊此按鈕可設定搜尋欄位：檔案名稱、模型名稱、標籤或創作者名稱。自訂搜尋範圍。"
+            },
+            "filter": {
+                "title": "篩選模型",
+                "content": "使用篩選器依基礎模型類型（SD1.5、SDXL、Flux 等）或特定標籤縮小模型範圍。"
+            },
+            "breadcrumb": {
+                "title": "麵包屑導覽",
+                "content": "麵包屑導覽顯示目前路徑，並可快速在資料夾間切換。點擊任一資料夾名稱即可直接跳轉。"
+            },
+            "modelCards": {
+                "title": "模型卡片",
+                "content": "<strong>單擊</strong>模型卡片可檢視詳細資訊並編輯 metadata。滑鼠懸停於可編輯欄位時會顯示鉛筆圖示。"
+            },
+            "contextMenu": {
+                "title": "右鍵選單",
+                "content": "<strong>右鍵點擊</strong>任一模型卡片可開啟更多操作選單。"
+            }
+        }
+    },
     "modelCard": {
         "actions": {
             "addToFavorites": "加入收藏",

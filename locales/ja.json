@@ -40,6 +40,53 @@
             "tb": "TB"
         }
     },
+    "onboarding": {
+        "languageSelection": {
+            "title": "LoRA Managerへようこそ",
+            "continue": "続行",
+            "changeFailed": "言語の変更に失敗しました：{message}"
+        },
+        "tutorial": {
+            "skipTutorial": "チュートリアルをスキップ",
+            "back": "戻る",
+            "next": "次へ",
+            "finish": "完了"
+        },
+        "steps": {
+            "fetch": {
+                "title": "モデルメタデータの取得",
+                "content": "<strong>取得</strong>ボタンをクリックして、Civitaiからモデルのメタデータとプレビュー画像をダウンロードします。"
+            },
+            "download": {
+                "title": "新しいモデルのダウンロード",
+                "content": "<strong>ダウンロード</strong>ボタンを使って、CivitaiのURLから直接モデルをダウンロードできます。"
+            },
+            "bulk": {
+                "title": "一括操作",
+                "content": "このボタンをクリックするか、<span class=\"onboarding-shortcut\">B</span>キーを押して一括モードに入ります。複数のモデルを選択して一括操作が可能です。<span class=\"onboarding-shortcut\">Ctrl+A</span>で表示中のモデルをすべて選択できます。"
+            },
+            "searchOptions": {
+                "title": "検索オプション",
+                "content": "このボタンをクリックして、検索対象フィールド（ファイル名、モデル名、タグ、作成者名）を設定できます。検索範囲をカスタマイズしましょう。"
+            },
+            "filter": {
+                "title": "モデルのフィルタ",
+                "content": "フィルタを使って、ベースモデルタイプ（SD1.5、SDXL、Fluxなど）や特定のタグでモデルを絞り込めます。"
+            },
+            "breadcrumb": {
+                "title": "パンくずナビゲーション",
+                "content": "パンくずナビゲーションは現在のパスを表示し、フォルダ間を素早く移動できます。フォルダ名をクリックすると直接ジャンプできます。"
+            },
+            "modelCards": {
+                "title": "モデルカード",
+                "content": "<strong>モデルカードをクリック</strong>すると詳細情報の表示やメタデータの編集ができます。編集可能な項目はホバー時に鉛筆アイコンが表示されます。"
+            },
+            "contextMenu": {
+                "title": "コンテキストメニュー",
+                "content": "<strong>モデルカードを右クリック</strong>すると追加の操作ができるコンテキストメニューが表示されます。"
+            }
+        }
+    },
     "modelCard": {
         "actions": {
             "addToFavorites": "お気に入りに追加",
