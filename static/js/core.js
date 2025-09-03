@@ -14,6 +14,7 @@ import { initTheme, initBackToTop } from './utils/uiHelpers.js';
 import { initializeInfiniteScroll } from './utils/infiniteScroll.js';
 import { migrateStorageItems } from './utils/storageHelpers.js';
 import { i18n } from './i18n/index.js';
+import { onboardingManager } from './managers/OnboardingManager.js';
 
 // Core application class
 export class AppCore {
@@ -64,6 +65,11 @@ export class AppCore {
         
         // Mark as initialized
         this.initialized = true;
+        
+        // Start onboarding if needed (after everything is initialized)
+        setTimeout(() => {
+            onboardingManager.start();
+        }, 1000); // Small delay to ensure all elements are rendered
         
         // Return the core instance for chaining
         return this;

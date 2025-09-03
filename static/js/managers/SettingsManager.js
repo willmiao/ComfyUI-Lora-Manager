@@ -971,7 +971,7 @@ export class SettingsManager {
             // Save to localStorage
             setStorageItem('settings', state.global.settings);
             
-            // 保存到后端
+            // Save to backend
             const response = await fetch('/api/settings', {
                 method: 'POST',
                 headers: {
