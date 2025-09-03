@@ -40,6 +40,54 @@
             "tb": "TB"
         }
     },
+    "onboarding": {
+        "languageSelection": {
+            "title": "Welcome to LoRA Manager",
+            "skip": "Skip",
+            "continue": "Continue",
+            "changeFailed": "Failed to change language: {message}"
+        },
+        "tutorial": {
+            "skipTutorial": "Skip Tutorial",
+            "back": "Back",
+            "next": "Next",
+            "finish": "Finish"
+        },
+        "steps": {
+            "fetch": {
+                "title": "Fetch Models Metadata",
+                "content": "Click the <strong>Fetch</strong> button to download model metadata and preview images from Civitai."
+            },
+            "download": {
+                "title": "Download New Models",
+                "content": "Use the <strong>Download</strong> button to download models directly from Civitai URLs."
+            },
+            "bulk": {
+                "title": "Bulk Operations",
+                "content": "Enter bulk mode by clicking this button or pressing <span class=\"onboarding-shortcut\">B</span>. Select multiple models and perform batch operations. Use <span class=\"onboarding-shortcut\">Ctrl+A</span> to select all visible models."
+            },
+            "searchOptions": {
+                "title": "Search Options",
+                "content": "Click this button to configure what fields to search in: filename, model name, tags, or creator name. Customize your search scope."
+            },
+            "filter": {
+                "title": "Filter Models",
+                "content": "Use filters to narrow down models by base model type (SD1.5, SDXL, Flux, etc.) or by specific tags."
+            },
+            "breadcrumb": {
+                "title": "Breadcrumb Navigation",
+                "content": "The breadcrumb navigation shows your current path and allows quick navigation between folders. Click any folder name to jump directly there."
+            },
+            "modelCards": {
+                "title": "Model Cards",
+                "content": "<strong>Single-click</strong> a model card to view detailed information and edit metadata. Look for the pencil icon when hovering over editable fields."
+            },
+            "contextMenu": {
+                "title": "Context Menu",
+                "content": "<strong>Right-click</strong> any model card for a context menu with additional actions."
+            }
+        }
+    },
     "modelCard": {
         "actions": {
             "addToFavorites": "Add to favorites",

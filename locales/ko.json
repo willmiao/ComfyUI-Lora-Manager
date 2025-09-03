@@ -40,6 +40,54 @@
             "tb": "TB"
         }
     },
+    "onboarding": {
+        "languageSelection": {
+            "title": "LoRA Manager에 오신 것을 환영합니다",
+            "skip": "건너뛰기",
+            "continue": "계속",
+            "changeFailed": "언어 변경 실패: {message}"
+        },
+        "tutorial": {
+            "skipTutorial": "튜토리얼 건너뛰기",
+            "back": "뒤로",
+            "next": "다음",
+            "finish": "완료"
+        },
+        "steps": {
+            "fetch": {
+                "title": "모델 메타데이터 가져오기",
+                "content": "<strong>가져오기</strong> 버튼을 클릭하여 Civitai에서 모델 메타데이터와 미리보기 이미지를 다운로드하세요."
+            },
+            "download": {
+                "title": "새 모델 다운로드",
+                "content": "<strong>다운로드</strong> 버튼을 사용하여 Civitai URL에서 모델을 직접 다운로드하세요."
+            },
+            "bulk": {
+                "title": "일괄 작업",
+                "content": "이 버튼을 클릭하거나 <span class=\"onboarding-shortcut\">B</span> 키를 눌러 일괄 모드로 진입하세요. 여러 모델을 선택하여 일괄 작업을 수행할 수 있습니다. <span class=\"onboarding-shortcut\">Ctrl+A</span>로 모든 표시된 모델을 선택하세요."
+            },
+            "searchOptions": {
+                "title": "검색 옵션",
+                "content": "이 버튼을 클릭하여 검색할 필드를 설정하세요: 파일명, 모델명, 태그, 제작자명 등. 검색 범위를 자유롭게 지정할 수 있습니다."
+            },
+            "filter": {
+                "title": "모델 필터링",
+                "content": "필터를 사용하여 베이스 모델 유형(SD1.5, SDXL, Flux 등)이나 특정 태그로 모델을 좁혀보세요."
+            },
+            "breadcrumb": {
+                "title": "경로(브레드크럼) 내비게이션",
+                "content": "브레드크럼 내비게이션은 현재 경로를 보여주며 폴더 간 빠른 이동을 지원합니다. 폴더 이름을 클릭하면 해당 위치로 바로 이동합니다."
+            },
+            "modelCards": {
+                "title": "모델 카드",
+                "content": "<strong>한 번 클릭</strong>하면 모델 카드의 상세 정보와 메타데이터를 볼 수 있습니다. 편집 가능한 필드는 마우스를 올리면 연필 아이콘이 표시됩니다."
+            },
+            "contextMenu": {
+                "title": "컨텍스트 메뉴",
+                "content": "<strong>오른쪽 클릭</strong>으로 모델 카드의 추가 작업 메뉴를 사용할 수 있습니다."
+            }
+        }
+    },
     "modelCard": {
         "actions": {
             "addToFavorites": "즐겨찾기에 추가",

@@ -40,6 +40,54 @@
             "tb": "To"
         }
     },
+    "onboarding": {
+        "languageSelection": {
+            "title": "Bienvenue dans LoRA Manager",
+            "skip": "Passer",
+            "continue": "Continuer",
+            "changeFailed": "Échec du changement de langue : {message}"
+        },
+        "tutorial": {
+            "skipTutorial": "Passer le tutoriel",
+            "back": "Retour",
+            "next": "Suivant",
+            "finish": "Terminer"
+        },
+        "steps": {
+            "fetch": {
+                "title": "Récupérer les métadonnées des modèles",
+                "content": "Cliquez sur le bouton <strong>Récupérer</strong> pour télécharger les métadonnées et les images d'aperçu des modèles depuis Civitai."
+            },
+            "download": {
+                "title": "Télécharger de nouveaux modèles",
+                "content": "Utilisez le bouton <strong>Télécharger</strong> pour télécharger des modèles directement à partir des URLs Civitai."
+            },
+            "bulk": {
+                "title": "Opérations groupées",
+                "content": "Activez le mode groupé en cliquant sur ce bouton ou en appuyant sur <span class=\"onboarding-shortcut\">B</span>. Sélectionnez plusieurs modèles et effectuez des opérations par lot. Utilisez <span class=\"onboarding-shortcut\">Ctrl+A</span> pour sélectionner tous les modèles visibles."
+            },
+            "searchOptions": {
+                "title": "Options de recherche",
+                "content": "Cliquez sur ce bouton pour configurer les champs à rechercher : nom de fichier, nom du modèle, tags ou nom du créateur. Personnalisez la portée de votre recherche."
+            },
+            "filter": {
+                "title": "Filtrer les modèles",
+                "content": "Utilisez les filtres pour affiner les modèles par type de modèle de base (SD1.5, SDXL, Flux, etc.) ou par tags spécifiques."
+            },
+            "breadcrumb": {
+                "title": "Navigation par fil d'Ariane",
+                "content": "La navigation par fil d'Ariane affiche votre chemin actuel et permet une navigation rapide entre les dossiers. Cliquez sur le nom d'un dossier pour y accéder directement."
+            },
+            "modelCards": {
+                "title": "Cartes de modèles",
+                "content": "<strong>Cliquez une fois</strong> sur une carte de modèle pour afficher les informations détaillées et modifier les métadonnées. Cherchez l'icône crayon lors du survol des champs modifiables."
+            },
+            "contextMenu": {
+                "title": "Menu contextuel",
+                "content": "<strong>Clic droit</strong> sur une carte de modèle pour accéder à un menu contextuel avec des actions supplémentaires."
+            }
+        }
+    },
     "modelCard": {
         "actions": {
             "addToFavorites": "Ajouter aux favoris",

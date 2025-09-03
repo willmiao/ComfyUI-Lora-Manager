@@ -1,5 +1,7 @@
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 import { state } from '../state/index.js';
+import { translate } from '../utils/i18nHelpers.js';
+import { showToast } from '../utils/uiHelpers.js';
 
 export class OnboardingManager {
     constructor() {
@@ -28,51 +30,51 @@ export class OnboardingManager {
         this.steps = [
             {
                 target: '.controls .action-buttons [data-action="fetch"]',
-                title: 'Fetch Models Metadata',
-                content: 'Click the <strong>Fetch</strong> button to download model metadata and preview images from Civitai.',
+                title: () => translate('onboarding.steps.fetch.title', {}, 'Fetch Models Metadata'),
+                content: () => translate('onboarding.steps.fetch.content', {}, 'Click the <strong>Fetch</strong> button to download model metadata and preview images from Civitai.'),
                 position: 'bottom'
             },
             {
                 target: '.controls .action-buttons [data-action="download"]',
-                title: 'Download New Models',
-                content: 'Use the <strong>Download</strong> button to download models directly from Civitai URLs.',
+                title: () => translate('onboarding.steps.download.title', {}, 'Download New Models'),
+                content: () => translate('onboarding.steps.download.content', {}, 'Use the <strong>Download</strong> button to download models directly from Civitai URLs.'),
                 position: 'bottom'
             },
             {
                 target: '.controls .action-buttons [data-action="bulk"]',
-                title: 'Bulk Operations',
-                content: 'Enter bulk mode by clicking this button or pressing <span class="onboarding-shortcut">B</span>. Select multiple models and perform batch operations. Use <span class="onboarding-shortcut">Ctrl+A</span> to select all visible models.',
+                title: () => translate('onboarding.steps.bulk.title', {}, 'Bulk Operations'),
+                content: () => translate('onboarding.steps.bulk.content', {}, 'Enter bulk mode by clicking this button or pressing <span class="onboarding-shortcut">B</span>. Select multiple models and perform batch operations. Use <span class="onboarding-shortcut">Ctrl+A</span> to select all visible models.'),
                 position: 'bottom'
             },
             {
                 target: '#searchOptionsToggle',
-                title: 'Search Options',
-                content: 'Click this button to configure what fields to search in: filename, model name, tags, or creator name. Customize your search scope.',
+                title: () => translate('onboarding.steps.searchOptions.title', {}, 'Search Options'),
+                content: () => translate('onboarding.steps.searchOptions.content', {}, 'Click this button to configure what fields to search in: filename, model name, tags, or creator name. Customize your search scope.'),
                 position: 'bottom'
             },
             {
                 target: '#filterButton',
-                title: 'Filter Models',
-                content: 'Use filters to narrow down models by base model type (SD1.5, SDXL, Flux, etc.) or by specific tags.',
+                title: () => translate('onboarding.steps.filter.title', {}, 'Filter Models'),
+                content: () => translate('onboarding.steps.filter.content', {}, 'Use filters to narrow down models by base model type (SD1.5, SDXL, Flux, etc.) or by specific tags.'),
                 position: 'bottom'
             },
             {
                 target: '#breadcrumbContainer',
-                title: 'Breadcrumb Navigation',
-                content: 'The breadcrumb navigation shows your current path and allows quick navigation between folders. Click any folder name to jump directly there.',
+                title: () => translate('onboarding.steps.breadcrumb.title', {}, 'Breadcrumb Navigation'),
+                content: () => translate('onboarding.steps.breadcrumb.content', {}, 'The breadcrumb navigation shows your current path and allows quick navigation between folders. Click any folder name to jump directly there.'),
                 position: 'bottom'
             },
             {
                 target: '.card-grid',
-                title: 'Model Cards',
-                content: '<strong>Single-click</strong> a model card to view detailed information and edit metadata. Look for the pencil icon when hovering over editable fields.',
+                title: () => translate('onboarding.steps.modelCards.title', {}, 'Model Cards'),
+                content: () => translate('onboarding.steps.modelCards.content', {}, '<strong>Single-click</strong> a model card to view detailed information and edit metadata. Look for the pencil icon when hovering over editable fields.'),
                 position: 'top',
                 customPosition: { top: '20%', left: '50%' }
             },
             {
                 target: '.card-grid',
-                title: 'Context Menu',
-                content: '<strong>Right-click</strong> any model card for a context menu with additional actions.',
+                title: () => translate('onboarding.steps.contextMenu.title', {}, 'Context Menu'),
+                content: () => translate('onboarding.steps.contextMenu.content', {}, '<strong>Right-click</strong> any model card for a context menu with additional actions.'),
                 position: 'top',
                 customPosition: { top: '20%', left: '50%' }
             }
@@ -112,7 +114,7 @@ export class OnboardingManager {
             modal.className = 'language-selection-modal';
             modal.innerHTML = `
                 <div class="language-selection-content">
-                    <h2>Welcome to LoRA Manager</h2>
+                    <h2>${translate('onboarding.languageSelection.title', {}, 'Welcome to LoRA Manager')}</h2>
                     <p>Choose Your Language / 选择语言 / 言語を選択</p>
                     <div class="language-grid">
                         ${this.languages.map(lang => `
@@ -125,8 +127,8 @@ export class OnboardingManager {
                         `).join('')}
                     </div>
                     <div class="language-actions">
-                        <button class="onboarding-btn" id="skipLanguageBtn">Skip</button>
-                        <button class="onboarding-btn primary" id="continueLanguageBtn">Continue</button>
+                        <button class="onboarding-btn" id="skipLanguageBtn">${translate('onboarding.languageSelection.skip', {}, 'Skip')}</button>
+                        <button class="onboarding-btn primary" id="continueLanguageBtn">${translate('onboarding.languageSelection.continue', {}, 'Continue')}</button>
                     </div>
                 </div>
             `;
@@ -201,6 +203,7 @@ export class OnboardingManager {
             }
         } catch (error) {
             console.error('Failed to change language:', error);
+            showToast('onboarding.languageSelection.changeFailed', { message: error.message }, 'error');
         }
     }
 
@@ -266,17 +269,17 @@ export class OnboardingManager {
 
         // Update popup content
         this.popup.innerHTML = `
-            <h3>${step.title}</h3>
-            <p>${step.content}</p>
+            <h3>${typeof step.title === 'function' ? step.title() : step.title}</h3>
+            <p>${typeof step.content === 'function' ? step.content() : step.content}</p>
             <div class="onboarding-controls">
                 <div class="onboarding-progress">
                     <span>${stepIndex + 1} / ${this.steps.length}</span>
                 </div>
                 <div class="onboarding-actions">
-                    <button class="onboarding-btn" onclick="onboardingManager.skip()">Skip Tutorial</button>
-                    ${stepIndex > 0 ? '<button class="onboarding-btn" onclick="onboardingManager.previousStep()">Back</button>' : ''}
+                    <button class="onboarding-btn" onclick="onboardingManager.skip()">${translate('onboarding.tutorial.skipTutorial', {}, 'Skip Tutorial')}</button>
+                    ${stepIndex > 0 ? `<button class="onboarding-btn" onclick="onboardingManager.previousStep()">${translate('onboarding.tutorial.back', {}, 'Back')}</button>` : ''}
                     <button class="onboarding-btn primary" onclick="onboardingManager.nextStep()">
-                        ${stepIndex === this.steps.length - 1 ? 'Finish' : 'Next'}
+                        ${stepIndex === this.steps.length - 1 ? translate('onboarding.tutorial.finish', {}, 'Finish') : translate('onboarding.tutorial.next', {}, 'Next')}
                     </button>
                 </div>
             </div>

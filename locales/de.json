@@ -40,6 +40,54 @@
             "tb": "TB"
         }
     },
+    "onboarding": {
+        "languageSelection": {
+            "title": "Willkommen beim LoRA Manager",
+            "skip": "Überspringen",
+            "continue": "Weiter",
+            "changeFailed": "Fehler beim Ändern der Sprache: {message}"
+        },
+        "tutorial": {
+            "skipTutorial": "Tutorial überspringen",
+            "back": "Zurück",
+            "next": "Weiter",
+            "finish": "Fertigstellen"
+        },
+        "steps": {
+            "fetch": {
+                "title": "Modelldaten abrufen",
+                "content": "Klicken Sie auf die Schaltfläche <strong>Abrufen</strong>, um Modelldaten und Vorschaubilder von Civitai herunterzuladen."
+            },
+            "download": {
+                "title": "Neue Modelle herunterladen",
+                "content": "Verwenden Sie die Schaltfläche <strong>Herunterladen</strong>, um Modelle direkt über Civitai-URLs herunterzuladen."
+            },
+            "bulk": {
+                "title": "Massenoperationen",
+                "content": "Wechseln Sie in den Massenmodus, indem Sie auf diese Schaltfläche klicken oder <span class=\"onboarding-shortcut\">B</span> drücken. Wählen Sie mehrere Modelle aus und führen Sie Stapeloperationen durch. Mit <span class=\"onboarding-shortcut\">Strg+A</span> können Sie alle sichtbaren Modelle auswählen."
+            },
+            "searchOptions": {
+                "title": "Suchoptionen",
+                "content": "Klicken Sie auf diese Schaltfläche, um festzulegen, in welchen Feldern gesucht werden soll: Dateiname, Modellname, Tags oder Erstellername. Passen Sie den Suchbereich an."
+            },
+            "filter": {
+                "title": "Modelle filtern",
+                "content": "Verwenden Sie Filter, um Modelle nach Basis-Modelltyp (SD1.5, SDXL, Flux usw.) oder bestimmten Tags einzugrenzen."
+            },
+            "breadcrumb": {
+                "title": "Breadcrumb-Navigation",
+                "content": "Die Breadcrumb-Navigation zeigt Ihren aktuellen Pfad und ermöglicht eine schnelle Navigation zwischen Ordnern. Klicken Sie auf einen Ordnernamen, um direkt dorthin zu springen."
+            },
+            "modelCards": {
+                "title": "Modellkarten",
+                "content": "<strong>Einfachklick</strong> auf eine Modellkarte zeigt detaillierte Informationen und ermöglicht das Bearbeiten von Metadaten. Suchen Sie nach dem Stiftsymbol, wenn Sie über bearbeitbare Felder fahren."
+            },
+            "contextMenu": {
+                "title": "Kontextmenü",
+                "content": "<strong>Rechtsklick</strong> auf eine Modellkarte öffnet ein Kontextmenü mit weiteren Aktionen."
+            }
+        }
+    },
     "modelCard": {
         "actions": {
             "addToFavorites": "Zu Favoriten hinzufügen",
