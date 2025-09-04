@@ -15,17 +15,6 @@ export class BaseContextMenu {
     init() {
         // Hide menu on regular clicks
         document.addEventListener('click', () => this.hideMenu());
-        
-        // Show menu on right-click on cards
-        document.addEventListener('contextmenu', (e) => {
-            const card = e.target.closest(this.cardSelector);
-            if (!card) {
-                this.hideMenu();
-                return;
-            }
-            e.preventDefault();
-            this.showMenu(e.clientX, e.clientY, card);
-        });
 
         // Handle menu item clicks
         this.menu.addEventListener('click', (e) => {

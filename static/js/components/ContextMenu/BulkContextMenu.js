@@ -1,46 +1,12 @@
 import { BaseContextMenu } from './BaseContextMenu.js';
 import { state } from '../../state/index.js';
 import { bulkManager } from '../../managers/BulkManager.js';
-import { translate, updateElementText } from '../../utils/i18nHelpers.js';
-import { MODEL_TYPES } from '../../api/apiConfig.js';
+import { updateElementText } from '../../utils/i18nHelpers.js';
 
 export class BulkContextMenu extends BaseContextMenu {
     constructor() {
         super('bulkContextMenu', '.model-card.selected');
         this.setupBulkMenuItems();
-    }
-
-    init() {
-        // Override parent init to handle bulk-specific context menu logic
-        document.addEventListener('click', () => this.hideMenu());
-        
-        document.addEventListener('contextmenu', (e) => {
-            const card = e.target.closest('.model-card');
-            if (!card || !state.bulkMode) {
-                this.hideMenu();
-                return;
-            }
-            
-            // Show bulk menu only if right-clicking on a selected card
-            if (card.classList.contains('selected')) {
-                e.preventDefault();
-                this.showMenu(e.clientX, e.clientY, card);
-            } else {
-                this.hideMenu();
-            }
-        });
-
-        // Handle menu item clicks
-        this.menu.addEventListener('click', (e) => {
-            const menuItem = e.target.closest('.context-menu-item');
-            if (!menuItem || !this.currentCard) return;
-
-            const action = menuItem.dataset.action;
-            if (!action) return;
-            
-            this.handleMenuAction(action, menuItem);
-            this.hideMenu();
-        });
     }
 
     setupBulkMenuItems() {

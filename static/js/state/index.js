@@ -71,6 +71,8 @@ export const state = {
             pageSize: 20,
             showFavoritesOnly: false,
             duplicatesMode: false,
+            bulkMode: false,
+            selectedModels: new Set(),
         },
         
         [MODEL_TYPES.CHECKPOINT]: {

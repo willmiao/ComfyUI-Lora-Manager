@@ -16,11 +16,14 @@ import { migrateStorageItems } from './utils/storageHelpers.js';
 import { i18n } from './i18n/index.js';
 import { onboardingManager } from './managers/OnboardingManager.js';
 import { BulkContextMenu } from './components/ContextMenu/BulkContextMenu.js';
+import { createPageContextMenu, initializeContextMenuCoordination } from './components/ContextMenu/index.js';
 
 // Core application class
 export class AppCore {
     constructor() {
         this.initialized = false;
+        this.pageContextMenu = null;
+        this.bulkContextMenu = null;
     }
     
     // Initialize core functionality
@@ -93,12 +96,26 @@ export class AppCore {
     initializePageFeatures() {
         const pageType = this.getPageType();
         
-        // Initialize virtual scroll for pages that need it
         if (['loras', 'recipes', 'checkpoints', 'embeddings'].includes(pageType)) {
+            this.initializeContextMenus(pageType);
             initializeInfiniteScroll(pageType);
         }
         
         return this;
+    }
+    
+    // Initialize context menus for the current page
+    initializeContextMenus(pageType) {
+        // Create page-specific context menu
+        this.pageContextMenu = createPageContextMenu(pageType);
+        
+        // Get bulk context menu from bulkManager
+        this.bulkContextMenu = bulkManager.bulkContextMenu;
+        
+        // Initialize context menu coordination
+        if (this.pageContextMenu || this.bulkContextMenu) {
+            initializeContextMenuCoordination(this.pageContextMenu, this.bulkContextMenu);
+        }
     }
 }
 

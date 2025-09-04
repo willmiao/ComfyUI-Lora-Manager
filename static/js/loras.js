@@ -1,7 +1,6 @@
 import { appCore } from './core.js';
 import { state } from './state/index.js';
 import { updateCardsForBulkMode } from './components/shared/ModelCard.js';
-import { LoraContextMenu } from './components/ContextMenu/index.js';
 import { createPageControls } from './components/controls/index.js';
 import { confirmDelete, closeDeleteModal, confirmExclude, closeExcludeModal } from './utils/modalUtils.js';
 import { ModelDuplicatesManager } from './components/ModelDuplicatesManager.js';
@@ -37,13 +36,10 @@ class LoraPageManager {
     }
     
     async initialize() {
-        // Initialize page-specific components
-        new LoraContextMenu();
-        
         // Initialize cards for current bulk mode state (should be false initially)
         updateCardsForBulkMode(state.bulkMode);
         
-        // Initialize common page features (virtual scroll)
+        // Initialize common page features (including context menus and virtual scroll)
         appCore.initializePageFeatures();
     }
 }
