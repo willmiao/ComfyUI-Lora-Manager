@@ -136,10 +136,10 @@ class BannerService {
 
         const actionsHtml = banner.actions ? banner.actions.map(action => {
             const actionAttribute = action.action ? `data-action="${action.action}"` : '';
-            const href = action.url ? `href="${action.url}"` : '#';
+            const href = action.url ? `href="${action.url}"` : 'href="#"';
             const target = action.url ? 'target="_blank" rel="noopener noreferrer"' : '';
             
-            return `<a ${href ? `href="${href}"` : ''} ${target} class="banner-action banner-action-${action.type}" ${actionAttribute}>
+            return `<a ${href} ${target} class="banner-action banner-action-${action.type}" ${actionAttribute}>
                 <i class="${action.icon}"></i>
                 <span>${action.text}</span>
             </a>`;
