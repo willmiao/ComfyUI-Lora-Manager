@@ -44,6 +44,34 @@
     </div>
 </div>
 
+<div id="bulkContextMenu" class="context-menu">
+    <div class="bulk-context-header">
+        <i class="fas fa-th-large"></i>
+        <span>{{ t('loras.bulkOperations.selected', {'count': 0}) }}</span>
+    </div>
+    <div class="context-menu-separator"></div>
+    <div class="context-menu-item" data-action="send-to-workflow">
+        <i class="fas fa-paper-plane"></i> <span>{{ t('loras.bulkOperations.sendToWorkflow') }}</span>
+    </div>
+    <div class="context-menu-item" data-action="copy-all">
+        <i class="fas fa-copy"></i> <span>{{ t('loras.bulkOperations.copyAll') }}</span>
+    </div>
+    <div class="context-menu-item" data-action="refresh-all">
+        <i class="fas fa-sync-alt"></i> <span>{{ t('loras.bulkOperations.refreshAll') }}</span>
+    </div>
+    <div class="context-menu-item" data-action="move-all">
+        <i class="fas fa-folder-open"></i> <span>{{ t('loras.bulkOperations.moveAll') }}</span>
+    </div>
+    <div class="context-menu-separator"></div>
+    <div class="context-menu-item delete-item" data-action="delete-all">
+        <i class="fas fa-trash"></i> <span>{{ t('loras.bulkOperations.deleteAll') }}</span>
+    </div>
+    <div class="context-menu-separator"></div>
+    <div class="context-menu-item" data-action="clear">
+        <i class="fas fa-times"></i> <span>{{ t('loras.bulkOperations.clear') }}</span>
+    </div>
+</div>
+
 <div id="nsfwLevelSelector" class="nsfw-level-selector">
     <div class="nsfw-level-header">
         <h3>{{ t('modals.contentRating.title') }}</h3>

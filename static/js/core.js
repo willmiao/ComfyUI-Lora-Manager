@@ -15,6 +15,7 @@ import { initializeInfiniteScroll } from './utils/infiniteScroll.js';
 import { migrateStorageItems } from './utils/storageHelpers.js';
 import { i18n } from './i18n/index.js';
 import { onboardingManager } from './managers/OnboardingManager.js';
+import { BulkContextMenu } from './components/ContextMenu/BulkContextMenu.js';
 
 // Core application class
 export class AppCore {
@@ -54,6 +55,10 @@ export class AppCore {
 
         // Initialize the bulk manager
         bulkManager.initialize();
+        
+        // Initialize bulk context menu
+        const bulkContextMenu = new BulkContextMenu();
+        bulkManager.setBulkContextMenu(bulkContextMenu);
         
         // Initialize the example images manager
         exampleImagesManager.initialize();

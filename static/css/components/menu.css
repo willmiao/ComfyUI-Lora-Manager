@@ -176,11 +176,6 @@
     background: linear-gradient(45deg, #4a90e2, #357abd);
 }
 
-/* Remove old node-color-indicator styles */
-.node-color-indicator {
-    display: none;
-}
-
 .send-all-item {
     border-top: 1px solid var(--border-color);
     font-weight: 500;
@@ -217,4 +212,22 @@
     font-size: 12px;
     color: var(--text-muted);
     font-style: italic;
+}
+
+/* Bulk Context Menu Header */
+.bulk-context-header {
+    padding: 10px 12px;
+    background: var(--lora-accent);
+    color: var(--lora-text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    border-radius: var(--border-radius-xs) var(--border-radius-xs) 0 0;
+}
+
+.bulk-context-header i {
+    width: 16px;
+    text-align: center;
 }

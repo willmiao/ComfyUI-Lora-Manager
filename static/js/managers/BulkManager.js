@@ -2,18 +2,14 @@ import { state, getCurrentPageState } from '../state/index.js';
 import { showToast, copyToClipboard, sendLoraToWorkflow } from '../utils/uiHelpers.js';
 import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
-import { moveManager } from './MoveManager.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
-import { updateElementText } from '../utils/i18nHelpers.js';
 
 export class BulkManager {
     constructor() {
         this.bulkBtn = document.getElementById('bulkOperationsBtn');
-        this.bulkPanel = document.getElementById('bulkOperationsPanel');
-        this.isStripVisible = false;
-        
-        this.stripMaxThumbnails = 50;
+        // Remove bulk panel references since we're using context menu now
+        this.bulkContextMenu = null; // Will be set by core initialization
         
         // Model type specific action configurations
         this.actionConfig = {
@@ -46,41 +42,13 @@ export class BulkManager {
         this.setupGlobalKeyboardListeners();
     }
 
+    setBulkContextMenu(bulkContextMenu) {
+        this.bulkContextMenu = bulkContextMenu;
+    }
+
     setupEventListeners() {
-        // Bulk operations button listeners
-        const sendToWorkflowBtn = this.bulkPanel?.querySelector('[data-action="send-to-workflow"]');
-        const copyAllBtn = this.bulkPanel?.querySelector('[data-action="copy-all"]');
-        const refreshAllBtn = this.bulkPanel?.querySelector('[data-action="refresh-all"]');
-        const moveAllBtn = this.bulkPanel?.querySelector('[data-action="move-all"]');
-        const deleteAllBtn = this.bulkPanel?.querySelector('[data-action="delete-all"]');
-        const clearBtn = this.bulkPanel?.querySelector('[data-action="clear"]');
-
-        if (sendToWorkflowBtn) {
-            sendToWorkflowBtn.addEventListener('click', () => this.sendAllModelsToWorkflow());
-        }
-        if (copyAllBtn) {
-            copyAllBtn.addEventListener('click', () => this.copyAllModelsSyntax());
-        }
-        if (refreshAllBtn) {
-            refreshAllBtn.addEventListener('click', () => this.refreshAllMetadata());
-        }
-        if (moveAllBtn) {
-            moveAllBtn.addEventListener('click', () => {
-                moveManager.showMoveModal('bulk');
-            });
-        }
-        if (deleteAllBtn) {
-            deleteAllBtn.addEventListener('click', () => this.showBulkDeleteModal());
-        }
-        if (clearBtn) {
-            clearBtn.addEventListener('click', () => this.clearSelection());
-        }
-
-        // Selected count click listener
-        const selectedCount = document.getElementById('selectedCount');
-        if (selectedCount) {
-            selectedCount.addEventListener('click', () => this.toggleThumbnailStrip());
-        }
+        // Only setup bulk mode toggle button listener now
+        // Context menu actions are handled by BulkContextMenu
     }
 
     setupGlobalKeyboardListeners() {
@@ -115,60 +83,15 @@ export class BulkManager {
         
         this.bulkBtn.classList.toggle('active', state.bulkMode);
         
-        if (state.bulkMode) {
-            this.bulkPanel.classList.remove('hidden');
-            this.updateActionButtonsVisibility();
-            setTimeout(() => {
-                this.bulkPanel.classList.add('visible');
-            }, 10);
-        } else {
-            this.bulkPanel.classList.remove('visible');
-            setTimeout(() => {
-                this.bulkPanel.classList.add('hidden');
-            }, 400);
-            this.hideThumbnailStrip();
-        }
-        
         updateCardsForBulkMode(state.bulkMode);
         
         if (!state.bulkMode) {
             this.clearSelection();
             
-            // TODO:
-            document.querySelectorAll('.model-card').forEach(card => {
-                const actions = card.querySelectorAll('.card-actions, .card-button');
-                actions.forEach(action => action.style.display = 'flex');
-            });
-        }
-    }
-
-    updateActionButtonsVisibility() {
-        const currentModelType = state.currentPageType;
-        const config = this.actionConfig[currentModelType];
-        
-        if (!config) return;
-
-        // Update button visibility based on model type
-        const sendToWorkflowBtn = this.bulkPanel?.querySelector('[data-action="send-to-workflow"]');
-        const copyAllBtn = this.bulkPanel?.querySelector('[data-action="copy-all"]');
-        const refreshAllBtn = this.bulkPanel?.querySelector('[data-action="refresh-all"]');
-        const moveAllBtn = this.bulkPanel?.querySelector('[data-action="move-all"]');
-        const deleteAllBtn = this.bulkPanel?.querySelector('[data-action="delete-all"]');
-
-        if (sendToWorkflowBtn) {
-            sendToWorkflowBtn.style.display = config.sendToWorkflow ? 'block' : 'none';
-        }
-        if (copyAllBtn) {
-            copyAllBtn.style.display = config.copyAll ? 'block' : 'none';
-        }
-        if (refreshAllBtn) {
-            refreshAllBtn.style.display = config.refreshAll ? 'block' : 'none';
-        }
-        if (moveAllBtn) {
-            moveAllBtn.style.display = config.moveAll ? 'block' : 'none';
-        }
-        if (deleteAllBtn) {
-            deleteAllBtn.style.display = config.deleteAll ? 'block' : 'none';
+            // Hide context menu when exiting bulk mode
+            if (this.bulkContextMenu) {
+                this.bulkContextMenu.hideMenu();
+            }
         }
     }
 
@@ -177,27 +100,10 @@ export class BulkManager {
             card.classList.remove('selected');
         });
         state.selectedModels.clear();
-        this.updateSelectedCount();
-        this.hideThumbnailStrip();
-    }
-
-    updateSelectedCount() {
-        const countElement = document.getElementById('selectedCount');
         
-        if (countElement) {
-            // Use i18nHelpers.js to update the count text
-            updateElementText(countElement, 'loras.bulkOperations.selected', { count: state.selectedModels.size });
-
-            const existingCaret = countElement.querySelector('.dropdown-caret');
-            if (existingCaret) {
-                existingCaret.className = `fas fa-caret-${this.isStripVisible ? 'down' : 'up'} dropdown-caret`;
-                existingCaret.style.visibility = state.selectedModels.size > 0 ? 'visible' : 'hidden';
-            } else {
-                const caretIcon = document.createElement('i');
-                caretIcon.className = `fas fa-caret-${this.isStripVisible ? 'down' : 'up'} dropdown-caret`;
-                caretIcon.style.visibility = state.selectedModels.size > 0 ? 'visible' : 'hidden';
-                countElement.appendChild(caretIcon);
-            }
+        // Update context menu header if visible
+        if (this.bulkContextMenu) {
+            this.bulkContextMenu.updateSelectedCountHeader();
         }
     }
 
@@ -222,10 +128,9 @@ export class BulkManager {
             });
         }
         
-        this.updateSelectedCount();
-        
-        if (this.isStripVisible) {
-            this.updateThumbnailStrip();
+        // Update context menu header if visible
+        if (this.bulkContextMenu) {
+            this.bulkContextMenu.updateSelectedCountHeader();
         }
     }
 
@@ -277,8 +182,6 @@ export class BulkManager {
                 card.classList.remove('selected');
             }
         });
-        
-        this.updateSelectedCount();
     }
 
     async copyAllModelsSyntax() {
@@ -413,115 +316,6 @@ export class BulkManager {
             showToast('toast.models.deleteFailedGeneral', {}, 'error');
         }
     }
-
-    toggleThumbnailStrip() {
-        if (state.selectedModels.size === 0) return;
-        
-        const existing = document.querySelector('.selected-thumbnails-strip');
-        if (existing) {
-            this.hideThumbnailStrip();
-        } else {
-            this.showThumbnailStrip();
-        }
-    }
-    
-    showThumbnailStrip() {
-        const strip = document.createElement('div');
-        strip.className = 'selected-thumbnails-strip';
-        
-        const thumbnailContainer = document.createElement('div');
-        thumbnailContainer.className = 'thumbnails-container';
-        strip.appendChild(thumbnailContainer);
-        
-        this.bulkPanel.parentNode.insertBefore(strip, this.bulkPanel);
-        
-        this.updateThumbnailStrip();
-        
-        this.isStripVisible = true;
-        this.updateSelectedCount();
-        
-        setTimeout(() => strip.classList.add('visible'), 10);
-    }
-    
-    hideThumbnailStrip() {
-        const strip = document.querySelector('.selected-thumbnails-strip');
-        if (strip && this.isStripVisible) {
-            strip.classList.remove('visible');
-            
-            this.isStripVisible = false;
-            
-            const countElement = document.getElementById('selectedCount');
-            if (countElement) {
-                const caret = countElement.querySelector('.dropdown-caret');
-                if (caret) {
-                    caret.className = 'fas fa-caret-up dropdown-caret';
-                }
-            }
-            
-            setTimeout(() => {
-                if (strip.parentNode) {
-                    strip.parentNode.removeChild(strip);
-                }
-            }, 300);
-        }
-    }
-    
-    updateThumbnailStrip() {
-        const container = document.querySelector('.thumbnails-container');
-        if (!container) return;
-        
-        container.innerHTML = '';
-        
-        const selectedModels = Array.from(state.selectedModels);
-        
-        if (selectedModels.length > this.stripMaxThumbnails) {
-            const counter = document.createElement('div');
-            counter.className = 'strip-counter';
-            counter.textContent = `Showing ${this.stripMaxThumbnails} of ${selectedModels.length} selected`;
-            container.appendChild(counter);
-        }
-        
-        const thumbnailsToShow = selectedModels.slice(0, this.stripMaxThumbnails);
-        const metadataCache = this.getMetadataCache();
-        
-        thumbnailsToShow.forEach(filepath => {
-            const metadata = metadataCache.get(filepath);
-            if (!metadata) return;
-            
-            const thumbnail = document.createElement('div');
-            thumbnail.className = 'selected-thumbnail';
-            thumbnail.dataset.filepath = filepath;
-            
-            if (metadata.isVideo) {
-                thumbnail.innerHTML = `
-                    <video autoplay loop muted playsinline>
-                        <source src="${metadata.previewUrl}" type="video/mp4">
-                    </video>
-                    <span class="thumbnail-name" title="${metadata.modelName}">${metadata.modelName}</span>
-                    <button class="thumbnail-remove"><i class="fas fa-times"></i></button>
-                `;
-            } else {
-                thumbnail.innerHTML = `
-                    <img src="${metadata.previewUrl}" alt="${metadata.modelName}">
-                    <span class="thumbnail-name" title="${metadata.modelName}">${metadata.modelName}</span>
-                    <button class="thumbnail-remove"><i class="fas fa-times"></i></button>
-                `;
-            }
-            
-            thumbnail.addEventListener('click', (e) => {
-                if (!e.target.closest('.thumbnail-remove')) {
-                    this.deselectItem(filepath);
-                }
-            });
-            
-            thumbnail.querySelector('.thumbnail-remove').addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.deselectItem(filepath);
-            });
-            
-            container.appendChild(thumbnail);
-        });
-    }
     
     deselectItem(filepath) {
         const card = document.querySelector(`.model-card[data-filepath="${filepath}"]`);
@@ -530,13 +324,6 @@ export class BulkManager {
         }
         
         state.selectedModels.delete(filepath);
-        
-        this.updateSelectedCount();
-        this.updateThumbnailStrip();
-        
-        if (state.selectedModels.size === 0) {
-            this.hideThumbnailStrip();
-        }
     }
 
     selectAllVisibleModels() {
