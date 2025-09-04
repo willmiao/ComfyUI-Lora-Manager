@@ -26,6 +26,7 @@ export class BulkContextMenu extends BaseContextMenu {
         if (!config) return;
 
         // Update button visibility based on model type
+        const addTagsItem = this.menu.querySelector('[data-action="add-tags"]');
         const sendToWorkflowItem = this.menu.querySelector('[data-action="send-to-workflow"]');
         const copyAllItem = this.menu.querySelector('[data-action="copy-all"]');
         const refreshAllItem = this.menu.querySelector('[data-action="refresh-all"]');
@@ -47,6 +48,9 @@ export class BulkContextMenu extends BaseContextMenu {
         if (deleteAllItem) {
             deleteAllItem.style.display = config.deleteAll ? 'flex' : 'none';
         }
+        if (addTagsItem) {
+            addTagsItem.style.display = config.addTags ? 'flex' : 'none';
+        }
     }
 
     updateSelectedCountHeader() {
@@ -64,6 +68,9 @@ export class BulkContextMenu extends BaseContextMenu {
 
     handleMenuAction(action, menuItem) {
         switch (action) {
+            case 'add-tags':
+                bulkManager.showBulkAddTagsModal();
+                break;
             case 'send-to-workflow':
                 bulkManager.sendAllModelsToWorkflow();
                 break;

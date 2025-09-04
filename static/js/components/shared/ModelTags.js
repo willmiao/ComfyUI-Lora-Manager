@@ -139,7 +139,7 @@ export function setupTagEditMode() {
 // ...existing helper functions...
 
 /**
- * Save tags - 支持LoRA和Checkpoint
+ * Save tags
  */
 async function saveTags() {
     const editBtn = document.querySelector('.edit-tags-btn');

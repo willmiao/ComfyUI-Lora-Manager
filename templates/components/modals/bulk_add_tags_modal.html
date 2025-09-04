@@ -1,0 +1,37 @@
+<div id="bulkAddTagsModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-tags"></i> {{ t('modals.bulkAddTags.title') }}</h3>
+            <button class="modal-close" onclick="modalManager.closeModal('bulkAddTagsModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="bulk-add-tags-info">
+                <p>{{ t('modals.bulkAddTags.description') }} <span id="bulkAddTagsCount">0</span> {{ t('modals.bulkAddTags.models') }}</p>
+            </div>
+            
+            <div class="model-tags-container bulk-tags-container edit-mode">
+                <div class="metadata-edit-container" style="display: block;">
+                    <div class="metadata-edit-content">
+                        <div class="metadata-edit-header">
+                            <label>{{ t('modals.bulkAddTags.tagsToAdd') }}</label>
+                        </div>
+                        <div class="metadata-items" id="bulkTagsItems">
+                            <!-- Tags will be added here dynamically -->
+                        </div>
+                        <div class="metadata-edit-controls">
+                            <button class="save-tags-btn bulk-save-tags-btn" title="{{ t('modals.bulkAddTags.saveChanges') }}">
+                                <i class="fas fa-save"></i> {{ t('common.actions.save') }}
+                            </button>
+                        </div>
+                        <div class="metadata-add-form">
+                            <input type="text" class="metadata-input bulk-metadata-input" placeholder="{{ t('modals.bulkAddTags.placeholder') }}">
+                        </div>
+                        <!-- Suggestions dropdown will be added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

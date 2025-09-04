@@ -14,6 +14,7 @@ export class BulkManager {
         // Model type specific action configurations
         this.actionConfig = {
             [MODEL_TYPES.LORA]: {
+                addTags: true,
                 sendToWorkflow: true,
                 copyAll: true,
                 refreshAll: true,
@@ -21,6 +22,7 @@ export class BulkManager {
                 deleteAll: true
             },
             [MODEL_TYPES.EMBEDDING]: {
+                addTags: true,
                 sendToWorkflow: false,
                 copyAll: false,
                 refreshAll: true,
@@ -28,6 +30,7 @@ export class BulkManager {
                 deleteAll: true
             },
             [MODEL_TYPES.CHECKPOINT]: {
+                addTags: true,
                 sendToWorkflow: false,
                 copyAll: false,
                 refreshAll: true,
@@ -404,6 +407,225 @@ export class BulkManager {
         } catch (error) {
             console.error('Error during bulk metadata refresh:', error);
             showToast('toast.models.refreshMetadataFailed', {}, 'error');
+        }
+    }
+    
+    showBulkAddTagsModal() {
+        if (state.selectedModels.size === 0) {
+            showToast('toast.models.noModelsSelected', {}, 'warning');
+            return;
+        }
+        
+        const countElement = document.getElementById('bulkAddTagsCount');
+        if (countElement) {
+            countElement.textContent = state.selectedModels.size;
+        }
+        
+        // Clear any existing tags in the modal
+        const tagsContainer = document.getElementById('bulkTagsItems');
+        if (tagsContainer) {
+            tagsContainer.innerHTML = '';
+        }
+        
+        modalManager.showModal('bulkAddTagsModal', null, null, () => {
+            // Cleanup when modal is closed
+            this.cleanupBulkAddTagsModal();
+        });
+        
+        // Initialize the bulk tags editing interface
+        this.initializeBulkTagsInterface();
+    }
+    
+    initializeBulkTagsInterface() {
+        // Import preset tags from ModelTags.js
+        const PRESET_TAGS = [
+            'character', 'style', 'concept', 'clothing', 
+            'poses', 'background', 'vehicle', 'buildings', 
+            'objects', 'animal'
+        ];
+        
+        // Setup tag input behavior
+        const tagInput = document.querySelector('.bulk-metadata-input');
+        if (tagInput) {
+            tagInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.addBulkTag(e.target.value.trim());
+                    e.target.value = '';
+                }
+            });
+        }
+        
+        // Create suggestions dropdown
+        const tagForm = document.querySelector('#bulkAddTagsModal .metadata-add-form');
+        if (tagForm) {
+            const suggestionsDropdown = this.createBulkSuggestionsDropdown(PRESET_TAGS);
+            tagForm.appendChild(suggestionsDropdown);
+        }
+        
+        // Setup save button
+        const saveBtn = document.querySelector('.bulk-save-tags-btn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                this.saveBulkTags();
+            });
+        }
+    }
+    
+    createBulkSuggestionsDropdown(presetTags) {
+        const dropdown = document.createElement('div');
+        dropdown.className = 'metadata-suggestions-dropdown';
+        
+        const header = document.createElement('div');
+        header.className = 'metadata-suggestions-header';
+        header.innerHTML = `
+            <span>Suggested Tags</span>
+            <small>Click to add</small>
+        `;
+        dropdown.appendChild(header);
+        
+        const container = document.createElement('div');
+        container.className = 'metadata-suggestions-container';
+        
+        presetTags.forEach(tag => {
+            const item = document.createElement('div');
+            item.className = 'metadata-suggestion-item';
+            item.title = tag;
+            item.innerHTML = `<span class="metadata-suggestion-text">${tag}</span>`;
+            
+            item.addEventListener('click', () => {
+                this.addBulkTag(tag);
+                const input = document.querySelector('.bulk-metadata-input');
+                if (input) {
+                    input.value = tag;
+                    input.focus();
+                }
+            });
+            
+            container.appendChild(item);
+        });
+        
+        dropdown.appendChild(container);
+        return dropdown;
+    }
+    
+    addBulkTag(tag) {
+        tag = tag.trim().toLowerCase();
+        if (!tag) return;
+        
+        const tagsContainer = document.getElementById('bulkTagsItems');
+        if (!tagsContainer) return;
+        
+        // Validation: Check length
+        if (tag.length > 30) {
+            showToast('modelTags.validation.maxLength', {}, 'error');
+            return;
+        }
+        
+        // Validation: Check total number
+        const currentTags = tagsContainer.querySelectorAll('.metadata-item');
+        if (currentTags.length >= 30) {
+            showToast('modelTags.validation.maxCount', {}, 'error');
+            return;
+        }
+        
+        // Validation: Check for duplicates
+        const existingTags = Array.from(currentTags).map(tagEl => tagEl.dataset.tag);
+        if (existingTags.includes(tag)) {
+            showToast('modelTags.validation.duplicate', {}, 'error');
+            return;
+        }
+        
+        // Create new tag
+        const newTag = document.createElement('div');
+        newTag.className = 'metadata-item';
+        newTag.dataset.tag = tag;
+        newTag.innerHTML = `
+            <span class="metadata-item-content">${tag}</span>
+            <button class="metadata-delete-btn">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        // Add delete button event listener
+        const deleteBtn = newTag.querySelector('.metadata-delete-btn');
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            newTag.remove();
+        });
+        
+        tagsContainer.appendChild(newTag);
+    }
+    
+    async saveBulkTags() {
+        const tagElements = document.querySelectorAll('#bulkTagsItems .metadata-item');
+        const tags = Array.from(tagElements).map(tag => tag.dataset.tag);
+        
+        if (tags.length === 0) {
+            showToast('toast.models.noTagsToAdd', {}, 'warning');
+            return;
+        }
+        
+        if (state.selectedModels.size === 0) {
+            showToast('toast.models.noModelsSelected', {}, 'warning');
+            return;
+        }
+        
+        try {
+            const apiClient = getModelApiClient();
+            const filePaths = Array.from(state.selectedModels);
+            let successCount = 0;
+            let failCount = 0;
+            
+            // Add tags to each selected model
+            for (const filePath of filePaths) {
+                try {
+                    await apiClient.addTags(filePath, { tags: tags });
+                    successCount++;
+                } catch (error) {
+                    console.error(`Failed to add tags to ${filePath}:`, error);
+                    failCount++;
+                }
+            }
+            
+            modalManager.closeModal('bulkAddTagsModal');
+            
+            if (successCount > 0) {
+                const currentConfig = MODEL_CONFIG[state.currentPageType];
+                showToast('toast.models.tagsAddedSuccessfully', { 
+                    count: successCount, 
+                    tagCount: tags.length,
+                    type: currentConfig.displayName.toLowerCase() 
+                }, 'success');
+            }
+            
+            if (failCount > 0) {
+                showToast('toast.models.tagsAddFailed', { count: failCount }, 'warning');
+            }
+            
+        } catch (error) {
+            console.error('Error during bulk tag addition:', error);
+            showToast('toast.models.bulkTagsAddFailed', {}, 'error');
+        }
+    }
+    
+    cleanupBulkAddTagsModal() {
+        // Clear tags container
+        const tagsContainer = document.getElementById('bulkTagsItems');
+        if (tagsContainer) {
+            tagsContainer.innerHTML = '';
+        }
+        
+        // Clear input
+        const input = document.querySelector('.bulk-metadata-input');
+        if (input) {
+            input.value = '';
+        }
+        
+        // Remove event listeners (they will be re-added when modal opens again)
+        const saveBtn = document.querySelector('.bulk-save-tags-btn');
+        if (saveBtn) {
+            saveBtn.replaceWith(saveBtn.cloneNode(true));
         }
     }
 }
