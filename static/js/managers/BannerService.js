@@ -172,6 +172,16 @@ class BannerService {
     }
 
     /**
+     * Check if a banner is currently rendered and visible
+     * @param {string} bannerId
+     * @returns {boolean}
+     */
+    isBannerVisible(bannerId) {
+        const el = document.querySelector(`[data-banner-id="${bannerId}"]`);
+        return !!el && el.offsetParent !== null;
+    }
+
+    /**
      * Update container visibility based on active banners
      */
     updateContainerVisibility() {

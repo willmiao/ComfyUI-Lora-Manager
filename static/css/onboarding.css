@@ -1,0 +1,252 @@
+/* Onboarding Tutorial Styles */
+.onboarding-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: var(--z-overlay);
+    display: none;
+    /* Use mask to create cutout for highlighted element */
+    mask-composite: subtract;
+    -webkit-mask-composite: subtract;
+}
+
+.onboarding-overlay.active {
+    display: block;
+}
+
+.onboarding-spotlight {
+    position: absolute;
+    background: transparent;
+    border: 3px solid var(--lora-accent);
+    border-radius: var(--border-radius-base);
+    z-index: calc(var(--z-overlay) + 1);
+    pointer-events: none;
+    transition: all 0.3s ease;
+    /* Add glow effect */
+    box-shadow: 
+        0 0 0 2px rgba(24, 144, 255, 0.3),
+        0 0 20px rgba(24, 144, 255, 0.2),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Target element highlighting */
+.onboarding-target-highlight {
+    position: relative;
+    z-index: calc(var(--z-overlay) + 2) !important;
+    pointer-events: auto !important;
+}
+
+/* Ensure highlighted elements are interactive */
+.onboarding-target-highlight * {
+    pointer-events: auto !important;
+}
+
+.onboarding-popup {
+    position: absolute;
+    background: var(--lora-surface);
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-base);
+    padding: var(--space-3);
+    min-width: 320px;
+    max-width: 400px;
+    z-index: calc(var(--z-overlay) + 3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.onboarding-popup h3 {
+    margin: 0 0 var(--space-2) 0;
+    color: var(--lora-accent);
+    font-size: 1.2em;
+    font-weight: 600;
+}
+
+.onboarding-popup p {
+    margin: 0 0 var(--space-3) 0;
+    color: var(--text-color);
+    line-height: 1.5;
+}
+
+.onboarding-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.onboarding-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: 0.85em;
+    color: var(--text-muted);
+}
+
+.onboarding-actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.onboarding-btn {
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-sm);
+    background: var(--card-bg);
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+
+.onboarding-btn:hover {
+    background: var(--lora-accent);
+    color: var(--lora-text);
+    border-color: var(--lora-accent);
+}
+
+.onboarding-btn.primary {
+    background: var(--lora-accent);
+    color: var(--lora-text);
+    border-color: var(--lora-accent);
+}
+
+.onboarding-btn.primary:hover {
+    opacity: 0.9;
+}
+
+/* Language Selection Modal */
+.language-selection-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: calc(var(--z-overlay) + 10);
+}
+
+.language-selection-content {
+    background: var(--lora-surface);
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-base);
+    padding: var(--space-3);
+    min-width: 510px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+}
+
+.language-selection-content h2 {
+    margin: 0 0 var(--space-2) 0;
+    color: var(--lora-accent);
+    font-size: 1.5em;
+}
+
+.language-selection-content p {
+    margin: 0 0 var(--space-3) 0;
+    color: var(--text-color);
+    line-height: 1.5;
+}
+
+.language-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.language-option {
+    padding: var(--space-2);
+    border: 2px solid var(--lora-border);
+    border-radius: var(--border-radius-sm);
+    background: var(--card-bg);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.language-option:hover {
+    border-color: var(--lora-accent);
+    background: var(--lora-surface);
+}
+
+.language-option.selected {
+    border-color: var(--lora-accent);
+    background: var(--lora-accent);
+    color: var(--lora-text);
+}
+
+.language-flag {
+    font-size: 1.5em;
+}
+
+.language-name {
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.language-actions {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: center;
+}
+
+/* Shortcut Key Highlighting */
+.onboarding-shortcut {
+    display: inline-block;
+    background: var(--shortcut-bg);
+    border: 1px solid var(--shortcut-border);
+    border-radius: var(--border-radius-xs);
+    padding: 2px 6px;
+    font-size: 0.8em;
+    font-weight: 600;
+    color: var(--shortcut-text);
+    margin: 0 2px;
+}
+
+/* Animation for highlighting elements */
+.onboarding-highlight {
+    animation: onboarding-pulse 2s infinite;
+}
+
+@keyframes onboarding-pulse {
+    0%, 100% {
+        box-shadow: 
+            0 0 0 2px rgba(24, 144, 255, 0.4),
+            0 0 20px rgba(24, 144, 255, 0.3),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+    50% {
+        box-shadow: 
+            0 0 0 4px rgba(24, 144, 255, 0.6),
+            0 0 30px rgba(24, 144, 255, 0.4),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .onboarding-popup {
+        min-width: 280px;
+        max-width: calc(100vw - 40px);
+        padding: var(--space-2);
+    }
+    
+    .language-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .language-selection-content {
+        min-width: calc(100vw - 40px);
+        max-width: 400px;
+    }
+}

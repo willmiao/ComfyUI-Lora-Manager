@@ -40,6 +40,53 @@
             "tb": "TB"
         }
     },
+    "onboarding": {
+        "languageSelection": {
+            "title": "Bienvenido a LoRA Manager",
+            "continue": "Continuar",
+            "changeFailed": "Error al cambiar el idioma: {message}"
+        },
+        "tutorial": {
+            "skipTutorial": "Saltar tutorial",
+            "back": "Atrás",
+            "next": "Siguiente",
+            "finish": "Finalizar"
+        },
+        "steps": {
+            "fetch": {
+                "title": "Obtener metadatos de modelos",
+                "content": "Haz clic en el botón <strong>Obtener</strong> para descargar metadatos y vistas previas de modelos desde Civitai."
+            },
+            "download": {
+                "title": "Descargar nuevos modelos",
+                "content": "Usa el botón <strong>Descargar</strong> para descargar modelos directamente desde URLs de Civitai."
+            },
+            "bulk": {
+                "title": "Operaciones masivas",
+                "content": "Entra en modo masivo haciendo clic en este botón o presionando <span class=\"onboarding-shortcut\">B</span>. Selecciona varios modelos y realiza operaciones por lotes. Usa <span class=\"onboarding-shortcut\">Ctrl+A</span> para seleccionar todos los modelos visibles."
+            },
+            "searchOptions": {
+                "title": "Opciones de búsqueda",
+                "content": "Haz clic en este botón para configurar en qué campos buscar: nombre de archivo, nombre del modelo, etiquetas o nombre del creador. Personaliza el alcance de tu búsqueda."
+            },
+            "filter": {
+                "title": "Filtrar modelos",
+                "content": "Utiliza los filtros para reducir los modelos por tipo de modelo base (SD1.5, SDXL, Flux, etc.) o por etiquetas específicas."
+            },
+            "breadcrumb": {
+                "title": "Navegación por rutas",
+                "content": "La navegación por rutas muestra tu ruta actual y permite una navegación rápida entre carpetas. Haz clic en cualquier nombre de carpeta para ir directamente allí."
+            },
+            "modelCards": {
+                "title": "Tarjetas de modelo",
+                "content": "<strong>Clic único</strong> en una tarjeta de modelo para ver información detallada y editar metadatos. Busca el icono de lápiz al pasar el ratón sobre campos editables."
+            },
+            "contextMenu": {
+                "title": "Menú contextual",
+                "content": "<strong>Clic derecho</strong> en cualquier tarjeta de modelo para ver un menú contextual con acciones adicionales."
+            }
+        }
+    },
     "modelCard": {
         "actions": {
             "addToFavorites": "Añadir a favoritos",

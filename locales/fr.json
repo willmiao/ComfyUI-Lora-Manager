@@ -40,6 +40,53 @@
             "tb": "To"
         }
     },
+    "onboarding": {
+        "languageSelection": {
+            "title": "Bienvenue dans LoRA Manager",
+            "continue": "Continuer",
+            "changeFailed": "Échec du changement de langue : {message}"
+        },
+        "tutorial": {
+            "skipTutorial": "Passer le tutoriel",
+            "back": "Retour",
+            "next": "Suivant",
+            "finish": "Terminer"
+        },
+        "steps": {
+            "fetch": {
+                "title": "Récupérer les métadonnées des modèles",
+                "content": "Cliquez sur le bouton <strong>Récupérer</strong> pour télécharger les métadonnées et les images d'aperçu des modèles depuis Civitai."
+            },
+            "download": {
+                "title": "Télécharger de nouveaux modèles",
+                "content": "Utilisez le bouton <strong>Télécharger</strong> pour télécharger des modèles directement à partir des URLs Civitai."
+            },
+            "bulk": {
+                "title": "Opérations groupées",
+                "content": "Activez le mode groupé en cliquant sur ce bouton ou en appuyant sur <span class=\"onboarding-shortcut\">B</span>. Sélectionnez plusieurs modèles et effectuez des opérations par lot. Utilisez <span class=\"onboarding-shortcut\">Ctrl+A</span> pour sélectionner tous les modèles visibles."
+            },
+            "searchOptions": {
+                "title": "Options de recherche",
+                "content": "Cliquez sur ce bouton pour configurer les champs à rechercher : nom de fichier, nom du modèle, tags ou nom du créateur. Personnalisez la portée de votre recherche."
+            },
+            "filter": {
+                "title": "Filtrer les modèles",
+                "content": "Utilisez les filtres pour affiner les modèles par type de modèle de base (SD1.5, SDXL, Flux, etc.) ou par tags spécifiques."
+            },
+            "breadcrumb": {
+                "title": "Navigation par fil d'Ariane",
+                "content": "La navigation par fil d'Ariane affiche votre chemin actuel et permet une navigation rapide entre les dossiers. Cliquez sur le nom d'un dossier pour y accéder directement."
+            },
+            "modelCards": {
+                "title": "Cartes de modèles",
+                "content": "<strong>Cliquez une fois</strong> sur une carte de modèle pour afficher les informations détaillées et modifier les métadonnées. Cherchez l'icône crayon lors du survol des champs modifiables."
+            },
+            "contextMenu": {
+                "title": "Menu contextuel",
+                "content": "<strong>Clic droit</strong> sur une carte de modèle pour accéder à un menu contextuel avec des actions supplémentaires."
+            }
+        }
+    },
     "modelCard": {
         "actions": {
             "addToFavorites": "Ajouter aux favoris",
@@ -77,7 +124,7 @@
         "appTitle": "LoRA Manager",
         "navigation": {
             "loras": "LoRAs",
-            "recipes": "Recettes",
+            "recipes": "Recipes",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
             "statistics": "Statistiques"
@@ -86,7 +133,7 @@
             "placeholder": "Rechercher...",
             "placeholders": {
                 "loras": "Rechercher des LoRAs...",
-                "recipes": "Rechercher des recettes...",
+                "recipes": "Rechercher des recipes...",
                 "checkpoints": "Rechercher des checkpoints...",
                 "embeddings": "Rechercher des embeddings..."
             },
@@ -98,7 +145,7 @@
                 "modelname": "Nom du modèle",
                 "tags": "Tags",
                 "creator": "Créateur",
-                "title": "Titre de la recette",
+                "title": "Titre de la recipe",
                 "loraName": "Nom de fichier LoRA",
                 "loraModel": "Nom du modèle LoRA"
             }
@@ -284,7 +331,7 @@
             "relinkCivitai": "Relier à nouveau à Civitai",
             "copySyntax": "Copier la syntaxe LoRA",
             "copyFilename": "Copier le nom de fichier du modèle",
-            "copyRecipeSyntax": "Copier la syntaxe de la recette",
+            "copyRecipeSyntax": "Copier la syntaxe de la recipe",
             "sendToWorkflowAppend": "Envoyer vers le workflow (Ajouter)",
             "sendToWorkflowReplace": "Envoyer vers le workflow (Remplacer)",
             "openExamples": "Ouvrir le dossier d'exemples",
@@ -294,33 +341,33 @@
             "moveToFolder": "Déplacer vers un dossier",
             "excludeModel": "Exclure le modèle",
             "deleteModel": "Supprimer le modèle",
-            "shareRecipe": "Partager la recette",
+            "shareRecipe": "Partager la recipe",
             "viewAllLoras": "Voir tous les LoRAs",
             "downloadMissingLoras": "Télécharger les LoRAs manquants",
-            "deleteRecipe": "Supprimer la recette"
+            "deleteRecipe": "Supprimer la recipe"
         }
     },
     "recipes": {
-        "title": "Recettes LoRA",
+        "title": "LoRA Recipes",
         "controls": {
             "import": {
                 "action": "Importer",
-                "title": "Importer une recette depuis une image ou une URL",
+                "title": "Importer une recipe depuis une image ou une URL",
                 "urlLocalPath": "URL / Chemin local",
                 "uploadImage": "Téléverser une image",
-                "urlSectionDescription": "Saisissez une URL d'image Civitai ou un chemin de fichier local pour l'importer comme recette.",
+                "urlSectionDescription": "Saisissez une URL d'image Civitai ou un chemin de fichier local pour l'importer comme recipe.",
                 "imageUrlOrPath": "URL d'image ou chemin de fichier :",
                 "urlPlaceholder": "https://civitai.com/images/... ou C:/chemin/vers/image.png",
                 "fetchImage": "Récupérer l'image",
-                "uploadSectionDescription": "Téléversez une image avec des métadonnées LoRA pour l'importer comme recette.",
+                "uploadSectionDescription": "Téléversez une image avec des métadonnées LoRA pour l'importer comme recipe.",
                 "selectImage": "Sélectionner une image",
-                "recipeName": "Nom de la recette",
-                "recipeNamePlaceholder": "Entrez le nom de la recette",
+                "recipeName": "Nom de la recipe",
+                "recipeNamePlaceholder": "Entrez le nom de la recipe",
                 "tagsOptional": "Tags (optionnel)",
                 "addTagPlaceholder": "Ajouter un tag",
                 "addTag": "Ajouter",
                 "noTagsAdded": "Aucun tag ajouté",
-                "lorasInRecipe": "LoRAs dans cette recette",
+                "lorasInRecipe": "LoRAs dans cette recipe",
                 "downloadLocationPreview": "Aperçu de l'emplacement de téléchargement :",
                 "useDefaultPath": "Utiliser le chemin par défaut",
                 "useDefaultPathTooltip": "Lorsque activé, les fichiers sont automatiquement organisés selon les modèles de chemin configurés",
@@ -330,14 +377,14 @@
                 "createNewFolder": "Créer un nouveau dossier",
                 "root": "Racine",
                 "browseFolders": "Parcourir les dossiers :",
-                "downloadAndSaveRecipe": "Télécharger et sauvegarder la recette",
+                "downloadAndSaveRecipe": "Télécharger et sauvegarder la recipe",
                 "downloadMissingLoras": "Télécharger les LoRAs manquants",
-                "saveRecipe": "Sauvegarder la recette",
+                "saveRecipe": "Sauvegarder la recipe",
                 "loraCountInfo": "({existing}/{total} dans la bibliothèque)",
                 "processingInput": "Traitement de l'entrée...",
                 "analyzingMetadata": "Analyse des métadonnées de l'image...",
                 "downloadingLoras": "Téléchargement des LoRAs...",
-                "savingRecipe": "Sauvegarde de la recette...",
+                "savingRecipe": "Sauvegarde de la recipe...",
                 "startingDownload": "Début du téléchargement pour le LoRA {current}/{total}",
                 "deletedFromCivitai": "Supprimé de Civitai",
                 "inLibrary": "Dans la bibliothèque",
@@ -346,12 +393,12 @@
                 "earlyAccessEnds": "L'accès anticipé se termine le {date}.",
                 "earlyAccess": "Accès anticipé",
                 "verifyEarlyAccess": "Vérifiez que vous avez acheté l'accès anticipé avant de télécharger.",
-                "duplicateRecipesFound": "{count} recette(s) identique(s) trouvée(s) dans votre bibliothèque",
-                "duplicateRecipesDescription": "Ces recettes contiennent les mêmes LoRAs avec des poids identiques.",
+                "duplicateRecipesFound": "{count} recipe(s) identique(s) trouvée(s) dans votre bibliothèque",
+                "duplicateRecipesDescription": "Ces recipes contiennent les mêmes LoRAs avec des poids identiques.",
                 "showDuplicates": "Afficher les doublons",
                 "hideDuplicates": "Masquer les doublons",
                 "loraCount": "{count} LoRAs",
-                "recipePreviewAlt": "Aperçu de la recette",
+                "recipePreviewAlt": "Aperçu de la recipe",
                 "loraPreviewAlt": "Aperçu LoRA",
                 "errors": {
                     "selectImageFile": "Veuillez sélectionner un fichier image",
@@ -360,7 +407,7 @@
                 }
             },
             "refresh": {
-                "title": "Actualiser la liste des recettes"
+                "title": "Actualiser la liste des recipes"
             },
             "filteredByLora": "Filtré par LoRA"
         },
@@ -371,20 +418,20 @@
         },
         "contextMenu": {
             "copyRecipe": {
-                "missingId": "Impossible de copier la recette : ID de recette manquant",
-                "failed": "Échec de la copie de la syntaxe de la recette"
+                "missingId": "Impossible de copier la recipe : ID de recipe manquant",
+                "failed": "Échec de la copie de la syntaxe de la recipe"
             },
             "sendRecipe": {
-                "missingId": "Impossible d'envoyer la recette : ID de recette manquant",
-                "failed": "Échec de l'envoi de la recette vers le workflow"
+                "missingId": "Impossible d'envoyer la recipe : ID de recipe manquant",
+                "failed": "Échec de l'envoi de la recipe vers le workflow"
             },
             "viewLoras": {
-                "missingId": "Impossible de voir les LoRAs : ID de recette manquant",
-                "noLorasFound": "Aucun LoRA trouvé dans cette recette",
-                "loadError": "Erreur lors du chargement des LoRAs de la recette : {message}"
+                "missingId": "Impossible de voir les LoRAs : ID de recipe manquant",
+                "noLorasFound": "Aucun LoRA trouvé dans cette recipe",
+                "loadError": "Erreur lors du chargement des LoRAs de la recipe : {message}"
             },
             "downloadMissing": {
-                "missingId": "Impossible de télécharger les LoRAs : ID de recette manquant",
+                "missingId": "Impossible de télécharger les LoRAs : ID de recipe manquant",
                 "noMissingLoras": "Aucun LoRA manquant à télécharger",
                 "getInfoFailed": "Échec de l'obtention des informations pour les LoRAs manquants",
                 "prepareError": "Erreur lors de la préparation des LoRAs pour le téléchargement : {message}"
@@ -504,9 +551,9 @@
             "message": "Êtes-vous sûr de vouloir exclure ce modèle ? Les modèles exclus n'apparaîtront pas dans les recherches ou listes de modèles."
         },
         "deleteDuplicateRecipes": {
-            "title": "Supprimer les recettes dupliquées",
-            "message": "Êtes-vous sûr de vouloir supprimer les recettes dupliquées sélectionnées ?",
-            "countMessage": "recettes seront définitivement supprimées."
+            "title": "Supprimer les recipes dupliquées",
+            "message": "Êtes-vous sûr de vouloir supprimer les recipes dupliquées sélectionnées ?",
+            "countMessage": "recipes seront définitivement supprimées."
         },
         "deleteDuplicateModels": {
             "title": "Supprimer les modèles dupliqués",
@@ -637,12 +684,12 @@
             "tabs": {
                 "examples": "Exemples",
                 "description": "Description du modèle",
-                "recipes": "Recettes"
+                "recipes": "Recipes"
             },
             "loading": {
                 "exampleImages": "Chargement des images d'exemple...",
                 "description": "Chargement de la description du modèle...",
-                "recipes": "Chargement des recettes...",
+                "recipes": "Chargement des recipes...",
                 "examples": "Chargement des exemples..."
             }
         }
@@ -685,8 +732,8 @@
             "message": "Scan et construction du cache embedding. Cela peut prendre quelques minutes..."
         },
         "recipes": {
-            "title": "Initialisation du gestionnaire de recettes",
-            "message": "Chargement et traitement des recettes. Cela peut prendre quelques minutes..."
+            "title": "Initialisation du gestionnaire de recipes",
+            "message": "Chargement et traitement des recipes. Cela peut prendre quelques minutes..."
         },
         "statistics": {
             "title": "Initialisation des statistiques",
@@ -705,9 +752,9 @@
                 "alt": "Téléchargement Civitai"
             },
             "recipes": {
-                "title": "Sauvegarder les recettes",
-                "description": "Créez des recettes pour sauvegarder vos combinaisons de modèles préférées pour une utilisation future.",
-                "alt": "Recettes"
+                "title": "Sauvegarder les recipes",
+                "description": "Créez des recipes pour sauvegarder vos combinaisons de modèles préférées pour une utilisation future.",
+                "alt": "Recipes"
             },
             "filter": {
                 "title": "Filtrage rapide",
@@ -748,12 +795,12 @@
             "loraAdded": "LoRA ajouté au workflow",
             "loraReplaced": "LoRA remplacé dans le workflow",
             "loraFailedToSend": "Échec de l'envoi du LoRA au workflow",
-            "recipeAdded": "Recette ajoutée au workflow",
-            "recipeReplaced": "Recette remplacée dans le workflow",
-            "recipeFailedToSend": "Échec de l'envoi de la recette au workflow"
+            "recipeAdded": "Recipe ajoutée au workflow",
+            "recipeReplaced": "Recipe remplacée dans le workflow",
+            "recipeFailedToSend": "Échec de l'envoi de la recipe au workflow"
         },
         "nodeSelector": {
-            "recipe": "Recette",
+            "recipe": "Recipe",
             "lora": "LoRA",
             "replace": "Remplacer",
             "append": "Ajouter",
@@ -787,7 +834,7 @@
             "general": "Général",
             "troubleshooting": "Dépannage",
             "modelManagement": "Gestion des modèles",
-            "recipes": "Recettes",
+            "recipes": "Recipes",
             "settings": "Paramètres & Configuration",
             "extensions": "Extensions",
             "newBadge": "NOUVEAU"
@@ -879,42 +926,42 @@
             "downloadCompleted": "Téléchargement terminé avec succès"
         },
         "recipes": {
-            "fetchFailed": "Échec de la récupération des recettes : {message}",
+            "fetchFailed": "Échec de la récupération des recipes : {message}",
             "reloadFailed": "Échec du rechargement des {modelType}s : {message}",
             "loadFailed": "Échec du chargement des {modelType}s : {message}",
             "refreshComplete": "Actualisation terminée",
-            "refreshFailed": "Échec de l'actualisation des recettes : {message}",
-            "updateFailed": "Échec de la mise à jour de la recette : {error}",
-            "updateError": "Erreur lors de la mise à jour de la recette : {message}",
-            "nameSaved": "Recette \"{name}\" sauvegardée avec succès",
-            "nameUpdated": "Nom de la recette mis à jour avec succès",
-            "tagsUpdated": "Tags de la recette mis à jour avec succès",
+            "refreshFailed": "Échec de l'actualisation des recipes : {message}",
+            "updateFailed": "Échec de la mise à jour de la recipe : {error}",
+            "updateError": "Erreur lors de la mise à jour de la recipe : {message}",
+            "nameSaved": "Recipe \"{name}\" sauvegardée avec succès",
+            "nameUpdated": "Nom de la recipe mis à jour avec succès",
+            "tagsUpdated": "Tags de la recipe mis à jour avec succès",
             "sourceUrlUpdated": "URL source mise à jour avec succès",
-            "noRecipeId": "Aucun ID de recette disponible",
-            "copyFailed": "Erreur lors de la copie de la syntaxe de la recette : {message}",
+            "noRecipeId": "Aucun ID de recipe disponible",
+            "copyFailed": "Erreur lors de la copie de la syntaxe de la recipe : {message}",
             "noMissingLoras": "Aucun LoRA manquant à télécharger",
             "missingLorasInfoFailed": "Échec de l'obtention des informations pour les LoRAs manquants",
             "preparingForDownloadFailed": "Erreur lors de la préparation des LoRAs pour le téléchargement",
             "enterLoraName": "Veuillez entrer un nom ou une syntaxe LoRA",
             "reconnectedSuccessfully": "LoRA reconnecté avec succès",
             "reconnectFailed": "Erreur lors de la reconnexion du LoRA : {message}",
-            "cannotSend": "Impossible d'envoyer la recette : ID de recette manquant",
-            "sendFailed": "Échec de l'envoi de la recette vers le workflow",
-            "sendError": "Erreur lors de l'envoi de la recette vers le workflow",
-            "cannotDelete": "Impossible de supprimer la recette : ID de recette manquant",
+            "cannotSend": "Impossible d'envoyer la recipe : ID de recipe manquant",
+            "sendFailed": "Échec de l'envoi de la recipe vers le workflow",
+            "sendError": "Erreur lors de l'envoi de la recipe vers le workflow",
+            "cannotDelete": "Impossible de supprimer la recipe : ID de recipe manquant",
             "deleteConfirmationError": "Erreur lors de l'affichage de la confirmation de suppression",
-            "deletedSuccessfully": "Recette supprimée avec succès",
-            "deleteFailed": "Erreur lors de la suppression de la recette : {message}",
-            "cannotShare": "Impossible de partager la recette : ID de recette manquant",
-            "preparingForSharing": "Préparation de la recette pour le partage...",
-            "downloadStarted": "Téléchargement de la recette démarré",
-            "shareError": "Erreur lors du partage de la recette : {message}",
-            "sharePreparationError": "Erreur lors de la préparation de la recette pour le partage",
+            "deletedSuccessfully": "Recipe supprimée avec succès",
+            "deleteFailed": "Erreur lors de la suppression de la recipe : {message}",
+            "cannotShare": "Impossible de partager la recipe : ID de recipe manquant",
+            "preparingForSharing": "Préparation de la recipe pour le partage...",
+            "downloadStarted": "Téléchargement de la recipe démarré",
+            "shareError": "Erreur lors du partage de la recipe : {message}",
+            "sharePreparationError": "Erreur lors de la préparation de la recipe pour le partage",
             "selectImageFirst": "Veuillez d'abord sélectionner une image",
-            "enterRecipeName": "Veuillez entrer un nom de recette",
+            "enterRecipeName": "Veuillez entrer un nom de recipe",
             "processingError": "Erreur de traitement : {message}",
             "folderBrowserError": "Erreur lors du chargement du navigateur de dossiers : {message}",
-            "recipeSaveFailed": "Échec de la sauvegarde de la recette : {error}",
+            "recipeSaveFailed": "Échec de la sauvegarde de la recipe : {error}",
             "importFailed": "Échec de l'importation : {message}",
             "folderTreeFailed": "Échec du chargement de l'arborescence des dossiers",
             "folderTreeError": "Erreur lors du chargement de l'arborescence des dossiers"
