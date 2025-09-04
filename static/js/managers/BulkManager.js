@@ -464,10 +464,18 @@ export class BulkManager {
         }
         
         // Setup save button
-        const saveBtn = document.querySelector('.bulk-save-tags-btn');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', () => {
-                this.saveBulkTags();
+        const appendBtn = document.querySelector('.bulk-append-tags-btn');
+        const replaceBtn = document.querySelector('.bulk-replace-tags-btn');
+        
+        if (appendBtn) {
+            appendBtn.addEventListener('click', () => {
+                this.saveBulkTags('append');
+            });
+        }
+        
+        if (replaceBtn) {
+            replaceBtn.addEventListener('click', () => {
+                this.saveBulkTags('replace');
             });
         }
     }
@@ -557,7 +565,7 @@ export class BulkManager {
         tagsContainer.appendChild(newTag);
     }
     
-    async saveBulkTags() {
+    async saveBulkTags(mode = 'append') {
         const tagElements = document.querySelectorAll('#bulkTagsItems .metadata-item');
         const tags = Array.from(tagElements).map(tag => tag.dataset.tag);
         
@@ -577,13 +585,17 @@ export class BulkManager {
             let successCount = 0;
             let failCount = 0;
             
-            // Add tags to each selected model
+            // Add or replace tags for each selected model based on mode
             for (const filePath of filePaths) {
                 try {
-                    await apiClient.addTags(filePath, { tags: tags });
+                    if (mode === 'replace') {
+                        await apiClient.saveModelMetadata(filePath, { tags: tags });
+                    } else {
+                        await apiClient.addTags(filePath, { tags: tags });
+                    }
                     successCount++;
                 } catch (error) {
-                    console.error(`Failed to add tags to ${filePath}:`, error);
+                    console.error(`Failed to ${mode} tags for ${filePath}:`, error);
                     failCount++;
                 }
             }
@@ -592,7 +604,8 @@ export class BulkManager {
             
             if (successCount > 0) {
                 const currentConfig = MODEL_CONFIG[state.currentPageType];
-                showToast('toast.models.tagsAddedSuccessfully', { 
+                const toastKey = mode === 'replace' ? 'toast.models.tagsReplacedSuccessfully' : 'toast.models.tagsAddedSuccessfully';
+                showToast(toastKey, { 
                     count: successCount, 
                     tagCount: tags.length,
                     type: currentConfig.displayName.toLowerCase() 
@@ -600,12 +613,14 @@ export class BulkManager {
             }
             
             if (failCount > 0) {
-                showToast('toast.models.tagsAddFailed', { count: failCount }, 'warning');
+                const toastKey = mode === 'replace' ? 'toast.models.tagsReplaceFailed' : 'toast.models.tagsAddFailed';
+                showToast(toastKey, { count: failCount }, 'warning');
             }
             
         } catch (error) {
-            console.error('Error during bulk tag addition:', error);
-            showToast('toast.models.bulkTagsAddFailed', {}, 'error');
+            console.error('Error during bulk tag operation:', error);
+            const toastKey = mode === 'replace' ? 'toast.models.bulkTagsReplaceFailed' : 'toast.models.bulkTagsAddFailed';
+            showToast(toastKey, {}, 'error');
         }
     }
     
@@ -623,9 +638,14 @@ export class BulkManager {
         }
         
         // Remove event listeners (they will be re-added when modal opens again)
-        const saveBtn = document.querySelector('.bulk-save-tags-btn');
-        if (saveBtn) {
-            saveBtn.replaceWith(saveBtn.cloneNode(true));
+        const appendBtn = document.querySelector('.bulk-append-tags-btn');
+        if (appendBtn) {
+            appendBtn.replaceWith(appendBtn.cloneNode(true));
+        }
+        
+        const replaceBtn = document.querySelector('.bulk-replace-tags-btn');
+        if (replaceBtn) {
+            replaceBtn.replaceWith(replaceBtn.cloneNode(true));
         }
     }
 }

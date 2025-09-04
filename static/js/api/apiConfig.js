@@ -63,6 +63,9 @@ export function getApiEndpoints(modelType) {
         
         // Bulk operations
         bulkDelete: `/api/${modelType}/bulk-delete`,
+        
+        // Tag operations
+        addTags: `/api/${modelType}/add-tags`,
 
         // Move operations (now common for all model types that support move)
         moveModel: `/api/${modelType}/move_model`,

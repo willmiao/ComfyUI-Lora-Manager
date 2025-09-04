@@ -870,11 +870,11 @@ class ModelRouteUtils:
                     metadata = await ModelRouteUtils.load_local_metadata(metadata_path)
                     
                     # Compare hashes
-                    stored_hash = metadata.get('sha256', '').lower()
+                    stored_hash = metadata.get('sha256', '').lower();
                     
                     # Set expected hash from first file if not yet set
                     if not expected_hash:
-                        expected_hash = stored_hash
+                        expected_hash = stored_hash;
                     
                     # Check if hash matches expected hash
                     if actual_hash != expected_hash:
@@ -978,7 +978,7 @@ class ModelRouteUtils:
             if os.path.exists(metadata_path):
                 metadata = await ModelRouteUtils.load_local_metadata(metadata_path)
                 hash_value = metadata.get('sha256')
-            
+            logger.info(f"hash_value: {hash_value}, metadata_path: {metadata_path}, metadata: {metadata}")
             # Rename all files
             renamed_files = []
             new_metadata_path = None
@@ -1092,4 +1092,64 @@ class ModelRouteUtils:
 
         except Exception as e:
             logger.error(f"Error saving metadata: {e}", exc_info=True)
+            return web.Response(text=str(e), status=500)
+
+    @staticmethod
+    async def handle_add_tags(request: web.Request, scanner) -> web.Response:
+        """Handle adding tags to model metadata
+        
+        Args:
+            request: The aiohttp request
+            scanner: The model scanner instance
+            
+        Returns:
+            web.Response: The HTTP response
+        """
+        try:
+            data = await request.json()
+            file_path = data.get('file_path')
+            new_tags = data.get('tags', [])
+            
+            if not file_path:
+                return web.Response(text='File path is required', status=400)
+            
+            if not isinstance(new_tags, list):
+                return web.Response(text='Tags must be a list', status=400)
+            
+            # Get metadata file path
+            metadata_path = os.path.splitext(file_path)[0] + '.metadata.json'
+            
+            # Load existing metadata
+            metadata = await ModelRouteUtils.load_local_metadata(metadata_path)
+            
+            # Get existing tags (case insensitive)
+            existing_tags = metadata.get('tags', [])
+            existing_tags_lower = [tag.lower() for tag in existing_tags]
+            
+            # Add new tags that don't already exist (case insensitive check)
+            tags_added = []
+            for tag in new_tags:
+                if isinstance(tag, str) and tag.strip():
+                    tag_stripped = tag.strip()
+                    if tag_stripped.lower() not in existing_tags_lower:
+                        existing_tags.append(tag_stripped)
+                        existing_tags_lower.append(tag_stripped.lower())
+                        tags_added.append(tag_stripped)
+            
+            # Update metadata with combined tags
+            metadata['tags'] = existing_tags
+            
+            # Save updated metadata
+            await MetadataManager.save_metadata(file_path, metadata)
+            
+            # Update cache
+            await scanner.update_single_model_cache(file_path, file_path, metadata)
+            
+            return web.json_response({
+                'success': True,
+                'tags': existing_tags
+            })
+            
+        except Exception as e:
+            logger.error(f"Error adding tags: {e}", exc_info=True)
             return web.Response(text=str(e), status=500)

@@ -306,6 +306,34 @@ export class BaseModelApiClient {
         }
     }
 
+    async addTags(filePath, data) {
+        try {
+            const response = await fetch(this.apiConfig.endpoints.addTags, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    file_path: filePath,
+                    ...data
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to add tags');
+            }
+
+            const result = await response.json();
+
+            if (result.success && result.tags) {
+                state.virtualScroller.updateSingleItem(filePath, { tags: result.tags });
+            }
+
+            return result;
+        } catch (error) {
+            console.error('Error adding tags:', error);
+            throw error;
+        }
+    }
+
     async refreshModels(fullRebuild = false) {
         try {
             state.loadingManager.showSimpleLoading(

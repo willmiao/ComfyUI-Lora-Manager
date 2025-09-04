@@ -1,10 +1,8 @@
 <div id="bulkAddTagsModal" class="modal" style="display: none;">
-    <div class="modal-content">
+    <div class="modal-content modal-content-large">
         <div class="modal-header">
-            <h3><i class="fas fa-tags"></i> {{ t('modals.bulkAddTags.title') }}</h3>
-            <button class="modal-close" onclick="modalManager.closeModal('bulkAddTagsModal')">
-                <i class="fas fa-times"></i>
-            </button>
+            <h2>{{ t('modals.bulkAddTags.title') }}</h2>
+            <span class="close" onclick="modalManager.closeModal('bulkAddTagsModal')">&times;</span>
         </div>
         <div class="modal-body">
             <div class="bulk-add-tags-info">
@@ -21,8 +19,11 @@
                             <!-- Tags will be added here dynamically -->
                         </div>
                         <div class="metadata-edit-controls">
-                            <button class="save-tags-btn bulk-save-tags-btn" title="{{ t('modals.bulkAddTags.saveChanges') }}">
-                                <i class="fas fa-save"></i> {{ t('common.actions.save') }}
+                            <button class="append-tags-btn bulk-append-tags-btn" title="{{ t('modals.bulkAddTags.appendTags') }}">
+                                <i class="fas fa-plus"></i> {{ t('modals.bulkAddTags.appendTags') }}
+                            </button>
+                            <button class="replace-tags-btn bulk-replace-tags-btn" title="{{ t('modals.bulkAddTags.replaceTags') }}">
+                                <i class="fas fa-exchange-alt"></i> {{ t('modals.bulkAddTags.replaceTags') }}
                             </button>
                         </div>
                         <div class="metadata-add-form">
