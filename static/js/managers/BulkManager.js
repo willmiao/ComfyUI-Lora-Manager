@@ -4,6 +4,7 @@ import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
+import { PRESET_TAGS } from '../utils/constants.js';
 
 export class BulkManager {
     constructor() {
@@ -437,13 +438,6 @@ export class BulkManager {
     }
     
     initializeBulkTagsInterface() {
-        // Import preset tags from ModelTags.js
-        const PRESET_TAGS = [
-            'character', 'style', 'concept', 'clothing', 
-            'poses', 'background', 'vehicle', 'buildings', 
-            'objects', 'animal'
-        ];
-        
         // Setup tag input behavior
         const tagInput = document.querySelector('.bulk-metadata-input');
         if (tagInput) {
@@ -452,6 +446,8 @@ export class BulkManager {
                     e.preventDefault();
                     this.addBulkTag(e.target.value.trim());
                     e.target.value = '';
+                    // Update dropdown to show added indicator
+                    this.updateBulkSuggestionsDropdown();
                 }
             });
         }
@@ -496,19 +492,30 @@ export class BulkManager {
         container.className = 'metadata-suggestions-container';
         
         presetTags.forEach(tag => {
-            const item = document.createElement('div');
-            item.className = 'metadata-suggestion-item';
-            item.title = tag;
-            item.innerHTML = `<span class="metadata-suggestion-text">${tag}</span>`;
+            // Check if tag is already added
+            const existingTags = this.getBulkExistingTags();
+            const isAdded = existingTags.includes(tag);
             
-            item.addEventListener('click', () => {
-                this.addBulkTag(tag);
-                const input = document.querySelector('.bulk-metadata-input');
-                if (input) {
-                    input.value = tag;
-                    input.focus();
-                }
-            });
+            const item = document.createElement('div');
+            item.className = `metadata-suggestion-item ${isAdded ? 'already-added' : ''}`;
+            item.title = tag;
+            item.innerHTML = `
+                <span class="metadata-suggestion-text">${tag}</span>
+                ${isAdded ? '<span class="added-indicator"><i class="fas fa-check"></i></span>' : ''}
+            `;
+            
+            if (!isAdded) {
+                item.addEventListener('click', () => {
+                    this.addBulkTag(tag);
+                    const input = document.querySelector('.bulk-metadata-input');
+                    if (input) {
+                        input.value = tag;
+                        input.focus();
+                    }
+                    // Update dropdown to show added indicator
+                    this.updateBulkSuggestionsDropdown();
+                });
+            }
             
             container.appendChild(item);
         });
@@ -560,9 +567,79 @@ export class BulkManager {
         deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             newTag.remove();
+            // Update dropdown to show/hide added indicator
+            this.updateBulkSuggestionsDropdown();
         });
         
         tagsContainer.appendChild(newTag);
+    }
+    
+    /**
+     * Get existing tags in the bulk tags container
+     * @returns {Array} Array of existing tag strings
+     */
+    getBulkExistingTags() {
+        const tagsContainer = document.getElementById('bulkTagsItems');
+        if (!tagsContainer) return [];
+        
+        const currentTags = tagsContainer.querySelectorAll('.metadata-item');
+        return Array.from(currentTags).map(tag => tag.dataset.tag);
+    }
+    
+    /**
+     * Update status of items in the bulk suggestions dropdown
+     */
+    updateBulkSuggestionsDropdown() {
+        const dropdown = document.querySelector('.metadata-suggestions-dropdown');
+        if (!dropdown) return;
+        
+        // Get all current tags
+        const existingTags = this.getBulkExistingTags();
+        
+        // Update status of each item in dropdown
+        dropdown.querySelectorAll('.metadata-suggestion-item').forEach(item => {
+            const tagText = item.querySelector('.metadata-suggestion-text').textContent;
+            const isAdded = existingTags.includes(tagText);
+            
+            if (isAdded) {
+                item.classList.add('already-added');
+                
+                // Add indicator if it doesn't exist
+                let indicator = item.querySelector('.added-indicator');
+                if (!indicator) {
+                    indicator = document.createElement('span');
+                    indicator.className = 'added-indicator';
+                    indicator.innerHTML = '<i class="fas fa-check"></i>';
+                    item.appendChild(indicator);
+                }
+                
+                // Remove click event
+                item.onclick = null;
+                item.removeEventListener('click', item._clickHandler);
+            } else {
+                // Re-enable items that are no longer in the list
+                item.classList.remove('already-added');
+                
+                // Remove indicator if it exists
+                const indicator = item.querySelector('.added-indicator');
+                if (indicator) indicator.remove();
+                
+                // Restore click event if not already set
+                if (!item._clickHandler) {
+                    item._clickHandler = () => {
+                        this.addBulkTag(tagText);
+                        const input = document.querySelector('.bulk-metadata-input');
+                        if (input) {
+                            input.value = tagText;
+                            input.focus();
+                        }
+                        // Update dropdown to show added indicator
+                        this.updateBulkSuggestionsDropdown();
+                    };
+                    item.addEventListener('click', item._clickHandler);
+                }
+            }
+        });
     }
     
     async saveBulkTags(mode = 'append') {
@@ -646,6 +723,15 @@ export class BulkManager {
         const replaceBtn = document.querySelector('.bulk-replace-tags-btn');
         if (replaceBtn) {
             replaceBtn.replaceWith(replaceBtn.cloneNode(true));
+        }
+
+        // Remove the suggestions dropdown
+        const tagForm = document.querySelector('#bulkAddTagsModal .metadata-add-form');
+        if (tagForm) {
+            const dropdown = tagForm.querySelector('.metadata-suggestions-dropdown');
+            if (dropdown) {
+                dropdown.remove();
+            }
         }
     }
 }

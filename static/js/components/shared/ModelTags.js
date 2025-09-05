@@ -4,14 +4,7 @@
  */
 import { showToast } from '../../utils/uiHelpers.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
-import { translate } from '../../utils/i18nHelpers.js';
-
-// Preset tag suggestions
-const PRESET_TAGS = [
-    'character', 'style', 'concept', 'clothing', 
-    'poses', 'background', 'vehicle', 'buildings', 
-    'objects', 'animal'
-];
+import { PRESET_TAGS } from '../../utils/constants.js';
 
 // Create a named function so we can remove it later
 let saveTagsHandler = null;
