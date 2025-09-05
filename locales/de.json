@@ -318,14 +318,13 @@
         "bulkOperations": {
             "selected": "{count} ausgewählt",
             "selectedSuffix": "ausgewählt",
-            "viewSelected": "Klicken Sie, um ausgewählte Elemente anzuzeigen",
-            "addTags": "Tags hinzufügen",
-            "sendToWorkflow": "An Workflow senden",
-            "copyAll": "Alle kopieren",
-            "refreshAll": "Alle aktualisieren",
-            "moveAll": "Alle verschieben",
-            "deleteAll": "Alle löschen",
-            "clear": "Leeren"
+            "viewSelected": "Auswahl anzeigen",
+            "addTags": "Allen Tags hinzufügen",
+            "copyAll": "Alle Syntax kopieren",
+            "refreshAll": "Alle Metadaten aktualisieren",
+            "moveAll": "Alle in Ordner verschieben",
+            "deleteAll": "Alle Modelle löschen",
+            "clear": "Auswahl löschen"
         },
         "contextMenu": {
             "refreshMetadata": "Civitai-Daten aktualisieren",
@@ -983,6 +982,7 @@
             "deleteFailed": "Fehler: {error}",
             "deleteFailedGeneral": "Fehler beim Löschen der Modelle",
             "selectedAdditional": "{count} zusätzliche {type}(s) ausgewählt",
+            "marqueeSelectionComplete": "{count} {type}(s) mit Rahmenauswahl ausgewählt",
             "refreshMetadataFailed": "Fehler beim Aktualisieren der Metadaten",
             "nameCannotBeEmpty": "Modellname darf nicht leer sein",
             "nameUpdatedSuccessfully": "Modellname erfolgreich aktualisiert",

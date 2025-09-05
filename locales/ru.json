@@ -318,14 +318,13 @@
         "bulkOperations": {
             "selected": "Выбрано {count}",
             "selectedSuffix": "выбрано",
-            "viewSelected": "Нажмите для просмотра выбранных элементов",
-            "addTags": "Добавить теги",
-            "sendToWorkflow": "Отправить в Workflow",
-            "copyAll": "Копировать все",
-            "refreshAll": "Обновить все",
-            "moveAll": "Переместить все",
-            "deleteAll": "Удалить все",
-            "clear": "Очистить"
+            "viewSelected": "Просмотреть выбранные",
+            "addTags": "Добавить теги ко всем",
+            "copyAll": "Копировать весь синтаксис",
+            "refreshAll": "Обновить все метаданные",
+            "moveAll": "Переместить все в папку",
+            "deleteAll": "Удалить все модели",
+            "clear": "Очистить выбор"
         },
         "contextMenu": {
             "refreshMetadata": "Обновить данные Civitai",
@@ -983,6 +982,7 @@
             "deleteFailed": "Ошибка: {error}",
             "deleteFailedGeneral": "Не удалось удалить модели",
             "selectedAdditional": "Выбрано дополнительно {count} {type}(ей)",
+            "marqueeSelectionComplete": "Выбрано {count} {type} с помощью выделения рамкой",
             "refreshMetadataFailed": "Не удалось обновить метаданные",
             "nameCannotBeEmpty": "Название модели не может быть пустым",
             "nameUpdatedSuccessfully": "Название модели успешно обновлено",

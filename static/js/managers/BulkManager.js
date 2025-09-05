@@ -12,6 +12,12 @@ export class BulkManager {
         // Remove bulk panel references since we're using context menu now
         this.bulkContextMenu = null; // Will be set by core initialization
         
+        // Marquee selection properties
+        this.isMarqueeActive = false;
+        this.marqueeStart = { x: 0, y: 0 };
+        this.marqueeElement = null;
+        this.initialSelectedModels = new Set();
+        
         // Model type specific action configurations
         this.actionConfig = {
             [MODEL_TYPES.LORA]: {
@@ -44,6 +50,7 @@ export class BulkManager {
     initialize() {
         this.setupEventListeners();
         this.setupGlobalKeyboardListeners();
+        this.setupMarqueeSelection();
     }
 
     setBulkContextMenu(bulkContextMenu) {
@@ -733,6 +740,201 @@ export class BulkManager {
                 dropdown.remove();
             }
         }
+    }
+
+    /**
+     * Setup marquee selection functionality
+     */
+    setupMarqueeSelection() {
+        const container = document.querySelector('.models-container') || document.body;
+        
+        container.addEventListener('mousedown', (e) => {
+            // Disable marquee if any modal is open
+            if (modalManager.isAnyModalOpen()) {
+                return;
+            }
+            // Only start marquee selection on left click in empty areas
+            if (e.button !== 0 || e.target.closest('.model-card') || e.target.closest('button') || e.target.closest('input')) {
+                return;
+            }
+
+            // Prevent text selection during marquee
+            e.preventDefault();
+            
+            this.startMarqueeSelection(e);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            // Disable marquee update if any modal is open
+            if (modalManager.isAnyModalOpen()) {
+                return;
+            }
+            if (this.isMarqueeActive) {
+                this.updateMarqueeSelection(e);
+            }
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            if (this.isMarqueeActive) {
+                this.endMarqueeSelection(e);
+            }
+        });
+
+        // Prevent context menu during marquee selection
+        document.addEventListener('contextmenu', (e) => {
+            if (this.isMarqueeActive) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    /**
+     * Start marquee selection
+     */
+    startMarqueeSelection(e) {
+        // Store initial mouse position
+        this.marqueeStart.x = e.clientX;
+        this.marqueeStart.y = e.clientY;
+        
+        // Store initial selection state
+        this.initialSelectedModels = new Set(state.selectedModels);
+        
+        // Enter bulk mode if not already active
+        if (!state.bulkMode) {
+            this.toggleBulkMode();
+        }
+        
+        // Create marquee element
+        this.createMarqueeElement();
+        
+        this.isMarqueeActive = true;
+        
+        // Add visual feedback class to body
+        document.body.classList.add('marquee-selecting');
+    }
+
+    /**
+     * Create the visual marquee selection rectangle
+     */
+    createMarqueeElement() {
+        this.marqueeElement = document.createElement('div');
+        this.marqueeElement.className = 'marquee-selection';
+        this.marqueeElement.style.cssText = `
+            position: fixed;
+            border: 2px dashed var(--lora-accent, #007bff);
+            background: rgba(0, 123, 255, 0.1);
+            pointer-events: none;
+            z-index: 9999;
+            left: ${this.marqueeStart.x}px;
+            top: ${this.marqueeStart.y}px;
+            width: 0;
+            height: 0;
+        `;
+        document.body.appendChild(this.marqueeElement);
+    }
+
+    /**
+     * Update marquee selection rectangle and selected items
+     */
+    updateMarqueeSelection(e) {
+        if (!this.marqueeElement) return;
+        
+        const currentX = e.clientX;
+        const currentY = e.clientY;
+        
+        // Calculate rectangle bounds
+        const left = Math.min(this.marqueeStart.x, currentX);
+        const top = Math.min(this.marqueeStart.y, currentY);
+        const width = Math.abs(currentX - this.marqueeStart.x);
+        const height = Math.abs(currentY - this.marqueeStart.y);
+        
+        // Update marquee element position and size
+        this.marqueeElement.style.left = left + 'px';
+        this.marqueeElement.style.top = top + 'px';
+        this.marqueeElement.style.width = width + 'px';
+        this.marqueeElement.style.height = height + 'px';
+        
+        // Check which cards intersect with marquee
+        this.updateCardSelection(left, top, left + width, top + height);
+    }
+
+    /**
+     * Update card selection based on marquee bounds
+     */
+    updateCardSelection(left, top, right, bottom) {
+        const cards = document.querySelectorAll('.model-card');
+        const newSelection = new Set(this.initialSelectedModels);
+        
+        cards.forEach(card => {
+            const rect = card.getBoundingClientRect();
+            
+            // Check if card intersects with marquee rectangle
+            const intersects = !(rect.right < left || 
+                               rect.left > right || 
+                               rect.bottom < top || 
+                               rect.top > bottom);
+            
+            const filepath = card.dataset.filepath;
+            
+            if (intersects) {
+                // Add to selection if intersecting
+                newSelection.add(filepath);
+                card.classList.add('selected');
+                
+                // Cache metadata if not already cached
+                const metadataCache = this.getMetadataCache();
+                if (!metadataCache.has(filepath)) {
+                    metadataCache.set(filepath, {
+                        fileName: card.dataset.file_name,
+                        usageTips: card.dataset.usage_tips,
+                        previewUrl: this.getCardPreviewUrl(card),
+                        isVideo: this.isCardPreviewVideo(card),
+                        modelName: card.dataset.name
+                    });
+                }
+            } else if (!this.initialSelectedModels.has(filepath)) {
+                // Remove from selection if not intersecting and wasn't initially selected
+                newSelection.delete(filepath);
+                card.classList.remove('selected');
+            }
+        });
+        
+        // Update global selection state
+        state.selectedModels = newSelection;
+        
+        // Update context menu header if visible
+        if (this.bulkContextMenu) {
+            this.bulkContextMenu.updateSelectedCountHeader();
+        }
+    }
+
+    /**
+     * End marquee selection
+     */
+    endMarqueeSelection(e) {
+        this.isMarqueeActive = false;
+        
+        // Remove marquee element
+        if (this.marqueeElement) {
+            this.marqueeElement.remove();
+            this.marqueeElement = null;
+        }
+        
+        // Remove visual feedback class
+        document.body.classList.remove('marquee-selecting');
+        
+        // Show toast with selection count if any items were selected
+        const selectionCount = state.selectedModels.size;
+        if (selectionCount > 0) {
+            const currentConfig = MODEL_CONFIG[state.currentPageType];
+            showToast('toast.models.marqueeSelectionComplete', { 
+                count: selectionCount, 
+                type: currentConfig.displayName.toLowerCase() 
+            }, 'success');
+        }
+        
+        // Clear initial selection state
+        this.initialSelectedModels.clear();
     }
 }
 

@@ -318,14 +318,13 @@
         "bulkOperations": {
             "selected": "已选中 {count} 项",
             "selectedSuffix": "已选中",
-            "viewSelected": "点击查看已选项目",
-            "addTags": "批量添加标签",
-            "sendToWorkflow": "发送到工作流",
-            "copyAll": "全部复制",
-            "refreshAll": "全部刷新",
-            "moveAll": "全部移动",
-            "deleteAll": "全部删除",
-            "clear": "清除"
+            "viewSelected": "查看已选中",
+            "addTags": "为所有添加标签",
+            "copyAll": "复制全部语法",
+            "refreshAll": "刷新全部元数据",
+            "moveAll": "全部移动到文件夹",
+            "deleteAll": "删除所有模型",
+            "clear": "清除选择"
         },
         "contextMenu": {
             "refreshMetadata": "刷新 Civitai 数据",
@@ -983,6 +982,7 @@
             "deleteFailed": "错误：{error}",
             "deleteFailedGeneral": "删除模型失败",
             "selectedAdditional": "已选中 {count} 个额外 {type}",
+            "marqueeSelectionComplete": "框选已选中 {count} 个 {type}",
             "refreshMetadataFailed": "刷新元数据失败",
             "nameCannotBeEmpty": "模型名称不能为空",
             "nameUpdatedSuccessfully": "模型名称更新成功",

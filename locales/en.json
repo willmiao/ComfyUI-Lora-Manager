@@ -318,14 +318,13 @@
         "bulkOperations": {
             "selected": "{count} selected",
             "selectedSuffix": "selected",
-            "viewSelected": "Click to view selected items",
-            "addTags": "Add Tags",
-            "sendToWorkflow": "Send to Workflow",
-            "copyAll": "Copy All",
-            "refreshAll": "Refresh All",
-            "moveAll": "Move All",
-            "deleteAll": "Delete All",
-            "clear": "Clear"
+            "viewSelected": "View Selected",
+            "addTags": "Add Tags to All",
+            "copyAll": "Copy All Syntax",
+            "refreshAll": "Refresh All Metadata",
+            "moveAll": "Move All to Folder",
+            "deleteAll": "Delete All Models",
+            "clear": "Clear Selection"
         },
         "contextMenu": {
             "refreshMetadata": "Refresh Civitai Data",
@@ -983,6 +982,7 @@
             "deleteFailed": "Error: {error}",
             "deleteFailedGeneral": "Failed to delete models",
             "selectedAdditional": "Selected {count} additional {type}(s)",
+            "marqueeSelectionComplete": "Selected {count} {type}(s) with marquee selection",
             "refreshMetadataFailed": "Failed to refresh metadata",
             "nameCannotBeEmpty": "Model name cannot be empty",
             "nameUpdatedSuccessfully": "Model name updated successfully",
