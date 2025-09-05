@@ -843,7 +843,7 @@ export class BulkManager {
      */
     showBulkBaseModelModal() {
         if (state.selectedModels.size === 0) {
-            showToast('toast.models.noSelectedModels', {}, 'warning');
+            showToast('toast.models.noModelsSelected', {}, 'warning');
             return;
         }
         
@@ -908,7 +908,7 @@ export class BulkManager {
         const selectedCount = state.selectedModels.size;
         
         if (selectedCount === 0) {
-            showToast('toast.models.noSelectedModels', {}, 'warning');
+            showToast('toast.models.noModelsSelected', {}, 'warning');
             return;
         }
         

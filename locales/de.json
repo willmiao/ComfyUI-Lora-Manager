@@ -320,6 +320,7 @@
             "selectedSuffix": "ausgewählt",
             "viewSelected": "Auswahl anzeigen",
             "addTags": "Allen Tags hinzufügen",
+            "setBaseModel": "Basis-Modell für alle festlegen",
             "copyAll": "Alle Syntax kopieren",
             "refreshAll": "Alle Metadaten aktualisieren",
             "moveAll": "Alle in Ordner verschieben",
@@ -581,6 +582,14 @@
             "appendTags": "Tags anhängen",
             "replaceTags": "Tags ersetzen",
             "saveChanges": "Änderungen speichern"
+        },
+        "bulkBaseModel": {
+            "title": "Basis-Modell für mehrere Modelle festlegen",
+            "description": "Basis-Modell festlegen für",
+            "models": "Modelle",
+            "selectBaseModel": "Basis-Modell auswählen",
+            "save": "Basis-Modell aktualisieren",
+            "cancel": "Abbrechen"
         },
         "exampleAccess": {
             "title": "Lokale Beispielbilder",
@@ -989,6 +998,11 @@
             "nameUpdateFailed": "Fehler beim Aktualisieren des Modellnamens",
             "baseModelUpdated": "Basis-Modell erfolgreich aktualisiert",
             "baseModelUpdateFailed": "Fehler beim Aktualisieren des Basis-Modells",
+            "baseModelNotSelected": "Bitte ein Basis-Modell auswählen",
+            "bulkBaseModelUpdating": "Basis-Modell wird für {count} Modell(e) aktualisiert...",
+            "bulkBaseModelUpdateSuccess": "Basis-Modell erfolgreich für {count} Modell(e) aktualisiert",
+            "bulkBaseModelUpdatePartial": "{success} Modelle aktualisiert, {failed} fehlgeschlagen",
+            "bulkBaseModelUpdateFailed": "Aktualisierung des Basis-Modells für ausgewählte Modelle fehlgeschlagen",
             "invalidCharactersRemoved": "Ungültige Zeichen aus Dateiname entfernt",
             "filenameCannotBeEmpty": "Dateiname darf nicht leer sein",
             "renameFailed": "Fehler beim Umbenennen der Datei: {message}",

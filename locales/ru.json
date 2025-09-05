@@ -320,6 +320,7 @@
             "selectedSuffix": "выбрано",
             "viewSelected": "Просмотреть выбранные",
             "addTags": "Добавить теги ко всем",
+            "setBaseModel": "Установить базовую модель для всех",
             "copyAll": "Копировать весь синтаксис",
             "refreshAll": "Обновить все метаданные",
             "moveAll": "Переместить все в папку",
@@ -581,6 +582,14 @@
             "appendTags": "Добавить теги",
             "replaceTags": "Заменить теги",
             "saveChanges": "Сохранить изменения"
+        },
+        "bulkBaseModel": {
+            "title": "Установить базовую модель для нескольких моделей",
+            "description": "Установить базовую модель для",
+            "models": "моделей",
+            "selectBaseModel": "Выбрать базовую модель",
+            "save": "Обновить базовую модель",
+            "cancel": "Отмена"
         },
         "exampleAccess": {
             "title": "Локальные примеры изображений",
@@ -989,6 +998,11 @@
             "nameUpdateFailed": "Не удалось обновить название модели",
             "baseModelUpdated": "Базовая модель успешно обновлена",
             "baseModelUpdateFailed": "Не удалось обновить базовую модель",
+            "baseModelNotSelected": "Пожалуйста, выберите базовую модель",
+            "bulkBaseModelUpdating": "Обновление базовой модели для {count} моделей...",
+            "bulkBaseModelUpdateSuccess": "Базовая модель успешно обновлена для {count} моделей",
+            "bulkBaseModelUpdatePartial": "Обновлено {success} моделей, не удалось обновить {failed} моделей",
+            "bulkBaseModelUpdateFailed": "Не удалось обновить базовую модель для выбранных моделей",
             "invalidCharactersRemoved": "Недопустимые символы удалены из имени файла",
             "filenameCannotBeEmpty": "Имя файла не может быть пустым",
             "renameFailed": "Не удалось переименовать файл: {message}",

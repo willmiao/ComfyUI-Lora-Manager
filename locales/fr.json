@@ -320,6 +320,7 @@
             "selectedSuffix": "sélectionné(s)",
             "viewSelected": "Voir la sélection",
             "addTags": "Ajouter des tags à tous",
+            "setBaseModel": "Définir le modèle de base pour tous",
             "copyAll": "Copier toute la syntaxe",
             "refreshAll": "Actualiser toutes les métadonnées",
             "moveAll": "Déplacer tout vers un dossier",
@@ -581,6 +582,14 @@
             "appendTags": "Ajouter les tags",
             "replaceTags": "Remplacer les tags",
             "saveChanges": "Enregistrer les modifications"
+        },
+        "bulkBaseModel": {
+            "title": "Définir le modèle de base pour plusieurs modèles",
+            "description": "Définir le modèle de base pour",
+            "models": "modèles",
+            "selectBaseModel": "Sélectionner le modèle de base",
+            "save": "Mettre à jour le modèle de base",
+            "cancel": "Annuler"
         },
         "exampleAccess": {
             "title": "Images d'exemple locales",
@@ -989,6 +998,11 @@
             "nameUpdateFailed": "Échec de la mise à jour du nom du modèle",
             "baseModelUpdated": "Modèle de base mis à jour avec succès",
             "baseModelUpdateFailed": "Échec de la mise à jour du modèle de base",
+            "baseModelNotSelected": "Veuillez sélectionner un modèle de base",
+            "bulkBaseModelUpdating": "Mise à jour du modèle de base pour {count} modèle(s)...",
+            "bulkBaseModelUpdateSuccess": "Modèle de base mis à jour avec succès pour {count} modèle(s)",
+            "bulkBaseModelUpdatePartial": "{success} modèle(s) mis à jour, {failed} modèle(s) en échec",
+            "bulkBaseModelUpdateFailed": "Échec de la mise à jour du modèle de base pour les modèles sélectionnés",
             "invalidCharactersRemoved": "Caractères invalides supprimés du nom de fichier",
             "filenameCannotBeEmpty": "Le nom de fichier ne peut pas être vide",
             "renameFailed": "Échec du renommage du fichier : {message}",

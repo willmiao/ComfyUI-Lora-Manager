@@ -320,6 +320,7 @@
             "selectedSuffix": "seleccionados",
             "viewSelected": "Ver seleccionados",
             "addTags": "Añadir etiquetas a todos",
+            "setBaseModel": "Establecer modelo base para todos",
             "copyAll": "Copiar toda la sintaxis",
             "refreshAll": "Actualizar todos los metadatos",
             "moveAll": "Mover todos a carpeta",
@@ -581,6 +582,14 @@
             "appendTags": "Añadir etiquetas",
             "replaceTags": "Reemplazar etiquetas",
             "saveChanges": "Guardar cambios"
+        },
+        "bulkBaseModel": {
+            "title": "Establecer modelo base para múltiples modelos",
+            "description": "Establecer modelo base para",
+            "models": "modelos",
+            "selectBaseModel": "Seleccionar modelo base",
+            "save": "Actualizar modelo base",
+            "cancel": "Cancelar"
         },
         "exampleAccess": {
             "title": "Imágenes de ejemplo locales",
@@ -989,6 +998,11 @@
             "nameUpdateFailed": "Error al actualizar nombre del modelo",
             "baseModelUpdated": "Modelo base actualizado exitosamente",
             "baseModelUpdateFailed": "Error al actualizar modelo base",
+            "baseModelNotSelected": "Por favor selecciona un modelo base",
+            "bulkBaseModelUpdating": "Actualizando modelo base para {count} modelo(s)...",
+            "bulkBaseModelUpdateSuccess": "Modelo base actualizado exitosamente para {count} modelo(s)",
+            "bulkBaseModelUpdatePartial": "Actualizados {success} modelo(s), fallaron {failed} modelo(s)",
+            "bulkBaseModelUpdateFailed": "Error al actualizar el modelo base para los modelos seleccionados",
             "invalidCharactersRemoved": "Caracteres inválidos eliminados del nombre de archivo",
             "filenameCannotBeEmpty": "El nombre de archivo no puede estar vacío",
             "renameFailed": "Error al renombrar archivo: {message}",

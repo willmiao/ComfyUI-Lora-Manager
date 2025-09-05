@@ -320,6 +320,7 @@
             "selectedSuffix": "개 선택됨",
             "viewSelected": "선택 항목 보기",
             "addTags": "모두에 태그 추가",
+            "setBaseModel": "모두에 베이스 모델 설정",
             "copyAll": "모든 문법 복사",
             "refreshAll": "모든 메타데이터 새로고침",
             "moveAll": "모두 폴더로 이동",
@@ -581,6 +582,14 @@
             "appendTags": "태그 추가",
             "replaceTags": "태그 교체",
             "saveChanges": "변경사항 저장"
+        },
+        "bulkBaseModel": {
+            "title": "여러 모델의 베이스 모델 설정",
+            "description": "다음 모델의 베이스 모델을 설정합니다:",
+            "models": "모델",
+            "selectBaseModel": "베이스 모델 선택",
+            "save": "베이스 모델 업데이트",
+            "cancel": "취소"
         },
         "exampleAccess": {
             "title": "로컬 예시 이미지",
@@ -989,6 +998,11 @@
             "nameUpdateFailed": "모델 이름 업데이트에 실패했습니다",
             "baseModelUpdated": "베이스 모델이 성공적으로 업데이트되었습니다",
             "baseModelUpdateFailed": "베이스 모델 업데이트에 실패했습니다",
+            "baseModelNotSelected": "베이스 모델을 선택해주세요",
+            "bulkBaseModelUpdating": "{count}개의 모델에 베이스 모델을 업데이트 중...",
+            "bulkBaseModelUpdateSuccess": "{count}개의 모델에 베이스 모델이 성공적으로 업데이트되었습니다",
+            "bulkBaseModelUpdatePartial": "{success}개의 모델이 업데이트되었고, {failed}개의 모델이 실패했습니다",
+            "bulkBaseModelUpdateFailed": "선택한 모델의 베이스 모델 업데이트에 실패했습니다",
             "invalidCharactersRemoved": "파일명에서 잘못된 문자가 제거되었습니다",
             "filenameCannotBeEmpty": "파일 이름은 비어있을 수 없습니다",
             "renameFailed": "파일 이름 변경 실패: {message}",

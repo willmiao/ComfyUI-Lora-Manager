@@ -320,6 +320,7 @@
             "selectedSuffix": "選択中",
             "viewSelected": "選択中を表示",
             "addTags": "すべてにタグを追加",
+            "setBaseModel": "すべてにベースモデルを設定",
             "copyAll": "すべての構文をコピー",
             "refreshAll": "すべてのメタデータを更新",
             "moveAll": "すべてをフォルダに移動",
@@ -581,6 +582,14 @@
             "appendTags": "タグを追加",
             "replaceTags": "タグを置換",
             "saveChanges": "変更を保存"
+        },
+        "bulkBaseModel": {
+            "title": "複数モデルのベースモデルを設定",
+            "description": "ベースモデルを設定するモデル：",
+            "models": "モデル",
+            "selectBaseModel": "ベースモデルを選択",
+            "save": "ベースモデルを更新",
+            "cancel": "キャンセル"
         },
         "exampleAccess": {
             "title": "ローカル例画像",
@@ -989,6 +998,11 @@
             "nameUpdateFailed": "モデル名の更新に失敗しました",
             "baseModelUpdated": "ベースモデルが正常に更新されました",
             "baseModelUpdateFailed": "ベースモデルの更新に失敗しました",
+            "baseModelNotSelected": "ベースモデルを選択してください",
+            "bulkBaseModelUpdating": "{count} モデルのベースモデルを更新中...",
+            "bulkBaseModelUpdateSuccess": "{count} モデルのベースモデルが正常に更新されました",
+            "bulkBaseModelUpdatePartial": "{success} モデルを更新、{failed} モデルは失敗しました",
+            "bulkBaseModelUpdateFailed": "選択したモデルのベースモデルの更新に失敗しました",
             "invalidCharactersRemoved": "ファイル名から無効な文字が削除されました",
             "filenameCannotBeEmpty": "ファイル名を空にすることはできません",
             "renameFailed": "ファイル名の変更に失敗しました：{message}",

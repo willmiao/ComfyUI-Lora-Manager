@@ -320,6 +320,7 @@
             "selectedSuffix": "已選擇",
             "viewSelected": "檢視已選取",
             "addTags": "新增標籤到全部",
+            "setBaseModel": "設定全部基礎模型",
             "copyAll": "複製全部語法",
             "refreshAll": "刷新全部 metadata",
             "moveAll": "全部移動到資料夾",
@@ -581,6 +582,14 @@
             "appendTags": "附加標籤",
             "replaceTags": "取代標籤",
             "saveChanges": "儲存變更"
+        },
+        "bulkBaseModel": {
+            "title": "設定多個模型的基礎模型",
+            "description": "設定基礎模型給",
+            "models": "個模型",
+            "selectBaseModel": "選擇基礎模型",
+            "save": "更新基礎模型",
+            "cancel": "取消"
         },
         "exampleAccess": {
             "title": "本機範例圖片",
@@ -989,6 +998,11 @@
             "nameUpdateFailed": "更新模型名稱失敗",
             "baseModelUpdated": "基礎模型已成功更新",
             "baseModelUpdateFailed": "更新基礎模型失敗",
+            "baseModelNotSelected": "請選擇基礎模型",
+            "bulkBaseModelUpdating": "正在為 {count} 個模型更新基礎模型...",
+            "bulkBaseModelUpdateSuccess": "已成功為 {count} 個模型更新基礎模型",
+            "bulkBaseModelUpdatePartial": "已更新 {success} 個模型，{failed} 個模型失敗",
+            "bulkBaseModelUpdateFailed": "更新所選模型的基礎模型失敗",
             "invalidCharactersRemoved": "已移除檔名中的無效字元",
             "filenameCannotBeEmpty": "檔案名稱不可為空",
             "renameFailed": "重新命名檔案失敗：{message}",
