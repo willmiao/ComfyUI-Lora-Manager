@@ -217,17 +217,19 @@
 /* Bulk Context Menu Header */
 .bulk-context-header {
     padding: 10px 12px;
-    background: var(--lora-accent);
-    color: var(--lora-text);
+    background: var(--card-bg); /* Use card background for subtlety */
+    color: var(--text-color);   /* Use standard text color */
     display: flex;
     align-items: center;
     gap: 8px;
     font-weight: 500;
     font-size: 14px;
     border-radius: var(--border-radius-xs) var(--border-radius-xs) 0 0;
+    border-bottom: 1px solid var(--border-color); /* Add subtle separator */
 }
 
 .bulk-context-header i {
     width: 16px;
     text-align: center;
+    color: var(--lora-accent); /* Accent only the icon for a hint of color */
 }

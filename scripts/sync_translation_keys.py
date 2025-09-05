@@ -78,11 +78,12 @@ class TranslationKeySynchronizer:
         """
         Merge the reference JSON structure with existing target translations.
         This creates a new structure that matches the reference exactly but preserves 
-        existing translations where available.
+        existing translations where available. Keys not in reference are removed.
         """
         def merge_recursive(ref_obj, target_obj):
             if isinstance(ref_obj, (dict, OrderedDict)):
                 result = OrderedDict()
+                # Only include keys that exist in the reference
                 for key, ref_value in ref_obj.items():
                     if key in target_obj and isinstance(target_obj[key], type(ref_value)):
                         # Key exists in target with same type
@@ -131,6 +132,7 @@ class TranslationKeySynchronizer:
                                   reference_lines: List[str], dry_run: bool = False) -> bool:
         """
         Synchronize a locale file using JSON structure merging.
+        Handles both addition of missing keys and removal of obsolete keys.
         """
         locale_file = os.path.join(self.locales_dir, f'{locale}.json')
         
@@ -144,24 +146,33 @@ class TranslationKeySynchronizer:
             self.log(f"Error loading {locale_file}: {e}", 'ERROR')
             return False
         
-        # Get keys to check for missing ones
+        # Get keys to check for differences
         ref_keys = self.get_all_leaf_keys(reference_data)
         target_keys = self.get_all_leaf_keys(target_data)
         missing_keys = set(ref_keys.keys()) - set(target_keys.keys())
+        obsolete_keys = set(target_keys.keys()) - set(ref_keys.keys())
         
-        if not missing_keys:
+        if not missing_keys and not obsolete_keys:
             self.log(f"Locale {locale} is already up to date")
             return False
         
-        self.log(f"Found {len(missing_keys)} missing keys in {locale}:")
-        for key in sorted(missing_keys):
-            self.log(f"  - {key}")
+        # Report changes
+        if missing_keys:
+            self.log(f"Found {len(missing_keys)} missing keys in {locale}:")
+            for key in sorted(missing_keys):
+                self.log(f"  + {key}")
+        
+        if obsolete_keys:
+            self.log(f"Found {len(obsolete_keys)} obsolete keys in {locale}:")
+            for key in sorted(obsolete_keys):
+                self.log(f"  - {key}")
         
         if dry_run:
-            self.log(f"DRY RUN: Would update {locale} with {len(missing_keys)} new keys")
+            total_changes = len(missing_keys) + len(obsolete_keys)
+            self.log(f"DRY RUN: Would update {locale} with {len(missing_keys)} additions and {len(obsolete_keys)} deletions ({total_changes} total changes)")
             return True
         
-        # Merge the structures
+        # Merge the structures (this will both add missing keys and remove obsolete ones)
         try:
             merged_data = self.merge_json_structures(reference_data, target_data)
             
@@ -176,7 +187,8 @@ class TranslationKeySynchronizer:
             with open(locale_file, 'w', encoding='utf-8') as f:
                 f.writelines(new_lines)
             
-            self.log(f"Successfully updated {locale} with {len(missing_keys)} new keys")
+            total_changes = len(missing_keys) + len(obsolete_keys)
+            self.log(f"Successfully updated {locale} with {len(missing_keys)} additions and {len(obsolete_keys)} deletions ({total_changes} total changes)")
             return True
             
         except json.JSONDecodeError as e:

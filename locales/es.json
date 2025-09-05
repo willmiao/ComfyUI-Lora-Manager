@@ -318,14 +318,13 @@
         "bulkOperations": {
             "selected": "{count} seleccionados",
             "selectedSuffix": "seleccionados",
-            "viewSelected": "Clic para ver elementos seleccionados",
-            "addTags": "Añadir etiquetas",
-            "sendToWorkflow": "Enviar al flujo de trabajo",
-            "copyAll": "Copiar todo",
-            "refreshAll": "Actualizar todo",
-            "moveAll": "Mover todo",
-            "deleteAll": "Eliminar todo",
-            "clear": "Limpiar"
+            "viewSelected": "Ver seleccionados",
+            "addTags": "Añadir etiquetas a todos",
+            "copyAll": "Copiar toda la sintaxis",
+            "refreshAll": "Actualizar todos los metadatos",
+            "moveAll": "Mover todos a carpeta",
+            "deleteAll": "Eliminar todos los modelos",
+            "clear": "Limpiar selección"
         },
         "contextMenu": {
             "refreshMetadata": "Actualizar datos de Civitai",
@@ -983,6 +982,7 @@
             "deleteFailed": "Error: {error}",
             "deleteFailedGeneral": "Error al eliminar modelos",
             "selectedAdditional": "Seleccionados {count} {type}(s) adicionales",
+            "marqueeSelectionComplete": "Seleccionados {count} {type}(s) con selección de marco",
             "refreshMetadataFailed": "Error al actualizar metadatos",
             "nameCannotBeEmpty": "El nombre del modelo no puede estar vacío",
             "nameUpdatedSuccessfully": "Nombre del modelo actualizado exitosamente",

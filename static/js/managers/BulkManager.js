@@ -4,13 +4,27 @@ import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
-import { PRESET_TAGS } from '../utils/constants.js';
+import { PRESET_TAGS, BASE_MODEL_CATEGORIES } from '../utils/constants.js';
+import { eventManager } from '../utils/EventManager.js';
+import { translate } from '../utils/i18nHelpers.js';
 
 export class BulkManager {
     constructor() {
         this.bulkBtn = document.getElementById('bulkOperationsBtn');
         // Remove bulk panel references since we're using context menu now
         this.bulkContextMenu = null; // Will be set by core initialization
+        
+        // Marquee selection properties
+        this.isMarqueeActive = false;
+        this.isDragging = false;
+        this.marqueeStart = { x: 0, y: 0 };
+        this.marqueeElement = null;
+        this.initialSelectedModels = new Set();
+        
+        // Drag detection properties
+        this.dragThreshold = 5; // Pixels to move before considering it a drag
+        this.mouseDownTime = 0;
+        this.mouseDownPosition = { x: 0, y: 0 };
         
         // Model type specific action configurations
         this.actionConfig = {
@@ -42,48 +56,155 @@ export class BulkManager {
     }
 
     initialize() {
-        this.setupEventListeners();
-        this.setupGlobalKeyboardListeners();
+        // Register with event manager for coordinated event handling
+        this.registerEventHandlers();
+        
+        // Initialize bulk mode state in event manager
+        eventManager.setState('bulkMode', state.bulkMode || false);
     }
 
     setBulkContextMenu(bulkContextMenu) {
         this.bulkContextMenu = bulkContextMenu;
     }
 
-    setupEventListeners() {
-        // Only setup bulk mode toggle button listener now
-        // Context menu actions are handled by BulkContextMenu
+    /**
+     * Register all event handlers with the centralized event manager
+     */
+    registerEventHandlers() {
+        // Register keyboard shortcuts with high priority
+        eventManager.addHandler('keydown', 'bulkManager-keyboard', (e) => {
+            return this.handleGlobalKeyboard(e);
+        }, {
+            priority: 100,
+            skipWhenModalOpen: true
+        });
+
+        // Register marquee selection events
+        eventManager.addHandler('mousedown', 'bulkManager-marquee-start', (e) => {
+            return this.handleMarqueeStart(e);
+        }, {
+            priority: 80,
+            skipWhenModalOpen: true,
+            targetSelector: '.page-content',
+            excludeSelector: '.model-card, button, input, folder-sidebar, .breadcrumb-item, #path-part, .context-menu',
+            button: 0 // Left mouse button only
+        });
+
+        eventManager.addHandler('mousemove', 'bulkManager-marquee-move', (e) => {
+            if (this.isMarqueeActive) {
+                this.updateMarqueeSelection(e);
+            } else if (this.mouseDownTime && !this.isDragging) {
+                // Check if we've moved enough to consider it a drag
+                const dx = e.clientX - this.mouseDownPosition.x;
+                const dy = e.clientY - this.mouseDownPosition.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance >= this.dragThreshold) {
+                    this.isDragging = true;
+                    this.startMarqueeSelection(e, true);
+                }
+            }
+        }, {
+            priority: 90,
+            skipWhenModalOpen: true
+        });
+
+        eventManager.addHandler('mouseup', 'bulkManager-marquee-end', (e) => {
+            if (this.isMarqueeActive) {
+                this.endMarqueeSelection(e);
+                return true; // Stop propagation
+            }
+            
+            // Reset drag detection if we had a mousedown but didn't drag
+            if (this.mouseDownTime) {
+                this.mouseDownTime = 0;
+                return false; // Allow other handlers to process the click
+            }
+        }, {
+            priority: 90
+        });
+
+        eventManager.addHandler('contextmenu', 'bulkManager-marquee-prevent', (e) => {
+            if (this.isMarqueeActive) {
+                e.preventDefault();
+                return true; // Stop propagation
+            }
+        }, {
+            priority: 100
+        });
+
+        // Modified: Clear selection and exit bulk mode on left-click page-content blank area
+        // Lower priority to avoid interfering with context menu interactions
+        eventManager.addHandler('mousedown', 'bulkManager-clear-on-blank', (e) => {
+            // Only handle left mouse button
+            if (e.button !== 0) return false;
+            // Only if in bulk mode and there are selected models
+            if (state.bulkMode && state.selectedModels && state.selectedModels.size > 0) {
+                // Check if click is on blank area (not on a model card or excluded elements)
+                this.clearSelection();
+                this.toggleBulkMode();
+                // Prevent further handling
+                return true;
+            }
+            return false;
+        }, {
+            priority: 70, // Lower priority to let context menu events process first
+            onlyInBulkMode: true,
+            skipWhenModalOpen: true,
+            targetSelector: '.page-content',
+            excludeSelector: '.model-card, button, input, folder-sidebar, .breadcrumb-item, #path-part, .context-menu, .context-menu *',
+            button: 0 // Left mouse button only
+        });
     }
 
-    setupGlobalKeyboardListeners() {
-        document.addEventListener('keydown', (e) => {
-            if (modalManager.isAnyModalOpen()) {
-                return;
-            }
+    /**
+     * Clean up event handlers
+     */
+    cleanup() {
+        eventManager.removeAllHandlersForSource('bulkManager-keyboard');
+        eventManager.removeAllHandlersForSource('bulkManager-marquee-start');
+        eventManager.removeAllHandlersForSource('bulkManager-marquee-move');
+        eventManager.removeAllHandlersForSource('bulkManager-marquee-end');
+        eventManager.removeAllHandlersForSource('bulkManager-marquee-prevent');
+        eventManager.removeAllHandlersForSource('bulkManager-clear-on-blank');
+    }
 
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput && document.activeElement === searchInput) {
-                return;
-            }
+    /**
+     * Handle global keyboard events through the event manager
+     */
+    handleGlobalKeyboard(e) {
+        // Skip if modal is open (handled by event manager conditions)
+        // Skip if search input is focused
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput && document.activeElement === searchInput) {
+            return false; // Don't handle, allow default behavior
+        }
 
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
-                e.preventDefault();
-                if (!state.bulkMode) {
-                    this.toggleBulkMode();
-                    setTimeout(() => this.selectAllVisibleModels(), 50);
-                } else {
-                    this.selectAllVisibleModels();
-                }
-            } else if (e.key === 'Escape' && state.bulkMode) {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+            e.preventDefault();
+            if (!state.bulkMode) {
                 this.toggleBulkMode();
-            } else if (e.key.toLowerCase() === 'b') {
-                this.toggleBulkMode();
+                setTimeout(() => this.selectAllVisibleModels(), 50);
+            } else {
+                this.selectAllVisibleModels();
             }
-        });
+            return true; // Stop propagation
+        } else if (e.key === 'Escape' && state.bulkMode) {
+            this.toggleBulkMode();
+            return true; // Stop propagation
+        } else if (e.key.toLowerCase() === 'b') {
+            this.toggleBulkMode();
+            return true; // Stop propagation
+        }
+        
+        return false; // Continue with other handlers
     }
 
     toggleBulkMode() {
         state.bulkMode = !state.bulkMode;
+        
+        // Update event manager state
+        eventManager.setState('bulkMode', state.bulkMode);
         
         this.bulkBtn.classList.toggle('active', state.bulkMode);
         
@@ -126,8 +247,6 @@ export class BulkManager {
             metadataCache.set(filepath, {
                 fileName: card.dataset.file_name,
                 usageTips: card.dataset.usage_tips,
-                previewUrl: this.getCardPreviewUrl(card),
-                isVideo: this.isCardPreviewVideo(card),
                 modelName: card.dataset.name
             });
         }
@@ -155,16 +274,6 @@ export class BulkManager {
             return pageState.metadataCache;
         }
     }
-    
-    getCardPreviewUrl(card) {
-        const img = card.querySelector('img');
-        const video = card.querySelector('video source');
-        return img ? img.src : (video ? video.src : '/loras_static/images/no-preview.png');
-    }
-    
-    isCardPreviewVideo(card) {
-        return card.querySelector('video') !== null;
-    }
 
     applySelectionState() {
         if (!state.bulkMode) return;
@@ -178,8 +287,6 @@ export class BulkManager {
                 metadataCache.set(filepath, {
                     fileName: card.dataset.file_name,
                     usageTips: card.dataset.usage_tips,
-                    previewUrl: this.getCardPreviewUrl(card),
-                    isVideo: this.isCardPreviewVideo(card),
                     modelName: card.dataset.name
                 });
             } else {
@@ -228,7 +335,7 @@ export class BulkManager {
         await copyToClipboard(loraSyntaxes.join(', '), `Copied ${loraSyntaxes.length} LoRA syntaxes to clipboard`);
     }
     
-    async sendAllModelsToWorkflow() {
+    async sendAllModelsToWorkflow(replaceMode = false) {
         if (state.currentPageType !== MODEL_TYPES.LORA) {
             showToast('toast.loras.sendOnlyForLoras', {}, 'warning');
             return;
@@ -265,7 +372,7 @@ export class BulkManager {
             return;
         }
         
-        await sendLoraToWorkflow(loraSyntaxes.join(', '), false, 'lora');
+        await sendLoraToWorkflow(loraSyntaxes.join(', '), replaceMode, 'lora');
     }
     
     showBulkDeleteModal() {
@@ -347,8 +454,6 @@ export class BulkManager {
                     metadataCache.set(item.file_path, {
                         fileName: item.file_name,
                         usageTips: item.usage_tips || '{}',
-                        previewUrl: item.preview_url || '/loras_static/images/no-preview.png',
-                        isVideo: item.is_video || false,
                         modelName: item.name || item.file_name
                     });
                 }
@@ -392,8 +497,6 @@ export class BulkManager {
                                 ...metadata,
                                 fileName: card.dataset.file_name,
                                 usageTips: card.dataset.usage_tips,
-                                previewUrl: this.getCardPreviewUrl(card),
-                                isVideo: this.isCardPreviewVideo(card),
                                 modelName: card.dataset.name
                             });
                         }
@@ -733,6 +836,301 @@ export class BulkManager {
                 dropdown.remove();
             }
         }
+    }
+
+    /**
+     * Show bulk base model modal
+     */
+    showBulkBaseModelModal() {
+        if (state.selectedModels.size === 0) {
+            showToast('toast.models.noSelectedModels', {}, 'warning');
+            return;
+        }
+        
+        const countElement = document.getElementById('bulkBaseModelCount');
+        if (countElement) {
+            countElement.textContent = state.selectedModels.size;
+        }
+        
+        modalManager.showModal('bulkBaseModelModal', null, null, () => {
+            this.cleanupBulkBaseModelModal();
+        });
+        
+        // Initialize the bulk base model interface
+        this.initializeBulkBaseModelInterface();
+    }
+    
+    /**
+     * Initialize bulk base model interface
+     */
+    initializeBulkBaseModelInterface() {
+        const select = document.getElementById('bulkBaseModelSelect');
+        if (!select) return;
+        
+        // Clear existing options
+        select.innerHTML = '';
+        
+        // Add placeholder option
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = 'Select a base model...';
+        placeholderOption.disabled = true;
+        placeholderOption.selected = true;
+        select.appendChild(placeholderOption);
+        
+        // Create option groups for better organization
+        Object.entries(BASE_MODEL_CATEGORIES).forEach(([category, models]) => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = category;
+            
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = model;
+                optgroup.appendChild(option);
+            });
+            
+            select.appendChild(optgroup);
+        });
+    }
+    
+    /**
+     * Save bulk base model changes
+     */
+    async saveBulkBaseModel() {
+        const select = document.getElementById('bulkBaseModelSelect');
+        if (!select || !select.value) {
+            showToast('toast.models.baseModelNotSelected', {}, 'warning');
+            return;
+        }
+        
+        const newBaseModel = select.value;
+        const selectedCount = state.selectedModels.size;
+        
+        if (selectedCount === 0) {
+            showToast('toast.models.noSelectedModels', {}, 'warning');
+            return;
+        }
+        
+        modalManager.closeModal('bulkBaseModelModal');
+        
+        try {
+            let successCount = 0;
+            let errorCount = 0;
+            const errors = [];
+            
+            state.loadingManager.showSimpleLoading(translate('toast.models.bulkBaseModelUpdating'));
+            
+            for (const filepath of state.selectedModels) {
+                try {
+                    await getModelApiClient().saveModelMetadata(filepath, { base_model: newBaseModel });
+                    successCount++;
+                } catch (error) {
+                    errorCount++;
+                    errors.push({ filepath, error: error.message });
+                    console.error(`Failed to update base model for ${filepath}:`, error);
+                }
+            }
+            
+            // Show results
+            if (errorCount === 0) {
+                showToast('toast.models.bulkBaseModelUpdateSuccess', { count: successCount }, 'success');
+            } else if (successCount > 0) {
+                showToast('toast.models.bulkBaseModelUpdatePartial', { 
+                    success: successCount, 
+                    failed: errorCount 
+                }, 'warning');
+            } else {
+                showToast('toast.models.bulkBaseModelUpdateFailed', {}, 'error');
+            }
+            
+        } catch (error) {
+            console.error('Error during bulk base model operation:', error);
+            showToast('toast.models.bulkBaseModelUpdateFailed', {}, 'error');
+        } finally {
+            state.loadingManager.hideSimpleLoading();
+        }
+    }
+    
+    /**
+     * Cleanup bulk base model modal
+     */
+    cleanupBulkBaseModelModal() {
+        const select = document.getElementById('bulkBaseModelSelect');
+        if (select) {
+            select.innerHTML = '';
+        }
+    }
+
+    /**
+     * Handle marquee start through event manager
+     */
+    handleMarqueeStart(e) {
+        // Store mousedown info for potential drag detection
+        this.mouseDownTime = Date.now();
+        this.mouseDownPosition = { x: e.clientX, y: e.clientY };
+        this.isDragging = false;
+        
+        // Don't start marquee yet - wait to see if user is dragging
+        return false;
+    }
+
+    /**
+     * Start marquee selection
+     * @param {MouseEvent} e - Mouse event
+     * @param {boolean} isDragging - Whether this is triggered from a drag operation
+     */
+    startMarqueeSelection(e, isDragging = false) {
+        // Store initial mouse position
+        this.marqueeStart.x = this.mouseDownPosition.x;
+        this.marqueeStart.y = this.mouseDownPosition.y;
+        
+        // Store initial selection state
+        this.initialSelectedModels = new Set(state.selectedModels);
+        
+        // Enter bulk mode if not already active and we're actually dragging
+        if (isDragging && !state.bulkMode) {
+            this.toggleBulkMode();
+        }
+        
+        // Create marquee element
+        this.createMarqueeElement();
+        
+        this.isMarqueeActive = true;
+        
+        // Update event manager state
+        eventManager.setState('marqueeActive', true);
+        
+        // Add visual feedback class to body
+        document.body.classList.add('marquee-selecting');
+    }
+
+    /**
+     * Create the visual marquee selection rectangle
+     */
+    createMarqueeElement() {
+        this.marqueeElement = document.createElement('div');
+        this.marqueeElement.className = 'marquee-selection';
+        this.marqueeElement.style.cssText = `
+            position: fixed;
+            border: 2px dashed var(--lora-accent, #007bff);
+            background: rgba(0, 123, 255, 0.1);
+            pointer-events: none;
+            z-index: 9999;
+            left: ${this.marqueeStart.x}px;
+            top: ${this.marqueeStart.y}px;
+            width: 0;
+            height: 0;
+        `;
+        document.body.appendChild(this.marqueeElement);
+    }
+
+    /**
+     * Update marquee selection rectangle and selected items
+     */
+    updateMarqueeSelection(e) {
+        if (!this.marqueeElement) return;
+        
+        const currentX = e.clientX;
+        const currentY = e.clientY;
+        
+        // Calculate rectangle bounds
+        const left = Math.min(this.marqueeStart.x, currentX);
+        const top = Math.min(this.marqueeStart.y, currentY);
+        const width = Math.abs(currentX - this.marqueeStart.x);
+        const height = Math.abs(currentY - this.marqueeStart.y);
+        
+        // Update marquee element position and size
+        this.marqueeElement.style.left = left + 'px';
+        this.marqueeElement.style.top = top + 'px';
+        this.marqueeElement.style.width = width + 'px';
+        this.marqueeElement.style.height = height + 'px';
+        
+        // Check which cards intersect with marquee
+        this.updateCardSelection(left, top, left + width, top + height);
+    }
+
+    /**
+     * Update card selection based on marquee bounds
+     */
+    updateCardSelection(left, top, right, bottom) {
+        const cards = document.querySelectorAll('.model-card');
+        const newSelection = new Set(this.initialSelectedModels);
+        
+        cards.forEach(card => {
+            const rect = card.getBoundingClientRect();
+            
+            // Check if card intersects with marquee rectangle
+            const intersects = !(rect.right < left || 
+                               rect.left > right || 
+                               rect.bottom < top || 
+                               rect.top > bottom);
+            
+            const filepath = card.dataset.filepath;
+            
+            if (intersects) {
+                // Add to selection if intersecting
+                newSelection.add(filepath);
+                card.classList.add('selected');
+                
+                // Cache metadata if not already cached
+                const metadataCache = this.getMetadataCache();
+                if (!metadataCache.has(filepath)) {
+                    metadataCache.set(filepath, {
+                        fileName: card.dataset.file_name,
+                        usageTips: card.dataset.usage_tips,
+                        modelName: card.dataset.name
+                    });
+                }
+            } else if (!this.initialSelectedModels.has(filepath)) {
+                // Remove from selection if not intersecting and wasn't initially selected
+                newSelection.delete(filepath);
+                card.classList.remove('selected');
+            }
+        });
+        
+        // Update global selection state
+        state.selectedModels = newSelection;
+        
+        // Update context menu header if visible
+        if (this.bulkContextMenu) {
+            this.bulkContextMenu.updateSelectedCountHeader();
+        }
+    }
+
+    /**
+     * End marquee selection
+     */
+    endMarqueeSelection(e) {
+        // First, mark as inactive to prevent double processing
+        this.isMarqueeActive = false;
+        this.isDragging = false;
+        this.mouseDownTime = 0;
+        
+        // Update event manager state
+        eventManager.setState('marqueeActive', false);
+        
+        // Remove marquee element
+        if (this.marqueeElement) {
+            this.marqueeElement.remove();
+            this.marqueeElement = null;
+        }
+        
+        // Remove visual feedback class
+        document.body.classList.remove('marquee-selecting');
+        
+        // Get selection count
+        const selectionCount = state.selectedModels.size;
+        
+        // If no models were selected, exit bulk mode
+        if (selectionCount === 0) {
+            if (state.bulkMode) {
+                this.toggleBulkMode();
+            }
+        }
+        
+        // Clear initial selection state
+        this.initialSelectedModels.clear();
     }
 }
 

@@ -1,0 +1,38 @@
+<div id="bulkBaseModelModal" class="modal" style="display: none;">
+    <div class="modal-content modal-content">
+        <div class="modal-header">
+            <h2>{{ t('modals.bulkBaseModel.title') }}</h2>
+            <span class="close" onclick="modalManager.closeModal('bulkBaseModelModal')">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="bulk-add-tags-info">
+                <p>{{ t('modals.bulkBaseModel.description') }} <span id="bulkBaseModelCount">0</span> {{ t('modals.bulkBaseModel.models') }}</p>
+            </div>
+            
+            <div class="model-tags-container bulk-tags-container edit-mode">
+                <div class="metadata-edit-container" style="display: block;">
+                    <div class="metadata-edit-content">
+                        <div class="metadata-edit-header">
+                            <label>{{ t('modals.bulkBaseModel.selectBaseModel') }}</label>
+                        </div>
+                        <div class="setting-control">
+                            <div class="select-control">
+                                <select id="bulkBaseModelSelect" class="bulk-base-model-select">
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="metadata-edit-controls">
+                            <button class="metadata-save-btn bulk-save-base-model-btn" onclick="bulkManager.saveBulkBaseModel()">
+                                <i class="fas fa-save"></i> {{ t('modals.bulkBaseModel.save') }}
+                            </button>
+                            <button class="btn btn-secondary" onclick="modalManager.closeModal('bulkBaseModelModal')">
+                                {{ t('modals.bulkBaseModel.cancel') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -318,14 +318,14 @@
         "bulkOperations": {
             "selected": "{count} selected",
             "selectedSuffix": "selected",
-            "viewSelected": "Click to view selected items",
-            "addTags": "Add Tags",
-            "sendToWorkflow": "Send to Workflow",
-            "copyAll": "Copy All",
-            "refreshAll": "Refresh All",
-            "moveAll": "Move All",
-            "deleteAll": "Delete All",
-            "clear": "Clear"
+            "viewSelected": "View Selected",
+            "addTags": "Add Tags to All",
+            "setBaseModel": "Set Base Model for All",
+            "copyAll": "Copy All Syntax",
+            "refreshAll": "Refresh All Metadata",
+            "moveAll": "Move All to Folder",
+            "deleteAll": "Delete All Models",
+            "clear": "Clear Selection"
         },
         "contextMenu": {
             "refreshMetadata": "Refresh Civitai Data",
@@ -582,6 +582,14 @@
             "appendTags": "Append Tags",
             "replaceTags": "Replace Tags",
             "saveChanges": "Save changes"
+        },
+        "bulkBaseModel": {
+            "title": "Set Base Model for Multiple Models",
+            "description": "Set base model for",
+            "models": "models",
+            "selectBaseModel": "Select Base Model",
+            "save": "Update Base Model",
+            "cancel": "Cancel"
         },
         "exampleAccess": {
             "title": "Local Example Images",
@@ -983,12 +991,18 @@
             "deleteFailed": "Error: {error}",
             "deleteFailedGeneral": "Failed to delete models",
             "selectedAdditional": "Selected {count} additional {type}(s)",
+            "marqueeSelectionComplete": "Selected {count} {type}(s) with marquee selection",
             "refreshMetadataFailed": "Failed to refresh metadata",
             "nameCannotBeEmpty": "Model name cannot be empty",
             "nameUpdatedSuccessfully": "Model name updated successfully",
             "nameUpdateFailed": "Failed to update model name",
             "baseModelUpdated": "Base model updated successfully",
             "baseModelUpdateFailed": "Failed to update base model",
+            "baseModelNotSelected": "Please select a base model",
+            "bulkBaseModelUpdating": "Updating base model for {count} model(s)...",
+            "bulkBaseModelUpdateSuccess": "Successfully updated base model for {count} model(s)",
+            "bulkBaseModelUpdatePartial": "Updated {success} model(s), failed {failed} model(s)",
+            "bulkBaseModelUpdateFailed": "Failed to update base model for selected models",
             "invalidCharactersRemoved": "Invalid characters removed from filename",
             "filenameCannotBeEmpty": "File name cannot be empty",
             "renameFailed": "Failed to rename file: {message}",

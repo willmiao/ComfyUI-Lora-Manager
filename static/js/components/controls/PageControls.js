@@ -70,7 +70,6 @@ export class PageControls {
     async initSidebarManager() {
         try {
             await this.sidebarManager.initialize(this);
-            console.log('SidebarManager initialized');
         } catch (error) {
             console.error('Failed to initialize SidebarManager:', error);
         }

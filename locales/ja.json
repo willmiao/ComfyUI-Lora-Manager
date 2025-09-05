@@ -318,14 +318,13 @@
         "bulkOperations": {
             "selected": "{count} 選択中",
             "selectedSuffix": "選択中",
-            "viewSelected": "選択したアイテムを表示するにはクリック",
-            "addTags": "タグを追加",
-            "sendToWorkflow": "ワークフローに送信",
-            "copyAll": "すべてコピー",
-            "refreshAll": "すべて更新",
-            "moveAll": "すべて移動",
-            "deleteAll": "すべて削除",
-            "clear": "クリア"
+            "viewSelected": "選択中を表示",
+            "addTags": "すべてにタグを追加",
+            "copyAll": "すべての構文をコピー",
+            "refreshAll": "すべてのメタデータを更新",
+            "moveAll": "すべてをフォルダに移動",
+            "deleteAll": "すべてのモデルを削除",
+            "clear": "選択をクリア"
         },
         "contextMenu": {
             "refreshMetadata": "Civitaiデータを更新",
@@ -983,6 +982,7 @@
             "deleteFailed": "エラー：{error}",
             "deleteFailedGeneral": "モデルの削除に失敗しました",
             "selectedAdditional": "{count} 追加{type}が選択されました",
+            "marqueeSelectionComplete": "マーキー選択で {count} の{type}が選択されました",
             "refreshMetadataFailed": "メタデータの更新に失敗しました",
             "nameCannotBeEmpty": "モデル名を空にすることはできません",
             "nameUpdatedSuccessfully": "モデル名が正常に更新されました",
