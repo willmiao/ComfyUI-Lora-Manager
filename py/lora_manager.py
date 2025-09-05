@@ -237,6 +237,7 @@ class LoraManager:
             # Run post-initialization tasks
             post_tasks = [
                 asyncio.create_task(cls._cleanup_backup_files(), name='cleanup_bak_files'),
+                asyncio.create_task(cls._cleanup_example_images_folders(), name='cleanup_example_images'),
                 # Add more post-initialization tasks here as needed
                 # asyncio.create_task(cls._another_post_task(), name='another_task'),
             ]
@@ -346,6 +347,123 @@ class LoraManager:
         
         return deleted_count, size_freed
     
+    @classmethod
+    async def _cleanup_example_images_folders(cls):
+        """Clean up invalid or empty folders in example images directory"""
+        try:
+            example_images_path = settings.get('example_images_path')
+            if not example_images_path or not os.path.exists(example_images_path):
+                logger.debug("Example images path not configured or doesn't exist, skipping cleanup")
+                return
+            
+            logger.debug(f"Starting cleanup of example images folders in: {example_images_path}")
+            
+            # Get all scanner instances to check hash validity
+            lora_scanner = await ServiceRegistry.get_lora_scanner()
+            checkpoint_scanner = await ServiceRegistry.get_checkpoint_scanner()
+            embedding_scanner = await ServiceRegistry.get_embedding_scanner()
+            
+            total_folders_checked = 0
+            empty_folders_removed = 0
+            invalid_hash_folders_removed = 0
+            
+            # Scan the example images directory
+            try:
+                with os.scandir(example_images_path) as it:
+                    for entry in it:
+                        if not entry.is_dir(follow_symlinks=False):
+                            continue
+                            
+                        folder_name = entry.name
+                        folder_path = entry.path
+                        total_folders_checked += 1
+                        
+                        try:
+                            # Check if folder is empty
+                            is_empty = cls._is_folder_empty(folder_path)
+                            if is_empty:
+                                logger.debug(f"Removing empty example images folder: {folder_name}")
+                                await cls._remove_folder_safely(folder_path)
+                                empty_folders_removed += 1
+                                continue
+                            
+                            # Check if folder name is a valid SHA256 hash (64 hex characters)
+                            if len(folder_name) != 64 or not all(c in '0123456789abcdefABCDEF' for c in folder_name):
+                                logger.debug(f"Removing invalid hash folder: {folder_name}")
+                                await cls._remove_folder_safely(folder_path)
+                                invalid_hash_folders_removed += 1
+                                continue
+                            
+                            # Check if hash exists in any of the scanners
+                            hash_exists = (
+                                lora_scanner.has_hash(folder_name) or 
+                                checkpoint_scanner.has_hash(folder_name) or 
+                                embedding_scanner.has_hash(folder_name)
+                            )
+                            
+                            if not hash_exists:
+                                logger.debug(f"Removing example images folder for deleted model: {folder_name}")
+                                await cls._remove_folder_safely(folder_path)
+                                invalid_hash_folders_removed += 1
+                                continue
+                                
+                            logger.debug(f"Keeping valid example images folder: {folder_name}")
+                            
+
+                        except Exception as e:
+                            logger.error(f"Error processing example images folder {folder_name}: {e}")
+                        
+                        # Yield control periodically
+                        await asyncio.sleep(0.01)
+                        
+            except Exception as e:
+                logger.error(f"Error scanning example images directory: {e}")
+                return
+            
+            # Log final cleanup report
+            total_removed = empty_folders_removed + invalid_hash_folders_removed
+            if total_removed > 0:
+                logger.info(f"Example images cleanup completed: checked {total_folders_checked} folders, "
+                           f"removed {empty_folders_removed} empty folders and {invalid_hash_folders_removed} "
+                           f"folders for deleted/invalid models (total: {total_removed} removed)")
+            else:
+                logger.info(f"Example images cleanup completed: checked {total_folders_checked} folders, "
+                           f"no cleanup needed")
+                
+        except Exception as e:
+            logger.error(f"Error during example images cleanup: {e}", exc_info=True)
+    
+    @classmethod
+    def _is_folder_empty(cls, folder_path: str) -> bool:
+        """Check if a folder is empty
+        
+        Args:
+            folder_path: Path to the folder to check
+            
+        Returns:
+            bool: True if folder is empty, False otherwise
+        """
+        try:
+            with os.scandir(folder_path) as it:
+                return not any(it)
+        except Exception as e:
+            logger.debug(f"Error checking if folder is empty {folder_path}: {e}")
+            return False
+    
+    @classmethod
+    async def _remove_folder_safely(cls, folder_path: str):
+        """Safely remove a folder and all its contents
+        
+        Args:
+            folder_path: Path to the folder to remove
+        """
+        try:
+            import shutil
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, shutil.rmtree, folder_path)
+        except Exception as e:
+            logger.warning(f"Failed to remove folder {folder_path}: {e}")
+
     @classmethod
     async def _cleanup(cls, app):
         """Cleanup resources using ServiceRegistry"""
