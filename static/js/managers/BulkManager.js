@@ -228,7 +228,7 @@ export class BulkManager {
         await copyToClipboard(loraSyntaxes.join(', '), `Copied ${loraSyntaxes.length} LoRA syntaxes to clipboard`);
     }
     
-    async sendAllModelsToWorkflow() {
+    async sendAllModelsToWorkflow(replaceMode = false) {
         if (state.currentPageType !== MODEL_TYPES.LORA) {
             showToast('toast.loras.sendOnlyForLoras', {}, 'warning');
             return;
@@ -265,7 +265,7 @@ export class BulkManager {
             return;
         }
         
-        await sendLoraToWorkflow(loraSyntaxes.join(', '), false, 'lora');
+        await sendLoraToWorkflow(loraSyntaxes.join(', '), replaceMode, 'lora');
     }
     
     showBulkDeleteModal() {

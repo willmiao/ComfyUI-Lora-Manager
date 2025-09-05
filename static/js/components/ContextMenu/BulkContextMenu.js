@@ -27,14 +27,18 @@ export class BulkContextMenu extends BaseContextMenu {
 
         // Update button visibility based on model type
         const addTagsItem = this.menu.querySelector('[data-action="add-tags"]');
-        const sendToWorkflowItem = this.menu.querySelector('[data-action="send-to-workflow"]');
+        const sendToWorkflowAppendItem = this.menu.querySelector('[data-action="send-to-workflow-append"]');
+        const sendToWorkflowReplaceItem = this.menu.querySelector('[data-action="send-to-workflow-replace"]');
         const copyAllItem = this.menu.querySelector('[data-action="copy-all"]');
         const refreshAllItem = this.menu.querySelector('[data-action="refresh-all"]');
         const moveAllItem = this.menu.querySelector('[data-action="move-all"]');
         const deleteAllItem = this.menu.querySelector('[data-action="delete-all"]');
 
-        if (sendToWorkflowItem) {
-            sendToWorkflowItem.style.display = config.sendToWorkflow ? 'flex' : 'none';
+        if (sendToWorkflowAppendItem) {
+            sendToWorkflowAppendItem.style.display = config.sendToWorkflow ? 'flex' : 'none';
+        }
+        if (sendToWorkflowReplaceItem) {
+            sendToWorkflowReplaceItem.style.display = config.sendToWorkflow ? 'flex' : 'none';
         }
         if (copyAllItem) {
             copyAllItem.style.display = config.copyAll ? 'flex' : 'none';
@@ -71,8 +75,11 @@ export class BulkContextMenu extends BaseContextMenu {
             case 'add-tags':
                 bulkManager.showBulkAddTagsModal();
                 break;
-            case 'send-to-workflow':
-                bulkManager.sendAllModelsToWorkflow();
+            case 'send-to-workflow-append':
+                bulkManager.sendAllModelsToWorkflow(false);
+                break;
+            case 'send-to-workflow-replace':
+                bulkManager.sendAllModelsToWorkflow(true);
                 break;
             case 'copy-all':
                 bulkManager.copyAllModelsSyntax();
