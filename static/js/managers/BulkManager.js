@@ -140,7 +140,6 @@ export class BulkManager {
             // Only if in bulk mode and there are selected models
             if (state.bulkMode && state.selectedModels && state.selectedModels.size > 0) {
                 // Check if click is on blank area (not on a model card or excluded elements)
-                // Also exclude context menu elements to prevent interference
                 this.clearSelection();
                 this.toggleBulkMode();
                 // Prevent further handling
@@ -150,6 +149,7 @@ export class BulkManager {
         }, {
             priority: 70, // Lower priority to let context menu events process first
             onlyInBulkMode: true,
+            skipWhenModalOpen: true,
             targetSelector: '.page-content',
             excludeSelector: '.model-card, button, input, folder-sidebar, .breadcrumb-item, #path-part, .context-menu, .context-menu *',
             button: 0 // Left mouse button only
