@@ -189,7 +189,8 @@ export const BASE_MODEL_CATEGORIES = {
 
 // Preset tag suggestions
 export const PRESET_TAGS = [
-    'character', 'style', 'concept', 'clothing', 
-    'poses', 'background', 'vehicle', 'buildings', 
+    'character', 'style', 'concept', 'clothing',
+    'realistic', 'anime', 'toon', 'furry',
+    'poses', 'background', 'vehicle', 'buildings',
     'objects', 'animal'
 ];

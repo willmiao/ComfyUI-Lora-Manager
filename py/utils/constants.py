@@ -54,7 +54,7 @@ AUTO_ORGANIZE_BATCH_SIZE = 50  # Process models in batches to avoid overwhelming
 # Civitai model tags in priority order for subfolder organization
 CIVITAI_MODEL_TAGS = [
     'character', 'style', 'concept', 'clothing', 
-    # 'base model', # exclude 'base model'
+    'realistic', 'anime', 'toon', 'furry',
     'poses', 'background', 'tool', 'vehicle', 'buildings', 
     'objects', 'assets', 'animal', 'action'
 ]
