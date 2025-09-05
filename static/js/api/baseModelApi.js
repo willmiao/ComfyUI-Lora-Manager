@@ -1011,14 +1011,22 @@ export class BaseModelApiClient {
 
     async fetchModelDescription(filePath) {
         try {
-            const response = await fetch(`${this.apiConfig.endpoints.modelDescription}?file_path=${encodeURIComponent(filePath)}`);
+            const params = new URLSearchParams({ file_path: filePath });
+            const response = await fetch(`${this.apiConfig.endpoints.modelDescription}?${params}`);
+            
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`Failed to fetch ${this.apiConfig.config.singularName} description: ${response.statusText}`);
             }
+            
             const data = await response.json();
-            return data;
+            
+            if (data.success) {
+                return data.description;
+            } else {
+                throw new Error(data.error || `No description found for ${this.apiConfig.config.singularName}`);
+            }
         } catch (error) {
-            console.error('Error fetching model description:', error);
+            console.error(`Error fetching ${this.apiConfig.config.singularName} description:`, error);
             throw error;
         }
     }
