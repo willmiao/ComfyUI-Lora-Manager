@@ -194,7 +194,7 @@
             "displayDensity": "Anzeige-Dichte",
             "displayDensityOptions": {
                 "default": "Standard",
-                "medium": "Mittel", 
+                "medium": "Mittel",
                 "compact": "Kompakt"
             },
             "displayDensityHelp": "Wählen Sie, wie viele Karten pro Zeile angezeigt werden sollen:",
@@ -231,7 +231,7 @@
             "templateOptions": {
                 "flatStructure": "Flache Struktur",
                 "byBaseModel": "Nach Basis-Modell",
-                "byAuthor": "Nach Autor", 
+                "byAuthor": "Nach Autor",
                 "byFirstTag": "Nach erstem Tag",
                 "baseModelFirstTag": "Basis-Modell + Erster Tag",
                 "baseModelAuthor": "Basis-Modell + Autor",
@@ -241,7 +241,7 @@
             "customTemplatePlaceholder": "Benutzerdefinierte Vorlage eingeben (z.B. {base_model}/{author}/{first_tag})",
             "modelTypes": {
                 "lora": "LoRA",
-                "checkpoint": "Checkpoint", 
+                "checkpoint": "Checkpoint",
                 "embedding": "Embedding"
             },
             "baseModelPathMappings": "Basis-Modell-Pfad-Zuordnungen",
@@ -319,6 +319,7 @@
             "selected": "{count} ausgewählt",
             "selectedSuffix": "ausgewählt",
             "viewSelected": "Klicken Sie, um ausgewählte Elemente anzuzeigen",
+            "addTags": "Tags hinzufügen",
             "sendToWorkflow": "An Workflow senden",
             "copyAll": "Alle kopieren",
             "refreshAll": "Alle aktualisieren",
@@ -571,6 +572,16 @@
             "message": "Sind Sie sicher, dass Sie alle ausgewählten Modelle und ihre zugehörigen Dateien löschen möchten?",
             "countMessage": "Modelle werden dauerhaft gelöscht.",
             "action": "Alle löschen"
+        },
+        "bulkAddTags": {
+            "title": "Tags zu mehreren Modellen hinzufügen",
+            "description": "Tags hinzufügen zu",
+            "models": "Modelle",
+            "tagsToAdd": "Hinzugefügte Tags",
+            "placeholder": "Tag eingeben und Enter drücken...",
+            "appendTags": "Tags anhängen",
+            "replaceTags": "Tags ersetzen",
+            "saveChanges": "Änderungen speichern"
         },
         "exampleAccess": {
             "title": "Lokale Beispielbilder",
@@ -987,7 +998,14 @@
             "verificationAlreadyDone": "Diese Gruppe wurde bereits verifiziert",
             "verificationCompleteMismatch": "Verifikation abgeschlossen. {count} Datei(en) haben unterschiedliche tatsächliche Hashes.",
             "verificationCompleteSuccess": "Verifikation abgeschlossen. Alle Dateien sind bestätigte Duplikate.",
-            "verificationFailed": "Fehler beim Verifizieren der Hashes: {message}"
+            "verificationFailed": "Fehler beim Verifizieren der Hashes: {message}",
+            "noTagsToAdd": "Keine Tags zum Hinzufügen",
+            "tagsAddedSuccessfully": "Erfolgreich {tagCount} Tag(s) zu {count} {type}(s) hinzugefügt",
+            "tagsReplacedSuccessfully": "Tags für {count} {type}(s) erfolgreich durch {tagCount} Tag(s) ersetzt",
+            "tagsAddFailed": "Fehler beim Hinzufügen von Tags zu {count} Modell(en)",
+            "tagsReplaceFailed": "Fehler beim Ersetzen von Tags für {count} Modell(e)",
+            "bulkTagsAddFailed": "Fehler beim Hinzufügen von Tags zu Modellen",
+            "bulkTagsReplaceFailed": "Fehler beim Ersetzen von Tags für Modelle"
         },
         "search": {
             "atLeastOneOption": "Mindestens eine Suchoption muss ausgewählt werden"

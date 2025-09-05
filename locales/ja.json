@@ -319,6 +319,7 @@
             "selected": "{count} 選択中",
             "selectedSuffix": "選択中",
             "viewSelected": "選択したアイテムを表示するにはクリック",
+            "addTags": "タグを追加",
             "sendToWorkflow": "ワークフローに送信",
             "copyAll": "すべてコピー",
             "refreshAll": "すべて更新",
@@ -571,6 +572,16 @@
             "message": "選択したすべてのモデルと関連ファイルを削除してもよろしいですか？",
             "countMessage": "モデルが完全に削除されます。",
             "action": "すべて削除"
+        },
+        "bulkAddTags": {
+            "title": "複数モデルにタグを追加",
+            "description": "タグを追加するモデル：",
+            "models": "モデル",
+            "tagsToAdd": "追加するタグ",
+            "placeholder": "タグを入力してEnterを押してください...",
+            "appendTags": "タグを追加",
+            "replaceTags": "タグを置換",
+            "saveChanges": "変更を保存"
         },
         "exampleAccess": {
             "title": "ローカル例画像",
@@ -987,7 +998,14 @@
             "verificationAlreadyDone": "このグループは既に検証済みです",
             "verificationCompleteMismatch": "検証完了。{count} ファイルの実際のハッシュが異なります。",
             "verificationCompleteSuccess": "検証完了。すべてのファイルが重複であることが確認されました。",
-            "verificationFailed": "ハッシュの検証に失敗しました：{message}"
+            "verificationFailed": "ハッシュの検証に失敗しました：{message}",
+            "noTagsToAdd": "追加するタグがありません",
+            "tagsAddedSuccessfully": "{count} {type} に {tagCount} 個のタグを追加しました",
+            "tagsReplacedSuccessfully": "{count} {type} のタグを {tagCount} 個に置換しました",
+            "tagsAddFailed": "{count} モデルへのタグ追加に失敗しました",
+            "tagsReplaceFailed": "{count} モデルのタグ置換に失敗しました",
+            "bulkTagsAddFailed": "モデルへのタグ追加に失敗しました",
+            "bulkTagsReplaceFailed": "モデルのタグ置換に失敗しました"
         },
         "search": {
             "atLeastOneOption": "少なくとも1つの検索オプションを選択する必要があります"

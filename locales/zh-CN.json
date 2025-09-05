@@ -319,6 +319,7 @@
             "selected": "已选中 {count} 项",
             "selectedSuffix": "已选中",
             "viewSelected": "点击查看已选项目",
+            "addTags": "批量添加标签",
             "sendToWorkflow": "发送到工作流",
             "copyAll": "全部复制",
             "refreshAll": "全部刷新",
@@ -571,6 +572,16 @@
             "message": "你确定要删除所有选中的模型及其相关文件吗？",
             "countMessage": "模型将被永久删除。",
             "action": "全部删除"
+        },
+        "bulkAddTags": {
+            "title": "批量添加标签",
+            "description": "为多个模型添加标签",
+            "models": "个模型",
+            "tagsToAdd": "要添加的标签",
+            "placeholder": "输入标签并按回车...",
+            "appendTags": "追加标签",
+            "replaceTags": "替换标签",
+            "saveChanges": "保存更改"
         },
         "exampleAccess": {
             "title": "本地示例图片",
@@ -987,7 +998,14 @@
             "verificationAlreadyDone": "此组已验证过",
             "verificationCompleteMismatch": "验证完成。{count} 个文件实际哈希不同。",
             "verificationCompleteSuccess": "验证完成。所有文件均为重复项。",
-            "verificationFailed": "验证哈希失败：{message}"
+            "verificationFailed": "验证哈希失败：{message}",
+            "noTagsToAdd": "没有可添加的标签",
+            "tagsAddedSuccessfully": "已成功为 {count} 个 {type} 添加 {tagCount} 个标签",
+            "tagsReplacedSuccessfully": "已成功为 {count} 个 {type} 替换为 {tagCount} 个标签",
+            "tagsAddFailed": "为 {count} 个模型添加标签失败",
+            "tagsReplaceFailed": "为 {count} 个模型替换标签失败",
+            "bulkTagsAddFailed": "批量添加标签失败",
+            "bulkTagsReplaceFailed": "批量替换标签失败"
         },
         "search": {
             "atLeastOneOption": "至少选择一个搜索选项"

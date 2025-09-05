@@ -319,6 +319,7 @@
             "selected": "已選擇 {count} 項",
             "selectedSuffix": "已選擇",
             "viewSelected": "點擊檢視已選項目",
+            "addTags": "新增標籤",
             "sendToWorkflow": "傳送到工作流",
             "copyAll": "全部複製",
             "refreshAll": "全部刷新",
@@ -571,6 +572,16 @@
             "message": "您確定要刪除所有選取的模型及其相關檔案嗎？",
             "countMessage": "模型將被永久刪除。",
             "action": "全部刪除"
+        },
+        "bulkAddTags": {
+            "title": "新增標籤到多個模型",
+            "description": "新增標籤到",
+            "models": "個模型",
+            "tagsToAdd": "要新增的標籤",
+            "placeholder": "輸入標籤並按 Enter...",
+            "appendTags": "附加標籤",
+            "replaceTags": "取代標籤",
+            "saveChanges": "儲存變更"
         },
         "exampleAccess": {
             "title": "本機範例圖片",
@@ -987,7 +998,14 @@
             "verificationAlreadyDone": "此群組已驗證過",
             "verificationCompleteMismatch": "驗證完成。{count} 個檔案的實際雜湊不同。",
             "verificationCompleteSuccess": "驗證完成。所有檔案均確認為重複項。",
-            "verificationFailed": "驗證雜湊失敗：{message}"
+            "verificationFailed": "驗證雜湊失敗：{message}",
+            "noTagsToAdd": "沒有可新增的標籤",
+            "tagsAddedSuccessfully": "已成功將 {tagCount} 個標籤新增到 {count} 個 {type}",
+            "tagsReplacedSuccessfully": "已成功以 {tagCount} 個標籤取代 {count} 個 {type} 的標籤",
+            "tagsAddFailed": "新增標籤到 {count} 個模型失敗",
+            "tagsReplaceFailed": "取代 {count} 個模型的標籤失敗",
+            "bulkTagsAddFailed": "批量新增標籤到模型失敗",
+            "bulkTagsReplaceFailed": "批量取代模型標籤失敗"
         },
         "search": {
             "atLeastOneOption": "至少需選擇一個搜尋選項"

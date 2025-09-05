@@ -194,7 +194,7 @@
             "displayDensity": "Плотность отображения",
             "displayDensityOptions": {
                 "default": "По умолчанию",
-                "medium": "Средняя", 
+                "medium": "Средняя",
                 "compact": "Компактная"
             },
             "displayDensityHelp": "Выберите количество карточек для отображения в ряду:",
@@ -231,7 +231,7 @@
             "templateOptions": {
                 "flatStructure": "Плоская структура",
                 "byBaseModel": "По базовой модели",
-                "byAuthor": "По автору", 
+                "byAuthor": "По автору",
                 "byFirstTag": "По первому тегу",
                 "baseModelFirstTag": "Базовая модель + Первый тег",
                 "baseModelAuthor": "Базовая модель + Автор",
@@ -241,7 +241,7 @@
             "customTemplatePlaceholder": "Введите пользовательский шаблон (например, {base_model}/{author}/{first_tag})",
             "modelTypes": {
                 "lora": "LoRA",
-                "checkpoint": "Checkpoint", 
+                "checkpoint": "Checkpoint",
                 "embedding": "Embedding"
             },
             "baseModelPathMappings": "Сопоставления путей базовых моделей",
@@ -319,6 +319,7 @@
             "selected": "Выбрано {count}",
             "selectedSuffix": "выбрано",
             "viewSelected": "Нажмите для просмотра выбранных элементов",
+            "addTags": "Добавить теги",
             "sendToWorkflow": "Отправить в Workflow",
             "copyAll": "Копировать все",
             "refreshAll": "Обновить все",
@@ -571,6 +572,16 @@
             "message": "Вы уверены, что хотите удалить все выбранные модели и связанные с ними файлы?",
             "countMessage": "моделей будут удалены навсегда.",
             "action": "Удалить все"
+        },
+        "bulkAddTags": {
+            "title": "Добавить теги к нескольким моделям",
+            "description": "Добавить теги к",
+            "models": "моделям",
+            "tagsToAdd": "Теги для добавления",
+            "placeholder": "Введите тег и нажмите Enter...",
+            "appendTags": "Добавить теги",
+            "replaceTags": "Заменить теги",
+            "saveChanges": "Сохранить изменения"
         },
         "exampleAccess": {
             "title": "Локальные примеры изображений",
@@ -987,7 +998,14 @@
             "verificationAlreadyDone": "Эта группа уже была проверена",
             "verificationCompleteMismatch": "Проверка завершена. {count} файл(ов) имеют разные фактические хеши.",
             "verificationCompleteSuccess": "Проверка завершена. Все файлы подтверждены как дубликаты.",
-            "verificationFailed": "Не удалось проверить хеши: {message}"
+            "verificationFailed": "Не удалось проверить хеши: {message}",
+            "noTagsToAdd": "Нет тегов для добавления",
+            "tagsAddedSuccessfully": "Успешно добавлено {tagCount} тег(ов) к {count} {type}(ам)",
+            "tagsReplacedSuccessfully": "Успешно заменены теги для {count} {type}(ов) на {tagCount} тег(ов)",
+            "tagsAddFailed": "Не удалось добавить теги к {count} модель(ям)",
+            "tagsReplaceFailed": "Не удалось заменить теги для {count} модель(ей)",
+            "bulkTagsAddFailed": "Не удалось добавить теги к моделям",
+            "bulkTagsReplaceFailed": "Не удалось заменить теги для моделей"
         },
         "search": {
             "atLeastOneOption": "Должен быть выбран хотя бы один вариант поиска"
