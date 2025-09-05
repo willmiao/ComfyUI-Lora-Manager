@@ -34,6 +34,10 @@ Enhance your Civitai browsing experience with our companion browser extension! S
 
 ## Release Notes
 
+### v0.9.1
+* **Enhanced Bulk Operations** - Improved bulk operations with Marquee Selection and a bulk operation context menu, providing a more intuitive, desktop-application-like user experience.
+* **New Bulk Actions** - Added bulk operations for adding tags and setting base models to multiple models simultaneously.
+
 ### v0.9.0
 * **UI Overhaul for Enhanced Navigation** - Replaced the top flat folder tags with a new folder sidebar and breadcrumb navigation system for a more intuitive folder browsing and selection experience.
 * **Dual-Mode Folder Sidebar** - The new folder sidebar offers two display modes: 'List Mode,' which mirrors the classic folder view, and 'Tree Mode,' which presents a hierarchical folder structure for effortless navigation through nested directories.
@@ -68,61 +72,6 @@ Enhance your Civitai browsing experience with our companion browser extension! S
 * **Creator Search Option** - Added ability to search models by creator name, making it easier to find models from specific authors.
 * **Enhanced Node Usability** - Improved user experience for Lora Loader, Lora Stacker, and WanVideo Lora Select nodes by fixing the maximum height of the text input area. Users can now freely and conveniently adjust the LoRA region within these nodes.
 * **Compatibility Fixes** - Resolved compatibility issues with ComfyUI and certain custom nodes, including ComfyUI-Custom-Scripts, ensuring smoother integration and operation.
-
-### v0.8.25
-* **LoRA List Reordering**  
-  - Drag & Drop: Easily rearrange LoRA entries using the drag handle.
-  - Keyboard Shortcuts:  
-    - Arrow keys: Navigate between LoRAs  
-    - Ctrl/Cmd + Arrow: Move selected LoRA up/down  
-    - Ctrl/Cmd + Home/End: Move selected LoRA to top/bottom  
-    - Delete/Backspace: Remove selected LoRA  
-  - Context Menu: Right-click for quick actions like Move Up, Move Down, Move to Top, Move to Bottom.
-* **Bulk Operations for Checkpoints & Embeddings**  
-  - Bulk Mode: Select multiple checkpoints or embeddings for batch actions.
-  - Bulk Refresh: Update Civitai metadata for selected models.
-  - Bulk Delete: Remove multiple models at once.
-  - Bulk Move (Embeddings): Move selected embeddings to a different folder.
-* **New Setting: Auto Download Example Images**  
-  - Automatically fetch example images for models missing previews (requires download location to be set). Enabled by default.
-* **General Improvements**  
-  - Various user experience enhancements and stability fixes.
-
-### v0.8.22
-* **Embeddings Management** - Added Embeddings page for comprehensive embedding model management.
-* **Advanced Sorting Options** - Introduced flexible sorting controls, allowing sorting by name, added date, or file size in both ascending and descending order.
-* **Custom Download Path Templates & Base Model Mapping** - Implemented UI settings for configuring download path templates and base model path mappings, allowing customized model organization and storage location when downloading models via LM Civitai Extension.
-* **LM Civitai Extension Enhancements** - Improved concurrent download performance and stability, with new support for canceling active downloads directly from the extension interface.
-* **Update Feature** - Added update functionality, allowing users to update LoRA Manager to the latest release version directly from the LoRA Manager UI.
-* **Bulk Operations: Refresh All** - Added bulk refresh functionality, allowing users to update Civitai metadata across multiple LoRAs.
-
-### v0.8.20
-* **LM Civitai Extension** - Released [browser extension through Chrome Web Store](https://chromewebstore.google.com/detail/lm-civitai-extension/capigligggeijgmocnaflanlbghnamgm?utm_source=item-share-cb) that works seamlessly with LoRA Manager to enhance Civitai browsing experience, showing which models are already in your local library, enabling one-click downloads, and providing queue and parallel download support
-* **Enhanced Lora Loader** - Added support for nunchaku, improving convenience when working with ComfyUI-nunchaku workflows, plus new template workflows for quick onboarding
-* **WanVideo Integration** - Introduced WanVideo Lora Select (LoraManager) node compatible with ComfyUI-WanVideoWrapper for streamlined lora usage in video workflows, including a template workflow to help you get started quickly
-
-### v0.8.19
-* **Analytics Dashboard** - Added new Statistics page providing comprehensive visual analysis of model collection and usage patterns for better library insights
-* **Target Node Selection** - Enhanced workflow integration with intelligent target choosing when sending LoRAs/recipes to workflows with multiple loader/stacker nodes; a visual selector now appears showing node color, type, ID, and title for precise targeting
-* **Enhanced NSFW Controls** - Added support for setting NSFW levels on recipes with automatic content blurring based on user preferences
-* **Customizable Card Display** - New display settings allowing users to choose whether card information and action buttons are always visible or only revealed on hover
-* **Expanded Compatibility** - Added support for efficiency-nodes-comfyui in Save Recipe and Save Image nodes, plus fixed compatibility with ComfyUI_Custom_Nodes_AlekPet
-
-### v0.8.18
-* **Custom Example Images** - Added ability to import your own example images for LoRAs and checkpoints with automatic metadata extraction from embedded information
-* **Enhanced Example Management** - New action buttons to set specific examples as previews or delete custom examples
-* **Improved Duplicate Detection** - Enhanced "Find Duplicates" with hash verification feature to eliminate false positives when identifying duplicate models
-* **Tag Management** - Added tag editing functionality allowing users to customize and manage model tags
-* **Advanced Selection Controls** - Implemented Ctrl+A shortcut for quickly selecting all filtered LoRAs, automatically entering bulk mode when needed
-* **Note**: Cache file functionality temporarily disabled pending rework
-
-### v0.8.17
-* **Duplicate Model Detection** - Added "Find Duplicates" functionality for LoRAs and checkpoints using model file hash detection, enabling convenient viewing and batch deletion of duplicate models
-* **Enhanced URL Recipe Imports** - Optimized import recipe via URL functionality using CivitAI API calls instead of web scraping, now supporting all rated images (including NSFW) for recipe imports
-* **Improved TriggerWord Control** - Enhanced TriggerWord Toggle node with new default_active switch to set the initial state (active/inactive) when trigger words are added
-* **Centralized Example Management** - Added "Migrate Existing Example Images" feature to consolidate downloaded example images from model folders into central storage with customizable naming patterns
-* **Intelligent Word Suggestions** - Implemented smart trigger word suggestions by reading class tokens and tag frequency from safetensors files, displaying recommendations when editing trigger words
-* **Model Version Management** - Added "Re-link to CivitAI" context menu option for connecting models to different CivitAI versions when needed
 
 [View Update History](./update_logs.md)
 
