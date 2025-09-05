@@ -959,19 +959,9 @@ export class BulkManager {
      * Cleanup bulk base model modal
      */
     cleanupBulkBaseModelModal() {
-        const modal = document.getElementById('bulkBaseModelModal');
-        if (modal) {
-            // Clear existing tags
-            const tagsContainer = modal.querySelector('.bulk-tags');
-            if (tagsContainer) {
-                tagsContainer.innerHTML = '';
-            }
-            
-            // Clear dropdown
-            const dropdown = modal.querySelector('.bulk-suggestions-dropdown');
-            if (dropdown) {
-                dropdown.innerHTML = '';
-            }
+        const select = document.getElementById('bulkBaseModelSelect');
+        if (select) {
+            select.innerHTML = '';
         }
     }
 
