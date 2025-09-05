@@ -54,13 +54,15 @@ export class AppCore {
         window.headerManager = new HeaderManager();
         initTheme();
         initBackToTop();
-
-        // Initialize the bulk manager
-        bulkManager.initialize();
         
-        // Initialize bulk context menu
-        const bulkContextMenu = new BulkContextMenu();
-        bulkManager.setBulkContextMenu(bulkContextMenu);
+        // Initialize the bulk manager and context menu only if not on recipes page
+        if (state.currentPageType !== 'recipes') {
+            bulkManager.initialize();
+
+            // Initialize bulk context menu
+            const bulkContextMenu = new BulkContextMenu();
+            bulkManager.setBulkContextMenu(bulkContextMenu);
+        }
         
         // Initialize the example images manager
         exampleImagesManager.initialize();

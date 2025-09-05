@@ -59,6 +59,9 @@ export class BulkManager {
     }
 
     initialize() {
+        // Do not initialize on recipes page
+        if (state.currentPageType === 'recipes') return;
+        
         // Register with event manager for coordinated event handling
         this.registerEventHandlers();
         
