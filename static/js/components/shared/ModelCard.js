@@ -9,48 +9,46 @@ import { MODEL_TYPES } from '../../api/apiConfig.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { showDeleteModal } from '../../utils/modalUtils.js';
 import { translate } from '../../utils/i18nHelpers.js';
+import { eventManager } from '../../utils/EventManager.js';
 
-// Add global event delegation handlers
+// Add global event delegation handlers using event manager
 export function setupModelCardEventDelegation(modelType) {
-    const gridElement = document.getElementById('modelGrid');
-    if (!gridElement) return;
+    // Remove any existing handler first
+    eventManager.removeHandler('click', 'modelCard-delegation');
     
-    // Remove any existing event listener to prevent duplication
-    gridElement.removeEventListener('click', gridElement._handleModelCardEvent);
-    
-    // Create event handler with modelType context
-    const handleModelCardEvent = (event) => handleModelCardEvent_internal(event, modelType);
-    
-    // Add the event delegation handler
-    gridElement.addEventListener('click', handleModelCardEvent);
-    
-    // Store reference to the handler for cleanup
-    gridElement._handleModelCardEvent = handleModelCardEvent;
+    // Register model card event delegation with event manager
+    eventManager.addHandler('click', 'modelCard-delegation', (event) => {
+        return handleModelCardEvent_internal(event, modelType);
+    }, {
+        priority: 60, // Medium priority for model card interactions
+        targetSelector: '#modelGrid',
+        skipWhenModalOpen: false // Allow model card interactions even when modals are open (for some actions)
+    });
 }
 
 // Event delegation handler for all model card events
 function handleModelCardEvent_internal(event, modelType) {
     // Find the closest card element
     const card = event.target.closest('.model-card');
-    if (!card) return;
+    if (!card) return false; // Continue with other handlers
     
     // Handle specific elements within the card
     if (event.target.closest('.toggle-blur-btn')) {
         event.stopPropagation();
         toggleBlurContent(card);
-        return;
+        return true; // Stop propagation
     }
     
     if (event.target.closest('.show-content-btn')) {
         event.stopPropagation();
         showBlurredContent(card);
-        return;
+        return true; // Stop propagation
     }
     
     if (event.target.closest('.fa-star')) {
         event.stopPropagation();
         toggleFavorite(card);
-        return;
+        return true; // Stop propagation
     }
     
     if (event.target.closest('.fa-globe')) {
@@ -58,41 +56,42 @@ function handleModelCardEvent_internal(event, modelType) {
         if (card.dataset.from_civitai === 'true') {
             openCivitai(card.dataset.filepath);
         }
-        return;
+        return true; // Stop propagation
     }
     
     if (event.target.closest('.fa-paper-plane')) {
         event.stopPropagation();
         handleSendToWorkflow(card, event.shiftKey, modelType);
-        return;
+        return true; // Stop propagation
     }
     
     if (event.target.closest('.fa-copy')) {
         event.stopPropagation();
         handleCopyAction(card, modelType);
-        return;
+        return true; // Stop propagation
     }
     
     if (event.target.closest('.fa-trash')) {
         event.stopPropagation();
         showDeleteModal(card.dataset.filepath);
-        return;
+        return true; // Stop propagation
     }
     
     if (event.target.closest('.fa-image')) {
         event.stopPropagation();
         getModelApiClient().replaceModelPreview(card.dataset.filepath);
-        return;
+        return true; // Stop propagation
     }
     
     if (event.target.closest('.fa-folder-open')) {
         event.stopPropagation();
         handleExampleImagesAccess(card, modelType);
-        return;
+        return true; // Stop propagation
     }
     
     // If no specific element was clicked, handle the card click (show modal or toggle selection)
     handleCardClick(card, modelType);
+    return false; // Continue with other handlers (e.g., bulk selection)
 }
 
 // Helper functions for event handling

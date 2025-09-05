@@ -9,16 +9,19 @@ export class EventManager {
         this.activeStates = {
             bulkMode: false,
             marqueeActive: false,
-            modalOpen: false
+            modalOpen: false,
+            nodeSelectorActive: false
         };
+        // Store references to cleanup functions
+        this.cleanupFunctions = new Map();
     }
 
     /**
-     * Register an event handler with priority
+     * Register an event handler with priority and conditional execution
      * @param {string} eventType - The DOM event type (e.g., 'click', 'mousedown')
      * @param {string} source - Source identifier (e.g., 'bulkManager', 'contextMenu')
      * @param {Function} handler - Event handler function
-     * @param {Object} options - Additional options including priority (higher number = higher priority)
+     * @param {Object} options - Additional options including priority and conditions
      */
     addHandler(eventType, source, handler, options = {}) {
         if (!this.handlers.has(eventType)) {
@@ -28,15 +31,21 @@ export class EventManager {
         }
         
         const handlerList = this.handlers.get(eventType);
-        handlerList.push({
+        const handlerEntry = {
             source,
             handler,
             priority: options.priority || 0,
-            options
-        });
+            options,
+            // Store cleanup function if provided
+            cleanup: options.cleanup || null
+        };
+        
+        handlerList.push(handlerEntry);
         
         // Sort by priority
         handlerList.sort((a, b) => b.priority - a.priority);
+        
+        return handlerEntry;
     }
 
     /**
@@ -46,6 +55,17 @@ export class EventManager {
         if (!this.handlers.has(eventType)) return;
         
         const handlerList = this.handlers.get(eventType);
+        
+        // Find and cleanup handler before removing
+        const handlerToRemove = handlerList.find(h => h.source === source);
+        if (handlerToRemove && handlerToRemove.cleanup) {
+            try {
+                handlerToRemove.cleanup();
+            } catch (error) {
+                console.warn(`Error during cleanup for ${source}:`, error);
+            }
+        }
+        
         const newList = handlerList.filter(h => h.source !== source);
         
         if (newList.length === 0) {
@@ -90,20 +110,91 @@ export class EventManager {
             if (options.onlyInBulkMode && !this.activeStates.bulkMode) continue;
             if (options.onlyWhenMarqueeActive && !this.activeStates.marqueeActive) continue;
             if (options.skipWhenModalOpen && this.activeStates.modalOpen) continue;
+            if (options.skipWhenNodeSelectorActive && this.activeStates.nodeSelectorActive) continue;
+            if (options.onlyWhenNodeSelectorActive && !this.activeStates.nodeSelectorActive) continue;
             
-            // Execute handler
-            const result = handler(event);
+            // Apply element-based filters
+            if (options.targetSelector && !this._matchesSelector(event.target, options.targetSelector)) continue;
+            if (options.excludeSelector && this._matchesSelector(event.target, options.excludeSelector)) continue;
             
-            // Stop propagation if handler returns true
-            if (result === true) break;
+            // Apply button filters
+            if (options.button !== undefined && event.button !== options.button) continue;
+            
+            try {
+                // Execute handler
+                const result = handler(event);
+                
+                // Stop propagation if handler returns true
+                if (result === true) break;
+            } catch (error) {
+                console.error(`Error in event handler for ${eventType}:`, error);
+            }
         }
+    }
+    
+    /**
+     * Helper function to check if an element matches or is contained within an element matching the selector
+     * This improves the robustness of the selector matching
+     */
+    _matchesSelector(element, selector) {
+        if (element.matches && element.matches(selector)) {
+            return true;
+        }
+        if (element.closest && element.closest(selector)) {
+            return true;
+        }
+        return false;
     }
     
     /**
      * Update application state
      */
     setState(state, value) {
-        this.activeStates[state] = value;
+        if (this.activeStates.hasOwnProperty(state)) {
+            this.activeStates[state] = value;
+        } else {
+            console.warn(`Unknown state: ${state}`);
+        }
+    }
+    
+    /**
+     * Get current application state
+     */
+    getState(state) {
+        return this.activeStates[state];
+    }
+    
+    /**
+     * Remove all handlers for a specific source
+     */
+    removeAllHandlersForSource(source) {
+        const eventTypes = Array.from(this.handlers.keys());
+        eventTypes.forEach(eventType => {
+            this.removeHandler(eventType, source);
+        });
+    }
+    
+    /**
+     * Clean up all event listeners (useful for app teardown)
+     */
+    cleanup() {
+        const eventTypes = Array.from(this.handlers.keys());
+        eventTypes.forEach(eventType => {
+            const handlers = this.handlers.get(eventType);
+            // Run cleanup functions
+            handlers.forEach(h => {
+                if (h.cleanup) {
+                    try {
+                        h.cleanup();
+                    } catch (error) {
+                        console.warn(`Error during cleanup for ${h.source}:`, error);
+                    }
+                }
+            });
+            this.cleanupDOMListener(eventType);
+        });
+        this.handlers.clear();
+        this.cleanupFunctions.clear();
     }
 }
 

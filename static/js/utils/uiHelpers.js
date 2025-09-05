@@ -2,6 +2,7 @@ import { translate } from './i18nHelpers.js';
 import { state, getCurrentPageState } from '../state/index.js';
 import { getStorageItem, setStorageItem } from './storageHelpers.js';
 import { NODE_TYPE_ICONS, DEFAULT_NODE_COLOR } from './constants.js';
+import { eventManager } from './EventManager.js';
 
 /**
  * Utility function to copy text to clipboard with fallback for older browsers
@@ -528,12 +529,15 @@ function showNodeSelector(nodes, loraSyntax, replaceMode, syntaxType) {
   selector.style.display = 'block';
   nodeSelectorState.isActive = true;
   
-  // Setup event listeners with proper cleanup
+  // Update event manager state
+  eventManager.setState('nodeSelectorActive', true);
+  
+  // Setup event listeners with proper cleanup through event manager
   setupNodeSelectorEvents(selector, nodes, loraSyntax, replaceMode, syntaxType);
 }
 
 /**
- * Setup event listeners for node selector
+ * Setup event listeners for node selector using event manager
  * @param {HTMLElement} selector - The selector element
  * @param {Object} nodes - Registry nodes data
  * @param {string} loraSyntax - The LoRA syntax to send
@@ -544,17 +548,21 @@ function setupNodeSelectorEvents(selector, nodes, loraSyntax, replaceMode, synta
   // Clean up any existing event listeners
   cleanupNodeSelectorEvents();
   
-  // Handle clicks outside to close
-  nodeSelectorState.clickHandler = (e) => {
+  // Register click outside handler with event manager
+  eventManager.addHandler('click', 'nodeSelector-outside', (e) => {
     if (!selector.contains(e.target)) {
       hideNodeSelector();
+      return true; // Stop propagation
     }
-  };
+  }, {
+    priority: 200, // High priority to handle before other click handlers
+    onlyWhenNodeSelectorActive: true
+  });
   
-  // Handle node selection
-  nodeSelectorState.selectorClickHandler = async (e) => {
+  // Register node selection handler with event manager  
+  eventManager.addHandler('click', 'nodeSelector-selection', async (e) => {
     const nodeItem = e.target.closest('.node-item');
-    if (!nodeItem) return;
+    if (!nodeItem) return false; // Continue with other handlers
     
     e.stopPropagation();
     
@@ -571,33 +579,25 @@ function setupNodeSelectorEvents(selector, nodes, loraSyntax, replaceMode, synta
     }
     
     hideNodeSelector();
-  };
-  
-  // Add event listeners with a small delay to prevent immediate triggering
-  setTimeout(() => {
-    if (nodeSelectorState.isActive) {
-      document.addEventListener('click', nodeSelectorState.clickHandler);
-      selector.addEventListener('click', nodeSelectorState.selectorClickHandler);
-    }
-  }, 100);
+    return true; // Stop propagation
+  }, {
+    priority: 150, // High priority but lower than outside click
+    targetSelector: '#nodeSelector',
+    onlyWhenNodeSelectorActive: true
+  });
 }
 
 /**
  * Clean up node selector event listeners
  */
 function cleanupNodeSelectorEvents() {
-  if (nodeSelectorState.clickHandler) {
-    document.removeEventListener('click', nodeSelectorState.clickHandler);
-    nodeSelectorState.clickHandler = null;
-  }
+  // Remove event handlers from event manager
+  eventManager.removeHandler('click', 'nodeSelector-outside');
+  eventManager.removeHandler('click', 'nodeSelector-selection');
   
-  if (nodeSelectorState.selectorClickHandler) {
-    const selector = document.getElementById('nodeSelector');
-    if (selector) {
-      selector.removeEventListener('click', nodeSelectorState.selectorClickHandler);
-    }
-    nodeSelectorState.selectorClickHandler = null;
-  }
+  // Clear legacy references
+  nodeSelectorState.clickHandler = null;
+  nodeSelectorState.selectorClickHandler = null;
 }
 
 /**
@@ -613,6 +613,9 @@ function hideNodeSelector() {
   // Clean up event listeners
   cleanupNodeSelectorEvents();
   nodeSelectorState.isActive = false;
+  
+  // Update event manager state
+  eventManager.setState('nodeSelectorActive', false);
 }
 
 /**
@@ -651,11 +654,21 @@ function positionNearMouse(element) {
   element.style.visibility = 'visible';
 }
 
-// Track mouse position for node selector positioning
-document.addEventListener('mousemove', (e) => {
-  window.lastMouseX = e.clientX;
-  window.lastMouseY = e.clientY;
-});
+/**
+ * Initialize mouse tracking for positioning elements
+ */
+export function initializeMouseTracking() {
+  // Register mouse tracking with event manager
+  eventManager.addHandler('mousemove', 'uiHelpers-mouseTracking', (e) => {
+    window.lastMouseX = e.clientX;
+    window.lastMouseY = e.clientY;
+  }, {
+    priority: 10 // Low priority since this is just tracking
+  });
+}
+
+// Initialize mouse tracking when module loads
+initializeMouseTracking();
 
 /**
  * Opens the example images folder for a specific model
