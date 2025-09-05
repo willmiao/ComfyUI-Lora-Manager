@@ -48,60 +48,34 @@
     -ms-user-select: none;
 }
 
-/* Bulk base model modal styles */
-.bulk-base-model-container {
-    padding: 20px 0;
-}
+/* Remove bulk base model modal specific styles - now using shared components */
+/* Use shared metadata editing styles instead */
 
-.bulk-base-model-info {
-    margin-bottom: 20px;
-    padding: 15px;
-    background: var(--lora-surface, #f8f9fa);
-    border-radius: 8px;
-    border-left: 4px solid var(--lora-accent, #007bff);
-}
-
-.bulk-base-model-info p {
-    margin: 0;
-    color: var(--lora-text-secondary, #6c757d);
-}
-
-.bulk-base-model-selection {
-    margin-bottom: 25px;
-}
-
-.bulk-base-model-selection label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    color: var(--lora-text, #212529);
-}
-
+/* Override for bulk base model select to ensure proper width */
 .bulk-base-model-select {
     width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--lora-border, #dee2e6);
-    border-radius: 6px;
-    background: var(--lora-background, #ffffff);
-    color: var(--lora-text, #212529);
-    font-size: 14px;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    max-width: 100%;
+    padding: 6px 10px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    background-color: var(--lora-surface);
+    color: var(--text-color);
+    font-size: 0.95em;
+    height: 32px;
 }
 
 .bulk-base-model-select:focus {
+    border-color: var(--lora-accent);
     outline: none;
-    border-color: var(--lora-accent, #007bff);
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-.bulk-base-model-controls {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-    padding-top: 20px;
-    border-top: 1px solid var(--lora-border, #dee2e6);
+/* Dark theme support for bulk base model select */
+[data-theme="dark"] .bulk-base-model-select {
+    background-color: rgba(30, 30, 30, 0.9);
+    color: var(--text-color);
 }
 
-.bulk-save-base-model-btn {
-    min-width: 120px;
+[data-theme="dark"] .bulk-base-model-select option {
+    background-color: #2d2d2d;
+    color: var(--text-color);
 }

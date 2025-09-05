@@ -6,6 +6,7 @@ import { getModelApiClient } from '../api/modelApiFactory.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
 import { PRESET_TAGS, BASE_MODEL_CATEGORIES } from '../utils/constants.js';
 import { eventManager } from '../utils/EventManager.js';
+import { translate } from '../utils/i18nHelpers.js';
 
 export class BulkManager {
     constructor() {
@@ -918,8 +919,7 @@ export class BulkManager {
             let errorCount = 0;
             const errors = [];
             
-            // Show initial progress toast
-            showToast('toast.models.bulkBaseModelUpdating', { count: selectedCount }, 'info');
+            state.loadingManager.showSimpleLoading(translate('toast.models.bulkBaseModelUpdating'));
             
             for (const filepath of state.selectedModels) {
                 try {
@@ -947,6 +947,8 @@ export class BulkManager {
         } catch (error) {
             console.error('Error during bulk base model operation:', error);
             showToast('toast.models.bulkBaseModelUpdateFailed', {}, 'error');
+        } finally {
+            state.loadingManager.hideSimpleLoading();
         }
     }
     

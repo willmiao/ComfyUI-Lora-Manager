@@ -247,6 +247,19 @@ export class ModalManager {
             });
         }
 
+        // Register bulkBaseModelModal
+        const bulkBaseModelModal = document.getElementById('bulkBaseModelModal');
+        if (bulkBaseModelModal) {
+            this.registerModal('bulkBaseModelModal', {
+                element: bulkBaseModelModal,
+                onClose: () => {
+                    this.getModal('bulkBaseModelModal').element.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                },
+                closeOnOutsideClick: true
+            });
+        }
+
         document.addEventListener('keydown', this.boundHandleEscape);
         this.initialized = true;
     }
