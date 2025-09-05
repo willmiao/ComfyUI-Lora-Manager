@@ -320,6 +320,7 @@
             "selectedSuffix": "已选中",
             "viewSelected": "查看已选中",
             "addTags": "为所有添加标签",
+            "setBaseModel": "为所有设置基础模型",
             "copyAll": "复制全部语法",
             "refreshAll": "刷新全部元数据",
             "moveAll": "全部移动到文件夹",
@@ -581,6 +582,14 @@
             "appendTags": "追加标签",
             "replaceTags": "替换标签",
             "saveChanges": "保存更改"
+        },
+        "bulkBaseModel": {
+            "title": "批量设置基础模型",
+            "description": "为多个模型设置基础模型",
+            "models": "个模型",
+            "selectBaseModel": "选择基础模型",
+            "save": "更新基础模型",
+            "cancel": "取消"
         },
         "exampleAccess": {
             "title": "本地示例图片",
@@ -989,6 +998,11 @@
             "nameUpdateFailed": "模型名称更新失败",
             "baseModelUpdated": "基础模型更新成功",
             "baseModelUpdateFailed": "基础模型更新失败",
+            "baseModelNotSelected": "请选择基础模型",
+            "bulkBaseModelUpdating": "正在为 {count} 个模型更新基础模型...",
+            "bulkBaseModelUpdateSuccess": "成功为 {count} 个模型更新基础模型",
+            "bulkBaseModelUpdatePartial": "更新了 {success} 个模型，{failed} 个失败",
+            "bulkBaseModelUpdateFailed": "为选中模型更新基础模型失败",
             "invalidCharactersRemoved": "文件名中的无效字符已移除",
             "filenameCannotBeEmpty": "文件名不能为空",
             "renameFailed": "重命名文件失败：{message}",

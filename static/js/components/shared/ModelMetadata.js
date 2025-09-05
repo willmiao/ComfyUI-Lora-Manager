@@ -2,10 +2,10 @@
  * ModelMetadata.js
  * Handles model metadata editing functionality - General version
  */
+
+import { BASE_MODEL_CATEGORIES } from '../../utils/constants.js';
 import { showToast } from '../../utils/uiHelpers.js';
-import { BASE_MODELS } from '../../utils/constants.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
-import { translate } from '../../utils/i18nHelpers.js';
 
 /**
  * Set up model name editing functionality
@@ -172,28 +172,8 @@ export function setupBaseModelEditing(filePath) {
         // Flag to track if a change was made
         let valueChanged = false;
         
-        // Add options from BASE_MODELS constants
-        const baseModelCategories = {
-            'Stable Diffusion 1.x': [BASE_MODELS.SD_1_4, BASE_MODELS.SD_1_5, BASE_MODELS.SD_1_5_LCM, BASE_MODELS.SD_1_5_HYPER],
-            'Stable Diffusion 2.x': [BASE_MODELS.SD_2_0, BASE_MODELS.SD_2_1],
-            'Stable Diffusion 3.x': [BASE_MODELS.SD_3, BASE_MODELS.SD_3_5, BASE_MODELS.SD_3_5_MEDIUM, BASE_MODELS.SD_3_5_LARGE, BASE_MODELS.SD_3_5_LARGE_TURBO],
-            'SDXL': [BASE_MODELS.SDXL, BASE_MODELS.SDXL_LIGHTNING, BASE_MODELS.SDXL_HYPER],
-            'Video Models': [
-                BASE_MODELS.SVD, BASE_MODELS.LTXV, BASE_MODELS.HUNYUAN_VIDEO, BASE_MODELS.WAN_VIDEO, 
-                BASE_MODELS.WAN_VIDEO_1_3B_T2V, BASE_MODELS.WAN_VIDEO_14B_T2V,
-                BASE_MODELS.WAN_VIDEO_14B_I2V_480P, BASE_MODELS.WAN_VIDEO_14B_I2V_720P,
-                BASE_MODELS.WAN_VIDEO_2_2_TI2V_5B, BASE_MODELS.WAN_VIDEO_2_2_T2V_A14B,
-                BASE_MODELS.WAN_VIDEO_2_2_I2V_A14B
-            ],
-            'Flux Models': [BASE_MODELS.FLUX_1_D, BASE_MODELS.FLUX_1_S, BASE_MODELS.FLUX_1_KONTEXT, BASE_MODELS.FLUX_1_KREA],
-            'Other Models': [
-                BASE_MODELS.ILLUSTRIOUS, BASE_MODELS.PONY, BASE_MODELS.HIDREAM,
-                BASE_MODELS.QWEN, BASE_MODELS.AURAFLOW,
-                BASE_MODELS.PIXART_A, BASE_MODELS.PIXART_E, BASE_MODELS.HUNYUAN_1,
-                BASE_MODELS.LUMINA, BASE_MODELS.KOLORS, BASE_MODELS.NOOBAI,
-                BASE_MODELS.UNKNOWN
-            ]
-        };
+        // Add options from BASE_MODEL_CATEGORIES constants
+        const baseModelCategories = BASE_MODEL_CATEGORIES;
         
         // Create option groups for better organization
         Object.entries(baseModelCategories).forEach(([category, models]) => {

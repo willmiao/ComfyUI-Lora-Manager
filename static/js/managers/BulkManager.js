@@ -4,7 +4,7 @@ import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
-import { PRESET_TAGS } from '../utils/constants.js';
+import { PRESET_TAGS, BASE_MODEL_CATEGORIES } from '../utils/constants.js';
 
 export class BulkManager {
     constructor() {
@@ -739,6 +739,129 @@ export class BulkManager {
             if (dropdown) {
                 dropdown.remove();
             }
+        }
+    }
+
+    /**
+     * Show bulk base model modal
+     */
+    showBulkBaseModelModal() {
+        if (state.selectedModels.size === 0) {
+            showToast('toast.models.noSelectedModels', {}, 'warning');
+            return;
+        }
+        
+        const countElement = document.getElementById('bulkBaseModelCount');
+        if (countElement) {
+            countElement.textContent = state.selectedModels.size;
+        }
+        
+        modalManager.showModal('bulkBaseModelModal', null, null, () => {
+            this.cleanupBulkBaseModelModal();
+        });
+        
+        // Initialize the bulk base model interface
+        this.initializeBulkBaseModelInterface();
+    }
+    
+    /**
+     * Initialize bulk base model interface
+     */
+    initializeBulkBaseModelInterface() {
+        const select = document.getElementById('bulkBaseModelSelect');
+        if (!select) return;
+        
+        // Clear existing options
+        select.innerHTML = '';
+        
+        // Add placeholder option
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = 'Select a base model...';
+        placeholderOption.disabled = true;
+        placeholderOption.selected = true;
+        select.appendChild(placeholderOption);
+        
+        // Create option groups for better organization
+        Object.entries(BASE_MODEL_CATEGORIES).forEach(([category, models]) => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = category;
+            
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = model;
+                optgroup.appendChild(option);
+            });
+            
+            select.appendChild(optgroup);
+        });
+    }
+    
+    /**
+     * Save bulk base model changes
+     */
+    async saveBulkBaseModel() {
+        const select = document.getElementById('bulkBaseModelSelect');
+        if (!select || !select.value) {
+            showToast('toast.models.baseModelNotSelected', {}, 'warning');
+            return;
+        }
+        
+        const newBaseModel = select.value;
+        const selectedCount = state.selectedModels.size;
+        
+        if (selectedCount === 0) {
+            showToast('toast.models.noSelectedModels', {}, 'warning');
+            return;
+        }
+        
+        modalManager.closeModal('bulkBaseModelModal');
+        
+        try {
+            let successCount = 0;
+            let errorCount = 0;
+            const errors = [];
+            
+            // Show initial progress toast
+            showToast('toast.models.bulkBaseModelUpdating', { count: selectedCount }, 'info');
+            
+            for (const filepath of state.selectedModels) {
+                try {
+                    await getModelApiClient().saveModelMetadata(filepath, { base_model: newBaseModel });
+                    successCount++;
+                } catch (error) {
+                    errorCount++;
+                    errors.push({ filepath, error: error.message });
+                    console.error(`Failed to update base model for ${filepath}:`, error);
+                }
+            }
+            
+            // Show results
+            if (errorCount === 0) {
+                showToast('toast.models.bulkBaseModelUpdateSuccess', { count: successCount }, 'success');
+            } else if (successCount > 0) {
+                showToast('toast.models.bulkBaseModelUpdatePartial', { 
+                    success: successCount, 
+                    failed: errorCount 
+                }, 'warning');
+            } else {
+                showToast('toast.models.bulkBaseModelUpdateFailed', {}, 'error');
+            }
+            
+        } catch (error) {
+            console.error('Error during bulk base model operation:', error);
+            showToast('toast.models.bulkBaseModelUpdateFailed', {}, 'error');
+        }
+    }
+    
+    /**
+     * Cleanup bulk base model modal
+     */
+    cleanupBulkBaseModelModal() {
+        const select = document.getElementById('bulkBaseModelSelect');
+        if (select) {
+            select.innerHTML = '';
         }
     }
 

@@ -27,6 +27,7 @@ export class BulkContextMenu extends BaseContextMenu {
 
         // Update button visibility based on model type
         const addTagsItem = this.menu.querySelector('[data-action="add-tags"]');
+        const setBaseModelItem = this.menu.querySelector('[data-action="set-base-model"]');
         const sendToWorkflowAppendItem = this.menu.querySelector('[data-action="send-to-workflow-append"]');
         const sendToWorkflowReplaceItem = this.menu.querySelector('[data-action="send-to-workflow-replace"]');
         const copyAllItem = this.menu.querySelector('[data-action="copy-all"]');
@@ -55,6 +56,9 @@ export class BulkContextMenu extends BaseContextMenu {
         if (addTagsItem) {
             addTagsItem.style.display = config.addTags ? 'flex' : 'none';
         }
+        if (setBaseModelItem) {
+            setBaseModelItem.style.display = 'flex'; // Base model editing is available for all model types
+        }
     }
 
     updateSelectedCountHeader() {
@@ -74,6 +78,9 @@ export class BulkContextMenu extends BaseContextMenu {
         switch (action) {
             case 'add-tags':
                 bulkManager.showBulkAddTagsModal();
+                break;
+            case 'set-base-model':
+                bulkManager.showBulkBaseModelModal();
                 break;
             case 'send-to-workflow-append':
                 bulkManager.sendAllModelsToWorkflow(false);

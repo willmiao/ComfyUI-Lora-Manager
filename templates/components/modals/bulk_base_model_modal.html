@@ -1,0 +1,31 @@
+<div id="bulkBaseModelModal" class="modal" style="display: none;">
+    <div class="modal-content modal-content-large">
+        <div class="modal-header">
+            <h2>{{ t('modals.bulkBaseModel.title') }}</h2>
+            <span class="close" onclick="modalManager.closeModal('bulkBaseModelModal')">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="bulk-base-model-info">
+                <p>{{ t('modals.bulkBaseModel.description') }} <span id="bulkBaseModelCount">0</span> {{ t('modals.bulkBaseModel.models') }}</p>
+            </div>
+            
+            <div class="bulk-base-model-container">
+                <div class="bulk-base-model-selection">
+                    <label for="bulkBaseModelSelect">{{ t('modals.bulkBaseModel.selectBaseModel') }}</label>
+                    <select id="bulkBaseModelSelect" class="bulk-base-model-select">
+                        <!-- Options will be populated dynamically -->
+                    </select>
+                </div>
+                
+                <div class="bulk-base-model-controls">
+                    <button class="btn btn-primary bulk-save-base-model-btn" onclick="bulkManager.saveBulkBaseModel()">
+                        <i class="fas fa-save"></i> {{ t('modals.bulkBaseModel.save') }}
+                    </button>
+                    <button class="btn btn-secondary" onclick="modalManager.closeModal('bulkBaseModelModal')">
+                        {{ t('modals.bulkBaseModel.cancel') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
