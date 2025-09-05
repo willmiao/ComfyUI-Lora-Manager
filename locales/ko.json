@@ -194,7 +194,7 @@
             "displayDensity": "표시 밀도",
             "displayDensityOptions": {
                 "default": "기본",
-                "medium": "중간", 
+                "medium": "중간",
                 "compact": "조밀"
             },
             "displayDensityHelp": "한 줄에 표시할 카드 수를 선택하세요:",
@@ -231,7 +231,7 @@
             "templateOptions": {
                 "flatStructure": "플랫 구조",
                 "byBaseModel": "베이스 모델별",
-                "byAuthor": "제작자별", 
+                "byAuthor": "제작자별",
                 "byFirstTag": "첫 번째 태그별",
                 "baseModelFirstTag": "베이스 모델 + 첫 번째 태그",
                 "baseModelAuthor": "베이스 모델 + 제작자",
@@ -241,7 +241,7 @@
             "customTemplatePlaceholder": "사용자 정의 템플릿 입력 (예: {base_model}/{author}/{first_tag})",
             "modelTypes": {
                 "lora": "LoRA",
-                "checkpoint": "Checkpoint", 
+                "checkpoint": "Checkpoint",
                 "embedding": "Embedding"
             },
             "baseModelPathMappings": "베이스 모델 경로 매핑",
@@ -319,6 +319,7 @@
             "selected": "{count}개 선택됨",
             "selectedSuffix": "개 선택됨",
             "viewSelected": "선택된 항목 보기",
+            "addTags": "태그 추가",
             "sendToWorkflow": "워크플로로 전송",
             "copyAll": "모두 복사",
             "refreshAll": "모두 새로고침",
@@ -571,6 +572,16 @@
             "message": "선택된 모든 모델과 관련 파일을 삭제하시겠습니까?",
             "countMessage": "개의 모델이 영구적으로 삭제됩니다.",
             "action": "모두 삭제"
+        },
+        "bulkAddTags": {
+            "title": "여러 모델에 태그 추가",
+            "description": "다음에 태그를 추가합니다:",
+            "models": "모델",
+            "tagsToAdd": "추가할 태그",
+            "placeholder": "태그를 입력하고 Enter를 누르세요...",
+            "appendTags": "태그 추가",
+            "replaceTags": "태그 교체",
+            "saveChanges": "변경사항 저장"
         },
         "exampleAccess": {
             "title": "로컬 예시 이미지",
@@ -987,7 +998,14 @@
             "verificationAlreadyDone": "이 그룹은 이미 검증되었습니다",
             "verificationCompleteMismatch": "검증 완료. {count}개 파일의 실제 해시가 다릅니다.",
             "verificationCompleteSuccess": "검증 완료. 모든 파일이 중복임을 확인했습니다.",
-            "verificationFailed": "해시 검증 실패: {message}"
+            "verificationFailed": "해시 검증 실패: {message}",
+            "noTagsToAdd": "추가할 태그가 없습니다",
+            "tagsAddedSuccessfully": "{count}개의 {type}에 {tagCount}개의 태그가 성공적으로 추가되었습니다",
+            "tagsReplacedSuccessfully": "{count}개의 {type}의 태그가 {tagCount}개의 태그로 성공적으로 교체되었습니다",
+            "tagsAddFailed": "{count}개의 모델에 태그 추가에 실패했습니다",
+            "tagsReplaceFailed": "{count}개의 모델의 태그 교체에 실패했습니다",
+            "bulkTagsAddFailed": "모델에 태그 추가에 실패했습니다",
+            "bulkTagsReplaceFailed": "모델의 태그 교체에 실패했습니다"
         },
         "search": {
             "atLeastOneOption": "최소 하나의 검색 옵션을 선택해야 합니다"

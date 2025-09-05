@@ -163,3 +163,10 @@ export const NODE_TYPE_ICONS = {
 
 // Default ComfyUI node color when bgcolor is null
 export const DEFAULT_NODE_COLOR = "#353535";
+
+// Preset tag suggestions
+export const PRESET_TAGS = [
+    'character', 'style', 'concept', 'clothing', 
+    'poses', 'background', 'vehicle', 'buildings', 
+    'objects', 'animal'
+];

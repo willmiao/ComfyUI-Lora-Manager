@@ -2,22 +2,20 @@ import { state, getCurrentPageState } from '../state/index.js';
 import { showToast, copyToClipboard, sendLoraToWorkflow } from '../utils/uiHelpers.js';
 import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
-import { moveManager } from './MoveManager.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
-import { updateElementText } from '../utils/i18nHelpers.js';
+import { PRESET_TAGS } from '../utils/constants.js';
 
 export class BulkManager {
     constructor() {
         this.bulkBtn = document.getElementById('bulkOperationsBtn');
-        this.bulkPanel = document.getElementById('bulkOperationsPanel');
-        this.isStripVisible = false;
-        
-        this.stripMaxThumbnails = 50;
+        // Remove bulk panel references since we're using context menu now
+        this.bulkContextMenu = null; // Will be set by core initialization
         
         // Model type specific action configurations
         this.actionConfig = {
             [MODEL_TYPES.LORA]: {
+                addTags: true,
                 sendToWorkflow: true,
                 copyAll: true,
                 refreshAll: true,
@@ -25,6 +23,7 @@ export class BulkManager {
                 deleteAll: true
             },
             [MODEL_TYPES.EMBEDDING]: {
+                addTags: true,
                 sendToWorkflow: false,
                 copyAll: false,
                 refreshAll: true,
@@ -32,6 +31,7 @@ export class BulkManager {
                 deleteAll: true
             },
             [MODEL_TYPES.CHECKPOINT]: {
+                addTags: true,
                 sendToWorkflow: false,
                 copyAll: false,
                 refreshAll: true,
@@ -46,41 +46,13 @@ export class BulkManager {
         this.setupGlobalKeyboardListeners();
     }
 
+    setBulkContextMenu(bulkContextMenu) {
+        this.bulkContextMenu = bulkContextMenu;
+    }
+
     setupEventListeners() {
-        // Bulk operations button listeners
-        const sendToWorkflowBtn = this.bulkPanel?.querySelector('[data-action="send-to-workflow"]');
-        const copyAllBtn = this.bulkPanel?.querySelector('[data-action="copy-all"]');
-        const refreshAllBtn = this.bulkPanel?.querySelector('[data-action="refresh-all"]');
-        const moveAllBtn = this.bulkPanel?.querySelector('[data-action="move-all"]');
-        const deleteAllBtn = this.bulkPanel?.querySelector('[data-action="delete-all"]');
-        const clearBtn = this.bulkPanel?.querySelector('[data-action="clear"]');
-
-        if (sendToWorkflowBtn) {
-            sendToWorkflowBtn.addEventListener('click', () => this.sendAllModelsToWorkflow());
-        }
-        if (copyAllBtn) {
-            copyAllBtn.addEventListener('click', () => this.copyAllModelsSyntax());
-        }
-        if (refreshAllBtn) {
-            refreshAllBtn.addEventListener('click', () => this.refreshAllMetadata());
-        }
-        if (moveAllBtn) {
-            moveAllBtn.addEventListener('click', () => {
-                moveManager.showMoveModal('bulk');
-            });
-        }
-        if (deleteAllBtn) {
-            deleteAllBtn.addEventListener('click', () => this.showBulkDeleteModal());
-        }
-        if (clearBtn) {
-            clearBtn.addEventListener('click', () => this.clearSelection());
-        }
-
-        // Selected count click listener
-        const selectedCount = document.getElementById('selectedCount');
-        if (selectedCount) {
-            selectedCount.addEventListener('click', () => this.toggleThumbnailStrip());
-        }
+        // Only setup bulk mode toggle button listener now
+        // Context menu actions are handled by BulkContextMenu
     }
 
     setupGlobalKeyboardListeners() {
@@ -115,60 +87,15 @@ export class BulkManager {
         
         this.bulkBtn.classList.toggle('active', state.bulkMode);
         
-        if (state.bulkMode) {
-            this.bulkPanel.classList.remove('hidden');
-            this.updateActionButtonsVisibility();
-            setTimeout(() => {
-                this.bulkPanel.classList.add('visible');
-            }, 10);
-        } else {
-            this.bulkPanel.classList.remove('visible');
-            setTimeout(() => {
-                this.bulkPanel.classList.add('hidden');
-            }, 400);
-            this.hideThumbnailStrip();
-        }
-        
         updateCardsForBulkMode(state.bulkMode);
         
         if (!state.bulkMode) {
             this.clearSelection();
             
-            // TODO:
-            document.querySelectorAll('.model-card').forEach(card => {
-                const actions = card.querySelectorAll('.card-actions, .card-button');
-                actions.forEach(action => action.style.display = 'flex');
-            });
-        }
-    }
-
-    updateActionButtonsVisibility() {
-        const currentModelType = state.currentPageType;
-        const config = this.actionConfig[currentModelType];
-        
-        if (!config) return;
-
-        // Update button visibility based on model type
-        const sendToWorkflowBtn = this.bulkPanel?.querySelector('[data-action="send-to-workflow"]');
-        const copyAllBtn = this.bulkPanel?.querySelector('[data-action="copy-all"]');
-        const refreshAllBtn = this.bulkPanel?.querySelector('[data-action="refresh-all"]');
-        const moveAllBtn = this.bulkPanel?.querySelector('[data-action="move-all"]');
-        const deleteAllBtn = this.bulkPanel?.querySelector('[data-action="delete-all"]');
-
-        if (sendToWorkflowBtn) {
-            sendToWorkflowBtn.style.display = config.sendToWorkflow ? 'block' : 'none';
-        }
-        if (copyAllBtn) {
-            copyAllBtn.style.display = config.copyAll ? 'block' : 'none';
-        }
-        if (refreshAllBtn) {
-            refreshAllBtn.style.display = config.refreshAll ? 'block' : 'none';
-        }
-        if (moveAllBtn) {
-            moveAllBtn.style.display = config.moveAll ? 'block' : 'none';
-        }
-        if (deleteAllBtn) {
-            deleteAllBtn.style.display = config.deleteAll ? 'block' : 'none';
+            // Hide context menu when exiting bulk mode
+            if (this.bulkContextMenu) {
+                this.bulkContextMenu.hideMenu();
+            }
         }
     }
 
@@ -177,27 +104,10 @@ export class BulkManager {
             card.classList.remove('selected');
         });
         state.selectedModels.clear();
-        this.updateSelectedCount();
-        this.hideThumbnailStrip();
-    }
-
-    updateSelectedCount() {
-        const countElement = document.getElementById('selectedCount');
         
-        if (countElement) {
-            // Use i18nHelpers.js to update the count text
-            updateElementText(countElement, 'loras.bulkOperations.selected', { count: state.selectedModels.size });
-
-            const existingCaret = countElement.querySelector('.dropdown-caret');
-            if (existingCaret) {
-                existingCaret.className = `fas fa-caret-${this.isStripVisible ? 'down' : 'up'} dropdown-caret`;
-                existingCaret.style.visibility = state.selectedModels.size > 0 ? 'visible' : 'hidden';
-            } else {
-                const caretIcon = document.createElement('i');
-                caretIcon.className = `fas fa-caret-${this.isStripVisible ? 'down' : 'up'} dropdown-caret`;
-                caretIcon.style.visibility = state.selectedModels.size > 0 ? 'visible' : 'hidden';
-                countElement.appendChild(caretIcon);
-            }
+        // Update context menu header if visible
+        if (this.bulkContextMenu) {
+            this.bulkContextMenu.updateSelectedCountHeader();
         }
     }
 
@@ -222,10 +132,9 @@ export class BulkManager {
             });
         }
         
-        this.updateSelectedCount();
-        
-        if (this.isStripVisible) {
-            this.updateThumbnailStrip();
+        // Update context menu header if visible
+        if (this.bulkContextMenu) {
+            this.bulkContextMenu.updateSelectedCountHeader();
         }
     }
 
@@ -277,8 +186,6 @@ export class BulkManager {
                 card.classList.remove('selected');
             }
         });
-        
-        this.updateSelectedCount();
     }
 
     async copyAllModelsSyntax() {
@@ -413,115 +320,6 @@ export class BulkManager {
             showToast('toast.models.deleteFailedGeneral', {}, 'error');
         }
     }
-
-    toggleThumbnailStrip() {
-        if (state.selectedModels.size === 0) return;
-        
-        const existing = document.querySelector('.selected-thumbnails-strip');
-        if (existing) {
-            this.hideThumbnailStrip();
-        } else {
-            this.showThumbnailStrip();
-        }
-    }
-    
-    showThumbnailStrip() {
-        const strip = document.createElement('div');
-        strip.className = 'selected-thumbnails-strip';
-        
-        const thumbnailContainer = document.createElement('div');
-        thumbnailContainer.className = 'thumbnails-container';
-        strip.appendChild(thumbnailContainer);
-        
-        this.bulkPanel.parentNode.insertBefore(strip, this.bulkPanel);
-        
-        this.updateThumbnailStrip();
-        
-        this.isStripVisible = true;
-        this.updateSelectedCount();
-        
-        setTimeout(() => strip.classList.add('visible'), 10);
-    }
-    
-    hideThumbnailStrip() {
-        const strip = document.querySelector('.selected-thumbnails-strip');
-        if (strip && this.isStripVisible) {
-            strip.classList.remove('visible');
-            
-            this.isStripVisible = false;
-            
-            const countElement = document.getElementById('selectedCount');
-            if (countElement) {
-                const caret = countElement.querySelector('.dropdown-caret');
-                if (caret) {
-                    caret.className = 'fas fa-caret-up dropdown-caret';
-                }
-            }
-            
-            setTimeout(() => {
-                if (strip.parentNode) {
-                    strip.parentNode.removeChild(strip);
-                }
-            }, 300);
-        }
-    }
-    
-    updateThumbnailStrip() {
-        const container = document.querySelector('.thumbnails-container');
-        if (!container) return;
-        
-        container.innerHTML = '';
-        
-        const selectedModels = Array.from(state.selectedModels);
-        
-        if (selectedModels.length > this.stripMaxThumbnails) {
-            const counter = document.createElement('div');
-            counter.className = 'strip-counter';
-            counter.textContent = `Showing ${this.stripMaxThumbnails} of ${selectedModels.length} selected`;
-            container.appendChild(counter);
-        }
-        
-        const thumbnailsToShow = selectedModels.slice(0, this.stripMaxThumbnails);
-        const metadataCache = this.getMetadataCache();
-        
-        thumbnailsToShow.forEach(filepath => {
-            const metadata = metadataCache.get(filepath);
-            if (!metadata) return;
-            
-            const thumbnail = document.createElement('div');
-            thumbnail.className = 'selected-thumbnail';
-            thumbnail.dataset.filepath = filepath;
-            
-            if (metadata.isVideo) {
-                thumbnail.innerHTML = `
-                    <video autoplay loop muted playsinline>
-                        <source src="${metadata.previewUrl}" type="video/mp4">
-                    </video>
-                    <span class="thumbnail-name" title="${metadata.modelName}">${metadata.modelName}</span>
-                    <button class="thumbnail-remove"><i class="fas fa-times"></i></button>
-                `;
-            } else {
-                thumbnail.innerHTML = `
-                    <img src="${metadata.previewUrl}" alt="${metadata.modelName}">
-                    <span class="thumbnail-name" title="${metadata.modelName}">${metadata.modelName}</span>
-                    <button class="thumbnail-remove"><i class="fas fa-times"></i></button>
-                `;
-            }
-            
-            thumbnail.addEventListener('click', (e) => {
-                if (!e.target.closest('.thumbnail-remove')) {
-                    this.deselectItem(filepath);
-                }
-            });
-            
-            thumbnail.querySelector('.thumbnail-remove').addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.deselectItem(filepath);
-            });
-            
-            container.appendChild(thumbnail);
-        });
-    }
     
     deselectItem(filepath) {
         const card = document.querySelector(`.model-card[data-filepath="${filepath}"]`);
@@ -530,13 +328,6 @@ export class BulkManager {
         }
         
         state.selectedModels.delete(filepath);
-        
-        this.updateSelectedCount();
-        this.updateThumbnailStrip();
-        
-        if (state.selectedModels.size === 0) {
-            this.hideThumbnailStrip();
-        }
     }
 
     selectAllVisibleModels() {
@@ -617,6 +408,330 @@ export class BulkManager {
         } catch (error) {
             console.error('Error during bulk metadata refresh:', error);
             showToast('toast.models.refreshMetadataFailed', {}, 'error');
+        }
+    }
+    
+    showBulkAddTagsModal() {
+        if (state.selectedModels.size === 0) {
+            showToast('toast.models.noModelsSelected', {}, 'warning');
+            return;
+        }
+        
+        const countElement = document.getElementById('bulkAddTagsCount');
+        if (countElement) {
+            countElement.textContent = state.selectedModels.size;
+        }
+        
+        // Clear any existing tags in the modal
+        const tagsContainer = document.getElementById('bulkTagsItems');
+        if (tagsContainer) {
+            tagsContainer.innerHTML = '';
+        }
+        
+        modalManager.showModal('bulkAddTagsModal', null, null, () => {
+            // Cleanup when modal is closed
+            this.cleanupBulkAddTagsModal();
+        });
+        
+        // Initialize the bulk tags editing interface
+        this.initializeBulkTagsInterface();
+    }
+    
+    initializeBulkTagsInterface() {
+        // Setup tag input behavior
+        const tagInput = document.querySelector('.bulk-metadata-input');
+        if (tagInput) {
+            tagInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.addBulkTag(e.target.value.trim());
+                    e.target.value = '';
+                    // Update dropdown to show added indicator
+                    this.updateBulkSuggestionsDropdown();
+                }
+            });
+        }
+        
+        // Create suggestions dropdown
+        const tagForm = document.querySelector('#bulkAddTagsModal .metadata-add-form');
+        if (tagForm) {
+            const suggestionsDropdown = this.createBulkSuggestionsDropdown(PRESET_TAGS);
+            tagForm.appendChild(suggestionsDropdown);
+        }
+        
+        // Setup save button
+        const appendBtn = document.querySelector('.bulk-append-tags-btn');
+        const replaceBtn = document.querySelector('.bulk-replace-tags-btn');
+        
+        if (appendBtn) {
+            appendBtn.addEventListener('click', () => {
+                this.saveBulkTags('append');
+            });
+        }
+        
+        if (replaceBtn) {
+            replaceBtn.addEventListener('click', () => {
+                this.saveBulkTags('replace');
+            });
+        }
+    }
+    
+    createBulkSuggestionsDropdown(presetTags) {
+        const dropdown = document.createElement('div');
+        dropdown.className = 'metadata-suggestions-dropdown';
+        
+        const header = document.createElement('div');
+        header.className = 'metadata-suggestions-header';
+        header.innerHTML = `
+            <span>Suggested Tags</span>
+            <small>Click to add</small>
+        `;
+        dropdown.appendChild(header);
+        
+        const container = document.createElement('div');
+        container.className = 'metadata-suggestions-container';
+        
+        presetTags.forEach(tag => {
+            // Check if tag is already added
+            const existingTags = this.getBulkExistingTags();
+            const isAdded = existingTags.includes(tag);
+            
+            const item = document.createElement('div');
+            item.className = `metadata-suggestion-item ${isAdded ? 'already-added' : ''}`;
+            item.title = tag;
+            item.innerHTML = `
+                <span class="metadata-suggestion-text">${tag}</span>
+                ${isAdded ? '<span class="added-indicator"><i class="fas fa-check"></i></span>' : ''}
+            `;
+            
+            if (!isAdded) {
+                item.addEventListener('click', () => {
+                    this.addBulkTag(tag);
+                    const input = document.querySelector('.bulk-metadata-input');
+                    if (input) {
+                        input.value = tag;
+                        input.focus();
+                    }
+                    // Update dropdown to show added indicator
+                    this.updateBulkSuggestionsDropdown();
+                });
+            }
+            
+            container.appendChild(item);
+        });
+        
+        dropdown.appendChild(container);
+        return dropdown;
+    }
+    
+    addBulkTag(tag) {
+        tag = tag.trim().toLowerCase();
+        if (!tag) return;
+        
+        const tagsContainer = document.getElementById('bulkTagsItems');
+        if (!tagsContainer) return;
+        
+        // Validation: Check length
+        if (tag.length > 30) {
+            showToast('modelTags.validation.maxLength', {}, 'error');
+            return;
+        }
+        
+        // Validation: Check total number
+        const currentTags = tagsContainer.querySelectorAll('.metadata-item');
+        if (currentTags.length >= 30) {
+            showToast('modelTags.validation.maxCount', {}, 'error');
+            return;
+        }
+        
+        // Validation: Check for duplicates
+        const existingTags = Array.from(currentTags).map(tagEl => tagEl.dataset.tag);
+        if (existingTags.includes(tag)) {
+            showToast('modelTags.validation.duplicate', {}, 'error');
+            return;
+        }
+        
+        // Create new tag
+        const newTag = document.createElement('div');
+        newTag.className = 'metadata-item';
+        newTag.dataset.tag = tag;
+        newTag.innerHTML = `
+            <span class="metadata-item-content">${tag}</span>
+            <button class="metadata-delete-btn">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        // Add delete button event listener
+        const deleteBtn = newTag.querySelector('.metadata-delete-btn');
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            newTag.remove();
+            // Update dropdown to show/hide added indicator
+            this.updateBulkSuggestionsDropdown();
+        });
+        
+        tagsContainer.appendChild(newTag);
+    }
+    
+    /**
+     * Get existing tags in the bulk tags container
+     * @returns {Array} Array of existing tag strings
+     */
+    getBulkExistingTags() {
+        const tagsContainer = document.getElementById('bulkTagsItems');
+        if (!tagsContainer) return [];
+        
+        const currentTags = tagsContainer.querySelectorAll('.metadata-item');
+        return Array.from(currentTags).map(tag => tag.dataset.tag);
+    }
+    
+    /**
+     * Update status of items in the bulk suggestions dropdown
+     */
+    updateBulkSuggestionsDropdown() {
+        const dropdown = document.querySelector('.metadata-suggestions-dropdown');
+        if (!dropdown) return;
+        
+        // Get all current tags
+        const existingTags = this.getBulkExistingTags();
+        
+        // Update status of each item in dropdown
+        dropdown.querySelectorAll('.metadata-suggestion-item').forEach(item => {
+            const tagText = item.querySelector('.metadata-suggestion-text').textContent;
+            const isAdded = existingTags.includes(tagText);
+            
+            if (isAdded) {
+                item.classList.add('already-added');
+                
+                // Add indicator if it doesn't exist
+                let indicator = item.querySelector('.added-indicator');
+                if (!indicator) {
+                    indicator = document.createElement('span');
+                    indicator.className = 'added-indicator';
+                    indicator.innerHTML = '<i class="fas fa-check"></i>';
+                    item.appendChild(indicator);
+                }
+                
+                // Remove click event
+                item.onclick = null;
+                item.removeEventListener('click', item._clickHandler);
+            } else {
+                // Re-enable items that are no longer in the list
+                item.classList.remove('already-added');
+                
+                // Remove indicator if it exists
+                const indicator = item.querySelector('.added-indicator');
+                if (indicator) indicator.remove();
+                
+                // Restore click event if not already set
+                if (!item._clickHandler) {
+                    item._clickHandler = () => {
+                        this.addBulkTag(tagText);
+                        const input = document.querySelector('.bulk-metadata-input');
+                        if (input) {
+                            input.value = tagText;
+                            input.focus();
+                        }
+                        // Update dropdown to show added indicator
+                        this.updateBulkSuggestionsDropdown();
+                    };
+                    item.addEventListener('click', item._clickHandler);
+                }
+            }
+        });
+    }
+    
+    async saveBulkTags(mode = 'append') {
+        const tagElements = document.querySelectorAll('#bulkTagsItems .metadata-item');
+        const tags = Array.from(tagElements).map(tag => tag.dataset.tag);
+        
+        if (tags.length === 0) {
+            showToast('toast.models.noTagsToAdd', {}, 'warning');
+            return;
+        }
+        
+        if (state.selectedModels.size === 0) {
+            showToast('toast.models.noModelsSelected', {}, 'warning');
+            return;
+        }
+        
+        try {
+            const apiClient = getModelApiClient();
+            const filePaths = Array.from(state.selectedModels);
+            let successCount = 0;
+            let failCount = 0;
+            
+            // Add or replace tags for each selected model based on mode
+            for (const filePath of filePaths) {
+                try {
+                    if (mode === 'replace') {
+                        await apiClient.saveModelMetadata(filePath, { tags: tags });
+                    } else {
+                        await apiClient.addTags(filePath, { tags: tags });
+                    }
+                    successCount++;
+                } catch (error) {
+                    console.error(`Failed to ${mode} tags for ${filePath}:`, error);
+                    failCount++;
+                }
+            }
+            
+            modalManager.closeModal('bulkAddTagsModal');
+            
+            if (successCount > 0) {
+                const currentConfig = MODEL_CONFIG[state.currentPageType];
+                const toastKey = mode === 'replace' ? 'toast.models.tagsReplacedSuccessfully' : 'toast.models.tagsAddedSuccessfully';
+                showToast(toastKey, { 
+                    count: successCount, 
+                    tagCount: tags.length,
+                    type: currentConfig.displayName.toLowerCase() 
+                }, 'success');
+            }
+            
+            if (failCount > 0) {
+                const toastKey = mode === 'replace' ? 'toast.models.tagsReplaceFailed' : 'toast.models.tagsAddFailed';
+                showToast(toastKey, { count: failCount }, 'warning');
+            }
+            
+        } catch (error) {
+            console.error('Error during bulk tag operation:', error);
+            const toastKey = mode === 'replace' ? 'toast.models.bulkTagsReplaceFailed' : 'toast.models.bulkTagsAddFailed';
+            showToast(toastKey, {}, 'error');
+        }
+    }
+    
+    cleanupBulkAddTagsModal() {
+        // Clear tags container
+        const tagsContainer = document.getElementById('bulkTagsItems');
+        if (tagsContainer) {
+            tagsContainer.innerHTML = '';
+        }
+        
+        // Clear input
+        const input = document.querySelector('.bulk-metadata-input');
+        if (input) {
+            input.value = '';
+        }
+        
+        // Remove event listeners (they will be re-added when modal opens again)
+        const appendBtn = document.querySelector('.bulk-append-tags-btn');
+        if (appendBtn) {
+            appendBtn.replaceWith(appendBtn.cloneNode(true));
+        }
+        
+        const replaceBtn = document.querySelector('.bulk-replace-tags-btn');
+        if (replaceBtn) {
+            replaceBtn.replaceWith(replaceBtn.cloneNode(true));
+        }
+
+        // Remove the suggestions dropdown
+        const tagForm = document.querySelector('#bulkAddTagsModal .metadata-add-form');
+        if (tagForm) {
+            const dropdown = tagForm.querySelector('.metadata-suggestions-dropdown');
+            if (dropdown) {
+                dropdown.remove();
+            }
         }
     }
 }

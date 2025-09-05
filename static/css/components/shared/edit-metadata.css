@@ -80,6 +80,7 @@
   align-items: flex-start;
   margin-bottom: var(--space-2);
   width: 100%;
+  min-height: 30px; /* Ensure some height even if empty to prevent layout shifts */
 }
 
 /* Individual Item */
@@ -153,15 +154,40 @@
 }
 
 .metadata-save-btn,
-.save-tags-btn {
+.save-tags-btn,
+.append-tags-btn,
+.replace-tags-btn {
   background: var(--lora-accent) !important;
   color: white !important;
   border-color: var(--lora-accent) !important;
 }
 
 .metadata-save-btn:hover,
-.save-tags-btn:hover {
+.save-tags-btn:hover,
+.append-tags-btn:hover,
+.replace-tags-btn:hover {
   opacity: 0.9;
+}
+
+/* Specific styling for bulk tag action buttons */
+.bulk-append-tags-btn {
+  background: var(--lora-accent) !important;
+  color: white !important;
+  border-color: var(--lora-accent) !important;
+}
+
+.bulk-replace-tags-btn {
+  background: var(--lora-warning, #f59e0b) !important;
+  color: white !important;
+  border-color: var(--lora-warning, #f59e0b) !important;
+}
+
+.bulk-append-tags-btn:hover {
+  opacity: 0.9;
+}
+
+.bulk-replace-tags-btn:hover {
+  background: var(--lora-warning-dark, #d97706) !important;
 }
 
 /* Add Form */

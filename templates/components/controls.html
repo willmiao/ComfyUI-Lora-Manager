@@ -99,32 +99,3 @@
         </nav>
     </div>
 </div>
-
-<!-- Add bulk operations panel (initially hidden) -->
-<div id="bulkOperationsPanel" class="bulk-operations-panel hidden">
-    <div class="bulk-operations-header">
-        <span id="selectedCount" class="selectable-count" title="{{ t('loras.bulkOperations.viewSelected') }}">
-            0 {{ t('loras.bulkOperations.selectedSuffix') }} <i class="fas fa-caret-down dropdown-caret"></i>
-        </span>
-        <div class="bulk-operations-actions">
-            <button data-action="send-to-workflow" title="{{ t('loras.bulkOperations.sendToWorkflow') }}">
-                <i class="fas fa-arrow-right"></i> <span>{{ t('loras.bulkOperations.sendToWorkflow') }}</span>
-            </button>
-            <button data-action="copy-all" title="{{ t('loras.bulkOperations.copyAll') }}">
-                <i class="fas fa-copy"></i> <span>{{ t('loras.bulkOperations.copyAll') }}</span>
-            </button>
-            <button data-action="refresh-all" title="{{ t('loras.bulkOperations.refreshAll') }}">
-                <i class="fas fa-sync-alt"></i> <span>{{ t('loras.bulkOperations.refreshAll') }}</span>
-            </button>
-            <button data-action="move-all" title="{{ t('loras.bulkOperations.moveAll') }}">
-                <i class="fas fa-folder-open"></i> <span>{{ t('loras.bulkOperations.moveAll') }}</span>
-            </button>
-            <button data-action="delete-all" title="{{ t('loras.bulkOperations.deleteAll') }}" class="danger-btn">
-                <i class="fas fa-trash"></i> <span>{{ t('loras.bulkOperations.deleteAll') }}</span>
-            </button>
-            <button data-action="clear" title="{{ t('loras.bulkOperations.clear') }}">
-                <i class="fas fa-times"></i> <span>{{ t('loras.bulkOperations.clear') }}</span>
-            </button>
-        </div>
-    </div>
-</div>

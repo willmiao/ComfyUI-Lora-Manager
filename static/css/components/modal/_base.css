@@ -37,6 +37,10 @@ body.modal-open {
     overflow-x: hidden; /* 防止水平滚动条 */
 }
 
+.modal-content-large {
+    min-height: 480px;
+}
+
 /* 当 modal 打开时锁定 body */
 body.modal-open {
     overflow: hidden !important; /* 覆盖 base.css 中的 scroll */

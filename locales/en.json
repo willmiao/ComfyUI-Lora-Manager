@@ -319,6 +319,7 @@
             "selected": "{count} selected",
             "selectedSuffix": "selected",
             "viewSelected": "Click to view selected items",
+            "addTags": "Add Tags",
             "sendToWorkflow": "Send to Workflow",
             "copyAll": "Copy All",
             "refreshAll": "Refresh All",
@@ -571,6 +572,16 @@
             "message": "Are you sure you want to delete all selected models and their associated files?",
             "countMessage": "models will be permanently deleted.",
             "action": "Delete All"
+        },
+        "bulkAddTags": {
+            "title": "Add Tags to Multiple Models",
+            "description": "Add tags to",
+            "models": "models",
+            "tagsToAdd": "Tags to Add",
+            "placeholder": "Enter tag and press Enter...",
+            "appendTags": "Append Tags",
+            "replaceTags": "Replace Tags",
+            "saveChanges": "Save changes"
         },
         "exampleAccess": {
             "title": "Local Example Images",
@@ -987,7 +998,14 @@
             "verificationAlreadyDone": "This group has already been verified",
             "verificationCompleteMismatch": "Verification complete. {count} file(s) have different actual hashes.",
             "verificationCompleteSuccess": "Verification complete. All files are confirmed duplicates.",
-            "verificationFailed": "Failed to verify hashes: {message}"
+            "verificationFailed": "Failed to verify hashes: {message}",
+            "noTagsToAdd": "No tags to add",
+            "tagsAddedSuccessfully": "Successfully added {tagCount} tag(s) to {count} {type}(s)",
+            "tagsReplacedSuccessfully": "Successfully replaced tags for {count} {type}(s) with {tagCount} tag(s)",
+            "tagsAddFailed": "Failed to add tags to {count} model(s)",
+            "tagsReplaceFailed": "Failed to replace tags for {count} model(s)",
+            "bulkTagsAddFailed": "Failed to add tags to models",
+            "bulkTagsReplaceFailed": "Failed to replace tags for models"
         },
         "search": {
             "atLeastOneOption": "At least one search option must be selected"

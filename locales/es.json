@@ -194,7 +194,7 @@
             "displayDensity": "Densidad de visualización",
             "displayDensityOptions": {
                 "default": "Predeterminado",
-                "medium": "Medio", 
+                "medium": "Medio",
                 "compact": "Compacto"
             },
             "displayDensityHelp": "Elige cuántas tarjetas mostrar por fila:",
@@ -231,7 +231,7 @@
             "templateOptions": {
                 "flatStructure": "Estructura plana",
                 "byBaseModel": "Por modelo base",
-                "byAuthor": "Por autor", 
+                "byAuthor": "Por autor",
                 "byFirstTag": "Por primera etiqueta",
                 "baseModelFirstTag": "Modelo base + primera etiqueta",
                 "baseModelAuthor": "Modelo base + autor",
@@ -241,7 +241,7 @@
             "customTemplatePlaceholder": "Introduce plantilla personalizada (ej., {base_model}/{author}/{first_tag})",
             "modelTypes": {
                 "lora": "LoRA",
-                "checkpoint": "Checkpoint", 
+                "checkpoint": "Checkpoint",
                 "embedding": "Embedding"
             },
             "baseModelPathMappings": "Mapeos de rutas de modelo base",
@@ -319,6 +319,7 @@
             "selected": "{count} seleccionados",
             "selectedSuffix": "seleccionados",
             "viewSelected": "Clic para ver elementos seleccionados",
+            "addTags": "Añadir etiquetas",
             "sendToWorkflow": "Enviar al flujo de trabajo",
             "copyAll": "Copiar todo",
             "refreshAll": "Actualizar todo",
@@ -571,6 +572,16 @@
             "message": "¿Estás seguro de que quieres eliminar todos los modelos seleccionados y sus archivos asociados?",
             "countMessage": "modelos serán eliminados permanentemente.",
             "action": "Eliminar todo"
+        },
+        "bulkAddTags": {
+            "title": "Añadir etiquetas a múltiples modelos",
+            "description": "Añadir etiquetas a",
+            "models": "modelos",
+            "tagsToAdd": "Etiquetas a añadir",
+            "placeholder": "Introduce una etiqueta y presiona Enter...",
+            "appendTags": "Añadir etiquetas",
+            "replaceTags": "Reemplazar etiquetas",
+            "saveChanges": "Guardar cambios"
         },
         "exampleAccess": {
             "title": "Imágenes de ejemplo locales",
@@ -987,7 +998,14 @@
             "verificationAlreadyDone": "Este grupo ya ha sido verificado",
             "verificationCompleteMismatch": "Verificación completa. {count} archivo(s) tienen hashes reales diferentes.",
             "verificationCompleteSuccess": "Verificación completa. Todos los archivos son confirmados duplicados.",
-            "verificationFailed": "Error al verificar hashes: {message}"
+            "verificationFailed": "Error al verificar hashes: {message}",
+            "noTagsToAdd": "No hay etiquetas para añadir",
+            "tagsAddedSuccessfully": "Se añadieron exitosamente {tagCount} etiqueta(s) a {count} {type}(s)",
+            "tagsReplacedSuccessfully": "Se reemplazaron exitosamente las etiquetas de {count} {type}(s) con {tagCount} etiqueta(s)",
+            "tagsAddFailed": "Error al añadir etiquetas a {count} modelo(s)",
+            "tagsReplaceFailed": "Error al reemplazar etiquetas para {count} modelo(s)",
+            "bulkTagsAddFailed": "Error al añadir etiquetas a los modelos",
+            "bulkTagsReplaceFailed": "Error al reemplazar etiquetas para los modelos"
         },
         "search": {
             "atLeastOneOption": "Al menos una opción de búsqueda debe estar seleccionada"

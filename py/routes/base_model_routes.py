@@ -49,6 +49,7 @@ class BaseModelRoutes(ABC):
         app.router.add_post(f'/api/{prefix}/relink-civitai', self.relink_civitai)
         app.router.add_post(f'/api/{prefix}/replace-preview', self.replace_preview)
         app.router.add_post(f'/api/{prefix}/save-metadata', self.save_metadata)
+        app.router.add_post(f'/api/{prefix}/add-tags', self.add_tags)
         app.router.add_post(f'/api/{prefix}/rename', self.rename_model)
         app.router.add_post(f'/api/{prefix}/bulk-delete', self.bulk_delete_models)
         app.router.add_post(f'/api/{prefix}/verify-duplicates', self.verify_duplicates)
@@ -271,6 +272,10 @@ class BaseModelRoutes(ABC):
     async def save_metadata(self, request: web.Request) -> web.Response:
         """Handle saving metadata updates"""
         return await ModelRouteUtils.handle_save_metadata(request, self.service.scanner)
+    
+    async def add_tags(self, request: web.Request) -> web.Response:
+        """Handle adding tags to model metadata"""
+        return await ModelRouteUtils.handle_add_tags(request, self.service.scanner)
     
     async def rename_model(self, request: web.Request) -> web.Response:
         """Handle renaming a model file and its associated files"""

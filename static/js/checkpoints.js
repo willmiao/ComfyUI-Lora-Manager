@@ -1,7 +1,6 @@
 import { appCore } from './core.js';
 import { confirmDelete, closeDeleteModal, confirmExclude, closeExcludeModal } from './utils/modalUtils.js';
 import { createPageControls } from './components/controls/index.js';
-import { CheckpointContextMenu } from './components/ContextMenu/index.js';
 import { ModelDuplicatesManager } from './components/ModelDuplicatesManager.js';
 import { MODEL_TYPES } from './api/apiConfig.js';
 
@@ -30,10 +29,7 @@ class CheckpointsPageManager {
     }
     
     async initialize() {
-        // Initialize context menu
-        new CheckpointContextMenu();
-        
-        // Initialize common page features
+        // Initialize common page features (including context menus)
         appCore.initializePageFeatures();
         
         console.log('Checkpoints Manager initialized');
