@@ -324,8 +324,18 @@
             "copyAll": "Копировать весь синтаксис",
             "refreshAll": "Обновить все метаданные",
             "moveAll": "Переместить все в папку",
+            "autoOrganize": "Автоматически организовать выбранные",
             "deleteAll": "Удалить все модели",
-            "clear": "Очистить выбор"
+            "clear": "Очистить выбор",
+            "autoOrganizeProgress": {
+                "initializing": "Инициализация автоматической организации...",
+                "starting": "Запуск автоматической организации для {type}...",
+                "processing": "Обработка ({processed}/{total}) — {success} перемещено, {skipped} пропущено, {failures} не удалось",
+                "cleaning": "Очистка пустых директорий...",
+                "completed": "Завершено: {success} перемещено, {skipped} пропущено, {failures} не удалось",
+                "complete": "Автоматическая организация завершена",
+                "error": "Ошибка: {error}"
+            }
         },
         "contextMenu": {
             "refreshMetadata": "Обновить данные Civitai",
@@ -942,7 +952,11 @@
             "downloadPartialWithAccess": "Загружено {completed} из {total} LoRAs. {accessFailures} не удалось из-за ограничений доступа. Проверьте ваш API ключ в настройках или статус раннего доступа.",
             "pleaseSelectVersion": "Пожалуйста, выберите версию",
             "versionExists": "Эта версия уже существует в вашей библиотеке",
-            "downloadCompleted": "Загрузка успешно завершена"
+            "downloadCompleted": "Загрузка успешно завершена",
+            "autoOrganizeSuccess": "Автоматическая организация успешно завершена для {count} {type}",
+            "autoOrganizePartialSuccess": "Автоматическая организация завершена: перемещено {success}, не удалось {failures} из {total} моделей",
+            "autoOrganizeFailed": "Ошибка автоматической организации: {error}",
+            "noModelsSelected": "Модели не выбраны"
         },
         "recipes": {
             "fetchFailed": "Не удалось получить рецепты: {message}",

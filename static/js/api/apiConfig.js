@@ -94,6 +94,10 @@ export function getApiEndpoints(modelType) {
         metadata: `/api/${modelType}/metadata`,
         modelDescription: `/api/${modelType}/model-description`,
         
+        // Auto-organize operations
+        autoOrganize: `/api/${modelType}/auto-organize`,
+        autoOrganizeProgress: `/api/${modelType}/auto-organize-progress`,
+        
         // Model-specific endpoints (will be merged with specific configs)
         specific: {}
     };

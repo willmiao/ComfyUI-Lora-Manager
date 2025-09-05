@@ -56,6 +56,7 @@ class BaseModelRoutes(ABC):
         app.router.add_post(f'/api/{prefix}/move_model', self.move_model)
         app.router.add_post(f'/api/{prefix}/move_models_bulk', self.move_models_bulk)
         app.router.add_get(f'/api/{prefix}/auto-organize', self.auto_organize_models)
+        app.router.add_post(f'/api/{prefix}/auto-organize', self.auto_organize_models)
         app.router.add_get(f'/api/{prefix}/auto-organize-progress', self.get_auto_organize_progress)
         
         # Common query routes
@@ -773,7 +774,7 @@ class BaseModelRoutes(ABC):
             return web.Response(text=str(e), status=500)
     
     async def auto_organize_models(self, request: web.Request) -> web.Response:
-        """Auto-organize all models based on current settings"""
+        """Auto-organize all models or a specific set of models based on current settings"""
         try:
             # Check if auto-organize is already running
             if ws_manager.is_auto_organize_running():
@@ -791,8 +792,17 @@ class BaseModelRoutes(ABC):
                     'error': 'Auto-organize is already running. Please wait for it to complete.'
                 }, status=409)
             
+            # Get specific file paths from request if this is a POST with selected models
+            file_paths = None
+            if request.method == 'POST':
+                try:
+                    data = await request.json()
+                    file_paths = data.get('file_paths')
+                except Exception:
+                    pass  # Continue with all models if no valid JSON
+            
             async with auto_organize_lock:
-                return await self._perform_auto_organize()
+                return await self._perform_auto_organize(file_paths)
                 
         except Exception as e:
             logger.error(f"Error in auto_organize_models: {e}", exc_info=True)
@@ -809,12 +819,24 @@ class BaseModelRoutes(ABC):
                 'error': str(e)
             }, status=500)
     
-    async def _perform_auto_organize(self) -> web.Response:
-        """Perform the actual auto-organize operation"""
+    async def _perform_auto_organize(self, file_paths=None) -> web.Response:
+        """Perform the actual auto-organize operation
+        
+        Args:
+            file_paths: Optional list of specific file paths to organize. 
+                       If None, organizes all models.
+        """
         try:
             # Get all models from cache
             cache = await self.service.scanner.get_cached_data()
             all_models = cache.raw_data
+            
+            # Filter models if specific file paths are provided
+            if file_paths:
+                all_models = [model for model in all_models if model.get('file_path') in file_paths]
+                operation_type = 'bulk'
+            else:
+                operation_type = 'all'
             
             # Get model roots for this scanner
             model_roots = self.service.get_model_roots()
@@ -822,7 +844,8 @@ class BaseModelRoutes(ABC):
                 await ws_manager.broadcast_auto_organize_progress({
                     'type': 'auto_organize_progress',
                     'status': 'error',
-                    'error': 'No model roots configured'
+                    'error': 'No model roots configured',
+                    'operation_type': operation_type
                 })
                 return web.json_response({
                     'success': False,
@@ -849,7 +872,8 @@ class BaseModelRoutes(ABC):
                 'processed': 0,
                 'success': 0,
                 'failures': 0,
-                'skipped': 0
+                'skipped': 0,
+                'operation_type': operation_type
             })
             
             # Process models in batches
@@ -980,7 +1004,8 @@ class BaseModelRoutes(ABC):
                     'processed': processed,
                     'success': success_count,
                     'failures': failure_count,
-                    'skipped': skipped_count
+                    'skipped': skipped_count,
+                    'operation_type': operation_type
                 })
                 
                 # Small delay between batches to prevent overwhelming the system
@@ -995,7 +1020,8 @@ class BaseModelRoutes(ABC):
                 'success': success_count,
                 'failures': failure_count,
                 'skipped': skipped_count,
-                'message': 'Cleaning up empty directories...'
+                'message': 'Cleaning up empty directories...',
+                'operation_type': operation_type
             })
             
             # Clean up empty directories after organizing
@@ -1014,20 +1040,22 @@ class BaseModelRoutes(ABC):
                 'success': success_count,
                 'failures': failure_count,
                 'skipped': skipped_count,
-                'cleanup': cleanup_counts
+                'cleanup': cleanup_counts,
+                'operation_type': operation_type
             })
             
             # Prepare response with limited details
             response_data = {
                 'success': True,
-                'message': f'Auto-organize completed: {success_count} moved, {skipped_count} skipped, {failure_count} failed out of {total_models} total',
+                'message': f'Auto-organize {operation_type} completed: {success_count} moved, {skipped_count} skipped, {failure_count} failed out of {total_models} total',
                 'summary': {
                     'total': total_models,
                     'success': success_count,
                     'skipped': skipped_count,
                     'failures': failure_count,
                     'organization_type': 'flat' if is_flat_structure else 'structured',
-                    'cleaned_dirs': cleanup_counts
+                    'cleaned_dirs': cleanup_counts,
+                    'operation_type': operation_type
                 }
             }
             
@@ -1047,7 +1075,8 @@ class BaseModelRoutes(ABC):
             await ws_manager.broadcast_auto_organize_progress({
                 'type': 'auto_organize_progress',
                 'status': 'error',
-                'error': str(e)
+                'error': str(e),
+                'operation_type': operation_type if 'operation_type' in locals() else 'unknown'
             })
             
             raise e

@@ -324,8 +324,18 @@
             "copyAll": "すべての構文をコピー",
             "refreshAll": "すべてのメタデータを更新",
             "moveAll": "すべてをフォルダに移動",
+            "autoOrganize": "自動整理を実行",
             "deleteAll": "すべてのモデルを削除",
-            "clear": "選択をクリア"
+            "clear": "選択をクリア",
+            "autoOrganizeProgress": {
+                "initializing": "自動整理を初期化中...",
+                "starting": "{type}の自動整理を開始中...",
+                "processing": "処理中（{processed}/{total}）- {success} 移動、{skipped} スキップ、{failures} 失敗",
+                "cleaning": "空のディレクトリをクリーンアップ中...",
+                "completed": "完了：{success} 移動、{skipped} スキップ、{failures} 失敗",
+                "complete": "自動整理が完了しました",
+                "error": "エラー：{error}"
+            }
         },
         "contextMenu": {
             "refreshMetadata": "Civitaiデータを更新",
@@ -942,7 +952,11 @@
             "downloadPartialWithAccess": "{total} LoRAのうち {completed} がダウンロードされました。{accessFailures} はアクセス制限により失敗しました。設定でAPIキーまたはアーリーアクセス状況を確認してください。",
             "pleaseSelectVersion": "バージョンを選択してください",
             "versionExists": "このバージョンは既にライブラリに存在します",
-            "downloadCompleted": "ダウンロードが正常に完了しました"
+            "downloadCompleted": "ダウンロードが正常に完了しました",
+            "autoOrganizeSuccess": "{count} {type} の自動整理が正常に完了しました",
+            "autoOrganizePartialSuccess": "自動整理が完了しました：{total} モデル中 {success} 移動、{failures} 失敗",
+            "autoOrganizeFailed": "自動整理に失敗しました：{error}",
+            "noModelsSelected": "モデルが選択されていません"
         },
         "recipes": {
             "fetchFailed": "レシピの取得に失敗しました：{message}",

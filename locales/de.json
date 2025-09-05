@@ -324,8 +324,18 @@
             "copyAll": "Alle Syntax kopieren",
             "refreshAll": "Alle Metadaten aktualisieren",
             "moveAll": "Alle in Ordner verschieben",
+            "autoOrganize": "Automatisch organisieren",
             "deleteAll": "Alle Modelle löschen",
-            "clear": "Auswahl löschen"
+            "clear": "Auswahl löschen",
+            "autoOrganizeProgress": {
+                "initializing": "Automatische Organisation wird initialisiert...",
+                "starting": "Automatische Organisation für {type} wird gestartet...",
+                "processing": "Verarbeitung ({processed}/{total}) – {success} verschoben, {skipped} übersprungen, {failures} fehlgeschlagen",
+                "cleaning": "Leere Verzeichnisse werden bereinigt...",
+                "completed": "Abgeschlossen: {success} verschoben, {skipped} übersprungen, {failures} fehlgeschlagen",
+                "complete": "Automatische Organisation abgeschlossen",
+                "error": "Fehler: {error}"
+            }
         },
         "contextMenu": {
             "refreshMetadata": "Civitai-Daten aktualisieren",
@@ -942,7 +952,11 @@
             "downloadPartialWithAccess": "{completed} von {total} LoRAs heruntergeladen. {accessFailures} fehlgeschlagen aufgrund von Zugriffsbeschränkungen. Überprüfen Sie Ihren API-Schlüssel in den Einstellungen oder den Early Access-Status.",
             "pleaseSelectVersion": "Bitte wählen Sie eine Version aus",
             "versionExists": "Diese Version existiert bereits in Ihrer Bibliothek",
-            "downloadCompleted": "Download erfolgreich abgeschlossen"
+            "downloadCompleted": "Download erfolgreich abgeschlossen",
+            "autoOrganizeSuccess": "Automatische Organisation für {count} {type} erfolgreich abgeschlossen",
+            "autoOrganizePartialSuccess": "Automatische Organisation abgeschlossen: {success} verschoben, {failures} fehlgeschlagen von insgesamt {total} Modellen",
+            "autoOrganizeFailed": "Automatische Organisation fehlgeschlagen: {error}",
+            "noModelsSelected": "Keine Modelle ausgewählt"
         },
         "recipes": {
             "fetchFailed": "Fehler beim Abrufen der Rezepte: {message}",

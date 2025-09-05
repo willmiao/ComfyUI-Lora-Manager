@@ -324,8 +324,18 @@
             "copyAll": "Copier toute la syntaxe",
             "refreshAll": "Actualiser toutes les métadonnées",
             "moveAll": "Déplacer tout vers un dossier",
+            "autoOrganize": "Auto-organiser la sélection",
             "deleteAll": "Supprimer tous les modèles",
-            "clear": "Effacer la sélection"
+            "clear": "Effacer la sélection",
+            "autoOrganizeProgress": {
+                "initializing": "Initialisation de l'auto-organisation...",
+                "starting": "Démarrage de l'auto-organisation pour {type}...",
+                "processing": "Traitement ({processed}/{total}) - {success} déplacés, {skipped} ignorés, {failures} échecs",
+                "cleaning": "Nettoyage des répertoires vides...",
+                "completed": "Terminé : {success} déplacés, {skipped} ignorés, {failures} échecs",
+                "complete": "Auto-organisation terminée",
+                "error": "Erreur : {error}"
+            }
         },
         "contextMenu": {
             "refreshMetadata": "Actualiser les données Civitai",
@@ -942,7 +952,11 @@
             "downloadPartialWithAccess": "{completed} sur {total} LoRAs téléchargés. {accessFailures} ont échoué en raison de restrictions d'accès. Vérifiez votre clé API dans les paramètres ou le statut d'accès anticipé.",
             "pleaseSelectVersion": "Veuillez sélectionner une version",
             "versionExists": "Cette version existe déjà dans votre bibliothèque",
-            "downloadCompleted": "Téléchargement terminé avec succès"
+            "downloadCompleted": "Téléchargement terminé avec succès",
+            "autoOrganizeSuccess": "Auto-organisation terminée avec succès pour {count} {type}",
+            "autoOrganizePartialSuccess": "Auto-organisation terminée avec {success} déplacés, {failures} échecs sur {total} modèles",
+            "autoOrganizeFailed": "Échec de l'auto-organisation : {error}",
+            "noModelsSelected": "Aucun modèle sélectionné"
         },
         "recipes": {
             "fetchFailed": "Échec de la récupération des recipes : {message}",

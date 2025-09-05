@@ -324,8 +324,18 @@
             "copyAll": "Copy All Syntax",
             "refreshAll": "Refresh All Metadata",
             "moveAll": "Move All to Folder",
+            "autoOrganize": "Auto-Organize Selected",
             "deleteAll": "Delete All Models",
-            "clear": "Clear Selection"
+            "clear": "Clear Selection",
+            "autoOrganizeProgress": {
+                "initializing": "Initializing auto-organize...",
+                "starting": "Starting auto-organize for {type}...",
+                "processing": "Processing ({processed}/{total}) - {success} moved, {skipped} skipped, {failures} failed",
+                "cleaning": "Cleaning up empty directories...",
+                "completed": "Completed: {success} moved, {skipped} skipped, {failures} failed",
+                "complete": "Auto-organize complete",
+                "error": "Error: {error}"
+            }
         },
         "contextMenu": {
             "refreshMetadata": "Refresh Civitai Data",
@@ -942,7 +952,11 @@
             "downloadPartialWithAccess": "Downloaded {completed} of {total} LoRAs. {accessFailures} failed due to access restrictions. Check your API key in settings or early access status.",
             "pleaseSelectVersion": "Please select a version",
             "versionExists": "This version already exists in your library",
-            "downloadCompleted": "Download completed successfully"
+            "downloadCompleted": "Download completed successfully",
+            "autoOrganizeSuccess": "Auto-organize completed successfully for {count} {type}",
+            "autoOrganizePartialSuccess": "Auto-organize completed with {success} moved, {failures} failed out of {total} models",
+            "autoOrganizeFailed": "Auto-organize failed: {error}",
+            "noModelsSelected": "No models selected"
         },
         "recipes": {
             "fetchFailed": "Failed to fetch recipes: {message}",

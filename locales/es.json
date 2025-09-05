@@ -324,8 +324,18 @@
             "copyAll": "Copiar toda la sintaxis",
             "refreshAll": "Actualizar todos los metadatos",
             "moveAll": "Mover todos a carpeta",
+            "autoOrganize": "Auto-organizar seleccionados",
             "deleteAll": "Eliminar todos los modelos",
-            "clear": "Limpiar selección"
+            "clear": "Limpiar selección",
+            "autoOrganizeProgress": {
+                "initializing": "Inicializando auto-organización...",
+                "starting": "Iniciando auto-organización para {type}...",
+                "processing": "Procesando ({processed}/{total}) - {success} movidos, {skipped} omitidos, {failures} fallidos",
+                "cleaning": "Limpiando directorios vacíos...",
+                "completed": "Completado: {success} movidos, {skipped} omitidos, {failures} fallidos",
+                "complete": "Auto-organización completada",
+                "error": "Error: {error}"
+            }
         },
         "contextMenu": {
             "refreshMetadata": "Actualizar datos de Civitai",
@@ -942,7 +952,11 @@
             "downloadPartialWithAccess": "Descargados {completed} de {total} LoRAs. {accessFailures} fallaron debido a restricciones de acceso. Revisa tu clave API en configuración o estado de acceso temprano.",
             "pleaseSelectVersion": "Por favor selecciona una versión",
             "versionExists": "Esta versión ya existe en tu biblioteca",
-            "downloadCompleted": "Descarga completada exitosamente"
+            "downloadCompleted": "Descarga completada exitosamente",
+            "autoOrganizeSuccess": "Auto-organización completada exitosamente para {count} {type}",
+            "autoOrganizePartialSuccess": "Auto-organización completada con {success} movidos, {failures} fallidos de un total de {total} modelos",
+            "autoOrganizeFailed": "Auto-organización fallida: {error}",
+            "noModelsSelected": "No hay modelos seleccionados"
         },
         "recipes": {
             "fetchFailed": "Error al obtener recetas: {message}",

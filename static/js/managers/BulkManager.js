@@ -2,7 +2,7 @@ import { state, getCurrentPageState } from '../state/index.js';
 import { showToast, copyToClipboard, sendLoraToWorkflow } from '../utils/uiHelpers.js';
 import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
-import { getModelApiClient } from '../api/modelApiFactory.js';
+import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
 import { PRESET_TAGS, BASE_MODEL_CATEGORIES } from '../utils/constants.js';
 import { eventManager } from '../utils/EventManager.js';
@@ -34,6 +34,7 @@ export class BulkManager {
                 copyAll: true,
                 refreshAll: true,
                 moveAll: true,
+                autoOrganize: true,
                 deleteAll: true
             },
             [MODEL_TYPES.EMBEDDING]: {
@@ -42,6 +43,7 @@ export class BulkManager {
                 copyAll: false,
                 refreshAll: true,
                 moveAll: true,
+                autoOrganize: true,
                 deleteAll: true
             },
             [MODEL_TYPES.CHECKPOINT]: {
@@ -50,6 +52,7 @@ export class BulkManager {
                 copyAll: false,
                 refreshAll: true,
                 moveAll: false,
+                autoOrganize: true,
                 deleteAll: true
             }
         };
@@ -956,9 +959,48 @@ export class BulkManager {
      * Cleanup bulk base model modal
      */
     cleanupBulkBaseModelModal() {
-        const select = document.getElementById('bulkBaseModelSelect');
-        if (select) {
-            select.innerHTML = '';
+        const modal = document.getElementById('bulkBaseModelModal');
+        if (modal) {
+            // Clear existing tags
+            const tagsContainer = modal.querySelector('.bulk-tags');
+            if (tagsContainer) {
+                tagsContainer.innerHTML = '';
+            }
+            
+            // Clear dropdown
+            const dropdown = modal.querySelector('.bulk-suggestions-dropdown');
+            if (dropdown) {
+                dropdown.innerHTML = '';
+            }
+        }
+    }
+
+    /**
+     * Auto-organize selected models based on current path template settings
+     */
+    async autoOrganizeSelectedModels() {
+        if (state.selectedModels.size === 0) {
+            showToast('toast.loras.noModelsSelected', {}, 'error');
+            return;
+        }
+
+        try {
+            // Get selected file paths
+            const filePaths = Array.from(state.selectedModels);
+            
+            // Get the API client for the current model type
+            const apiClient = getModelApiClient();
+            
+            // Call the auto-organize method with selected file paths
+            await apiClient.autoOrganizeModels(filePaths);
+            
+            setTimeout(() => {
+                resetAndReload(true);
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Error during bulk auto-organize:', error);
+            showToast('toast.loras.autoOrganizeFailed', { error: error.message }, 'error');
         }
     }
 

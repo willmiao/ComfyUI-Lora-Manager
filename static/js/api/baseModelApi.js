@@ -1011,23 +1011,140 @@ export class BaseModelApiClient {
 
     async fetchModelDescription(filePath) {
         try {
-            const params = new URLSearchParams({ file_path: filePath });
-            const response = await fetch(`${this.apiConfig.endpoints.modelDescription}?${params}`);
-            
+            const response = await fetch(`${this.apiConfig.endpoints.modelDescription}?file_path=${encodeURIComponent(filePath)}`);
             if (!response.ok) {
-                throw new Error(`Failed to fetch ${this.apiConfig.config.singularName} description: ${response.statusText}`);
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
             const data = await response.json();
-            
-            if (data.success) {
-                return data.description;
-            } else {
-                throw new Error(data.error || `No description found for ${this.apiConfig.config.singularName}`);
-            }
+            return data;
         } catch (error) {
-            console.error(`Error fetching ${this.apiConfig.config.singularName} description:`, error);
+            console.error('Error fetching model description:', error);
             throw error;
         }
+    }
+
+    /**
+     * Auto-organize models based on current path template settings
+     * @param {Array} filePaths - Optional array of file paths to organize. If not provided, organizes all models.
+     * @returns {Promise} - Promise that resolves when the operation is complete
+     */
+    async autoOrganizeModels(filePaths = null) {
+        let ws = null;
+        
+        await state.loadingManager.showWithProgress(async (loading) => {
+            try {
+                // Connect to WebSocket for progress updates
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+                ws = new WebSocket(`${wsProtocol}${window.location.host}${WS_ENDPOINTS.fetchProgress}`);
+                
+                const operationComplete = new Promise((resolve, reject) => {
+                    ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        
+                        if (data.type !== 'auto_organize_progress') return;
+                        
+                        switch(data.status) {
+                            case 'started':
+                                loading.setProgress(0);
+                                const operationType = data.operation_type === 'bulk' ? 'selected models' : 'all models';
+                                loading.setStatus(translate('loras.bulkOperations.autoOrganizeProgress.starting', { type: operationType }, `Starting auto-organize for ${operationType}...`));
+                                break;
+                                
+                            case 'processing':
+                                const percent = data.total > 0 ? ((data.processed / data.total) * 90).toFixed(1) : 0;
+                                loading.setProgress(percent);
+                                loading.setStatus(
+                                    translate('loras.bulkOperations.autoOrganizeProgress.processing', {
+                                        processed: data.processed,
+                                        total: data.total,
+                                        success: data.success,
+                                        failures: data.failures,
+                                        skipped: data.skipped
+                                    }, `Processing (${data.processed}/${data.total}) - ${data.success} moved, ${data.skipped} skipped, ${data.failures} failed`)
+                                );
+                                break;
+                                
+                            case 'cleaning':
+                                loading.setProgress(95);
+                                loading.setStatus(translate('loras.bulkOperations.autoOrganizeProgress.cleaning', {}, 'Cleaning up empty directories...'));
+                                break;
+                                
+                            case 'completed':
+                                loading.setProgress(100);
+                                loading.setStatus(
+                                    translate('loras.bulkOperations.autoOrganizeProgress.completed', {
+                                        success: data.success,
+                                        skipped: data.skipped,
+                                        failures: data.failures,
+                                        total: data.total
+                                    }, `Completed: ${data.success} moved, ${data.skipped} skipped, ${data.failures} failed`)
+                                );
+                                
+                                setTimeout(() => {
+                                    resolve(data);
+                                }, 1500);
+                                break;
+                                
+                            case 'error':
+                                loading.setStatus(translate('loras.bulkOperations.autoOrganizeProgress.error', { error: data.error }, `Error: ${data.error}`));
+                                reject(new Error(data.error));
+                                break;
+                        }
+                    };
+                    
+                    ws.onerror = (error) => {
+                        console.error('WebSocket error during auto-organize:', error);
+                        reject(new Error('Connection error'));
+                    };
+                });
+                
+                // Start the auto-organize operation
+                const endpoint = this.apiConfig.endpoints.autoOrganize;
+                const requestOptions = {
+                    method: filePaths ? 'POST' : 'GET',
+                    headers: filePaths ? { 'Content-Type': 'application/json' } : {}
+                };
+                
+                if (filePaths) {
+                    requestOptions.body = JSON.stringify({ file_paths: filePaths });
+                }
+                
+                const response = await fetch(endpoint, requestOptions);
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Failed to start auto-organize operation');
+                }
+                
+                // Wait for the operation to complete via WebSocket
+                const result = await operationComplete;
+                
+                // Show appropriate success message based on results
+                if (result.failures === 0) {
+                    showToast('toast.loras.autoOrganizeSuccess', { 
+                        count: result.success,
+                        type: result.operation_type === 'bulk' ? 'selected models' : 'all models'
+                    }, 'success');
+                } else {
+                    showToast('toast.loras.autoOrganizePartialSuccess', { 
+                        success: result.success,
+                        failures: result.failures,
+                        total: result.total
+                    }, 'warning');
+                }
+                
+            } catch (error) {
+                console.error('Error during auto-organize:', error);
+                showToast('toast.loras.autoOrganizeFailed', { error: error.message }, 'error');
+                throw error;
+            } finally {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.close();
+                }
+            }
+        }, {
+            initialMessage: translate('loras.bulkOperations.autoOrganizeProgress.initializing', {}, 'Initializing auto-organize...'),
+            completionMessage: translate('loras.bulkOperations.autoOrganizeProgress.complete', {}, 'Auto-organize complete')
+        });
     }
 }

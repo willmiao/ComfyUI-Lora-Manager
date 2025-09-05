@@ -324,8 +324,18 @@
             "copyAll": "複製全部語法",
             "refreshAll": "刷新全部 metadata",
             "moveAll": "全部移動到資料夾",
+            "autoOrganize": "自動整理所選模型",
             "deleteAll": "刪除全部模型",
-            "clear": "清除選取"
+            "clear": "清除選取",
+            "autoOrganizeProgress": {
+                "initializing": "正在初始化自動整理...",
+                "starting": "正在開始自動整理 {type}...",
+                "processing": "處理中（{processed}/{total}）- 已移動 {success}，已略過 {skipped}，失敗 {failures}",
+                "cleaning": "正在清理空資料夾...",
+                "completed": "完成：已移動 {success}，已略過 {skipped}，失敗 {failures}",
+                "complete": "自動整理完成",
+                "error": "錯誤：{error}"
+            }
         },
         "contextMenu": {
             "refreshMetadata": "刷新 Civitai 資料",
@@ -942,7 +952,11 @@
             "downloadPartialWithAccess": "已下載 {completed} 個 LoRA，共 {total} 個。{accessFailures} 個因訪問限制而失敗。請檢查您的 API 密鑰或提前訪問狀態。",
             "pleaseSelectVersion": "請選擇一個版本",
             "versionExists": "此版本已存在於您的庫中",
-            "downloadCompleted": "下載成功完成"
+            "downloadCompleted": "下載成功完成",
+            "autoOrganizeSuccess": "自動整理已成功完成，共 {count} 個 {type} 已整理",
+            "autoOrganizePartialSuccess": "自動整理完成：已移動 {success} 個，{failures} 個失敗，共 {total} 個模型",
+            "autoOrganizeFailed": "自動整理失敗：{error}",
+            "noModelsSelected": "未選擇任何模型"
         },
         "recipes": {
             "fetchFailed": "取得配方失敗：{message}",

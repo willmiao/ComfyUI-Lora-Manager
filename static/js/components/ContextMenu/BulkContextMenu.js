@@ -33,6 +33,7 @@ export class BulkContextMenu extends BaseContextMenu {
         const copyAllItem = this.menu.querySelector('[data-action="copy-all"]');
         const refreshAllItem = this.menu.querySelector('[data-action="refresh-all"]');
         const moveAllItem = this.menu.querySelector('[data-action="move-all"]');
+        const autoOrganizeItem = this.menu.querySelector('[data-action="auto-organize"]');
         const deleteAllItem = this.menu.querySelector('[data-action="delete-all"]');
 
         if (sendToWorkflowAppendItem) {
@@ -49,6 +50,9 @@ export class BulkContextMenu extends BaseContextMenu {
         }
         if (moveAllItem) {
             moveAllItem.style.display = config.moveAll ? 'flex' : 'none';
+        }
+        if (autoOrganizeItem) {
+            autoOrganizeItem.style.display = config.autoOrganize ? 'flex' : 'none';
         }
         if (deleteAllItem) {
             deleteAllItem.style.display = config.deleteAll ? 'flex' : 'none';
@@ -96,6 +100,9 @@ export class BulkContextMenu extends BaseContextMenu {
                 break;
             case 'move-all':
                 window.moveManager.showMoveModal('bulk');
+                break;
+            case 'auto-organize':
+                bulkManager.autoOrganizeSelectedModels();
                 break;
             case 'delete-all':
                 bulkManager.showBulkDeleteModal();

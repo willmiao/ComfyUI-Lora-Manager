@@ -324,8 +324,18 @@
             "copyAll": "모든 문법 복사",
             "refreshAll": "모든 메타데이터 새로고침",
             "moveAll": "모두 폴더로 이동",
+            "autoOrganize": "자동 정리 선택",
             "deleteAll": "모든 모델 삭제",
-            "clear": "선택 지우기"
+            "clear": "선택 지우기",
+            "autoOrganizeProgress": {
+                "initializing": "자동 정리 초기화 중...",
+                "starting": "{type}에 대한 자동 정리 시작...",
+                "processing": "처리 중 ({processed}/{total}) - {success}개 이동, {skipped}개 건너뜀, {failures}개 실패",
+                "cleaning": "빈 디렉토리 정리 중...",
+                "completed": "완료: {success}개 이동, {skipped}개 건너뜀, {failures}개 실패",
+                "complete": "자동 정리 완료",
+                "error": "오류: {error}"
+            }
         },
         "contextMenu": {
             "refreshMetadata": "Civitai 데이터 새로고침",
@@ -942,7 +952,11 @@
             "downloadPartialWithAccess": "{total}개 중 {completed}개 LoRA가 다운로드되었습니다. {accessFailures}개는 액세스 제한으로 실패했습니다. 설정에서 API 키 또는 얼리 액세스 상태를 확인하세요.",
             "pleaseSelectVersion": "버전을 선택해주세요",
             "versionExists": "이 버전은 이미 라이브러리에 있습니다",
-            "downloadCompleted": "다운로드가 성공적으로 완료되었습니다"
+            "downloadCompleted": "다운로드가 성공적으로 완료되었습니다",
+            "autoOrganizeSuccess": "{count}개의 {type}에 대해 자동 정리가 성공적으로 완료되었습니다",
+            "autoOrganizePartialSuccess": "자동 정리 완료: 전체 {total}개 중 {success}개 이동, {failures}개 실패",
+            "autoOrganizeFailed": "자동 정리 실패: {error}",
+            "noModelsSelected": "선택된 모델이 없습니다"
         },
         "recipes": {
             "fetchFailed": "레시피 가져오기 실패: {message}",
