@@ -495,41 +495,11 @@ class CivitaiClient:
             logger.error(f"Error fetching model metadata: {e}", exc_info=True)
             return None, 0
 
-    # Keep old method for backward compatibility, delegating to the new one
-    async def get_model_description(self, model_id: str) -> Optional[str]:
-        """Fetch the model description from Civitai API (Legacy method)"""
-        metadata, _ = await self.get_model_metadata(model_id)
-        return metadata.get("description") if metadata else None
-
     async def close(self):
         """Close the session if it exists"""
         if self._session is not None:
             await self._session.close()
             self._session = None
-
-    async def _get_hash_from_civitai(self, model_version_id: str) -> Optional[str]:
-        """Get hash from Civitai API"""
-        try:
-            session = await self._ensure_fresh_session()
-            if not session:
-                return None
-            
-            version_info = await session.get(f"{self.base_url}/model-versions/{model_version_id}")
-            
-            if not version_info or not version_info.json().get('files'):
-                return None
-            
-            # Get hash from the first file
-            for file_info in version_info.json().get('files', []):
-                if file_info.get('hashes', {}).get('SHA256'):
-                    # Convert hash to lowercase to standardize
-                    hash_value = file_info['hashes']['SHA256'].lower()
-                    return hash_value
-                
-            return None
-        except Exception as e:
-            logger.error(f"Error getting hash from Civitai: {e}")
-            return None
 
     async def get_image_info(self, image_id: str) -> Optional[Dict]:
         """Fetch image information from Civitai API
