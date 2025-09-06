@@ -43,6 +43,14 @@ export class CheckpointsControls extends PageControls {
             showDownloadModal: () => {
                 downloadManager.showDownloadModal();
             },
+
+            toggleBulkMode: () => {
+                if (window.bulkManager) {
+                    window.bulkManager.toggleBulkMode();
+                } else {
+                    console.error('Bulk manager not available');
+                }
+            },
             
             // No clearCustomFilter implementation is needed for checkpoints
             // as custom filters are currently only used for LoRAs

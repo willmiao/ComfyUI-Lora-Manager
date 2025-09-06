@@ -185,12 +185,9 @@ export class PageControls {
             duplicatesButton.addEventListener('click', () => this.findDuplicates());
         }
         
-        if (this.pageType === 'loras') {
-            // Bulk operations button - LoRAs only
-            const bulkButton = document.querySelector('[data-action="bulk"]');
-            if (bulkButton) {
-                bulkButton.addEventListener('click', () => this.toggleBulkMode());
-            }
+        const bulkButton = document.querySelector('[data-action="bulk"]');
+        if (bulkButton) {
+            bulkButton.addEventListener('click', () => this.toggleBulkMode());
         }
         
         // Favorites filter button handler
@@ -349,14 +346,9 @@ export class PageControls {
     }
     
     /**
-     * Toggle bulk mode (LoRAs only)
+     * Toggle bulk mode
      */
     toggleBulkMode() {
-        if (this.pageType !== 'loras' || !this.api) {
-            console.error('Bulk mode is only available for LoRAs');
-            return;
-        }
-        
         this.api.toggleBulkMode();
     }
     
