@@ -34,6 +34,10 @@ Enhance your Civitai browsing experience with our companion browser extension! S
 
 ## Release Notes
 
+### v0.9.2
+* **Bulk Auto-Organization Action** - Added a new bulk auto-organization feature. You can now select multiple models and automatically organize them according to your current path template settings for streamlined management.
+* **Bug Fixes** - Addressed several bugs to improve stability and reliability.
+
 ### v0.9.1
 * **Enhanced Bulk Operations** - Improved bulk operations with Marquee Selection and a bulk operation context menu, providing a more intuitive, desktop-application-like user experience.
 * **New Bulk Actions** - Added bulk operations for adding tags and setting base models to multiple models simultaneously.
