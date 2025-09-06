@@ -67,8 +67,9 @@ class UsageStats:
     def _get_stats_file_path(self) -> str:
         """Get the path to the stats JSON file"""
         if not config.loras_roots or len(config.loras_roots) == 0:
-            # Fallback to temporary directory if no lora roots
-            return os.path.join(config.temp_directory, self.STATS_FILENAME)
+            # If no lora roots are available, we can't save stats
+            # This will be handled by the caller
+            raise RuntimeError("No LoRA root directories configured. Cannot initialize usage statistics.")
         
         # Use the first lora root
         return os.path.join(config.loras_roots[0], self.STATS_FILENAME)

@@ -33,7 +33,13 @@ class StatsRoutes:
         self.lora_scanner = await ServiceRegistry.get_lora_scanner()
         self.checkpoint_scanner = await ServiceRegistry.get_checkpoint_scanner()
         self.embedding_scanner = await ServiceRegistry.get_embedding_scanner()
-        self.usage_stats = UsageStats()
+        
+        # Only initialize usage stats if we have valid paths configured
+        try:
+            self.usage_stats = UsageStats()
+        except RuntimeError as e:
+            logger.warning(f"Could not initialize usage statistics: {e}")
+            self.usage_stats = None
 
     async def handle_stats_page(self, request: web.Request) -> web.Response:
         """Handle GET /statistics request"""

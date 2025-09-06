@@ -213,6 +213,54 @@ class StandaloneServer:
 # After all mocks are in place, import LoraManager
 from py.lora_manager import LoraManager
 
+def validate_settings():
+    """Validate that settings.json exists and has required configuration"""
+    settings_path = os.path.join(os.path.dirname(__file__), 'settings.json')
+    if not os.path.exists(settings_path):
+        logger.error("=" * 80)
+        logger.error("CONFIGURATION ERROR: settings.json file not found!")
+        logger.error("")
+        logger.error("To run in standalone mode, you need to create a settings.json file.")
+        logger.error("Please follow these steps:")
+        logger.error("")
+        logger.error("1. Copy the provided settings.json.example file to create a new file")
+        logger.error("   named settings.json in the comfyui-lora-manager folder")
+        logger.error("")
+        logger.error("2. Edit settings.json to include your correct model folder paths")
+        logger.error("   and CivitAI API key")
+        logger.error("=" * 80)
+        return False
+    
+    # Check if settings.json has valid folder paths
+    try:
+        with open(settings_path, 'r', encoding='utf-8') as f:
+            settings = json.load(f)
+        
+        folder_paths = settings.get('folder_paths', {})
+        has_valid_paths = False
+        
+        for path_type in ['loras', 'checkpoints', 'embeddings']:
+            paths = folder_paths.get(path_type, [])
+            if paths and any(os.path.exists(p) for p in paths):
+                has_valid_paths = True
+                break
+        
+        if not has_valid_paths:
+            logger.warning("=" * 80)
+            logger.warning("CONFIGURATION WARNING: No valid model folder paths found!")
+            logger.warning("")
+            logger.warning("Your settings.json exists but doesn't contain valid folder paths.")
+            logger.warning("Please check and update the folder_paths section in settings.json")
+            logger.warning("to include existing directories for your models.")
+            logger.warning("=" * 80)
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error reading settings.json: {e}")
+        return False
+    
+    return True
+
 class StandaloneLoraManager(LoraManager):
     """Extended LoraManager for standalone mode"""
     
@@ -404,6 +452,12 @@ async def main():
     
     # Set log level
     logging.getLogger().setLevel(getattr(logging, args.log_level))
+    
+    # Validate settings before proceeding
+    if not validate_settings():
+        logger.error("Cannot start server due to configuration issues.")
+        logger.error("Please fix the settings.json file and try again.")
+        return
     
     # Create the server instance
     server = StandaloneServer()
