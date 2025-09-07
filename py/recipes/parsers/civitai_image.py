@@ -53,6 +53,14 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
             # Track already added LoRAs to prevent duplicates
             added_loras = {}  # key: model_version_id or hash, value: index in result["loras"]
             
+            # Extract hash information from hashes field for LoRA matching
+            lora_hashes = {}
+            if "hashes" in metadata and isinstance(metadata["hashes"], dict):
+                for key, hash_value in metadata["hashes"].items():
+                    if key.startswith("LORA:"):
+                        lora_name = key.replace("LORA:", "")
+                        lora_hashes[lora_name] = hash_value
+            
             # Extract prompt and negative prompt
             if "prompt" in metadata:
                 result["gen_params"]["prompt"] = metadata["prompt"]
@@ -100,6 +108,10 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                     # Modified to process resources without a type field as potential LoRAs
                     if resource.get("type", "lora") == "lora":
                         lora_hash = resource.get("hash", "")
+                        
+                        # Try to get hash from the hashes field if not present in resource
+                        if not lora_hash and resource.get("name"):
+                            lora_hash = lora_hashes.get(resource["name"], "")
                         
                         # Skip LoRAs without proper identification (hash or modelVersionId)
                         if not lora_hash and not resource.get("modelVersionId"):
