@@ -13,6 +13,7 @@ from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
 from ..services.download_manager import DownloadManager
 from ..services.websocket_manager import ws_manager
+from ..services.metadata_service import get_metadata_provider
 
 logger = logging.getLogger(__name__)
 

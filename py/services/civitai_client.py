@@ -3,9 +3,8 @@ import aiohttp
 import os
 import logging
 import asyncio
-from email.parser import Parser
 from typing import Optional, Dict, Tuple, List
-from urllib.parse import unquote
+from .model_metadata_provider import CivitaiModelMetadataProvider, ModelMetadataProviderManager
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +18,11 @@ class CivitaiClient:
         async with cls._lock:
             if cls._instance is None:
                 cls._instance = cls()
+                
+                # Register this client as a metadata provider
+                provider_manager = await ModelMetadataProviderManager.get_instance()
+                provider_manager.register_provider('civitai', CivitaiModelMetadataProvider(cls._instance), True)
+                
             return cls._instance
 
     def __init__(self):
@@ -69,24 +73,6 @@ class CivitaiClient:
         
         return await self.session
 
-    def _parse_content_disposition(self, header: str) -> str:
-        """Parse filename from content-disposition header"""
-        if not header:
-            return None
-        
-        # Handle quoted filenames
-        if 'filename="' in header:
-            start = header.index('filename="') + 10
-            end = header.index('"', start)
-            return unquote(header[start:end])
-        
-        # Fallback to original parsing
-        disposition = Parser().parsestr(f'Content-Disposition: {header}')
-        filename = disposition.get_param('filename')
-        if filename:
-            return unquote(filename)
-        return None
-
     def _get_request_headers(self) -> dict:
         """Get request headers with optional API key"""
         headers = {
@@ -101,7 +87,7 @@ class CivitaiClient:
             
         return headers
 
-    async def _download_file(self, url: str, save_dir: str, default_filename: str, progress_callback=None) -> Tuple[bool, str]:
+    async def download_file(self, url: str, save_dir: str, default_filename: str, progress_callback=None) -> Tuple[bool, str]:
         """Download file with resumable downloads and retry mechanism
 
         Args:
@@ -129,7 +115,6 @@ class CivitaiClient:
             logger.info(f"Resuming download from offset {resume_offset} bytes")
         
         total_size = 0
-        filename = default_filename
         
         while retry_count <= max_retries:
             try:

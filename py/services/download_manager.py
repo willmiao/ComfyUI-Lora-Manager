@@ -487,7 +487,7 @@ class DownloadManager:
                     await progress_callback(3)  # 3% progress after preview download
 
             # Download model file with progress tracking
-            success, result = await civitai_client._download_file(
+            success, result = await civitai_client.download_file(
                 download_url, 
                 save_dir,
                 os.path.basename(save_path),
