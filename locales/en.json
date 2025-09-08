@@ -16,7 +16,9 @@
             "loading": "Loading...",
             "unknown": "Unknown",
             "date": "Date",
-            "version": "Version"
+            "version": "Version",
+            "enabled": "Enabled",
+            "disabled": "Disabled"
         },
         "language": {
             "select": "Language",
@@ -178,7 +180,8 @@
             "folderSettings": "Folder Settings",
             "downloadPathTemplates": "Download Path Templates",
             "exampleImages": "Example Images",
-            "misc": "Misc."
+            "misc": "Misc.",
+            "metadataArchive": "Metadata Archive Database"
         },
         "contentFiltering": {
             "blurNsfwContent": "Blur NSFW Content",
@@ -273,6 +276,31 @@
         "misc": {
             "includeTriggerWords": "Include Trigger Words in LoRA Syntax",
             "includeTriggerWordsHelp": "Include trained trigger words when copying LoRA syntax to clipboard"
+        },
+        "metadataArchive": {
+            "enableArchiveDb": "Enable Metadata Archive Database",
+            "enableArchiveDbHelp": "Use local database for faster metadata retrieval and access to deleted models. Recommended for better performance.",
+            "providerPriority": "Metadata Provider Priority",
+            "providerPriorityHelp": "Choose which metadata source to try first when loading model information",
+            "priorityArchiveDb": "Archive Database (Recommended)",
+            "priorityCivitaiApi": "Civitai API",
+            "status": "Status",
+            "statusAvailable": "Available",
+            "statusUnavailable": "Not Available",
+            "enabled": "Enabled",
+            "currentPriority": "Current Priority",
+            "management": "Database Management",
+            "managementHelp": "Download or remove the metadata archive database",
+            "downloadButton": "Download Database",
+            "downloadingButton": "Downloading...",
+            "downloadedButton": "Downloaded",
+            "removeButton": "Remove Database",
+            "removingButton": "Removing...",
+            "downloadSuccess": "Metadata archive database downloaded successfully",
+            "downloadError": "Failed to download metadata archive database",
+            "removeSuccess": "Metadata archive database removed successfully",
+            "removeError": "Failed to remove metadata archive database",
+            "removeConfirm": "Are you sure you want to remove the metadata archive database? This will delete the local database file and you'll need to download it again to use this feature."
         }
     },
     "loras": {

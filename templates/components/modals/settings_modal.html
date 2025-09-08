@@ -419,6 +419,70 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Metadata Archive Section -->
+            <div class="settings-section">
+                <h3>{{ t('settings.sections.metadataArchive') }}</h3>
+                
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="enableMetadataArchive">{{ t('settings.metadataArchive.enableArchiveDb') }}:</label>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="enableMetadataArchive" onchange="settingsManager.saveToggleSetting('enableMetadataArchive', 'enable_metadata_archive_db')">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.metadataArchive.enableArchiveDbHelp') }}
+                    </div>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="metadataProviderPriority">{{ t('settings.metadataArchive.providerPriority') }}:</label>
+                        </div>
+                        <div class="setting-control select-control">
+                            <select id="metadataProviderPriority" onchange="settingsManager.saveSelectSetting('metadataProviderPriority', 'metadata_provider_priority')">
+                                <option value="archive_db">{{ t('settings.metadataArchive.priorityArchiveDb') }}</option>
+                                <option value="civitai_api">{{ t('settings.metadataArchive.priorityCivitaiApi') }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.metadataArchive.providerPriorityHelp') }}
+                    </div>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="metadata-archive-status" id="metadataArchiveStatus">
+                        <!-- Status will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label>{{ t('settings.metadataArchive.management') }}:</label>
+                        </div>
+                        <div class="setting-control">
+                            <button type="button" id="downloadMetadataArchiveBtn" class="btn btn-primary" onclick="settingsManager.downloadMetadataArchive()">
+                                {{ t('settings.metadataArchive.downloadButton') }}
+                            </button>
+                            <button type="button" id="removeMetadataArchiveBtn" class="btn btn-danger" onclick="settingsManager.removeMetadataArchive()" style="margin-left: 10px;">
+                                {{ t('settings.metadataArchive.removeButton') }}
+                            </button>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.metadataArchive.managementHelp') }}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

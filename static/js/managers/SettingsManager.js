@@ -260,6 +260,9 @@ export class SettingsManager {
             includeTriggerWordsCheckbox.checked = state.global.settings.includeTriggerWords || false;
         }
 
+        // Load metadata archive settings
+        await this.loadMetadataArchiveSettings();
+
         // Load base model path mappings
         this.loadBaseModelMappings();
 
@@ -838,6 +841,11 @@ export class SettingsManager {
                     state: value ? 'toast.settings.compactModeEnabled' : 'toast.settings.compactModeDisabled' 
                 }, 'success');
             }
+
+            // Special handling for metadata archive settings
+            if (settingKey === 'enable_metadata_archive_db' || settingKey === 'metadata_provider_priority') {
+                await this.updateMetadataArchiveStatus();
+            }
             
         } catch (error) {
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
@@ -910,9 +918,190 @@ export class SettingsManager {
                 
                 showToast('toast.settings.displayDensitySet', { density: densityName }, 'success');
             }
+
+            // Special handling for metadata archive settings
+            if (settingKey === 'metadata_provider_priority') {
+                await this.updateMetadataArchiveStatus();
+            }
             
         } catch (error) {
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
+        }
+    }
+
+    async loadMetadataArchiveSettings() {
+        try {
+            // Load current settings from state
+            const enableMetadataArchiveCheckbox = document.getElementById('enableMetadataArchive');
+            if (enableMetadataArchiveCheckbox) {
+                enableMetadataArchiveCheckbox.checked = state.global.settings.enable_metadata_archive_db || false;
+            }
+
+            const metadataProviderPrioritySelect = document.getElementById('metadataProviderPriority');
+            if (metadataProviderPrioritySelect) {
+                metadataProviderPrioritySelect.value = state.global.settings.metadata_provider_priority || 'archive_db';
+            }
+
+            // Load status
+            await this.updateMetadataArchiveStatus();
+        } catch (error) {
+            console.error('Error loading metadata archive settings:', error);
+        }
+    }
+
+    async updateMetadataArchiveStatus() {
+        try {
+            const response = await fetch('/api/metadata-archive-status');
+            const data = await response.json();
+
+            const statusContainer = document.getElementById('metadataArchiveStatus');
+            if (statusContainer && data.success) {
+                const status = data;
+                const sizeText = status.databaseSize > 0 ? ` (${this.formatFileSize(status.databaseSize)})` : '';
+                
+                statusContainer.innerHTML = `
+                    <div class="status-info">
+                        <div class="status-item">
+                            <strong>${translate('settings.metadataArchive.status')}:</strong> 
+                            <span class="status-badge ${status.isAvailable ? 'status-available' : 'status-unavailable'}">
+                                ${status.isAvailable ? translate('settings.metadataArchive.statusAvailable') : translate('settings.metadataArchive.statusUnavailable')}
+                            </span>
+                            ${sizeText}
+                        </div>
+                        <div class="status-item">
+                            <strong>${translate('settings.metadataArchive.enabled')}:</strong> 
+                            <span class="status-badge ${status.isEnabled ? 'status-enabled' : 'status-disabled'}">
+                                ${status.isEnabled ? translate('common.enabled') : translate('common.disabled')}
+                            </span>
+                        </div>
+                        <div class="status-item">
+                            <strong>${translate('settings.metadataArchive.currentPriority')}:</strong> 
+                            ${status.priority === 'archive_db' ? translate('settings.metadataArchive.priorityArchiveDb') : translate('settings.metadataArchive.priorityCivitaiApi')}
+                        </div>
+                    </div>
+                `;
+
+                // Update button states
+                const downloadBtn = document.getElementById('downloadMetadataArchiveBtn');
+                const removeBtn = document.getElementById('removeMetadataArchiveBtn');
+                
+                if (downloadBtn) {
+                    downloadBtn.disabled = status.isAvailable;
+                    downloadBtn.textContent = status.isAvailable ? 
+                        translate('settings.metadataArchive.downloadedButton') : 
+                        translate('settings.metadataArchive.downloadButton');
+                }
+                
+                if (removeBtn) {
+                    removeBtn.disabled = !status.isAvailable;
+                }
+            }
+        } catch (error) {
+            console.error('Error updating metadata archive status:', error);
+        }
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    async downloadMetadataArchive() {
+        try {
+            const downloadBtn = document.getElementById('downloadMetadataArchiveBtn');
+            if (downloadBtn) {
+                downloadBtn.disabled = true;
+                downloadBtn.textContent = translate('settings.metadataArchive.downloadingButton');
+            }
+
+            const response = await fetch('/api/download-metadata-archive', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showNotification(translate('settings.metadataArchive.downloadSuccess'), 'success');
+                
+                // Update settings in state
+                state.global.settings.enable_metadata_archive_db = true;
+                setStorageItem('settings', state.global.settings);
+                
+                // Update UI
+                const enableCheckbox = document.getElementById('enableMetadataArchive');
+                if (enableCheckbox) {
+                    enableCheckbox.checked = true;
+                }
+                
+                await this.updateMetadataArchiveStatus();
+            } else {
+                showNotification(translate('settings.metadataArchive.downloadError') + ': ' + data.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error downloading metadata archive:', error);
+            showNotification(translate('settings.metadataArchive.downloadError') + ': ' + error.message, 'error');
+        } finally {
+            const downloadBtn = document.getElementById('downloadMetadataArchiveBtn');
+            if (downloadBtn) {
+                downloadBtn.disabled = false;
+                downloadBtn.textContent = translate('settings.metadataArchive.downloadButton');
+            }
+        }
+    }
+
+    async removeMetadataArchive() {
+        if (!confirm(translate('settings.metadataArchive.removeConfirm'))) {
+            return;
+        }
+
+        try {
+            const removeBtn = document.getElementById('removeMetadataArchiveBtn');
+            if (removeBtn) {
+                removeBtn.disabled = true;
+                removeBtn.textContent = translate('settings.metadataArchive.removingButton');
+            }
+
+            const response = await fetch('/api/remove-metadata-archive', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showNotification(translate('settings.metadataArchive.removeSuccess'), 'success');
+                
+                // Update settings in state
+                state.global.settings.enable_metadata_archive_db = false;
+                setStorageItem('settings', state.global.settings);
+                
+                // Update UI
+                const enableCheckbox = document.getElementById('enableMetadataArchive');
+                if (enableCheckbox) {
+                    enableCheckbox.checked = false;
+                }
+                
+                await this.updateMetadataArchiveStatus();
+            } else {
+                showNotification(translate('settings.metadataArchive.removeError') + ': ' + data.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error removing metadata archive:', error);
+            showNotification(translate('settings.metadataArchive.removeError') + ': ' + error.message, 'error');
+        } finally {
+            const removeBtn = document.getElementById('removeMetadataArchiveBtn');
+            if (removeBtn) {
+                removeBtn.disabled = false;
+                removeBtn.textContent = translate('settings.metadataArchive.removeButton');
+            }
         }
     }
     

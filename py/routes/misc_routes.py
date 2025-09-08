@@ -11,6 +11,8 @@ from ..utils.lora_metadata import extract_trained_words
 from ..config import config
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS, NODE_TYPES, DEFAULT_NODE_COLOR
 from ..services.service_registry import ServiceRegistry
+from ..services.metadata_service import get_metadata_archive_manager, update_metadata_provider_priority
+from ..services.websocket_manager import ws_manager
 import re
 
 logger = logging.getLogger(__name__)
@@ -112,6 +114,11 @@ class MiscRoutes:
         
         # Add new route for checking if a model exists in the library
         app.router.add_get('/api/check-model-exists', MiscRoutes.check_model_exists)
+        
+        # Add routes for metadata archive database management
+        app.router.add_post('/api/download-metadata-archive', MiscRoutes.download_metadata_archive)
+        app.router.add_post('/api/remove-metadata-archive', MiscRoutes.remove_metadata_archive)
+        app.router.add_get('/api/metadata-archive-status', MiscRoutes.get_metadata_archive_status)
 
     @staticmethod
     async def clear_cache(request):
@@ -693,6 +700,111 @@ class MiscRoutes:
             
         except Exception as e:
             logger.error(f"Failed to check model existence: {e}", exc_info=True)
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    @staticmethod
+    async def download_metadata_archive(request):
+        """Download and extract the metadata archive database"""
+        try:
+            archive_manager = await get_metadata_archive_manager()
+            
+            # Progress callback to send updates via WebSocket
+            def progress_callback(stage, message):
+                asyncio.create_task(ws_manager.broadcast({
+                    'stage': stage,
+                    'message': message,
+                    'type': 'metadata_archive_download'
+                }))
+            
+            # Download and extract in background
+            success = await archive_manager.download_and_extract_database(progress_callback)
+            
+            if success:
+                # Update settings to enable metadata archive
+                settings.set('enable_metadata_archive_db', True)
+                
+                # Update provider priority
+                await update_metadata_provider_priority()
+                
+                return web.json_response({
+                    'success': True,
+                    'message': 'Metadata archive database downloaded and extracted successfully'
+                })
+            else:
+                return web.json_response({
+                    'success': False,
+                    'error': 'Failed to download and extract metadata archive database'
+                }, status=500)
+                
+        except Exception as e:
+            logger.error(f"Error downloading metadata archive: {e}", exc_info=True)
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    @staticmethod
+    async def remove_metadata_archive(request):
+        """Remove the metadata archive database"""
+        try:
+            archive_manager = await get_metadata_archive_manager()
+            
+            success = await archive_manager.remove_database()
+            
+            if success:
+                # Update settings to disable metadata archive
+                settings.set('enable_metadata_archive_db', False)
+                
+                # Update provider priority
+                await update_metadata_provider_priority()
+                
+                return web.json_response({
+                    'success': True,
+                    'message': 'Metadata archive database removed successfully'
+                })
+            else:
+                return web.json_response({
+                    'success': False,
+                    'error': 'Failed to remove metadata archive database'
+                }, status=500)
+                
+        except Exception as e:
+            logger.error(f"Error removing metadata archive: {e}", exc_info=True)
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+    
+    @staticmethod
+    async def get_metadata_archive_status(request):
+        """Get the status of metadata archive database"""
+        try:
+            archive_manager = await get_metadata_archive_manager()
+            
+            is_available = archive_manager.is_database_available()
+            is_enabled = settings.get('enable_metadata_archive_db', False)
+            priority = settings.get('metadata_provider_priority', 'archive_db')
+            
+            db_size = 0
+            if is_available:
+                db_path = archive_manager.get_database_path()
+                if db_path and os.path.exists(db_path):
+                    db_size = os.path.getsize(db_path)
+            
+            return web.json_response({
+                'success': True,
+                'isAvailable': is_available,
+                'isEnabled': is_enabled,
+                'priority': priority,
+                'databaseSize': db_size,
+                'databasePath': archive_manager.get_database_path() if is_available else None
+            })
+            
+        except Exception as e:
+            logger.error(f"Error getting metadata archive status: {e}", exc_info=True)
             return web.json_response({
                 'success': False,
                 'error': str(e)

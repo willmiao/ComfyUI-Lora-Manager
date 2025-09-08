@@ -4,6 +4,7 @@ from aiohttp import web
 from .base_model_routes import BaseModelRoutes
 from ..services.embedding_service import EmbeddingService
 from ..services.service_registry import ServiceRegistry
+from ..services.model_metadata_provider import ModelMetadataProviderManager
 
 logger = logging.getLogger(__name__)
 
@@ -14,14 +15,14 @@ class EmbeddingRoutes(BaseModelRoutes):
         """Initialize Embedding routes with Embedding service"""
         # Service will be initialized later via setup_routes
         self.service = None
-        self.civitai_client = None
+        self.metadata_provider = None
         self.template_name = "embeddings.html"
     
     async def initialize_services(self):
         """Initialize services from ServiceRegistry"""
         embedding_scanner = await ServiceRegistry.get_embedding_scanner()
         self.service = EmbeddingService(embedding_scanner)
-        self.civitai_client = await ServiceRegistry.get_civitai_client()
+        self.metadata_provider = await ModelMetadataProviderManager.get_instance()
         
         # Initialize parent with the service
         super().__init__(self.service)
@@ -61,7 +62,7 @@ class EmbeddingRoutes(BaseModelRoutes):
         """Get available versions for a Civitai embedding model with local availability info"""
         try:
             model_id = request.match_info['model_id']
-            response = await self.civitai_client.get_model_versions(model_id)
+            response = await self.metadata_provider.get_model_versions(model_id)
             if not response or not response.get('modelVersions'):
                 return web.Response(status=404, text="Model not found")
             

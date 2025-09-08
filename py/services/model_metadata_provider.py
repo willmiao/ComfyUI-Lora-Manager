@@ -297,7 +297,8 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 result = await provider.get_model_versions(model_id)
                 if result:
                     return result
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Provider failed for get_model_versions: {e}")
                 continue
         return None
 
@@ -307,27 +308,30 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 result = await provider.get_model_version(model_id, version_id)
                 if result:
                     return result
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Provider failed for get_model_version: {e}")
                 continue
         return None
 
     async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict], Optional[str]]:
         for provider in self.providers:
             try:
-                result, err = await provider.get_model_version_info(version_id)
+                result, error = await provider.get_model_version_info(version_id)
                 if result:
-                    return result, err
-            except Exception:
+                    return result, error
+            except Exception as e:
+                logger.debug(f"Provider failed for get_model_version_info: {e}")
                 continue
-        return None, "Not found in any provider"
+        return None, "No provider could retrieve the data"
 
     async def get_model_metadata(self, model_id: str) -> Tuple[Optional[Dict], int]:
         for provider in self.providers:
             try:
-                result, code = await provider.get_model_metadata(model_id)
+                result, status = await provider.get_model_metadata(model_id)
                 if result:
-                    return result, code
-            except Exception:
+                    return result, status
+            except Exception as e:
+                logger.debug(f"Provider failed for get_model_metadata: {e}")
                 continue
         return None, 404
 
