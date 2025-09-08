@@ -287,14 +287,18 @@ export function addLorasWidget(node, name, opts, callback) {
       });
 
       // Move preview tooltip events to nameEl instead of loraEl
+      let previewTimer; // Timer for delayed preview
       nameEl.addEventListener('mouseenter', async (e) => {
         e.stopPropagation();
         const rect = nameEl.getBoundingClientRect();
-        await previewTooltip.show(name, rect.right, rect.top);
+        previewTimer = setTimeout(async () => {
+          await previewTooltip.show(name, rect.right, rect.top);
+        }, 400); // 400ms delay
       });
 
       nameEl.addEventListener('mouseleave', (e) => {
         e.stopPropagation();
+        clearTimeout(previewTimer); // Cancel if not triggered
         previewTooltip.hide();
       });
       
