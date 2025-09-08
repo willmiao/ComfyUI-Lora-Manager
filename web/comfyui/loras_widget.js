@@ -11,12 +11,15 @@ import {
   EMPTY_CONTAINER_HEIGHT 
 } from "./loras_widget_utils.js";
 import { initDrag, createContextMenu, initHeaderDrag, initReorderDrag, handleKeyboardNavigation } from "./loras_widget_events.js";
+import { forwardMiddleMouseToCanvas } from "./utils.js";
 
 export function addLorasWidget(node, name, opts, callback) {
   // Create container for loras
   const container = document.createElement("div");
   container.className = "comfy-loras-container";
-  
+
+  forwardMiddleMouseToCanvas(container);
+
   // Set initial height using CSS variables approach
   const defaultHeight = 200;
   
