@@ -35,7 +35,7 @@ class ExampleImagesProcessor:
         return image_url
     
     @staticmethod
-    async def download_model_images(model_hash, model_name, model_images, model_dir, optimize, independent_session):
+    async def download_model_images(model_hash, model_name, model_images, model_dir, optimize, downloader):
         """Download images for a single model
         
         Returns:
@@ -78,23 +78,25 @@ class ExampleImagesProcessor:
             try:
                 logger.debug(f"Downloading {save_filename} for {model_name}")
                 
-                # Download directly using the independent session
-                async with independent_session.get(image_url, timeout=60) as response:
-                    if response.status == 200:
-                        with open(save_path, 'wb') as f:
-                            async for chunk in response.content.iter_chunked(8192):
-                                if chunk:
-                                    f.write(chunk)
-                    elif response.status == 404:
-                        error_msg = f"Failed to download file: {image_url}, status code: 404 - Model metadata might be stale"
-                        logger.warning(error_msg)
-                        model_success = False  # Mark the model as failed due to 404 error
-                        # Return early to trigger metadata refresh attempt
-                        return False, True  # (success, is_metadata_stale)
-                    else:
-                        error_msg = f"Failed to download file: {image_url}, status code: {response.status}"
-                        logger.warning(error_msg)
-                        model_success = False  # Mark the model as failed
+                # Download using the unified downloader
+                success, content = await downloader.download_to_memory(
+                    image_url,
+                    use_auth=False  # Example images don't need auth
+                )
+                
+                if success:
+                    with open(save_path, 'wb') as f:
+                        f.write(content)
+                elif "404" in str(content):
+                    error_msg = f"Failed to download file: {image_url}, status code: 404 - Model metadata might be stale"
+                    logger.warning(error_msg)
+                    model_success = False  # Mark the model as failed due to 404 error
+                    # Return early to trigger metadata refresh attempt
+                    return False, True  # (success, is_metadata_stale)
+                else:
+                    error_msg = f"Failed to download file: {image_url}, error: {content}"
+                    logger.warning(error_msg)
+                    model_success = False  # Mark the model as failed
             except Exception as e:
                 error_msg = f"Error downloading file {image_url}: {str(e)}"
                 logger.error(error_msg)
@@ -103,7 +105,7 @@ class ExampleImagesProcessor:
         return model_success, False  # (success, is_metadata_stale)
     
     @staticmethod
-    async def download_model_images_with_tracking(model_hash, model_name, model_images, model_dir, optimize, independent_session):
+    async def download_model_images_with_tracking(model_hash, model_name, model_images, model_dir, optimize, downloader):
         """Download images for a single model with tracking of failed image URLs
         
         Returns:
@@ -147,25 +149,27 @@ class ExampleImagesProcessor:
             try:
                 logger.debug(f"Downloading {save_filename} for {model_name}")
                 
-                # Download directly using the independent session
-                async with independent_session.get(image_url, timeout=60) as response:
-                    if response.status == 200:
-                        with open(save_path, 'wb') as f:
-                            async for chunk in response.content.iter_chunked(8192):
-                                if chunk:
-                                    f.write(chunk)
-                    elif response.status == 404:
-                        error_msg = f"Failed to download file: {image_url}, status code: 404 - Model metadata might be stale"
-                        logger.warning(error_msg)
-                        model_success = False  # Mark the model as failed due to 404 error
-                        failed_images.append(image_url)  # Track failed URL
-                        # Return early to trigger metadata refresh attempt
-                        return False, True, failed_images  # (success, is_metadata_stale, failed_images)
-                    else:
-                        error_msg = f"Failed to download file: {image_url}, status code: {response.status}"
-                        logger.warning(error_msg)
-                        model_success = False  # Mark the model as failed
-                        failed_images.append(image_url)  # Track failed URL
+                # Download using the unified downloader
+                success, content = await downloader.download_to_memory(
+                    image_url,
+                    use_auth=False  # Example images don't need auth
+                )
+                
+                if success:
+                    with open(save_path, 'wb') as f:
+                        f.write(content)
+                elif "404" in str(content):
+                    error_msg = f"Failed to download file: {image_url}, status code: 404 - Model metadata might be stale"
+                    logger.warning(error_msg)
+                    model_success = False  # Mark the model as failed due to 404 error
+                    failed_images.append(image_url)  # Track failed URL
+                    # Return early to trigger metadata refresh attempt
+                    return False, True, failed_images  # (success, is_metadata_stale, failed_images)
+                else:
+                    error_msg = f"Failed to download file: {image_url}, error: {content}"
+                    logger.warning(error_msg)
+                    model_success = False  # Mark the model as failed
+                    failed_images.append(image_url)  # Track failed URL
             except Exception as e:
                 error_msg = f"Error downloading file {image_url}: {str(e)}"
                 logger.error(error_msg)

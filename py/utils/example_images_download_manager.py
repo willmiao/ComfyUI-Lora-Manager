@@ -3,13 +3,13 @@ import os
 import asyncio
 import json
 import time
-import aiohttp
 from aiohttp import web
 from ..services.service_registry import ServiceRegistry
 from ..utils.metadata_manager import MetadataManager
 from .example_images_processor import ExampleImagesProcessor
 from .example_images_metadata import MetadataUpdater
 from ..services.websocket_manager import ws_manager  # Add this import at the top
+from ..services.downloader import get_downloader
 
 logger = logging.getLogger(__name__)
 
@@ -199,19 +199,8 @@ class DownloadManager:
         """Download example images for all models"""
         global is_downloading, download_progress
         
-        # Create independent download session
-        connector = aiohttp.TCPConnector(
-            ssl=True,
-            limit=3,
-            force_close=False,
-            enable_cleanup_closed=True
-        )
-        timeout = aiohttp.ClientTimeout(total=None, connect=60, sock_read=60)
-        independent_session = aiohttp.ClientSession(
-            connector=connector,
-            trust_env=True,
-            timeout=timeout
-        )
+        # Get unified downloader
+        downloader = await get_downloader()
         
         try:
             # Get scanners
@@ -246,7 +235,7 @@ class DownloadManager:
                 # Main logic for processing model is here, but actual operations are delegated to other classes
                 was_remote_download = await DownloadManager._process_model(
                     scanner_type, model, scanner, 
-                    output_dir, optimize, independent_session
+                    output_dir, optimize, downloader
                 )
                 
                 # Update progress
@@ -270,12 +259,6 @@ class DownloadManager:
             download_progress['end_time'] = time.time()
         
         finally:
-            # Close the independent session
-            try:
-                await independent_session.close()
-            except Exception as e:
-                logger.error(f"Error closing download session: {e}")
-                
             # Save final progress to file
             try:
                 DownloadManager._save_progress(output_dir)
@@ -286,7 +269,7 @@ class DownloadManager:
             is_downloading = False
     
     @staticmethod
-    async def _process_model(scanner_type, model, scanner, output_dir, optimize, independent_session):
+    async def _process_model(scanner_type, model, scanner, output_dir, optimize, downloader):
         """Process a single model download"""
         global download_progress
         
@@ -347,7 +330,7 @@ class DownloadManager:
                 images = model.get('civitai', {}).get('images', [])
                 
                 success, is_stale = await ExampleImagesProcessor.download_model_images(
-                    model_hash, model_name, images, model_dir, optimize, independent_session
+                    model_hash, model_name, images, model_dir, optimize, downloader
                 )
                 
                 # If metadata is stale, try to refresh it
@@ -365,7 +348,7 @@ class DownloadManager:
                         # Retry download with updated metadata
                         updated_images = updated_model.get('civitai', {}).get('images', [])
                         success, _ = await ExampleImagesProcessor.download_model_images(
-                            model_hash, model_name, updated_images, model_dir, optimize, independent_session
+                            model_hash, model_name, updated_images, model_dir, optimize, downloader
                         )
                     
                     download_progress['refreshed_models'].add(model_hash)
@@ -529,19 +512,8 @@ class DownloadManager:
         """Download example images for specific models only - synchronous version"""
         global download_progress
         
-        # Create independent download session
-        connector = aiohttp.TCPConnector(
-            ssl=True,
-            limit=3,
-            force_close=False,
-            enable_cleanup_closed=True
-        )
-        timeout = aiohttp.ClientTimeout(total=None, connect=60, sock_read=60)
-        independent_session = aiohttp.ClientSession(
-            connector=connector,
-            trust_env=True,
-            timeout=timeout
-        )
+        # Get unified downloader
+        downloader = await get_downloader()
         
         try:
             # Get scanners
@@ -586,7 +558,7 @@ class DownloadManager:
                 # Force process this model regardless of previous status
                 was_successful = await DownloadManager._process_specific_model(
                     scanner_type, model, scanner, 
-                    output_dir, optimize, independent_session
+                    output_dir, optimize, downloader
                 )
                 
                 if was_successful:
@@ -650,14 +622,11 @@ class DownloadManager:
             raise
         
         finally:
-            # Close the independent session
-            try:
-                await independent_session.close()
-            except Exception as e:
-                logger.error(f"Error closing download session: {e}")
+            # No need to close any sessions since we use the global downloader
+            pass
     
     @staticmethod
-    async def _process_specific_model(scanner_type, model, scanner, output_dir, optimize, independent_session):
+    async def _process_specific_model(scanner_type, model, scanner, output_dir, optimize, downloader):
         """Process a specific model for forced download, ignoring previous download status"""
         global download_progress
         
@@ -701,7 +670,7 @@ class DownloadManager:
                 images = model.get('civitai', {}).get('images', [])
                 
                 success, is_stale, failed_images = await ExampleImagesProcessor.download_model_images_with_tracking(
-                    model_hash, model_name, images, model_dir, optimize, independent_session
+                    model_hash, model_name, images, model_dir, optimize, downloader
                 )
                 
                 # If metadata is stale, try to refresh it
@@ -719,7 +688,7 @@ class DownloadManager:
                         # Retry download with updated metadata
                         updated_images = updated_model.get('civitai', {}).get('images', [])
                         success, _, additional_failed_images = await ExampleImagesProcessor.download_model_images_with_tracking(
-                            model_hash, model_name, updated_images, model_dir, optimize, independent_session
+                            model_hash, model_name, updated_images, model_dir, optimize, downloader
                         )
                         
                         # Combine failed images from both attempts

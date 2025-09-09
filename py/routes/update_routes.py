@@ -1,5 +1,4 @@
 import os
-import aiohttp
 import logging
 import toml
 import git
@@ -8,7 +7,7 @@ import shutil
 import tempfile
 from aiohttp import web
 from typing import Dict, List
-
+from ..services.downloader import get_downloader, Downloader
 
 logger = logging.getLogger(__name__)
 
@@ -162,28 +161,42 @@ class UpdateRoutes:
         github_api = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest"
 
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(github_api) as resp:
-                    if resp.status != 200:
-                        logger.error(f"Failed to fetch release info: {resp.status}")
-                        return False, ""
-                    data = await resp.json()
-                    zip_url = data.get("zipball_url")
-                    version = data.get("tag_name", "unknown")
+            downloader = await get_downloader()
+            
+            # Get release info
+            success, data = await downloader.make_request(
+                'GET',
+                github_api,
+                use_auth=False
+            )
+            if not success:
+                logger.error(f"Failed to fetch release info: {data}")
+                return False, ""
+            
+            zip_url = data.get("zipball_url")
+            version = data.get("tag_name", "unknown")
 
-                # Download ZIP
-                async with session.get(zip_url) as zip_resp:
-                    if zip_resp.status != 200:
-                        logger.error(f"Failed to download ZIP: {zip_resp.status}")
-                        return False, ""
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_zip:
-                        tmp_zip.write(await zip_resp.read())
-                        zip_path = tmp_zip.name
+            # Download ZIP to temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_zip:
+                tmp_zip_path = tmp_zip.name
+            
+            success, result = await downloader.download_file(
+                url=zip_url,
+                save_path=tmp_zip_path,
+                use_auth=False,
+                allow_resume=False
+            )
+            
+            if not success:
+                logger.error(f"Failed to download ZIP: {result}")
+                return False, ""
 
-                UpdateRoutes._clean_plugin_folder(plugin_root, skip_files=['settings.json'])
+            zip_path = tmp_zip_path
 
-                # Extract ZIP to temp dir
-                with tempfile.TemporaryDirectory() as tmp_dir:
+            UpdateRoutes._clean_plugin_folder(plugin_root, skip_files=['settings.json'])
+
+            # Extract ZIP to temp dir
+            with tempfile.TemporaryDirectory() as tmp_dir:
                     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                         zip_ref.extractall(tmp_dir)
                     # Find extracted folder (GitHub ZIP contains a root folder)
@@ -213,9 +226,9 @@ class UpdateRoutes:
                     with open(tracking_info_file, "w", encoding='utf-8') as file:
                         file.write('\n'.join(tracking_files))
 
-                os.remove(zip_path)
-                logger.info(f"Updated plugin via ZIP to {version}")
-                return True, version
+            os.remove(zip_path)
+            logger.info(f"Updated plugin via ZIP to {version}")
+            return True, version
 
         except Exception as e:
             logger.error(f"ZIP update failed: {e}", exc_info=True)
@@ -244,23 +257,23 @@ class UpdateRoutes:
         github_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/commits/main"
         
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(github_url, headers={'Accept': 'application/vnd.github+json'}) as response:
-                    if response.status != 200:
-                        logger.warning(f"Failed to fetch GitHub commit: {response.status}")
-                        return "main", []
-                    
-                    data = await response.json()
-                    commit_sha = data.get('sha', '')[:7]  # Short hash
-                    commit_message = data.get('commit', {}).get('message', '')
-                    
-                    # Format as "main-{short_hash}"
-                    version = f"main-{commit_sha}"
-                    
-                    # Use commit message as changelog
-                    changelog = [commit_message] if commit_message else []
-                    
-                    return version, changelog
+            downloader = await Downloader.get_instance()
+            success, data = await downloader.make_request('GET', github_url, headers={'Accept': 'application/vnd.github+json'})
+            
+            if not success:
+                logger.warning(f"Failed to fetch GitHub commit: {data}")
+                return "main", []
+            
+            commit_sha = data.get('sha', '')[:7]  # Short hash
+            commit_message = data.get('commit', {}).get('message', '')
+            
+            # Format as "main-{short_hash}"
+            version = f"main-{commit_sha}"
+            
+            # Use commit message as changelog
+            changelog = [commit_message] if commit_message else []
+            
+            return version, changelog
         
         except Exception as e:
             logger.error(f"Error fetching nightly version: {e}", exc_info=True)
@@ -410,22 +423,22 @@ class UpdateRoutes:
         github_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest"
         
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(github_url, headers={'Accept': 'application/vnd.github+json'}) as response:
-                    if response.status != 200:
-                        logger.warning(f"Failed to fetch GitHub release: {response.status}")
-                        return "v0.0.0", []
-                    
-                    data = await response.json()
-                    version = data.get('tag_name', '')
-                    if not version.startswith('v'):
-                        version = f"v{version}"
-                    
-                    # Extract changelog from release notes
-                    body = data.get('body', '')
-                    changelog = UpdateRoutes._parse_changelog(body)
-                    
-                    return version, changelog
+            downloader = await Downloader.get_instance()
+            success, data = await downloader.make_request('GET', github_url, headers={'Accept': 'application/vnd.github+json'})
+            
+            if not success:
+                logger.warning(f"Failed to fetch GitHub release: {data}")
+                return "v0.0.0", []
+            
+            version = data.get('tag_name', '')
+            if not version.startswith('v'):
+                version = f"v{version}"
+            
+            # Extract changelog from release notes
+            body = data.get('body', '')
+            changelog = UpdateRoutes._parse_changelog(body)
+            
+            return version, changelog
         
         except Exception as e:
             logger.error(f"Error fetching remote version: {e}", exc_info=True)

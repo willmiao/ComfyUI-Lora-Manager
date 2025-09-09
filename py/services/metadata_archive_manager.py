@@ -1,9 +1,9 @@
 import zipfile
-import aiohttp
 import logging
 import asyncio
 from pathlib import Path
 from typing import Optional
+from .downloader import get_downloader
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +67,8 @@ class MetadataArchiveManager:
             
     async def _download_archive(self, progress_callback=None) -> bool:
         """Download the zip archive from one of the available URLs"""
+        downloader = await get_downloader()
+        
         for url in self.DOWNLOAD_URLS:
             try:
                 logger.info(f"Attempting to download from {url}")
@@ -74,26 +76,25 @@ class MetadataArchiveManager:
                 if progress_callback:
                     progress_callback("download", f"Downloading from {url}")
                 
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(url) as response:
-                        if response.status == 200:
-                            total_size = int(response.headers.get('content-length', 0))
-                            downloaded = 0
-                            
-                            with open(self.archive_path, 'wb') as f:
-                                async for chunk in response.content.iter_chunked(8192):
-                                    f.write(chunk)
-                                    downloaded += len(chunk)
-                                    
-                                    if progress_callback and total_size > 0:
-                                        percentage = (downloaded / total_size) * 100
-                                        progress_callback("download", f"Downloaded {percentage:.1f}%")
-                            
-                            logger.info(f"Successfully downloaded archive from {url}")
-                            return True
-                        else:
-                            logger.warning(f"Failed to download from {url}: HTTP {response.status}")
-                            continue
+                # Custom progress callback to report download progress
+                async def download_progress(progress):
+                    if progress_callback:
+                        progress_callback("download", f"Downloaded {progress:.1f}%")
+                
+                success, result = await downloader.download_file(
+                    url=url,
+                    save_path=str(self.archive_path),
+                    progress_callback=download_progress,
+                    use_auth=False,  # Public download, no auth needed
+                    allow_resume=True
+                )
+                
+                if success:
+                    logger.info(f"Successfully downloaded archive from {url}")
+                    return True
+                else:
+                    logger.warning(f"Failed to download from {url}: {result}")
+                    continue
                             
             except Exception as e:
                 logger.warning(f"Error downloading from {url}: {e}")
