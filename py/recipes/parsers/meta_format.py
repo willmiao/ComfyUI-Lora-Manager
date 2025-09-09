@@ -5,6 +5,7 @@ import logging
 from typing import Dict, Any
 from ..base import RecipeMetadataParser
 from ..constants import GEN_PARAM_KEYS
+from ...services.metadata_service import get_default_metadata_provider
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +19,11 @@ class MetaFormatParser(RecipeMetadataParser):
         return re.search(self.METADATA_MARKER, user_comment, re.IGNORECASE | re.DOTALL) is not None
     
     async def parse_metadata(self, user_comment: str, recipe_scanner=None, civitai_client=None) -> Dict[str, Any]:
-        """Parse metadata from images with meta format metadata"""
+        """Parse metadata from images with meta format metadata (Lora_N Model hash format)"""
         try:
+            # Get metadata provider instead of using civitai_client directly
+            metadata_provider = await get_default_metadata_provider()
+            
             # Extract prompt and negative prompt
             parts = user_comment.split('Negative prompt:', 1)
             prompt = parts[0].strip()
@@ -122,9 +126,9 @@ class MetaFormatParser(RecipeMetadataParser):
                 }
                 
                 # Get info from Civitai by hash if available
-                if civitai_client and hash_value:
+                if metadata_provider and hash_value:
                     try:
-                        civitai_info = await civitai_client.get_model_by_hash(hash_value)
+                        civitai_info = await metadata_provider.get_model_by_hash(hash_value)
                         # Populate lora entry with Civitai info
                         populated_entry = await self.populate_lora_from_civitai(
                             lora_entry, 

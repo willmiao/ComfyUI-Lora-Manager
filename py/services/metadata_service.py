@@ -16,6 +16,10 @@ async def initialize_metadata_providers():
     """Initialize and configure all metadata providers based on settings"""
     provider_manager = await ModelMetadataProviderManager.get_instance()
     
+    # Clear existing providers to allow reinitialization
+    provider_manager.providers.clear()
+    provider_manager.default_provider = None
+    
     # Get settings
     enable_archive_db = settings.get('enable_metadata_archive_db', False)
     priority = settings.get('metadata_provider_priority', 'archive_db')
@@ -24,23 +28,23 @@ async def initialize_metadata_providers():
     
     # Initialize archive database provider if enabled
     if enable_archive_db:
-        # Initialize archive manager
-        base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        archive_manager = MetadataArchiveManager(base_path)
-        
-        db_path = archive_manager.get_database_path()
-        if db_path:
-            try:
+        try:
+            # Initialize archive manager
+            base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            archive_manager = MetadataArchiveManager(base_path)
+            
+            db_path = archive_manager.get_database_path()
+            if db_path and os.path.exists(db_path):
                 sqlite_provider = SQLiteModelMetadataProvider(db_path)
                 provider_manager.register_provider('sqlite', sqlite_provider)
                 providers.append(('sqlite', sqlite_provider))
                 logger.info(f"SQLite metadata provider registered with database: {db_path}")
-            except Exception as e:
-                logger.error(f"Failed to initialize SQLite metadata provider: {e}")
-        else:
-            logger.warning("Metadata archive database is enabled but not available")
+            else:
+                logger.warning("Metadata archive database is enabled but database file not found")
+        except Exception as e:
+            logger.error(f"Failed to initialize SQLite metadata provider: {e}")
     
-    # Initialize Civitai API provider
+    # Initialize Civitai API provider (always available as fallback)
     try:
         civitai_client = await ServiceRegistry.get_civitai_client()
         civitai_provider = CivitaiModelMetadataProvider(civitai_client)
@@ -50,42 +54,48 @@ async def initialize_metadata_providers():
     except Exception as e:
         logger.error(f"Failed to initialize Civitai API metadata provider: {e}")
     
-    # Set up fallback provider based on priority
+    # Set up fallback provider based on priority and available providers
     if len(providers) > 1:
         # Order providers based on priority setting
+        ordered_providers = []
         if priority == 'archive_db':
             # Archive DB first, then Civitai API
-            ordered_providers = [p[1] for p in providers if p[0] == 'sqlite'] + [p[1] for p in providers if p[0] == 'civitai_api']
+            ordered_providers = [p[1] for p in providers if p[0] == 'sqlite']
+            ordered_providers.extend([p[1] for p in providers if p[0] == 'civitai_api'])
         else:
             # Civitai API first, then Archive DB
-            ordered_providers = [p[1] for p in providers if p[0] == 'civitai_api'] + [p[1] for p in providers if p[0] == 'sqlite']
+            ordered_providers = [p[1] for p in providers if p[0] == 'civitai_api']
+            ordered_providers.extend([p[1] for p in providers if p[0] == 'sqlite'])
         
         if ordered_providers:
             fallback_provider = FallbackMetadataProvider(ordered_providers)
             provider_manager.register_provider('fallback', fallback_provider, is_default=True)
-            logger.info(f"Fallback metadata provider registered with priority: {priority}")
+            logger.info(f"Fallback metadata provider registered with {len(ordered_providers)} providers, priority: {priority}")
     elif len(providers) == 1:
         # Only one provider available, set it as default
         provider_name, provider = providers[0]
         provider_manager.register_provider(provider_name, provider, is_default=True)
         logger.info(f"Single metadata provider registered as default: {provider_name}")
     else:
-        logger.warning("No metadata providers available")
+        logger.warning("No metadata providers available - this may cause metadata lookup failures")
     
     return provider_manager
 
 async def update_metadata_provider_priority():
     """Update metadata provider priority based on current settings"""
-    provider_manager = await ModelMetadataProviderManager.get_instance()
-    
-    # Get current settings
-    enable_archive_db = settings.get('enable_metadata_archive_db', False)
-    priority = settings.get('metadata_provider_priority', 'archive_db')
-    
-    # Rebuild providers with new priority
-    await initialize_metadata_providers()
-    
-    logger.info(f"Updated metadata provider priority to: {priority}")
+    try:
+        # Get current settings
+        enable_archive_db = settings.get('enable_metadata_archive_db', False)
+        priority = settings.get('metadata_provider_priority', 'archive_db')
+        
+        # Reinitialize all providers with new settings
+        provider_manager = await initialize_metadata_providers()
+        
+        logger.info(f"Updated metadata provider priority to: {priority}, archive_db enabled: {enable_archive_db}")
+        return provider_manager
+    except Exception as e:
+        logger.error(f"Failed to update metadata provider priority: {e}")
+        return await ModelMetadataProviderManager.get_instance()
 
 async def get_metadata_archive_manager():
     """Get metadata archive manager instance"""
@@ -100,3 +110,7 @@ async def get_metadata_provider(provider_name: str = None):
         return provider_manager._get_provider(provider_name)
     
     return provider_manager._get_provider()
+
+async def get_default_metadata_provider():
+    """Get the default metadata provider (fallback or single provider)"""
+    return await get_metadata_provider()

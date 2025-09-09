@@ -7,6 +7,7 @@ from typing import Dict, Any
 from ...config import config
 from ..base import RecipeMetadataParser
 from ..constants import GEN_PARAM_KEYS
+from ...services.metadata_service import get_default_metadata_provider
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,9 @@ class RecipeFormatParser(RecipeMetadataParser):
     async def parse_metadata(self, user_comment: str, recipe_scanner=None, civitai_client=None) -> Dict[str, Any]:
         """Parse metadata from images with dedicated recipe metadata format"""
         try:
+            # Get metadata provider instead of using civitai_client directly
+            metadata_provider = await get_default_metadata_provider()
+            
             # Extract recipe metadata from user comment
             try:
                 # Look for recipe metadata section
@@ -71,9 +75,9 @@ class RecipeFormatParser(RecipeMetadataParser):
                         lora_entry['localPath'] = None
                         
                         # Try to get additional info from Civitai if we have a model version ID
-                        if lora.get('modelVersionId') and civitai_client:
+                        if lora.get('modelVersionId') and metadata_provider:
                             try:
-                                civitai_info_tuple = await civitai_client.get_model_version_info(lora['modelVersionId'])
+                                civitai_info_tuple = await metadata_provider.get_model_version_info(lora['modelVersionId'])
                                 # Populate lora entry with Civitai info
                                 populated_entry = await self.populate_lora_from_civitai(
                                     lora_entry, 

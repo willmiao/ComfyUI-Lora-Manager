@@ -7,13 +7,12 @@ from aiohttp import web
 from .model_utils import determine_base_model
 from .constants import PREVIEW_EXTENSIONS, CARD_PREVIEW_WIDTH
 from ..config import config
-from ..services.civitai_client import CivitaiClient
 from ..services.service_registry import ServiceRegistry
+from ..services.downloader import get_downloader
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
-from ..services.download_manager import DownloadManager
 from ..services.websocket_manager import ws_manager
-from ..services.metadata_service import get_metadata_provider
+from ..services.metadata_service import get_default_metadata_provider
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +39,7 @@ class ModelRouteUtils:
 
     @staticmethod
     async def update_model_metadata(metadata_path: str, local_metadata: Dict, 
-                                  civitai_metadata: Dict, client: CivitaiClient) -> None:
+                                  civitai_metadata: Dict, metadata_provider=None) -> None:
         """Update local metadata with CivitAI data"""
         # Save existing trainedWords and customImages if they exist
         existing_civitai = local_metadata.get('civitai') or {}  # Use empty dict if None
@@ -80,15 +79,17 @@ class ModelRouteUtils:
             # If we have modelId and don't have enough metadata, fetch additional data
             if not model_metadata or not model_metadata.get('description'):
                 model_id = civitai_metadata.get('modelId')
-                if model_id:
-                    fetched_metadata, _ = await client.get_model_metadata(str(model_id))
+                if model_id and metadata_provider:
+                    fetched_metadata, _ = await metadata_provider.get_model_metadata(str(model_id))
                     if fetched_metadata:
                         model_metadata = fetched_metadata
             
             # Update local metadata with the model information
             if model_metadata:
                 local_metadata['modelDescription'] = model_metadata.get('description', '')
-                local_metadata['tags'] = model_metadata.get('tags', [])
+                # Only set tags if local_metadata['tags'] is empty
+                if not local_metadata.get('tags'):
+                    local_metadata['tags'] = model_metadata.get('tags', [])
                 if 'creator' in model_metadata and model_metadata['creator']:
                     local_metadata['civitai']['creator'] = model_metadata['creator']
         
@@ -114,22 +115,28 @@ class ModelRouteUtils:
                 preview_path = os.path.join(os.path.dirname(metadata_path), preview_filename)
                 
                 if is_video:
-                    # Download video as is
-                    if await client.download_preview_image(first_preview['url'], preview_path):
+                    # Download video as is using downloader
+                    downloader = await get_downloader()
+                    success, result = await downloader.download_file(
+                        first_preview['url'], 
+                        preview_path, 
+                        use_auth=False
+                    )
+                    if success:
                         local_metadata['preview_url'] = preview_path.replace(os.sep, '/')
                         local_metadata['preview_nsfw_level'] = first_preview.get('nsfwLevel', 0)
                 else:
-                    # For images, download and then optimize to WebP
-                    temp_path = preview_path + ".temp"
-                    if await client.download_preview_image(first_preview['url'], temp_path):
+                    # For images, download and then optimize to WebP using downloader
+                    downloader = await get_downloader()
+                    success, content = await downloader.download_to_memory(
+                        first_preview['url'], 
+                        use_auth=False
+                    )
+                    if success:
                         try:
-                            # Read the downloaded image
-                            with open(temp_path, 'rb') as f:
-                                image_data = f.read()
-                            
                             # Optimize and convert to WebP
                             optimized_data, _ = ExifUtils.optimize_image(
-                                image_data=image_data,
+                                image_data=content,  # Use downloaded content directly
                                 target_width=CARD_PREVIEW_WIDTH,
                                 format='webp',
                                 quality=85,
@@ -144,17 +151,16 @@ class ModelRouteUtils:
                             local_metadata['preview_url'] = preview_path.replace(os.sep, '/')
                             local_metadata['preview_nsfw_level'] = first_preview.get('nsfwLevel', 0)
                             
-                            # Remove the temporary file
-                            if os.path.exists(temp_path):
-                                os.remove(temp_path)
-                                
                         except Exception as e:
                             logger.error(f"Error optimizing preview image: {e}")
-                            # If optimization fails, try to use the downloaded image directly
-                            if os.path.exists(temp_path):
-                                os.rename(temp_path, preview_path)
+                            # If optimization fails, save the original content
+                            try:
+                                with open(preview_path, 'wb') as f:
+                                    f.write(content)
                                 local_metadata['preview_url'] = preview_path.replace(os.sep, '/')
                                 local_metadata['preview_nsfw_level'] = first_preview.get('nsfwLevel', 0)
+                            except Exception as save_error:
+                                logger.error(f"Error saving preview image: {save_error}")
 
         # Save updated metadata
         await MetadataManager.save_metadata(metadata_path, local_metadata)
@@ -177,7 +183,6 @@ class ModelRouteUtils:
         Returns:
             bool: True if successful, False otherwise
         """
-        client = CivitaiClient()
         try:
             # Validate input parameters
             if not isinstance(model_data, dict):
@@ -189,8 +194,9 @@ class ModelRouteUtils:
             # Check if model metadata exists
             local_metadata = await ModelRouteUtils.load_local_metadata(metadata_path)
 
-            # Fetch metadata from Civitai
-            civitai_metadata = await client.get_model_by_hash(sha256)
+            # Get metadata provider and fetch metadata from unified provider
+            metadata_provider = await get_default_metadata_provider()
+            civitai_metadata = await metadata_provider.get_model_by_hash(sha256)
             if not civitai_metadata:
                 # Mark as not from CivitAI if not found
                 local_metadata['from_civitai'] = False
@@ -203,7 +209,7 @@ class ModelRouteUtils:
                 metadata_path, 
                 local_metadata, 
                 civitai_metadata, 
-                client
+                metadata_provider
             )
             
             # Update cache object directly using safe .get() method
@@ -226,8 +232,6 @@ class ModelRouteUtils:
         except Exception as e:
             logger.error(f"Error fetching CivitAI data: {str(e)}", exc_info=True)  # Include stack trace
             return False
-        finally:
-            await client.close()
     
     @staticmethod
     def filter_civitai_data(data: Dict, minimal: bool = False) -> Dict:
@@ -360,24 +364,22 @@ class ModelRouteUtils:
             if not local_metadata or not local_metadata.get('sha256'):
                 return web.json_response({"success": False, "error": "No SHA256 hash found"}, status=400)
 
-            # Create a client for fetching from Civitai
-            client = CivitaiClient()
-            try:
-                # Fetch and update metadata
-                civitai_metadata = await client.get_model_by_hash(local_metadata["sha256"])
-                if not civitai_metadata:
-                    await ModelRouteUtils.handle_not_found_on_civitai(metadata_path, local_metadata)
-                    return web.json_response({"success": False, "error": "Not found on CivitAI"}, status=404)
+            # Get metadata provider and fetch from unified provider
+            metadata_provider = await get_default_metadata_provider()
+            
+            # Fetch and update metadata
+            civitai_metadata = await metadata_provider.get_model_by_hash(local_metadata["sha256"])
+            if not civitai_metadata:
+                await ModelRouteUtils.handle_not_found_on_civitai(metadata_path, local_metadata)
+                return web.json_response({"success": False, "error": "Not found on CivitAI"}, status=404)
 
-                await ModelRouteUtils.update_model_metadata(metadata_path, local_metadata, civitai_metadata, client)
-                
-                # Update the cache
-                await scanner.update_single_model_cache(data['file_path'], data['file_path'], local_metadata)
-                
-                # Return the updated metadata along with success status
-                return web.json_response({"success": True, "metadata": local_metadata})
-            finally:
-                await client.close()
+            await ModelRouteUtils.update_model_metadata(metadata_path, local_metadata, civitai_metadata, metadata_provider)
+            
+            # Update the cache
+            await scanner.update_single_model_cache(data['file_path'], data['file_path'], local_metadata)
+            
+            # Return the updated metadata along with success status
+            return web.json_response({"success": True, "metadata": local_metadata})
 
         except Exception as e:
             logger.error(f"Error fetching from CivitAI: {e}", exc_info=True)
@@ -778,43 +780,38 @@ class ModelRouteUtils:
             # Check if model metadata exists
             local_metadata = await ModelRouteUtils.load_local_metadata(metadata_path)
             
-            # Create a client for fetching from Civitai
-            client = await CivitaiClient.get_instance()
-            try:
-                # Fetch metadata using get_model_version which includes more comprehensive data
-                civitai_metadata = await client.get_model_version(model_id, model_version_id)
-                if not civitai_metadata:
-                    error_msg = f"Model version not found on CivitAI for ID: {model_id}"
-                    if model_version_id:
-                        error_msg += f" with version: {model_version_id}"
-                    return web.json_response({"success": False, "error": error_msg}, status=404)
-                
-                # Try to find the primary model file to get the SHA256 hash
-                primary_model_file = None
-                for file in civitai_metadata.get('files', []):
-                    if file.get('primary', False) and file.get('type') == 'Model':
-                        primary_model_file = file
-                        break
-                
-                # Update the SHA256 hash in local metadata if available
-                if primary_model_file and primary_model_file.get('hashes', {}).get('SHA256'):
-                    local_metadata['sha256'] = primary_model_file['hashes']['SHA256'].lower()
-                
-                # Update metadata with CivitAI information
-                await ModelRouteUtils.update_model_metadata(metadata_path, local_metadata, civitai_metadata, client)
-                
-                # Update the cache
-                await scanner.update_single_model_cache(file_path, file_path, local_metadata)
-                
-                return web.json_response({
-                    "success": True,
-                    "message": f"Model successfully re-linked to Civitai model {model_id}" + 
-                               (f" version {model_version_id}" if model_version_id else ""),
-                    "hash": local_metadata.get('sha256', '')
-                })
-                
-            finally:
-                await client.close()
+            # Get metadata provider and fetch metadata using get_model_version which includes more comprehensive data
+            metadata_provider = await get_default_metadata_provider()
+            civitai_metadata = await metadata_provider.get_model_version(model_id, model_version_id)
+            if not civitai_metadata:
+                error_msg = f"Model version not found on CivitAI for ID: {model_id}"
+                if model_version_id:
+                    error_msg += f" with version: {model_version_id}"
+                return web.json_response({"success": False, "error": error_msg}, status=404)
+            
+            # Try to find the primary model file to get the SHA256 hash
+            primary_model_file = None
+            for file in civitai_metadata.get('files', []):
+                if file.get('primary', False) and file.get('type') == 'Model':
+                    primary_model_file = file
+                    break
+            
+            # Update the SHA256 hash in local metadata if available
+            if primary_model_file and primary_model_file.get('hashes', {}).get('SHA256'):
+                local_metadata['sha256'] = primary_model_file['hashes']['SHA256'].lower()
+            
+            # Update metadata with CivitAI information
+            await ModelRouteUtils.update_model_metadata(metadata_path, local_metadata, civitai_metadata, metadata_provider)
+            
+            # Update the cache
+            await scanner.update_single_model_cache(file_path, file_path, local_metadata)
+            
+            return web.json_response({
+                "success": True,
+                "message": f"Model successfully re-linked to Civitai model {model_id}" + 
+                           (f" version {model_version_id}" if model_version_id else ""),
+                "hash": local_metadata.get('sha256', '')
+            })
 
         except Exception as e:
             logger.error(f"Error re-linking to CivitAI: {e}", exc_info=True)

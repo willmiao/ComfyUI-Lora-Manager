@@ -258,7 +258,7 @@ class UpdateRoutes:
         
         try:
             downloader = await Downloader.get_instance()
-            success, data = await downloader.make_request('GET', github_url, headers={'Accept': 'application/vnd.github+json'})
+            success, data = await downloader.make_request('GET', github_url, custom_headers={'Accept': 'application/vnd.github+json'})
             
             if not success:
                 logger.warning(f"Failed to fetch GitHub commit: {data}")
@@ -424,7 +424,7 @@ class UpdateRoutes:
         
         try:
             downloader = await Downloader.get_instance()
-            success, data = await downloader.make_request('GET', github_url, headers={'Accept': 'application/vnd.github+json'})
+            success, data = await downloader.make_request('GET', github_url, custom_headers={'Accept': 'application/vnd.github+json'})
             
             if not success:
                 logger.warning(f"Failed to fetch GitHub release: {data}")

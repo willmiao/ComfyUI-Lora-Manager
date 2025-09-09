@@ -276,6 +276,10 @@ class Downloader:
                         
                         while rename_attempt < max_rename_attempts and not rename_success:
                             try:
+                                # If the destination file exists, remove it first (Windows safe)
+                                if os.path.exists(save_path):
+                                    os.remove(save_path)
+
                                 os.rename(part_path, save_path)
                                 rename_success = True
                             except PermissionError as e:

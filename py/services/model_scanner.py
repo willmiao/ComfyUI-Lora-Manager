@@ -730,11 +730,10 @@ class ModelScanner:
             
             if needs_metadata_update and model_id:
                 logger.debug(f"Fetching missing metadata for {file_path} with model ID {model_id}")
-                from ..services.civitai_client import CivitaiClient
-                client = CivitaiClient()
+                from ..services.metadata_service import get_default_metadata_provider
+                metadata_provider = await get_default_metadata_provider()
                 
-                model_metadata, status_code = await client.get_model_metadata(model_id)
-                await client.close()
+                model_metadata, status_code = await metadata_provider.get_model_metadata(model_id)
                 
                 if status_code == 404:
                     logger.warning(f"Model {model_id} appears to be deleted from Civitai (404 response)")

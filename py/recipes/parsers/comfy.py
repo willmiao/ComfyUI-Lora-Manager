@@ -6,6 +6,7 @@ import logging
 from typing import Dict, Any
 from ..base import RecipeMetadataParser
 from ..constants import GEN_PARAM_KEYS
+from ...services.metadata_service import get_default_metadata_provider
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,9 @@ class ComfyMetadataParser(RecipeMetadataParser):
     async def parse_metadata(self, user_comment: str, recipe_scanner=None, civitai_client=None) -> Dict[str, Any]:
         """Parse metadata from Civitai ComfyUI metadata format"""
         try:
+            # Get metadata provider instead of using civitai_client directly
+            metadata_provider = await get_default_metadata_provider()
+            
             data = json.loads(user_comment)
             loras = []
             
@@ -73,10 +77,10 @@ class ComfyMetadataParser(RecipeMetadataParser):
                     'isDeleted': False
                 }
                 
-                # Get additional info from Civitai if client is available
-                if civitai_client:
+                # Get additional info from Civitai if metadata provider is available
+                if metadata_provider:
                     try:
-                        civitai_info_tuple = await civitai_client.get_model_version_info(model_version_id)
+                        civitai_info_tuple = await metadata_provider.get_model_version_info(model_version_id)
                         # Populate lora entry with Civitai info
                         populated_entry = await self.populate_lora_from_civitai(
                             lora_entry, 
@@ -116,9 +120,9 @@ class ComfyMetadataParser(RecipeMetadataParser):
                         }
                         
                         # Get additional checkpoint info from Civitai
-                        if civitai_client:
+                        if metadata_provider:
                             try:
-                                civitai_info_tuple = await civitai_client.get_model_version_info(checkpoint_version_id)
+                                civitai_info_tuple = await metadata_provider.get_model_version_info(checkpoint_version_id)
                                 civitai_info, _ = civitai_info_tuple if isinstance(civitai_info_tuple, tuple) else (civitai_info_tuple, None)
                                 # Populate checkpoint with Civitai info
                                 checkpoint = await self.populate_checkpoint_from_civitai(checkpoint, civitai_info)

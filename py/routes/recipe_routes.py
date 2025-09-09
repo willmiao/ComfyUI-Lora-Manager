@@ -24,6 +24,7 @@ from ..config import config
 standalone_mode = 'nodes' not in sys.modules
 
 from ..services.service_registry import ServiceRegistry  # Add ServiceRegistry import
+from ..services.downloader import get_downloader
 
 # Only import MetadataRegistry in non-standalone mode
 if not standalone_mode:
@@ -372,21 +373,23 @@ class RecipeRoutes:
                             "loras": []
                         }, status=400)
                     
-                    # Download image directly from URL
-                    session = await self.civitai_client.session
+                    # Download image using unified downloader
+                    downloader = await get_downloader()
                     # Create a temporary file to save the downloaded image
                     with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
                         temp_path = temp_file.name
                     
-                    async with session.get(image_url) as response:
-                        if response.status != 200:
-                            return web.json_response({
-                                "error": f"Failed to download image from URL: HTTP {response.status}",
-                                "loras": []
-                            }, status=400)
-                        
-                        with open(temp_path, 'wb') as f:
-                            f.write(await response.read())
+                    success, result = await downloader.download_file(
+                        image_url,
+                        temp_path,
+                        use_auth=False  # Image downloads typically don't need auth
+                    )
+                    
+                    if not success:
+                        return web.json_response({
+                            "error": f"Failed to download image from URL: {result}",
+                            "loras": []
+                        }, status=400)
                     
                     # Use meta field from image_info as metadata
                     if 'meta' in image_info:
@@ -430,8 +433,7 @@ class RecipeRoutes:
             # Parse the metadata
             result = await parser.parse_metadata(
                 metadata, 
-                recipe_scanner=self.recipe_scanner, 
-                civitai_client=self.civitai_client
+                recipe_scanner=self.recipe_scanner
             )
             
             # For URL mode, include the image data as base64
@@ -532,8 +534,7 @@ class RecipeRoutes:
             # Parse the metadata
             result = await parser.parse_metadata(
                 metadata, 
-                recipe_scanner=self.recipe_scanner, 
-                civitai_client=self.civitai_client
+                recipe_scanner=self.recipe_scanner
             )
             
             # Add base64 image data to result
