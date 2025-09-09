@@ -300,7 +300,11 @@
             "downloadError": "Failed to download metadata archive database",
             "removeSuccess": "Metadata archive database removed successfully",
             "removeError": "Failed to remove metadata archive database",
-            "removeConfirm": "Are you sure you want to remove the metadata archive database? This will delete the local database file and you'll need to download it again to use this feature."
+            "removeConfirm": "Are you sure you want to remove the metadata archive database? This will delete the local database file and you'll need to download it again to use this feature.",
+            "preparing": "Preparing download...",
+            "connecting": "Connecting to download server...",
+            "completed": "Completed",
+            "downloadComplete": "Download completed successfully"
         }
     },
     "loras": {

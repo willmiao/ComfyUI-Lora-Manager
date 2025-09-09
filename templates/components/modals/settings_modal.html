@@ -398,28 +398,6 @@
                 </div>
             </div>
             
-            <!-- Misc. Section -->
-            <div class="settings-section">
-                <h3>{{ t('settings.sections.misc') }}</h3>
-                <div class="setting-item">
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <label for="includeTriggerWords">{{ t('settings.misc.includeTriggerWords') }}</label>
-                        </div>
-                        <div class="setting-control">
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="includeTriggerWords" 
-                                       onchange="settingsManager.saveToggleSetting('includeTriggerWords', 'include_trigger_words')">
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="input-help">
-                        {{ t('settings.misc.includeTriggerWordsHelp') }}
-                    </div>
-                </div>
-            </div>
-            
             <!-- Metadata Archive Section -->
             <div class="settings-section">
                 <h3>{{ t('settings.sections.metadataArchive') }}</h3>
@@ -470,16 +448,38 @@
                             <label>{{ t('settings.metadataArchive.management') }}:</label>
                         </div>
                         <div class="setting-control">
-                            <button type="button" id="downloadMetadataArchiveBtn" class="btn btn-primary" onclick="settingsManager.downloadMetadataArchive()">
+                            <button type="button" id="downloadMetadataArchiveBtn" class="primary-btn" onclick="settingsManager.downloadMetadataArchive()">
                                 {{ t('settings.metadataArchive.downloadButton') }}
                             </button>
-                            <button type="button" id="removeMetadataArchiveBtn" class="btn btn-danger" onclick="settingsManager.removeMetadataArchive()" style="margin-left: 10px;">
+                            <button type="button" id="removeMetadataArchiveBtn" class="danger-btn" onclick="settingsManager.removeMetadataArchive()" style="margin-left: 10px;">
                                 {{ t('settings.metadataArchive.removeButton') }}
                             </button>
                         </div>
                     </div>
                     <div class="input-help">
                         {{ t('settings.metadataArchive.managementHelp') }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Misc. Section -->
+            <div class="settings-section">
+                <h3>{{ t('settings.sections.misc') }}</h3>
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="includeTriggerWords">{{ t('settings.misc.includeTriggerWords') }}</label>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="includeTriggerWords" 
+                                       onchange="settingsManager.saveToggleSetting('includeTriggerWords', 'include_trigger_words')">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.misc.includeTriggerWordsHelp') }}
                     </div>
                 </div>
             </div>

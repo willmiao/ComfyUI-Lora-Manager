@@ -79,7 +79,7 @@ class MetadataArchiveManager:
                 # Custom progress callback to report download progress
                 async def download_progress(progress):
                     if progress_callback:
-                        progress_callback("download", f"Downloaded {progress:.1f}%")
+                        progress_callback("download", f"Downloading archive... {progress:.1f}%")
                 
                 success, result = await downloader.download_file(
                     url=url,

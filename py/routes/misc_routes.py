@@ -711,13 +711,23 @@ class MiscRoutes:
         try:
             archive_manager = await get_metadata_archive_manager()
             
+            # Get the download_id from query parameters if provided
+            download_id = request.query.get('download_id')
+            
             # Progress callback to send updates via WebSocket
             def progress_callback(stage, message):
-                asyncio.create_task(ws_manager.broadcast({
+                data = {
                     'stage': stage,
                     'message': message,
                     'type': 'metadata_archive_download'
-                }))
+                }
+                
+                if download_id:
+                    # Send to specific download WebSocket if download_id is provided
+                    asyncio.create_task(ws_manager.broadcast_download_progress(download_id, data))
+                else:
+                    # Fallback to general broadcast
+                    asyncio.create_task(ws_manager.broadcast(data))
             
             # Download and extract in background
             success = await archive_manager.download_and_extract_database(progress_callback)

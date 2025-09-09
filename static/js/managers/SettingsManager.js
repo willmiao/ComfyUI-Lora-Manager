@@ -789,6 +789,8 @@ export class SettingsManager {
             state.global.settings.compactMode = value;
         } else if (settingKey === 'include_trigger_words') {
             state.global.settings.includeTriggerWords = value;
+        } else if (settingKey === 'enable_metadata_archive_db') {
+            state.global.settings.enable_metadata_archive_db = value;
         } else {
             // For any other settings that might be added in the future
             state.global.settings[settingKey] = value;
@@ -799,7 +801,7 @@ export class SettingsManager {
         
         try {
             // For backend settings, make API call
-            if (['show_only_sfw'].includes(settingKey)) {
+            if (['show_only_sfw', 'enable_metadata_archive_db'].includes(settingKey)) {
                 const payload = {};
                 payload[settingKey] = value;
                 
@@ -813,6 +815,11 @@ export class SettingsManager {
 
                 if (!response.ok) {
                     throw new Error('Failed to save setting');
+                }
+                
+                // Refresh metadata archive status when enable setting changes
+                if (settingKey === 'enable_metadata_archive_db') {
+                    await this.updateMetadataArchiveStatus();
                 }
             }
                 
@@ -872,6 +879,8 @@ export class SettingsManager {
             state.global.settings.compactMode = (value !== 'default');
         } else if (settingKey === 'card_info_display') {
             state.global.settings.cardInfoDisplay = value;
+        } else if (settingKey === 'metadata_provider_priority') {
+            state.global.settings.metadata_provider_priority = value;
         } else {
             // For any other settings that might be added in the future
             state.global.settings[settingKey] = value;
@@ -882,7 +891,7 @@ export class SettingsManager {
         
         try {
             // For backend settings, make API call
-            if (settingKey === 'default_lora_root' || settingKey === 'default_checkpoint_root' || settingKey === 'default_embedding_root' || settingKey === 'download_path_templates') {
+            if (settingKey === 'default_lora_root' || settingKey === 'default_checkpoint_root' || settingKey === 'default_embedding_root' || settingKey === 'download_path_templates' || settingKey === 'metadata_provider_priority') {
                 const payload = {};
                 if (settingKey === 'download_path_templates') {
                     payload[settingKey] = state.global.settings.download_path_templates;
@@ -903,6 +912,11 @@ export class SettingsManager {
                 }
                 
                 showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
+                
+                // Refresh metadata archive status when provider priority changes
+                if (settingKey === 'metadata_provider_priority') {
+                    await this.updateMetadataArchiveStatus();
+                }
             }
             
             // Apply frontend settings immediately
@@ -960,24 +974,24 @@ export class SettingsManager {
                 const sizeText = status.databaseSize > 0 ? ` (${this.formatFileSize(status.databaseSize)})` : '';
                 
                 statusContainer.innerHTML = `
-                    <div class="status-info">
-                        <div class="status-item">
-                            <strong>${translate('settings.metadataArchive.status')}:</strong> 
-                            <span class="status-badge ${status.isAvailable ? 'status-available' : 'status-unavailable'}">
-                                ${status.isAvailable ? translate('settings.metadataArchive.statusAvailable') : translate('settings.metadataArchive.statusUnavailable')}
-                            </span>
+                    <div class="archive-status-item">
+                        <span class="archive-status-label">${translate('settings.metadataArchive.status')}:</span>
+                        <span class="archive-status-value status-${status.isAvailable ? 'available' : 'unavailable'}">
+                            ${status.isAvailable ? translate('settings.metadataArchive.statusAvailable') : translate('settings.metadataArchive.statusUnavailable')}
                             ${sizeText}
-                        </div>
-                        <div class="status-item">
-                            <strong>${translate('settings.metadataArchive.enabled')}:</strong> 
-                            <span class="status-badge ${status.isEnabled ? 'status-enabled' : 'status-disabled'}">
-                                ${status.isEnabled ? translate('common.enabled') : translate('common.disabled')}
-                            </span>
-                        </div>
-                        <div class="status-item">
-                            <strong>${translate('settings.metadataArchive.currentPriority')}:</strong> 
+                        </span>
+                    </div>
+                    <div class="archive-status-item">
+                        <span class="archive-status-label">${translate('settings.metadataArchive.enabled')}:</span>
+                        <span class="archive-status-value status-${status.isEnabled ? 'enabled' : 'disabled'}">
+                            ${status.isEnabled ? translate('common.status.enabled') : translate('common.status.disabled')}
+                        </span>
+                    </div>
+                    <div class="archive-status-item">
+                        <span class="archive-status-label">${translate('settings.metadataArchive.currentPriority')}:</span>
+                        <span class="archive-status-value">
                             ${status.priority === 'archive_db' ? translate('settings.metadataArchive.priorityArchiveDb') : translate('settings.metadataArchive.priorityCivitaiApi')}
-                        </div>
+                        </span>
                     </div>
                 `;
 
@@ -1012,12 +1026,81 @@ export class SettingsManager {
     async downloadMetadataArchive() {
         try {
             const downloadBtn = document.getElementById('downloadMetadataArchiveBtn');
+            
             if (downloadBtn) {
                 downloadBtn.disabled = true;
                 downloadBtn.textContent = translate('settings.metadataArchive.downloadingButton');
             }
+            
+            // Show loading with enhanced progress
+            const progressUpdater = state.loadingManager.showEnhancedProgress(translate('settings.metadataArchive.preparing'));
 
-            const response = await fetch('/api/download-metadata-archive', {
+            // Set up WebSocket for progress updates
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            const downloadId = `metadata_archive_${Date.now()}`;
+            const ws = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${downloadId}`);
+            
+            let wsConnected = false;
+            let actualDownloadId = downloadId; // Will be updated when WebSocket confirms the ID
+            
+            // Promise to wait for WebSocket connection and ID confirmation
+            const wsReady = new Promise((resolve) => {
+                ws.onopen = () => {
+                    wsConnected = true;
+                    console.log('Connected to metadata archive download progress WebSocket');
+                };
+                
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    
+                    // Handle download ID confirmation
+                    if (data.type === 'download_id') {
+                        actualDownloadId = data.download_id;
+                        console.log(`Connected to metadata archive download progress with ID: ${data.download_id}`);
+                        resolve(data.download_id);
+                        return;
+                    }
+                    
+                    // Handle metadata archive download progress
+                    if (data.type === 'metadata_archive_download') {
+                        const message = data.message || '';
+                        
+                        // Update progress bar based on stage
+                        let progressPercent = 0;
+                        if (data.stage === 'download') {
+                            // Extract percentage from message if available
+                            const percentMatch = data.message.match(/(\d+\.?\d*)%/);
+                            if (percentMatch) {
+                                progressPercent = Math.min(parseFloat(percentMatch[1]), 90); // Cap at 90% for download
+                            } else {
+                                progressPercent = 0; // Default download progress
+                            }
+                        } else if (data.stage === 'extract') {
+                            progressPercent = 95; // Near completion for extraction
+                        }
+                        
+                        // Update loading manager progress
+                        progressUpdater.updateProgress(progressPercent, '', `${message}`);
+                    }
+                };
+                
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    resolve(downloadId); // Fallback to original ID
+                };
+                
+                // Timeout fallback
+                setTimeout(() => resolve(downloadId), 5000);
+            });
+            
+            ws.onclose = () => {
+                console.log('WebSocket connection closed');
+            };
+
+            // Wait for WebSocket to be ready
+            await wsReady;
+
+            const response = await fetch(`/api/download-metadata-archive?download_id=${encodeURIComponent(actualDownloadId)}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1026,8 +1109,16 @@ export class SettingsManager {
 
             const data = await response.json();
 
+            // Close WebSocket
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
+
             if (data.success) {
-                showNotification(translate('settings.metadataArchive.downloadSuccess'), 'success');
+                // Complete progress
+                await progressUpdater.complete(translate('settings.metadataArchive.downloadComplete'));
+                
+                showToast('settings.metadataArchive.downloadSuccess', 'success');
                 
                 // Update settings in state
                 state.global.settings.enable_metadata_archive_db = true;
@@ -1041,11 +1132,17 @@ export class SettingsManager {
                 
                 await this.updateMetadataArchiveStatus();
             } else {
-                showNotification(translate('settings.metadataArchive.downloadError') + ': ' + data.error, 'error');
+                // Hide loading on error
+                state.loadingManager.hide();
+                showToast('settings.metadataArchive.downloadError' + ': ' + data.error, 'error');
             }
         } catch (error) {
             console.error('Error downloading metadata archive:', error);
-            showNotification(translate('settings.metadataArchive.downloadError') + ': ' + error.message, 'error');
+            
+            // Hide loading on error
+            state.loadingManager.hide();
+
+            showToast('settings.metadataArchive.downloadError' + ': ' + error.message, 'error');
         } finally {
             const downloadBtn = document.getElementById('downloadMetadataArchiveBtn');
             if (downloadBtn) {
@@ -1077,8 +1174,8 @@ export class SettingsManager {
             const data = await response.json();
 
             if (data.success) {
-                showNotification(translate('settings.metadataArchive.removeSuccess'), 'success');
-                
+                showToast('settings.metadataArchive.removeSuccess', 'success');
+
                 // Update settings in state
                 state.global.settings.enable_metadata_archive_db = false;
                 setStorageItem('settings', state.global.settings);
@@ -1091,11 +1188,11 @@ export class SettingsManager {
                 
                 await this.updateMetadataArchiveStatus();
             } else {
-                showNotification(translate('settings.metadataArchive.removeError') + ': ' + data.error, 'error');
+                showToast('settings.metadataArchive.removeError' + ': ' + data.error, 'error');
             }
         } catch (error) {
             console.error('Error removing metadata archive:', error);
-            showNotification(translate('settings.metadataArchive.removeError') + ': ' + error.message, 'error');
+            showToast('settings.metadataArchive.removeError' + ': ' + error.message, 'error');
         } finally {
             const removeBtn = document.getElementById('removeMetadataArchiveBtn');
             if (removeBtn) {
