@@ -1,7 +1,11 @@
+import { forwardMiddleMouseToCanvas } from "./utils.js";
+
 export function addTagsWidget(node, name, opts, callback) {
   // Create container for tags
   const container = document.createElement("div");
   container.className = "comfy-tags-container";
+
+  forwardMiddleMouseToCanvas(container);
   
   // Set initial height
   const defaultHeight = 150;

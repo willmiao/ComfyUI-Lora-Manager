@@ -1,7 +1,11 @@
+import { forwardMiddleMouseToCanvas } from "./utils.js";
+
 export function addJsonDisplayWidget(node, name, opts) {
   // Create container for JSON display
   const container = document.createElement("div");
   container.className = "comfy-json-display-container";
+
+  forwardMiddleMouseToCanvas(container);
   
   // Set initial height
   const defaultHeight = 200;

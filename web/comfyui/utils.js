@@ -1,4 +1,5 @@
 export const CONVERTED_TYPE = 'converted-widget';
+import { app } from "../../scripts/app.js";
 import { AutoComplete } from "./autocomplete.js";
 
 export function chainCallback(object, property, callback) {
@@ -321,4 +322,31 @@ export function setupAutocompleteCleanup(node) {
             originalOnRemoved.call(this);
         }
     };
+}
+
+/**
+ * Forward middle mouse (button 1) pointer events from a container to the ComfyUI canvas,
+ * so that workflow panning works even when the pointer is over a DOM widget.
+ * @param {HTMLElement} container - The root DOM element of the widget
+ */
+export function forwardMiddleMouseToCanvas(container) {
+    if (!container) return;
+    // Forward pointerdown
+    container.addEventListener('pointerdown', (event) => {
+        if (event.button === 1) {
+            app.canvas.processMouseDown(event);
+        }
+    });
+    // Forward pointermove
+    container.addEventListener('pointermove', (event) => {
+        if ((event.buttons & 4) === 4) {
+            app.canvas.processMouseMove(event);
+        }
+    });
+    // Forward pointerup
+    container.addEventListener('pointerup', (event) => {
+        if (event.button === 1) {
+            app.canvas.processMouseUp(event);
+        }
+    });
 }
