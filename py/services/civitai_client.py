@@ -62,13 +62,30 @@ class CivitaiClient:
     async def get_model_by_hash(self, model_hash: str) -> Optional[Dict]:
         try:
             downloader = await get_downloader()
-            success, result = await downloader.make_request(
+            success, version = await downloader.make_request(
                 'GET',
                 f"{self.base_url}/model-versions/by-hash/{model_hash}",
                 use_auth=True
             )
             if success:
-                return result
+                # Get model ID from version data
+                model_id = version.get('modelId')
+                if model_id:
+                    # Fetch additional model metadata
+                    success_model, data = await downloader.make_request(
+                        'GET',
+                        f"{self.base_url}/models/{model_id}",
+                        use_auth=True
+                    )
+                    if success_model:
+                        # Enrich version_info with model data
+                        version['model']['description'] = data.get("description")
+                        version['model']['tags'] = data.get("tags", [])
+                        
+                        # Add creator from model data
+                        version['creator'] = data.get("creator")
+                
+                return version
             return None
         except Exception as e:
             logger.error(f"API Error: {str(e)}")
