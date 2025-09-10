@@ -154,7 +154,7 @@ def calculate_relative_path_for_model(model_data: Dict, model_type: str = 'lora'
 
     # For CivitAI models, prefer civitai data only if 'id' exists; for non-CivitAI models, use model_data directly
     if civitai_data and civitai_data.get('id') is not None:
-        base_model = civitai_data.get('baseModel', '')
+        base_model = model_data.get('base_model', '')
         # Get author from civitai creator data
         creator_info = civitai_data.get('creator') or {}
         author = creator_info.get('username') or 'Anonymous'
