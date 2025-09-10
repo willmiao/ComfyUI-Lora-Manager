@@ -83,38 +83,27 @@ class ModelRouteUtils:
             local_metadata['civitai'] = merged_civitai
             local_metadata['from_civitai'] = True
         
-        # Update model name if available
-        if 'model' in civitai_metadata:
-            if civitai_metadata.get('model', {}).get('name'):
-                local_metadata['model_name'] = civitai_metadata['model']['name']
-        
-            # Extract model metadata directly from civitai_metadata if available
-            model_metadata = None
+        # Update model-related metadata from civitai_metadata.model
+        if 'model' in civitai_metadata and civitai_metadata['model']:
+            model_data = civitai_metadata['model']
             
-            if 'model' in civitai_metadata and civitai_metadata.get('model'):
-                # Data is already available in the response from get_model_version
-                model_metadata = {
-                    'description': civitai_metadata.get('model', {}).get('description', ''),
-                    'tags': civitai_metadata.get('model', {}).get('tags', []),
-                    'creator': civitai_metadata.get('creator', {})
-                }
+            # Update model name if available and not already set
+            if model_data.get('name'):
+                local_metadata['model_name'] = model_data['name']
             
-            # If we have modelId and don't have enough metadata, fetch additional data
-            if not model_metadata or not model_metadata.get('description'):
-                model_id = civitai_metadata.get('modelId')
-                if model_id and metadata_provider:
-                    fetched_metadata, _ = await metadata_provider.get_model_metadata(str(model_id))
-                    if fetched_metadata:
-                        model_metadata = fetched_metadata
+            # Update modelDescription if missing or empty in local_metadata
+            if not local_metadata.get('modelDescription') and model_data.get('description'):
+                local_metadata['modelDescription'] = model_data['description']
             
-            # Update local metadata with the model information
-            if model_metadata:
-                local_metadata['modelDescription'] = model_metadata.get('description', '')
-                # Only set tags if local_metadata['tags'] is empty
-                if not local_metadata.get('tags'):
-                    local_metadata['tags'] = model_metadata.get('tags', [])
-                if 'creator' in model_metadata and model_metadata['creator']:
-                    local_metadata['civitai']['creator'] = model_metadata['creator']
+            # Update tags if missing or empty in local_metadata
+            if not local_metadata.get('tags') and model_data.get('tags'):
+                local_metadata['tags'] = model_data['tags']
+            
+            # Update creator in civitai metadata if missing
+            if model_data.get('creator') and not local_metadata.get('civitai', {}).get('creator'):
+                if 'civitai' not in local_metadata:
+                    local_metadata['civitai'] = {}
+                local_metadata['civitai']['creator'] = model_data['creator']
         
         # Update base model
         local_metadata['base_model'] = determine_base_model(civitai_metadata.get('baseModel'))

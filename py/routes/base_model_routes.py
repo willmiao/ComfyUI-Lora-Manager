@@ -611,10 +611,19 @@ class BaseModelRoutes(ABC):
             success = 0
             needs_resort = False
             
-            # Prepare models to process, only those without CivitAI data
+            # Prepare models to process, only those without CivitAI data or missing tags, description, or creator
             to_process = [
                 model for model in cache.raw_data 
-                if model.get('sha256') and (not model.get('civitai') or 'id' not in model.get('civitai'))
+                if (
+                    model.get('sha256')
+                    and (
+                        not model.get('civitai')
+                        or not model['civitai'].get('id')
+                        or not model.get('tags')
+                        or not model.get('modelDescription')
+                        or not (model.get('civitai') and model['civitai'].get('creator'))
+                    )
+                )
             ]
             total_to_process = len(to_process)
             
