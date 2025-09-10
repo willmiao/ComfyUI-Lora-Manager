@@ -850,7 +850,7 @@ export class SettingsManager {
             }
 
             // Special handling for metadata archive settings
-            if (settingKey === 'enable_metadata_archive_db' || settingKey === 'metadata_provider_priority') {
+            if (settingKey === 'enable_metadata_archive_db') {
                 await this.updateMetadataArchiveStatus();
             }
             
@@ -879,8 +879,6 @@ export class SettingsManager {
             state.global.settings.compactMode = (value !== 'default');
         } else if (settingKey === 'card_info_display') {
             state.global.settings.cardInfoDisplay = value;
-        } else if (settingKey === 'metadata_provider_priority') {
-            state.global.settings.metadata_provider_priority = value;
         } else {
             // For any other settings that might be added in the future
             state.global.settings[settingKey] = value;
@@ -891,7 +889,7 @@ export class SettingsManager {
         
         try {
             // For backend settings, make API call
-            if (settingKey === 'default_lora_root' || settingKey === 'default_checkpoint_root' || settingKey === 'default_embedding_root' || settingKey === 'download_path_templates' || settingKey === 'metadata_provider_priority') {
+            if (settingKey === 'default_lora_root' || settingKey === 'default_checkpoint_root' || settingKey === 'default_embedding_root' || settingKey === 'download_path_templates') {
                 const payload = {};
                 if (settingKey === 'download_path_templates') {
                     payload[settingKey] = state.global.settings.download_path_templates;
@@ -912,11 +910,6 @@ export class SettingsManager {
                 }
                 
                 showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
-                
-                // Refresh metadata archive status when provider priority changes
-                if (settingKey === 'metadata_provider_priority') {
-                    await this.updateMetadataArchiveStatus();
-                }
             }
             
             // Apply frontend settings immediately
@@ -932,11 +925,6 @@ export class SettingsManager {
                 
                 showToast('toast.settings.displayDensitySet', { density: densityName }, 'success');
             }
-
-            // Special handling for metadata archive settings
-            if (settingKey === 'metadata_provider_priority') {
-                await this.updateMetadataArchiveStatus();
-            }
             
         } catch (error) {
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
@@ -949,11 +937,6 @@ export class SettingsManager {
             const enableMetadataArchiveCheckbox = document.getElementById('enableMetadataArchive');
             if (enableMetadataArchiveCheckbox) {
                 enableMetadataArchiveCheckbox.checked = state.global.settings.enable_metadata_archive_db || false;
-            }
-
-            const metadataProviderPrioritySelect = document.getElementById('metadataProviderPriority');
-            if (metadataProviderPrioritySelect) {
-                metadataProviderPrioritySelect.value = state.global.settings.metadata_provider_priority || 'archive_db';
             }
 
             // Load status
@@ -985,12 +968,6 @@ export class SettingsManager {
                         <span class="archive-status-label">${translate('settings.metadataArchive.enabled')}:</span>
                         <span class="archive-status-value status-${status.isEnabled ? 'enabled' : 'disabled'}">
                             ${status.isEnabled ? translate('common.status.enabled') : translate('common.status.disabled')}
-                        </span>
-                    </div>
-                    <div class="archive-status-item">
-                        <span class="archive-status-label">${translate('settings.metadataArchive.currentPriority')}:</span>
-                        <span class="archive-status-value">
-                            ${status.priority === 'archive_db' ? translate('settings.metadataArchive.priorityArchiveDb') : translate('settings.metadataArchive.priorityCivitaiApi')}
                         </span>
                     </div>
                 `;

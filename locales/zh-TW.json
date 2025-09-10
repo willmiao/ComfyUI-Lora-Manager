@@ -16,7 +16,9 @@
             "loading": "載入中...",
             "unknown": "未知",
             "date": "日期",
-            "version": "版本"
+            "version": "版本",
+            "enabled": "已啟用",
+            "disabled": "已停用"
         },
         "language": {
             "select": "語言",
@@ -178,7 +180,8 @@
             "folderSettings": "資料夾設定",
             "downloadPathTemplates": "下載路徑範本",
             "exampleImages": "範例圖片",
-            "misc": "其他"
+            "misc": "其他",
+            "metadataArchive": "中繼資料封存資料庫"
         },
         "contentFiltering": {
             "blurNsfwContent": "模糊 NSFW 內容",
@@ -273,6 +276,30 @@
         "misc": {
             "includeTriggerWords": "在 LoRA 語法中包含觸發詞",
             "includeTriggerWordsHelp": "複製 LoRA 語法到剪貼簿時包含訓練觸發詞"
+        },
+        "metadataArchive": {
+            "enableArchiveDb": "啟用中繼資料封存資料庫",
+            "enableArchiveDbHelp": "使用本機資料庫以存取已從 Civitai 刪除模型的中繼資料。",
+            "status": "狀態",
+            "statusAvailable": "可用",
+            "statusUnavailable": "不可用",
+            "enabled": "已啟用",
+            "management": "資料庫管理",
+            "managementHelp": "下載或移除中繼資料封存資料庫",
+            "downloadButton": "下載資料庫",
+            "downloadingButton": "下載中...",
+            "downloadedButton": "已下載",
+            "removeButton": "移除資料庫",
+            "removingButton": "移除中...",
+            "downloadSuccess": "中繼資料封存資料庫下載成功",
+            "downloadError": "下載中繼資料封存資料庫失敗",
+            "removeSuccess": "中繼資料封存資料庫移除成功",
+            "removeError": "移除中繼資料封存資料庫失敗",
+            "removeConfirm": "您確定要移除中繼資料封存資料庫嗎？這將刪除本機資料庫檔案，若要再次使用此功能需重新下載。",
+            "preparing": "準備下載中...",
+            "connecting": "正在連接下載伺服器...",
+            "completed": "已完成",
+            "downloadComplete": "下載成功完成"
         }
     },
     "loras": {

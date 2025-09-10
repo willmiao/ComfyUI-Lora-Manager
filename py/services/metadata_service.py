@@ -22,7 +22,6 @@ async def initialize_metadata_providers():
     
     # Get settings
     enable_archive_db = settings.get('enable_metadata_archive_db', False)
-    priority = settings.get('metadata_provider_priority', 'archive_db')
     
     providers = []
     
@@ -54,23 +53,17 @@ async def initialize_metadata_providers():
     except Exception as e:
         logger.error(f"Failed to initialize Civitai API metadata provider: {e}")
     
-    # Set up fallback provider based on priority and available providers
+    # Set up fallback provider based on available providers
     if len(providers) > 1:
-        # Order providers based on priority setting
+        # Always use Civitai API first, then Archive DB
         ordered_providers = []
-        if priority == 'archive_db':
-            # Archive DB first, then Civitai API
-            ordered_providers = [p[1] for p in providers if p[0] == 'sqlite']
-            ordered_providers.extend([p[1] for p in providers if p[0] == 'civitai_api'])
-        else:
-            # Civitai API first, then Archive DB
-            ordered_providers = [p[1] for p in providers if p[0] == 'civitai_api']
-            ordered_providers.extend([p[1] for p in providers if p[0] == 'sqlite'])
+        ordered_providers.extend([p[1] for p in providers if p[0] == 'civitai_api'])
+        ordered_providers.extend([p[1] for p in providers if p[0] == 'sqlite'])
         
         if ordered_providers:
             fallback_provider = FallbackMetadataProvider(ordered_providers)
             provider_manager.register_provider('fallback', fallback_provider, is_default=True)
-            logger.info(f"Fallback metadata provider registered with {len(ordered_providers)} providers, priority: {priority}")
+            logger.info(f"Fallback metadata provider registered with {len(ordered_providers)} providers, Civitai API first")
     elif len(providers) == 1:
         # Only one provider available, set it as default
         provider_name, provider = providers[0]
@@ -81,20 +74,19 @@ async def initialize_metadata_providers():
     
     return provider_manager
 
-async def update_metadata_provider_priority():
-    """Update metadata provider priority based on current settings"""
+async def update_metadata_providers():
+    """Update metadata providers based on current settings"""
     try:
         # Get current settings
         enable_archive_db = settings.get('enable_metadata_archive_db', False)
-        priority = settings.get('metadata_provider_priority', 'archive_db')
         
         # Reinitialize all providers with new settings
         provider_manager = await initialize_metadata_providers()
         
-        logger.info(f"Updated metadata provider priority to: {priority}, archive_db enabled: {enable_archive_db}")
+        logger.info(f"Updated metadata providers, archive_db enabled: {enable_archive_db}")
         return provider_manager
     except Exception as e:
-        logger.error(f"Failed to update metadata provider priority: {e}")
+        logger.error(f"Failed to update metadata providers: {e}")
         return await ModelMetadataProviderManager.get_instance()
 
 async def get_metadata_archive_manager():

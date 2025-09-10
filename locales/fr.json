@@ -16,7 +16,9 @@
             "loading": "Chargement...",
             "unknown": "Inconnu",
             "date": "Date",
-            "version": "Version"
+            "version": "Version",
+            "enabled": "Activé",
+            "disabled": "Désactivé"
         },
         "language": {
             "select": "Langue",
@@ -178,7 +180,8 @@
             "folderSettings": "Paramètres des dossiers",
             "downloadPathTemplates": "Modèles de chemin de téléchargement",
             "exampleImages": "Images d'exemple",
-            "misc": "Divers"
+            "misc": "Divers",
+            "metadataArchive": "Base de données d'archive des métadonnées"
         },
         "contentFiltering": {
             "blurNsfwContent": "Flouter le contenu NSFW",
@@ -273,6 +276,30 @@
         "misc": {
             "includeTriggerWords": "Inclure les mots-clés dans la syntaxe LoRA",
             "includeTriggerWordsHelp": "Inclure les mots-clés d'entraînement lors de la copie de la syntaxe LoRA dans le presse-papiers"
+        },
+        "metadataArchive": {
+            "enableArchiveDb": "Activer la base de données d'archive des métadonnées",
+            "enableArchiveDbHelp": "Utiliser une base de données locale pour accéder aux métadonnées des modèles supprimés de Civitai.",
+            "status": "Statut",
+            "statusAvailable": "Disponible",
+            "statusUnavailable": "Non disponible",
+            "enabled": "Activé",
+            "management": "Gestion de la base de données",
+            "managementHelp": "Télécharger ou supprimer la base de données d'archive des métadonnées",
+            "downloadButton": "Télécharger la base de données",
+            "downloadingButton": "Téléchargement...",
+            "downloadedButton": "Téléchargé",
+            "removeButton": "Supprimer la base de données",
+            "removingButton": "Suppression...",
+            "downloadSuccess": "Base de données d'archive des métadonnées téléchargée avec succès",
+            "downloadError": "Échec du téléchargement de la base de données d'archive des métadonnées",
+            "removeSuccess": "Base de données d'archive des métadonnées supprimée avec succès",
+            "removeError": "Échec de la suppression de la base de données d'archive des métadonnées",
+            "removeConfirm": "Êtes-vous sûr de vouloir supprimer la base de données d'archive des métadonnées ? Cela supprimera le fichier local et vous devrez la télécharger à nouveau pour utiliser cette fonctionnalité.",
+            "preparing": "Préparation du téléchargement...",
+            "connecting": "Connexion au serveur de téléchargement...",
+            "completed": "Terminé",
+            "downloadComplete": "Téléchargement terminé avec succès"
         }
     },
     "loras": {

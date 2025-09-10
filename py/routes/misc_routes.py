@@ -11,7 +11,7 @@ from ..utils.lora_metadata import extract_trained_words
 from ..config import config
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS, NODE_TYPES, DEFAULT_NODE_COLOR
 from ..services.service_registry import ServiceRegistry
-from ..services.metadata_service import get_metadata_archive_manager, update_metadata_provider_priority
+from ..services.metadata_service import get_metadata_archive_manager, update_metadata_providers
 from ..services.websocket_manager import ws_manager
 import re
 
@@ -736,8 +736,8 @@ class MiscRoutes:
                 # Update settings to enable metadata archive
                 settings.set('enable_metadata_archive_db', True)
                 
-                # Update provider priority
-                await update_metadata_provider_priority()
+                # Update metadata providers
+                await update_metadata_providers()
                 
                 return web.json_response({
                     'success': True,
@@ -768,8 +768,8 @@ class MiscRoutes:
                 # Update settings to disable metadata archive
                 settings.set('enable_metadata_archive_db', False)
                 
-                # Update provider priority
-                await update_metadata_provider_priority()
+                # Update metadata providers
+                await update_metadata_providers()
                 
                 return web.json_response({
                     'success': True,
@@ -796,7 +796,6 @@ class MiscRoutes:
             
             is_available = archive_manager.is_database_available()
             is_enabled = settings.get('enable_metadata_archive_db', False)
-            priority = settings.get('metadata_provider_priority', 'archive_db')
             
             db_size = 0
             if is_available:
@@ -808,7 +807,6 @@ class MiscRoutes:
                 'success': True,
                 'isAvailable': is_available,
                 'isEnabled': is_enabled,
-                'priority': priority,
                 'databaseSize': db_size,
                 'databasePath': archive_manager.get_database_path() if is_available else None
             })

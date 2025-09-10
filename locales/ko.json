@@ -16,7 +16,9 @@
             "loading": "로딩 중...",
             "unknown": "알 수 없음",
             "date": "날짜",
-            "version": "버전"
+            "version": "버전",
+            "enabled": "활성화됨",
+            "disabled": "비활성화됨"
         },
         "language": {
             "select": "언어",
@@ -178,7 +180,8 @@
             "folderSettings": "폴더 설정",
             "downloadPathTemplates": "다운로드 경로 템플릿",
             "exampleImages": "예시 이미지",
-            "misc": "기타"
+            "misc": "기타",
+            "metadataArchive": "메타데이터 아카이브 데이터베이스"
         },
         "contentFiltering": {
             "blurNsfwContent": "NSFW 콘텐츠 블러 처리",
@@ -273,6 +276,30 @@
         "misc": {
             "includeTriggerWords": "LoRA 문법에 트리거 단어 포함",
             "includeTriggerWordsHelp": "LoRA 문법을 클립보드에 복사할 때 학습된 트리거 단어를 포함합니다"
+        },
+        "metadataArchive": {
+            "enableArchiveDb": "메타데이터 아카이브 데이터베이스 활성화",
+            "enableArchiveDbHelp": "Civitai에서 삭제된 모델의 메타데이터에 접근하기 위해 로컬 데이터베이스를 사용합니다.",
+            "status": "상태",
+            "statusAvailable": "사용 가능",
+            "statusUnavailable": "사용 불가",
+            "enabled": "활성화됨",
+            "management": "데이터베이스 관리",
+            "managementHelp": "메타데이터 아카이브 데이터베이스를 다운로드하거나 제거합니다",
+            "downloadButton": "데이터베이스 다운로드",
+            "downloadingButton": "다운로드 중...",
+            "downloadedButton": "다운로드 완료",
+            "removeButton": "데이터베이스 제거",
+            "removingButton": "제거 중...",
+            "downloadSuccess": "메타데이터 아카이브 데이터베이스가 성공적으로 다운로드되었습니다",
+            "downloadError": "메타데이터 아카이브 데이터베이스 다운로드 실패",
+            "removeSuccess": "메타데이터 아카이브 데이터베이스가 성공적으로 제거되었습니다",
+            "removeError": "메타데이터 아카이브 데이터베이스 제거 실패",
+            "removeConfirm": "메타데이터 아카이브 데이터베이스를 제거하시겠습니까? 이 작업은 로컬 데이터베이스 파일을 삭제하며, 이 기능을 사용하려면 다시 다운로드해야 합니다.",
+            "preparing": "다운로드 준비 중...",
+            "connecting": "다운로드 서버에 연결 중...",
+            "completed": "완료됨",
+            "downloadComplete": "다운로드가 성공적으로 완료되었습니다"
         }
     },
     "loras": {

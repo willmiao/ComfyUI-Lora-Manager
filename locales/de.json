@@ -16,7 +16,9 @@
             "loading": "Wird geladen...",
             "unknown": "Unbekannt",
             "date": "Datum",
-            "version": "Version"
+            "version": "Version",
+            "enabled": "Aktiviert",
+            "disabled": "Deaktiviert"
         },
         "language": {
             "select": "Sprache",
@@ -178,7 +180,8 @@
             "folderSettings": "Ordner-Einstellungen",
             "downloadPathTemplates": "Download-Pfad-Vorlagen",
             "exampleImages": "Beispielbilder",
-            "misc": "Verschiedenes"
+            "misc": "Verschiedenes",
+            "metadataArchive": "Metadaten-Archiv-Datenbank"
         },
         "contentFiltering": {
             "blurNsfwContent": "NSFW-Inhalte unscharf stellen",
@@ -273,6 +276,30 @@
         "misc": {
             "includeTriggerWords": "Trigger Words in LoRA-Syntax einschließen",
             "includeTriggerWordsHelp": "Trainierte Trigger Words beim Kopieren der LoRA-Syntax in die Zwischenablage einschließen"
+        },
+        "metadataArchive": {
+            "enableArchiveDb": "Metadaten-Archiv-Datenbank aktivieren",
+            "enableArchiveDbHelp": "Verwenden Sie eine lokale Datenbank, um auf Metadaten von Modellen zuzugreifen, die von Civitai gelöscht wurden.",
+            "status": "Status",
+            "statusAvailable": "Verfügbar",
+            "statusUnavailable": "Nicht verfügbar",
+            "enabled": "Aktiviert",
+            "management": "Datenbankverwaltung",
+            "managementHelp": "Laden Sie die Metadaten-Archiv-Datenbank herunter oder entfernen Sie sie",
+            "downloadButton": "Datenbank herunterladen",
+            "downloadingButton": "Wird heruntergeladen...",
+            "downloadedButton": "Heruntergeladen",
+            "removeButton": "Datenbank entfernen",
+            "removingButton": "Wird entfernt...",
+            "downloadSuccess": "Metadaten-Archiv-Datenbank erfolgreich heruntergeladen",
+            "downloadError": "Fehler beim Herunterladen der Metadaten-Archiv-Datenbank",
+            "removeSuccess": "Metadaten-Archiv-Datenbank erfolgreich entfernt",
+            "removeError": "Fehler beim Entfernen der Metadaten-Archiv-Datenbank",
+            "removeConfirm": "Sind Sie sicher, dass Sie die Metadaten-Archiv-Datenbank entfernen möchten? Dadurch wird die lokale Datenbankdatei gelöscht und Sie müssen sie erneut herunterladen, um diese Funktion zu nutzen.",
+            "preparing": "Download wird vorbereitet...",
+            "connecting": "Verbindung zum Download-Server wird hergestellt...",
+            "completed": "Abgeschlossen",
+            "downloadComplete": "Download erfolgreich abgeschlossen"
         }
     },
     "loras": {

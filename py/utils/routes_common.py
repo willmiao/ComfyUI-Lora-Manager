@@ -12,7 +12,7 @@ from ..services.downloader import get_downloader
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
 from ..services.websocket_manager import ws_manager
-from ..services.metadata_service import get_default_metadata_provider
+from ..services.metadata_service import get_default_metadata_provider, get_metadata_provider
 
 logger = logging.getLogger(__name__)
 
@@ -41,13 +41,15 @@ class ModelRouteUtils:
     def is_civitai_api_metadata(meta: dict) -> bool:
         """
         Determine if the given civitai metadata is from the civitai API.
-        Returns True if both 'files' and 'images' exist and are non-empty.
+        Returns True if both 'files' and 'images' exist and are non-empty,
+        and the 'source' is not 'archive_db'.
         """
         if not isinstance(meta, dict):
             return False
         files = meta.get('files')
         images = meta.get('images')
-        return bool(files) and bool(images)
+        source = meta.get('source')
+        return bool(files) and bool(images) and source != 'archive_db'
 
     @staticmethod
     async def update_model_metadata(metadata_path: str, local_metadata: Dict, 
@@ -58,11 +60,16 @@ class ModelRouteUtils:
 
         # Check if we should skip the update to avoid overwriting richer data
         if civitai_metadata.get('source') == 'archive_db' and ModelRouteUtils.is_civitai_api_metadata(existing_civitai):
-            logger.info(f"Skip civitai update for {local_metadata.get('model_name', '')}: {existing_civitai.get('name', '')}")
+            logger.info(f"Skip civitai update for {local_metadata.get('model_name', '')} ({existing_civitai.get('name', '')})")
         else:
             # Create a new civitai metadata by updating existing with new
             merged_civitai = existing_civitai.copy()
             merged_civitai.update(civitai_metadata)
+
+            if civitai_metadata.get('source') == 'archive_db':
+                model_name = civitai_metadata.get('model', {}).get('name', '')
+                version_name = civitai_metadata.get('name', '')
+                logger.info(f"Recovered metadata from archive_db for deleted model: {model_name} ({version_name})")
 
             # Special handling for trainedWords - ensure we don't lose any existing trained words
             if 'trainedWords' in existing_civitai:
@@ -210,8 +217,12 @@ class ModelRouteUtils:
             # Check if model metadata exists
             local_metadata = await ModelRouteUtils.load_local_metadata(metadata_path)
 
-            # Get metadata provider and fetch metadata from unified provider
-            metadata_provider = await get_default_metadata_provider()
+            if model_data.get('from_civitai') is False:
+                # Likely deleted from CivitAI, use archive_db if available
+                metadata_provider = await get_metadata_provider('sqlite')
+            else:
+                metadata_provider = await get_default_metadata_provider()
+
             civitai_metadata = await metadata_provider.get_model_by_hash(sha256)
             if not civitai_metadata:
                 # Mark as not from CivitAI if not found

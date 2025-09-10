@@ -16,7 +16,9 @@
             "loading": "読み込み中...",
             "unknown": "不明",
             "date": "日付",
-            "version": "バージョン"
+            "version": "バージョン",
+            "enabled": "有効",
+            "disabled": "無効"
         },
         "language": {
             "select": "言語",
@@ -178,7 +180,8 @@
             "folderSettings": "フォルダ設定",
             "downloadPathTemplates": "ダウンロードパステンプレート",
             "exampleImages": "例画像",
-            "misc": "その他"
+            "misc": "その他",
+            "metadataArchive": "メタデータアーカイブデータベース"
         },
         "contentFiltering": {
             "blurNsfwContent": "NSFWコンテンツをぼかす",
@@ -273,6 +276,30 @@
         "misc": {
             "includeTriggerWords": "LoRA構文にトリガーワードを含める",
             "includeTriggerWordsHelp": "LoRA構文をクリップボードにコピーする際、学習済みトリガーワードを含めます"
+        },
+        "metadataArchive": {
+            "enableArchiveDb": "メタデータアーカイブデータベースを有効化",
+            "enableArchiveDbHelp": "Civitaiから削除されたモデルのメタデータにアクセスするためにローカルデータベースを使用します。",
+            "status": "ステータス",
+            "statusAvailable": "利用可能",
+            "statusUnavailable": "利用不可",
+            "enabled": "有効",
+            "management": "データベース管理",
+            "managementHelp": "メタデータアーカイブデータベースのダウンロードまたは削除",
+            "downloadButton": "データベースをダウンロード",
+            "downloadingButton": "ダウンロード中...",
+            "downloadedButton": "ダウンロード済み",
+            "removeButton": "データベースを削除",
+            "removingButton": "削除中...",
+            "downloadSuccess": "メタデータアーカイブデータベースのダウンロードが完了しました",
+            "downloadError": "メタデータアーカイブデータベースのダウンロードに失敗しました",
+            "removeSuccess": "メタデータアーカイブデータベースが削除されました",
+            "removeError": "メタデータアーカイブデータベースの削除に失敗しました",
+            "removeConfirm": "本当にメタデータアーカイブデータベースを削除しますか？ローカルのデータベースファイルが削除され、この機能を再度利用するには再ダウンロードが必要です。",
+            "preparing": "ダウンロードを準備中...",
+            "connecting": "ダウンロードサーバーに接続中...",
+            "completed": "完了",
+            "downloadComplete": "ダウンロードが正常に完了しました"
         }
     },
     "loras": {

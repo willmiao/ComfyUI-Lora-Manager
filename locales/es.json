@@ -16,7 +16,9 @@
             "loading": "Cargando...",
             "unknown": "Desconocido",
             "date": "Fecha",
-            "version": "Versión"
+            "version": "Versión",
+            "enabled": "Habilitado",
+            "disabled": "Deshabilitado"
         },
         "language": {
             "select": "Idioma",
@@ -178,7 +180,8 @@
             "folderSettings": "Configuración de carpetas",
             "downloadPathTemplates": "Plantillas de rutas de descarga",
             "exampleImages": "Imágenes de ejemplo",
-            "misc": "Varios"
+            "misc": "Varios",
+            "metadataArchive": "Base de datos de archivo de metadatos"
         },
         "contentFiltering": {
             "blurNsfwContent": "Difuminar contenido NSFW",
@@ -273,6 +276,30 @@
         "misc": {
             "includeTriggerWords": "Incluir palabras clave en la sintaxis de LoRA",
             "includeTriggerWordsHelp": "Incluir palabras clave entrenadas al copiar la sintaxis de LoRA al portapapeles"
+        },
+        "metadataArchive": {
+            "enableArchiveDb": "Habilitar base de datos de archivo de metadatos",
+            "enableArchiveDbHelp": "Utiliza una base de datos local para acceder a metadatos de modelos que han sido eliminados de Civitai.",
+            "status": "Estado",
+            "statusAvailable": "Disponible",
+            "statusUnavailable": "No disponible",
+            "enabled": "Habilitado",
+            "management": "Gestión de base de datos",
+            "managementHelp": "Descargar o eliminar la base de datos de archivo de metadatos",
+            "downloadButton": "Descargar base de datos",
+            "downloadingButton": "Descargando...",
+            "downloadedButton": "Descargado",
+            "removeButton": "Eliminar base de datos",
+            "removingButton": "Eliminando...",
+            "downloadSuccess": "Base de datos de archivo de metadatos descargada exitosamente",
+            "downloadError": "Error al descargar la base de datos de archivo de metadatos",
+            "removeSuccess": "Base de datos de archivo de metadatos eliminada exitosamente",
+            "removeError": "Error al eliminar la base de datos de archivo de metadatos",
+            "removeConfirm": "¿Estás seguro de que quieres eliminar la base de datos de archivo de metadatos? Esto eliminará el archivo de base de datos local y tendrás que descargarlo de nuevo para usar esta función.",
+            "preparing": "Preparando descarga...",
+            "connecting": "Conectando al servidor de descarga...",
+            "completed": "Completado",
+            "downloadComplete": "Descarga completada exitosamente"
         }
     },
     "loras": {

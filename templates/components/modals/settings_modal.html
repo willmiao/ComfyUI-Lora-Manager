@@ -420,23 +420,6 @@
                 </div>
                 
                 <div class="setting-item">
-                    <div class="setting-row">
-                        <div class="setting-info">
-                            <label for="metadataProviderPriority">{{ t('settings.metadataArchive.providerPriority') }}:</label>
-                        </div>
-                        <div class="setting-control select-control">
-                            <select id="metadataProviderPriority" onchange="settingsManager.saveSelectSetting('metadataProviderPriority', 'metadata_provider_priority')">
-                                <option value="archive_db">{{ t('settings.metadataArchive.priorityArchiveDb') }}</option>
-                                <option value="civitai_api">{{ t('settings.metadataArchive.priorityCivitaiApi') }}</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="input-help">
-                        {{ t('settings.metadataArchive.providerPriorityHelp') }}
-                    </div>
-                </div>
-                
-                <div class="setting-item">
                     <div class="metadata-archive-status" id="metadataArchiveStatus">
                         <!-- Status will be populated by JavaScript -->
                     </div>

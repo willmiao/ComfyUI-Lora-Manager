@@ -82,8 +82,7 @@ class SettingsManager:
             "civitai_api_key": "",
             "show_only_sfw": False,
             "language": "en",
-            "enable_metadata_archive_db": False,  # Enable metadata archive database
-            "metadata_provider_priority": "archive_db"  # Default priority: 'archive_db' or 'civitai_api'
+            "enable_metadata_archive_db": False  # Enable metadata archive database
         }
 
     def get(self, key: str, default: Any = None) -> Any:
