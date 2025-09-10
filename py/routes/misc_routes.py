@@ -188,10 +188,13 @@ class MiscRoutes:
                     old_path = settings.get('example_images_path')
                     if old_path != value:
                         logger.info(f"Example images path changed to {value} - server restart required")
-                
+
                 # Save to settings
                 settings.set(key, value)
             
+                if key == 'enable_metadata_archive_db':
+                    await update_metadata_providers()
+
             return web.json_response({'success': True})
         except Exception as e:
             logger.error(f"Error updating settings: {e}", exc_info=True)
