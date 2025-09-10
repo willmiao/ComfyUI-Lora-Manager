@@ -97,7 +97,7 @@ class Downloader:
         timeout = aiohttp.ClientTimeout(
             total=None,  # No total timeout for large downloads
             connect=60,  # Connection timeout
-            sock_read=None  # No socket read timeout
+            sock_read=300  # 5 minute socket read timeout
         )
         
         self._session = aiohttp.ClientSession(
