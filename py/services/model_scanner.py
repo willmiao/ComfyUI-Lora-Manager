@@ -699,7 +699,7 @@ class ModelScanner:
             if existing_path and existing_path != file_path:
                 logger.warning(f"Duplicate filename detected: '{filename}' - files: '{existing_path}' and '{file_path}'")
             
-        await self._fetch_missing_metadata(file_path, model_data)
+        # await self._fetch_missing_metadata(file_path, model_data)
         rel_path = os.path.relpath(file_path, root_path)
         folder = os.path.dirname(rel_path)
         model_data['folder'] = folder.replace(os.path.sep, '/')
