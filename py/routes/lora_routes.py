@@ -7,8 +7,7 @@ from server import PromptServer  # type: ignore
 from .base_model_routes import BaseModelRoutes
 from ..services.lora_service import LoraService
 from ..services.service_registry import ServiceRegistry
-from ..services.model_metadata_provider import ModelMetadataProviderManager
-from ..utils.routes_common import ModelRouteUtils
+from ..services.metadata_service import get_default_metadata_provider
 from ..utils.utils import get_lora_info
 
 logger = logging.getLogger(__name__)
@@ -20,14 +19,12 @@ class LoraRoutes(BaseModelRoutes):
         """Initialize LoRA routes with LoRA service"""
         # Service will be initialized later via setup_routes
         self.service = None
-        self.metadata_provider = None
         self.template_name = "loras.html"
     
     async def initialize_services(self):
         """Initialize services from ServiceRegistry"""
         lora_scanner = await ServiceRegistry.get_lora_scanner()
         self.service = LoraService(lora_scanner)
-        self.metadata_provider = await ModelMetadataProviderManager.get_instance()
         
         # Initialize parent with the service
         super().__init__(self.service)
@@ -218,7 +215,8 @@ class LoraRoutes(BaseModelRoutes):
         """Get available versions for a Civitai LoRA model with local availability info"""
         try:
             model_id = request.match_info['model_id']
-            response = await self.metadata_provider.get_model_versions(model_id)
+            metadata_provider = await get_default_metadata_provider()
+            response = await metadata_provider.get_model_versions(model_id)
             if not response or not response.get('modelVersions'):
                 return web.Response(status=404, text="Model not found")
             
@@ -263,8 +261,9 @@ class LoraRoutes(BaseModelRoutes):
             model_version_id = request.match_info.get('modelVersionId')
             
             # Get model details from metadata provider
-            model, error_msg = await self.metadata_provider.get_model_version_info(model_version_id)
-            
+            metadata_provider = await get_default_metadata_provider()
+            model, error_msg = await metadata_provider.get_model_version_info(model_version_id)
+
             if not model:
                 # Log warning for failed model retrieval
                 logger.warning(f"Failed to fetch model version {model_version_id}: {error_msg}")
@@ -289,7 +288,8 @@ class LoraRoutes(BaseModelRoutes):
         """Get CivitAI model details by hash"""
         try:
             hash = request.match_info.get('hash')
-            model = await self.metadata_provider.get_model_by_hash(hash)
+            metadata_provider = await get_default_metadata_provider()
+            model = await metadata_provider.get_model_by_hash(hash)
             return web.json_response(model)
         except Exception as e:
             logger.error(f"Error fetching model details by hash: {e}")
