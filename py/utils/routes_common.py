@@ -38,27 +38,43 @@ class ModelRouteUtils:
         await MetadataManager.save_metadata(metadata_path, local_metadata)
 
     @staticmethod
+    def is_civitai_api_metadata(meta: dict) -> bool:
+        """
+        Determine if the given civitai metadata is from the civitai API.
+        Returns True if both 'files' and 'images' exist and are non-empty.
+        """
+        if not isinstance(meta, dict):
+            return False
+        files = meta.get('files')
+        images = meta.get('images')
+        return bool(files) and bool(images)
+
+    @staticmethod
     async def update_model_metadata(metadata_path: str, local_metadata: Dict, 
                                   civitai_metadata: Dict, metadata_provider=None) -> None:
         """Update local metadata with CivitAI data"""
         # Save existing trainedWords and customImages if they exist
         existing_civitai = local_metadata.get('civitai') or {}  # Use empty dict if None
 
-        # Create a new civitai metadata by updating existing with new
-        merged_civitai = existing_civitai.copy()
-        merged_civitai.update(civitai_metadata)
+        # Check if we should skip the update to avoid overwriting richer data
+        if civitai_metadata.get('source') == 'archive_db' and ModelRouteUtils.is_civitai_api_metadata(existing_civitai):
+            logger.info(f"Skip civitai update for {local_metadata.get('model_name', '')}: {existing_civitai.get('name', '')}")
+        else:
+            # Create a new civitai metadata by updating existing with new
+            merged_civitai = existing_civitai.copy()
+            merged_civitai.update(civitai_metadata)
 
-        # Special handling for trainedWords - ensure we don't lose any existing trained words
-        if 'trainedWords' in existing_civitai:
-            existing_trained_words = existing_civitai.get('trainedWords', [])
-            new_trained_words = civitai_metadata.get('trainedWords', [])
-            # Use a set to combine words without duplicates, then convert back to list
-            merged_trained_words = list(set(existing_trained_words + new_trained_words))
-            merged_civitai['trainedWords'] = merged_trained_words
+            # Special handling for trainedWords - ensure we don't lose any existing trained words
+            if 'trainedWords' in existing_civitai:
+                existing_trained_words = existing_civitai.get('trainedWords', [])
+                new_trained_words = civitai_metadata.get('trainedWords', [])
+                # Use a set to combine words without duplicates, then convert back to list
+                merged_trained_words = list(set(existing_trained_words + new_trained_words))
+                merged_civitai['trainedWords'] = merged_trained_words
 
-        # Update local metadata with merged civitai data
-        local_metadata['civitai'] = merged_civitai
-        local_metadata['from_civitai'] = True
+            # Update local metadata with merged civitai data
+            local_metadata['civitai'] = merged_civitai
+            local_metadata['from_civitai'] = True
         
         # Update model name if available
         if 'model' in civitai_metadata:

@@ -127,7 +127,8 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
                     'model': {
                         'name': model_row['name'],
                         'type': model_type,
-                    }
+                    },
+                    'source': 'archive_db'
                 }
                 # Update with any additional data
                 version_entry.update(version_data)
@@ -266,7 +267,8 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
                 "creator": {
                     "username": model_row['username'] or model_data.get("creator", {}).get("username"),
                     "image": model_data.get("creator", {}).get("image")
-                }
+                },
+                "source": "archive_db"
             }
             
             # Add any additional fields from version data
