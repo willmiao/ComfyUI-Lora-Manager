@@ -671,6 +671,7 @@ NODE_EXTRACTORS = {
     "AdvancedCLIPTextEncode": CLIPTextEncodeExtractor,  # From https://github.com/BlenderNeko/ComfyUI_ADV_CLIP_emb
     "smZ_CLIPTextEncode": CLIPTextEncodeExtractor,  # From https://github.com/shiimizu/ComfyUI_smZNodes
     "CR_ApplyControlNetStack": CR_ApplyControlNetStackExtractor,  # Add CR_ApplyControlNetStack
+    "PCTextEncode": CLIPTextEncodeExtractor,  # From https://github.com/asagi4/comfyui-prompt-control
     # Latent
     "EmptyLatentImage": ImageSizeExtractor,
     # Flux
