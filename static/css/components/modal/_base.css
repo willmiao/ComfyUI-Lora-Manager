@@ -208,6 +208,14 @@ body.modal-open {
     pointer-events: none;
 }
 
+button:disabled,
+.primary-btn:disabled,
+.danger-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 .restart-required-icon {
     color: var(--lora-warning);
     margin-left: 5px;
@@ -228,14 +236,76 @@ body.modal-open {
     background-color: oklch(35% 0.02 256 / 0.98);
 }
 
-.primary-btn.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+/* Danger button styles */
+.danger-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background-color: var(--lora-error);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 0.95em;
 }
 
-.primary-btn.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.danger-btn:hover {
+    background-color: oklch(from var(--lora-error) l c h / 85%);
+    color: white;
+}
+
+/* Metadata archive status styles */
+.metadata-archive-status {
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--border-radius-sm);
+    padding: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+[data-theme="dark"] .metadata-archive-status {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--lora-border);
+}
+
+.archive-status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.95em;
+}
+
+.archive-status-item:last-child {
+    margin-bottom: 0;
+}
+
+.archive-status-label {
+    font-weight: 500;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.archive-status-value {
+    color: var(--text-color);
+}
+
+.archive-status-value.status-available {
+    color: var(--lora-success, #10b981);
+}
+
+.archive-status-value.status-unavailable {
+    color: var(--lora-warning, #f59e0b);
+}
+
+.archive-status-value.status-enabled {
+    color: var(--lora-success, #10b981);
+}
+
+.archive-status-value.status-disabled {
+    color: var(--lora-error, #ef4444);
 }
 
 /* Add styles for delete preview image */

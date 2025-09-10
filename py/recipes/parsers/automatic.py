@@ -6,6 +6,7 @@ import logging
 from typing import Dict, Any
 from ..base import RecipeMetadataParser
 from ..constants import GEN_PARAM_KEYS
+from ...services.metadata_service import get_default_metadata_provider
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,9 @@ class AutomaticMetadataParser(RecipeMetadataParser):
     async def parse_metadata(self, user_comment: str, recipe_scanner=None, civitai_client=None) -> Dict[str, Any]:
         """Parse metadata from Automatic1111 format"""
         try:
+            # Get metadata provider instead of using civitai_client directly
+            metadata_provider = await get_default_metadata_provider()
+            
             # Split on Negative prompt if it exists
             if "Negative prompt:" in user_comment:
                 parts = user_comment.split('Negative prompt:', 1)
@@ -216,9 +220,9 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                         }
                         
                         # Get additional info from Civitai
-                        if civitai_client:
+                        if metadata_provider:
                             try:
-                                civitai_info = await civitai_client.get_model_version_info(resource.get("modelVersionId"))
+                                civitai_info = await metadata_provider.get_model_version_info(resource.get("modelVersionId"))
                                 populated_entry = await self.populate_lora_from_civitai(
                                     lora_entry,
                                     civitai_info,
@@ -271,11 +275,11 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                         }
                         
                         # Try to get info from Civitai
-                        if civitai_client:
+                        if metadata_provider:
                             try:
                                 if lora_hash:
                                     # If we have hash, use it for lookup
-                                    civitai_info = await civitai_client.get_model_by_hash(lora_hash)
+                                    civitai_info = await metadata_provider.get_model_by_hash(lora_hash)
                                 else:
                                     civitai_info = None
                                 

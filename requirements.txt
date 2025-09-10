@@ -8,3 +8,4 @@ toml
 numpy
 natsort
 GitPython
+aiosqlite

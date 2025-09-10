@@ -5,3 +5,4 @@ output/*
 py/run_test.py
 .vscode/
 cache/
+civitai/

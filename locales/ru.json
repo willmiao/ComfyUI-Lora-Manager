@@ -16,7 +16,9 @@
             "loading": "Загрузка...",
             "unknown": "Неизвестно",
             "date": "Дата",
-            "version": "Версия"
+            "version": "Версия",
+            "enabled": "Включено",
+            "disabled": "Отключено"
         },
         "language": {
             "select": "Язык",
@@ -178,7 +180,8 @@
             "folderSettings": "Настройки папок",
             "downloadPathTemplates": "Шаблоны путей загрузки",
             "exampleImages": "Примеры изображений",
-            "misc": "Разное"
+            "misc": "Разное",
+            "metadataArchive": "Архив метаданных"
         },
         "contentFiltering": {
             "blurNsfwContent": "Размывать NSFW контент",
@@ -273,6 +276,30 @@
         "misc": {
             "includeTriggerWords": "Включать триггерные слова в синтаксис LoRA",
             "includeTriggerWordsHelp": "Включать обученные триггерные слова при копировании синтаксиса LoRA в буфер обмена"
+        },
+        "metadataArchive": {
+            "enableArchiveDb": "Включить архив метаданных",
+            "enableArchiveDbHelp": "Использовать локальную базу данных для доступа к метаданным моделей, удалённых с Civitai.",
+            "status": "Статус",
+            "statusAvailable": "Доступно",
+            "statusUnavailable": "Недоступно",
+            "enabled": "Включено",
+            "management": "Управление базой данных",
+            "managementHelp": "Скачать или удалить базу данных архива метаданных",
+            "downloadButton": "Скачать базу данных",
+            "downloadingButton": "Скачивание...",
+            "downloadedButton": "Скачано",
+            "removeButton": "Удалить базу данных",
+            "removingButton": "Удаление...",
+            "downloadSuccess": "База данных архива метаданных успешно загружена",
+            "downloadError": "Не удалось загрузить базу данных архива метаданных",
+            "removeSuccess": "База данных архива метаданных успешно удалена",
+            "removeError": "Не удалось удалить базу данных архива метаданных",
+            "removeConfirm": "Вы уверены, что хотите удалить базу данных архива метаданных? Это удалит локальный файл базы данных, и для использования этой функции потребуется повторная загрузка.",
+            "preparing": "Подготовка к загрузке...",
+            "connecting": "Подключение к серверу загрузки...",
+            "completed": "Завершено",
+            "downloadComplete": "Загрузка успешно завершена"
         }
     },
     "loras": {

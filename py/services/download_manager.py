@@ -10,6 +10,8 @@ from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
 from .service_registry import ServiceRegistry
 from .settings_manager import settings
+from .metadata_service import get_default_metadata_provider
+from .downloader import get_downloader
 
 # Download to temporary file first
 import tempfile
@@ -199,11 +201,11 @@ class DownloadManager:
                 if await embedding_scanner.check_model_version_exists(model_version_id):
                     return {'success': False, 'error': 'Model version already exists in embedding library'}
 
-            # Get civitai client
-            civitai_client = await self._get_civitai_client()
+            # Get metadata provider instead of civitai client directly
+            metadata_provider = await get_default_metadata_provider()
 
             # Get version info based on the provided identifier
-            version_info = await civitai_client.get_model_version(model_id, model_version_id)
+            version_info = await metadata_provider.get_model_version(model_id, model_version_id)
             
             if not version_info:
                 return {'success': False, 'error': 'Failed to fetch model metadata'}
@@ -445,8 +447,14 @@ class DownloadManager:
                     preview_ext = '.mp4'
                     preview_path = os.path.splitext(save_path)[0] + preview_ext
                     
-                    # Download video directly
-                    if await civitai_client.download_preview_image(images[0]['url'], preview_path):
+                    # Download video directly using downloader
+                    downloader = await get_downloader()
+                    success, result = await downloader.download_file(
+                        images[0]['url'], 
+                        preview_path, 
+                        use_auth=False  # Preview images typically don't need auth
+                    )
+                    if success:
                         metadata.preview_url = preview_path.replace(os.sep, '/')
                         metadata.preview_nsfw_level = images[0].get('nsfwLevel', 0)
                 else:
@@ -454,8 +462,16 @@ class DownloadManager:
                     with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
                         temp_path = temp_file.name
                     
-                    # Download the original image to temp path
-                    if await civitai_client.download_preview_image(images[0]['url'], temp_path):
+                    # Download the original image to temp path using downloader
+                    downloader = await get_downloader()
+                    success, content = await downloader.download_to_memory(
+                        images[0]['url'], 
+                        use_auth=False
+                    )
+                    if success:
+                        # Save to temp file
+                        with open(temp_path, 'wb') as f:
+                            f.write(content)
                         # Optimize and convert to WebP
                         preview_path = os.path.splitext(save_path)[0] + '.webp'
                         
@@ -486,12 +502,13 @@ class DownloadManager:
                 if progress_callback:
                     await progress_callback(3)  # 3% progress after preview download
 
-            # Download model file with progress tracking
-            success, result = await civitai_client._download_file(
+            # Download model file with progress tracking using downloader
+            downloader = await get_downloader()
+            success, result = await downloader.download_file(
                 download_url, 
-                save_dir,
-                os.path.basename(save_path),
-                progress_callback=lambda p: self._handle_download_progress(p, progress_callback)
+                save_path,  # Use full path instead of separate dir and filename
+                progress_callback=lambda p: self._handle_download_progress(p, progress_callback),
+                use_auth=True  # Model downloads need authentication
             )
 
             if not success:

@@ -8,6 +8,7 @@ from ..config import config
 from .recipe_cache import RecipeCache
 from .service_registry import ServiceRegistry
 from .lora_scanner import LoraScanner
+from .metadata_service import get_default_metadata_provider
 from ..utils.utils import fuzzy_match
 from natsort import natsorted
 import sys
@@ -431,13 +432,13 @@ class RecipeScanner:
     async def _get_hash_from_civitai(self, model_version_id: str) -> Optional[str]:
         """Get hash from Civitai API"""
         try:
-            # Get CivitaiClient from ServiceRegistry
-            civitai_client = await self._get_civitai_client()
-            if not civitai_client:
-                logger.error("Failed to get CivitaiClient from ServiceRegistry")
+            # Get metadata provider instead of civitai client directly
+            metadata_provider = await get_default_metadata_provider()
+            if not metadata_provider:
+                logger.error("Failed to get metadata provider")
                 return None
                 
-            version_info, error_msg = await civitai_client.get_model_version_info(model_version_id)
+            version_info, error_msg = await metadata_provider.get_model_version_info(model_version_id)
             
             if not version_info:
                 if error_msg and "model not found" in error_msg.lower():

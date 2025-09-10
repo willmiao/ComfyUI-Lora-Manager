@@ -16,7 +16,9 @@
             "loading": "加载中...",
             "unknown": "未知",
             "date": "日期",
-            "version": "版本"
+            "version": "版本",
+            "enabled": "已启用",
+            "disabled": "已禁用"
         },
         "language": {
             "select": "语言",
@@ -178,7 +180,8 @@
             "folderSettings": "文件夹设置",
             "downloadPathTemplates": "下载路径模板",
             "exampleImages": "示例图片",
-            "misc": "其他"
+            "misc": "其他",
+            "metadataArchive": "元数据归档数据库"
         },
         "contentFiltering": {
             "blurNsfwContent": "模糊 NSFW 内容",
@@ -273,6 +276,30 @@
         "misc": {
             "includeTriggerWords": "复制 LoRA 语法时包含触发词",
             "includeTriggerWordsHelp": "复制 LoRA 语法到剪贴板时包含训练触发词"
+        },
+        "metadataArchive": {
+            "enableArchiveDb": "启用元数据归档数据库",
+            "enableArchiveDbHelp": "使用本地数据库访问已从 Civitai 删除的模型元数据。",
+            "status": "状态",
+            "statusAvailable": "可用",
+            "statusUnavailable": "不可用",
+            "enabled": "已启用",
+            "management": "数据库管理",
+            "managementHelp": "下载或移除元数据归档数据库",
+            "downloadButton": "下载数据库",
+            "downloadingButton": "正在下载...",
+            "downloadedButton": "已下载",
+            "removeButton": "移除数据库",
+            "removingButton": "正在移除...",
+            "downloadSuccess": "元数据归档数据库下载成功",
+            "downloadError": "元数据归档数据库下载失败",
+            "removeSuccess": "元数据归档数据库移除成功",
+            "removeError": "元数据归档数据库移除失败",
+            "removeConfirm": "你确定要移除元数据归档数据库吗？这将删除本地数据库文件，如需使用此功能需重新下载。",
+            "preparing": "正在准备下载...",
+            "connecting": "正在连接下载服务器...",
+            "completed": "已完成",
+            "downloadComplete": "下载成功完成"
         }
     },
     "loras": {

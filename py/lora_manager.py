@@ -190,6 +190,9 @@ class LoraManager:
 
             # Register DownloadManager with ServiceRegistry
             await ServiceRegistry.get_download_manager()
+
+            from .services.metadata_service import initialize_metadata_providers
+            await initialize_metadata_providers()
             
             # Initialize WebSocket manager
             await ServiceRegistry.get_websocket_manager()

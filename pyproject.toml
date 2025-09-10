@@ -12,7 +12,8 @@ dependencies = [
     "olefile", # for getting rid of warning message
     "toml",
     "natsort",
-    "GitPython"
+    "GitPython",
+    "aiosqlite"
 ]
 
 [project.urls]

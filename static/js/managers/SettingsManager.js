@@ -260,6 +260,9 @@ export class SettingsManager {
             includeTriggerWordsCheckbox.checked = state.global.settings.includeTriggerWords || false;
         }
 
+        // Load metadata archive settings
+        await this.loadMetadataArchiveSettings();
+
         // Load base model path mappings
         this.loadBaseModelMappings();
 
@@ -786,6 +789,8 @@ export class SettingsManager {
             state.global.settings.compactMode = value;
         } else if (settingKey === 'include_trigger_words') {
             state.global.settings.includeTriggerWords = value;
+        } else if (settingKey === 'enable_metadata_archive_db') {
+            state.global.settings.enable_metadata_archive_db = value;
         } else {
             // For any other settings that might be added in the future
             state.global.settings[settingKey] = value;
@@ -796,7 +801,7 @@ export class SettingsManager {
         
         try {
             // For backend settings, make API call
-            if (['show_only_sfw'].includes(settingKey)) {
+            if (['show_only_sfw', 'enable_metadata_archive_db'].includes(settingKey)) {
                 const payload = {};
                 payload[settingKey] = value;
                 
@@ -810,6 +815,11 @@ export class SettingsManager {
 
                 if (!response.ok) {
                     throw new Error('Failed to save setting');
+                }
+                
+                // Refresh metadata archive status when enable setting changes
+                if (settingKey === 'enable_metadata_archive_db') {
+                    await this.updateMetadataArchiveStatus();
                 }
             }
                 
@@ -837,6 +847,11 @@ export class SettingsManager {
                 showToast('toast.settings.compactModeToggled', { 
                     state: value ? 'toast.settings.compactModeEnabled' : 'toast.settings.compactModeDisabled' 
                 }, 'success');
+            }
+
+            // Special handling for metadata archive settings
+            if (settingKey === 'enable_metadata_archive_db') {
+                await this.updateMetadataArchiveStatus();
             }
             
         } catch (error) {
@@ -913,6 +928,254 @@ export class SettingsManager {
             
         } catch (error) {
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
+        }
+    }
+
+    async loadMetadataArchiveSettings() {
+        try {
+            // Load current settings from state
+            const enableMetadataArchiveCheckbox = document.getElementById('enableMetadataArchive');
+            if (enableMetadataArchiveCheckbox) {
+                enableMetadataArchiveCheckbox.checked = state.global.settings.enable_metadata_archive_db || false;
+            }
+
+            // Load status
+            await this.updateMetadataArchiveStatus();
+        } catch (error) {
+            console.error('Error loading metadata archive settings:', error);
+        }
+    }
+
+    async updateMetadataArchiveStatus() {
+        try {
+            const response = await fetch('/api/metadata-archive-status');
+            const data = await response.json();
+
+            const statusContainer = document.getElementById('metadataArchiveStatus');
+            if (statusContainer && data.success) {
+                const status = data;
+                const sizeText = status.databaseSize > 0 ? ` (${this.formatFileSize(status.databaseSize)})` : '';
+                
+                statusContainer.innerHTML = `
+                    <div class="archive-status-item">
+                        <span class="archive-status-label">${translate('settings.metadataArchive.status')}:</span>
+                        <span class="archive-status-value status-${status.isAvailable ? 'available' : 'unavailable'}">
+                            ${status.isAvailable ? translate('settings.metadataArchive.statusAvailable') : translate('settings.metadataArchive.statusUnavailable')}
+                            ${sizeText}
+                        </span>
+                    </div>
+                    <div class="archive-status-item">
+                        <span class="archive-status-label">${translate('settings.metadataArchive.enabled')}:</span>
+                        <span class="archive-status-value status-${status.isEnabled ? 'enabled' : 'disabled'}">
+                            ${status.isEnabled ? translate('common.status.enabled') : translate('common.status.disabled')}
+                        </span>
+                    </div>
+                `;
+
+                // Update button states
+                const downloadBtn = document.getElementById('downloadMetadataArchiveBtn');
+                const removeBtn = document.getElementById('removeMetadataArchiveBtn');
+                
+                if (downloadBtn) {
+                    downloadBtn.disabled = status.isAvailable;
+                    downloadBtn.textContent = status.isAvailable ? 
+                        translate('settings.metadataArchive.downloadedButton') : 
+                        translate('settings.metadataArchive.downloadButton');
+                }
+                
+                if (removeBtn) {
+                    removeBtn.disabled = !status.isAvailable;
+                }
+            }
+        } catch (error) {
+            console.error('Error updating metadata archive status:', error);
+        }
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    async downloadMetadataArchive() {
+        try {
+            const downloadBtn = document.getElementById('downloadMetadataArchiveBtn');
+            
+            if (downloadBtn) {
+                downloadBtn.disabled = true;
+                downloadBtn.textContent = translate('settings.metadataArchive.downloadingButton');
+            }
+            
+            // Show loading with enhanced progress
+            const progressUpdater = state.loadingManager.showEnhancedProgress(translate('settings.metadataArchive.preparing'));
+
+            // Set up WebSocket for progress updates
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            const downloadId = `metadata_archive_${Date.now()}`;
+            const ws = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${downloadId}`);
+            
+            let wsConnected = false;
+            let actualDownloadId = downloadId; // Will be updated when WebSocket confirms the ID
+            
+            // Promise to wait for WebSocket connection and ID confirmation
+            const wsReady = new Promise((resolve) => {
+                ws.onopen = () => {
+                    wsConnected = true;
+                    console.log('Connected to metadata archive download progress WebSocket');
+                };
+                
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    
+                    // Handle download ID confirmation
+                    if (data.type === 'download_id') {
+                        actualDownloadId = data.download_id;
+                        console.log(`Connected to metadata archive download progress with ID: ${data.download_id}`);
+                        resolve(data.download_id);
+                        return;
+                    }
+                    
+                    // Handle metadata archive download progress
+                    if (data.type === 'metadata_archive_download') {
+                        const message = data.message || '';
+                        
+                        // Update progress bar based on stage
+                        let progressPercent = 0;
+                        if (data.stage === 'download') {
+                            // Extract percentage from message if available
+                            const percentMatch = data.message.match(/(\d+\.?\d*)%/);
+                            if (percentMatch) {
+                                progressPercent = Math.min(parseFloat(percentMatch[1]), 90); // Cap at 90% for download
+                            } else {
+                                progressPercent = 0; // Default download progress
+                            }
+                        } else if (data.stage === 'extract') {
+                            progressPercent = 95; // Near completion for extraction
+                        }
+                        
+                        // Update loading manager progress
+                        progressUpdater.updateProgress(progressPercent, '', `${message}`);
+                    }
+                };
+                
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    resolve(downloadId); // Fallback to original ID
+                };
+                
+                // Timeout fallback
+                setTimeout(() => resolve(downloadId), 5000);
+            });
+            
+            ws.onclose = () => {
+                console.log('WebSocket connection closed');
+            };
+
+            // Wait for WebSocket to be ready
+            await wsReady;
+
+            const response = await fetch(`/api/download-metadata-archive?download_id=${encodeURIComponent(actualDownloadId)}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            // Close WebSocket
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
+
+            if (data.success) {
+                // Complete progress
+                await progressUpdater.complete(translate('settings.metadataArchive.downloadComplete'));
+                
+                showToast('settings.metadataArchive.downloadSuccess', 'success');
+                
+                // Update settings in state
+                state.global.settings.enable_metadata_archive_db = true;
+                setStorageItem('settings', state.global.settings);
+                
+                // Update UI
+                const enableCheckbox = document.getElementById('enableMetadataArchive');
+                if (enableCheckbox) {
+                    enableCheckbox.checked = true;
+                }
+                
+                await this.updateMetadataArchiveStatus();
+            } else {
+                // Hide loading on error
+                state.loadingManager.hide();
+                showToast('settings.metadataArchive.downloadError' + ': ' + data.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error downloading metadata archive:', error);
+            
+            // Hide loading on error
+            state.loadingManager.hide();
+
+            showToast('settings.metadataArchive.downloadError' + ': ' + error.message, 'error');
+        } finally {
+            const downloadBtn = document.getElementById('downloadMetadataArchiveBtn');
+            if (downloadBtn) {
+                downloadBtn.disabled = false;
+                downloadBtn.textContent = translate('settings.metadataArchive.downloadButton');
+            }
+        }
+    }
+
+    async removeMetadataArchive() {
+        if (!confirm(translate('settings.metadataArchive.removeConfirm'))) {
+            return;
+        }
+
+        try {
+            const removeBtn = document.getElementById('removeMetadataArchiveBtn');
+            if (removeBtn) {
+                removeBtn.disabled = true;
+                removeBtn.textContent = translate('settings.metadataArchive.removingButton');
+            }
+
+            const response = await fetch('/api/remove-metadata-archive', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showToast('settings.metadataArchive.removeSuccess', 'success');
+
+                // Update settings in state
+                state.global.settings.enable_metadata_archive_db = false;
+                setStorageItem('settings', state.global.settings);
+                
+                // Update UI
+                const enableCheckbox = document.getElementById('enableMetadataArchive');
+                if (enableCheckbox) {
+                    enableCheckbox.checked = false;
+                }
+                
+                await this.updateMetadataArchiveStatus();
+            } else {
+                showToast('settings.metadataArchive.removeError' + ': ' + data.error, 'error');
+            }
+        } catch (error) {
+            console.error('Error removing metadata archive:', error);
+            showToast('settings.metadataArchive.removeError' + ': ' + error.message, 'error');
+        } finally {
+            const removeBtn = document.getElementById('removeMetadataArchiveBtn');
+            if (removeBtn) {
+                removeBtn.disabled = false;
+                removeBtn.textContent = translate('settings.metadataArchive.removeButton');
+            }
         }
     }
     

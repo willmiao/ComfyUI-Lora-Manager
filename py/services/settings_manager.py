@@ -81,7 +81,8 @@ class SettingsManager:
         return {
             "civitai_api_key": "",
             "show_only_sfw": False,
-            "language": "en"  # 添加默认语言设置
+            "language": "en",
+            "enable_metadata_archive_db": False  # Enable metadata archive database
         }
 
     def get(self, key: str, default: Any = None) -> Any:

@@ -611,10 +611,10 @@ class BaseModelRoutes(ABC):
             success = 0
             needs_resort = False
             
-            # Prepare models to process
+            # Prepare models to process, only those without CivitAI data
             to_process = [
                 model for model in cache.raw_data 
-                if model.get('sha256') and (not model.get('civitai') or 'id' not in model.get('civitai')) and model.get('from_civitai', True)
+                if model.get('sha256') and (not model.get('civitai') or 'id' not in model.get('civitai'))
             ]
             total_to_process = len(to_process)
             

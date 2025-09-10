@@ -5,6 +5,7 @@ import logging
 from typing import Dict, Any, Union
 from ..base import RecipeMetadataParser
 from ..constants import GEN_PARAM_KEYS
+from ...services.metadata_service import get_default_metadata_provider
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +37,15 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
         Args:
             metadata: The metadata from the image (dict)
             recipe_scanner: Optional recipe scanner service
-            civitai_client: Optional Civitai API client
+            civitai_client: Optional Civitai API client (deprecated, use metadata_provider instead)
             
         Returns:
             Dict containing parsed recipe data
         """
         try:
+            # Get metadata provider instead of using civitai_client directly
+            metadata_provider = await get_default_metadata_provider()
+            
             # Initialize result structure
             result = {
                 'base_model': None,
@@ -85,9 +89,9 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
             # Extract base model information - directly if available
             if "baseModel" in metadata:
                 result["base_model"] = metadata["baseModel"]
-            elif "Model hash" in metadata and civitai_client:
+            elif "Model hash" in metadata and metadata_provider:
                 model_hash = metadata["Model hash"]
-                model_info = await civitai_client.get_model_by_hash(model_hash)
+                model_info = await metadata_provider.get_model_by_hash(model_hash)
                 if model_info:
                     result["base_model"] = model_info.get("baseModel", "")
             elif "Model" in metadata and isinstance(metadata.get("resources"), list):
@@ -95,8 +99,8 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                 for resource in metadata.get("resources", []):
                     if resource.get("type") == "model" and resource.get("name") == metadata.get("Model"):
                         # This is likely the checkpoint model
-                        if civitai_client and resource.get("hash"):
-                            model_info = await civitai_client.get_model_by_hash(resource.get("hash"))
+                        if metadata_provider and resource.get("hash"):
+                            model_info = await metadata_provider.get_model_by_hash(resource.get("hash"))
                             if model_info:
                                 result["base_model"] = model_info.get("baseModel", "")
             
@@ -138,9 +142,9 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                         }
                         
                         # Try to get info from Civitai if hash is available
-                        if lora_entry['hash'] and civitai_client:
+                        if lora_entry['hash'] and metadata_provider:
                             try:
-                                civitai_info = await civitai_client.get_model_by_hash(lora_hash)
+                                civitai_info = await metadata_provider.get_model_by_hash(lora_hash)
                                 
                                 populated_entry = await self.populate_lora_from_civitai(
                                     lora_entry,
@@ -194,10 +198,10 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                     }
                     
                     # Try to get info from Civitai if modelVersionId is available
-                    if version_id and civitai_client:
+                    if version_id and metadata_provider:
                         try:
                             # Use get_model_version_info instead of get_model_version
-                            civitai_info, error = await civitai_client.get_model_version_info(version_id)
+                            civitai_info, error = await metadata_provider.get_model_version_info(version_id)
                             
                             if error:
                                 logger.warning(f"Error getting model version info: {error}")
@@ -259,11 +263,11 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                         'isDeleted': False
                     }
                     
-                    # If we have a version ID and civitai client, try to get more info
-                    if version_id and civitai_client:
+                    # If we have a version ID and metadata provider, try to get more info
+                    if version_id and metadata_provider:
                         try:
                             # Use get_model_version_info with the version ID
-                            civitai_info, error = await civitai_client.get_model_version_info(version_id)
+                            civitai_info, error = await metadata_provider.get_model_version_info(version_id)
                             
                             if error:
                                 logger.warning(f"Error getting model version info: {error}")
@@ -316,9 +320,9 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                 }
                 
                 # Try to get info from Civitai if hash is available
-                if lora_entry['hash'] and civitai_client:
+                if lora_entry['hash'] and metadata_provider:
                     try:
-                        civitai_info = await civitai_client.get_model_by_hash(lora_hash)
+                        civitai_info = await metadata_provider.get_model_by_hash(lora_hash)
                         
                         populated_entry = await self.populate_lora_from_civitai(
                             lora_entry,

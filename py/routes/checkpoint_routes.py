@@ -4,6 +4,7 @@ from aiohttp import web
 from .base_model_routes import BaseModelRoutes
 from ..services.checkpoint_service import CheckpointService
 from ..services.service_registry import ServiceRegistry
+from ..services.metadata_service import get_default_metadata_provider
 from ..config import config
 
 logger = logging.getLogger(__name__)
@@ -15,14 +16,12 @@ class CheckpointRoutes(BaseModelRoutes):
         """Initialize Checkpoint routes with Checkpoint service"""
         # Service will be initialized later via setup_routes
         self.service = None
-        self.civitai_client = None
         self.template_name = "checkpoints.html"
     
     async def initialize_services(self):
         """Initialize services from ServiceRegistry"""
         checkpoint_scanner = await ServiceRegistry.get_checkpoint_scanner()
         self.service = CheckpointService(checkpoint_scanner)
-        self.civitai_client = await ServiceRegistry.get_civitai_client()
         
         # Initialize parent with the service
         super().__init__(self.service)
@@ -66,7 +65,8 @@ class CheckpointRoutes(BaseModelRoutes):
         """Get available versions for a Civitai checkpoint model with local availability info"""
         try:
             model_id = request.match_info['model_id']
-            response = await self.civitai_client.get_model_versions(model_id)
+            metadata_provider = await get_default_metadata_provider()
+            response = await metadata_provider.get_model_versions(model_id)
             if not response or not response.get('modelVersions'):
                 return web.Response(status=404, text="Model not found")
             
