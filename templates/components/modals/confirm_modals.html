@@ -54,21 +54,6 @@
     </div>
 </div>
 
-<!-- Cache Clear Confirmation Modal -->
-<div id="clearCacheModal" class="modal delete-modal">
-    <div class="modal-content delete-modal-content">
-        <h2>{{ t('modals.clearCache.title') }}</h2>
-        <p class="delete-message">{{ t('modals.clearCache.message') }}</p>
-        <div class="delete-model-info">
-            <p>{{ t('modals.clearCache.description') }}</p>
-        </div>
-        <div class="modal-actions">
-            <button class="cancel-btn" onclick="modalManager.closeModal('clearCacheModal')">{{ t('common.actions.cancel') }}</button>
-            <button class="delete-btn" onclick="settingsManager.executeClearCache()">{{ t('modals.clearCache.action') }}</button>
-        </div>
-    </div>
-</div>
-
 <!-- Bulk Delete Confirmation Modal -->
 <div id="bulkDeleteModal" class="modal delete-modal">
     <div class="modal-content delete-modal-content">

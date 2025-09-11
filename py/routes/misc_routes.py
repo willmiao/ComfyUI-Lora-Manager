@@ -13,8 +13,6 @@ from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS, NODE_TYPES, DEFAULT_NO
 from ..services.service_registry import ServiceRegistry
 from ..services.metadata_service import get_metadata_archive_manager, update_metadata_providers
 from ..services.websocket_manager import ws_manager
-import re
-
 logger = logging.getLogger(__name__)
 
 standalone_mode = 'nodes' not in sys.modules
@@ -89,9 +87,6 @@ class MiscRoutes:
     def setup_routes(app):
         """Register miscellaneous routes"""
         app.router.add_post('/api/settings', MiscRoutes.update_settings)
-        
-        # Add new route for clearing cache
-        app.router.add_post('/api/clear-cache', MiscRoutes.clear_cache)
 
         app.router.add_get('/api/health-check', lambda request: web.json_response({'status': 'ok'}))
 
@@ -119,51 +114,6 @@ class MiscRoutes:
         app.router.add_post('/api/download-metadata-archive', MiscRoutes.download_metadata_archive)
         app.router.add_post('/api/remove-metadata-archive', MiscRoutes.remove_metadata_archive)
         app.router.add_get('/api/metadata-archive-status', MiscRoutes.get_metadata_archive_status)
-
-    @staticmethod
-    async def clear_cache(request):
-        """Clear all cache files from the cache folder"""
-        try:
-            # Get the cache folder path (relative to project directory)
-            project_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            cache_folder = os.path.join(project_dir, 'cache')
-            
-            # Check if cache folder exists
-            if not os.path.exists(cache_folder):
-                logger.info("Cache folder does not exist, nothing to clear")
-                return web.json_response({'success': True, 'message': 'No cache folder found'})
-            
-            # Get list of cache files before deleting for reporting
-            cache_files = [f for f in os.listdir(cache_folder) if os.path.isfile(os.path.join(cache_folder, f))]
-            deleted_files = []
-            
-            # Delete each .msgpack file in the cache folder
-            for filename in cache_files:
-                if filename.endswith('.msgpack'):
-                    file_path = os.path.join(cache_folder, filename)
-                    try:
-                        os.remove(file_path)
-                        deleted_files.append(filename)
-                        logger.info(f"Deleted cache file: {filename}")
-                    except Exception as e:
-                        logger.error(f"Failed to delete {filename}: {e}")
-                        return web.json_response({
-                            'success': False,
-                            'error': f"Failed to delete {filename}: {str(e)}"
-                        }, status=500)
-            
-            return web.json_response({
-                'success': True,
-                'message': f"Successfully cleared {len(deleted_files)} cache files",
-                'deleted_files': deleted_files
-            })
-            
-        except Exception as e:
-            logger.error(f"Error clearing cache files: {e}", exc_info=True)
-            return web.json_response({
-                'success': False,
-                'error': str(e)
-            }, status=500)
 
     @staticmethod
     async def update_settings(request):

@@ -1275,32 +1275,6 @@ export class SettingsManager {
         modalManager.showModal('clearCacheModal');
     }
 
-    async executeClearCache() {
-        try {
-            // Call the API endpoint to clear cache files
-            const response = await fetch('/api/clear-cache', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-
-            const result = await response.json();
-            
-            if (result.success) {
-                showToast('toast.settings.cacheCleared', {}, 'success');
-            } else {
-                showToast('toast.settings.cacheClearFailed', { error: result.error }, 'error');
-            }
-            
-            // Close the confirmation modal
-            modalManager.closeModal('clearCacheModal');
-        } catch (error) {
-            showToast('toast.settings.cacheClearError', { message: error.message }, 'error');
-            modalManager.closeModal('clearCacheModal');
-        }
-    }
-
     async reloadContent() {
         if (this.currentPage === 'loras') {
             // Reload the loras without updating folders
