@@ -3,6 +3,7 @@ import os
 import sys
 import threading
 import asyncio
+import subprocess
 from server import PromptServer # type: ignore
 from aiohttp import web
 from ..services.settings_manager import settings
@@ -89,6 +90,8 @@ class MiscRoutes:
         app.router.add_post('/api/settings', MiscRoutes.update_settings)
 
         app.router.add_get('/api/health-check', lambda request: web.json_response({'status': 'ok'}))
+
+        app.router.add_post('/api/open-file-location', MiscRoutes.open_file_location)
 
         # Usage stats routes
         app.router.add_post('/api/update-usage-stats', MiscRoutes.update_usage_stats)
@@ -766,6 +769,57 @@ class MiscRoutes:
             
         except Exception as e:
             logger.error(f"Error getting metadata archive status: {e}", exc_info=True)
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+        
+    @staticmethod
+    async def open_file_location(request):
+        """
+        Open the folder containing the specified file and select the file in the file explorer.
+
+        Expects a JSON request body with:
+        {
+            "file_path": "absolute/path/to/file"
+        }
+        """
+        try:
+            data = await request.json()
+            file_path = data.get('file_path')
+
+            if not file_path:
+                return web.json_response({
+                    'success': False,
+                    'error': 'Missing file_path parameter'
+                }, status=400)
+
+            file_path = os.path.abspath(file_path)
+
+            if not os.path.isfile(file_path):
+                return web.json_response({
+                    'success': False,
+                    'error': 'File does not exist'
+                }, status=404)
+
+            # Open the folder and select the file
+            if os.name == 'nt':  # Windows
+                # explorer /select,"C:\path\to\file"
+                subprocess.Popen(['explorer', '/select,', file_path])
+            elif os.name == 'posix':
+                if sys.platform == 'darwin':  # macOS
+                    subprocess.Popen(['open', '-R', file_path])
+                else:  # Linux (selecting file is not standard, just open folder)
+                    folder = os.path.dirname(file_path)
+                    subprocess.Popen(['xdg-open', folder])
+
+            return web.json_response({
+                'success': True,
+                'message': f'Opened folder and selected file: {file_path}'
+            })
+
+        except Exception as e:
+            logger.error(f"Failed to open file location: {e}", exc_info=True)
             return web.json_response({
                 'success': False,
                 'error': str(e)

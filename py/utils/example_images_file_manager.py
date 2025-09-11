@@ -1,6 +1,5 @@
 import logging
 import os
-import re
 import sys
 import subprocess
 from aiohttp import web

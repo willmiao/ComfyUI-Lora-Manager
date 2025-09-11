@@ -67,6 +67,14 @@
     font-size: 0.9em;
 }
 
+.file-path[data-action="open-file-location"] {
+    cursor: pointer;
+    text-decoration: underline;
+}
+.file-path[data-action="open-file-location"]:hover {
+    opacity: 0.8;
+}
+
 .description-text {
     line-height: 1.5;
     max-height: 100px;

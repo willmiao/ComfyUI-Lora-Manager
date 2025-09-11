@@ -678,7 +678,12 @@
                 "editBaseModel": "編輯基礎模型",
                 "viewOnCivitai": "在 Civitai 查看",
                 "viewOnCivitaiText": "在 Civitai 查看",
-                "viewCreatorProfile": "查看創作者個人檔案"
+                "viewCreatorProfile": "查看創作者個人檔案",
+                "openFileLocation": "開啟檔案位置"
+            },
+            "openFileLocation": {
+                "success": "檔案位置已成功開啟",
+                "failed": "開啟檔案位置失敗"
             },
             "metadata": {
                 "version": "版本",

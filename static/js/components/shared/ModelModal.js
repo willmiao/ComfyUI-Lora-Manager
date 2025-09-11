@@ -166,10 +166,14 @@ export async function showModelModal(model, modelType) {
                                 </button>
                             </div>
                         </div>
-                        <div class="info-item location-size">
+                        <div class="info-item">
                             <div class="location-wrapper">
                                 <label>${translate('modals.model.metadata.location', {}, 'Location')}</label>
-                                <span class="file-path">${modelWithFullData.file_path.replace(/[^/]+$/, '') || 'N/A'}</span>
+                                <span class="file-path" title="${translate('modals.model.actions.openFileLocation', {}, 'Open file location')}"
+                                    data-action="open-file-location"
+                                    data-filepath="${modelWithFullData.file_path}">
+                                    ${modelWithFullData.file_path.replace(/[^/]+$/, '') || 'N/A'}
+                                </span>
                             </div>
                         </div>
                         <div class="info-item base-size">
@@ -318,6 +322,12 @@ function setupEventHandlers(filePath) {
                     window.open(`https://civitai.com/user/${username}`, '_blank');
                 }
                 break;
+            case 'open-file-location':
+                const filePath = target.dataset.filepath;
+                if (filePath) {
+                    openFileLocation(filePath);
+                }
+                break;
         }
     }
     
@@ -441,6 +451,24 @@ async function saveNotes(filePath) {
         showToast('modals.model.notes.saved', {}, 'success');
     } catch (error) {
         showToast('modals.model.notes.saveFailed', {}, 'error');
+    }
+}
+
+/**
+ * Call backend to open file location and select the file
+ * @param {string} filePath
+ */
+async function openFileLocation(filePath) {
+    try {
+        const resp = await fetch('/api/open-file-location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 'file_path': filePath })
+        });
+        if (!resp.ok) throw new Error('Failed to open file location');
+        showToast('modals.model.openFileLocation.success', {}, 'success');
+    } catch (err) {
+        showToast('modals.model.openFileLocation.failed', {}, 'error');
     }
 }
 

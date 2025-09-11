@@ -678,7 +678,12 @@
                 "editBaseModel": "ベースモデルを編集",
                 "viewOnCivitai": "Civitaiで表示",
                 "viewOnCivitaiText": "Civitaiで表示",
-                "viewCreatorProfile": "作成者プロフィールを表示"
+                "viewCreatorProfile": "作成者プロフィールを表示",
+                "openFileLocation": "ファイルの場所を開く"
+            },
+            "openFileLocation": {
+                "success": "ファイルの場所を正常に開きました",
+                "failed": "ファイルの場所を開くのに失敗しました"
             },
             "metadata": {
                 "version": "バージョン",

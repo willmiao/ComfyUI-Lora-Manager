@@ -678,7 +678,12 @@
                 "editBaseModel": "Редактировать базовую модель",
                 "viewOnCivitai": "Посмотреть на Civitai",
                 "viewOnCivitaiText": "Посмотреть на Civitai",
-                "viewCreatorProfile": "Посмотреть профиль создателя"
+                "viewCreatorProfile": "Посмотреть профиль создателя",
+                "openFileLocation": "Открыть расположение файла"
+            },
+            "openFileLocation": {
+                "success": "Расположение файла успешно открыто",
+                "failed": "Не удалось открыть расположение файла"
             },
             "metadata": {
                 "version": "Версия",

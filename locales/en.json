@@ -678,7 +678,12 @@
                 "editBaseModel": "Edit base model",
                 "viewOnCivitai": "View on Civitai",
                 "viewOnCivitaiText": "View on Civitai",
-                "viewCreatorProfile": "View Creator Profile"
+                "viewCreatorProfile": "View Creator Profile",
+                "openFileLocation": "Open File Location"
+            },
+            "openFileLocation": {
+                "success": "File location opened successfully",
+                "failed": "Failed to open file location"
             },
             "metadata": {
                 "version": "Version",

@@ -678,7 +678,12 @@
                 "editBaseModel": "베이스 모델 편집",
                 "viewOnCivitai": "Civitai에서 보기",
                 "viewOnCivitaiText": "Civitai에서 보기",
-                "viewCreatorProfile": "제작자 프로필 보기"
+                "viewCreatorProfile": "제작자 프로필 보기",
+                "openFileLocation": "파일 위치 열기"
+            },
+            "openFileLocation": {
+                "success": "파일 위치가 성공적으로 열렸습니다",
+                "failed": "파일 위치 열기에 실패했습니다"
             },
             "metadata": {
                 "version": "버전",

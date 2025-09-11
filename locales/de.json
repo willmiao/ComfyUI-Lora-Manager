@@ -678,7 +678,12 @@
                 "editBaseModel": "Basis-Modell bearbeiten",
                 "viewOnCivitai": "Auf Civitai anzeigen",
                 "viewOnCivitaiText": "Auf Civitai anzeigen",
-                "viewCreatorProfile": "Ersteller-Profil anzeigen"
+                "viewCreatorProfile": "Ersteller-Profil anzeigen",
+                "openFileLocation": "Dateispeicherort öffnen"
+            },
+            "openFileLocation": {
+                "success": "Dateispeicherort erfolgreich geöffnet",
+                "failed": "Fehler beim Öffnen des Dateispeicherorts"
             },
             "metadata": {
                 "version": "Version",
