@@ -698,63 +698,12 @@ class ModelScanner:
             existing_path = self._hash_index.get_path(existing_hash)
             if existing_path and existing_path != file_path:
                 logger.warning(f"Duplicate filename detected: '{filename}' - files: '{existing_path}' and '{file_path}'")
-            
-        # await self._fetch_missing_metadata(file_path, model_data)
+
         rel_path = os.path.relpath(file_path, root_path)
         folder = os.path.dirname(rel_path)
         model_data['folder'] = folder.replace(os.path.sep, '/')
         
         return model_data
-
-    async def _fetch_missing_metadata(self, file_path: str, model_data: Dict) -> None:
-        """Fetch missing description and tags from Civitai if needed"""
-        try:
-            if model_data.get('civitai_deleted', False):
-                logger.debug(f"Skipping metadata fetch for {file_path}: marked as deleted on Civitai")
-                return
-
-            needs_metadata_update = False
-            model_id = None
-            
-            if model_data.get('civitai'):
-                model_id = model_data['civitai'].get('modelId')
-                
-                if model_id:
-                    model_id = str(model_id)
-                    tags_missing = not model_data.get('tags') or len(model_data.get('tags', [])) == 0
-                    desc_missing = not model_data.get('modelDescription') or model_data.get('modelDescription') in (None, "")
-                    # TODO: not for now, but later we should check if the creator is missing
-                    # creator_missing = not model_data.get('civitai', {}).get('creator')
-                    creator_missing = False
-                    needs_metadata_update = tags_missing or desc_missing or creator_missing
-            
-            if needs_metadata_update and model_id:
-                logger.debug(f"Fetching missing metadata for {file_path} with model ID {model_id}")
-                from ..services.metadata_service import get_default_metadata_provider
-                metadata_provider = await get_default_metadata_provider()
-                
-                model_metadata, status_code = await metadata_provider.get_model_metadata(model_id)
-                
-                if status_code == 404:
-                    logger.warning(f"Model {model_id} appears to be deleted from Civitai (404 response)")
-                    model_data['civitai_deleted'] = True
-                    
-                    await MetadataManager.save_metadata(file_path, model_data)
-                
-                elif model_metadata:
-                    logger.debug(f"Updating metadata for {file_path} with model ID {model_id}")
-                    
-                    if model_metadata.get('tags') and (not model_data.get('tags') or len(model_data.get('tags', [])) == 0):
-                        model_data['tags'] = model_metadata['tags']
-                    
-                    if model_metadata.get('description') and (not model_data.get('modelDescription') or model_data.get('modelDescription') in (None, "")):
-                        model_data['modelDescription'] = model_metadata['description']
-
-                    model_data['civitai']['creator'] = model_metadata['creator']
-                    
-                    await MetadataManager.save_metadata(file_path, model_data)
-        except Exception as e:
-            logger.error(f"Failed to update metadata from Civitai for {file_path}: {e}")
 
     async def add_model_to_cache(self, metadata_dict: Dict, folder: str = '') -> bool:
         """Add a model to the cache
