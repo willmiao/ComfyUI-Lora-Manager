@@ -284,26 +284,17 @@ export class SearchManager {
       // Update search options based on page type
       if (pageState && pageState.searchOptions) {
         if (this.currentPage === 'recipes') {
-          pageState.searchOptions = {
-            title: options.title || false,
-            tags: options.tags || false,
-            loraName: options.loraName || false,
-            loraModel: options.loraModel || false
-          };
-        } else if (this.currentPage === 'loras' || this.currentPage === 'embeddings') {
-          pageState.searchOptions = {
-            filename: options.filename || false,
-            modelname: options.modelname || false,
-            tags: options.tags || false,
-            creator: options.creator || false
-          };
-        } else if (this.currentPage === 'checkpoints') {
-          pageState.searchOptions = {
-            filename: options.filename || false,
-            modelname: options.modelname || false,
-            tags: options.tags || false,
-            creator: options.creator || false
-          };
+            // Update only the relevant fields in searchOptions instead of replacing the whole object
+            pageState.searchOptions.title = options.title || false;
+            pageState.searchOptions.tags = options.tags || false;
+            pageState.searchOptions.loraName = options.loraName || false;
+            pageState.searchOptions.loraModel = options.loraModel || false;
+        } else if (this.currentPage === 'loras' || this.currentPage === 'checkpoints' || this.currentPage === 'embeddings') {
+            // Update only the relevant fields in searchOptions instead of replacing the whole object
+            pageState.searchOptions.filename = options.filename || false;
+            pageState.searchOptions.modelname = options.modelname || false;
+            pageState.searchOptions.tags = options.tags || false;
+            pageState.searchOptions.creator = options.creator || false;
         }
       }
       
