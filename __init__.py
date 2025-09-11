@@ -5,6 +5,7 @@ from .py.nodes.lora_stacker import LoraStacker
 from .py.nodes.save_image import SaveImage
 from .py.nodes.debug_metadata import DebugMetadata
 from .py.nodes.wanvideo_lora_select import WanVideoLoraSelect
+from .py.nodes.wanvideo_lora_select_from_text import WanVideoLoraSelectFromText
 # Import metadata collector to install hooks on startup
 from .py.metadata_collector import init as init_metadata_collector
 
@@ -15,7 +16,8 @@ NODE_CLASS_MAPPINGS = {
     LoraStacker.NAME: LoraStacker,
     SaveImage.NAME: SaveImage,
     DebugMetadata.NAME: DebugMetadata,
-    WanVideoLoraSelect.NAME: WanVideoLoraSelect
+    WanVideoLoraSelect.NAME: WanVideoLoraSelect,
+    WanVideoLoraSelectFromText.NAME: WanVideoLoraSelectFromText
 }
 
 WEB_DIRECTORY = "./web/comfyui"
