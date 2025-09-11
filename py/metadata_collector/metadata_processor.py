@@ -295,7 +295,7 @@ class MetadataProcessor:
             "seed": None,
             "steps": None,
             "cfg_scale": None,
-            "guidance": None,  # Add guidance parameter
+            # "guidance": None,  # Add guidance parameter
             "sampler": None,
             "scheduler": None,
             "checkpoint": None,
