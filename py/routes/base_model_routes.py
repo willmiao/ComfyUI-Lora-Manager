@@ -612,8 +612,9 @@ class BaseModelRoutes(ABC):
             needs_resort = False
             
             # Prepare models to process, only those without CivitAI data or missing tags, description, or creator
+            enable_metadata_archive_db = settings.get('enable_metadata_archive_db', False)
             to_process = [
-                model for model in cache.raw_data 
+                model for model in cache.raw_data
                 if (
                     model.get('sha256')
                     and (
@@ -622,6 +623,10 @@ class BaseModelRoutes(ABC):
                         or not model.get('tags')
                         or not model.get('modelDescription')
                         or not (model.get('civitai') and model['civitai'].get('creator'))
+                    )
+                    and (
+                        (enable_metadata_archive_db)
+                        or (not enable_metadata_archive_db and model.get('from_civitai') is True)
                     )
                 )
             ]

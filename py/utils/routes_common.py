@@ -13,6 +13,7 @@ from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
 from ..services.websocket_manager import ws_manager
 from ..services.metadata_service import get_default_metadata_provider, get_metadata_provider
+from ..services.settings_manager import settings
 
 logger = logging.getLogger(__name__)
 
@@ -207,6 +208,8 @@ class ModelRouteUtils:
             local_metadata = await ModelRouteUtils.load_local_metadata(metadata_path)
 
             if model_data.get('from_civitai') is False:
+                if not settings.get('enable_metadata_archive_db', False):
+                    return False
                 # Likely deleted from CivitAI, use archive_db if available
                 metadata_provider = await get_metadata_provider('sqlite')
             else:
