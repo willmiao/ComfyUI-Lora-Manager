@@ -12,8 +12,8 @@ from ..utils.routes_common import ModelRouteUtils
 from ..services.websocket_manager import ws_manager
 from ..services.settings_manager import settings
 from ..services.server_i18n import server_i18n
-from ..utils.utils import calculate_relative_path_for_model
-from ..utils.constants import AUTO_ORGANIZE_BATCH_SIZE
+from ..services.model_file_service import ModelFileService, ModelMoveService
+from ..services.websocket_progress_callback import WebSocketProgressCallback
 from ..config import config
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,11 @@ class BaseModelRoutes(ABC):
             loader=jinja2.FileSystemLoader(config.templates_path),
             autoescape=True
         )
+        
+        # Initialize file services with dependency injection
+        self.model_file_service = ModelFileService(service.scanner, service.model_type)
+        self.model_move_service = ModelMoveService(service.scanner)
+        self.websocket_progress_callback = WebSocketProgressCallback()
     
     def setup_routes(self, app: web.Application, prefix: str):
         """Setup common routes for the model type
@@ -46,6 +51,7 @@ class BaseModelRoutes(ABC):
         app.router.add_post(f'/api/{prefix}/delete', self.delete_model)
         app.router.add_post(f'/api/{prefix}/exclude', self.exclude_model)
         app.router.add_post(f'/api/{prefix}/fetch-civitai', self.fetch_civitai)
+        app.router.add_post(f'/api/{prefix}/fetch-all-civitai', self.fetch_all_civitai)
         app.router.add_post(f'/api/{prefix}/relink-civitai', self.relink_civitai)
         app.router.add_post(f'/api/{prefix}/replace-preview', self.replace_preview)
         app.router.add_post(f'/api/{prefix}/save-metadata', self.save_metadata)
@@ -84,8 +90,6 @@ class BaseModelRoutes(ABC):
         app.router.add_get(f'/api/cancel-download-get', self.cancel_download_get)
         app.router.add_get(f'/api/download-progress/{{download_id}}', self.get_download_progress)
         
-        # CivitAI integration routes
-        app.router.add_post(f'/api/{prefix}/fetch-all-civitai', self.fetch_all_civitai)
         # app.router.add_get(f'/api/civitai/versions/{{model_id}}', self.get_civitai_versions)
         
         # Add generic page route
@@ -707,33 +711,17 @@ class BaseModelRoutes(ABC):
             data = await request.json()
             file_path = data.get('file_path')
             target_path = data.get('target_path')
+            
             if not file_path or not target_path:
                 return web.Response(text='File path and target path are required', status=400)
-            import os
-            source_dir = os.path.dirname(file_path)
-            if os.path.normpath(source_dir) == os.path.normpath(target_path):
-                logger.info(f"Source and target directories are the same: {source_dir}")
-                return web.json_response({
-                    'success': True, 
-                    'message': 'Source and target directories are the same',
-                    'original_file_path': file_path,
-                    'new_file_path': file_path
-                })
-
-            new_file_path = await self.service.scanner.move_model(file_path, target_path)
-            if new_file_path:
-                return web.json_response({
-                    'success': True, 
-                    'original_file_path': file_path,
-                    'new_file_path': new_file_path
-                })
+            
+            result = await self.model_move_service.move_model(file_path, target_path)
+            
+            if result['success']:
+                return web.json_response(result)
             else:
-                return web.json_response({
-                    'success': False,
-                    'error': 'Failed to move model',
-                    'original_file_path': file_path,
-                    'new_file_path': None
-                }, status=500)
+                return web.json_response(result, status=500)
+                
         except Exception as e:
             logger.error(f"Error moving model: {e}", exc_info=True)
             return web.Response(text=str(e), status=500)
@@ -744,45 +732,13 @@ class BaseModelRoutes(ABC):
             data = await request.json()
             file_paths = data.get('file_paths', [])
             target_path = data.get('target_path')
+            
             if not file_paths or not target_path:
                 return web.Response(text='File paths and target path are required', status=400)
-            results = []
-            import os
-            for file_path in file_paths:
-                source_dir = os.path.dirname(file_path)
-                if os.path.normpath(source_dir) == os.path.normpath(target_path):
-                    results.append({
-                        "original_file_path": file_path,
-                        "new_file_path": file_path,
-                        "success": True, 
-                        "message": "Source and target directories are the same"
-                    })
-                    continue
-
-                new_file_path = await self.service.scanner.move_model(file_path, target_path)
-                if new_file_path:
-                    results.append({
-                        "original_file_path": file_path,
-                        "new_file_path": new_file_path,
-                        "success": True,
-                        "message": "Success"
-                    })
-                else:
-                    results.append({
-                        "original_file_path": file_path,
-                        "new_file_path": None,
-                        "success": False,
-                        "message": "Failed to move model"
-                    })
-            success_count = sum(1 for r in results if r["success"])
-            failure_count = len(results) - success_count
-            return web.json_response({
-                'success': True,
-                'message': f'Moved {success_count} of {len(file_paths)} models',
-                'results': results,
-                'success_count': success_count,
-                'failure_count': failure_count
-            })
+            
+            result = await self.model_move_service.move_models_bulk(file_paths, target_path)
+            return web.json_response(result)
+            
         except Exception as e:
             logger.error(f"Error moving models in bulk: {e}", exc_info=True)
             return web.Response(text=str(e), status=500)
@@ -816,12 +772,18 @@ class BaseModelRoutes(ABC):
                     pass  # Continue with all models if no valid JSON
             
             async with auto_organize_lock:
-                return await self._perform_auto_organize(file_paths)
+                # Use the service layer for business logic
+                result = await self.model_file_service.auto_organize_models(
+                    file_paths=file_paths,
+                    progress_callback=self.websocket_progress_callback
+                )
+                
+                return web.json_response(result.to_dict())
                 
         except Exception as e:
             logger.error(f"Error in auto_organize_models: {e}", exc_info=True)
             
-            # Send error message via WebSocket and cleanup
+            # Send error message via WebSocket
             await ws_manager.broadcast_auto_organize_progress({
                 'type': 'auto_organize_progress',
                 'status': 'error',
@@ -832,268 +794,6 @@ class BaseModelRoutes(ABC):
                 'success': False,
                 'error': str(e)
             }, status=500)
-    
-    async def _perform_auto_organize(self, file_paths=None) -> web.Response:
-        """Perform the actual auto-organize operation
-        
-        Args:
-            file_paths: Optional list of specific file paths to organize. 
-                       If None, organizes all models.
-        """
-        try:
-            # Get all models from cache
-            cache = await self.service.scanner.get_cached_data()
-            all_models = cache.raw_data
-            
-            # Filter models if specific file paths are provided
-            if file_paths:
-                all_models = [model for model in all_models if model.get('file_path') in file_paths]
-                operation_type = 'bulk'
-            else:
-                operation_type = 'all'
-            
-            # Get model roots for this scanner
-            model_roots = self.service.get_model_roots()
-            if not model_roots:
-                await ws_manager.broadcast_auto_organize_progress({
-                    'type': 'auto_organize_progress',
-                    'status': 'error',
-                    'error': 'No model roots configured',
-                    'operation_type': operation_type
-                })
-                return web.json_response({
-                    'success': False,
-                    'error': 'No model roots configured'
-                }, status=400)
-            
-            # Check if flat structure is configured for this model type
-            path_template = settings.get_download_path_template(self.service.model_type)
-            is_flat_structure = not path_template
-            
-            # Prepare results tracking
-            results = []
-            total_models = len(all_models)
-            processed = 0
-            success_count = 0
-            failure_count = 0
-            skipped_count = 0
-            
-            # Send initial progress via WebSocket
-            await ws_manager.broadcast_auto_organize_progress({
-                'type': 'auto_organize_progress',
-                'status': 'started',
-                'total': total_models,
-                'processed': 0,
-                'success': 0,
-                'failures': 0,
-                'skipped': 0,
-                'operation_type': operation_type
-            })
-            
-            # Process models in batches
-            for i in range(0, total_models, AUTO_ORGANIZE_BATCH_SIZE):
-                batch = all_models[i:i + AUTO_ORGANIZE_BATCH_SIZE]
-                
-                for model in batch:
-                    try:
-                        file_path = model.get('file_path')
-                        if not file_path:
-                            if len(results) < 100:  # Limit detailed results
-                                results.append({
-                                    "model": model.get('model_name', 'Unknown'),
-                                    "success": False,
-                                    "message": "No file path found"
-                                })
-                            failure_count += 1
-                            processed += 1
-                            continue
-                        
-                        # Find which model root this file belongs to
-                        current_root = None
-                        for root in model_roots:
-                            # Normalize paths for comparison
-                            normalized_root = os.path.normpath(root).replace(os.sep, '/')
-                            normalized_file = os.path.normpath(file_path).replace(os.sep, '/')
-                            
-                            if normalized_file.startswith(normalized_root):
-                                current_root = root
-                                break
-                        
-                        if not current_root:
-                            if len(results) < 100:  # Limit detailed results
-                                results.append({
-                                    "model": model.get('model_name', 'Unknown'),
-                                    "success": False,
-                                    "message": "Model file not found in any configured root directory"
-                                })
-                            failure_count += 1
-                            processed += 1
-                            continue
-                        
-                        # Handle flat structure case
-                        if is_flat_structure:
-                            current_dir = os.path.dirname(file_path)
-                            # Check if already in root directory
-                            if os.path.normpath(current_dir) == os.path.normpath(current_root):
-                                skipped_count += 1
-                                processed += 1
-                                continue
-                            
-                            # Move to root directory for flat structure
-                            target_dir = current_root
-                        else:
-                            # Calculate new relative path based on settings
-                            new_relative_path = calculate_relative_path_for_model(model, self.service.model_type)
-                            
-                            # If no relative path calculated (insufficient metadata), skip
-                            if not new_relative_path:
-                                if len(results) < 100:  # Limit detailed results
-                                    results.append({
-                                        "model": model.get('model_name', 'Unknown'),
-                                        "success": False,
-                                        "message": "Skipped - insufficient metadata for organization"
-                                    })
-                                skipped_count += 1
-                                processed += 1
-                                continue
-                            
-                            # Calculate target directory
-                            target_dir = os.path.join(current_root, new_relative_path).replace(os.sep, '/')
-                        
-                        current_dir = os.path.dirname(file_path)
-                        
-                        # Skip if already in correct location
-                        if current_dir.replace(os.sep, '/') == target_dir.replace(os.sep, '/'):
-                            skipped_count += 1
-                            processed += 1
-                            continue
-                        
-                        # Check if target file would conflict
-                        file_name = os.path.basename(file_path)
-                        target_file_path = os.path.join(target_dir, file_name)
-                        
-                        if os.path.exists(target_file_path):
-                            if len(results) < 100:  # Limit detailed results
-                                results.append({
-                                    "model": model.get('model_name', 'Unknown'),
-                                    "success": False,
-                                    "message": f"Target file already exists: {target_file_path}"
-                                })
-                            failure_count += 1
-                            processed += 1
-                            continue
-                        
-                        # Perform the move
-                        success = await self.service.scanner.move_model(file_path, target_dir)
-                        
-                        if success:
-                            success_count += 1
-                        else:
-                            if len(results) < 100:  # Limit detailed results
-                                results.append({
-                                    "model": model.get('model_name', 'Unknown'),
-                                    "success": False,
-                                    "message": "Failed to move model"
-                                })
-                            failure_count += 1
-                        
-                        processed += 1
-                        
-                    except Exception as e:
-                        logger.error(f"Error processing model {model.get('model_name', 'Unknown')}: {e}", exc_info=True)
-                        if len(results) < 100:  # Limit detailed results
-                            results.append({
-                                "model": model.get('model_name', 'Unknown'),
-                                "success": False,
-                                "message": f"Error: {str(e)}"
-                            })
-                        failure_count += 1
-                        processed += 1
-                
-                # Send progress update after each batch
-                await ws_manager.broadcast_auto_organize_progress({
-                    'type': 'auto_organize_progress',
-                    'status': 'processing',
-                    'total': total_models,
-                    'processed': processed,
-                    'success': success_count,
-                    'failures': failure_count,
-                    'skipped': skipped_count,
-                    'operation_type': operation_type
-                })
-                
-                # Small delay between batches to prevent overwhelming the system
-                await asyncio.sleep(0.1)
-            
-            # Send completion message
-            await ws_manager.broadcast_auto_organize_progress({
-                'type': 'auto_organize_progress',
-                'status': 'cleaning',
-                'total': total_models,
-                'processed': processed,
-                'success': success_count,
-                'failures': failure_count,
-                'skipped': skipped_count,
-                'message': 'Cleaning up empty directories...',
-                'operation_type': operation_type
-            })
-            
-            # Clean up empty directories after organizing
-            from ..utils.utils import remove_empty_dirs
-            cleanup_counts = {}
-            for root in model_roots:
-                removed = remove_empty_dirs(root)
-                cleanup_counts[root] = removed
-                
-            # Send cleanup completed message
-            await ws_manager.broadcast_auto_organize_progress({
-                'type': 'auto_organize_progress',
-                'status': 'completed',
-                'total': total_models,
-                'processed': processed,
-                'success': success_count,
-                'failures': failure_count,
-                'skipped': skipped_count,
-                'cleanup': cleanup_counts,
-                'operation_type': operation_type
-            })
-            
-            # Prepare response with limited details
-            response_data = {
-                'success': True,
-                'message': f'Auto-organize {operation_type} completed: {success_count} moved, {skipped_count} skipped, {failure_count} failed out of {total_models} total',
-                'summary': {
-                    'total': total_models,
-                    'success': success_count,
-                    'skipped': skipped_count,
-                    'failures': failure_count,
-                    'organization_type': 'flat' if is_flat_structure else 'structured',
-                    'cleaned_dirs': cleanup_counts,
-                    'operation_type': operation_type
-                }
-            }
-            
-            # Only include detailed results if under limit
-            if len(results) <= 100:
-                response_data['results'] = results
-            else:
-                response_data['results_truncated'] = True
-                response_data['sample_results'] = results[:50]  # Show first 50 as sample
-            
-            return web.json_response(response_data)
-            
-        except Exception as e:
-            logger.error(f"Error in _perform_auto_organize: {e}", exc_info=True)
-            
-            # Send error message via WebSocket
-            await ws_manager.broadcast_auto_organize_progress({
-                'type': 'auto_organize_progress',
-                'status': 'error',
-                'error': str(e),
-                'operation_type': operation_type if 'operation_type' in locals() else 'unknown'
-            })
-            
-            raise e
     
     async def get_auto_organize_progress(self, request: web.Request) -> web.Response:
         """Get current auto-organize progress for polling"""
