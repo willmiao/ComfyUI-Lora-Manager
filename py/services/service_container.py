@@ -167,6 +167,16 @@ class DefaultServiceContainer(ServiceContainer):
             scanner = await self._create_embedding_scanner()
             self.register_singleton('embedding_scanner', scanner)
         return scanner
+    
+    def get_download_service(self):
+        """Get the download service instance"""
+        download_service = self.get_service('download_service')
+        if download_service is None:
+            # Import here to avoid circular imports
+            from ..services.downloader import get_downloader
+            download_service = get_downloader()
+            self.register_singleton('download_service', download_service)
+        return download_service
 
 
 # Global service container instance

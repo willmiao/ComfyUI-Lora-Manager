@@ -5,8 +5,9 @@ import logging
 from aiohttp import web
 
 from ..controllers.lora_controller import LoraController
-# from ..controllers.checkpoint_controller import CheckpointController  # TODO: Create this
-# from ..controllers.embedding_controller import EmbeddingController    # TODO: Create this
+from ..controllers.health_controller import HealthController
+from ..controllers.checkpoint_controller import CheckpointController
+from ..controllers.embedding_controller import EmbeddingController
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +31,9 @@ class RouteRegistry:
             
             # Setup routes for each controller
             self._setup_lora_routes(app)
-            # self._setup_checkpoint_routes(app)  # TODO: Implement
-            # self._setup_embedding_routes(app)   # TODO: Implement
+            self._setup_health_routes(app)
+            self._setup_checkpoint_routes(app)
+            self._setup_embedding_routes(app)
             
             logger.info("Successfully set up all routes using new controller architecture")
             
@@ -45,9 +47,14 @@ class RouteRegistry:
             # Initialize LoRA controller
             self.controllers['lora'] = LoraController()
             
-            # TODO: Initialize other controllers
-            # self.controllers['checkpoint'] = CheckpointController()
-            # self.controllers['embedding'] = EmbeddingController()
+            # Initialize health controller
+            self.controllers['health'] = HealthController()
+            
+            # Initialize checkpoint controller
+            self.controllers['checkpoint'] = CheckpointController()
+            
+            # Initialize embedding controller
+            self.controllers['embedding'] = EmbeddingController()
             
             logger.info("Initialized all controllers")
             
@@ -70,14 +77,35 @@ class RouteRegistry:
             logger.error(f"Error setting up LoRA routes: {e}", exc_info=True)
             raise
     
+    def _setup_health_routes(self, app: web.Application):
+        """Setup health check routes
+        
+        Args:
+            app: aiohttp application instance
+        """
+        try:
+            health_controller = self.controllers['health']
+            health_controller.setup_routes(app)
+            logger.info("Set up health check routes using new controller")
+            
+        except Exception as e:
+            logger.error(f"Error setting up health routes: {e}", exc_info=True)
+            raise
+    
     def _setup_checkpoint_routes(self, app: web.Application):
         """Setup Checkpoint routes using the new controller
         
         Args:
             app: aiohttp application instance
         """
-        # TODO: Implement when CheckpointController is created
-        pass
+        try:
+            checkpoint_controller = self.controllers['checkpoint']
+            checkpoint_controller.setup_routes(app)
+            logger.info("Set up Checkpoint routes using new controller")
+            
+        except Exception as e:
+            logger.error(f"Error setting up Checkpoint routes: {e}", exc_info=True)
+            raise
     
     def _setup_embedding_routes(self, app: web.Application):
         """Setup Embedding routes using the new controller
@@ -85,8 +113,14 @@ class RouteRegistry:
         Args:
             app: aiohttp application instance
         """
-        # TODO: Implement when EmbeddingController is created
-        pass
+        try:
+            embedding_controller = self.controllers['embedding']
+            embedding_controller.setup_routes(app)
+            logger.info("Set up Embedding routes using new controller")
+            
+        except Exception as e:
+            logger.error(f"Error setting up Embedding routes: {e}", exc_info=True)
+            raise
     
     def get_controller(self, controller_name: str):
         """Get a controller instance by name

@@ -157,8 +157,13 @@ class LoraManager:
         # Register default model types with the factory
         register_default_model_types()
         
+        # NEW: Using the new controller architecture
+        from .routes.route_registry import setup_new_routes
+        setup_new_routes(app)
+        
+        # OLD: Using the legacy route system (commenting out)
         # Setup all model routes using the factory
-        ModelServiceFactory.setup_all_routes(app)
+        # ModelServiceFactory.setup_all_routes(app)
         
         # Setup non-model-specific routes
         stats_routes = StatsRoutes()
