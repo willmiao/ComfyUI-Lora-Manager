@@ -620,7 +620,7 @@ class BaseModelRoutes(ABC):
                     and (
                         not model.get('civitai')
                         or not model['civitai'].get('id')
-                        or not model.get('tags')
+                        # or not model.get('tags') # Skipping tag cause it could be empty legitimately
                         or not model.get('modelDescription')
                         or not (model.get('civitai') and model['civitai'].get('creator'))
                     )
