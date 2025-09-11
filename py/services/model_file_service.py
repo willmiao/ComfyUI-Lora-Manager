@@ -1,7 +1,7 @@
 import asyncio
 import os
 import logging
-from typing import List, Dict, Callable, Optional, Any
+from typing import List, Dict, Optional, Any, Set
 from abc import ABC, abstractmethod
 
 from ..utils.utils import calculate_relative_path_for_model, remove_empty_dirs
@@ -94,6 +94,7 @@ class ModelFileService:
             AutoOrganizeResult object with operation results
         """
         result = AutoOrganizeResult()
+        source_directories: Set[str] = set()
         
         try:
             # Get all models from cache
@@ -137,7 +138,8 @@ class ModelFileService:
                 all_models, 
                 model_roots, 
                 result, 
-                progress_callback
+                progress_callback,
+                source_directories  # Pass the set to track source directories
             )
             
             # Send cleanup progress
@@ -154,8 +156,9 @@ class ModelFileService:
                     'operation_type': result.operation_type
                 })
             
-            # Clean up empty directories
-            result.cleanup_counts = await self._cleanup_empty_directories(model_roots)
+            # Clean up empty directories - only in affected directories for bulk operations
+            cleanup_paths = list(source_directories) if result.operation_type == 'bulk' else model_roots
+            result.cleanup_counts = await self._cleanup_empty_directories(cleanup_paths)
             
             # Send completion message
             if progress_callback:
@@ -192,7 +195,8 @@ class ModelFileService:
         all_models: List[Dict[str, Any]], 
         model_roots: List[str], 
         result: AutoOrganizeResult,
-        progress_callback: Optional[ProgressCallback]
+        progress_callback: Optional[ProgressCallback],
+        source_directories: Optional[Set[str]] = None
     ) -> None:
         """Process models in batches to avoid overwhelming the system"""
         
@@ -200,7 +204,7 @@ class ModelFileService:
             batch = all_models[i:i + AUTO_ORGANIZE_BATCH_SIZE]
             
             for model in batch:
-                await self._process_single_model(model, model_roots, result)
+                await self._process_single_model(model, model_roots, result, source_directories)
                 result.processed += 1
             
             # Send progress update after each batch
@@ -223,7 +227,8 @@ class ModelFileService:
         self, 
         model: Dict[str, Any], 
         model_roots: List[str], 
-        result: AutoOrganizeResult
+        result: AutoOrganizeResult,
+        source_directories: Optional[Set[str]] = None
     ) -> None:
         """Process a single model for organization"""
         try:
@@ -270,6 +275,10 @@ class ModelFileService:
                                f"Target file already exists: {target_file_path}")
                 result.failure_count += 1
                 return
+            
+            # Store the source directory for potential cleanup
+            if source_directories is not None:
+                source_directories.add(current_dir)
             
             # Perform the move
             success = await self.scanner.move_model(file_path, target_dir)
@@ -340,12 +349,19 @@ class ModelFileService:
             result.results_truncated = True
             result.sample_results = result.results[:50]
     
-    async def _cleanup_empty_directories(self, model_roots: List[str]) -> Dict[str, int]:
-        """Clean up empty directories after organizing"""
+    async def _cleanup_empty_directories(self, paths: List[str]) -> Dict[str, int]:
+        """Clean up empty directories after organizing
+        
+        Args:
+            paths: List of paths to check for empty directories
+            
+        Returns:
+            Dictionary with counts of removed directories by root path
+        """
         cleanup_counts = {}
-        for root in model_roots:
-            removed = remove_empty_dirs(root)
-            cleanup_counts[root] = removed
+        for path in paths:
+            removed = remove_empty_dirs(path)
+            cleanup_counts[path] = removed
         return cleanup_counts
 
 
