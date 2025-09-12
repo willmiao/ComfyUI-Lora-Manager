@@ -285,7 +285,7 @@ export function setupInputWidgetWithAutocomplete(node, inputWidget, originalCall
         // Initialize autocomplete on first callback if not already done
         if (!autocomplete && inputWidget.inputEl) {
             autocomplete = new AutoComplete(inputWidget.inputEl, 'loras', {
-                maxItems: 15,
+                maxItems: 20,
                 minChars: 1,
                 debounceDelay: 200
             });

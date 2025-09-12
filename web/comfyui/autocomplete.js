@@ -7,7 +7,7 @@ class AutoComplete {
         this.inputElement = inputElement;
         this.modelType = modelType;
         this.options = {
-            maxItems: 15,
+            maxItems: 20,
             minChars: 1,
             debounceDelay: 200,
             showPreview: true,
