@@ -9,3 +9,4 @@ numpy
 natsort
 GitPython
 aiosqlite
+beautifulsoup4

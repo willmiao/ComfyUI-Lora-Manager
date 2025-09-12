@@ -523,6 +523,7 @@ class BaseModelRoutes(ABC):
             model_version_id = request.query.get('model_version_id')
             download_id = request.query.get('download_id')
             use_default_paths = request.query.get('use_default_paths', 'false').lower() == 'true'
+            source = request.query.get('source')  # Optional source parameter
             
             # Create a data dictionary that mimics what would be received from a POST request
             data = {
@@ -537,6 +538,10 @@ class BaseModelRoutes(ABC):
                 data['download_id'] = download_id
                 
             data['use_default_paths'] = use_default_paths
+            
+            # Add source parameter if provided
+            if source:
+                data['source'] = source
             
             # Create a mock request object with the data
             future = asyncio.get_event_loop().create_future()

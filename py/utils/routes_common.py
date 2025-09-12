@@ -632,6 +632,7 @@ class ModelRouteUtils:
                 }, status=400)
             
             use_default_paths = data.get('use_default_paths', False)
+            source = data.get('source')  # Optional source parameter
             
             # Pass the download_id to download_from_civitai
             result = await download_manager.download_from_civitai(
@@ -641,7 +642,8 @@ class ModelRouteUtils:
                 relative_path=data.get('relative_path', ''),
                 use_default_paths=use_default_paths,
                 progress_callback=progress_callback,
-                download_id=download_id  # Pass download_id explicitly
+                download_id=download_id,  # Pass download_id explicitly
+                source=source  # Pass source parameter
             )
             
             # Include download_id in the response
