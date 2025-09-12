@@ -147,8 +147,8 @@ class AutoComplete {
             return '';
         }
         
-        // Split on multiple delimiters: comma, space, '>' and other common separators
-        const segments = beforeCursor.split(/[,\s>]+/);
+        // Split on comma and '>' delimiters only (do not split on spaces)
+        const segments = beforeCursor.split(/[,\>]+/);
         
         // Return the last non-empty segment as search term
         const lastSegment = segments[segments.length - 1] || '';
@@ -381,7 +381,7 @@ class AutoComplete {
     async insertSelection(relativePath) {
         // Extract just the filename for LoRA name
         const fileName = relativePath.split(/[/\\]/).pop().replace(/\.(safetensors|ckpt|pt|bin)$/i, '');
-        
+
         // Get usage tips and extract strength
         let strength = 1.0; // Default strength
         try {
@@ -389,7 +389,6 @@ class AutoComplete {
             if (response.ok) {
                 const data = await response.json();
                 if (data.success && data.usage_tips) {
-                    // Parse JSON string and extract strength
                     try {
                         const usageTips = JSON.parse(data.usage_tips);
                         if (usageTips.strength && typeof usageTips.strength === 'number') {
@@ -403,44 +402,30 @@ class AutoComplete {
         } catch (error) {
             console.warn('Failed to fetch usage tips:', error);
         }
-        
+
         // Format the LoRA code with strength
         const loraCode = `<lora:${fileName}:${strength}>, `;
-        
+
         const currentValue = this.inputElement.value;
         const caretPos = this.getCaretPosition();
-        const lastCommaIndex = currentValue.lastIndexOf(',', caretPos - 1);
-        
-        let newValue;
-        let newCaretPos;
-        
-        if (lastCommaIndex === -1) {
-            // No comma found before cursor, replace from start or current search term start
-            const searchTerm = this.getSearchTerm(currentValue.substring(0, caretPos));
-            const searchStartPos = caretPos - searchTerm.length;
-            newValue = currentValue.substring(0, searchStartPos) + loraCode + currentValue.substring(caretPos);
-            newCaretPos = searchStartPos + loraCode.length;
-        } else {
-            // Replace text after last comma before cursor
-            const afterCommaPos = lastCommaIndex + 1;
-            // Skip whitespace after comma
-            let insertPos = afterCommaPos;
-            while (insertPos < caretPos && /\s/.test(currentValue[insertPos])) {
-                insertPos++;
-            }
-            
-            newValue = currentValue.substring(0, insertPos) + loraCode + currentValue.substring(caretPos);
-            newCaretPos = insertPos + loraCode.length;
-        }
-        
+
+        // Use getSearchTerm to get the current search term before cursor
+        const beforeCursor = currentValue.substring(0, caretPos);
+        const searchTerm = this.getSearchTerm(beforeCursor);
+        const searchStartPos = caretPos - searchTerm.length;
+
+        // Only replace the search term, not everything after the last comma
+        const newValue = currentValue.substring(0, searchStartPos) + loraCode + currentValue.substring(caretPos);
+        const newCaretPos = searchStartPos + loraCode.length;
+
         this.inputElement.value = newValue;
-        
+
         // Trigger input event to notify about the change
         const event = new Event('input', { bubbles: true });
         this.inputElement.dispatchEvent(event);
-        
+
         this.hide();
-        
+
         // Focus back to input and position cursor
         this.inputElement.focus();
         this.inputElement.setSelectionRange(newCaretPos, newCaretPos);

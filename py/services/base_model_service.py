@@ -363,7 +363,7 @@ class BaseModelService(ABC):
                     from ..config import config
                     return config.get_preview_static_url(preview_url)
         
-        return None
+        return '/loras_static/images/no-preview.png'
     
     async def get_model_civitai_url(self, model_name: str) -> Dict[str, Optional[str]]:
         """Get the Civitai URL for a model file"""
