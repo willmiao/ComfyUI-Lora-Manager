@@ -82,7 +82,13 @@ class SettingsManager:
             "civitai_api_key": "",
             "show_only_sfw": False,
             "language": "en",
-            "enable_metadata_archive_db": False  # Enable metadata archive database
+            "enable_metadata_archive_db": False,  # Enable metadata archive database
+            "proxy_enabled": False,  # Enable app-level proxy
+            "proxy_host": "",  # Proxy host
+            "proxy_port": "",  # Proxy port  
+            "proxy_username": "",  # Proxy username (optional)
+            "proxy_password": "",  # Proxy password (optional)
+            "proxy_type": "http"  # Proxy type: http, https, socks4, socks5
         }
 
     def get(self, key: str, default: Any = None) -> Any:
@@ -93,6 +99,13 @@ class SettingsManager:
         """Set setting value and save"""
         self.settings[key] = value
         self._save_settings()
+
+    def delete(self, key: str) -> None:
+        """Delete setting key and save"""
+        if key in self.settings:
+            del self.settings[key]
+            self._save_settings()
+            logger.info(f"Deleted setting: {key}")
 
     def _save_settings(self) -> None:
         """Save settings to file"""

@@ -181,7 +181,8 @@
             "downloadPathTemplates": "ダウンロードパステンプレート",
             "exampleImages": "例画像",
             "misc": "その他",
-            "metadataArchive": "メタデータアーカイブデータベース"
+            "metadataArchive": "メタデータアーカイブデータベース",
+            "proxySettings": "プロキシ設定"
         },
         "contentFiltering": {
             "blurNsfwContent": "NSFWコンテンツをぼかす",
@@ -300,6 +301,24 @@
             "connecting": "ダウンロードサーバーに接続中...",
             "completed": "完了",
             "downloadComplete": "ダウンロードが正常に完了しました"
+        },
+        "proxySettings": {
+            "enableProxy": "アプリレベルのプロキシを有効化",
+            "enableProxyHelp": "このアプリケーション専用のカスタムプロキシ設定を有効にします（システムのプロキシ設定を上書きします）",
+            "proxyType": "プロキシタイプ",
+            "proxyTypeHelp": "プロキシサーバーの種類を選択（HTTP、HTTPS、SOCKS4、SOCKS5）",
+            "proxyHost": "プロキシホスト",
+            "proxyHostPlaceholder": "proxy.example.com",
+            "proxyHostHelp": "プロキシサーバーのホスト名またはIPアドレス",
+            "proxyPort": "プロキシポート",
+            "proxyPortPlaceholder": "8080",
+            "proxyPortHelp": "プロキシサーバーのポート番号",
+            "proxyUsername": "ユーザー名（任意）",
+            "proxyUsernamePlaceholder": "ユーザー名",
+            "proxyUsernameHelp": "プロキシ認証用のユーザー名（必要な場合）",
+            "proxyPassword": "パスワード（任意）",
+            "proxyPasswordPlaceholder": "パスワード",
+            "proxyPasswordHelp": "プロキシ認証用のパスワード（必要な場合）"
         }
     },
     "loras": {

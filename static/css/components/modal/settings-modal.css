@@ -101,7 +101,7 @@
 .api-key-input input {
     width: 100%;
     padding: 6px 40px 6px 10px; /* Add left padding */
-    height: 32px;
+    height: 20px;
     border-radius: var(--border-radius-xs);
     border: 1px solid var(--border-color);
     background-color: var(--lora-surface);
@@ -121,6 +121,36 @@
 
 .api-key-input .toggle-visibility:hover {
     opacity: 1;
+}
+
+/* Text input wrapper styles for consistent input styling */
+.text-input-wrapper {
+    width: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.text-input-wrapper input {
+    width: 100%;
+    padding: 6px 10px;
+    height: 20px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    background-color: var(--lora-surface);
+    color: var(--text-color);
+    font-size: 0.95em;
+}
+
+.text-input-wrapper input:focus {
+    border-color: var(--lora-accent);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+}
+
+/* Dark theme specific adjustments */
+[data-theme="dark"] .text-input-wrapper input {
+    background-color: rgba(30, 30, 30, 0.9);
 }
 
 .input-help {
@@ -312,7 +342,7 @@ input:checked + .toggle-slider:before {
     border-radius: var(--border-radius-xs);
     border: 1px solid var(--border-color);
     background-color: var(--lora-surface);
-    color: var (--text-color);
+    color: var(--text-color);
     font-size: 0.95em;
     height: 32px;
 }
@@ -571,10 +601,31 @@ input:checked + .toggle-slider:before {
     background-color: rgba(30, 30, 30, 0.9);
 }
 
+/* Proxy Settings Styles */
+.proxy-settings-group {
+    margin-left: var(--space-1);
+    padding-left: var(--space-1);
+    border-left: 2px solid var(--lora-border);
+    animation: slideDown 0.3s ease-out;
+}
+
+.proxy-settings-group .setting-item {
+    margin-bottom: var(--space-2);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .placeholder-info {
         flex-direction: column;
         align-items: flex-start;
+    }
+    
+    .proxy-settings-group {
+        margin-left: 0;
+        padding-left: var(--space-1);
+        border-left: none;
+        border-top: 1px solid var(--lora-border);
+        padding-top: var(--space-2);
+        margin-top: var(--space-2);
     }
 }

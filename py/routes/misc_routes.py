@@ -14,6 +14,7 @@ from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS, NODE_TYPES, DEFAULT_NO
 from ..services.service_registry import ServiceRegistry
 from ..services.metadata_service import get_metadata_archive_manager, update_metadata_providers
 from ..services.websocket_manager import ws_manager
+from ..services.downloader import get_downloader
 logger = logging.getLogger(__name__)
 
 standalone_mode = 'nodes' not in sys.modules
@@ -123,6 +124,8 @@ class MiscRoutes:
         """Update application settings"""
         try:
             data = await request.json()
+            proxy_keys = {'proxy_enabled', 'proxy_host', 'proxy_port', 'proxy_username', 'proxy_password', 'proxy_type'}
+            proxy_changed = False
             
             # Validate and update settings
             for key, value in data.items():
@@ -142,11 +145,22 @@ class MiscRoutes:
                     if old_path != value:
                         logger.info(f"Example images path changed to {value} - server restart required")
 
-                # Save to settings
-                settings.set(key, value)
+                # Handle deletion for proxy credentials
+                if value == '__DELETE__' and key in ('proxy_username', 'proxy_password'):
+                    settings.delete(key)
+                else:
+                    # Save to settings
+                    settings.set(key, value)
             
                 if key == 'enable_metadata_archive_db':
                     await update_metadata_providers()
+                
+                if key in proxy_keys:
+                    proxy_changed = True
+
+            if proxy_changed:
+                downloader = await get_downloader()
+                await downloader.refresh_session()
 
             return web.json_response({'success': True})
         except Exception as e:

@@ -181,7 +181,8 @@
             "downloadPathTemplates": "Download Path Templates",
             "exampleImages": "Example Images",
             "misc": "Misc.",
-            "metadataArchive": "Metadata Archive Database"
+            "metadataArchive": "Metadata Archive Database",
+            "proxySettings": "Proxy Settings"
         },
         "contentFiltering": {
             "blurNsfwContent": "Blur NSFW Content",
@@ -300,6 +301,24 @@
             "connecting": "Connecting to download server...",
             "completed": "Completed",
             "downloadComplete": "Download completed successfully"
+        },
+        "proxySettings": {
+            "enableProxy": "Enable App-level Proxy",
+            "enableProxyHelp": "Enable custom proxy settings for this application, overriding system proxy settings",
+            "proxyType": "Proxy Type",
+            "proxyTypeHelp": "Select the type of proxy server (HTTP, HTTPS, SOCKS4, SOCKS5)",
+            "proxyHost": "Proxy Host",
+            "proxyHostPlaceholder": "proxy.example.com",
+            "proxyHostHelp": "The hostname or IP address of your proxy server",
+            "proxyPort": "Proxy Port", 
+            "proxyPortPlaceholder": "8080",
+            "proxyPortHelp": "The port number of your proxy server",
+            "proxyUsername": "Username (Optional)",
+            "proxyUsernamePlaceholder": "username", 
+            "proxyUsernameHelp": "Username for proxy authentication (if required)",
+            "proxyPassword": "Password (Optional)",
+            "proxyPasswordPlaceholder": "password",
+            "proxyPasswordHelp": "Password for proxy authentication (if required)"
         }
     },
     "loras": {

@@ -409,9 +409,6 @@ class LoraManager:
                                 await cls._remove_folder_safely(folder_path)
                                 invalid_hash_folders_removed += 1
                                 continue
-                                
-                            logger.debug(f"Keeping valid example images folder: {folder_name}")
-                            
 
                         except Exception as e:
                             logger.error(f"Error processing example images folder {folder_name}: {e}")

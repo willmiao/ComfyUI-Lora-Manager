@@ -181,7 +181,8 @@
             "downloadPathTemplates": "Шаблоны путей загрузки",
             "exampleImages": "Примеры изображений",
             "misc": "Разное",
-            "metadataArchive": "Архив метаданных"
+            "metadataArchive": "Архив метаданных",
+            "proxySettings": "Настройки прокси"
         },
         "contentFiltering": {
             "blurNsfwContent": "Размывать NSFW контент",
@@ -300,6 +301,24 @@
             "connecting": "Подключение к серверу загрузки...",
             "completed": "Завершено",
             "downloadComplete": "Загрузка успешно завершена"
+        },
+        "proxySettings": {
+            "enableProxy": "Включить прокси на уровне приложения",
+            "enableProxyHelp": "Включить пользовательские настройки прокси для этого приложения, переопределяя системные настройки прокси",
+            "proxyType": "Тип прокси",
+            "proxyTypeHelp": "Выберите тип прокси-сервера (HTTP, HTTPS, SOCKS4, SOCKS5)",
+            "proxyHost": "Хост прокси",
+            "proxyHostPlaceholder": "proxy.example.com",
+            "proxyHostHelp": "Имя хоста или IP-адрес вашего прокси-сервера",
+            "proxyPort": "Порт прокси",
+            "proxyPortPlaceholder": "8080",
+            "proxyPortHelp": "Номер порта вашего прокси-сервера",
+            "proxyUsername": "Имя пользователя (необязательно)",
+            "proxyUsernamePlaceholder": "имя пользователя",
+            "proxyUsernameHelp": "Имя пользователя для аутентификации на прокси (если требуется)",
+            "proxyPassword": "Пароль (необязательно)",
+            "proxyPasswordPlaceholder": "пароль",
+            "proxyPasswordHelp": "Пароль для аутентификации на прокси (если требуется)"
         }
     },
     "loras": {

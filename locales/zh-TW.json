@@ -181,7 +181,8 @@
             "downloadPathTemplates": "下載路徑範本",
             "exampleImages": "範例圖片",
             "misc": "其他",
-            "metadataArchive": "中繼資料封存資料庫"
+            "metadataArchive": "中繼資料封存資料庫",
+            "proxySettings": "代理設定"
         },
         "contentFiltering": {
             "blurNsfwContent": "模糊 NSFW 內容",
@@ -300,6 +301,24 @@
             "connecting": "正在連接下載伺服器...",
             "completed": "已完成",
             "downloadComplete": "下載成功完成"
+        },
+        "proxySettings": {
+            "enableProxy": "啟用應用程式代理",
+            "enableProxyHelp": "啟用此應用程式的自訂代理設定，將覆蓋系統代理設定",
+            "proxyType": "代理類型",
+            "proxyTypeHelp": "選擇代理伺服器類型（HTTP、HTTPS、SOCKS4、SOCKS5）",
+            "proxyHost": "代理主機",
+            "proxyHostPlaceholder": "proxy.example.com",
+            "proxyHostHelp": "您的代理伺服器主機名稱或 IP 位址",
+            "proxyPort": "代理埠號",
+            "proxyPortPlaceholder": "8080",
+            "proxyPortHelp": "您的代理伺服器埠號",
+            "proxyUsername": "使用者名稱（選填）",
+            "proxyUsernamePlaceholder": "username",
+            "proxyUsernameHelp": "代理驗證所需的使用者名稱（如有需要）",
+            "proxyPassword": "密碼（選填）",
+            "proxyPasswordPlaceholder": "password",
+            "proxyPasswordHelp": "代理驗證所需的密碼（如有需要）"
         }
     },
     "loras": {

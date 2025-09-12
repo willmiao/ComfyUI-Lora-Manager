@@ -445,6 +445,129 @@
                 </div>
             </div>
 
+            <!-- Proxy Settings Section -->
+            <div class="settings-section">
+                <h3>{{ t('settings.sections.proxySettings') }}</h3>
+                
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="proxyEnabled">{{ t('settings.proxySettings.enableProxy') }}</label>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="proxyEnabled" 
+                                       onchange="settingsManager.saveToggleSetting('proxyEnabled', 'proxy_enabled')">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.proxySettings.enableProxyHelp') }}
+                    </div>
+                </div>
+
+                <div class="proxy-settings-group" id="proxySettingsGroup" style="display: none;">
+                    <div class="setting-item">
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <label for="proxyType">{{ t('settings.proxySettings.proxyType') }}</label>
+                            </div>
+                            <div class="setting-control select-control">
+                                <select id="proxyType" onchange="settingsManager.saveSelectSetting('proxyType', 'proxy_type')">
+                                    <option value="http">HTTP</option>
+                                    <option value="https">HTTPS</option>
+                                    <option value="socks4">SOCKS4</option>
+                                    <option value="socks5">SOCKS5</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="input-help">
+                            {{ t('settings.proxySettings.proxyTypeHelp') }}
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <label for="proxyHost">{{ t('settings.proxySettings.proxyHost') }}</label>
+                            </div>
+                            <div class="setting-control">
+                                <div class="text-input-wrapper">
+                                    <input type="text" id="proxyHost" 
+                                           placeholder="{{ t('settings.proxySettings.proxyHostPlaceholder') }}"
+                                           onblur="settingsManager.saveInputSetting('proxyHost', 'proxy_host')"
+                                           onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="input-help">
+                            {{ t('settings.proxySettings.proxyHostHelp') }}
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <label for="proxyPort">{{ t('settings.proxySettings.proxyPort') }}</label>
+                            </div>
+                            <div class="setting-control">
+                                <div class="text-input-wrapper">
+                                    <input type="text" id="proxyPort" 
+                                           placeholder="{{ t('settings.proxySettings.proxyPortPlaceholder') }}"
+                                           onblur="settingsManager.saveInputSetting('proxyPort', 'proxy_port')"
+                                           onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="input-help">
+                            {{ t('settings.proxySettings.proxyPortHelp') }}
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <label for="proxyUsername">{{ t('settings.proxySettings.proxyUsername') }}</label>
+                            </div>
+                            <div class="setting-control">
+                                <div class="text-input-wrapper">
+                                    <input type="text" id="proxyUsername" 
+                                           placeholder="{{ t('settings.proxySettings.proxyUsernamePlaceholder') }}"
+                                           onblur="settingsManager.saveInputSetting('proxyUsername', 'proxy_username')"
+                                           onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="input-help">
+                            {{ t('settings.proxySettings.proxyUsernameHelp') }}
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-row">
+                            <div class="setting-info">
+                                <label for="proxyPassword">{{ t('settings.proxySettings.proxyPassword') }}</label>
+                            </div>
+                            <div class="setting-control">
+                                <div class="api-key-input">
+                                    <input type="password" id="proxyPassword" 
+                                           placeholder="{{ t('settings.proxySettings.proxyPasswordPlaceholder') }}"
+                                           onblur="settingsManager.saveInputSetting('proxyPassword', 'proxy_password')"
+                                           onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                    <button class="toggle-visibility">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="input-help">
+                            {{ t('settings.proxySettings.proxyPasswordHelp') }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Misc. Section -->
             <div class="settings-section">
                 <h3>{{ t('settings.sections.misc') }}</h3>
@@ -466,6 +589,7 @@
                     </div>
                 </div>
             </div>
+            
         </div>
     </div>
 </div>

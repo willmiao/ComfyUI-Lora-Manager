@@ -181,7 +181,8 @@
             "downloadPathTemplates": "Modèles de chemin de téléchargement",
             "exampleImages": "Images d'exemple",
             "misc": "Divers",
-            "metadataArchive": "Base de données d'archive des métadonnées"
+            "metadataArchive": "Base de données d'archive des métadonnées",
+            "proxySettings": "Paramètres du proxy"
         },
         "contentFiltering": {
             "blurNsfwContent": "Flouter le contenu NSFW",
@@ -300,6 +301,24 @@
             "connecting": "Connexion au serveur de téléchargement...",
             "completed": "Terminé",
             "downloadComplete": "Téléchargement terminé avec succès"
+        },
+        "proxySettings": {
+            "enableProxy": "Activer le proxy au niveau de l'application",
+            "enableProxyHelp": "Activer les paramètres de proxy personnalisés pour cette application, remplaçant les paramètres de proxy système",
+            "proxyType": "Type de proxy",
+            "proxyTypeHelp": "Sélectionnez le type de serveur proxy (HTTP, HTTPS, SOCKS4, SOCKS5)",
+            "proxyHost": "Hôte du proxy",
+            "proxyHostPlaceholder": "proxy.exemple.com",
+            "proxyHostHelp": "Le nom d'hôte ou l'adresse IP de votre serveur proxy",
+            "proxyPort": "Port du proxy",
+            "proxyPortPlaceholder": "8080",
+            "proxyPortHelp": "Le numéro de port de votre serveur proxy",
+            "proxyUsername": "Nom d'utilisateur (optionnel)",
+            "proxyUsernamePlaceholder": "nom_utilisateur",
+            "proxyUsernameHelp": "Nom d'utilisateur pour l'authentification proxy (si nécessaire)",
+            "proxyPassword": "Mot de passe (optionnel)",
+            "proxyPasswordPlaceholder": "mot_de_passe",
+            "proxyPasswordHelp": "Mot de passe pour l'authentification proxy (si nécessaire)"
         }
     },
     "loras": {

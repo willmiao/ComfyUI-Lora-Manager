@@ -125,7 +125,13 @@ export class SettingsManager {
             'default_checkpoint_root',
             'default_embedding_root',
             'base_model_path_mappings',
-            'download_path_templates'
+            'download_path_templates',
+            'proxy_enabled',
+            'proxy_type',
+            'proxy_host',
+            'proxy_port',
+            'proxy_username',
+            'proxy_password'
         ];
 
         // Build payload for syncing
@@ -280,6 +286,60 @@ export class SettingsManager {
         if (languageSelect) {
             const currentLanguage = state.global.settings.language || 'en';
             languageSelect.value = currentLanguage;
+        }
+
+        this.loadProxySettings();
+    }
+
+    loadProxySettings() {
+        // Load proxy enabled setting
+        const proxyEnabledCheckbox = document.getElementById('proxyEnabled');
+        if (proxyEnabledCheckbox) {
+            proxyEnabledCheckbox.checked = state.global.settings.proxy_enabled || false;
+            
+            // Add event listener for toggling proxy settings group visibility
+            proxyEnabledCheckbox.addEventListener('change', () => {
+                const proxySettingsGroup = document.getElementById('proxySettingsGroup');
+                if (proxySettingsGroup) {
+                    proxySettingsGroup.style.display = proxyEnabledCheckbox.checked ? 'block' : 'none';
+                }
+            });
+            
+            // Set initial visibility
+            const proxySettingsGroup = document.getElementById('proxySettingsGroup');
+            if (proxySettingsGroup) {
+                proxySettingsGroup.style.display = proxyEnabledCheckbox.checked ? 'block' : 'none';
+            }
+        }
+
+        // Load proxy type
+        const proxyTypeSelect = document.getElementById('proxyType');
+        if (proxyTypeSelect) {
+            proxyTypeSelect.value = state.global.settings.proxy_type || 'http';
+        }
+
+        // Load proxy host
+        const proxyHostInput = document.getElementById('proxyHost');
+        if (proxyHostInput) {
+            proxyHostInput.value = state.global.settings.proxy_host || '';
+        }
+
+        // Load proxy port
+        const proxyPortInput = document.getElementById('proxyPort');
+        if (proxyPortInput) {
+            proxyPortInput.value = state.global.settings.proxy_port || '';
+        }
+
+        // Load proxy username
+        const proxyUsernameInput = document.getElementById('proxyUsername');
+        if (proxyUsernameInput) {
+            proxyUsernameInput.value = state.global.settings.proxy_username || '';
+        }
+
+        // Load proxy password
+        const proxyPasswordInput = document.getElementById('proxyPassword');
+        if (proxyPasswordInput) {
+            proxyPasswordInput.value = state.global.settings.proxy_password || '';
         }
     }
 
@@ -791,6 +851,14 @@ export class SettingsManager {
             state.global.settings.includeTriggerWords = value;
         } else if (settingKey === 'enable_metadata_archive_db') {
             state.global.settings.enable_metadata_archive_db = value;
+        } else if (settingKey === 'proxy_enabled') {
+            state.global.settings.proxy_enabled = value;
+            
+            // Toggle visibility of proxy settings group
+            const proxySettingsGroup = document.getElementById('proxySettingsGroup');
+            if (proxySettingsGroup) {
+                proxySettingsGroup.style.display = value ? 'block' : 'none';
+            }
         } else {
             // For any other settings that might be added in the future
             state.global.settings[settingKey] = value;
@@ -801,7 +869,7 @@ export class SettingsManager {
         
         try {
             // For backend settings, make API call
-            if (['show_only_sfw', 'enable_metadata_archive_db'].includes(settingKey)) {
+            if (['show_only_sfw', 'enable_metadata_archive_db', 'proxy_enabled'].includes(settingKey)) {
                 const payload = {};
                 payload[settingKey] = value;
                 
@@ -879,6 +947,8 @@ export class SettingsManager {
             state.global.settings.compactMode = (value !== 'default');
         } else if (settingKey === 'card_info_display') {
             state.global.settings.cardInfoDisplay = value;
+        } else if (settingKey === 'proxy_type') {
+            state.global.settings.proxy_type = value;
         } else {
             // For any other settings that might be added in the future
             state.global.settings[settingKey] = value;
@@ -889,7 +959,7 @@ export class SettingsManager {
         
         try {
             // For backend settings, make API call
-            if (settingKey === 'default_lora_root' || settingKey === 'default_checkpoint_root' || settingKey === 'default_embedding_root' || settingKey === 'download_path_templates') {
+            if (settingKey === 'default_lora_root' || settingKey === 'default_checkpoint_root' || settingKey === 'default_embedding_root' || settingKey === 'download_path_templates' || settingKey.startsWith('proxy_')) {
                 const payload = {};
                 if (settingKey === 'download_path_templates') {
                     payload[settingKey] = state.global.settings.download_path_templates;
@@ -1183,7 +1253,7 @@ export class SettingsManager {
         const element = document.getElementById(elementId);
         if (!element) return;
         
-        const value = element.value;
+        const value = element.value.trim(); // Trim whitespace
         
         // For API key or other inputs that need to be saved on backend
         try {
@@ -1193,25 +1263,39 @@ export class SettingsManager {
                 return; // No change, exit early
             }
             
-            // Update state
-            state.global.settings[settingKey] = value;
+            // For username and password, remove the setting if value is empty
+            if ((settingKey === 'proxy_username' || settingKey === 'proxy_password') && value === '') {
+                // Remove from state instead of setting to empty string
+                delete state.global.settings[settingKey];
+            } else {
+                // Update state with value (including empty strings for non-optional fields)
+                state.global.settings[settingKey] = value;
+            }
             
             setStorageItem('settings', state.global.settings);
             
             // For backend settings, make API call
-            const payload = {};
-            payload[settingKey] = value;
-            
-            const response = await fetch('/api/settings', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload)
-            });
+            if (settingKey === 'civitai_api_key' || settingKey.startsWith('proxy_')) {
+                const payload = {};
+                
+                // For username and password, send delete flag if empty to remove from backend
+                if ((settingKey === 'proxy_username' || settingKey === 'proxy_password') && value === '') {
+                    payload[settingKey] = '__DELETE__';
+                } else {
+                    payload[settingKey] = value;
+                }
+                
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
 
-            if (!response.ok) {
-                throw new Error('Failed to save setting');
+                if (!response.ok) {
+                    throw new Error('Failed to save setting');
+                }
             }
             
             showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');

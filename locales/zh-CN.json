@@ -181,7 +181,8 @@
             "downloadPathTemplates": "下载路径模板",
             "exampleImages": "示例图片",
             "misc": "其他",
-            "metadataArchive": "元数据归档数据库"
+            "metadataArchive": "元数据归档数据库",
+            "proxySettings": "代理设置"
         },
         "contentFiltering": {
             "blurNsfwContent": "模糊 NSFW 内容",
@@ -300,6 +301,24 @@
             "connecting": "正在连接下载服务器...",
             "completed": "已完成",
             "downloadComplete": "下载成功完成"
+        },
+        "proxySettings": {
+            "enableProxy": "启用应用级代理",
+            "enableProxyHelp": "为此应用启用自定义代理设置，覆盖系统代理设置",
+            "proxyType": "代理类型",
+            "proxyTypeHelp": "选择代理服务器类型 (HTTP, HTTPS, SOCKS4, SOCKS5)",
+            "proxyHost": "代理主机",
+            "proxyHostPlaceholder": "proxy.example.com",
+            "proxyHostHelp": "代理服务器的主机名或IP地址",
+            "proxyPort": "代理端口",
+            "proxyPortPlaceholder": "8080", 
+            "proxyPortHelp": "代理服务器的端口号",
+            "proxyUsername": "用户名 (可选)",
+            "proxyUsernamePlaceholder": "用户名",
+            "proxyUsernameHelp": "代理认证的用户名 (如果需要)",
+            "proxyPassword": "密码 (可选)",
+            "proxyPasswordPlaceholder": "密码",
+            "proxyPasswordHelp": "代理认证的密码 (如果需要)"
         }
     },
     "loras": {
