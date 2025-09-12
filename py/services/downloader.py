@@ -108,7 +108,7 @@ class Downloader:
                 else:
                     proxy_url = f"{proxy_type}://{proxy_host}:{proxy_port}"
                 
-                logger.info(f"Using app-level proxy: {proxy_type}://{proxy_host}:{proxy_port}")
+                logger.debug(f"Using app-level proxy: {proxy_type}://{proxy_host}:{proxy_port}")
                 logger.debug("Proxy mode: app-level proxy is active.")
         else:
             logger.debug("Proxy mode: system-level proxy (trust_env) will be used if configured in environment.")
