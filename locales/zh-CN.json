@@ -31,7 +31,8 @@
             "japanese": "日语",
             "korean": "韩语",
             "french": "法语",
-            "spanish": "西班牙语"
+            "spanish": "西班牙语",
+			"Hebrew": "עברית"
         },
         "fileSize": {
             "zero": "0 字节",
