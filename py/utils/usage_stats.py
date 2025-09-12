@@ -62,7 +62,7 @@ class UsageStats:
         self._bg_task = asyncio.create_task(self._background_processor())
         
         self._initialized = True
-        logger.info("Usage statistics tracker initialized")
+        logger.debug("Usage statistics tracker initialized")
     
     def _get_stats_file_path(self) -> str:
         """Get the path to the stats JSON file"""
@@ -164,7 +164,7 @@ class UsageStats:
                         if "last_save_time" in loaded_stats:
                             self.stats["last_save_time"] = loaded_stats["last_save_time"]
                 
-                logger.info(f"Loaded usage statistics from {self._stats_file_path}")
+                logger.debug(f"Loaded usage statistics from {self._stats_file_path}")
         except Exception as e:
             logger.error(f"Error loading usage statistics: {e}")
     

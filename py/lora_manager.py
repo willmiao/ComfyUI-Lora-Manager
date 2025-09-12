@@ -221,7 +221,7 @@ class LoraManager:
                 name='post_init_tasks'
             )
             
-            logger.info("LoRA Manager: All services initialized and background tasks scheduled")
+            logger.debug("LoRA Manager: All services initialized and background tasks scheduled")
                 
         except Exception as e:
             logger.error(f"LoRA Manager: Error initializing services: {e}", exc_info=True)
@@ -427,7 +427,7 @@ class LoraManager:
                            f"removed {empty_folders_removed} empty folders and {invalid_hash_folders_removed} "
                            f"folders for deleted/invalid models (total: {total_removed} removed)")
             else:
-                logger.info(f"Example images cleanup completed: checked {total_folders_checked} folders, "
+                logger.debug(f"Example images cleanup completed: checked {total_folders_checked} folders, "
                            f"no cleanup needed")
                 
         except Exception as e:
