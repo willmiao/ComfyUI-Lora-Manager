@@ -10,9 +10,9 @@ const savedSettings = getStorageItem('settings', {
 });
 
 // Load preview versions from localStorage for each model type
-const loraPreviewVersions = getMapFromStorage('lora_preview_versions');
-const checkpointPreviewVersions = getMapFromStorage('checkpoint_preview_versions');
-const embeddingPreviewVersions = getMapFromStorage('embedding_preview_versions');
+const loraPreviewVersions = getMapFromStorage('loras_preview_versions');
+const checkpointPreviewVersions = getMapFromStorage('checkpoints_preview_versions');
+const embeddingPreviewVersions = getMapFromStorage('embeddings_preview_versions');
 
 export const state = {
     // Global state

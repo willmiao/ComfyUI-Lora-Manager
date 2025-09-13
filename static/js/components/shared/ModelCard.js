@@ -216,13 +216,6 @@ function handleCardClick(card, modelType) {
 }
 
 async function showModelModalFromCard(card, modelType) {
-    // Get the appropriate preview versions map
-    const previewVersionsKey = modelType;
-    const previewVersions = state.pages[previewVersionsKey]?.previewVersions || new Map();
-    const version = previewVersions.get(card.dataset.filepath);
-    const previewUrl = card.dataset.preview_url || '/loras_static/images/no-preview.png';
-    const versionedPreviewUrl = version ? `${previewUrl}?t=${version}` : previewUrl;
-    
     // Create model metadata object
     const modelMeta = {
         sha256: card.dataset.sha256,
@@ -235,7 +228,6 @@ async function showModelModalFromCard(card, modelType) {
         from_civitai: card.dataset.from_civitai === 'true',
         base_model: card.dataset.base_model,
         notes: card.dataset.notes || '',
-        preview_url: versionedPreviewUrl,
         favorite: card.dataset.favorite === 'true',
         // Parse civitai metadata from the card's dataset
         civitai: JSON.parse(card.dataset.meta || '{}'),
