@@ -294,6 +294,8 @@ class DownloadManager:
             file_info = next((f for f in version_info.get('files', []) if f.get('primary')), None)
             if not file_info:
                 return {'success': False, 'error': 'No primary file found in metadata'}
+            if not file_info.get('downloadUrl'):
+                return {'success': False, 'error': 'No download URL found for primary file'}
 
             # 3. Prepare download
             file_name = file_info['name']
