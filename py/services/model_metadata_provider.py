@@ -4,7 +4,8 @@ import aiosqlite
 import logging
 import aiohttp
 from bs4 import BeautifulSoup
-from typing import Optional, Dict, List, Tuple, Any
+from typing import Optional, Dict, Tuple
+from .downloader import get_downloader
 
 logger = logging.getLogger(__name__)
 
@@ -60,22 +61,6 @@ class CivitaiModelMetadataProvider(ModelMetadataProvider):
 class CivArchiveModelMetadataProvider(ModelMetadataProvider):
     """Provider that uses CivArchive HTML page parsing for metadata"""
     
-    def __init__(self, session: aiohttp.ClientSession = None):
-        self.session = session
-        self._own_session = session is None
-    
-    async def _get_session(self):
-        """Get or create HTTP session"""
-        if self.session is None:
-            self.session = aiohttp.ClientSession()
-        return self.session
-    
-    async def close(self):
-        """Close HTTP session if we own it"""
-        if self._own_session and self.session:
-            await self.session.close()
-            self.session = None
-    
     async def get_model_by_hash(self, model_hash: str) -> Optional[Dict]:
         """Not supported by CivArchive provider"""
         return None
@@ -92,8 +77,9 @@ class CivArchiveModelMetadataProvider(ModelMetadataProvider):
         try:
             # Construct CivArchive URL
             url = f"https://civarchive.com/models/{model_id}?modelVersionId={version_id}"
-            
-            session = await self._get_session()
+
+            downloader = await get_downloader()
+            session = await downloader.session
             async with session.get(url) as response:
                 if response.status != 200:
                     return None
