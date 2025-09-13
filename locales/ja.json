@@ -31,7 +31,8 @@
             "japanese": "日本語",
             "korean": "한국어",
             "french": "Français",
-            "spanish": "Español"
+            "spanish": "Español",
+			"Hebrew": "עברית"
         },
         "fileSize": {
             "zero": "0バイト",
