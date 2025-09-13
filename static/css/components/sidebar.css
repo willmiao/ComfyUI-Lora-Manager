@@ -233,7 +233,7 @@
 }
 
 .sidebar-tree-children.expanded {
-    max-height: 9999px;
+    max-height: 50000px;
 }
 
 .sidebar-tree-children .sidebar-tree-node-content {
