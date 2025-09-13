@@ -630,8 +630,8 @@ class BaseModelRoutes(ABC):
                         not model.get('civitai')
                         or not model['civitai'].get('id')
                         # or not model.get('tags') # Skipping tag cause it could be empty legitimately
-                        or not model.get('modelDescription')
-                        or not (model.get('civitai') and model['civitai'].get('creator'))
+                        # or not model.get('modelDescription')
+                        # or not (model.get('civitai') and model['civitai'].get('creator'))
                     )
                     and (
                         (enable_metadata_archive_db)
