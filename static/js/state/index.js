@@ -2,11 +2,17 @@
 import { getStorageItem, getMapFromStorage } from '../utils/storageHelpers.js';
 import { MODEL_TYPES } from '../api/apiConfig.js';
 
-// Load settings from localStorage or use defaults
+// Load only frontend settings from localStorage with defaults
+// Backend settings will be loaded by SettingsManager from the backend
 const savedSettings = getStorageItem('settings', {
     blurMatureContent: true,
     show_only_sfw: false,
-    cardInfoDisplay: 'always'
+    cardInfoDisplay: 'always',
+    autoplayOnHover: false,
+    displayDensity: 'default',
+    optimizeExampleImages: true,
+    autoDownloadExampleImages: true,
+    includeTriggerWords: false
 });
 
 // Load preview versions from localStorage for each model type

@@ -80,7 +80,6 @@ class SettingsManager:
         """Return default settings"""
         return {
             "civitai_api_key": "",
-            "show_only_sfw": False,
             "language": "en",
             "enable_metadata_archive_db": False,  # Enable metadata archive database
             "proxy_enabled": False,  # Enable app-level proxy

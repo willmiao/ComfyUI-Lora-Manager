@@ -88,6 +88,7 @@ class MiscRoutes:
     @staticmethod
     def setup_routes(app):
         """Register miscellaneous routes"""
+        app.router.add_get('/api/settings', MiscRoutes.get_settings)
         app.router.add_post('/api/settings', MiscRoutes.update_settings)
 
         app.router.add_get('/api/health-check', lambda request: web.json_response({'status': 'ok'}))
@@ -118,6 +119,47 @@ class MiscRoutes:
         app.router.add_post('/api/download-metadata-archive', MiscRoutes.download_metadata_archive)
         app.router.add_post('/api/remove-metadata-archive', MiscRoutes.remove_metadata_archive)
         app.router.add_get('/api/metadata-archive-status', MiscRoutes.get_metadata_archive_status)
+
+    @staticmethod
+    async def get_settings(request):
+        """Get application settings that should be synced to frontend"""
+        try:
+            # Define keys that should be synced from backend to frontend
+            sync_keys = [
+                'civitai_api_key',
+                'default_lora_root', 
+                'default_checkpoint_root',
+                'default_embedding_root',
+                'base_model_path_mappings',
+                'download_path_templates',
+                'enable_metadata_archive_db',
+                'language',
+                'proxy_enabled',
+                'proxy_type',
+                'proxy_host',
+                'proxy_port',
+                'proxy_username',
+                'proxy_password'
+            ]
+            
+            # Build response with only the keys that should be synced
+            response_data = {}
+            for key in sync_keys:
+                value = settings.get(key)
+                if value is not None:
+                    response_data[key] = value
+            
+            return web.json_response({
+                'success': True,
+                'settings': response_data
+            })
+            
+        except Exception as e:
+            logger.error(f"Error getting settings: {e}", exc_info=True)
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
 
     @staticmethod
     async def update_settings(request):

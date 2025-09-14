@@ -38,6 +38,11 @@ export class AppCore {
         
         console.log(`AppCore: Language set: ${i18n.getCurrentLocale()}`);
         
+        // Initialize settings manager and wait for it to sync from backend
+        console.log('AppCore: Initializing settings...');
+        await settingsManager.waitForInitialization();
+        console.log('AppCore: Settings initialized');
+        
         // Initialize managers
         state.loadingManager = new LoadingManager();
         modalManager.initialize();
