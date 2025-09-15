@@ -97,7 +97,7 @@ export class SettingsManager {
 
     async syncSettingsFromBackend() {
         try {
-            const response = await fetch('/api/settings');
+            const response = await fetch('/api/lm/settings');
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -213,7 +213,7 @@ export class SettingsManager {
                 const payload = {};
                 payload[settingKey] = value;
 
-                const response = await fetch('/api/settings', {
+                const response = await fetch('/api/lm/settings', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1274,7 +1274,7 @@ export class SettingsManager {
                 const payload = {};
                 payload[settingKey] = '__DELETE__';
                 
-                const response = await fetch('/api/settings', {
+                const response = await fetch('/api/lm/settings', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

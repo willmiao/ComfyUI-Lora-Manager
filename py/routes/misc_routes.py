@@ -88,8 +88,8 @@ class MiscRoutes:
     @staticmethod
     def setup_routes(app):
         """Register miscellaneous routes"""
-        app.router.add_get('/api/settings', MiscRoutes.get_settings)
-        app.router.add_post('/api/settings', MiscRoutes.update_settings)
+        app.router.add_get('/api/lm/settings', MiscRoutes.get_settings)
+        app.router.add_post('/api/lm/settings', MiscRoutes.update_settings)
 
         app.router.add_get('/api/health-check', lambda request: web.json_response({'status': 'ok'}))
 

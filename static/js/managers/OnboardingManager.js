@@ -186,7 +186,7 @@ export class OnboardingManager {
             setStorageItem('settings', state.global.settings);
             
             // Save to backend
-            const response = await fetch('/api/settings', {
+            const response = await fetch('/api/lm/settings', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
