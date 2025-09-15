@@ -94,7 +94,7 @@ class CivitaiClient:
     async def download_preview_image(self, image_url: str, save_path: str):
         try:
             downloader = await get_downloader()
-            success, content = await downloader.download_to_memory(
+            success, content, headers = await downloader.download_to_memory(
                 image_url,
                 use_auth=False  # Preview images don't need auth
             )

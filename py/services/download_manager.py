@@ -463,7 +463,7 @@ class DownloadManager:
                     
                     # Download the original image to temp path using downloader
                     downloader = await get_downloader()
-                    success, content = await downloader.download_to_memory(
+                    success, content, headers = await downloader.download_to_memory(
                         images[0]['url'], 
                         use_auth=False
                     )

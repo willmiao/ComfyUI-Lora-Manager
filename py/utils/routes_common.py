@@ -141,7 +141,7 @@ class ModelRouteUtils:
                 else:
                     # For images, download and then optimize to WebP using downloader
                     downloader = await get_downloader()
-                    success, content = await downloader.download_to_memory(
+                    success, content, headers = await downloader.download_to_memory(
                         first_preview['url'], 
                         use_auth=False
                     )
