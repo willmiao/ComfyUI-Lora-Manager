@@ -94,11 +94,10 @@ export class ExampleImagesManager {
             
             // Add event listener to validate path input
             if (pathInput) {
-                pathInput.addEventListener('input', async () => {
+                // Save path on Enter key or blur
+                const savePath = async () => {
                     const hasPath = pathInput.value.trim() !== '';
                     this.updateDownloadButtonState(hasPath);
-                    
-                    // Update path in backend settings using settingsManager
                     try {
                         await settingsManager.saveSetting('example_images_path', pathInput.value);
                         if (hasPath) {
@@ -108,7 +107,6 @@ export class ExampleImagesManager {
                         console.error('Failed to update example images path:', error);
                         showToast('toast.exampleImages.pathUpdateFailed', { message: error.message }, 'error');
                     }
-
                     // Setup or clear auto download based on path availability
                     if (state.global.settings.autoDownloadExampleImages) {
                         if (hasPath) {
@@ -117,6 +115,26 @@ export class ExampleImagesManager {
                             this.clearAutoDownload();
                         }
                     }
+                };
+                let ignoreNextBlur = false;
+                pathInput.addEventListener('keydown', async (e) => {
+                    if (e.key === 'Enter') {
+                        ignoreNextBlur = true;
+                        await savePath();
+                        pathInput.blur(); // Remove focus from the input after saving
+                    }
+                });
+                pathInput.addEventListener('blur', async () => {
+                    if (ignoreNextBlur) {
+                        ignoreNextBlur = false;
+                        return;
+                    }
+                    await savePath();
+                });
+                // Still update button state on input, but don't save
+                pathInput.addEventListener('input', () => {
+                    const hasPath = pathInput.value.trim() !== '';
+                    this.updateDownloadButtonState(hasPath);
                 });
             }
         } catch (error) {
