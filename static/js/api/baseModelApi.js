@@ -938,8 +938,8 @@ export class BaseModelApiClient {
                     ws.onerror = reject;
                 });
                 
-                // Get the output directory from storage
-                const outputDir = getStorageItem('example_images_path', '');
+                // Get the output directory from state
+                const outputDir = state.global?.settings?.example_images_path || '';
                 if (!outputDir) {
                     throw new Error('Please set the example images path in the settings first.');
                 }
