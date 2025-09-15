@@ -240,6 +240,7 @@
                 "baseModelFirstTag": "基礎模型 + 第一標籤",
                 "baseModelAuthor": "基礎模型 + 作者",
                 "authorFirstTag": "作者 + 第一標籤",
+                "baseModelAuthorFirstTag": "基礎模型 + 作者 + 第一標籤",
                 "customTemplate": "自訂範本"
             },
             "customTemplatePlaceholder": "輸入自訂範本（例如：{base_model}/{author}/{first_tag}）",

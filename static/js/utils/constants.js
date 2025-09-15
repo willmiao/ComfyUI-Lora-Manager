@@ -92,6 +92,12 @@ export const DOWNLOAD_PATH_TEMPLATES = {
         description: 'Organize by base model and author',
         example: 'Flux.1 D/authorname/model-name.safetensors'
     },
+    BASE_MODEL_AUTHOR_TAG: {
+        value: '{base_model}/{author}/{first_tag}',
+        label: 'Base Model + Author + First Tag',
+        description: 'Organize by base model, author, and primary tag',
+        example: 'Flux.1 D/authorname/style/model-name.safetensors'
+    },
     AUTHOR_TAG: {
         value: '{author}/{first_tag}',
         label: 'Author + First Tag',
@@ -189,8 +195,8 @@ export const BASE_MODEL_CATEGORIES = {
 
 // Preset tag suggestions
 export const PRESET_TAGS = [
-    'character', 'style', 'concept', 'clothing',
-    'realistic', 'anime', 'toon', 'furry',
+    'character', 'concept', 'clothing',
+    'realistic', 'anime', 'toon', 'furry', 'style',
     'poses', 'background', 'vehicle', 'buildings',
     'objects', 'animal'
 ];

@@ -240,6 +240,7 @@
                 "baseModelFirstTag": "Modèle de base + Premier tag",
                 "baseModelAuthor": "Modèle de base + Auteur",
                 "authorFirstTag": "Auteur + Premier tag",
+                "baseModelAuthorFirstTag": "Modèle de base + Auteur + Premier tag",
                 "customTemplate": "Modèle personnalisé"
             },
             "customTemplatePlaceholder": "Entrez un modèle personnalisé (ex: {base_model}/{author}/{first_tag})",

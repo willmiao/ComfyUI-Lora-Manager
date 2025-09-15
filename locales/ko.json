@@ -240,6 +240,7 @@
                 "baseModelFirstTag": "베이스 모델 + 첫 번째 태그",
                 "baseModelAuthor": "베이스 모델 + 제작자",
                 "authorFirstTag": "제작자 + 첫 번째 태그",
+                "baseModelAuthorFirstTag": "베이스 모델 + 제작자 + 첫 번째 태그",
                 "customTemplate": "사용자 정의 템플릿"
             },
             "customTemplatePlaceholder": "사용자 정의 템플릿 입력 (예: {base_model}/{author}/{first_tag})",

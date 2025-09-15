@@ -240,6 +240,7 @@
                 "baseModelFirstTag": "ベースモデル + 最初のタグ",
                 "baseModelAuthor": "ベースモデル + 作成者",
                 "authorFirstTag": "作成者 + 最初のタグ",
+                "baseModelAuthorFirstTag": "ベースモデル + 作成者 + 最初のタグ",
                 "customTemplate": "カスタムテンプレート"
             },
             "customTemplatePlaceholder": "カスタムテンプレートを入力（例：{base_model}/{author}/{first_tag}）",

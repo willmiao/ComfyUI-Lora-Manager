@@ -240,6 +240,7 @@
                 "baseModelFirstTag": "Modelo base + primera etiqueta",
                 "baseModelAuthor": "Modelo base + autor",
                 "authorFirstTag": "Autor + primera etiqueta",
+                "baseModelAuthorFirstTag": "Modelo base + autor + primera etiqueta",
                 "customTemplate": "Plantilla personalizada"
             },
             "customTemplatePlaceholder": "Introduce plantilla personalizada (ej., {base_model}/{author}/{first_tag})",

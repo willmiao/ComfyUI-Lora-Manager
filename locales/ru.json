@@ -240,6 +240,7 @@
                 "baseModelFirstTag": "Базовая модель + Первый тег",
                 "baseModelAuthor": "Базовая модель + Автор",
                 "authorFirstTag": "Автор + Первый тег",
+                "baseModelAuthorFirstTag": "Базовая модель + Автор + Первый тег",
                 "customTemplate": "Пользовательский шаблон"
             },
             "customTemplatePlaceholder": "Введите пользовательский шаблон (например, {base_model}/{author}/{first_tag})",

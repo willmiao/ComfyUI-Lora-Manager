@@ -240,6 +240,7 @@
                 "baseModelFirstTag": "Base Model + First Tag",
                 "baseModelAuthor": "Base Model + Author",
                 "authorFirstTag": "Author + First Tag",
+                "baseModelAuthorFirstTag": "Base Model + Author + First Tag",
                 "customTemplate": "Custom Template"
             },
             "customTemplatePlaceholder": "Enter custom template (e.g., {base_model}/{author}/{first_tag})",

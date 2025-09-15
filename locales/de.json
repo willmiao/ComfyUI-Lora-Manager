@@ -240,6 +240,7 @@
                 "baseModelFirstTag": "Basis-Modell + Erster Tag",
                 "baseModelAuthor": "Basis-Modell + Autor",
                 "authorFirstTag": "Autor + Erster Tag",
+                "baseModelAuthorFirstTag": "Basis-Modell + Autor + Erster Tag",
                 "customTemplate": "Benutzerdefinierte Vorlage"
             },
             "customTemplatePlaceholder": "Benutzerdefinierte Vorlage eingeben (z.B. {base_model}/{author}/{first_tag})",
