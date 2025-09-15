@@ -376,7 +376,7 @@ input:checked + .toggle-slider:before {
     padding: var(--space-1);
     margin-top: 8px;
     font-family: monospace;
-    font-size: 1.1em;
+    font-size: 0.9em;
     color: var(--lora-accent);
     display: none;
 }
