@@ -23,17 +23,60 @@ class ExampleImagesProcessor:
         return ''.join(random.choice(chars) for _ in range(length))
     
     @staticmethod
-    def get_civitai_optimized_url(image_url):
-        """Convert Civitai image URL to its optimized WebP version"""
+    def get_civitai_optimized_url(media_url):
+        """Convert Civitai media URL (image or video) to its optimized version"""
         base_pattern = r'(https://image\.civitai\.com/[^/]+/[^/]+)'
-        match = re.match(base_pattern, image_url)
+        match = re.match(base_pattern, media_url)
         
         if match:
             base_url = match.group(1)
-            return f"{base_url}/optimized=true/image.webp"
+            return f"{base_url}/optimized=true"
         
-        return image_url
+        return media_url
     
+    @staticmethod
+    def _get_file_extension_from_content_or_headers(content, headers, fallback_url=None):
+        """Determine file extension from content magic bytes or headers"""
+        # Check magic bytes for common formats
+        if content:
+            if content.startswith(b'\xFF\xD8\xFF'):
+                return '.jpg'
+            elif content.startswith(b'\x89PNG\r\n\x1A\n'):
+                return '.png'
+            elif content.startswith(b'GIF87a') or content.startswith(b'GIF89a'):
+                return '.gif'
+            elif content.startswith(b'RIFF') and b'WEBP' in content[:12]:
+                return '.webp'
+            elif content.startswith(b'\x00\x00\x00\x18ftypmp4') or content.startswith(b'\x00\x00\x00\x20ftypmp4'):
+                return '.mp4'
+            elif content.startswith(b'\x1A\x45\xDF\xA3'):
+                return '.webm'
+        
+        # Check Content-Type header
+        if headers:
+            content_type = headers.get('content-type', '').lower()
+            type_map = {
+                'image/jpeg': '.jpg',
+                'image/png': '.png',
+                'image/gif': '.gif',
+                'image/webp': '.webp',
+                'video/mp4': '.mp4',
+                'video/webm': '.webm',
+                'video/quicktime': '.mov'
+            }
+            if content_type in type_map:
+                return type_map[content_type]
+        
+        # Fallback to URL extension if available
+        if fallback_url:
+            filename = os.path.basename(fallback_url.split('?')[0])
+            ext = os.path.splitext(filename)[1].lower()
+            if ext in SUPPORTED_MEDIA_EXTENSIONS['images'] or ext in SUPPORTED_MEDIA_EXTENSIONS['videos']:
+                return ext
+        
+        # Default fallback
+        return '.jpg'
+
     @staticmethod
     async def download_model_images(model_hash, model_name, model_images, model_dir, optimize, downloader):
         """Download images for a single model
@@ -48,45 +91,49 @@ class ExampleImagesProcessor:
             if not image_url:
                 continue
             
-            # Get image filename from URL
-            image_filename = os.path.basename(image_url.split('?')[0])
-            image_ext = os.path.splitext(image_filename)[1].lower()
-            
-            # Handle images and videos
-            is_image = image_ext in SUPPORTED_MEDIA_EXTENSIONS['images']
-            is_video = image_ext in SUPPORTED_MEDIA_EXTENSIONS['videos']
-            
-            if not (is_image or is_video):
-                logger.debug(f"Skipping unsupported file type: {image_filename}")
-                continue
-            
-            # Use 0-based indexing instead of 1-based indexing
-            save_filename = f"image_{i}{image_ext}"
-            
-            # If optimizing images and this is a Civitai image, use their pre-optimized WebP version
-            if is_image and optimize and 'civitai.com' in image_url:
+            # Apply optimization for Civitai URLs if enabled
+            original_url = image_url
+            if optimize and 'civitai.com' in image_url:
                 image_url = ExampleImagesProcessor.get_civitai_optimized_url(image_url)
-                save_filename = f"image_{i}.webp"
             
-            # Check if already downloaded
-            save_path = os.path.join(model_dir, save_filename)
-            if os.path.exists(save_path):
-                logger.debug(f"File already exists: {save_path}")
-                continue
-            
-            # Download the file
+            # Download the file first to determine the actual file type
             try:
-                logger.debug(f"Downloading {save_filename} for {model_name}")
+                logger.debug(f"Downloading media file {i} for {model_name}")
                 
-                # Download using the unified downloader
-                success, content = await downloader.download_to_memory(
+                # Download using the unified downloader with headers
+                success, content, headers = await downloader.download_to_memory(
                     image_url,
-                    use_auth=False  # Example images don't need auth
+                    use_auth=False,  # Example images don't need auth
+                    return_headers=True
                 )
                 
                 if success:
+                    # Determine file extension from content or headers
+                    media_ext = ExampleImagesProcessor._get_file_extension_from_content_or_headers(
+                        content, headers, original_url
+                    )
+                    
+                    # Check if the detected file type is supported
+                    is_image = media_ext in SUPPORTED_MEDIA_EXTENSIONS['images']
+                    is_video = media_ext in SUPPORTED_MEDIA_EXTENSIONS['videos']
+                    
+                    if not (is_image or is_video):
+                        logger.debug(f"Skipping unsupported file type: {media_ext}")
+                        continue
+                    
+                    # Use 0-based indexing with the detected extension
+                    save_filename = f"image_{i}{media_ext}"
+                    save_path = os.path.join(model_dir, save_filename)
+                    
+                    # Check if already downloaded
+                    if os.path.exists(save_path):
+                        logger.debug(f"File already exists: {save_path}")
+                        continue
+                    
+                    # Save the file
                     with open(save_path, 'wb') as f:
                         f.write(content)
+                    
                 elif "404" in str(content):
                     error_msg = f"Failed to download file: {image_url}, status code: 404 - Model metadata might be stale"
                     logger.warning(error_msg)
@@ -119,45 +166,49 @@ class ExampleImagesProcessor:
             if not image_url:
                 continue
             
-            # Get image filename from URL
-            image_filename = os.path.basename(image_url.split('?')[0])
-            image_ext = os.path.splitext(image_filename)[1].lower()
-            
-            # Handle images and videos
-            is_image = image_ext in SUPPORTED_MEDIA_EXTENSIONS['images']
-            is_video = image_ext in SUPPORTED_MEDIA_EXTENSIONS['videos']
-            
-            if not (is_image or is_video):
-                logger.debug(f"Skipping unsupported file type: {image_filename}")
-                continue
-            
-            # Use 0-based indexing instead of 1-based indexing
-            save_filename = f"image_{i}{image_ext}"
-            
-            # If optimizing images and this is a Civitai image, use their pre-optimized WebP version
-            if is_image and optimize and 'civitai.com' in image_url:
+            # Apply optimization for Civitai URLs if enabled
+            original_url = image_url
+            if optimize and 'civitai.com' in image_url:
                 image_url = ExampleImagesProcessor.get_civitai_optimized_url(image_url)
-                save_filename = f"image_{i}.webp"
             
-            # Check if already downloaded
-            save_path = os.path.join(model_dir, save_filename)
-            if os.path.exists(save_path):
-                logger.debug(f"File already exists: {save_path}")
-                continue
-            
-            # Download the file
+            # Download the file first to determine the actual file type
             try:
-                logger.debug(f"Downloading {save_filename} for {model_name}")
+                logger.debug(f"Downloading media file {i} for {model_name}")
                 
-                # Download using the unified downloader
-                success, content = await downloader.download_to_memory(
+                # Download using the unified downloader with headers
+                success, content, headers = await downloader.download_to_memory(
                     image_url,
-                    use_auth=False  # Example images don't need auth
+                    use_auth=False,  # Example images don't need auth
+                    return_headers=True
                 )
                 
                 if success:
+                    # Determine file extension from content or headers
+                    media_ext = ExampleImagesProcessor._get_file_extension_from_content_or_headers(
+                        content, headers, original_url
+                    )
+                    
+                    # Check if the detected file type is supported
+                    is_image = media_ext in SUPPORTED_MEDIA_EXTENSIONS['images']
+                    is_video = media_ext in SUPPORTED_MEDIA_EXTENSIONS['videos']
+                    
+                    if not (is_image or is_video):
+                        logger.debug(f"Skipping unsupported file type: {media_ext}")
+                        continue
+                    
+                    # Use 0-based indexing with the detected extension
+                    save_filename = f"image_{i}{media_ext}"
+                    save_path = os.path.join(model_dir, save_filename)
+                    
+                    # Check if already downloaded
+                    if os.path.exists(save_path):
+                        logger.debug(f"File already exists: {save_path}")
+                        continue
+                    
+                    # Save the file
                     with open(save_path, 'wb') as f:
                         f.write(content)
+                    
                 elif "404" in str(content):
                     error_msg = f"Failed to download file: {image_url}, status code: 404 - Model metadata might be stale"
                     logger.warning(error_msg)
@@ -570,3 +621,6 @@ class ExampleImagesProcessor:
                 'success': False,
                 'error': str(e)
             }, status=500)
+
+
+    

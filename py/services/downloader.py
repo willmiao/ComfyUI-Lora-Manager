@@ -366,8 +366,9 @@ class Downloader:
         self,
         url: str,
         use_auth: bool = False,
-        custom_headers: Optional[Dict[str, str]] = None
-    ) -> Tuple[bool, Union[bytes, str]]:
+        custom_headers: Optional[Dict[str, str]] = None,
+        return_headers: bool = False
+    ) -> Tuple[bool, Union[bytes, str], Optional[Dict]]:
         """
         Download a file to memory (for small files like preview images)
         
@@ -375,9 +376,10 @@ class Downloader:
             url: Download URL
             use_auth: Whether to include authentication headers
             custom_headers: Additional headers to include in request
+            return_headers: Whether to return response headers along with content
             
         Returns:
-            Tuple[bool, Union[bytes, str]]: (success, content or error message)
+            Tuple[bool, Union[bytes, str], Optional[Dict]]: (success, content or error message, response headers if requested)
         """
         try:
             session = await self.session
@@ -395,19 +397,26 @@ class Downloader:
             async with session.get(url, headers=headers, proxy=self.proxy_url) as response:
                 if response.status == 200:
                     content = await response.read()
-                    return True, content
+                    if return_headers:
+                        return True, content, dict(response.headers)
+                    else:
+                        return True, content, None
                 elif response.status == 401:
-                    return False, "Unauthorized access - invalid or missing API key"
+                    error_msg = "Unauthorized access - invalid or missing API key"
+                    return False, error_msg, None
                 elif response.status == 403:
-                    return False, "Access forbidden"
+                    error_msg = "Access forbidden"
+                    return False, error_msg, None
                 elif response.status == 404:
-                    return False, "File not found"
+                    error_msg = "File not found"
+                    return False, error_msg, None
                 else:
-                    return False, f"Download failed with status {response.status}"
+                    error_msg = f"Download failed with status {response.status}"
+                    return False, error_msg, None
                     
         except Exception as e:
             logger.error(f"Error downloading to memory from {url}: {e}")
-            return False, str(e)
+            return False, str(e), None
     
     async def get_response_headers(
         self,
