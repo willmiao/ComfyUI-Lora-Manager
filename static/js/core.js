@@ -7,7 +7,7 @@ import { HeaderManager } from './components/Header.js';
 import { settingsManager } from './managers/SettingsManager.js';
 import { moveManager } from './managers/MoveManager.js';
 import { bulkManager } from './managers/BulkManager.js';
-import { exampleImagesManager } from './managers/ExampleImagesManager.js';
+import { ExampleImagesManager } from './managers/ExampleImagesManager.js';
 import { helpManager } from './managers/HelpManager.js';
 import { bannerService } from './managers/BannerService.js';
 import { initTheme, initBackToTop } from './utils/uiHelpers.js';
@@ -50,7 +50,7 @@ export class AppCore {
         bannerService.initialize();
         window.modalManager = modalManager;
         window.settingsManager = settingsManager;
-        window.exampleImagesManager = exampleImagesManager;
+        window.exampleImagesManager = new ExampleImagesManager();
         window.helpManager = helpManager;
         window.moveManager = moveManager;
         window.bulkManager = bulkManager;

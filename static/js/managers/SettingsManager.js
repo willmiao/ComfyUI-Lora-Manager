@@ -47,8 +47,6 @@ export class SettingsManager {
             'autoplayOnHover',
             'displayDensity',
             'cardInfoDisplay',
-            'optimizeExampleImages',
-            'autoDownloadExampleImages',
             'includeTriggerWords'
         ];
 
@@ -74,14 +72,6 @@ export class SettingsManager {
 
         if (state.global.settings.autoplayOnHover === undefined) {
             state.global.settings.autoplayOnHover = false;
-        }
-
-        if (state.global.settings.optimizeExampleImages === undefined) {
-            state.global.settings.optimizeExampleImages = true;
-        }
-
-        if (state.global.settings.autoDownloadExampleImages === undefined) {
-            state.global.settings.autoDownloadExampleImages = true;
         }
 
         if (state.global.settings.cardInfoDisplay === undefined) {
@@ -147,7 +137,10 @@ export class SettingsManager {
             proxy_host: '',
             proxy_port: '',
             proxy_username: '',
-            proxy_password: ''
+            proxy_password: '',
+            example_images_path: '',
+            optimizeExampleImages: true,
+            autoDownloadExampleImages: true
         };
 
         Object.keys(backendDefaults).forEach(key => {
@@ -172,8 +165,6 @@ export class SettingsManager {
             'autoplayOnHover', 
             'displayDensity',
             'cardInfoDisplay',
-            'optimizeExampleImages',
-            'autoDownloadExampleImages',
             'includeTriggerWords'
         ];
 
@@ -203,7 +194,10 @@ export class SettingsManager {
             'proxy_host',
             'proxy_port',
             'proxy_username',
-            'proxy_password'
+            'proxy_password',
+            'example_images_path',
+            'optimizeExampleImages',
+            'autoDownloadExampleImages'
         ];
         return backendKeys.includes(settingKey);
     }
@@ -218,7 +212,7 @@ export class SettingsManager {
             try {
                 const payload = {};
                 payload[settingKey] = value;
-                
+
                 const response = await fetch('/api/settings', {
                     method: 'POST',
                     headers: {
@@ -229,6 +223,12 @@ export class SettingsManager {
 
                 if (!response.ok) {
                     throw new Error('Failed to save setting to backend');
+                }
+
+                // Parse response and check for success
+                const data = await response.json();
+                if (data.success === false) {
+                    throw new Error(data.error || 'Failed to save setting to backend');
                 }
             } catch (error) {
                 console.error(`Failed to save backend setting ${settingKey}:`, error);
@@ -985,8 +985,6 @@ export class SettingsManager {
                 await this.saveSetting(settingKey, value);
             }
             
-            showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
-            
             // Apply frontend settings immediately
             this.applyFrontendSettings();
             
@@ -999,8 +997,10 @@ export class SettingsManager {
                 if (value === 'compact') densityName = "Compact";
                 
                 showToast('toast.settings.displayDensitySet', { density: densityName }, 'success');
+                return;
             }
             
+            showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
         } catch (error) {
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
         }

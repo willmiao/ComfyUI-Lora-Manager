@@ -139,7 +139,10 @@ class MiscRoutes:
                 'proxy_host',
                 'proxy_port',
                 'proxy_username',
-                'proxy_password'
+                'proxy_password',
+                'example_images_path',
+                'optimizeExampleImages',
+                'autoDownloadExampleImages'
             ]
             
             # Build response with only the keys that should be synced

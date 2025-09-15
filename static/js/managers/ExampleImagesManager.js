@@ -1,9 +1,10 @@
 import { showToast } from '../utils/uiHelpers.js';
 import { state } from '../state/index.js';
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
+import { settingsManager } from './SettingsManager.js';
 
 // ExampleImagesManager.js
-class ExampleImagesManager {
+export class ExampleImagesManager {
     constructor() {
         this.isDownloading = false;
         this.isPaused = false;
@@ -27,7 +28,12 @@ class ExampleImagesManager {
     }
     
     // Initialize the manager
-    initialize() {
+    async initialize() {
+        // Wait for settings to be initialized before proceeding
+        if (window.settingsManager) {
+            await window.settingsManager.waitForInitialization();
+        }
+        
         // Initialize event listeners
         this.initEventListeners();
         
@@ -78,86 +84,41 @@ class ExampleImagesManager {
             // Get custom path input element
             const pathInput = document.getElementById('exampleImagesPath');
 
-            // Set path from storage if available
-            const savedPath = getStorageItem('example_images_path', '');
-            if (savedPath) {
+            // Set path from backend settings
+            const savedPath = state.global.settings.example_images_path || '';
+            if (pathInput) {
                 pathInput.value = savedPath;
                 // Enable download button if path is set
-                this.updateDownloadButtonState(true);
-                
-                // Sync the saved path with the backend
-                try {
-                    const response = await fetch('/api/settings', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            example_images_path: savedPath
-                        })
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    
-                    const data = await response.json();
-                    if (!data.success) {
-                        console.error('Failed to sync example images path with backend:', data.error);
-                    }
-                } catch (error) {
-                    console.error('Failed to sync saved path with backend:', error);
-                }
-            } else {
-                // Disable download button if no path is set
-                this.updateDownloadButtonState(false);
+                this.updateDownloadButtonState(!!savedPath);
             }
             
             // Add event listener to validate path input
-            pathInput.addEventListener('input', async () => {
-                const hasPath = pathInput.value.trim() !== '';
-                this.updateDownloadButtonState(hasPath);
-                
-                // Save path to storage when changed
-                if (hasPath) {
-                    setStorageItem('example_images_path', pathInput.value);
+            if (pathInput) {
+                pathInput.addEventListener('input', async () => {
+                    const hasPath = pathInput.value.trim() !== '';
+                    this.updateDownloadButtonState(hasPath);
                     
-                    // Update path in backend settings
+                    // Update path in backend settings using settingsManager
                     try {
-                        const response = await fetch('/api/settings', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                example_images_path: pathInput.value
-                            })
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! Status: ${response.status}`);
-                        }
-                        
-                        const data = await response.json();
-                        if (!data.success) {
-                            console.error('Failed to update example images path in backend:', data.error);
-                        } else {
+                        await settingsManager.saveSetting('example_images_path', pathInput.value);
+                        if (hasPath) {
                             showToast('toast.exampleImages.pathUpdated', {}, 'success');
                         }
                     } catch (error) {
                         console.error('Failed to update example images path:', error);
+                        showToast('toast.exampleImages.pathUpdateFailed', { message: error.message }, 'error');
                     }
-                }
 
-                // Setup or clear auto download based on path availability
-                if (state.global.settings.autoDownloadExampleImages) {
-                    if (hasPath) {
-                        this.setupAutoDownload();
-                    } else {
-                        this.clearAutoDownload();
+                    // Setup or clear auto download based on path availability
+                    if (state.global.settings.autoDownloadExampleImages) {
+                        if (hasPath) {
+                            this.setupAutoDownload();
+                        } else {
+                            this.clearAutoDownload();
+                        }
                     }
-                }
-            });
+                });
+            }
         } catch (error) {
             console.error('Failed to initialize path options:', error);
         }
@@ -255,7 +216,7 @@ class ExampleImagesManager {
                 return;
             }
             
-            const optimize = document.getElementById('optimizeExampleImages').checked;
+            const optimize = state.global.settings.optimizeExampleImages;
             
             const response = await fetch('/api/download-example-images', {
                 method: 'POST',
@@ -746,7 +707,7 @@ class ExampleImagesManager {
             console.log('Performing auto download check...');
             
             const outputDir = document.getElementById('exampleImagesPath').value;
-            const optimize = document.getElementById('optimizeExampleImages').checked;
+            const optimize = state.global.settings.optimizeExampleImages;
             
             const response = await fetch('/api/download-example-images', {
                 method: 'POST',
@@ -771,6 +732,3 @@ class ExampleImagesManager {
         }
     }
 }
-
-// Create singleton instance
-export const exampleImagesManager = new ExampleImagesManager();

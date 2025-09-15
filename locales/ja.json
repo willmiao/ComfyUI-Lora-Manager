@@ -1166,6 +1166,7 @@
         },
         "exampleImages": {
             "pathUpdated": "例画像パスが正常に更新されました",
+            "pathUpdateFailed": "例画像パスの更新に失敗しました：{message}",
             "downloadInProgress": "ダウンロードは既に進行中です",
             "enterLocationFirst": "最初にダウンロード場所を入力してください",
             "downloadStarted": "例画像のダウンロードが開始されました",

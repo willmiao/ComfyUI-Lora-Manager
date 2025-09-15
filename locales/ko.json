@@ -1166,6 +1166,7 @@
         },
         "exampleImages": {
             "pathUpdated": "예시 이미지 경로가 성공적으로 업데이트되었습니다",
+            "pathUpdateFailed": "예시 이미지 경로 업데이트 실패: {message}",
             "downloadInProgress": "이미 다운로드가 진행 중입니다",
             "enterLocationFirst": "먼저 다운로드 위치를 입력해주세요",
             "downloadStarted": "예시 이미지 다운로드가 시작되었습니다",

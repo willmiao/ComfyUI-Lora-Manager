@@ -1166,6 +1166,7 @@
         },
         "exampleImages": {
             "pathUpdated": "範例圖片路徑已更新",
+            "pathUpdateFailed": "更新範例圖片路徑失敗：{message}",
             "downloadInProgress": "下載已在進行中",
             "enterLocationFirst": "請先輸入下載位置",
             "downloadStarted": "範例圖片下載已開始",

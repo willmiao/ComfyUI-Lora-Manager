@@ -1166,6 +1166,7 @@
         },
         "exampleImages": {
             "pathUpdated": "Chemin des images d'exemple mis à jour avec succès",
+            "pathUpdateFailed": "Échec de la mise à jour du chemin des images d'exemple : {message}",
             "downloadInProgress": "Téléchargement déjà en cours",
             "enterLocationFirst": "Veuillez d'abord entrer un emplacement de téléchargement",
             "downloadStarted": "Téléchargement des images d'exemple démarré",

@@ -1166,6 +1166,7 @@
         },
         "exampleImages": {
             "pathUpdated": "Ruta de imágenes de ejemplo actualizada exitosamente",
+            "pathUpdateFailed": "Error al actualizar la ruta de imágenes de ejemplo: {message}",
             "downloadInProgress": "Descarga ya en progreso",
             "enterLocationFirst": "Por favor introduce primero una ubicación de descarga",
             "downloadStarted": "Descarga de imágenes de ejemplo iniciada",

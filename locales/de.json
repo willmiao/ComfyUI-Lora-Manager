@@ -1166,6 +1166,7 @@
         },
         "exampleImages": {
             "pathUpdated": "Beispielbilder-Pfad erfolgreich aktualisiert",
+            "pathUpdateFailed": "Fehler beim Aktualisieren des Beispielbilder-Pfads: {message}",
             "downloadInProgress": "Download bereits in Bearbeitung",
             "enterLocationFirst": "Bitte geben Sie zuerst einen Download-Speicherort ein",
             "downloadStarted": "Beispielbilder-Download gestartet",
