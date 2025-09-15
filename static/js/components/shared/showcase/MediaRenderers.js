@@ -75,8 +75,6 @@ export function generateImageWrapper(media, heightPercent, shouldBlur, nsfwText,
                 data-remote-src="${remoteUrl}"
                 data-nsfw-level="${nsfwLevel}"
                 alt="Preview" 
-                crossorigin="anonymous" 
-                referrerpolicy="no-referrer"
                 width="${media.width}"
                 height="${media.height}"
                 class="lazy ${shouldBlur ? 'blurred' : ''}"> 

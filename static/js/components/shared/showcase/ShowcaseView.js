@@ -191,7 +191,7 @@ function renderMediaItem(img, index, exampleFiles) {
     );
     
     // Determine if this is a custom image (has id property)
-    const isCustomImage = Boolean(img.id);
+    const isCustomImage = Boolean(typeof img.id === 'string' && img.id);
     
     // Create the media control buttons HTML
     const mediaControlsHtml = `
@@ -235,7 +235,7 @@ function findLocalFile(img, index, exampleFiles) {
     
     let localFile = null;
     
-    if (img.id) {
+    if (typeof img.id === 'string' && img.id) {
         // This is a custom image, find by custom_<id>
         const customPrefix = `custom_${img.id}`;
         localFile = exampleFiles.find(file => file.name.startsWith(customPrefix));
