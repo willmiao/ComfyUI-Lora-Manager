@@ -176,32 +176,6 @@ app.registerExtension({
           inputWidget,
           originalCallback
         );
-
-        // Register this node with the backend
-        this.registerNode = async () => {
-          try {
-            await fetch("/api/register-node", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                node_id: this.id,
-                bgcolor: this.bgcolor,
-                title: this.title,
-                graph_id: this.graph.id,
-              }),
-            });
-          } catch (error) {
-            console.warn("Failed to register node:", error);
-          }
-        };
-
-        // Ensure the node is registered after creation
-        // Call registration
-        // setTimeout(() => {
-        //   this.registerNode();
-        // }, 0);
       });
     }
   },

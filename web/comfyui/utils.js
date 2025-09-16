@@ -20,10 +20,6 @@ export function chainCallback(object, property, callback) {
   }
 }
 
-export function getComfyUIFrontendVersion() {
-  return window['__COMFYUI_FRONTEND_VERSION__'] || "0.0.0";
-}
-
 /**
  * Show a toast notification
  * @param {Object|string} options - Toast options object or message string for backward compatibility
@@ -78,29 +74,6 @@ export function showToast(options, type = 'info') {
     }
 }
 
-// Dynamically import the appropriate widget based on app version
-export async function dynamicImportByVersion(latestModulePath, legacyModulePath) {
-  // Parse app version and compare with 1.12.6 (version when tags widget API changed)
-  const currentVersion = getComfyUIFrontendVersion();
-  const versionParts = currentVersion.split('.').map(part => parseInt(part, 10));
-  const requiredVersion = [1, 12, 6];
-  
-  // Compare version numbers
-  for (let i = 0; i < 3; i++) {
-    if (versionParts[i] > requiredVersion[i]) {
-      console.log(`Using latest widget: ${latestModulePath}`);
-      return import(latestModulePath);
-    } else if (versionParts[i] < requiredVersion[i]) {
-      console.log(`Using legacy widget: ${legacyModulePath}`);
-      return import(legacyModulePath);
-    }
-  }
-  
-  // If we get here, versions are equal, use the latest module
-  console.log(`Using latest widget: ${latestModulePath}`);
-  return import(latestModulePath);
-}
-
 export function hideWidgetForGood(node, widget, suffix = "") {
   widget.origType = widget.type;
   widget.origComputeSize = widget.computeSize;
@@ -122,11 +95,6 @@ export function hideWidgetForGood(node, widget, suffix = "") {
       hideWidgetForGood(node, w, `:${widget.name}`);
     }
   }
-}
-
-// Function to get the appropriate loras widget based on ComfyUI version
-export async function getLorasWidgetModule() {
-  return await dynamicImportByVersion("./loras_widget.js", "./legacy_loras_widget.js");
 }
 
 // Update pattern to match both formats: <lora:name:model_strength> or <lora:name:model_strength:clip_strength>

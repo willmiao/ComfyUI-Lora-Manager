@@ -1,11 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
-import { CONVERTED_TYPE, dynamicImportByVersion } from "./utils.js";
-
-// Function to get the appropriate tags widget based on ComfyUI version
-async function getTagsWidgetModule() {
-    return await dynamicImportByVersion("./tags_widget.js", "./legacy_tags_widget.js");
-}
+import { CONVERTED_TYPE } from "./utils.js";
+import { addTagsWidget } from "./tags_widget.js";
 
 // TriggerWordToggle extension for ComfyUI
 app.registerExtension({
@@ -30,10 +26,6 @@ app.registerExtension({
 
             // Wait for node to be properly initialized
             requestAnimationFrame(async () => {
-                // Dynamically import the appropriate tags widget module
-                const tagsModule = await getTagsWidgetModule();
-                const { addTagsWidget } = tagsModule;
-                
                 // Get the widget object directly from the returned object
                 const result = addTagsWidget(node, "toggle_trigger_words", {
                     defaultVal: []
