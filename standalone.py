@@ -2,7 +2,7 @@ from pathlib import Path
 import os
 import sys
 import json
-from middleware.cache_middleware import cache_control
+from py.middleware.cache_middleware import cache_control
 
 # Create mock modules for py/nodes directory - add this before any other imports
 def mock_nodes_directory():
