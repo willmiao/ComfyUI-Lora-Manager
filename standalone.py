@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 import sys
 import json
+from middleware.cache_middleware import cache_control
 
 # Create mock modules for py/nodes directory - add this before any other imports
 def mock_nodes_directory():
@@ -129,7 +130,7 @@ class StandaloneServer:
     """Server implementation for standalone mode"""
     
     def __init__(self):
-        self.app = web.Application(logger=logger)
+        self.app = web.Application(logger=logger, middlewares=[cache_control])
         self.instance = self  # Make it compatible with PromptServer.instance pattern
         
         # Ensure the app's access logger is configured to reduce verbosity
