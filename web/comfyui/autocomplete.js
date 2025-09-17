@@ -47,8 +47,6 @@ class AutoComplete {
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             display: none;
-            font-family: Arial, sans-serif;
-            font-size: 14px;
             min-width: 200px;
             width: auto;
             backdrop-filter: blur(8px);
