@@ -40,11 +40,11 @@ class EmbeddingRoutes(BaseModelRoutes):
     
     def _validate_civitai_model_type(self, model_type: str) -> bool:
         """Validate CivitAI model type for Embedding"""
-        return model_type.lower() in ['textualinversion', 'embedding']
+        return model_type.lower() == 'textualinversion'
     
     def _get_expected_model_types(self) -> str:
         """Get expected model types string for error messages"""
-        return "TextualInversion/Embedding"
+        return "TextualInversion"
     
     async def get_embedding_info(self, request: web.Request) -> web.Response:
         """Get detailed information for a specific embedding by name"""

@@ -224,6 +224,7 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
                 
             model_data = json.loads(model_row['data'])
             model_type = model_row['type']
+            model_name = model_row['name']
             
             # Get all versions for this model
             versions_query = """
@@ -260,7 +261,8 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
                 
             return {
                 'modelVersions': model_versions,
-                'type': model_type
+                'type': model_type,
+                'name': model_name
             }
     
     async def get_model_version(self, model_id: int = None, version_id: int = None) -> Optional[Dict]:

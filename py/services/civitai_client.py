@@ -122,7 +122,8 @@ class CivitaiClient:
                 # Also return model type along with versions
                 return {
                     'modelVersions': result.get('modelVersions', []),
-                    'type': result.get('type', '')
+                    'type': result.get('type', ''),
+                    'name': result.get('name', '')
                 }
             return None
         except Exception as e:
