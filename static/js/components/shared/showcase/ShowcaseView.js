@@ -29,7 +29,7 @@ export async function loadExampleImages(images, modelHash) {
         let localFiles = [];
 
         try {
-            const endpoint = '/api/example-image-files';
+            const endpoint = '/api/lm/example-image-files';
             const params = `model_hash=${modelHash}`;
             
             const response = await fetch(`${endpoint}?${params}`);
@@ -374,7 +374,7 @@ async function handleImportFiles(files, modelHash, importContainer) {
         });
         
         // Call API to import files
-        const response = await fetch('/api/import-example-images', {
+        const response = await fetch('/api/lm/import-example-images', {
             method: 'POST',
             body: formData
         });
@@ -386,7 +386,7 @@ async function handleImportFiles(files, modelHash, importContainer) {
         }
         
         // Get updated local files
-        const updatedFilesResponse = await fetch(`/api/example-image-files?model_hash=${modelHash}`);
+        const updatedFilesResponse = await fetch(`/api/lm/example-image-files?model_hash=${modelHash}`);
         const updatedFilesResult = await updatedFilesResponse.json();
         
         if (!updatedFilesResult.success) {

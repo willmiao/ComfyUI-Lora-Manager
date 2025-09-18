@@ -172,7 +172,7 @@ export class ExampleImagesManager {
     
     async checkDownloadStatus() {
         try {
-            const response = await fetch('/api/example-images-status');
+            const response = await fetch('/api/lm/example-images-status');
             const data = await response.json();
             
             if (data.success) {
@@ -236,7 +236,7 @@ export class ExampleImagesManager {
             
             const optimize = state.global.settings.optimizeExampleImages;
             
-            const response = await fetch('/api/download-example-images', {
+            const response = await fetch('/api/lm/download-example-images', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -278,7 +278,7 @@ export class ExampleImagesManager {
         }
         
         try {
-            const response = await fetch('/api/pause-example-images', {
+            const response = await fetch('/api/lm/pause-example-images', {
                 method: 'POST'
             });
             
@@ -314,7 +314,7 @@ export class ExampleImagesManager {
         }
         
         try {
-            const response = await fetch('/api/resume-example-images', {
+            const response = await fetch('/api/lm/resume-example-images', {
                 method: 'POST'
             });
             
@@ -358,7 +358,7 @@ export class ExampleImagesManager {
     
     async updateProgress() {
         try {
-            const response = await fetch('/api/example-images-status');
+            const response = await fetch('/api/lm/example-images-status');
             const data = await response.json();
             
             if (data.success) {
@@ -727,7 +727,7 @@ export class ExampleImagesManager {
             const outputDir = document.getElementById('exampleImagesPath').value;
             const optimize = state.global.settings.optimizeExampleImages;
             
-            const response = await fetch('/api/download-example-images', {
+            const response = await fetch('/api/lm/download-example-images', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

@@ -55,48 +55,48 @@ export function getApiEndpoints(modelType) {
     
     return {
         // Base CRUD operations
-        list: `/api/${modelType}/list`,
-        delete: `/api/${modelType}/delete`,
-        exclude: `/api/${modelType}/exclude`,
-        rename: `/api/${modelType}/rename`,
-        save: `/api/${modelType}/save-metadata`,
+        list: `/api/lm/${modelType}/list`,
+        delete: `/api/lm/${modelType}/delete`,
+        exclude: `/api/lm/${modelType}/exclude`,
+        rename: `/api/lm/${modelType}/rename`,
+        save: `/api/lm/${modelType}/save-metadata`,
         
         // Bulk operations
-        bulkDelete: `/api/${modelType}/bulk-delete`,
+        bulkDelete: `/api/lm/${modelType}/bulk-delete`,
         
         // Tag operations
-        addTags: `/api/${modelType}/add-tags`,
+        addTags: `/api/lm/${modelType}/add-tags`,
 
         // Move operations (now common for all model types that support move)
-        moveModel: `/api/${modelType}/move_model`,
-        moveBulk: `/api/${modelType}/move_models_bulk`,
+        moveModel: `/api/lm/${modelType}/move_model`,
+        moveBulk: `/api/lm/${modelType}/move_models_bulk`,
         
         // CivitAI integration
-        fetchCivitai: `/api/${modelType}/fetch-civitai`,
-        fetchAllCivitai: `/api/${modelType}/fetch-all-civitai`,
-        relinkCivitai: `/api/${modelType}/relink-civitai`,
-        civitaiVersions: `/api/${modelType}/civitai/versions`,
+        fetchCivitai: `/api/lm/${modelType}/fetch-civitai`,
+        fetchAllCivitai: `/api/lm/${modelType}/fetch-all-civitai`,
+        relinkCivitai: `/api/lm/${modelType}/relink-civitai`,
+        civitaiVersions: `/api/lm/${modelType}/civitai/versions`,
         
         // Preview management
-        replacePreview: `/api/${modelType}/replace-preview`,
+        replacePreview: `/api/lm/${modelType}/replace-preview`,
         
         // Query operations
-        scan: `/api/${modelType}/scan`,
-        topTags: `/api/${modelType}/top-tags`,
-        baseModels: `/api/${modelType}/base-models`,
-        roots: `/api/${modelType}/roots`,
-        folders: `/api/${modelType}/folders`,
-        folderTree: `/api/${modelType}/folder-tree`,
-        unifiedFolderTree: `/api/${modelType}/unified-folder-tree`,
-        duplicates: `/api/${modelType}/find-duplicates`,
-        conflicts: `/api/${modelType}/find-filename-conflicts`,
-        verify: `/api/${modelType}/verify-duplicates`,
-        metadata: `/api/${modelType}/metadata`,
-        modelDescription: `/api/${modelType}/model-description`,
+        scan: `/api/lm/${modelType}/scan`,
+        topTags: `/api/lm/${modelType}/top-tags`,
+        baseModels: `/api/lm/${modelType}/base-models`,
+        roots: `/api/lm/${modelType}/roots`,
+        folders: `/api/lm/${modelType}/folders`,
+        folderTree: `/api/lm/${modelType}/folder-tree`,
+        unifiedFolderTree: `/api/lm/${modelType}/unified-folder-tree`,
+        duplicates: `/api/lm/${modelType}/find-duplicates`,
+        conflicts: `/api/lm/${modelType}/find-filename-conflicts`,
+        verify: `/api/lm/${modelType}/verify-duplicates`,
+        metadata: `/api/lm/${modelType}/metadata`,
+        modelDescription: `/api/lm/${modelType}/model-description`,
         
         // Auto-organize operations
-        autoOrganize: `/api/${modelType}/auto-organize`,
-        autoOrganizeProgress: `/api/${modelType}/auto-organize-progress`,
+        autoOrganize: `/api/lm/${modelType}/auto-organize`,
+        autoOrganizeProgress: `/api/lm/${modelType}/auto-organize-progress`,
         
         // Model-specific endpoints (will be merged with specific configs)
         specific: {}
@@ -108,24 +108,24 @@ export function getApiEndpoints(modelType) {
  */
 export const MODEL_SPECIFIC_ENDPOINTS = {
     [MODEL_TYPES.LORA]: {
-        letterCounts: `/api/${MODEL_TYPES.LORA}/letter-counts`,
-        notes: `/api/${MODEL_TYPES.LORA}/get-notes`,
-        triggerWords: `/api/${MODEL_TYPES.LORA}/get-trigger-words`,
-        previewUrl: `/api/${MODEL_TYPES.LORA}/preview-url`,
-        civitaiUrl: `/api/${MODEL_TYPES.LORA}/civitai-url`,
-        metadata: `/api/${MODEL_TYPES.LORA}/metadata`,
-        getTriggerWordsPost: `/api/${MODEL_TYPES.LORA}/get_trigger_words`,
-        civitaiModelByVersion: `/api/${MODEL_TYPES.LORA}/civitai/model/version`,
-        civitaiModelByHash: `/api/${MODEL_TYPES.LORA}/civitai/model/hash`,
+        letterCounts: `/api/lm/${MODEL_TYPES.LORA}/letter-counts`,
+        notes: `/api/lm/${MODEL_TYPES.LORA}/get-notes`,
+        triggerWords: `/api/lm/${MODEL_TYPES.LORA}/get-trigger-words`,
+        previewUrl: `/api/lm/${MODEL_TYPES.LORA}/preview-url`,
+        civitaiUrl: `/api/lm/${MODEL_TYPES.LORA}/civitai-url`,
+        metadata: `/api/lm/${MODEL_TYPES.LORA}/metadata`,
+        getTriggerWordsPost: `/api/lm/${MODEL_TYPES.LORA}/get_trigger_words`,
+        civitaiModelByVersion: `/api/lm/${MODEL_TYPES.LORA}/civitai/model/version`,
+        civitaiModelByHash: `/api/lm/${MODEL_TYPES.LORA}/civitai/model/hash`,
     },
     [MODEL_TYPES.CHECKPOINT]: {
-        info: `/api/${MODEL_TYPES.CHECKPOINT}/info`,
-        checkpoints_roots: `/api/${MODEL_TYPES.CHECKPOINT}/checkpoints_roots`,
-        unet_roots: `/api/${MODEL_TYPES.CHECKPOINT}/unet_roots`,
-        metadata: `/api/${MODEL_TYPES.CHECKPOINT}/metadata`,
+        info: `/api/lm/${MODEL_TYPES.CHECKPOINT}/info`,
+        checkpoints_roots: `/api/lm/${MODEL_TYPES.CHECKPOINT}/checkpoints_roots`,
+        unet_roots: `/api/lm/${MODEL_TYPES.CHECKPOINT}/unet_roots`,
+        metadata: `/api/lm/${MODEL_TYPES.CHECKPOINT}/metadata`,
     },
     [MODEL_TYPES.EMBEDDING]: {
-        metadata: `/api/${MODEL_TYPES.EMBEDDING}/metadata`,
+        metadata: `/api/lm/${MODEL_TYPES.EMBEDDING}/metadata`,
     }
 };
 
@@ -173,11 +173,11 @@ export function getCurrentModelType(explicitType = null) {
 
 // Download API endpoints (shared across all model types)
 export const DOWNLOAD_ENDPOINTS = {
-    download: '/api/download-model',
-    downloadGet: '/api/download-model-get',
-    cancelGet: '/api/cancel-download-get',
-    progress: '/api/download-progress',
-    exampleImages: '/api/force-download-example-images' // New endpoint for downloading example images
+    download: '/api/lm/download-model',
+    downloadGet: '/api/lm/download-model-get',
+    cancelGet: '/api/lm/cancel-download-get',
+    progress: '/api/lm/download-progress',
+    exampleImages: '/api/lm/force-download-example-images' // New endpoint for downloading example images
 };
 
 // WebSocket endpoints

@@ -370,7 +370,7 @@ export function copyLoraSyntax(card) {
 export async function sendLoraToWorkflow(loraSyntax, replaceMode = false, syntaxType = 'lora') {
   try {
     // Get registry information from the new endpoint
-    const registryResponse = await fetch('/api/get-registry');
+    const registryResponse = await fetch('/api/lm/get-registry');
     const registryData = await registryResponse.json();
     
     if (!registryData.success) {
@@ -417,7 +417,7 @@ export async function sendLoraToWorkflow(loraSyntax, replaceMode = false, syntax
 async function sendToSpecificNode(nodeIds, loraSyntax, replaceMode, syntaxType) {
   try {
     // Call the backend API to update the lora code
-    const response = await fetch('/api/update-lora-code', {
+    const response = await fetch('/api/lm/update-lora-code', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -676,7 +676,7 @@ initializeMouseTracking();
  */
 export async function openExampleImagesFolder(modelHash) {
   try {
-    const response = await fetch('/api/open-example-images-folder', {
+    const response = await fetch('/api/lm/open-example-images-folder', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

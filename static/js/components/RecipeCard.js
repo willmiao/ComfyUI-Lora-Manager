@@ -203,7 +203,7 @@ class RecipeCard {
                 return;
             }
 
-            fetch(`/api/recipe/${recipeId}/syntax`)
+            fetch(`/api/lm/recipe/${recipeId}/syntax`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.syntax) {
@@ -299,7 +299,7 @@ class RecipeCard {
         deleteBtn.disabled = true;
         
         // Call API to delete the recipe
-        fetch(`/api/recipe/${recipeId}`, {
+        fetch(`/api/lm/recipe/${recipeId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
@@ -341,7 +341,7 @@ class RecipeCard {
             showToast('toast.recipes.preparingForSharing', {}, 'info');
             
             // Call the API to process the image with metadata
-            fetch(`/api/recipe/${recipeId}/share`)
+            fetch(`/api/lm/recipe/${recipeId}/share`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Failed to prepare recipe for sharing');

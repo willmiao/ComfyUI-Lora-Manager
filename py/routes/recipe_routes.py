@@ -61,46 +61,46 @@ class RecipeRoutes:
         routes = cls()
         app.router.add_get('/loras/recipes', routes.handle_recipes_page)
 
-        app.router.add_get('/api/recipes', routes.get_recipes)
-        app.router.add_get('/api/recipe/{recipe_id}', routes.get_recipe_detail)
-        app.router.add_post('/api/recipes/analyze-image', routes.analyze_recipe_image)
-        app.router.add_post('/api/recipes/analyze-local-image', routes.analyze_local_image)
-        app.router.add_post('/api/recipes/save', routes.save_recipe)
-        app.router.add_delete('/api/recipe/{recipe_id}', routes.delete_recipe)
+        app.router.add_get('/api/lm/recipes', routes.get_recipes)
+        app.router.add_get('/api/lm/recipe/{recipe_id}', routes.get_recipe_detail)
+        app.router.add_post('/api/lm/recipes/analyze-image', routes.analyze_recipe_image)
+        app.router.add_post('/api/lm/recipes/analyze-local-image', routes.analyze_local_image)
+        app.router.add_post('/api/lm/recipes/save', routes.save_recipe)
+        app.router.add_delete('/api/lm/recipe/{recipe_id}', routes.delete_recipe)
         
         # Add new filter-related endpoints
-        app.router.add_get('/api/recipes/top-tags', routes.get_top_tags)
-        app.router.add_get('/api/recipes/base-models', routes.get_base_models)
+        app.router.add_get('/api/lm/recipes/top-tags', routes.get_top_tags)
+        app.router.add_get('/api/lm/recipes/base-models', routes.get_base_models)
         
         # Add new sharing endpoints
-        app.router.add_get('/api/recipe/{recipe_id}/share', routes.share_recipe)
-        app.router.add_get('/api/recipe/{recipe_id}/share/download', routes.download_shared_recipe)
+        app.router.add_get('/api/lm/recipe/{recipe_id}/share', routes.share_recipe)
+        app.router.add_get('/api/lm/recipe/{recipe_id}/share/download', routes.download_shared_recipe)
         
         # Add new endpoint for getting recipe syntax
-        app.router.add_get('/api/recipe/{recipe_id}/syntax', routes.get_recipe_syntax)
+        app.router.add_get('/api/lm/recipe/{recipe_id}/syntax', routes.get_recipe_syntax)
         
         # Add new endpoint for updating recipe metadata (name, tags and source_path)
-        app.router.add_put('/api/recipe/{recipe_id}/update', routes.update_recipe)
+        app.router.add_put('/api/lm/recipe/{recipe_id}/update', routes.update_recipe)
         
         # Add new endpoint for reconnecting deleted LoRAs
-        app.router.add_post('/api/recipe/lora/reconnect', routes.reconnect_lora)
+        app.router.add_post('/api/lm/recipe/lora/reconnect', routes.reconnect_lora)
         
         # Add new endpoint for finding duplicate recipes
-        app.router.add_get('/api/recipes/find-duplicates', routes.find_duplicates)
+        app.router.add_get('/api/lm/recipes/find-duplicates', routes.find_duplicates)
         
         # Add new endpoint for bulk deletion of recipes
-        app.router.add_post('/api/recipes/bulk-delete', routes.bulk_delete)
+        app.router.add_post('/api/lm/recipes/bulk-delete', routes.bulk_delete)
         
         # Start cache initialization
         app.on_startup.append(routes._init_cache)
         
-        app.router.add_post('/api/recipes/save-from-widget', routes.save_recipe_from_widget)
+        app.router.add_post('/api/lm/recipes/save-from-widget', routes.save_recipe_from_widget)
         
         # Add route to get recipes for a specific Lora
-        app.router.add_get('/api/recipes/for-lora', routes.get_recipes_for_lora)
+        app.router.add_get('/api/lm/recipes/for-lora', routes.get_recipes_for_lora)
         
         # Add new endpoint for scanning and rebuilding the recipe cache
-        app.router.add_get('/api/recipes/scan', routes.scan_recipes)
+        app.router.add_get('/api/lm/recipes/scan', routes.scan_recipes)
     
     async def _init_cache(self, app):
         """Initialize cache on startup"""

@@ -169,7 +169,7 @@ class InitializationManager {
      */
     pollProgress() {
         const checkProgress = () => {
-            fetch('/api/init-status')
+            fetch('/api/lm/init-status')
                 .then(response => response.json())
                 .then(data => {
                     this.handleProgressUpdate(data);

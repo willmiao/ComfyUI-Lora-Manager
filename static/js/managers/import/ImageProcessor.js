@@ -62,7 +62,7 @@ export class ImageProcessor {
     async analyzeImageFromUrl(url) {
         try {
             // Call the API with URL data
-            const response = await fetch('/api/recipes/analyze-image', {
+            const response = await fetch('/api/lm/recipes/analyze-image', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -110,7 +110,7 @@ export class ImageProcessor {
     async analyzeImageFromLocalPath(path) {
         try {
             // Call the API with local path data
-            const response = await fetch('/api/recipes/analyze-local-image', {
+            const response = await fetch('/api/lm/recipes/analyze-local-image', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -169,7 +169,7 @@ export class ImageProcessor {
             formData.append('image', this.importManager.recipeImage);
             
             // Upload image for analysis
-            const response = await fetch('/api/recipes/analyze-image', {
+            const response = await fetch('/api/lm/recipes/analyze-image', {
                 method: 'POST',
                 body: formData
             });

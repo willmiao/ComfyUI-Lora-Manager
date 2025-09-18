@@ -38,7 +38,7 @@ app.registerExtension({
     async updateUsageStats(promptId) {
         try {
             // Call backend endpoint with the prompt_id
-            const response = await fetch(`/api/update-usage-stats`, {
+            const response = await fetch(`/api/lm/update-usage-stats`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ app.registerExtension({
                 }
             }
 
-            const response = await fetch('/api/register-nodes', {
+            const response = await fetch('/api/lm/register-nodes', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -158,7 +158,7 @@ app.registerExtension({
         
         try {
             // Search for current relative path
-            const response = await api.fetchApi(`/${modelType}/relative-paths?search=${encodeURIComponent(fileName)}&limit=2`);
+            const response = await api.fetchApi(`/lm/${modelType}/relative-paths?search=${encodeURIComponent(fileName)}&limit=2`);
             const data = await response.json();
             
             if (!data.success || !data.relative_paths || data.relative_paths.length === 0) {

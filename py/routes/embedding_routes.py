@@ -36,7 +36,7 @@ class EmbeddingRoutes(BaseModelRoutes):
     def setup_specific_routes(self, app: web.Application, prefix: str):
         """Setup Embedding-specific routes"""
         # Embedding info by name
-        app.router.add_get(f'/api/{prefix}/info/{{name}}', self.get_embedding_info)
+        app.router.add_get(f'/api/lm/{prefix}/info/{{name}}', self.get_embedding_info)
     
     def _validate_civitai_model_type(self, model_type: str) -> bool:
         """Validate CivitAI model type for Embedding"""

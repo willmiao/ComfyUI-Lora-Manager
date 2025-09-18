@@ -97,7 +97,7 @@ export class UpdateService {
         
         try {
             // Call backend API to check for updates with nightly flag
-            const response = await fetch(`/api/check-updates?nightly=${this.nightlyMode}`);
+            const response = await fetch(`/api/lm/check-updates?nightly=${this.nightlyMode}`);
             const data = await response.json();
             
             if (data.success) {
@@ -280,7 +280,7 @@ export class UpdateService {
             // Update progress
             this.updateProgress(10, translate('update.updateProgress.preparing'));
             
-            const response = await fetch('/api/perform-update', {
+            const response = await fetch('/api/lm/perform-update', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -444,7 +444,7 @@ export class UpdateService {
     async checkVersionInfo() {
         try {
             // Call API to get current version info
-            const response = await fetch('/api/version-info');
+            const response = await fetch('/api/lm/version-info');
             const data = await response.json();
             
             if (data.success) {

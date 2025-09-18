@@ -37,11 +37,11 @@ class CheckpointRoutes(BaseModelRoutes):
     def setup_specific_routes(self, app: web.Application, prefix: str):
         """Setup Checkpoint-specific routes"""
         # Checkpoint info by name
-        app.router.add_get(f'/api/{prefix}/info/{{name}}', self.get_checkpoint_info)
+        app.router.add_get(f'/api/lm/{prefix}/info/{{name}}', self.get_checkpoint_info)
         
         # Checkpoint roots and Unet roots
-        app.router.add_get(f'/api/{prefix}/checkpoints_roots', self.get_checkpoints_roots)
-        app.router.add_get(f'/api/{prefix}/unet_roots', self.get_unet_roots)
+        app.router.add_get(f'/api/lm/{prefix}/checkpoints_roots', self.get_checkpoints_roots)
+        app.router.add_get(f'/api/lm/{prefix}/unet_roots', self.get_unet_roots)
     
     def _validate_civitai_model_type(self, model_type: str) -> bool:
         """Validate CivitAI model type for Checkpoint"""

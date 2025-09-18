@@ -100,7 +100,7 @@ export class FolderBrowser {
             }
             
             // Fetch LoRA roots
-            const rootsResponse = await fetch('/api/loras/roots');
+            const rootsResponse = await fetch('/api/lm/loras/roots');
             if (!rootsResponse.ok) {
                 throw new Error(`Failed to fetch LoRA roots: ${rootsResponse.status}`);
             }
@@ -120,7 +120,7 @@ export class FolderBrowser {
             }
             
             // Fetch folders
-            const foldersResponse = await fetch('/api/loras/folders');
+            const foldersResponse = await fetch('/api/lm/loras/folders');
             if (!foldersResponse.ok) {
                 throw new Error(`Failed to fetch folders: ${foldersResponse.status}`);
             }

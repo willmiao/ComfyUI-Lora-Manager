@@ -46,7 +46,7 @@ export class AlphabetBar {
      */
     async fetchLetterCounts() {
         try {
-            const response = await fetch('/api/loras/letter-counts');
+            const response = await fetch('/api/lm/loras/letter-counts');
             
             if (!response.ok) {
                 throw new Error(`Failed to fetch letter counts: ${response.statusText}`);

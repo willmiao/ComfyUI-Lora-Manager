@@ -186,7 +186,7 @@ async function handleExampleImagesAccess(card, modelType) {
     const modelHash = card.dataset.sha256;
     
     try {
-        const response = await fetch(`/api/has-example-images?model_hash=${modelHash}`);
+        const response = await fetch(`/api/lm/has-example-images?model_hash=${modelHash}`);
         const data = await response.json();
         
         if (data.has_images) {

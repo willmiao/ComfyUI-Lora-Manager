@@ -65,12 +65,12 @@ class StatisticsManager {
                 storageAnalytics,
                 insights
             ] = await Promise.all([
-                this.fetchData('/api/stats/collection-overview'),
-                this.fetchData('/api/stats/usage-analytics'),
-                this.fetchData('/api/stats/base-model-distribution'),
-                this.fetchData('/api/stats/tag-analytics'),
-                this.fetchData('/api/stats/storage-analytics'),
-                this.fetchData('/api/stats/insights')
+                this.fetchData('/api/lm/stats/collection-overview'),
+                this.fetchData('/api/lm/stats/usage-analytics'),
+                this.fetchData('/api/lm/stats/base-model-distribution'),
+                this.fetchData('/api/lm/stats/tag-analytics'),
+                this.fetchData('/api/lm/stats/storage-analytics'),
+                this.fetchData('/api/lm/stats/insights')
             ]);
 
             this.data = {

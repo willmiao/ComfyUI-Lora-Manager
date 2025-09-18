@@ -48,7 +48,7 @@ export class ModelDuplicatesManager {
     // Method to check for duplicates count using existing endpoint
     async checkDuplicatesCount() {
         try {
-            const endpoint = `/api/${this.modelType}/find-duplicates`;
+            const endpoint = `/api/lm/${this.modelType}/find-duplicates`;
             const response = await fetch(endpoint);
             
             if (!response.ok) {
@@ -104,7 +104,7 @@ export class ModelDuplicatesManager {
     async findDuplicates() {
         try {
             // Determine API endpoint based on model type
-            const endpoint = `/api/${this.modelType}/find-duplicates`;
+            const endpoint = `/api/lm/${this.modelType}/find-duplicates`;
             
             const response = await fetch(endpoint);
             if (!response.ok) {
@@ -623,7 +623,7 @@ export class ModelDuplicatesManager {
             const filePaths = Array.from(this.selectedForDeletion);
             
             // Call API to bulk delete
-            const response = await fetch(`/api/${this.modelType}/bulk-delete`, {
+            const response = await fetch(`/api/lm/${this.modelType}/bulk-delete`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -648,7 +648,7 @@ export class ModelDuplicatesManager {
                 
                 // Check if there are still duplicates
                 try {
-                    const endpoint = `/api/${this.modelType}/find-duplicates`;
+                    const endpoint = `/api/lm/${this.modelType}/find-duplicates`;
                     const dupResponse = await fetch(endpoint);
                     
                     if (!dupResponse.ok) {
@@ -756,7 +756,7 @@ export class ModelDuplicatesManager {
             const filePaths = group.models.map(model => model.file_path);
             
             // Make API request to verify hashes
-            const response = await fetch(`/api/${this.modelType}/verify-duplicates`, {
+            const response = await fetch(`/api/lm/${this.modelType}/verify-duplicates`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

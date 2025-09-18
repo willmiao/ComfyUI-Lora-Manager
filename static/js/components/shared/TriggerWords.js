@@ -14,7 +14,7 @@ import { getModelApiClient } from '../../api/modelApiFactory.js';
  */
 async function fetchTrainedWords(filePath) {
     try {
-        const response = await fetch(`/api/trained-words?file_path=${encodeURIComponent(filePath)}`);
+        const response = await fetch(`/api/lm/trained-words?file_path=${encodeURIComponent(filePath)}`);
         const data = await response.json();
         
         if (data.success) {

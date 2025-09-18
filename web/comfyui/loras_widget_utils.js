@@ -70,7 +70,7 @@ export async function saveRecipeDirectly() {
     }
     
     // Send the request to the backend API
-    const response = await fetch('/api/recipes/save-from-widget', {
+    const response = await fetch('/api/lm/recipes/save-from-widget', {
       method: 'POST'
     });
     

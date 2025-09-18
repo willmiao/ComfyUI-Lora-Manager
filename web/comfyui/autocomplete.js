@@ -156,7 +156,7 @@ class AutoComplete {
     async search(term = '') {
         try {
             this.currentSearchTerm = term;
-            const response = await api.fetchApi(`/${this.modelType}/relative-paths?search=${encodeURIComponent(term)}&limit=${this.options.maxItems}`);
+            const response = await api.fetchApi(`/lm/${this.modelType}/relative-paths?search=${encodeURIComponent(term)}&limit=${this.options.maxItems}`);
             const data = await response.json();
             
             if (data.success && data.relative_paths && data.relative_paths.length > 0) {
@@ -383,7 +383,7 @@ class AutoComplete {
         // Get usage tips and extract strength
         let strength = 1.0; // Default strength
         try {
-            const response = await api.fetchApi(`/loras/usage-tips-by-path?relative_path=${encodeURIComponent(relativePath)}`);
+            const response = await api.fetchApi(`/lm/loras/usage-tips-by-path?relative_path=${encodeURIComponent(relativePath)}`);
             if (response.ok) {
                 const data = await response.json();
                 if (data.success && data.usage_tips) {

@@ -429,7 +429,7 @@ export class SettingsManager {
             if (!defaultLoraRootSelect) return;
             
             // Fetch lora roots
-            const response = await fetch('/api/loras/roots');
+            const response = await fetch('/api/lm/loras/roots');
             if (!response.ok) {
                 throw new Error('Failed to fetch LoRA roots');
             }
@@ -468,7 +468,7 @@ export class SettingsManager {
             if (!defaultCheckpointRootSelect) return;
             
             // Fetch checkpoint roots
-            const response = await fetch('/api/checkpoints/roots');
+            const response = await fetch('/api/lm/checkpoints/roots');
             if (!response.ok) {
                 throw new Error('Failed to fetch checkpoint roots');
             }
@@ -507,7 +507,7 @@ export class SettingsManager {
             if (!defaultEmbeddingRootSelect) return;
 
             // Fetch embedding roots
-            const response = await fetch('/api/embeddings/roots');
+            const response = await fetch('/api/lm/embeddings/roots');
             if (!response.ok) {
                 throw new Error('Failed to fetch embedding roots');
             }
@@ -1023,7 +1023,7 @@ export class SettingsManager {
 
     async updateMetadataArchiveStatus() {
         try {
-            const response = await fetch('/api/metadata-archive-status');
+            const response = await fetch('/api/lm/metadata-archive-status');
             const data = await response.json();
 
             const statusContainer = document.getElementById('metadataArchiveStatus');
@@ -1152,7 +1152,7 @@ export class SettingsManager {
             // Wait for WebSocket to be ready
             await wsReady;
 
-            const response = await fetch(`/api/download-metadata-archive?download_id=${encodeURIComponent(actualDownloadId)}`, {
+            const response = await fetch(`/api/lm/download-metadata-archive?download_id=${encodeURIComponent(actualDownloadId)}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1215,7 +1215,7 @@ export class SettingsManager {
                 removeBtn.textContent = translate('settings.metadataArchive.removingButton');
             }
 
-            const response = await fetch('/api/remove-metadata-archive', {
+            const response = await fetch('/api/lm/remove-metadata-archive', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

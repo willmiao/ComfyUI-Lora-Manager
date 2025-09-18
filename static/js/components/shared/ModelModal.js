@@ -460,7 +460,7 @@ async function saveNotes(filePath) {
  */
 async function openFileLocation(filePath) {
     try {
-        const resp = await fetch('/api/open-file-location', {
+        const resp = await fetch('/api/lm/open-file-location', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 'file_path': filePath })

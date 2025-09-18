@@ -17,9 +17,9 @@ class UpdateRoutes:
     @staticmethod
     def setup_routes(app):
         """Register update check routes"""
-        app.router.add_get('/api/check-updates', UpdateRoutes.check_updates)
-        app.router.add_get('/api/version-info', UpdateRoutes.get_version_info)
-        app.router.add_post('/api/perform-update', UpdateRoutes.perform_update)
+        app.router.add_get('/api/lm/check-updates', UpdateRoutes.check_updates)
+        app.router.add_get('/api/lm/version-info', UpdateRoutes.get_version_info)
+        app.router.add_post('/api/lm/perform-update', UpdateRoutes.perform_update)
     
     @staticmethod
     async def check_updates(request):

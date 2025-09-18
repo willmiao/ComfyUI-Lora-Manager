@@ -40,12 +40,12 @@ class LoraRoutes(BaseModelRoutes):
     def setup_specific_routes(self, app: web.Application, prefix: str):
         """Setup LoRA-specific routes"""
         # LoRA-specific query routes
-        app.router.add_get(f'/api/{prefix}/letter-counts', self.get_letter_counts)
-        app.router.add_get(f'/api/{prefix}/get-trigger-words', self.get_lora_trigger_words)
-        app.router.add_get(f'/api/{prefix}/usage-tips-by-path', self.get_lora_usage_tips_by_path)
+        app.router.add_get(f'/api/lm/{prefix}/letter-counts', self.get_letter_counts)
+        app.router.add_get(f'/api/lm/{prefix}/get-trigger-words', self.get_lora_trigger_words)
+        app.router.add_get(f'/api/lm/{prefix}/usage-tips-by-path', self.get_lora_usage_tips_by_path)
         
         # ComfyUI integration
-        app.router.add_post(f'/api/{prefix}/get_trigger_words', self.get_trigger_words)
+        app.router.add_post(f'/api/lm/{prefix}/get_trigger_words', self.get_trigger_words)
     
     def _parse_specific_params(self, request: web.Request) -> Dict:
         """Parse LoRA-specific parameters"""

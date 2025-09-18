@@ -91,37 +91,37 @@ class MiscRoutes:
         app.router.add_get('/api/lm/settings', MiscRoutes.get_settings)
         app.router.add_post('/api/lm/settings', MiscRoutes.update_settings)
 
-        app.router.add_get('/api/health-check', lambda request: web.json_response({'status': 'ok'}))
+        app.router.add_get('/api/lm/health-check', lambda request: web.json_response({'status': 'ok'}))
 
-        app.router.add_post('/api/open-file-location', MiscRoutes.open_file_location)
+        app.router.add_post('/api/lm/open-file-location', MiscRoutes.open_file_location)
 
         # Usage stats routes
-        app.router.add_post('/api/update-usage-stats', MiscRoutes.update_usage_stats)
-        app.router.add_get('/api/get-usage-stats', MiscRoutes.get_usage_stats)
+        app.router.add_post('/api/lm/update-usage-stats', MiscRoutes.update_usage_stats)
+        app.router.add_get('/api/lm/get-usage-stats', MiscRoutes.get_usage_stats)
         
         # Lora code update endpoint
-        app.router.add_post('/api/update-lora-code', MiscRoutes.update_lora_code)
+        app.router.add_post('/api/lm/update-lora-code', MiscRoutes.update_lora_code)
 
         # Add new route for getting trained words
-        app.router.add_get('/api/trained-words', MiscRoutes.get_trained_words)
+        app.router.add_get('/api/lm/trained-words', MiscRoutes.get_trained_words)
         
         # Add new route for getting model example files
-        app.router.add_get('/api/model-example-files', MiscRoutes.get_model_example_files)
+        app.router.add_get('/api/lm/model-example-files', MiscRoutes.get_model_example_files)
         
         # Node registry endpoints
-        app.router.add_post('/api/register-nodes', MiscRoutes.register_nodes)
-        app.router.add_get('/api/get-registry', MiscRoutes.get_registry)
+        app.router.add_post('/api/lm/register-nodes', MiscRoutes.register_nodes)
+        app.router.add_get('/api/lm/get-registry', MiscRoutes.get_registry)
         
         # Add new route for checking if a model exists in the library
-        app.router.add_get('/api/check-model-exists', MiscRoutes.check_model_exists)
+        app.router.add_get('/api/lm/check-model-exists', MiscRoutes.check_model_exists)
         
         # Add routes for metadata archive database management
-        app.router.add_post('/api/download-metadata-archive', MiscRoutes.download_metadata_archive)
-        app.router.add_post('/api/remove-metadata-archive', MiscRoutes.remove_metadata_archive)
-        app.router.add_get('/api/metadata-archive-status', MiscRoutes.get_metadata_archive_status)
+        app.router.add_post('/api/lm/download-metadata-archive', MiscRoutes.download_metadata_archive)
+        app.router.add_post('/api/lm/remove-metadata-archive', MiscRoutes.remove_metadata_archive)
+        app.router.add_get('/api/lm/metadata-archive-status', MiscRoutes.get_metadata_archive_status)
         
         # Add route for checking model versions in library
-        app.router.add_get('/api/model-versions-status', MiscRoutes.get_model_versions_status)
+        app.router.add_get('/api/lm/model-versions-status', MiscRoutes.get_model_versions_status)
 
     @staticmethod
     async def get_settings(request):

@@ -12,16 +12,16 @@ class ExampleImagesRoutes:
     @staticmethod
     def setup_routes(app):
         """Register example images routes"""
-        app.router.add_post('/api/download-example-images', ExampleImagesRoutes.download_example_images)
-        app.router.add_post('/api/import-example-images', ExampleImagesRoutes.import_example_images)
-        app.router.add_get('/api/example-images-status', ExampleImagesRoutes.get_example_images_status)
-        app.router.add_post('/api/pause-example-images', ExampleImagesRoutes.pause_example_images)
-        app.router.add_post('/api/resume-example-images', ExampleImagesRoutes.resume_example_images)
-        app.router.add_post('/api/open-example-images-folder', ExampleImagesRoutes.open_example_images_folder)
-        app.router.add_get('/api/example-image-files', ExampleImagesRoutes.get_example_image_files)
-        app.router.add_get('/api/has-example-images', ExampleImagesRoutes.has_example_images)
-        app.router.add_post('/api/delete-example-image', ExampleImagesRoutes.delete_example_image)
-        app.router.add_post('/api/force-download-example-images', ExampleImagesRoutes.force_download_example_images)
+        app.router.add_post('/api/lm/download-example-images', ExampleImagesRoutes.download_example_images)
+        app.router.add_post('/api/lm/import-example-images', ExampleImagesRoutes.import_example_images)
+        app.router.add_get('/api/lm/example-images-status', ExampleImagesRoutes.get_example_images_status)
+        app.router.add_post('/api/lm/pause-example-images', ExampleImagesRoutes.pause_example_images)
+        app.router.add_post('/api/lm/resume-example-images', ExampleImagesRoutes.resume_example_images)
+        app.router.add_post('/api/lm/open-example-images-folder', ExampleImagesRoutes.open_example_images_folder)
+        app.router.add_get('/api/lm/example-image-files', ExampleImagesRoutes.get_example_image_files)
+        app.router.add_get('/api/lm/has-example-images', ExampleImagesRoutes.has_example_images)
+        app.router.add_post('/api/lm/delete-example-image', ExampleImagesRoutes.delete_example_image)
+        app.router.add_post('/api/lm/force-download-example-images', ExampleImagesRoutes.force_download_example_images)
 
     @staticmethod
     async def download_example_images(request):
