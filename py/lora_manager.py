@@ -368,7 +368,7 @@ class LoraManager:
             
             total_folders_checked = 0
             empty_folders_removed = 0
-            invalid_hash_folders_removed = 0
+            orphaned_folders_removed = 0
             
             # Scan the example images directory
             try:
@@ -392,9 +392,8 @@ class LoraManager:
                             
                             # Check if folder name is a valid SHA256 hash (64 hex characters)
                             if len(folder_name) != 64 or not all(c in '0123456789abcdefABCDEF' for c in folder_name):
-                                logger.debug(f"Removing invalid hash folder: {folder_name}")
-                                await cls._remove_folder_safely(folder_path)
-                                invalid_hash_folders_removed += 1
+                                # Skip non-hash folders to avoid deleting other content
+                                logger.debug(f"Skipping non-hash folder: {folder_name}")
                                 continue
                             
                             # Check if hash exists in any of the scanners
@@ -407,7 +406,7 @@ class LoraManager:
                             if not hash_exists:
                                 logger.debug(f"Removing example images folder for deleted model: {folder_name}")
                                 await cls._remove_folder_safely(folder_path)
-                                invalid_hash_folders_removed += 1
+                                orphaned_folders_removed += 1
                                 continue
 
                         except Exception as e:
@@ -421,11 +420,11 @@ class LoraManager:
                 return
             
             # Log final cleanup report
-            total_removed = empty_folders_removed + invalid_hash_folders_removed
+            total_removed = empty_folders_removed + orphaned_folders_removed
             if total_removed > 0:
                 logger.info(f"Example images cleanup completed: checked {total_folders_checked} folders, "
-                           f"removed {empty_folders_removed} empty folders and {invalid_hash_folders_removed} "
-                           f"folders for deleted/invalid models (total: {total_removed} removed)")
+                           f"removed {empty_folders_removed} empty folders and {orphaned_folders_removed} "
+                           f"folders for deleted models (total: {total_removed} removed)")
             else:
                 logger.debug(f"Example images cleanup completed: checked {total_folders_checked} folders, "
                            f"no cleanup needed")
@@ -469,12 +468,6 @@ class LoraManager:
         """Cleanup resources using ServiceRegistry"""
         try:
             logger.info("LoRA Manager: Cleaning up services")
-                
-            # Close CivitaiClient gracefully
-            civitai_client = await ServiceRegistry.get_service("civitai_client")
-            if civitai_client:
-                await civitai_client.close()
-                logger.info("Closed CivitaiClient connection")
                 
         except Exception as e:
             logger.error(f"Error during cleanup: {e}", exc_info=True)
