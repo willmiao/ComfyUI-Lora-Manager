@@ -183,7 +183,7 @@ export function collectActiveLorasFromChain(node, visited = new Set()) {
 export function updateConnectedTriggerWords(node, loraNames) {
     const connectedNodeIds = getConnectedTriggerToggleNodes(node);
     if (connectedNodeIds.length > 0) {
-        fetch("/api/loras/get_trigger_words", {
+        fetch("/api/lm/loras/get_trigger_words", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
