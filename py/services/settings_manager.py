@@ -81,6 +81,7 @@ class SettingsManager:
         return {
             "civitai_api_key": "",
             "language": "en",
+            "show_only_sfw": False,  # Show only SFW content
             "enable_metadata_archive_db": False,  # Enable metadata archive database
             "proxy_enabled": False,  # Enable app-level proxy
             "proxy_host": "",  # Proxy host

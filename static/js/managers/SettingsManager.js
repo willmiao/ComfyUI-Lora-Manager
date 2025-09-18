@@ -43,7 +43,6 @@ export class SettingsManager {
         // Frontend-only settings that should be stored in localStorage
         const frontendOnlyKeys = [
             'blurMatureContent',
-            'show_only_sfw', 
             'autoplayOnHover',
             'displayDensity',
             'cardInfoDisplay',
@@ -132,6 +131,7 @@ export class SettingsManager {
             download_path_templates: { ...DEFAULT_PATH_TEMPLATES },
             enable_metadata_archive_db: false,
             language: 'en',
+            show_only_sfw: false,
             proxy_enabled: false,
             proxy_type: 'http',
             proxy_host: '',
@@ -161,7 +161,6 @@ export class SettingsManager {
         // Save only frontend-specific settings to localStorage
         const frontendOnlyKeys = [
             'blurMatureContent',
-            'show_only_sfw',
             'autoplayOnHover', 
             'displayDensity',
             'cardInfoDisplay',
@@ -189,6 +188,7 @@ export class SettingsManager {
             'download_path_templates',
             'enable_metadata_archive_db',
             'language',
+            'show_only_sfw',
             'proxy_enabled',
             'proxy_type',
             'proxy_host',
