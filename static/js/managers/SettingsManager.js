@@ -140,7 +140,7 @@ export class SettingsManager {
             proxy_password: '',
             example_images_path: '',
             optimizeExampleImages: true,
-            autoDownloadExampleImages: true
+            autoDownloadExampleImages: false
         };
 
         Object.keys(backendDefaults).forEach(key => {
@@ -972,10 +972,6 @@ export class SettingsManager {
                 await this.saveSetting('default_embedding_root', value);
             } else if (settingKey === 'display_density') {
                 await this.saveSetting('displayDensity', value);
-                
-                // Also update compactMode for backwards compatibility
-                state.global.settings.compactMode = (value !== 'default');
-                this.saveFrontendSettingsToStorage();
             } else if (settingKey === 'card_info_display') {
                 await this.saveSetting('cardInfoDisplay', value);
             } else if (settingKey === 'proxy_type') {

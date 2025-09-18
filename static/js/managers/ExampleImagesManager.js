@@ -100,9 +100,7 @@ export class ExampleImagesManager {
                     this.updateDownloadButtonState(hasPath);
                     try {
                         await settingsManager.saveSetting('example_images_path', pathInput.value);
-                        if (hasPath) {
                             showToast('toast.exampleImages.pathUpdated', {}, 'success');
-                        }
                     } catch (error) {
                         console.error('Failed to update example images path:', error);
                         showToast('toast.exampleImages.pathUpdateFailed', { message: error.message }, 'error');
@@ -227,13 +225,6 @@ export class ExampleImagesManager {
         }
         
         try {
-            const outputDir = document.getElementById('exampleImagesPath').value || '';
-            
-            if (!outputDir) {
-                showToast('toast.exampleImages.enterLocationFirst', {}, 'warning');
-                return;
-            }
-            
             const optimize = state.global.settings.optimizeExampleImages;
             
             const response = await fetch('/api/lm/download-example-images', {
@@ -242,7 +233,6 @@ export class ExampleImagesManager {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    output_dir: outputDir,
                     optimize: optimize,
                     model_types: ['lora', 'checkpoint', 'embedding'] // Example types, adjust as needed
                 })
@@ -691,9 +681,8 @@ export class ExampleImagesManager {
             return false;
         }
 
-        // Check if download path is set
-        const pathInput = document.getElementById('exampleImagesPath');
-        if (!pathInput || !pathInput.value.trim()) {
+        // Check if download path is set in settings
+        if (!state.global.settings.example_images_path) {
             return false;
         }
 
@@ -724,7 +713,6 @@ export class ExampleImagesManager {
         try {
             console.log('Performing auto download check...');
             
-            const outputDir = document.getElementById('exampleImagesPath').value;
             const optimize = state.global.settings.optimizeExampleImages;
             
             const response = await fetch('/api/lm/download-example-images', {
@@ -733,7 +721,6 @@ export class ExampleImagesManager {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    output_dir: outputDir,
                     optimize: optimize,
                     model_types: ['lora', 'checkpoint', 'embedding'],
                     auto_mode: true // Flag to indicate this is an automatic download

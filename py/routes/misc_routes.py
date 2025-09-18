@@ -4,6 +4,7 @@ import sys
 import threading
 import asyncio
 import subprocess
+import re
 from server import PromptServer # type: ignore
 from aiohttp import web
 from ..services.settings_manager import settings
@@ -84,6 +85,54 @@ node_registry = NodeRegistry()
 
 class MiscRoutes:
     """Miscellaneous routes for various utility functions"""
+    
+    @staticmethod
+    def is_dedicated_example_images_folder(folder_path):
+        """
+        Check if a folder is a dedicated example images folder.
+        
+        A dedicated folder should either be:
+        1. Empty
+        2. Only contain .download_progress.json file and/or folders with valid SHA256 hash names (64 hex characters)
+        
+        Args:
+            folder_path (str): Path to the folder to check
+            
+        Returns:
+            bool: True if the folder is dedicated, False otherwise
+        """
+        try:
+            if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
+                return False
+            
+            items = os.listdir(folder_path)
+            
+            # Empty folder is considered dedicated
+            if not items:
+                return True
+            
+            # Check each item in the folder
+            for item in items:
+                item_path = os.path.join(folder_path, item)
+                
+                # Allow .download_progress.json file
+                if item == '.download_progress.json' and os.path.isfile(item_path):
+                    continue
+                
+                # Allow folders with valid SHA256 hash names (64 hex characters)
+                if os.path.isdir(item_path):
+                    # Check if the folder name is a valid SHA256 hash
+                    if re.match(r'^[a-fA-F0-9]{64}$', item):
+                        continue
+                
+                # If we encounter anything else, it's not a dedicated folder
+                return False
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error checking if folder is dedicated: {e}")
+            return False
     
     @staticmethod
     def setup_routes(app):
@@ -180,12 +229,19 @@ class MiscRoutes:
                 if value == settings.get(key):
                     # No change, skip
                     continue
-                # Special handling for example_images_path - verify path exists
+                # Special handling for example_images_path - verify path exists and is dedicated
                 if key == 'example_images_path' and value:
                     if not os.path.exists(value):
                         return web.json_response({
                             'success': False,
                             'error': f"Path does not exist: {value}"
+                        })
+                    
+                    # Check if folder is dedicated for example images
+                    if not MiscRoutes.is_dedicated_example_images_folder(value):
+                        return web.json_response({
+                            'success': False,
+                            'error': "Please set a dedicated folder for example images."
                         })
                     
                     # Path changed - server restart required for new path to take effect

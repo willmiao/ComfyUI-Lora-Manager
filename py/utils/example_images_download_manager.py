@@ -40,10 +40,10 @@ class DownloadManager:
         
         Expects a JSON body with:
         {
-            "output_dir": "path/to/output",  # Base directory to save example images
             "optimize": true,                # Whether to optimize images (default: true)
             "model_types": ["lora", "checkpoint"], # Model types to process (default: both)
-            "delay": 1.0                     # Delay between downloads to avoid rate limiting (default: 1.0)
+            "delay": 1.0,                    # Delay between downloads to avoid rate limiting (default: 1.0)
+            "auto_mode": false               # Flag to indicate automatic download (default: false)
         }
         """
         global download_task, is_downloading, download_progress
@@ -64,16 +64,30 @@ class DownloadManager:
         try:
             # Parse the request body
             data = await request.json()
-            output_dir = data.get('output_dir')
+            auto_mode = data.get('auto_mode', False)
             optimize = data.get('optimize', True)
             model_types = data.get('model_types', ['lora', 'checkpoint'])
             delay = float(data.get('delay', 0.2)) # Default to 0.2 seconds
             
+            # Get output directory from settings
+            from ..services.service_registry import ServiceRegistry
+            settings_manager = await ServiceRegistry.get_settings_manager()
+            output_dir = settings_manager.get('example_images_path')
+            
             if not output_dir:
-                return web.json_response({
-                    'success': False,
-                    'error': 'Missing output_dir parameter'
-                }, status=400)
+                error_msg = 'Example images path not configured in settings'
+                if auto_mode:
+                    # For auto mode, just log and return success to avoid showing error toasts
+                    logger.debug(error_msg)
+                    return web.json_response({
+                        'success': True,
+                        'message': 'Example images path not configured, skipping auto download'
+                    })
+                else:
+                    return web.json_response({
+                        'success': False,
+                        'error': error_msg
+                    }, status=400)
             
             # Create the output directory
             os.makedirs(output_dir, exist_ok=True)
@@ -426,7 +440,6 @@ class DownloadManager:
         Expects a JSON body with:
         {
             "model_hashes": ["hash1", "hash2", ...],  # List of model hashes to download
-            "output_dir": "path/to/output",           # Base directory to save example images
             "optimize": true,                         # Whether to optimize images (default: true)
             "model_types": ["lora", "checkpoint"],    # Model types to process (default: both)
             "delay": 1.0                              # Delay between downloads (default: 1.0)
@@ -444,7 +457,6 @@ class DownloadManager:
             # Parse the request body
             data = await request.json()
             model_hashes = data.get('model_hashes', [])
-            output_dir = data.get('output_dir')
             optimize = data.get('optimize', True)
             model_types = data.get('model_types', ['lora', 'checkpoint'])
             delay = float(data.get('delay', 0.2)) # Default to 0.2 seconds
@@ -454,11 +466,16 @@ class DownloadManager:
                     'success': False,
                     'error': 'Missing model_hashes parameter'
                 }, status=400)
-                
+            
+            # Get output directory from settings
+            from ..services.service_registry import ServiceRegistry
+            settings_manager = await ServiceRegistry.get_settings_manager()
+            output_dir = settings_manager.get('example_images_path')
+            
             if not output_dir:
                 return web.json_response({
                     'success': False,
-                    'error': 'Missing output_dir parameter'
+                    'error': 'Example images path not configured in settings'
                 }, status=400)
             
             # Create the output directory
