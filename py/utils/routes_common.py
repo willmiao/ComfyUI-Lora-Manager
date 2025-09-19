@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Dict, List, Callable, Awaitable
 from aiohttp import web
+from datetime import datetime
 
 from .model_utils import determine_base_model
 from .constants import PREVIEW_EXTENSIONS, CARD_PREVIEW_WIDTH
@@ -82,7 +83,6 @@ class ModelRouteUtils:
 
             # Update local metadata with merged civitai data
             local_metadata['civitai'] = merged_civitai
-            local_metadata['from_civitai'] = True
         
         # Update model-related metadata from civitai_metadata.model
         if 'model' in civitai_metadata and civitai_metadata['model']:
@@ -203,12 +203,11 @@ class ModelRouteUtils:
                 return False
 
             metadata_path = os.path.splitext(file_path)[0] + '.metadata.json'
-            
-            # Check if model metadata exists
-            local_metadata = await ModelRouteUtils.load_local_metadata(metadata_path)
+            enable_metadata_archive_db = settings.get('enable_metadata_archive_db', False)
 
-            if model_data.get('from_civitai') is False:
-                if not settings.get('enable_metadata_archive_db', False):
+            if model_data.get('civitai_deleted') is True and model_data.get('db_checked') is False:
+                # If CivitAI deleted flag is set, skip CivitAI API provider
+                if not enable_metadata_archive_db:
                     return False
                 # Likely deleted from CivitAI, use archive_db if available
                 metadata_provider = await get_metadata_provider('sqlite')
@@ -217,11 +216,24 @@ class ModelRouteUtils:
 
             civitai_metadata, error = await metadata_provider.get_model_by_hash(sha256)
             if not civitai_metadata:
-                # Mark as not from CivitAI if not found
-                local_metadata['from_civitai'] = False
-                model_data['from_civitai'] = False
-                await MetadataManager.save_metadata(file_path, local_metadata)
+                if error == "Model not found":
+                    model_data['from_civitai'] = False
+                    model_data['civitai_deleted'] = True
+                    model_data['db_checked'] = enable_metadata_archive_db
+                    model_data['last_checked_at'] = datetime.now().timestamp()
+
+                    # Remove 'folder' key from model_data if present before saving
+                    data_to_save = model_data.copy()
+                    data_to_save.pop('folder', None)
+                    await MetadataManager.save_metadata(file_path, data_to_save)
                 return False
+            
+            model_data['from_civitai'] = True
+            model_data['civitai_deleted'] = civitai_metadata.get('source') == 'archive_db'
+            model_data['db_checked'] = enable_metadata_archive_db
+            
+            local_metadata = model_data.copy()
+            local_metadata.pop('folder', None)  # Remove 'folder' key if present
 
             # Update metadata
             await ModelRouteUtils.update_model_metadata(
@@ -235,8 +247,7 @@ class ModelRouteUtils:
             update_dict = {
                 'model_name': local_metadata.get('model_name'),
                 'preview_url': local_metadata.get('preview_url'),
-                'from_civitai': True,
-                'civitai': civitai_metadata
+                'civitai': local_metadata.get('civitai'),
             }
             model_data.update(update_dict)
             

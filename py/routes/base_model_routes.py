@@ -626,18 +626,16 @@ class BaseModelRoutes(ABC):
             
             # Prepare models to process, only those without CivitAI data
             enable_metadata_archive_db = settings.get('enable_metadata_archive_db', False)
+            # Filter models that need CivitAI metadata update
             to_process = [
                 model for model in cache.raw_data
-                if (
-                    model.get('sha256')
-                    and (
-                        not model.get('civitai')
-                        or not model['civitai'].get('id')
-                    )
-                    and (
-                        (enable_metadata_archive_db)
-                        or (not enable_metadata_archive_db and model.get('from_civitai') is True)
-                    )
+                if model.get('sha256')
+                and (
+                    not model.get('civitai') or not model['civitai'].get('id')
+                )
+                and (
+                    (enable_metadata_archive_db and not model.get('db_checked', False))
+                    or (not enable_metadata_archive_db and model.get('from_civitai') is True)
                 )
             ]
             total_to_process = len(to_process)
