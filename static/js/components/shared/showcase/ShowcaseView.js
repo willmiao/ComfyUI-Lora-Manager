@@ -33,6 +33,20 @@ export async function loadExampleImages(images, modelHash) {
             const params = `model_hash=${modelHash}`;
             
             const response = await fetch(`${endpoint}?${params}`);
+            if (!response.ok) {
+                // Try to parse error message from backend
+                let errorMsg = `HTTP error ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    if (errorData && errorData.error) {
+                        errorMsg = errorData.error;
+                    }
+                } catch (e) {
+                    // Ignore JSON parse error
+                }
+                console.warn("Failed to get example files:", errorMsg);
+                return;
+            }
             const result = await response.json();
             
             if (result.success) {

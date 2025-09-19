@@ -228,7 +228,7 @@ export class ImportManager {
 
             // Set default root if available
             const defaultRootKey = 'default_lora_root';
-            const defaultRoot = getStorageItem('settings', {})[defaultRootKey];
+            const defaultRoot = state.global.settings[defaultRootKey];
             if (defaultRoot && rootsData.roots.includes(defaultRoot)) {
                 loraRoot.value = defaultRoot;
             }

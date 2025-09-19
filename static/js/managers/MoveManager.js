@@ -2,7 +2,6 @@ import { showToast } from '../utils/uiHelpers.js';
 import { state, getCurrentPageState } from '../state/index.js';
 import { modalManager } from './ModalManager.js';
 import { bulkManager } from './BulkManager.js';
-import { getStorageItem } from '../utils/storageHelpers.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { FolderTreeManager } from '../components/FolderTreeManager.js';
 import { sidebarManager } from '../components/SidebarManager.js';
@@ -87,7 +86,7 @@ class MoveManager {
 
             // Set default root if available
             const settingsKey = `default_${currentPageType.slice(0, -1)}_root`;
-            const defaultRoot = getStorageItem('settings', {})[settingsKey];
+            const defaultRoot = state.global.settings[settingsKey];
             if (defaultRoot && rootsData.roots.includes(defaultRoot)) {
                 modelRootSelect.value = defaultRoot;
             }
