@@ -91,7 +91,7 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                 result["base_model"] = metadata["baseModel"]
             elif "Model hash" in metadata and metadata_provider:
                 model_hash = metadata["Model hash"]
-                model_info = await metadata_provider.get_model_by_hash(model_hash)
+                model_info, error = await metadata_provider.get_model_by_hash(model_hash)
                 if model_info:
                     result["base_model"] = model_info.get("baseModel", "")
             elif "Model" in metadata and isinstance(metadata.get("resources"), list):
@@ -100,7 +100,7 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                     if resource.get("type") == "model" and resource.get("name") == metadata.get("Model"):
                         # This is likely the checkpoint model
                         if metadata_provider and resource.get("hash"):
-                            model_info = await metadata_provider.get_model_by_hash(resource.get("hash"))
+                            model_info, error = await metadata_provider.get_model_by_hash(resource.get("hash"))
                             if model_info:
                                 result["base_model"] = model_info.get("baseModel", "")
             
@@ -201,11 +201,7 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                     if version_id and metadata_provider:
                         try:
                             # Use get_model_version_info instead of get_model_version
-                            civitai_info, error = await metadata_provider.get_model_version_info(version_id)
-                            
-                            if error:
-                                logger.warning(f"Error getting model version info: {error}")
-                                continue
+                            civitai_info = await metadata_provider.get_model_version_info(version_id)
                             
                             populated_entry = await self.populate_lora_from_civitai(
                                 lora_entry,
@@ -267,26 +263,23 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                     if version_id and metadata_provider:
                         try:
                             # Use get_model_version_info with the version ID
-                            civitai_info, error = await metadata_provider.get_model_version_info(version_id)
+                            civitai_info = await metadata_provider.get_model_version_info(version_id)
                             
-                            if error:
-                                logger.warning(f"Error getting model version info: {error}")
-                            else:
-                                populated_entry = await self.populate_lora_from_civitai(
-                                    lora_entry,
-                                    civitai_info,
-                                    recipe_scanner,
-                                    base_model_counts
-                                )
+                            populated_entry = await self.populate_lora_from_civitai(
+                                lora_entry,
+                                civitai_info,
+                                recipe_scanner,
+                                base_model_counts
+                            )
+                            
+                            if populated_entry is None:
+                                continue  # Skip invalid LoRA types
                                 
-                                if populated_entry is None:
-                                    continue  # Skip invalid LoRA types
-                                    
-                                lora_entry = populated_entry
-                                
-                                # Track this LoRA for deduplication
-                                if version_id:
-                                    added_loras[version_id] = len(result["loras"])
+                            lora_entry = populated_entry
+                            
+                            # Track this LoRA for deduplication
+                            if version_id:
+                                added_loras[version_id] = len(result["loras"])
                         except Exception as e:
                             logger.error(f"Error fetching Civitai info for model ID {version_id}: {e}")
                     

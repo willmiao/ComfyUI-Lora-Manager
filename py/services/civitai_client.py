@@ -1,4 +1,3 @@
-from datetime import datetime
 import os
 import logging
 import asyncio
@@ -59,17 +58,17 @@ class CivitaiClient:
         
         return success, result
 
-    async def get_model_by_hash(self, model_hash: str) -> Optional[Dict]:
+    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict], Optional[str]]:
         try:
             downloader = await get_downloader()
-            success, version = await downloader.make_request(
+            success, result = await downloader.make_request(
                 'GET',
                 f"{self.base_url}/model-versions/by-hash/{model_hash}",
                 use_auth=True
             )
             if success:
                 # Get model ID from version data
-                model_id = version.get('modelId')
+                model_id = result.get('modelId')
                 if model_id:
                     # Fetch additional model metadata
                     success_model, data = await downloader.make_request(
@@ -79,17 +78,24 @@ class CivitaiClient:
                     )
                     if success_model:
                         # Enrich version_info with model data
-                        version['model']['description'] = data.get("description")
-                        version['model']['tags'] = data.get("tags", [])
+                        result['model']['description'] = data.get("description")
+                        result['model']['tags'] = data.get("tags", [])
                         
                         # Add creator from model data
-                        version['creator'] = data.get("creator")
+                        result['creator'] = data.get("creator")
                 
-                return version
-            return None
+                return result, None
+            
+            # Handle specific error cases
+            if "not found" in str(result):
+                return None, "Model not found"
+            
+            # Other error cases
+            logger.error(f"Failed to fetch model info for {model_hash[:10]}: {result}")
+            return None, str(result)
         except Exception as e:
             logger.error(f"API Error: {str(e)}")
-            return None
+            return None, str(e)
 
     async def download_preview_image(self, image_url: str, save_path: str):
         try:
@@ -246,8 +252,8 @@ class CivitaiClient:
                 return result, None
             
             # Handle specific error cases
-            if "404" in str(result):
-                error_msg = f"Model not found (status 404)"
+            if "not found" in str(result):
+                error_msg = f"Model not found"
                 logger.warning(f"Model version not found: {version_id} - {error_msg}")
                 return None, error_msg
             
@@ -258,59 +264,6 @@ class CivitaiClient:
             error_msg = f"Error fetching model version info: {e}"
             logger.error(error_msg)
             return None, error_msg
-
-    async def get_model_metadata(self, model_id: str) -> Tuple[Optional[Dict], int]:
-        """Fetch model metadata (description, tags, and creator info) from Civitai API
-        
-        Args:
-            model_id: The Civitai model ID
-            
-        Returns:
-            Tuple[Optional[Dict], int]: A tuple containing:
-                - A dictionary with model metadata or None if not found
-                - The HTTP status code from the request (0 for exceptions)
-        """
-        try:
-            downloader = await get_downloader()
-            url = f"{self.base_url}/models/{model_id}"
-            
-            success, result = await downloader.make_request(
-                'GET',
-                url,
-                use_auth=True
-            )
-            
-            if not success:
-                # Try to extract status code from error message
-                status_code = 0
-                if "404" in str(result):
-                    status_code = 404
-                elif "401" in str(result):
-                    status_code = 401
-                elif "403" in str(result):
-                    status_code = 403
-                logger.warning(f"Failed to fetch model metadata: {result}")
-                return None, status_code
-            
-            # Extract relevant metadata
-            metadata = {
-                "description": result.get("description") or "No model description available",
-                "tags": result.get("tags", []),
-                "creator": {
-                    "username": result.get("creator", {}).get("username"),
-                    "image": result.get("creator", {}).get("image")
-                }
-            }
-            
-            if metadata["description"] or metadata["tags"] or metadata["creator"]["username"]:
-                return metadata, 200
-            else:
-                logger.warning(f"No metadata found for model {model_id}")
-                return None, 200
-                
-        except Exception as e:
-            logger.error(f"Error fetching model metadata: {e}", exc_info=True)
-            return None, 0
 
     async def get_image_info(self, image_id: str) -> Optional[Dict]:
         """Fetch image information from Civitai API

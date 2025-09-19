@@ -215,7 +215,7 @@ class ModelRouteUtils:
             else:
                 metadata_provider = await get_default_metadata_provider()
 
-            civitai_metadata = await metadata_provider.get_model_by_hash(sha256)
+            civitai_metadata, error = await metadata_provider.get_model_by_hash(sha256)
             if not civitai_metadata:
                 # Mark as not from CivitAI if not found
                 local_metadata['from_civitai'] = False
@@ -387,10 +387,10 @@ class ModelRouteUtils:
             metadata_provider = await get_default_metadata_provider()
             
             # Fetch and update metadata
-            civitai_metadata = await metadata_provider.get_model_by_hash(local_metadata["sha256"])
+            civitai_metadata, error = await metadata_provider.get_model_by_hash(local_metadata["sha256"])
             if not civitai_metadata:
                 await ModelRouteUtils.handle_not_found_on_civitai(metadata_path, local_metadata)
-                return web.json_response({"success": False, "error": "Not found on CivitAI"}, status=404)
+                return web.json_response({"success": False, "error": error}, status=404)
 
             await ModelRouteUtils.update_model_metadata(metadata_path, local_metadata, civitai_metadata, metadata_provider)
             

@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 import json
 import aiosqlite
 import logging
-import aiohttp
 from bs4 import BeautifulSoup
 from typing import Optional, Dict, Tuple
 from .downloader import get_downloader
@@ -13,7 +12,7 @@ class ModelMetadataProvider(ABC):
     """Base abstract class for all model metadata providers"""
     
     @abstractmethod
-    async def get_model_by_hash(self, model_hash: str) -> Optional[Dict]:
+    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict], Optional[str]]:
         """Find model by hash value"""
         pass
         
@@ -31,11 +30,6 @@ class ModelMetadataProvider(ABC):
     async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict], Optional[str]]:
         """Fetch model version metadata"""
         pass
-        
-    @abstractmethod
-    async def get_model_metadata(self, model_id: str) -> Tuple[Optional[Dict], int]:
-        """Fetch model metadata (description, tags, and creator info)"""
-        pass
 
 class CivitaiModelMetadataProvider(ModelMetadataProvider):
     """Provider that uses Civitai API for metadata"""
@@ -43,7 +37,7 @@ class CivitaiModelMetadataProvider(ModelMetadataProvider):
     def __init__(self, civitai_client):
         self.client = civitai_client
         
-    async def get_model_by_hash(self, model_hash: str) -> Optional[Dict]:
+    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict], Optional[str]]:
         return await self.client.get_model_by_hash(model_hash)
         
     async def get_model_versions(self, model_id: str) -> Optional[Dict]:
@@ -54,16 +48,13 @@ class CivitaiModelMetadataProvider(ModelMetadataProvider):
         
     async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict], Optional[str]]:
         return await self.client.get_model_version_info(version_id)
-        
-    async def get_model_metadata(self, model_id: str) -> Tuple[Optional[Dict], int]:
-        return await self.client.get_model_metadata(model_id)
 
 class CivArchiveModelMetadataProvider(ModelMetadataProvider):
     """Provider that uses CivArchive HTML page parsing for metadata"""
     
-    async def get_model_by_hash(self, model_hash: str) -> Optional[Dict]:
+    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict], Optional[str]]:
         """Not supported by CivArchive provider"""
-        return None
+        return None, "CivArchive provider does not support hash lookup"
         
     async def get_model_versions(self, model_id: str) -> Optional[Dict]:
         """Not supported by CivArchive provider"""
@@ -174,10 +165,6 @@ class CivArchiveModelMetadataProvider(ModelMetadataProvider):
     async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict], Optional[str]]:
         """Not supported by CivArchive provider - requires both model_id and version_id"""
         return None, "CivArchive provider requires both model_id and version_id"
-        
-    async def get_model_metadata(self, model_id: str) -> Tuple[Optional[Dict], int]:
-        """Not supported by CivArchive provider"""
-        return None, 404
 
 class SQLiteModelMetadataProvider(ModelMetadataProvider):
     """Provider that uses SQLite database for metadata"""
@@ -185,7 +172,7 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
     def __init__(self, db_path: str):
         self.db_path = db_path
         
-    async def get_model_by_hash(self, model_hash: str) -> Optional[Dict]:
+    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict], Optional[str]]:
         """Find model by hash value from SQLite database"""
         async with aiosqlite.connect(self.db_path) as db:
             # Look up in model_files table to get model_id and version_id
@@ -200,14 +187,15 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
             file_row = await cursor.fetchone()
             
             if not file_row:
-                return None
+                return None, "Model not found"
                 
             # Get version details
             model_id = file_row['model_id']
             version_id = file_row['version_id']
             
             # Build response in the same format as Civitai API
-            return await self._get_version_with_model_data(db, model_id, version_id)
+            result = await self._get_version_with_model_data(db, model_id, version_id)
+            return result, None if result else "Error retrieving model data"
             
     async def get_model_versions(self, model_id: str) -> Optional[Dict]:
         """Get all versions of a model from SQLite database"""
@@ -324,37 +312,6 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
             version_data = await self._get_version_with_model_data(db, model_id, version_id)
             return version_data, None
     
-    async def get_model_metadata(self, model_id: str) -> Tuple[Optional[Dict], int]:
-        """Fetch model metadata from SQLite database"""
-        async with aiosqlite.connect(self.db_path) as db:
-            db.row_factory = aiosqlite.Row
-            
-            # Get model details
-            model_query = "SELECT name, type, data, username FROM models WHERE id = ?"
-            cursor = await db.execute(model_query, (model_id,))
-            model_row = await cursor.fetchone()
-            
-            if not model_row:
-                return None, 404
-                
-            # Parse data JSON
-            try:
-                model_data = json.loads(model_row['data'])
-                
-                # Extract relevant metadata
-                metadata = {
-                    "description": model_data.get("description", "No model description available"),
-                    "tags": model_data.get("tags", []),
-                    "creator": {
-                        "username": model_row['username'] or model_data.get("creator", {}).get("username"),
-                        "image": model_data.get("creator", {}).get("image")
-                    }
-                }
-                
-                return metadata, 200
-            except json.JSONDecodeError:
-                return None, 500
-    
     async def _get_version_with_model_data(self, db, model_id, version_id) -> Optional[Dict]:
         """Helper to build version data with model information"""
         # Get version details
@@ -409,15 +366,16 @@ class FallbackMetadataProvider(ModelMetadataProvider):
     def __init__(self, providers: list):
         self.providers = providers
 
-    async def get_model_by_hash(self, model_hash: str) -> Optional[Dict]:
+    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict], Optional[str]]:
         for provider in self.providers:
             try:
-                result = await provider.get_model_by_hash(model_hash)
+                result, error = await provider.get_model_by_hash(model_hash)
                 if result:
-                    return result
-            except Exception:
+                    return result, error
+            except Exception as e:
+                logger.debug(f"Provider failed for get_model_by_hash: {e}")
                 continue
-        return None
+        return None, "Model not found"
 
     async def get_model_versions(self, model_id: str) -> Optional[Dict]:
         for provider in self.providers:
@@ -452,17 +410,6 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 continue
         return None, "No provider could retrieve the data"
 
-    async def get_model_metadata(self, model_id: str) -> Tuple[Optional[Dict], int]:
-        for provider in self.providers:
-            try:
-                result, status = await provider.get_model_metadata(model_id)
-                if result:
-                    return result, status
-            except Exception as e:
-                logger.debug(f"Provider failed for get_model_metadata: {e}")
-                continue
-        return None, 404
-
 class ModelMetadataProviderManager:
     """Manager for selecting and using model metadata providers"""
     
@@ -485,7 +432,7 @@ class ModelMetadataProviderManager:
         if is_default or self.default_provider is None:
             self.default_provider = name
             
-    async def get_model_by_hash(self, model_hash: str, provider_name: str = None) -> Optional[Dict]:
+    async def get_model_by_hash(self, model_hash: str, provider_name: str = None) -> Tuple[Optional[Dict], Optional[str]]:
         """Find model by hash using specified or default provider"""
         provider = self._get_provider(provider_name)
         return await provider.get_model_by_hash(model_hash)
@@ -504,11 +451,6 @@ class ModelMetadataProviderManager:
         """Fetch model version info using specified or default provider"""
         provider = self._get_provider(provider_name)
         return await provider.get_model_version_info(version_id)
-        
-    async def get_model_metadata(self, model_id: str, provider_name: str = None) -> Tuple[Optional[Dict], int]:
-        """Fetch model metadata using specified or default provider"""
-        provider = self._get_provider(provider_name)
-        return await provider.get_model_metadata(model_id)
         
     def _get_provider(self, provider_name: str = None) -> ModelMetadataProvider:
         """Get provider by name or default provider"""

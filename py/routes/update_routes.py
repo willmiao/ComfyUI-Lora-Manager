@@ -7,7 +7,7 @@ import shutil
 import tempfile
 from aiohttp import web
 from typing import Dict, List
-from ..services.downloader import get_downloader, Downloader
+from ..services.downloader import get_downloader
 
 logger = logging.getLogger(__name__)
 
@@ -265,7 +265,7 @@ class UpdateRoutes:
         github_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/commits/main"
         
         try:
-            downloader = await Downloader.get_instance()
+            downloader = await get_downloader()
             success, data = await downloader.make_request('GET', github_url, custom_headers={'Accept': 'application/vnd.github+json'})
             
             if not success:
@@ -431,7 +431,7 @@ class UpdateRoutes:
         github_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest"
         
         try:
-            downloader = await Downloader.get_instance()
+            downloader = await get_downloader()
             success, data = await downloader.make_request('GET', github_url, custom_headers={'Accept': 'application/vnd.github+json'})
             
             if not success:

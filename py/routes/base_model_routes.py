@@ -624,7 +624,7 @@ class BaseModelRoutes(ABC):
             success = 0
             needs_resort = False
             
-            # Prepare models to process, only those without CivitAI data or missing tags, description, or creator
+            # Prepare models to process, only those without CivitAI data
             enable_metadata_archive_db = settings.get('enable_metadata_archive_db', False)
             to_process = [
                 model for model in cache.raw_data
@@ -633,9 +633,6 @@ class BaseModelRoutes(ABC):
                     and (
                         not model.get('civitai')
                         or not model['civitai'].get('id')
-                        # or not model.get('tags') # Skipping tag cause it could be empty legitimately
-                        # or not model.get('modelDescription')
-                        # or not (model.get('civitai') and model['civitai'].get('creator'))
                     )
                     and (
                         (enable_metadata_archive_db)
@@ -782,7 +779,13 @@ class BaseModelRoutes(ABC):
         try:
             hash = request.match_info.get('hash')
             metadata_provider = await get_default_metadata_provider()
-            model = await metadata_provider.get_model_by_hash(hash)
+            model, error = await metadata_provider.get_model_by_hash(hash)
+            if error:
+                logger.warning(f"Error getting model by hash: {error}")
+                return web.json_response({
+                    "success": False,
+                    "error": error
+                }, status=404)
             return web.json_response(model)
         except Exception as e:
             logger.error(f"Error fetching model details by hash: {e}")
