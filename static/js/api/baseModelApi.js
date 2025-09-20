@@ -538,13 +538,13 @@ export class BaseModelApiClient {
                 completionMessage = translate('toast.api.bulkMetadataCompletePartial', { success: successCount, total: totalItems, type: this.apiConfig.config.displayName }, `Refreshed ${successCount} of ${totalItems} ${this.apiConfig.config.displayName}s`);
                 showToast('toast.api.bulkMetadataCompletePartial', { success: successCount, total: totalItems, type: this.apiConfig.config.displayName }, 'warning');
                 
-                if (failedItems.length > 0) {
-                    const failureMessage = failedItems.length <= 3 
-                        ? failedItems.map(item => `${item.fileName}: ${item.error}`).join('\n')
-                        : failedItems.slice(0, 3).map(item => `${item.fileName}: ${item.error}`).join('\n') + 
-                          `\n(and ${failedItems.length - 3} more)`;
-                    showToast('toast.api.bulkMetadataFailureDetails', { failures: failureMessage }, 'warning', 6000);
-                }
+                // if (failedItems.length > 0) {
+                //     const failureMessage = failedItems.length <= 3 
+                //         ? failedItems.map(item => `${item.fileName}: ${item.error}`).join('\n')
+                //         : failedItems.slice(0, 3).map(item => `${item.fileName}: ${item.error}`).join('\n') + 
+                //           `\n(and ${failedItems.length - 3} more)`;
+                //     showToast('toast.api.bulkMetadataFailureDetails', { failures: failureMessage }, 'warning', 6000);
+                // }
             } else {
                 completionMessage = translate('toast.api.bulkMetadataCompleteNone', { type: this.apiConfig.config.displayName }, `Failed to refresh metadata for any ${this.apiConfig.config.displayName}s`);
                 showToast('toast.api.bulkMetadataCompleteNone', { type: this.apiConfig.config.displayName }, 'error');
