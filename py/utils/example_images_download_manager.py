@@ -10,6 +10,7 @@ from .example_images_processor import ExampleImagesProcessor
 from .example_images_metadata import MetadataUpdater
 from ..services.websocket_manager import ws_manager  # Add this import at the top
 from ..services.downloader import get_downloader
+from ..services.settings_manager import settings
 
 logger = logging.getLogger(__name__)
 
@@ -70,10 +71,8 @@ class DownloadManager:
             delay = float(data.get('delay', 0.2)) # Default to 0.2 seconds
             
             # Get output directory from settings
-            from ..services.service_registry import ServiceRegistry
-            settings_manager = await ServiceRegistry.get_settings_manager()
-            output_dir = settings_manager.get('example_images_path')
-            
+            output_dir = settings.get('example_images_path')
+
             if not output_dir:
                 error_msg = 'Example images path not configured in settings'
                 if auto_mode:
@@ -468,9 +467,7 @@ class DownloadManager:
                 }, status=400)
             
             # Get output directory from settings
-            from ..services.service_registry import ServiceRegistry
-            settings_manager = await ServiceRegistry.get_settings_manager()
-            output_dir = settings_manager.get('example_images_path')
+            output_dir = settings.get('example_images_path')
             
             if not output_dir:
                 return web.json_response({
