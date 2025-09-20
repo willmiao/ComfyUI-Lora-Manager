@@ -184,7 +184,7 @@ class ModelRouteUtils:
         file_path: str, 
         model_data: dict,
         update_cache_func: Callable[[str, str, Dict], Awaitable[bool]]
-    ) -> bool:
+    ) -> tuple[bool, str]:
         """Fetch and update metadata for a single model
         
         Args:
@@ -194,21 +194,22 @@ class ModelRouteUtils:
             update_cache_func: Function to update the cache with new metadata
             
         Returns:
-            bool: True if successful, False otherwise
+            tuple[bool, str]: (success, error_message). When success is True, error_message is None.
         """
         try:
             # Validate input parameters
             if not isinstance(model_data, dict):
-                logger.error(f"Invalid model_data type: {type(model_data)}")
-                return False
+                error_msg = f"Invalid model_data type: {type(model_data)}"
+                logger.error(error_msg)
+                return False, error_msg
 
             metadata_path = os.path.splitext(file_path)[0] + '.metadata.json'
             enable_metadata_archive_db = settings.get('enable_metadata_archive_db', False)
 
-            if model_data.get('civitai_deleted') is True and model_data.get('db_checked') is False:
+            if model_data.get('civitai_deleted') is True:
                 # If CivitAI deleted flag is set, skip CivitAI API provider
-                if not enable_metadata_archive_db:
-                    return False
+                if not enable_metadata_archive_db or model_data.get('db_checked') is True:
+                    return False, "CivitAI model is deleted and metadata archive DB is not enabled"
                 # Likely deleted from CivitAI, use archive_db if available
                 metadata_provider = await get_metadata_provider('sqlite')
             else:
@@ -226,11 +227,16 @@ class ModelRouteUtils:
                     data_to_save = model_data.copy()
                     data_to_save.pop('folder', None)
                     await MetadataManager.save_metadata(file_path, data_to_save)
-                return False
+
+                # For other errors, log and return False with error message
+                error_msg = f"Error fetching metadata: {error} (model_name={model_data.get('model_name', '')})"
+                logger.error(error_msg)
+                return False, error_msg
             
             model_data['from_civitai'] = True
             model_data['civitai_deleted'] = civitai_metadata.get('source') == 'archive_db'
             model_data['db_checked'] = enable_metadata_archive_db
+            model_data['last_checked_at'] = datetime.now().timestamp()
             
             local_metadata = model_data.copy()
             local_metadata.pop('folder', None)  # Remove 'folder' key if present
@@ -254,14 +260,16 @@ class ModelRouteUtils:
             # Update cache using the provided function
             await update_cache_func(file_path, file_path, local_metadata)
                 
-            return True
+            return True, None
 
         except KeyError as e:
-            logger.error(f"Error fetching CivitAI data - Missing key: {e} in model_data={model_data}")
-            return False
+            error_msg = f"Error fetching metadata - Missing key: {e} in model_data={model_data}"
+            logger.error(error_msg)
+            return False, error_msg
         except Exception as e:
-            logger.error(f"Error fetching CivitAI data: {str(e)}", exc_info=True)  # Include stack trace
-            return False
+            error_msg = f"Error fetching metadata: {str(e)}"
+            logger.error(error_msg, exc_info=True)  # Include stack trace
+            return False, error_msg
     
     @staticmethod
     def filter_civitai_data(data: Dict, minimal: bool = False) -> Dict:

@@ -255,20 +255,45 @@ class BaseModelRoutes(ABC):
         return await ModelRouteUtils.handle_exclude_model(request, self.service.scanner)
     
     async def fetch_civitai(self, request: web.Request) -> web.Response:
-        """Handle CivitAI metadata fetch request"""
-        response = await ModelRouteUtils.handle_fetch_civitai(request, self.service.scanner)
-        
-        # If successful, format the metadata before returning
-        if response.status == 200:
-            data = json.loads(response.body.decode('utf-8'))
-            if data.get("success") and data.get("metadata"):
-                formatted_metadata = await self.service.format_response(data["metadata"])
-                return web.json_response({
-                    "success": True,
-                    "metadata": formatted_metadata
-                })
-        
-        return response
+        """Handle CivitAI metadata fetch request - force refresh model metadata"""
+        try:
+            data = await request.json()
+            file_path = data.get('file_path')
+            if not file_path:
+                return web.json_response({"success": False, "error": "File path is required"}, status=400)
+
+            # Get model data from cache
+            cache = await self.service.scanner.get_cached_data()
+            model_data = next((item for item in cache.raw_data if item['file_path'] == file_path), None)
+            
+            if not model_data:
+                return web.json_response({"success": False, "error": "Model not found in cache"}, status=404)
+            
+            # Check if model has SHA256 hash
+            if not model_data.get('sha256'):
+                return web.json_response({"success": False, "error": "No SHA256 hash found"}, status=400)
+
+            # Use fetch_and_update_model to get and update metadata
+            success, error = await ModelRouteUtils.fetch_and_update_model(
+                sha256=model_data['sha256'],
+                file_path=file_path,
+                model_data=model_data,
+                update_cache_func=self.service.scanner.update_single_model_cache
+            )
+
+            if not success:
+                return web.json_response({"success": False, "error": error})
+            
+            # Format the updated metadata for response
+            formatted_metadata = await self.service.format_response(model_data)
+            return web.json_response({
+                "success": True,
+                "metadata": formatted_metadata
+            })
+
+        except Exception as e:
+            logger.error(f"Error fetching from CivitAI: {e}", exc_info=True)
+            return web.json_response({"success": False, "error": str(e)}, status=500)
     
     async def relink_civitai(self, request: web.Request) -> web.Response:
         """Handle CivitAI metadata re-linking request"""
@@ -652,12 +677,13 @@ class BaseModelRoutes(ABC):
             for model in to_process:
                 try:
                     original_name = model.get('model_name')
-                    if await ModelRouteUtils.fetch_and_update_model(
+                    result, error = await ModelRouteUtils.fetch_and_update_model(
                         sha256=model['sha256'],
                         file_path=model['file_path'],
                         model_data=model,
                         update_cache_func=self.service.scanner.update_single_model_cache
-                    ):
+                    )
+                    if result:
                         success += 1
                         if original_name != model.get('model_name'):
                             needs_resort = True

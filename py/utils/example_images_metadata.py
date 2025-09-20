@@ -53,7 +53,7 @@ class MetadataUpdater:
             async def update_cache_func(old_path, new_path, metadata):
                 return await scanner.update_single_model_cache(old_path, new_path, metadata)
             
-            success = await ModelRouteUtils.fetch_and_update_model(
+            success, error = await ModelRouteUtils.fetch_and_update_model(
                 model_hash, 
                 file_path, 
                 model_data,
@@ -64,7 +64,7 @@ class MetadataUpdater:
                 logger.info(f"Successfully refreshed metadata for {model_name}")
                 return True
             else:
-                logger.warning(f"Failed to refresh metadata for {model_name}")
+                logger.warning(f"Failed to refresh metadata for {model_name}, {error}")
                 return False
                 
         except Exception as e:
