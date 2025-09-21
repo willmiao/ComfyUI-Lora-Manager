@@ -67,11 +67,23 @@ def download_manager_stub():
     class FakeDownloadManager:
         def __init__(self):
             self.calls = []
+            self.error = None
+            self.cancelled = []
+            self.active_downloads = {}
 
         async def download_from_civitai(self, **kwargs):
             self.calls.append(kwargs)
+            if self.error is not None:
+                raise self.error
             await kwargs["progress_callback"](42)
             return {"success": True, "path": "/tmp/model.safetensors"}
+
+        async def cancel_download(self, download_id):
+            self.cancelled.append(download_id)
+            return {"success": True, "download_id": download_id}
+
+        async def get_active_downloads(self):
+            return self.active_downloads
 
     stub = FakeDownloadManager()
     previous = ServiceRegistry._services.get("download_manager")
@@ -98,6 +110,21 @@ def test_list_models_returns_formatted_items(mock_service, mock_scanner):
             assert payload["items"] == [{"file_path": "/tmp/demo.safetensors", "name": "Demo", "formatted": True}]
             assert payload["total"] == 1
             assert mock_service.formatted == payload["items"]
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_routes_return_service_not_ready_when_unattached():
+    async def scenario():
+        client = await create_test_client(None)
+        try:
+            response = await client.get("/api/lm/test-models/list")
+            payload = await response.json()
+
+            assert response.status == 503
+            assert payload == {"success": False, "error": "Service not ready"}
         finally:
             await client.close()
 
@@ -236,6 +263,50 @@ def test_download_model_requires_identifier(mock_service, download_manager_stub)
             assert response.status == 400
             assert payload["success"] is False
             assert "Missing required" in payload["error"]
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_download_model_maps_validation_errors(mock_service, download_manager_stub):
+    download_manager_stub.error = ValueError("Invalid relative path")
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post(
+                "/api/lm/download-model",
+                json={"model_version_id": 123},
+            )
+            payload = await response.json()
+
+            assert response.status == 400
+            assert payload == {"success": False, "error": "Invalid relative path"}
+            assert ws_manager._download_progress == {}
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_download_model_maps_early_access_errors(mock_service, download_manager_stub):
+    download_manager_stub.error = RuntimeError("401 early access")
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post(
+                "/api/lm/download-model",
+                json={"model_id": 4},
+            )
+            payload = await response.json()
+
+            assert response.status == 401
+            assert payload == {
+                "success": False,
+                "error": "Early Access Restriction: This model requires purchase. Please buy early access on Civitai.com.",
+            }
         finally:
             await client.close()
 
