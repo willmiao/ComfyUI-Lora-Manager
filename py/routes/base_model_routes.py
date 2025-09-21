@@ -8,12 +8,20 @@ import jinja2
 from aiohttp import web
 
 from ..config import config
-from ..services.metadata_service import get_default_metadata_provider
+from ..services.download_coordinator import DownloadCoordinator
+from ..services.downloader import get_downloader
+from ..services.metadata_service import get_default_metadata_provider, get_metadata_provider
+from ..services.metadata_sync_service import MetadataSyncService
 from ..services.model_file_service import ModelFileService, ModelMoveService
+from ..services.preview_asset_service import PreviewAssetService
+from ..services.server_i18n import server_i18n as default_server_i18n
+from ..services.service_registry import ServiceRegistry
 from ..services.settings_manager import settings as default_settings
+from ..services.tag_update_service import TagUpdateService
 from ..services.websocket_manager import ws_manager as default_ws_manager
 from ..services.websocket_progress_callback import WebSocketProgressCallback
-from ..services.server_i18n import server_i18n as default_server_i18n
+from ..utils.exif_utils import ExifUtils
+from ..utils.metadata_manager import MetadataManager
 from ..utils.routes_common import ModelRouteUtils
 from .model_route_registrar import COMMON_ROUTE_DEFINITIONS, ModelRouteRegistrar
 from .handlers.model_handlers import (
@@ -64,6 +72,24 @@ class BaseModelRoutes(ABC):
         self._handler_set: ModelHandlerSet | None = None
         self._handler_mapping: Dict[str, Callable[[web.Request], web.StreamResponse]] | None = None
 
+        self._preview_service = PreviewAssetService(
+            metadata_manager=MetadataManager,
+            downloader_factory=get_downloader,
+            exif_utils=ExifUtils,
+        )
+        self._metadata_sync_service = MetadataSyncService(
+            metadata_manager=MetadataManager,
+            preview_service=self._preview_service,
+            settings=settings_service,
+            default_metadata_provider_factory=metadata_provider_factory,
+            metadata_provider_selector=get_metadata_provider,
+        )
+        self._tag_update_service = TagUpdateService(metadata_manager=MetadataManager)
+        self._download_coordinator = DownloadCoordinator(
+            ws_manager=self._ws_manager,
+            download_manager_factory=ServiceRegistry.get_download_manager,
+        )
+
         if service is not None:
             self.attach_service(service)
 
@@ -98,9 +124,19 @@ class BaseModelRoutes(ABC):
             parse_specific_params=self._parse_specific_params,
             logger=logger,
         )
-        management = ModelManagementHandler(service=service, logger=logger)
+        management = ModelManagementHandler(
+            service=service,
+            logger=logger,
+            metadata_sync=self._metadata_sync_service,
+            preview_service=self._preview_service,
+            tag_update_service=self._tag_update_service,
+        )
         query = ModelQueryHandler(service=service, logger=logger)
-        download = ModelDownloadHandler(ws_manager=self._ws_manager, logger=logger)
+        download = ModelDownloadHandler(
+            ws_manager=self._ws_manager,
+            logger=logger,
+            download_coordinator=self._download_coordinator,
+        )
         civitai = ModelCivitaiHandler(
             service=service,
             settings_service=self._settings,
@@ -110,6 +146,7 @@ class BaseModelRoutes(ABC):
             validate_model_type=self._validate_civitai_model_type,
             expected_model_types=self._get_expected_model_types,
             find_model_file=self._find_model_file,
+            metadata_sync=self._metadata_sync_service,
         )
         move = ModelMoveHandler(move_service=self._ensure_move_service(), logger=logger)
         auto_organize = ModelAutoOrganizeHandler(
