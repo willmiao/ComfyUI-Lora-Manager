@@ -5,9 +5,9 @@ from typing import Dict
 from server import PromptServer  # type: ignore
 
 from .base_model_routes import BaseModelRoutes
+from .model_route_registrar import ModelRouteRegistrar
 from ..services.lora_service import LoraService
 from ..services.service_registry import ServiceRegistry
-from ..services.metadata_service import get_default_metadata_provider
 from ..utils.utils import get_lora_info
 
 logger = logging.getLogger(__name__)
@@ -17,8 +17,7 @@ class LoraRoutes(BaseModelRoutes):
     
     def __init__(self):
         """Initialize LoRA routes with LoRA service"""
-        # Service will be initialized later via setup_routes
-        self.service = None
+        super().__init__()
         self.template_name = "loras.html"
     
     async def initialize_services(self):
@@ -26,26 +25,26 @@ class LoraRoutes(BaseModelRoutes):
         lora_scanner = await ServiceRegistry.get_lora_scanner()
         self.service = LoraService(lora_scanner)
         
-        # Initialize parent with the service
-        super().__init__(self.service)
+        # Attach service dependencies
+        self.attach_service(self.service)
     
     def setup_routes(self, app: web.Application):
         """Setup LoRA routes"""
         # Schedule service initialization on app startup
         app.on_startup.append(lambda _: self.initialize_services())
-        
+
         # Setup common routes with 'loras' prefix (includes page route)
         super().setup_routes(app, 'loras')
-    
-    def setup_specific_routes(self, app: web.Application, prefix: str):
+
+    def setup_specific_routes(self, registrar: ModelRouteRegistrar, prefix: str):
         """Setup LoRA-specific routes"""
         # LoRA-specific query routes
-        app.router.add_get(f'/api/lm/{prefix}/letter-counts', self.get_letter_counts)
-        app.router.add_get(f'/api/lm/{prefix}/get-trigger-words', self.get_lora_trigger_words)
-        app.router.add_get(f'/api/lm/{prefix}/usage-tips-by-path', self.get_lora_usage_tips_by_path)
-        
+        registrar.add_prefixed_route('GET', '/api/lm/{prefix}/letter-counts', prefix, self.get_letter_counts)
+        registrar.add_prefixed_route('GET', '/api/lm/{prefix}/get-trigger-words', prefix, self.get_lora_trigger_words)
+        registrar.add_prefixed_route('GET', '/api/lm/{prefix}/usage-tips-by-path', prefix, self.get_lora_usage_tips_by_path)
+
         # ComfyUI integration
-        app.router.add_post(f'/api/lm/{prefix}/get_trigger_words', self.get_trigger_words)
+        registrar.add_prefixed_route('POST', '/api/lm/{prefix}/get_trigger_words', prefix, self.get_trigger_words)
     
     def _parse_specific_params(self, request: web.Request) -> Dict:
         """Parse LoRA-specific parameters"""

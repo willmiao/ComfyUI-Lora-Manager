@@ -37,7 +37,7 @@ from py_local.config import config
 class DummyRoutes(BaseModelRoutes):
     template_name = "dummy.html"
 
-    def setup_specific_routes(self, app: web.Application, prefix: str) -> None:  # pragma: no cover - no extra routes in smoke tests
+    def setup_specific_routes(self, registrar, prefix: str) -> None:  # pragma: no cover - no extra routes in smoke tests
         return None
 
 

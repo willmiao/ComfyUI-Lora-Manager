@@ -2,9 +2,9 @@ import logging
 from aiohttp import web
 
 from .base_model_routes import BaseModelRoutes
+from .model_route_registrar import ModelRouteRegistrar
 from ..services.checkpoint_service import CheckpointService
 from ..services.service_registry import ServiceRegistry
-from ..services.metadata_service import get_default_metadata_provider
 from ..config import config
 
 logger = logging.getLogger(__name__)
@@ -14,8 +14,7 @@ class CheckpointRoutes(BaseModelRoutes):
     
     def __init__(self):
         """Initialize Checkpoint routes with Checkpoint service"""
-        # Service will be initialized later via setup_routes
-        self.service = None
+        super().__init__()
         self.template_name = "checkpoints.html"
     
     async def initialize_services(self):
@@ -23,8 +22,8 @@ class CheckpointRoutes(BaseModelRoutes):
         checkpoint_scanner = await ServiceRegistry.get_checkpoint_scanner()
         self.service = CheckpointService(checkpoint_scanner)
         
-        # Initialize parent with the service
-        super().__init__(self.service)
+        # Attach service dependencies
+        self.attach_service(self.service)
     
     def setup_routes(self, app: web.Application):
         """Setup Checkpoint routes"""
@@ -34,14 +33,14 @@ class CheckpointRoutes(BaseModelRoutes):
         # Setup common routes with 'checkpoints' prefix (includes page route)
         super().setup_routes(app, 'checkpoints')
     
-    def setup_specific_routes(self, app: web.Application, prefix: str):
+    def setup_specific_routes(self, registrar: ModelRouteRegistrar, prefix: str):
         """Setup Checkpoint-specific routes"""
         # Checkpoint info by name
-        app.router.add_get(f'/api/lm/{prefix}/info/{{name}}', self.get_checkpoint_info)
-        
+        registrar.add_prefixed_route('GET', '/api/lm/{prefix}/info/{name}', prefix, self.get_checkpoint_info)
+
         # Checkpoint roots and Unet roots
-        app.router.add_get(f'/api/lm/{prefix}/checkpoints_roots', self.get_checkpoints_roots)
-        app.router.add_get(f'/api/lm/{prefix}/unet_roots', self.get_unet_roots)
+        registrar.add_prefixed_route('GET', '/api/lm/{prefix}/checkpoints_roots', prefix, self.get_checkpoints_roots)
+        registrar.add_prefixed_route('GET', '/api/lm/{prefix}/unet_roots', prefix, self.get_unet_roots)
     
     def _validate_civitai_model_type(self, model_type: str) -> bool:
         """Validate CivitAI model type for Checkpoint"""

@@ -2,9 +2,9 @@ import logging
 from aiohttp import web
 
 from .base_model_routes import BaseModelRoutes
+from .model_route_registrar import ModelRouteRegistrar
 from ..services.embedding_service import EmbeddingService
 from ..services.service_registry import ServiceRegistry
-from ..services.metadata_service import get_default_metadata_provider
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +13,7 @@ class EmbeddingRoutes(BaseModelRoutes):
     
     def __init__(self):
         """Initialize Embedding routes with Embedding service"""
-        # Service will be initialized later via setup_routes
-        self.service = None
+        super().__init__()
         self.template_name = "embeddings.html"
     
     async def initialize_services(self):
@@ -22,8 +21,8 @@ class EmbeddingRoutes(BaseModelRoutes):
         embedding_scanner = await ServiceRegistry.get_embedding_scanner()
         self.service = EmbeddingService(embedding_scanner)
         
-        # Initialize parent with the service
-        super().__init__(self.service)
+        # Attach service dependencies
+        self.attach_service(self.service)
     
     def setup_routes(self, app: web.Application):
         """Setup Embedding routes"""
@@ -33,10 +32,10 @@ class EmbeddingRoutes(BaseModelRoutes):
         # Setup common routes with 'embeddings' prefix (includes page route)
         super().setup_routes(app, 'embeddings')
     
-    def setup_specific_routes(self, app: web.Application, prefix: str):
+    def setup_specific_routes(self, registrar: ModelRouteRegistrar, prefix: str):
         """Setup Embedding-specific routes"""
         # Embedding info by name
-        app.router.add_get(f'/api/lm/{prefix}/info/{{name}}', self.get_embedding_info)
+        registrar.add_prefixed_route('GET', '/api/lm/{prefix}/info/{name}', prefix, self.get_embedding_info)
     
     def _validate_civitai_model_type(self, model_type: str) -> bool:
         """Validate CivitAI model type for Embedding"""
