@@ -28,6 +28,7 @@ spec.loader.exec_module(py_local)
 sys.modules.setdefault("py_local", py_local)
 
 from py_local.routes.base_model_routes import BaseModelRoutes
+from py_local.services.model_file_service import AutoOrganizeResult
 from py_local.services.service_registry import ServiceRegistry
 from py_local.services.websocket_manager import ws_manager
 from py_local.utils.routes_common import ExifUtils
@@ -222,6 +223,25 @@ def test_download_model_invokes_download_manager(
     asyncio.run(scenario())
 
 
+def test_download_model_requires_identifier(mock_service, download_manager_stub):
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post(
+                "/api/lm/download-model",
+                json={"model_root": "/tmp"},
+            )
+            payload = await response.json()
+
+            assert response.status == 400
+            assert payload["success"] is False
+            assert "Missing required" in payload["error"]
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
 def test_auto_organize_progress_returns_latest_snapshot(mock_service):
     async def scenario():
         client = await create_test_client(mock_service)
@@ -233,6 +253,66 @@ def test_auto_organize_progress_returns_latest_snapshot(mock_service):
 
             assert response.status == 200
             assert payload == {"success": True, "progress": {"status": "processing", "percent": 50}}
+        finally:
+            await client.close()
+    
+    asyncio.run(scenario())
+
+
+def test_auto_organize_route_emits_progress(mock_service, monkeypatch: pytest.MonkeyPatch):
+    async def fake_auto_organize(self, file_paths=None, progress_callback=None):
+        result = AutoOrganizeResult()
+        result.total = 1
+        result.processed = 1
+        result.success_count = 1
+        result.skipped_count = 0
+        result.failure_count = 0
+        result.operation_type = "bulk"
+        if progress_callback is not None:
+            await progress_callback.on_progress({"type": "auto_organize_progress", "status": "started"})
+            await progress_callback.on_progress({"type": "auto_organize_progress", "status": "completed"})
+        return result
+
+    monkeypatch.setattr(
+        py_local.services.model_file_service.ModelFileService,
+        "auto_organize_models",
+        fake_auto_organize,
+    )
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post("/api/lm/test-models/auto-organize", json={"file_paths": []})
+            payload = await response.json()
+
+            assert response.status == 200
+            assert payload["success"] is True
+
+            progress = ws_manager.get_auto_organize_progress()
+            assert progress is not None
+            assert progress["status"] == "completed"
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_auto_organize_conflict_when_running(mock_service):
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            await ws_manager.broadcast_auto_organize_progress(
+                {"type": "auto_organize_progress", "status": "started"}
+            )
+
+            response = await client.post("/api/lm/test-models/auto-organize")
+            payload = await response.json()
+
+            assert response.status == 409
+            assert payload == {
+                "success": False,
+                "error": "Auto-organize is already running. Please wait for it to complete.",
+            }
         finally:
             await client.close()
 

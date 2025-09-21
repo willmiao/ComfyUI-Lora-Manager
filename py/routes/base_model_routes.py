@@ -19,7 +19,15 @@ from ..services.service_registry import ServiceRegistry
 from ..services.settings_manager import settings as default_settings
 from ..services.tag_update_service import TagUpdateService
 from ..services.websocket_manager import ws_manager as default_ws_manager
-from ..services.websocket_progress_callback import WebSocketProgressCallback
+from ..services.use_cases import (
+    AutoOrganizeUseCase,
+    BulkMetadataRefreshUseCase,
+    DownloadModelUseCase,
+)
+from ..services.websocket_progress_callback import (
+    WebSocketBroadcastCallback,
+    WebSocketProgressCallback,
+)
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
 from ..utils.routes_common import ModelRouteUtils
@@ -68,6 +76,7 @@ class BaseModelRoutes(ABC):
         self.model_file_service: ModelFileService | None = None
         self.model_move_service: ModelMoveService | None = None
         self.websocket_progress_callback = WebSocketProgressCallback()
+        self.metadata_progress_callback = WebSocketBroadcastCallback()
 
         self._handler_set: ModelHandlerSet | None = None
         self._handler_mapping: Dict[str, Callable[[web.Request], web.StreamResponse]] | None = None
@@ -132,10 +141,18 @@ class BaseModelRoutes(ABC):
             tag_update_service=self._tag_update_service,
         )
         query = ModelQueryHandler(service=service, logger=logger)
+        download_use_case = DownloadModelUseCase(download_coordinator=self._download_coordinator)
         download = ModelDownloadHandler(
             ws_manager=self._ws_manager,
             logger=logger,
+            download_use_case=download_use_case,
             download_coordinator=self._download_coordinator,
+        )
+        metadata_refresh_use_case = BulkMetadataRefreshUseCase(
+            service=service,
+            metadata_sync=self._metadata_sync_service,
+            settings_service=self._settings,
+            logger=logger,
         )
         civitai = ModelCivitaiHandler(
             service=service,
@@ -147,10 +164,16 @@ class BaseModelRoutes(ABC):
             expected_model_types=self._get_expected_model_types,
             find_model_file=self._find_model_file,
             metadata_sync=self._metadata_sync_service,
+            metadata_refresh_use_case=metadata_refresh_use_case,
+            metadata_progress_callback=self.metadata_progress_callback,
         )
         move = ModelMoveHandler(move_service=self._ensure_move_service(), logger=logger)
-        auto_organize = ModelAutoOrganizeHandler(
+        auto_organize_use_case = AutoOrganizeUseCase(
             file_service=self._ensure_file_service(),
+            lock_provider=self._ws_manager,
+        )
+        auto_organize = ModelAutoOrganizeHandler(
+            use_case=auto_organize_use_case,
             progress_callback=self.websocket_progress_callback,
             ws_manager=self._ws_manager,
             logger=logger,
