@@ -170,6 +170,8 @@ def test_replace_preview_writes_file_and_updates_cache(
             assert payload["preview_url"] == "/static/preview-model.webp"
             assert Path(expected_preview).exists()
             assert mock_scanner.preview_updates[-1]["preview_path"] == expected_preview
+            assert mock_scanner._cache.raw_data[0]["preview_url"] == expected_preview
+            assert mock_scanner._cache.raw_data[0]["preview_nsfw_level"] == 2
 
             updated_metadata = json.loads(metadata_path.read_text())
             assert updated_metadata["preview_url"] == expected_preview
@@ -204,6 +206,15 @@ def test_download_model_invokes_download_manager(
             progress = ws_manager.get_download_progress(payload["download_id"])
             assert progress is not None
             assert progress["progress"] == 42
+            assert "timestamp" in progress
+
+            progress_response = await client.get(
+                f"/api/lm/download-progress/{payload['download_id']}"
+            )
+            progress_payload = await progress_response.json()
+
+            assert progress_response.status == 200
+            assert progress_payload == {"success": True, "progress": 42}
             ws_manager.cleanup_download_progress(payload["download_id"])
         finally:
             await client.close()
