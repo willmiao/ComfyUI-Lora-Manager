@@ -1,6 +1,8 @@
 import types
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence
+import asyncio
+import inspect
 from unittest import mock
 import sys
 
@@ -37,6 +39,13 @@ nodes_mock.LoraLoader = mock.MagicMock()
 nodes_mock.SaveImage = mock.MagicMock()
 nodes_mock.NODE_CLASS_MAPPINGS = {}
 sys.modules['nodes'] = nodes_mock
+
+
+def pytest_pyfunc_call(pyfuncitem):
+    if inspect.iscoroutinefunction(pyfuncitem.function):
+        asyncio.run(pyfuncitem.obj(**pyfuncitem.funcargs))
+        return True
+    return None
 
 
 @dataclass
