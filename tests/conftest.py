@@ -1,7 +1,42 @@
+import types
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence
+from unittest import mock
+import sys
 
 import pytest
+
+# Mock ComfyUI modules before any imports from the main project
+server_mock = types.SimpleNamespace()
+server_mock.PromptServer = mock.MagicMock()
+sys.modules['server'] = server_mock
+
+folder_paths_mock = types.SimpleNamespace()
+folder_paths_mock.get_folder_paths = mock.MagicMock(return_value=[])
+folder_paths_mock.folder_names_and_paths = {}
+sys.modules['folder_paths'] = folder_paths_mock
+
+# Mock other ComfyUI modules that might be imported
+comfy_mock = types.SimpleNamespace()
+comfy_mock.utils = types.SimpleNamespace()
+comfy_mock.model_management = types.SimpleNamespace()
+comfy_mock.comfy_types = types.SimpleNamespace()
+comfy_mock.comfy_types.IO = mock.MagicMock()
+sys.modules['comfy'] = comfy_mock
+sys.modules['comfy.utils'] = comfy_mock.utils
+sys.modules['comfy.model_management'] = comfy_mock.model_management
+sys.modules['comfy.comfy_types'] = comfy_mock.comfy_types
+
+execution_mock = types.SimpleNamespace()
+execution_mock.PromptExecutor = mock.MagicMock()
+sys.modules['execution'] = execution_mock
+
+# Mock ComfyUI nodes module  
+nodes_mock = types.SimpleNamespace()
+nodes_mock.LoraLoader = mock.MagicMock()
+nodes_mock.SaveImage = mock.MagicMock()
+nodes_mock.NODE_CLASS_MAPPINGS = {}
+sys.modules['nodes'] = nodes_mock
 
 
 @dataclass
