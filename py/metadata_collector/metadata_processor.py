@@ -1,9 +1,9 @@
 import json
-import sys
+import os
 from .constants import IMAGES
 
 # Check if running in standalone mode
-standalone_mode = 'nodes' not in sys.modules
+standalone_mode = os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
 
 from .constants import MODELS, PROMPTS, SAMPLING, LORAS, SIZE, IS_SAMPLER
 

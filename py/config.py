@@ -3,12 +3,11 @@ import platform
 import folder_paths # type: ignore
 from typing import List
 import logging
-import sys
 import json
 import urllib.parse
 
-# Check if running in standalone mode
-standalone_mode = 'nodes' not in sys.modules
+# Use an environment variable to control standalone mode
+standalone_mode = os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
 
 logger = logging.getLogger(__name__)
 

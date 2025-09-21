@@ -21,7 +21,7 @@ from ..services.server_i18n import server_i18n
 from ..config import config
 
 # Check if running in standalone mode
-standalone_mode = 'nodes' not in sys.modules
+standalone_mode = os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
 
 from ..services.service_registry import ServiceRegistry  # Add ServiceRegistry import
 from ..services.downloader import get_downloader

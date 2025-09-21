@@ -4,6 +4,9 @@ import sys
 import json
 from py.middleware.cache_middleware import cache_control
 
+# Set environment variable to indicate standalone mode
+os.environ["COMFYUI_LORA_MANAGER_STANDALONE"] = "1"
+
 # Create mock modules for py/nodes directory - add this before any other imports
 def mock_nodes_directory():
     """Create mock modules for all Python files in the py/nodes directory"""

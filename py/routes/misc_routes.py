@@ -18,7 +18,7 @@ from ..services.websocket_manager import ws_manager
 from ..services.downloader import get_downloader
 logger = logging.getLogger(__name__)
 
-standalone_mode = 'nodes' not in sys.modules
+standalone_mode = os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
 
 # Node registry for tracking active workflow nodes
 class NodeRegistry:

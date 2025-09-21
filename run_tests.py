@@ -10,6 +10,10 @@ import sys
 import os
 from pathlib import Path
 
+# Set environment variable to indicate standalone mode
+# HF_HUB_DISABLE_TELEMETRY is from ComfyUI main.py
+standalone_mode = os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
+
 def main():
     """Run pytest from the tests directory to avoid import issues."""
     # Get the script directory
