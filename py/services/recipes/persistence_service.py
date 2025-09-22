@@ -1,7 +1,6 @@
 """Services encapsulating recipe persistence workflows."""
 from __future__ import annotations
 
-import asyncio
 import base64
 import json
 import os
@@ -123,7 +122,7 @@ class RecipePersistenceService:
         self._exif_utils.append_recipe_metadata(image_path, recipe_data)
 
         matching_recipes = await self._find_matching_recipes(recipe_scanner, fingerprint, exclude_id=recipe_id)
-        await self._update_cache(recipe_scanner, recipe_data)
+        await recipe_scanner.add_recipe(recipe_data)
 
         return PersistenceResult(
             {
@@ -154,7 +153,7 @@ class RecipePersistenceService:
         if image_path and os.path.exists(image_path):
             os.remove(image_path)
 
-        await self._remove_from_cache(recipe_scanner, recipe_id)
+        await recipe_scanner.remove_recipe(recipe_id)
         return PersistenceResult({"success": True, "message": "Recipe deleted successfully"})
 
     async def update_recipe(self, *, recipe_scanner, recipe_id: str, updates: dict[str, Any]) -> PersistenceResult:
@@ -185,40 +184,16 @@ class RecipePersistenceService:
         if not os.path.exists(recipe_path):
             raise RecipeNotFoundError("Recipe not found")
 
-        lora_scanner = getattr(recipe_scanner, "_lora_scanner", None)
-        target_lora = None if lora_scanner is None else await lora_scanner.get_model_info_by_name(target_name)
+        target_lora = await recipe_scanner.get_local_lora(target_name)
         if not target_lora:
             raise RecipeNotFoundError(f"Local LoRA not found with name: {target_name}")
 
-        with open(recipe_path, "r", encoding="utf-8") as file_obj:
-            recipe_data = json.load(file_obj)
-
-        loras = recipe_data.get("loras", [])
-        if lora_index >= len(loras):
-            raise RecipeNotFoundError("LoRA index out of range in recipe")
-
-        lora = loras[lora_index]
-        lora["isDeleted"] = False
-        lora["exclude"] = False
-        lora["file_name"] = target_name
-        if "sha256" in target_lora:
-            lora["hash"] = target_lora["sha256"].lower()
-        if target_lora.get("civitai"):
-            lora["modelName"] = target_lora["civitai"]["model"]["name"]
-            lora["modelVersionName"] = target_lora["civitai"]["name"]
-            lora["modelVersionId"] = target_lora["civitai"]["id"]
-
-        recipe_data["fingerprint"] = calculate_recipe_fingerprint(recipe_data.get("loras", []))
-
-        with open(recipe_path, "w", encoding="utf-8") as file_obj:
-            json.dump(recipe_data, file_obj, indent=4, ensure_ascii=False)
-
-        updated_lora = dict(lora)
-        updated_lora["inLibrary"] = True
-        updated_lora["preview_url"] = config.get_preview_static_url(target_lora["preview_url"])
-        updated_lora["localPath"] = target_lora["file_path"]
-
-        await self._refresh_cache_after_update(recipe_scanner, recipe_id, recipe_data)
+        recipe_data, updated_lora = await recipe_scanner.update_lora_entry(
+            recipe_id,
+            lora_index,
+            target_name=target_name,
+            target_lora=target_lora,
+        )
 
         image_path = recipe_data.get("file_path")
         if image_path and os.path.exists(image_path):
@@ -276,7 +251,7 @@ class RecipePersistenceService:
                 failed_recipes.append({"id": recipe_id, "reason": str(exc)})
 
         if deleted_recipes:
-            await self._bulk_remove_from_cache(recipe_scanner, deleted_recipes)
+            await recipe_scanner.bulk_remove(deleted_recipes)
 
         return PersistenceResult(
             {
@@ -314,14 +289,11 @@ class RecipePersistenceService:
         if not lora_matches:
             raise RecipeValidationError("No LoRAs found in the generation metadata")
 
-        lora_scanner = getattr(recipe_scanner, "_lora_scanner", None)
         loras_data = []
         base_model_counts: Dict[str, int] = {}
 
         for name, strength in lora_matches:
-            lora_info = None
-            if lora_scanner is not None:
-                lora_info = await lora_scanner.get_model_info_by_name(name)
+            lora_info = await recipe_scanner.get_local_lora(name)
             lora_data = {
                 "file_name": name,
                 "strength": float(strength),
@@ -366,7 +338,7 @@ class RecipePersistenceService:
             json.dump(recipe_data, file_obj, indent=4, ensure_ascii=False)
 
         self._exif_utils.append_recipe_metadata(image_path, recipe_data)
-        await self._update_cache(recipe_scanner, recipe_data)
+        await recipe_scanner.add_recipe(recipe_data)
 
         return PersistenceResult(
             {
@@ -421,45 +393,6 @@ class RecipePersistenceService:
         if exclude_id and exclude_id in matches:
             matches.remove(exclude_id)
         return matches
-
-    async def _update_cache(self, recipe_scanner, recipe_data: dict[str, Any]) -> None:
-        cache = getattr(recipe_scanner, "_cache", None)
-        if cache is not None:
-            cache.raw_data.append(recipe_data)
-            asyncio.create_task(cache.resort())
-            self._logger.info("Added recipe %s to cache", recipe_data.get("id"))
-
-    async def _remove_from_cache(self, recipe_scanner, recipe_id: str) -> None:
-        cache = getattr(recipe_scanner, "_cache", None)
-        if cache is not None:
-            cache.raw_data = [item for item in cache.raw_data if str(item.get("id", "")) != recipe_id]
-            asyncio.create_task(cache.resort())
-            self._logger.info("Removed recipe %s from cache", recipe_id)
-
-    async def _bulk_remove_from_cache(self, recipe_scanner, recipe_ids: Iterable[str]) -> None:
-        cache = getattr(recipe_scanner, "_cache", None)
-        if cache is not None:
-            recipe_ids_set = set(recipe_ids)
-            cache.raw_data = [item for item in cache.raw_data if item.get("id") not in recipe_ids_set]
-            asyncio.create_task(cache.resort())
-            self._logger.info("Removed %s recipes from cache", len(recipe_ids_set))
-
-    async def _refresh_cache_after_update(
-        self,
-        recipe_scanner,
-        recipe_id: str,
-        recipe_data: dict[str, Any],
-    ) -> None:
-        cache = getattr(recipe_scanner, "_cache", None)
-        if cache is not None:
-            for cache_item in cache.raw_data:
-                if cache_item.get("id") == recipe_id:
-                    cache_item.update({
-                        "loras": recipe_data.get("loras", []),
-                        "fingerprint": recipe_data.get("fingerprint"),
-                    })
-                    asyncio.create_task(cache.resort())
-                    break
 
     def _derive_recipe_name(self, lora_matches: list[tuple[str, str]]) -> str:
         recipe_name_parts = [f"{name.strip()}-{float(strength):.2f}" for name, strength in lora_matches[:3]]

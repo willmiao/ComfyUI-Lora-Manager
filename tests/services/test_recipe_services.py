@@ -108,6 +108,10 @@ async def test_save_recipe_reports_duplicates(tmp_path):
             self.last_fingerprint = fingerprint
             return ["existing"]
 
+        async def add_recipe(self, recipe_data):
+            self._cache.raw_data.append(recipe_data)
+            await self._cache.resort()
+
     scanner = DummyScanner(tmp_path)
     service = RecipePersistenceService(
         exif_utils=exif_utils,
