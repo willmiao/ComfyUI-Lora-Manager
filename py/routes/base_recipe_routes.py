@@ -11,6 +11,15 @@ from ..config import config
 from ..services.server_i18n import server_i18n
 from ..services.service_registry import ServiceRegistry
 from ..services.settings_manager import settings
+from .handlers.recipe_handlers import (
+    RecipeAnalysisHandler,
+    RecipeHandlerSet,
+    RecipeListingHandler,
+    RecipeManagementHandler,
+    RecipePageView,
+    RecipeQueryHandler,
+    RecipeSharingHandler,
+)
 from .recipe_route_registrar import ROUTE_DEFINITIONS
 
 logger = logging.getLogger(__name__)
@@ -22,6 +31,8 @@ class BaseRecipeRoutes:
     _HANDLER_NAMES: tuple[str, ...] = tuple(
         definition.handler_name for definition in ROUTE_DEFINITIONS
     )
+
+    template_name: str = "recipes.html"
 
     def __init__(self) -> None:
         self.recipe_scanner = None
@@ -36,6 +47,7 @@ class BaseRecipeRoutes:
 
         self._i18n_registered = False
         self._startup_hooks_registered = False
+        self._handler_set: RecipeHandlerSet | None = None
         self._handler_mapping: dict[str, Callable] | None = None
 
     async def attach_dependencies(self, app: web.Application | None = None) -> None:
@@ -81,10 +93,9 @@ class BaseRecipeRoutes:
         """Return a mapping of handler name to coroutine for registrar binding."""
 
         if self._handler_mapping is None:
-            owner = self.get_handler_owner()
-            self._handler_mapping = {
-                name: getattr(owner, name) for name in self._HANDLER_NAMES
-            }
+            handler_set = self._create_handler_set()
+            self._handler_set = handler_set
+            self._handler_mapping = handler_set.to_route_mapping()
         return self._handler_mapping
 
     # Internal helpers -------------------------------------------------
@@ -105,5 +116,57 @@ class BaseRecipeRoutes:
     def get_handler_owner(self):
         """Return the object supplying bound handler coroutines."""
 
-        return self
+        if self._handler_set is None:
+            self._handler_set = self._create_handler_set()
+        return self._handler_set
+
+    def _create_handler_set(self) -> RecipeHandlerSet:
+        recipe_scanner_getter = lambda: self.recipe_scanner
+        civitai_client_getter = lambda: self.civitai_client
+
+        page_view = RecipePageView(
+            ensure_dependencies_ready=self.ensure_dependencies_ready,
+            settings_service=self.settings,
+            server_i18n=self.server_i18n,
+            template_env=self.template_env,
+            template_name=self.template_name,
+            recipe_scanner_getter=recipe_scanner_getter,
+            logger=logger,
+        )
+        listing = RecipeListingHandler(
+            ensure_dependencies_ready=self.ensure_dependencies_ready,
+            recipe_scanner_getter=recipe_scanner_getter,
+            logger=logger,
+        )
+        query = RecipeQueryHandler(
+            ensure_dependencies_ready=self.ensure_dependencies_ready,
+            recipe_scanner_getter=recipe_scanner_getter,
+            format_recipe_file_url=listing.format_recipe_file_url,
+            logger=logger,
+        )
+        management = RecipeManagementHandler(
+            ensure_dependencies_ready=self.ensure_dependencies_ready,
+            recipe_scanner_getter=recipe_scanner_getter,
+            logger=logger,
+        )
+        analysis = RecipeAnalysisHandler(
+            ensure_dependencies_ready=self.ensure_dependencies_ready,
+            recipe_scanner_getter=recipe_scanner_getter,
+            civitai_client_getter=civitai_client_getter,
+            logger=logger,
+        )
+        sharing = RecipeSharingHandler(
+            ensure_dependencies_ready=self.ensure_dependencies_ready,
+            recipe_scanner_getter=recipe_scanner_getter,
+            logger=logger,
+        )
+
+        return RecipeHandlerSet(
+            page_view=page_view,
+            listing=listing,
+            query=query,
+            management=management,
+            analysis=analysis,
+            sharing=sharing,
+        )
 
