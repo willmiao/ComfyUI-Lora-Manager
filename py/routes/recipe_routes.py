@@ -56,11 +56,6 @@ class RecipeRoutes(BaseRecipeRoutes):
             # 设置服务端i18n语言
             self.server_i18n.set_locale(user_language)
 
-            # 为模板环境添加i18n过滤器
-            if not hasattr(self.template_env, '_i18n_filter_added'):
-                self._ensure_i18n_filter()
-                self.template_env._i18n_filter_added = True
-
             # Skip initialization check and directly try to get cached data
             try:
                 # Recipe scanner will initialize cache if needed
