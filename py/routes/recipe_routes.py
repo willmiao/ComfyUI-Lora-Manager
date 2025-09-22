@@ -1,7 +1,6 @@
 import os
 import time
 import base64
-import jinja2
 import numpy as np
 from PIL import Image
 import io
@@ -12,19 +11,17 @@ import tempfile
 import json
 import asyncio
 import sys
+
+from .base_recipe_routes import BaseRecipeRoutes
+from .recipe_route_registrar import RecipeRouteRegistrar
 from ..utils.exif_utils import ExifUtils
 from ..recipes import RecipeParserFactory
 from ..utils.constants import CARD_PREVIEW_WIDTH
-
-from ..services.settings_manager import settings
-from ..services.server_i18n import server_i18n
 from ..config import config
+from ..services.downloader import get_downloader
 
 # Check if running in standalone mode
 standalone_mode = os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
-
-from ..services.service_registry import ServiceRegistry  # Add ServiceRegistry import
-from ..services.downloader import get_downloader
 
 # Only import MetadataRegistry in non-standalone mode
 if not standalone_mode:
@@ -35,111 +32,35 @@ if not standalone_mode:
 
 logger = logging.getLogger(__name__)
 
-class RecipeRoutes:
-    """API route handlers for Recipe management"""
 
-    def __init__(self):
-        # Initialize service references as None, will be set during async init
-        self.recipe_scanner = None
-        self.civitai_client = None
-        self.template_env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(config.templates_path),
-            autoescape=True
-        )
-        
-        # Pre-warm the cache
-        self._init_cache_task = None
-
-    async def init_services(self):
-        """Initialize services from ServiceRegistry"""
-        self.recipe_scanner = await ServiceRegistry.get_recipe_scanner()
-        self.civitai_client = await ServiceRegistry.get_civitai_client()
+class RecipeRoutes(BaseRecipeRoutes):
+    """API route handlers for Recipe management."""
 
     @classmethod
     def setup_routes(cls, app: web.Application):
-        """Register API routes"""
+        """Register API routes using the declarative registrar."""
+
         routes = cls()
-        app.router.add_get('/loras/recipes', routes.handle_recipes_page)
+        registrar = RecipeRouteRegistrar(app)
+        registrar.register_routes(routes.to_route_mapping())
+        routes.register_startup_hooks(app)
 
-        app.router.add_get('/api/lm/recipes', routes.get_recipes)
-        app.router.add_get('/api/lm/recipe/{recipe_id}', routes.get_recipe_detail)
-        app.router.add_post('/api/lm/recipes/analyze-image', routes.analyze_recipe_image)
-        app.router.add_post('/api/lm/recipes/analyze-local-image', routes.analyze_local_image)
-        app.router.add_post('/api/lm/recipes/save', routes.save_recipe)
-        app.router.add_delete('/api/lm/recipe/{recipe_id}', routes.delete_recipe)
-        
-        # Add new filter-related endpoints
-        app.router.add_get('/api/lm/recipes/top-tags', routes.get_top_tags)
-        app.router.add_get('/api/lm/recipes/base-models', routes.get_base_models)
-        
-        # Add new sharing endpoints
-        app.router.add_get('/api/lm/recipe/{recipe_id}/share', routes.share_recipe)
-        app.router.add_get('/api/lm/recipe/{recipe_id}/share/download', routes.download_shared_recipe)
-        
-        # Add new endpoint for getting recipe syntax
-        app.router.add_get('/api/lm/recipe/{recipe_id}/syntax', routes.get_recipe_syntax)
-        
-        # Add new endpoint for updating recipe metadata (name, tags and source_path)
-        app.router.add_put('/api/lm/recipe/{recipe_id}/update', routes.update_recipe)
-        
-        # Add new endpoint for reconnecting deleted LoRAs
-        app.router.add_post('/api/lm/recipe/lora/reconnect', routes.reconnect_lora)
-        
-        # Add new endpoint for finding duplicate recipes
-        app.router.add_get('/api/lm/recipes/find-duplicates', routes.find_duplicates)
-        
-        # Add new endpoint for bulk deletion of recipes
-        app.router.add_post('/api/lm/recipes/bulk-delete', routes.bulk_delete)
-        
-        # Start cache initialization
-        app.on_startup.append(routes._init_cache)
-        
-        app.router.add_post('/api/lm/recipes/save-from-widget', routes.save_recipe_from_widget)
-        
-        # Add route to get recipes for a specific Lora
-        app.router.add_get('/api/lm/recipes/for-lora', routes.get_recipes_for_lora)
-        
-        # Add new endpoint for scanning and rebuilding the recipe cache
-        app.router.add_get('/api/lm/recipes/scan', routes.scan_recipes)
-    
-    async def _init_cache(self, app):
-        """Initialize cache on startup"""
+    async def render_page(self, request: web.Request) -> web.Response:
+        """Handle GET /loras/recipes request."""
         try:
-            # Initialize services first
-            await self.init_services()
-            
-            # Now that services are initialized, get the lora scanner
-            lora_scanner = self.recipe_scanner._lora_scanner
-            
-            # Get lora cache to ensure it's initialized
-            lora_cache = await lora_scanner.get_cached_data()
-            
-            # Verify hash index is built
-            if hasattr(lora_scanner, '_hash_index'):
-                hash_index_size = len(lora_scanner._hash_index._hash_to_path) if hasattr(lora_scanner._hash_index, '_hash_to_path') else 0
-            
-            # Now that lora scanner is initialized, initialize recipe cache
-            await self.recipe_scanner.get_cached_data(force_refresh=True)
-        except Exception as e:
-            logger.error(f"Error pre-warming recipe cache: {e}", exc_info=True)
+            await self.ensure_dependencies_ready()
 
-    async def handle_recipes_page(self, request: web.Request) -> web.Response:
-        """Handle GET /loras/recipes request"""
-        try:
-            # Ensure services are initialized
-            await self.init_services()
-            
             # 获取用户语言设置
-            user_language = settings.get('language', 'en')
-            
+            user_language = self.settings.get('language', 'en')
+
             # 设置服务端i18n语言
-            server_i18n.set_locale(user_language)
-            
+            self.server_i18n.set_locale(user_language)
+
             # 为模板环境添加i18n过滤器
             if not hasattr(self.template_env, '_i18n_filter_added'):
-                self.template_env.filters['t'] = server_i18n.create_template_filter()
+                self._ensure_i18n_filter()
                 self.template_env._i18n_filter_added = True
-            
+
             # Skip initialization check and directly try to get cached data
             try:
                 # Recipe scanner will initialize cache if needed
@@ -148,10 +69,10 @@ class RecipeRoutes:
                 rendered = template.render(
                     recipes=[],  # Frontend will load recipes via API
                     is_initializing=False,
-                    settings=settings,
+                    settings=self.settings,
                     request=request,
                     # 添加服务端翻译函数
-                    t=server_i18n.get_translation,
+                    t=self.server_i18n.get_translation,
                 )
             except Exception as cache_error:
                 logger.error(f"Error loading recipe cache data: {cache_error}")
@@ -159,10 +80,10 @@ class RecipeRoutes:
                 template = self.template_env.get_template('recipes.html')
                 rendered = template.render(
                     is_initializing=True,
-                    settings=settings,
+                    settings=self.settings,
                     request=request,
                     # 添加服务端翻译函数
-                    t=server_i18n.get_translation,
+                    t=self.server_i18n.get_translation,
                 )
                 logger.info("Recipe cache error, returning initialization page")
             
@@ -178,11 +99,11 @@ class RecipeRoutes:
                 status=500
             )
     
-    async def get_recipes(self, request: web.Request) -> web.Response:
-        """API endpoint for getting paginated recipes"""
+    async def list_recipes(self, request: web.Request) -> web.Response:
+        """API endpoint for getting paginated recipes."""
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             # Get query parameters with defaults
             page = int(request.query.get('page', '1'))
@@ -250,11 +171,11 @@ class RecipeRoutes:
             logger.error(f"Error retrieving recipes: {e}", exc_info=True)
             return web.json_response({"error": str(e)}, status=500)
 
-    async def get_recipe_detail(self, request: web.Request) -> web.Response:
-        """Get detailed information about a specific recipe"""
+    async def get_recipe(self, request: web.Request) -> web.Response:
+        """Get detailed information about a specific recipe."""
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             recipe_id = request.match_info['recipe_id']
             
@@ -305,12 +226,12 @@ class RecipeRoutes:
         from datetime import datetime
         return datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S') 
 
-    async def analyze_recipe_image(self, request: web.Request) -> web.Response:
-        """Analyze an uploaded image or URL for recipe metadata"""
+    async def analyze_uploaded_image(self, request: web.Request) -> web.Response:
+        """Analyze an uploaded image or URL for recipe metadata."""
         temp_path = None
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             # Check if request contains multipart data (image) or JSON data (url)
             content_type = request.headers.get('Content-Type', '')
@@ -480,7 +401,7 @@ class RecipeRoutes:
         """Analyze a local image file for recipe metadata"""
         try:
             # Ensure services are initialized 
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             # Get JSON data from request
             data = await request.json()
@@ -573,7 +494,7 @@ class RecipeRoutes:
         """Save a recipe to the recipes folder"""
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             reader = await request.multipart()
             
@@ -779,7 +700,7 @@ class RecipeRoutes:
         """Delete a recipe by ID"""
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             recipe_id = request.match_info['recipe_id']
             
@@ -829,7 +750,7 @@ class RecipeRoutes:
         """Get top tags used in recipes"""
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             # Get limit parameter with default
             limit = int(request.query.get('limit', '20'))
@@ -864,7 +785,7 @@ class RecipeRoutes:
         """Get base models used in recipes"""
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             # Get all recipes from cache
             cache = await self.recipe_scanner.get_cached_data()
@@ -895,7 +816,7 @@ class RecipeRoutes:
         """Process a recipe image for sharing by adding metadata to EXIF"""
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             recipe_id = request.match_info['recipe_id']
             
@@ -957,7 +878,7 @@ class RecipeRoutes:
         """Serve a processed recipe image for download"""
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             recipe_id = request.match_info['recipe_id']
             
@@ -1016,7 +937,7 @@ class RecipeRoutes:
         """Save a recipe from the LoRAs widget"""
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             # Get metadata using the metadata collector instead of workflow parsing
             raw_metadata = get_metadata()
@@ -1216,7 +1137,7 @@ class RecipeRoutes:
         """Generate recipe syntax for LoRAs in the recipe, looking up proper file names using hash_index"""
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             recipe_id = request.match_info['recipe_id']
             
@@ -1299,7 +1220,7 @@ class RecipeRoutes:
         """Update recipe metadata (name and tags)"""
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             recipe_id = request.match_info['recipe_id']
             data = await request.json()
@@ -1329,7 +1250,7 @@ class RecipeRoutes:
         """Reconnect a deleted LoRA in a recipe to a local LoRA file"""
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             # Parse request data
             data = await request.json()
@@ -1438,7 +1359,7 @@ class RecipeRoutes:
         """Get recipes that use a specific Lora"""
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             lora_hash = request.query.get('hash')
             
@@ -1487,7 +1408,7 @@ class RecipeRoutes:
         """API endpoint for scanning and rebuilding the recipe cache"""
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             # Force refresh the recipe cache
             logger.info("Manually triggering recipe cache rebuild")
@@ -1508,7 +1429,7 @@ class RecipeRoutes:
         """Find all duplicate recipes based on fingerprints"""
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             # Get all duplicate recipes
             duplicate_groups = await self.recipe_scanner.find_all_duplicate_recipes()
@@ -1566,7 +1487,7 @@ class RecipeRoutes:
         """Delete multiple recipes by ID"""
         try:
             # Ensure services are initialized
-            await self.init_services()
+            await self.ensure_dependencies_ready()
             
             # Parse request data
             data = await request.json()
@@ -1650,3 +1571,9 @@ class RecipeRoutes:
                 'success': False,
                 'error': str(e)
             }, status=500)
+
+    # Legacy method aliases retained for compatibility with existing imports.
+    handle_recipes_page = render_page
+    get_recipes = list_recipes
+    get_recipe_detail = get_recipe
+    analyze_recipe_image = analyze_uploaded_image
