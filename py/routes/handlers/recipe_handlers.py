@@ -290,27 +290,7 @@ class RecipeQueryHandler:
             if not lora_hash:
                 return web.json_response({"success": False, "error": "Lora hash is required"}, status=400)
 
-            cache = await recipe_scanner.get_cached_data()
-            matching_recipes = []
-            for recipe in getattr(cache, "raw_data", []):
-                for lora in recipe.get("loras", []):
-                    if lora.get("hash", "").lower() == lora_hash.lower():
-                        matching_recipes.append(recipe)
-                        break
-
-            lora_scanner = getattr(recipe_scanner, "_lora_scanner", None)
-            for recipe in matching_recipes:
-                for lora in recipe.get("loras", []):
-                    hash_value = (lora.get("hash") or "").lower()
-                    if hash_value and lora_scanner is not None:
-                        lora["inLibrary"] = lora_scanner.has_hash(hash_value)
-                        lora["preview_url"] = lora_scanner.get_preview_url_by_hash(hash_value)
-                        lora["localPath"] = lora_scanner.get_path_by_hash(hash_value)
-                if recipe.get("file_path"):
-                    recipe["file_url"] = self._format_recipe_file_url(recipe["file_path"])
-                else:
-                    recipe["file_url"] = "/loras_static/images/no-preview.png"
-
+            matching_recipes = await recipe_scanner.get_recipes_for_lora(lora_hash)
             return web.json_response({"success": True, "recipes": matching_recipes})
         except Exception as exc:
             self._logger.error("Error getting recipes for Lora: %s", exc)
@@ -384,50 +364,15 @@ class RecipeQueryHandler:
                 raise RuntimeError("Recipe scanner unavailable")
 
             recipe_id = request.match_info["recipe_id"]
-            cache = await recipe_scanner.get_cached_data()
-            recipe = next(
-                (r for r in getattr(cache, "raw_data", []) if str(r.get("id", "")) == recipe_id),
-                None,
-            )
-            if not recipe:
+            try:
+                syntax_parts = await recipe_scanner.get_recipe_syntax_tokens(recipe_id)
+            except RecipeNotFoundError:
                 return web.json_response({"error": "Recipe not found"}, status=404)
 
-            loras = recipe.get("loras", [])
-            if not loras:
+            if not syntax_parts:
                 return web.json_response({"error": "No LoRAs found in this recipe"}, status=400)
 
-            lora_scanner = getattr(recipe_scanner, "_lora_scanner", None)
-            hash_index = getattr(lora_scanner, "_hash_index", None)
-
-            lora_syntax_parts = []
-            for lora in loras:
-                if lora.get("isDeleted", False):
-                    continue
-                hash_value = (lora.get("hash") or "").lower()
-                if not hash_value or lora_scanner is None or not lora_scanner.has_hash(hash_value):
-                    continue
-
-                file_name = None
-                if hash_value and hash_index is not None and hasattr(hash_index, "_hash_to_path"):
-                    file_path = hash_index._hash_to_path.get(hash_value)
-                    if file_path:
-                        file_name = os.path.splitext(os.path.basename(file_path))[0]
-
-                if not file_name and lora.get("modelVersionId") and lora_scanner is not None:
-                    all_loras = await lora_scanner.get_cached_data()
-                    for cached_lora in getattr(all_loras, "raw_data", []):
-                        civitai_info = cached_lora.get("civitai")
-                        if civitai_info and civitai_info.get("id") == lora.get("modelVersionId"):
-                            file_name = os.path.splitext(os.path.basename(cached_lora["path"]))[0]
-                            break
-
-                if not file_name:
-                    file_name = lora.get("file_name", "unknown-lora")
-
-                strength = lora.get("strength", 1.0)
-                lora_syntax_parts.append(f"<lora:{file_name}:{strength}>")
-
-            return web.json_response({"success": True, "syntax": " ".join(lora_syntax_parts)})
+            return web.json_response({"success": True, "syntax": " ".join(syntax_parts)})
         except Exception as exc:
             self._logger.error("Error generating recipe syntax: %s", exc, exc_info=True)
             return web.json_response({"error": str(exc)}, status=500)

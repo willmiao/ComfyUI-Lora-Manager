@@ -38,11 +38,7 @@ class RecipeSharingService:
     async def share_recipe(self, *, recipe_scanner, recipe_id: str) -> SharingResult:
         """Prepare a temporary downloadable copy of a recipe image."""
 
-        cache = await recipe_scanner.get_cached_data()
-        recipe = next(
-            (r for r in getattr(cache, "raw_data", []) if str(r.get("id", "")) == recipe_id),
-            None,
-        )
+        recipe = await recipe_scanner.get_recipe_by_id(recipe_id)
         if not recipe:
             raise RecipeNotFoundError("Recipe not found")
 
@@ -81,11 +77,7 @@ class RecipeSharingService:
             self._cleanup_entry(recipe_id)
             raise RecipeNotFoundError("Shared recipe file not found")
 
-        cache = await recipe_scanner.get_cached_data()
-        recipe = next(
-            (r for r in getattr(cache, "raw_data", []) if str(r.get("id", "")) == recipe_id),
-            None,
-        )
+        recipe = await recipe_scanner.get_recipe_by_id(recipe_id)
         filename_base = (
             f"recipe_{recipe.get('title', '').replace(' ', '_').lower()}" if recipe else recipe_id
         )
