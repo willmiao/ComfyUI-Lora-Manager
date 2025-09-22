@@ -233,6 +233,32 @@ You can now run LoRA Manager independently from ComfyUI:
 
 This standalone mode provides a lightweight option for managing your model and recipe collection without needing to run the full ComfyUI environment, making it useful even for users who primarily use other stable diffusion interfaces.
 
+## Developer notes
+
+The REST layer is split into modular registrars, controllers, and handler sets
+to simplify maintenance:
+
+* `py/routes/recipe_route_registrar.py` holds the declarative endpoint list.
+* `py/routes/base_recipe_routes.py` wires shared services/templates and returns
+  the handler mapping consumed by `RecipeRouteRegistrar`.
+* `py/routes/handlers/recipe_handlers.py` groups HTTP adapters by concern (page
+  rendering, listings, queries, mutations, sharing) and delegates business rules
+  to services in `py/services/recipes/`.
+
+To add a new recipe endpoint:
+
+1. Declare the route in `ROUTE_DEFINITIONS` with a unique handler name.
+2. Implement the coroutine on the appropriate handler class or introduce a new
+   handler when the concern does not fit existing ones.
+3. Inject additional collaborators in
+   `BaseRecipeRoutes._create_handler_set` (for example a new service or factory)
+   so the handler can access its dependencies.
+
+The end-to-end wiring is documented in
+[`docs/architecture/recipe_routes.md`](docs/architecture/recipe_routes.md), and
+the integration suite in `tests/routes/test_recipe_routes.py` smoke-tests the
+primary endpoints.
+
 ---
 
 ## Contributing
