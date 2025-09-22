@@ -69,7 +69,6 @@ class MetadataUpdater:
             # Track that we're refreshing this model
             download_progress['refreshed_models'].add(model_hash)
             
-            # Use ModelRouteUtils to refresh metadata
             async def update_cache_func(old_path, new_path, metadata):
                 return await scanner.update_single_model_cache(old_path, new_path, metadata)
             

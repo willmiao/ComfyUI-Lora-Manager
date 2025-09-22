@@ -81,7 +81,7 @@ class MockHashIndex:
 
 
 class MockCache:
-    """Cache object with the attributes consumed by ``ModelRouteUtils``."""
+    """Cache object with the attributes."""
 
     def __init__(self, items: Optional[Sequence[Dict[str, Any]]] = None):
         self.raw_data: List[Dict[str, Any]] = list(items or [])
@@ -89,7 +89,7 @@ class MockCache:
 
     async def resort(self) -> None:
         self.resort_calls += 1
-        # ``ModelRouteUtils`` expects the coroutine interface but does not
+        # expects the coroutine interface but does not
         # rely on the return value.
 
 

@@ -1,11 +1,10 @@
 import os
 import logging
-from typing import Dict, List, Optional
+from typing import Dict
 
 from .base_model_service import BaseModelService
 from ..utils.models import EmbeddingMetadata
 from ..config import config
-from ..utils.routes_common import ModelRouteUtils
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,7 @@ class EmbeddingService(BaseModelService):
             "notes": embedding_data.get("notes", ""),
             "model_type": embedding_data.get("model_type", "embedding"),
             "favorite": embedding_data.get("favorite", False),
-            "civitai": ModelRouteUtils.filter_civitai_data(embedding_data.get("civitai", {}), minimal=True)
+            "civitai": self.filter_civitai_data(embedding_data.get("civitai", {}), minimal=True)
         }
     
     def find_duplicate_hashes(self) -> Dict:

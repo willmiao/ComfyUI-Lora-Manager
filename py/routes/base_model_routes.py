@@ -31,7 +31,6 @@ from ..services.websocket_progress_callback import (
 )
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
-from ..utils.routes_common import ModelRouteUtils
 from .model_route_registrar import COMMON_ROUTE_DEFINITIONS, ModelRouteRegistrar
 from .handlers.model_handlers import (
     ModelAutoOrganizeHandler,
@@ -235,10 +234,6 @@ class BaseModelRoutes(ABC):
     def get_handler(self, name: str) -> Callable[[web.Request], web.StreamResponse]:
         """Expose handlers for subclasses or tests."""
         return self._ensure_handler_mapping()[name]
-
-    @property
-    def utils(self) -> ModelRouteUtils:  # pragma: no cover - compatibility shim
-        return ModelRouteUtils
 
     def _ensure_service(self):
         if self.service is None:

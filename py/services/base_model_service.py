@@ -4,7 +4,6 @@ import logging
 import os
 
 from ..utils.models import BaseModelMetadata
-from ..utils.routes_common import ModelRouteUtils
 from .model_query import FilterCriteria, ModelCacheRepository, ModelFilterSet, SearchStrategy, SettingsProvider
 from .settings_manager import settings as default_settings
 
@@ -197,6 +196,18 @@ class BaseModelService(ABC):
         """Get model root directories"""
         return self.scanner.get_model_roots()
     
+    def filter_civitai_data(self, data: Dict, minimal: bool = False) -> Dict:
+        """Filter relevant fields from CivitAI data"""
+        if not data:
+            return {}
+
+        fields = ["id", "modelId", "name", "trainedWords"] if minimal else [
+            "id", "modelId", "name", "createdAt", "updatedAt",
+            "publishedAt", "trainedWords", "baseModel", "description",
+            "model", "images", "customImages", "creator"
+        ]
+        return {k: data[k] for k in fields if k in data}
+    
     async def get_folder_tree(self, model_root: str) -> Dict:
         """Get hierarchical folder tree for a specific model root"""
         cache = await self.scanner.get_cached_data()
@@ -307,7 +318,7 @@ class BaseModelService(ABC):
         
         for model in cache.raw_data:
             if model.get('file_path') == file_path:
-                return ModelRouteUtils.filter_civitai_data(model.get("civitai", {}))
+                return self.filter_civitai_data(model.get("civitai", {}))
         
         return None
 

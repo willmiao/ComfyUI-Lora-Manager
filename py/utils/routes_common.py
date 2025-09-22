@@ -18,7 +18,7 @@ from ..services.settings_manager import settings
 
 logger = logging.getLogger(__name__)
 
-
+# TODO: retire this class
 class ModelRouteUtils:
     """Shared utilities for model routes (LoRAs, Checkpoints, etc.)"""
 
