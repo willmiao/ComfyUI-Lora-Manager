@@ -1,5 +1,5 @@
 import { state, getCurrentPageState } from '../state/index.js';
-import { showToast, copyToClipboard, sendLoraToWorkflow } from '../utils/uiHelpers.js';
+import { showToast, copyToClipboard, sendLoraToWorkflow, buildLoraSyntax } from '../utils/uiHelpers.js';
 import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
@@ -321,8 +321,7 @@ export class BulkManager {
             
             if (metadata) {
                 const usageTips = JSON.parse(metadata.usageTips || '{}');
-                const strength = usageTips.strength || 1;
-                loraSyntaxes.push(`<lora:${metadata.fileName}:${strength}>`);
+                loraSyntaxes.push(buildLoraSyntax(metadata.fileName, usageTips));
             } else {
                 missingLoras.push(filepath);
             }
@@ -361,8 +360,7 @@ export class BulkManager {
             
             if (metadata) {
                 const usageTips = JSON.parse(metadata.usageTips || '{}');
-                const strength = usageTips.strength || 1;
-                loraSyntaxes.push(`<lora:${metadata.fileName}:${strength}>`);
+                loraSyntaxes.push(buildLoraSyntax(metadata.fileName, usageTips));
             } else {
                 missingLoras.push(filepath);
             }

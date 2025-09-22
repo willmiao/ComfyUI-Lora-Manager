@@ -271,6 +271,7 @@ function renderLoraSpecificContent(lora, escapedWords) {
                         <option value="strength_min">${translate('modals.model.usageTips.strengthMin', {}, 'Strength Min')}</option>
                         <option value="strength_max">${translate('modals.model.usageTips.strengthMax', {}, 'Strength Max')}</option>
                         <option value="strength">${translate('modals.model.usageTips.strength', {}, 'Strength')}</option>
+                        <option value="clip_strength">${translate('modals.model.usageTips.clipStrength', {}, 'Clip Strength')}</option>
                         <option value="clip_skip">${translate('modals.model.usageTips.clipSkip', {}, 'Clip Skip')}</option>
                     </select>
                     <input type="number" id="preset-value" step="0.01" placeholder="${translate('modals.model.usageTips.valuePlaceholder', {}, 'Value')}" style="display:none;">

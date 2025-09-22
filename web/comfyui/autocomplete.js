@@ -2,6 +2,19 @@ import { api } from "../../scripts/api.js";
 import { app } from "../../scripts/app.js";
 import { TextAreaCaretHelper } from "./textarea_caret_helper.js";
 
+function parseUsageTipNumber(value) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return value;
+    }
+    if (typeof value === 'string') {
+        const parsed = parseFloat(value);
+        if (Number.isFinite(parsed)) {
+            return parsed;
+        }
+    }
+    return null;
+}
+
 class AutoComplete {
     constructor(inputElement, modelType = 'loras', options = {}) {
         this.inputElement = inputElement;
@@ -380,8 +393,10 @@ class AutoComplete {
         // Extract just the filename for LoRA name
         const fileName = relativePath.split(/[/\\]/).pop().replace(/\.(safetensors|ckpt|pt|bin)$/i, '');
 
-        // Get usage tips and extract strength
+        // Get usage tips and extract strength information
         let strength = 1.0; // Default strength
+        let hasStrength = false;
+        let clipStrength = null;
         try {
             const response = await api.fetchApi(`/lm/loras/usage-tips-by-path?relative_path=${encodeURIComponent(relativePath)}`);
             if (response.ok) {
@@ -389,8 +404,18 @@ class AutoComplete {
                 if (data.success && data.usage_tips) {
                     try {
                         const usageTips = JSON.parse(data.usage_tips);
-                        if (usageTips.strength && typeof usageTips.strength === 'number') {
-                            strength = usageTips.strength;
+                        const parsedStrength = parseUsageTipNumber(usageTips.strength);
+                        if (parsedStrength !== null) {
+                            strength = parsedStrength;
+                            hasStrength = true;
+                        }
+                        const clipSource = usageTips.clip_strength ?? usageTips.clipStrength;
+                        const parsedClipStrength = parseUsageTipNumber(clipSource);
+                        if (parsedClipStrength !== null) {
+                            clipStrength = parsedClipStrength;
+                            if (!hasStrength) {
+                                strength = 1.0;
+                            }
                         }
                     } catch (parseError) {
                         console.warn('Failed to parse usage tips JSON:', parseError);
@@ -401,8 +426,10 @@ class AutoComplete {
             console.warn('Failed to fetch usage tips:', error);
         }
 
-        // Format the LoRA code with strength
-        const loraCode = `<lora:${fileName}:${strength}>, `;
+        // Format the LoRA code with strength values
+        const loraCode = clipStrength !== null
+            ? `<lora:${fileName}:${strength}:${clipStrength}>, `
+            : `<lora:${fileName}:${strength}>, `;
 
         const currentValue = this.inputElement.value;
         const caretPos = this.getCaretPosition();

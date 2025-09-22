@@ -727,6 +727,7 @@
                 "strengthMin": "Force Min",
                 "strengthMax": "Force Max",
                 "strength": "Force",
+                "clipStrength": "Force Clip",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Valeur",
                 "add": "Ajouter"
