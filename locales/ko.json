@@ -727,6 +727,7 @@
                 "strengthMin": "최소 강도",
                 "strengthMax": "최대 강도",
                 "strength": "강도",
+                "clipStrength": "클립 강도",
                 "clipSkip": "클립 스킵",
                 "valuePlaceholder": "값",
                 "add": "추가"

@@ -1,4 +1,4 @@
-import { showToast, openCivitai, copyToClipboard, copyLoraSyntax, sendLoraToWorkflow, openExampleImagesFolder } from '../../utils/uiHelpers.js';
+import { showToast, openCivitai, copyToClipboard, copyLoraSyntax, sendLoraToWorkflow, openExampleImagesFolder, buildLoraSyntax } from '../../utils/uiHelpers.js';
 import { state, getCurrentPageState } from '../../state/index.js';
 import { showModelModal } from './ModelModal.js';
 import { toggleShowcase } from './showcase/ShowcaseView.js';
@@ -155,8 +155,7 @@ async function toggleFavorite(card) {
 function handleSendToWorkflow(card, replaceMode, modelType) {
     if (modelType === MODEL_TYPES.LORA) {
         const usageTips = JSON.parse(card.dataset.usage_tips || '{}');
-        const strength = usageTips.strength || 1;
-        const loraSyntax = `<lora:${card.dataset.file_name}:${strength}>`;
+        const loraSyntax = buildLoraSyntax(card.dataset.file_name, usageTips);
         sendLoraToWorkflow(loraSyntax, replaceMode, 'lora');
     } else {
         // Checkpoint send functionality - to be implemented

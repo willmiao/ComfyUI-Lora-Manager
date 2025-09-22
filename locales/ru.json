@@ -727,6 +727,7 @@
                 "strengthMin": "Мин. сила",
                 "strengthMax": "Макс. сила",
                 "strength": "Сила",
+                "clipStrength": "Сила клипа",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Значение",
                 "add": "Добавить"

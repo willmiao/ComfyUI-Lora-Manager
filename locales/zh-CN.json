@@ -727,6 +727,7 @@
                 "strengthMin": "最小强度",
                 "strengthMax": "最大强度",
                 "strength": "强度",
+                "clipStrength": "Clip 强度",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "数值",
                 "add": "添加"

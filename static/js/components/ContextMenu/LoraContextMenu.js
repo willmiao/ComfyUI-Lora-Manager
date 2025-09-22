@@ -1,7 +1,7 @@
 import { BaseContextMenu } from './BaseContextMenu.js';
 import { ModelContextMenuMixin } from './ModelContextMenuMixin.js';
 import { getModelApiClient, resetAndReload } from '../../api/modelApiFactory.js';
-import { copyLoraSyntax, sendLoraToWorkflow } from '../../utils/uiHelpers.js';
+import { copyLoraSyntax, sendLoraToWorkflow, buildLoraSyntax } from '../../utils/uiHelpers.js';
 import { showExcludeModal, showDeleteModal } from '../../utils/modalUtils.js';
 import { moveManager } from '../../managers/MoveManager.js';
 
@@ -70,9 +70,8 @@ export class LoraContextMenu extends BaseContextMenu {
     sendLoraToWorkflow(replaceMode) {
         const card = this.currentCard;
         const usageTips = JSON.parse(card.dataset.usage_tips || '{}');
-        const strength = usageTips.strength || 1;
-        const loraSyntax = `<lora:${card.dataset.file_name}:${strength}>`;
-        
+        const loraSyntax = buildLoraSyntax(card.dataset.file_name, usageTips);
+
         sendLoraToWorkflow(loraSyntax, replaceMode, 'lora');
     }
 }

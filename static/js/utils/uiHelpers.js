@@ -295,10 +295,48 @@ export function getNSFWLevelName(level) {
     return 'Unknown';
 }
 
+function parseUsageTipNumber(value) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+export function getLoraStrengthsFromUsageTips(usageTips = {}) {
+  const parsedStrength = parseUsageTipNumber(usageTips.strength);
+  const clipStrengthSource = usageTips.clip_strength ?? usageTips.clipStrength;
+  const parsedClipStrength = parseUsageTipNumber(clipStrengthSource);
+
+  return {
+    strength: parsedStrength !== null ? parsedStrength : 1,
+    hasStrength: parsedStrength !== null,
+    clipStrength: parsedClipStrength,
+    hasClipStrength: parsedClipStrength !== null,
+  };
+}
+
+export function buildLoraSyntax(fileName, usageTips = {}) {
+  const { strength, hasStrength, clipStrength, hasClipStrength } = getLoraStrengthsFromUsageTips(usageTips);
+
+  if (hasClipStrength) {
+    const modelStrength = hasStrength ? strength : 1;
+    return `<lora:${fileName}:${modelStrength}:${clipStrength}>`;
+  }
+
+  return `<lora:${fileName}:${strength}>`;
+}
+
 export function copyLoraSyntax(card) {
   const usageTips = JSON.parse(card.dataset.usage_tips || "{}");
-  const strength = usageTips.strength || 1;
-  const baseSyntax = `<lora:${card.dataset.file_name}:${strength}>`;
+  const baseSyntax = buildLoraSyntax(card.dataset.file_name, usageTips);
 
   // Check if trigger words should be included
   const includeTriggerWords = state.global.settings.includeTriggerWords;
