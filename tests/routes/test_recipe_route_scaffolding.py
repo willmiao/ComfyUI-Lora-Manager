@@ -128,31 +128,38 @@ def test_register_startup_hooks_appends_once():
     assert len(startup_bound_to_routes) == 2
 
 
-def test_to_route_mapping_uses_handler_owner(monkeypatch: pytest.MonkeyPatch):
-    class DummyOwner:
-        async def render_page(self, request):
-            return web.Response(text="ok")
+def test_to_route_mapping_uses_handler_set():
+    class DummyHandlerSet:
+        def __init__(self):
+            self.calls = 0
 
-        async def list_recipes(self, request):  # pragma: no cover - invoked via mapping
-            return web.json_response({})
+        def to_route_mapping(self):
+            self.calls += 1
+
+            async def render_page(request):  # pragma: no cover - simple coroutine
+                return web.Response(text="ok")
+
+            return {"render_page": render_page}
 
     class DummyRoutes(base_routes_module.BaseRecipeRoutes):
-        def get_handler_owner(self):  # noqa: D401 - simple override for test
-            return DummyOwner()
+        def __init__(self):
+            super().__init__()
+            self.created = 0
 
-    monkeypatch.setattr(
-        base_routes_module.BaseRecipeRoutes,
-        "_HANDLER_NAMES",
-        ("render_page", "list_recipes"),
-    )
+        def _create_handler_set(self):  # noqa: D401 - simple override for test
+            self.created += 1
+            return DummyHandlerSet()
 
     routes = DummyRoutes()
     mapping = routes.to_route_mapping()
 
-    assert set(mapping.keys()) == {"render_page", "list_recipes"}
+    assert set(mapping.keys()) == {"render_page"}
     assert asyncio.iscoroutinefunction(mapping["render_page"])
     # Cached mapping reused on subsequent calls
     assert routes.to_route_mapping() is mapping
+    # Handler set cached for get_handler_owner callers
+    assert isinstance(routes.get_handler_owner(), DummyHandlerSet)
+    assert routes.created == 1
 
 
 def test_recipe_route_registrar_binds_every_route():
