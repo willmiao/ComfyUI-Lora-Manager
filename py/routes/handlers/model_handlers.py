@@ -30,7 +30,6 @@ from ...services.use_cases import (
 from ...services.websocket_manager import WebSocketManager
 from ...services.websocket_progress_callback import WebSocketProgressCallback
 from ...utils.file_utils import calculate_sha256
-from ...utils.routes_common import ModelRouteUtils
 
 
 class ModelPageView:
@@ -192,18 +191,44 @@ class ModelManagementHandler:
         metadata_sync: MetadataSyncService,
         preview_service: PreviewAssetService,
         tag_update_service: TagUpdateService,
+        lifecycle_service,
     ) -> None:
         self._service = service
         self._logger = logger
         self._metadata_sync = metadata_sync
         self._preview_service = preview_service
         self._tag_update_service = tag_update_service
+        self._lifecycle_service = lifecycle_service
 
     async def delete_model(self, request: web.Request) -> web.Response:
-        return await ModelRouteUtils.handle_delete_model(request, self._service.scanner)
+        try:
+            data = await request.json()
+            file_path = data.get("file_path")
+            if not file_path:
+                return web.Response(text="Model path is required", status=400)
+
+            result = await self._lifecycle_service.delete_model(file_path)
+            return web.json_response(result)
+        except ValueError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except Exception as exc:
+            self._logger.error("Error deleting model: %s", exc, exc_info=True)
+            return web.Response(text=str(exc), status=500)
 
     async def exclude_model(self, request: web.Request) -> web.Response:
-        return await ModelRouteUtils.handle_exclude_model(request, self._service.scanner)
+        try:
+            data = await request.json()
+            file_path = data.get("file_path")
+            if not file_path:
+                return web.Response(text="Model path is required", status=400)
+
+            result = await self._lifecycle_service.exclude_model(file_path)
+            return web.json_response(result)
+        except ValueError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except Exception as exc:
+            self._logger.error("Error excluding model: %s", exc, exc_info=True)
+            return web.Response(text=str(exc), status=500)
 
     async def fetch_civitai(self, request: web.Request) -> web.Response:
         try:
@@ -375,10 +400,58 @@ class ModelManagementHandler:
             return web.Response(text=str(exc), status=500)
 
     async def rename_model(self, request: web.Request) -> web.Response:
-        return await ModelRouteUtils.handle_rename_model(request, self._service.scanner)
+        try:
+            data = await request.json()
+            file_path = data.get("file_path")
+            new_file_name = data.get("new_file_name")
+
+            if not file_path or not new_file_name:
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": "File path and new file name are required",
+                    },
+                    status=400,
+                )
+
+            result = await self._lifecycle_service.rename_model(
+                file_path=file_path, new_file_name=new_file_name
+            )
+
+            return web.json_response(
+                {
+                    **result,
+                    "new_preview_path": config.get_preview_static_url(
+                        result.get("new_preview_path")
+                    ),
+                }
+            )
+        except ValueError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except Exception as exc:
+            self._logger.error("Error renaming model: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def bulk_delete_models(self, request: web.Request) -> web.Response:
-        return await ModelRouteUtils.handle_bulk_delete_models(request, self._service.scanner)
+        try:
+            data = await request.json()
+            file_paths = data.get("file_paths", [])
+            if not file_paths:
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": "No file paths provided for deletion",
+                    },
+                    status=400,
+                )
+
+            result = await self._lifecycle_service.bulk_delete_models(file_paths)
+            return web.json_response(result)
+        except ValueError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except Exception as exc:
+            self._logger.error("Error in bulk delete: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def verify_duplicates(self, request: web.Request) -> web.Response:
         try:

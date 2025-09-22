@@ -13,6 +13,7 @@ from ..services.downloader import get_downloader
 from ..services.metadata_service import get_default_metadata_provider, get_metadata_provider
 from ..services.metadata_sync_service import MetadataSyncService
 from ..services.model_file_service import ModelFileService, ModelMoveService
+from ..services.model_lifecycle_service import ModelLifecycleService
 from ..services.preview_asset_service import PreviewAssetService
 from ..services.server_i18n import server_i18n as default_server_i18n
 from ..services.service_registry import ServiceRegistry
@@ -75,6 +76,7 @@ class BaseModelRoutes(ABC):
 
         self.model_file_service: ModelFileService | None = None
         self.model_move_service: ModelMoveService | None = None
+        self.model_lifecycle_service: ModelLifecycleService | None = None
         self.websocket_progress_callback = WebSocketProgressCallback()
         self.metadata_progress_callback = WebSocketBroadcastCallback()
 
@@ -108,6 +110,12 @@ class BaseModelRoutes(ABC):
         self.model_type = service.model_type
         self.model_file_service = ModelFileService(service.scanner, service.model_type)
         self.model_move_service = ModelMoveService(service.scanner)
+        self.model_lifecycle_service = ModelLifecycleService(
+            scanner=service.scanner,
+            metadata_manager=MetadataManager,
+            metadata_loader=self._metadata_sync_service.load_local_metadata,
+            recipe_scanner_factory=ServiceRegistry.get_recipe_scanner,
+        )
         self._handler_set = None
         self._handler_mapping = None
 
@@ -139,6 +147,7 @@ class BaseModelRoutes(ABC):
             metadata_sync=self._metadata_sync_service,
             preview_service=self._preview_service,
             tag_update_service=self._tag_update_service,
+            lifecycle_service=self._ensure_lifecycle_service(),
         )
         query = ModelQueryHandler(service=service, logger=logger)
         download_use_case = DownloadModelUseCase(download_coordinator=self._download_coordinator)
@@ -247,6 +256,17 @@ class BaseModelRoutes(ABC):
             service = self._ensure_service()
             self.model_move_service = ModelMoveService(service.scanner)
         return self.model_move_service
+
+    def _ensure_lifecycle_service(self) -> ModelLifecycleService:
+        if self.model_lifecycle_service is None:
+            service = self._ensure_service()
+            self.model_lifecycle_service = ModelLifecycleService(
+                scanner=service.scanner,
+                metadata_manager=MetadataManager,
+                metadata_loader=self._metadata_sync_service.load_local_metadata,
+                recipe_scanner_factory=ServiceRegistry.get_recipe_scanner,
+            )
+        return self.model_lifecycle_service
 
     def _make_handler_proxy(self, name: str) -> Callable[[web.Request], web.StreamResponse]:
         async def proxy(request: web.Request) -> web.StreamResponse:

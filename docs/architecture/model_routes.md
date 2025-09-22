@@ -43,7 +43,7 @@ the set and the invariants that must hold after each handler returns.
 | --- | --- | --- | --- |
 | `ModelPageView` | `/{prefix}` | `SettingsManager`, `server_i18n`, Jinja environment, `service.scanner` | Template is rendered with `is_initializing` flag when caches are cold; i18n filter is registered exactly once per environment instance. |
 | `ModelListingHandler` | `/api/lm/{prefix}/list` | `service.get_paginated_data`, `service.format_response` | Listings respect pagination query parameters and cap `page_size` at 100; every item is formatted before response. |
-| `ModelManagementHandler` | Mutations (delete, exclude, metadata, preview, tags, rename, bulk delete, duplicate verification) | `ModelRouteUtils`, `MetadataSyncService`, `PreviewAssetService`, `TagUpdateService`, scanner cache/index | Cache state mirrors filesystem changes: deletes prune cache & hash index, preview replacements synchronise metadata and cache NSFW levels, metadata saves trigger cache resort when names change. |
+| `ModelManagementHandler` | Mutations (delete, exclude, metadata, preview, tags, rename, bulk delete, duplicate verification) | `ModelLifecycleService`, `MetadataSyncService`, `PreviewAssetService`, `TagUpdateService`, scanner cache/index | Cache state mirrors filesystem changes: deletes prune cache & hash index, preview replacements synchronise metadata and cache NSFW levels, metadata saves trigger cache resort when names change. |
 | `ModelQueryHandler` | Read-only queries (top tags, folders, duplicates, metadata, URLs) | Service query helpers & scanner cache | Outputs always wrapped in `{"success": True}` when no error; duplicate/filename grouping omits empty entries; invalid parameters (e.g. missing `model_root`) return HTTP 400. |
 | `ModelDownloadHandler` | `/api/lm/download-model`, `/download-model-get`, `/download-progress/{id}`, `/cancel-download-get` | `DownloadModelUseCase`, `DownloadCoordinator`, `WebSocketManager` | Payload validation errors become HTTP 400 without mutating download progress cache; early-access failures surface as HTTP 401; successful downloads cache progress snapshots that back both WebSocket broadcasts and polling endpoints. |
 | `ModelCivitaiHandler` | CivitAI metadata routes | `MetadataSyncService`, metadata provider factory, `BulkMetadataRefreshUseCase` | `fetch_all_civitai` streams progress via `WebSocketBroadcastCallback`; version lookups validate model type before returning; local availability fields derive from hash lookups without mutating cache state. |
@@ -69,10 +69,10 @@ collaboration points:
 
 1. **Cache mutations** – Delete, exclude, rename, and bulk delete operations are
    channelled through `ModelManagementHandler`.  The handler delegates to
-   `ModelRouteUtils` or `MetadataSyncService`, and the scanner cache is mutated
-   in-place before the handler returns.  The accompanying tests assert that
-   `scanner._cache.raw_data` and `scanner._hash_index` stay in sync after each
-   mutation.
+   `ModelLifecycleService` or `MetadataSyncService`, and the scanner cache is
+   mutated in-place before the handler returns.  The accompanying tests assert
+   that `scanner._cache.raw_data` and `scanner._hash_index` stay in sync after
+   each mutation.
 2. **Preview updates** – `PreviewAssetService.replace_preview` writes the new
    asset, `MetadataSyncService` persists the JSON metadata, and
    `scanner.update_preview_in_cache` mirrors the change.  The handler returns
