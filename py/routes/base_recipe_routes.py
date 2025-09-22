@@ -2,15 +2,25 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Callable, Mapping
 
 import jinja2
 from aiohttp import web
 
 from ..config import config
+from ..recipes import RecipeParserFactory
+from ..services.downloader import get_downloader
+from ..services.recipes import (
+    RecipeAnalysisService,
+    RecipePersistenceService,
+    RecipeSharingService,
+)
 from ..services.server_i18n import server_i18n
 from ..services.service_registry import ServiceRegistry
 from ..services.settings_manager import settings
+from ..utils.constants import CARD_PREVIEW_WIDTH
+from ..utils.exif_utils import ExifUtils
 from .handlers.recipe_handlers import (
     RecipeAnalysisHandler,
     RecipeHandlerSet,
@@ -124,6 +134,37 @@ class BaseRecipeRoutes:
         recipe_scanner_getter = lambda: self.recipe_scanner
         civitai_client_getter = lambda: self.civitai_client
 
+        standalone_mode = os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
+        if not standalone_mode:
+            from ..metadata_collector import get_metadata  # type: ignore[import-not-found]
+            from ..metadata_collector.metadata_processor import (  # type: ignore[import-not-found]
+                MetadataProcessor,
+            )
+            from ..metadata_collector.metadata_registry import (  # type: ignore[import-not-found]
+                MetadataRegistry,
+            )
+        else:  # pragma: no cover - optional dependency path
+            get_metadata = None  # type: ignore[assignment]
+            MetadataProcessor = None  # type: ignore[assignment]
+            MetadataRegistry = None  # type: ignore[assignment]
+
+        analysis_service = RecipeAnalysisService(
+            exif_utils=ExifUtils,
+            recipe_parser_factory=RecipeParserFactory,
+            downloader_factory=get_downloader,
+            metadata_collector=get_metadata,
+            metadata_processor_cls=MetadataProcessor,
+            metadata_registry_cls=MetadataRegistry,
+            standalone_mode=standalone_mode,
+            logger=logger,
+        )
+        persistence_service = RecipePersistenceService(
+            exif_utils=ExifUtils,
+            card_preview_width=CARD_PREVIEW_WIDTH,
+            logger=logger,
+        )
+        sharing_service = RecipeSharingService(logger=logger)
+
         page_view = RecipePageView(
             ensure_dependencies_ready=self.ensure_dependencies_ready,
             settings_service=self.settings,
@@ -148,17 +189,21 @@ class BaseRecipeRoutes:
             ensure_dependencies_ready=self.ensure_dependencies_ready,
             recipe_scanner_getter=recipe_scanner_getter,
             logger=logger,
+            persistence_service=persistence_service,
+            analysis_service=analysis_service,
         )
         analysis = RecipeAnalysisHandler(
             ensure_dependencies_ready=self.ensure_dependencies_ready,
             recipe_scanner_getter=recipe_scanner_getter,
             civitai_client_getter=civitai_client_getter,
             logger=logger,
+            analysis_service=analysis_service,
         )
         sharing = RecipeSharingHandler(
             ensure_dependencies_ready=self.ensure_dependencies_ready,
             recipe_scanner_getter=recipe_scanner_getter,
             logger=logger,
+            sharing_service=sharing_service,
         )
 
         return RecipeHandlerSet(
