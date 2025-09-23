@@ -16,7 +16,7 @@ import { migrateStorageItems } from './utils/storageHelpers.js';
 import { i18n } from './i18n/index.js';
 import { onboardingManager } from './managers/OnboardingManager.js';
 import { BulkContextMenu } from './components/ContextMenu/BulkContextMenu.js';
-import { createPageContextMenu } from './components/ContextMenu/index.js';
+import { createPageContextMenu, createGlobalContextMenu } from './components/ContextMenu/index.js';
 import { initializeEventManagement } from './utils/eventManagementInit.js';
 
 // Core application class
@@ -116,6 +116,10 @@ export class AppCore {
     initializeContextMenus(pageType) {
         // Create page-specific context menu
         window.pageContextMenu = createPageContextMenu(pageType);
+
+        if (!window.globalContextMenuInstance) {
+            window.globalContextMenuInstance = createGlobalContextMenu();
+        }
     }
 }
 

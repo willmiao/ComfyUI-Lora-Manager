@@ -86,29 +86,39 @@ function setupPageUnloadCleanup() {
 function registerContextMenuEvents() {
     eventManager.addHandler('contextmenu', 'contextMenu-coordination', (e) => {
         const card = e.target.closest('.model-card');
-        if (!card) {
-            // Hide all menus if not right-clicking on a card
-            window.pageContextMenu?.hideMenu();
-            window.bulkManager?.bulkContextMenu?.hideMenu();
+        const pageContent = e.target.closest('.page-content');
+
+        if (!pageContent) {
+            window.globalContextMenuInstance?.hideMenu();
             return false;
         }
-        
-        e.preventDefault();
-        
-        // Hide all menus first
-        window.pageContextMenu?.hideMenu();
-        window.bulkManager?.bulkContextMenu?.hideMenu();
-        
-        // Determine which menu to show based on bulk mode and selection state
-        if (state.bulkMode && card.classList.contains('selected')) {
-            // Show bulk menu for selected cards in bulk mode
-            window.bulkManager?.bulkContextMenu?.showMenu(e.clientX, e.clientY, card);
-        } else if (!state.bulkMode) {
-            // Show regular menu when not in bulk mode
-            window.pageContextMenu?.showMenu(e.clientX, e.clientY, card);
+
+        if (card) {
+            e.preventDefault();
+
+            // Hide all menus first
+            window.pageContextMenu?.hideMenu();
+            window.bulkManager?.bulkContextMenu?.hideMenu();
+            window.globalContextMenuInstance?.hideMenu();
+
+            // Determine which menu to show based on bulk mode and selection state
+            if (state.bulkMode && card.classList.contains('selected')) {
+                // Show bulk menu for selected cards in bulk mode
+                window.bulkManager?.bulkContextMenu?.showMenu(e.clientX, e.clientY, card);
+            } else if (!state.bulkMode) {
+                // Show regular menu when not in bulk mode
+                window.pageContextMenu?.showMenu(e.clientX, e.clientY, card);
+            }
+        } else {
+            e.preventDefault();
+
+            window.pageContextMenu?.hideMenu();
+            window.bulkManager?.bulkContextMenu?.hideMenu();
+            window.globalContextMenuInstance?.hideMenu();
+
+            window.globalContextMenuInstance?.showMenu(e.clientX, e.clientY, null);
         }
-        // Don't show any menu for unselected cards in bulk mode
-        
+
         return true; // Stop propagation
     }, {
         priority: 200, // Higher priority than bulk manager events
@@ -125,6 +135,7 @@ function registerGlobalClickHandlers() {
         if (!e.target.closest('.context-menu')) {
             window.pageContextMenu?.hideMenu();
             window.bulkManager?.bulkContextMenu?.hideMenu();
+            window.globalContextMenuInstance?.hideMenu();
         }
         return false; // Allow other handlers to process
     }, {
