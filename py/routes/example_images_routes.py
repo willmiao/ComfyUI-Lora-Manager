@@ -1,88 +1,69 @@
+from __future__ import annotations
+
 import logging
-from typing import Callable
+from typing import Callable, Mapping
 
 from aiohttp import web
 
 from .example_images_route_registrar import ExampleImagesRouteRegistrar
+from .handlers.example_images_handlers import (
+    ExampleImagesDownloadHandler,
+    ExampleImagesFileHandler,
+    ExampleImagesHandlerSet,
+    ExampleImagesManagementHandler,
+)
 from ..utils.example_images_download_manager import DownloadManager
-from ..utils.example_images_processor import ExampleImagesProcessor
 from ..utils.example_images_file_manager import ExampleImagesFileManager
-from ..services.websocket_manager import ws_manager
+from ..utils.example_images_processor import ExampleImagesProcessor
 
 logger = logging.getLogger(__name__)
 
 
 class ExampleImagesRoutes:
-    """Routes for example images related functionality"""
+    """Route controller for example image endpoints."""
 
-    @staticmethod
-    def setup_routes(app: web.Application) -> None:
-        """Register example images routes using the registrar."""
+    def __init__(
+        self,
+        *,
+        download_manager=DownloadManager,
+        processor=ExampleImagesProcessor,
+        file_manager=ExampleImagesFileManager,
+    ) -> None:
+        self._download_manager = download_manager
+        self._processor = processor
+        self._file_manager = file_manager
+        self._handler_set: ExampleImagesHandlerSet | None = None
+        self._handler_mapping: Mapping[str, Callable[[web.Request], web.StreamResponse]] | None = None
+
+    @classmethod
+    def setup_routes(cls, app: web.Application) -> None:
+        """Register routes on the given aiohttp application using default wiring."""
+
+        controller = cls()
+        controller.register(app)
+
+    def register(self, app: web.Application) -> None:
+        """Bind the controller's handlers to the aiohttp router."""
 
         registrar = ExampleImagesRouteRegistrar(app)
-        registrar.register_routes(ExampleImagesRoutes._route_mapping())
+        registrar.register_routes(self.to_route_mapping())
 
-    @staticmethod
-    def _route_mapping() -> dict[str, Callable[[web.Request], object]]:
-        return {
-            "download_example_images": ExampleImagesRoutes.download_example_images,
-            "import_example_images": ExampleImagesRoutes.import_example_images,
-            "get_example_images_status": ExampleImagesRoutes.get_example_images_status,
-            "pause_example_images": ExampleImagesRoutes.pause_example_images,
-            "resume_example_images": ExampleImagesRoutes.resume_example_images,
-            "open_example_images_folder": ExampleImagesRoutes.open_example_images_folder,
-            "get_example_image_files": ExampleImagesRoutes.get_example_image_files,
-            "has_example_images": ExampleImagesRoutes.has_example_images,
-            "delete_example_image": ExampleImagesRoutes.delete_example_image,
-            "force_download_example_images": ExampleImagesRoutes.force_download_example_images,
-        }
+    def to_route_mapping(self) -> Mapping[str, Callable[[web.Request], web.StreamResponse]]:
+        """Return the registrar-compatible mapping of handler names to callables."""
 
-    @staticmethod
-    async def download_example_images(request):
-        """Download example images for models from Civitai"""
-        return await DownloadManager.start_download(request)
+        if self._handler_mapping is None:
+            handler_set = self._build_handler_set()
+            self._handler_set = handler_set
+            self._handler_mapping = handler_set.to_route_mapping()
+        return self._handler_mapping
 
-    @staticmethod
-    async def get_example_images_status(request):
-        """Get the current status of example images download"""
-        return await DownloadManager.get_status(request)
-
-    @staticmethod
-    async def pause_example_images(request):
-        """Pause the example images download"""
-        return await DownloadManager.pause_download(request)
-
-    @staticmethod
-    async def resume_example_images(request):
-        """Resume the example images download"""
-        return await DownloadManager.resume_download(request)
-
-    @staticmethod
-    async def open_example_images_folder(request):
-        """Open the example images folder for a specific model"""
-        return await ExampleImagesFileManager.open_folder(request)
-
-    @staticmethod
-    async def get_example_image_files(request):
-        """Get list of example image files for a specific model"""
-        return await ExampleImagesFileManager.get_files(request)
-
-    @staticmethod
-    async def import_example_images(request):
-        """Import local example images for a model"""
-        return await ExampleImagesProcessor.import_images(request)
-
-    @staticmethod
-    async def has_example_images(request):
-        """Check if example images folder exists and is not empty for a model"""
-        return await ExampleImagesFileManager.has_images(request)
-
-    @staticmethod
-    async def delete_example_image(request):
-        """Delete a custom example image for a model"""
-        return await ExampleImagesProcessor.delete_custom_image(request)
-
-    @staticmethod
-    async def force_download_example_images(request):
-        """Force download example images for specific models"""
-        return await DownloadManager.start_force_download(request)
+    def _build_handler_set(self) -> ExampleImagesHandlerSet:
+        logger.debug("Building ExampleImagesHandlerSet with %s, %s, %s", self._download_manager, self._processor, self._file_manager)
+        download_handler = ExampleImagesDownloadHandler(self._download_manager)
+        management_handler = ExampleImagesManagementHandler(self._processor)
+        file_handler = ExampleImagesFileHandler(self._file_manager)
+        return ExampleImagesHandlerSet(
+            download=download_handler,
+            management=management_handler,
+            files=file_handler,
+        )
