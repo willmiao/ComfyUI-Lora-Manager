@@ -6,3 +6,5 @@ py/run_test.py
 .vscode/
 cache/
 civitai/
+node_modules/
+coverage/
