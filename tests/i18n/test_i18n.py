@@ -4,27 +4,31 @@ Test script to verify the updated i18n system works correctly.
 This tests both JavaScript loading and Python server-side functionality.
 """
 
-import os
-import sys
-import json
-import re
 import glob
-from typing import Set, Dict, List, Tuple, Any
+import json
+import os
+import re
+import sys
+from pathlib import Path
+from typing import Any, Dict, List, Set
 
-# Add the parent directory to the path so we can import the modules
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
-def test_json_files_exist():
+
+def check_json_files_exist() -> bool:
     """Test that all JSON locale files exist and are valid JSON."""
     print("Testing JSON locale files...")
-    return test_json_structure_validation()
+    return check_json_structure_validation()
 
-def test_locale_files_structural_consistency():
+
+def check_locale_files_structural_consistency() -> bool:
     """Test that all locale files have identical structure, line counts, and formatting."""
     print("\nTesting locale files structural consistency...")
     
-    locales_dir = os.path.join(os.path.dirname(__file__), 'locales')
-    if not os.path.exists(locales_dir):
+    locales_dir = ROOT_DIR / 'locales'
+    if not locales_dir.exists():
         print("❌ Locales directory does not exist!")
         return False
     
@@ -50,7 +54,7 @@ def test_locale_files_structural_consistency():
     success = True
     
     # Load and parse the reference file
-    reference_path = os.path.join(locales_dir, reference_file)
+    reference_path = locales_dir / reference_file
     try:
         with open(reference_path, 'r', encoding='utf-8') as f:
             reference_lines = f.readlines()
@@ -69,7 +73,7 @@ def test_locale_files_structural_consistency():
     
     # Compare each locale file with the reference
     for locale_file in locale_files[1:]:  # Skip reference file
-        locale_path = os.path.join(locales_dir, locale_file)
+        locale_path = locales_dir / locale_file
         locale_name = locale_file.replace('.json', '')
         
         try:
@@ -368,15 +372,15 @@ def normalize_structural_chars(structural_chars: str) -> str:
     
     return normalized.strip()
 
-def test_locale_files_formatting_consistency():
+def check_locale_files_formatting_consistency() -> bool:
     """Test that all locale files have identical formatting (whitespace, indentation, etc.)."""
     print("\nTesting locale files formatting consistency...")
     
-    locales_dir = os.path.join(os.path.dirname(__file__), 'locales')
+    locales_dir = ROOT_DIR / 'locales'
     expected_locales = ['en', 'zh-CN', 'zh-TW', 'ja', 'ru', 'de', 'fr', 'es', 'ko']
     
     # Read reference file (en.json)
-    reference_path = os.path.join(locales_dir, 'en.json')
+    reference_path = locales_dir / 'en.json'
     try:
         with open(reference_path, 'r', encoding='utf-8') as f:
             reference_lines = f.readlines()
@@ -388,7 +392,7 @@ def test_locale_files_formatting_consistency():
     
     # Compare each locale file
     for locale in expected_locales[1:]:  # Skip 'en' as it's the reference
-        locale_path = os.path.join(locales_dir, f'{locale}.json')
+        locale_path = locales_dir / f'{locale}.json'
         
         if not os.path.exists(locale_path):
             print(f"❌ {locale}.json does not exist!")
@@ -450,15 +454,15 @@ def test_locale_files_formatting_consistency():
     
     return success
 
-def test_locale_key_ordering():
+def check_locale_key_ordering() -> bool:
     """Test that all locale files maintain the same key ordering as the reference."""
     print("\nTesting locale files key ordering...")
     
-    locales_dir = os.path.join(os.path.dirname(__file__), 'locales')
+    locales_dir = ROOT_DIR / 'locales'
     expected_locales = ['en', 'zh-CN', 'zh-TW', 'ja', 'ru', 'de', 'fr', 'es', 'ko']
     
     # Load reference file
-    reference_path = os.path.join(locales_dir, 'en.json')
+    reference_path = locales_dir / 'en.json'
     try:
         with open(reference_path, 'r', encoding='utf-8') as f:
             reference_data = json.load(f, object_pairs_hook=lambda x: x)  # Preserve order
@@ -471,7 +475,7 @@ def test_locale_key_ordering():
     success = True
     
     for locale in expected_locales[1:]:  # Skip 'en' as it's the reference
-        locale_path = os.path.join(locales_dir, f'{locale}.json')
+        locale_path = locales_dir / f'{locale}.json'
         
         if not os.path.exists(locale_path):
             continue
@@ -524,7 +528,7 @@ def get_key_order(data: Any, path: str = '') -> List[str]:
     
     return keys
 
-def test_server_i18n():
+def check_server_i18n() -> bool:
     """Test the Python server-side i18n system."""
     print("\nTesting Python server-side i18n...")
     
@@ -579,14 +583,14 @@ def test_server_i18n():
         traceback.print_exc()
         return False
 
-def test_translation_completeness():
+def check_translation_completeness() -> bool:
     """Test that all languages have the same translation keys."""
     print("\nTesting translation completeness...")
     
-    locales_dir = os.path.join(os.path.dirname(__file__), 'locales')
+    locales_dir = ROOT_DIR / 'locales'
     
     # Load English as reference
-    with open(os.path.join(locales_dir, 'en.json'), 'r', encoding='utf-8') as f:
+    with open(locales_dir / 'en.json', 'r', encoding='utf-8') as f:
         en_data = json.load(f)
     
     en_keys = get_all_translation_keys(en_data)
@@ -596,7 +600,7 @@ def test_translation_completeness():
     locales = ['zh-CN', 'zh-TW', 'ja', 'ru', 'de', 'fr', 'es', 'ko']
     
     for locale in locales:
-        with open(os.path.join(locales_dir, f'{locale}.json'), 'r', encoding='utf-8') as f:
+        with open(locales_dir / f'{locale}.json', 'r', encoding='utf-8') as f:
             locale_data = json.load(f)
         
         locale_keys = get_all_translation_keys(locale_data)
@@ -739,13 +743,13 @@ def get_all_translation_keys(data: dict, prefix: str = '', include_containers: b
     return keys
 
 
-def test_static_code_analysis():
+def check_static_code_analysis() -> bool:
     """Test static code analysis to detect missing translation keys."""
     # print("\nTesting static code analysis for translation keys...")
     
     # Load English translations as reference
-    locales_dir = os.path.join(os.path.dirname(__file__), 'locales')
-    with open(os.path.join(locales_dir, 'en.json'), 'r', encoding='utf-8') as f:
+    locales_dir = ROOT_DIR / 'locales'
+    with open(locales_dir / 'en.json', 'r', encoding='utf-8') as f:
         en_data = json.load(f)
     
     available_keys = get_all_translation_keys(en_data)
@@ -771,7 +775,7 @@ def test_static_code_analysis():
     }
     
     # Extract keys from JavaScript files
-    js_dir = os.path.join(os.path.dirname(__file__), 'static', 'js')
+    js_dir = ROOT_DIR / 'static' / 'js'
     js_files = []
     if os.path.exists(js_dir):
         # Recursively find all JS files
@@ -788,14 +792,14 @@ def test_static_code_analysis():
         file_keys = file_keys - false_positives
         js_keys.update(file_keys)
         if file_keys:
-            rel_path = os.path.relpath(js_file, os.path.dirname(__file__))
+            rel_path = os.path.relpath(js_file, ROOT_DIR)
             js_files_with_keys.append((rel_path, len(file_keys)))
             # print(f"  Found {len(file_keys)} keys in {rel_path}")
     
     # print(f"Total unique keys found in JavaScript files: {len(js_keys)}")
     
     # Extract keys from HTML template files
-    templates_dir = os.path.join(os.path.dirname(__file__), 'templates')
+    templates_dir = ROOT_DIR / 'templates'
     html_files = []
     if os.path.exists(templates_dir):
         html_files = glob.glob(os.path.join(templates_dir, '*.html'))
@@ -810,7 +814,7 @@ def test_static_code_analysis():
         file_keys = file_keys - false_positives
         html_keys.update(file_keys)
         if file_keys:
-            rel_path = os.path.relpath(html_file, os.path.dirname(__file__))
+            rel_path = os.path.relpath(html_file, ROOT_DIR)
             html_files_with_keys.append((rel_path, len(file_keys)))
             # print(f"  Found {len(file_keys)} keys in {rel_path}")
     
@@ -884,12 +888,12 @@ def test_static_code_analysis():
     return success
 
 
-def test_json_structure_validation():
+def check_json_structure_validation() -> bool:
     """Test JSON file structure and syntax validation."""
     print("\nTesting JSON file structure and syntax validation...")
     
-    locales_dir = os.path.join(os.path.dirname(__file__), 'locales')
-    if not os.path.exists(locales_dir):
+    locales_dir = ROOT_DIR / 'locales'
+    if not locales_dir.exists():
         print("❌ Locales directory does not exist!")
         return False
     
@@ -897,8 +901,8 @@ def test_json_structure_validation():
     success = True
     
     for locale in expected_locales:
-        file_path = os.path.join(locales_dir, f'{locale}.json')
-        if not os.path.exists(file_path):
+        file_path = locales_dir / f'{locale}.json'
+        if not file_path.exists():
             print(f"❌ {locale}.json does not exist!")
             success = False
             continue
@@ -957,6 +961,39 @@ def test_json_structure_validation():
     
     return success
 
+
+def test_json_files_are_valid():
+    assert check_json_files_exist()
+
+
+def test_locale_structures_match_reference():
+    assert check_locale_files_structural_consistency()
+
+
+def test_locale_formatting_matches_reference():
+    assert check_locale_files_formatting_consistency()
+
+
+def test_locale_key_order_matches_reference():
+    assert check_locale_key_ordering()
+
+
+def test_server_side_i18n_behaves_as_expected():
+    assert check_server_i18n()
+
+
+def test_translations_are_complete():
+    assert check_translation_completeness()
+
+
+def test_static_code_analysis_is_clean():
+    assert check_static_code_analysis()
+
+
+def test_json_structure_validation():
+    assert check_json_structure_validation()
+
+
 def main():
     """Run all tests."""
     print("🚀 Testing updated i18n system...\n")
@@ -964,31 +1001,31 @@ def main():
     success = True
     
     # Test JSON files structure and syntax
-    if not test_json_files_exist():
+    if not check_json_files_exist():
         success = False
     
     # Test comprehensive structural consistency
-    if not test_locale_files_structural_consistency():
+    if not check_locale_files_structural_consistency():
         success = False
     
     # Test formatting consistency
-    if not test_locale_files_formatting_consistency():
+    if not check_locale_files_formatting_consistency():
         success = False
     
     # Test key ordering
-    if not test_locale_key_ordering():
+    if not check_locale_key_ordering():
         success = False
     
     # Test server i18n
-    if not test_server_i18n():
+    if not check_server_i18n():
         success = False
     
     # Test translation completeness
-    if not test_translation_completeness():
+    if not check_translation_completeness():
         success = False
     
     # Test static code analysis
-    if not test_static_code_analysis():
+    if not check_static_code_analysis():
         success = False
     
     print(f"\n{'🎉 All tests passed!' if success else '❌ Some tests failed!'}")
