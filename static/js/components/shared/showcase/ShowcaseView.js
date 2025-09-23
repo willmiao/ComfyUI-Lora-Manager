@@ -155,7 +155,7 @@ function renderMediaItem(img, index, exampleFiles) {
     
     // Check if media should be blurred
     const nsfwLevel = img.nsfwLevel !== undefined ? img.nsfwLevel : 0;
-    const shouldBlur = state.settings.blurMatureContent && nsfwLevel > NSFW_LEVELS.PG13;
+    const shouldBlur = state.settings.blur_mature_content && nsfwLevel > NSFW_LEVELS.PG13;
     
     // Determine NSFW warning text based on level
     let nsfwText = "Mature Content";

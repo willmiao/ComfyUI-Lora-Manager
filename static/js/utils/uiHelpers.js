@@ -339,7 +339,7 @@ export function copyLoraSyntax(card) {
   const baseSyntax = buildLoraSyntax(card.dataset.file_name, usageTips);
 
   // Check if trigger words should be included
-  const includeTriggerWords = state.global.settings.includeTriggerWords;
+  const includeTriggerWords = state.global.settings.include_trigger_words;
 
   if (!includeTriggerWords) {
     const message = translate('uiHelpers.lora.syntaxCopied', {}, 'LoRA syntax copied to clipboard');

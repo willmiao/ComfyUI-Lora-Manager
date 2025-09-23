@@ -179,7 +179,7 @@ class MiscRoutes:
             # Define keys that should be synced from backend to frontend
             sync_keys = [
                 'civitai_api_key',
-                'default_lora_root', 
+                'default_lora_root',
                 'default_checkpoint_root',
                 'default_embedding_root',
                 'base_model_path_mappings',
@@ -193,8 +193,15 @@ class MiscRoutes:
                 'proxy_username',
                 'proxy_password',
                 'example_images_path',
-                'optimizeExampleImages',
-                'autoDownloadExampleImages'
+                'optimize_example_images',
+                'auto_download_example_images',
+                'blur_mature_content',
+                'autoplay_on_hover',
+                'display_density',
+                'card_info_display',
+                'include_trigger_words',
+                'show_only_sfw',
+                'compact_mode'
             ]
             
             # Build response with only the keys that should be synced

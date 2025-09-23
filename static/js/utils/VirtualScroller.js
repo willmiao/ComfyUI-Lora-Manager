@@ -102,7 +102,7 @@ export class VirtualScroller {
         const availableContentWidth = containerWidth - paddingLeft - paddingRight;
         
         // Get display density setting
-        const displayDensity = state.global.settings?.displayDensity || 'default';
+        const displayDensity = state.global.settings?.display_density || 'default';
         
         // Set exact column counts and grid widths to match CSS container widths
         let maxColumns, maxGridWidth;

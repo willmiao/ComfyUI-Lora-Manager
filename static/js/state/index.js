@@ -1,19 +1,42 @@
 // Create the new hierarchical state structure
 import { getStorageItem, getMapFromStorage } from '../utils/storageHelpers.js';
 import { MODEL_TYPES } from '../api/apiConfig.js';
+import { DEFAULT_PATH_TEMPLATES } from '../utils/constants.js';
 
-// Load only frontend settings from localStorage with defaults
-// Backend settings will be loaded by SettingsManager from the backend
-const savedSettings = getStorageItem('settings', {
-    blurMatureContent: true,
+const DEFAULT_SETTINGS_BASE = Object.freeze({
+    civitai_api_key: '',
+    language: 'en',
     show_only_sfw: false,
-    cardInfoDisplay: 'always',
-    autoplayOnHover: false,
-    displayDensity: 'default',
-    optimizeExampleImages: true,
-    autoDownloadExampleImages: true,
-    includeTriggerWords: false
+    enable_metadata_archive_db: false,
+    proxy_enabled: false,
+    proxy_type: 'http',
+    proxy_host: '',
+    proxy_port: '',
+    proxy_username: '',
+    proxy_password: '',
+    default_lora_root: '',
+    default_checkpoint_root: '',
+    default_embedding_root: '',
+    base_model_path_mappings: {},
+    download_path_templates: {},
+    example_images_path: '',
+    optimize_example_images: true,
+    auto_download_example_images: false,
+    blur_mature_content: true,
+    autoplay_on_hover: false,
+    display_density: 'default',
+    card_info_display: 'always',
+    include_trigger_words: false,
+    compact_mode: false,
 });
+
+export function createDefaultSettings() {
+    return {
+        ...DEFAULT_SETTINGS_BASE,
+        base_model_path_mappings: {},
+        download_path_templates: { ...DEFAULT_PATH_TEMPLATES },
+    };
+}
 
 // Load preview versions from localStorage for each model type
 const loraPreviewVersions = getMapFromStorage('loras_preview_versions');
@@ -23,7 +46,7 @@ const embeddingPreviewVersions = getMapFromStorage('embeddings_preview_versions'
 export const state = {
     // Global state
     global: {
-        settings: savedSettings,
+        settings: createDefaultSettings(),
         loadingManager: null,
         observer: null,
     },

@@ -74,7 +74,7 @@ export class AppCore {
         // Initialize the help manager
         helpManager.initialize();
 
-        const cardInfoDisplay = state.global.settings.cardInfoDisplay || 'always';
+        const cardInfoDisplay = state.global.settings.card_info_display || 'always';
         document.body.classList.toggle('hover-reveal', cardInfoDisplay === 'hover');
 
         initializeEventManagement();
