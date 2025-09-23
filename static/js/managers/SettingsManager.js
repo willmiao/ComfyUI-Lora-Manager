@@ -4,6 +4,7 @@ import { state, createDefaultSettings } from '../state/index.js';
 import { resetAndReload } from '../api/modelApiFactory.js';
 import { DOWNLOAD_PATH_TEMPLATES, MAPPABLE_BASE_MODELS, PATH_TEMPLATE_PLACEHOLDERS, DEFAULT_PATH_TEMPLATES } from '../utils/constants.js';
 import { translate } from '../utils/i18nHelpers.js';
+import { i18n } from '../i18n/index.js';
 
 export class SettingsManager {
     constructor() {
@@ -57,7 +58,24 @@ export class SettingsManager {
             state.global.settings = this.mergeSettingsWithDefaults();
         }
 
+        await this.applyLanguageSetting();
         this.applyFrontendSettings();
+    }
+
+    async applyLanguageSetting() {
+        const desiredLanguage = state?.global?.settings?.language;
+
+        if (!desiredLanguage) {
+            return;
+        }
+
+        try {
+            if (i18n.getCurrentLocale() !== desiredLanguage) {
+                await i18n.setLanguage(desiredLanguage);
+            }
+        } catch (error) {
+            console.warn('Failed to apply language from settings:', error);
+        }
     }
 
     mergeSettingsWithDefaults(backendSettings = {}) {
@@ -1158,37 +1176,11 @@ export class SettingsManager {
             // Use the universal save method for language (frontend-only setting)
             await this.saveSetting('language', selectedLanguage);
 
-            this.persistLanguageToLocalStorage(selectedLanguage);
-
             // Reload the page to apply the new language
             window.location.reload();
 
         } catch (error) {
             showToast('toast.settings.languageChangeFailed', { message: error.message }, 'error');
-        }
-    }
-
-    persistLanguageToLocalStorage(language) {
-        const STORAGE_PREFIX = 'lora_manager_';
-
-        try {
-            const storageKey = `${STORAGE_PREFIX}settings`;
-            const currentSettings = localStorage.getItem(storageKey);
-            let parsedSettings = {};
-
-            if (currentSettings) {
-                try {
-                    parsedSettings = JSON.parse(currentSettings) || {};
-                } catch (parseError) {
-                    console.warn('Failed to parse existing settings from localStorage, resetting to defaults');
-                    parsedSettings = {};
-                }
-            }
-
-            parsedSettings.language = language;
-            localStorage.setItem(storageKey, JSON.stringify(parsedSettings));
-        } catch (error) {
-            console.warn('Failed to persist language preference to localStorage:', error);
         }
     }
 
