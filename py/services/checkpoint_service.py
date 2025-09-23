@@ -1,11 +1,10 @@
 import os
 import logging
-from typing import Dict, List, Optional
+from typing import Dict
 
 from .base_model_service import BaseModelService
 from ..utils.models import CheckpointMetadata
 from ..config import config
-from ..utils.routes_common import ModelRouteUtils
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,7 @@ class CheckpointService(BaseModelService):
             "notes": checkpoint_data.get("notes", ""),
             "model_type": checkpoint_data.get("model_type", "checkpoint"),
             "favorite": checkpoint_data.get("favorite", False),
-            "civitai": ModelRouteUtils.filter_civitai_data(checkpoint_data.get("civitai", {}), minimal=True)
+            "civitai": self.filter_civitai_data(checkpoint_data.get("civitai", {}), minimal=True)
         }
     
     def find_duplicate_hashes(self) -> Dict:

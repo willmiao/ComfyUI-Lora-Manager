@@ -1,19 +1,39 @@
 import logging
 import os
 import re
-from ..utils.metadata_manager import MetadataManager
-from ..utils.routes_common import ModelRouteUtils
+
+from ..recipes.constants import GEN_PARAM_KEYS
+from ..services.metadata_service import get_default_metadata_provider, get_metadata_provider
+from ..services.metadata_sync_service import MetadataSyncService
+from ..services.preview_asset_service import PreviewAssetService
+from ..services.settings_manager import settings
+from ..services.downloader import get_downloader
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS
 from ..utils.exif_utils import ExifUtils
-from ..recipes.constants import GEN_PARAM_KEYS
+from ..utils.metadata_manager import MetadataManager
 
 logger = logging.getLogger(__name__)
+
+_preview_service = PreviewAssetService(
+    metadata_manager=MetadataManager,
+    downloader_factory=get_downloader,
+    exif_utils=ExifUtils,
+)
+
+_metadata_sync_service = MetadataSyncService(
+    metadata_manager=MetadataManager,
+    preview_service=_preview_service,
+    settings=settings,
+    default_metadata_provider_factory=get_default_metadata_provider,
+    metadata_provider_selector=get_metadata_provider,
+)
+
 
 class MetadataUpdater:
     """Handles updating model metadata related to example images"""
     
     @staticmethod
-    async def refresh_model_metadata(model_hash, model_name, scanner_type, scanner):
+    async def refresh_model_metadata(model_hash, model_name, scanner_type, scanner, progress: dict | None = None):
         """Refresh model metadata from CivitAI
         
         Args:
@@ -25,8 +45,6 @@ class MetadataUpdater:
         Returns:
             bool: True if metadata was successfully refreshed, False otherwise
         """
-        from ..utils.example_images_download_manager import download_progress
-        
         try:
             # Find the model in the scanner cache
             cache = await scanner.get_cached_data()
@@ -47,17 +65,17 @@ class MetadataUpdater:
                 return False
             
             # Track that we're refreshing this model
-            download_progress['refreshed_models'].add(model_hash)
+            if progress is not None:
+                progress['refreshed_models'].add(model_hash)
             
-            # Use ModelRouteUtils to refresh metadata
             async def update_cache_func(old_path, new_path, metadata):
                 return await scanner.update_single_model_cache(old_path, new_path, metadata)
             
-            success, error = await ModelRouteUtils.fetch_and_update_model(
-                model_hash, 
-                file_path, 
-                model_data,
-                update_cache_func
+            success, error = await _metadata_sync_service.fetch_and_update_model(
+                sha256=model_hash,
+                file_path=file_path,
+                model_data=model_data,
+                update_cache_func=update_cache_func,
             )
             
             if success:
@@ -66,12 +84,13 @@ class MetadataUpdater:
             else:
                 logger.warning(f"Failed to refresh metadata for {model_name}, {error}")
                 return False
-                
+
         except Exception as e:
             error_msg = f"Error refreshing metadata for {model_name}: {str(e)}"
             logger.error(error_msg, exc_info=True)
-            download_progress['errors'].append(error_msg)
-            download_progress['last_error'] = error_msg
+            if progress is not None:
+                progress['errors'].append(error_msg)
+                progress['last_error'] = error_msg
             return False
     
     @staticmethod

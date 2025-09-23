@@ -28,6 +28,7 @@ spec.loader.exec_module(py_local)
 sys.modules.setdefault("py_local", py_local)
 
 from py_local.routes.base_model_routes import BaseModelRoutes
+from py_local.services.model_file_service import AutoOrganizeResult
 from py_local.services.service_registry import ServiceRegistry
 from py_local.services.websocket_manager import ws_manager
 from py_local.utils.routes_common import ExifUtils
@@ -66,11 +67,23 @@ def download_manager_stub():
     class FakeDownloadManager:
         def __init__(self):
             self.calls = []
+            self.error = None
+            self.cancelled = []
+            self.active_downloads = {}
 
         async def download_from_civitai(self, **kwargs):
             self.calls.append(kwargs)
+            if self.error is not None:
+                raise self.error
             await kwargs["progress_callback"](42)
             return {"success": True, "path": "/tmp/model.safetensors"}
+
+        async def cancel_download(self, download_id):
+            self.cancelled.append(download_id)
+            return {"success": True, "download_id": download_id}
+
+        async def get_active_downloads(self):
+            return self.active_downloads
 
     stub = FakeDownloadManager()
     previous = ServiceRegistry._services.get("download_manager")
@@ -97,6 +110,21 @@ def test_list_models_returns_formatted_items(mock_service, mock_scanner):
             assert payload["items"] == [{"file_path": "/tmp/demo.safetensors", "name": "Demo", "formatted": True}]
             assert payload["total"] == 1
             assert mock_service.formatted == payload["items"]
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_routes_return_service_not_ready_when_unattached():
+    async def scenario():
+        client = await create_test_client(None)
+        try:
+            response = await client.get("/api/lm/test-models/list")
+            payload = await response.json()
+
+            assert response.status == 503
+            assert payload == {"success": False, "error": "Service not ready"}
         finally:
             await client.close()
 
@@ -222,6 +250,69 @@ def test_download_model_invokes_download_manager(
     asyncio.run(scenario())
 
 
+def test_download_model_requires_identifier(mock_service, download_manager_stub):
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post(
+                "/api/lm/download-model",
+                json={"model_root": "/tmp"},
+            )
+            payload = await response.json()
+
+            assert response.status == 400
+            assert payload["success"] is False
+            assert "Missing required" in payload["error"]
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_download_model_maps_validation_errors(mock_service, download_manager_stub):
+    download_manager_stub.error = ValueError("Invalid relative path")
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post(
+                "/api/lm/download-model",
+                json={"model_version_id": 123},
+            )
+            payload = await response.json()
+
+            assert response.status == 400
+            assert payload == {"success": False, "error": "Invalid relative path"}
+            assert ws_manager._download_progress == {}
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_download_model_maps_early_access_errors(mock_service, download_manager_stub):
+    download_manager_stub.error = RuntimeError("401 early access")
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post(
+                "/api/lm/download-model",
+                json={"model_id": 4},
+            )
+            payload = await response.json()
+
+            assert response.status == 401
+            assert payload == {
+                "success": False,
+                "error": "Early Access Restriction: This model requires purchase. Please buy early access on Civitai.com.",
+            }
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
 def test_auto_organize_progress_returns_latest_snapshot(mock_service):
     async def scenario():
         client = await create_test_client(mock_service)
@@ -233,6 +324,66 @@ def test_auto_organize_progress_returns_latest_snapshot(mock_service):
 
             assert response.status == 200
             assert payload == {"success": True, "progress": {"status": "processing", "percent": 50}}
+        finally:
+            await client.close()
+    
+    asyncio.run(scenario())
+
+
+def test_auto_organize_route_emits_progress(mock_service, monkeypatch: pytest.MonkeyPatch):
+    async def fake_auto_organize(self, file_paths=None, progress_callback=None):
+        result = AutoOrganizeResult()
+        result.total = 1
+        result.processed = 1
+        result.success_count = 1
+        result.skipped_count = 0
+        result.failure_count = 0
+        result.operation_type = "bulk"
+        if progress_callback is not None:
+            await progress_callback.on_progress({"type": "auto_organize_progress", "status": "started"})
+            await progress_callback.on_progress({"type": "auto_organize_progress", "status": "completed"})
+        return result
+
+    monkeypatch.setattr(
+        py_local.services.model_file_service.ModelFileService,
+        "auto_organize_models",
+        fake_auto_organize,
+    )
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post("/api/lm/test-models/auto-organize", json={"file_paths": []})
+            payload = await response.json()
+
+            assert response.status == 200
+            assert payload["success"] is True
+
+            progress = ws_manager.get_auto_organize_progress()
+            assert progress is not None
+            assert progress["status"] == "completed"
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_auto_organize_conflict_when_running(mock_service):
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            await ws_manager.broadcast_auto_organize_progress(
+                {"type": "auto_organize_progress", "status": "started"}
+            )
+
+            response = await client.post("/api/lm/test-models/auto-organize")
+            payload = await response.json()
+
+            assert response.status == 409
+            assert payload == {
+                "success": False,
+                "error": "Auto-organize is already running. Please wait for it to complete.",
+            }
         finally:
             await client.close()
 

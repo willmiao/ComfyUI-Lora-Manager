@@ -166,7 +166,7 @@ class LoraManager:
         RecipeRoutes.setup_routes(app)
         UpdateRoutes.setup_routes(app)  
         MiscRoutes.setup_routes(app)
-        ExampleImagesRoutes.setup_routes(app)
+        ExampleImagesRoutes.setup_routes(app, ws_manager=ws_manager)
         
         # Setup WebSocket routes that are shared across all model types
         app.router.add_get('/ws/fetch-progress', ws_manager.handle_connection)

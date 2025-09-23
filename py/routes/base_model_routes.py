@@ -8,13 +8,29 @@ import jinja2
 from aiohttp import web
 
 from ..config import config
-from ..services.metadata_service import get_default_metadata_provider
+from ..services.download_coordinator import DownloadCoordinator
+from ..services.downloader import get_downloader
+from ..services.metadata_service import get_default_metadata_provider, get_metadata_provider
+from ..services.metadata_sync_service import MetadataSyncService
 from ..services.model_file_service import ModelFileService, ModelMoveService
-from ..services.settings_manager import settings as default_settings
-from ..services.websocket_manager import ws_manager as default_ws_manager
-from ..services.websocket_progress_callback import WebSocketProgressCallback
+from ..services.model_lifecycle_service import ModelLifecycleService
+from ..services.preview_asset_service import PreviewAssetService
 from ..services.server_i18n import server_i18n as default_server_i18n
-from ..utils.routes_common import ModelRouteUtils
+from ..services.service_registry import ServiceRegistry
+from ..services.settings_manager import settings as default_settings
+from ..services.tag_update_service import TagUpdateService
+from ..services.websocket_manager import ws_manager as default_ws_manager
+from ..services.use_cases import (
+    AutoOrganizeUseCase,
+    BulkMetadataRefreshUseCase,
+    DownloadModelUseCase,
+)
+from ..services.websocket_progress_callback import (
+    WebSocketBroadcastCallback,
+    WebSocketProgressCallback,
+)
+from ..utils.exif_utils import ExifUtils
+from ..utils.metadata_manager import MetadataManager
 from .model_route_registrar import COMMON_ROUTE_DEFINITIONS, ModelRouteRegistrar
 from .handlers.model_handlers import (
     ModelAutoOrganizeHandler,
@@ -59,10 +75,30 @@ class BaseModelRoutes(ABC):
 
         self.model_file_service: ModelFileService | None = None
         self.model_move_service: ModelMoveService | None = None
+        self.model_lifecycle_service: ModelLifecycleService | None = None
         self.websocket_progress_callback = WebSocketProgressCallback()
+        self.metadata_progress_callback = WebSocketBroadcastCallback()
 
         self._handler_set: ModelHandlerSet | None = None
         self._handler_mapping: Dict[str, Callable[[web.Request], web.StreamResponse]] | None = None
+
+        self._preview_service = PreviewAssetService(
+            metadata_manager=MetadataManager,
+            downloader_factory=get_downloader,
+            exif_utils=ExifUtils,
+        )
+        self._metadata_sync_service = MetadataSyncService(
+            metadata_manager=MetadataManager,
+            preview_service=self._preview_service,
+            settings=settings_service,
+            default_metadata_provider_factory=metadata_provider_factory,
+            metadata_provider_selector=get_metadata_provider,
+        )
+        self._tag_update_service = TagUpdateService(metadata_manager=MetadataManager)
+        self._download_coordinator = DownloadCoordinator(
+            ws_manager=self._ws_manager,
+            download_manager_factory=ServiceRegistry.get_download_manager,
+        )
 
         if service is not None:
             self.attach_service(service)
@@ -73,6 +109,12 @@ class BaseModelRoutes(ABC):
         self.model_type = service.model_type
         self.model_file_service = ModelFileService(service.scanner, service.model_type)
         self.model_move_service = ModelMoveService(service.scanner)
+        self.model_lifecycle_service = ModelLifecycleService(
+            scanner=service.scanner,
+            metadata_manager=MetadataManager,
+            metadata_loader=self._metadata_sync_service.load_local_metadata,
+            recipe_scanner_factory=ServiceRegistry.get_recipe_scanner,
+        )
         self._handler_set = None
         self._handler_mapping = None
 
@@ -98,9 +140,28 @@ class BaseModelRoutes(ABC):
             parse_specific_params=self._parse_specific_params,
             logger=logger,
         )
-        management = ModelManagementHandler(service=service, logger=logger)
+        management = ModelManagementHandler(
+            service=service,
+            logger=logger,
+            metadata_sync=self._metadata_sync_service,
+            preview_service=self._preview_service,
+            tag_update_service=self._tag_update_service,
+            lifecycle_service=self._ensure_lifecycle_service(),
+        )
         query = ModelQueryHandler(service=service, logger=logger)
-        download = ModelDownloadHandler(ws_manager=self._ws_manager, logger=logger)
+        download_use_case = DownloadModelUseCase(download_coordinator=self._download_coordinator)
+        download = ModelDownloadHandler(
+            ws_manager=self._ws_manager,
+            logger=logger,
+            download_use_case=download_use_case,
+            download_coordinator=self._download_coordinator,
+        )
+        metadata_refresh_use_case = BulkMetadataRefreshUseCase(
+            service=service,
+            metadata_sync=self._metadata_sync_service,
+            settings_service=self._settings,
+            logger=logger,
+        )
         civitai = ModelCivitaiHandler(
             service=service,
             settings_service=self._settings,
@@ -110,10 +171,17 @@ class BaseModelRoutes(ABC):
             validate_model_type=self._validate_civitai_model_type,
             expected_model_types=self._get_expected_model_types,
             find_model_file=self._find_model_file,
+            metadata_sync=self._metadata_sync_service,
+            metadata_refresh_use_case=metadata_refresh_use_case,
+            metadata_progress_callback=self.metadata_progress_callback,
         )
         move = ModelMoveHandler(move_service=self._ensure_move_service(), logger=logger)
-        auto_organize = ModelAutoOrganizeHandler(
+        auto_organize_use_case = AutoOrganizeUseCase(
             file_service=self._ensure_file_service(),
+            lock_provider=self._ws_manager,
+        )
+        auto_organize = ModelAutoOrganizeHandler(
+            use_case=auto_organize_use_case,
             progress_callback=self.websocket_progress_callback,
             ws_manager=self._ws_manager,
             logger=logger,
@@ -167,10 +235,6 @@ class BaseModelRoutes(ABC):
         """Expose handlers for subclasses or tests."""
         return self._ensure_handler_mapping()[name]
 
-    @property
-    def utils(self) -> ModelRouteUtils:  # pragma: no cover - compatibility shim
-        return ModelRouteUtils
-
     def _ensure_service(self):
         if self.service is None:
             raise RuntimeError("Model service has not been attached")
@@ -187,6 +251,17 @@ class BaseModelRoutes(ABC):
             service = self._ensure_service()
             self.model_move_service = ModelMoveService(service.scanner)
         return self.model_move_service
+
+    def _ensure_lifecycle_service(self) -> ModelLifecycleService:
+        if self.model_lifecycle_service is None:
+            service = self._ensure_service()
+            self.model_lifecycle_service = ModelLifecycleService(
+                scanner=service.scanner,
+                metadata_manager=MetadataManager,
+                metadata_loader=self._metadata_sync_service.load_local_metadata,
+                recipe_scanner_factory=ServiceRegistry.get_recipe_scanner,
+            )
+        return self.model_lifecycle_service
 
     def _make_handler_proxy(self, name: str) -> Callable[[web.Request], web.StreamResponse]:
         async def proxy(request: web.Request) -> web.StreamResponse:
