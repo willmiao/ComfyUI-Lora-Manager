@@ -1151,18 +1151,44 @@ export class SettingsManager {
     async saveLanguageSetting() {
         const element = document.getElementById('languageSelect');
         if (!element) return;
-        
+
         const selectedLanguage = element.value;
-        
+
         try {
             // Use the universal save method for language (frontend-only setting)
             await this.saveSetting('language', selectedLanguage);
-            
+
+            this.persistLanguageToLocalStorage(selectedLanguage);
+
             // Reload the page to apply the new language
             window.location.reload();
 
         } catch (error) {
             showToast('toast.settings.languageChangeFailed', { message: error.message }, 'error');
+        }
+    }
+
+    persistLanguageToLocalStorage(language) {
+        const STORAGE_PREFIX = 'lora_manager_';
+
+        try {
+            const storageKey = `${STORAGE_PREFIX}settings`;
+            const currentSettings = localStorage.getItem(storageKey);
+            let parsedSettings = {};
+
+            if (currentSettings) {
+                try {
+                    parsedSettings = JSON.parse(currentSettings) || {};
+                } catch (parseError) {
+                    console.warn('Failed to parse existing settings from localStorage, resetting to defaults');
+                    parsedSettings = {};
+                }
+            }
+
+            parsedSettings.language = language;
+            localStorage.setItem(storageKey, JSON.stringify(parsedSettings));
+        } catch (error) {
+            console.warn('Failed to persist language preference to localStorage:', error);
         }
     }
 
