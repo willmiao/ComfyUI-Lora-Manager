@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import Any, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
@@ -88,6 +88,14 @@ class StubExampleImagesFileManager:
         return web.json_response({"operation": "has_images", "query": dict(request.query)})
 
 
+class StubWebSocketManager:
+    def __init__(self) -> None:
+        self.broadcast_calls: List[Dict[str, Any]] = []
+
+    async def broadcast(self, payload: Dict[str, Any]) -> None:
+        self.broadcast_calls.append(payload)
+
+
 @asynccontextmanager
 async def example_images_app() -> ExampleImagesHarness:
     """Yield an ExampleImagesRoutes app wired with stubbed collaborators."""
@@ -95,8 +103,10 @@ async def example_images_app() -> ExampleImagesHarness:
     download_manager = StubDownloadManager()
     processor = StubExampleImagesProcessor()
     file_manager = StubExampleImagesFileManager()
+    ws_manager = StubWebSocketManager()
 
     controller = ExampleImagesRoutes(
+        ws_manager=ws_manager,
         download_manager=download_manager,
         processor=processor,
         file_manager=file_manager,

@@ -32,21 +32,24 @@ class ExampleImagesRoutes:
     def __init__(
         self,
         *,
+        ws_manager,
         download_manager: DownloadManager | None = None,
         processor=ExampleImagesProcessor,
         file_manager=ExampleImagesFileManager,
     ) -> None:
-        self._download_manager = download_manager or get_default_download_manager()
+        if ws_manager is None:
+            raise ValueError("ws_manager is required")
+        self._download_manager = download_manager or get_default_download_manager(ws_manager)
         self._processor = processor
         self._file_manager = file_manager
         self._handler_set: ExampleImagesHandlerSet | None = None
         self._handler_mapping: Mapping[str, Callable[[web.Request], web.StreamResponse]] | None = None
 
     @classmethod
-    def setup_routes(cls, app: web.Application) -> None:
+    def setup_routes(cls, app: web.Application, *, ws_manager) -> None:
         """Register routes on the given aiohttp application using default wiring."""
 
-        controller = cls()
+        controller = cls(ws_manager=ws_manager)
         controller.register(app)
 
     def register(self, app: web.Application) -> None:
