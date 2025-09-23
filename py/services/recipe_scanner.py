@@ -3,13 +3,14 @@ import logging
 import asyncio
 import json
 import time
-from typing import List, Dict, Optional, Any, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 from ..config import config
 from .recipe_cache import RecipeCache
 from .service_registry import ServiceRegistry
 from .lora_scanner import LoraScanner
 from .metadata_service import get_default_metadata_provider
-from ..utils.utils import fuzzy_match
+from .recipes.errors import RecipeNotFoundError
+from ..utils.utils import calculate_recipe_fingerprint, fuzzy_match
 from natsort import natsorted
 import sys
 
@@ -46,6 +47,8 @@ class RecipeScanner:
             self._initialization_lock = asyncio.Lock()
             self._initialization_task: Optional[asyncio.Task] = None
             self._is_initializing = False
+            self._mutation_lock = asyncio.Lock()
+            self._resort_tasks: Set[asyncio.Task] = set()
             if lora_scanner:
                 self._lora_scanner = lora_scanner
             self._initialized = True
@@ -191,6 +194,22 @@ class RecipeScanner:
             # Clean up the event loop
             loop.close()
 
+    def _schedule_resort(self, *, name_only: bool = False) -> None:
+        """Schedule a background resort of the recipe cache."""
+
+        if not self._cache:
+            return
+
+        async def _resort_wrapper() -> None:
+            try:
+                await self._cache.resort(name_only=name_only)
+            except Exception as exc:  # pragma: no cover - defensive logging
+                logger.error("Recipe Scanner: error resorting cache: %s", exc, exc_info=True)
+
+        task = asyncio.create_task(_resort_wrapper())
+        self._resort_tasks.add(task)
+        task.add_done_callback(lambda finished: self._resort_tasks.discard(finished))
+
     @property
     def recipes_dir(self) -> str:
         """Get path to recipes directory"""
@@ -255,7 +274,45 @@ class RecipeScanner:
         
         # Return the cache (may be empty or partially initialized)
         return self._cache or RecipeCache(raw_data=[], sorted_by_name=[], sorted_by_date=[])
-    
+
+    async def refresh_cache(self, force: bool = False) -> RecipeCache:
+        """Public helper to refresh or return the recipe cache."""
+
+        return await self.get_cached_data(force_refresh=force)
+
+    async def add_recipe(self, recipe_data: Dict[str, Any]) -> None:
+        """Add a recipe to the in-memory cache."""
+
+        if not recipe_data:
+            return
+
+        cache = await self.get_cached_data()
+        await cache.add_recipe(recipe_data, resort=False)
+        self._schedule_resort()
+
+    async def remove_recipe(self, recipe_id: str) -> bool:
+        """Remove a recipe from the cache by ID."""
+
+        if not recipe_id:
+            return False
+
+        cache = await self.get_cached_data()
+        removed = await cache.remove_recipe(recipe_id, resort=False)
+        if removed is None:
+            return False
+
+        self._schedule_resort()
+        return True
+
+    async def bulk_remove(self, recipe_ids: Iterable[str]) -> int:
+        """Remove multiple recipes from the cache."""
+
+        cache = await self.get_cached_data()
+        removed = await cache.bulk_remove(recipe_ids, resort=False)
+        if removed:
+            self._schedule_resort()
+        return len(removed)
+
     async def scan_all_recipes(self) -> List[Dict]:
         """Scan all recipe JSON files and return metadata"""
         recipes = []
@@ -326,7 +383,6 @@ class RecipeScanner:
 
             # Calculate and update fingerprint if missing
             if 'loras' in recipe_data and 'fingerprint' not in recipe_data:
-                from ..utils.utils import calculate_recipe_fingerprint
                 fingerprint = calculate_recipe_fingerprint(recipe_data['loras'])
                 recipe_data['fingerprint'] = fingerprint
                 
@@ -497,9 +553,36 @@ class RecipeScanner:
             logger.error(f"Error getting base model for lora: {e}")
             return None
 
+    def _enrich_lora_entry(self, lora: Dict[str, Any]) -> Dict[str, Any]:
+        """Populate convenience fields for a LoRA entry."""
+
+        if not lora or not self._lora_scanner:
+            return lora
+
+        hash_value = (lora.get('hash') or '').lower()
+        if not hash_value:
+            return lora
+
+        try:
+            lora['inLibrary'] = self._lora_scanner.has_hash(hash_value)
+            lora['preview_url'] = self._lora_scanner.get_preview_url_by_hash(hash_value)
+            lora['localPath'] = self._lora_scanner.get_path_by_hash(hash_value)
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.debug("Error enriching lora entry %s: %s", hash_value, exc)
+
+        return lora
+
+    async def get_local_lora(self, name: str) -> Optional[Dict[str, Any]]:
+        """Lookup a local LoRA model by name."""
+
+        if not self._lora_scanner or not name:
+            return None
+
+        return await self._lora_scanner.get_model_info_by_name(name)
+
     async def get_paginated_data(self, page: int, page_size: int, sort_by: str = 'date', search: str = None, filters: dict = None, search_options: dict = None, lora_hash: str = None, bypass_filters: bool = True):
         """Get paginated and filtered recipe data
-        
+
         Args:
             page: Current page number (1-based)
             page_size: Number of items per page
@@ -598,16 +681,12 @@ class RecipeScanner:
         
         # Get paginated items
         paginated_items = filtered_data[start_idx:end_idx]
-        
+
         # Add inLibrary information for each lora
         for item in paginated_items:
             if 'loras' in item:
-                for lora in item['loras']:
-                    if 'hash' in lora and lora['hash']:
-                        lora['inLibrary'] = self._lora_scanner.has_hash(lora['hash'].lower())
-                        lora['preview_url'] = self._lora_scanner.get_preview_url_by_hash(lora['hash'].lower())
-                        lora['localPath'] = self._lora_scanner.get_path_by_hash(lora['hash'].lower())
-        
+                item['loras'] = [self._enrich_lora_entry(dict(lora)) for lora in item['loras']]
+
         result = {
             'items': paginated_items,
             'total': total_items,
@@ -653,13 +732,8 @@ class RecipeScanner:
                 
         # Add lora metadata
         if 'loras' in formatted_recipe:
-            for lora in formatted_recipe['loras']:
-                if 'hash' in lora and lora['hash']:
-                    lora_hash = lora['hash'].lower()
-                    lora['inLibrary'] = self._lora_scanner.has_hash(lora_hash)
-                    lora['preview_url'] = self._lora_scanner.get_preview_url_by_hash(lora_hash)
-                    lora['localPath'] = self._lora_scanner.get_path_by_hash(lora_hash)
-                    
+            formatted_recipe['loras'] = [self._enrich_lora_entry(dict(lora)) for lora in formatted_recipe['loras']]
+
         return formatted_recipe
         
     def _format_file_url(self, file_path: str) -> str:
@@ -717,26 +791,159 @@ class RecipeScanner:
             # Save updated recipe
             with open(recipe_json_path, 'w', encoding='utf-8') as f:
                 json.dump(recipe_data, f, indent=4, ensure_ascii=False)
-                
+
             # Update the cache if it exists
             if self._cache is not None:
-                await self._cache.update_recipe_metadata(recipe_id, metadata)
-                
+                await self._cache.update_recipe_metadata(recipe_id, metadata, resort=False)
+                self._schedule_resort()
+
             # If the recipe has an image, update its EXIF metadata
             from ..utils.exif_utils import ExifUtils
             image_path = recipe_data.get('file_path')
             if image_path and os.path.exists(image_path):
                 ExifUtils.append_recipe_metadata(image_path, recipe_data)
-                
+
             return True
         except Exception as e:
             import logging
             logging.getLogger(__name__).error(f"Error updating recipe metadata: {e}", exc_info=True)
             return False
 
+    async def update_lora_entry(
+        self,
+        recipe_id: str,
+        lora_index: int,
+        *,
+        target_name: str,
+        target_lora: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Update a specific LoRA entry within a recipe.
+
+        Returns the updated recipe data and the refreshed LoRA metadata.
+        """
+
+        if target_name is None:
+            raise ValueError("target_name must be provided")
+
+        recipe_json_path = os.path.join(self.recipes_dir, f"{recipe_id}.recipe.json")
+        if not os.path.exists(recipe_json_path):
+            raise RecipeNotFoundError("Recipe not found")
+
+        async with self._mutation_lock:
+            with open(recipe_json_path, 'r', encoding='utf-8') as file_obj:
+                recipe_data = json.load(file_obj)
+
+            loras = recipe_data.get('loras', [])
+            if lora_index >= len(loras):
+                raise RecipeNotFoundError("LoRA index out of range in recipe")
+
+            lora_entry = loras[lora_index]
+            lora_entry['isDeleted'] = False
+            lora_entry['exclude'] = False
+            lora_entry['file_name'] = target_name
+
+            if target_lora is not None:
+                sha_value = target_lora.get('sha256') or target_lora.get('sha')
+                if sha_value:
+                    lora_entry['hash'] = sha_value.lower()
+
+                civitai_info = target_lora.get('civitai') or {}
+                if civitai_info:
+                    lora_entry['modelName'] = civitai_info.get('model', {}).get('name', '')
+                    lora_entry['modelVersionName'] = civitai_info.get('name', '')
+                    lora_entry['modelVersionId'] = civitai_info.get('id')
+
+            recipe_data['fingerprint'] = calculate_recipe_fingerprint(recipe_data.get('loras', []))
+            recipe_data['modified'] = time.time()
+
+            with open(recipe_json_path, 'w', encoding='utf-8') as file_obj:
+                json.dump(recipe_data, file_obj, indent=4, ensure_ascii=False)
+
+        cache = await self.get_cached_data()
+        replaced = await cache.replace_recipe(recipe_id, recipe_data, resort=False)
+        if not replaced:
+            await cache.add_recipe(recipe_data, resort=False)
+        self._schedule_resort()
+
+        updated_lora = dict(lora_entry)
+        if target_lora is not None:
+            preview_url = target_lora.get('preview_url')
+            if preview_url:
+                updated_lora['preview_url'] = config.get_preview_static_url(preview_url)
+            if target_lora.get('file_path'):
+                updated_lora['localPath'] = target_lora['file_path']
+
+        updated_lora = self._enrich_lora_entry(updated_lora)
+        return recipe_data, updated_lora
+
+    async def get_recipes_for_lora(self, lora_hash: str) -> List[Dict[str, Any]]:
+        """Return recipes that reference a given LoRA hash."""
+
+        if not lora_hash:
+            return []
+
+        normalized_hash = lora_hash.lower()
+        cache = await self.get_cached_data()
+        matching_recipes: List[Dict[str, Any]] = []
+
+        for recipe in cache.raw_data:
+            loras = recipe.get('loras', [])
+            if any((entry.get('hash') or '').lower() == normalized_hash for entry in loras):
+                recipe_copy = {**recipe}
+                recipe_copy['loras'] = [self._enrich_lora_entry(dict(entry)) for entry in loras]
+                recipe_copy['file_url'] = self._format_file_url(recipe.get('file_path'))
+                matching_recipes.append(recipe_copy)
+
+        return matching_recipes
+
+    async def get_recipe_syntax_tokens(self, recipe_id: str) -> List[str]:
+        """Build LoRA syntax tokens for a recipe."""
+
+        cache = await self.get_cached_data()
+        recipe = await cache.get_recipe(recipe_id)
+        if recipe is None:
+            raise RecipeNotFoundError("Recipe not found")
+
+        loras = recipe.get('loras', [])
+        if not loras:
+            return []
+
+        lora_cache = None
+        if self._lora_scanner is not None:
+            lora_cache = await self._lora_scanner.get_cached_data()
+
+        syntax_parts: List[str] = []
+        for lora in loras:
+            if lora.get('isDeleted', False):
+                continue
+
+            file_name = None
+            hash_value = (lora.get('hash') or '').lower()
+            if hash_value and self._lora_scanner is not None and hasattr(self._lora_scanner, '_hash_index'):
+                file_path = self._lora_scanner._hash_index.get_path(hash_value)
+                if file_path:
+                    file_name = os.path.splitext(os.path.basename(file_path))[0]
+
+            if not file_name and lora.get('modelVersionId') and lora_cache is not None:
+                for cached_lora in getattr(lora_cache, 'raw_data', []):
+                    civitai_info = cached_lora.get('civitai')
+                    if civitai_info and civitai_info.get('id') == lora.get('modelVersionId'):
+                        cached_path = cached_lora.get('path') or cached_lora.get('file_path')
+                        if cached_path:
+                            file_name = os.path.splitext(os.path.basename(cached_path))[0]
+                        break
+
+            if not file_name:
+                file_name = lora.get('file_name', 'unknown-lora')
+
+            strength = lora.get('strength', 1.0)
+            syntax_parts.append(f"<lora:{file_name}:{strength}>")
+
+        return syntax_parts
+
     async def update_lora_filename_by_hash(self, hash_value: str, new_file_name: str) -> Tuple[int, int]:
         """Update file_name in all recipes that contain a LoRA with the specified hash.
-        
+
         Args:
             hash_value: The SHA256 hash value of the LoRA
             new_file_name: The new file_name to set

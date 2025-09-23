@@ -5,7 +5,6 @@ from typing import Dict, List, Optional
 from .base_model_service import BaseModelService
 from ..utils.models import LoraMetadata
 from ..config import config
-from ..utils.routes_common import ModelRouteUtils
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,7 @@ class LoraService(BaseModelService):
             "usage_tips": lora_data.get("usage_tips", ""),
             "notes": lora_data.get("notes", ""),
             "favorite": lora_data.get("favorite", False),
-            "civitai": ModelRouteUtils.filter_civitai_data(lora_data.get("civitai", {}), minimal=True)
+            "civitai": self.filter_civitai_data(lora_data.get("civitai", {}), minimal=True)
         }
     
     async def _apply_specific_filters(self, data: List[Dict], **kwargs) -> List[Dict]:

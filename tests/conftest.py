@@ -1,6 +1,8 @@
 import types
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence
+import asyncio
+import inspect
 from unittest import mock
 import sys
 
@@ -39,6 +41,35 @@ nodes_mock.NODE_CLASS_MAPPINGS = {}
 sys.modules['nodes'] = nodes_mock
 
 
+def pytest_pyfunc_call(pyfuncitem):
+    """Allow bare async tests to run without pytest.mark.asyncio."""
+    test_function = pyfuncitem.function
+    if inspect.iscoroutinefunction(test_function):
+        func = pyfuncitem.obj
+        signature = inspect.signature(func)
+        accepted_kwargs: Dict[str, Any] = {}
+        for name, parameter in signature.parameters.items():
+            if parameter.kind is inspect.Parameter.VAR_POSITIONAL:
+                continue
+            if parameter.kind is inspect.Parameter.VAR_KEYWORD:
+                accepted_kwargs = dict(pyfuncitem.funcargs)
+                break
+            if name in pyfuncitem.funcargs:
+                accepted_kwargs[name] = pyfuncitem.funcargs[name]
+
+        original_policy = asyncio.get_event_loop_policy()
+        policy = pyfuncitem.funcargs.get("event_loop_policy")
+        if policy is not None and policy is not original_policy:
+            asyncio.set_event_loop_policy(policy)
+        try:
+            asyncio.run(func(**accepted_kwargs))
+        finally:
+            if policy is not None and policy is not original_policy:
+                asyncio.set_event_loop_policy(original_policy)
+        return True
+    return None
+
+
 @dataclass
 class MockHashIndex:
     """Minimal hash index stub mirroring the scanner contract."""
@@ -50,7 +81,7 @@ class MockHashIndex:
 
 
 class MockCache:
-    """Cache object with the attributes consumed by ``ModelRouteUtils``."""
+    """Cache object with the attributes."""
 
     def __init__(self, items: Optional[Sequence[Dict[str, Any]]] = None):
         self.raw_data: List[Dict[str, Any]] = list(items or [])
@@ -58,7 +89,7 @@ class MockCache:
 
     async def resort(self) -> None:
         self.resort_calls += 1
-        # ``ModelRouteUtils`` expects the coroutine interface but does not
+        # expects the coroutine interface but does not
         # rely on the return value.
 
 
@@ -187,3 +218,5 @@ def mock_scanner(mock_cache: MockCache, mock_hash_index: MockHashIndex) -> MockS
 @pytest.fixture
 def mock_service(mock_scanner: MockScanner) -> MockModelService:
     return MockModelService(scanner=mock_scanner)
+
+

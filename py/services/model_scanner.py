@@ -13,6 +13,7 @@ from ..utils.metadata_manager import MetadataManager
 from .model_cache import ModelCache
 from .model_hash_index import ModelHashIndex
 from ..utils.constants import PREVIEW_EXTENSIONS
+from .model_lifecycle_service import delete_model_artifacts
 from .service_registry import ServiceRegistry
 from .websocket_manager import ws_manager
 
@@ -1040,10 +1041,8 @@ class ModelScanner:
                     target_dir = os.path.dirname(file_path)
                     file_name = os.path.splitext(os.path.basename(file_path))[0]
                     
-                    # Delete all associated files for the model
-                    from ..utils.routes_common import ModelRouteUtils
-                    deleted_files = await ModelRouteUtils.delete_model_files(
-                        target_dir, 
+                    deleted_files = await delete_model_artifacts(
+                        target_dir,
                         file_name
                     )
                     
