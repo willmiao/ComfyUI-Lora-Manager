@@ -124,16 +124,16 @@
     },
     "globalContextMenu": {
         "downloadExampleImages": {
-            "label": "[TODO: Translate] Download example images",
-            "missingPath": "[TODO: Translate] Set a download location before downloading example images.",
-            "unavailable": "[TODO: Translate] Example image downloads aren't available yet. Try again after the page finishes loading."
+            "label": "下载示例图片",
+            "missingPath": "请先设置下载位置后再下载示例图片。",
+            "unavailable": "示例图片下载当前不可用。请在页面加载完成后重试。"
         },
         "cleanupExampleImages": {
-            "label": "Clean up example image folders",
-            "success": "Moved {count} folder(s) to the deleted folder",
-            "none": "No example image folders needed cleanup",
-            "partial": "Cleanup completed with {failures} folder(s) skipped",
-            "error": "Failed to clean example image folders: {message}"
+            "label": "清理示例图片文件夹",
+            "success": "已将 {count} 个文件夹移动到已删除文件夹",
+            "none": "没有需要清理的示例图片文件夹",
+            "partial": "清理完成，有 {failures} 个文件夹跳过",
+            "error": "清理示例图片文件夹失败：{message}"
         }
     },
     "header": {

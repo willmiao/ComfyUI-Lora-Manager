@@ -124,16 +124,16 @@
     },
     "globalContextMenu": {
         "downloadExampleImages": {
-            "label": "[TODO: Translate] Download example images",
-            "missingPath": "[TODO: Translate] Set a download location before downloading example images.",
-            "unavailable": "[TODO: Translate] Example image downloads aren't available yet. Try again after the page finishes loading."
+            "label": "예시 이미지 다운로드",
+            "missingPath": "예시 이미지를 다운로드하기 전에 다운로드 위치를 설정하세요.",
+            "unavailable": "예시 이미지 다운로드는 아직 사용할 수 없습니다. 페이지 로딩이 완료된 후 다시 시도하세요."
         },
         "cleanupExampleImages": {
-            "label": "Clean up example image folders",
-            "success": "Moved {count} folder(s) to the deleted folder",
-            "none": "No example image folders needed cleanup",
-            "partial": "Cleanup completed with {failures} folder(s) skipped",
-            "error": "Failed to clean example image folders: {message}"
+            "label": "예시 이미지 폴더 정리",
+            "success": "{count}개의 폴더가 삭제 폴더로 이동되었습니다",
+            "none": "정리가 필요한 예시 이미지 폴더가 없습니다",
+            "partial": "정리가 완료되었으나 {failures}개의 폴더가 건너뛰어졌습니다",
+            "error": "예시 이미지 폴더 정리에 실패했습니다: {message}"
         }
     },
     "header": {

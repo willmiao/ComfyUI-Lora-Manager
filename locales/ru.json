@@ -124,16 +124,16 @@
     },
     "globalContextMenu": {
         "downloadExampleImages": {
-            "label": "[TODO: Translate] Download example images",
-            "missingPath": "[TODO: Translate] Set a download location before downloading example images.",
-            "unavailable": "[TODO: Translate] Example image downloads aren't available yet. Try again after the page finishes loading."
+            "label": "Загрузить примеры изображений",
+            "missingPath": "Укажите место загрузки перед загрузкой примеров изображений.",
+            "unavailable": "Загрузка примеров изображений пока недоступна. Попробуйте снова после полной загрузки страницы."
         },
         "cleanupExampleImages": {
-            "label": "Clean up example image folders",
-            "success": "Moved {count} folder(s) to the deleted folder",
-            "none": "No example image folders needed cleanup",
-            "partial": "Cleanup completed with {failures} folder(s) skipped",
-            "error": "Failed to clean example image folders: {message}"
+            "label": "Очистить папки с примерами изображений",
+            "success": "Перемещено {count} папок в папку удалённых",
+            "none": "Нет папок с примерами изображений, требующих очистки",
+            "partial": "Очистка завершена, пропущено {failures} папок",
+            "error": "Не удалось очистить папки с примерами изображений: {message}"
         }
     },
     "header": {

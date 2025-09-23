@@ -124,16 +124,16 @@
     },
     "globalContextMenu": {
         "downloadExampleImages": {
-            "label": "[TODO: Translate] Download example images",
-            "missingPath": "[TODO: Translate] Set a download location before downloading example images.",
-            "unavailable": "[TODO: Translate] Example image downloads aren't available yet. Try again after the page finishes loading."
+            "label": "Beispielbilder herunterladen",
+            "missingPath": "Bitte legen Sie einen Speicherort fest, bevor Sie Beispielbilder herunterladen.",
+            "unavailable": "Beispielbild-Downloads sind noch nicht verfügbar. Versuchen Sie es erneut, nachdem die Seite vollständig geladen ist."
         },
         "cleanupExampleImages": {
-            "label": "Clean up example image folders",
-            "success": "Moved {count} folder(s) to the deleted folder",
-            "none": "No example image folders needed cleanup",
-            "partial": "Cleanup completed with {failures} folder(s) skipped",
-            "error": "Failed to clean example image folders: {message}"
+            "label": "Beispielbild-Ordner bereinigen",
+            "success": "{count} Ordner wurden in den Papierkorb verschoben",
+            "none": "Keine Beispielbild-Ordner mussten bereinigt werden",
+            "partial": "Bereinigung abgeschlossen, {failures} Ordner übersprungen",
+            "error": "Fehler beim Bereinigen der Beispielbild-Ordner: {message}"
         }
     },
     "header": {
