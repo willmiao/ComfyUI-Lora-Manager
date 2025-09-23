@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import Any, List, Tuple
+from typing import Any, List, Set, Tuple
 
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
@@ -8,6 +8,7 @@ import pytest
 
 from py.routes import example_images_routes
 from py.routes.example_images_routes import ExampleImagesRoutes
+from py.routes.example_images_route_registrar import ROUTE_DEFINITIONS
 
 
 @dataclass
@@ -108,6 +109,19 @@ async def example_images_app(monkeypatch: pytest.MonkeyPatch) -> ExampleImagesHa
         )
     finally:
         await client.close()
+
+
+async def test_setup_routes_registers_all_definitions(monkeypatch: pytest.MonkeyPatch):
+    async with example_images_app(monkeypatch) as harness:
+        registered: Set[tuple[str, str]] = {
+            (route.method, route.resource.canonical)
+            for route in harness.client.app.router.routes()
+            if route.resource.canonical
+        }
+
+        expected = {(definition.method, definition.path) for definition in ROUTE_DEFINITIONS}
+
+        assert expected <= registered
 
 
 @pytest.mark.parametrize(
