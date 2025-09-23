@@ -405,7 +405,7 @@ export function createModelCard(model, modelType) {
     card.dataset.nsfwLevel = nsfwLevel;
     
     // Determine if the preview should be blurred based on NSFW level and user settings
-    const shouldBlur = state.settings.blurMatureContent && nsfwLevel > NSFW_LEVELS.PG13;
+    const shouldBlur = state.settings.blur_mature_content && nsfwLevel > NSFW_LEVELS.PG13;
     if (shouldBlur) {
         card.classList.add('nsfw-content');
     }
@@ -433,7 +433,7 @@ export function createModelCard(model, modelType) {
     }
 
     // Check if autoplayOnHover is enabled for video previews
-    const autoplayOnHover = state.global?.settings?.autoplayOnHover || false;
+    const autoplayOnHover = state.global?.settings?.autoplay_on_hover || false;
     const isVideo = previewUrl.endsWith('.mp4');
     const videoAttrs = autoplayOnHover ? 'controls muted loop' : 'controls autoplay muted loop';
 

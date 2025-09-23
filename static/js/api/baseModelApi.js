@@ -945,7 +945,7 @@ export class BaseModelApiClient {
                 }
                 
                 // Determine optimize setting
-                const optimize = state.global?.settings?.optimizeExampleImages ?? true;
+                const optimize = state.global?.settings?.optimize_example_images ?? true;
                 
                 // Make the API request to start the download process
                 const response = await fetch(DOWNLOAD_ENDPOINTS.exampleImages, {

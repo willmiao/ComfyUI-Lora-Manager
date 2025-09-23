@@ -182,9 +182,6 @@ export class OnboardingManager {
             // Update state
             state.global.settings.language = languageCode;
             
-            // Save to localStorage
-            setStorageItem('settings', state.global.settings);
-            
             // Save to backend
             const response = await fetch('/api/lm/settings', {
                 method: 'POST',

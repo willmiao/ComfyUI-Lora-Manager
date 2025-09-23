@@ -63,7 +63,7 @@ export class ExampleImagesManager {
         }
 
         // Setup auto download if enabled
-        if (state.global.settings.autoDownloadExampleImages) {
+        if (state.global.settings.auto_download_example_images) {
             this.setupAutoDownload();
         }
 
@@ -106,7 +106,7 @@ export class ExampleImagesManager {
                         showToast('toast.exampleImages.pathUpdateFailed', { message: error.message }, 'error');
                     }
                     // Setup or clear auto download based on path availability
-                    if (state.global.settings.autoDownloadExampleImages) {
+                    if (state.global.settings.auto_download_example_images) {
                         if (hasPath) {
                             this.setupAutoDownload();
                         } else {
@@ -225,7 +225,7 @@ export class ExampleImagesManager {
         }
         
         try {
-            const optimize = state.global.settings.optimizeExampleImages;
+            const optimize = state.global.settings.optimize_example_images;
             
             const response = await fetch('/api/lm/download-example-images', {
                 method: 'POST',
@@ -677,7 +677,7 @@ export class ExampleImagesManager {
 
     canAutoDownload() {
         // Check if auto download is enabled
-        if (!state.global.settings.autoDownloadExampleImages) {
+        if (!state.global.settings.auto_download_example_images) {
             return false;
         }
 
@@ -713,7 +713,7 @@ export class ExampleImagesManager {
         try {
             console.log('Performing auto download check...');
             
-            const optimize = state.global.settings.optimizeExampleImages;
+            const optimize = state.global.settings.optimize_example_images;
             
             const response = await fetch('/api/lm/download-example-images', {
                 method: 'POST',
