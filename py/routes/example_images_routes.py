@@ -12,6 +12,10 @@ from .handlers.example_images_handlers import (
     ExampleImagesHandlerSet,
     ExampleImagesManagementHandler,
 )
+from ..services.use_cases.example_images import (
+    DownloadExampleImagesUseCase,
+    ImportExampleImagesUseCase,
+)
 from ..utils.example_images_download_manager import DownloadManager
 from ..utils.example_images_file_manager import ExampleImagesFileManager
 from ..utils.example_images_processor import ExampleImagesProcessor
@@ -59,8 +63,10 @@ class ExampleImagesRoutes:
 
     def _build_handler_set(self) -> ExampleImagesHandlerSet:
         logger.debug("Building ExampleImagesHandlerSet with %s, %s, %s", self._download_manager, self._processor, self._file_manager)
-        download_handler = ExampleImagesDownloadHandler(self._download_manager)
-        management_handler = ExampleImagesManagementHandler(self._processor)
+        download_use_case = DownloadExampleImagesUseCase(download_manager=self._download_manager)
+        download_handler = ExampleImagesDownloadHandler(download_use_case, self._download_manager)
+        import_use_case = ImportExampleImagesUseCase(processor=self._processor)
+        management_handler = ExampleImagesManagementHandler(import_use_case, self._processor)
         file_handler = ExampleImagesFileHandler(self._file_manager)
         return ExampleImagesHandlerSet(
             download=download_handler,

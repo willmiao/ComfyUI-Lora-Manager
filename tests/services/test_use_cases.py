@@ -10,9 +10,23 @@ from py_local.services.use_cases import (
     AutoOrganizeInProgressError,
     AutoOrganizeUseCase,
     BulkMetadataRefreshUseCase,
+    DownloadExampleImagesConfigurationError,
+    DownloadExampleImagesInProgressError,
+    DownloadExampleImagesUseCase,
     DownloadModelEarlyAccessError,
     DownloadModelUseCase,
     DownloadModelValidationError,
+    ImportExampleImagesUseCase,
+    ImportExampleImagesValidationError,
+)
+from py_local.utils.example_images_download_manager import (
+    DownloadConfigurationError,
+    DownloadInProgressError,
+    ExampleImagesDownloadError,
+)
+from py_local.utils.example_images_processor import (
+    ExampleImagesImportError,
+    ExampleImagesValidationError,
 )
 from tests.conftest import MockModelService, MockScanner
 
@@ -86,6 +100,38 @@ class StubDownloadCoordinator:
         if self.error == "401":
             raise RuntimeError("401 Unauthorized")
         return {"success": True, "download_id": "abc123"}
+
+
+class StubExampleImagesDownloadManager:
+    def __init__(self) -> None:
+        self.payloads: List[Dict[str, Any]] = []
+        self.error: Optional[str] = None
+        self.progress_snapshot = {"status": "running"}
+
+    async def start_download(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        self.payloads.append(payload)
+        if self.error == "in_progress":
+            raise DownloadInProgressError(self.progress_snapshot)
+        if self.error == "configuration":
+            raise DownloadConfigurationError("path missing")
+        if self.error == "generic":
+            raise ExampleImagesDownloadError("boom")
+        return {"success": True, "message": "ok"}
+
+
+class StubExampleImagesProcessor:
+    def __init__(self) -> None:
+        self.calls: List[Dict[str, Any]] = []
+        self.error: Optional[str] = None
+        self.response: Dict[str, Any] = {"success": True}
+
+    async def import_images(self, model_hash: str, files: List[str]) -> Dict[str, Any]:
+        self.calls.append({"model_hash": model_hash, "files": files})
+        if self.error == "validation":
+            raise ExampleImagesValidationError("missing")
+        if self.error == "generic":
+            raise ExampleImagesImportError("boom")
+        return self.response
 
 
 async def test_auto_organize_use_case_executes_with_lock() -> None:
@@ -189,3 +235,83 @@ async def test_download_model_use_case_returns_result() -> None:
 
     assert result["success"] is True
     assert result["download_id"] == "abc123"
+
+
+async def test_download_example_images_use_case_triggers_manager() -> None:
+    manager = StubExampleImagesDownloadManager()
+    use_case = DownloadExampleImagesUseCase(download_manager=manager)
+
+    payload = {"optimize": True}
+    result = await use_case.execute(payload)
+
+    assert manager.payloads == [payload]
+    assert result == {"success": True, "message": "ok"}
+
+
+async def test_download_example_images_use_case_maps_in_progress() -> None:
+    manager = StubExampleImagesDownloadManager()
+    manager.error = "in_progress"
+    use_case = DownloadExampleImagesUseCase(download_manager=manager)
+
+    with pytest.raises(DownloadExampleImagesInProgressError) as exc:
+        await use_case.execute({})
+
+    assert exc.value.progress == manager.progress_snapshot
+
+
+async def test_download_example_images_use_case_maps_configuration() -> None:
+    manager = StubExampleImagesDownloadManager()
+    manager.error = "configuration"
+    use_case = DownloadExampleImagesUseCase(download_manager=manager)
+
+    with pytest.raises(DownloadExampleImagesConfigurationError):
+        await use_case.execute({})
+
+
+async def test_download_example_images_use_case_propagates_generic_error() -> None:
+    manager = StubExampleImagesDownloadManager()
+    manager.error = "generic"
+    use_case = DownloadExampleImagesUseCase(download_manager=manager)
+
+    with pytest.raises(ExampleImagesDownloadError):
+        await use_case.execute({})
+
+
+class DummyJsonRequest:
+    def __init__(self, payload: Dict[str, Any]) -> None:
+        self._payload = payload
+        self.content_type = "application/json"
+
+    async def json(self) -> Dict[str, Any]:
+        return self._payload
+
+
+async def test_import_example_images_use_case_delegates() -> None:
+    processor = StubExampleImagesProcessor()
+    use_case = ImportExampleImagesUseCase(processor=processor)
+
+    request = DummyJsonRequest({"model_hash": "abc", "file_paths": ["/tmp/file"]})
+    result = await use_case.execute(request)
+
+    assert processor.calls == [{"model_hash": "abc", "files": ["/tmp/file"]}]
+    assert result == {"success": True}
+
+
+async def test_import_example_images_use_case_maps_validation_error() -> None:
+    processor = StubExampleImagesProcessor()
+    processor.error = "validation"
+    use_case = ImportExampleImagesUseCase(processor=processor)
+    request = DummyJsonRequest({"model_hash": None, "file_paths": []})
+
+    with pytest.raises(ImportExampleImagesValidationError):
+        await use_case.execute(request)
+
+
+async def test_import_example_images_use_case_propagates_generic_error() -> None:
+    processor = StubExampleImagesProcessor()
+    processor.error = "generic"
+    use_case = ImportExampleImagesUseCase(processor=processor)
+    request = DummyJsonRequest({"model_hash": "abc", "file_paths": ["/tmp/file"]})
+
+    with pytest.raises(ExampleImagesImportError):
+        await use_case.execute(request)
