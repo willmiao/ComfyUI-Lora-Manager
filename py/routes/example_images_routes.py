@@ -16,7 +16,10 @@ from ..services.use_cases.example_images import (
     DownloadExampleImagesUseCase,
     ImportExampleImagesUseCase,
 )
-from ..utils.example_images_download_manager import DownloadManager
+from ..utils.example_images_download_manager import (
+    DownloadManager,
+    get_default_download_manager,
+)
 from ..utils.example_images_file_manager import ExampleImagesFileManager
 from ..utils.example_images_processor import ExampleImagesProcessor
 
@@ -29,11 +32,11 @@ class ExampleImagesRoutes:
     def __init__(
         self,
         *,
-        download_manager=DownloadManager,
+        download_manager: DownloadManager | None = None,
         processor=ExampleImagesProcessor,
         file_manager=ExampleImagesFileManager,
     ) -> None:
-        self._download_manager = download_manager
+        self._download_manager = download_manager or get_default_download_manager()
         self._processor = processor
         self._file_manager = file_manager
         self._handler_set: ExampleImagesHandlerSet | None = None
