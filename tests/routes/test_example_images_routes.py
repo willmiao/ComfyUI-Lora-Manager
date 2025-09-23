@@ -27,6 +27,7 @@ class ExampleImagesHarness:
     download_manager: "StubDownloadManager"
     processor: "StubExampleImagesProcessor"
     file_manager: "StubExampleImagesFileManager"
+    cleanup_service: "StubExampleImagesCleanupService"
     controller: ExampleImagesRoutes
 
 
@@ -88,6 +89,21 @@ class StubExampleImagesFileManager:
         return web.json_response({"operation": "has_images", "query": dict(request.query)})
 
 
+class StubExampleImagesCleanupService:
+    def __init__(self) -> None:
+        self.calls: List[Dict[str, Any]] = []
+        self.result: Dict[str, Any] = {
+            "success": True,
+            "moved_total": 0,
+            "moved_empty_folders": 0,
+            "moved_orphaned_folders": 0,
+        }
+
+    async def cleanup_example_image_folders(self) -> Dict[str, Any]:
+        self.calls.append({})
+        return self.result
+
+
 class StubWebSocketManager:
     def __init__(self) -> None:
         self.broadcast_calls: List[Dict[str, Any]] = []
@@ -103,6 +119,7 @@ async def example_images_app() -> ExampleImagesHarness:
     download_manager = StubDownloadManager()
     processor = StubExampleImagesProcessor()
     file_manager = StubExampleImagesFileManager()
+    cleanup_service = StubExampleImagesCleanupService()
     ws_manager = StubWebSocketManager()
 
     controller = ExampleImagesRoutes(
@@ -110,6 +127,7 @@ async def example_images_app() -> ExampleImagesHarness:
         download_manager=download_manager,
         processor=processor,
         file_manager=file_manager,
+        cleanup_service=cleanup_service,
     )
 
     app = web.Application()
@@ -125,6 +143,7 @@ async def example_images_app() -> ExampleImagesHarness:
             download_manager=download_manager,
             processor=processor,
             file_manager=file_manager,
+            cleanup_service=cleanup_service,
             controller=controller,
         )
     finally:
@@ -255,6 +274,23 @@ async def test_file_routes_delegate_to_file_manager():
         ]
 
 
+async def test_cleanup_route_delegates_to_service():
+    async with example_images_app() as harness:
+        harness.cleanup_service.result = {
+            "success": True,
+            "moved_total": 2,
+            "moved_empty_folders": 1,
+            "moved_orphaned_folders": 1,
+        }
+
+        response = await harness.client.post("/api/lm/cleanup-example-image-folders")
+        body = await response.json()
+
+        assert response.status == 200
+        assert body == harness.cleanup_service.result
+        assert len(harness.cleanup_service.calls) == 1
+
+
 @pytest.mark.asyncio
 async def test_download_handler_methods_delegate() -> None:
     class Recorder:
@@ -337,15 +373,20 @@ async def test_management_handler_methods_delegate() -> None:
             return "delete"
 
     recorder = Recorder()
+    cleanup_service = StubExampleImagesCleanupService()
     use_case = StubImportUseCase()
-    handler = ExampleImagesManagementHandler(use_case, recorder)
+    handler = ExampleImagesManagementHandler(use_case, recorder, cleanup_service)
     request = object()
 
     import_response = await handler.import_example_images(request)
     assert json.loads(import_response.text) == {"status": "imported"}
     assert await handler.delete_example_image(request) == "delete"
+    cleanup_service.result = {"success": True}
+    cleanup_response = await handler.cleanup_example_image_folders(request)
+    assert json.loads(cleanup_response.text) == {"success": True}
     assert use_case.requests == [request]
     assert recorder.calls == [("delete_custom_image", request)]
+    assert len(cleanup_service.calls) == 1
 
 
 @pytest.mark.asyncio
@@ -403,7 +444,8 @@ def test_handler_set_route_mapping_includes_all_handlers() -> None:
             return {}
 
     download = ExampleImagesDownloadHandler(DummyUseCase(), DummyManager())
-    management = ExampleImagesManagementHandler(DummyUseCase(), DummyProcessor())
+    cleanup_service = StubExampleImagesCleanupService()
+    management = ExampleImagesManagementHandler(DummyUseCase(), DummyProcessor(), cleanup_service)
     files = ExampleImagesFileHandler(object())
     handler_set = ExampleImagesHandlerSet(
         download=download,
@@ -421,6 +463,7 @@ def test_handler_set_route_mapping_includes_all_handlers() -> None:
         "force_download_example_images",
         "import_example_images",
         "delete_example_image",
+        "cleanup_example_image_folders",
         "open_example_images_folder",
         "get_example_image_files",
         "has_example_images",

@@ -89,9 +89,10 @@ class ExampleImagesDownloadHandler:
 class ExampleImagesManagementHandler:
     """HTTP adapters for import/delete endpoints."""
 
-    def __init__(self, import_use_case: ImportExampleImagesUseCase, processor) -> None:
+    def __init__(self, import_use_case: ImportExampleImagesUseCase, processor, cleanup_service) -> None:
         self._import_use_case = import_use_case
         self._processor = processor
+        self._cleanup_service = cleanup_service
 
     async def import_example_images(self, request: web.Request) -> web.StreamResponse:
         try:
@@ -104,6 +105,16 @@ class ExampleImagesManagementHandler:
 
     async def delete_example_image(self, request: web.Request) -> web.StreamResponse:
         return await self._processor.delete_custom_image(request)
+
+    async def cleanup_example_image_folders(self, request: web.Request) -> web.StreamResponse:
+        result = await self._cleanup_service.cleanup_example_image_folders()
+
+        if result.get('success') or result.get('partial_success'):
+            return web.json_response(result, status=200)
+
+        error_code = result.get('error_code')
+        status = 400 if error_code in {'path_not_configured', 'path_not_found'} else 500
+        return web.json_response(result, status=status)
 
 
 class ExampleImagesFileHandler:
@@ -141,6 +152,7 @@ class ExampleImagesHandlerSet:
             "force_download_example_images": self.download.force_download_example_images,
             "import_example_images": self.management.import_example_images,
             "delete_example_image": self.management.delete_example_image,
+            "cleanup_example_image_folders": self.management.cleanup_example_image_folders,
             "open_example_images_folder": self.files.open_example_images_folder,
             "get_example_image_files": self.files.get_example_image_files,
             "has_example_images": self.files.has_example_images,

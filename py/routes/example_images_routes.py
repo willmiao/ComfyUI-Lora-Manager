@@ -22,6 +22,7 @@ from ..utils.example_images_download_manager import (
 )
 from ..utils.example_images_file_manager import ExampleImagesFileManager
 from ..utils.example_images_processor import ExampleImagesProcessor
+from ..services.example_images_cleanup_service import ExampleImagesCleanupService
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +37,14 @@ class ExampleImagesRoutes:
         download_manager: DownloadManager | None = None,
         processor=ExampleImagesProcessor,
         file_manager=ExampleImagesFileManager,
+        cleanup_service: ExampleImagesCleanupService | None = None,
     ) -> None:
         if ws_manager is None:
             raise ValueError("ws_manager is required")
         self._download_manager = download_manager or get_default_download_manager(ws_manager)
         self._processor = processor
         self._file_manager = file_manager
+        self._cleanup_service = cleanup_service or ExampleImagesCleanupService()
         self._handler_set: ExampleImagesHandlerSet | None = None
         self._handler_mapping: Mapping[str, Callable[[web.Request], web.StreamResponse]] | None = None
 
@@ -72,7 +75,11 @@ class ExampleImagesRoutes:
         download_use_case = DownloadExampleImagesUseCase(download_manager=self._download_manager)
         download_handler = ExampleImagesDownloadHandler(download_use_case, self._download_manager)
         import_use_case = ImportExampleImagesUseCase(processor=self._processor)
-        management_handler = ExampleImagesManagementHandler(import_use_case, self._processor)
+        management_handler = ExampleImagesManagementHandler(
+            import_use_case,
+            self._processor,
+            self._cleanup_service,
+        )
         file_handler = ExampleImagesFileHandler(self._file_manager)
         return ExampleImagesHandlerSet(
             download=download_handler,
