@@ -8,7 +8,6 @@ const {
     getSessionItem,
     setSessionItem,
     removeSessionItem,
-    migrateStorageItems
 } = storageHelpers;
 
 const createFakeStorage = () => {
@@ -108,35 +107,5 @@ describe('storageHelpers namespace utilities', () => {
         removeSessionItem('flag');
 
         expect(sessionStorage.getItem('lora_manager_flag')).toBeNull();
-    });
-});
-
-describe('migrateStorageItems', () => {
-    it('migrates known keys and logs completion', () => {
-        const setStorageSpy = vi.spyOn(storageHelpers, 'setStorageItem');
-        localStorage.setItem('theme', '"light"');
-        localStorage.setItem('loras_filters', JSON.stringify({ sort: 'asc' }));
-        localStorage.setItem('nsfwBlurLevel', '3');
-
-        migrateStorageItems();
-
-        expect(setStorageSpy).toHaveBeenCalledTimes(3);
-        expect(localStorage.getItem('lora_manager_theme')).toBe('light');
-        expect(localStorage.getItem('lora_manager_loras_filters')).toBe(JSON.stringify({ sort: 'asc' }));
-        expect(localStorage.getItem('loras_filters')).toBeNull();
-        expect(localStorage.getItem('lora_manager_nsfwBlurLevel')).toBe('3');
-        expect(localStorage.getItem('nsfwBlurLevel')).toBeNull();
-        expect(localStorage.getItem('lora_manager_migration_completed')).toBe('true');
-        expect(consoleLogMock).toHaveBeenCalledWith('Lora Manager: Storage migration completed');
-    });
-
-    it('skips migration when already completed and logs notice', () => {
-        const setStorageSpy = vi.spyOn(storageHelpers, 'setStorageItem');
-        localStorage.setItem('lora_manager_migration_completed', 'true');
-
-        migrateStorageItems();
-
-        expect(setStorageSpy).not.toHaveBeenCalled();
-        expect(consoleLogMock).toHaveBeenCalledWith('Lora Manager: Storage migration already completed');
     });
 });

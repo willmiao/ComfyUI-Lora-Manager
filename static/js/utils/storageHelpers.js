@@ -117,64 +117,6 @@ export function removeSessionItem(key) {
 }
 
 /**
- * Migrate all existing localStorage items to use the prefix
- * This should be called once during application initialization
- */
-export function migrateStorageItems() {
-    // Check if migration has already been performed
-    if (localStorage.getItem(STORAGE_PREFIX + 'migration_completed')) {
-        console.log('Lora Manager: Storage migration already completed');
-        return;
-    }
-    
-    // List of known keys used in the application
-    const knownKeys = [
-        'nsfwBlurLevel',
-        'theme',
-        'activeFolder',
-        'folderTagsCollapsed',
-        'settings',
-        'loras_filters',
-        'recipes_filters',
-        'checkpoints_filters',
-        'loras_search_prefs',
-        'recipes_search_prefs',
-        'checkpoints_search_prefs',
-        'show_update_notifications',
-        'last_update_check',
-        'dismissed_banners'
-    ];
-    
-    // Migrate each known key
-    knownKeys.forEach(key => {
-        const prefixedKey = STORAGE_PREFIX + key;
-        
-        // Only migrate if the prefixed key doesn't already exist
-        if (localStorage.getItem(prefixedKey) === null) {
-            const value = localStorage.getItem(key);
-            if (value !== null) {
-                try {
-                    // Try to parse as JSON first
-                    const parsedValue = JSON.parse(value);
-                    setStorageItem(key, parsedValue);
-                } catch (e) {
-                    // If not JSON, store as is
-                    setStorageItem(key, value);
-                }
-                
-                // We can optionally remove the old key after migration
-                localStorage.removeItem(key);
-            }
-        }
-    });
-    
-    // Mark migration as completed
-    localStorage.setItem(STORAGE_PREFIX + 'migration_completed', 'true');
-    
-    console.log('Lora Manager: Storage migration completed');
-}
-
-/**
  * Save a Map to localStorage
  * @param {string} key - The localStorage key
  * @param {Map} map - The Map to save

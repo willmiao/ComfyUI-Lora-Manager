@@ -12,7 +12,6 @@ import { helpManager } from './managers/HelpManager.js';
 import { bannerService } from './managers/BannerService.js';
 import { initTheme, initBackToTop } from './utils/uiHelpers.js';
 import { initializeInfiniteScroll } from './utils/infiniteScroll.js';
-import { migrateStorageItems } from './utils/storageHelpers.js';
 import { i18n } from './i18n/index.js';
 import { onboardingManager } from './managers/OnboardingManager.js';
 import { BulkContextMenu } from './components/ContextMenu/BulkContextMenu.js';
@@ -122,11 +121,6 @@ export class AppCore {
         }
     }
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Migrate localStorage items to use the namespace prefix
-    migrateStorageItems();
-});
 
 // Create and export a singleton instance
 export const appCore = new AppCore();
