@@ -123,6 +123,11 @@
         }
     },
     "globalContextMenu": {
+        "downloadExampleImages": {
+            "label": "Download example images",
+            "missingPath": "Set a download location before downloading example images.",
+            "unavailable": "Example image downloads aren't available yet. Try again after the page finishes loading."
+        },
         "cleanupExampleImages": {
             "label": "Clean up example image folders",
             "success": "Moved {count} folder(s) to the deleted folder",

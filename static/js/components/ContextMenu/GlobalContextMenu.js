@@ -1,5 +1,6 @@
 import { BaseContextMenu } from './BaseContextMenu.js';
 import { showToast } from '../../utils/uiHelpers.js';
+import { state } from '../../state/index.js';
 
 export class GlobalContextMenu extends BaseContextMenu {
     constructor() {
@@ -19,9 +20,37 @@ export class GlobalContextMenu extends BaseContextMenu {
                     console.error('Failed to trigger example images cleanup:', error);
                 });
                 break;
+            case 'download-example-images':
+                this.downloadExampleImages(menuItem).catch((error) => {
+                    console.error('Failed to trigger example images download:', error);
+                });
+                break;
             default:
                 console.warn(`Unhandled global context menu action: ${action}`);
                 break;
+        }
+    }
+
+    async downloadExampleImages(menuItem) {
+        const exampleImagesManager = window.exampleImagesManager;
+
+        if (!exampleImagesManager) {
+            showToast('globalContextMenu.downloadExampleImages.unavailable', {}, 'error');
+            return;
+        }
+
+        const downloadPath = state?.global?.settings?.example_images_path;
+        if (!downloadPath) {
+            showToast('globalContextMenu.downloadExampleImages.missingPath', {}, 'warning');
+            return;
+        }
+
+        menuItem?.classList.add('disabled');
+
+        try {
+            await exampleImagesManager.handleDownloadButton();
+        } finally {
+            menuItem?.classList.remove('disabled');
         }
     }
 
