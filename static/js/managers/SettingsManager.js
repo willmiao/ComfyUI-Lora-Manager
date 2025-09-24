@@ -5,6 +5,7 @@ import { resetAndReload } from '../api/modelApiFactory.js';
 import { DOWNLOAD_PATH_TEMPLATES, MAPPABLE_BASE_MODELS, PATH_TEMPLATE_PLACEHOLDERS, DEFAULT_PATH_TEMPLATES } from '../utils/constants.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { i18n } from '../i18n/index.js';
+import { configureModelCardVideo } from '../components/shared/ModelCard.js';
 
 export class SettingsManager {
     constructor() {
@@ -1222,29 +1223,7 @@ export class SettingsManager {
         // Apply autoplay setting to existing videos in card previews
         const autoplayOnHover = state.global.settings.autoplay_on_hover;
         document.querySelectorAll('.card-preview video').forEach(video => {
-            // Remove previous event listeners by cloning and replacing the element
-            const videoParent = video.parentElement;
-            const videoClone = video.cloneNode(true);
-            
-            if (autoplayOnHover) {
-                // Pause video initially and set up mouse events for hover playback
-                videoClone.removeAttribute('autoplay');
-                videoClone.pause();
-                
-                // Add mouse events to the parent element
-                videoParent.onmouseenter = () => videoClone.play();
-                videoParent.onmouseleave = () => {
-                    videoClone.pause();
-                    videoClone.currentTime = 0;
-                };
-            } else {
-                // Use default autoplay behavior
-                videoClone.setAttribute('autoplay', '');
-                videoParent.onmouseenter = null;
-                videoParent.onmouseleave = null;
-            }
-            
-            videoParent.replaceChild(videoClone, video);
+            configureModelCardVideo(video, autoplayOnHover);
         });
         
         // Apply display density class to grid
