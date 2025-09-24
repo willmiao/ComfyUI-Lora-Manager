@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createDefaultSettings, getCurrentPageState, initPageState, setCurrentPageType, state } from './index.js';
-import { MODEL_TYPES } from '../api/apiConfig.js';
-import { DEFAULT_PATH_TEMPLATES } from '../utils/constants.js';
+import { createDefaultSettings, getCurrentPageState, initPageState, setCurrentPageType, state } from '../../../static/js/state/index.js';
+import { MODEL_TYPES } from '../../../static/js/api/apiConfig.js';
+import { DEFAULT_PATH_TEMPLATES } from '../../../static/js/utils/constants.js';
 
 describe('state module', () => {
   beforeEach(() => {

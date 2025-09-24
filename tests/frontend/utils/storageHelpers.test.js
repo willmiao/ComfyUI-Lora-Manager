@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import * as storageHelpers from './storageHelpers.js';
+import * as storageHelpers from '../../../static/js/utils/storageHelpers.js';
 
 const {
     getStorageItem,

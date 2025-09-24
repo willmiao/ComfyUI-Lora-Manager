@@ -6,7 +6,6 @@ export default defineConfig({
     globals: true,
     setupFiles: ['tests/frontend/setup.js'],
     include: [
-      'static/js/**/*.test.js',
       'tests/frontend/**/*.test.js'
     ],
     coverage: {
