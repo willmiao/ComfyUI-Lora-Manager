@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "node scripts/run_frontend_coverage.js"
   },
   "devDependencies": {
     "jsdom": "^24.0.0",

@@ -9,7 +9,9 @@ export default defineConfig({
       'tests/frontend/**/*.test.js'
     ],
     coverage: {
-      enabled: false,
+      enabled: process.env.VITEST_COVERAGE === 'true',
+      provider: 'v8',
+      reporter: ['text', 'lcov', 'json-summary'],
       reportsDirectory: 'coverage/frontend'
     }
   }
