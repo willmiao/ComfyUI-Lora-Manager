@@ -10,7 +10,7 @@ This roadmap tracks the planned rollout of automated testing for the ComfyUI LoR
 | Phase 1 | Cover state management logic | Unit test selectors, derived data helpers, and storage utilities under `static/js/state` and `static/js/utils` | ✅ Complete | Storage helpers and state selectors now exercised via deterministic suites |
 | Phase 2 | Test AppCore orchestration | Simulate page bootstrapping, infinite scroll hooks, and manager registration using JSDOM DOM fixtures | ✅ Complete | AppCore initialization + page feature suites now validate manager wiring, infinite scroll hooks, and onboarding gating |
 | Phase 3 | Validate page-specific managers | Add focused suites for `loras`, `checkpoints`, `embeddings`, and `recipes` managers covering filtering, sorting, and bulk actions | ✅ Complete | LoRA/checkpoint suites expanded; embeddings + recipes managers now covered with initialization, filtering, and duplicate workflows |
-| Phase 4 | Interaction-level regression tests | Exercise template fragments, modals, and menus to ensure UI wiring remains intact | ⚪ Not Started | Evaluate Playwright component testing or happy-path DOM snapshots |
+| Phase 4 | Interaction-level regression tests | Exercise template fragments, modals, and menus to ensure UI wiring remains intact | ✅ Complete | Vitest DOM suites cover NSFW selector, recipe modal editing, and global context menus |
 | Phase 5 | Continuous integration & coverage | Integrate frontend tests into CI workflow and track coverage metrics | ⚪ Not Started | Align reporting directories with backend coverage for unified reporting |
 
 ## Next Steps Checklist
@@ -20,6 +20,7 @@ This roadmap tracks the planned rollout of automated testing for the ComfyUI LoR
 - [x] Prototype AppCore initialization test that verifies manager bootstrapping with stubbed dependencies.
 - [x] Add AppCore page feature suite exercising context menu creation and infinite scroll registration via DOM fixtures.
 - [x] Extend AppCore orchestration tests to cover manager wiring, bulk menu setup, and onboarding gating scenarios.
+- [x] Add interaction regression suites for context menus and recipe modals to complete Phase 4.
 - [ ] Evaluate integrating coverage reporting once test surface grows (> 20 specs).
 - [x] Create shared fixtures for the loras and checkpoints pages once dedicated manager suites are added.
 - [x] Draft focused test matrix for loras/checkpoints manager filtering and sorting paths ahead of Phase 3.
