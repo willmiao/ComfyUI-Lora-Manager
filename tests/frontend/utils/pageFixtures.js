@@ -23,3 +23,27 @@ export function renderCheckpointsPage() {
     },
   });
 }
+
+/**
+ * Renders the Embeddings page template with expected dataset attributes.
+ * @returns {Element}
+ */
+export function renderEmbeddingsPage() {
+  return renderTemplate('embeddings.html', {
+    dataset: {
+      page: 'embeddings',
+    },
+  });
+}
+
+/**
+ * Renders the Recipes page template with expected dataset attributes.
+ * @returns {Element}
+ */
+export function renderRecipesPage() {
+  return renderTemplate('recipes.html', {
+    dataset: {
+      page: 'recipes',
+    },
+  });
+}
