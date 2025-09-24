@@ -49,7 +49,8 @@ export class AppCore {
         bannerService.initialize();
         window.modalManager = modalManager;
         window.settingsManager = settingsManager;
-        window.exampleImagesManager = new ExampleImagesManager();
+        const exampleImagesManager = new ExampleImagesManager();
+        window.exampleImagesManager = exampleImagesManager;
         window.helpManager = helpManager;
         window.moveManager = moveManager;
         window.bulkManager = bulkManager;
