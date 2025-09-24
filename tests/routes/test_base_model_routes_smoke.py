@@ -31,7 +31,7 @@ from py_local.routes.base_model_routes import BaseModelRoutes
 from py_local.services.model_file_service import AutoOrganizeResult
 from py_local.services.service_registry import ServiceRegistry
 from py_local.services.websocket_manager import ws_manager
-from py_local.utils.routes_common import ExifUtils
+from py_local.utils.exif_utils import ExifUtils
 from py_local.config import config
 
 
