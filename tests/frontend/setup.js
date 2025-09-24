@@ -1,4 +1,5 @@
 import { afterEach, beforeEach } from 'vitest';
+import { resetDom } from './utils/domFixtures.js';
 
 beforeEach(() => {
   // Ensure storage is clean before each test to avoid cross-test pollution
@@ -6,11 +7,10 @@ beforeEach(() => {
   sessionStorage.clear();
 
   // Reset DOM state for modules that rely on body attributes
-  document.body.innerHTML = '';
-  document.body.dataset.page = '';
+  resetDom();
 });
 
 afterEach(() => {
   // Clean any dynamically attached globals by tests
-  delete document.body.dataset.page;
+  resetDom();
 });
