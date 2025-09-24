@@ -389,6 +389,45 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
             # Add any additional fields from version data
             result.update(version_data)
             
+            # Attach files associated with this version from model_files table
+            files_query = """
+                SELECT data
+                FROM model_files
+                WHERE version_id = ? AND type = 'Model'
+                ORDER BY id ASC
+            """
+            cursor = await db.execute(files_query, (version_id,))
+            file_rows = await cursor.fetchall()
+            
+            files = []
+            for file_row in file_rows:
+                try:
+                    file_data = json.loads(file_row['data'])
+                except json.JSONDecodeError:
+                    logger.warning(
+                        "Skipping model_files entry with invalid JSON for version_id %s", version_id
+                    )
+                    continue
+                # Remove 'modelId' and 'modelVersionId' fields if present
+                file_data.pop('modelId', None)
+                file_data.pop('modelVersionId', None)
+                files.append(file_data)
+            
+            if 'files' in result:
+                existing_files = result['files']
+                if isinstance(existing_files, list):
+                    existing_files.extend(files)
+                    result['files'] = existing_files
+                else:
+                    merged_files = files.copy()
+                    if existing_files:
+                        merged_files.insert(0, existing_files)
+                    result['files'] = merged_files
+            elif files:
+                result['files'] = files
+            else:
+                result['files'] = []
+            
             return result
         except json.JSONDecodeError:
             return None
