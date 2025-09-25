@@ -5,11 +5,15 @@ import git
 import zipfile
 import shutil
 import tempfile
-from aiohttp import web
+import asyncio
+from aiohttp import web, ClientError
 from typing import Dict, List
 from ..services.downloader import get_downloader
 
 logger = logging.getLogger(__name__)
+
+NETWORK_EXCEPTIONS = (ClientError, OSError, asyncio.TimeoutError)
+
 
 class UpdateRoutes:
     """Routes for handling plugin update checks"""
@@ -63,6 +67,12 @@ class UpdateRoutes:
                 'nightly': nightly
             })
             
+        except NETWORK_EXCEPTIONS as e:
+            logger.warning("Network unavailable during update check: %s", e)
+            return web.json_response({
+                'success': False,
+                'error': 'Network unavailable for update check'
+            })
         except Exception as e:
             logger.error(f"Failed to check for updates: {e}", exc_info=True)
             return web.json_response({
@@ -283,6 +293,9 @@ class UpdateRoutes:
             
             return version, changelog
         
+        except NETWORK_EXCEPTIONS as e:
+            logger.warning("Unable to reach GitHub for nightly version: %s", e)
+            return "main", []
         except Exception as e:
             logger.error(f"Error fetching nightly version: {e}", exc_info=True)
             return "main", []
@@ -448,6 +461,9 @@ class UpdateRoutes:
             
             return version, changelog
         
+        except NETWORK_EXCEPTIONS as e:
+            logger.warning("Unable to reach GitHub for release info: %s", e)
+            return "v0.0.0", []
         except Exception as e:
             logger.error(f"Error fetching remote version: {e}", exc_info=True)
             return "v0.0.0", []
