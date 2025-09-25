@@ -8,3 +8,4 @@ cache/
 civitai/
 node_modules/
 coverage/
+.coverage

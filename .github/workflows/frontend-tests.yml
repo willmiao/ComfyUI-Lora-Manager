@@ -11,6 +11,7 @@ on:
       - 'vitest.config.js'
       - 'tests/frontend/**'
       - 'static/js/**'
+      - 'scripts/run_frontend_coverage.js'
       - '.github/workflows/frontend-tests.yml'
   pull_request:
     paths:
@@ -19,6 +20,7 @@ on:
       - 'vitest.config.js'
       - 'tests/frontend/**'
       - 'static/js/**'
+      - 'scripts/run_frontend_coverage.js'
       - '.github/workflows/frontend-tests.yml'
 
 jobs:

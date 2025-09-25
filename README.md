@@ -233,6 +233,33 @@ You can now run LoRA Manager independently from ComfyUI:
 
 This standalone mode provides a lightweight option for managing your model and recipe collection without needing to run the full ComfyUI environment, making it useful even for users who primarily use other stable diffusion interfaces.
 
+## Testing & Coverage
+
+### Backend
+
+Install the development dependencies and run pytest with coverage reports:
+
+```bash
+pip install -r requirements-dev.txt
+COVERAGE_FILE=coverage/backend/.coverage pytest \
+  --cov=py \
+  --cov=standalone \
+  --cov-report=term-missing \
+  --cov-report=html:coverage/backend/html \
+  --cov-report=xml:coverage/backend/coverage.xml \
+  --cov-report=json:coverage/backend/coverage.json
+```
+
+HTML, XML, and JSON artifacts are stored under `coverage/backend/` so you can inspect hot spots locally or from CI artifacts.
+
+### Frontend
+
+Run the Vitest coverage suite to analyze widget hot spots:
+
+```bash
+npm run test:coverage
+```
+
 ---
 
 ## Contributing
