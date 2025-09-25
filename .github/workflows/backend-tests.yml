@@ -52,7 +52,7 @@ jobs:
           COVERAGE_FILE: coverage/backend/.coverage
         run: |
           mkdir -p coverage/backend
-          pytest \
+          python -m pytest \
             --cov=py \
             --cov=standalone \
             --cov-report=term-missing \
