@@ -21,8 +21,8 @@
             "disabled": "已禁用"
         },
         "language": {
-            "select": "Language",
-            "select_help": "Choose your preferred language for the interface",
+            "select": "选择语言",
+            "select_help": "选择你喜欢的界面语言",
             "english": "English",
             "chinese_simplified": "中文（简体）",
             "chinese_traditional": "中文（繁体）",
