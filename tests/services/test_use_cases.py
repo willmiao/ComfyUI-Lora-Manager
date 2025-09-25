@@ -5,8 +5,8 @@ from typing import Any, Dict, List, Optional
 
 import pytest
 
-from py_local.services.model_file_service import AutoOrganizeResult
-from py_local.services.use_cases import (
+from py.services.model_file_service import AutoOrganizeResult
+from py.services.use_cases import (
     AutoOrganizeInProgressError,
     AutoOrganizeUseCase,
     BulkMetadataRefreshUseCase,
@@ -19,12 +19,12 @@ from py_local.services.use_cases import (
     ImportExampleImagesUseCase,
     ImportExampleImagesValidationError,
 )
-from py_local.utils.example_images_download_manager import (
+from py.utils.example_images_download_manager import (
     DownloadConfigurationError,
     DownloadInProgressError,
     ExampleImagesDownloadError,
 )
-from py_local.utils.example_images_processor import (
+from py.utils.example_images_processor import (
     ExampleImagesImportError,
     ExampleImagesValidationError,
 )

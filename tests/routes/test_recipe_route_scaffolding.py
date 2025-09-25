@@ -8,41 +8,23 @@ logic.
 from __future__ import annotations
 
 import asyncio
-import importlib.util
-import sys
 import types
 from collections import Counter
-from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict
 
 import pytest
 from aiohttp import web
 
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-PY_PACKAGE_PATH = REPO_ROOT / "py"
-
-spec = importlib.util.spec_from_file_location(
-    "py_local",
-    PY_PACKAGE_PATH / "__init__.py",
-    submodule_search_locations=[str(PY_PACKAGE_PATH)],
-)
-py_local = importlib.util.module_from_spec(spec)
-assert spec.loader is not None
-spec.loader.exec_module(py_local)
-sys.modules.setdefault("py_local", py_local)
-
-base_routes_module = importlib.import_module("py_local.routes.base_recipe_routes")
-recipe_routes_module = importlib.import_module("py_local.routes.recipe_routes")
-registrar_module = importlib.import_module("py_local.routes.recipe_route_registrar")
+from py.routes import base_recipe_routes, recipe_route_registrar, recipe_routes
+from py.services import service_registry
+from py.services.server_i18n import server_i18n
 
 
 @pytest.fixture(autouse=True)
 def reset_service_registry(monkeypatch: pytest.MonkeyPatch):
     """Ensure each test starts from a clean registry state."""
 
-    services_module = importlib.import_module("py_local.services.service_registry")
-    registry = services_module.ServiceRegistry
+    registry = service_registry.ServiceRegistry
     previous_services = dict(registry._services)
     previous_locks = dict(registry._locks)
     registry._services.clear()
@@ -74,10 +56,7 @@ def _make_stub_scanner():
 
 
 def test_attach_dependencies_resolves_services_once(monkeypatch: pytest.MonkeyPatch):
-    base_module = base_routes_module
-    services_module = importlib.import_module("py_local.services.service_registry")
-    registry = services_module.ServiceRegistry
-    server_i18n = importlib.import_module("py_local.services.server_i18n").server_i18n
+    registry = service_registry.ServiceRegistry
 
     scanner = _make_stub_scanner()
     civitai_client = object()
@@ -98,7 +77,7 @@ def test_attach_dependencies_resolves_services_once(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(server_i18n, "create_template_filter", fake_create_filter)
 
     async def scenario():
-        routes = base_module.BaseRecipeRoutes()
+        routes = base_recipe_routes.BaseRecipeRoutes()
 
         await routes.attach_dependencies()
         await routes.attach_dependencies()  # idempotent
@@ -113,7 +92,7 @@ def test_attach_dependencies_resolves_services_once(monkeypatch: pytest.MonkeyPa
 
 
 def test_register_startup_hooks_appends_once():
-    routes = base_routes_module.BaseRecipeRoutes()
+    routes = base_recipe_routes.BaseRecipeRoutes()
 
     app = web.Application()
     routes.register_startup_hooks(app)
@@ -141,7 +120,7 @@ def test_to_route_mapping_uses_handler_set():
 
             return {"render_page": render_page}
 
-    class DummyRoutes(base_routes_module.BaseRecipeRoutes):
+    class DummyRoutes(base_recipe_routes.BaseRecipeRoutes):
         def __init__(self):
             super().__init__()
             self.created = 0
@@ -184,11 +163,11 @@ def test_recipe_route_registrar_binds_every_route():
             self.router = FakeRouter()
 
     app = FakeApp()
-    registrar = registrar_module.RecipeRouteRegistrar(app)
+    registrar = recipe_route_registrar.RecipeRouteRegistrar(app)
 
     handler_mapping = {
         definition.handler_name: object()
-        for definition in registrar_module.ROUTE_DEFINITIONS
+        for definition in recipe_route_registrar.ROUTE_DEFINITIONS
     }
 
     registrar.register_routes(handler_mapping)
@@ -196,7 +175,7 @@ def test_recipe_route_registrar_binds_every_route():
     assert {
         (method, path)
         for method, path, _ in app.router.calls
-    } == {(d.method, d.path) for d in registrar_module.ROUTE_DEFINITIONS}
+    } == {(d.method, d.path) for d in recipe_route_registrar.ROUTE_DEFINITIONS}
 
 
 def test_recipe_routes_setup_routes_uses_registrar(monkeypatch: pytest.MonkeyPatch):
@@ -209,28 +188,28 @@ def test_recipe_routes_setup_routes_uses_registrar(monkeypatch: pytest.MonkeyPat
         def register_routes(self, mapping):
             registered_mappings.append(mapping)
 
-    monkeypatch.setattr(recipe_routes_module, "RecipeRouteRegistrar", DummyRegistrar)
+    monkeypatch.setattr(recipe_routes, "RecipeRouteRegistrar", DummyRegistrar)
 
     expected_mapping = {name: object() for name in ("render_page", "list_recipes")}
 
     def fake_to_route_mapping(self):
         return expected_mapping
 
-    monkeypatch.setattr(base_routes_module.BaseRecipeRoutes, "to_route_mapping", fake_to_route_mapping)
+    monkeypatch.setattr(base_recipe_routes.BaseRecipeRoutes, "to_route_mapping", fake_to_route_mapping)
     monkeypatch.setattr(
-        base_routes_module.BaseRecipeRoutes,
+        base_recipe_routes.BaseRecipeRoutes,
         "_HANDLER_NAMES",
         tuple(expected_mapping.keys()),
     )
 
     app = web.Application()
-    recipe_routes_module.RecipeRoutes.setup_routes(app)
+    recipe_routes.RecipeRoutes.setup_routes(app)
 
     assert registered_mappings == [expected_mapping]
     recipe_callbacks = {
         cb
         for cb in app.on_startup
-        if isinstance(getattr(cb, "__self__", None), recipe_routes_module.RecipeRoutes)
+        if isinstance(getattr(cb, "__self__", None), recipe_routes.RecipeRoutes)
     }
-    assert {type(cb.__self__) for cb in recipe_callbacks} == {recipe_routes_module.RecipeRoutes}
+    assert {type(cb.__self__) for cb in recipe_callbacks} == {recipe_routes.RecipeRoutes}
     assert {cb.__name__ for cb in recipe_callbacks} == {"attach_dependencies", "prewarm_cache"}
