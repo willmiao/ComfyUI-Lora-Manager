@@ -82,11 +82,15 @@ export class UpdateService {
         }
     }
     
-    async checkForUpdates() {
+    async checkForUpdates({ force = false } = {}) {
+        if (!force && !this.updateNotificationsEnabled) {
+            return;
+        }
+
         // Check if we should perform an update check
         const now = Date.now();
-        const forceCheck = this.lastCheckTime === 0;
-        
+        const forceCheck = force || this.lastCheckTime === 0;
+
         if (!forceCheck && now - this.lastCheckTime < this.updateCheckInterval) {
             // If we already have update info, just update the UI
             if (this.updateAvailable) {
@@ -94,7 +98,7 @@ export class UpdateService {
             }
             return;
         }
-        
+
         try {
             // Call backend API to check for updates with nightly flag
             const response = await fetch(`/api/lm/check-updates?nightly=${this.nightlyMode}`);
@@ -435,8 +439,7 @@ export class UpdateService {
     }
     
     async manualCheckForUpdates() {
-        this.lastCheckTime = 0; // Reset last check time to force check
-        await this.checkForUpdates();
+        await this.checkForUpdates({ force: true });
         // Ensure badge visibility is updated after manual check
         this.updateBadgeVisibility();
     }
