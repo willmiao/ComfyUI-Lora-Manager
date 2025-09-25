@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, rmSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,11 +15,18 @@ rmSync(frontendCoverageDir, { recursive: true, force: true });
 mkdirSync(v8OutputDir, { recursive: true });
 mkdirSync(frontendCoverageDir, { recursive: true });
 
-const vitestBinName = process.platform === 'win32' ? 'vitest.cmd' : 'vitest';
-const vitestBin = path.join(repoRoot, 'node_modules', '.bin', vitestBinName);
+const vitestCli = path.join(repoRoot, 'node_modules', 'vitest', 'vitest.mjs');
+
+if (!existsSync(vitestCli)) {
+  console.error('Failed to locate Vitest CLI at', vitestCli);
+  console.error('Try reinstalling frontend dependencies with `npm install`.');
+  process.exit(1);
+}
 
 const env = { ...process.env, NODE_V8_COVERAGE: v8OutputDir };
-const result = spawnSync(vitestBin, ['run'], { stdio: 'inherit', env });
+
+const spawnOptions = { stdio: 'inherit', env };
+const result = spawnSync(process.execPath, [vitestCli, 'run'], spawnOptions);
 
 if (result.error) {
   console.error('Failed to execute Vitest:', result.error.message);
