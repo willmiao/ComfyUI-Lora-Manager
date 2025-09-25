@@ -5,7 +5,7 @@ import { showToast } from './utils/uiHelpers.js';
 // Chart.js import (assuming it's available globally or via CDN)
 // If Chart.js isn't available, we'll need to add it to the project
 
-class StatisticsManager {
+export class StatisticsManager {
     constructor() {
         this.charts = {};
         this.data = {};
