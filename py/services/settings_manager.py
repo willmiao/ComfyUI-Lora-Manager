@@ -111,24 +111,30 @@ class SettingsManager:
             logger.info("Migration completed")
 
     def _auto_set_default_roots(self):
-        """Auto set default root paths if only one folder is present and default is empty."""
+        """Auto set default root paths when only one folder is present and the current default is unset or not among the options."""
         folder_paths = self.settings.get('folder_paths', {})
         updated = False
         # loras
         loras = folder_paths.get('loras', [])
-        if isinstance(loras, list) and len(loras) == 1 and not self.settings.get('default_lora_root'):
-            self.settings['default_lora_root'] = loras[0]
-            updated = True
+        if isinstance(loras, list) and len(loras) == 1:
+            current_lora_root = self.settings.get('default_lora_root')
+            if current_lora_root not in loras:
+                self.settings['default_lora_root'] = loras[0]
+                updated = True
         # checkpoints
         checkpoints = folder_paths.get('checkpoints', [])
-        if isinstance(checkpoints, list) and len(checkpoints) == 1 and not self.settings.get('default_checkpoint_root'):
-            self.settings['default_checkpoint_root'] = checkpoints[0]
-            updated = True
+        if isinstance(checkpoints, list) and len(checkpoints) == 1:
+            current_checkpoint_root = self.settings.get('default_checkpoint_root')
+            if current_checkpoint_root not in checkpoints:
+                self.settings['default_checkpoint_root'] = checkpoints[0]
+                updated = True
         # embeddings
         embeddings = folder_paths.get('embeddings', [])
-        if isinstance(embeddings, list) and len(embeddings) == 1 and not self.settings.get('default_embedding_root'):
-            self.settings['default_embedding_root'] = embeddings[0]
-            updated = True
+        if isinstance(embeddings, list) and len(embeddings) == 1:
+            current_embedding_root = self.settings.get('default_embedding_root')
+            if current_embedding_root not in embeddings:
+                self.settings['default_embedding_root'] = embeddings[0]
+                updated = True
         if updated:
             self._save_settings()
 
