@@ -279,10 +279,17 @@ class RecipePersistenceService:
         os.makedirs(recipes_dir, exist_ok=True)
 
         recipe_id = str(uuid.uuid4())
-        image_filename = f"{recipe_id}.png"
+        optimized_image, extension = self._exif_utils.optimize_image(
+            image_data=image_bytes,
+            target_width=self._card_preview_width,
+            format="webp",
+            quality=85,
+            preserve_metadata=True,
+        )
+        image_filename = f"{recipe_id}{extension}"
         image_path = os.path.join(recipes_dir, image_filename)
         with open(image_path, "wb") as file_obj:
-            file_obj.write(image_bytes)
+            file_obj.write(optimized_image)
 
         lora_stack = metadata.get("loras", "")
         lora_matches = re.findall(r"<lora:([^:]+):([^>]+)>", lora_stack)

@@ -4,7 +4,7 @@ import logging
 from typing import Optional
 from io import BytesIO
 import os
-from PIL import Image
+from PIL import Image, PngImagePlugin
 
 logger = logging.getLogger(__name__)
 
@@ -86,9 +86,10 @@ class ExifUtils:
                 
                 # For PNG, try to update parameters directly
                 if img_format == 'PNG':
-                    # We'll save with parameters in the PNG info
-                    info_dict = {'parameters': metadata}
-                    img.save(image_path, format='PNG', pnginfo=info_dict)
+                    # Use PngInfo instead of plain dictionary
+                    png_info = PngImagePlugin.PngInfo()
+                    png_info.add_text("parameters", metadata)
+                    img.save(image_path, format='PNG', pnginfo=png_info)
                     return image_path
                 
                 # For WebP format, use PIL's exif parameter directly
