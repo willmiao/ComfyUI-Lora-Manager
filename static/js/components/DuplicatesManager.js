@@ -13,7 +13,7 @@ export class DuplicatesManager {
     
     async findDuplicates() {
         try {
-            const response = await fetch('/api/recipes/find-duplicates');
+            const response = await fetch('/api/lm/recipes/find-duplicates');
             if (!response.ok) {
                 throw new Error('Failed to find duplicates');
             }
@@ -354,7 +354,7 @@ export class DuplicatesManager {
             const recipeIds = Array.from(this.selectedForDeletion);
             
             // Call API to bulk delete
-            const response = await fetch('/api/recipes/bulk-delete', {
+            const response = await fetch('/api/lm/recipes/bulk-delete', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

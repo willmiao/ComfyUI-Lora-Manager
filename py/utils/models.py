@@ -24,6 +24,8 @@ class BaseModelMetadata:
     civitai_deleted: bool = False  # Whether deleted from Civitai
     favorite: bool = False      # Whether the model is a favorite
     exclude: bool = False       # Whether to exclude this model from the cache
+    db_checked: bool = False    # Whether checked in archive DB
+    last_checked_at: float = 0  # Last checked timestamp
     _unknown_fields: Dict[str, Any] = field(default_factory=dict, repr=False, compare=False)  # Store unknown fields
 
     def __post_init__(self):

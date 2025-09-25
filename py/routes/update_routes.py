@@ -7,7 +7,7 @@ import shutil
 import tempfile
 from aiohttp import web
 from typing import Dict, List
-from ..services.downloader import get_downloader, Downloader
+from ..services.downloader import get_downloader
 
 logger = logging.getLogger(__name__)
 
@@ -17,9 +17,9 @@ class UpdateRoutes:
     @staticmethod
     def setup_routes(app):
         """Register update check routes"""
-        app.router.add_get('/api/check-updates', UpdateRoutes.check_updates)
-        app.router.add_get('/api/version-info', UpdateRoutes.get_version_info)
-        app.router.add_post('/api/perform-update', UpdateRoutes.perform_update)
+        app.router.add_get('/api/lm/check-updates', UpdateRoutes.check_updates)
+        app.router.add_get('/api/lm/version-info', UpdateRoutes.get_version_info)
+        app.router.add_post('/api/lm/perform-update', UpdateRoutes.perform_update)
     
     @staticmethod
     async def check_updates(request):
@@ -154,7 +154,7 @@ class UpdateRoutes:
     async def _download_and_replace_zip(plugin_root: str) -> tuple[bool, str]:
         """
         Download latest release ZIP from GitHub and replace plugin files.
-        Skips settings.json. Writes extracted file list to .tracking.
+        Skips settings.json and civitai folder. Writes extracted file list to .tracking.
         """
         repo_owner = "willmiao"
         repo_name = "ComfyUI-Lora-Manager"
@@ -193,7 +193,8 @@ class UpdateRoutes:
 
             zip_path = tmp_zip_path
 
-            UpdateRoutes._clean_plugin_folder(plugin_root, skip_files=['settings.json'])
+            # Skip both settings.json and civitai folder
+            UpdateRoutes._clean_plugin_folder(plugin_root, skip_files=['settings.json', 'civitai'])
 
             # Extract ZIP to temp dir
             with tempfile.TemporaryDirectory() as tmp_dir:
@@ -202,17 +203,17 @@ class UpdateRoutes:
                     # Find extracted folder (GitHub ZIP contains a root folder)
                     extracted_root = next(os.scandir(tmp_dir)).path
 
-                    # Copy files, skipping settings.json
+                    # Copy files, skipping settings.json and civitai folder
                     for item in os.listdir(extracted_root):
+                        if item == 'settings.json' or item == 'civitai':
+                            continue
                         src = os.path.join(extracted_root, item)
                         dst = os.path.join(plugin_root, item)
                         if os.path.isdir(src):
                             if os.path.exists(dst):
                                 shutil.rmtree(dst)
-                            shutil.copytree(src, dst, ignore=shutil.ignore_patterns('settings.json'))
+                            shutil.copytree(src, dst, ignore=shutil.ignore_patterns('settings.json', 'civitai'))
                         else:
-                            if item == 'settings.json':
-                                continue
                             shutil.copy2(src, dst)
 
                     # Write .tracking file: list all files under extracted_root, relative to extracted_root
@@ -220,8 +221,15 @@ class UpdateRoutes:
                     tracking_info_file = os.path.join(plugin_root, '.tracking')
                     tracking_files = []
                     for root, dirs, files in os.walk(extracted_root):
+                        # Skip civitai folder and its contents
+                        rel_root = os.path.relpath(root, extracted_root)
+                        if rel_root == 'civitai' or rel_root.startswith('civitai' + os.sep):
+                            continue
                         for file in files:
                             rel_path = os.path.relpath(os.path.join(root, file), extracted_root)
+                            # Skip settings.json and any file under civitai
+                            if rel_path == 'settings.json' or rel_path.startswith('civitai' + os.sep):
+                                continue
                             tracking_files.append(rel_path.replace("\\", "/"))
                     with open(tracking_info_file, "w", encoding='utf-8') as file:
                         file.write('\n'.join(tracking_files))
@@ -257,7 +265,7 @@ class UpdateRoutes:
         github_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/commits/main"
         
         try:
-            downloader = await Downloader.get_instance()
+            downloader = await get_downloader()
             success, data = await downloader.make_request('GET', github_url, custom_headers={'Accept': 'application/vnd.github+json'})
             
             if not success:
@@ -423,7 +431,7 @@ class UpdateRoutes:
         github_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest"
         
         try:
-            downloader = await Downloader.get_instance()
+            downloader = await get_downloader()
             success, data = await downloader.make_request('GET', github_url, custom_headers={'Accept': 'application/vnd.github+json'})
             
             if not success:

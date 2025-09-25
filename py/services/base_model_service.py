@@ -4,99 +4,88 @@ import logging
 import os
 
 from ..utils.models import BaseModelMetadata
-from ..utils.routes_common import ModelRouteUtils
-from ..utils.constants import NSFW_LEVELS
-from .settings_manager import settings
-from ..utils.utils import fuzzy_match
+from .model_query import FilterCriteria, ModelCacheRepository, ModelFilterSet, SearchStrategy, SettingsProvider
+from .settings_manager import settings as default_settings
 
 logger = logging.getLogger(__name__)
 
 class BaseModelService(ABC):
     """Base service class for all model types"""
     
-    def __init__(self, model_type: str, scanner, metadata_class: Type[BaseModelMetadata]):
-        """Initialize the service
-        
+    def __init__(
+        self,
+        model_type: str,
+        scanner,
+        metadata_class: Type[BaseModelMetadata],
+        *,
+        cache_repository: Optional[ModelCacheRepository] = None,
+        filter_set: Optional[ModelFilterSet] = None,
+        search_strategy: Optional[SearchStrategy] = None,
+        settings_provider: Optional[SettingsProvider] = None,
+    ):
+        """Initialize the service.
+
         Args:
-            model_type: Type of model (lora, checkpoint, etc.)
-            scanner: Model scanner instance
-            metadata_class: Metadata class for this model type
+            model_type: Type of model (lora, checkpoint, etc.).
+            scanner: Model scanner instance.
+            metadata_class: Metadata class for this model type.
+            cache_repository: Custom repository for cache access (primarily for tests).
+            filter_set: Filter component controlling folder/tag/favorites logic.
+            search_strategy: Search component for fuzzy/text matching.
+            settings_provider: Settings object; defaults to the global settings manager.
         """
         self.model_type = model_type
         self.scanner = scanner
         self.metadata_class = metadata_class
+        self.settings = settings_provider or default_settings
+        self.cache_repository = cache_repository or ModelCacheRepository(scanner)
+        self.filter_set = filter_set or ModelFilterSet(self.settings)
+        self.search_strategy = search_strategy or SearchStrategy()
     
-    async def get_paginated_data(self, page: int, page_size: int, sort_by: str = 'name', 
-                               folder: str = None, search: str = None, fuzzy_search: bool = False,
-                               base_models: list = None, tags: list = None,
-                               search_options: dict = None, hash_filters: dict = None,
-                               favorites_only: bool = False, **kwargs) -> Dict:
-        """Get paginated and filtered model data
-        
-        Args:
-            page: Page number (1-based)
-            page_size: Number of items per page
-            sort_by: Sort criteria, e.g. 'name', 'name:asc', 'name:desc', 'date', 'date:asc', 'date:desc'
-            folder: Folder filter
-            search: Search term
-            fuzzy_search: Whether to use fuzzy search
-            base_models: List of base models to filter by
-            tags: List of tags to filter by
-            search_options: Search options dict
-            hash_filters: Hash filtering options
-            favorites_only: Filter for favorites only
-            **kwargs: Additional model-specific filters
-            
-        Returns:
-            Dict containing paginated results
-        """
-        cache = await self.scanner.get_cached_data()
+    async def get_paginated_data(
+        self,
+        page: int,
+        page_size: int,
+        sort_by: str = 'name',
+        folder: str = None,
+        search: str = None,
+        fuzzy_search: bool = False,
+        base_models: list = None,
+        tags: list = None,
+        search_options: dict = None,
+        hash_filters: dict = None,
+        favorites_only: bool = False,
+        **kwargs,
+    ) -> Dict:
+        """Get paginated and filtered model data"""
+        sort_params = self.cache_repository.parse_sort(sort_by)
+        sorted_data = await self.cache_repository.fetch_sorted(sort_params)
 
-        # Parse sort_by into sort_key and order
-        if ':' in sort_by:
-            sort_key, order = sort_by.split(':', 1)
-            sort_key = sort_key.strip()
-            order = order.strip().lower()
-            if order not in ('asc', 'desc'):
-                order = 'asc'
-        else:
-            sort_key = sort_by.strip()
-            order = 'asc'
-
-        # Get default search options if not provided
-        if search_options is None:
-            search_options = {
-                'filename': True,
-                'modelname': True,
-                'tags': False,
-                'recursive': True,
-            }
-
-        # Get the base data set using new sort logic
-        filtered_data = await cache.get_sorted_data(sort_key, order)
-        
-        # Apply hash filtering if provided (highest priority)
         if hash_filters:
-            filtered_data = await self._apply_hash_filters(filtered_data, hash_filters)
-            
-            # Jump to pagination for hash filters
+            filtered_data = await self._apply_hash_filters(sorted_data, hash_filters)
             return self._paginate(filtered_data, page, page_size)
-        
-        # Apply common filters
+
         filtered_data = await self._apply_common_filters(
-            filtered_data, folder, base_models, tags, favorites_only, search_options
+            sorted_data,
+            folder=folder,
+            base_models=base_models,
+            tags=tags,
+            favorites_only=favorites_only,
+            search_options=search_options,
         )
-        
-        # Apply search filtering
+
         if search:
             filtered_data = await self._apply_search_filters(
-                filtered_data, search, fuzzy_search, search_options
+                filtered_data,
+                search,
+                fuzzy_search,
+                search_options,
             )
-        
-        # Apply model-specific filters
+
         filtered_data = await self._apply_specific_filters(filtered_data, **kwargs)
-        
+
         return self._paginate(filtered_data, page, page_size)
+
     
     async def _apply_hash_filters(self, data: List[Dict], hash_filters: Dict) -> List[Dict]:
         """Apply hash-based filtering"""
@@ -120,113 +109,36 @@ class BaseModelService(ABC):
         
         return data
     
-    async def _apply_common_filters(self, data: List[Dict], folder: str = None, 
-                                  base_models: list = None, tags: list = None,
-                                  favorites_only: bool = False, search_options: dict = None) -> List[Dict]:
+    async def _apply_common_filters(
+        self,
+        data: List[Dict],
+        folder: str = None,
+        base_models: list = None,
+        tags: list = None,
+        favorites_only: bool = False,
+        search_options: dict = None,
+    ) -> List[Dict]:
         """Apply common filters that work across all model types"""
-        # Apply SFW filtering if enabled in settings
-        if settings.get('show_only_sfw', False):
-            data = [
-                item for item in data
-                if not item.get('preview_nsfw_level') or item.get('preview_nsfw_level') < NSFW_LEVELS['R']
-            ]
-        
-        # Apply favorites filtering if enabled
-        if favorites_only:
-            data = [
-                item for item in data
-                if item.get('favorite', False) is True
-            ]
-        
-        # Apply folder filtering
-        if folder is not None:
-            if search_options and search_options.get('recursive', True):
-                # Recursive folder filtering - include all subfolders
-                # Ensure we match exact folder or its subfolders by checking path boundaries
-                if folder == "":
-                    # Empty folder means root - include all items
-                    pass  # Don't filter anything
-                else:
-                    # Add trailing slash to ensure we match folder boundaries correctly
-                    folder_with_separator = folder + "/"
-                    data = [
-                        item for item in data
-                        if (item['folder'] == folder or 
-                            item['folder'].startswith(folder_with_separator))
-                    ]
-            else:
-                # Exact folder filtering
-                data = [
-                    item for item in data
-                    if item['folder'] == folder
-                ]
-        
-        # Apply base model filtering
-        if base_models and len(base_models) > 0:
-            data = [
-                item for item in data
-                if item.get('base_model') in base_models
-            ]
-        
-        # Apply tag filtering
-        if tags and len(tags) > 0:
-            data = [
-                item for item in data
-                if any(tag in item.get('tags', []) for tag in tags)
-            ]
-        
-        return data
+        normalized_options = self.search_strategy.normalize_options(search_options)
+        criteria = FilterCriteria(
+            folder=folder,
+            base_models=base_models,
+            tags=tags,
+            favorites_only=favorites_only,
+            search_options=normalized_options,
+        )
+        return self.filter_set.apply(data, criteria)
     
-    async def _apply_search_filters(self, data: List[Dict], search: str, 
-                                  fuzzy_search: bool, search_options: dict) -> List[Dict]:
+    async def _apply_search_filters(
+        self,
+        data: List[Dict],
+        search: str,
+        fuzzy_search: bool,
+        search_options: dict,
+    ) -> List[Dict]:
         """Apply search filtering"""
-        search_results = []
-        
-        for item in data:
-            # Search by file name
-            if search_options.get('filename', True):
-                if fuzzy_search:
-                    if fuzzy_match(item.get('file_name', ''), search):
-                        search_results.append(item)
-                        continue
-                elif search.lower() in item.get('file_name', '').lower():
-                    search_results.append(item)
-                    continue
-            
-            # Search by model name
-            if search_options.get('modelname', True):
-                if fuzzy_search:
-                    if fuzzy_match(item.get('model_name', ''), search):
-                        search_results.append(item)
-                        continue
-                elif search.lower() in item.get('model_name', '').lower():
-                    search_results.append(item)
-                    continue
-            
-            # Search by tags
-            if search_options.get('tags', False) and 'tags' in item:
-                if any((fuzzy_match(tag, search) if fuzzy_search else search.lower() in tag.lower()) 
-                       for tag in item['tags']):
-                    search_results.append(item)
-                    continue
-            
-            # Search by creator
-            civitai = item.get('civitai')
-            creator_username = ''
-            if civitai and isinstance(civitai, dict):
-                creator = civitai.get('creator')
-                if creator and isinstance(creator, dict):
-                    creator_username = creator.get('username', '')
-            if search_options.get('creator', False) and creator_username:
-                if fuzzy_search:
-                    if fuzzy_match(creator_username, search):
-                        search_results.append(item)
-                        continue
-                elif search.lower() in creator_username.lower():
-                    search_results.append(item)
-                    continue
-        
-        return search_results
+        normalized_options = self.search_strategy.normalize_options(search_options)
+        return self.search_strategy.apply(data, search, normalized_options, fuzzy_search)
     
     async def _apply_specific_filters(self, data: List[Dict], **kwargs) -> List[Dict]:
         """Apply model-specific filters - to be overridden by subclasses if needed"""
@@ -283,6 +195,18 @@ class BaseModelService(ABC):
     def get_model_roots(self) -> List[str]:
         """Get model root directories"""
         return self.scanner.get_model_roots()
+    
+    def filter_civitai_data(self, data: Dict, minimal: bool = False) -> Dict:
+        """Filter relevant fields from CivitAI data"""
+        if not data:
+            return {}
+
+        fields = ["id", "modelId", "name", "trainedWords"] if minimal else [
+            "id", "modelId", "name", "createdAt", "updatedAt",
+            "publishedAt", "trainedWords", "baseModel", "description",
+            "model", "images", "customImages", "creator"
+        ]
+        return {k: data[k] for k in fields if k in data}
     
     async def get_folder_tree(self, model_root: str) -> Dict:
         """Get hierarchical folder tree for a specific model root"""
@@ -363,7 +287,7 @@ class BaseModelService(ABC):
                     from ..config import config
                     return config.get_preview_static_url(preview_url)
         
-        return None
+        return '/loras_static/images/no-preview.png'
     
     async def get_model_civitai_url(self, model_name: str) -> Dict[str, Optional[str]]:
         """Get the Civitai URL for a model file"""
@@ -394,7 +318,7 @@ class BaseModelService(ABC):
         
         for model in cache.raw_data:
             if model.get('file_path') == file_path:
-                return ModelRouteUtils.filter_civitai_data(model.get("civitai", {}))
+                return self.filter_civitai_data(model.get("civitai", {}))
         
         return None
 

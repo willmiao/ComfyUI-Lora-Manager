@@ -1,5 +1,5 @@
-from datetime import datetime
 import os
+import copy
 import logging
 import asyncio
 from typing import Optional, Dict, Tuple, List
@@ -59,17 +59,17 @@ class CivitaiClient:
         
         return success, result
 
-    async def get_model_by_hash(self, model_hash: str) -> Optional[Dict]:
+    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict], Optional[str]]:
         try:
             downloader = await get_downloader()
-            success, version = await downloader.make_request(
+            success, result = await downloader.make_request(
                 'GET',
                 f"{self.base_url}/model-versions/by-hash/{model_hash}",
                 use_auth=True
             )
             if success:
                 # Get model ID from version data
-                model_id = version.get('modelId')
+                model_id = result.get('modelId')
                 if model_id:
                     # Fetch additional model metadata
                     success_model, data = await downloader.make_request(
@@ -79,22 +79,29 @@ class CivitaiClient:
                     )
                     if success_model:
                         # Enrich version_info with model data
-                        version['model']['description'] = data.get("description")
-                        version['model']['tags'] = data.get("tags", [])
+                        result['model']['description'] = data.get("description")
+                        result['model']['tags'] = data.get("tags", [])
                         
                         # Add creator from model data
-                        version['creator'] = data.get("creator")
+                        result['creator'] = data.get("creator")
                 
-                return version
-            return None
+                return result, None
+            
+            # Handle specific error cases
+            if "not found" in str(result):
+                return None, "Model not found"
+            
+            # Other error cases
+            logger.error(f"Failed to fetch model info for {model_hash[:10]}: {result}")
+            return None, str(result)
         except Exception as e:
             logger.error(f"API Error: {str(e)}")
-            return None
+            return None, str(e)
 
     async def download_preview_image(self, image_url: str, save_path: str):
         try:
             downloader = await get_downloader()
-            success, content = await downloader.download_to_memory(
+            success, content, headers = await downloader.download_to_memory(
                 image_url,
                 use_auth=False  # Preview images don't need auth
             )
@@ -122,7 +129,8 @@ class CivitaiClient:
                 # Also return model type along with versions
                 return {
                     'modelVersions': result.get('modelVersions', []),
-                    'type': result.get('type', '')
+                    'type': result.get('type', ''),
+                    'name': result.get('name', '')
                 }
             return None
         except Exception as e:
@@ -182,31 +190,76 @@ class CivitaiClient:
                 )
                 if not success:
                     return None
-                    
+
                 model_versions = data.get('modelVersions', [])
-                
-                # Step 2: Determine the version_id to use
-                target_version_id = version_id
-                if target_version_id is None:
-                    target_version_id = model_versions[0].get('id')
-            
-                # Step 3: Get detailed version info using the version_id
-                success, version = await downloader.make_request(
-                    'GET',
-                    f"{self.base_url}/model-versions/{target_version_id}",
-                    use_auth=True
-                )
-                if not success:
+                if not model_versions:
+                    logger.warning(f"No model versions found for model {model_id}")
                     return None
-                
+
+                # Step 2: Determine the target version entry to use
+                target_version = None
+                if version_id is not None:
+                    target_version = next(
+                        (item for item in model_versions if item.get('id') == version_id),
+                        None
+                    )
+                    if target_version is None:
+                        logger.warning(
+                            f"Version {version_id} not found for model {model_id}, defaulting to first version"
+                        )
+                if target_version is None:
+                    target_version = model_versions[0]
+
+                target_version_id = target_version.get('id')
+
+                # Step 3: Get detailed version info using the SHA256 hash
+                model_hash = None
+                for file_info in target_version.get('files', []):
+                    if file_info.get('type') == 'Model' and file_info.get('primary'):
+                        model_hash = file_info.get('hashes', {}).get('SHA256')
+                        if model_hash:
+                            break
+
+                version = None
+                if model_hash:
+                    success, version = await downloader.make_request(
+                        'GET',
+                        f"{self.base_url}/model-versions/by-hash/{model_hash}",
+                        use_auth=True
+                    )
+                    if not success:
+                        logger.warning(
+                            f"Failed to fetch version by hash for model {model_id} version {target_version_id}: {version}"
+                        )
+                        version = None
+                else:
+                    logger.warning(
+                        f"No primary model hash found for model {model_id} version {target_version_id}"
+                    )
+
+                if version is None:
+                    version = copy.deepcopy(target_version)
+                    version.pop('index', None)
+                    version['modelId'] = model_id
+                    version['model'] = {
+                        'name': data.get('name'),
+                        'type': data.get('type'),
+                        'nsfw': data.get('nsfw'),
+                        'poi': data.get('poi')
+                    }
+
                 # Step 4: Enrich version_info with model data
                 # Add description and tags from model data
-                version['model']['description'] = data.get("description")
-                version['model']['tags'] = data.get("tags", [])
-                
+                model_info = version.get('model')
+                if not isinstance(model_info, dict):
+                    model_info = {}
+                    version['model'] = model_info
+                model_info['description'] = data.get("description")
+                model_info['tags'] = data.get("tags", [])
+
                 # Add creator from model data
                 version['creator'] = data.get("creator")
-                
+
                 return version
             
             # Case 3: Neither model_id nor version_id provided
@@ -245,8 +298,8 @@ class CivitaiClient:
                 return result, None
             
             # Handle specific error cases
-            if "404" in str(result):
-                error_msg = f"Model not found (status 404)"
+            if "not found" in str(result):
+                error_msg = f"Model not found"
                 logger.warning(f"Model version not found: {version_id} - {error_msg}")
                 return None, error_msg
             
@@ -257,59 +310,6 @@ class CivitaiClient:
             error_msg = f"Error fetching model version info: {e}"
             logger.error(error_msg)
             return None, error_msg
-
-    async def get_model_metadata(self, model_id: str) -> Tuple[Optional[Dict], int]:
-        """Fetch model metadata (description, tags, and creator info) from Civitai API
-        
-        Args:
-            model_id: The Civitai model ID
-            
-        Returns:
-            Tuple[Optional[Dict], int]: A tuple containing:
-                - A dictionary with model metadata or None if not found
-                - The HTTP status code from the request (0 for exceptions)
-        """
-        try:
-            downloader = await get_downloader()
-            url = f"{self.base_url}/models/{model_id}"
-            
-            success, result = await downloader.make_request(
-                'GET',
-                url,
-                use_auth=True
-            )
-            
-            if not success:
-                # Try to extract status code from error message
-                status_code = 0
-                if "404" in str(result):
-                    status_code = 404
-                elif "401" in str(result):
-                    status_code = 401
-                elif "403" in str(result):
-                    status_code = 403
-                logger.warning(f"Failed to fetch model metadata: {result}")
-                return None, status_code
-            
-            # Extract relevant metadata
-            metadata = {
-                "description": result.get("description") or "No model description available",
-                "tags": result.get("tags", []),
-                "creator": {
-                    "username": result.get("creator", {}).get("username"),
-                    "image": result.get("creator", {}).get("image")
-                }
-            }
-            
-            if metadata["description"] or metadata["tags"] or metadata["creator"]["username"]:
-                return metadata, 200
-            else:
-                logger.warning(f"No metadata found for model {model_id}")
-                return None, 200
-                
-        except Exception as e:
-            logger.error(f"Error fetching model metadata: {e}", exc_info=True)
-            return None, 0
 
     async def get_image_info(self, image_id: str) -> Optional[Dict]:
         """Fetch image information from Civitai API

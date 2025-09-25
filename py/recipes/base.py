@@ -55,7 +55,7 @@ class RecipeMetadataParser(ABC):
             # Unpack the tuple to get the actual data
             civitai_info, error_msg = civitai_info_tuple if isinstance(civitai_info_tuple, tuple) else (civitai_info_tuple, None)
             
-            if not civitai_info or civitai_info.get("error") == "Model not found":
+            if not civitai_info or error_msg == "Model not found":
                 # Model not found or deleted
                 lora_entry['isDeleted'] = True
                 lora_entry['thumbnailUrl'] = '/loras_static/images/no-preview.png'

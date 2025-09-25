@@ -1,156 +1,158 @@
 import { modalManager } from './ModalManager.js';
 import { showToast } from '../utils/uiHelpers.js';
-import { state } from '../state/index.js';
+import { state, createDefaultSettings } from '../state/index.js';
 import { resetAndReload } from '../api/modelApiFactory.js';
-import { setStorageItem, getStorageItem } from '../utils/storageHelpers.js';
 import { DOWNLOAD_PATH_TEMPLATES, MAPPABLE_BASE_MODELS, PATH_TEMPLATE_PLACEHOLDERS, DEFAULT_PATH_TEMPLATES } from '../utils/constants.js';
 import { translate } from '../utils/i18nHelpers.js';
+import { i18n } from '../i18n/index.js';
+import { configureModelCardVideo } from '../components/shared/ModelCard.js';
 
 export class SettingsManager {
     constructor() {
         this.initialized = false;
         this.isOpen = false;
+        this.initializationPromise = null;
         
         // Add initialization to sync with modal state
         this.currentPage = document.body.dataset.page || 'loras';
-        
-        // Ensure settings are loaded from localStorage
-        this.loadSettingsFromStorage();
 
-        // Sync settings to backend if needed
-        this.syncSettingsToBackendIfNeeded();
+        this.backendSettingKeys = new Set(Object.keys(createDefaultSettings()));
+
+        // Start initialization but don't await here to avoid blocking constructor
+        this.initializationPromise = this.initializeSettings();
 
         this.initialize();
     }
 
-    loadSettingsFromStorage() {
-        // Get saved settings from localStorage
-        const savedSettings = getStorageItem('settings');
-
-        // Migrate legacy default_loras_root to default_lora_root if present
-        if (savedSettings && savedSettings.default_loras_root && !savedSettings.default_lora_root) {
-            savedSettings.default_lora_root = savedSettings.default_loras_root;
-            delete savedSettings.default_loras_root;
-            setStorageItem('settings', savedSettings);
-        }
-
-        // Apply saved settings to state if available
-        if (savedSettings) {
-            state.global.settings = { ...state.global.settings, ...savedSettings };
-        }
-
-        // Initialize default values for new settings if they don't exist
-        if (state.global.settings.compactMode === undefined) {
-            state.global.settings.compactMode = false;
-        }
-
-        // Set default for optimizeExampleImages if undefined
-        if (state.global.settings.optimizeExampleImages === undefined) {
-            state.global.settings.optimizeExampleImages = true;
-        }
-
-        // Set default for autoDownloadExampleImages if undefined
-        if (state.global.settings.autoDownloadExampleImages === undefined) {
-            state.global.settings.autoDownloadExampleImages = true;
-        }
-
-        // Set default for cardInfoDisplay if undefined
-        if (state.global.settings.cardInfoDisplay === undefined) {
-            state.global.settings.cardInfoDisplay = 'always';
-        }
-
-        // Set default for defaultCheckpointRoot if undefined
-        if (state.global.settings.default_checkpoint_root === undefined) {
-            state.global.settings.default_checkpoint_root = '';
-        }
-
-        // Convert old boolean compactMode to new displayDensity string
-        if (typeof state.global.settings.displayDensity === 'undefined') {
-            if (state.global.settings.compactMode === true) {
-                state.global.settings.displayDensity = 'compact';
-            } else {
-                state.global.settings.displayDensity = 'default';
-            }
-            // We can delete the old setting, but keeping it for backwards compatibility
-        }
-
-        // Migrate legacy download_path_template to new structure
-        if (state.global.settings.download_path_template && !state.global.settings.download_path_templates) {
-            const legacyTemplate = state.global.settings.download_path_template;
-            state.global.settings.download_path_templates = {
-                lora: legacyTemplate,
-                checkpoint: legacyTemplate,
-                embedding: legacyTemplate
-            };
-            delete state.global.settings.download_path_template;
-            setStorageItem('settings', state.global.settings);
-        }
-
-        // Set default for download path templates if undefined
-        if (state.global.settings.download_path_templates === undefined) {
-            state.global.settings.download_path_templates = { ...DEFAULT_PATH_TEMPLATES };
-        }
-
-        // Ensure all model types have templates
-        Object.keys(DEFAULT_PATH_TEMPLATES).forEach(modelType => {
-            if (typeof state.global.settings.download_path_templates[modelType] === 'undefined') {
-                state.global.settings.download_path_templates[modelType] = DEFAULT_PATH_TEMPLATES[modelType];
-            }
-        });
-
-        // Set default for base model path mappings if undefined
-        if (state.global.settings.base_model_path_mappings === undefined) {
-            state.global.settings.base_model_path_mappings = {};
-        }
-
-        // Set default for defaultEmbeddingRoot if undefined
-        if (state.global.settings.default_embedding_root === undefined) {
-            state.global.settings.default_embedding_root = '';
-        }
-
-        // Set default for includeTriggerWords if undefined
-        if (state.global.settings.includeTriggerWords === undefined) {
-            state.global.settings.includeTriggerWords = false;
+    // Add method to wait for initialization to complete
+    async waitForInitialization() {
+        if (this.initializationPromise) {
+            await this.initializationPromise;
         }
     }
 
-    async syncSettingsToBackendIfNeeded() {
-        // Get local settings from storage
-        const localSettings = getStorageItem('settings') || {};
+    async initializeSettings() {
+        // Reset to defaults before syncing
+        state.global.settings = createDefaultSettings();
 
-        // Fields that need to be synced to backend
-        const fieldsToSync = [
-            'civitai_api_key',
-            'default_lora_root',
-            'default_checkpoint_root',
-            'default_embedding_root',
-            'base_model_path_mappings',
-            'download_path_templates'
-        ];
+        // Sync settings from backend to frontend
+        await this.syncSettingsFromBackend();
+    }
 
-        // Build payload for syncing
-        const payload = {};
-
-        fieldsToSync.forEach(key => {
-            if (localSettings[key] !== undefined) {
-                payload[key] = localSettings[key];
+    async syncSettingsFromBackend() {
+        try {
+            const response = await fetch('/api/lm/settings');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        });
 
-        // Only send request if there is something to sync
-        if (Object.keys(payload).length > 0) {
+            const data = await response.json();
+            if (data.success && data.settings) {
+                state.global.settings = this.mergeSettingsWithDefaults(data.settings);
+                console.log('Settings synced from backend');
+            } else {
+                console.error('Failed to sync settings from backend:', data.error);
+                state.global.settings = this.mergeSettingsWithDefaults();
+            }
+        } catch (error) {
+            console.error('Failed to sync settings from backend:', error);
+            state.global.settings = this.mergeSettingsWithDefaults();
+        }
+
+        await this.applyLanguageSetting();
+        this.applyFrontendSettings();
+    }
+
+    async applyLanguageSetting() {
+        const desiredLanguage = state?.global?.settings?.language;
+
+        if (!desiredLanguage) {
+            return;
+        }
+
+        try {
+            if (i18n.getCurrentLocale() !== desiredLanguage) {
+                await i18n.setLanguage(desiredLanguage);
+            }
+        } catch (error) {
+            console.warn('Failed to apply language from settings:', error);
+        }
+    }
+
+    mergeSettingsWithDefaults(backendSettings = {}) {
+        const defaults = createDefaultSettings();
+        const merged = { ...defaults, ...backendSettings };
+
+        const baseMappings = backendSettings?.base_model_path_mappings;
+        if (baseMappings && typeof baseMappings === 'object' && !Array.isArray(baseMappings)) {
+            merged.base_model_path_mappings = baseMappings;
+        } else {
+            merged.base_model_path_mappings = defaults.base_model_path_mappings;
+        }
+
+        let templates = backendSettings?.download_path_templates;
+        if (typeof templates === 'string') {
             try {
-                await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                // Log success to console
-                console.log('Settings synced to backend');
-            } catch (e) {
-                // Log error to console
-                console.error('Failed to sync settings to backend:', e);
+                const parsed = JSON.parse(templates);
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    templates = parsed;
+                }
+            } catch (parseError) {
+                console.warn('Failed to parse download_path_templates string from backend, using defaults');
+                templates = null;
             }
+        }
+
+        if (!templates || typeof templates !== 'object' || Array.isArray(templates)) {
+            templates = {};
+        }
+
+        merged.download_path_templates = { ...DEFAULT_PATH_TEMPLATES, ...templates };
+
+        Object.keys(merged).forEach(key => this.backendSettingKeys.add(key));
+
+        return merged;
+    }
+
+    // Helper method to determine if a setting should be saved to backend
+    isBackendSetting(settingKey) {
+        return this.backendSettingKeys.has(settingKey);
+    }
+
+    // Helper method to save setting based on whether it's frontend or backend
+    async saveSetting(settingKey, value) {
+        // Update state
+        state.global.settings[settingKey] = value;
+
+        if (!this.isBackendSetting(settingKey)) {
+            return;
+        }
+
+        // Save to backend
+        try {
+            const payload = {};
+            payload[settingKey] = value;
+
+            const response = await fetch('/api/lm/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save setting to backend');
+            }
+
+            // Parse response and check for success
+            const data = await response.json();
+            if (data.success === false) {
+                throw new Error(data.error || 'Failed to save setting to backend');
+            }
+        } catch (error) {
+            console.error(`Failed to save backend setting ${settingKey}:`, error);
+            throw error;
         }
     }
 
@@ -212,43 +214,42 @@ export class SettingsManager {
         // Set frontend settings from state
         const blurMatureContentCheckbox = document.getElementById('blurMatureContent');
         if (blurMatureContentCheckbox) {
-            blurMatureContentCheckbox.checked = state.global.settings.blurMatureContent;
+            blurMatureContentCheckbox.checked = state.global.settings.blur_mature_content ?? true;
         }
-        
+
         const showOnlySFWCheckbox = document.getElementById('showOnlySFW');
         if (showOnlySFWCheckbox) {
-            // Sync with state (backend will set this via template)
-            state.global.settings.show_only_sfw = showOnlySFWCheckbox.checked;
+            showOnlySFWCheckbox.checked = state.global.settings.show_only_sfw ?? false;
         }
-        
+
         // Set video autoplay on hover setting
         const autoplayOnHoverCheckbox = document.getElementById('autoplayOnHover');
         if (autoplayOnHoverCheckbox) {
-            autoplayOnHoverCheckbox.checked = state.global.settings.autoplayOnHover || false;
+            autoplayOnHoverCheckbox.checked = state.global.settings.autoplay_on_hover || false;
         }
-        
+
         // Set display density setting
         const displayDensitySelect = document.getElementById('displayDensity');
         if (displayDensitySelect) {
-            displayDensitySelect.value = state.global.settings.displayDensity || 'default';
+            displayDensitySelect.value = state.global.settings.display_density || 'default';
         }
-        
+
         // Set card info display setting
         const cardInfoDisplaySelect = document.getElementById('cardInfoDisplay');
         if (cardInfoDisplaySelect) {
-            cardInfoDisplaySelect.value = state.global.settings.cardInfoDisplay || 'always';
+            cardInfoDisplaySelect.value = state.global.settings.card_info_display || 'always';
         }
 
         // Set optimize example images setting
         const optimizeExampleImagesCheckbox = document.getElementById('optimizeExampleImages');
         if (optimizeExampleImagesCheckbox) {
-            optimizeExampleImagesCheckbox.checked = state.global.settings.optimizeExampleImages || false;
+            optimizeExampleImagesCheckbox.checked = state.global.settings.optimize_example_images ?? true;
         }
 
         // Set auto download example images setting
         const autoDownloadExampleImagesCheckbox = document.getElementById('autoDownloadExampleImages');
         if (autoDownloadExampleImagesCheckbox) {
-            autoDownloadExampleImagesCheckbox.checked = state.global.settings.autoDownloadExampleImages || false;
+            autoDownloadExampleImagesCheckbox.checked = state.global.settings.auto_download_example_images || false;
         }
 
         // Load download path templates
@@ -257,7 +258,7 @@ export class SettingsManager {
         // Set include trigger words setting
         const includeTriggerWordsCheckbox = document.getElementById('includeTriggerWords');
         if (includeTriggerWordsCheckbox) {
-            includeTriggerWordsCheckbox.checked = state.global.settings.includeTriggerWords || false;
+            includeTriggerWordsCheckbox.checked = state.global.settings.include_trigger_words || false;
         }
 
         // Load metadata archive settings
@@ -281,6 +282,60 @@ export class SettingsManager {
             const currentLanguage = state.global.settings.language || 'en';
             languageSelect.value = currentLanguage;
         }
+
+        this.loadProxySettings();
+    }
+
+    loadProxySettings() {
+        // Load proxy enabled setting
+        const proxyEnabledCheckbox = document.getElementById('proxyEnabled');
+        if (proxyEnabledCheckbox) {
+            proxyEnabledCheckbox.checked = state.global.settings.proxy_enabled || false;
+            
+            // Add event listener for toggling proxy settings group visibility
+            proxyEnabledCheckbox.addEventListener('change', () => {
+                const proxySettingsGroup = document.getElementById('proxySettingsGroup');
+                if (proxySettingsGroup) {
+                    proxySettingsGroup.style.display = proxyEnabledCheckbox.checked ? 'block' : 'none';
+                }
+            });
+            
+            // Set initial visibility
+            const proxySettingsGroup = document.getElementById('proxySettingsGroup');
+            if (proxySettingsGroup) {
+                proxySettingsGroup.style.display = proxyEnabledCheckbox.checked ? 'block' : 'none';
+            }
+        }
+
+        // Load proxy type
+        const proxyTypeSelect = document.getElementById('proxyType');
+        if (proxyTypeSelect) {
+            proxyTypeSelect.value = state.global.settings.proxy_type || 'http';
+        }
+
+        // Load proxy host
+        const proxyHostInput = document.getElementById('proxyHost');
+        if (proxyHostInput) {
+            proxyHostInput.value = state.global.settings.proxy_host || '';
+        }
+
+        // Load proxy port
+        const proxyPortInput = document.getElementById('proxyPort');
+        if (proxyPortInput) {
+            proxyPortInput.value = state.global.settings.proxy_port || '';
+        }
+
+        // Load proxy username
+        const proxyUsernameInput = document.getElementById('proxyUsername');
+        if (proxyUsernameInput) {
+            proxyUsernameInput.value = state.global.settings.proxy_username || '';
+        }
+
+        // Load proxy password
+        const proxyPasswordInput = document.getElementById('proxyPassword');
+        if (proxyPasswordInput) {
+            proxyPasswordInput.value = state.global.settings.proxy_password || '';
+        }
     }
 
     async loadLoraRoots() {
@@ -289,7 +344,7 @@ export class SettingsManager {
             if (!defaultLoraRootSelect) return;
             
             // Fetch lora roots
-            const response = await fetch('/api/loras/roots');
+            const response = await fetch('/api/lm/loras/roots');
             if (!response.ok) {
                 throw new Error('Failed to fetch LoRA roots');
             }
@@ -328,7 +383,7 @@ export class SettingsManager {
             if (!defaultCheckpointRootSelect) return;
             
             // Fetch checkpoint roots
-            const response = await fetch('/api/checkpoints/roots');
+            const response = await fetch('/api/lm/checkpoints/roots');
             if (!response.ok) {
                 throw new Error('Failed to fetch checkpoint roots');
             }
@@ -367,7 +422,7 @@ export class SettingsManager {
             if (!defaultEmbeddingRootSelect) return;
 
             // Fetch embedding roots
-            const response = await fetch('/api/embeddings/roots');
+            const response = await fetch('/api/lm/embeddings/roots');
             if (!response.ok) {
                 throw new Error('Failed to fetch embedding roots');
             }
@@ -543,23 +598,8 @@ export class SettingsManager {
 
     async saveBaseModelMappings() {
         try {
-            // Save to localStorage
-            setStorageItem('settings', state.global.settings);
-
-            // Save to backend
-            const response = await fetch('/api/settings', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    base_model_path_mappings: state.global.settings.base_model_path_mappings
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to save base model mappings');
-            }
+            // Save to backend using universal save method
+            await this.saveSetting('base_model_path_mappings', state.global.settings.base_model_path_mappings);
 
             // Show success toast
             const mappingCount = Object.keys(state.global.settings.base_model_path_mappings).length;
@@ -733,23 +773,8 @@ export class SettingsManager {
 
     async saveDownloadPathTemplates() {
         try {
-            // Save to localStorage
-            setStorageItem('settings', state.global.settings);
-
-            // Save to backend
-            const response = await fetch('/api/settings', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    download_path_templates: state.global.settings.download_path_templates
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to save download path templates');
-            }
+            // Save to backend using universal save method
+            await this.saveSetting('download_path_templates', state.global.settings.download_path_templates);
 
             showToast('toast.settings.downloadTemplatesUpdated', {}, 'success');
 
@@ -773,54 +798,20 @@ export class SettingsManager {
         if (!element) return;
         
         const value = element.checked;
-        
-        // Update frontend state
-        if (settingKey === 'blur_mature_content') {
-            state.global.settings.blurMatureContent = value;
-        } else if (settingKey === 'show_only_sfw') {
-            state.global.settings.show_only_sfw = value;
-        } else if (settingKey === 'autoplay_on_hover') {
-            state.global.settings.autoplayOnHover = value;
-        } else if (settingKey === 'optimize_example_images') {
-            state.global.settings.optimizeExampleImages = value;
-        } else if (settingKey === 'auto_download_example_images') {
-            state.global.settings.autoDownloadExampleImages = value;
-        } else if (settingKey === 'compact_mode') {
-            state.global.settings.compactMode = value;
-        } else if (settingKey === 'include_trigger_words') {
-            state.global.settings.includeTriggerWords = value;
-        } else if (settingKey === 'enable_metadata_archive_db') {
-            state.global.settings.enable_metadata_archive_db = value;
-        } else {
-            // For any other settings that might be added in the future
-            state.global.settings[settingKey] = value;
-        }
-        
-        // Save to localStorage
-        setStorageItem('settings', state.global.settings);
-        
-        try {
-            // For backend settings, make API call
-            if (['show_only_sfw', 'enable_metadata_archive_db'].includes(settingKey)) {
-                const payload = {};
-                payload[settingKey] = value;
-                
-                const response = await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload)
-                });
 
-                if (!response.ok) {
-                    throw new Error('Failed to save setting');
+        try {
+            await this.saveSetting(settingKey, value);
+
+            if (settingKey === 'proxy_enabled') {
+                const proxySettingsGroup = document.getElementById('proxySettingsGroup');
+                if (proxySettingsGroup) {
+                    proxySettingsGroup.style.display = value ? 'block' : 'none';
                 }
-                
-                // Refresh metadata archive status when enable setting changes
-                if (settingKey === 'enable_metadata_archive_db') {
-                    await this.updateMetadataArchiveStatus();
-                }
+            }
+
+            // Refresh metadata archive status when enable setting changes
+            if (settingKey === 'enable_metadata_archive_db') {
+                await this.updateMetadataArchiveStatus();
             }
                 
             showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
@@ -844,16 +835,11 @@ export class SettingsManager {
             // Recalculate layout when compact mode changes
             if (settingKey === 'compact_mode' && state.virtualScroller) {
                 state.virtualScroller.calculateLayout();
-                showToast('toast.settings.compactModeToggled', { 
-                    state: value ? 'toast.settings.compactModeEnabled' : 'toast.settings.compactModeDisabled' 
+                showToast('toast.settings.compactModeToggled', {
+                    state: value ? 'toast.settings.compactModeEnabled' : 'toast.settings.compactModeDisabled'
                 }, 'success');
             }
 
-            // Special handling for metadata archive settings
-            if (settingKey === 'enable_metadata_archive_db') {
-                await this.updateMetadataArchiveStatus();
-            }
-            
         } catch (error) {
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
         }
@@ -865,53 +851,10 @@ export class SettingsManager {
         
         const value = element.value;
         
-        // Update frontend state
-        if (settingKey === 'default_lora_root') {
-            state.global.settings.default_lora_root = value;
-        } else if (settingKey === 'default_checkpoint_root') {
-            state.global.settings.default_checkpoint_root = value;
-        } else if (settingKey === 'default_embedding_root') {
-            state.global.settings.default_embedding_root = value;
-        } else if (settingKey === 'display_density') {
-            state.global.settings.displayDensity = value;
-            
-            // Also update compactMode for backwards compatibility
-            state.global.settings.compactMode = (value !== 'default');
-        } else if (settingKey === 'card_info_display') {
-            state.global.settings.cardInfoDisplay = value;
-        } else {
-            // For any other settings that might be added in the future
-            state.global.settings[settingKey] = value;
-        }
-        
-        // Save to localStorage
-        setStorageItem('settings', state.global.settings);
-        
         try {
-            // For backend settings, make API call
-            if (settingKey === 'default_lora_root' || settingKey === 'default_checkpoint_root' || settingKey === 'default_embedding_root' || settingKey === 'download_path_templates') {
-                const payload = {};
-                if (settingKey === 'download_path_templates') {
-                    payload[settingKey] = state.global.settings.download_path_templates;
-                } else {
-                    payload[settingKey] = value;
-                }
-                
-                const response = await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload)
-                });
+            // Update frontend state with mapped keys
+            await this.saveSetting(settingKey, value);
 
-                if (!response.ok) {
-                    throw new Error('Failed to save setting');
-                }
-                
-                showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
-            }
-            
             // Apply frontend settings immediately
             this.applyFrontendSettings();
             
@@ -924,8 +867,10 @@ export class SettingsManager {
                 if (value === 'compact') densityName = "Compact";
                 
                 showToast('toast.settings.displayDensitySet', { density: densityName }, 'success');
+                return;
             }
             
+            showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
         } catch (error) {
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
         }
@@ -948,7 +893,7 @@ export class SettingsManager {
 
     async updateMetadataArchiveStatus() {
         try {
-            const response = await fetch('/api/metadata-archive-status');
+            const response = await fetch('/api/lm/metadata-archive-status');
             const data = await response.json();
 
             const statusContainer = document.getElementById('metadataArchiveStatus');
@@ -1077,7 +1022,7 @@ export class SettingsManager {
             // Wait for WebSocket to be ready
             await wsReady;
 
-            const response = await fetch(`/api/download-metadata-archive?download_id=${encodeURIComponent(actualDownloadId)}`, {
+            const response = await fetch(`/api/lm/download-metadata-archive?download_id=${encodeURIComponent(actualDownloadId)}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1097,9 +1042,8 @@ export class SettingsManager {
                 
                 showToast('settings.metadataArchive.downloadSuccess', 'success');
                 
-                // Update settings in state
-                state.global.settings.enable_metadata_archive_db = true;
-                setStorageItem('settings', state.global.settings);
+                // Update settings using universal save method
+                await this.saveSetting('enable_metadata_archive_db', true);
                 
                 // Update UI
                 const enableCheckbox = document.getElementById('enableMetadataArchive');
@@ -1141,7 +1085,7 @@ export class SettingsManager {
                 removeBtn.textContent = translate('settings.metadataArchive.removingButton');
             }
 
-            const response = await fetch('/api/remove-metadata-archive', {
+            const response = await fetch('/api/lm/remove-metadata-archive', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1153,9 +1097,8 @@ export class SettingsManager {
             if (data.success) {
                 showToast('settings.metadataArchive.removeSuccess', 'success');
 
-                // Update settings in state
-                state.global.settings.enable_metadata_archive_db = false;
-                setStorageItem('settings', state.global.settings);
+                // Update settings using universal save method
+                await this.saveSetting('enable_metadata_archive_db', false);
                 
                 // Update UI
                 const enableCheckbox = document.getElementById('enableMetadataArchive');
@@ -1183,9 +1126,8 @@ export class SettingsManager {
         const element = document.getElementById(elementId);
         if (!element) return;
         
-        const value = element.value;
+        const value = element.value.trim(); // Trim whitespace
         
-        // For API key or other inputs that need to be saved on backend
         try {
             // Check if value has changed from existing value
             const currentValue = state.global.settings[settingKey] || '';
@@ -1193,25 +1135,29 @@ export class SettingsManager {
                 return; // No change, exit early
             }
             
-            // Update state
-            state.global.settings[settingKey] = value;
-            
-            setStorageItem('settings', state.global.settings);
-            
-            // For backend settings, make API call
-            const payload = {};
-            payload[settingKey] = value;
-            
-            const response = await fetch('/api/settings', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload)
-            });
+            // For username and password, handle empty values specially
+            if ((settingKey === 'proxy_username' || settingKey === 'proxy_password') && value === '') {
+                // Remove from state instead of setting to empty string
+                delete state.global.settings[settingKey];
+                
+                // Send delete flag to backend
+                const payload = {};
+                payload[settingKey] = '__DELETE__';
+                
+                const response = await fetch('/api/lm/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
 
-            if (!response.ok) {
-                throw new Error('Failed to save setting');
+                if (!response.ok) {
+                    throw new Error('Failed to delete setting');
+                }
+            } else {
+                // Use the universal save method
+                await this.saveSetting(settingKey, value);
             }
             
             showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
@@ -1224,31 +1170,13 @@ export class SettingsManager {
     async saveLanguageSetting() {
         const element = document.getElementById('languageSelect');
         if (!element) return;
-        
-        const selectedLanguage = element.value;
-        
-        try {
-            // Update local state
-            state.global.settings.language = selectedLanguage;
-            
-            // Save to localStorage
-            setStorageItem('settings', state.global.settings);
-            
-            // Save to backend
-            const response = await fetch('/api/settings', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    language: selectedLanguage
-                })
-            });
 
-            if (!response.ok) {
-                throw new Error('Failed to save language setting to backend');
-            }
-            
+        const selectedLanguage = element.value;
+
+        try {
+            // Use the universal save method for language (frontend-only setting)
+            await this.saveSetting('language', selectedLanguage);
+
             // Reload the page to apply the new language
             window.location.reload();
 
@@ -1293,47 +1221,25 @@ export class SettingsManager {
 
     applyFrontendSettings() {
         // Apply autoplay setting to existing videos in card previews
-        const autoplayOnHover = state.global.settings.autoplayOnHover;
+        const autoplayOnHover = state.global.settings.autoplay_on_hover;
         document.querySelectorAll('.card-preview video').forEach(video => {
-            // Remove previous event listeners by cloning and replacing the element
-            const videoParent = video.parentElement;
-            const videoClone = video.cloneNode(true);
-            
-            if (autoplayOnHover) {
-                // Pause video initially and set up mouse events for hover playback
-                videoClone.removeAttribute('autoplay');
-                videoClone.pause();
-                
-                // Add mouse events to the parent element
-                videoParent.onmouseenter = () => videoClone.play();
-                videoParent.onmouseleave = () => {
-                    videoClone.pause();
-                    videoClone.currentTime = 0;
-                };
-            } else {
-                // Use default autoplay behavior
-                videoClone.setAttribute('autoplay', '');
-                videoParent.onmouseenter = null;
-                videoParent.onmouseleave = null;
-            }
-            
-            videoParent.replaceChild(videoClone, video);
+            configureModelCardVideo(video, autoplayOnHover);
         });
         
         // Apply display density class to grid
         const grid = document.querySelector('.card-grid');
         if (grid) {
-            const density = state.global.settings.displayDensity || 'default';
-            
+            const density = state.global.settings.display_density || 'default';
+
             // Remove all density classes first
             grid.classList.remove('default-density', 'medium-density', 'compact-density');
-            
+
             // Add the appropriate density class
             grid.classList.add(`${density}-density`);
         }
-        
+
         // Apply card info display setting
-        const cardInfoDisplay = state.global.settings.cardInfoDisplay || 'always';
+        const cardInfoDisplay = state.global.settings.card_info_display || 'always';
         document.body.classList.toggle('hover-reveal', cardInfoDisplay === 'hover');
     }
 }

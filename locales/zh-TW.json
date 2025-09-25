@@ -123,6 +123,20 @@
             "noRemoteImagesAvailable": "此模型在 Civitai 上無遠端範例圖片"
         }
     },
+    "globalContextMenu": {
+        "downloadExampleImages": {
+            "label": "下載範例圖片",
+            "missingPath": "請先設定下載位置再下載範例圖片。",
+            "unavailable": "範例圖片下載目前尚不可用。請在頁面載入完成後再試一次。"
+        },
+        "cleanupExampleImages": {
+            "label": "清理範例圖片資料夾",
+            "success": "已將 {count} 個資料夾移至已刪除資料夾",
+            "none": "沒有需要清理的範例圖片資料夾",
+            "partial": "清理完成，有 {failures} 個資料夾略過",
+            "error": "清理範例圖片資料夾失敗：{message}"
+        }
+    },
     "header": {
         "appTitle": "LoRA 管理器",
         "navigation": {
@@ -182,7 +196,8 @@
             "downloadPathTemplates": "下載路徑範本",
             "exampleImages": "範例圖片",
             "misc": "其他",
-            "metadataArchive": "中繼資料封存資料庫"
+            "metadataArchive": "中繼資料封存資料庫",
+            "proxySettings": "代理設定"
         },
         "contentFiltering": {
             "blurNsfwContent": "模糊 NSFW 內容",
@@ -240,6 +255,7 @@
                 "baseModelFirstTag": "基礎模型 + 第一標籤",
                 "baseModelAuthor": "基礎模型 + 作者",
                 "authorFirstTag": "作者 + 第一標籤",
+                "baseModelAuthorFirstTag": "基礎模型 + 作者 + 第一標籤",
                 "customTemplate": "自訂範本"
             },
             "customTemplatePlaceholder": "輸入自訂範本（例如：{base_model}/{author}/{first_tag}）",
@@ -301,6 +317,24 @@
             "connecting": "正在連接下載伺服器...",
             "completed": "已完成",
             "downloadComplete": "下載成功完成"
+        },
+        "proxySettings": {
+            "enableProxy": "啟用應用程式代理",
+            "enableProxyHelp": "啟用此應用程式的自訂代理設定，將覆蓋系統代理設定",
+            "proxyType": "代理類型",
+            "proxyTypeHelp": "選擇代理伺服器類型（HTTP、HTTPS、SOCKS4、SOCKS5）",
+            "proxyHost": "代理主機",
+            "proxyHostPlaceholder": "proxy.example.com",
+            "proxyHostHelp": "您的代理伺服器主機名稱或 IP 位址",
+            "proxyPort": "代理埠號",
+            "proxyPortPlaceholder": "8080",
+            "proxyPortHelp": "您的代理伺服器埠號",
+            "proxyUsername": "使用者名稱（選填）",
+            "proxyUsernamePlaceholder": "username",
+            "proxyUsernameHelp": "代理驗證所需的使用者名稱（如有需要）",
+            "proxyPassword": "密碼（選填）",
+            "proxyPasswordPlaceholder": "password",
+            "proxyPasswordHelp": "代理驗證所需的密碼（如有需要）"
         }
     },
     "loras": {
@@ -708,6 +742,7 @@
                 "strengthMin": "最小強度",
                 "strengthMax": "最大強度",
                 "strength": "強度",
+                "clipStrength": "Clip 強度",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "數值",
                 "add": "新增"
@@ -1148,6 +1183,7 @@
         },
         "exampleImages": {
             "pathUpdated": "範例圖片路徑已更新",
+            "pathUpdateFailed": "更新範例圖片路徑失敗：{message}",
             "downloadInProgress": "下載已在進行中",
             "enterLocationFirst": "請先輸入下載位置",
             "downloadStarted": "範例圖片下載已開始",

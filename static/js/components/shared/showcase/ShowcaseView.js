@@ -29,7 +29,7 @@ export async function loadExampleImages(images, modelHash) {
         let localFiles = [];
 
         try {
-            const endpoint = '/api/example-image-files';
+            const endpoint = '/api/lm/example-image-files';
             const params = `model_hash=${modelHash}`;
             
             const response = await fetch(`${endpoint}?${params}`);
@@ -155,7 +155,7 @@ function renderMediaItem(img, index, exampleFiles) {
     
     // Check if media should be blurred
     const nsfwLevel = img.nsfwLevel !== undefined ? img.nsfwLevel : 0;
-    const shouldBlur = state.settings.blurMatureContent && nsfwLevel > NSFW_LEVELS.PG13;
+    const shouldBlur = state.settings.blur_mature_content && nsfwLevel > NSFW_LEVELS.PG13;
     
     // Determine NSFW warning text based on level
     let nsfwText = "Mature Content";
@@ -191,7 +191,7 @@ function renderMediaItem(img, index, exampleFiles) {
     );
     
     // Determine if this is a custom image (has id property)
-    const isCustomImage = Boolean(img.id);
+    const isCustomImage = Boolean(typeof img.id === 'string' && img.id);
     
     // Create the media control buttons HTML
     const mediaControlsHtml = `
@@ -235,7 +235,7 @@ function findLocalFile(img, index, exampleFiles) {
     
     let localFile = null;
     
-    if (img.id) {
+    if (typeof img.id === 'string' && img.id) {
         // This is a custom image, find by custom_<id>
         const customPrefix = `custom_${img.id}`;
         localFile = exampleFiles.find(file => file.name.startsWith(customPrefix));
@@ -374,7 +374,7 @@ async function handleImportFiles(files, modelHash, importContainer) {
         });
         
         // Call API to import files
-        const response = await fetch('/api/import-example-images', {
+        const response = await fetch('/api/lm/import-example-images', {
             method: 'POST',
             body: formData
         });
@@ -386,7 +386,7 @@ async function handleImportFiles(files, modelHash, importContainer) {
         }
         
         // Get updated local files
-        const updatedFilesResponse = await fetch(`/api/example-image-files?model_hash=${modelHash}`);
+        const updatedFilesResponse = await fetch(`/api/lm/example-image-files?model_hash=${modelHash}`);
         const updatedFilesResult = await updatedFilesResponse.json();
         
         if (!updatedFilesResult.success) {

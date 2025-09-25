@@ -103,7 +103,7 @@ export class RecipeContextMenu extends BaseContextMenu {
             return;
         }
 
-        fetch(`/api/recipe/${recipeId}/syntax`)
+        fetch(`/api/lm/recipe/${recipeId}/syntax`)
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.syntax) {
@@ -126,7 +126,7 @@ export class RecipeContextMenu extends BaseContextMenu {
             return;
         }
 
-        fetch(`/api/recipe/${recipeId}/syntax`)
+        fetch(`/api/lm/recipe/${recipeId}/syntax`)
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.syntax) {
@@ -149,7 +149,7 @@ export class RecipeContextMenu extends BaseContextMenu {
         }
         
         // First get the recipe details to access its LoRAs
-        fetch(`/api/recipe/${recipeId}`)
+        fetch(`/api/lm/recipe/${recipeId}`)
             .then(response => response.json())
             .then(recipe => {
                 // Clear any previous filters first
@@ -189,7 +189,7 @@ export class RecipeContextMenu extends BaseContextMenu {
         
         try {
             // First get the recipe details
-            const response = await fetch(`/api/recipe/${recipeId}`);
+            const response = await fetch(`/api/lm/recipe/${recipeId}`);
             const recipe = await response.json();
             
             // Get missing LoRAs
@@ -209,9 +209,9 @@ export class RecipeContextMenu extends BaseContextMenu {
                 
                 // Determine which endpoint to use based on available data
                 if (lora.modelVersionId) {
-                    endpoint = `/api/loras/civitai/model/version/${lora.modelVersionId}`;
+                    endpoint = `/api/lm/loras/civitai/model/version/${lora.modelVersionId}`;
                 } else if (lora.hash) {
-                    endpoint = `/api/loras/civitai/model/hash/${lora.hash}`;
+                    endpoint = `/api/lm/loras/civitai/model/hash/${lora.hash}`;
                 } else {
                     console.error("Missing both hash and modelVersionId for lora:", lora);
                     return null;

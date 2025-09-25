@@ -36,12 +36,18 @@ class EmbeddingsPageManager {
     }
 }
 
-// Initialize everything when DOM is ready
-document.addEventListener('DOMContentLoaded', async () => {
+async function initializeEmbeddingsPage() {
     // Initialize core application
     await appCore.initialize();
-    
+
     // Initialize embeddings page
     const embeddingsPage = new EmbeddingsPageManager();
     await embeddingsPage.initialize();
-});
+
+    return embeddingsPage;
+}
+
+// Initialize everything when DOM is ready
+document.addEventListener('DOMContentLoaded', initializeEmbeddingsPage);
+
+export { EmbeddingsPageManager, initializeEmbeddingsPage };

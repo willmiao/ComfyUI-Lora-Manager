@@ -2,6 +2,10 @@ from pathlib import Path
 import os
 import sys
 import json
+from py.middleware.cache_middleware import cache_control
+
+# Set environment variable to indicate standalone mode
+os.environ["COMFYUI_LORA_MANAGER_STANDALONE"] = "1"
 
 # Create mock modules for py/nodes directory - add this before any other imports
 def mock_nodes_directory():
@@ -129,7 +133,7 @@ class StandaloneServer:
     """Server implementation for standalone mode"""
     
     def __init__(self):
-        self.app = web.Application(logger=logger)
+        self.app = web.Application(logger=logger, middlewares=[cache_control])
         self.instance = self  # Make it compatible with PromptServer.instance pattern
         
         # Ensure the app's access logger is configured to reduce verbosity
@@ -417,7 +421,7 @@ class StandaloneLoraManager(LoraManager):
         RecipeRoutes.setup_routes(app)
         UpdateRoutes.setup_routes(app)
         MiscRoutes.setup_routes(app)
-        ExampleImagesRoutes.setup_routes(app)
+        ExampleImagesRoutes.setup_routes(app, ws_manager=ws_manager)
 
         # Setup WebSocket routes that are shared across all model types
         app.router.add_get('/ws/fetch-progress', ws_manager.handle_connection)

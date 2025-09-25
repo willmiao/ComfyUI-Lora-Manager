@@ -507,12 +507,12 @@ class StatsRoutes:
         app.router.add_get('/statistics', self.handle_stats_page)
         
         # Register API routes
-        app.router.add_get('/api/stats/collection-overview', self.get_collection_overview)
-        app.router.add_get('/api/stats/usage-analytics', self.get_usage_analytics)
-        app.router.add_get('/api/stats/base-model-distribution', self.get_base_model_distribution)
-        app.router.add_get('/api/stats/tag-analytics', self.get_tag_analytics)
-        app.router.add_get('/api/stats/storage-analytics', self.get_storage_analytics)
-        app.router.add_get('/api/stats/insights', self.get_insights)
+        app.router.add_get('/api/lm/stats/collection-overview', self.get_collection_overview)
+        app.router.add_get('/api/lm/stats/usage-analytics', self.get_usage_analytics)
+        app.router.add_get('/api/lm/stats/base-model-distribution', self.get_base_model_distribution)
+        app.router.add_get('/api/lm/stats/tag-analytics', self.get_tag_analytics)
+        app.router.add_get('/api/lm/stats/storage-analytics', self.get_storage_analytics)
+        app.router.add_get('/api/lm/stats/insights', self.get_insights)
         
     async def _on_startup(self, app):
         """Initialize services when the app starts"""

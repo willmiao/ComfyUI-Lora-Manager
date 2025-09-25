@@ -5,9 +5,9 @@ from typing import Dict
 from server import PromptServer  # type: ignore
 
 from .base_model_routes import BaseModelRoutes
+from .model_route_registrar import ModelRouteRegistrar
 from ..services.lora_service import LoraService
 from ..services.service_registry import ServiceRegistry
-from ..services.metadata_service import get_default_metadata_provider
 from ..utils.utils import get_lora_info
 
 logger = logging.getLogger(__name__)
@@ -17,8 +17,7 @@ class LoraRoutes(BaseModelRoutes):
     
     def __init__(self):
         """Initialize LoRA routes with LoRA service"""
-        # Service will be initialized later via setup_routes
-        self.service = None
+        super().__init__()
         self.template_name = "loras.html"
     
     async def initialize_services(self):
@@ -26,31 +25,26 @@ class LoraRoutes(BaseModelRoutes):
         lora_scanner = await ServiceRegistry.get_lora_scanner()
         self.service = LoraService(lora_scanner)
         
-        # Initialize parent with the service
-        super().__init__(self.service)
+        # Attach service dependencies
+        self.attach_service(self.service)
     
     def setup_routes(self, app: web.Application):
         """Setup LoRA routes"""
         # Schedule service initialization on app startup
         app.on_startup.append(lambda _: self.initialize_services())
-        
+
         # Setup common routes with 'loras' prefix (includes page route)
         super().setup_routes(app, 'loras')
-    
-    def setup_specific_routes(self, app: web.Application, prefix: str):
+
+    def setup_specific_routes(self, registrar: ModelRouteRegistrar, prefix: str):
         """Setup LoRA-specific routes"""
         # LoRA-specific query routes
-        app.router.add_get(f'/api/{prefix}/letter-counts', self.get_letter_counts)
-        app.router.add_get(f'/api/{prefix}/get-trigger-words', self.get_lora_trigger_words)
-        app.router.add_get(f'/api/{prefix}/usage-tips-by-path', self.get_lora_usage_tips_by_path)
-        
-        # CivitAI integration with LoRA-specific validation
-        app.router.add_get(f'/api/{prefix}/civitai/versions/{{model_id}}', self.get_civitai_versions_lora)
-        app.router.add_get(f'/api/{prefix}/civitai/model/version/{{modelVersionId}}', self.get_civitai_model_by_version)
-        app.router.add_get(f'/api/{prefix}/civitai/model/hash/{{hash}}', self.get_civitai_model_by_hash)
-        
+        registrar.add_prefixed_route('GET', '/api/lm/{prefix}/letter-counts', prefix, self.get_letter_counts)
+        registrar.add_prefixed_route('GET', '/api/lm/{prefix}/get-trigger-words', prefix, self.get_lora_trigger_words)
+        registrar.add_prefixed_route('GET', '/api/lm/{prefix}/usage-tips-by-path', prefix, self.get_lora_usage_tips_by_path)
+
         # ComfyUI integration
-        app.router.add_post(f'/api/{prefix}/get_trigger_words', self.get_trigger_words)
+        registrar.add_prefixed_route('POST', '/api/lm/{prefix}/get_trigger_words', prefix, self.get_trigger_words)
     
     def _parse_specific_params(self, request: web.Request) -> Dict:
         """Parse LoRA-specific parameters"""
@@ -75,6 +69,15 @@ class LoraRoutes(BaseModelRoutes):
             params['hash_filters']['multiple_hashes'] = [h.lower() for h in request.query['lora_hashes'].split(',')]
         
         return params
+    
+    def _validate_civitai_model_type(self, model_type: str) -> bool:
+        """Validate CivitAI model type for LoRA"""
+        from ..utils.constants import VALID_LORA_TYPES
+        return model_type.lower() in VALID_LORA_TYPES
+    
+    def _get_expected_model_types(self) -> str:
+        """Get expected model types string for error messages"""
+        return "LORA, LoCon, or DORA"
     
     # LoRA-specific route handlers
     async def get_letter_counts(self, request: web.Request) -> web.Response:
@@ -208,94 +211,6 @@ class LoraRoutes(BaseModelRoutes):
             return web.json_response({
                 'success': False,
                 'error': str(e)
-            }, status=500)
-    
-    # CivitAI integration methods
-    async def get_civitai_versions_lora(self, request: web.Request) -> web.Response:
-        """Get available versions for a Civitai LoRA model with local availability info"""
-        try:
-            model_id = request.match_info['model_id']
-            metadata_provider = await get_default_metadata_provider()
-            response = await metadata_provider.get_model_versions(model_id)
-            if not response or not response.get('modelVersions'):
-                return web.Response(status=404, text="Model not found")
-            
-            versions = response.get('modelVersions', [])
-            model_type = response.get('type', '')
-            
-            # Check model type - should be LORA, LoCon, or DORA
-            from ..utils.constants import VALID_LORA_TYPES
-            if model_type.lower() not in VALID_LORA_TYPES:
-                return web.json_response({
-                    'error': f"Model type mismatch. Expected LORA or LoCon, got {model_type}"
-                }, status=400)
-            
-            # Check local availability for each version
-            for version in versions:
-                # Find the model file (type="Model") in the files list
-                model_file = next((file for file in version.get('files', []) 
-                                  if file.get('type') == 'Model'), None)
-                
-                if model_file:
-                    sha256 = model_file.get('hashes', {}).get('SHA256')
-                    if sha256:
-                        # Set existsLocally and localPath at the version level
-                        version['existsLocally'] = self.service.has_hash(sha256)
-                        if version['existsLocally']:
-                            version['localPath'] = self.service.get_path_by_hash(sha256)
-                        
-                        # Also set the model file size at the version level for easier access
-                        version['modelSizeKB'] = model_file.get('sizeKB')
-                else:
-                    # No model file found in this version
-                    version['existsLocally'] = False
-                    
-            return web.json_response(versions)
-        except Exception as e:
-            logger.error(f"Error fetching LoRA model versions: {e}")
-            return web.Response(status=500, text=str(e))
-    
-    async def get_civitai_model_by_version(self, request: web.Request) -> web.Response:
-        """Get CivitAI model details by model version ID"""
-        try:
-            model_version_id = request.match_info.get('modelVersionId')
-            
-            # Get model details from metadata provider
-            metadata_provider = await get_default_metadata_provider()
-            model, error_msg = await metadata_provider.get_model_version_info(model_version_id)
-
-            if not model:
-                # Log warning for failed model retrieval
-                logger.warning(f"Failed to fetch model version {model_version_id}: {error_msg}")
-                
-                # Determine status code based on error message
-                status_code = 404 if error_msg and "not found" in error_msg.lower() else 500
-                
-                return web.json_response({
-                    "success": False,
-                    "error": error_msg or "Failed to fetch model information"
-                }, status=status_code)
-                
-            return web.json_response(model)
-        except Exception as e:
-            logger.error(f"Error fetching model details: {e}")
-            return web.json_response({
-                "success": False,
-                "error": str(e)
-            }, status=500)
-    
-    async def get_civitai_model_by_hash(self, request: web.Request) -> web.Response:
-        """Get CivitAI model details by hash"""
-        try:
-            hash = request.match_info.get('hash')
-            metadata_provider = await get_default_metadata_provider()
-            model = await metadata_provider.get_model_by_hash(hash)
-            return web.json_response(model)
-        except Exception as e:
-            logger.error(f"Error fetching model details by hash: {e}")
-            return web.json_response({
-                "success": False,
-                "error": str(e)
             }, status=500)
     
     async def get_trigger_words(self, request: web.Request) -> web.Response:

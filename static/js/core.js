@@ -7,16 +7,15 @@ import { HeaderManager } from './components/Header.js';
 import { settingsManager } from './managers/SettingsManager.js';
 import { moveManager } from './managers/MoveManager.js';
 import { bulkManager } from './managers/BulkManager.js';
-import { exampleImagesManager } from './managers/ExampleImagesManager.js';
+import { ExampleImagesManager } from './managers/ExampleImagesManager.js';
 import { helpManager } from './managers/HelpManager.js';
 import { bannerService } from './managers/BannerService.js';
 import { initTheme, initBackToTop } from './utils/uiHelpers.js';
 import { initializeInfiniteScroll } from './utils/infiniteScroll.js';
-import { migrateStorageItems } from './utils/storageHelpers.js';
 import { i18n } from './i18n/index.js';
 import { onboardingManager } from './managers/OnboardingManager.js';
 import { BulkContextMenu } from './components/ContextMenu/BulkContextMenu.js';
-import { createPageContextMenu } from './components/ContextMenu/index.js';
+import { createPageContextMenu, createGlobalContextMenu } from './components/ContextMenu/index.js';
 import { initializeEventManagement } from './utils/eventManagementInit.js';
 
 // Core application class
@@ -38,6 +37,11 @@ export class AppCore {
         
         console.log(`AppCore: Language set: ${i18n.getCurrentLocale()}`);
         
+        // Initialize settings manager and wait for it to sync from backend
+        console.log('AppCore: Initializing settings...');
+        await settingsManager.waitForInitialization();
+        console.log('AppCore: Settings initialized');
+        
         // Initialize managers
         state.loadingManager = new LoadingManager();
         modalManager.initialize();
@@ -45,6 +49,7 @@ export class AppCore {
         bannerService.initialize();
         window.modalManager = modalManager;
         window.settingsManager = settingsManager;
+        const exampleImagesManager = new ExampleImagesManager();
         window.exampleImagesManager = exampleImagesManager;
         window.helpManager = helpManager;
         window.moveManager = moveManager;
@@ -69,7 +74,7 @@ export class AppCore {
         // Initialize the help manager
         helpManager.initialize();
 
-        const cardInfoDisplay = state.global.settings.cardInfoDisplay || 'always';
+        const cardInfoDisplay = state.global.settings.card_info_display || 'always';
         document.body.classList.toggle('hover-reveal', cardInfoDisplay === 'hover');
 
         initializeEventManagement();
@@ -111,13 +116,12 @@ export class AppCore {
     initializeContextMenus(pageType) {
         // Create page-specific context menu
         window.pageContextMenu = createPageContextMenu(pageType);
+
+        if (!window.globalContextMenuInstance) {
+            window.globalContextMenuInstance = createGlobalContextMenu();
+        }
     }
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Migrate localStorage items to use the namespace prefix
-    migrateStorageItems();
-});
 
 // Create and export a singleton instance
 export const appCore = new AppCore();

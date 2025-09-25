@@ -68,7 +68,7 @@ export class DownloadManager {
                 formData.append('metadata', JSON.stringify(completeMetadata));
             
                 // Send save request
-                const response = await fetch('/api/recipes/save', {
+                const response = await fetch('/api/lm/recipes/save', {
                     method: 'POST',
                     body: formData
                 });

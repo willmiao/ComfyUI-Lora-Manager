@@ -1,0 +1,91 @@
+{
+  "id": 1255556,
+  "modelId": 1117241,
+  "name": "v1.0",
+  "createdAt": "2025-01-08T06:13:08.839Z",
+  "updatedAt": "2025-01-08T06:28:54.156Z",
+  "status": "Published",
+  "publishedAt": "2025-01-08T06:28:54.155Z",
+  "trainedWords": ["in the style of ppWhimsy"],
+  "trainingStatus": null,
+  "trainingDetails": null,
+  "baseModel": "Flux.1 D",
+  "baseModelType": "Standard",
+  "earlyAccessEndsAt": null,
+  "earlyAccessConfig": null,
+  "description": null,
+  "uploadType": "Created",
+  "usageControl": "Download",
+  "air": "urn:air:flux1:lora:civitai:1117241@1255556",
+  "stats": {
+    "downloadCount": 210,
+    "ratingCount": 0,
+    "rating": 0,
+    "thumbsUpCount": 26
+  },
+  "model": {
+    "name": "Enchanted Whimsy style (Flux)",
+    "type": "LORA",
+    "nsfw": false,
+    "poi": false
+  },
+  "files": [
+    {
+      "id": 1160774,
+      "sizeKB": 38828.8125,
+      "name": "pp-enchanted-whimsy.safetensors",
+      "type": "Model",
+      "pickleScanResult": "Success",
+      "pickleScanMessage": "No Pickle imports",
+      "virusScanResult": "Success",
+      "virusScanMessage": null,
+      "scannedAt": "2025-01-08T06:16:27.731Z",
+      "metadata": {
+        "format": "SafeTensor",
+        "size": null,
+        "fp": null
+      },
+      "hashes": {
+        "AutoV1": "40CAF049",
+        "AutoV2": "3202778C3E",
+        "SHA256": "3202778C3EBE5CF7EBE5FC51561DEAE8611F4362036EB7C02EFA033C705E6240",
+        "CRC32": "69DCD953",
+        "BLAKE3": "ED04580DDB1AD36D8B87F4B0800F5930C7E5D4A7269BDC2BE26ED77EA1A34697",
+        "AutoV3": "BF82986F8597"
+      },
+      "primary": true,
+      "downloadUrl": "https://civitai.com/api/download/models/1255556"
+    }
+  ],
+  "images": [
+    {
+      "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/707aef9b-36fb-46c2-ac41-adcab539d3a6/width=832/50270101.jpeg",
+      "nsfwLevel": 1,
+      "width": 832,
+      "height": 1216,
+      "hash": "U7Am@@$^J3%100R;pLR.M]tQ-ps+?wRiVrof",
+      "type": "image",
+      "metadata": {
+        "hash": "U7Am@@$^J3%100R;pLR.M]tQ-ps+?wRiVrof",
+        "size": 702313,
+        "width": 832,
+        "height": 1216
+      },
+      "minor": false,
+      "poi": false,
+      "meta": {
+        "prompt": "in the style of ppWhimsy, a close-up of a boy with a crown of ferns and tiny horns, his eyes wide with wonder as a family of glowing hedgehogs nestle in his hands, their spines shimmering with soft pastel colors"
+      },
+      "availability": "Public",
+      "hasMeta": true,
+      "hasPositivePrompt": true,
+      "onSite": false,
+      "remixOfId": null
+    }
+  ],
+  "downloadUrl": "https://civitai.com/api/download/models/1255556",
+  "creator": {
+    "username": "PixelPawsAI",
+    "image": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/f3a1aa7c-0159-4dd8-884a-1e7ceb350f96/width=96/PixelPawsAI.jpeg"
+  }
+}

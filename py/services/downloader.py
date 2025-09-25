@@ -45,6 +45,7 @@ class Downloader:
         # Session management
         self._session = None
         self._session_created_at = None
+        self._proxy_url = None  # Store proxy URL for current session
         
         # Configuration
         self.chunk_size = 4 * 1024 * 1024  # 4MB chunks for better throughput
@@ -63,6 +64,13 @@ class Downloader:
         if self._session is None or self._should_refresh_session():
             await self._create_session()
         return self._session
+    
+    @property
+    def proxy_url(self) -> Optional[str]:
+        """Get the current proxy URL (initialize if needed)"""
+        if not hasattr(self, '_proxy_url'):
+            self._proxy_url = None
+        return self._proxy_url
     
     def _should_refresh_session(self) -> bool:
         """Check if session should be refreshed"""
@@ -84,6 +92,26 @@ class Downloader:
         if self._session is not None:
             await self._session.close()
         
+        # Check for app-level proxy settings
+        proxy_url = None
+        if settings.get('proxy_enabled', False):
+            proxy_host = settings.get('proxy_host', '').strip()
+            proxy_port = settings.get('proxy_port', '').strip()
+            proxy_type = settings.get('proxy_type', 'http').lower()
+            proxy_username = settings.get('proxy_username', '').strip()
+            proxy_password = settings.get('proxy_password', '').strip()
+            
+            if proxy_host and proxy_port:
+                # Build proxy URL
+                if proxy_username and proxy_password:
+                    proxy_url = f"{proxy_type}://{proxy_username}:{proxy_password}@{proxy_host}:{proxy_port}"
+                else:
+                    proxy_url = f"{proxy_type}://{proxy_host}:{proxy_port}"
+                
+                logger.debug(f"Using app-level proxy: {proxy_type}://{proxy_host}:{proxy_port}")
+                logger.debug("Proxy mode: app-level proxy is active.")
+        else:
+            logger.debug("Proxy mode: system-level proxy (trust_env) will be used if configured in environment.")
         # Optimize TCP connection parameters
         connector = aiohttp.TCPConnector(
             ssl=True,
@@ -102,12 +130,15 @@ class Downloader:
         
         self._session = aiohttp.ClientSession(
             connector=connector,
-            trust_env=True,  # Use system proxy settings
+            trust_env=proxy_url is None,  # Only use system proxy if no app-level proxy is set
             timeout=timeout
         )
+        
+        # Store proxy URL for use in requests
+        self._proxy_url = proxy_url
         self._session_created_at = datetime.now()
         
-        logger.debug("Created new HTTP session")
+        logger.debug("Created new HTTP session with proxy settings. App-level proxy: %s, System-level proxy (trust_env): %s", bool(proxy_url), proxy_url is None)
     
     def _get_auth_headers(self, use_auth: bool = False) -> Dict[str, str]:
         """Get headers with optional authentication"""
@@ -164,6 +195,11 @@ class Downloader:
         while retry_count <= self.max_retries:
             try:
                 session = await self.session
+                # Debug log for proxy mode at request time
+                if self.proxy_url:
+                    logger.debug(f"[download_file] Using app-level proxy: {self.proxy_url}")
+                else:
+                    logger.debug("[download_file] Using system-level proxy (trust_env) if configured.")
                 
                 # Add Range header for resume if we have partial data
                 request_headers = headers.copy()
@@ -177,7 +213,7 @@ class Downloader:
                 if resume_offset > 0:
                     logger.debug(f"Requesting range from byte {resume_offset}")
                 
-                async with session.get(url, headers=request_headers, allow_redirects=True) as response:
+                async with session.get(url, headers=request_headers, allow_redirects=True, proxy=self.proxy_url) as response:
                     # Handle different response codes
                     if response.status == 200:
                         # Full content response
@@ -202,7 +238,7 @@ class Downloader:
                             part_size = os.path.getsize(part_path)
                             logger.warning(f"Range not satisfiable. Part file size: {part_size}")
                             # Try to get actual file size
-                            head_response = await session.head(url, headers=headers)
+                            head_response = await session.head(url, headers=headers, proxy=self.proxy_url)
                             if head_response.status == 200:
                                 actual_size = int(head_response.headers.get('content-length', 0))
                                 if part_size == actual_size:
@@ -330,8 +366,9 @@ class Downloader:
         self,
         url: str,
         use_auth: bool = False,
-        custom_headers: Optional[Dict[str, str]] = None
-    ) -> Tuple[bool, Union[bytes, str]]:
+        custom_headers: Optional[Dict[str, str]] = None,
+        return_headers: bool = False
+    ) -> Tuple[bool, Union[bytes, str], Optional[Dict]]:
         """
         Download a file to memory (for small files like preview images)
         
@@ -339,34 +376,47 @@ class Downloader:
             url: Download URL
             use_auth: Whether to include authentication headers
             custom_headers: Additional headers to include in request
+            return_headers: Whether to return response headers along with content
             
         Returns:
-            Tuple[bool, Union[bytes, str]]: (success, content or error message)
+            Tuple[bool, Union[bytes, str], Optional[Dict]]: (success, content or error message, response headers if requested)
         """
         try:
             session = await self.session
+            # Debug log for proxy mode at request time
+            if self.proxy_url:
+                logger.debug(f"[download_to_memory] Using app-level proxy: {self.proxy_url}")
+            else:
+                logger.debug("[download_to_memory] Using system-level proxy (trust_env) if configured.")
             
             # Prepare headers
             headers = self._get_auth_headers(use_auth)
             if custom_headers:
                 headers.update(custom_headers)
             
-            async with session.get(url, headers=headers) as response:
+            async with session.get(url, headers=headers, proxy=self.proxy_url) as response:
                 if response.status == 200:
                     content = await response.read()
-                    return True, content
+                    if return_headers:
+                        return True, content, dict(response.headers)
+                    else:
+                        return True, content, None
                 elif response.status == 401:
-                    return False, "Unauthorized access - invalid or missing API key"
+                    error_msg = "Unauthorized access - invalid or missing API key"
+                    return False, error_msg, None
                 elif response.status == 403:
-                    return False, "Access forbidden"
+                    error_msg = "Access forbidden"
+                    return False, error_msg, None
                 elif response.status == 404:
-                    return False, "File not found"
+                    error_msg = "File not found"
+                    return False, error_msg, None
                 else:
-                    return False, f"Download failed with status {response.status}"
+                    error_msg = f"Download failed with status {response.status}"
+                    return False, error_msg, None
                     
         except Exception as e:
             logger.error(f"Error downloading to memory from {url}: {e}")
-            return False, str(e)
+            return False, str(e), None
     
     async def get_response_headers(
         self,
@@ -387,13 +437,18 @@ class Downloader:
         """
         try:
             session = await self.session
+            # Debug log for proxy mode at request time
+            if self.proxy_url:
+                logger.debug(f"[get_response_headers] Using app-level proxy: {self.proxy_url}")
+            else:
+                logger.debug("[get_response_headers] Using system-level proxy (trust_env) if configured.")
             
             # Prepare headers
             headers = self._get_auth_headers(use_auth)
             if custom_headers:
                 headers.update(custom_headers)
             
-            async with session.head(url, headers=headers) as response:
+            async with session.head(url, headers=headers, proxy=self.proxy_url) as response:
                 if response.status == 200:
                     return True, dict(response.headers)
                 else:
@@ -426,11 +481,20 @@ class Downloader:
         """
         try:
             session = await self.session
+            # Debug log for proxy mode at request time
+            if self.proxy_url:
+                logger.debug(f"[make_request] Using app-level proxy: {self.proxy_url}")
+            else:
+                logger.debug("[make_request] Using system-level proxy (trust_env) if configured.")
             
             # Prepare headers
             headers = self._get_auth_headers(use_auth)
             if custom_headers:
                 headers.update(custom_headers)
+            
+            # Add proxy to kwargs if not already present
+            if 'proxy' not in kwargs:
+                kwargs['proxy'] = self.proxy_url
             
             async with session.request(method, url, headers=headers, **kwargs) as response:
                 if response.status == 200:
@@ -460,7 +524,13 @@ class Downloader:
             await self._session.close()
             self._session = None
             self._session_created_at = None
+            self._proxy_url = None
             logger.debug("Closed HTTP session")
+    
+    async def refresh_session(self):
+        """Force refresh the HTTP session (useful when proxy settings change)"""
+        await self._create_session()
+        logger.info("HTTP session refreshed due to settings change")
 
 
 # Global instance accessor

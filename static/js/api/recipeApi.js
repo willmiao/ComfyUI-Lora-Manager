@@ -21,7 +21,7 @@ export async function fetchRecipesPage(page = 1, pageSize = 100) {
         // If we have a specific recipe ID to load
         if (pageState.customFilter?.active && pageState.customFilter?.recipeId) {
             // Special case: load specific recipe
-            const response = await fetch(`/api/recipe/${pageState.customFilter.recipeId}`);
+            const response = await fetch(`/api/lm/recipe/${pageState.customFilter.recipeId}`);
             
             if (!response.ok) {
                 throw new Error(`Failed to load recipe: ${response.statusText}`);
@@ -72,7 +72,7 @@ export async function fetchRecipesPage(page = 1, pageSize = 100) {
         }
 
         // Fetch recipes
-        const response = await fetch(`/api/recipes?${params.toString()}`);
+        const response = await fetch(`/api/lm/recipes?${params.toString()}`);
         
         if (!response.ok) {
             throw new Error(`Failed to load recipes: ${response.statusText}`);
@@ -207,7 +207,7 @@ export async function refreshRecipes() {
         state.loadingManager.showSimpleLoading('Refreshing recipes...');
         
         // Call the API endpoint to rebuild the recipe cache
-        const response = await fetch('/api/recipes/scan');
+        const response = await fetch('/api/lm/recipes/scan');
         
         if (!response.ok) {
             const data = await response.json();
@@ -274,7 +274,7 @@ export async function updateRecipeMetadata(filePath, updates) {
         const basename = filePath.split('/').pop().split('\\').pop();
         const recipeId = basename.substring(0, basename.lastIndexOf('.'));
         
-        const response = await fetch(`/api/recipe/${recipeId}/update`, {
+        const response = await fetch(`/api/lm/recipe/${recipeId}/update`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

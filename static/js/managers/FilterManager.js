@@ -66,7 +66,7 @@ export class FilterManager {
             tagsContainer.innerHTML = '<div class="tags-loading">Loading tags...</div>';
             
             // Determine the API endpoint based on the page type
-            const tagsEndpoint = `/api/${this.currentPage}/top-tags?limit=20`;
+            const tagsEndpoint = `/api/lm/${this.currentPage}/top-tags?limit=20`;
 
             const response = await fetch(tagsEndpoint);
             if (!response.ok) throw new Error('Failed to fetch tags');
@@ -134,7 +134,7 @@ export class FilterManager {
         if (!baseModelTagsContainer) return;
         
         // Set the API endpoint based on current page
-        const apiEndpoint = `/api/${this.currentPage}/base-models`;
+        const apiEndpoint = `/api/lm/${this.currentPage}/base-models`;
         
         // Fetch base models
         fetch(apiEndpoint)

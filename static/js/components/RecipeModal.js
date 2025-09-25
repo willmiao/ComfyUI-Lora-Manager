@@ -784,7 +784,7 @@ class RecipeModal {
         
         try {
             // Fetch recipe syntax from backend
-            const response = await fetch(`/api/recipe/${this.recipeId}/syntax`);
+            const response = await fetch(`/api/lm/recipe/${this.recipeId}/syntax`);
             
             if (!response.ok) {
                 throw new Error(`Failed to get recipe syntax: ${response.statusText}`);
@@ -830,9 +830,9 @@ class RecipeModal {
                 
                 // Determine which endpoint to use based on available data
                 if (lora.modelVersionId) {
-                    endpoint = `/api/loras/civitai/model/version/${lora.modelVersionId}`;
+                    endpoint = `/api/lm/loras/civitai/model/version/${lora.modelVersionId}`;
                 } else if (lora.hash) {
-                    endpoint = `/api/loras/civitai/model/hash/${lora.hash}`;
+                    endpoint = `/api/lm/loras/civitai/model/hash/${lora.hash}`;
                 } else {
                     console.error("Missing both hash and modelVersionId for lora:", lora);
                     return null;
@@ -1003,7 +1003,7 @@ class RecipeModal {
             state.loadingManager.showSimpleLoading('Reconnecting LoRA...');
             
             // Call API to reconnect the LoRA
-            const response = await fetch('/api/recipe/lora/reconnect', {
+            const response = await fetch('/api/lm/recipe/lora/reconnect', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

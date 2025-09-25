@@ -1,9 +1,7 @@
 import os
-import importlib
-import sys
 
 # Check if running in standalone mode
-standalone_mode = 'nodes' not in sys.modules
+standalone_mode = os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
 
 if not standalone_mode:
     from .metadata_hook import MetadataHook

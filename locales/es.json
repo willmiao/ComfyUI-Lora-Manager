@@ -123,6 +123,20 @@
             "noRemoteImagesAvailable": "No hay imágenes de ejemplo remotas disponibles para este modelo en Civitai"
         }
     },
+    "globalContextMenu": {
+        "downloadExampleImages": {
+            "label": "Descargar imágenes de ejemplo",
+            "missingPath": "Establece una ubicación de descarga antes de descargar imágenes de ejemplo.",
+            "unavailable": "Las descargas de imágenes de ejemplo aún no están disponibles. Intenta de nuevo después de que la página termine de cargar."
+        },
+        "cleanupExampleImages": {
+            "label": "Limpiar carpetas de imágenes de ejemplo",
+            "success": "Se movieron {count} carpeta(s) a la carpeta de eliminados",
+            "none": "No hay carpetas de imágenes de ejemplo que necesiten limpieza",
+            "partial": "Limpieza completada con {failures} carpeta(s) omitidas",
+            "error": "No se pudieron limpiar las carpetas de imágenes de ejemplo: {message}"
+        }
+    },
     "header": {
         "appTitle": "LoRA Manager",
         "navigation": {
@@ -182,7 +196,8 @@
             "downloadPathTemplates": "Plantillas de rutas de descarga",
             "exampleImages": "Imágenes de ejemplo",
             "misc": "Varios",
-            "metadataArchive": "Base de datos de archivo de metadatos"
+            "metadataArchive": "Base de datos de archivo de metadatos",
+            "proxySettings": "Configuración de proxy"
         },
         "contentFiltering": {
             "blurNsfwContent": "Difuminar contenido NSFW",
@@ -240,6 +255,7 @@
                 "baseModelFirstTag": "Modelo base + primera etiqueta",
                 "baseModelAuthor": "Modelo base + autor",
                 "authorFirstTag": "Autor + primera etiqueta",
+                "baseModelAuthorFirstTag": "Modelo base + autor + primera etiqueta",
                 "customTemplate": "Plantilla personalizada"
             },
             "customTemplatePlaceholder": "Introduce plantilla personalizada (ej., {base_model}/{author}/{first_tag})",
@@ -301,6 +317,24 @@
             "connecting": "Conectando al servidor de descarga...",
             "completed": "Completado",
             "downloadComplete": "Descarga completada exitosamente"
+        },
+        "proxySettings": {
+            "enableProxy": "Habilitar proxy a nivel de aplicación",
+            "enableProxyHelp": "Habilita la configuración de proxy personalizada para esta aplicación, sobrescribiendo la configuración de proxy del sistema",
+            "proxyType": "Tipo de proxy",
+            "proxyTypeHelp": "Selecciona el tipo de servidor proxy (HTTP, HTTPS, SOCKS4, SOCKS5)",
+            "proxyHost": "Host del proxy",
+            "proxyHostPlaceholder": "proxy.ejemplo.com",
+            "proxyHostHelp": "El nombre de host o dirección IP de tu servidor proxy",
+            "proxyPort": "Puerto del proxy",
+            "proxyPortPlaceholder": "8080",
+            "proxyPortHelp": "El número de puerto de tu servidor proxy",
+            "proxyUsername": "Usuario (opcional)",
+            "proxyUsernamePlaceholder": "usuario",
+            "proxyUsernameHelp": "Usuario para autenticación de proxy (si es necesario)",
+            "proxyPassword": "Contraseña (opcional)",
+            "proxyPasswordPlaceholder": "contraseña",
+            "proxyPasswordHelp": "Contraseña para autenticación de proxy (si es necesario)"
         }
     },
     "loras": {
@@ -708,6 +742,7 @@
                 "strengthMin": "Fuerza mínima",
                 "strengthMax": "Fuerza máxima",
                 "strength": "Fuerza",
+                "clipStrength": "Fuerza de Clip",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Valor",
                 "add": "Añadir"
@@ -1148,6 +1183,7 @@
         },
         "exampleImages": {
             "pathUpdated": "Ruta de imágenes de ejemplo actualizada exitosamente",
+            "pathUpdateFailed": "Error al actualizar la ruta de imágenes de ejemplo: {message}",
             "downloadInProgress": "Descarga ya en progreso",
             "enterLocationFirst": "Por favor introduce primero una ubicación de descarga",
             "downloadStarted": "Descarga de imágenes de ejemplo iniciada",

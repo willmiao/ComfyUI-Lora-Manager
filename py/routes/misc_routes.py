@@ -4,6 +4,7 @@ import sys
 import threading
 import asyncio
 import subprocess
+import re
 from server import PromptServer # type: ignore
 from aiohttp import web
 from ..services.settings_manager import settings
@@ -12,11 +13,12 @@ from ..utils.lora_metadata import extract_trained_words
 from ..config import config
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS, NODE_TYPES, DEFAULT_NODE_COLOR
 from ..services.service_registry import ServiceRegistry
-from ..services.metadata_service import get_metadata_archive_manager, update_metadata_providers
+from ..services.metadata_service import get_metadata_archive_manager, update_metadata_providers, get_metadata_provider
 from ..services.websocket_manager import ws_manager
+from ..services.downloader import get_downloader
 logger = logging.getLogger(__name__)
 
-standalone_mode = 'nodes' not in sys.modules
+standalone_mode = os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
 
 # Node registry for tracking active workflow nodes
 class NodeRegistry:
@@ -85,51 +87,156 @@ class MiscRoutes:
     """Miscellaneous routes for various utility functions"""
     
     @staticmethod
+    def is_dedicated_example_images_folder(folder_path):
+        """
+        Check if a folder is a dedicated example images folder.
+        
+        A dedicated folder should either be:
+        1. Empty
+        2. Only contain .download_progress.json file and/or folders with valid SHA256 hash names (64 hex characters)
+        
+        Args:
+            folder_path (str): Path to the folder to check
+            
+        Returns:
+            bool: True if the folder is dedicated, False otherwise
+        """
+        try:
+            if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
+                return False
+            
+            items = os.listdir(folder_path)
+            
+            # Empty folder is considered dedicated
+            if not items:
+                return True
+            
+            # Check each item in the folder
+            for item in items:
+                item_path = os.path.join(folder_path, item)
+                
+                # Allow .download_progress.json file
+                if item == '.download_progress.json' and os.path.isfile(item_path):
+                    continue
+                
+                # Allow folders with valid SHA256 hash names (64 hex characters)
+                if os.path.isdir(item_path):
+                    # Check if the folder name is a valid SHA256 hash
+                    if re.match(r'^[a-fA-F0-9]{64}$', item):
+                        continue
+                
+                # If we encounter anything else, it's not a dedicated folder
+                return False
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error checking if folder is dedicated: {e}")
+            return False
+    
+    @staticmethod
     def setup_routes(app):
         """Register miscellaneous routes"""
-        app.router.add_post('/api/settings', MiscRoutes.update_settings)
+        app.router.add_get('/api/lm/settings', MiscRoutes.get_settings)
+        app.router.add_post('/api/lm/settings', MiscRoutes.update_settings)
 
-        app.router.add_get('/api/health-check', lambda request: web.json_response({'status': 'ok'}))
+        app.router.add_get('/api/lm/health-check', lambda request: web.json_response({'status': 'ok'}))
 
-        app.router.add_post('/api/open-file-location', MiscRoutes.open_file_location)
+        app.router.add_post('/api/lm/open-file-location', MiscRoutes.open_file_location)
 
         # Usage stats routes
-        app.router.add_post('/api/update-usage-stats', MiscRoutes.update_usage_stats)
-        app.router.add_get('/api/get-usage-stats', MiscRoutes.get_usage_stats)
+        app.router.add_post('/api/lm/update-usage-stats', MiscRoutes.update_usage_stats)
+        app.router.add_get('/api/lm/get-usage-stats', MiscRoutes.get_usage_stats)
         
         # Lora code update endpoint
-        app.router.add_post('/api/update-lora-code', MiscRoutes.update_lora_code)
+        app.router.add_post('/api/lm/update-lora-code', MiscRoutes.update_lora_code)
 
         # Add new route for getting trained words
-        app.router.add_get('/api/trained-words', MiscRoutes.get_trained_words)
+        app.router.add_get('/api/lm/trained-words', MiscRoutes.get_trained_words)
         
         # Add new route for getting model example files
-        app.router.add_get('/api/model-example-files', MiscRoutes.get_model_example_files)
+        app.router.add_get('/api/lm/model-example-files', MiscRoutes.get_model_example_files)
         
         # Node registry endpoints
-        app.router.add_post('/api/register-nodes', MiscRoutes.register_nodes)
-        app.router.add_get('/api/get-registry', MiscRoutes.get_registry)
+        app.router.add_post('/api/lm/register-nodes', MiscRoutes.register_nodes)
+        app.router.add_get('/api/lm/get-registry', MiscRoutes.get_registry)
         
         # Add new route for checking if a model exists in the library
-        app.router.add_get('/api/check-model-exists', MiscRoutes.check_model_exists)
+        app.router.add_get('/api/lm/check-model-exists', MiscRoutes.check_model_exists)
         
         # Add routes for metadata archive database management
-        app.router.add_post('/api/download-metadata-archive', MiscRoutes.download_metadata_archive)
-        app.router.add_post('/api/remove-metadata-archive', MiscRoutes.remove_metadata_archive)
-        app.router.add_get('/api/metadata-archive-status', MiscRoutes.get_metadata_archive_status)
+        app.router.add_post('/api/lm/download-metadata-archive', MiscRoutes.download_metadata_archive)
+        app.router.add_post('/api/lm/remove-metadata-archive', MiscRoutes.remove_metadata_archive)
+        app.router.add_get('/api/lm/metadata-archive-status', MiscRoutes.get_metadata_archive_status)
+        
+        # Add route for checking model versions in library
+        app.router.add_get('/api/lm/model-versions-status', MiscRoutes.get_model_versions_status)
+
+    @staticmethod
+    async def get_settings(request):
+        """Get application settings that should be synced to frontend"""
+        try:
+            # Define keys that should be synced from backend to frontend
+            sync_keys = [
+                'civitai_api_key',
+                'default_lora_root',
+                'default_checkpoint_root',
+                'default_embedding_root',
+                'base_model_path_mappings',
+                'download_path_templates',
+                'enable_metadata_archive_db',
+                'language',
+                'proxy_enabled',
+                'proxy_type',
+                'proxy_host',
+                'proxy_port',
+                'proxy_username',
+                'proxy_password',
+                'example_images_path',
+                'optimize_example_images',
+                'auto_download_example_images',
+                'blur_mature_content',
+                'autoplay_on_hover',
+                'display_density',
+                'card_info_display',
+                'include_trigger_words',
+                'show_only_sfw',
+                'compact_mode'
+            ]
+            
+            # Build response with only the keys that should be synced
+            response_data = {}
+            for key in sync_keys:
+                value = settings.get(key)
+                if value is not None:
+                    response_data[key] = value
+            
+            return web.json_response({
+                'success': True,
+                'settings': response_data
+            })
+            
+        except Exception as e:
+            logger.error(f"Error getting settings: {e}", exc_info=True)
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
 
     @staticmethod
     async def update_settings(request):
         """Update application settings"""
         try:
             data = await request.json()
+            proxy_keys = {'proxy_enabled', 'proxy_host', 'proxy_port', 'proxy_username', 'proxy_password', 'proxy_type'}
+            proxy_changed = False
             
             # Validate and update settings
             for key, value in data.items():
                 if value == settings.get(key):
                     # No change, skip
                     continue
-                # Special handling for example_images_path - verify path exists
+                # Special handling for example_images_path - verify path exists and is dedicated
                 if key == 'example_images_path' and value:
                     if not os.path.exists(value):
                         return web.json_response({
@@ -137,16 +244,34 @@ class MiscRoutes:
                             'error': f"Path does not exist: {value}"
                         })
                     
+                    # Check if folder is dedicated for example images
+                    if not MiscRoutes.is_dedicated_example_images_folder(value):
+                        return web.json_response({
+                            'success': False,
+                            'error': "Please set a dedicated folder for example images."
+                        })
+                    
                     # Path changed - server restart required for new path to take effect
                     old_path = settings.get('example_images_path')
                     if old_path != value:
                         logger.info(f"Example images path changed to {value} - server restart required")
 
-                # Save to settings
-                settings.set(key, value)
+                # Handle deletion for proxy credentials
+                if value == '__DELETE__' and key in ('proxy_username', 'proxy_password'):
+                    settings.delete(key)
+                else:
+                    # Save to settings
+                    settings.set(key, value)
             
                 if key == 'enable_metadata_archive_db':
                     await update_metadata_providers()
+                
+                if key in proxy_keys:
+                    proxy_changed = True
+
+            if proxy_changed:
+                downloader = await get_downloader()
+                await downloader.refresh_session()
 
             return web.json_response({'success': True})
         except Exception as e:
@@ -769,6 +894,113 @@ class MiscRoutes:
             
         except Exception as e:
             logger.error(f"Error getting metadata archive status: {e}", exc_info=True)
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    @staticmethod
+    async def get_model_versions_status(request):
+        """
+        Get all versions of a model from metadata provider and check their library status
+        
+        Expects query parameters:
+        - modelId: int - Civitai model ID (required)
+        
+        Returns:
+        - JSON with model type and versions list, each version includes 'inLibrary' flag
+        """
+        try:
+            # Get the modelId from query parameters
+            model_id_str = request.query.get('modelId')
+            
+            # Validate modelId parameter (required)
+            if not model_id_str:
+                return web.json_response({
+                    'success': False,
+                    'error': 'Missing required parameter: modelId'
+                }, status=400)
+                
+            try:
+                # Convert modelId to integer
+                model_id = int(model_id_str)
+            except ValueError:
+                return web.json_response({
+                    'success': False,
+                    'error': 'Parameter modelId must be an integer'
+                }, status=400)
+            
+            # Get metadata provider
+            metadata_provider = await get_metadata_provider()
+            if not metadata_provider:
+                return web.json_response({
+                    'success': False,
+                    'error': 'Metadata provider not available'
+                }, status=503)
+            
+            # Get model versions from metadata provider
+            response = await metadata_provider.get_model_versions(model_id)
+            if not response or not response.get('modelVersions'):
+                return web.json_response({
+                    'success': False,
+                    'error': 'Model not found'
+                }, status=404)
+            
+            versions = response.get('modelVersions', [])
+            model_name = response.get('name', '')
+            model_type = response.get('type', '').lower()
+            
+            # Determine scanner based on model type
+            scanner = None
+            normalized_type = None
+            
+            if model_type in ['lora', 'locon', 'dora']:
+                scanner = await ServiceRegistry.get_lora_scanner()
+                normalized_type = 'lora'
+            elif model_type == 'checkpoint':
+                scanner = await ServiceRegistry.get_checkpoint_scanner()
+                normalized_type = 'checkpoint'
+            elif model_type == 'textualinversion':
+                scanner = await ServiceRegistry.get_embedding_scanner()
+                normalized_type = 'embedding'
+            else:
+                return web.json_response({
+                    'success': False,
+                    'error': f'Model type "{model_type}" is not supported'
+                }, status=400)
+            
+            if not scanner:
+                return web.json_response({
+                    'success': False,
+                    'error': f'Scanner for type "{normalized_type}" is not available'
+                }, status=503)
+            
+            # Get local versions from scanner
+            local_versions = await scanner.get_model_versions_by_id(model_id)
+            local_version_ids = set(version['versionId'] for version in local_versions)
+            
+            # Add inLibrary flag to each version
+            enriched_versions = []
+            for version in versions:
+                version_id = version.get('id')
+                enriched_version = {
+                    'id': version_id,
+                    'name': version.get('name', ''),
+                    'thumbnailUrl': version.get('images')[0]['url'] if version.get('images') else None,
+                    'inLibrary': version_id in local_version_ids
+                }
+                enriched_versions.append(enriched_version)
+            
+            return web.json_response({
+                'success': True,
+                'modelId': model_id,
+                'modelName': model_name,
+                'modelType': model_type,
+                'versions': enriched_versions
+            })
+            
+        except Exception as e:
+            logger.error(f"Failed to get model versions status: {e}", exc_info=True)
             return web.json_response({
                 'success': False,
                 'error': str(e)

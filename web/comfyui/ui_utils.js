@@ -107,7 +107,7 @@ const initializeWidgets = () => {
 // Fetch version info from the API
 const fetchVersionInfo = async () => {
     try {
-        const response = await fetch('/api/version-info');
+        const response = await fetch('/api/lm/version-info');
         const data = await response.json();
         
         if (data.success) {

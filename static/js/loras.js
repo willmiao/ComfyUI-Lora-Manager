@@ -6,7 +6,7 @@ import { confirmDelete, closeDeleteModal, confirmExclude, closeExcludeModal } fr
 import { ModelDuplicatesManager } from './components/ModelDuplicatesManager.js';
 
 // Initialize the LoRA page
-class LoraPageManager {
+export class LoraPageManager {
     constructor() {
         // Add bulk mode to state
         state.bulkMode = false;
@@ -38,18 +38,22 @@ class LoraPageManager {
     async initialize() {
         // Initialize cards for current bulk mode state (should be false initially)
         updateCardsForBulkMode(state.bulkMode);
-        
+
         // Initialize common page features (including context menus and virtual scroll)
         appCore.initializePageFeatures();
     }
 }
 
-// Initialize everything when DOM is ready
-document.addEventListener('DOMContentLoaded', async () => {
+export async function initializeLoraPage() {
     // Initialize core application
     await appCore.initialize();
-    
+
     // Initialize page-specific functionality
     const loraPage = new LoraPageManager();
     await loraPage.initialize();
-});
+
+    return loraPage;
+}
+
+// Initialize everything when DOM is ready
+document.addEventListener('DOMContentLoaded', initializeLoraPage);

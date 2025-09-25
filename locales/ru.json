@@ -123,6 +123,20 @@
             "noRemoteImagesAvailable": "Нет удаленных примеров изображений для этой модели на Civitai"
         }
     },
+    "globalContextMenu": {
+        "downloadExampleImages": {
+            "label": "Загрузить примеры изображений",
+            "missingPath": "Укажите место загрузки перед загрузкой примеров изображений.",
+            "unavailable": "Загрузка примеров изображений пока недоступна. Попробуйте снова после полной загрузки страницы."
+        },
+        "cleanupExampleImages": {
+            "label": "Очистить папки с примерами изображений",
+            "success": "Перемещено {count} папок в папку удалённых",
+            "none": "Нет папок с примерами изображений, требующих очистки",
+            "partial": "Очистка завершена, пропущено {failures} папок",
+            "error": "Не удалось очистить папки с примерами изображений: {message}"
+        }
+    },
     "header": {
         "appTitle": "LoRA Manager",
         "navigation": {
@@ -182,7 +196,8 @@
             "downloadPathTemplates": "Шаблоны путей загрузки",
             "exampleImages": "Примеры изображений",
             "misc": "Разное",
-            "metadataArchive": "Архив метаданных"
+            "metadataArchive": "Архив метаданных",
+            "proxySettings": "Настройки прокси"
         },
         "contentFiltering": {
             "blurNsfwContent": "Размывать NSFW контент",
@@ -240,6 +255,7 @@
                 "baseModelFirstTag": "Базовая модель + Первый тег",
                 "baseModelAuthor": "Базовая модель + Автор",
                 "authorFirstTag": "Автор + Первый тег",
+                "baseModelAuthorFirstTag": "Базовая модель + Автор + Первый тег",
                 "customTemplate": "Пользовательский шаблон"
             },
             "customTemplatePlaceholder": "Введите пользовательский шаблон (например, {base_model}/{author}/{first_tag})",
@@ -301,6 +317,24 @@
             "connecting": "Подключение к серверу загрузки...",
             "completed": "Завершено",
             "downloadComplete": "Загрузка успешно завершена"
+        },
+        "proxySettings": {
+            "enableProxy": "Включить прокси на уровне приложения",
+            "enableProxyHelp": "Включить пользовательские настройки прокси для этого приложения, переопределяя системные настройки прокси",
+            "proxyType": "Тип прокси",
+            "proxyTypeHelp": "Выберите тип прокси-сервера (HTTP, HTTPS, SOCKS4, SOCKS5)",
+            "proxyHost": "Хост прокси",
+            "proxyHostPlaceholder": "proxy.example.com",
+            "proxyHostHelp": "Имя хоста или IP-адрес вашего прокси-сервера",
+            "proxyPort": "Порт прокси",
+            "proxyPortPlaceholder": "8080",
+            "proxyPortHelp": "Номер порта вашего прокси-сервера",
+            "proxyUsername": "Имя пользователя (необязательно)",
+            "proxyUsernamePlaceholder": "имя пользователя",
+            "proxyUsernameHelp": "Имя пользователя для аутентификации на прокси (если требуется)",
+            "proxyPassword": "Пароль (необязательно)",
+            "proxyPasswordPlaceholder": "пароль",
+            "proxyPasswordHelp": "Пароль для аутентификации на прокси (если требуется)"
         }
     },
     "loras": {
@@ -708,6 +742,7 @@
                 "strengthMin": "Мин. сила",
                 "strengthMax": "Макс. сила",
                 "strength": "Сила",
+                "clipStrength": "Сила клипа",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Значение",
                 "add": "Добавить"
@@ -1148,6 +1183,7 @@
         },
         "exampleImages": {
             "pathUpdated": "Путь к примерам изображений успешно обновлен",
+            "pathUpdateFailed": "Не удалось обновить путь к примерам изображений: {message}",
             "downloadInProgress": "Загрузка уже в процессе",
             "enterLocationFirst": "Пожалуйста, сначала введите место загрузки",
             "downloadStarted": "Загрузка примеров изображений начата",

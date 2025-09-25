@@ -1,0 +1,50 @@
+name: Frontend Tests
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vitest.config.js'
+      - 'tests/frontend/**'
+      - 'static/js/**'
+      - '.github/workflows/frontend-tests.yml'
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vitest.config.js'
+      - 'tests/frontend/**'
+      - 'static/js/**'
+      - '.github/workflows/frontend-tests.yml'
+
+jobs:
+  vitest:
+    name: Run Vitest with coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run frontend tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: coverage/frontend
+          if-no-files-found: warn

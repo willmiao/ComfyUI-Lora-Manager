@@ -538,13 +538,13 @@ export class BaseModelApiClient {
                 completionMessage = translate('toast.api.bulkMetadataCompletePartial', { success: successCount, total: totalItems, type: this.apiConfig.config.displayName }, `Refreshed ${successCount} of ${totalItems} ${this.apiConfig.config.displayName}s`);
                 showToast('toast.api.bulkMetadataCompletePartial', { success: successCount, total: totalItems, type: this.apiConfig.config.displayName }, 'warning');
                 
-                if (failedItems.length > 0) {
-                    const failureMessage = failedItems.length <= 3 
-                        ? failedItems.map(item => `${item.fileName}: ${item.error}`).join('\n')
-                        : failedItems.slice(0, 3).map(item => `${item.fileName}: ${item.error}`).join('\n') + 
-                          `\n(and ${failedItems.length - 3} more)`;
-                    showToast('toast.api.bulkMetadataFailureDetails', { failures: failureMessage }, 'warning', 6000);
-                }
+                // if (failedItems.length > 0) {
+                //     const failureMessage = failedItems.length <= 3 
+                //         ? failedItems.map(item => `${item.fileName}: ${item.error}`).join('\n')
+                //         : failedItems.slice(0, 3).map(item => `${item.fileName}: ${item.error}`).join('\n') + 
+                //           `\n(and ${failedItems.length - 3} more)`;
+                //     showToast('toast.api.bulkMetadataFailureDetails', { failures: failureMessage }, 'warning', 6000);
+                // }
             } else {
                 completionMessage = translate('toast.api.bulkMetadataCompleteNone', { type: this.apiConfig.config.displayName }, `Failed to refresh metadata for any ${this.apiConfig.config.displayName}s`);
                 showToast('toast.api.bulkMetadataCompleteNone', { type: this.apiConfig.config.displayName }, 'error');
@@ -938,14 +938,14 @@ export class BaseModelApiClient {
                     ws.onerror = reject;
                 });
                 
-                // Get the output directory from storage
-                const outputDir = getStorageItem('example_images_path', '');
+                // Get the output directory from state
+                const outputDir = state.global?.settings?.example_images_path || '';
                 if (!outputDir) {
                     throw new Error('Please set the example images path in the settings first.');
                 }
                 
                 // Determine optimize setting
-                const optimize = state.global?.settings?.optimizeExampleImages ?? true;
+                const optimize = state.global?.settings?.optimize_example_images ?? true;
                 
                 // Make the API request to start the download process
                 const response = await fetch(DOWNLOAD_ENDPOINTS.exampleImages, {

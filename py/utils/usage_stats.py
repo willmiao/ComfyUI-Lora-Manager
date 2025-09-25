@@ -1,6 +1,5 @@
 import os
 import json
-import sys
 import time
 import asyncio
 import logging
@@ -12,7 +11,7 @@ from ..config import config
 from ..services.service_registry import ServiceRegistry
 
 # Check if running in standalone mode
-standalone_mode = 'nodes' not in sys.modules
+standalone_mode = os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
 
 if not standalone_mode:
     from ..metadata_collector.metadata_registry import MetadataRegistry
@@ -62,7 +61,7 @@ class UsageStats:
         self._bg_task = asyncio.create_task(self._background_processor())
         
         self._initialized = True
-        logger.info("Usage statistics tracker initialized")
+        logger.debug("Usage statistics tracker initialized")
     
     def _get_stats_file_path(self) -> str:
         """Get the path to the stats JSON file"""
@@ -164,7 +163,7 @@ class UsageStats:
                         if "last_save_time" in loaded_stats:
                             self.stats["last_save_time"] = loaded_stats["last_save_time"]
                 
-                logger.info(f"Loaded usage statistics from {self._stats_file_path}")
+                logger.debug(f"Loaded usage statistics from {self._stats_file_path}")
         except Exception as e:
             logger.error(f"Error loading usage statistics: {e}")
     

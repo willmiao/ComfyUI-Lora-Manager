@@ -1,4 +1,4 @@
-import { showToast, openCivitai, copyToClipboard, copyLoraSyntax, sendLoraToWorkflow, openExampleImagesFolder } from '../../utils/uiHelpers.js';
+import { showToast, openCivitai, copyToClipboard, copyLoraSyntax, sendLoraToWorkflow, openExampleImagesFolder, buildLoraSyntax } from '../../utils/uiHelpers.js';
 import { state, getCurrentPageState } from '../../state/index.js';
 import { showModelModal } from './ModelModal.js';
 import { toggleShowcase } from './showcase/ShowcaseView.js';
@@ -155,8 +155,7 @@ async function toggleFavorite(card) {
 function handleSendToWorkflow(card, replaceMode, modelType) {
     if (modelType === MODEL_TYPES.LORA) {
         const usageTips = JSON.parse(card.dataset.usage_tips || '{}');
-        const strength = usageTips.strength || 1;
-        const loraSyntax = `<lora:${card.dataset.file_name}:${strength}>`;
+        const loraSyntax = buildLoraSyntax(card.dataset.file_name, usageTips);
         sendLoraToWorkflow(loraSyntax, replaceMode, 'lora');
     } else {
         // Checkpoint send functionality - to be implemented
@@ -186,7 +185,7 @@ async function handleExampleImagesAccess(card, modelType) {
     const modelHash = card.dataset.sha256;
     
     try {
-        const response = await fetch(`/api/has-example-images?model_hash=${modelHash}`);
+        const response = await fetch(`/api/lm/has-example-images?model_hash=${modelHash}`);
         const data = await response.json();
         
         if (data.has_images) {
@@ -216,13 +215,6 @@ function handleCardClick(card, modelType) {
 }
 
 async function showModelModalFromCard(card, modelType) {
-    // Get the appropriate preview versions map
-    const previewVersionsKey = modelType;
-    const previewVersions = state.pages[previewVersionsKey]?.previewVersions || new Map();
-    const version = previewVersions.get(card.dataset.filepath);
-    const previewUrl = card.dataset.preview_url || '/loras_static/images/no-preview.png';
-    const versionedPreviewUrl = version ? `${previewUrl}?t=${version}` : previewUrl;
-    
     // Create model metadata object
     const modelMeta = {
         sha256: card.dataset.sha256,
@@ -235,7 +227,6 @@ async function showModelModalFromCard(card, modelType) {
         from_civitai: card.dataset.from_civitai === 'true',
         base_model: card.dataset.base_model,
         notes: card.dataset.notes || '',
-        preview_url: versionedPreviewUrl,
         favorite: card.dataset.favorite === 'true',
         // Parse civitai metadata from the card's dataset
         civitai: JSON.parse(card.dataset.meta || '{}'),
@@ -414,7 +405,7 @@ export function createModelCard(model, modelType) {
     card.dataset.nsfwLevel = nsfwLevel;
     
     // Determine if the preview should be blurred based on NSFW level and user settings
-    const shouldBlur = state.settings.blurMatureContent && nsfwLevel > NSFW_LEVELS.PG13;
+    const shouldBlur = state.settings.blur_mature_content && nsfwLevel > NSFW_LEVELS.PG13;
     if (shouldBlur) {
         card.classList.add('nsfw-content');
     }
@@ -442,9 +433,20 @@ export function createModelCard(model, modelType) {
     }
 
     // Check if autoplayOnHover is enabled for video previews
-    const autoplayOnHover = state.global?.settings?.autoplayOnHover || false;
+    const autoplayOnHover = state.global?.settings?.autoplay_on_hover || false;
     const isVideo = previewUrl.endsWith('.mp4');
-    const videoAttrs = autoplayOnHover ? 'controls muted loop' : 'controls autoplay muted loop';
+    const videoAttrs = [
+        'controls',
+        'muted',
+        'loop',
+        'playsinline',
+        'preload="none"',
+        `data-src="${versionedPreviewUrl}"`
+    ];
+
+    if (!autoplayOnHover) {
+        videoAttrs.push('data-autoplay="true"');
+    }
 
     // Get favorite status from model data
     const isFavorite = model.favorite === true;
@@ -482,9 +484,7 @@ export function createModelCard(model, modelType) {
     card.innerHTML = `
         <div class="card-preview ${shouldBlur ? 'blurred' : ''}">
             ${isVideo ? 
-                `<video ${videoAttrs} style="pointer-events: none;">
-                    <source src="${versionedPreviewUrl}" type="video/mp4">
-                </video>` :
+                `<video ${videoAttrs.join(' ')} style="pointer-events: none;"></video>` :
                 `<img src="${versionedPreviewUrl}" alt="${model.model_name}">`
             }
             <div class="card-header">
@@ -523,19 +523,153 @@ export function createModelCard(model, modelType) {
     
     // Add video auto-play on hover functionality if needed
     const videoElement = card.querySelector('video');
-    if (videoElement && autoplayOnHover) {
-        const cardPreview = card.querySelector('.card-preview');
-        
-        // Remove autoplay attribute and pause initially
-        videoElement.removeAttribute('autoplay');
-        videoElement.pause();
-        
-        // Add mouse events to trigger play/pause using event attributes
-        cardPreview.setAttribute('onmouseenter', 'this.querySelector("video")?.play()');
-        cardPreview.setAttribute('onmouseleave', 'const v=this.querySelector("video"); if(v){v.pause();v.currentTime=0;}');
+    if (videoElement) {
+        configureModelCardVideo(videoElement, autoplayOnHover);
     }
 
     return card;
+}
+
+const VIDEO_LAZY_ROOT_MARGIN = '200px 0px';
+let videoLazyObserver = null;
+
+function ensureVideoLazyObserver() {
+    if (videoLazyObserver) {
+        return videoLazyObserver;
+    }
+
+    videoLazyObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const target = entry.target;
+                observer.unobserve(target);
+                loadVideoSource(target);
+            }
+        });
+    }, {
+        root: null,
+        rootMargin: VIDEO_LAZY_ROOT_MARGIN,
+        threshold: 0.01
+    });
+
+    return videoLazyObserver;
+}
+
+function cleanupHoverHandlers(videoElement) {
+    const handlers = videoElement._hoverHandlers;
+    if (!handlers) return;
+
+    const { cardPreview, mouseEnter, mouseLeave } = handlers;
+    if (cardPreview) {
+        cardPreview.removeEventListener('mouseenter', mouseEnter);
+        cardPreview.removeEventListener('mouseleave', mouseLeave);
+    }
+
+    delete videoElement._hoverHandlers;
+}
+
+function requestSafePlay(videoElement) {
+    const playPromise = videoElement.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {});
+    }
+}
+
+function loadVideoSource(videoElement) {
+    if (!videoElement || videoElement.dataset.loaded === 'true') {
+        return;
+    }
+
+    const sourceElement = videoElement.querySelector('source');
+    const dataSrc = videoElement.dataset.src || sourceElement?.dataset?.src;
+
+    if (!dataSrc) {
+        return;
+    }
+
+    // Ensure src attributes are reset before applying
+    videoElement.removeAttribute('src');
+    if (sourceElement) {
+        sourceElement.src = dataSrc;
+    } else {
+        videoElement.src = dataSrc;
+    }
+
+    videoElement.load();
+    videoElement.dataset.loaded = 'true';
+
+    if (videoElement.dataset.autoplay === 'true') {
+        videoElement.setAttribute('autoplay', '');
+        requestSafePlay(videoElement);
+    }
+}
+
+export function configureModelCardVideo(videoElement, autoplayOnHover) {
+    if (!videoElement) return;
+
+    cleanupHoverHandlers(videoElement);
+
+    const sourceElement = videoElement.querySelector('source');
+    const existingSrc = videoElement.dataset.src || sourceElement?.dataset?.src || videoElement.currentSrc;
+
+    if (existingSrc && !videoElement.dataset.src) {
+        videoElement.dataset.src = existingSrc;
+    }
+
+    if (sourceElement && !sourceElement.dataset.src) {
+        sourceElement.dataset.src = videoElement.dataset.src || sourceElement.src;
+    }
+
+    videoElement.removeAttribute('autoplay');
+    videoElement.removeAttribute('src');
+    videoElement.setAttribute('preload', 'none');
+    videoElement.setAttribute('muted', '');
+    videoElement.setAttribute('loop', '');
+    videoElement.setAttribute('playsinline', '');
+    videoElement.setAttribute('controls', '');
+    videoElement.dataset.loaded = 'false';
+
+    if (sourceElement) {
+        sourceElement.removeAttribute('src');
+        if (videoElement.dataset.src) {
+            sourceElement.dataset.src = videoElement.dataset.src;
+        }
+    }
+
+    if (!autoplayOnHover) {
+        videoElement.dataset.autoplay = 'true';
+    } else {
+        delete videoElement.dataset.autoplay;
+    }
+
+    const observer = ensureVideoLazyObserver();
+    observer.observe(videoElement);
+
+    // Pause the video until it is either hovered or autoplay kicks in
+    try {
+        videoElement.pause();
+    } catch (err) {
+        // Ignore pause errors (e.g., if not loaded yet)
+    }
+
+    if (autoplayOnHover) {
+        const cardPreview = videoElement.closest('.card-preview');
+        if (cardPreview) {
+            const mouseEnter = () => {
+                loadVideoSource(videoElement);
+                requestSafePlay(videoElement);
+            };
+            const mouseLeave = () => {
+                videoElement.pause();
+                videoElement.currentTime = 0;
+            };
+
+            cardPreview.addEventListener('mouseenter', mouseEnter);
+            cardPreview.addEventListener('mouseleave', mouseLeave);
+
+            videoElement._hoverHandlers = { cardPreview, mouseEnter, mouseLeave };
+        }
+    }
 }
 
 // Add a method to update card appearance based on bulk mode (LoRA only)
@@ -577,3 +711,5 @@ export function updateCardsForBulkMode(isBulkMode) {
         bulkManager.applySelectionState();
     }
 }
+
+

@@ -22,7 +22,7 @@ export function loadRecipesForLora(loraName, sha256) {
     `;
     
     // Fetch recipes that use this Lora by hash
-    fetch(`/api/recipes/for-lora?hash=${encodeURIComponent(sha256.toLowerCase())}`)
+    fetch(`/api/lm/recipes/for-lora?hash=${encodeURIComponent(sha256.toLowerCase())}`)
         .then(response => response.json())
         .then(data => {
             if (!data.success) {
@@ -166,7 +166,7 @@ function copyRecipeSyntax(recipeId) {
         return;
     }
 
-    fetch(`/api/recipe/${recipeId}/syntax`)
+    fetch(`/api/lm/recipe/${recipeId}/syntax`)
         .then(response => response.json())
         .then(data => {
             if (data.success && data.syntax) {

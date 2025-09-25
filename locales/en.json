@@ -123,6 +123,20 @@
             "noRemoteImagesAvailable": "No remote example images available for this model on Civitai"
         }
     },
+    "globalContextMenu": {
+        "downloadExampleImages": {
+            "label": "Download example images",
+            "missingPath": "Set a download location before downloading example images.",
+            "unavailable": "Example image downloads aren't available yet. Try again after the page finishes loading."
+        },
+        "cleanupExampleImages": {
+            "label": "Clean up example image folders",
+            "success": "Moved {count} folder(s) to the deleted folder",
+            "none": "No example image folders needed cleanup",
+            "partial": "Cleanup completed with {failures} folder(s) skipped",
+            "error": "Failed to clean example image folders: {message}"
+        }
+    },
     "header": {
         "appTitle": "LoRA Manager",
         "navigation": {
@@ -182,7 +196,8 @@
             "downloadPathTemplates": "Download Path Templates",
             "exampleImages": "Example Images",
             "misc": "Misc.",
-            "metadataArchive": "Metadata Archive Database"
+            "metadataArchive": "Metadata Archive Database",
+            "proxySettings": "Proxy Settings"
         },
         "contentFiltering": {
             "blurNsfwContent": "Blur NSFW Content",
@@ -240,6 +255,7 @@
                 "baseModelFirstTag": "Base Model + First Tag",
                 "baseModelAuthor": "Base Model + Author",
                 "authorFirstTag": "Author + First Tag",
+                "baseModelAuthorFirstTag": "Base Model + Author + First Tag",
                 "customTemplate": "Custom Template"
             },
             "customTemplatePlaceholder": "Enter custom template (e.g., {base_model}/{author}/{first_tag})",
@@ -301,6 +317,24 @@
             "connecting": "Connecting to download server...",
             "completed": "Completed",
             "downloadComplete": "Download completed successfully"
+        },
+        "proxySettings": {
+            "enableProxy": "Enable App-level Proxy",
+            "enableProxyHelp": "Enable custom proxy settings for this application, overriding system proxy settings",
+            "proxyType": "Proxy Type",
+            "proxyTypeHelp": "Select the type of proxy server (HTTP, HTTPS, SOCKS4, SOCKS5)",
+            "proxyHost": "Proxy Host",
+            "proxyHostPlaceholder": "proxy.example.com",
+            "proxyHostHelp": "The hostname or IP address of your proxy server",
+            "proxyPort": "Proxy Port", 
+            "proxyPortPlaceholder": "8080",
+            "proxyPortHelp": "The port number of your proxy server",
+            "proxyUsername": "Username (Optional)",
+            "proxyUsernamePlaceholder": "username", 
+            "proxyUsernameHelp": "Username for proxy authentication (if required)",
+            "proxyPassword": "Password (Optional)",
+            "proxyPasswordPlaceholder": "password",
+            "proxyPasswordHelp": "Password for proxy authentication (if required)"
         }
     },
     "loras": {
@@ -708,6 +742,7 @@
                 "strengthMin": "Strength Min",
                 "strengthMax": "Strength Max",
                 "strength": "Strength",
+                "clipStrength": "Clip Strength",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Value",
                 "add": "Add"
@@ -1148,6 +1183,7 @@
         },
         "exampleImages": {
             "pathUpdated": "Example images path updated successfully",
+            "pathUpdateFailed": "Failed to update example images path: {message}",
             "downloadInProgress": "Download already in progress",
             "enterLocationFirst": "Please enter a download location first",
             "downloadStarted": "Example images download started",

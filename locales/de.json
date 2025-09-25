@@ -123,6 +123,20 @@
             "noRemoteImagesAvailable": "Keine Remote-Beispielbilder für dieses Modell auf Civitai verfügbar"
         }
     },
+    "globalContextMenu": {
+        "downloadExampleImages": {
+            "label": "Beispielbilder herunterladen",
+            "missingPath": "Bitte legen Sie einen Speicherort fest, bevor Sie Beispielbilder herunterladen.",
+            "unavailable": "Beispielbild-Downloads sind noch nicht verfügbar. Versuchen Sie es erneut, nachdem die Seite vollständig geladen ist."
+        },
+        "cleanupExampleImages": {
+            "label": "Beispielbild-Ordner bereinigen",
+            "success": "{count} Ordner wurden in den Papierkorb verschoben",
+            "none": "Keine Beispielbild-Ordner mussten bereinigt werden",
+            "partial": "Bereinigung abgeschlossen, {failures} Ordner übersprungen",
+            "error": "Fehler beim Bereinigen der Beispielbild-Ordner: {message}"
+        }
+    },
     "header": {
         "appTitle": "LoRA Manager",
         "navigation": {
@@ -182,7 +196,8 @@
             "downloadPathTemplates": "Download-Pfad-Vorlagen",
             "exampleImages": "Beispielbilder",
             "misc": "Verschiedenes",
-            "metadataArchive": "Metadaten-Archiv-Datenbank"
+            "metadataArchive": "Metadaten-Archiv-Datenbank",
+            "proxySettings": "Proxy-Einstellungen"
         },
         "contentFiltering": {
             "blurNsfwContent": "NSFW-Inhalte unscharf stellen",
@@ -240,6 +255,7 @@
                 "baseModelFirstTag": "Basis-Modell + Erster Tag",
                 "baseModelAuthor": "Basis-Modell + Autor",
                 "authorFirstTag": "Autor + Erster Tag",
+                "baseModelAuthorFirstTag": "Basis-Modell + Autor + Erster Tag",
                 "customTemplate": "Benutzerdefinierte Vorlage"
             },
             "customTemplatePlaceholder": "Benutzerdefinierte Vorlage eingeben (z.B. {base_model}/{author}/{first_tag})",
@@ -301,6 +317,24 @@
             "connecting": "Verbindung zum Download-Server wird hergestellt...",
             "completed": "Abgeschlossen",
             "downloadComplete": "Download erfolgreich abgeschlossen"
+        },
+        "proxySettings": {
+            "enableProxy": "App-Proxy aktivieren",
+            "enableProxyHelp": "Aktivieren Sie benutzerdefinierte Proxy-Einstellungen für diese Anwendung. Überschreibt die System-Proxy-Einstellungen.",
+            "proxyType": "Proxy-Typ",
+            "proxyTypeHelp": "Wählen Sie den Typ des Proxy-Servers (HTTP, HTTPS, SOCKS4, SOCKS5)",
+            "proxyHost": "Proxy-Host",
+            "proxyHostPlaceholder": "proxy.beispiel.de",
+            "proxyHostHelp": "Der Hostname oder die IP-Adresse Ihres Proxy-Servers",
+            "proxyPort": "Proxy-Port",
+            "proxyPortPlaceholder": "8080",
+            "proxyPortHelp": "Die Portnummer Ihres Proxy-Servers",
+            "proxyUsername": "Benutzername (optional)",
+            "proxyUsernamePlaceholder": "benutzername",
+            "proxyUsernameHelp": "Benutzername für die Proxy-Authentifizierung (falls erforderlich)",
+            "proxyPassword": "Passwort (optional)",
+            "proxyPasswordPlaceholder": "passwort",
+            "proxyPasswordHelp": "Passwort für die Proxy-Authentifizierung (falls erforderlich)"
         }
     },
     "loras": {
@@ -708,6 +742,7 @@
                 "strengthMin": "Stärke Min",
                 "strengthMax": "Stärke Max",
                 "strength": "Stärke",
+                "clipStrength": "Clip-Stärke",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Wert",
                 "add": "Hinzufügen"
@@ -1148,6 +1183,7 @@
         },
         "exampleImages": {
             "pathUpdated": "Beispielbilder-Pfad erfolgreich aktualisiert",
+            "pathUpdateFailed": "Fehler beim Aktualisieren des Beispielbilder-Pfads: {message}",
             "downloadInProgress": "Download bereits in Bearbeitung",
             "enterLocationFirst": "Bitte geben Sie zuerst einen Download-Speicherort ein",
             "downloadStarted": "Beispielbilder-Download gestartet",

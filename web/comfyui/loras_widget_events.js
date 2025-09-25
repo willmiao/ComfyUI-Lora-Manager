@@ -491,7 +491,7 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
       
       try {
         // Get Civitai URL from API
-        const response = await api.fetchApi(`/loras/civitai-url?name=${encodeURIComponent(loraName)}`, {
+        const response = await api.fetchApi(`/lm/loras/civitai-url?name=${encodeURIComponent(loraName)}`, {
           method: 'GET'
         });
         
@@ -547,7 +547,7 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
       
       try {
         // Get notes from API
-        const response = await api.fetchApi(`/loras/get-notes?name=${encodeURIComponent(loraName)}`, {
+        const response = await api.fetchApi(`/lm/loras/get-notes?name=${encodeURIComponent(loraName)}`, {
           method: 'GET'
         });
         
@@ -584,7 +584,7 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
       
       try {
         // Get trigger words from API
-        const response = await api.fetchApi(`/loras/get-trigger-words?name=${encodeURIComponent(loraName)}`, {
+        const response = await api.fetchApi(`/lm/loras/get-trigger-words?name=${encodeURIComponent(loraName)}`, {
           method: 'GET'
         });
         

@@ -123,6 +123,20 @@
             "noRemoteImagesAvailable": "このモデルのCivitaiでのリモート例画像は利用できません"
         }
     },
+    "globalContextMenu": {
+        "downloadExampleImages": {
+            "label": "例画像をダウンロード",
+            "missingPath": "例画像をダウンロードする前にダウンロード場所を設定してください。",
+            "unavailable": "例画像のダウンロードはまだ利用できません。ページの読み込みが完了してから再度お試しください。"
+        },
+        "cleanupExampleImages": {
+            "label": "例画像フォルダをクリーンアップ",
+            "success": "{count} 個のフォルダを削除フォルダに移動しました",
+            "none": "クリーンアップが必要な例画像フォルダはありません",
+            "partial": "クリーンアップが完了しましたが、{failures} 個のフォルダはスキップされました",
+            "error": "例画像フォルダのクリーンアップに失敗しました：{message}"
+        }
+    },
     "header": {
         "appTitle": "LoRA Manager",
         "navigation": {
@@ -182,7 +196,8 @@
             "downloadPathTemplates": "ダウンロードパステンプレート",
             "exampleImages": "例画像",
             "misc": "その他",
-            "metadataArchive": "メタデータアーカイブデータベース"
+            "metadataArchive": "メタデータアーカイブデータベース",
+            "proxySettings": "プロキシ設定"
         },
         "contentFiltering": {
             "blurNsfwContent": "NSFWコンテンツをぼかす",
@@ -240,6 +255,7 @@
                 "baseModelFirstTag": "ベースモデル + 最初のタグ",
                 "baseModelAuthor": "ベースモデル + 作成者",
                 "authorFirstTag": "作成者 + 最初のタグ",
+                "baseModelAuthorFirstTag": "ベースモデル + 作成者 + 最初のタグ",
                 "customTemplate": "カスタムテンプレート"
             },
             "customTemplatePlaceholder": "カスタムテンプレートを入力（例：{base_model}/{author}/{first_tag}）",
@@ -301,6 +317,24 @@
             "connecting": "ダウンロードサーバーに接続中...",
             "completed": "完了",
             "downloadComplete": "ダウンロードが正常に完了しました"
+        },
+        "proxySettings": {
+            "enableProxy": "アプリレベルのプロキシを有効化",
+            "enableProxyHelp": "このアプリケーション専用のカスタムプロキシ設定を有効にします（システムのプロキシ設定を上書きします）",
+            "proxyType": "プロキシタイプ",
+            "proxyTypeHelp": "プロキシサーバーの種類を選択（HTTP、HTTPS、SOCKS4、SOCKS5）",
+            "proxyHost": "プロキシホスト",
+            "proxyHostPlaceholder": "proxy.example.com",
+            "proxyHostHelp": "プロキシサーバーのホスト名またはIPアドレス",
+            "proxyPort": "プロキシポート",
+            "proxyPortPlaceholder": "8080",
+            "proxyPortHelp": "プロキシサーバーのポート番号",
+            "proxyUsername": "ユーザー名（任意）",
+            "proxyUsernamePlaceholder": "ユーザー名",
+            "proxyUsernameHelp": "プロキシ認証用のユーザー名（必要な場合）",
+            "proxyPassword": "パスワード（任意）",
+            "proxyPasswordPlaceholder": "パスワード",
+            "proxyPasswordHelp": "プロキシ認証用のパスワード（必要な場合）"
         }
     },
     "loras": {
@@ -708,6 +742,7 @@
                 "strengthMin": "強度最小",
                 "strengthMax": "強度最大",
                 "strength": "強度",
+                "clipStrength": "クリップ強度",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "値",
                 "add": "追加"
@@ -1148,6 +1183,7 @@
         },
         "exampleImages": {
             "pathUpdated": "例画像パスが正常に更新されました",
+            "pathUpdateFailed": "例画像パスの更新に失敗しました：{message}",
             "downloadInProgress": "ダウンロードは既に進行中です",
             "enterLocationFirst": "最初にダウンロード場所を入力してください",
             "downloadStarted": "例画像のダウンロードが開始されました",

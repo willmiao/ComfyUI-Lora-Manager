@@ -115,7 +115,7 @@ class LoraManagerLoader:
         formatted_loras = []
         for item in loaded_loras:
             parts = item.split(":")
-            lora_name = parts[0].strip()
+            lora_name = parts[0]
             strength_parts = parts[1].strip().split(",")
             
             if len(strength_parts) > 1:
@@ -165,7 +165,7 @@ class LoraManagerTextLoader:
         
         loras = []
         for match in matches:
-            lora_name = match[0].strip()
+            lora_name = match[0]
             model_strength = float(match[1])
             clip_strength = float(match[2]) if match[2] else model_strength
             

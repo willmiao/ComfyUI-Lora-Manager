@@ -408,7 +408,7 @@ export function initMediaControlHandlers(container) {
                 
                 try {
                     // Call the API to delete the custom example
-                    const response = await fetch('/api/delete-example-image', {
+                    const response = await fetch('/api/lm/delete-example-image', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'

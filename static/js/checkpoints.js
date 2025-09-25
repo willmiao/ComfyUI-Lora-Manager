@@ -5,7 +5,7 @@ import { ModelDuplicatesManager } from './components/ModelDuplicatesManager.js';
 import { MODEL_TYPES } from './api/apiConfig.js';
 
 // Initialize the Checkpoints page
-class CheckpointsPageManager {
+export class CheckpointsPageManager {
     constructor() {
         // Initialize page controls
         this.pageControls = createPageControls(MODEL_TYPES.CHECKPOINT);
@@ -31,17 +31,21 @@ class CheckpointsPageManager {
     async initialize() {
         // Initialize common page features (including context menus)
         appCore.initializePageFeatures();
-        
+
         console.log('Checkpoints Manager initialized');
     }
 }
 
-// Initialize everything when DOM is ready
-document.addEventListener('DOMContentLoaded', async () => {
+export async function initializeCheckpointsPage() {
     // Initialize core application
     await appCore.initialize();
-    
+
     // Initialize checkpoints page
     const checkpointsPage = new CheckpointsPageManager();
     await checkpointsPage.initialize();
-});
+
+    return checkpointsPage;
+}
+
+// Initialize everything when DOM is ready
+document.addEventListener('DOMContentLoaded', initializeCheckpointsPage);

@@ -49,10 +49,19 @@ async def initialize_metadata_providers():
         civitai_provider = CivitaiModelMetadataProvider(civitai_client)
         provider_manager.register_provider('civitai_api', civitai_provider)
         providers.append(('civitai_api', civitai_provider))
-        logger.info("Civitai API metadata provider registered")
+        logger.debug("Civitai API metadata provider registered")
     except Exception as e:
         logger.error(f"Failed to initialize Civitai API metadata provider: {e}")
-    
+
+    # Register CivArchive provider, but do NOT add to fallback providers
+    try:
+        from .model_metadata_provider import CivArchiveModelMetadataProvider
+        civarchive_provider = CivArchiveModelMetadataProvider()
+        provider_manager.register_provider('civarchive', civarchive_provider)
+        logger.debug("CivArchive metadata provider registered (not included in fallback)")
+    except Exception as e:
+        logger.error(f"Failed to initialize CivArchive metadata provider: {e}")
+
     # Set up fallback provider based on available providers
     if len(providers) > 1:
         # Always use Civitai API first, then Archive DB
@@ -68,7 +77,7 @@ async def initialize_metadata_providers():
         # Only one provider available, set it as default
         provider_name, provider = providers[0]
         provider_manager.register_provider(provider_name, provider, is_default=True)
-        logger.info(f"Single metadata provider registered as default: {provider_name}")
+        logger.debug(f"Single metadata provider registered as default: {provider_name}")
     else:
         logger.warning("No metadata providers available - this may cause metadata lookup failures")
     

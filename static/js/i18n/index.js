@@ -1,3 +1,5 @@
+import { state } from '../state/index.js';
+
 /**
  * Internationalization (i18n) system for LoRA Manager
  * Uses user-selected language from settings with fallback to English
@@ -124,26 +126,12 @@ class I18nManager {
      * @returns {string} Language code
      */
     getLanguageFromSettings() {
-        // Check localStorage for user-selected language
-        const STORAGE_PREFIX = 'lora_manager_';
-        let userLanguage = null;
-        
-        try {
-            const settings = localStorage.getItem(STORAGE_PREFIX + 'settings');
-            if (settings) {
-                const parsedSettings = JSON.parse(settings);
-                userLanguage = parsedSettings.language;
-            }
-        } catch (e) {
-            console.warn('Failed to parse settings from localStorage:', e);
+        const language = state?.global?.settings?.language;
+
+        if (language && this.availableLocales[language]) {
+            return language;
         }
-        
-        // If user has selected a language, use it
-        if (userLanguage && this.availableLocales[userLanguage]) {
-            return userLanguage;
-        }
-        
-        // Fallback to English
+
         return 'en';
     }
     
@@ -166,17 +154,9 @@ class I18nManager {
             this.readyPromise = this.initializeWithLocale(languageCode);
             await this.readyPromise;
             
-            // Save to localStorage
-            const STORAGE_PREFIX = 'lora_manager_';
-            const currentSettings = localStorage.getItem(STORAGE_PREFIX + 'settings');
-            let settings = {};
-            
-            if (currentSettings) {
-                settings = JSON.parse(currentSettings);
+            if (state?.global?.settings) {
+                state.global.settings.language = languageCode;
             }
-            
-            settings.language = languageCode;
-            localStorage.setItem(STORAGE_PREFIX + 'settings', JSON.stringify(settings));
             
             console.log(`Language changed to: ${languageCode}`);
             

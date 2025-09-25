@@ -21,8 +21,8 @@
             "disabled": "已禁用"
         },
         "language": {
-            "select": "语言",
-            "select_help": "选择你喜欢的界面语言",
+            "select": "Language",
+            "select_help": "Choose your preferred language for the interface",
             "english": "English",
             "chinese_simplified": "中文（简体）",
             "chinese_traditional": "中文（繁体）",
@@ -32,7 +32,13 @@
             "korean": "韩语",
             "french": "法语",
             "spanish": "西班牙语",
-			"Hebrew": "עברית"
+		      	"Hebrew": "עברית"
+            "russian": "Русский",
+            "german": "Deutsch",
+            "japanese": "日本語",
+            "korean": "한국어",
+            "french": "Français",
+            "spanish": "Español"
         },
         "fileSize": {
             "zero": "0 字节",
@@ -123,6 +129,20 @@
             "noRemoteImagesAvailable": "此模型在 Civitai 上没有远程示例图片"
         }
     },
+    "globalContextMenu": {
+        "downloadExampleImages": {
+            "label": "下载示例图片",
+            "missingPath": "请先设置下载位置后再下载示例图片。",
+            "unavailable": "示例图片下载当前不可用。请在页面加载完成后重试。"
+        },
+        "cleanupExampleImages": {
+            "label": "清理示例图片文件夹",
+            "success": "已将 {count} 个文件夹移动到已删除文件夹",
+            "none": "没有需要清理的示例图片文件夹",
+            "partial": "清理完成，有 {failures} 个文件夹跳过",
+            "error": "清理示例图片文件夹失败：{message}"
+        }
+    },
     "header": {
         "appTitle": "LoRA 管理器",
         "navigation": {
@@ -182,7 +202,8 @@
             "downloadPathTemplates": "下载路径模板",
             "exampleImages": "示例图片",
             "misc": "其他",
-            "metadataArchive": "元数据归档数据库"
+            "metadataArchive": "元数据归档数据库",
+            "proxySettings": "代理设置"
         },
         "contentFiltering": {
             "blurNsfwContent": "模糊 NSFW 内容",
@@ -240,6 +261,7 @@
                 "baseModelFirstTag": "基础模型 + 首标签",
                 "baseModelAuthor": "基础模型 + 作者",
                 "authorFirstTag": "作者 + 首标签",
+                "baseModelAuthorFirstTag": "基础模型 + 作者 + 首标签",
                 "customTemplate": "自定义模板"
             },
             "customTemplatePlaceholder": "输入自定义模板（如：{base_model}/{author}/{first_tag}）",
@@ -301,6 +323,24 @@
             "connecting": "正在连接下载服务器...",
             "completed": "已完成",
             "downloadComplete": "下载成功完成"
+        },
+        "proxySettings": {
+            "enableProxy": "启用应用级代理",
+            "enableProxyHelp": "为此应用启用自定义代理设置，覆盖系统代理设置",
+            "proxyType": "代理类型",
+            "proxyTypeHelp": "选择代理服务器类型 (HTTP, HTTPS, SOCKS4, SOCKS5)",
+            "proxyHost": "代理主机",
+            "proxyHostPlaceholder": "proxy.example.com",
+            "proxyHostHelp": "代理服务器的主机名或IP地址",
+            "proxyPort": "代理端口",
+            "proxyPortPlaceholder": "8080",
+            "proxyPortHelp": "代理服务器的端口号",
+            "proxyUsername": "用户名 (可选)",
+            "proxyUsernamePlaceholder": "用户名",
+            "proxyUsernameHelp": "代理认证的用户名 (如果需要)",
+            "proxyPassword": "密码 (可选)",
+            "proxyPasswordPlaceholder": "密码",
+            "proxyPasswordHelp": "代理认证的密码 (如果需要)"
         }
     },
     "loras": {
@@ -708,6 +748,7 @@
                 "strengthMin": "最小强度",
                 "strengthMax": "最大强度",
                 "strength": "强度",
+                "clipStrength": "Clip 强度",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "数值",
                 "add": "添加"
@@ -1148,6 +1189,7 @@
         },
         "exampleImages": {
             "pathUpdated": "示例图片路径更新成功",
+            "pathUpdateFailed": "更新示例图片路径失败：{message}",
             "downloadInProgress": "下载已在进行中",
             "enterLocationFirst": "请先输入下载位置",
             "downloadStarted": "示例图片下载已开始",
