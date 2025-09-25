@@ -1,35 +1,13 @@
 import pytest
 
-import importlib
-import importlib.util
-import sys
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[2]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-
-
-def import_from(module_name: str):
-    existing = sys.modules.get("py")
-    if existing is None or getattr(existing, "__file__", "") != str(ROOT / "py/__init__.py"):
-        sys.modules.pop("py", None)
-        spec = importlib.util.spec_from_file_location("py", ROOT / "py/__init__.py")
-        module = importlib.util.module_from_spec(spec)
-        assert spec and spec.loader
-        spec.loader.exec_module(module)  # type: ignore[union-attr]
-        module.__path__ = [str(ROOT / "py")]
-        sys.modules["py"] = module
-    return importlib.import_module(module_name)
-
-
-BaseModelService = import_from("py.services.base_model_service").BaseModelService
-model_query_module = import_from("py.services.model_query")
-ModelCacheRepository = model_query_module.ModelCacheRepository
-ModelFilterSet = model_query_module.ModelFilterSet
-SearchStrategy = model_query_module.SearchStrategy
-SortParams = model_query_module.SortParams
-BaseModelMetadata = import_from("py.utils.models").BaseModelMetadata
+from py.services.base_model_service import BaseModelService
+from py.services.model_query import (
+    ModelCacheRepository,
+    ModelFilterSet,
+    SearchStrategy,
+    SortParams,
+)
+from py.utils.models import BaseModelMetadata
 
 
 class StubSettings:

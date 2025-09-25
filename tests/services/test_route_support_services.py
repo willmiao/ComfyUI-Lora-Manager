@@ -1,37 +1,15 @@
 import asyncio
 import json
 import os
-import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
-ROOT = Path(__file__).resolve().parents[2]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-
-import importlib
-import importlib.util
-
 import pytest
 
-
-def import_from(module_name: str):
-    existing = sys.modules.get("py")
-    if existing is None or getattr(existing, "__file__", "") != str(ROOT / "py/__init__.py"):
-        sys.modules.pop("py", None)
-        spec = importlib.util.spec_from_file_location("py", ROOT / "py/__init__.py")
-        module = importlib.util.module_from_spec(spec)
-        assert spec and spec.loader
-        spec.loader.exec_module(module)  # type: ignore[union-attr]
-        module.__path__ = [str(ROOT / "py")]
-        sys.modules["py"] = module
-    return importlib.import_module(module_name)
-
-
-DownloadCoordinator = import_from("py.services.download_coordinator").DownloadCoordinator
-MetadataSyncService = import_from("py.services.metadata_sync_service").MetadataSyncService
-PreviewAssetService = import_from("py.services.preview_asset_service").PreviewAssetService
-TagUpdateService = import_from("py.services.tag_update_service").TagUpdateService
+from py.services.download_coordinator import DownloadCoordinator
+from py.services.metadata_sync_service import MetadataSyncService
+from py.services.preview_asset_service import PreviewAssetService
+from py.services.tag_update_service import TagUpdateService
 
 
 class DummySettings:

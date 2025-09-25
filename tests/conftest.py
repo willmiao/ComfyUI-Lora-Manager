@@ -1,12 +1,44 @@
+import asyncio
+import importlib.util
+import inspect
+import sys
 import types
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
-import asyncio
-import inspect
 from unittest import mock
-import sys
 
 import pytest
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+PY_INIT = REPO_ROOT / "py" / "__init__.py"
+
+
+def _load_repo_package(name: str) -> types.ModuleType:
+    """Ensure the repository's ``py`` package is importable under *name*."""
+
+    module = sys.modules.get(name)
+    if module and getattr(module, "__file__", None) == str(PY_INIT):
+        return module
+
+    spec = importlib.util.spec_from_file_location(
+        name,
+        PY_INIT,
+        submodule_search_locations=[str(PY_INIT.parent)],
+    )
+    if spec is None or spec.loader is None:  # pragma: no cover - initialization guard
+        raise ImportError(f"Unable to load repository package for alias '{name}'")
+
+    package = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(package)  # type: ignore[attr-defined]
+    package.__path__ = [str(PY_INIT.parent)]  # type: ignore[attr-defined]
+    sys.modules[name] = package
+    return package
+
+
+_repo_package = _load_repo_package("py")
+sys.modules.setdefault("py_local", _repo_package)
 
 # Mock ComfyUI modules before any imports from the main project
 server_mock = types.SimpleNamespace()

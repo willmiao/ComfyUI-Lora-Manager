@@ -1,5 +1,4 @@
 import asyncio
-import importlib.util
 import json
 import os
 import sys
@@ -14,25 +13,13 @@ import pytest
 from aiohttp import FormData, web
 from aiohttp.test_utils import TestClient, TestServer
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-PY_PACKAGE_PATH = REPO_ROOT / "py"
-
-spec = importlib.util.spec_from_file_location(
-    "py_local",
-    PY_PACKAGE_PATH / "__init__.py",
-    submodule_search_locations=[str(PY_PACKAGE_PATH)],
-)
-py_local = importlib.util.module_from_spec(spec)
-assert spec.loader is not None  # for mypy/static analyzers
-spec.loader.exec_module(py_local)
-sys.modules.setdefault("py_local", py_local)
-
-from py_local.routes.base_model_routes import BaseModelRoutes
-from py_local.services.model_file_service import AutoOrganizeResult
-from py_local.services.service_registry import ServiceRegistry
-from py_local.services.websocket_manager import ws_manager
-from py_local.utils.exif_utils import ExifUtils
-from py_local.config import config
+from py.config import config
+from py.routes.base_model_routes import BaseModelRoutes
+from py.services import model_file_service
+from py.services.model_file_service import AutoOrganizeResult
+from py.services.service_registry import ServiceRegistry
+from py.services.websocket_manager import ws_manager
+from py.utils.exif_utils import ExifUtils
 
 
 class DummyRoutes(BaseModelRoutes):
@@ -345,7 +332,7 @@ def test_auto_organize_route_emits_progress(mock_service, monkeypatch: pytest.Mo
         return result
 
     monkeypatch.setattr(
-        py_local.services.model_file_service.ModelFileService,
+        model_file_service.ModelFileService,
         "auto_organize_models",
         fake_auto_organize,
     )
