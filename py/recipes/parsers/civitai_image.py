@@ -284,7 +284,59 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                             logger.error(f"Error fetching Civitai info for model ID {version_id}: {e}")
                     
                         result["loras"].append(lora_entry)
-            
+
+            # If we found LoRA hashes in the metadata but haven't already
+            # populated entries for them, fall back to creating LoRAs from
+            # the hashes section. Some Civitai image responses only include
+            # LoRA information here without explicit resources entries.
+            for lora_name, lora_hash in lora_hashes.items():
+                if not lora_hash:
+                    continue
+
+                # Skip LoRAs we've already added via resources or other fields
+                if lora_hash in added_loras:
+                    continue
+
+                lora_entry = {
+                    'name': lora_name,
+                    'type': "lora",
+                    'weight': 1.0,
+                    'hash': lora_hash,
+                    'existsLocally': False,
+                    'localPath': None,
+                    'file_name': lora_name,
+                    'thumbnailUrl': '/loras_static/images/no-preview.png',
+                    'baseModel': '',
+                    'size': 0,
+                    'downloadUrl': '',
+                    'isDeleted': False
+                }
+
+                if metadata_provider:
+                    try:
+                        civitai_info = await metadata_provider.get_model_by_hash(lora_hash)
+
+                        populated_entry = await self.populate_lora_from_civitai(
+                            lora_entry,
+                            civitai_info,
+                            recipe_scanner,
+                            base_model_counts,
+                            lora_hash
+                        )
+
+                        if populated_entry is None:
+                            continue
+
+                        lora_entry = populated_entry
+
+                        if 'id' in lora_entry and lora_entry['id']:
+                            added_loras[str(lora_entry['id'])] = len(result["loras"])
+                    except Exception as e:
+                        logger.error(f"Error fetching Civitai info for LoRA hash {lora_hash}: {e}")
+
+                added_loras[lora_hash] = len(result["loras"])
+                result["loras"].append(lora_entry)
+
             # Check for LoRA info in the format "Lora_0 Model hash", "Lora_0 Model name", etc.
             lora_index = 0
             while f"Lora_{lora_index} Model hash" in metadata and f"Lora_{lora_index} Model name" in metadata:
