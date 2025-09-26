@@ -189,6 +189,9 @@ def calculate_relative_path_for_model(model_data: Dict, model_type: str = 'lora'
     formatted_path = formatted_path.replace('{first_tag}', first_tag)
     formatted_path = formatted_path.replace('{author}', author)
 
+    if model_type == 'embedding':
+        formatted_path = formatted_path.replace(' ', '_')
+
     return formatted_path
 
 def remove_empty_dirs(path):

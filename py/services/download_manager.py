@@ -388,7 +388,10 @@ class DownloadManager:
         formatted_path = formatted_path.replace('{base_model}', mapped_base_model)
         formatted_path = formatted_path.replace('{first_tag}', first_tag)
         formatted_path = formatted_path.replace('{author}', author)
-        
+
+        if model_type == 'embedding':
+            formatted_path = formatted_path.replace(' ', '_')
+
         return formatted_path
 
     async def _execute_download(self, download_url: str, save_dir: str, 

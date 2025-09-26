@@ -245,3 +245,17 @@ async def test_download_rejects_unsupported_model_type(monkeypatch, scanners):
 
     assert result["success"] is False
     assert result["error"].startswith("Model type")
+
+
+def test_embedding_relative_path_replaces_spaces():
+    manager = DownloadManager()
+
+    version_info = {
+        "baseModel": "Base Model",
+        "model": {"tags": ["tag with space"]},
+        "creator": {"username": "Author Name"},
+    }
+
+    relative_path = manager._calculate_relative_path(version_info, "embedding")
+
+    assert relative_path == "Base_Model/tag_with_space"
