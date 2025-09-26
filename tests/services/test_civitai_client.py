@@ -63,6 +63,10 @@ async def test_get_model_by_hash_enriches_metadata(monkeypatch, downloader):
         "modelId": 123,
         "model": {"description": "", "tags": []},
         "creator": {},
+        "images": [
+            {"meta": {"comfy": {"foo": "bar"}, "other": "keep"}},
+            {"meta": "not-a-dict"},
+        ],
     }
     model_payload = {"description": "desc", "tags": ["tag"], "creator": {"username": "user"}}
 
@@ -83,6 +87,8 @@ async def test_get_model_by_hash_enriches_metadata(monkeypatch, downloader):
     assert result["model"]["description"] == "desc"
     assert result["model"]["tags"] == ["tag"]
     assert result["creator"] == {"username": "user"}
+    assert "comfy" not in result["images"][0]["meta"]
+    assert result["images"][0]["meta"]["other"] == "keep"
 
 
 async def test_get_model_by_hash_handles_not_found(monkeypatch, downloader):
@@ -144,6 +150,7 @@ async def test_get_model_version_by_version_id(monkeypatch, downloader):
                 "modelId": 321,
                 "model": {"description": ""},
                 "files": [],
+                "images": [{"meta": {"comfy": {"foo": "bar"}, "other": "keep"}}],
             }
         if url.endswith("/models/321"):
             return True, {"description": "desc", "tags": ["tag"], "creator": {"username": "user"}}
@@ -158,6 +165,8 @@ async def test_get_model_version_by_version_id(monkeypatch, downloader):
     assert result["model"]["description"] == "desc"
     assert result["model"]["tags"] == ["tag"]
     assert result["creator"] == {"username": "user"}
+    assert "comfy" not in result["images"][0]["meta"]
+    assert result["images"][0]["meta"]["other"] == "keep"
 
 
 async def test_get_model_version_requires_identifier(monkeypatch, downloader):
@@ -181,7 +190,7 @@ async def test_get_model_version_info_handles_not_found(monkeypatch, downloader)
 
 
 async def test_get_model_version_info_success(monkeypatch, downloader):
-    expected = {"id": 55}
+    expected = {"id": 55, "images": [{"meta": {"comfy": {"foo": "bar"}, "other": "keep"}}]}
 
     async def fake_make_request(method, url, use_auth=True):
         return True, expected
@@ -194,6 +203,8 @@ async def test_get_model_version_info_success(monkeypatch, downloader):
 
     assert result == expected
     assert error is None
+    assert "comfy" not in result["images"][0]["meta"]
+    assert result["images"][0]["meta"]["other"] == "keep"
 
 
 async def test_get_image_info_returns_first_item(monkeypatch, downloader):

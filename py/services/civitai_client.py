@@ -32,6 +32,24 @@ class CivitaiClient:
         self._initialized = True
         
         self.base_url = "https://civitai.com/api/v1"
+
+    @staticmethod
+    def _remove_comfy_metadata(model_version: Optional[Dict]) -> None:
+        """Remove Comfy-specific metadata from model version images."""
+        if not isinstance(model_version, dict):
+            return
+
+        images = model_version.get("images")
+        if not isinstance(images, list):
+            return
+
+        for image in images:
+            if not isinstance(image, dict):
+                continue
+
+            meta = image.get("meta")
+            if isinstance(meta, dict) and "comfy" in meta:
+                meta.pop("comfy", None)
     
     async def download_file(self, url: str, save_dir: str, default_filename: str, progress_callback=None) -> Tuple[bool, str]:
         """Download file with resumable downloads and retry mechanism
@@ -81,10 +99,11 @@ class CivitaiClient:
                         # Enrich version_info with model data
                         result['model']['description'] = data.get("description")
                         result['model']['tags'] = data.get("tags", [])
-                        
+
                         # Add creator from model data
                         result['creator'] = data.get("creator")
-                
+
+                self._remove_comfy_metadata(result)
                 return result, None
             
             # Handle specific error cases
@@ -177,7 +196,8 @@ class CivitaiClient:
                     version['model']['description'] = model_data.get("description")
                     version['model']['tags'] = model_data.get("tags", [])
                     version['creator'] = model_data.get("creator")
-                
+
+                self._remove_comfy_metadata(version)
                 return version
             
             # Case 2: model_id is provided (with or without version_id)
@@ -260,6 +280,7 @@ class CivitaiClient:
                 # Add creator from model data
                 version['creator'] = data.get("creator")
 
+                self._remove_comfy_metadata(version)
                 return version
             
             # Case 3: Neither model_id nor version_id provided
@@ -295,6 +316,7 @@ class CivitaiClient:
             
             if success:
                 logger.debug(f"Successfully fetched model version info for: {version_id}")
+                self._remove_comfy_metadata(result)
                 return result, None
             
             # Handle specific error cases
