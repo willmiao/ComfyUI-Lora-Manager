@@ -8,6 +8,8 @@ import tempfile
 import asyncio
 from aiohttp import web, ClientError
 from typing import Dict, List
+
+from py.utils.settings_paths import ensure_settings_file
 from ..services.downloader import get_downloader
 
 logger = logging.getLogger(__name__)
@@ -121,7 +123,7 @@ class UpdateRoutes:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             plugin_root = os.path.dirname(os.path.dirname(current_dir))
 
-            settings_path = os.path.join(plugin_root, 'settings.json')
+            settings_path = ensure_settings_file(logger)
             settings_backup = None
             if os.path.exists(settings_path):
                 with open(settings_path, 'r', encoding='utf-8') as f:

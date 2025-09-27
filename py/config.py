@@ -6,6 +6,8 @@ import logging
 import json
 import urllib.parse
 
+from py.utils.settings_paths import ensure_settings_file
+
 # Use an environment variable to control standalone mode
 standalone_mode = os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
 
@@ -40,12 +42,12 @@ class Config:
         try:
             # Check if we're running in ComfyUI mode (not standalone)           
             # Load existing settings
-            settings_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'settings.json')
+            settings_path = ensure_settings_file(logger)
             settings = {}
             if os.path.exists(settings_path):
                 with open(settings_path, 'r', encoding='utf-8') as f:
                     settings = json.load(f)
-            
+
             # Update settings with paths
             settings['folder_paths'] = {
                 'loras': self.loras_roots,

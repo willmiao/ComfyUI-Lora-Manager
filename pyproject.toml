@@ -13,7 +13,8 @@ dependencies = [
     "toml",
     "natsort",
     "GitPython",
-    "aiosqlite"
+    "aiosqlite",
+    "platformdirs"
 ]
 
 [project.urls]

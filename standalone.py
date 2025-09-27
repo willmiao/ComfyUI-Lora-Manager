@@ -3,6 +3,7 @@ import os
 import sys
 import json
 from py.middleware.cache_middleware import cache_control
+from py.utils.settings_paths import ensure_settings_file, get_settings_dir
 
 # Set environment variable to indicate standalone mode
 os.environ["COMFYUI_LORA_MANAGER_STANDALONE"] = "1"
@@ -32,7 +33,7 @@ class MockFolderPaths:
     @staticmethod
     def get_folder_paths(folder_name):
         # Load paths from settings.json
-        settings_path = os.path.join(os.path.dirname(__file__), 'settings.json')
+        settings_path = ensure_settings_file()
         try:
             if os.path.exists(settings_path):
                 with open(settings_path, 'r', encoding='utf-8') as f:
@@ -159,7 +160,7 @@ class StandaloneServer:
         self.app.router.add_get('/', self.handle_status)
         
         # Add static route for example images if the path exists in settings
-        settings_path = os.path.join(os.path.dirname(__file__), 'settings.json')
+        settings_path = ensure_settings_file(logger)
         if os.path.exists(settings_path):
             with open(settings_path, 'r', encoding='utf-8') as f:
                 settings = json.load(f)
@@ -219,16 +220,19 @@ from py.lora_manager import LoraManager
 
 def validate_settings():
     """Validate that settings.json exists and has required configuration"""
-    settings_path = os.path.join(os.path.dirname(__file__), 'settings.json')
+    settings_path = ensure_settings_file(logger)
     if not os.path.exists(settings_path):
         logger.error("=" * 80)
         logger.error("CONFIGURATION ERROR: settings.json file not found!")
+        logger.error("")
+        logger.error("Expected location: %s", settings_path)
         logger.error("")
         logger.error("To run in standalone mode, you need to create a settings.json file.")
         logger.error("Please follow these steps:")
         logger.error("")
         logger.error("1. Copy the provided settings.json.example file to create a new file")
-        logger.error("   named settings.json in the comfyui-lora-manager folder")
+        logger.error("   named settings.json inside the LoRA Manager settings folder:")
+        logger.error("   %s", get_settings_dir())
         logger.error("")
         logger.error("2. Edit settings.json to include your correct model folder paths")
         logger.error("   and CivitAI API key")
