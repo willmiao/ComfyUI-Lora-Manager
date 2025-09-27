@@ -10,3 +10,4 @@ natsort
 GitPython
 aiosqlite
 beautifulsoup4
+platformdirs
