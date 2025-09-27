@@ -1,7 +1,9 @@
-import os
 import json
+import os
 import logging
 from typing import Any, Dict
+
+from py.utils.settings_paths import ensure_settings_file
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +38,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
 
 class SettingsManager:
     def __init__(self):
-        self.settings_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'settings.json')
+        self.settings_file = ensure_settings_file(logger)
         self.settings = self._load_settings()
         self._migrate_setting_keys()
         self._ensure_default_settings()

@@ -3,21 +3,32 @@ import json
 import pytest
 
 from py.services.settings_manager import SettingsManager
+from py.utils import settings_paths
 
 
 @pytest.fixture
 def manager(tmp_path, monkeypatch):
     monkeypatch.setattr(SettingsManager, "_save_settings", lambda self: None)
+    fake_settings_path = tmp_path / "settings.json"
+    monkeypatch.setattr(
+        "py.services.settings_manager.ensure_settings_file",
+        lambda logger=None: str(fake_settings_path),
+    )
     mgr = SettingsManager()
-    mgr.settings_file = str(tmp_path / "settings.json")
+    mgr.settings_file = str(fake_settings_path)
     return mgr
 
 
 def test_environment_variable_overrides_settings(tmp_path, monkeypatch):
     monkeypatch.setattr(SettingsManager, "_save_settings", lambda self: None)
     monkeypatch.setenv("CIVITAI_API_KEY", "secret")
+    fake_settings_path = tmp_path / "settings.json"
+    monkeypatch.setattr(
+        "py.services.settings_manager.ensure_settings_file",
+        lambda logger=None: str(fake_settings_path),
+    )
     mgr = SettingsManager()
-    mgr.settings_file = str(tmp_path / "settings.json")
+    mgr.settings_file = str(fake_settings_path)
 
     assert mgr.get("civitai_api_key") == "secret"
 
@@ -59,3 +70,21 @@ def test_delete_setting(manager):
     manager.set("example", 1)
     manager.delete("example")
     assert manager.get("example") is None
+
+
+def test_migrates_legacy_settings_file(tmp_path, monkeypatch):
+    legacy_root = tmp_path / "legacy"
+    legacy_root.mkdir()
+    legacy_file = legacy_root / "settings.json"
+    legacy_file.write_text("{\"value\": 1}", encoding="utf-8")
+
+    target_dir = tmp_path / "config"
+
+    monkeypatch.setattr(settings_paths, "get_project_root", lambda: str(legacy_root))
+    monkeypatch.setattr(settings_paths, "user_config_dir", lambda *_, **__: str(target_dir))
+
+    migrated_path = settings_paths.ensure_settings_file()
+
+    assert migrated_path == str(target_dir / "settings.json")
+    assert (target_dir / "settings.json").exists()
+    assert not legacy_file.exists()
