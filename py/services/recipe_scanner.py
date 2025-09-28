@@ -424,27 +424,29 @@ class RecipeScanner:
             # If has modelVersionId but no hash, look in lora cache first, then fetch from Civitai
             if 'modelVersionId' in lora and not lora.get('hash'):
                 model_version_id = lora['modelVersionId']
+                # Check if model_version_id is an integer and > 0
+                if isinstance(model_version_id, int) and model_version_id > 0:
 
-                # Try to find in lora cache first
-                hash_from_cache = await self._find_hash_in_lora_cache(model_version_id)
-                if hash_from_cache:
-                    lora['hash'] = hash_from_cache
-                    metadata_updated = True
-                else:
-                    # If not in cache, fetch from Civitai
-                    result = await self._get_hash_from_civitai(model_version_id)
-                    if isinstance(result, tuple):
-                        hash_from_civitai, is_deleted = result
-                        if hash_from_civitai:
-                            lora['hash'] = hash_from_civitai
-                            metadata_updated = True
-                        elif is_deleted:
-                            # Mark the lora as deleted if it was not found on Civitai
-                            lora['isDeleted'] = True
-                            logger.warning(f"Marked lora with modelVersionId {model_version_id} as deleted")
-                            metadata_updated = True
+                    # Try to find in lora cache first
+                    hash_from_cache = await self._find_hash_in_lora_cache(model_version_id)
+                    if hash_from_cache:
+                        lora['hash'] = hash_from_cache
+                        metadata_updated = True
                     else:
-                        logger.debug(f"Could not get hash for modelVersionId {model_version_id}")
+                        # If not in cache, fetch from Civitai
+                        result = await self._get_hash_from_civitai(model_version_id)
+                        if isinstance(result, tuple):
+                            hash_from_civitai, is_deleted = result
+                            if hash_from_civitai:
+                                lora['hash'] = hash_from_civitai
+                                metadata_updated = True
+                            elif is_deleted:
+                                # Mark the lora as deleted if it was not found on Civitai
+                                lora['isDeleted'] = True
+                                logger.warning(f"Marked lora with modelVersionId {model_version_id} as deleted")
+                                metadata_updated = True
+                        else:
+                            logger.debug(f"Could not get hash for modelVersionId {model_version_id}")
             
             # If has hash but no file_name, look up in lora library
             if 'hash' in lora and (not lora.get('file_name') or not lora['file_name']):
