@@ -3,7 +3,7 @@ import os
 import logging
 from typing import Any, Dict
 
-from py.utils.settings_paths import ensure_settings_file
+from ..utils.settings_paths import ensure_settings_file
 
 logger = logging.getLogger(__name__)
 

@@ -9,7 +9,7 @@ import asyncio
 from aiohttp import web, ClientError
 from typing import Dict, List
 
-from py.utils.settings_paths import ensure_settings_file
+from ..utils.settings_paths import ensure_settings_file
 from ..services.downloader import get_downloader
 
 logger = logging.getLogger(__name__)

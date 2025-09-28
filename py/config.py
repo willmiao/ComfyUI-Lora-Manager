@@ -6,7 +6,7 @@ import logging
 import json
 import urllib.parse
 
-from py.utils.settings_paths import ensure_settings_file
+from .utils.settings_paths import ensure_settings_file
 
 # Use an environment variable to control standalone mode
 standalone_mode = os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
