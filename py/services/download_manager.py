@@ -3,7 +3,7 @@ import os
 import asyncio
 from collections import OrderedDict
 import uuid
-from typing import Dict
+from typing import Dict, List
 from ..utils.models import LoraMetadata, CheckpointMetadata, EmbeddingMetadata
 from ..utils.constants import CARD_PREVIEW_WIDTH, VALID_LORA_TYPES, CIVITAI_MODEL_TAGS
 from ..utils.exif_utils import ExifUtils
@@ -294,7 +294,18 @@ class DownloadManager:
             file_info = next((f for f in version_info.get('files', []) if f.get('primary')), None)
             if not file_info:
                 return {'success': False, 'error': 'No primary file found in metadata'}
-            if not file_info.get('downloadUrl'):
+            mirrors = file_info.get('mirrors') or []
+            download_urls = []
+            if mirrors:
+                for mirror in mirrors:
+                    if mirror.get('deletedAt') is None and mirror.get('url'):
+                        download_urls.append(mirror['url'])
+            else:
+                download_url = file_info.get('downloadUrl')
+                if download_url:
+                    download_urls.append(download_url)
+
+            if not download_urls:
                 return {'success': False, 'error': 'No download URL found for primary file'}
 
             # 3. Prepare download
@@ -314,7 +325,7 @@ class DownloadManager:
             
             # 6. Start download process
             result = await self._execute_download(
-                download_url=file_info.get('downloadUrl', ''),
+                download_urls=download_urls,
                 save_dir=save_dir,
                 metadata=metadata,
                 version_info=version_info,
@@ -394,8 +405,8 @@ class DownloadManager:
 
         return formatted_path
 
-    async def _execute_download(self, download_url: str, save_dir: str, 
-                          metadata, version_info: Dict, 
+    async def _execute_download(self, download_urls: List[str], save_dir: str,
+                          metadata, version_info: Dict,
                           relative_path: str, progress_callback=None,
                           model_type: str = "lora", download_id: str = None) -> Dict:
         """Execute the actual download process including preview images and model files"""
@@ -506,33 +517,44 @@ class DownloadManager:
 
             # Download model file with progress tracking using downloader
             downloader = await get_downloader()
-            # Determine if the download URL is from Civitai
-            use_auth = download_url.startswith("https://civitai.com/api/download/")
-            success, result = await downloader.download_file(
-                download_url, 
-                save_path,  # Use full path instead of separate dir and filename
-                progress_callback=lambda p: self._handle_download_progress(p, progress_callback),
-                use_auth=use_auth  # Only use authentication for Civitai downloads
-            )
+            last_error = None
+            for download_url in download_urls:
+                use_auth = download_url.startswith("https://civitai.com/api/download/")
+                success, result = await downloader.download_file(
+                    download_url,
+                    save_path,  # Use full path instead of separate dir and filename
+                    progress_callback=lambda p: self._handle_download_progress(p, progress_callback),
+                    use_auth=use_auth  # Only use authentication for Civitai downloads
+                )
 
-            if not success:
+                if success:
+                    break
+
+                last_error = result
+                if os.path.exists(save_path):
+                    try:
+                        os.remove(save_path)
+                    except Exception as e:
+                        logger.warning(f"Failed to remove incomplete file {save_path}: {e}")
+            else:
                 # Clean up files on failure, but preserve .part file for resume
                 cleanup_files = [metadata_path]
-                if metadata.preview_url and os.path.exists(metadata.preview_url):
-                    cleanup_files.append(metadata.preview_url)
-                
+                preview_path_value = getattr(metadata, 'preview_url', None)
+                if preview_path_value and os.path.exists(preview_path_value):
+                    cleanup_files.append(preview_path_value)
+
                 for path in cleanup_files:
                     if path and os.path.exists(path):
                         try:
                             os.remove(path)
                         except Exception as e:
                             logger.warning(f"Failed to cleanup file {path}: {e}")
-                
+
                 # Log but don't remove .part file to allow resume
                 if os.path.exists(part_path):
                     logger.info(f"Preserving partial download for resume: {part_path}")
-                
-                return {'success': False, 'error': result}
+
+                return {'success': False, 'error': last_error or 'Failed to download file'}
 
             # 4. Update file information (size and modified time)
             metadata.update_file_info(save_path)
