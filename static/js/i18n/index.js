@@ -25,7 +25,8 @@ class I18nManager {
             'ja': { name: 'Japanese', nativeName: '日本語' },
             'ko': { name: 'Korean', nativeName: '한국어' },
             'fr': { name: 'French', nativeName: 'Français' },
-            'es': { name: 'Spanish', nativeName: 'Español' }
+            'es': { name: 'Spanish', nativeName: 'Español' },
+            'he': { name: 'Hebrew', nativeName: 'עברית' }
         };
         
         this.currentLocale = this.getLanguageFromSettings();
