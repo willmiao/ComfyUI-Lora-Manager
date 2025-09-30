@@ -48,10 +48,7 @@ function formatPresetKey(key) {
  * @param {string} key - Preset key name to remove
  */
 window.removePreset = async function(key) {
-    const filePath = document.querySelector('#modelModal .modal-content')
-            .querySelector('.file-path').textContent + 
-            document.querySelector('#modelModal .modal-content')
-            .querySelector('#file-name').textContent + '.safetensors';
+    const filePath = document.querySelector('#modelModal .modal-content .file-path').dataset.filepath;
     const loraCard = document.querySelector(`.model-card[data-filepath="${filePath}"]`);
     const currentPresets = parsePresets(loraCard.dataset.usage_tips);
     
