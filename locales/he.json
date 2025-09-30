@@ -123,6 +123,20 @@
             "noRemoteImagesAvailable": "אין תמונות דוגמה מרוחקות זמינות למודל זה ב-Civitai"
         }
     },
+    "globalContextMenu": {
+        "downloadExampleImages": {
+            "label": "הורד תמונות דוגמה",
+            "missingPath": "הגדר מיקום הורדה לפני הורדת תמונות דוגמה.",
+            "unavailable": "הורדות תמונות דוגמה אינן זמינות עדיין. נסה שוב לאחר שהדף מסיים להיטען."
+        },
+        "cleanupExampleImages": {
+            "label": "נקה תיקיות תמונות דוגמה",
+            "success": "הועברו {count} תיקיות לתיקיית המחוקים",
+            "none": "אין תיקיות תמונות דוגמה שזקוקות לניקוי",
+            "partial": "הניקוי הושלם עם דילוג על {failures} תיקיות",
+            "error": "ניקוי תיקיות תמונות הדוגמה נכשל: {message}"
+        }
+    },
     "header": {
         "appTitle": "מנהל LoRA",
         "navigation": {
@@ -182,7 +196,8 @@
             "downloadPathTemplates": "תבניות נתיב הורדה",
             "exampleImages": "תמונות דוגמה",
             "misc": "שונות",
-            "metadataArchive": "מסד נתונים של ארכיון מטא-דאטה"
+            "metadataArchive": "מסד נתונים של ארכיון מטא-דאטה",
+            "proxySettings": "הגדרות פרוקסי"
         },
         "contentFiltering": {
             "blurNsfwContent": "טשטש תוכן NSFW",
@@ -239,6 +254,7 @@
                 "byFirstTag": "לפי תגית ראשונה",
                 "baseModelFirstTag": "מודל בסיס + תגית ראשונה",
                 "baseModelAuthor": "מודל בסיס + יוצר",
+                "baseModelAuthorFirstTag": "מודל בסיס + יוצר + תגית ראשונה",
                 "authorFirstTag": "יוצר + תגית ראשונה",
                 "customTemplate": "תבנית מותאמת אישית"
             },
@@ -301,6 +317,24 @@
             "connecting": "מתחבר לשרת ההורדות...",
             "completed": "הושלם",
             "downloadComplete": "ההורדה הושלמה בהצלחה"
+        },
+        "proxySettings": {
+            "enableProxy": "הפעל פרוקסי ברמת האפליקציה",
+            "enableProxyHelp": "אפשר הגדרות פרוקסי מותאמות אישית עבור יישום זה, במקום הגדרות הפרוקסי של המערכת",
+            "proxyType": "סוג פרוקסי",
+            "proxyTypeHelp": "בחר את סוג שרת הפרוקסי (HTTP, HTTPS, SOCKS4, SOCKS5)",
+            "proxyHost": "שרת פרוקסי",
+            "proxyHostPlaceholder": "proxy.example.com",
+            "proxyHostHelp": "שם המארח או כתובת ה-IP של שרת הפרוקסי",
+            "proxyPort": "פורט פרוקסי",
+            "proxyPortPlaceholder": "8080",
+            "proxyPortHelp": "מספר הפורט של שרת הפרוקסי",
+            "proxyUsername": "שם משתמש (אופציונלי)",
+            "proxyUsernamePlaceholder": "username",
+            "proxyUsernameHelp": "שם משתמש לאימות מול הפרוקסי (אם נדרש)",
+            "proxyPassword": "סיסמה (אופציונלי)",
+            "proxyPasswordPlaceholder": "password",
+            "proxyPasswordHelp": "סיסמה לאימות מול הפרוקסי (אם נדרש)"
         }
     },
     "loras": {
@@ -708,6 +742,7 @@
                 "strengthMin": "חוזק מינימלי",
                 "strengthMax": "חוזק מקסימלי",
                 "strength": "חוזק",
+                "clipStrength": "עוצמת CLIP",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "ערך",
                 "add": "הוסף"
@@ -1148,6 +1183,7 @@
         },
         "exampleImages": {
             "pathUpdated": "נתיב תמונות הדוגמה עודכן בהצלחה",
+            "pathUpdateFailed": "עדכון נתיב תמונות הדוגמה נכשל: {message}",
             "downloadInProgress": "ההורדה כבר בתהליך",
             "enterLocationFirst": "אנא הזן מיקום הורדה תחילה",
             "downloadStarted": "הורדת תמונות הדוגמה החלה",
