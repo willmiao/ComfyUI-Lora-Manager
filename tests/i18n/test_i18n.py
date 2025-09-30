@@ -31,6 +31,7 @@ EXPECTED_LOCALES = (
     "fr",
     "es",
     "ko",
+    "he",
 )
 
 REQUIRED_SECTIONS = {"common", "header", "loras", "recipes", "modals"}
