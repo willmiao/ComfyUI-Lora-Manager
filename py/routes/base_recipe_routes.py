@@ -134,7 +134,7 @@ class BaseRecipeRoutes:
         recipe_scanner_getter = lambda: self.recipe_scanner
         civitai_client_getter = lambda: self.civitai_client
 
-        standalone_mode = os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
+        standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1" or os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
         if not standalone_mode:
             from ..metadata_collector import get_metadata  # type: ignore[import-not-found]
             from ..metadata_collector.metadata_processor import (  # type: ignore[import-not-found]

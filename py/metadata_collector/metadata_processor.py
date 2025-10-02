@@ -3,7 +3,7 @@ import os
 from .constants import IMAGES
 
 # Check if running in standalone mode
-standalone_mode = os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
+standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1" or os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
 
 from .constants import MODELS, PROMPTS, SAMPLING, LORAS, SIZE, IS_SAMPLER
 

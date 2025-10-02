@@ -11,7 +11,7 @@ from ..config import config
 from ..services.service_registry import ServiceRegistry
 
 # Check if running in standalone mode
-standalone_mode = os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
+standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1" or os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
 
 if not standalone_mode:
     from ..metadata_collector.metadata_registry import MetadataRegistry

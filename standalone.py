@@ -6,7 +6,7 @@ from py.middleware.cache_middleware import cache_control
 from py.utils.settings_paths import ensure_settings_file, get_settings_dir
 
 # Set environment variable to indicate standalone mode
-os.environ["COMFYUI_LORA_MANAGER_STANDALONE"] = "1"
+os.environ["LORA_MANAGER_STANDALONE"] = "1"
 
 # Create mock modules for py/nodes directory - add this before any other imports
 def mock_nodes_directory():
