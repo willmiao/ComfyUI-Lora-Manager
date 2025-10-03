@@ -183,6 +183,72 @@ async def test_initialize_in_background_applies_scan_result(tmp_path: Path, monk
     assert ws_stub.payloads[-1]["progress"] == 100
 
 
+@pytest.mark.asyncio
+async def test_initialize_in_background_uses_persisted_cache_without_full_scan(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    db_path = tmp_path / 'cache.sqlite'
+    store = PersistentModelCache(db_path=str(db_path))
+
+    file_path = tmp_path / 'one.txt'
+    file_path.write_text('one', encoding='utf-8')
+    normalized = _normalize_path(file_path)
+
+    raw_model = {
+        'file_path': normalized,
+        'file_name': 'one',
+        'model_name': 'one',
+        'folder': '',
+        'size': 3,
+        'modified': 123.0,
+        'sha256': 'hash-one',
+        'base_model': 'test',
+        'preview_url': '',
+        'preview_nsfw_level': 0,
+        'from_civitai': True,
+        'favorite': False,
+        'notes': '',
+        'usage_tips': '',
+        'exclude': False,
+        'db_checked': False,
+        'last_checked_at': 0.0,
+        'tags': ['alpha'],
+        'civitai': {'id': 11, 'modelId': 22, 'name': 'ver'},
+    }
+
+    store.save_cache('dummy', [raw_model], {'hash-one': [normalized]}, [])
+
+    monkeypatch.setattr(model_scanner, 'get_persistent_cache', lambda: store)
+
+    scanner = DummyScanner(tmp_path)
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, 'ws_manager', ws_stub)
+
+    monkeypatch.setattr(scanner, '_count_model_files', lambda: pytest.fail('should not count files when cache loads'))
+
+    def _fail_initialize(*_args, **_kwargs):
+        pytest.fail('should not perform full scan when cache loads')
+
+    monkeypatch.setattr(scanner, '_initialize_cache_sync', _fail_initialize)
+
+    original_sleep = asyncio.sleep
+
+    async def fast_sleep(duration: float) -> None:
+        await original_sleep(0)
+
+    monkeypatch.setattr(model_scanner.asyncio, 'sleep', fast_sleep)
+
+    await scanner.initialize_in_background()
+
+    cache = await scanner.get_cached_data()
+    assert len(cache.raw_data) == 1
+    assert cache.raw_data[0]['file_path'] == normalized
+
+    assert scanner._hash_index.get_path('hash-one') == normalized
+
+    final_payload = ws_stub.payloads[-1]
+    assert final_payload['progress'] == 100
+    assert 'Loaded' in final_payload['details']
+
 
 @pytest.mark.asyncio
 async def test_load_persisted_cache_populates_cache(tmp_path: Path, monkeypatch):

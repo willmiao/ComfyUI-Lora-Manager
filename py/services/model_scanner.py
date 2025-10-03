@@ -205,9 +205,24 @@ class ModelScanner:
                 'pageType': page_type
             })
 
-            await self._load_persisted_cache(page_type)
+            cache_loaded = await self._load_persisted_cache(page_type)
 
-            # If cache loading failed, proceed with full scan
+            if cache_loaded:
+                await asyncio.sleep(0)  # Yield control so the UI can process the cache hydration update
+                await ws_manager.broadcast_init_progress({
+                    'stage': 'finalizing',
+                    'progress': 100,
+                    'status': 'complete',
+                    'details': f"Loaded {len(self._cache.raw_data)} cached {self.model_type} files from disk.",
+                    'scanner_type': self.model_type,
+                    'pageType': page_type
+                })
+                logger.info(
+                    f"{self.model_type.capitalize()} cache hydrated from persisted snapshot with {len(self._cache.raw_data)} models"
+                )
+                return
+
+            # Persistent load failed; fall back to a full scan
             await ws_manager.broadcast_init_progress({
                 'stage': 'scan_folders',
                 'progress': 0,
