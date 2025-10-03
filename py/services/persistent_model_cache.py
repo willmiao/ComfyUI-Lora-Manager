@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import sqlite3
 import threading
 from dataclasses import dataclass
@@ -24,11 +25,12 @@ class PersistentModelCache:
     """Persist core model metadata and hash index data in SQLite."""
 
     _DEFAULT_FILENAME = "model_cache.sqlite"
-    _instance: Optional["PersistentModelCache"] = None
+    _instances: Dict[str, "PersistentModelCache"] = {}
     _instance_lock = threading.Lock()
 
-    def __init__(self, db_path: Optional[str] = None) -> None:
-        self._db_path = db_path or self._resolve_default_path()
+    def __init__(self, library_name: str = "default", db_path: Optional[str] = None) -> None:
+        self._library_name = library_name or "default"
+        self._db_path = db_path or self._resolve_default_path(self._library_name)
         self._db_lock = threading.Lock()
         self._schema_initialized = False
         try:
@@ -41,11 +43,12 @@ class PersistentModelCache:
             self._initialize_schema()
 
     @classmethod
-    def get_default(cls) -> "PersistentModelCache":
+    def get_default(cls, library_name: Optional[str] = None) -> "PersistentModelCache":
+        name = (library_name or "default")
         with cls._instance_lock:
-            if cls._instance is None:
-                cls._instance = cls()
-            return cls._instance
+            if name not in cls._instances:
+                cls._instances[name] = cls(name)
+            return cls._instances[name]
 
     def is_enabled(self) -> bool:
         return os.environ.get("LORA_MANAGER_DISABLE_PERSISTENT_CACHE", "0") != "1"
@@ -203,7 +206,7 @@ class PersistentModelCache:
 
     # Internal helpers -------------------------------------------------
 
-    def _resolve_default_path(self) -> str:
+    def _resolve_default_path(self, library_name: str) -> str:
         override = os.environ.get("LORA_MANAGER_CACHE_DB")
         if override:
             return override
@@ -212,7 +215,12 @@ class PersistentModelCache:
         except Exception as exc:  # pragma: no cover - defensive guard
             logger.warning("Falling back to project directory for cache: %s", exc)
             settings_dir = os.path.dirname(os.path.dirname(self._db_path)) if hasattr(self, "_db_path") else os.getcwd()
-        return os.path.join(settings_dir, self._DEFAULT_FILENAME)
+        safe_name = re.sub(r"[^A-Za-z0-9_.-]", "_", library_name or "default")
+        if safe_name.lower() in ("default", ""):
+            legacy_path = os.path.join(settings_dir, self._DEFAULT_FILENAME)
+            if os.path.exists(legacy_path):
+                return legacy_path
+        return os.path.join(settings_dir, "model_cache", f"{safe_name}.sqlite")
 
     def _initialize_schema(self) -> None:
         with self._db_lock:
@@ -343,4 +351,7 @@ class PersistentModelCache:
 
 
 def get_persistent_cache() -> PersistentModelCache:
-    return PersistentModelCache.get_default()
+    from .settings_manager import settings as settings_service  # Local import to avoid cycles
+
+    library_name = settings_service.get_active_library_name()
+    return PersistentModelCache.get_default(library_name)

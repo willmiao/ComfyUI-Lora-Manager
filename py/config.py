@@ -1,7 +1,7 @@
 import os
 import platform
 import folder_paths # type: ignore
-from typing import List
+from typing import Dict, Iterable, List, Mapping
 import logging
 import json
 import urllib.parse
@@ -38,39 +38,48 @@ class Config:
             self.save_folder_paths_to_settings()
 
     def save_folder_paths_to_settings(self):
-        """Save folder paths to settings.json for standalone mode to use later"""
+        """Persist ComfyUI-derived folder paths to the multi-library settings."""
         try:
-            # Check if we're running in ComfyUI mode (not standalone)           
-            # Load existing settings
-            settings_path = ensure_settings_file(logger)
-            settings = {}
-            if os.path.exists(settings_path):
-                with open(settings_path, 'r', encoding='utf-8') as f:
-                    settings = json.load(f)
+            ensure_settings_file(logger)
+            from .services.settings_manager import settings as settings_service
 
-            # Update settings with paths
-            settings['folder_paths'] = {
-                'loras': self.loras_roots,
-                'checkpoints': self.checkpoints_roots,
-                'unet': self.unet_roots,
-                'embeddings': self.embeddings_roots,
-            }
-            
-            # Add default roots if there's only one item and key doesn't exist
-            if len(self.loras_roots) == 1 and "default_lora_root" not in settings:
-                settings["default_lora_root"] = self.loras_roots[0]
-            
-            if self.checkpoints_roots and len(self.checkpoints_roots) == 1 and "default_checkpoint_root" not in settings:
-                settings["default_checkpoint_root"] = self.checkpoints_roots[0]
+            libraries = settings_service.get_libraries()
+            comfy_library = libraries.get("comfyui", {})
 
-            if self.embeddings_roots and len(self.embeddings_roots) == 1 and "default_embedding_root" not in settings:
-                settings["default_embedding_root"] = self.embeddings_roots[0]
-            
-            # Save settings
-            with open(settings_path, 'w', encoding='utf-8') as f:
-                json.dump(settings, f, indent=2)
-            
-            logger.info("Saved folder paths to settings.json")
+            default_lora_root = comfy_library.get("default_lora_root", "")
+            if not default_lora_root and len(self.loras_roots) == 1:
+                default_lora_root = self.loras_roots[0]
+
+            default_checkpoint_root = comfy_library.get("default_checkpoint_root", "")
+            if (not default_checkpoint_root and self.checkpoints_roots and
+                    len(self.checkpoints_roots) == 1):
+                default_checkpoint_root = self.checkpoints_roots[0]
+
+            default_embedding_root = comfy_library.get("default_embedding_root", "")
+            if (not default_embedding_root and self.embeddings_roots and
+                    len(self.embeddings_roots) == 1):
+                default_embedding_root = self.embeddings_roots[0]
+
+            metadata = dict(comfy_library.get("metadata", {}))
+            metadata.setdefault("display_name", "ComfyUI")
+            metadata["source"] = "comfyui"
+
+            settings_service.upsert_library(
+                "comfyui",
+                folder_paths={
+                    'loras': list(self.loras_roots),
+                    'checkpoints': list(self.checkpoints_roots or []),
+                    'unet': list(self.unet_roots or []),
+                    'embeddings': list(self.embeddings_roots or []),
+                },
+                default_lora_root=default_lora_root,
+                default_checkpoint_root=default_checkpoint_root,
+                default_embedding_root=default_embedding_root,
+                metadata=metadata,
+                activate=True,
+            )
+
+            logger.info("Updated 'comfyui' library with current folder paths")
         except Exception as e:
             logger.warning(f"Failed to save folder paths: {e}")
 
@@ -156,31 +165,91 @@ class Config:
                 return mapped_path
         return link_path
 
+    def _dedupe_existing_paths(self, raw_paths: Iterable[str]) -> Dict[str, str]:
+        dedup: Dict[str, str] = {}
+        for path in raw_paths:
+            if not isinstance(path, str):
+                continue
+            if not os.path.exists(path):
+                continue
+            real_path = os.path.normpath(os.path.realpath(path)).replace(os.sep, '/')
+            normalized = os.path.normpath(path).replace(os.sep, '/')
+            if real_path not in dedup:
+                dedup[real_path] = normalized
+        return dedup
+
+    def _prepare_lora_paths(self, raw_paths: Iterable[str]) -> List[str]:
+        path_map = self._dedupe_existing_paths(raw_paths)
+        unique_paths = sorted(path_map.values(), key=lambda p: p.lower())
+
+        for original_path in unique_paths:
+            real_path = os.path.normpath(os.path.realpath(original_path)).replace(os.sep, '/')
+            if real_path != original_path:
+                self.add_path_mapping(original_path, real_path)
+
+        return unique_paths
+
+    def _prepare_checkpoint_paths(
+        self, checkpoint_paths: Iterable[str], unet_paths: Iterable[str]
+    ) -> List[str]:
+        checkpoint_map = self._dedupe_existing_paths(checkpoint_paths)
+        unet_map = self._dedupe_existing_paths(unet_paths)
+
+        merged_map: Dict[str, str] = {}
+        for real_path, original in {**checkpoint_map, **unet_map}.items():
+            if real_path not in merged_map:
+                merged_map[real_path] = original
+
+        unique_paths = sorted(merged_map.values(), key=lambda p: p.lower())
+
+        checkpoint_values = set(checkpoint_map.values())
+        unet_values = set(unet_map.values())
+        self.checkpoints_roots = [p for p in unique_paths if p in checkpoint_values]
+        self.unet_roots = [p for p in unique_paths if p in unet_values]
+
+        for original_path in unique_paths:
+            real_path = os.path.normpath(os.path.realpath(original_path)).replace(os.sep, '/')
+            if real_path != original_path:
+                self.add_path_mapping(original_path, real_path)
+
+        return unique_paths
+
+    def _prepare_embedding_paths(self, raw_paths: Iterable[str]) -> List[str]:
+        path_map = self._dedupe_existing_paths(raw_paths)
+        unique_paths = sorted(path_map.values(), key=lambda p: p.lower())
+
+        for original_path in unique_paths:
+            real_path = os.path.normpath(os.path.realpath(original_path)).replace(os.sep, '/')
+            if real_path != original_path:
+                self.add_path_mapping(original_path, real_path)
+
+        return unique_paths
+
+    def _apply_library_paths(self, folder_paths: Mapping[str, Iterable[str]]) -> None:
+        self._path_mappings.clear()
+
+        lora_paths = folder_paths.get('loras', []) or []
+        checkpoint_paths = folder_paths.get('checkpoints', []) or []
+        unet_paths = folder_paths.get('unet', []) or []
+        embedding_paths = folder_paths.get('embeddings', []) or []
+
+        self.loras_roots = self._prepare_lora_paths(lora_paths)
+        self.base_models_roots = self._prepare_checkpoint_paths(checkpoint_paths, unet_paths)
+        self.embeddings_roots = self._prepare_embedding_paths(embedding_paths)
+
+        self._scan_symbolic_links()
+
     def _init_lora_paths(self) -> List[str]:
         """Initialize and validate LoRA paths from ComfyUI settings"""
         try:
             raw_paths = folder_paths.get_folder_paths("loras")
-            
-            # Normalize and resolve symlinks, store mapping from resolved -> original
-            path_map = {}
-            for path in raw_paths:
-                if os.path.exists(path):
-                    real_path = os.path.normpath(os.path.realpath(path)).replace(os.sep, '/')
-                    path_map[real_path] = path_map.get(real_path, path.replace(os.sep, "/"))  # preserve first seen
-            
-            # Now sort and use only the deduplicated real paths
-            unique_paths = sorted(path_map.values(), key=lambda p: p.lower())
+            unique_paths = self._prepare_lora_paths(raw_paths)
             logger.info("Found LoRA roots:" + ("\n - " + "\n - ".join(unique_paths) if unique_paths else "[]"))
-            
+
             if not unique_paths:
                 logger.warning("No valid loras folders found in ComfyUI configuration")
                 return []
-            
-            for original_path in unique_paths:
-                real_path = os.path.normpath(os.path.realpath(original_path)).replace(os.sep, '/')
-                if real_path != original_path:
-                    self.add_path_mapping(original_path, real_path)
-            
+
             return unique_paths
         except Exception as e:
             logger.warning(f"Error initializing LoRA paths: {e}")
@@ -189,52 +258,17 @@ class Config:
     def _init_checkpoint_paths(self) -> List[str]:
         """Initialize and validate checkpoint paths from ComfyUI settings"""
         try:
-            # Get checkpoint paths from folder_paths
             raw_checkpoint_paths = folder_paths.get_folder_paths("checkpoints")
             raw_unet_paths = folder_paths.get_folder_paths("unet")
-            
-            # Normalize and resolve symlinks for checkpoints, store mapping from resolved -> original
-            checkpoint_map = {}
-            for path in raw_checkpoint_paths:
-                if os.path.exists(path):
-                    real_path = os.path.normpath(os.path.realpath(path)).replace(os.sep, '/')
-                    checkpoint_map[real_path] = checkpoint_map.get(real_path, path.replace(os.sep, "/"))  # preserve first seen
-            
-            # Normalize and resolve symlinks for unet, store mapping from resolved -> original
-            unet_map = {}
-            for path in raw_unet_paths:
-                if os.path.exists(path):
-                    real_path = os.path.normpath(os.path.realpath(path)).replace(os.sep, '/')
-                    unet_map[real_path] = unet_map.get(real_path, path.replace(os.sep, "/"))  # preserve first seen
-            
-            # Merge both maps and deduplicate by real path
-            merged_map = {}
-            for real_path, orig_path in {**checkpoint_map, **unet_map}.items():
-                if real_path not in merged_map:
-                    merged_map[real_path] = orig_path
+            unique_paths = self._prepare_checkpoint_paths(raw_checkpoint_paths, raw_unet_paths)
 
-            # Now sort and use only the deduplicated real paths
-            unique_paths = sorted(merged_map.values(), key=lambda p: p.lower())
-            
-            # Split back into checkpoints and unet roots for class properties
-            self.checkpoints_roots = [p for p in unique_paths if p in checkpoint_map.values()]
-            self.unet_roots = [p for p in unique_paths if p in unet_map.values()]
-            
-            all_paths = unique_paths
-            
-            logger.info("Found checkpoint roots:" + ("\n - " + "\n - ".join(all_paths) if all_paths else "[]"))
-            
-            if not all_paths:
+            logger.info("Found checkpoint roots:" + ("\n - " + "\n - ".join(unique_paths) if unique_paths else "[]"))
+
+            if not unique_paths:
                 logger.warning("No valid checkpoint folders found in ComfyUI configuration")
                 return []
-            
-            # Initialize path mappings
-            for original_path in all_paths:
-                real_path = os.path.normpath(os.path.realpath(original_path)).replace(os.sep, '/')
-                if real_path != original_path:
-                    self.add_path_mapping(original_path, real_path)
-            
-            return all_paths
+
+            return unique_paths
         except Exception as e:
             logger.warning(f"Error initializing checkpoint paths: {e}")
             return []
@@ -243,27 +277,13 @@ class Config:
         """Initialize and validate embedding paths from ComfyUI settings"""
         try:
             raw_paths = folder_paths.get_folder_paths("embeddings")
-            
-            # Normalize and resolve symlinks, store mapping from resolved -> original
-            path_map = {}
-            for path in raw_paths:
-                if os.path.exists(path):
-                    real_path = os.path.normpath(os.path.realpath(path)).replace(os.sep, '/')
-                    path_map[real_path] = path_map.get(real_path, path.replace(os.sep, "/"))  # preserve first seen
-            
-            # Now sort and use only the deduplicated real paths
-            unique_paths = sorted(path_map.values(), key=lambda p: p.lower())
+            unique_paths = self._prepare_embedding_paths(raw_paths)
             logger.info("Found embedding roots:" + ("\n - " + "\n - ".join(unique_paths) if unique_paths else "[]"))
-            
+
             if not unique_paths:
                 logger.warning("No valid embeddings folders found in ComfyUI configuration")
                 return []
-            
-            for original_path in unique_paths:
-                real_path = os.path.normpath(os.path.realpath(original_path)).replace(os.sep, '/')
-                if real_path != original_path:
-                    self.add_path_mapping(original_path, real_path)
-            
+
             return unique_paths
         except Exception as e:
             logger.warning(f"Error initializing embedding paths: {e}")
@@ -272,7 +292,7 @@ class Config:
     def get_preview_static_url(self, preview_path: str) -> str:
         if not preview_path:
             return ""
-        
+
         real_path = os.path.realpath(preview_path).replace(os.sep, '/')
         
         # Find longest matching path (most specific match)
@@ -289,8 +309,23 @@ class Config:
             safe_parts = [urllib.parse.quote(part) for part in relative_path.split('/')]
             safe_path = '/'.join(safe_parts)
             return f'{best_route}/{safe_path}'
-        
+
         return ""
+
+    def apply_library_settings(self, library_config: Mapping[str, object]) -> None:
+        """Update runtime paths to match the provided library configuration."""
+        folder_paths = library_config.get('folder_paths') if isinstance(library_config, Mapping) else {}
+        if not isinstance(folder_paths, Mapping):
+            folder_paths = {}
+
+        self._apply_library_paths(folder_paths)
+
+        logger.info(
+            "Applied library settings with %d lora roots, %d checkpoint roots, and %d embedding roots",
+            len(self.loras_roots or []),
+            len(self.base_models_roots or []),
+            len(self.embeddings_roots or []),
+        )
 
 # Global config instance
 config = Config()
