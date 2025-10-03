@@ -209,3 +209,88 @@ async def test_misc_routes_bind_produces_expected_handlers():
 
     expected_names = {definition.handler_name for definition in MISC_ROUTE_DEFINITIONS}
     assert set(mapping.keys()) == expected_names
+
+
+def test_ensure_handler_mapping_caches_result():
+    call_records = []
+
+    class RecordingHandlerSet:
+        def __init__(self, **handlers):
+            call_records.append(handlers)
+            self._handlers = handlers
+
+        def to_route_mapping(self):
+            return {"health_check": self._handlers["health"].health_check}
+
+    controller = MiscRoutes(
+        settings_service=DummySettings(),
+        usage_stats_factory=lambda: SimpleNamespace(process_execution=noop_async, get_stats=noop_async),
+        prompt_server=FakePromptServer,
+        service_registry_adapter=ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+        ),
+        metadata_provider_factory=fake_metadata_provider_factory,
+        metadata_archive_manager_factory=fake_metadata_archive_manager_factory,
+        metadata_provider_updater=noop_async,
+        downloader_factory=dummy_downloader_factory,
+        handler_set_factory=RecordingHandlerSet,
+    )
+
+    first_mapping = controller._ensure_handler_mapping()
+    second_mapping = controller._ensure_handler_mapping()
+
+    assert first_mapping is second_mapping, "Expected cached handler mapping to be reused"
+    assert len(call_records) == 1, "Handler set factory should only be invoked once"
+
+
+def test_create_handler_set_uses_provided_dependencies():
+    recorded_handlers: list[dict] = []
+
+    class RecordingHandlerSet:
+        def __init__(self, **handlers):
+            recorded_handlers.append(handlers)
+
+        def to_route_mapping(self):
+            return {}
+
+    class CustomPromptServer:
+        instance = SimpleNamespace()
+
+    class FakeUsageStats:
+        async def process_execution(self, _prompt_id):  # pragma: no cover - helper
+            return None
+
+        async def get_stats(self):  # pragma: no cover - helper
+            return {}
+
+    fake_node_registry = SimpleNamespace()
+
+    controller = MiscRoutes(
+        settings_service=DummySettings(),
+        usage_stats_factory=lambda: FakeUsageStats(),
+        prompt_server=CustomPromptServer,
+        service_registry_adapter=ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+        ),
+        metadata_provider_factory=fake_metadata_provider_factory,
+        metadata_archive_manager_factory=fake_metadata_archive_manager_factory,
+        metadata_provider_updater=noop_async,
+        downloader_factory=dummy_downloader_factory,
+        handler_set_factory=RecordingHandlerSet,
+        node_registry=fake_node_registry,
+        standalone_mode_flag=True,
+    )
+
+    controller._create_handler_set()
+
+    assert recorded_handlers, "Expected handler factory to capture handler instances"
+    handler_kwargs = recorded_handlers[0]
+    node_registry_handler = handler_kwargs["node_registry"]
+
+    assert node_registry_handler._node_registry is fake_node_registry
+    assert node_registry_handler._prompt_server is CustomPromptServer
+    assert node_registry_handler._standalone_mode is True
