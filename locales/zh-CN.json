@@ -194,6 +194,12 @@
         "civitaiApiKey": "Civitai API 密钥",
         "civitaiApiKeyPlaceholder": "请输入你的 Civitai API 密钥",
         "civitaiApiKeyHelp": "用于从 Civitai 下载模型时的身份验证",
+        "openSettingsFileLocation": {
+            "label": "打开设置文件夹",
+            "tooltip": "打开包含 settings.json 的文件夹",
+            "success": "已打开 settings.json 文件夹",
+            "failed": "无法打开 settings.json 文件夹"
+        },
         "sections": {
             "contentFiltering": "内容过滤",
             "videoSettings": "视频设置",

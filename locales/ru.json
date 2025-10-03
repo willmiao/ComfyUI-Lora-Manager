@@ -188,6 +188,12 @@
         "civitaiApiKey": "Ключ API Civitai",
         "civitaiApiKeyPlaceholder": "Введите ваш ключ API Civitai",
         "civitaiApiKeyHelp": "Используется для аутентификации при загрузке моделей с Civitai",
+        "openSettingsFileLocation": {
+            "label": "Открыть папку настроек",
+            "tooltip": "Открыть папку, содержащую settings.json",
+            "success": "Папка settings.json открыта",
+            "failed": "Не удалось открыть папку settings.json"
+        },
         "sections": {
             "contentFiltering": "Фильтрация контента",
             "videoSettings": "Настройки видео",

@@ -183,6 +183,14 @@ export class SettingsManager {
             button.addEventListener('click', () => this.toggleInputVisibility(button));
         });
 
+        const openSettingsLocationButton = document.querySelector('.settings-open-location-button');
+        if (openSettingsLocationButton) {
+            openSettingsLocationButton.addEventListener('click', () => {
+                const filePath = openSettingsLocationButton.dataset.settingsPath;
+                this.openSettingsFileLocation(filePath);
+            });
+        }
+
         ['lora', 'checkpoint', 'embedding'].forEach(modelType => {
             const customInput = document.getElementById(`${modelType}CustomTemplate`);
             if (customInput) {
@@ -208,6 +216,32 @@ export class SettingsManager {
         });
         
         this.initialized = true;
+    }
+
+    async openSettingsFileLocation(filePath) {
+        if (!filePath) {
+            showToast('settings.openSettingsFileLocation.failed', {}, 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/lm/open-file-location', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ file_path: filePath }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Request failed with status ${response.status}`);
+            }
+
+            showToast('settings.openSettingsFileLocation.success', {}, 'success');
+        } catch (error) {
+            console.error('Failed to open settings file location:', error);
+            showToast('settings.openSettingsFileLocation.failed', {}, 'error');
+        }
     }
 
     async loadSettingsToUI() {

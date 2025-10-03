@@ -188,6 +188,12 @@
         "civitaiApiKey": "Civitai API Key",
         "civitaiApiKeyPlaceholder": "Geben Sie Ihren Civitai API Key ein",
         "civitaiApiKeyHelp": "Wird für die Authentifizierung beim Herunterladen von Modellen von Civitai verwendet",
+        "openSettingsFileLocation": {
+            "label": "Einstellungsordner öffnen",
+            "tooltip": "Den Ordner mit der settings.json öffnen",
+            "success": "Einstellungsordner geöffnet",
+            "failed": "Einstellungsordner konnte nicht geöffnet werden"
+        },
         "sections": {
             "contentFiltering": "Inhaltsfilterung",
             "videoSettings": "Video-Einstellungen",

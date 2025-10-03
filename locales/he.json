@@ -188,6 +188,12 @@
         "civitaiApiKey": "מפתח API של Civitai",
         "civitaiApiKeyPlaceholder": "הזן את מפתח ה-API שלך מ-Civitai",
         "civitaiApiKeyHelp": "משמש לאימות בעת הורדת מודלים מ-Civitai",
+        "openSettingsFileLocation": {
+            "label": "פתח תיקיית הגדרות",
+            "tooltip": "פתח את התיקייה שמכילה את ‎settings.json",
+            "success": "תיקיית settings.json נפתחה",
+            "failed": "לא ניתן לפתוח את תיקיית settings.json"
+        },
         "sections": {
             "contentFiltering": "סינון תוכן",
             "videoSettings": "הגדרות וידאו",

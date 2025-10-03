@@ -188,6 +188,12 @@
         "civitaiApiKey": "Civitai API 키",
         "civitaiApiKeyPlaceholder": "Civitai API 키를 입력하세요",
         "civitaiApiKeyHelp": "Civitai에서 모델을 다운로드할 때 인증에 사용됩니다",
+        "openSettingsFileLocation": {
+            "label": "설정 폴더 열기",
+            "tooltip": "settings.json이 있는 폴더를 엽니다",
+            "success": "settings.json 폴더를 열었습니다",
+            "failed": "settings.json 폴더를 열지 못했습니다"
+        },
         "sections": {
             "contentFiltering": "콘텐츠 필터링",
             "videoSettings": "비디오 설정",

@@ -23,6 +23,48 @@
     max-width: 650px; /* Further increased from 600px for more space */
 }
 
+.settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-1);
+    margin-bottom: var(--space-2);
+}
+
+.settings-header h2 {
+    margin: 0;
+}
+
+.settings-open-location-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: none;
+    color: var(--text-color);
+    opacity: 0.6;
+    cursor: pointer;
+    border-radius: var(--border-radius-xs);
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.settings-open-location-button:hover,
+.settings-open-location-button:focus-visible {
+    opacity: 1;
+    background-color: rgba(var(--border-color-rgb, 148, 163, 184), 0.2);
+    outline: none;
+}
+
+.settings-open-location-button i {
+    font-size: 1em;
+}
+
+.settings-open-location-button:focus-visible {
+    box-shadow: 0 0 0 2px rgba(var(--border-color-rgb, 148, 163, 184), 0.6);
+}
+
 /* Settings Links */
 .settings-links {
     margin-top: var(--space-3);
