@@ -37,7 +37,7 @@ async def initialize_metadata_providers():
                 sqlite_provider = SQLiteModelMetadataProvider(db_path)
                 provider_manager.register_provider('sqlite', sqlite_provider)
                 providers.append(('sqlite', sqlite_provider))
-                logger.info(f"SQLite metadata provider registered with database: {db_path}")
+                logger.debug(f"SQLite metadata provider registered with database: {db_path}")
             else:
                 logger.warning("Metadata archive database is enabled but database file not found")
         except Exception as e:
@@ -72,7 +72,7 @@ async def initialize_metadata_providers():
         if ordered_providers:
             fallback_provider = FallbackMetadataProvider(ordered_providers)
             provider_manager.register_provider('fallback', fallback_provider, is_default=True)
-            logger.info(f"Fallback metadata provider registered with {len(ordered_providers)} providers, Civitai API first")
+            logger.debug(f"Fallback metadata provider registered with {len(ordered_providers)} providers, Civitai API first")
     elif len(providers) == 1:
         # Only one provider available, set it as default
         provider_name, provider = providers[0]
