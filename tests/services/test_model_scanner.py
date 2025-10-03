@@ -1,5 +1,6 @@
 import asyncio
 import os
+import sqlite3
 from pathlib import Path
 from typing import List
 
@@ -304,3 +305,77 @@ async def test_load_persisted_cache_populates_cache(tmp_path: Path, monkeypatch)
     assert scanner._tags_count == {'alpha': 1}
     assert ws_stub.payloads[-1]['stage'] == 'loading_cache'
     assert ws_stub.payloads[-1]['progress'] == 1
+
+
+@pytest.mark.asyncio
+async def test_update_single_model_cache_persists_changes(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    db_path = tmp_path / 'cache.sqlite'
+    monkeypatch.setenv('LORA_MANAGER_CACHE_DB', str(db_path))
+    monkeypatch.setattr(PersistentModelCache, '_instance', None, raising=False)
+
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+
+    await scanner._initialize_cache()
+
+    normalized = _normalize_path(tmp_path / 'one.txt')
+    updated_metadata = {
+        'file_path': normalized,
+        'file_name': 'one',
+        'model_name': 'renamed',
+        'sha256': 'hash-one',
+        'tags': ['gamma', 'delta'],
+        'size': 42,
+        'modified': 456.0,
+        'base_model': 'base',
+        'from_civitai': True,
+    }
+
+    await scanner.update_single_model_cache(normalized, normalized, updated_metadata)
+
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT model_name FROM models WHERE file_path = ?",
+            (normalized,),
+        ).fetchone()
+
+        assert row is not None
+        assert row['model_name'] == 'renamed'
+
+        tags = {
+            record['tag']
+            for record in conn.execute(
+                "SELECT tag FROM model_tags WHERE file_path = ?",
+                (normalized,),
+            )
+        }
+
+        assert tags == {'gamma', 'delta'}
+
+
+@pytest.mark.asyncio
+async def test_batch_delete_persists_removal(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    db_path = tmp_path / 'cache.sqlite'
+    monkeypatch.setenv('LORA_MANAGER_CACHE_DB', str(db_path))
+    monkeypatch.setattr(PersistentModelCache, '_instance', None, raising=False)
+
+    first, _, _ = _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+
+    await scanner._initialize_cache()
+
+    normalized = _normalize_path(first)
+    removed = await scanner._batch_update_cache_for_deleted_models([normalized])
+
+    assert removed is True
+
+    with sqlite3.connect(db_path) as conn:
+        remaining = conn.execute(
+            "SELECT COUNT(*) FROM models WHERE file_path = ?",
+            (normalized,),
+        ).fetchone()[0]
+
+    assert remaining == 0
