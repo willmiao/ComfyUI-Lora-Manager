@@ -657,9 +657,11 @@ class ModelScanner:
                 # Update folders list
                 all_folders = set(item.get('folder', '') for item in self._cache.raw_data)
                 self._cache.folders = sorted(list(all_folders), key=lambda x: x.lower())
-                
+
                 # Resort cache
                 await self._cache.resort()
+
+                await self._persist_current_cache()
                 
             logger.info(f"{self.model_type.capitalize()} Scanner: Cache reconciliation completed in {time.time() - start_time:.2f} seconds. Added {total_added}, removed {total_removed} models.")
         except Exception as e:
@@ -1087,7 +1089,7 @@ class ModelScanner:
     async def update_single_model_cache(self, original_path: str, new_path: str, metadata: Dict) -> bool:
         """Update cache after a model has been moved or modified"""
         cache = await self.get_cached_data()
-        
+
         existing_item = next((item for item in cache.raw_data if item['file_path'] == original_path), None)
         if existing_item and 'tags' in existing_item:
             for tag in existing_item.get('tags', []):
@@ -1099,10 +1101,12 @@ class ModelScanner:
         self._hash_index.remove_by_path(original_path)
         
         cache.raw_data = [
-            item for item in cache.raw_data 
+            item for item in cache.raw_data
             if item['file_path'] != original_path
         ]
-        
+
+        cache_modified = bool(existing_item) or bool(metadata)
+
         if metadata:
             normalized_new_path = new_path.replace(os.sep, '/')
             if original_path == new_path and existing_item:
@@ -1129,7 +1133,10 @@ class ModelScanner:
                 self._tags_count[tag] = self._tags_count.get(tag, 0) + 1
 
         await cache.resort()
-        
+
+        if cache_modified:
+            await self._persist_current_cache()
+
         return True
         
     def has_hash(self, sha256: str) -> bool:
@@ -1363,7 +1370,9 @@ class ModelScanner:
             
             # Resort cache
             await self._cache.resort()
-            
+
+            await self._persist_current_cache()
+
             return True
             
         except Exception as e:
