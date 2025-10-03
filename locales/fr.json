@@ -188,6 +188,12 @@
         "civitaiApiKey": "Clé API Civitai",
         "civitaiApiKeyPlaceholder": "Entrez votre clé API Civitai",
         "civitaiApiKeyHelp": "Utilisée pour l'authentification lors du téléchargement de modèles depuis Civitai",
+        "openSettingsFileLocation": {
+            "label": "Ouvrir le dossier des paramètres",
+            "tooltip": "Ouvrir le dossier contenant settings.json",
+            "success": "Dossier settings.json ouvert",
+            "failed": "Impossible d'ouvrir le dossier settings.json"
+        },
         "sections": {
             "contentFiltering": "Filtrage du contenu",
             "videoSettings": "Paramètres vidéo",

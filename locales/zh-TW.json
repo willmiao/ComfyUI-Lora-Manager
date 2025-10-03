@@ -188,6 +188,12 @@
         "civitaiApiKey": "Civitai API 金鑰",
         "civitaiApiKeyPlaceholder": "請輸入您的 Civitai API 金鑰",
         "civitaiApiKeyHelp": "用於從 Civitai 下載模型時的身份驗證",
+        "openSettingsFileLocation": {
+            "label": "開啟設定資料夾",
+            "tooltip": "開啟包含 settings.json 的資料夾",
+            "success": "已開啟 settings.json 資料夾",
+            "failed": "無法開啟 settings.json 資料夾"
+        },
         "sections": {
             "contentFiltering": "內容過濾",
             "videoSettings": "影片設定",

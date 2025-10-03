@@ -2,7 +2,17 @@
 <div id="settingsModal" class="modal">
     <div class="modal-content settings-modal">
         <button class="close" onclick="modalManager.closeModal('settingsModal')">&times;</button>
-        <h2>{{ t('common.actions.settings') }}</h2>
+        <div class="settings-header">
+            <h2>{{ t('common.actions.settings') }}</h2>
+            <button
+                type="button"
+                class="settings-open-location-button"
+                data-settings-path="{{ settings.settings_file }}"
+                aria-label="{{ t('settings.openSettingsFileLocation.tooltip') }}"
+                title="{{ t('settings.openSettingsFileLocation.tooltip') }}">
+                <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+            </button>
+        </div>
         <div class="settings-form">
             <div class="setting-item api-key-item">
                 <div class="setting-row">
