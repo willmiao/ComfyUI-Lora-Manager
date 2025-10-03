@@ -4,6 +4,7 @@ import logging
 import os
 
 from ..utils.models import BaseModelMetadata
+from ..utils.metadata_manager import MetadataManager
 from .model_query import FilterCriteria, ModelCacheRepository, ModelFilterSet, SearchStrategy, SettingsProvider
 from .settings_manager import settings as default_settings
 
@@ -313,24 +314,24 @@ class BaseModelService(ABC):
         return {'civitai_url': None, 'model_id': None, 'version_id': None}
 
     async def get_model_metadata(self, file_path: str) -> Optional[Dict]:
-        """Get filtered CivitAI metadata for a model by file path"""
-        cache = await self.scanner.get_cached_data()
-        
-        for model in cache.raw_data:
-            if model.get('file_path') == file_path:
-                return self.filter_civitai_data(model.get("civitai", {}))
-        
-        return None
+        """Load full metadata for a single model.
+
+        Listing/search endpoints return lightweight cache entries; this method performs
+        a lazy read of the on-disk metadata snapshot when callers need full detail.
+        """
+        metadata, should_skip = await MetadataManager.load_metadata(file_path, self.metadata_class)
+        if should_skip or metadata is None:
+            return None
+        return self.filter_civitai_data(metadata.to_dict().get("civitai", {}))
+
 
     async def get_model_description(self, file_path: str) -> Optional[str]:
-        """Get model description by file path"""
-        cache = await self.scanner.get_cached_data()
-        
-        for model in cache.raw_data:
-            if model.get('file_path') == file_path:
-                return model.get('modelDescription', '')
-        
-        return None
+        """Return the stored modelDescription field for a model."""
+        metadata, should_skip = await MetadataManager.load_metadata(file_path, self.metadata_class)
+        if should_skip or metadata is None:
+            return None
+        return metadata.modelDescription or ''
+
 
     async def search_relative_paths(self, search_term: str, limit: int = 15) -> List[str]:
         """Search model relative file paths for autocomplete functionality"""

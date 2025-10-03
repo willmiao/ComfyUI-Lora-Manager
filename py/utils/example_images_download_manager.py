@@ -345,14 +345,19 @@ class DownloadManager:
                 self._progress['processed_models'].add(model_hash)
                 return False  # Return False to indicate no remote download happened
             
+            full_model = await MetadataUpdater.get_updated_model(
+                model_hash, scanner
+            )
+            civitai_payload = (full_model or {}).get('civitai', {}) if full_model else {}
+
             # If no local images, try to download from remote
-            elif model.get('civitai') and model.get('civitai', {}).get('images'):
-                images = model.get('civitai', {}).get('images', [])
-                
+            if civitai_payload.get('images'):
+                images = civitai_payload.get('images', [])
+
                 success, is_stale = await ExampleImagesProcessor.download_model_images(
                     model_hash, model_name, images, model_dir, optimize, downloader
                 )
-                
+
                 # If metadata is stale, try to refresh it
                 if is_stale and model_hash not in self._progress['refreshed_models']:
                     await MetadataUpdater.refresh_model_metadata(
@@ -363,16 +368,17 @@ class DownloadManager:
                     updated_model = await MetadataUpdater.get_updated_model(
                         model_hash, scanner
                     )
+                    updated_civitai = (updated_model or {}).get('civitai', {}) if updated_model else {}
 
-                    if updated_model and updated_model.get('civitai', {}).get('images'):
+                    if updated_civitai.get('images'):
                         # Retry download with updated metadata
-                        updated_images = updated_model.get('civitai', {}).get('images', [])
+                        updated_images = updated_civitai.get('images', [])
                         success, _ = await ExampleImagesProcessor.download_model_images(
                             model_hash, model_name, updated_images, model_dir, optimize, downloader
                         )
 
                     self._progress['refreshed_models'].add(model_hash)
-                
+
                 # Mark as processed if successful, or as failed if unsuccessful after refresh
                 if success:
                     self._progress['processed_models'].add(model_hash)
@@ -381,13 +387,13 @@ class DownloadManager:
                     if model_hash in self._progress['refreshed_models']:
                         self._progress['failed_models'].add(model_hash)
                         logger.info(f"Marking model {model_name} as failed after metadata refresh")
-                    
+
                 return True  # Return True to indicate a remote download happened
             else:
                 # No civitai data or images available, mark as failed to avoid future attempts
                 self._progress['failed_models'].add(model_hash)
                 logger.debug(f"No civitai images available for model {model_name}, marking as failed")
-            
+
             # Save progress periodically
             if self._progress['completed'] % 10 == 0 or self._progress['completed'] == self._progress['total'] - 1:
                 self._save_progress(output_dir)
@@ -627,51 +633,59 @@ class DownloadManager:
                 self._progress['processed_models'].add(model_hash)
                 return False  # Return False to indicate no remote download happened
             
+            full_model = await MetadataUpdater.get_updated_model(
+                model_hash, scanner
+            )
+            civitai_payload = (full_model or {}).get('civitai', {}) if full_model else {}
+
             # If no local images, try to download from remote
-            elif model.get('civitai') and model.get('civitai', {}).get('images'):
-                images = model.get('civitai', {}).get('images', [])
-                
+            if civitai_payload.get('images'):
+                images = civitai_payload.get('images', [])
+
                 success, is_stale, failed_images = await ExampleImagesProcessor.download_model_images_with_tracking(
                     model_hash, model_name, images, model_dir, optimize, downloader
                 )
-                
+
                 # If metadata is stale, try to refresh it
                 if is_stale and model_hash not in self._progress['refreshed_models']:
                     await MetadataUpdater.refresh_model_metadata(
                         model_hash, model_name, scanner_type, scanner, self._progress
                     )
-                    
+
                     # Get the updated model data
                     updated_model = await MetadataUpdater.get_updated_model(
                         model_hash, scanner
                     )
-                    
-                    if updated_model and updated_model.get('civitai', {}).get('images'):
+                    updated_civitai = (updated_model or {}).get('civitai', {}) if updated_model else {}
+
+                    if updated_civitai.get('images'):
                         # Retry download with updated metadata
-                        updated_images = updated_model.get('civitai', {}).get('images', [])
+                        updated_images = updated_civitai.get('images', [])
                         success, _, additional_failed_images = await ExampleImagesProcessor.download_model_images_with_tracking(
                             model_hash, model_name, updated_images, model_dir, optimize, downloader
                         )
-                        
+
                         # Combine failed images from both attempts
                         failed_images.extend(additional_failed_images)
-                    
+
                     self._progress['refreshed_models'].add(model_hash)
-                
+
                 # For forced downloads, remove failed images from metadata
                 if failed_images:
                     # Create a copy of images excluding failed ones
                     await self._remove_failed_images_from_metadata(
                         model_hash, model_name, failed_images, scanner
                     )
-                
+
                 # Mark as processed
                 if success or failed_images:  # Mark as processed if we successfully downloaded some images or removed failed ones
                     self._progress['processed_models'].add(model_hash)
-                    
+
                 return True  # Return True to indicate a remote download happened
             else:
                 logger.debug(f"No civitai images available for model {model_name}")
+
+
                 return False
                 
         except Exception as e:

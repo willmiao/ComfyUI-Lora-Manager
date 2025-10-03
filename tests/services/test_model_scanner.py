@@ -9,6 +9,7 @@ from py.services import model_scanner
 from py.services.model_cache import ModelCache
 from py.services.model_hash_index import ModelHashIndex
 from py.services.model_scanner import CacheBuildResult, ModelScanner
+from py.services.persistent_model_cache import PersistentModelCache
 from py.utils.models import BaseModelMetadata
 
 
@@ -76,6 +77,11 @@ def reset_model_scanner_singletons():
     yield
     ModelScanner._instances.clear()
     ModelScanner._locks.clear()
+
+
+@pytest.fixture(autouse=True)
+def disable_persistent_cache_env(monkeypatch):
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '1')
 
 
 @pytest.fixture(autouse=True)
@@ -175,3 +181,60 @@ async def test_initialize_in_background_applies_scan_result(tmp_path: Path, monk
     assert scanner._tags_count == {"alpha": 1, "beta": 1}
     assert scanner._excluded_models == [_normalize_path(tmp_path / "skip-file.txt")]
     assert ws_stub.payloads[-1]["progress"] == 100
+
+
+
+@pytest.mark.asyncio
+async def test_load_persisted_cache_populates_cache(tmp_path: Path, monkeypatch):
+    # Enable persistence for this specific test and back it with a temp database
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    db_path = tmp_path / 'cache.sqlite'
+    store = PersistentModelCache(db_path=str(db_path))
+
+    file_path = tmp_path / 'one.txt'
+    file_path.write_text('one', encoding='utf-8')
+    normalized = _normalize_path(file_path)
+
+    raw_model = {
+        'file_path': normalized,
+        'file_name': 'one',
+        'model_name': 'one',
+        'folder': '',
+        'size': 3,
+        'modified': 123.0,
+        'sha256': 'hash-one',
+        'base_model': 'test',
+        'preview_url': '',
+        'preview_nsfw_level': 0,
+        'from_civitai': True,
+        'favorite': False,
+        'notes': '',
+        'usage_tips': '',
+        'exclude': False,
+        'db_checked': False,
+        'last_checked_at': 0.0,
+        'tags': ['alpha'],
+        'civitai': {'id': 11, 'modelId': 22, 'name': 'ver', 'trainedWords': ['abc']},
+    }
+
+    store.save_cache('dummy', [raw_model], {'hash-one': [normalized]}, [])
+
+    monkeypatch.setattr(model_scanner, 'get_persistent_cache', lambda: store)
+
+    scanner = DummyScanner(tmp_path)
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, 'ws_manager', ws_stub)
+
+    loaded = await scanner._load_persisted_cache('dummy')
+    assert loaded is True
+
+    cache = await scanner.get_cached_data()
+    assert len(cache.raw_data) == 1
+    entry = cache.raw_data[0]
+    assert entry['file_path'] == normalized
+    assert entry['tags'] == ['alpha']
+    assert entry['civitai']['trainedWords'] == ['abc']
+    assert scanner._hash_index.get_path('hash-one') == normalized
+    assert scanner._tags_count == {'alpha': 1}
+    assert ws_stub.payloads[-1]['stage'] == 'loading_cache'
+    assert ws_stub.payloads[-1]['progress'] == 1

@@ -95,21 +95,35 @@ class MetadataUpdater:
     
     @staticmethod
     async def get_updated_model(model_hash, scanner):
-        """Get updated model data
-        
-        Args:
-            model_hash: SHA256 hash of the model
-            scanner: Scanner instance
-            
-        Returns:
-            dict: Updated model data or None if not found
-        """
+        """Load the most recent metadata for a model identified by hash."""
         cache = await scanner.get_cached_data()
+        target = None
         for item in cache.raw_data:
             if item.get('sha256') == model_hash:
-                return item
-        return None
-    
+                target = item
+                break
+
+        if not target:
+            return None
+
+        file_path = target.get('file_path')
+        if not file_path:
+            return target
+
+        model_cls = getattr(scanner, 'model_class', None)
+        if model_cls is None:
+            metadata, should_skip = await MetadataManager.load_metadata(file_path)
+        else:
+            metadata, should_skip = await MetadataManager.load_metadata(file_path, model_cls)
+
+        if should_skip or metadata is None:
+            return target
+
+        rich_metadata = metadata.to_dict()
+        rich_metadata.setdefault('folder', target.get('folder', ''))
+        return rich_metadata
+
+
     @staticmethod
     async def update_metadata_from_local_examples(model_hash, model, scanner_type, scanner, model_dir):
         """Update model metadata with local example image information
