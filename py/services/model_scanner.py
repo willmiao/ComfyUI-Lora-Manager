@@ -668,47 +668,6 @@ class ModelScanner:
             logger.error(f"{self.model_type.capitalize()} Scanner: Error reconciling cache: {e}", exc_info=True)
         finally:
             self._is_initializing = False # Unset flag
-
-    async def scan_all_models(self) -> List[Dict]:
-        """Scan all model directories and return metadata"""
-        scan_result = await self._gather_model_data()
-        self._excluded_models = scan_result.excluded_models
-        return scan_result.raw_data
-    
-    async def _scan_directory(self, root_path: str) -> List[Dict]:
-        """Scan a single directory for model files"""
-        models = []
-        original_root = root_path  # Save original root path
-
-        async def scan_recursive(path: str, visited_paths: set):
-            """Recursively scan directory, avoiding circular symlinks"""
-            try:
-                real_path = os.path.realpath(path)
-                if real_path in visited_paths:
-                    logger.debug(f"Skipping already visited path: {path}")
-                    return
-                visited_paths.add(real_path)
-
-                with os.scandir(path) as it:
-                    entries = list(it)
-                    for entry in entries:
-                        try:
-                            if entry.is_file(follow_symlinks=True) and any(entry.name.endswith(ext) for ext in self.file_extensions):
-                                file_path = entry.path.replace(os.sep, "/")
-                                result = await self._process_model_file(file_path, original_root)
-                                # Only add to models if result is not None (skip corrupted metadata)
-                                if result:
-                                    models.append(result)
-                                await asyncio.sleep(0)
-                            elif entry.is_dir(follow_symlinks=True):
-                                await scan_recursive(entry.path, visited_paths)
-                        except Exception as e:
-                            logger.error(f"Error processing entry {entry.path}: {e}")
-            except Exception as e:
-                logger.error(f"Error scanning {path}: {e}")
-
-        await scan_recursive(root_path, set())
-        return models
     
     def is_initializing(self) -> bool:
         """Check if the scanner is currently initializing"""
