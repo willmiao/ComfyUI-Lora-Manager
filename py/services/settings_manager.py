@@ -2,7 +2,7 @@ import copy
 import json
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 from ..utils.settings_paths import ensure_settings_file
@@ -143,7 +143,7 @@ class SettingsManager:
             self._save_settings()
 
     def _current_timestamp(self) -> str:
-        return datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+        return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
     def _build_library_payload(
         self,

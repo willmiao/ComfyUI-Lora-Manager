@@ -111,7 +111,8 @@ def test_upsert_library_creates_entry_and_activates(manager, tmp_path):
     assert manager.get_active_library_name() == "studio"
     libraries = manager.get_libraries()
     stored_paths = libraries["studio"]["folder_paths"]["loras"]
-    assert str(lora_dir).replace(os.sep, "/") in stored_paths
+    normalized_stored_paths = [p.replace(os.sep, "/") for p in stored_paths]
+    assert str(lora_dir).replace(os.sep, "/") in normalized_stored_paths
 
 
 def test_delete_library_switches_active(manager, tmp_path):
