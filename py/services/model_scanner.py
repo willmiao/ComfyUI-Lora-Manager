@@ -82,9 +82,26 @@ class ModelScanner:
         self._excluded_models = []  # List to track excluded models
         self._persistent_cache = get_persistent_cache()
         self._initialized = True
-        
+
         # Register this service
         asyncio.create_task(self._register_service())
+
+    def on_library_changed(self) -> None:
+        """Reset caches when the active library changes."""
+        self._persistent_cache = get_persistent_cache()
+        self._cache = None
+        self._hash_index = ModelHashIndex()
+        self._tags_count = {}
+        self._excluded_models = []
+        self._is_initializing = False
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and not loop.is_closed():
+            loop.create_task(self.initialize_in_background())
     
     async def _register_service(self):
         """Register this instance with the ServiceRegistry"""

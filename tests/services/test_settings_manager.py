@@ -1,4 +1,5 @@
 import json
+import os
 
 import pytest
 
@@ -88,3 +89,43 @@ def test_migrates_legacy_settings_file(tmp_path, monkeypatch):
     assert migrated_path == str(target_dir / "settings.json")
     assert (target_dir / "settings.json").exists()
     assert not legacy_file.exists()
+
+
+def test_migrate_creates_default_library(manager):
+    libraries = manager.get_libraries()
+    assert "default" in libraries
+    assert manager.get_active_library_name() == "default"
+    assert libraries["default"].get("folder_paths", {}) == manager.settings.get("folder_paths", {})
+
+
+def test_upsert_library_creates_entry_and_activates(manager, tmp_path):
+    lora_dir = tmp_path / "loras"
+    lora_dir.mkdir()
+
+    manager.upsert_library(
+        "studio",
+        folder_paths={"loras": [str(lora_dir)]},
+        activate=True,
+    )
+
+    assert manager.get_active_library_name() == "studio"
+    libraries = manager.get_libraries()
+    stored_paths = libraries["studio"]["folder_paths"]["loras"]
+    assert str(lora_dir).replace(os.sep, "/") in stored_paths
+
+
+def test_delete_library_switches_active(manager, tmp_path):
+    other_dir = tmp_path / "other"
+    other_dir.mkdir()
+
+    manager.create_library(
+        "other",
+        folder_paths={"loras": [str(other_dir)]},
+        activate=True,
+    )
+
+    assert manager.get_active_library_name() == "other"
+
+    manager.delete_library("other")
+
+    assert manager.get_active_library_name() == "default"

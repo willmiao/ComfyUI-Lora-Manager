@@ -312,7 +312,7 @@ async def test_update_single_model_cache_persists_changes(tmp_path: Path, monkey
     monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
     db_path = tmp_path / 'cache.sqlite'
     monkeypatch.setenv('LORA_MANAGER_CACHE_DB', str(db_path))
-    monkeypatch.setattr(PersistentModelCache, '_instance', None, raising=False)
+    monkeypatch.setattr(PersistentModelCache, '_instances', {}, raising=False)
 
     _create_files(tmp_path)
     scanner = DummyScanner(tmp_path)
@@ -360,7 +360,7 @@ async def test_batch_delete_persists_removal(tmp_path: Path, monkeypatch):
     monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
     db_path = tmp_path / 'cache.sqlite'
     monkeypatch.setenv('LORA_MANAGER_CACHE_DB', str(db_path))
-    monkeypatch.setattr(PersistentModelCache, '_instance', None, raising=False)
+    monkeypatch.setattr(PersistentModelCache, '_instances', {}, raising=False)
 
     first, _, _ = _create_files(tmp_path)
     scanner = DummyScanner(tmp_path)
