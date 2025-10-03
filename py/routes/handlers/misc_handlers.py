@@ -320,9 +320,14 @@ class TrainedWordsHandler:
             if not file_path.endswith(".safetensors"):
                 return web.json_response({"success": False, "error": "File must be a safetensors file"}, status=400)
 
-            trained_words = extract_trained_words(file_path)
-            sorted_words = sorted(trained_words, key=lambda w: w.get("count", 0), reverse=True)
-            return web.json_response({"success": True, "trained_words": sorted_words})
+            trained_words, class_tokens = await extract_trained_words(file_path)
+            return web.json_response(
+                {
+                    "success": True,
+                    "trained_words": trained_words,
+                    "class_tokens": class_tokens,
+                }
+            )
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Failed to get trained words: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
