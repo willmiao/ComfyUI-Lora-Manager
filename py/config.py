@@ -1,7 +1,7 @@
 import os
 import platform
 import folder_paths # type: ignore
-from typing import Dict, Iterable, List, Mapping
+from typing import Dict, Iterable, List, Mapping, Set
 import logging
 import json
 import urllib.parse
@@ -12,6 +12,37 @@ from .utils.settings_paths import ensure_settings_file
 standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1" or os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
 
 logger = logging.getLogger(__name__)
+
+
+def _normalize_folder_paths_for_comparison(
+    folder_paths: Mapping[str, Iterable[str]]
+) -> Dict[str, Set[str]]:
+    """Normalize folder paths for comparison across libraries."""
+
+    normalized: Dict[str, Set[str]] = {}
+    for key, values in folder_paths.items():
+        if isinstance(values, str):
+            candidate_values: Iterable[str] = [values]
+        else:
+            try:
+                candidate_values = iter(values)
+            except TypeError:
+                continue
+
+        normalized_values: Set[str] = set()
+        for value in candidate_values:
+            if not isinstance(value, str):
+                continue
+            stripped = value.strip()
+            if not stripped:
+                continue
+            normalized_values.add(os.path.normcase(os.path.normpath(stripped)))
+
+        if normalized_values:
+            normalized[key] = normalized_values
+
+    return normalized
+
 
 class Config:
     """Global configuration for LoRA Manager"""
@@ -45,6 +76,29 @@ class Config:
 
             libraries = settings_service.get_libraries()
             comfy_library = libraries.get("comfyui", {})
+            default_library = libraries.get("default", {})
+
+            target_folder_paths = {
+                'loras': list(self.loras_roots),
+                'checkpoints': list(self.checkpoints_roots or []),
+                'unet': list(self.unet_roots or []),
+                'embeddings': list(self.embeddings_roots or []),
+            }
+
+            normalized_target_paths = _normalize_folder_paths_for_comparison(target_folder_paths)
+
+            if (not comfy_library and default_library and normalized_target_paths and
+                    _normalize_folder_paths_for_comparison(default_library.get("folder_paths", {})) ==
+                    normalized_target_paths):
+                try:
+                    settings_service.rename_library("default", "comfyui")
+                    logger.info("Renamed legacy 'default' library to 'comfyui'")
+                    libraries = settings_service.get_libraries()
+                    comfy_library = libraries.get("comfyui", {})
+                except Exception as rename_error:
+                    logger.debug(
+                        "Failed to rename legacy 'default' library: %s", rename_error
+                    )
 
             default_lora_root = comfy_library.get("default_lora_root", "")
             if not default_lora_root and len(self.loras_roots) == 1:
@@ -66,12 +120,7 @@ class Config:
 
             settings_service.upsert_library(
                 "comfyui",
-                folder_paths={
-                    'loras': list(self.loras_roots),
-                    'checkpoints': list(self.checkpoints_roots or []),
-                    'unet': list(self.unet_roots or []),
-                    'embeddings': list(self.embeddings_roots or []),
-                },
+                folder_paths=target_folder_paths,
                 default_lora_root=default_lora_root,
                 default_checkpoint_root=default_checkpoint_root,
                 default_embedding_root=default_embedding_root,
