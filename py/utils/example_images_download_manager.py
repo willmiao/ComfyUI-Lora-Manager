@@ -358,7 +358,8 @@ class DownloadManager:
             full_model = await MetadataUpdater.get_updated_model(
                 model_hash, scanner
             )
-            civitai_payload = (full_model or {}).get('civitai', {}) if full_model else {}
+            civitai_payload = (full_model or {}).get('civitai') if full_model else None
+            civitai_payload = civitai_payload or {}
 
             # If no local images, try to download from remote
             if civitai_payload.get('images'):
@@ -378,7 +379,8 @@ class DownloadManager:
                     updated_model = await MetadataUpdater.get_updated_model(
                         model_hash, scanner
                     )
-                    updated_civitai = (updated_model or {}).get('civitai', {}) if updated_model else {}
+                    updated_civitai = (updated_model or {}).get('civitai') if updated_model else None
+                    updated_civitai = updated_civitai or {}
 
                     if updated_civitai.get('images'):
                         # Retry download with updated metadata
@@ -647,7 +649,8 @@ class DownloadManager:
             full_model = await MetadataUpdater.get_updated_model(
                 model_hash, scanner
             )
-            civitai_payload = (full_model or {}).get('civitai', {}) if full_model else {}
+            civitai_payload = (full_model or {}).get('civitai') if full_model else None
+            civitai_payload = civitai_payload or {}
 
             # If no local images, try to download from remote
             if civitai_payload.get('images'):
@@ -667,7 +670,8 @@ class DownloadManager:
                     updated_model = await MetadataUpdater.get_updated_model(
                         model_hash, scanner
                     )
-                    updated_civitai = (updated_model or {}).get('civitai', {}) if updated_model else {}
+                    updated_civitai = (updated_model or {}).get('civitai') if updated_model else None
+                    updated_civitai = updated_civitai or {}
 
                     if updated_civitai.get('images'):
                         # Retry download with updated metadata
