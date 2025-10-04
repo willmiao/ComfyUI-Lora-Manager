@@ -4,6 +4,10 @@ import sys
 import subprocess
 from aiohttp import web
 from ..services.settings_manager import settings
+from ..utils.example_images_paths import (
+    get_model_folder,
+    get_model_relative_path,
+)
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS
 
 logger = logging.getLogger(__name__)
@@ -41,8 +45,12 @@ class ExampleImagesFileManager:
                 }, status=400)
             
             # Construct folder path for this model
-            model_folder = os.path.join(example_images_path, model_hash)
-            model_folder = os.path.abspath(model_folder)  # Get absolute path
+            model_folder = get_model_folder(model_hash)
+            if not model_folder:
+                return web.json_response({
+                    'success': False,
+                    'error': 'Failed to resolve example images folder for this model.'
+                }, status=500)
 
             # Path validation: ensure model_folder is under example_images_path
             if not model_folder.startswith(os.path.abspath(example_images_path)):
@@ -109,8 +117,13 @@ class ExampleImagesFileManager:
                 }, status=400)
             
             # Construct folder path for this model
-            model_folder = os.path.join(example_images_path, model_hash)
-            
+            model_folder = get_model_folder(model_hash)
+            if not model_folder:
+                return web.json_response({
+                    'success': False,
+                    'error': 'Failed to resolve example images folder for this model'
+                }, status=500)
+
             # Check if folder exists
             if not os.path.exists(model_folder):
                 return web.json_response({
@@ -128,9 +141,10 @@ class ExampleImagesFileManager:
                     file_ext = os.path.splitext(file)[1].lower()
                     if (file_ext in SUPPORTED_MEDIA_EXTENSIONS['images'] or 
                         file_ext in SUPPORTED_MEDIA_EXTENSIONS['videos']):
+                        relative_path = get_model_relative_path(model_hash)
                         files.append({
                             'name': file,
-                            'path': f'/example_images_static/{model_hash}/{file}',
+                            'path': f'/example_images_static/{relative_path}/{file}',
                             'extension': file_ext,
                             'is_video': file_ext in SUPPORTED_MEDIA_EXTENSIONS['videos']
                         })
@@ -176,8 +190,13 @@ class ExampleImagesFileManager:
                 })
             
             # Construct folder path for this model
-            model_folder = os.path.join(example_images_path, model_hash)
-            
+            model_folder = get_model_folder(model_hash)
+            if not model_folder:
+                return web.json_response({
+                    'has_images': False,
+                    'error': 'Failed to resolve example images folder for this model'
+                })
+
             # Check if folder exists
             if not os.path.exists(model_folder) or not os.path.isdir(model_folder):
                 return web.json_response({

@@ -7,6 +7,7 @@ from aiohttp import web
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS
 from ..services.service_registry import ServiceRegistry
 from ..services.settings_manager import settings
+from ..utils.example_images_paths import get_model_folder, get_model_relative_path
 from .example_images_metadata import MetadataUpdater
 from ..utils.metadata_manager import MetadataManager
 
@@ -346,7 +347,9 @@ class ExampleImagesProcessor:
                 )
 
             # Create model folder
-            model_folder = os.path.join(example_images_path, model_hash)
+            model_folder = get_model_folder(model_hash)
+            if not model_folder:
+                raise ExampleImagesImportError('Failed to resolve model folder for example images')
             os.makedirs(model_folder, exist_ok=True)
 
             imported_files = []
@@ -383,7 +386,7 @@ class ExampleImagesProcessor:
                     # Add to imported files list
                     imported_files.append({
                         'name': new_filename,
-                        'path': f'/example_images_static/{model_hash}/{new_filename}',
+                        'path': f'/example_images_static/{get_model_relative_path(model_hash)}/{new_filename}',
                         'extension': file_ext,
                         'is_video': file_ext in SUPPORTED_MEDIA_EXTENSIONS['videos']
                     })
@@ -497,7 +500,12 @@ class ExampleImagesProcessor:
                 }, status=404)
             
             # Find and delete the actual file
-            model_folder = os.path.join(example_images_path, model_hash)
+            model_folder = get_model_folder(model_hash)
+            if not model_folder:
+                return web.json_response({
+                    'success': False,
+                    'error': 'Failed to resolve model folder for example images'
+                }, status=500)
             file_deleted = False
             
             if os.path.exists(model_folder):
