@@ -241,6 +241,10 @@
             }
         },
         "folderSettings": {
+            "activeLibrary": "Active Library",
+            "activeLibraryHelp": "Switch between configured libraries to update default folders. Changing the selection reloads the page.",
+            "loadingLibraries": "Loading libraries...",
+            "noLibraries": "No libraries configured",
             "defaultLoraRoot": "デフォルトLoRAルート",
             "defaultLoraRootHelp": "ダウンロード、インポート、移動用のデフォルトLoRAルートディレクトリを設定",
             "defaultCheckpointRoot": "デフォルトCheckpointルート",
@@ -1125,6 +1129,8 @@
             "compactModeToggled": "コンパクトモード {state}",
             "settingSaveFailed": "設定の保存に失敗しました：{message}",
             "displayDensitySet": "表示密度が {density} に設定されました",
+            "libraryLoadFailed": "Failed to load libraries: {message}",
+            "libraryActivateFailed": "Failed to activate library: {message}",
             "languageChangeFailed": "言語の変更に失敗しました：{message}",
             "cacheCleared": "キャッシュファイルが正常にクリアされました。次回のアクションでキャッシュが再構築されます。",
             "cacheClearFailed": "キャッシュのクリアに失敗しました：{error}",

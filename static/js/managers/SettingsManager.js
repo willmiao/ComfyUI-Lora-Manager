@@ -12,6 +12,8 @@ export class SettingsManager {
         this.initialized = false;
         this.isOpen = false;
         this.initializationPromise = null;
+        this.availableLibraries = {};
+        this.activeLibrary = '';
         
         // Add initialization to sync with modal state
         this.currentPage = document.body.dataset.page || 'loras';
@@ -301,6 +303,9 @@ export class SettingsManager {
         // Load base model path mappings
         this.loadBaseModelMappings();
 
+        // Load library options
+        await this.loadLibraries();
+
         // Load default lora root
         await this.loadLoraRoots();
         
@@ -370,6 +375,147 @@ export class SettingsManager {
         if (proxyPasswordInput) {
             proxyPasswordInput.value = state.global.settings.proxy_password || '';
         }
+    }
+
+    async loadLibraries() {
+        const librarySelect = document.getElementById('librarySelect');
+        if (!librarySelect) {
+            return;
+        }
+
+        const setPlaceholderOption = (textKey, fallback) => {
+            librarySelect.innerHTML = '';
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = translate(textKey, {}, fallback);
+            librarySelect.appendChild(option);
+        };
+
+        setPlaceholderOption('settings.folderSettings.loadingLibraries', 'Loading libraries...');
+        librarySelect.disabled = true;
+
+        try {
+            const response = await fetch('/api/lm/settings/libraries');
+            if (!response.ok) {
+                throw new Error('Failed to fetch library registry');
+            }
+
+            const data = await response.json();
+            if (data.success === false) {
+                throw new Error(data.error || 'Failed to fetch library registry');
+            }
+
+            const libraries = data.libraries && typeof data.libraries === 'object'
+                ? data.libraries
+                : {};
+
+            this.availableLibraries = libraries;
+
+            const entries = Object.entries(libraries);
+            if (entries.length === 0) {
+                this.activeLibrary = '';
+                setPlaceholderOption('settings.folderSettings.noLibraries', 'No libraries configured');
+                return;
+            }
+
+            const activeName = data.active_library && libraries[data.active_library]
+                ? data.active_library
+                : entries[0][0];
+
+            this.activeLibrary = activeName;
+
+            librarySelect.innerHTML = '';
+            const fragment = document.createDocumentFragment();
+            entries
+                .sort((a, b) => {
+                    const nameA = this.getLibraryDisplayName(a[0], a[1]).toLowerCase();
+                    const nameB = this.getLibraryDisplayName(b[0], b[1]).toLowerCase();
+                    return nameA.localeCompare(nameB);
+                })
+                .forEach(([name, info]) => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = this.getLibraryDisplayName(name, info);
+                    fragment.appendChild(option);
+                });
+
+            librarySelect.appendChild(fragment);
+            librarySelect.value = activeName;
+            librarySelect.disabled = entries.length <= 1;
+        } catch (error) {
+            console.error('Error loading libraries:', error);
+            setPlaceholderOption('settings.folderSettings.noLibraries', 'No libraries configured');
+            this.availableLibraries = {};
+            this.activeLibrary = '';
+            librarySelect.disabled = true;
+            showToast('toast.settings.libraryLoadFailed', { message: error.message }, 'error');
+        }
+    }
+
+    getLibraryDisplayName(libraryName, libraryData = {}) {
+        if (libraryData && typeof libraryData === 'object') {
+            const metadata = libraryData.metadata;
+            if (metadata && typeof metadata === 'object' && metadata.display_name) {
+                return metadata.display_name;
+            }
+
+            if (libraryData.display_name) {
+                return libraryData.display_name;
+            }
+        }
+
+        return libraryName;
+    }
+
+    async handleLibraryChange() {
+        const librarySelect = document.getElementById('librarySelect');
+        if (!librarySelect) {
+            return;
+        }
+
+        const selectedLibrary = librarySelect.value;
+        if (!selectedLibrary || selectedLibrary === this.activeLibrary) {
+            librarySelect.value = this.activeLibrary;
+            return;
+        }
+
+        librarySelect.disabled = true;
+
+        try {
+            await this.activateLibrary(selectedLibrary);
+            window.location.reload();
+        } catch (error) {
+            console.error('Failed to activate library:', error);
+            showToast('toast.settings.libraryActivateFailed', { message: error.message }, 'error');
+            await this.loadLibraries();
+        } finally {
+            if (!document.hidden) {
+                librarySelect.disabled = librarySelect.options.length <= 1;
+            }
+        }
+    }
+
+    async activateLibrary(libraryName) {
+        const response = await fetch('/api/lm/settings/libraries/activate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ library: libraryName }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Request failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.success === false) {
+            throw new Error(data.error || 'Failed to activate library');
+        }
+
+        const activeName = data.active_library || libraryName;
+        this.activeLibrary = activeName;
+        return data;
     }
 
     async loadLoraRoots() {

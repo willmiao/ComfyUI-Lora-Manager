@@ -247,6 +247,10 @@
             }
         },
         "folderSettings": {
+            "activeLibrary": "Active Library",
+            "activeLibraryHelp": "Switch between configured libraries to update default folders. Changing the selection reloads the page.",
+            "loadingLibraries": "Loading libraries...",
+            "noLibraries": "No libraries configured",
             "defaultLoraRoot": "默认 LoRA 根目录",
             "defaultLoraRootHelp": "设置下载、导入和移动时的默认 LoRA 根目录",
             "defaultCheckpointRoot": "默认 Checkpoint 根目录",
@@ -1131,6 +1135,8 @@
             "compactModeToggled": "紧凑模式 {state}",
             "settingSaveFailed": "保存设置失败：{message}",
             "displayDensitySet": "显示密度已设置为 {density}",
+            "libraryLoadFailed": "Failed to load libraries: {message}",
+            "libraryActivateFailed": "Failed to activate library: {message}",
             "languageChangeFailed": "切换语言失败：{message}",
             "cacheCleared": "缓存文件已成功清除。下次操作将重建缓存。",
             "cacheClearFailed": "清除缓存失败：{error}",

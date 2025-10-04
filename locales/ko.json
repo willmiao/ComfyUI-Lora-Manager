@@ -241,6 +241,10 @@
             }
         },
         "folderSettings": {
+            "activeLibrary": "Active Library",
+            "activeLibraryHelp": "Switch between configured libraries to update default folders. Changing the selection reloads the page.",
+            "loadingLibraries": "Loading libraries...",
+            "noLibraries": "No libraries configured",
             "defaultLoraRoot": "기본 LoRA 루트",
             "defaultLoraRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 LoRA 루트 디렉토리를 설정합니다",
             "defaultCheckpointRoot": "기본 Checkpoint 루트",
@@ -1125,6 +1129,8 @@
             "compactModeToggled": "컴팩트 모드 {state}",
             "settingSaveFailed": "설정 저장 실패: {message}",
             "displayDensitySet": "표시 밀도가 {density}로 설정되었습니다",
+            "libraryLoadFailed": "Failed to load libraries: {message}",
+            "libraryActivateFailed": "Failed to activate library: {message}",
             "languageChangeFailed": "언어 변경 실패: {message}",
             "cacheCleared": "캐시 파일이 성공적으로 지워졌습니다. 다음 작업 시 캐시가 재구축됩니다.",
             "cacheClearFailed": "캐시 지우기 실패: {error}",
