@@ -5,6 +5,7 @@ import re
 import json
 from ..services.settings_manager import settings
 from ..services.service_registry import ServiceRegistry
+from ..utils.example_images_paths import iter_library_roots
 from ..utils.metadata_manager import MetadataManager
 from ..utils.example_images_processor import ExampleImagesProcessor
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS
@@ -19,29 +20,35 @@ class ExampleImagesMigration:
     @staticmethod
     async def check_and_run_migrations():
         """Check if migrations are needed and run them in background"""
-        example_images_path = settings.get('example_images_path')
-        if not example_images_path or not os.path.exists(example_images_path):
+        root = settings.get('example_images_path')
+        if not root or not os.path.exists(root):
             logger.debug("No example images path configured or path doesn't exist, skipping migrations")
             return
-        
-        # Check current version from progress file
-        current_version = 0
-        progress_file = os.path.join(example_images_path, '.download_progress.json')
-        if os.path.exists(progress_file):
-            try:
-                with open(progress_file, 'r', encoding='utf-8') as f:
-                    progress_data = json.load(f)
-                    current_version = progress_data.get('naming_version', 0)
-            except Exception as e:
-                logger.error(f"Failed to load progress file for migration check: {e}")
-        
-        # If current version is less than target version, start migration
-        if current_version < CURRENT_NAMING_VERSION:
-            logger.info(f"Starting example images naming migration from v{current_version} to v{CURRENT_NAMING_VERSION}")
-            # Start migration in background task
-            asyncio.create_task(
-                ExampleImagesMigration.run_migrations(example_images_path, current_version, CURRENT_NAMING_VERSION)
-            )
+
+        for library_name, library_path in iter_library_roots():
+            if not library_path or not os.path.exists(library_path):
+                continue
+
+            current_version = 0
+            progress_file = os.path.join(library_path, '.download_progress.json')
+            if os.path.exists(progress_file):
+                try:
+                    with open(progress_file, 'r', encoding='utf-8') as f:
+                        progress_data = json.load(f)
+                        current_version = progress_data.get('naming_version', 0)
+                except Exception as e:
+                    logger.error(f"Failed to load progress file for migration check: {e}")
+
+            if current_version < CURRENT_NAMING_VERSION:
+                logger.info(
+                    "Starting example images naming migration from v%s to v%s for library '%s'",
+                    current_version,
+                    CURRENT_NAMING_VERSION,
+                    library_name,
+                )
+                asyncio.create_task(
+                    ExampleImagesMigration.run_migrations(library_path, current_version, CURRENT_NAMING_VERSION)
+                )
     
     @staticmethod
     async def run_migrations(example_images_path, from_version, to_version):

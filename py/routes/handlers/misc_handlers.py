@@ -11,7 +11,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -29,6 +28,7 @@ from ...services.settings_manager import settings as default_settings
 from ...services.websocket_manager import ws_manager
 from ...services.downloader import get_downloader
 from ...utils.constants import DEFAULT_NODE_COLOR, NODE_TYPES, SUPPORTED_MEDIA_EXTENSIONS
+from ...utils.example_images_paths import is_valid_example_images_root
 from ...utils.lora_metadata import extract_trained_words
 from ...utils.usage_stats import UsageStats
 
@@ -274,21 +274,7 @@ class SettingsHandler:
         return None
 
     def _is_dedicated_example_images_folder(self, folder_path: str) -> bool:
-        try:
-            items = os.listdir(folder_path)
-            if not items:
-                return True
-            for item in items:
-                item_path = os.path.join(folder_path, item)
-                if item == ".download_progress.json" and os.path.isfile(item_path):
-                    continue
-                if os.path.isdir(item_path) and re.fullmatch(r"[a-fA-F0-9]{64}", item):
-                    continue
-                return False
-            return True
-        except Exception as exc:  # pragma: no cover - defensive logging
-            logger.error("Error checking if folder is dedicated: %s", exc)
-            return False
+        return is_valid_example_images_root(folder_path)
 
 
 class UsageStatsHandler:

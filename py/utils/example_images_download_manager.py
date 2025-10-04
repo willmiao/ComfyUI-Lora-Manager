@@ -8,6 +8,7 @@ import time
 from typing import Any, Dict
 
 from ..services.service_registry import ServiceRegistry
+from ..utils.example_images_paths import ensure_library_root_exists
 from ..utils.metadata_manager import MetadataManager
 from .example_images_processor import ExampleImagesProcessor
 from .example_images_metadata import MetadataUpdater
@@ -84,6 +85,13 @@ class DownloadManager:
         self._ws_manager = ws_manager
         self._state_lock = state_lock or asyncio.Lock()
 
+    def _resolve_output_dir(self) -> str:
+        base_path = settings.get('example_images_path')
+        if not base_path:
+            return ''
+        library_name = settings.get_active_library_name()
+        return ensure_library_root_exists(library_name)
+
     async def start_download(self, options: dict):
         """Start downloading example images for models."""
 
@@ -98,9 +106,9 @@ class DownloadManager:
                 model_types = data.get('model_types', ['lora', 'checkpoint'])
                 delay = float(data.get('delay', 0.2))
 
-                output_dir = settings.get('example_images_path')
+                base_path = settings.get('example_images_path')
 
-                if not output_dir:
+                if not base_path:
                     error_msg = 'Example images path not configured in settings'
                     if auto_mode:
                         logger.debug(error_msg)
@@ -110,7 +118,9 @@ class DownloadManager:
                         }
                     raise DownloadConfigurationError(error_msg)
 
-                os.makedirs(output_dir, exist_ok=True)
+                output_dir = self._resolve_output_dir()
+                if not output_dir:
+                    raise DownloadConfigurationError('Example images path not configured in settings')
 
                 self._progress.reset()
                 self._progress['status'] = 'running'
@@ -458,12 +468,13 @@ class DownloadManager:
             if not model_hashes:
                 raise DownloadConfigurationError('Missing model_hashes parameter')
 
-            output_dir = settings.get('example_images_path')
+            base_path = settings.get('example_images_path')
 
+            if not base_path:
+                raise DownloadConfigurationError('Example images path not configured in settings')
+            output_dir = self._resolve_output_dir()
             if not output_dir:
                 raise DownloadConfigurationError('Example images path not configured in settings')
-
-            os.makedirs(output_dir, exist_ok=True)
 
             self._progress.reset()
             self._progress['total'] = len(model_hashes)
