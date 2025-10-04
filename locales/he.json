@@ -241,6 +241,10 @@
             }
         },
         "folderSettings": {
+            "activeLibrary": "Active Library",
+            "activeLibraryHelp": "Switch between configured libraries to update default folders. Changing the selection reloads the page.",
+            "loadingLibraries": "Loading libraries...",
+            "noLibraries": "No libraries configured",
             "defaultLoraRoot": "תיקיית שורש ברירת מחדל של LoRA",
             "defaultLoraRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של LoRA להורדות, ייבוא והעברות",
             "defaultCheckpointRoot": "תיקיית שורש ברירת מחדל של Checkpoint",
@@ -1125,6 +1129,8 @@
             "compactModeToggled": "מצב קומפקטי {state}",
             "settingSaveFailed": "שמירת ההגדרה נכשלה: {message}",
             "displayDensitySet": "צפיפות התצוגה הוגדרה ל-{density}",
+            "libraryLoadFailed": "Failed to load libraries: {message}",
+            "libraryActivateFailed": "Failed to activate library: {message}",
             "languageChangeFailed": "שינוי השפה נכשל: {message}",
             "cacheCleared": "קבצי המטמון נוקו בהצלחה. המטמון ייבנה מחדש בפעולה הבאה.",
             "cacheClearFailed": "ניקוי המטמון נכשל: {error}",

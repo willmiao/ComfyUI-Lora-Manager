@@ -181,7 +181,23 @@
             <!-- Add Folder Settings Section -->
             <div class="settings-section">
                 <h3>{{ t('settings.sections.folderSettings') }}</h3>
-                
+
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="librarySelect">{{ t('settings.folderSettings.activeLibrary') }}</label>
+                        </div>
+                        <div class="setting-control select-control">
+                            <select id="librarySelect" onchange="settingsManager.handleLibraryChange()">
+                                <option value="">{{ t('settings.folderSettings.loadingLibraries') }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.folderSettings.activeLibraryHelp') }}
+                    </div>
+                </div>
+
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">

@@ -241,6 +241,10 @@
             }
         },
         "folderSettings": {
+            "activeLibrary": "Active Library",
+            "activeLibraryHelp": "Switch between configured libraries to update default folders. Changing the selection reloads the page.",
+            "loadingLibraries": "Loading libraries...",
+            "noLibraries": "No libraries configured",
             "defaultLoraRoot": "預設 LoRA 根目錄",
             "defaultLoraRootHelp": "設定下載、匯入和移動時的預設 LoRA 根目錄",
             "defaultCheckpointRoot": "預設 Checkpoint 根目錄",
@@ -1125,6 +1129,8 @@
             "compactModeToggled": "緊湊模式已{state}",
             "settingSaveFailed": "儲存設定失敗：{message}",
             "displayDensitySet": "顯示密度已設為 {density}",
+            "libraryLoadFailed": "Failed to load libraries: {message}",
+            "libraryActivateFailed": "Failed to activate library: {message}",
             "languageChangeFailed": "切換語言失敗：{message}",
             "cacheCleared": "快取檔案已成功清除。快取將於下次操作時重建。",
             "cacheClearFailed": "清除快取失敗：{error}",

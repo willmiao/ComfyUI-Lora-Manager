@@ -241,6 +241,10 @@
             }
         },
         "folderSettings": {
+            "activeLibrary": "Active Library",
+            "activeLibraryHelp": "Switch between configured libraries to update default folders. Changing the selection reloads the page.",
+            "loadingLibraries": "Loading libraries...",
+            "noLibraries": "No libraries configured",
             "defaultLoraRoot": "Racine LoRA par défaut",
             "defaultLoraRootHelp": "Définir le répertoire racine LoRA par défaut pour les téléchargements, imports et déplacements",
             "defaultCheckpointRoot": "Racine Checkpoint par défaut",
@@ -1125,6 +1129,8 @@
             "compactModeToggled": "Mode compact {state}",
             "settingSaveFailed": "Échec de la sauvegarde du paramètre : {message}",
             "displayDensitySet": "Densité d'affichage définie sur {density}",
+            "libraryLoadFailed": "Failed to load libraries: {message}",
+            "libraryActivateFailed": "Failed to activate library: {message}",
             "languageChangeFailed": "Échec du changement de langue : {message}",
             "cacheCleared": "Les fichiers de cache ont été vidés avec succès. Le cache sera reconstruit à la prochaine action.",
             "cacheClearFailed": "Échec du vidage du cache : {error}",

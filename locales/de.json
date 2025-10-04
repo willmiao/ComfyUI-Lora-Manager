@@ -241,6 +241,10 @@
             }
         },
         "folderSettings": {
+            "activeLibrary": "Active Library",
+            "activeLibraryHelp": "Switch between configured libraries to update default folders. Changing the selection reloads the page.",
+            "loadingLibraries": "Loading libraries...",
+            "noLibraries": "No libraries configured",
             "defaultLoraRoot": "Standard-LoRA-Stammordner",
             "defaultLoraRootHelp": "Legen Sie den Standard-LoRA-Stammordner für Downloads, Importe und Verschiebungen fest",
             "defaultCheckpointRoot": "Standard-Checkpoint-Stammordner",
@@ -1125,6 +1129,8 @@
             "compactModeToggled": "Kompakt-Modus {state}",
             "settingSaveFailed": "Fehler beim Speichern der Einstellung: {message}",
             "displayDensitySet": "Anzeige-Dichte auf {density} gesetzt",
+            "libraryLoadFailed": "Failed to load libraries: {message}",
+            "libraryActivateFailed": "Failed to activate library: {message}",
             "languageChangeFailed": "Fehler beim Ändern der Sprache: {message}",
             "cacheCleared": "Cache-Dateien wurden erfolgreich gelöscht. Cache wird bei der nächsten Aktion neu aufgebaut.",
             "cacheClearFailed": "Fehler beim Löschen des Caches: {error}",
