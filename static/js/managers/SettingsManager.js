@@ -482,13 +482,17 @@ export class SettingsManager {
         librarySelect.disabled = true;
 
         try {
+            state.loadingManager.showSimpleLoading('Activating library...');
             await this.activateLibrary(selectedLibrary);
+            // Add a short delay before reloading the page
+            await new Promise(resolve => setTimeout(resolve, 300));
             window.location.reload();
         } catch (error) {
             console.error('Failed to activate library:', error);
             showToast('toast.settings.libraryActivateFailed', { message: error.message }, 'error');
             await this.loadLibraries();
         } finally {
+            state.loadingManager.hide();
             if (!document.hidden) {
                 librarySelect.disabled = librarySelect.options.length <= 1;
             }

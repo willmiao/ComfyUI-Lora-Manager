@@ -36,6 +36,25 @@ async def test_broadcast_init_progress_adds_defaults(manager):
     ]
 
 
+async def test_broadcast_init_progress_caches_payload(manager):
+    await manager.broadcast_init_progress({'pageType': 'loras', 'progress': 42})
+
+    cached = manager._last_init_progress.get('page:loras')
+    assert cached is not None
+    assert cached['progress'] == 42
+    assert cached['stage'] == 'processing'
+    assert cached['details'] == 'Processing...'
+
+
+async def test_send_cached_progress_to_new_client(manager):
+    await manager.broadcast_init_progress({'pageType': 'loras', 'progress': 87})
+
+    ws = DummyWebSocket()
+    await manager._send_cached_init_progress(ws)
+
+    assert ws.messages[-1]['progress'] == 87
+    assert ws.messages[-1]['pageType'] == 'loras'
+
 async def test_broadcast_download_progress_tracks_state(manager):
     ws = DummyWebSocket()
     download_id = "abc"
