@@ -1,5 +1,6 @@
 import os
 import platform
+from pathlib import Path
 import folder_paths # type: ignore
 from typing import Dict, Iterable, List, Mapping, Set
 import logging
@@ -52,9 +53,9 @@ class Config:
         self.static_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')
         self.i18n_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'locales')
         # Path mapping dictionary, target to link mapping
-        self._path_mappings = {}
-        # Static route mapping dictionary, target to route mapping
-        self._route_mappings = {}
+        self._path_mappings: Dict[str, str] = {}
+        # Normalized preview root directories used to validate preview access
+        self._preview_root_paths: Set[Path] = set()
         self.loras_roots = self._init_lora_paths()
         self.checkpoints_roots = None
         self.unet_roots = None
@@ -63,6 +64,7 @@ class Config:
         self.embeddings_roots = self._init_embedding_paths()
         # Scan symbolic links during initialization
         self._scan_symbolic_links()
+        self._rebuild_preview_roots()
         
         if not standalone_mode:
             # Save the paths to settings.json when running in ComfyUI mode
@@ -185,12 +187,65 @@ class Config:
         # Keep the original mapping: target path -> link path
         self._path_mappings[normalized_target] = normalized_link
         logger.info(f"Added path mapping: {normalized_target} -> {normalized_link}")
+        self._preview_root_paths.update(self._expand_preview_root(normalized_target))
+        self._preview_root_paths.update(self._expand_preview_root(normalized_link))
 
-    def add_route_mapping(self, path: str, route: str):
-        """Add a static route mapping"""
-        normalized_path = os.path.normpath(path).replace(os.sep, '/')
-        self._route_mappings[normalized_path] = route
-        # logger.info(f"Added route mapping: {normalized_path} -> {route}")
+    def _expand_preview_root(self, path: str) -> Set[Path]:
+        """Return normalized ``Path`` objects representing a preview root."""
+
+        roots: Set[Path] = set()
+        if not path:
+            return roots
+
+        try:
+            raw_path = Path(path).expanduser()
+        except Exception:
+            return roots
+
+        if raw_path.is_absolute():
+            roots.add(raw_path)
+
+        try:
+            resolved = raw_path.resolve(strict=False)
+        except RuntimeError:
+            resolved = raw_path.absolute()
+        roots.add(resolved)
+
+        try:
+            real_path = raw_path.resolve()
+        except (FileNotFoundError, RuntimeError):
+            real_path = resolved
+        roots.add(real_path)
+
+        normalized: Set[Path] = set()
+        for candidate in roots:
+            if candidate.is_absolute():
+                normalized.add(candidate)
+            else:
+                try:
+                    normalized.add(candidate.resolve(strict=False))
+                except RuntimeError:
+                    normalized.add(candidate.absolute())
+
+        return normalized
+
+    def _rebuild_preview_roots(self) -> None:
+        """Recompute the cache of directories permitted for previews."""
+
+        preview_roots: Set[Path] = set()
+
+        for root in self.loras_roots or []:
+            preview_roots.update(self._expand_preview_root(root))
+        for root in self.base_models_roots or []:
+            preview_roots.update(self._expand_preview_root(root))
+        for root in self.embeddings_roots or []:
+            preview_roots.update(self._expand_preview_root(root))
+
+        for target, link in self._path_mappings.items():
+            preview_roots.update(self._expand_preview_root(target))
+            preview_roots.update(self._expand_preview_root(link))
+
+        self._preview_root_paths = {path for path in preview_roots if path.is_absolute()}
 
     def map_path_to_link(self, path: str) -> str:
         """Map a target path back to its symbolic link path"""
@@ -276,6 +331,7 @@ class Config:
 
     def _apply_library_paths(self, folder_paths: Mapping[str, Iterable[str]]) -> None:
         self._path_mappings.clear()
+        self._preview_root_paths = set()
 
         lora_paths = folder_paths.get('loras', []) or []
         checkpoint_paths = folder_paths.get('checkpoints', []) or []
@@ -287,6 +343,7 @@ class Config:
         self.embeddings_roots = self._prepare_embedding_paths(embedding_paths)
 
         self._scan_symbolic_links()
+        self._rebuild_preview_roots()
 
     def _init_lora_paths(self) -> List[str]:
         """Initialize and validate LoRA paths from ComfyUI settings"""
@@ -342,24 +399,29 @@ class Config:
         if not preview_path:
             return ""
 
-        real_path = os.path.realpath(preview_path).replace(os.sep, '/')
-        
-        # Find longest matching path (most specific match)
-        best_match = ""
-        best_route = ""
-        
-        for path, route in self._route_mappings.items():
-            if real_path.startswith(path) and len(path) > len(best_match):
-                best_match = path
-                best_route = route
-        
-        if best_match:
-            relative_path = os.path.relpath(real_path, best_match).replace(os.sep, '/')
-            safe_parts = [urllib.parse.quote(part) for part in relative_path.split('/')]
-            safe_path = '/'.join(safe_parts)
-            return f'{best_route}/{safe_path}'
+        normalized = os.path.normpath(preview_path).replace(os.sep, '/')
+        encoded_path = urllib.parse.quote(normalized, safe='')
+        return f'/api/lm/previews?path={encoded_path}'
 
-        return ""
+    def is_preview_path_allowed(self, preview_path: str) -> bool:
+        """Return ``True`` if ``preview_path`` is within an allowed directory."""
+
+        if not preview_path:
+            return False
+
+        try:
+            candidate = Path(preview_path).expanduser().resolve(strict=False)
+        except Exception:
+            return False
+
+        for root in self._preview_root_paths:
+            try:
+                candidate.relative_to(root)
+                return True
+            except ValueError:
+                continue
+
+        return False
 
     def apply_library_settings(self, library_config: Mapping[str, object]) -> None:
         """Update runtime paths to match the provided library configuration."""
