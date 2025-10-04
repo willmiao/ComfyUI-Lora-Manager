@@ -1,4 +1,3 @@
-from pathlib import Path
 import os
 import sys
 import json
@@ -280,121 +279,7 @@ class StandaloneLoraManager(LoraManager):
         # Store app in a global-like location for compatibility
         sys.modules['server'].PromptServer.instance = server_instance
         
-        added_targets = set()  # Track already added target paths
-        
-        # Add static routes for each lora root
-        for idx, root in enumerate(config.loras_roots, start=1):
-            if not os.path.exists(root):
-                logger.warning(f"Lora root path does not exist: {root}")
-                continue
-                
-            preview_path = f'/loras_static/root{idx}/preview'
-            
-            # Check if this root is a link path in the mappings
-            real_root = root
-            for target, link in config._path_mappings.items():
-                if os.path.normpath(link) == os.path.normpath(root):
-                    # If so, route should point to the target (real path)
-                    real_root = target
-                    break
-            
-            # Normalize and standardize path display for consistency
-            display_root = real_root.replace('\\', '/')
-            
-            # Add static route for original path - use the normalized path
-            app.router.add_static(preview_path, real_root)
-            logger.info(f"Added static route {preview_path} -> {display_root}")
-            
-            # Record route mapping with normalized path
-            config.add_route_mapping(real_root, preview_path)
-            added_targets.add(os.path.normpath(real_root))
-        
-        # Add static routes for each checkpoint root
-        for idx, root in enumerate(config.base_models_roots, start=1):
-            if not os.path.exists(root):
-                logger.warning(f"Checkpoint root path does not exist: {root}")
-                continue
-                
-            preview_path = f'/checkpoints_static/root{idx}/preview'
-            
-            # Check if this root is a link path in the mappings
-            real_root = root
-            for target, link in config._path_mappings.items():
-                if os.path.normpath(link) == os.path.normpath(root):
-                    # If so, route should point to the target (real path)
-                    real_root = target
-                    break
-            
-            # Normalize and standardize path display for consistency
-            display_root = real_root.replace('\\', '/')
-            
-            # Add static route for original path
-            app.router.add_static(preview_path, real_root)
-            logger.info(f"Added static route {preview_path} -> {display_root}")
-            
-            # Record route mapping
-            config.add_route_mapping(real_root, preview_path)
-            added_targets.add(os.path.normpath(real_root))
 
-        # Add static routes for each embedding root
-        for idx, root in enumerate(getattr(config, "embeddings_roots", []), start=1):
-            if not os.path.exists(root):
-                logger.warning(f"Embedding root path does not exist: {root}")
-                continue
-
-            preview_path = f'/embeddings_static/root{idx}/preview'
-
-            real_root = root
-            for target, link in config._path_mappings.items():
-                if os.path.normpath(link) == os.path.normpath(root):
-                    real_root = target
-                    break
-
-            display_root = real_root.replace('\\', '/')
-            app.router.add_static(preview_path, real_root)
-            logger.info(f"Added static route {preview_path} -> {display_root}")
-
-            config.add_route_mapping(real_root, preview_path)
-            added_targets.add(os.path.normpath(real_root))
-        
-        # Add static routes for symlink target paths that aren't already covered
-        link_idx = {
-            'lora': 1,
-            'checkpoint': 1,
-            'embedding': 1
-        }
-        
-        for target_path, link_path in config._path_mappings.items():
-            norm_target = os.path.normpath(target_path)
-            if norm_target not in added_targets:
-                # Determine if this is a checkpoint, lora, or embedding link based on path
-                is_checkpoint = any(os.path.normpath(cp_root) in os.path.normpath(link_path) for cp_root in config.base_models_roots)
-                is_checkpoint = is_checkpoint or any(os.path.normpath(cp_root) in norm_target for cp_root in config.base_models_roots)
-                is_embedding = any(os.path.normpath(emb_root) in os.path.normpath(link_path) for emb_root in getattr(config, "embeddings_roots", []))
-                is_embedding = is_embedding or any(os.path.normpath(emb_root) in norm_target for emb_root in getattr(config, "embeddings_roots", []))
-
-                if is_checkpoint:
-                    route_path = f'/checkpoints_static/link_{link_idx["checkpoint"]}/preview'
-                    link_idx["checkpoint"] += 1
-                elif is_embedding:
-                    route_path = f'/embeddings_static/link_{link_idx["embedding"]}/preview'
-                    link_idx["embedding"] += 1
-                else:
-                    route_path = f'/loras_static/link_{link_idx["lora"]}/preview'
-                    link_idx["lora"] += 1
-                
-                # Display path with forward slashes for consistency
-                display_target = target_path.replace('\\', '/')
-                
-                try:
-                    app.router.add_static(route_path, Path(target_path).resolve(strict=False))
-                    logger.info(f"Added static route for link target {route_path} -> {display_target}")
-                    config.add_route_mapping(target_path, route_path)
-                    added_targets.add(norm_target)
-                except Exception as e:
-                    logger.warning(f"Failed to add static route on initialization for {target_path}: {e}")
-                    continue
-        
         # Add static route for locales JSON files
         if os.path.exists(config.i18n_path):
             app.router.add_static('/locales', config.i18n_path)
@@ -409,6 +294,7 @@ class StandaloneLoraManager(LoraManager):
         from py.routes.update_routes import UpdateRoutes
         from py.routes.misc_routes import MiscRoutes
         from py.routes.example_images_routes import ExampleImagesRoutes
+        from py.routes.preview_routes import PreviewRoutes
         from py.routes.stats_routes import StatsRoutes
         from py.services.websocket_manager import ws_manager
         
@@ -426,6 +312,7 @@ class StandaloneLoraManager(LoraManager):
         UpdateRoutes.setup_routes(app)
         MiscRoutes.setup_routes(app)
         ExampleImagesRoutes.setup_routes(app, ws_manager=ws_manager)
+        PreviewRoutes.setup_routes(app)
 
         # Setup WebSocket routes that are shared across all model types
         app.router.add_get('/ws/fetch-progress', ws_manager.handle_connection)
