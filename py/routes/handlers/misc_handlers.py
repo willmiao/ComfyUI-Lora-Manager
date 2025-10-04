@@ -474,18 +474,18 @@ class ModelLibraryHandler:
                 embedding_versions = await embedding_scanner.get_model_versions_by_id(model_id)
 
             model_type = None
-            version_ids: list[int] = []
+            versions = []
             if lora_versions:
                 model_type = "lora"
-                version_ids = [version["versionId"] for version in lora_versions]
+                versions = lora_versions
             elif checkpoint_versions:
                 model_type = "checkpoint"
-                version_ids = [version["versionId"] for version in checkpoint_versions]
+                versions = checkpoint_versions
             elif embedding_versions:
                 model_type = "embedding"
-                version_ids = [version["versionId"] for version in embedding_versions]
+                versions = embedding_versions
 
-            return web.json_response({"success": True, "modelType": model_type, "modelVersionIds": version_ids})
+            return web.json_response({"success": True, "modelType": model_type, "versions": versions})
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Failed to check model existence: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
