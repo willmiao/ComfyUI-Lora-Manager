@@ -56,6 +56,8 @@ class InitializationManager {
             this.pageType = 'checkpoints';
         } else if (path.includes('/loras')) {
             this.pageType = 'loras';
+        } else if (path.includes('/embeddings')) {
+            this.pageType = 'embeddings';
         } else {
             // Default to loras if can't determine
             this.pageType = 'loras';
@@ -195,6 +197,7 @@ class InitializationManager {
      */
     handleProgressUpdate(data) {
         if (!data) return;
+        console.log('Received progress update:', data);
         
         // Check if this update is for our page type
         if (data.pageType && data.pageType !== this.pageType) {
@@ -206,7 +209,8 @@ class InitializationManager {
         if (!data.pageType && data.scanner_type) {
             const scannerTypeToPageType = {
                 'lora': 'loras',
-                'checkpoint': 'checkpoints'
+                'checkpoint': 'checkpoints',
+                'embedding': 'embeddings'
             };
             
             if (scannerTypeToPageType[data.scanner_type] !== this.pageType) {
