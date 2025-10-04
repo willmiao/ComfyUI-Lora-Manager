@@ -420,7 +420,7 @@ export function createModelCard(model, modelType) {
     const previewVersions = state.pages[previewVersionsKey]?.previewVersions || new Map();
     const version = previewVersions.get(model.file_path);
     const previewUrl = model.preview_url || '/loras_static/images/no-preview.png';
-    const versionedPreviewUrl = version ? `${previewUrl}?t=${version}` : previewUrl;
+    const versionedPreviewUrl = version ? `${previewUrl}${previewUrl.includes('?') ? '&' : '?'}t=${version}` : previewUrl;
 
     // Determine NSFW warning text based on level with i18n support
     let nsfwText = translate('modelCard.nsfw.matureContent', {}, 'Mature Content');
