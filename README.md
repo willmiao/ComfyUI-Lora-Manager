@@ -225,7 +225,7 @@ You can now run LoRA Manager independently from ComfyUI:
      ```
 
 2. **For non-ComfyUI users**:
-   - Copy the provided `settings.json.example` file to the LoRA Manager settings folder (`%APPDATA%/ComfyUI-LoRA-Manager/`, `~/Library/Application Support/ComfyUI-LoRA-Manager/`, or `${XDG_CONFIG_HOME:-~/.config}/ComfyUI-LoRA-Manager/`) and rename it to `settings.json`
+   - Copy the provided `settings.json.example` file to create a new file named `settings.json`
    - Edit `settings.json` to include your correct model folder paths and CivitAI API key
    - Install required dependencies: `pip install -r requirements.txt`
    - Run standalone mode:
