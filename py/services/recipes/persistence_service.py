@@ -305,9 +305,9 @@ class RecipePersistenceService:
                 "file_name": name,
                 "strength": float(strength),
                 "hash": (lora_info.get("sha256") or "").lower() if lora_info else "",
-                "modelVersionId": lora_info.get("civitai", {}).get("id") if lora_info else 0,
-                "modelName": lora_info.get("civitai", {}).get("model", {}).get("name") if lora_info else "",
-                "modelVersionName": lora_info.get("civitai", {}).get("name") if lora_info else "",
+                "modelVersionId": (lora_info.get("civitai") or {}).get("id", 0) if lora_info else 0,
+                "modelName": ((lora_info.get("civitai") or {}).get("model") or {}).get("name", name) if lora_info else "",
+                "modelVersionName": (lora_info.get("civitai") or {}).get("name", "") if lora_info else "",
                 "isDeleted": False,
                 "exclude": False,
             }
