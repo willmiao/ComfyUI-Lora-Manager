@@ -22,7 +22,6 @@ from aiohttp import web
 from ...config import config
 from ...services.metadata_service import (
     get_metadata_archive_manager,
-    get_metadata_provider,
     update_metadata_providers,
 )
 from ...services.service_registry import ServiceRegistry

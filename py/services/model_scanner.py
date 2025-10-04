@@ -211,7 +211,12 @@ class ModelScanner:
             self._is_initializing = True
             
             # Determine the page type based on model type
-            page_type = 'loras' if self.model_type == 'lora' else 'checkpoints'
+            page_type_map = {
+                'lora': 'loras',
+                'checkpoint': 'checkpoints',
+                'embedding': 'embeddings'
+            }
+            page_type = page_type_map.get(self.model_type, self.model_type)
             
             # First, try to load from cache
             await ws_manager.broadcast_init_progress({
