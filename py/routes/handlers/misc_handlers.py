@@ -166,6 +166,24 @@ class SettingsHandler:
         self._metadata_provider_updater = metadata_provider_updater
         self._downloader_factory = downloader_factory
 
+    async def get_libraries(self, request: web.Request) -> web.Response:
+        """Return the registered libraries and the active selection."""
+
+        try:
+            snapshot = config.get_library_registry_snapshot()
+            libraries = snapshot.get("libraries", {})
+            active_library = snapshot.get("active_library", "")
+            return web.json_response(
+                {
+                    "success": True,
+                    "libraries": libraries,
+                    "active_library": active_library,
+                }
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Error getting library registry: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def get_settings(self, request: web.Request) -> web.Response:
         try:
             response_data = {}
@@ -176,6 +194,41 @@ class SettingsHandler:
             return web.json_response({"success": True, "settings": response_data})
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Error getting settings: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def activate_library(self, request: web.Request) -> web.Response:
+        """Activate the selected library."""
+
+        try:
+            data = await request.json()
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Error parsing activate library request: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": "Invalid JSON payload"}, status=400)
+
+        library_name = data.get("library") or data.get("library_name")
+        if not isinstance(library_name, str) or not library_name.strip():
+            return web.json_response(
+                {"success": False, "error": "Library name is required"}, status=400
+            )
+
+        try:
+            normalized_name = library_name.strip()
+            self._settings.activate_library(normalized_name)
+            snapshot = config.get_library_registry_snapshot()
+            libraries = snapshot.get("libraries", {})
+            active_library = snapshot.get("active_library", "")
+            return web.json_response(
+                {
+                    "success": True,
+                    "active_library": active_library,
+                    "libraries": libraries,
+                }
+            )
+        except KeyError as exc:
+            logger.debug("Attempted to activate unknown library '%s'", library_name)
+            return web.json_response({"success": False, "error": str(exc)}, status=404)
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Error activating library '%s': %s", library_name, exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def update_settings(self, request: web.Request) -> web.Response:
@@ -731,6 +784,8 @@ class MiscHandlerSet:
             "health_check": self.health.health_check,
             "get_settings": self.settings.get_settings,
             "update_settings": self.settings.update_settings,
+            "get_settings_libraries": self.settings.get_libraries,
+            "activate_library": self.settings.activate_library,
             "update_usage_stats": self.usage_stats.update_usage_stats,
             "get_usage_stats": self.usage_stats.get_usage_stats,
             "update_lora_code": self.lora_code.update_lora_code,
