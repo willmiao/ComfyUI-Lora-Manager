@@ -241,10 +241,10 @@
             }
         },
         "folderSettings": {
-            "activeLibrary": "Active Library",
-            "activeLibraryHelp": "Switch between configured libraries to update default folders. Changing the selection reloads the page.",
-            "loadingLibraries": "Loading libraries...",
-            "noLibraries": "No libraries configured",
+            "activeLibrary": "Biblioteca activa",
+            "activeLibraryHelp": "Alterna entre las bibliotecas configuradas para actualizar las carpetas predeterminadas. Cambiar la selección recarga la página.",
+            "loadingLibraries": "Cargando bibliotecas...",
+            "noLibraries": "No hay bibliotecas configuradas",
             "defaultLoraRoot": "Raíz predeterminada de LoRA",
             "defaultLoraRootHelp": "Establecer el directorio raíz predeterminado de LoRA para descargas, importaciones y movimientos",
             "defaultCheckpointRoot": "Raíz predeterminada de checkpoint",

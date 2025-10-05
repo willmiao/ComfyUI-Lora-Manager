@@ -241,10 +241,10 @@
             }
         },
         "folderSettings": {
-            "activeLibrary": "Active Library",
-            "activeLibraryHelp": "Switch between configured libraries to update default folders. Changing the selection reloads the page.",
-            "loadingLibraries": "Loading libraries...",
-            "noLibraries": "No libraries configured",
+            "activeLibrary": "ספרייה פעילה",
+            "activeLibraryHelp": "החלפה בין הספריות המוגדרות תעדכן את תיקיות ברירת המחדל. שינוי הבחירה ירענן את הדף.",
+            "loadingLibraries": "טוען ספריות...",
+            "noLibraries": "לא הוגדרו ספריות",
             "defaultLoraRoot": "תיקיית שורש ברירת מחדל של LoRA",
             "defaultLoraRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של LoRA להורדות, ייבוא והעברות",
             "defaultCheckpointRoot": "תיקיית שורש ברירת מחדל של Checkpoint",

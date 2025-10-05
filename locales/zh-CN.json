@@ -247,10 +247,10 @@
             }
         },
         "folderSettings": {
-            "activeLibrary": "Active Library",
-            "activeLibraryHelp": "Switch between configured libraries to update default folders. Changing the selection reloads the page.",
-            "loadingLibraries": "Loading libraries...",
-            "noLibraries": "No libraries configured",
+            "activeLibrary": "活动库",
+            "activeLibraryHelp": "在已配置的库之间切换以更新默认文件夹。更改选择将重新加载页面。",
+            "loadingLibraries": "正在加载库...",
+            "noLibraries": "尚未配置库",
             "defaultLoraRoot": "默认 LoRA 根目录",
             "defaultLoraRootHelp": "设置下载、导入和移动时的默认 LoRA 根目录",
             "defaultCheckpointRoot": "默认 Checkpoint 根目录",
