@@ -73,7 +73,6 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  transition: all 0.2s ease;
   font-size: 0.9rem;
 }
 
