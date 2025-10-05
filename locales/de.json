@@ -393,6 +393,7 @@
             "viewSelected": "Auswahl anzeigen",
             "addTags": "Allen Tags hinzufügen",
             "setBaseModel": "Basis-Modell für alle festlegen",
+            "setContentRating": "Inhaltsbewertung für alle festlegen",
             "copyAll": "Alle Syntax kopieren",
             "refreshAll": "Alle Metadaten aktualisieren",
             "moveAll": "Alle in Ordner verschieben",
@@ -617,6 +618,7 @@
         "contentRating": {
             "title": "Inhaltsbewertung festlegen",
             "current": "Aktuell",
+            "multiple": "Mehrere Werte",
             "levels": {
                 "pg": "PG",
                 "pg13": "PG13",
@@ -1095,6 +1097,10 @@
             "bulkBaseModelUpdateSuccess": "Basis-Modell erfolgreich für {count} Modell(e) aktualisiert",
             "bulkBaseModelUpdatePartial": "{success} Modelle aktualisiert, {failed} fehlgeschlagen",
             "bulkBaseModelUpdateFailed": "Aktualisierung des Basis-Modells für ausgewählte Modelle fehlgeschlagen",
+            "bulkContentRatingUpdating": "Inhaltsbewertung wird für {count} Modell(e) aktualisiert...",
+            "bulkContentRatingSet": "Inhaltsbewertung auf {level} für {count} Modell(e) gesetzt",
+            "bulkContentRatingPartial": "Inhaltsbewertung auf {level} für {success} Modell(e) gesetzt, {failed} fehlgeschlagen",
+            "bulkContentRatingFailed": "Inhaltsbewertung für ausgewählte Modelle konnte nicht aktualisiert werden",
             "invalidCharactersRemoved": "Ungültige Zeichen aus Dateiname entfernt",
             "filenameCannotBeEmpty": "Dateiname darf nicht leer sein",
             "renameFailed": "Fehler beim Umbenennen der Datei: {message}",

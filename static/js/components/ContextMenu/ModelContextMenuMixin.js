@@ -2,6 +2,7 @@ import { showToast, getNSFWLevelName, openExampleImagesFolder } from '../../util
 import { modalManager } from '../../managers/ModalManager.js';
 import { state } from '../../state/index.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
+import { bulkManager } from '../../managers/BulkManager.js';
 
 // Mixin with shared functionality for LoraContextMenu and CheckpointContextMenu
 export const ModelContextMenuMixin = {
@@ -11,6 +12,7 @@ export const ModelContextMenuMixin = {
         const closeBtn = this.nsfwSelector.querySelector('.close-nsfw-selector');
         closeBtn.addEventListener('click', () => {
             this.nsfwSelector.style.display = 'none';
+            this.resetNSFWSelectorState();
         });
 
         // Level buttons
@@ -18,41 +20,70 @@ export const ModelContextMenuMixin = {
         levelButtons.forEach(btn => {
             btn.addEventListener('click', async () => {
                 const level = parseInt(btn.dataset.level);
+                const mode = this.nsfwSelector.dataset.mode || 'single';
+
+                if (mode === 'bulk') {
+                    let bulkFilePaths = [];
+                    if (this.nsfwSelector.dataset.bulkFilePaths) {
+                        try {
+                            bulkFilePaths = JSON.parse(this.nsfwSelector.dataset.bulkFilePaths);
+                        } catch (error) {
+                            console.warn('Failed to parse bulk file paths for content rating', error);
+                        }
+                    }
+
+                    const success = await bulkManager.setBulkContentRating(level, bulkFilePaths);
+                    if (success) {
+                        this.nsfwSelector.style.display = 'none';
+                        this.resetNSFWSelectorState();
+                    }
+                    return;
+                }
+
                 const filePath = this.nsfwSelector.dataset.cardPath;
-                
+
                 if (!filePath) return;
-                
+
                 try {
                     await this.saveModelMetadata(filePath, { preview_nsfw_level: level });
-                    
+
                     showToast('toast.contextMenu.contentRatingSet', { level: getNSFWLevelName(level) }, 'success');
                     this.nsfwSelector.style.display = 'none';
+                    this.resetNSFWSelectorState();
                 } catch (error) {
                     showToast('toast.contextMenu.contentRatingFailed', { message: error.message }, 'error');
                 }
             });
         });
-        
+
         // Close when clicking outside
         document.addEventListener('click', (e) => {
-            if (this.nsfwSelector.style.display === 'block' && 
-                !this.nsfwSelector.contains(e.target) && 
-                !e.target.closest('.context-menu-item[data-action="set-nsfw"]')) {
+            if (this.nsfwSelector.style.display === 'block' &&
+                !this.nsfwSelector.contains(e.target) &&
+                !e.target.closest('.context-menu-item[data-action="set-nsfw"], .context-menu-item[data-action="set-content-rating"]')) {
                 this.nsfwSelector.style.display = 'none';
+                this.resetNSFWSelectorState();
             }
         });
+    },
+
+    resetNSFWSelectorState() {
+        if (!this.nsfwSelector) return;
+        delete this.nsfwSelector.dataset.bulkFilePaths;
+        delete this.nsfwSelector.dataset.mode;
+        delete this.nsfwSelector.dataset.cardPath;
     },
 
     showNSFWLevelSelector(x, y, card) {
         const selector = document.getElementById('nsfwLevelSelector');
         const currentLevelEl = document.getElementById('currentNSFWLevel');
-        
+
         // Get current NSFW level
         let currentLevel = 0;
         try {
             const metaData = JSON.parse(card.dataset.meta || '{}');
             currentLevel = metaData.preview_nsfw_level || 0;
-            
+
             // Update if we have no recorded level but have a dataset attribute
             if (!currentLevel && card.dataset.nsfwLevel) {
                 currentLevel = parseInt(card.dataset.nsfwLevel) || 0;
@@ -60,35 +91,37 @@ export const ModelContextMenuMixin = {
         } catch (err) {
             console.error('Error parsing metadata:', err);
         }
-        
+
         currentLevelEl.textContent = getNSFWLevelName(currentLevel);
-        
+
         // Position the selector
         if (x && y) {
             const viewportWidth = document.documentElement.clientWidth;
             const viewportHeight = document.documentElement.clientHeight;
             const selectorRect = selector.getBoundingClientRect();
-            
+
             // Center the selector if no coordinates provided
             let finalX = (viewportWidth - selectorRect.width) / 2;
             let finalY = (viewportHeight - selectorRect.height) / 2;
-            
+
             selector.style.left = `${finalX}px`;
             selector.style.top = `${finalY}px`;
         }
-        
+
         // Highlight current level button
-        document.querySelectorAll('.nsfw-level-btn').forEach(btn => {
+        selector.querySelectorAll('.nsfw-level-btn').forEach(btn => {
             if (parseInt(btn.dataset.level) === currentLevel) {
                 btn.classList.add('active');
             } else {
                 btn.classList.remove('active');
             }
         });
-        
+
         // Store reference to current card
+        selector.dataset.mode = 'single';
         selector.dataset.cardPath = card.dataset.filepath;
-        
+        delete selector.dataset.bulkFilePaths;
+
         // Show selector
         selector.style.display = 'block';
     },

@@ -1,5 +1,5 @@
 import { state, getCurrentPageState } from '../state/index.js';
-import { showToast, copyToClipboard, sendLoraToWorkflow, buildLoraSyntax } from '../utils/uiHelpers.js';
+import { showToast, copyToClipboard, sendLoraToWorkflow, buildLoraSyntax, getNSFWLevelName } from '../utils/uiHelpers.js';
 import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
@@ -35,7 +35,8 @@ export class BulkManager {
                 refreshAll: true,
                 moveAll: true,
                 autoOrganize: true,
-                deleteAll: true
+                deleteAll: true,
+                setContentRating: true
             },
             [MODEL_TYPES.EMBEDDING]: {
                 addTags: true,
@@ -44,7 +45,8 @@ export class BulkManager {
                 refreshAll: true,
                 moveAll: true,
                 autoOrganize: true,
-                deleteAll: true
+                deleteAll: true,
+                setContentRating: false
             },
             [MODEL_TYPES.CHECKPOINT]: {
                 addTags: true,
@@ -53,7 +55,8 @@ export class BulkManager {
                 refreshAll: true,
                 moveAll: false,
                 autoOrganize: true,
-                deleteAll: true
+                deleteAll: true,
+                setContentRating: true
             }
         };
     }
@@ -850,20 +853,137 @@ export class BulkManager {
             showToast('toast.models.noModelsSelected', {}, 'warning');
             return;
         }
-        
+
         const countElement = document.getElementById('bulkBaseModelCount');
         if (countElement) {
             countElement.textContent = state.selectedModels.size;
         }
-        
+
         modalManager.showModal('bulkBaseModelModal', null, null, () => {
             this.cleanupBulkBaseModelModal();
         });
-        
+
         // Initialize the bulk base model interface
         this.initializeBulkBaseModelInterface();
     }
-    
+
+    showBulkContentRatingSelector() {
+        if (state.selectedModels.size === 0) {
+            showToast('toast.models.noModelsSelected', {}, 'warning');
+            return;
+        }
+
+        const selector = document.getElementById('nsfwLevelSelector');
+        const currentLevelEl = document.getElementById('currentNSFWLevel');
+
+        if (!selector || !currentLevelEl) {
+            console.warn('NSFW level selector not found');
+            return;
+        }
+
+        const filePaths = Array.from(state.selectedModels);
+        selector.dataset.mode = 'bulk';
+        selector.dataset.bulkFilePaths = JSON.stringify(filePaths);
+        delete selector.dataset.cardPath;
+
+        const selectedCards = Array.from(document.querySelectorAll('.model-card.selected'));
+        const levels = new Set();
+
+        selectedCards.forEach((card) => {
+            let level = 0;
+            try {
+                const metaData = JSON.parse(card.dataset.meta || '{}');
+                if (typeof metaData.preview_nsfw_level === 'number') {
+                    level = metaData.preview_nsfw_level;
+                }
+            } catch (error) {
+                console.warn('Failed to parse metadata for card', error);
+            }
+
+            if (!level && card.dataset.nsfwLevel) {
+                const parsed = parseInt(card.dataset.nsfwLevel, 10);
+                if (!Number.isNaN(parsed)) {
+                    level = parsed;
+                }
+            }
+
+            levels.add(level);
+        });
+
+        let highlightLevel = null;
+        if (levels.size === 1) {
+            highlightLevel = levels.values().next().value;
+            currentLevelEl.textContent = getNSFWLevelName(highlightLevel);
+        } else {
+            currentLevelEl.textContent = translate('modals.contentRating.multiple', {}, 'Multiple values');
+        }
+
+        selector.querySelectorAll('.nsfw-level-btn').forEach((btn) => {
+            const btnLevel = parseInt(btn.dataset.level, 10);
+            if (highlightLevel !== null && btnLevel === highlightLevel) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        const viewportWidth = document.documentElement.clientWidth;
+        const viewportHeight = document.documentElement.clientHeight;
+        const selectorRect = selector.getBoundingClientRect();
+        const finalX = Math.max((viewportWidth - selectorRect.width) / 2, 0);
+        const finalY = Math.max((viewportHeight - selectorRect.height) / 2, 0);
+
+        selector.style.left = `${finalX}px`;
+        selector.style.top = `${finalY}px`;
+        selector.style.display = 'block';
+    }
+
+    async setBulkContentRating(level, filePaths = null) {
+        const targets = Array.isArray(filePaths) ? filePaths : Array.from(state.selectedModels);
+
+        if (!targets || targets.length === 0) {
+            showToast('toast.models.noModelsSelected', {}, 'warning');
+            return false;
+        }
+
+        const totalCount = targets.length;
+        const levelName = getNSFWLevelName(level);
+
+        state.loadingManager.showSimpleLoading(translate('toast.models.bulkContentRatingUpdating', { count: totalCount }));
+
+        let successCount = 0;
+        let failureCount = 0;
+
+        try {
+            const apiClient = getModelApiClient();
+            for (const filePath of targets) {
+                try {
+                    await apiClient.saveModelMetadata(filePath, { preview_nsfw_level: level });
+                    successCount++;
+                } catch (error) {
+                    failureCount++;
+                    console.error(`Failed to set content rating for ${filePath}:`, error);
+                }
+            }
+        } finally {
+            state.loadingManager.hideSimpleLoading();
+        }
+
+        if (successCount === totalCount) {
+            showToast('toast.models.bulkContentRatingSet', { count: successCount, level: levelName }, 'success');
+        } else if (successCount > 0) {
+            showToast('toast.models.bulkContentRatingPartial', {
+                success: successCount,
+                failed: failureCount,
+                level: levelName
+            }, 'warning');
+        } else {
+            showToast('toast.models.bulkContentRatingFailed', {}, 'error');
+        }
+
+        return successCount > 0;
+    }
+
     /**
      * Initialize bulk base model interface
      */

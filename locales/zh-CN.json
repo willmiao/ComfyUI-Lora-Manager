@@ -399,6 +399,7 @@
             "viewSelected": "查看已选中",
             "addTags": "为所有添加标签",
             "setBaseModel": "为所有设置基础模型",
+            "setContentRating": "为全部设置内容评级",
             "copyAll": "复制全部语法",
             "refreshAll": "刷新全部元数据",
             "moveAll": "全部移动到文件夹",
@@ -623,6 +624,7 @@
         "contentRating": {
             "title": "设置内容评级",
             "current": "当前",
+            "multiple": "多个值",
             "levels": {
                 "pg": "PG",
                 "pg13": "PG13",
@@ -1101,6 +1103,10 @@
             "bulkBaseModelUpdateSuccess": "成功为 {count} 个模型更新基础模型",
             "bulkBaseModelUpdatePartial": "更新了 {success} 个模型，{failed} 个失败",
             "bulkBaseModelUpdateFailed": "为选中模型更新基础模型失败",
+            "bulkContentRatingUpdating": "正在为 {count} 个模型更新内容评级...",
+            "bulkContentRatingSet": "已将 {count} 个模型的内容评级设置为 {level}",
+            "bulkContentRatingPartial": "已将 {success} 个模型的内容评级设置为 {level}，{failed} 个失败",
+            "bulkContentRatingFailed": "未能更新所选模型的内容评级",
             "invalidCharactersRemoved": "文件名中的无效字符已移除",
             "filenameCannotBeEmpty": "文件名不能为空",
             "renameFailed": "重命名文件失败：{message}",

@@ -393,6 +393,7 @@
             "viewSelected": "Ver seleccionados",
             "addTags": "Añadir etiquetas a todos",
             "setBaseModel": "Establecer modelo base para todos",
+            "setContentRating": "Establecer clasificación de contenido para todos",
             "copyAll": "Copiar toda la sintaxis",
             "refreshAll": "Actualizar todos los metadatos",
             "moveAll": "Mover todos a carpeta",
@@ -617,6 +618,7 @@
         "contentRating": {
             "title": "Establecer clasificación de contenido",
             "current": "Actual",
+            "multiple": "Valores múltiples",
             "levels": {
                 "pg": "PG",
                 "pg13": "PG13",
@@ -1095,6 +1097,10 @@
             "bulkBaseModelUpdateSuccess": "Modelo base actualizado exitosamente para {count} modelo(s)",
             "bulkBaseModelUpdatePartial": "Actualizados {success} modelo(s), fallaron {failed} modelo(s)",
             "bulkBaseModelUpdateFailed": "Error al actualizar el modelo base para los modelos seleccionados",
+            "bulkContentRatingUpdating": "Actualizando la clasificación de contenido para {count} modelo(s)...",
+            "bulkContentRatingSet": "Clasificación de contenido establecida en {level} para {count} modelo(s)",
+            "bulkContentRatingPartial": "Clasificación de contenido establecida en {level} para {success} modelo(s), {failed} fallaron",
+            "bulkContentRatingFailed": "No se pudo actualizar la clasificación de contenido para los modelos seleccionados",
             "invalidCharactersRemoved": "Caracteres inválidos eliminados del nombre de archivo",
             "filenameCannotBeEmpty": "El nombre de archivo no puede estar vacío",
             "renameFailed": "Error al renombrar archivo: {message}",

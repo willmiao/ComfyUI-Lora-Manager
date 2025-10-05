@@ -393,6 +393,7 @@
             "viewSelected": "檢視已選取",
             "addTags": "新增標籤到全部",
             "setBaseModel": "設定全部基礎模型",
+            "setContentRating": "為全部設定內容分級",
             "copyAll": "複製全部語法",
             "refreshAll": "刷新全部 metadata",
             "moveAll": "全部移動到資料夾",
@@ -617,6 +618,7 @@
         "contentRating": {
             "title": "設定內容分級",
             "current": "目前",
+            "multiple": "多個值",
             "levels": {
                 "pg": "PG",
                 "pg13": "PG13",
@@ -1095,6 +1097,10 @@
             "bulkBaseModelUpdateSuccess": "已成功為 {count} 個模型更新基礎模型",
             "bulkBaseModelUpdatePartial": "已更新 {success} 個模型，{failed} 個模型失敗",
             "bulkBaseModelUpdateFailed": "更新所選模型的基礎模型失敗",
+            "bulkContentRatingUpdating": "正在為 {count} 個模型更新內容分級...",
+            "bulkContentRatingSet": "已將 {count} 個模型的內容分級設定為 {level}",
+            "bulkContentRatingPartial": "已將 {success} 個模型的內容分級設定為 {level}，{failed} 個失敗",
+            "bulkContentRatingFailed": "無法更新所選模型的內容分級",
             "invalidCharactersRemoved": "已移除檔名中的無效字元",
             "filenameCannotBeEmpty": "檔案名稱不可為空",
             "renameFailed": "重新命名檔案失敗：{message}",
