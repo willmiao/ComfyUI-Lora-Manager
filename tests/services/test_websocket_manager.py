@@ -21,6 +21,32 @@ def manager():
     return WebSocketManager()
 
 
+async def test_broadcast_init_progress_replays_cached_payloads(manager):
+    first_payload = {"pageType": "loras", "progress": 15}
+    second_payload = {"scanner_type": "loras", "progress": 45}
+
+    await manager.broadcast_init_progress(first_payload)
+    await manager.broadcast_init_progress(second_payload)
+
+    replay_socket = DummyWebSocket()
+    await manager._send_cached_init_progress(replay_socket)
+
+    assert replay_socket.messages == [
+        {
+            "pageType": "loras",
+            "progress": 15,
+            "stage": "processing",
+            "details": "Processing...",
+        },
+        {
+            "scanner_type": "loras",
+            "progress": 45,
+            "stage": "processing",
+            "details": "Processing...",
+        },
+    ]
+
+
 async def test_broadcast_init_progress_adds_defaults(manager):
     ws = DummyWebSocket()
     manager._init_websockets.add(ws)
@@ -66,6 +92,18 @@ async def test_broadcast_download_progress_tracks_state(manager):
     assert manager.get_download_progress(download_id)["progress"] == 55
 
 
+async def test_broadcast_download_progress_to_multiple_updates(manager):
+    ws = DummyWebSocket()
+    download_id = "batch"
+    manager._download_websockets[download_id] = ws
+
+    await manager.broadcast_download_progress(download_id, {"progress": 10})
+    await manager.broadcast_download_progress(download_id, {"progress": 75})
+
+    assert ws.messages == [{"progress": 10}, {"progress": 75}]
+    assert manager.get_download_progress(download_id)["progress"] == 75
+
+
 async def test_broadcast_download_progress_missing_socket(manager):
     await manager.broadcast_download_progress("missing", {"progress": 30})
     # Progress should be stored even without a live websocket
@@ -82,6 +120,18 @@ async def test_auto_organize_progress_helpers(manager):
     manager.cleanup_auto_organize_progress()
     assert manager.get_auto_organize_progress() is None
     assert manager.is_auto_organize_running() is False
+
+
+async def test_broadcast_auto_organize_progress_notifies_all_clients(manager):
+    ws_primary = DummyWebSocket()
+    ws_secondary = DummyWebSocket()
+    manager._websockets.update({ws_primary, ws_secondary})
+
+    payload = {"status": "started", "progress": 5}
+    await manager.broadcast_auto_organize_progress(payload)
+
+    assert ws_primary.messages == [payload]
+    assert ws_secondary.messages == [payload]
 
 
 def test_cleanup_old_downloads(manager):
