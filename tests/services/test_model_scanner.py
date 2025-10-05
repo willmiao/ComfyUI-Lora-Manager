@@ -379,3 +379,50 @@ async def test_batch_delete_persists_removal(tmp_path: Path, monkeypatch):
         ).fetchone()[0]
 
     assert remaining == 0
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_adds_new_files_and_updates_hash_index(tmp_path: Path):
+    first, _, _ = _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+
+    await scanner._initialize_cache()
+    await scanner.get_cached_data()
+
+    new_file = tmp_path / "three.txt"
+    new_file.write_text("three", encoding="utf-8")
+    (tmp_path / "nested" / "two.txt").unlink()
+
+    await scanner._reconcile_cache()
+
+    cache = await scanner.get_cached_data()
+    cached_paths = {item["file_path"] for item in cache.raw_data}
+
+    assert cached_paths == {
+        _normalize_path(first),
+        _normalize_path(new_file),
+    }
+    assert scanner._hash_index.get_path("hash-three") == _normalize_path(new_file)
+    assert scanner._hash_index.get_path("hash-two") is None
+    assert scanner._tags_count == {"alpha": 1, "beta": 1}
+    assert cache.folders == [""]
+
+
+@pytest.mark.asyncio
+async def test_count_model_files_handles_symlink_loops(tmp_path: Path):
+    scanner = DummyScanner(tmp_path)
+
+    root_file = tmp_path / "root.txt"
+    root_file.write_text("root", encoding="utf-8")
+
+    subdir = tmp_path / "sub"
+    subdir.mkdir()
+    nested_file = subdir / "nested.txt"
+    nested_file.write_text("nested", encoding="utf-8")
+
+    loop_link = subdir / "loop"
+    loop_link.symlink_to(tmp_path)
+
+    count = scanner._count_model_files()
+
+    assert count == 2
