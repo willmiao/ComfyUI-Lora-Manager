@@ -104,6 +104,10 @@ def test_iter_library_roots_returns_all_configured(tmp_path):
 
 def test_is_valid_example_images_root_accepts_hash_directories(tmp_path):
     settings.settings['example_images_path'] = str(tmp_path)
+    # Ensure single-library mode (not multi-library mode)
+    settings.settings['libraries'] = {'default': {}}
+    settings.settings['active_library'] = 'default'
+    
     hash_folder = tmp_path / ('d' * 64)
     hash_folder.mkdir()
     (hash_folder / 'image.png').write_text('data', encoding='utf-8')
@@ -112,4 +116,6 @@ def test_is_valid_example_images_root_accepts_hash_directories(tmp_path):
 
     invalid_folder = tmp_path / 'not_hash'
     invalid_folder.mkdir()
+    # Add a non-hash file to make it clearly invalid
+    (invalid_folder / 'invalid.txt').write_text('invalid', encoding='utf-8')
     assert is_valid_example_images_root(str(tmp_path)) is False

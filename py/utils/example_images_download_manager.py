@@ -202,6 +202,11 @@ class DownloadManager:
                 )
 
                 snapshot = self._progress.snapshot()
+            except ExampleImagesDownloadError:
+                # Re-raise our own exception types without wrapping
+                self._is_downloading = False
+                self._download_task = None
+                raise
             except Exception as e:
                 self._is_downloading = False
                 self._download_task = None

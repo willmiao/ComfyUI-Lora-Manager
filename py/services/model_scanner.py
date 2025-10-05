@@ -620,8 +620,12 @@ class ModelScanner:
                         try:
                             # Find the appropriate root path for this file
                             root_path = None
-                            for potential_root in self.get_model_roots():
-                                if path.startswith(potential_root):
+                            model_roots = self.get_model_roots()
+                            for potential_root in model_roots:
+                                # Normalize both paths for comparison
+                                normalized_path = os.path.normpath(path)
+                                normalized_root = os.path.normpath(potential_root)
+                                if normalized_path.startswith(normalized_root):
                                     root_path = potential_root
                                     break
                             

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from typing import Any, Dict
 
@@ -37,20 +38,30 @@ async def test_open_folder_requires_existing_model_directory(monkeypatch: pytest
     (model_folder / "image.png").write_text("data", encoding="utf-8")
 
     popen_calls: list[list[str]] = []
+    startfile_calls: list[str] = []
 
     class DummyPopen:
         def __init__(self, cmd, *_args, **_kwargs):
             popen_calls.append(cmd)
 
+    def dummy_startfile(path):
+        startfile_calls.append(path)
+
     monkeypatch.setattr("subprocess.Popen", DummyPopen)
+    monkeypatch.setattr("os.startfile", dummy_startfile)
 
     request = JsonRequest({"model_hash": model_hash})
     response = await ExampleImagesFileManager.open_folder(request)
     body = json.loads(response.text)
 
     assert body["success"] is True
-    assert popen_calls
-    assert model_hash in popen_calls[0][-1]
+    # On Windows, os.startfile is used; on other platforms, subprocess.Popen
+    if os.name == 'nt':
+        assert startfile_calls
+        assert model_hash in startfile_calls[0]
+    else:
+        assert popen_calls
+        assert model_hash in popen_calls[0][-1]
 
 
 async def test_open_folder_rejects_invalid_paths(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:

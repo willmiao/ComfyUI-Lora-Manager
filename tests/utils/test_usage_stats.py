@@ -113,11 +113,12 @@ async def test_usage_stats_background_processor_handles_pending_prompts(tmp_path
     stats, tasks, _ = _prepare_usage_stats(tmp_path, monkeypatch, sleep_override=fast_sleep)
 
     metadata_calls = []
+    # Use string literals directly to avoid dependency on conditional imports
     metadata_payload = {
-        MODELS: {
+        "models": {
             "1": {"type": "checkpoint", "name": "model.ckpt"},
         },
-        LORAS: {
+        "loras": {
             "2": {"lora_list": [{"name": "awesome_lora.safetensors"}]},
         },
     }

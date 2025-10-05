@@ -30,10 +30,12 @@ def restore_settings() -> None:
 async def test_start_download_requires_configured_path(monkeypatch: pytest.MonkeyPatch) -> None:
     manager = download_module.DownloadManager(ws_manager=RecordingWebSocketManager())
 
-    with pytest.raises(download_module.ExampleImagesDownloadError) as exc_info:
+    # Ensure example_images_path is not configured
+    settings.settings.pop('example_images_path', None)
+
+    with pytest.raises(download_module.DownloadConfigurationError) as exc_info:
         await manager.start_download({})
 
-    assert isinstance(exc_info.value.__cause__, download_module.DownloadConfigurationError)
     assert "not configured" in str(exc_info.value)
 
     result = await manager.start_download({"auto_mode": True})
