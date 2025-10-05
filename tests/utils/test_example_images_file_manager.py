@@ -48,7 +48,7 @@ async def test_open_folder_requires_existing_model_directory(monkeypatch: pytest
         startfile_calls.append(path)
 
     monkeypatch.setattr("subprocess.Popen", DummyPopen)
-    monkeypatch.setattr("os.startfile", dummy_startfile)
+    monkeypatch.setattr("os.startfile", dummy_startfile, raising=False)
 
     request = JsonRequest({"model_hash": model_hash})
     response = await ExampleImagesFileManager.open_folder(request)
