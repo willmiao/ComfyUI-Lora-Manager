@@ -102,6 +102,34 @@ def get_model_folder(model_hash: str, library_name: Optional[str] = None) -> str
     return resolved_folder
 
 
+class ExampleImagePathResolver:
+    """Convenience wrapper exposing example image path helpers."""
+
+    @staticmethod
+    def get_model_folder(model_hash: str, library_name: Optional[str] = None) -> str:
+        """Return the example image folder for a model, migrating legacy paths."""
+
+        return get_model_folder(model_hash, library_name)
+
+    @staticmethod
+    def get_library_root(library_name: Optional[str] = None) -> str:
+        """Return the configured library root for example images."""
+
+        return get_library_root(library_name)
+
+    @staticmethod
+    def ensure_library_root_exists(library_name: Optional[str] = None) -> str:
+        """Ensure the library root exists before writing files."""
+
+        return ensure_library_root_exists(library_name)
+
+    @staticmethod
+    def get_model_relative_path(model_hash: str, library_name: Optional[str] = None) -> str:
+        """Return the relative path to a model folder from the static mount point."""
+
+        return get_model_relative_path(model_hash, library_name)
+
+
 def get_model_relative_path(model_hash: str, library_name: Optional[str] = None) -> str:
     """Return the relative URL path from the static mount to a model folder."""
 
