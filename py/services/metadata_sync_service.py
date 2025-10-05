@@ -166,10 +166,11 @@ class MetadataSyncService:
         try:
             if model_data.get("civitai_deleted") is True:
                 if not enable_archive or model_data.get("db_checked") is True:
-                    return (
-                        False,
-                        "CivitAI model is deleted and metadata archive DB is not enabled",
-                    )
+                    if not enable_archive:
+                        error_msg = "CivitAI model is deleted and metadata archive DB is not enabled"
+                    else:
+                        error_msg = "CivitAI model is deleted and not found in metadata archive DB"
+                    return (False, error_msg)
                 metadata_provider = await self._get_provider("sqlite")
             else:
                 metadata_provider = await self._get_default_provider()
