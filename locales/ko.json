@@ -241,10 +241,10 @@
             }
         },
         "folderSettings": {
-            "activeLibrary": "Active Library",
-            "activeLibraryHelp": "Switch between configured libraries to update default folders. Changing the selection reloads the page.",
-            "loadingLibraries": "Loading libraries...",
-            "noLibraries": "No libraries configured",
+            "activeLibrary": "활성 라이브러리",
+            "activeLibraryHelp": "구성된 라이브러리를 전환하여 기본 폴더를 업데이트합니다. 선택을 변경하면 페이지가 다시 로드됩니다.",
+            "loadingLibraries": "라이브러리를 불러오는 중...",
+            "noLibraries": "구성된 라이브러리가 없습니다",
             "defaultLoraRoot": "기본 LoRA 루트",
             "defaultLoraRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 LoRA 루트 디렉토리를 설정합니다",
             "defaultCheckpointRoot": "기본 Checkpoint 루트",

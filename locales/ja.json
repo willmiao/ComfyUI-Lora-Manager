@@ -241,10 +241,10 @@
             }
         },
         "folderSettings": {
-            "activeLibrary": "Active Library",
-            "activeLibraryHelp": "Switch between configured libraries to update default folders. Changing the selection reloads the page.",
-            "loadingLibraries": "Loading libraries...",
-            "noLibraries": "No libraries configured",
+            "activeLibrary": "アクティブライブラリ",
+            "activeLibraryHelp": "設定済みのライブラリを切り替えてデフォルトのフォルダを更新します。選択を変更するとページが再読み込みされます。",
+            "loadingLibraries": "ライブラリを読み込み中...",
+            "noLibraries": "ライブラリが設定されていません",
             "defaultLoraRoot": "デフォルトLoRAルート",
             "defaultLoraRootHelp": "ダウンロード、インポート、移動用のデフォルトLoRAルートディレクトリを設定",
             "defaultCheckpointRoot": "デフォルトCheckpointルート",

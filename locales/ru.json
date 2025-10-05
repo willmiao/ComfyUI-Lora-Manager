@@ -241,10 +241,10 @@
             }
         },
         "folderSettings": {
-            "activeLibrary": "Active Library",
-            "activeLibraryHelp": "Switch between configured libraries to update default folders. Changing the selection reloads the page.",
-            "loadingLibraries": "Loading libraries...",
-            "noLibraries": "No libraries configured",
+            "activeLibrary": "Активная библиотека",
+            "activeLibraryHelp": "Переключайтесь между настроенными библиотеками, чтобы обновить папки по умолчанию. Изменение выбора перезагружает страницу.",
+            "loadingLibraries": "Загрузка библиотек...",
+            "noLibraries": "Библиотеки не настроены",
             "defaultLoraRoot": "Корневая папка LoRA по умолчанию",
             "defaultLoraRootHelp": "Установить корневую папку LoRA по умолчанию для загрузок, импорта и перемещений",
             "defaultCheckpointRoot": "Корневая папка Checkpoint по умолчанию",
