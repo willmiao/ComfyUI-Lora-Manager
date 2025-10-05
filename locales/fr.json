@@ -393,6 +393,7 @@
             "viewSelected": "Voir la sélection",
             "addTags": "Ajouter des tags à tous",
             "setBaseModel": "Définir le modèle de base pour tous",
+            "setContentRating": "Définir la classification du contenu pour tous",
             "copyAll": "Copier toute la syntaxe",
             "refreshAll": "Actualiser toutes les métadonnées",
             "moveAll": "Déplacer tout vers un dossier",
@@ -617,6 +618,7 @@
         "contentRating": {
             "title": "Définir la classification du contenu",
             "current": "Actuel",
+            "multiple": "Valeurs multiples",
             "levels": {
                 "pg": "PG",
                 "pg13": "PG13",
@@ -1095,6 +1097,10 @@
             "bulkBaseModelUpdateSuccess": "Modèle de base mis à jour avec succès pour {count} modèle(s)",
             "bulkBaseModelUpdatePartial": "{success} modèle(s) mis à jour, {failed} modèle(s) en échec",
             "bulkBaseModelUpdateFailed": "Échec de la mise à jour du modèle de base pour les modèles sélectionnés",
+            "bulkContentRatingUpdating": "Mise à jour de la classification du contenu pour {count} modèle(s)...",
+            "bulkContentRatingSet": "Classification du contenu définie sur {level} pour {count} modèle(s)",
+            "bulkContentRatingPartial": "Classification du contenu définie sur {level} pour {success} modèle(s), {failed} échec(s)",
+            "bulkContentRatingFailed": "Impossible de mettre à jour la classification du contenu pour les modèles sélectionnés",
             "invalidCharactersRemoved": "Caractères invalides supprimés du nom de fichier",
             "filenameCannotBeEmpty": "Le nom de fichier ne peut pas être vide",
             "renameFailed": "Échec du renommage du fichier : {message}",

@@ -393,6 +393,7 @@
             "viewSelected": "הצג נבחרים",
             "addTags": "הוסף תגיות לכל",
             "setBaseModel": "הגדר מודל בסיס לכל",
+            "setContentRating": "הגדר דירוג תוכן לכל המודלים",
             "copyAll": "העתק את כל התחבירים",
             "refreshAll": "רענן את כל המטא-דאטה",
             "moveAll": "העבר הכל לתיקייה",
@@ -617,6 +618,7 @@
         "contentRating": {
             "title": "הגדר דירוג תוכן",
             "current": "נוכחי",
+            "multiple": "ערכים מרובים",
             "levels": {
                 "pg": "PG",
                 "pg13": "PG13",
@@ -1095,6 +1097,10 @@
             "bulkBaseModelUpdateSuccess": "עודכן בהצלחה מודל הבסיס עבור {count} מודל(ים)",
             "bulkBaseModelUpdatePartial": "עודכנו {success} מודל(ים), נכשלו {failed} מודל(ים)",
             "bulkBaseModelUpdateFailed": "עדכון מודל הבסיס עבור המודלים שנבחרו נכשל",
+            "bulkContentRatingUpdating": "מעדכן דירוג תוכן עבור {count} מודלים...",
+            "bulkContentRatingSet": "דירוג התוכן הוגדר ל-{level} עבור {count} מודלים",
+            "bulkContentRatingPartial": "דירוג התוכן הוגדר ל-{level} עבור {success} מודלים, {failed} נכשלו",
+            "bulkContentRatingFailed": "עדכון דירוג התוכן עבור המודלים שנבחרו נכשל",
             "invalidCharactersRemoved": "תווים לא חוקיים הוסרו משם הקובץ",
             "filenameCannotBeEmpty": "שם הקובץ אינו יכול להיות ריק",
             "renameFailed": "שינוי שם הקובץ נכשל: {message}",

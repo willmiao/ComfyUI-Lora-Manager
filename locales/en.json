@@ -393,6 +393,7 @@
             "viewSelected": "View Selected",
             "addTags": "Add Tags to All",
             "setBaseModel": "Set Base Model for All",
+            "setContentRating": "Set Content Rating for All",
             "copyAll": "Copy All Syntax",
             "refreshAll": "Refresh All Metadata",
             "moveAll": "Move All to Folder",
@@ -617,6 +618,7 @@
         "contentRating": {
             "title": "Set Content Rating",
             "current": "Current",
+            "multiple": "Multiple values",
             "levels": {
                 "pg": "PG",
                 "pg13": "PG13",
@@ -1095,6 +1097,10 @@
             "bulkBaseModelUpdateSuccess": "Successfully updated base model for {count} model(s)",
             "bulkBaseModelUpdatePartial": "Updated {success} model(s), failed {failed} model(s)",
             "bulkBaseModelUpdateFailed": "Failed to update base model for selected models",
+            "bulkContentRatingUpdating": "Updating content rating for {count} model(s)...",
+            "bulkContentRatingSet": "Set content rating to {level} for {count} model(s)",
+            "bulkContentRatingPartial": "Set content rating to {level} for {success} model(s), {failed} failed",
+            "bulkContentRatingFailed": "Failed to update content rating for selected models",
             "invalidCharactersRemoved": "Invalid characters removed from filename",
             "filenameCannotBeEmpty": "File name cannot be empty",
             "renameFailed": "Failed to rename file: {message}",

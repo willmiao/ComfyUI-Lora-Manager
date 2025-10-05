@@ -28,6 +28,7 @@ export class BulkContextMenu extends BaseContextMenu {
         // Update button visibility based on model type
         const addTagsItem = this.menu.querySelector('[data-action="add-tags"]');
         const setBaseModelItem = this.menu.querySelector('[data-action="set-base-model"]');
+        const setContentRatingItem = this.menu.querySelector('[data-action="set-content-rating"]');
         const sendToWorkflowAppendItem = this.menu.querySelector('[data-action="send-to-workflow-append"]');
         const sendToWorkflowReplaceItem = this.menu.querySelector('[data-action="send-to-workflow-replace"]');
         const copyAllItem = this.menu.querySelector('[data-action="copy-all"]');
@@ -63,6 +64,9 @@ export class BulkContextMenu extends BaseContextMenu {
         if (setBaseModelItem) {
             setBaseModelItem.style.display = 'flex'; // Base model editing is available for all model types
         }
+        if (setContentRatingItem) {
+            setContentRatingItem.style.display = config.setContentRating ? 'flex' : 'none';
+        }
     }
 
     updateSelectedCountHeader() {
@@ -85,6 +89,9 @@ export class BulkContextMenu extends BaseContextMenu {
                 break;
             case 'set-base-model':
                 bulkManager.showBulkBaseModelModal();
+                break;
+            case 'set-content-rating':
+                bulkManager.showBulkContentRatingSelector();
                 break;
             case 'send-to-workflow-append':
                 bulkManager.sendAllModelsToWorkflow(false);

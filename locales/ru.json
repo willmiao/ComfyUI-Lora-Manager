@@ -393,6 +393,7 @@
             "viewSelected": "Просмотреть выбранные",
             "addTags": "Добавить теги ко всем",
             "setBaseModel": "Установить базовую модель для всех",
+            "setContentRating": "Установить рейтинг контента для всех",
             "copyAll": "Копировать весь синтаксис",
             "refreshAll": "Обновить все метаданные",
             "moveAll": "Переместить все в папку",
@@ -617,6 +618,7 @@
         "contentRating": {
             "title": "Установить рейтинг контента",
             "current": "Текущий",
+            "multiple": "Несколько значений",
             "levels": {
                 "pg": "PG",
                 "pg13": "PG13",
@@ -1095,6 +1097,10 @@
             "bulkBaseModelUpdateSuccess": "Базовая модель успешно обновлена для {count} моделей",
             "bulkBaseModelUpdatePartial": "Обновлено {success} моделей, не удалось обновить {failed} моделей",
             "bulkBaseModelUpdateFailed": "Не удалось обновить базовую модель для выбранных моделей",
+            "bulkContentRatingUpdating": "Обновление рейтинга контента для {count} модель(ей)...",
+            "bulkContentRatingSet": "Рейтинг контента установлен на {level} для {count} модель(ей)",
+            "bulkContentRatingPartial": "Рейтинг контента {level} установлен для {success} модель(ей), {failed} не удалось",
+            "bulkContentRatingFailed": "Не удалось обновить рейтинг контента для выбранных моделей",
             "invalidCharactersRemoved": "Недопустимые символы удалены из имени файла",
             "filenameCannotBeEmpty": "Имя файла не может быть пустым",
             "renameFailed": "Не удалось переименовать файл: {message}",
