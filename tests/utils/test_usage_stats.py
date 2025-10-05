@@ -127,7 +127,7 @@ async def test_usage_stats_background_processor_handles_pending_prompts(tmp_path
             metadata_calls.append(prompt_id)
             return metadata_payload
 
-    monkeypatch.setattr(usage_stats_module, "MetadataRegistry", FakeMetadataRegistry)
+    monkeypatch.setattr(usage_stats_module, "MetadataRegistry", FakeMetadataRegistry, raising=False)
 
     checkpoint_scanner = SimpleNamespace(get_hash_by_filename=lambda name: {"model": "ckpt-hash"}.get(name))
     lora_scanner = SimpleNamespace(get_hash_by_filename=lambda name: {"awesome_lora.safetensors": "lora-hash"}.get(name))
