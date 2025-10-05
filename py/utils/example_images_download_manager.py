@@ -106,11 +106,10 @@ class DownloadManager:
         self._ws_manager = ws_manager
         self._state_lock = state_lock or asyncio.Lock()
 
-    def _resolve_output_dir(self) -> str:
+    def _resolve_output_dir(self, library_name: str | None = None) -> str:
         base_path = settings.get('example_images_path')
         if not base_path:
             return ''
-        library_name = settings.get_active_library_name()
         return ensure_library_root_exists(library_name)
 
     async def start_download(self, options: dict):
@@ -139,7 +138,8 @@ class DownloadManager:
                         }
                     raise DownloadConfigurationError(error_msg)
 
-                output_dir = self._resolve_output_dir()
+                active_library = settings.get_active_library_name()
+                output_dir = self._resolve_output_dir(active_library)
                 if not output_dir:
                     raise DownloadConfigurationError('Example images path not configured in settings')
 
@@ -196,7 +196,8 @@ class DownloadManager:
                         output_dir,
                         optimize,
                         model_types,
-                        delay
+                        delay,
+                        active_library,
                     )
                 )
 
@@ -261,7 +262,14 @@ class DownloadManager:
             'message': 'Download resumed'
         }
     
-    async def _download_all_example_images(self, output_dir, optimize, model_types, delay):
+    async def _download_all_example_images(
+        self,
+        output_dir,
+        optimize,
+        model_types,
+        delay,
+        library_name,
+    ):
         """Download example images for all models."""
 
         downloader = await get_downloader()
@@ -299,8 +307,13 @@ class DownloadManager:
             for i, (scanner_type, model, scanner) in enumerate(all_models):
                 # Main logic for processing model is here, but actual operations are delegated to other classes
                 was_remote_download = await self._process_model(
-                    scanner_type, model, scanner,
-                    output_dir, optimize, downloader
+                    scanner_type,
+                    model,
+                    scanner,
+                    output_dir,
+                    optimize,
+                    downloader,
+                    library_name,
                 )
                 
                 # Update progress
@@ -342,7 +355,16 @@ class DownloadManager:
                 self._is_downloading = False
                 self._download_task = None
     
-    async def _process_model(self, scanner_type, model, scanner, output_dir, optimize, downloader):
+    async def _process_model(
+        self,
+        scanner_type,
+        model,
+        scanner,
+        output_dir,
+        optimize,
+        downloader,
+        library_name,
+    ):
         """Process a single model download."""
 
         # Check if download is paused
@@ -369,7 +391,7 @@ class DownloadManager:
                 logger.debug(f"Skipping known failed model: {model_name}")
                 return False
             
-            model_dir = ExampleImagePathResolver.get_model_folder(model_hash)
+            model_dir = ExampleImagePathResolver.get_model_folder(model_hash, library_name)
             existing_files = _model_directory_has_files(model_dir)
 
             # Skip if already processed AND directory exists with files
@@ -532,7 +554,8 @@ class DownloadManager:
 
             if not base_path:
                 raise DownloadConfigurationError('Example images path not configured in settings')
-            output_dir = self._resolve_output_dir()
+            active_library = settings.get_active_library_name()
+            output_dir = self._resolve_output_dir(active_library)
             if not output_dir:
                 raise DownloadConfigurationError('Example images path not configured in settings')
 
@@ -552,7 +575,8 @@ class DownloadManager:
                 output_dir,
                 optimize,
                 model_types,
-                delay
+                delay,
+                active_library,
             )
 
             async with self._state_lock:
@@ -571,7 +595,15 @@ class DownloadManager:
             await self._broadcast_progress(status='error', extra={'error': str(e)})
             raise ExampleImagesDownloadError(str(e)) from e
     
-    async def _download_specific_models_example_images_sync(self, model_hashes, output_dir, optimize, model_types, delay):
+    async def _download_specific_models_example_images_sync(
+        self,
+        model_hashes,
+        output_dir,
+        optimize,
+        model_types,
+        delay,
+        library_name,
+    ):
         """Download example images for specific models only - synchronous version."""
 
         downloader = await get_downloader()
@@ -612,8 +644,13 @@ class DownloadManager:
             for i, (scanner_type, model, scanner) in enumerate(models_to_process):
                 # Force process this model regardless of previous status
                 was_successful = await self._process_specific_model(
-                    scanner_type, model, scanner,
-                    output_dir, optimize, downloader
+                    scanner_type,
+                    model,
+                    scanner,
+                    output_dir,
+                    optimize,
+                    downloader,
+                    library_name,
                 )
                 
                 if was_successful:
@@ -665,7 +702,16 @@ class DownloadManager:
             # No need to close any sessions since we use the global downloader
             pass
     
-    async def _process_specific_model(self, scanner_type, model, scanner, output_dir, optimize, downloader):
+    async def _process_specific_model(
+        self,
+        scanner_type,
+        model,
+        scanner,
+        output_dir,
+        optimize,
+        downloader,
+        library_name,
+    ):
         """Process a specific model for forced download, ignoring previous download status."""
 
         # Check if download is paused
@@ -687,7 +733,7 @@ class DownloadManager:
             self._progress['current_model'] = f"{model_name} ({model_hash[:8]})"
             await self._broadcast_progress(status='running')
             
-            model_dir = ExampleImagePathResolver.get_model_folder(model_hash)
+            model_dir = ExampleImagePathResolver.get_model_folder(model_hash, library_name)
             if not model_dir:
                 logger.warning(
                     "Unable to resolve example images folder for model %s (%s)",
