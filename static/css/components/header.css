@@ -76,8 +76,17 @@
   font-size: 0.9rem;
 }
 
-.nav-item:hover {
+.nav-item:hover,
+.nav-item:focus-visible {
   background-color: var(--lora-surface-hover, oklch(95% 0.02 256));
+  color: var(--lora-accent);
+}
+
+.nav-item:hover i,
+.nav-item:hover span,
+.nav-item:focus-visible i,
+.nav-item:focus-visible span {
+  color: inherit;
 }
 
 .nav-item.active {
