@@ -1,7 +1,10 @@
 import pytest
 
 from py.services.settings_manager import settings
-from py.utils.utils import calculate_relative_path_for_model
+from py.utils.utils import (
+    calculate_recipe_fingerprint,
+    calculate_relative_path_for_model,
+)
 
 
 @pytest.fixture
@@ -32,3 +35,36 @@ def test_calculate_relative_path_for_embedding_replaces_spaces(isolated_settings
     relative_path = calculate_relative_path_for_model(model_data, "embedding")
 
     assert relative_path == "Base_Model/tag_with_space"
+
+
+def test_calculate_relative_path_for_model_uses_mappings_and_defaults(isolated_settings):
+    isolated_settings["download_path_templates"]["lora"] = "{base_model}/{first_tag}/{author}"
+    isolated_settings["base_model_path_mappings"] = {"SDXL": "SDXL-mapped"}
+
+    model_data = {
+        "base_model": "SDXL",
+        "tags": [],
+        "civitai": {"id": 12, "creator": {"username": "Creator"}},
+    }
+
+    relative_path = calculate_relative_path_for_model(model_data, "lora")
+
+    assert relative_path == "SDXL-mapped/no tags/Creator"
+
+
+def test_calculate_recipe_fingerprint_filters_and_sorts():
+    loras = [
+        {"hash": "ABC", "strength": 0.1234},
+        {"hash": "", "isDeleted": True, "modelVersionId": 42, "strength": 0.5},
+        {"hash": "def", "weight": 0.345},
+        {"hash": "skip", "exclude": True, "strength": 0.9},
+        {"hash": "", "strength": 0.1},
+    ]
+
+    fingerprint = calculate_recipe_fingerprint(loras)
+
+    assert fingerprint == "42:0.5|abc:0.12|def:0.34"
+
+
+def test_calculate_recipe_fingerprint_empty_input():
+    assert calculate_recipe_fingerprint([]) == ""
