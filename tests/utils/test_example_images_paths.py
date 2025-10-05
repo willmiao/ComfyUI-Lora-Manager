@@ -7,7 +7,13 @@ from pathlib import Path
 import pytest
 
 from py.services.settings_manager import settings
-from py.utils.example_images_paths import get_model_folder, get_model_relative_path
+from py.utils.example_images_paths import (
+    ensure_library_root_exists,
+    get_model_folder,
+    get_model_relative_path,
+    is_valid_example_images_root,
+    iter_library_roots,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -74,3 +80,36 @@ def test_get_model_folder_migrates_legacy_structure(tmp_path):
     assert relative == os.path.join('extra', model_hash).replace('\\', '/')
     assert not legacy_folder.exists()
     assert (expected_folder / 'image.png').exists()
+
+
+def test_ensure_library_root_exists_creates_directories(tmp_path):
+    settings.settings['example_images_path'] = str(tmp_path)
+    settings.settings['libraries'] = {'default': {}, 'secondary': {}}
+    settings.settings['active_library'] = 'secondary'
+
+    resolved = ensure_library_root_exists('secondary')
+    assert Path(resolved) == tmp_path / 'secondary'
+    assert (tmp_path / 'secondary').is_dir()
+
+
+def test_iter_library_roots_returns_all_configured(tmp_path):
+    settings.settings['example_images_path'] = str(tmp_path)
+    settings.settings['libraries'] = {'default': {}, 'alt': {}}
+    settings.settings['active_library'] = 'alt'
+
+    roots = dict(iter_library_roots())
+    assert roots['default'] == str(tmp_path / 'default')
+    assert roots['alt'] == str(tmp_path / 'alt')
+
+
+def test_is_valid_example_images_root_accepts_hash_directories(tmp_path):
+    settings.settings['example_images_path'] = str(tmp_path)
+    hash_folder = tmp_path / ('d' * 64)
+    hash_folder.mkdir()
+    (hash_folder / 'image.png').write_text('data', encoding='utf-8')
+
+    assert is_valid_example_images_root(str(tmp_path)) is True
+
+    invalid_folder = tmp_path / 'not_hash'
+    invalid_folder.mkdir()
+    assert is_valid_example_images_root(str(tmp_path)) is False
