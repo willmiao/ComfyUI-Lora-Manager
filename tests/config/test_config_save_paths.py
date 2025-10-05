@@ -76,10 +76,17 @@ def test_save_paths_renames_default_library(monkeypatch: pytest.MonkeyPatch, tmp
 
     name, payload = fake_settings.upsert_calls[0]
     assert name == "comfyui"
-    assert payload["folder_paths"] == folder_paths
-    assert payload["default_lora_root"] == folder_paths["loras"][0]
-    assert payload["default_checkpoint_root"] == folder_paths["checkpoints"][0]
-    assert payload["default_embedding_root"] == folder_paths["embeddings"][0]
+    
+    # The Config class normalizes paths to use forward slashes for cross-platform compatibility
+    # Convert expected paths to the same format for comparison
+    expected_folder_paths = {
+        key: [path.replace("\\", "/") for path in paths]
+        for key, paths in folder_paths.items()
+    }
+    assert payload["folder_paths"] == expected_folder_paths
+    assert payload["default_lora_root"] == folder_paths["loras"][0].replace("\\", "/")
+    assert payload["default_checkpoint_root"] == folder_paths["checkpoints"][0].replace("\\", "/")
+    assert payload["default_embedding_root"] == folder_paths["embeddings"][0].replace("\\", "/")
     assert payload["metadata"] == {"display_name": "ComfyUI", "source": "comfyui"}
     assert payload["activate"] is True
 
