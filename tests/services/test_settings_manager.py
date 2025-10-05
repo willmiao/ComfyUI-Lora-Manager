@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 
@@ -32,6 +33,32 @@ def test_environment_variable_overrides_settings(tmp_path, monkeypatch):
     mgr.settings_file = str(fake_settings_path)
 
     assert mgr.get("civitai_api_key") == "secret"
+
+
+def _create_manager_with_settings(tmp_path, monkeypatch, initial_settings, *, save_spy=None):
+    """Helper to instantiate SettingsManager with predefined settings."""
+
+    fake_settings_path = tmp_path / "settings.json"
+
+    monkeypatch.setattr(
+        "py.services.settings_manager.ensure_settings_file",
+        lambda logger=None: str(fake_settings_path),
+    )
+
+    if save_spy is None:
+        monkeypatch.setattr(SettingsManager, "_save_settings", lambda self: None)
+    else:
+        monkeypatch.setattr(SettingsManager, "_save_settings", save_spy)
+
+    monkeypatch.setattr(
+        SettingsManager,
+        "_load_settings",
+        lambda self: copy.deepcopy(initial_settings),
+    )
+
+    mgr = SettingsManager()
+    mgr.settings_file = str(fake_settings_path)
+    return mgr
 
 
 def test_download_path_template_parses_json_string(manager):
@@ -96,6 +123,89 @@ def test_migrate_creates_default_library(manager):
     assert "default" in libraries
     assert manager.get_active_library_name() == "default"
     assert libraries["default"].get("folder_paths", {}) == manager.settings.get("folder_paths", {})
+
+
+def test_migrate_sanitizes_legacy_libraries(tmp_path, monkeypatch):
+    initial = {
+        "libraries": {"legacy": "not-a-dict"},
+        "active_library": "legacy",
+        "folder_paths": {"loras": ["/old"]},
+    }
+
+    manager = _create_manager_with_settings(tmp_path, monkeypatch, initial)
+
+    libraries = manager.get_libraries()
+    assert set(libraries.keys()) == {"legacy"}
+    payload = libraries["legacy"]
+    assert payload["folder_paths"] == {}
+    assert payload["default_lora_root"] == ""
+    assert payload["default_checkpoint_root"] == ""
+    assert payload["default_embedding_root"] == ""
+    assert manager.get_active_library_name() == "legacy"
+
+
+def test_active_library_syncs_top_level_settings(tmp_path, monkeypatch):
+    initial = {
+        "libraries": {
+            "default": {
+                "folder_paths": {"loras": ["/loras"]},
+                "default_lora_root": "/loras",
+                "default_checkpoint_root": "/ckpt",
+                "default_embedding_root": "/embed",
+            },
+            "studio": {
+                "folder_paths": {"loras": ["/studio"]},
+                "default_lora_root": "/studio",
+                "default_checkpoint_root": "/studio_ckpt",
+                "default_embedding_root": "/studio_embed",
+            },
+        },
+        "active_library": "studio",
+        # Drifted top-level values that should be corrected during init
+        "folder_paths": {"loras": ["/loras"]},
+        "default_lora_root": "/loras",
+        "default_checkpoint_root": "/ckpt",
+        "default_embedding_root": "/embed",
+    }
+
+    manager = _create_manager_with_settings(tmp_path, monkeypatch, initial)
+
+    assert manager.get_active_library_name() == "studio"
+    assert manager.get("folder_paths")["loras"] == ["/studio"]
+    assert manager.get("default_lora_root") == "/studio"
+    assert manager.get("default_checkpoint_root") == "/studio_ckpt"
+    assert manager.get("default_embedding_root") == "/studio_embed"
+
+    # Drift the top-level values again and ensure activate_library repairs them
+    manager.settings["folder_paths"] = {"loras": ["/loras"]}
+    manager.settings["default_lora_root"] = "/loras"
+    manager.activate_library("studio")
+
+    assert manager.get("folder_paths")["loras"] == ["/studio"]
+    assert manager.get("default_lora_root") == "/studio"
+
+
+def test_refresh_environment_variables_updates_stored_value(tmp_path, monkeypatch):
+    calls = []
+
+    def save_spy(self):
+        calls.append(self.settings.get("civitai_api_key"))
+
+    initial = {
+        "civitai_api_key": "stale",
+        "libraries": {"default": {"folder_paths": {}, "default_lora_root": "", "default_checkpoint_root": "", "default_embedding_root": ""}},
+        "active_library": "default",
+    }
+
+    monkeypatch.setenv("CIVITAI_API_KEY", "from-init")
+    manager = _create_manager_with_settings(tmp_path, monkeypatch, initial, save_spy=save_spy)
+
+    assert calls[-1] == "from-init"
+
+    monkeypatch.setenv("CIVITAI_API_KEY", "refreshed")
+    manager.refresh_environment_variables()
+
+    assert calls[-1] == "refreshed"
 
 
 def test_upsert_library_creates_entry_and_activates(manager, tmp_path):
