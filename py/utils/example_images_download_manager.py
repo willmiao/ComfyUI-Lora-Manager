@@ -1,14 +1,19 @@
 from __future__ import annotations
 
-import logging
-import os
 import asyncio
 import json
 import time
+import logging
+import os
+import shutil
 from typing import Any, Dict
 
 from ..services.service_registry import ServiceRegistry
-from ..utils.example_images_paths import ensure_library_root_exists
+from ..utils.example_images_paths import (
+    ExampleImagePathResolver,
+    ensure_library_root_exists,
+    uses_library_scoped_folders,
+)
 from ..utils.metadata_manager import MetadataManager
 from .example_images_processor import ExampleImagesProcessor
 from .example_images_metadata import MetadataUpdater
@@ -75,6 +80,22 @@ class _DownloadProgress(dict):
         snapshot['failed_models'] = list(self['failed_models'])
         return snapshot
 
+
+def _model_directory_has_files(path: str) -> bool:
+    """Return True when the provided directory exists and contains entries."""
+
+    if not path or not os.path.isdir(path):
+        return False
+
+    try:
+        with os.scandir(path) as entries:
+            for _ in entries:
+                return True
+    except OSError:
+        return False
+
+    return False
+
 class DownloadManager:
     """Manages downloading example images for models."""
 
@@ -128,9 +149,31 @@ class DownloadManager:
                 self._progress['end_time'] = None
 
                 progress_file = os.path.join(output_dir, '.download_progress.json')
-                if os.path.exists(progress_file):
+                progress_source = progress_file
+                if uses_library_scoped_folders():
+                    legacy_root = settings.get('example_images_path') or ''
+                    legacy_progress = os.path.join(legacy_root, '.download_progress.json') if legacy_root else ''
+                    if legacy_progress and os.path.exists(legacy_progress) and not os.path.exists(progress_file):
+                        try:
+                            os.makedirs(output_dir, exist_ok=True)
+                            shutil.move(legacy_progress, progress_file)
+                            logger.info(
+                                "Migrated legacy download progress file '%s' to '%s'",
+                                legacy_progress,
+                                progress_file,
+                            )
+                        except OSError as exc:
+                            logger.warning(
+                                "Failed to migrate download progress file from '%s' to '%s': %s",
+                                legacy_progress,
+                                progress_file,
+                                exc,
+                            )
+                            progress_source = legacy_progress
+
+                if os.path.exists(progress_source):
                     try:
-                        with open(progress_file, 'r', encoding='utf-8') as f:
+                        with open(progress_source, 'r', encoding='utf-8') as f:
                             saved_progress = json.load(f)
                             self._progress['processed_models'] = set(saved_progress.get('processed_models', []))
                             self._progress['failed_models'] = set(saved_progress.get('failed_models', []))
@@ -326,20 +369,35 @@ class DownloadManager:
                 logger.debug(f"Skipping known failed model: {model_name}")
                 return False
             
+            model_dir = ExampleImagePathResolver.get_model_folder(model_hash)
+            existing_files = _model_directory_has_files(model_dir)
+
             # Skip if already processed AND directory exists with files
             if model_hash in self._progress['processed_models']:
-                model_dir = os.path.join(output_dir, model_hash)
-                has_files = os.path.exists(model_dir) and any(os.listdir(model_dir))
-                if has_files:
+                if existing_files:
                     logger.debug(f"Skipping already processed model: {model_name}")
                     return False
-                else:
-                    logger.info(f"Model {model_name} marked as processed but folder empty or missing, reprocessing")
-                    # Remove from processed models since we need to reprocess
-                    self._progress['processed_models'].discard(model_hash)
-            
+                logger.info(f"Model {model_name} marked as processed but folder empty or missing, reprocessing")
+                # Remove from processed models since we need to reprocess
+                self._progress['processed_models'].discard(model_hash)
+
+            if existing_files and model_hash not in self._progress['processed_models']:
+                logger.debug(
+                    "Model folder already populated for %s, marking as processed without download",
+                    model_name,
+                )
+                self._progress['processed_models'].add(model_hash)
+                return False
+
+            if not model_dir:
+                logger.warning(
+                    "Unable to resolve example images folder for model %s (%s)",
+                    model_name,
+                    model_hash,
+                )
+                return False
+
             # Create model directory
-            model_dir = os.path.join(output_dir, model_hash)
             os.makedirs(model_dir, exist_ok=True)
             
             # First check for local example images - local processing doesn't need delay
@@ -629,8 +687,15 @@ class DownloadManager:
             self._progress['current_model'] = f"{model_name} ({model_hash[:8]})"
             await self._broadcast_progress(status='running')
             
-            # Create model directory
-            model_dir = os.path.join(output_dir, model_hash)
+            model_dir = ExampleImagePathResolver.get_model_folder(model_hash)
+            if not model_dir:
+                logger.warning(
+                    "Unable to resolve example images folder for model %s (%s)",
+                    model_name,
+                    model_hash,
+                )
+                return False
+
             os.makedirs(model_dir, exist_ok=True)
             
             # First check for local example images - local processing doesn't need delay
