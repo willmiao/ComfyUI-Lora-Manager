@@ -742,20 +742,17 @@ class RecipeScanner:
         """Format file path as URL for serving in web UI"""
         if not file_path:
             return '/loras_static/images/no-preview.png'
-            
+
         try:
-            # Format file path as a URL that will work with static file serving
-            recipes_dir = os.path.join(config.loras_roots[0], "recipes").replace(os.sep, '/')
-            if file_path.replace(os.sep, '/').startswith(recipes_dir):
-                relative_path = os.path.relpath(file_path, config.loras_roots[0]).replace(os.sep, '/')
-                return f"/loras_static/root1/preview/{relative_path}"
-                
-            # If not in recipes dir, try to create a valid URL from the file name
-            file_name = os.path.basename(file_path)
-            return f"/loras_static/root1/preview/recipes/{file_name}"
+            normalized_path = os.path.normpath(file_path)
+            static_url = config.get_preview_static_url(normalized_path)
+            if static_url:
+                return static_url
         except Exception as e:
             logger.error(f"Error formatting file URL: {e}")
             return '/loras_static/images/no-preview.png'
+
+        return '/loras_static/images/no-preview.png'
     
     def _format_timestamp(self, timestamp: float) -> str:
         """Format timestamp for display"""

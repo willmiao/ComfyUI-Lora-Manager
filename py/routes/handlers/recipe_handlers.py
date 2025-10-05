@@ -206,17 +206,15 @@ class RecipeListingHandler:
 
     def format_recipe_file_url(self, file_path: str) -> str:
         try:
-            recipes_dir = os.path.join(config.loras_roots[0], "recipes").replace(os.sep, "/")
-            normalized_path = file_path.replace(os.sep, "/")
-            if normalized_path.startswith(recipes_dir):
-                relative_path = os.path.relpath(file_path, config.loras_roots[0]).replace(os.sep, "/")
-                return f"/loras_static/root1/preview/{relative_path}"
-
-            file_name = os.path.basename(file_path)
-            return f"/loras_static/root1/preview/recipes/{file_name}"
+            normalized_path = os.path.normpath(file_path)
+            static_url = config.get_preview_static_url(normalized_path)
+            if static_url:
+                return static_url
         except Exception as exc:  # pragma: no cover - logging path
             self._logger.error("Error formatting recipe file URL: %s", exc, exc_info=True)
             return "/loras_static/images/no-preview.png"
+
+        return "/loras_static/images/no-preview.png"
 
 
 class RecipeQueryHandler:
