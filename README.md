@@ -140,10 +140,7 @@ Enhance your Civitai browsing experience with our companion browser extension! S
 ### Option 2: **Portable Standalone Edition** (No ComfyUI required)
 
 1. Download the [Portable Package](https://github.com/willmiao/ComfyUI-Lora-Manager/releases/download/v0.9.2/lora_manager_portable.7z)
-2. Copy the provided `settings.json.example` file to your LoRA Manager settings folder and rename it to `settings.json`:
-   - **Windows:** `%APPDATA%/ComfyUI-LoRA-Manager/settings.json`
-   - **macOS:** `~/Library/Application Support/ComfyUI-LoRA-Manager/settings.json`
-   - **Linux:** `${XDG_CONFIG_HOME:-~/.config}/ComfyUI-LoRA-Manager/settings.json`
+2. Copy the provided `settings.json.example` file to create a new file named `settings.json` in `comfyui-lora-manager` folder
 3. Edit the new `settings.json` to include your correct model folder paths and CivitAI API key
 4. Run run.bat
     - To change the startup port, edit `run.bat` and modify the parameter (e.g. `--port 9001`)
