@@ -531,19 +531,104 @@ export function createModelCard(model, modelType) {
 }
 
 const VIDEO_LAZY_ROOT_MARGIN = '200px 0px';
+const VIDEO_LOAD_INTERVAL_MS = 120;
+const VIDEO_LOAD_MAX_CONCURRENCY = 2;
 let videoLazyObserver = null;
+
+const videoLoadQueue = [];
+const queuedVideoElements = new Set();
+let activeVideoLoads = 0;
+let queueTimer = null;
+
+const scheduleFrame = typeof requestAnimationFrame === 'function'
+    ? requestAnimationFrame
+    : (callback) => setTimeout(callback, 16);
+
+function scheduleVideoQueueProcessing(delay = 0) {
+    if (queueTimer !== null) {
+        return;
+    }
+
+    queueTimer = setTimeout(() => {
+        queueTimer = null;
+        processVideoLoadQueue();
+    }, delay);
+}
+
+function dequeueVideoElement(videoElement) {
+    if (!queuedVideoElements.has(videoElement)) {
+        return;
+    }
+
+    queuedVideoElements.delete(videoElement);
+    const index = videoLoadQueue.indexOf(videoElement);
+    if (index !== -1) {
+        videoLoadQueue.splice(index, 1);
+    }
+}
+
+function processVideoLoadQueue() {
+    if (videoLoadQueue.length === 0) {
+        return;
+    }
+
+    while (activeVideoLoads < VIDEO_LOAD_MAX_CONCURRENCY && videoLoadQueue.length > 0) {
+        const videoElement = videoLoadQueue.shift();
+        queuedVideoElements.delete(videoElement);
+
+        if (!videoElement || !videoElement.isConnected || videoElement.dataset.loaded === 'true') {
+            continue;
+        }
+
+        activeVideoLoads++;
+        videoElement.dataset.loading = 'true';
+
+        scheduleFrame(() => {
+            try {
+                loadVideoSource(videoElement);
+            } finally {
+                delete videoElement.dataset.loading;
+                activeVideoLoads--;
+
+                if (videoLoadQueue.length > 0) {
+                    scheduleVideoQueueProcessing(VIDEO_LOAD_INTERVAL_MS);
+                }
+            }
+        });
+    }
+
+    if (videoLoadQueue.length > 0 && queueTimer === null) {
+        scheduleVideoQueueProcessing(VIDEO_LOAD_INTERVAL_MS);
+    }
+}
+
+function enqueueVideoElement(videoElement) {
+    if (!videoElement || videoElement.dataset.loaded === 'true' || videoElement.dataset.loading === 'true') {
+        return;
+    }
+
+    if (!videoElement.isConnected) {
+        return;
+    }
+
+    if (queuedVideoElements.has(videoElement)) {
+        return;
+    }
+
+    queuedVideoElements.add(videoElement);
+    videoLoadQueue.push(videoElement);
+    scheduleVideoQueueProcessing();
+}
 
 function ensureVideoLazyObserver() {
     if (videoLazyObserver) {
         return videoLazyObserver;
     }
 
-    videoLazyObserver = new IntersectionObserver((entries, observer) => {
+    videoLazyObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                const target = entry.target;
-                observer.unobserve(target);
-                loadVideoSource(target);
+                enqueueVideoElement(entry.target);
             }
         });
     }, {
@@ -576,15 +661,27 @@ function requestSafePlay(videoElement) {
 }
 
 function loadVideoSource(videoElement) {
-    if (!videoElement || videoElement.dataset.loaded === 'true') {
-        return;
+    if (!videoElement) {
+        return false;
+    }
+
+    if (videoLazyObserver) {
+        try {
+            videoLazyObserver.unobserve(videoElement);
+        } catch (error) {
+            // Ignore observer errors (e.g., element already unobserved)
+        }
+    }
+
+    if (videoElement.dataset.loaded === 'true' || !videoElement.isConnected) {
+        return false;
     }
 
     const sourceElement = videoElement.querySelector('source');
     const dataSrc = videoElement.dataset.src || sourceElement?.dataset?.src;
 
     if (!dataSrc) {
-        return;
+        return false;
     }
 
     // Ensure src attributes are reset before applying
@@ -602,11 +699,14 @@ function loadVideoSource(videoElement) {
         videoElement.setAttribute('autoplay', '');
         requestSafePlay(videoElement);
     }
+
+    return true;
 }
 
 export function configureModelCardVideo(videoElement, autoplayOnHover) {
     if (!videoElement) return;
 
+    dequeueVideoElement(videoElement);
     cleanupHoverHandlers(videoElement);
 
     const sourceElement = videoElement.querySelector('source');
@@ -628,6 +728,7 @@ export function configureModelCardVideo(videoElement, autoplayOnHover) {
     videoElement.setAttribute('playsinline', '');
     videoElement.setAttribute('controls', '');
     videoElement.dataset.loaded = 'false';
+    delete videoElement.dataset.loading;
 
     if (sourceElement) {
         sourceElement.removeAttribute('src');
@@ -656,6 +757,7 @@ export function configureModelCardVideo(videoElement, autoplayOnHover) {
         const cardPreview = videoElement.closest('.card-preview');
         if (cardPreview) {
             const mouseEnter = () => {
+                dequeueVideoElement(videoElement);
                 loadVideoSource(videoElement);
                 requestSafePlay(videoElement);
             };
