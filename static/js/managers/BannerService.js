@@ -234,8 +234,6 @@ class BannerService {
         const availableAt = firstSeenAt + COMMUNITY_SUPPORT_BANNER_DELAY_MS;
         const delay = Math.max(availableAt - now, 0);
 
-        this.registerCommunitySupportBanner();
-
         if (delay === 0) {
             this.registerCommunitySupportBanner();
         } else {
