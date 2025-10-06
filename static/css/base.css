@@ -32,6 +32,7 @@ html, body {
     --text-muted: #6c757d;
     --card-bg: #ffffff;
     --border-color: #e0e0e0;
+    --header-height: 48px;
 
     /* Color Components */
     --lora-accent-l: 68%;

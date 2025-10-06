@@ -2,10 +2,10 @@
 .modal {
     display: none;
     position: fixed;
-    top: 48px; /* Start below the header */
+    top: var(--header-height, 48px); /* Start below the header */
     left: 0;
     width: 100%;
-    height: calc(100% - 48px); /* Adjust height to exclude header */
+    height: calc(100% - var(--header-height, 48px)); /* Adjust height to exclude header */
     background: rgba(0, 0, 0, 0.2); /* 调整为更淡的半透明黑色 */
     z-index: var(--z-modal);
     overflow: auto; /* Change from hidden to auto to allow scrolling */
@@ -23,7 +23,7 @@ body.modal-open {
     position: relative;
     max-width: 800px;
     height: auto;
-    max-height: calc(90vh);
+    max-height: calc(100vh - var(--header-height, 48px) - 5.5rem); /* Subtract header height and modal margins */
     margin: 1rem auto; /* Keep reduced top margin */
     background: var(--lora-surface);
     border-radius: var(--border-radius-base);

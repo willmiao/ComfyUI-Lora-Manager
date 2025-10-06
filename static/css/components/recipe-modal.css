@@ -211,6 +211,20 @@
     border: 1px solid var(--lora-border);
 }
 
+#recipeModal .modal-content {
+    display: flex;
+    flex-direction: column;
+}
+
+#recipeModal .modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
 /* Top Section: Preview and Gen Params */
 .recipe-top-section {
     display: grid;
@@ -474,9 +488,10 @@
 
 /* Bottom Section: Resources */
 .recipe-bottom-section {
-    max-height: 320px;
     display: flex;
     flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
     border-top: 1px solid var(--border-color);
     padding-top: var(--space-2);
 }
