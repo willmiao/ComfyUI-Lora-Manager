@@ -1,4 +1,14 @@
-import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
+import {
+    getStorageItem,
+    setStorageItem
+} from '../utils/storageHelpers.js';
+import { translate } from '../utils/i18nHelpers.js';
+
+const COMMUNITY_SUPPORT_BANNER_ID = 'community-support';
+const COMMUNITY_SUPPORT_BANNER_DELAY_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
+const COMMUNITY_SUPPORT_FIRST_SEEN_AT_KEY = 'community_support_banner_first_seen_at';
+const COMMUNITY_SUPPORT_SHOWN_KEY = 'community_support_banner_shown';
+const KO_FI_URL = 'https://ko-fi.com/pixelpawsai';
 
 /**
  * Banner Service for managing notification banners
@@ -8,6 +18,8 @@ class BannerService {
         this.banners = new Map();
         this.container = null;
         this.initialized = false;
+        this.communitySupportBannerTimer = null;
+        this.communitySupportBannerRegistered = false;
     }
 
     /**
@@ -50,6 +62,8 @@ class BannerService {
             dismissible: true,
             priority: 1
         });
+
+        this.prepareCommunitySupportBanner();
 
         this.showActiveBanners();
         this.initialized = true;
@@ -197,6 +211,92 @@ class BannerService {
     clearDismissedBanners() {
         setStorageItem('dismissed_banners', []);
         location.reload();
+    }
+
+    prepareCommunitySupportBanner() {
+        if (this.communitySupportBannerTimer) {
+            clearTimeout(this.communitySupportBannerTimer);
+            this.communitySupportBannerTimer = null;
+        }
+
+        if (getStorageItem(COMMUNITY_SUPPORT_SHOWN_KEY, false)) {
+            return;
+        }
+
+        const now = Date.now();
+        let firstSeenAt = getStorageItem(COMMUNITY_SUPPORT_FIRST_SEEN_AT_KEY, null);
+
+        if (typeof firstSeenAt !== 'number') {
+            firstSeenAt = now;
+            setStorageItem(COMMUNITY_SUPPORT_FIRST_SEEN_AT_KEY, firstSeenAt);
+        }
+
+        const availableAt = firstSeenAt + COMMUNITY_SUPPORT_BANNER_DELAY_MS;
+        const delay = Math.max(availableAt - now, 0);
+
+        this.registerCommunitySupportBanner();
+
+        if (delay === 0) {
+            this.registerCommunitySupportBanner();
+        } else {
+            this.communitySupportBannerTimer = setTimeout(() => {
+                this.registerCommunitySupportBanner();
+            }, delay);
+        }
+    }
+
+    registerCommunitySupportBanner() {
+        if (this.communitySupportBannerRegistered || getStorageItem(COMMUNITY_SUPPORT_SHOWN_KEY, false)) {
+            return;
+        }
+
+        if (this.communitySupportBannerTimer) {
+            clearTimeout(this.communitySupportBannerTimer);
+            this.communitySupportBannerTimer = null;
+        }
+
+        this.communitySupportBannerRegistered = true;
+        setStorageItem(COMMUNITY_SUPPORT_SHOWN_KEY, true);
+
+        this.registerBanner(COMMUNITY_SUPPORT_BANNER_ID, {
+            id: COMMUNITY_SUPPORT_BANNER_ID,
+            title: translate(
+                'banners.communitySupport.title',
+                {},
+                'Keep LoRA Manager Thriving with Your Support ❤️'
+            ),
+            content: translate(
+                'banners.communitySupport.content',
+                {},
+                'LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM Civitai Extension as a thank-you gift. Every contribution truly makes a difference.'
+            ),
+            actions: [
+                {
+                    text: translate(
+                        'banners.communitySupport.supportCta',
+                        {},
+                        'Support on Ko-fi'
+                    ),
+                    icon: 'fas fa-heart',
+                    url: KO_FI_URL,
+                    type: 'primary'
+                },
+                {
+                    text: translate(
+                        'banners.communitySupport.learnMore',
+                        {},
+                        'LM Civitai Extension Tutorial'
+                    ),
+                    icon: 'fas fa-book',
+                    url: 'https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/LoRA-Manager-Civitai-Extension-(Chrome-Extension)',
+                    type: 'tertiary'
+                }
+            ],
+            dismissible: true,
+            priority: 2
+        });
+
+        this.updateContainerVisibility();
     }
 }
 

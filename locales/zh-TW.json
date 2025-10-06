@@ -1256,6 +1256,12 @@
             "refreshNow": "立即重新整理",
             "refreshingIn": "將於",
             "seconds": "秒後重新整理"
+        },
+        "communitySupport": {
+            "title": "Keep LoRA Manager Thriving with Your Support ❤️",
+            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM Civitai Extension as a thank-you gift. Every contribution truly makes a difference.",
+            "supportCta": "Support on Ko-fi",
+            "learnMore": "LM Civitai Extension Tutorial"
         }
     }
 }
