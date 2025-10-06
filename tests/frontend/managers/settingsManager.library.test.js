@@ -17,6 +17,10 @@ vi.mock('../../../static/js/state/index.js', () => {
             global: {
                 settings,
             },
+            loadingManager: {
+                showSimpleLoading: vi.fn(),
+                hide: vi.fn(),
+            },
         },
         createDefaultSettings: () => ({
             language: 'en',
