@@ -52,6 +52,31 @@ class RecipeScanner:
             if lora_scanner:
                 self._lora_scanner = lora_scanner
             self._initialized = True
+
+    def on_library_changed(self) -> None:
+        """Reset cached state when the active library changes."""
+
+        # Cancel any in-flight initialization or resorting work so the next
+        # access rebuilds the cache for the new library.
+        if self._initialization_task and not self._initialization_task.done():
+            self._initialization_task.cancel()
+
+        for task in list(self._resort_tasks):
+            if not task.done():
+                task.cancel()
+        self._resort_tasks.clear()
+
+        self._cache = None
+        self._initialization_task = None
+        self._is_initializing = False
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and not loop.is_closed():
+            loop.create_task(self.initialize_in_background())
     
     async def _get_civitai_client(self):
         """Lazily initialize CivitaiClient from registry"""
