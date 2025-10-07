@@ -7,6 +7,8 @@ import {
   chainCallback,
   mergeLoras,
   setupInputWidgetWithAutocomplete,
+  getAllGraphNodes,
+  getNodeFromGraph,
 } from "./utils.js";
 import { addLorasWidget } from "./loras_widget.js";
 
@@ -16,23 +18,26 @@ app.registerExtension({
   setup() {
     // Add message handler to listen for messages from Python
     api.addEventListener("lora_code_update", (event) => {
-      const { id, lora_code, mode } = event.detail;
-      this.handleLoraCodeUpdate(id, lora_code, mode);
+      this.handleLoraCodeUpdate(event.detail || {});
     });
   },
 
   // Handle lora code updates from Python
-  handleLoraCodeUpdate(id, loraCode, mode) {
+  handleLoraCodeUpdate(message) {
+    const nodeId = message?.node_id ?? message?.id;
+    const graphId = message?.graph_id;
+    const loraCode = message?.lora_code ?? "";
+    const mode = message?.mode ?? "append";
+
+    const numericNodeId =
+      typeof nodeId === "string" ? Number(nodeId) : nodeId;
+
     // Handle broadcast mode (for Desktop/non-browser support)
-    if (id === -1) {
+    if (numericNodeId === -1) {
       // Find all Lora Loader nodes in the current graph
-      const loraLoaderNodes = [];
-      for (const nodeId in app.graph._nodes_by_id) {
-        const node = app.graph._nodes_by_id[nodeId];
-        if (node.comfyClass === "Lora Loader (LoraManager)") {
-          loraLoaderNodes.push(node);
-        }
-      }
+      const loraLoaderNodes = getAllGraphNodes(app.graph)
+        .map(({ node }) => node)
+        .filter((node) => node?.comfyClass === "Lora Loader (LoraManager)");
 
       // Update each Lora Loader node found
       if (loraLoaderNodes.length > 0) {
@@ -52,14 +57,18 @@ app.registerExtension({
     }
 
     // Standard mode - update a specific node
-    const node = app.graph.getNodeById(+id);
+    const node = getNodeFromGraph(graphId, numericNodeId);
     if (
       !node ||
       (node.comfyClass !== "Lora Loader (LoraManager)" &&
         node.comfyClass !== "Lora Stacker (LoraManager)" &&
         node.comfyClass !== "WanVideo Lora Select (LoraManager)")
     ) {
-      console.warn("Node not found or not a LoraLoader:", id);
+      console.warn(
+        "Node not found or not a LoraLoader:",
+        graphId ?? "root",
+        nodeId
+      );
       return;
     }
 

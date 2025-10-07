@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { addJsonDisplayWidget } from "./json_display_widget.js";
+import { getNodeFromGraph } from "./utils.js";
 
 app.registerExtension({
     name: "LoraManager.DebugMetadata",
@@ -8,8 +9,8 @@ app.registerExtension({
     setup() {
         // Add message handler to listen for metadata updates from Python
         api.addEventListener("metadata_update", (event) => {
-            const { id, metadata } = event.detail;
-            this.handleMetadataUpdate(id, metadata);
+            const { id, graph_id: graphId, metadata } = event.detail;
+            this.handleMetadataUpdate(id, graphId, metadata);
         });
     },
 
@@ -37,8 +38,8 @@ app.registerExtension({
     },
     
     // Handle metadata updates from Python
-    handleMetadataUpdate(id, metadata) {
-        const node = app.graph.getNodeById(+id);
+    handleMetadataUpdate(id, graphId, metadata) {
+        const node = getNodeFromGraph(graphId, id);
         if (!node || node.comfyClass !== "Debug Metadata (LoraManager)") {
             console.warn("Node not found or not a DebugMetadata node:", id);
             return;

@@ -1,7 +1,7 @@
 // ComfyUI extension to track model usage statistics
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
-import { showToast } from "./utils.js";
+import { getAllGraphNodes, getNodeReference, showToast } from "./utils.js";
 
 // Define target nodes and their widget configurations
 const PATH_CORRECTION_TARGETS = [
@@ -56,25 +56,35 @@ app.registerExtension({
 
     async refreshRegistry() {
         try {
-            // Get current workflow nodes
-            const prompt = await app.graphToPrompt();
-            const workflow = prompt.workflow;
-            if (!workflow || !workflow.nodes) {
-                console.warn("No workflow nodes found for registry refresh");
-                return;
-            }
-
-            // Find all Lora nodes
             const loraNodes = [];
-            for (const node of workflow.nodes.values()) {
-                if (node.type === "Lora Loader (LoraManager)" || 
-                    node.type === "Lora Stacker (LoraManager)" || 
-                    node.type === "WanVideo Lora Select (LoraManager)") {
+            const nodeEntries = getAllGraphNodes(app.graph);
+
+            for (const { graph, node } of nodeEntries) {
+                if (!node || !node.comfyClass) {
+                    continue;
+                }
+
+                if (
+                    node.comfyClass === "Lora Loader (LoraManager)" ||
+                    node.comfyClass === "Lora Stacker (LoraManager)" ||
+                    node.comfyClass === "WanVideo Lora Select (LoraManager)"
+                ) {
+                    const reference = getNodeReference(node);
+                    if (!reference) {
+                        continue;
+                    }
+
+                    const graphName = typeof graph?.name === "string" && graph.name.trim()
+                        ? graph.name
+                        : null;
+
                     loraNodes.push({
-                        node_id: node.id,
-                        bgcolor: node.bgcolor || null,
-                        title: node.title || node.type,
-                        type: node.type
+                        node_id: reference.node_id,
+                        graph_id: reference.graph_id,
+                        graph_name: graphName,
+                        bgcolor: node.bgcolor ?? node.color ?? null,
+                        title: node.title || node.comfyClass,
+                        type: node.comfyClass,
                     });
                 }
             }

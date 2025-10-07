@@ -229,11 +229,27 @@ class LoraRoutes(BaseModelRoutes):
             trigger_words_text = ",, ".join(all_trigger_words) if all_trigger_words else ""
             
             # Send update to all connected trigger word toggle nodes
-            for node_id in node_ids:
-                PromptServer.instance.send_sync("trigger_word_update", {
-                    "id": node_id,
+            for entry in node_ids:
+                node_identifier = entry
+                graph_identifier = None
+                if isinstance(entry, dict):
+                    node_identifier = entry.get("node_id")
+                    graph_identifier = entry.get("graph_id")
+
+                try:
+                    parsed_node_id = int(node_identifier)
+                except (TypeError, ValueError):
+                    parsed_node_id = node_identifier
+
+                payload = {
+                    "id": parsed_node_id,
                     "message": trigger_words_text
-                })
+                }
+
+                if graph_identifier is not None:
+                    payload["graph_id"] = str(graph_identifier)
+
+                PromptServer.instance.send_sync("trigger_word_update", payload)
             
             return web.json_response({"success": True})
 

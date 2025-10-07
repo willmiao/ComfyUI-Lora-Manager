@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
-import { CONVERTED_TYPE } from "./utils.js";
+import { CONVERTED_TYPE, getNodeFromGraph } from "./utils.js";
 import { addTagsWidget } from "./tags_widget.js";
 
 // TriggerWordToggle extension for ComfyUI
@@ -10,8 +10,8 @@ app.registerExtension({
     setup() {
         // Add message handler to listen for messages from Python
         api.addEventListener("trigger_word_update", (event) => {
-            const { id, message } = event.detail;
-            this.handleTriggerWordUpdate(id, message);
+            const { id, graph_id: graphId, message } = event.detail;
+            this.handleTriggerWordUpdate(id, graphId, message);
         });
     },
     
@@ -76,8 +76,8 @@ app.registerExtension({
     },
 
     // Handle trigger word updates from Python
-    handleTriggerWordUpdate(id, message) {
-        const node = app.graph.getNodeById(+id);
+    handleTriggerWordUpdate(id, graphId, message) {
+        const node = getNodeFromGraph(graphId, id);
         if (!node || node.comfyClass !== "TriggerWord Toggle (LoraManager)") {
             console.warn("Node not found or not a TriggerWordToggle:", id);
             return;

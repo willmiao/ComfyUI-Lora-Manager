@@ -80,7 +80,7 @@ class NodeRegistry:
 
     def __init__(self) -> None:
         self._lock = asyncio.Lock()
-        self._nodes: Dict[int, dict] = {}
+        self._nodes: Dict[str, dict] = {}
         self._registry_updated = asyncio.Event()
 
     async def register_nodes(self, nodes: list[dict]) -> None:
@@ -88,11 +88,16 @@ class NodeRegistry:
             self._nodes.clear()
             for node in nodes:
                 node_id = node["node_id"]
+                graph_id = str(node["graph_id"])
+                unique_id = f"{graph_id}:{node_id}"
                 node_type = node.get("type", "")
                 type_id = NODE_TYPES.get(node_type, 0)
                 bgcolor = node.get("bgcolor") or DEFAULT_NODE_COLOR
-                self._nodes[node_id] = {
+                self._nodes[unique_id] = {
                     "id": node_id,
+                    "graph_id": graph_id,
+                    "graph_name": node.get("graph_name"),
+                    "unique_id": unique_id,
                     "bgcolor": bgcolor,
                     "title": node.get("title"),
                     "type": type_id,
@@ -330,16 +335,65 @@ class LoraCodeHandler:
                     logger.error("Error broadcasting lora code: %s", exc)
                     results.append({"node_id": "broadcast", "success": False, "error": str(exc)})
             else:
-                for node_id in node_ids:
+                for entry in node_ids:
+                    node_identifier = entry
+                    graph_identifier = None
+                    if isinstance(entry, dict):
+                        node_identifier = entry.get("node_id")
+                        graph_identifier = entry.get("graph_id")
+
+                    if node_identifier is None:
+                        results.append(
+                            {
+                                "node_id": node_identifier,
+                                "graph_id": graph_identifier,
+                                "success": False,
+                                "error": "Missing node_id parameter",
+                            }
+                        )
+                        continue
+
+                    try:
+                        parsed_node_id = int(node_identifier)
+                    except (TypeError, ValueError):
+                        parsed_node_id = node_identifier
+
+                    payload = {
+                        "id": parsed_node_id,
+                        "lora_code": lora_code,
+                        "mode": mode,
+                    }
+
+                    if graph_identifier is not None:
+                        payload["graph_id"] = str(graph_identifier)
+
                     try:
                         self._prompt_server.instance.send_sync(
                             "lora_code_update",
-                            {"id": node_id, "lora_code": lora_code, "mode": mode},
+                            payload,
                         )
-                        results.append({"node_id": node_id, "success": True})
+                        results.append(
+                            {
+                                "node_id": parsed_node_id,
+                                "graph_id": payload.get("graph_id"),
+                                "success": True,
+                            }
+                        )
                     except Exception as exc:  # pragma: no cover - defensive logging
-                        logger.error("Error sending lora code to node %s: %s", node_id, exc)
-                        results.append({"node_id": node_id, "success": False, "error": str(exc)})
+                        logger.error(
+                            "Error sending lora code to node %s (graph %s): %s",
+                            parsed_node_id,
+                            graph_identifier,
+                            exc,
+                        )
+                        results.append(
+                            {
+                                "node_id": parsed_node_id,
+                                "graph_id": payload.get("graph_id"),
+                                "success": False,
+                                "error": str(exc),
+                            }
+                        )
 
             return web.json_response({"success": True, "results": results})
         except Exception as exc:  # pragma: no cover - defensive logging
@@ -679,10 +733,21 @@ class NodeRegistryHandler:
                 node_id = node.get("node_id")
                 if node_id is None:
                     return web.json_response({"success": False, "error": f"Node {index} missing node_id parameter"}, status=400)
+                graph_id = node.get("graph_id")
+                if graph_id is None:
+                    return web.json_response({"success": False, "error": f"Node {index} missing graph_id parameter"}, status=400)
+                graph_name = node.get("graph_name")
                 try:
                     node["node_id"] = int(node_id)
                 except (TypeError, ValueError):
                     return web.json_response({"success": False, "error": f"Node {index} node_id must be an integer"}, status=400)
+                node["graph_id"] = str(graph_id)
+                if graph_name is None:
+                    node["graph_name"] = None
+                elif isinstance(graph_name, str):
+                    node["graph_name"] = graph_name
+                else:
+                    node["graph_name"] = str(graph_name)
 
             await self._node_registry.register_nodes(nodes)
             return web.json_response({"success": True, "message": f"{len(nodes)} nodes registered successfully"})

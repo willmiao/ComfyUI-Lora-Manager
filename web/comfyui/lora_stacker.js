@@ -7,6 +7,8 @@ import {
   chainCallback,
   mergeLoras,
   setupInputWidgetWithAutocomplete,
+  getLinkFromGraph,
+  getNodeKey,
 } from "./utils.js";
 import { addLorasWidget } from "./loras_widget.js";
 
@@ -124,17 +126,18 @@ app.registerExtension({
 
 // Helper function to find and update downstream Lora Loader nodes
 function updateDownstreamLoaders(startNode, visited = new Set()) {
-  if (visited.has(startNode.id)) return;
-  visited.add(startNode.id);
+  const nodeKey = getNodeKey(startNode);
+  if (!nodeKey || visited.has(nodeKey)) return;
+  visited.add(nodeKey);
 
   // Check each output link
   if (startNode.outputs) {
     for (const output of startNode.outputs) {
       if (output.links) {
         for (const linkId of output.links) {
-          const link = app.graph.links[linkId];
+          const link = getLinkFromGraph(startNode.graph, linkId);
           if (link) {
-            const targetNode = app.graph.getNodeById(link.target_id);
+            const targetNode = startNode.graph?.getNodeById?.(link.target_id);
 
             // If target is a Lora Loader, collect all active loras in the chain and update
             if (

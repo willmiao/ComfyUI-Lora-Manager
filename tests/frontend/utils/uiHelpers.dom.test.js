@@ -46,6 +46,7 @@ vi.mock(EVENT_MANAGER_MODULE, () => ({
     off: vi.fn(),
     addHandler: vi.fn(),
     removeHandler: vi.fn(),
+    setState: vi.fn(),
   },
 }));
 
@@ -62,6 +63,7 @@ describe('UI helper DOM utilities', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    delete global.fetch;
   });
 
   it('creates toast elements and cleans them up after timeout', async () => {
@@ -104,5 +106,54 @@ describe('UI helper DOM utilities', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     expect(document.body.dataset.theme).toBe('dark');
     expect(document.querySelector('.theme-toggle').classList.contains('theme-dark')).toBe(true);
+  });
+
+  it('renders subgraph names in the node selector list', async () => {
+    const registryResponse = {
+      success: true,
+      data: {
+        node_count: 2,
+        nodes: {
+          'root:1': {
+            id: 1,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Root Loader',
+            type: 1,
+            bgcolor: '#123456',
+          },
+          'subgraph-uuid:2': {
+            id: 2,
+            graph_id: 'subgraph-uuid',
+            graph_name: 'Character Subgraph',
+            title: 'Nested Loader',
+            type: 1,
+            bgcolor: '#654321',
+          },
+        },
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => registryResponse,
+    });
+
+    document.body.innerHTML = '<div id="nodeSelector"></div>';
+
+    const { sendLoraToWorkflow } = await import(UI_HELPERS_MODULE);
+
+    const result = await sendLoraToWorkflow('<lora:test:1>');
+
+    expect(result).toBe(true);
+    expect(global.fetch).toHaveBeenCalledWith('/api/lm/get-registry');
+
+    const nodeLabels = Array.from(
+      document.querySelectorAll('#nodeSelector .node-item[data-node-id] span')
+    ).map((span) => span.textContent.trim());
+
+    expect(nodeLabels).toEqual([
+      '#1 Root Loader',
+      '#2 (Character Subgraph) Nested Loader',
+    ]);
   });
 });

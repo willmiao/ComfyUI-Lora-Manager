@@ -435,8 +435,9 @@ export async function sendLoraToWorkflow(loraSyntax, replaceMode = false, syntax
       return true;
     } else {
       // Single node - send directly
-      const nodeId = Object.keys(registryData.data.nodes)[0];
-      return await sendToSpecificNode([nodeId], loraSyntax, replaceMode, syntaxType);
+      const nodes = registryData.data.nodes;
+      const nodeId = Object.keys(nodes)[0];
+      return await sendToSpecificNode([nodeId], nodes, loraSyntax, replaceMode, syntaxType);
     }
   } catch (error) {
     console.error('Failed to get registry:', error);
@@ -452,19 +453,65 @@ export async function sendLoraToWorkflow(loraSyntax, replaceMode = false, syntax
  * @param {boolean} replaceMode - Whether to replace existing LoRAs
  * @param {string} syntaxType - The type of syntax ('lora' or 'recipe')
  */
-async function sendToSpecificNode(nodeIds, loraSyntax, replaceMode, syntaxType) {
+function resolveNodeReference(nodeKey, nodesMap) {
+  if (!nodeKey) {
+    return null;
+  }
+
+  const directMatch = nodesMap?.[nodeKey];
+  if (directMatch) {
+    return {
+      node_id: directMatch.id,
+      graph_id: directMatch.graph_id ?? null,
+    };
+  }
+
+  if (typeof nodeKey === 'string' && nodeKey.includes(':')) {
+    const [graphId, ...rest] = nodeKey.split(':');
+    const nodeIdPart = rest.join(':');
+    const numericNodeId = Number(nodeIdPart);
+    return {
+      node_id: Number.isNaN(numericNodeId) ? nodeIdPart : numericNodeId,
+      graph_id: graphId || null,
+    };
+  }
+
+  const numericId = Number(nodeKey);
+  return {
+    node_id: Number.isNaN(numericId) ? nodeKey : numericId,
+    graph_id: null,
+  };
+}
+
+async function sendToSpecificNode(nodeIds, nodesMap, loraSyntax, replaceMode, syntaxType) {
   try {
     // Call the backend API to update the lora code
+    const requestBody = {
+      lora_code: loraSyntax,
+      mode: replaceMode ? 'replace' : 'append'
+    };
+
+    if (Array.isArray(nodeIds)) {
+      const references = nodeIds
+        .map((nodeKey) => resolveNodeReference(nodeKey, nodesMap))
+        .filter((reference) => reference && reference.node_id !== undefined);
+
+      if (references.length > 0) {
+        requestBody.node_ids = references;
+      }
+    } else if (nodeIds) {
+      const reference = resolveNodeReference(nodeIds, nodesMap);
+      if (reference) {
+        requestBody.node_ids = [reference];
+      }
+    }
+
     const response = await fetch('/api/lm/update-lora-code', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        node_ids: nodeIds,
-        lora_code: loraSyntax,
-        mode: replaceMode ? 'replace' : 'append'
-      })
+      body: JSON.stringify(requestBody)
     });
     
     const result = await response.json();
@@ -522,16 +569,17 @@ function showNodeSelector(nodes, loraSyntax, replaceMode, syntaxType) {
   hideNodeSelector();
   
   // Generate node list HTML with icons and proper colors
-  const nodeItems = Object.values(nodes).map(node => {
+  const nodeItems = Object.entries(nodes).map(([nodeKey, node]) => {
     const iconClass = NODE_TYPE_ICONS[node.type] || 'fas fa-question-circle';
     const bgColor = node.bgcolor || DEFAULT_NODE_COLOR;
-    
+    const graphLabel = node.graph_name ? ` (${node.graph_name})` : '';
+
     return `
-      <div class="node-item" data-node-id="${node.id}">
+      <div class="node-item" data-node-id="${nodeKey}">
         <div class="node-icon-indicator" style="background-color: ${bgColor}">
           <i class="${iconClass}"></i>
         </div>
-        <span>#${node.id} ${node.title}</span>
+        <span>#${node.id}${graphLabel} ${node.title}</span>
       </div>
     `;
   }).join('');
@@ -610,10 +658,10 @@ function setupNodeSelectorEvents(selector, nodes, loraSyntax, replaceMode, synta
     if (action === 'send-all') {
       // Send to all nodes
       const allNodeIds = Object.keys(nodes);
-      await sendToSpecificNode(allNodeIds, loraSyntax, replaceMode, syntaxType);
+      await sendToSpecificNode(allNodeIds, nodes, loraSyntax, replaceMode, syntaxType);
     } else if (nodeId) {
       // Send to specific node
-      await sendToSpecificNode([nodeId], loraSyntax, replaceMode, syntaxType);
+      await sendToSpecificNode([nodeId], nodes, loraSyntax, replaceMode, syntaxType);
     }
     
     hideNodeSelector();

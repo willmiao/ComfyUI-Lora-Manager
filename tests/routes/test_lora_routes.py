@@ -188,7 +188,7 @@ async def test_get_trigger_words_broadcasts(monkeypatch, routes):
 
     monkeypatch.setattr("py.routes.lora_routes.get_lora_info", lambda name: (f"path/{name}", [f"trigger-{name}"]))
 
-    request = DummyRequest(json_data={"lora_names": ["one"], "node_ids": ["node"]})
+    request = DummyRequest(json_data={"lora_names": ["one"], "node_ids": [{"node_id": "node", "graph_id": "graph-1"}]})
 
     response = await routes.get_trigger_words(request)
     payload = json.loads(response.text)
@@ -196,7 +196,7 @@ async def test_get_trigger_words_broadcasts(monkeypatch, routes):
     assert payload == {"success": True}
     send_mock.assert_called_once_with(
         "trigger_word_update",
-        {"id": "node", "message": "trigger-one"},
+        {"id": "node", "graph_id": "graph-1", "message": "trigger-one"},
     )
 
 
