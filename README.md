@@ -34,6 +34,14 @@ Enhance your Civitai browsing experience with our companion browser extension! S
 
 ## Release Notes
 
+### v0.9.6
+* **Critical Performance Optimization** - Introduced persistent model cache that dramatically accelerates initialization after startup and significantly reduces Python backend memory footprint for improved application performance.
+* **Cross-Browser Settings Synchronization** - Migrated nearly all settings to the backend, ensuring your preferences sync automatically across all browsers for a seamless multi-browser experience.
+* **Protected User Settings Location** - Relocated user settings (settings.json) to the user config directory (accessible via the link icon in Settings), preventing accidental deletion during reinstalls or updates.
+* **Global Context Menu** - Added a new global context menu accessible by right-clicking on empty page areas, providing quick access to global operations with more features coming in future updates.
+* **Multi-Library Support** - Introduced support for managing multiple libraries, allowing you to easily switch between different model collections (advanced usage, documentation in progress).
+* **Bug Fixes & Stability Improvements** - Various bug fixes and enhancements for improved stability and reliability.
+
 ### v0.9.3
 * **Metadata Archive Database Support** - Added the ability to download and utilize a metadata archive database, enabling access to metadata for models that have been deleted from CivitAI.
 * **App-Level Proxy Settings** - Introduced support for configuring a global proxy within the application, making it easier to use the manager behind network restrictions.
