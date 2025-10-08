@@ -14,13 +14,15 @@ logger = logging.getLogger(__name__)
 
 CURRENT_NAMING_VERSION = 2  # Increment this when naming conventions change
 
+settings = get_settings_manager()
+
 class ExampleImagesMigration:
     """Handles migrations for example images naming conventions"""
     
     @staticmethod
     async def check_and_run_migrations():
         """Check if migrations are needed and run them in background"""
-        root = get_settings_manager().get('example_images_path')
+        root = settings.get('example_images_path')
         if not root or not os.path.exists(root):
             logger.debug("No example images path configured or path doesn't exist, skipping migrations")
             return

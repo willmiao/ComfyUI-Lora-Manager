@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 # Check if we're in standalone mode
 STANDALONE_MODE = 'nodes' not in sys.modules
 
+settings = get_settings_manager()
+
 class LoraManager:
     """Main entry point for LoRA Manager plugin"""
     
@@ -51,7 +53,7 @@ class LoraManager:
         asyncio_logger.addFilter(ConnectionResetFilter())
 
         # Add static route for example images if the path exists in settings
-        example_images_path = get_settings_manager().get('example_images_path')
+        example_images_path = settings.get('example_images_path')
         logger.info(f"Example images path: {example_images_path}")
         if example_images_path and os.path.exists(example_images_path):
             app.router.add_static('/example_images_static', example_images_path)

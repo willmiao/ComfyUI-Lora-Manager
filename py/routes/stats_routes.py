@@ -15,6 +15,8 @@ from ..utils.usage_stats import UsageStats
 
 logger = logging.getLogger(__name__)
 
+settings = get_settings_manager()
+
 class StatsRoutes:
     """Route handlers for Statistics page and API endpoints"""
     
@@ -66,7 +68,7 @@ class StatsRoutes:
             is_initializing = lora_initializing or checkpoint_initializing or embedding_initializing
 
             # 获取用户语言设置
-            settings_manager = get_settings_manager()
+            settings_manager = settings
             user_language = settings_manager.get('language', 'en')
             
             # 设置服务端i18n语言

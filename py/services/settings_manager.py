@@ -692,16 +692,24 @@ class SettingsManager:
 
 _SETTINGS_MANAGER: Optional["SettingsManager"] = None
 _SETTINGS_MANAGER_LOCK = Lock()
+# Legacy module-level alias for backwards compatibility with callers that
+# monkeypatch ``py.services.settings_manager.settings`` during tests.
+settings: Optional["SettingsManager"] = None
 
 
 def get_settings_manager() -> "SettingsManager":
     """Return the lazily initialised global :class:`SettingsManager`."""
 
-    global _SETTINGS_MANAGER
+    global _SETTINGS_MANAGER, settings
+    if settings is not None:
+        return settings
+
     if _SETTINGS_MANAGER is None:
         with _SETTINGS_MANAGER_LOCK:
             if _SETTINGS_MANAGER is None:
                 _SETTINGS_MANAGER = SettingsManager()
+
+    settings = _SETTINGS_MANAGER
     return _SETTINGS_MANAGER
 
 
@@ -712,6 +720,7 @@ def reset_settings_manager() -> None:
     directory before the manager touches the filesystem.
     """
 
-    global _SETTINGS_MANAGER
+    global _SETTINGS_MANAGER, settings
     with _SETTINGS_MANAGER_LOCK:
         _SETTINGS_MANAGER = None
+        settings = None

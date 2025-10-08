@@ -20,22 +20,22 @@ _preview_service = PreviewAssetService(
     exif_utils=ExifUtils,
 )
 
-_METADATA_SYNC_SERVICE: MetadataSyncService | None = None
+_metadata_sync_service: MetadataSyncService | None = None
 
 
 def _get_metadata_sync_service() -> MetadataSyncService:
     """Return the shared metadata sync service, initialising it lazily."""
 
-    global _METADATA_SYNC_SERVICE
-    if _METADATA_SYNC_SERVICE is None:
-        _METADATA_SYNC_SERVICE = MetadataSyncService(
+    global _metadata_sync_service
+    if _metadata_sync_service is None:
+        _metadata_sync_service = MetadataSyncService(
             metadata_manager=MetadataManager,
             preview_service=_preview_service,
             settings=get_settings_manager(),
             default_metadata_provider_factory=get_default_metadata_provider,
             metadata_provider_selector=get_metadata_provider,
         )
-    return _METADATA_SYNC_SERVICE
+    return _metadata_sync_service
 
 
 class MetadataUpdater:
