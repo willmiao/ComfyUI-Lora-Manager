@@ -90,7 +90,7 @@ class BaseModelRoutes(ABC):
         self._metadata_sync_service = MetadataSyncService(
             metadata_manager=MetadataManager,
             preview_service=self._preview_service,
-            settings=settings_service,
+            settings=self._settings,
             default_metadata_provider_factory=metadata_provider_factory,
             metadata_provider_selector=get_metadata_provider,
         )
