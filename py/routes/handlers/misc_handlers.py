@@ -24,7 +24,7 @@ from ...services.metadata_service import (
     update_metadata_providers,
 )
 from ...services.service_registry import ServiceRegistry
-from ...services.settings_manager import settings as default_settings
+from ...services.settings_manager import get_settings_manager
 from ...services.websocket_manager import ws_manager
 from ...services.downloader import get_downloader
 from ...utils.constants import DEFAULT_NODE_COLOR, NODE_TYPES, SUPPORTED_MEDIA_EXTENSIONS
@@ -162,11 +162,11 @@ class SettingsHandler:
     def __init__(
         self,
         *,
-        settings_service=default_settings,
+        settings_service=None,
         metadata_provider_updater: Callable[[], Awaitable[None]] = update_metadata_providers,
         downloader_factory: Callable[[], Awaitable[DownloaderProtocol]] = get_downloader,
     ) -> None:
-        self._settings = settings_service
+        self._settings = settings_service or get_settings_manager()
         self._metadata_provider_updater = metadata_provider_updater
         self._downloader_factory = downloader_factory
 
@@ -617,11 +617,11 @@ class MetadataArchiveHandler:
         self,
         *,
         metadata_archive_manager_factory: Callable[[], Awaitable[MetadataArchiveManagerProtocol]] = get_metadata_archive_manager,
-        settings_service=default_settings,
+        settings_service=None,
         metadata_provider_updater: Callable[[], Awaitable[None]] = update_metadata_providers,
     ) -> None:
         self._metadata_archive_manager_factory = metadata_archive_manager_factory
-        self._settings = settings_service
+        self._settings = settings_service or get_settings_manager()
         self._metadata_provider_updater = metadata_provider_updater
 
     async def download_metadata_archive(self, request: web.Request) -> web.Response:

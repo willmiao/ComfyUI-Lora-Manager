@@ -6,7 +6,7 @@ import os
 from ..utils.models import BaseModelMetadata
 from ..utils.metadata_manager import MetadataManager
 from .model_query import FilterCriteria, ModelCacheRepository, ModelFilterSet, SearchStrategy, SettingsProvider
-from .settings_manager import settings as default_settings
+from .settings_manager import get_settings_manager
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ class BaseModelService(ABC):
         self.model_type = model_type
         self.scanner = scanner
         self.metadata_class = metadata_class
-        self.settings = settings_provider or default_settings
+        self.settings = settings_provider or get_settings_manager()
         self.cache_repository = cache_repository or ModelCacheRepository(scanner)
         self.filter_set = filter_set or ModelFilterSet(self.settings)
         self.search_strategy = search_strategy or SearchStrategy()

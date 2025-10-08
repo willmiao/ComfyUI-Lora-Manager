@@ -6,7 +6,7 @@ from ..recipes.constants import GEN_PARAM_KEYS
 from ..services.metadata_service import get_default_metadata_provider, get_metadata_provider
 from ..services.metadata_sync_service import MetadataSyncService
 from ..services.preview_asset_service import PreviewAssetService
-from ..services.settings_manager import settings
+from ..services.settings_manager import get_settings_manager
 from ..services.downloader import get_downloader
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS
 from ..utils.exif_utils import ExifUtils
@@ -20,13 +20,22 @@ _preview_service = PreviewAssetService(
     exif_utils=ExifUtils,
 )
 
-_metadata_sync_service = MetadataSyncService(
-    metadata_manager=MetadataManager,
-    preview_service=_preview_service,
-    settings=settings,
-    default_metadata_provider_factory=get_default_metadata_provider,
-    metadata_provider_selector=get_metadata_provider,
-)
+_METADATA_SYNC_SERVICE: MetadataSyncService | None = None
+
+
+def _get_metadata_sync_service() -> MetadataSyncService:
+    """Return the shared metadata sync service, initialising it lazily."""
+
+    global _METADATA_SYNC_SERVICE
+    if _METADATA_SYNC_SERVICE is None:
+        _METADATA_SYNC_SERVICE = MetadataSyncService(
+            metadata_manager=MetadataManager,
+            preview_service=_preview_service,
+            settings=get_settings_manager(),
+            default_metadata_provider_factory=get_default_metadata_provider,
+            metadata_provider_selector=get_metadata_provider,
+        )
+    return _METADATA_SYNC_SERVICE
 
 
 class MetadataUpdater:
@@ -71,7 +80,7 @@ class MetadataUpdater:
             async def update_cache_func(old_path, new_path, metadata):
                 return await scanner.update_single_model_cache(old_path, new_path, metadata)
             
-            success, error = await _metadata_sync_service.fetch_and_update_model(
+            success, error = await _get_metadata_sync_service().fetch_and_update_model(
                 sha256=model_hash,
                 file_path=file_path,
                 model_data=model_data,

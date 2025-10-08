@@ -1,6 +1,6 @@
 import pytest
 
-from py.services.settings_manager import settings
+from py.services.settings_manager import SettingsManager, get_settings_manager
 from py.utils.utils import (
     calculate_recipe_fingerprint,
     calculate_relative_path_for_model,
@@ -9,7 +9,8 @@ from py.utils.utils import (
 
 @pytest.fixture
 def isolated_settings(monkeypatch):
-    default_settings = settings._get_default_settings()
+    manager = get_settings_manager()
+    default_settings = manager._get_default_settings()
     default_settings.update(
         {
             "download_path_templates": {
@@ -20,8 +21,8 @@ def isolated_settings(monkeypatch):
             "base_model_path_mappings": {},
         }
     )
-    monkeypatch.setattr(settings, "settings", default_settings)
-    monkeypatch.setattr(type(settings), "_save_settings", lambda self: None)
+    monkeypatch.setattr(manager, "settings", default_settings)
+    monkeypatch.setattr(SettingsManager, "_save_settings", lambda self: None)
     return default_settings
 
 

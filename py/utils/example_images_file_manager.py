@@ -3,7 +3,7 @@ import os
 import sys
 import subprocess
 from aiohttp import web
-from ..services.settings_manager import settings
+from ..services.settings_manager import get_settings_manager
 from ..utils.example_images_paths import (
     get_model_folder,
     get_model_relative_path,
@@ -37,7 +37,8 @@ class ExampleImagesFileManager:
                 }, status=400)
             
             # Get example images path from settings
-            example_images_path = settings.get('example_images_path')
+            settings_manager = get_settings_manager()
+            example_images_path = settings_manager.get('example_images_path')
             if not example_images_path:
                 return web.json_response({
                     'success': False,
@@ -109,7 +110,8 @@ class ExampleImagesFileManager:
                 }, status=400)
             
             # Get example images path from settings
-            example_images_path = settings.get('example_images_path')
+            settings_manager = get_settings_manager()
+            example_images_path = settings_manager.get('example_images_path')
             if not example_images_path:
                 return web.json_response({
                     'success': False,
@@ -183,7 +185,8 @@ class ExampleImagesFileManager:
                 }, status=400)
             
             # Get example images path from settings
-            example_images_path = settings.get('example_images_path')
+            settings_manager = get_settings_manager()
+            example_images_path = settings_manager.get('example_images_path')
             if not example_images_path:
                 return web.json_response({
                     'has_images': False

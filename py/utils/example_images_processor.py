@@ -6,7 +6,7 @@ import string
 from aiohttp import web
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS
 from ..services.service_registry import ServiceRegistry
-from ..services.settings_manager import settings
+from ..services.settings_manager import get_settings_manager
 from ..utils.example_images_paths import get_model_folder, get_model_relative_path
 from .example_images_metadata import MetadataUpdater
 from ..utils.metadata_manager import MetadataManager
@@ -318,7 +318,7 @@ class ExampleImagesProcessor:
 
         try:
             # Get example images path
-            example_images_path = settings.get('example_images_path')
+            example_images_path = get_settings_manager().get('example_images_path')
             if not example_images_path:
                 raise ExampleImagesValidationError('No example images path configured')
 
@@ -442,7 +442,7 @@ class ExampleImagesProcessor:
                 }, status=400)
             
             # Get example images path
-            example_images_path = settings.get('example_images_path')
+            example_images_path = get_settings_manager().get('example_images_path')
             if not example_images_path:
                 return web.json_response({
                     'success': False,

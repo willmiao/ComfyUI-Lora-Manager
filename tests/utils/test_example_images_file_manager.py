@@ -7,7 +7,7 @@ from typing import Any, Dict
 
 import pytest
 
-from py.services.settings_manager import settings
+from py.services.settings_manager import get_settings_manager
 from py.utils.example_images_file_manager import ExampleImagesFileManager
 
 
@@ -22,16 +22,18 @@ class JsonRequest:
 
 @pytest.fixture(autouse=True)
 def restore_settings() -> None:
-    original = settings.settings.copy()
+    manager = get_settings_manager()
+    original = manager.settings.copy()
     try:
         yield
     finally:
-        settings.settings.clear()
-        settings.settings.update(original)
+        manager.settings.clear()
+        manager.settings.update(original)
 
 
 async def test_open_folder_requires_existing_model_directory(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
-    settings.settings["example_images_path"] = str(tmp_path)
+    settings_manager = get_settings_manager()
+    settings_manager.settings["example_images_path"] = str(tmp_path)
     model_hash = "a" * 64
     model_folder = tmp_path / model_hash
     model_folder.mkdir()
@@ -65,7 +67,8 @@ async def test_open_folder_requires_existing_model_directory(monkeypatch: pytest
 
 
 async def test_open_folder_rejects_invalid_paths(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
-    settings.settings["example_images_path"] = str(tmp_path)
+    settings_manager = get_settings_manager()
+    settings_manager.settings["example_images_path"] = str(tmp_path)
 
     def fake_get_model_folder(_hash):
         return str(tmp_path.parent / "outside")
@@ -81,7 +84,8 @@ async def test_open_folder_rejects_invalid_paths(monkeypatch: pytest.MonkeyPatch
 
 
 async def test_get_files_lists_supported_media(tmp_path) -> None:
-    settings.settings["example_images_path"] = str(tmp_path)
+    settings_manager = get_settings_manager()
+    settings_manager.settings["example_images_path"] = str(tmp_path)
     model_hash = "b" * 64
     model_folder = tmp_path / model_hash
     model_folder.mkdir()
@@ -99,7 +103,8 @@ async def test_get_files_lists_supported_media(tmp_path) -> None:
 
 
 async def test_has_images_reports_presence(tmp_path) -> None:
-    settings.settings["example_images_path"] = str(tmp_path)
+    settings_manager = get_settings_manager()
+    settings_manager.settings["example_images_path"] = str(tmp_path)
     model_hash = "c" * 64
     model_folder = tmp_path / model_hash
     model_folder.mkdir()

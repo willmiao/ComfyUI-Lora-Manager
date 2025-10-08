@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from py.services.settings_manager import settings
+from py.services.settings_manager import SettingsManager, get_settings_manager
 from py.utils import example_images_download_manager as download_module
 
 
@@ -43,11 +43,15 @@ def _patch_scanner(monkeypatch: pytest.MonkeyPatch, scanner: StubScanner) -> Non
 
 
 @pytest.mark.usefixtures("tmp_path")
-async def test_start_download_rejects_parallel_runs(monkeypatch: pytest.MonkeyPatch, tmp_path):
+async def test_start_download_rejects_parallel_runs(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
     ws_manager = RecordingWebSocketManager()
     manager = download_module.DownloadManager(ws_manager=ws_manager)
 
-    monkeypatch.setitem(settings.settings, "example_images_path", str(tmp_path))
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
 
     model = {
         "sha256": "abc123",
@@ -106,11 +110,15 @@ async def test_start_download_rejects_parallel_runs(monkeypatch: pytest.MonkeyPa
 
 
 @pytest.mark.usefixtures("tmp_path")
-async def test_pause_resume_blocks_processing(monkeypatch: pytest.MonkeyPatch, tmp_path):
+async def test_pause_resume_blocks_processing(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
     ws_manager = RecordingWebSocketManager()
     manager = download_module.DownloadManager(ws_manager=ws_manager)
 
-    monkeypatch.setitem(settings.settings, "example_images_path", str(tmp_path))
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
 
     models = [
         {
@@ -231,13 +239,17 @@ async def test_pause_resume_blocks_processing(monkeypatch: pytest.MonkeyPatch, t
 
 
 @pytest.mark.usefixtures("tmp_path")
-async def test_legacy_folder_migrated_and_skipped(monkeypatch: pytest.MonkeyPatch, tmp_path):
+async def test_legacy_folder_migrated_and_skipped(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
     ws_manager = RecordingWebSocketManager()
     manager = download_module.DownloadManager(ws_manager=ws_manager)
 
-    monkeypatch.setitem(settings.settings, "example_images_path", str(tmp_path))
-    monkeypatch.setitem(settings.settings, "libraries", {"default": {}, "extra": {}})
-    monkeypatch.setitem(settings.settings, "active_library", "extra")
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
+    monkeypatch.setitem(settings_manager.settings, "libraries", {"default": {}, "extra": {}})
+    monkeypatch.setitem(settings_manager.settings, "active_library", "extra")
 
     model_hash = "d" * 64
     model_path = tmp_path / "model.safetensors"
@@ -310,13 +322,17 @@ async def test_legacy_folder_migrated_and_skipped(monkeypatch: pytest.MonkeyPatc
 
 
 @pytest.mark.usefixtures("tmp_path")
-async def test_legacy_progress_file_migrates(monkeypatch: pytest.MonkeyPatch, tmp_path):
+async def test_legacy_progress_file_migrates(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
     ws_manager = RecordingWebSocketManager()
     manager = download_module.DownloadManager(ws_manager=ws_manager)
 
-    monkeypatch.setitem(settings.settings, "example_images_path", str(tmp_path))
-    monkeypatch.setitem(settings.settings, "libraries", {"default": {}, "extra": {}})
-    monkeypatch.setitem(settings.settings, "active_library", "extra")
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
+    monkeypatch.setitem(settings_manager.settings, "libraries", {"default": {}, "extra": {}})
+    monkeypatch.setitem(settings_manager.settings, "active_library", "extra")
 
     model_hash = "e" * 64
     model_path = tmp_path / "model-two.safetensors"
@@ -380,20 +396,24 @@ async def test_legacy_progress_file_migrates(monkeypatch: pytest.MonkeyPatch, tm
 
 
 @pytest.mark.usefixtures("tmp_path")
-async def test_download_remains_in_initial_library(monkeypatch: pytest.MonkeyPatch, tmp_path):
+async def test_download_remains_in_initial_library(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
     ws_manager = RecordingWebSocketManager()
     manager = download_module.DownloadManager(ws_manager=ws_manager)
 
-    monkeypatch.setitem(settings.settings, "example_images_path", str(tmp_path))
-    monkeypatch.setitem(settings.settings, "libraries", {"LibraryA": {}, "LibraryB": {}})
-    monkeypatch.setitem(settings.settings, "active_library", "LibraryA")
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
+    monkeypatch.setitem(settings_manager.settings, "libraries", {"LibraryA": {}, "LibraryB": {}})
+    monkeypatch.setitem(settings_manager.settings, "active_library", "LibraryA")
 
     state = {"active": "LibraryA"}
 
     def fake_get_active_library_name(self):
         return state["active"]
 
-    monkeypatch.setattr(type(settings), "get_active_library_name", fake_get_active_library_name)
+    monkeypatch.setattr(SettingsManager, "get_active_library_name", fake_get_active_library_name)
 
     model_hash = "f" * 64
     model_path = tmp_path / "example-model.safetensors"
@@ -454,3 +474,7 @@ async def test_download_remains_in_initial_library(monkeypatch: pytest.MonkeyPat
     assert (model_dir / "local.txt").exists()
     assert not (library_b_root / ".download_progress.json").exists()
     assert not (library_b_root / model_hash).exists()
+
+@pytest.fixture
+def settings_manager():
+    return get_settings_manager()

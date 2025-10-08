@@ -16,7 +16,7 @@ import asyncio
 import aiohttp
 from datetime import datetime
 from typing import Optional, Dict, Tuple, Callable, Union
-from ..services.settings_manager import settings
+from ..services.settings_manager import get_settings_manager
 
 logger = logging.getLogger(__name__)
 
@@ -94,12 +94,13 @@ class Downloader:
         
         # Check for app-level proxy settings
         proxy_url = None
-        if settings.get('proxy_enabled', False):
-            proxy_host = settings.get('proxy_host', '').strip()
-            proxy_port = settings.get('proxy_port', '').strip()
-            proxy_type = settings.get('proxy_type', 'http').lower()
-            proxy_username = settings.get('proxy_username', '').strip()
-            proxy_password = settings.get('proxy_password', '').strip()
+        settings_manager = get_settings_manager()
+        if settings_manager.get('proxy_enabled', False):
+            proxy_host = settings_manager.get('proxy_host', '').strip()
+            proxy_port = settings_manager.get('proxy_port', '').strip()
+            proxy_type = settings_manager.get('proxy_type', 'http').lower()
+            proxy_username = settings_manager.get('proxy_username', '').strip()
+            proxy_password = settings_manager.get('proxy_password', '').strip()
             
             if proxy_host and proxy_port:
                 # Build proxy URL
@@ -146,7 +147,8 @@ class Downloader:
         
         if use_auth:
             # Add CivitAI API key if available
-            api_key = settings.get('civitai_api_key')
+            settings_manager = get_settings_manager()
+            api_key = settings_manager.get('civitai_api_key')
             if api_key:
                 headers['Authorization'] = f'Bearer {api_key}'
                 headers['Content-Type'] = 'application/json'

@@ -3,7 +3,7 @@ import logging
 import os
 import re
 import json
-from ..services.settings_manager import settings
+from ..services.settings_manager import get_settings_manager
 from ..services.service_registry import ServiceRegistry
 from ..utils.example_images_paths import iter_library_roots
 from ..utils.metadata_manager import MetadataManager
@@ -20,7 +20,7 @@ class ExampleImagesMigration:
     @staticmethod
     async def check_and_run_migrations():
         """Check if migrations are needed and run them in background"""
-        root = settings.get('example_images_path')
+        root = get_settings_manager().get('example_images_path')
         if not root or not os.path.exists(root):
             logger.debug("No example images path configured or path doesn't exist, skipping migrations")
             return

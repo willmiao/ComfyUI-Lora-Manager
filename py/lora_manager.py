@@ -13,7 +13,7 @@ from .routes.misc_routes import MiscRoutes
 from .routes.preview_routes import PreviewRoutes
 from .routes.example_images_routes import ExampleImagesRoutes
 from .services.service_registry import ServiceRegistry
-from .services.settings_manager import settings
+from .services.settings_manager import get_settings_manager
 from .utils.example_images_migration import ExampleImagesMigration
 from .services.websocket_manager import ws_manager
 from .services.example_images_cleanup_service import ExampleImagesCleanupService
@@ -51,7 +51,7 @@ class LoraManager:
         asyncio_logger.addFilter(ConnectionResetFilter())
 
         # Add static route for example images if the path exists in settings
-        example_images_path = settings.get('example_images_path')
+        example_images_path = get_settings_manager().get('example_images_path')
         logger.info(f"Example images path: {example_images_path}")
         if example_images_path and os.path.exists(example_images_path):
             app.router.add_static('/example_images_static', example_images_path)

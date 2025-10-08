@@ -74,8 +74,9 @@ class Config:
         """Persist ComfyUI-derived folder paths to the multi-library settings."""
         try:
             ensure_settings_file(logger)
-            from .services.settings_manager import settings as settings_service
+            from .services.settings_manager import get_settings_manager
 
+            settings_service = get_settings_manager()
             libraries = settings_service.get_libraries()
             comfy_library = libraries.get("comfyui", {})
             default_library = libraries.get("default", {})
@@ -442,8 +443,9 @@ class Config:
         """Return the current library registry and active library name."""
 
         try:
-            from .services.settings_manager import settings as settings_service
+            from .services.settings_manager import get_settings_manager
 
+            settings_service = get_settings_manager()
             libraries = settings_service.get_libraries()
             active_library = settings_service.get_active_library_name()
             return {

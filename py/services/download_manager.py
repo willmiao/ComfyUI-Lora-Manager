@@ -9,7 +9,7 @@ from ..utils.constants import CARD_PREVIEW_WIDTH, VALID_LORA_TYPES, CIVITAI_MODE
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
 from .service_registry import ServiceRegistry
-from .settings_manager import settings
+from .settings_manager import get_settings_manager
 from .metadata_service import get_default_metadata_provider
 from .downloader import get_downloader
 
@@ -241,23 +241,24 @@ class DownloadManager:
             
             # Handle use_default_paths
             if use_default_paths:
+                settings_manager = get_settings_manager()
                 # Set save_dir based on model type
                 if model_type == 'checkpoint':
-                    default_path = settings.get('default_checkpoint_root')
+                    default_path = settings_manager.get('default_checkpoint_root')
                     if not default_path:
                         return {'success': False, 'error': 'Default checkpoint root path not set in settings'}
                     save_dir = default_path
                 elif model_type == 'lora':
-                    default_path = settings.get('default_lora_root')
+                    default_path = settings_manager.get('default_lora_root')
                     if not default_path:
                         return {'success': False, 'error': 'Default lora root path not set in settings'}
                     save_dir = default_path
                 elif model_type == 'embedding':
-                    default_path = settings.get('default_embedding_root')
+                    default_path = settings_manager.get('default_embedding_root')
                     if not default_path:
                         return {'success': False, 'error': 'Default embedding root path not set in settings'}
                     save_dir = default_path
-                    
+
                 # Calculate relative path using template
                 relative_path = self._calculate_relative_path(version_info, model_type)
 
@@ -360,7 +361,8 @@ class DownloadManager:
             Relative path string
         """
         # Get path template from settings for specific model type
-        path_template = settings.get_download_path_template(model_type)
+        settings_manager = get_settings_manager()
+        path_template = settings_manager.get_download_path_template(model_type)
         
         # If template is empty, return empty path (flat structure)
         if not path_template:
@@ -377,7 +379,7 @@ class DownloadManager:
             author = 'Anonymous'
         
         # Apply mapping if available
-        base_model_mappings = settings.get('base_model_path_mappings', {})
+        base_model_mappings = settings_manager.get('base_model_path_mappings', {})
         mapped_base_model = base_model_mappings.get(base_model, base_model)
         
         # Get model tags

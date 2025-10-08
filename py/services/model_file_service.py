@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 
 from ..utils.utils import calculate_relative_path_for_model, remove_empty_dirs
 from ..utils.constants import AUTO_ORGANIZE_BATCH_SIZE
-from ..services.settings_manager import settings
+from ..services.settings_manager import get_settings_manager
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +114,8 @@ class ModelFileService:
                 raise ValueError('No model roots configured')
             
             # Check if flat structure is configured for this model type
-            path_template = settings.get_download_path_template(self.model_type)
+            settings_manager = get_settings_manager()
+            path_template = settings_manager.get_download_path_template(self.model_type)
             result.is_flat_structure = not path_template
             
             # Initialize tracking
