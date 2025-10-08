@@ -28,6 +28,18 @@ if TYPE_CHECKING:  # pragma: no cover - import for type checkers only
     from ..services.settings_manager import SettingsManager
 
 
+def _build_metadata_sync_service(settings_manager: "SettingsManager") -> MetadataSyncService:
+    """Construct a metadata sync service bound to the provided settings."""
+
+    return MetadataSyncService(
+        metadata_manager=MetadataManager,
+        preview_service=_preview_service,
+        settings=settings_manager,
+        default_metadata_provider_factory=get_default_metadata_provider,
+        metadata_provider_selector=get_metadata_provider,
+    )
+
+
 def _get_metadata_sync_service() -> MetadataSyncService:
     """Return the shared metadata sync service, initialising it lazily."""
 
@@ -35,18 +47,19 @@ def _get_metadata_sync_service() -> MetadataSyncService:
 
     settings_manager = get_settings_manager()
 
-    if (
-        _metadata_sync_service is None
-        or _metadata_sync_service_settings is not settings_manager
-    ):
-        _metadata_sync_service = MetadataSyncService(
-            metadata_manager=MetadataManager,
-            preview_service=_preview_service,
-            settings=settings_manager,
-            default_metadata_provider_factory=get_default_metadata_provider,
-            metadata_provider_selector=get_metadata_provider,
-        )
+    if isinstance(_metadata_sync_service, MetadataSyncService):
+        if _metadata_sync_service_settings is not settings_manager:
+            _metadata_sync_service = _build_metadata_sync_service(settings_manager)
+            _metadata_sync_service_settings = settings_manager
+    elif _metadata_sync_service is None:
+        _metadata_sync_service = _build_metadata_sync_service(settings_manager)
         _metadata_sync_service_settings = settings_manager
+    else:
+        # Tests may inject stand-ins that do not match the sync service type. Preserve
+        # those injections while still updating our cached settings reference so the
+        # next real service instantiation uses the current configuration.
+        _metadata_sync_service_settings = settings_manager
+
     return _metadata_sync_service
 
 
