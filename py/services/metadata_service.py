@@ -6,7 +6,7 @@ from .model_metadata_provider import (
     CivitaiModelMetadataProvider,
     FallbackMetadataProvider
 )
-from .settings_manager import settings
+from .settings_manager import get_settings_manager
 from .metadata_archive_manager import MetadataArchiveManager
 from .service_registry import ServiceRegistry
 
@@ -21,7 +21,8 @@ async def initialize_metadata_providers():
     provider_manager.default_provider = None
     
     # Get settings
-    enable_archive_db = settings.get('enable_metadata_archive_db', False)
+    settings_manager = get_settings_manager()
+    enable_archive_db = settings_manager.get('enable_metadata_archive_db', False)
     
     providers = []
     
@@ -87,7 +88,8 @@ async def update_metadata_providers():
     """Update metadata providers based on current settings"""
     try:
         # Get current settings
-        enable_archive_db = settings.get('enable_metadata_archive_db', False)
+        settings_manager = get_settings_manager()
+        enable_archive_db = settings_manager.get('enable_metadata_archive_db', False)
         
         # Reinitialize all providers with new settings
         provider_manager = await initialize_metadata_providers()

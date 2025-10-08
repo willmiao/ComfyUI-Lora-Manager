@@ -8,12 +8,31 @@ from collections import defaultdict, Counter
 from typing import Dict, List, Any
 
 from ..config import config
-from ..services.settings_manager import settings
+from ..services.settings_manager import get_settings_manager
 from ..services.server_i18n import server_i18n
 from ..services.service_registry import ServiceRegistry
 from ..utils.usage_stats import UsageStats
 
 logger = logging.getLogger(__name__)
+
+
+class _SettingsProxy:
+    def __init__(self):
+        self._manager = None
+
+    def _resolve(self):
+        if self._manager is None:
+            self._manager = get_settings_manager()
+        return self._manager
+
+    def get(self, *args, **kwargs):
+        return self._resolve().get(*args, **kwargs)
+
+    def __getattr__(self, item):
+        return getattr(self._resolve(), item)
+
+
+settings = _SettingsProxy()
 
 class StatsRoutes:
     """Route handlers for Statistics page and API endpoints"""
@@ -66,7 +85,9 @@ class StatsRoutes:
             is_initializing = lora_initializing or checkpoint_initializing or embedding_initializing
 
             # 获取用户语言设置
-            user_language = settings.get('language', 'en')
+            settings_object = settings
+            user_language = settings_object.get('language', 'en')
+            settings_manager = settings_object if not isinstance(settings_object, _SettingsProxy) else settings_object._resolve()
             
             # 设置服务端i18n语言
             server_i18n.set_locale(user_language)
@@ -79,7 +100,7 @@ class StatsRoutes:
             template = self.template_env.get_template('statistics.html')
             rendered = template.render(
                 is_initializing=is_initializing,
-                settings=settings,
+                settings=settings_manager,
                 request=request,
                 t=server_i18n.get_translation,
             )

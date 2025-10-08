@@ -5,7 +5,7 @@ from typing import Any, Dict
 
 import pytest
 
-from py.services.settings_manager import settings
+from py.services.settings_manager import get_settings_manager
 from py.utils import example_images_download_manager as download_module
 
 
@@ -19,19 +19,21 @@ class RecordingWebSocketManager:
 
 @pytest.fixture(autouse=True)
 def restore_settings() -> None:
-    original = settings.settings.copy()
+    manager = get_settings_manager()
+    original = manager.settings.copy()
     try:
         yield
     finally:
-        settings.settings.clear()
-        settings.settings.update(original)
+        manager.settings.clear()
+        manager.settings.update(original)
 
 
 async def test_start_download_requires_configured_path(monkeypatch: pytest.MonkeyPatch) -> None:
     manager = download_module.DownloadManager(ws_manager=RecordingWebSocketManager())
 
     # Ensure example_images_path is not configured
-    settings.settings.pop('example_images_path', None)
+    settings_manager = get_settings_manager()
+    settings_manager.settings.pop('example_images_path', None)
 
     with pytest.raises(download_module.DownloadConfigurationError) as exc_info:
         await manager.start_download({})
@@ -44,9 +46,10 @@ async def test_start_download_requires_configured_path(monkeypatch: pytest.Monke
 
 
 async def test_start_download_bootstraps_progress_and_task(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
-    settings.settings["example_images_path"] = str(tmp_path)
-    settings.settings["libraries"] = {"default": {}}
-    settings.settings["active_library"] = "default"
+    settings_manager = get_settings_manager()
+    settings_manager.settings["example_images_path"] = str(tmp_path)
+    settings_manager.settings["libraries"] = {"default": {}}
+    settings_manager.settings["active_library"] = "default"
 
     ws_manager = RecordingWebSocketManager()
     manager = download_module.DownloadManager(ws_manager=ws_manager)
@@ -84,9 +87,10 @@ async def test_start_download_bootstraps_progress_and_task(monkeypatch: pytest.M
 
 
 async def test_pause_and_resume_flow(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
-    settings.settings["example_images_path"] = str(tmp_path)
-    settings.settings["libraries"] = {"default": {}}
-    settings.settings["active_library"] = "default"
+    settings_manager = get_settings_manager()
+    settings_manager.settings["example_images_path"] = str(tmp_path)
+    settings_manager.settings["libraries"] = {"default": {}}
+    settings_manager.settings["active_library"] = "default"
 
     ws_manager = RecordingWebSocketManager()
     manager = download_module.DownloadManager(ws_manager=ws_manager)

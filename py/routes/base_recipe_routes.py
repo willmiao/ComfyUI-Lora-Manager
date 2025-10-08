@@ -18,7 +18,7 @@ from ..services.recipes import (
 )
 from ..services.server_i18n import server_i18n
 from ..services.service_registry import ServiceRegistry
-from ..services.settings_manager import settings
+from ..services.settings_manager import get_settings_manager
 from ..utils.constants import CARD_PREVIEW_WIDTH
 from ..utils.exif_utils import ExifUtils
 from .handlers.recipe_handlers import (
@@ -48,7 +48,7 @@ class BaseRecipeRoutes:
         self.recipe_scanner = None
         self.lora_scanner = None
         self.civitai_client = None
-        self.settings = settings
+        self.settings = get_settings_manager()
         self.server_i18n = server_i18n
         self.template_env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(config.templates_path),

@@ -18,7 +18,7 @@ from ..utils.metadata_manager import MetadataManager
 from .example_images_processor import ExampleImagesProcessor
 from .example_images_metadata import MetadataUpdater
 from ..services.downloader import get_downloader
-from ..services.settings_manager import settings
+from ..services.settings_manager import get_settings_manager
 
 
 class ExampleImagesDownloadError(RuntimeError):
@@ -107,7 +107,7 @@ class DownloadManager:
         self._state_lock = state_lock or asyncio.Lock()
 
     def _resolve_output_dir(self, library_name: str | None = None) -> str:
-        base_path = settings.get('example_images_path')
+        base_path = get_settings_manager().get('example_images_path')
         if not base_path:
             return ''
         return ensure_library_root_exists(library_name)
@@ -126,7 +126,8 @@ class DownloadManager:
                 model_types = data.get('model_types', ['lora', 'checkpoint'])
                 delay = float(data.get('delay', 0.2))
 
-                base_path = settings.get('example_images_path')
+                settings_manager = get_settings_manager()
+                base_path = settings_manager.get('example_images_path')
 
                 if not base_path:
                     error_msg = 'Example images path not configured in settings'
@@ -138,7 +139,7 @@ class DownloadManager:
                         }
                     raise DownloadConfigurationError(error_msg)
 
-                active_library = settings.get_active_library_name()
+                active_library = get_settings_manager().get_active_library_name()
                 output_dir = self._resolve_output_dir(active_library)
                 if not output_dir:
                     raise DownloadConfigurationError('Example images path not configured in settings')
@@ -151,7 +152,7 @@ class DownloadManager:
                 progress_file = os.path.join(output_dir, '.download_progress.json')
                 progress_source = progress_file
                 if uses_library_scoped_folders():
-                    legacy_root = settings.get('example_images_path') or ''
+                    legacy_root = get_settings_manager().get('example_images_path') or ''
                     legacy_progress = os.path.join(legacy_root, '.download_progress.json') if legacy_root else ''
                     if legacy_progress and os.path.exists(legacy_progress) and not os.path.exists(progress_file):
                         try:
@@ -555,11 +556,12 @@ class DownloadManager:
             if not model_hashes:
                 raise DownloadConfigurationError('Missing model_hashes parameter')
 
-            base_path = settings.get('example_images_path')
+            settings_manager = get_settings_manager()
+            base_path = settings_manager.get('example_images_path')
 
             if not base_path:
                 raise DownloadConfigurationError('Example images path not configured in settings')
-            active_library = settings.get_active_library_name()
+            active_library = settings_manager.get_active_library_name()
             output_dir = self._resolve_output_dir(active_library)
             if not output_dir:
                 raise DownloadConfigurationError('Example images path not configured in settings')

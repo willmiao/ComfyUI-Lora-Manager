@@ -17,7 +17,7 @@ from ..services.model_lifecycle_service import ModelLifecycleService
 from ..services.preview_asset_service import PreviewAssetService
 from ..services.server_i18n import server_i18n as default_server_i18n
 from ..services.service_registry import ServiceRegistry
-from ..services.settings_manager import settings as default_settings
+from ..services.settings_manager import get_settings_manager
 from ..services.tag_update_service import TagUpdateService
 from ..services.websocket_manager import ws_manager as default_ws_manager
 from ..services.use_cases import (
@@ -56,14 +56,14 @@ class BaseModelRoutes(ABC):
         self,
         service=None,
         *,
-        settings_service=default_settings,
+        settings_service=None,
         ws_manager=default_ws_manager,
         server_i18n=default_server_i18n,
         metadata_provider_factory=get_default_metadata_provider,
     ) -> None:
         self.service = None
         self.model_type = ""
-        self._settings = settings_service
+        self._settings = settings_service or get_settings_manager()
         self._ws_manager = ws_manager
         self._server_i18n = server_i18n
         self._metadata_provider_factory = metadata_provider_factory
@@ -90,7 +90,7 @@ class BaseModelRoutes(ABC):
         self._metadata_sync_service = MetadataSyncService(
             metadata_manager=MetadataManager,
             preview_service=self._preview_service,
-            settings=settings_service,
+            settings=self._settings,
             default_metadata_provider_factory=metadata_provider_factory,
             metadata_provider_selector=get_metadata_provider,
         )

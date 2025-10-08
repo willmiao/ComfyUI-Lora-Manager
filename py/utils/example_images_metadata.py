@@ -1,12 +1,13 @@
 import logging
 import os
 import re
+from typing import TYPE_CHECKING, Optional
 
 from ..recipes.constants import GEN_PARAM_KEYS
 from ..services.metadata_service import get_default_metadata_provider, get_metadata_provider
 from ..services.metadata_sync_service import MetadataSyncService
 from ..services.preview_asset_service import PreviewAssetService
-from ..services.settings_manager import settings
+from ..services.settings_manager import get_settings_manager
 from ..services.downloader import get_downloader
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS
 from ..utils.exif_utils import ExifUtils
@@ -20,13 +21,46 @@ _preview_service = PreviewAssetService(
     exif_utils=ExifUtils,
 )
 
-_metadata_sync_service = MetadataSyncService(
-    metadata_manager=MetadataManager,
-    preview_service=_preview_service,
-    settings=settings,
-    default_metadata_provider_factory=get_default_metadata_provider,
-    metadata_provider_selector=get_metadata_provider,
-)
+_metadata_sync_service: MetadataSyncService | None = None
+_metadata_sync_service_settings: Optional["SettingsManager"] = None
+
+if TYPE_CHECKING:  # pragma: no cover - import for type checkers only
+    from ..services.settings_manager import SettingsManager
+
+
+def _build_metadata_sync_service(settings_manager: "SettingsManager") -> MetadataSyncService:
+    """Construct a metadata sync service bound to the provided settings."""
+
+    return MetadataSyncService(
+        metadata_manager=MetadataManager,
+        preview_service=_preview_service,
+        settings=settings_manager,
+        default_metadata_provider_factory=get_default_metadata_provider,
+        metadata_provider_selector=get_metadata_provider,
+    )
+
+
+def _get_metadata_sync_service() -> MetadataSyncService:
+    """Return the shared metadata sync service, initialising it lazily."""
+
+    global _metadata_sync_service, _metadata_sync_service_settings
+
+    settings_manager = get_settings_manager()
+
+    if isinstance(_metadata_sync_service, MetadataSyncService):
+        if _metadata_sync_service_settings is not settings_manager:
+            _metadata_sync_service = _build_metadata_sync_service(settings_manager)
+            _metadata_sync_service_settings = settings_manager
+    elif _metadata_sync_service is None:
+        _metadata_sync_service = _build_metadata_sync_service(settings_manager)
+        _metadata_sync_service_settings = settings_manager
+    else:
+        # Tests may inject stand-ins that do not match the sync service type. Preserve
+        # those injections while still updating our cached settings reference so the
+        # next real service instantiation uses the current configuration.
+        _metadata_sync_service_settings = settings_manager
+
+    return _metadata_sync_service
 
 
 class MetadataUpdater:
@@ -71,7 +105,7 @@ class MetadataUpdater:
             async def update_cache_func(old_path, new_path, metadata):
                 return await scanner.update_single_model_cache(old_path, new_path, metadata)
             
-            success, error = await _metadata_sync_service.fetch_and_update_model(
+            success, error = await _get_metadata_sync_service().fetch_and_update_model(
                 sha256=model_hash,
                 file_path=file_path,
                 model_data=model_data,

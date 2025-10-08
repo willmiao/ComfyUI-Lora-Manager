@@ -6,7 +6,7 @@ import pytest
 
 from py.services.example_images_cleanup_service import ExampleImagesCleanupService
 from py.services.service_registry import ServiceRegistry
-from py.services.settings_manager import settings
+from py.services.settings_manager import get_settings_manager
 
 
 class StubScanner:
@@ -21,8 +21,9 @@ class StubScanner:
 async def test_cleanup_moves_empty_and_orphaned(tmp_path, monkeypatch):
     service = ExampleImagesCleanupService()
 
-    previous_path = settings.get('example_images_path')
-    settings.settings['example_images_path'] = str(tmp_path)
+    settings_manager = get_settings_manager()
+    previous_path = settings_manager.get('example_images_path')
+    settings_manager.settings['example_images_path'] = str(tmp_path)
 
     try:
         empty_folder = tmp_path / 'empty_folder'
@@ -64,23 +65,24 @@ async def test_cleanup_moves_empty_and_orphaned(tmp_path, monkeypatch):
 
     finally:
         if previous_path is None:
-            settings.settings.pop('example_images_path', None)
+            settings_manager.settings.pop('example_images_path', None)
         else:
-            settings.settings['example_images_path'] = previous_path
+            settings_manager.settings['example_images_path'] = previous_path
 
 
 @pytest.mark.asyncio
 async def test_cleanup_handles_missing_path(monkeypatch):
     service = ExampleImagesCleanupService()
 
-    previous_path = settings.get('example_images_path')
-    settings.settings.pop('example_images_path', None)
+    settings_manager = get_settings_manager()
+    previous_path = settings_manager.get('example_images_path')
+    settings_manager.settings.pop('example_images_path', None)
 
     try:
         result = await service.cleanup_example_image_folders()
     finally:
         if previous_path is not None:
-            settings.settings['example_images_path'] = previous_path
+            settings_manager.settings['example_images_path'] = previous_path
 
     assert result['success'] is False
     assert result['error_code'] == 'path_not_configured'

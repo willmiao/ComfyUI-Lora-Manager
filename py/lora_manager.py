@@ -13,7 +13,7 @@ from .routes.misc_routes import MiscRoutes
 from .routes.preview_routes import PreviewRoutes
 from .routes.example_images_routes import ExampleImagesRoutes
 from .services.service_registry import ServiceRegistry
-from .services.settings_manager import settings
+from .services.settings_manager import get_settings_manager
 from .utils.example_images_migration import ExampleImagesMigration
 from .services.websocket_manager import ws_manager
 from .services.example_images_cleanup_service import ExampleImagesCleanupService
@@ -22,6 +22,25 @@ logger = logging.getLogger(__name__)
 
 # Check if we're in standalone mode
 STANDALONE_MODE = 'nodes' not in sys.modules
+
+
+class _SettingsProxy:
+    def __init__(self):
+        self._manager = None
+
+    def _resolve(self):
+        if self._manager is None:
+            self._manager = get_settings_manager()
+        return self._manager
+
+    def get(self, *args, **kwargs):
+        return self._resolve().get(*args, **kwargs)
+
+    def __getattr__(self, item):
+        return getattr(self._resolve(), item)
+
+
+settings = _SettingsProxy()
 
 class LoraManager:
     """Main entry point for LoRA Manager plugin"""

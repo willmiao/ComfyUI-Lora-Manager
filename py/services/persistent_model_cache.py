@@ -351,7 +351,7 @@ class PersistentModelCache:
 
 
 def get_persistent_cache() -> PersistentModelCache:
-    from .settings_manager import settings as settings_service  # Local import to avoid cycles
+    from .settings_manager import get_settings_manager  # Local import to avoid cycles
 
-    library_name = settings_service.get_active_library_name()
+    library_name = get_settings_manager().get_active_library_name()
     return PersistentModelCache.get_default(library_name)

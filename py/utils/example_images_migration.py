@@ -3,7 +3,7 @@ import logging
 import os
 import re
 import json
-from ..services.settings_manager import settings
+from ..services.settings_manager import get_settings_manager
 from ..services.service_registry import ServiceRegistry
 from ..utils.example_images_paths import iter_library_roots
 from ..utils.metadata_manager import MetadataManager
@@ -13,6 +13,25 @@ from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS
 logger = logging.getLogger(__name__)
 
 CURRENT_NAMING_VERSION = 2  # Increment this when naming conventions change
+
+
+class _SettingsProxy:
+    def __init__(self):
+        self._manager = None
+
+    def _resolve(self):
+        if self._manager is None:
+            self._manager = get_settings_manager()
+        return self._manager
+
+    def get(self, *args, **kwargs):
+        return self._resolve().get(*args, **kwargs)
+
+    def __getattr__(self, item):
+        return getattr(self._resolve(), item)
+
+
+settings = _SettingsProxy()
 
 class ExampleImagesMigration:
     """Handles migrations for example images naming conventions"""

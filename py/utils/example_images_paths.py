@@ -8,7 +8,7 @@ import re
 import shutil
 from typing import Iterable, List, Optional, Tuple
 
-from ..services.settings_manager import settings
+from ..services.settings_manager import get_settings_manager
 
 _HEX_PATTERN = re.compile(r"[a-fA-F0-9]{64}")
 
@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 def _get_configured_libraries() -> List[str]:
     """Return configured library names if multi-library support is enabled."""
 
-    libraries = settings.get("libraries")
+    settings_manager = get_settings_manager()
+    libraries = settings_manager.get("libraries")
     if isinstance(libraries, dict) and libraries:
         return list(libraries.keys())
     return []
@@ -27,7 +28,8 @@ def _get_configured_libraries() -> List[str]:
 def get_example_images_root() -> str:
     """Return the root directory configured for example images."""
 
-    root = settings.get("example_images_path") or ""
+    settings_manager = get_settings_manager()
+    root = settings_manager.get("example_images_path") or ""
     return os.path.abspath(root) if root else ""
 
 
@@ -41,7 +43,8 @@ def uses_library_scoped_folders() -> bool:
 def sanitize_library_name(library_name: Optional[str]) -> str:
     """Return a filesystem safe library name."""
 
-    name = library_name or settings.get_active_library_name() or "default"
+    settings_manager = get_settings_manager()
+    name = library_name or settings_manager.get_active_library_name() or "default"
     safe_name = re.sub(r"[^A-Za-z0-9_.-]", "_", name)
     return safe_name or "default"
 
@@ -161,11 +164,13 @@ def iter_library_roots() -> Iterable[Tuple[str, str]]:
                 results.append((library, get_library_root(library)))
         else:
             # Fall back to the active library to avoid skipping migrations/cleanup
-            active = settings.get_active_library_name() or "default"
+            settings_manager = get_settings_manager()
+            active = settings_manager.get_active_library_name() or "default"
             results.append((active, get_library_root(active)))
         return results
 
-    active = settings.get_active_library_name() or "default"
+    settings_manager = get_settings_manager()
+    active = settings_manager.get_active_library_name() or "default"
     return [(active, root)]
 
 

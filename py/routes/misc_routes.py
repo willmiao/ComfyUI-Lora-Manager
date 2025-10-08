@@ -14,7 +14,7 @@ from ..services.metadata_service import (
     get_metadata_provider,
     update_metadata_providers,
 )
-from ..services.settings_manager import settings
+from ..services.settings_manager import get_settings_manager
 from ..services.downloader import get_downloader
 from ..utils.usage_stats import UsageStats
 from .handlers.misc_handlers import (
@@ -47,7 +47,7 @@ class MiscRoutes:
     def __init__(
         self,
         *,
-        settings_service=settings,
+        settings_service=None,
         usage_stats_factory: Callable[[], UsageStats] = UsageStats,
         prompt_server: type[PromptServer] = PromptServer,
         service_registry_adapter=build_service_registry_adapter(),
@@ -60,7 +60,7 @@ class MiscRoutes:
         node_registry: NodeRegistry | None = None,
         standalone_mode_flag: bool = standalone_mode,
     ) -> None:
-        self._settings = settings_service
+        self._settings = settings_service or get_settings_manager()
         self._usage_stats_factory = usage_stats_factory
         self._prompt_server = prompt_server
         self._service_registry_adapter = service_registry_adapter

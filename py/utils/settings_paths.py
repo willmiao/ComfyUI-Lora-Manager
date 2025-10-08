@@ -65,6 +65,12 @@ def ensure_settings_file(logger: Optional[logging.Logger] = None) -> str:
 
     logger = logger or _LOGGER
     target_path = get_settings_file_path(create_dir=True)
+    preferred_dir = user_config_dir(APP_NAME, appauthor=False)
+    preferred_path = os.path.join(preferred_dir, "settings.json")
+
+    if os.path.abspath(target_path) != os.path.abspath(preferred_path):
+        os.makedirs(preferred_dir, exist_ok=True)
+        target_path = preferred_path
     legacy_path = get_legacy_settings_path()
 
     if os.path.exists(legacy_path) and not os.path.exists(target_path):

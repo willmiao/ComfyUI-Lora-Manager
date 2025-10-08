@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 from .service_registry import ServiceRegistry
-from .settings_manager import settings
+from .settings_manager import get_settings_manager
 from ..utils.example_images_paths import iter_library_roots
 
 
@@ -62,7 +62,8 @@ class ExampleImagesCleanupService:
     async def cleanup_example_image_folders(self) -> Dict[str, object]:
         """Clean empty or orphaned example image folders by moving them under a deleted bucket."""
 
-        example_images_path = settings.get("example_images_path")
+        settings_manager = get_settings_manager()
+        example_images_path = settings_manager.get("example_images_path")
         if not example_images_path:
             logger.debug("Cleanup skipped: example images path not configured")
             return {

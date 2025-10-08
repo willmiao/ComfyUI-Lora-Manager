@@ -8,7 +8,7 @@ import pytest
 from py.services.download_manager import DownloadManager
 from py.services import download_manager
 from py.services.service_registry import ServiceRegistry
-from py.services.settings_manager import settings
+from py.services.settings_manager import SettingsManager, get_settings_manager
 from py.utils.metadata_manager import MetadataManager
 
 
@@ -23,7 +23,8 @@ def reset_download_manager():
 @pytest.fixture(autouse=True)
 def isolate_settings(monkeypatch, tmp_path):
     """Point settings writes at a temporary directory to avoid touching real files."""
-    default_settings = settings._get_default_settings()
+    manager = get_settings_manager()
+    default_settings = manager._get_default_settings()
     default_settings.update(
         {
             "default_lora_root": str(tmp_path),
@@ -37,8 +38,8 @@ def isolate_settings(monkeypatch, tmp_path):
             "base_model_path_mappings": {"BaseModel": "MappedModel"},
         }
     )
-    monkeypatch.setattr(settings, "settings", default_settings)
-    monkeypatch.setattr(type(settings), "_save_settings", lambda self: None)
+    monkeypatch.setattr(manager, "settings", default_settings)
+    monkeypatch.setattr(SettingsManager, "_save_settings", lambda self: None)
 
 
 @pytest.fixture(autouse=True)
@@ -187,7 +188,7 @@ async def test_successful_download_uses_defaults(monkeypatch, scanners, metadata
     assert manager._active_downloads[result["download_id"]]["status"] == "completed"
 
     assert captured["relative_path"] == "MappedModel/fantasy"
-    expected_dir = Path(settings.get("default_lora_root")) / "MappedModel" / "fantasy"
+    expected_dir = Path(get_settings_manager().get("default_lora_root")) / "MappedModel" / "fantasy"
     assert captured["save_dir"] == expected_dir
     assert captured["model_type"] == "lora"
     assert captured["download_urls"] == [

@@ -7,18 +7,19 @@ from typing import Any, Dict, Tuple
 
 import pytest
 
-from py.services.settings_manager import settings
+from py.services.settings_manager import get_settings_manager
 from py.utils import example_images_processor as processor_module
 
 
 @pytest.fixture(autouse=True)
 def restore_settings() -> None:
-    original = settings.settings.copy()
+    manager = get_settings_manager()
+    original = manager.settings.copy()
     try:
         yield
     finally:
-        settings.settings.clear()
-        settings.settings.update(original)
+        manager.settings.clear()
+        manager.settings.update(original)
 
 
 def test_get_file_extension_from_magic_bytes() -> None:
@@ -90,9 +91,10 @@ def stub_scanners(monkeypatch: pytest.MonkeyPatch, tmp_path) -> StubScanner:
 
 
 async def test_import_images_creates_hash_directory(monkeypatch: pytest.MonkeyPatch, tmp_path, stub_scanners: StubScanner) -> None:
-    settings.settings["example_images_path"] = str(tmp_path / "examples")
-    settings.settings["libraries"] = {"default": {}}
-    settings.settings["active_library"] = "default"
+    settings_manager = get_settings_manager()
+    settings_manager.settings["example_images_path"] = str(tmp_path / "examples")
+    settings_manager.settings["libraries"] = {"default": {}}
+    settings_manager.settings["active_library"] = "default"
 
     source_file = tmp_path / "upload.png"
     source_file.write_bytes(b"PNG data")
@@ -112,7 +114,7 @@ async def test_import_images_creates_hash_directory(monkeypatch: pytest.MonkeyPa
     assert result["success"] is True
     assert result["files"][0]["name"].startswith("custom_short")
 
-    model_folder = Path(settings.settings["example_images_path"]) / ("a" * 64)
+    model_folder = Path(settings_manager.settings["example_images_path"]) / ("a" * 64)
     assert model_folder.exists()
     created_files = list(model_folder.glob("custom_short*.png"))
     assert len(created_files) == 1
@@ -132,7 +134,8 @@ async def test_import_images_rejects_missing_parameters(monkeypatch: pytest.Monk
 
 
 async def test_import_images_raises_when_model_not_found(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
-    settings.settings["example_images_path"] = str(tmp_path)
+    settings_manager = get_settings_manager()
+    settings_manager.settings["example_images_path"] = str(tmp_path)
 
     async def _empty_scanner(cls=None):
         return StubScanner([])

@@ -73,6 +73,30 @@ nodes_mock.NODE_CLASS_MAPPINGS = {}
 sys.modules['nodes'] = nodes_mock
 
 
+@pytest.fixture(autouse=True)
+def _isolate_settings_dir(tmp_path_factory, monkeypatch):
+    """Redirect settings.json into a temporary directory for each test."""
+
+    settings_dir = tmp_path_factory.mktemp("settings_dir")
+
+    def fake_get_settings_dir(create: bool = True) -> str:
+        if create:
+            settings_dir.mkdir(exist_ok=True)
+        return str(settings_dir)
+
+    monkeypatch.setattr("py.utils.settings_paths.get_settings_dir", fake_get_settings_dir)
+    monkeypatch.setattr(
+        "py.utils.settings_paths.user_config_dir",
+        lambda *_args, **_kwargs: str(settings_dir),
+    )
+
+    from py.services import settings_manager as settings_manager_module
+
+    settings_manager_module.reset_settings_manager()
+    yield
+    settings_manager_module.reset_settings_manager()
+
+
 def pytest_pyfunc_call(pyfuncitem):
     """Allow bare async tests to run without pytest.mark.asyncio."""
     test_function = pyfuncitem.function

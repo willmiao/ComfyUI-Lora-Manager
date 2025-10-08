@@ -3,7 +3,7 @@ import os
 from typing import Dict
 from ..services.service_registry import ServiceRegistry
 from ..config import config
-from ..services.settings_manager import settings
+from ..services.settings_manager import get_settings_manager
 from .constants import CIVITAI_MODEL_TAGS
 import asyncio
 
@@ -143,7 +143,8 @@ def calculate_relative_path_for_model(model_data: Dict, model_type: str = 'lora'
         Relative path string (empty string for flat structure)
     """
     # Get path template from settings for specific model type
-    path_template = settings.get_download_path_template(model_type)
+    settings_manager = get_settings_manager()
+    path_template = settings_manager.get_download_path_template(model_type)
 
     # If template is empty, return empty path (flat structure)
     if not path_template:
@@ -166,7 +167,7 @@ def calculate_relative_path_for_model(model_data: Dict, model_type: str = 'lora'
     model_tags = model_data.get('tags', [])
 
     # Apply mapping if available
-    base_model_mappings = settings.get('base_model_path_mappings', {})
+    base_model_mappings = settings_manager.get('base_model_path_mappings', {})
     mapped_base_model = base_model_mappings.get(base_model, base_model)
 
     # Find the first Civitai model tag that exists in model_tags
