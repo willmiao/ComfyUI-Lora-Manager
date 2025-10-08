@@ -14,7 +14,24 @@ logger = logging.getLogger(__name__)
 
 CURRENT_NAMING_VERSION = 2  # Increment this when naming conventions change
 
-settings = get_settings_manager()
+
+class _SettingsProxy:
+    def __init__(self):
+        self._manager = None
+
+    def _resolve(self):
+        if self._manager is None:
+            self._manager = get_settings_manager()
+        return self._manager
+
+    def get(self, *args, **kwargs):
+        return self._resolve().get(*args, **kwargs)
+
+    def __getattr__(self, item):
+        return getattr(self._resolve(), item)
+
+
+settings = _SettingsProxy()
 
 class ExampleImagesMigration:
     """Handles migrations for example images naming conventions"""

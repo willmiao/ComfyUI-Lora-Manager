@@ -23,7 +23,24 @@ logger = logging.getLogger(__name__)
 # Check if we're in standalone mode
 STANDALONE_MODE = 'nodes' not in sys.modules
 
-settings = get_settings_manager()
+
+class _SettingsProxy:
+    def __init__(self):
+        self._manager = None
+
+    def _resolve(self):
+        if self._manager is None:
+            self._manager = get_settings_manager()
+        return self._manager
+
+    def get(self, *args, **kwargs):
+        return self._resolve().get(*args, **kwargs)
+
+    def __getattr__(self, item):
+        return getattr(self._resolve(), item)
+
+
+settings = _SettingsProxy()
 
 class LoraManager:
     """Main entry point for LoRA Manager plugin"""
