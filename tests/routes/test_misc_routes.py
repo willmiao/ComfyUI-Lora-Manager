@@ -527,6 +527,64 @@ async def test_get_civitai_user_models_marks_library_versions():
 
 
 @pytest.mark.asyncio
+async def test_get_civitai_user_models_rewrites_civitai_previews():
+    image_url = "https://image.civitai.com/container/example/original=true/sample.jpeg"
+    video_url = "https://image.civitai.com/container/example/original=true/sample.mp4"
+
+    models = [
+        {
+            "id": 1,
+            "name": "Model A",
+            "type": "LORA",
+            "tags": ["style"],
+            "modelVersions": [
+                {
+                    "id": 100,
+                    "name": "preview-image",
+                    "baseModel": "Flux.1",
+                    "images": [
+                        {"url": image_url, "type": "image"},
+                    ],
+                },
+                {
+                    "id": 101,
+                    "name": "preview-video",
+                    "baseModel": "Flux.1",
+                    "images": [
+                        {"url": video_url, "type": "video"},
+                    ],
+                },
+            ],
+        },
+    ]
+
+    provider = FakeUserModelsProvider(models)
+
+    async def provider_factory():
+        return provider
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+        ),
+        metadata_provider_factory=provider_factory,
+    )
+
+    response = await handler.get_civitai_user_models(FakeRequest(query={"username": "pixel"}))
+    payload = json.loads(response.text)
+
+    assert payload["success"] is True
+    previews_by_version = {item["versionId"]: item["thumbnailUrl"] for item in payload["versions"]}
+    assert previews_by_version[100] == "https://image.civitai.com/container/example/width=450,optimized=true/sample.jpeg"
+    assert (
+        previews_by_version[101]
+        == "https://image.civitai.com/container/example/transcode=true,width=450,optimized=true/sample.mp4"
+    )
+
+
+@pytest.mark.asyncio
 async def test_get_civitai_user_models_requires_username():
     provider = FakeUserModelsProvider([])
 

@@ -5,8 +5,10 @@ from __future__ import annotations
 import logging
 import os
 from typing import Awaitable, Callable, Dict, Optional, Sequence
+from urllib.parse import urlparse
 
 from ..utils.constants import CARD_PREVIEW_WIDTH, PREVIEW_EXTENSIONS
+from ..utils.civitai_utils import rewrite_preview_url
 
 logger = logging.getLogger(__name__)
 
@@ -45,23 +47,59 @@ class PreviewAssetService:
         base_name = os.path.splitext(os.path.splitext(os.path.basename(metadata_path))[0])[0]
         preview_dir = os.path.dirname(metadata_path)
         is_video = first_preview.get("type") == "video"
+        preview_url = first_preview.get("url")
+
+        if not preview_url:
+            return
+
+        def extension_from_url(url: str, fallback: str) -> str:
+            try:
+                parsed = urlparse(url)
+            except ValueError:
+                return fallback
+            ext = os.path.splitext(parsed.path)[1]
+            return ext or fallback
+
+        downloader = await self._downloader_factory()
 
         if is_video:
-            extension = ".mp4"
+            extension = extension_from_url(preview_url, ".mp4")
             preview_path = os.path.join(preview_dir, base_name + extension)
-            downloader = await self._downloader_factory()
-            success, result = await downloader.download_file(
-                first_preview["url"], preview_path, use_auth=False
-            )
-            if success:
-                local_metadata["preview_url"] = preview_path.replace(os.sep, "/")
-                local_metadata["preview_nsfw_level"] = first_preview.get("nsfwLevel", 0)
+            rewritten_url, rewritten = rewrite_preview_url(preview_url, media_type="video")
+
+            attempt_urls = []
+            if rewritten:
+                attempt_urls.append(rewritten_url)
+            attempt_urls.append(preview_url)
+
+            seen: set[str] = set()
+            for candidate in attempt_urls:
+                if not candidate or candidate in seen:
+                    continue
+                seen.add(candidate)
+
+                success, _ = await downloader.download_file(candidate, preview_path, use_auth=False)
+                if success:
+                    local_metadata["preview_url"] = preview_path.replace(os.sep, "/")
+                    local_metadata["preview_nsfw_level"] = first_preview.get("nsfwLevel", 0)
+                    return
         else:
+            rewritten_url, rewritten = rewrite_preview_url(preview_url, media_type="image")
+            if rewritten:
+                extension = extension_from_url(preview_url, ".png")
+                preview_path = os.path.join(preview_dir, base_name + extension)
+                success, _ = await downloader.download_file(
+                    rewritten_url, preview_path, use_auth=False
+                )
+                if success:
+                    local_metadata["preview_url"] = preview_path.replace(os.sep, "/")
+                    local_metadata["preview_nsfw_level"] = first_preview.get("nsfwLevel", 0)
+                    return
+
             extension = ".webp"
             preview_path = os.path.join(preview_dir, base_name + extension)
-            downloader = await self._downloader_factory()
             success, content, _headers = await downloader.download_to_memory(
-                first_preview["url"], use_auth=False
+                preview_url, use_auth=False
             )
             if not success:
                 return

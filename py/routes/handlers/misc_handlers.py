@@ -34,6 +34,7 @@ from ...utils.constants import (
     SUPPORTED_MEDIA_EXTENSIONS,
     VALID_LORA_TYPES,
 )
+from ...utils.civitai_utils import rewrite_preview_url
 from ...utils.example_images_paths import is_valid_example_images_root
 from ...utils.lora_metadata import extract_trained_words
 from ...utils.usage_stats import UsageStats
@@ -692,7 +693,10 @@ class ModelLibraryHandler:
                     if images and isinstance(images, list):
                         first_image = images[0]
                         if isinstance(first_image, dict):
-                            thumbnail_url = first_image.get("url")
+                            raw_url = first_image.get("url")
+                            media_type = first_image.get("type")
+                            rewritten_url, _ = rewrite_preview_url(raw_url, media_type)
+                            thumbnail_url = rewritten_url
 
                     in_library = await scanner.check_model_version_exists(version_id_int)
 
