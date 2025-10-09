@@ -825,18 +825,30 @@ class ModelCivitaiHandler:
                     status=400,
                 )
 
+            cache = await self._service.scanner.get_cached_data()
+            version_index = cache.version_index
+
             for version in versions:
-                model_file = self._find_model_file(version.get("files", [])) if isinstance(version.get("files"), Iterable) else None
-                if model_file:
-                    hashes = model_file.get("hashes", {}) if isinstance(model_file, Mapping) else {}
-                    sha256 = hashes.get("SHA256") if isinstance(hashes, Mapping) else None
-                    if sha256:
-                        version["existsLocally"] = self._service.has_hash(sha256)
-                        if version["existsLocally"]:
-                            version["localPath"] = self._service.get_path_by_hash(sha256)
-                        version["modelSizeKB"] = model_file.get("sizeKB") if isinstance(model_file, Mapping) else None
+                version_id = None
+                version_id_raw = version.get("id")
+                if version_id_raw is not None:
+                    try:
+                        version_id = int(str(version_id_raw))
+                    except (TypeError, ValueError):
+                        version_id = None
+
+                cache_entry = version_index.get(version_id) if (version_id is not None and version_index) else None
+                version["existsLocally"] = cache_entry is not None
+                if cache_entry and isinstance(cache_entry, Mapping):
+                    local_path = cache_entry.get("file_path")
+                    if local_path:
+                        version["localPath"] = local_path
                 else:
-                    version["existsLocally"] = False
+                    version.pop("localPath", None)
+
+                model_file = self._find_model_file(version.get("files", [])) if isinstance(version.get("files"), Iterable) else None
+                if model_file and isinstance(model_file, Mapping):
+                    version["modelSizeKB"] = model_file.get("sizeKB")
             return web.json_response(versions)
         except Exception as exc:
             self._logger.error("Error fetching %s model versions: %s", self._service.model_type, exc)
