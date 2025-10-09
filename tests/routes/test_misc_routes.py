@@ -365,7 +365,7 @@ async def test_misc_routes_bind_produces_expected_handlers():
 
 
 @pytest.mark.asyncio
-async def test_get_civitai_user_models_filters_versions():
+async def test_get_civitai_user_models_marks_library_versions():
     models = [
         {
             "id": 1,
@@ -475,6 +475,18 @@ async def test_get_civitai_user_models_filters_versions():
             "tags": ["style"],
             "baseModel": "Flux.1",
             "thumbnailUrl": "http://example.com/a1.jpg",
+            "inLibrary": False,
+        },
+        {
+            "modelId": 1,
+            "versionId": 101,
+            "modelName": "Model A",
+            "versionName": "v2",
+            "type": "LORA",
+            "tags": ["style"],
+            "baseModel": "Flux.1",
+            "thumbnailUrl": "http://example.com/a2.jpg",
+            "inLibrary": True,
         },
         {
             "modelId": 2,
@@ -485,6 +497,18 @@ async def test_get_civitai_user_models_filters_versions():
             "tags": ["embedding"],
             "baseModel": None,
             "thumbnailUrl": "http://example.com/e1.jpg",
+            "inLibrary": False,
+        },
+        {
+            "modelId": 2,
+            "versionId": 202,
+            "modelName": "Embedding",
+            "versionName": "v2",
+            "type": "TextualInversion",
+            "tags": ["embedding"],
+            "baseModel": None,
+            "thumbnailUrl": None,
+            "inLibrary": True,
         },
         {
             "modelId": 3,
@@ -495,6 +519,7 @@ async def test_get_civitai_user_models_filters_versions():
             "tags": ["checkpoint"],
             "baseModel": "SDXL",
             "thumbnailUrl": None,
+            "inLibrary": False,
         },
     ]
 

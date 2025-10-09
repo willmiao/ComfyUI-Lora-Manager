@@ -687,15 +687,14 @@ class ModelLibraryHandler:
                     except (TypeError, ValueError):
                         continue
 
-                    if await scanner.check_model_version_exists(version_id_int):
-                        continue
-
                     images = version.get("images") or []
                     thumbnail_url = None
                     if images and isinstance(images, list):
                         first_image = images[0]
                         if isinstance(first_image, dict):
                             thumbnail_url = first_image.get("url")
+
+                    in_library = await scanner.check_model_version_exists(version_id_int)
 
                     versions.append(
                         {
@@ -707,6 +706,7 @@ class ModelLibraryHandler:
                             "tags": tags,
                             "baseModel": version.get("baseModel"),
                             "thumbnailUrl": thumbnail_url,
+                            "inLibrary": in_library,
                         }
                     )
 
