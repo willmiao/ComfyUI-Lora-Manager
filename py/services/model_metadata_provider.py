@@ -80,122 +80,22 @@ class CivitaiModelMetadataProvider(ModelMetadataProvider):
         return await self.client.get_model_version_info(version_id)
 
 class CivArchiveModelMetadataProvider(ModelMetadataProvider):
-    """Provider that uses CivArchive HTML page parsing for metadata"""
+    """Provider that uses CivArchive API for metadata"""
     
+    def __init__(self, civarchive_client):
+        self.client = civarchive_client
+        
     async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict], Optional[str]]:
-        """Not supported by CivArchive provider"""
-        return None, "CivArchive provider does not support hash lookup"
+        return await self.client.get_model_by_hash(model_hash)
         
     async def get_model_versions(self, model_id: str) -> Optional[Dict]:
-        """Not supported by CivArchive provider"""
-        return None
+        return await self.client.get_model_versions(model_id)
         
     async def get_model_version(self, model_id: int = None, version_id: int = None) -> Optional[Dict]:
-        """Get specific model version by parsing CivArchive HTML page"""
-        if model_id is None or version_id is None:
-            return None
-        
-        try:
-            # Construct CivArchive URL
-            url = f"https://civarchive.com/models/{model_id}?modelVersionId={version_id}"
-
-            downloader = await get_downloader()
-            session = await downloader.session
-            async with session.get(url) as response:
-                if response.status != 200:
-                    return None
-                
-                html_content = await response.text()
-                
-            # Parse HTML to extract JSON data
-            soup_parser = _require_beautifulsoup()
-            soup = soup_parser(html_content, 'html.parser')
-            script_tag = soup.find('script', {'id': '__NEXT_DATA__', 'type': 'application/json'})
-            
-            if not script_tag:
-                return None
-                
-            # Parse JSON content
-            json_data = json.loads(script_tag.string)
-            model_data = json_data.get('props', {}).get('pageProps', {}).get('model')
-            
-            if not model_data or 'version' not in model_data:
-                return None
-            
-            # Extract version data as base
-            version = model_data['version'].copy()
-            
-            # Restructure stats
-            if 'downloadCount' in version and 'ratingCount' in version and 'rating' in version:
-                version['stats'] = {
-                    'downloadCount': version.pop('downloadCount'),
-                    'ratingCount': version.pop('ratingCount'),
-                    'rating': version.pop('rating')
-                }
-            
-            # Rename trigger to trainedWords
-            if 'trigger' in version:
-                version['trainedWords'] = version.pop('trigger')
-            
-            # Transform files data to expected format
-            if 'files' in version:
-                transformed_files = []
-                for file_data in version['files']:
-                    # Find first available mirror (deletedAt is null)
-                    available_mirror = None
-                    for mirror in file_data.get('mirrors', []):
-                        if mirror.get('deletedAt') is None:
-                            available_mirror = mirror
-                            break
-                    
-                    # Create transformed file entry
-                    transformed_file = {
-                        'id': file_data.get('id'),
-                        'sizeKB': file_data.get('sizeKB'),
-                        'name': available_mirror.get('filename', file_data.get('name')) if available_mirror else file_data.get('name'),
-                        'type': file_data.get('type'),
-                        'downloadUrl': available_mirror.get('url') if available_mirror else None,
-                        'primary': True,
-                        'mirrors': file_data.get('mirrors', [])
-                    }
-                    
-                    # Transform hash format
-                    if 'sha256' in file_data:
-                        transformed_file['hashes'] = {
-                            'SHA256': file_data['sha256'].upper()
-                        }
-                    
-                    transformed_files.append(transformed_file)
-                
-                version['files'] = transformed_files
-            
-            # Add model information
-            version['model'] = {
-                'name': model_data.get('name'),
-                'type': model_data.get('type'),
-                'nsfw': model_data.get('is_nsfw', False),
-                'description': model_data.get('description'),
-                'tags': model_data.get('tags', [])
-            }
-
-            version['creator'] = {
-                'username': model_data.get('username'),
-                'image': ''
-            }
-            
-            # Add source identifier
-            version['source'] = 'civarchive'
-            version['is_deleted'] = json_data.get('query', {}).get('is_deleted', False)
-            
-            return version
-            
-        except Exception as e:
-            logger.error(f"Error fetching CivArchive model version {model_id}/{version_id}: {e}")
-            return None
+        return await self.client.get_model_version(model_id, version_id)
         
     async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict], Optional[str]]:
-        """Not supported by CivArchive provider - requires both model_id and version_id"""
-        return None, "CivArchive provider requires both model_id and version_id"
+        return await self.client.get_model_version_info(version_id)
 
 class SQLiteModelMetadataProvider(ModelMetadataProvider):
     """Provider that uses SQLite database for metadata"""
