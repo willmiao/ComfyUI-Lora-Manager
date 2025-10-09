@@ -4,6 +4,7 @@ from .model_metadata_provider import (
     ModelMetadataProviderManager, 
     SQLiteModelMetadataProvider,
     CivitaiModelMetadataProvider,
+    CivArchiveModelMetadataProvider,
     FallbackMetadataProvider
 )
 from .settings_manager import get_settings_manager
