@@ -529,12 +529,15 @@
         "title": "Embedding Models"
     },
     "sidebar": {
-        "modelRoot": "Model Root",
+        "modelRoot": "Root",
         "collapseAll": "Collapse All Folders",
         "pinSidebar": "Pin Sidebar",
         "unpinSidebar": "Unpin Sidebar",
         "switchToListView": "Switch to List View",
         "switchToTreeView": "Switch to Tree View",
+        "recursiveOn": "Search subfolders",
+        "recursiveOff": "Search current folder only",
+        "recursiveUnavailable": "Recursive search is available in tree view only",
         "collapseAllDisabled": "Not available in list view"
     },
     "statistics": {

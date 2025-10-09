@@ -529,12 +529,15 @@
         "title": "מודלי Embedding"
     },
     "sidebar": {
-        "modelRoot": "שורש המודלים",
+        "modelRoot": "שורש",
         "collapseAll": "כווץ את כל התיקיות",
         "pinSidebar": "נעל סרגל צד",
         "unpinSidebar": "שחרר סרגל צד",
         "switchToListView": "עבור לתצוגת רשימה",
-        "switchToTreeView": "עבור לתצוגת עץ",
+        "switchToTreeView": "תצוגת עץ",
+        "recursiveOn": "חיפוש בתיקיות משנה",
+        "recursiveOff": "חיפוש רק בתיקייה הנוכחית",
+        "recursiveUnavailable": "חיפוש רקורסיבי זמין רק בתצוגת עץ",
         "collapseAllDisabled": "לא זמין בתצוגת רשימה"
     },
     "statistics": {

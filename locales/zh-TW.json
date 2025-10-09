@@ -529,12 +529,15 @@
         "title": "Embedding 模型"
     },
     "sidebar": {
-        "modelRoot": "模型根目錄",
+        "modelRoot": "根目錄",
         "collapseAll": "全部摺疊資料夾",
         "pinSidebar": "固定側邊欄",
         "unpinSidebar": "取消固定側邊欄",
         "switchToListView": "切換至列表檢視",
-        "switchToTreeView": "切換至樹狀檢視",
+        "switchToTreeView": "切換到樹狀檢視",
+        "recursiveOn": "搜尋子資料夾",
+        "recursiveOff": "僅搜尋目前資料夾",
+        "recursiveUnavailable": "遞迴搜尋僅能在樹狀檢視中使用",
         "collapseAllDisabled": "列表檢視下不可用"
     },
     "statistics": {

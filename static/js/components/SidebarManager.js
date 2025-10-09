@@ -21,6 +21,7 @@ export class SidebarManager {
         this.isInitialized = false;
         this.displayMode = 'tree'; // 'tree' or 'list'
         this.foldersList = [];
+        this.recursiveSearchEnabled = true;
         
         // Bind methods
         this.handleTreeClick = this.handleTreeClick.bind(this);
@@ -36,6 +37,7 @@ export class SidebarManager {
         this.updateContainerMargin = this.updateContainerMargin.bind(this);
         this.handleDisplayModeToggle = this.handleDisplayModeToggle.bind(this);
         this.handleFolderListClick = this.handleFolderListClick.bind(this);
+        this.handleRecursiveToggle = this.handleRecursiveToggle.bind(this);
     }
 
     async initialize(pageControls) {
@@ -89,6 +91,7 @@ export class SidebarManager {
         this.isHovering = false;
         this.apiClient = null;
         this.isInitialized = false;
+        this.recursiveSearchEnabled = true;
         
         // Reset container margin
         const container = document.querySelector('.container');
@@ -111,6 +114,7 @@ export class SidebarManager {
         const sidebar = document.getElementById('folderSidebar');
         const hoverArea = document.getElementById('sidebarHoverArea');
         const displayModeToggleBtn = document.getElementById('sidebarDisplayModeToggle');
+        const recursiveToggleBtn = document.getElementById('sidebarRecursiveToggle');
 
         if (pinToggleBtn) {
             pinToggleBtn.removeEventListener('click', this.handlePinToggle);
@@ -144,6 +148,9 @@ export class SidebarManager {
 
         if (displayModeToggleBtn) {
             displayModeToggleBtn.removeEventListener('click', this.handleDisplayModeToggle);
+        }
+        if (recursiveToggleBtn) {
+            recursiveToggleBtn.removeEventListener('click', this.handleRecursiveToggle);
         }
     }
 
@@ -197,7 +204,7 @@ export class SidebarManager {
     updateSidebarTitle() {
         const sidebarTitle = document.getElementById('sidebarTitle');
         if (sidebarTitle) {
-            sidebarTitle.textContent = `${this.apiClient.apiConfig.config.displayName} Root`;
+            sidebarTitle.textContent = translate('sidebar.modelRoot');
         }
     }
 
@@ -218,6 +225,12 @@ export class SidebarManager {
         const collapseAllBtn = document.getElementById('sidebarCollapseAll');
         if (collapseAllBtn) {
             collapseAllBtn.addEventListener('click', this.handleCollapseAll);
+        }
+
+        // Recursive toggle button
+        const recursiveToggleBtn = document.getElementById('sidebarRecursiveToggle');
+        if (recursiveToggleBtn) {
+            recursiveToggleBtn.addEventListener('click', this.handleRecursiveToggle);
         }
 
         // Tree click handler
@@ -645,9 +658,31 @@ export class SidebarManager {
         this.displayMode = this.displayMode === 'tree' ? 'list' : 'tree';
         this.updateDisplayModeButton();
         this.updateCollapseAllButton();
+        this.updateRecursiveToggleButton();
         this.updateSearchRecursiveOption();
         this.saveDisplayMode();
         this.loadFolderTree(); // Reload with new display mode
+    }
+
+    async handleRecursiveToggle(event) {
+        event.stopPropagation();
+
+        if (this.displayMode !== 'tree') {
+            return;
+        }
+
+        this.recursiveSearchEnabled = !this.recursiveSearchEnabled;
+        setStorageItem(`${this.pageType}_recursiveSearch`, this.recursiveSearchEnabled);
+        this.updateSearchRecursiveOption();
+        this.updateRecursiveToggleButton();
+
+        if (this.pageControls && typeof this.pageControls.resetAndReload === 'function') {
+            try {
+                await this.pageControls.resetAndReload(true);
+            } catch (error) {
+                console.error('Failed to reload models after toggling recursive search:', error);
+            }
+        }
     }
 
     updateDisplayModeButton() {
@@ -679,8 +714,35 @@ export class SidebarManager {
         }
     }
 
+    updateRecursiveToggleButton() {
+        const recursiveToggleBtn = document.getElementById('sidebarRecursiveToggle');
+        if (!recursiveToggleBtn) return;
+
+        const icon = recursiveToggleBtn.querySelector('i');
+        const isTreeMode = this.displayMode === 'tree';
+        const isActive = isTreeMode && this.recursiveSearchEnabled;
+
+        recursiveToggleBtn.classList.toggle('active', isActive);
+        recursiveToggleBtn.classList.toggle('disabled', !isTreeMode);
+        recursiveToggleBtn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        recursiveToggleBtn.setAttribute('aria-disabled', isTreeMode ? 'false' : 'true');
+
+        if (icon) {
+            icon.className = 'fas fa-code-branch';
+        }
+
+        if (!isTreeMode) {
+            recursiveToggleBtn.title = translate('sidebar.recursiveUnavailable');
+        } else if (this.recursiveSearchEnabled) {
+            recursiveToggleBtn.title = translate('sidebar.recursiveOn');
+        } else {
+            recursiveToggleBtn.title = translate('sidebar.recursiveOff');
+        }
+    }
+
     updateSearchRecursiveOption() {
-        this.pageControls.pageState.searchOptions.recursive = this.displayMode === 'tree';
+        const isRecursive = this.displayMode === 'tree' && this.recursiveSearchEnabled;
+        this.pageControls.pageState.searchOptions.recursive = isRecursive;
     }
 
     updateTreeSelection() {
@@ -925,15 +987,18 @@ export class SidebarManager {
         const isPinned = getStorageItem(`${this.pageType}_sidebarPinned`, true);
         const expandedPaths = getStorageItem(`${this.pageType}_expandedNodes`, []);
         const displayMode = getStorageItem(`${this.pageType}_displayMode`, 'tree'); // 'tree' or 'list', default to 'tree'
+        const recursiveSearchEnabled = getStorageItem(`${this.pageType}_recursiveSearch`, true);
         
         this.isPinned = isPinned;
         this.expandedNodes = new Set(expandedPaths);
         this.displayMode = displayMode;
+        this.recursiveSearchEnabled = recursiveSearchEnabled;
         
         this.updatePinButton();
         this.updateDisplayModeButton();
         this.updateCollapseAllButton();
         this.updateSearchRecursiveOption();
+        this.updateRecursiveToggleButton();
     }
 
     restoreSelectedFolder() {
