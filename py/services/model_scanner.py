@@ -634,7 +634,8 @@ class ModelScanner:
                                 if model_data:
                                     # Add to cache
                                     self._cache.raw_data.append(model_data)
-                                    
+                                    self._cache.add_to_version_index(model_data)
+
                                     # Update hash index if available
                                     if 'sha256' in model_data and 'file_path' in model_data:
                                         self._hash_index.add_entry(model_data['sha256'].lower(), model_data['file_path'])
@@ -661,7 +662,9 @@ class ModelScanner:
                 for path in missing_files:
                     try:
                         model_to_remove = path_to_item[path]
-                        
+
+                        self._cache.remove_from_version_index(model_to_remove)
+
                         # Update tags count
                         for tag in model_to_remove.get('tags', []):
                             if tag in self._tags_count:
@@ -683,6 +686,8 @@ class ModelScanner:
                 # Update folders list
                 all_folders = set(item.get('folder', '') for item in self._cache.raw_data)
                 self._cache.folders = sorted(list(all_folders), key=lambda x: x.lower())
+
+                self._cache.rebuild_version_index()
 
                 # Resort cache
                 await self._cache.resort()
@@ -829,6 +834,8 @@ class ModelScanner:
         else:
             self._cache.raw_data = list(scan_result.raw_data)
 
+        self._cache.rebuild_version_index()
+
         await self._cache.resort()
 
     async def _gather_model_data(
@@ -934,7 +941,8 @@ class ModelScanner:
             
             # Add to cache
             self._cache.raw_data.append(metadata_dict)
-            
+            self._cache.add_to_version_index(metadata_dict)
+
             # Resort cache data
             await self._cache.resort()
             
@@ -1076,6 +1084,9 @@ class ModelScanner:
         cache = await self.get_cached_data()
 
         existing_item = next((item for item in cache.raw_data if item['file_path'] == original_path), None)
+        if existing_item:
+            cache.remove_from_version_index(existing_item)
+
         if existing_item and 'tags' in existing_item:
             for tag in existing_item.get('tags', []):
                 if tag in self._tags_count:
@@ -1106,6 +1117,7 @@ class ModelScanner:
             )
 
             cache.raw_data.append(cache_entry)
+            cache.add_to_version_index(cache_entry)
 
             sha_value = cache_entry.get('sha256')
             if sha_value:
@@ -1116,6 +1128,8 @@ class ModelScanner:
 
             for tag in cache_entry.get('tags', []):
                 self._tags_count[tag] = self._tags_count.get(tag, 0) + 1
+
+        cache.rebuild_version_index()
 
         await cache.resort()
 
@@ -1339,11 +1353,12 @@ class ModelScanner:
             # Update hash index
             for model in models_to_remove:
                 file_path = model['file_path']
+                self._cache.remove_from_version_index(model)
                 if hasattr(self, '_hash_index') and self._hash_index:
                     # Get the hash and filename before removal for duplicate checking
                     file_name = os.path.splitext(os.path.basename(file_path))[0]
                     hash_val = model.get('sha256', '').lower()
-                    
+
                     # Remove from hash index
                     self._hash_index.remove_by_path(file_path, hash_val)
                     
@@ -1352,8 +1367,9 @@ class ModelScanner:
             
             # Update cache data
             self._cache.raw_data = [item for item in self._cache.raw_data if item['file_path'] not in file_paths]
-            
+
             # Resort cache
+            self._cache.rebuild_version_index()
             await self._cache.resort()
 
             await self._persist_current_cache()
@@ -1394,15 +1410,16 @@ class ModelScanner:
             bool: True if the model version exists, False otherwise
         """
         try:
+            normalized_id = int(model_version_id)
+        except (TypeError, ValueError):
+            return False
+
+        try:
             cache = await self.get_cached_data()
-            if not cache or not cache.raw_data:
+            if not cache:
                 return False
 
-            for item in cache.raw_data:
-                if item.get('civitai') and item['civitai'].get('id') == model_version_id:
-                    return True
-
-            return False
+            return normalized_id in cache.version_index
         except Exception as e:
             logger.error(f"Error checking model version existence: {e}")
             return False

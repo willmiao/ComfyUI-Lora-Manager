@@ -1,6 +1,6 @@
 import asyncio
-from typing import List, Dict, Tuple
-from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass, field
 from operator import itemgetter
 from natsort import natsorted
 
@@ -17,10 +17,12 @@ SUPPORTED_SORT_MODES = [
 
 @dataclass
 class ModelCache:
-    """Cache structure for model data with extensible sorting"""
+    """Cache structure for model data with extensible sorting."""
+
     raw_data: List[Dict]
     folders: List[str]
-    
+    version_index: Dict[int, Dict] = field(default_factory=dict)
+
     def __post_init__(self):
         self._lock = asyncio.Lock()
         # Cache for last sort: (sort_key, order) -> sorted list
@@ -28,6 +30,58 @@ class ModelCache:
         self._last_sorted_data: List[Dict] = []
         # Default sort on init
         asyncio.create_task(self.resort())
+        self.rebuild_version_index()
+
+    @staticmethod
+    def _normalize_version_id(value: Any) -> Optional[int]:
+        """Normalize a potential version identifier into an integer."""
+
+        if isinstance(value, int):
+            return value
+        if isinstance(value, str):
+            try:
+                return int(value)
+            except ValueError:
+                return None
+        return None
+
+    def rebuild_version_index(self) -> None:
+        """Rebuild the version index from the current raw data."""
+
+        self.version_index = {}
+        for item in self.raw_data:
+            self.add_to_version_index(item)
+
+    def add_to_version_index(self, item: Dict) -> None:
+        """Register a cache item in the version index if possible."""
+
+        civitai_data = item.get('civitai') if isinstance(item, dict) else None
+        if not isinstance(civitai_data, dict):
+            return
+
+        version_id = self._normalize_version_id(civitai_data.get('id'))
+        if version_id is None:
+            return
+
+        self.version_index[version_id] = item
+
+    def remove_from_version_index(self, item: Dict) -> None:
+        """Remove a cache item from the version index if present."""
+
+        civitai_data = item.get('civitai') if isinstance(item, dict) else None
+        if not isinstance(civitai_data, dict):
+            return
+
+        version_id = self._normalize_version_id(civitai_data.get('id'))
+        if version_id is None:
+            return
+
+        existing = self.version_index.get(version_id)
+        if existing is item or (
+            isinstance(existing, dict)
+            and existing.get('file_path') == item.get('file_path')
+        ):
+            self.version_index.pop(version_id, None)
 
     async def resort(self):
         """Resort cached data according to last sort mode if set"""
@@ -41,6 +95,7 @@ class ModelCache:
 
             all_folders = set(l['folder'] for l in self.raw_data)
             self.folders = sorted(list(all_folders), key=lambda x: x.lower())
+            self.rebuild_version_index()
 
     def _sort_data(self, data: List[Dict], sort_key: str, order: str) -> List[Dict]:
         """Sort data by sort_key and order"""

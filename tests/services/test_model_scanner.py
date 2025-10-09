@@ -243,6 +243,7 @@ async def test_initialize_in_background_uses_persisted_cache_without_full_scan(t
     cache = await scanner.get_cached_data()
     assert len(cache.raw_data) == 1
     assert cache.raw_data[0]['file_path'] == normalized
+    assert cache.version_index[11]['file_path'] == normalized
 
     assert scanner._hash_index.get_path('hash-one') == normalized
 
@@ -301,6 +302,7 @@ async def test_load_persisted_cache_populates_cache(tmp_path: Path, monkeypatch)
     assert entry['file_path'] == normalized
     assert entry['tags'] == ['alpha']
     assert entry['civitai']['trainedWords'] == ['abc']
+    assert cache.version_index[11]['file_path'] == normalized
     assert scanner._hash_index.get_path('hash-one') == normalized
     assert scanner._tags_count == {'alpha': 1}
     assert ws_stub.payloads[-1]['stage'] == 'loading_cache'
@@ -379,6 +381,66 @@ async def test_batch_delete_persists_removal(tmp_path: Path, monkeypatch):
         ).fetchone()[0]
 
     assert remaining == 0
+
+
+@pytest.mark.asyncio
+async def test_version_index_tracks_version_ids(tmp_path: Path):
+    scanner = DummyScanner(tmp_path)
+
+    first_path = _normalize_path(tmp_path / 'alpha.txt')
+    second_path = _normalize_path(tmp_path / 'beta.txt')
+
+    first_entry = {
+        'file_path': first_path,
+        'file_name': 'alpha',
+        'model_name': 'alpha',
+        'folder': '',
+        'size': 1,
+        'modified': 1.0,
+        'sha256': 'hash-alpha',
+        'tags': [],
+        'civitai': {'id': 101, 'modelId': 1, 'name': 'alpha'},
+    }
+
+    second_entry = {
+        'file_path': second_path,
+        'file_name': 'beta',
+        'model_name': 'beta',
+        'folder': '',
+        'size': 1,
+        'modified': 1.0,
+        'sha256': 'hash-beta',
+        'tags': [],
+        'civitai': {'id': 202, 'modelId': 2, 'name': 'beta'},
+    }
+
+    hash_index = ModelHashIndex()
+    hash_index.add_entry('hash-alpha', first_path)
+    hash_index.add_entry('hash-beta', second_path)
+
+    scan_result = CacheBuildResult(
+        raw_data=[first_entry, second_entry],
+        hash_index=hash_index,
+        tags_count={},
+        excluded_models=[],
+    )
+
+    await scanner._apply_scan_result(scan_result)
+
+    cache = await scanner.get_cached_data()
+    assert cache.version_index[101]['file_path'] == first_path
+    assert cache.version_index[202]['file_path'] == second_path
+
+    assert await scanner.check_model_version_exists(101) is True
+    assert await scanner.check_model_version_exists('202') is True
+    assert await scanner.check_model_version_exists(999) is False
+
+    removed = await scanner._batch_update_cache_for_deleted_models([first_path])
+    assert removed is True
+
+    cache_after = await scanner.get_cached_data()
+    assert 101 not in cache_after.version_index
+    assert await scanner.check_model_version_exists(101) is False
 
 
 @pytest.mark.asyncio
