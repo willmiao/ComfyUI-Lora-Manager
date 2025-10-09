@@ -48,6 +48,13 @@ SUPPORTED_MEDIA_EXTENSIONS = {
 # Valid Lora types
 VALID_LORA_TYPES = ['lora', 'locon', 'dora']
 
+# Supported Civitai model types for user model queries (case-insensitive)
+CIVITAI_USER_MODEL_TYPES = [
+    *VALID_LORA_TYPES,
+    'textualinversion',
+    'checkpoint',
+]
+
 # Auto-organize settings
 AUTO_ORGANIZE_BATCH_SIZE = 50  # Process models in batches to avoid overwhelming the system
 
