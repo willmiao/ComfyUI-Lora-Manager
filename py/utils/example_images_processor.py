@@ -475,15 +475,17 @@ class ExampleImagesProcessor:
                     'error': f"Model with hash {model_hash} not found in cache"
                 }, status=404)
             
-            # Check if model has custom images
-            if not model_data.get('civitai', {}).get('customImages'):
+            await MetadataManager.hydrate_model_data(model_data)
+            civitai_data = model_data.setdefault('civitai', {})
+            custom_images = civitai_data.get('customImages')
+
+            if not isinstance(custom_images, list) or not custom_images:
                 return web.json_response({
                     'success': False,
                     'error': f"Model has no custom images"
                 }, status=404)
             
             # Find the custom image with matching short_id
-            custom_images = model_data['civitai']['customImages']
             matching_image = None
             new_custom_images = []
             
@@ -527,17 +529,15 @@ class ExampleImagesProcessor:
                 logger.warning(f"File for custom example with id {short_id} not found, but metadata will still be updated")
             
             # Update metadata
-            model_data['civitai']['customImages'] = new_custom_images
+            civitai_data['customImages'] = new_custom_images
+            model_data.setdefault('civitai', {})['customImages'] = new_custom_images
             
             # Save updated metadata to file
             file_path = model_data.get('file_path')
             if file_path:
                 try:
-                    # Create a copy of model data without 'folder' field
                     model_copy = model_data.copy()
                     model_copy.pop('folder', None)
-                    
-                    # Write metadata to file
                     await MetadataManager.save_metadata(file_path, model_copy)
                     logger.debug(f"Saved updated metadata for {model_data.get('model_name')}")
                 except Exception as e:
@@ -551,7 +551,7 @@ class ExampleImagesProcessor:
                 await scanner.update_single_model_cache(file_path, file_path, model_data)
             
             # Get regular images array (might be None)
-            regular_images = model_data['civitai'].get('images', [])
+            regular_images = civitai_data.get('images', [])
             
             return web.json_response({
                 'success': True,

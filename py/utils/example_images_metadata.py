@@ -1,7 +1,7 @@
 import logging
 import os
 import re
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from ..recipes.constants import GEN_PARAM_KEYS
 from ..services.metadata_service import get_default_metadata_provider, get_metadata_provider
@@ -105,6 +105,7 @@ class MetadataUpdater:
             async def update_cache_func(old_path, new_path, metadata):
                 return await scanner.update_single_model_cache(old_path, new_path, metadata)
             
+            await MetadataManager.hydrate_model_data(model_data)
             success, error = await _get_metadata_sync_service().fetch_and_update_model(
                 sha256=model_hash,
                 file_path=file_path,
@@ -185,16 +186,16 @@ class MetadataUpdater:
                         if is_supported:
                             local_images_paths.append(file_path)
             
+            await MetadataManager.hydrate_model_data(model)
+            civitai_data = model.setdefault('civitai', {})
+
             # Check if metadata update is needed (no civitai field or empty images)
-            needs_update = not model.get('civitai') or not model.get('civitai', {}).get('images')
+            needs_update = not civitai_data or not civitai_data.get('images')
             
             if needs_update and local_images_paths:
                 logger.debug(f"Found {len(local_images_paths)} local example images for {model.get('model_name')}, updating metadata")
                 
                 # Create or get civitai field
-                if not model.get('civitai'):
-                    model['civitai'] = {}
-                
                 # Create images array
                 images = []
                 
@@ -229,16 +230,13 @@ class MetadataUpdater:
                     images.append(image_entry)
                 
                 # Update the model's civitai.images field
-                model['civitai']['images'] = images
+                civitai_data['images'] = images
                 
                 # Save metadata to .metadata.json file
                 file_path = model.get('file_path')
                 try:
-                    # Create a copy of model data without 'folder' field
                     model_copy = model.copy()
                     model_copy.pop('folder', None)
-                    
-                    # Write metadata to file
                     await MetadataManager.save_metadata(file_path, model_copy)
                     logger.info(f"Saved metadata for {model.get('model_name')}")
                 except Exception as e:
@@ -271,16 +269,13 @@ class MetadataUpdater:
             tuple: (regular_images, custom_images) - Both image arrays
         """
         try:
-            # Ensure civitai field exists in model_data
-            if not model_data.get('civitai'):
-                model_data['civitai'] = {}
-            
-            # Ensure customImages array exists
-            if not model_data['civitai'].get('customImages'):
-                model_data['civitai']['customImages'] = []
-            
-            # Get current customImages array
-            custom_images = model_data['civitai']['customImages']
+            await MetadataManager.hydrate_model_data(model_data)
+            civitai_data = model_data.setdefault('civitai', {})
+            custom_images = civitai_data.get('customImages')
+
+            if not isinstance(custom_images, list):
+                custom_images = []
+                civitai_data['customImages'] = custom_images
             
             # Add new image entry for each imported file
             for path_tuple in newly_imported_paths:
@@ -338,11 +333,8 @@ class MetadataUpdater:
             file_path = model_data.get('file_path')
             if file_path:
                 try:
-                    # Create a copy of model data without 'folder' field
                     model_copy = model_data.copy()
                     model_copy.pop('folder', None)
-                    
-                    # Write metadata to file
                     await MetadataManager.save_metadata(file_path, model_copy)
                     logger.info(f"Saved metadata for {model_data.get('model_name')}")
                 except Exception as e:
@@ -353,7 +345,7 @@ class MetadataUpdater:
                 await scanner.update_single_model_cache(file_path, file_path, model_data)
             
             # Get regular images array (might be None)
-            regular_images = model_data['civitai'].get('images', [])
+            regular_images = civitai_data.get('images', [])
             
             # Return both image arrays
             return regular_images, custom_images

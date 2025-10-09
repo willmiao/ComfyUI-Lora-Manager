@@ -2,7 +2,7 @@ from datetime import datetime
 import os
 import json
 import logging
-from typing import Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Type, Union
 
 from .models import BaseModelMetadata, LoraMetadata
 from .file_utils import normalize_path, find_preview_file, calculate_sha256
@@ -53,6 +53,70 @@ class MetadataManager:
             error_type = "Invalid JSON" if isinstance(e, json.JSONDecodeError) else "Parse error"
             logger.error(f"{error_type} in metadata file: {metadata_path}. Error: {str(e)}. Skipping model to preserve existing data.")
             return None, True  # should_skip = True
+
+    @staticmethod
+    async def load_metadata_payload(file_path: str) -> Dict:
+        """
+        Load metadata and return it as a dictionary, including any unknown fields.
+        Falls back to reading the raw JSON file if parsing into a model class fails.
+        """
+
+        payload: Dict = {}
+        metadata_obj, should_skip = await MetadataManager.load_metadata(file_path)
+
+        if metadata_obj:
+            payload = metadata_obj.to_dict()
+            unknown_fields = getattr(metadata_obj, "_unknown_fields", None)
+            if isinstance(unknown_fields, dict):
+                payload.update(unknown_fields)
+        else:
+            if not should_skip:
+                metadata_path = (
+                    file_path
+                    if file_path.endswith(".metadata.json")
+                    else f"{os.path.splitext(file_path)[0]}.metadata.json"
+                )
+                if os.path.exists(metadata_path):
+                    try:
+                        with open(metadata_path, "r", encoding="utf-8") as handle:
+                            raw = json.load(handle)
+                        if isinstance(raw, dict):
+                            payload = raw
+                    except json.JSONDecodeError:
+                        logger.warning(
+                            "Failed to parse metadata file %s while loading payload",
+                            metadata_path,
+                        )
+                    except Exception as exc:  # pragma: no cover - defensive logging
+                        logger.warning("Failed to read metadata file %s: %s", metadata_path, exc)
+
+        if not isinstance(payload, dict):
+            payload = {}
+
+        if file_path:
+            payload.setdefault("file_path", normalize_path(file_path))
+
+        return payload
+
+    @staticmethod
+    async def hydrate_model_data(model_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Replace the provided model data with the authoritative payload from disk.
+        Preserves the cached folder entry if present.
+        """
+
+        file_path = model_data.get("file_path")
+        if not file_path:
+            return model_data
+
+        folder = model_data.get("folder")
+        payload = await MetadataManager.load_metadata_payload(file_path)
+        if folder is not None:
+            payload["folder"] = folder
+
+        model_data.clear()
+        model_data.update(payload)
+        return model_data
     
     @staticmethod
     async def save_metadata(path: str, metadata: Union[BaseModelMetadata, Dict]) -> bool:

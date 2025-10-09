@@ -30,6 +30,7 @@ from ...services.use_cases import (
 from ...services.websocket_manager import WebSocketManager
 from ...services.websocket_progress_callback import WebSocketProgressCallback
 from ...utils.file_utils import calculate_sha256
+from ...utils.metadata_manager import MetadataManager
 
 
 class ModelPageView:
@@ -243,6 +244,8 @@ class ModelManagementHandler:
                 return web.json_response({"success": False, "error": "Model not found in cache"}, status=404)
             if not model_data.get("sha256"):
                 return web.json_response({"success": False, "error": "No SHA256 hash found"}, status=400)
+
+            await MetadataManager.hydrate_model_data(model_data)
 
             success, error = await self._metadata_sync.fetch_and_update_model(
                 sha256=model_data["sha256"],
