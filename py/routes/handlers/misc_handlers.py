@@ -27,7 +27,14 @@ from ...services.service_registry import ServiceRegistry
 from ...services.settings_manager import get_settings_manager
 from ...services.websocket_manager import ws_manager
 from ...services.downloader import get_downloader
-from ...utils.constants import DEFAULT_NODE_COLOR, NODE_TYPES, SUPPORTED_MEDIA_EXTENSIONS
+from ...utils.constants import (
+    CIVITAI_USER_MODEL_TYPES,
+    DEFAULT_NODE_COLOR,
+    NODE_TYPES,
+    SUPPORTED_MEDIA_EXTENSIONS,
+    VALID_LORA_TYPES,
+)
+from ...utils.civitai_utils import rewrite_preview_url
 from ...utils.example_images_paths import is_valid_example_images_root
 from ...utils.lora_metadata import extract_trained_words
 from ...utils.usage_stats import UsageStats
@@ -611,6 +618,107 @@ class ModelLibraryHandler:
             logger.error("Failed to get model versions status: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def get_civitai_user_models(self, request: web.Request) -> web.Response:
+        try:
+            username = request.query.get("username")
+            if not username:
+                return web.json_response({"success": False, "error": "Missing required parameter: username"}, status=400)
+
+            metadata_provider = await self._metadata_provider_factory()
+            if not metadata_provider:
+                return web.json_response({"success": False, "error": "Metadata provider not available"}, status=503)
+
+            try:
+                models = await metadata_provider.get_user_models(username)
+            except NotImplementedError:
+                return web.json_response({"success": False, "error": "Metadata provider does not support user model queries"}, status=501)
+
+            if models is None:
+                return web.json_response({"success": False, "error": "Failed to fetch user models"}, status=502)
+
+            if not isinstance(models, list):
+                models = []
+
+            lora_scanner = await self._service_registry.get_lora_scanner()
+            checkpoint_scanner = await self._service_registry.get_checkpoint_scanner()
+            embedding_scanner = await self._service_registry.get_embedding_scanner()
+
+            normalized_allowed_types = {model_type.lower() for model_type in CIVITAI_USER_MODEL_TYPES}
+            lora_type_aliases = {model_type.lower() for model_type in VALID_LORA_TYPES}
+
+            type_scanner_map: Dict[str, object | None] = {
+                **{alias: lora_scanner for alias in lora_type_aliases},
+                "checkpoint": checkpoint_scanner,
+                "textualinversion": embedding_scanner,
+            }
+
+            versions: list[dict] = []
+            for model in models:
+                if not isinstance(model, dict):
+                    continue
+
+                model_type = str(model.get("type", "")).lower()
+                if model_type not in normalized_allowed_types:
+                    continue
+
+                scanner = type_scanner_map.get(model_type)
+                if scanner is None:
+                    return web.json_response({"success": False, "error": f'Scanner for type "{model_type}" is not available'}, status=503)
+
+                tags_value = model.get("tags")
+                tags = tags_value if isinstance(tags_value, list) else []
+                model_id = model.get("id")
+                try:
+                    model_id_int = int(model_id)
+                except (TypeError, ValueError):
+                    continue
+                model_name = model.get("name", "")
+
+                versions_data = model.get("modelVersions")
+                if not isinstance(versions_data, list):
+                    continue
+
+                for version in versions_data:
+                    if not isinstance(version, dict):
+                        continue
+
+                    version_id = version.get("id")
+                    try:
+                        version_id_int = int(version_id)
+                    except (TypeError, ValueError):
+                        continue
+
+                    images = version.get("images") or []
+                    thumbnail_url = None
+                    if images and isinstance(images, list):
+                        first_image = images[0]
+                        if isinstance(first_image, dict):
+                            raw_url = first_image.get("url")
+                            media_type = first_image.get("type")
+                            rewritten_url, _ = rewrite_preview_url(raw_url, media_type)
+                            thumbnail_url = rewritten_url
+
+                    in_library = await scanner.check_model_version_exists(version_id_int)
+
+                    versions.append(
+                        {
+                            "modelId": model_id_int,
+                            "versionId": version_id_int,
+                            "modelName": model_name,
+                            "versionName": version.get("name", ""),
+                            "type": model.get("type"),
+                            "tags": tags,
+                            "baseModel": version.get("baseModel"),
+                            "thumbnailUrl": thumbnail_url,
+                            "inLibrary": in_library,
+                        }
+                    )
+
+            return web.json_response({"success": True, "username": username, "versions": versions})
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Failed to get Civitai user models: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
 
 class MetadataArchiveHandler:
     def __init__(
@@ -844,6 +952,7 @@ class MiscHandlerSet:
             "register_nodes": self.node_registry.register_nodes,
             "get_registry": self.node_registry.get_registry,
             "check_model_exists": self.model_library.check_model_exists,
+            "get_civitai_user_models": self.model_library.get_civitai_user_models,
             "download_metadata_archive": self.metadata_archive.download_metadata_archive,
             "remove_metadata_archive": self.metadata_archive.remove_metadata_archive,
             "get_metadata_archive_status": self.metadata_archive.get_metadata_archive_status,

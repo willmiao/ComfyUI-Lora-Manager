@@ -529,12 +529,15 @@
         "title": "Модели Embedding"
     },
     "sidebar": {
-        "modelRoot": "Корень моделей",
+        "modelRoot": "Корень",
         "collapseAll": "Свернуть все папки",
         "pinSidebar": "Закрепить боковую панель",
         "unpinSidebar": "Открепить боковую панель",
         "switchToListView": "Переключить на вид списка",
         "switchToTreeView": "Переключить на древовидный вид",
+        "recursiveOn": "Искать во вложенных папках",
+        "recursiveOff": "Искать только в текущей папке",
+        "recursiveUnavailable": "Рекурсивный поиск доступен только в режиме дерева",
         "collapseAllDisabled": "Недоступно в виде списка"
     },
     "statistics": {

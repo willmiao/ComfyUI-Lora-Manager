@@ -529,12 +529,15 @@
         "title": "Modèles Embedding"
     },
     "sidebar": {
-        "modelRoot": "Racine du modèle",
+        "modelRoot": "Racine",
         "collapseAll": "Réduire tous les dossiers",
         "pinSidebar": "Épingler la barre latérale",
         "unpinSidebar": "Désépingler la barre latérale",
         "switchToListView": "Passer en vue liste",
         "switchToTreeView": "Passer en vue arborescence",
+        "recursiveOn": "Rechercher dans les sous-dossiers",
+        "recursiveOff": "Rechercher uniquement dans le dossier actuel",
+        "recursiveUnavailable": "La recherche récursive n'est disponible qu'en vue arborescente",
         "collapseAllDisabled": "Non disponible en vue liste"
     },
     "statistics": {

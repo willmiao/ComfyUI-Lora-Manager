@@ -394,3 +394,98 @@ async def test_execute_download_retries_urls(monkeypatch, tmp_path):
     assert result == {"success": True}
     assert [url for url, *_ in dummy_downloader.calls] == download_urls
     assert dummy_scanner.calls  # ensure cache updated
+
+
+@pytest.mark.asyncio
+async def test_execute_download_uses_rewritten_civitai_preview(monkeypatch, tmp_path):
+    manager = DownloadManager()
+    save_dir = tmp_path / "downloads"
+    save_dir.mkdir()
+    target_path = save_dir / "file.safetensors"
+
+    manager._active_downloads["dl"] = {}
+
+    class DummyMetadata:
+        def __init__(self, path: Path):
+            self.file_path = str(path)
+            self.sha256 = "sha256"
+            self.file_name = path.stem
+            self.preview_url = None
+            self.preview_nsfw_level = None
+
+        def generate_unique_filename(self, *_args, **_kwargs):
+            return os.path.basename(self.file_path)
+
+        def update_file_info(self, _path):
+            return None
+
+        def to_dict(self):
+            return {"file_path": self.file_path}
+
+    metadata = DummyMetadata(target_path)
+    version_info = {
+        "images": [
+            {
+                "url": "https://image.civitai.com/container/example/original=true/sample.jpeg",
+                "type": "image",
+                "nsfwLevel": 2,
+            }
+        ]
+    }
+    download_urls = ["https://example.invalid/file.safetensors"]
+
+    class DummyDownloader:
+        def __init__(self):
+            self.file_calls: list[tuple[str, str]] = []
+            self.memory_calls = 0
+
+        async def download_file(self, url, path, progress_callback=None, use_auth=None):
+            self.file_calls.append((url, path))
+            if url.endswith(".jpeg"):
+                Path(path).write_bytes(b"preview")
+                return True, None
+            if url.endswith(".safetensors"):
+                Path(path).write_bytes(b"model")
+                return True, None
+            return False, "unexpected url"
+
+        async def download_to_memory(self, *_args, **_kwargs):
+            self.memory_calls += 1
+            return False, b"", {}
+
+    dummy_downloader = DummyDownloader()
+    monkeypatch.setattr(download_manager, "get_downloader", AsyncMock(return_value=dummy_downloader))
+
+    optimize_called = {"value": False}
+
+    def fake_optimize_image(**_kwargs):
+        optimize_called["value"] = True
+        return b"", {}
+
+    monkeypatch.setattr(download_manager.ExifUtils, "optimize_image", staticmethod(fake_optimize_image))
+    monkeypatch.setattr(MetadataManager, "save_metadata", AsyncMock(return_value=True))
+
+    dummy_scanner = SimpleNamespace(add_model_to_cache=AsyncMock(return_value=None))
+    monkeypatch.setattr(DownloadManager, "_get_lora_scanner", AsyncMock(return_value=dummy_scanner))
+
+    result = await manager._execute_download(
+        download_urls=download_urls,
+        save_dir=str(save_dir),
+        metadata=metadata,
+        version_info=version_info,
+        relative_path="",
+        progress_callback=None,
+        model_type="lora",
+        download_id="dl",
+    )
+
+    assert result == {"success": True}
+    preview_urls = [url for url, _ in dummy_downloader.file_calls if url.endswith(".jpeg")]
+    assert any("width=450,optimized=true" in url for url in preview_urls)
+    assert dummy_downloader.memory_calls == 0
+    assert optimize_called["value"] is False
+    assert metadata.preview_url.endswith(".jpeg")
+    assert metadata.preview_nsfw_level == 2
+    stored_preview = manager._active_downloads["dl"]["preview_path"]
+    assert stored_preview.endswith(".jpeg")
+    assert Path(stored_preview).exists()

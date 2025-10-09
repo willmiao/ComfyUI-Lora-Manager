@@ -529,12 +529,15 @@
         "title": "Embedding 모델"
     },
     "sidebar": {
-        "modelRoot": "모델 루트",
+        "modelRoot": "루트",
         "collapseAll": "모든 폴더 접기",
         "pinSidebar": "사이드바 고정",
         "unpinSidebar": "사이드바 고정 해제",
         "switchToListView": "목록 보기로 전환",
         "switchToTreeView": "트리 보기로 전환",
+        "recursiveOn": "하위 폴더 검색",
+        "recursiveOff": "현재 폴더만 검색",
+        "recursiveUnavailable": "재귀 검색은 트리 보기에서만 사용할 수 있습니다",
         "collapseAllDisabled": "목록 보기에서는 사용할 수 없습니다"
     },
     "statistics": {

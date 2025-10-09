@@ -16,10 +16,12 @@ from aiohttp.test_utils import TestClient, TestServer
 from py.config import config
 from py.routes.base_model_routes import BaseModelRoutes
 from py.services import model_file_service
+from py.services.metadata_sync_service import MetadataSyncService
 from py.services.model_file_service import AutoOrganizeResult
 from py.services.service_registry import ServiceRegistry
 from py.services.websocket_manager import ws_manager
 from py.utils.exif_utils import ExifUtils
+from py.utils.metadata_manager import MetadataManager
 
 
 class DummyRoutes(BaseModelRoutes):
@@ -195,6 +197,116 @@ def test_replace_preview_writes_file_and_updates_cache(
             await client.close()
 
     asyncio.run(scenario())
+
+
+def test_fetch_civitai_hydrates_metadata_before_sync(
+    mock_service,
+    mock_scanner,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    model_path = tmp_path / "hydrate.safetensors"
+    model_path.write_bytes(b"model")
+    metadata_path = tmp_path / "hydrate.metadata.json"
+
+    existing_metadata = {
+        "file_path": str(model_path),
+        "sha256": "abc123",
+        "model_name": "Hydrated",
+        "preview_url": "keep/me.png",
+        "civitai": {
+            "id": 99,
+            "modelId": 42,
+            "images": [{"url": "https://example.com/existing.png", "type": "image"}],
+            "customImages": [{"id": "old-id", "url": "", "type": "image"}],
+            "trainedWords": ["keep"],
+        },
+        "custom_field": "preserve",
+    }
+    metadata_path.write_text(json.dumps(existing_metadata), encoding="utf-8")
+
+    minimal_cache_entry = {
+        "file_path": str(model_path),
+        "sha256": "abc123",
+        "folder": "some/folder",
+        "civitai": {"id": 99, "modelId": 42},
+    }
+    mock_scanner._cache.raw_data = [minimal_cache_entry]
+
+    class FakeMetadata:
+        def __init__(self, payload: dict) -> None:
+            self._payload = payload
+            self._unknown_fields = {"legacy_field": "legacy"}
+
+        def to_dict(self) -> dict:
+            return self._payload.copy()
+
+    async def fake_load_metadata(path: str, *_args, **_kwargs):
+        assert path == str(model_path)
+        return FakeMetadata(existing_metadata), False
+
+    async def fake_save_metadata(path: str, metadata: dict) -> bool:
+        save_calls.append((path, json.loads(json.dumps(metadata))))
+        return True
+
+    async def fake_fetch_and_update_model(
+        self,
+        *,
+        sha256: str,
+        file_path: str,
+        model_data: dict,
+        update_cache_func,
+    ):
+        captured["model_data"] = json.loads(json.dumps(model_data))
+        to_save = model_data.copy()
+        to_save.pop("folder", None)
+        await MetadataManager.save_metadata(
+            os.path.splitext(file_path)[0] + ".metadata.json",
+            to_save,
+        )
+        await update_cache_func(file_path, file_path, model_data)
+        return True, None
+
+    save_calls: list[tuple[str, dict]] = []
+    captured: dict[str, dict] = {}
+
+    monkeypatch.setattr(MetadataManager, "load_metadata", staticmethod(fake_load_metadata))
+    monkeypatch.setattr(MetadataManager, "save_metadata", staticmethod(fake_save_metadata))
+    monkeypatch.setattr(MetadataSyncService, "fetch_and_update_model", fake_fetch_and_update_model)
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post(
+                "/api/lm/test-models/fetch-civitai",
+                json={"file_path": str(model_path)},
+            )
+            payload = await response.json()
+
+            assert response.status == 200
+            assert payload["success"] is True
+            assert captured["model_data"]["custom_field"] == "preserve"
+            assert captured["model_data"]["civitai"]["images"][0]["url"] == "https://example.com/existing.png"
+            assert captured["model_data"]["civitai"]["trainedWords"] == ["keep"]
+            assert captured["model_data"]["civitai"]["id"] == 99
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+    assert save_calls, "Metadata save should be invoked"
+    saved_path, saved_payload = save_calls[0]
+    assert saved_path == str(metadata_path)
+    assert saved_payload["custom_field"] == "preserve"
+    assert saved_payload["civitai"]["images"][0]["url"] == "https://example.com/existing.png"
+    assert saved_payload["civitai"]["trainedWords"] == ["keep"]
+    assert saved_payload["civitai"]["id"] == 99
+    assert saved_payload["legacy_field"] == "legacy"
+
+    assert mock_scanner.updated_models
+    updated_metadata = mock_scanner.updated_models[-1]["metadata"]
+    assert updated_metadata["custom_field"] == "preserve"
+    assert updated_metadata["civitai"]["customImages"][0]["id"] == "old-id"
 
 
 def test_download_model_invokes_download_manager(

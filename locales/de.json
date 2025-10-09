@@ -529,12 +529,15 @@
         "title": "Embedding-Modelle"
     },
     "sidebar": {
-        "modelRoot": "Modell-Stammverzeichnis",
+        "modelRoot": "Stammverzeichnis",
         "collapseAll": "Alle Ordner einklappen",
         "pinSidebar": "Sidebar anheften",
         "unpinSidebar": "Sidebar lösen",
         "switchToListView": "Zur Listenansicht wechseln",
         "switchToTreeView": "Zur Baumansicht wechseln",
+        "recursiveOn": "Unterordner durchsuchen",
+        "recursiveOff": "Nur aktuellen Ordner durchsuchen",
+        "recursiveUnavailable": "Rekursive Suche ist nur in der Baumansicht verfügbar",
         "collapseAllDisabled": "Im Listenmodus nicht verfügbar"
     },
     "statistics": {

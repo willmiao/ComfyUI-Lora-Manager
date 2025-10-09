@@ -535,12 +535,15 @@
         "title": "Embedding 模型"
     },
     "sidebar": {
-        "modelRoot": "模型根目录",
+        "modelRoot": "根目录",
         "collapseAll": "折叠所有文件夹",
         "pinSidebar": "固定侧边栏",
         "unpinSidebar": "取消固定侧边栏",
         "switchToListView": "切换到列表视图",
         "switchToTreeView": "切换到树状视图",
+        "recursiveOn": "搜索子文件夹",
+        "recursiveOff": "仅搜索当前文件夹",
+        "recursiveUnavailable": "仅在树形视图中可使用递归搜索",
         "collapseAllDisabled": "列表视图下不可用"
     },
     "statistics": {

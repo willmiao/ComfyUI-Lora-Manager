@@ -67,7 +67,7 @@ export const state = {
                 modelname: true,
                 tags: false,
                 creator: false,
-                recursive: true,
+                recursive: getStorageItem(`${MODEL_TYPES.LORA}_recursiveSearch`, true),
             },
             filters: {
                 baseModel: [],
@@ -116,7 +116,7 @@ export const state = {
                 filename: true,
                 modelname: true,
                 creator: false,
-                recursive: true,
+                recursive: getStorageItem(`${MODEL_TYPES.CHECKPOINT}_recursiveSearch`, true),
             },
             filters: {
                 baseModel: [],
@@ -144,7 +144,7 @@ export const state = {
                 modelname: true,
                 tags: false,
                 creator: false,
-                recursive: true,
+                recursive: getStorageItem(`${MODEL_TYPES.EMBEDDING}_recursiveSearch`, true),
             },
             filters: {
                 baseModel: [],
