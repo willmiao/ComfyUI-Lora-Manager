@@ -354,7 +354,7 @@ class CivitaiClient:
 
     async def get_image_info(self, image_id: str) -> Optional[Dict]:
         """Fetch image information from Civitai API
-        
+
         Args:
             image_id: The Civitai image ID
             
@@ -384,4 +384,38 @@ class CivitaiClient:
         except Exception as e:
             error_msg = f"Error fetching image info: {e}"
             logger.error(error_msg)
+            return None
+
+    async def get_user_models(self, username: str) -> Optional[List[Dict]]:
+        """Fetch all models for a specific Civitai user."""
+        if not username:
+            return None
+
+        try:
+            downloader = await get_downloader()
+            url = f"{self.base_url}/models?username={username}"
+            success, result = await downloader.make_request(
+                'GET',
+                url,
+                use_auth=True
+            )
+
+            if not success:
+                logger.error("Failed to fetch models for %s: %s", username, result)
+                return None
+
+            items = result.get("items") if isinstance(result, dict) else None
+            if not isinstance(items, list):
+                return []
+
+            for model in items:
+                versions = model.get("modelVersions")
+                if not isinstance(versions, list):
+                    continue
+                for version in versions:
+                    self._remove_comfy_metadata(version)
+
+            return items
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Error fetching models for %s: %s", username, exc)
             return None

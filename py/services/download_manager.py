@@ -4,8 +4,10 @@ import asyncio
 from collections import OrderedDict
 import uuid
 from typing import Dict, List
+from urllib.parse import urlparse
 from ..utils.models import LoraMetadata, CheckpointMetadata, EmbeddingMetadata
 from ..utils.constants import CARD_PREVIEW_WIDTH, VALID_LORA_TYPES, CIVITAI_MODEL_TAGS
+from ..utils.civitai_utils import rewrite_preview_url
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
 from .service_registry import ServiceRegistry
@@ -450,70 +452,103 @@ class DownloadManager:
             # Download preview image if available
             images = version_info.get('images', [])
             if images:
-                # Report preview download progress
                 if progress_callback:
                     await progress_callback(1)  # 1% progress for starting preview download
 
-                # Check if it's a video or an image
-                is_video = images[0].get('type') == 'video'
-                
-                if (is_video):
-                    # For videos, use .mp4 extension
-                    preview_ext = '.mp4'
-                    preview_path = os.path.splitext(save_path)[0] + preview_ext
-                    
-                    # Download video directly using downloader
-                    downloader = await get_downloader()
-                    success, result = await downloader.download_file(
-                        images[0]['url'], 
-                        preview_path, 
-                        use_auth=False  # Preview images typically don't need auth
-                    )
-                    if success:
-                        metadata.preview_url = preview_path.replace(os.sep, '/')
-                        metadata.preview_nsfw_level = images[0].get('nsfwLevel', 0)
-                else:
-                    # For images, use WebP format for better performance
-                    with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
-                        temp_path = temp_file.name
-                    
-                    # Download the original image to temp path using downloader
-                    downloader = await get_downloader()
-                    success, content, headers = await downloader.download_to_memory(
-                        images[0]['url'], 
-                        use_auth=False
-                    )
-                    if success:
-                        # Save to temp file
-                        with open(temp_path, 'wb') as f:
-                            f.write(content)
-                        # Optimize and convert to WebP
-                        preview_path = os.path.splitext(save_path)[0] + '.webp'
-                        
-                        # Use ExifUtils to optimize and convert the image
-                        optimized_data, _ = ExifUtils.optimize_image(
-                            image_data=temp_path,
-                            target_width=CARD_PREVIEW_WIDTH,
-                            format='webp',
-                            quality=85,
-                            preserve_metadata=False
-                        )
-                        
-                        # Save the optimized image
-                        with open(preview_path, 'wb') as f:
-                            f.write(optimized_data)
-                            
-                        # Update metadata
-                        metadata.preview_url = preview_path.replace(os.sep, '/')
-                        metadata.preview_nsfw_level = images[0].get('nsfwLevel', 0)
-                        
-                        # Remove temporary file
-                        try:
-                            os.unlink(temp_path)
-                        except Exception as e:
-                            logger.warning(f"Failed to delete temp file: {e}")
+                first_image = images[0] if isinstance(images[0], dict) else None
+                preview_url = first_image.get('url') if first_image else None
+                media_type = (first_image.get('type') or '').lower() if first_image else ''
+                nsfw_level = first_image.get('nsfwLevel', 0) if first_image else 0
 
-                # Report preview download completion
+                def _extension_from_url(url: str, fallback: str) -> str:
+                    try:
+                        parsed = urlparse(url)
+                    except ValueError:
+                        return fallback
+                    ext = os.path.splitext(parsed.path)[1]
+                    return ext or fallback
+
+                preview_downloaded = False
+                preview_path = None
+
+                if preview_url:
+                    downloader = await get_downloader()
+
+                    if media_type == 'video':
+                        preview_ext = _extension_from_url(preview_url, '.mp4')
+                        preview_path = os.path.splitext(save_path)[0] + preview_ext
+                        rewritten_url, rewritten = rewrite_preview_url(preview_url, media_type='video')
+                        attempt_urls: List[str] = []
+                        if rewritten:
+                            attempt_urls.append(rewritten_url)
+                        attempt_urls.append(preview_url)
+
+                        seen_attempts = set()
+                        for attempt in attempt_urls:
+                            if not attempt or attempt in seen_attempts:
+                                continue
+                            seen_attempts.add(attempt)
+                            success, _ = await downloader.download_file(
+                                attempt,
+                                preview_path,
+                                use_auth=False
+                            )
+                            if success:
+                                preview_downloaded = True
+                                break
+                    else:
+                        rewritten_url, rewritten = rewrite_preview_url(preview_url, media_type='image')
+                        if rewritten:
+                            preview_ext = _extension_from_url(preview_url, '.png')
+                            preview_path = os.path.splitext(save_path)[0] + preview_ext
+                            success, _ = await downloader.download_file(
+                                rewritten_url,
+                                preview_path,
+                                use_auth=False
+                            )
+                            if success:
+                                preview_downloaded = True
+
+                        if not preview_downloaded:
+                            temp_path: str | None = None
+                            try:
+                                with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
+                                    temp_path = temp_file.name
+
+                                success, content, _ = await downloader.download_to_memory(
+                                    preview_url,
+                                    use_auth=False
+                                )
+                                if success:
+                                    with open(temp_path, 'wb') as temp_file_handle:
+                                        temp_file_handle.write(content)
+                                    preview_path = os.path.splitext(save_path)[0] + '.webp'
+
+                                    optimized_data, _ = ExifUtils.optimize_image(
+                                        image_data=temp_path,
+                                        target_width=CARD_PREVIEW_WIDTH,
+                                        format='webp',
+                                        quality=85,
+                                        preserve_metadata=False
+                                    )
+
+                                    with open(preview_path, 'wb') as preview_file:
+                                        preview_file.write(optimized_data)
+
+                                    preview_downloaded = True
+                            finally:
+                                if temp_path and os.path.exists(temp_path):
+                                    try:
+                                        os.unlink(temp_path)
+                                    except Exception as e:
+                                        logger.warning(f"Failed to delete temp file: {e}")
+
+                if preview_downloaded and preview_path:
+                    metadata.preview_url = preview_path.replace(os.sep, '/')
+                    metadata.preview_nsfw_level = nsfw_level
+                    if download_id and download_id in self._active_downloads:
+                        self._active_downloads[download_id]['preview_path'] = preview_path
+
                 if progress_callback:
                     await progress_callback(3)  # 3% progress after preview download
 
@@ -677,7 +712,15 @@ class DownloadManager:
                         except Exception as e:
                             logger.error(f"Error deleting metadata file: {e}")
 
-                    # Delete preview file if exists (.webp or .mp4)
+                    preview_path_value = download_info.get('preview_path')
+                    if preview_path_value and os.path.exists(preview_path_value):
+                        try:
+                            os.unlink(preview_path_value)
+                            logger.debug(f"Deleted preview file: {preview_path_value}")
+                        except Exception as e:
+                            logger.error(f"Error deleting preview file: {e}")
+
+                    # Delete preview file if exists (.webp or .mp4) for legacy paths
                     for preview_ext in ['.webp', '.mp4']:
                         preview_path = os.path.splitext(file_path)[0] + preview_ext
                         if os.path.exists(preview_path):

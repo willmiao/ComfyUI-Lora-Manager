@@ -6,6 +6,7 @@ import logging
 from typing import Any, Dict, Optional, Protocol, Sequence
 
 from ..metadata_sync_service import MetadataSyncService
+from ...utils.metadata_manager import MetadataManager
 
 
 class MetadataRefreshProgressReporter(Protocol):
@@ -70,6 +71,7 @@ class BulkMetadataRefreshUseCase:
         for model in to_process:
             try:
                 original_name = model.get("model_name")
+                await MetadataManager.hydrate_model_data(model)
                 result, _ = await self._metadata_sync.fetch_and_update_model(
                     sha256=model["sha256"],
                     file_path=model["file_path"],

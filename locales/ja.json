@@ -529,12 +529,15 @@
         "title": "Embeddingモデル"
     },
     "sidebar": {
-        "modelRoot": "モデルルート",
+        "modelRoot": "ルート",
         "collapseAll": "すべてのフォルダを折りたたむ",
         "pinSidebar": "サイドバーを固定",
         "unpinSidebar": "サイドバーの固定を解除",
         "switchToListView": "リストビューに切り替え",
-        "switchToTreeView": "ツリービューに切り替え",
+        "switchToTreeView": "ツリー表示に切り替え",
+        "recursiveOn": "サブフォルダーを検索",
+        "recursiveOff": "現在のフォルダーのみを検索",
+        "recursiveUnavailable": "再帰検索はツリービューでのみ利用できます",
         "collapseAllDisabled": "リストビューでは利用できません"
     },
     "statistics": {

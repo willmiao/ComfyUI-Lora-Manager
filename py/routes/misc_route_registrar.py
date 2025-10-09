@@ -34,6 +34,7 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/register-nodes", "register_nodes"),
     RouteDefinition("GET", "/api/lm/get-registry", "get_registry"),
     RouteDefinition("GET", "/api/lm/check-model-exists", "check_model_exists"),
+    RouteDefinition("GET", "/api/lm/civitai/user-models", "get_civitai_user_models"),
     RouteDefinition("POST", "/api/lm/download-metadata-archive", "download_metadata_archive"),
     RouteDefinition("POST", "/api/lm/remove-metadata-archive", "remove_metadata_archive"),
     RouteDefinition("GET", "/api/lm/metadata-archive-status", "get_metadata_archive_status"),

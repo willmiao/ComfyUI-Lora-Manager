@@ -28,6 +28,7 @@ from py.utils.example_images_processor import (
     ExampleImagesImportError,
     ExampleImagesValidationError,
 )
+from py.utils.metadata_manager import MetadataManager
 from tests.conftest import MockModelService, MockScanner
 
 
@@ -155,7 +156,9 @@ async def test_auto_organize_use_case_rejects_when_running() -> None:
         await use_case.execute(file_paths=None, progress_callback=None)
 
 
-async def test_bulk_metadata_refresh_emits_progress_and_updates_cache() -> None:
+async def test_bulk_metadata_refresh_emits_progress_and_updates_cache(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     scanner = MockScanner()
     scanner._cache.raw_data = [
         {
@@ -170,6 +173,25 @@ async def test_bulk_metadata_refresh_emits_progress_and_updates_cache() -> None:
     settings = StubSettings()
     progress = ProgressCollector()
 
+    hydration_calls: list[str] = []
+
+    async def fake_hydrate(model_data: Dict[str, Any]) -> Dict[str, Any]:
+        hydration_calls.append(model_data.get("file_path", ""))
+        model_data.clear()
+        model_data.update(
+            {
+                "file_path": "model1.safetensors",
+                "sha256": "hash",
+                "from_civitai": True,
+                "model_name": "Demo",
+                "extra": "value",
+                "civitai": {"images": [{"url": "existing.png", "type": "image"}]},
+            }
+        )
+        return model_data
+
+    monkeypatch.setattr(MetadataManager, "hydrate_model_data", staticmethod(fake_hydrate))
+
     use_case = BulkMetadataRefreshUseCase(
         service=service,
         metadata_sync=metadata_sync,
@@ -183,6 +205,9 @@ async def test_bulk_metadata_refresh_emits_progress_and_updates_cache() -> None:
     assert progress.events[0]["status"] == "started"
     assert progress.events[-1]["status"] == "completed"
     assert metadata_sync.calls
+    assert metadata_sync.calls[0]["model_data"]["extra"] == "value"
+    assert scanner._cache.raw_data[0]["extra"] == "value"
+    assert hydration_calls == ["model1.safetensors"]
     assert scanner._cache.resort_calls == 1
 
 
