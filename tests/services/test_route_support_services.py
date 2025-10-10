@@ -30,6 +30,9 @@ class RecordingMetadataManager:
         Path(metadata_path).write_text(json.dumps(metadata))
         return True
 
+    async def hydrate_model_data(self, model_data: Dict[str, Any]) -> Dict[str, Any]:
+        return model_data
+
 
 class RecordingPreviewService:
     def __init__(self) -> None:

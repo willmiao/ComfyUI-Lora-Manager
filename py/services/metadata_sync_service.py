@@ -176,6 +176,9 @@ class MetadataSyncService:
                 metadata_provider = await self._get_default_provider()
 
             civitai_metadata, error = await metadata_provider.get_model_by_hash(sha256)
+
+            await self._metadata_manager.hydrate_model_data(model_data)
+
             if not civitai_metadata:
                 if error == "Model not found":
                     model_data["from_civitai"] = False

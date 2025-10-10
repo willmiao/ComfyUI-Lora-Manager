@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from typing import Any, Dict
 from unittest.mock import AsyncMock
 
 import pytest
@@ -20,7 +21,10 @@ def build_service(
     default_provider: SimpleNamespace | None = None,
     provider_selector: AsyncMock | None = None,
 ):
-    metadata_manager = SimpleNamespace(save_metadata=AsyncMock())
+    metadata_manager = SimpleNamespace(
+        save_metadata=AsyncMock(),
+        hydrate_model_data=AsyncMock(side_effect=lambda payload: payload),
+    )
     preview_service = SimpleNamespace(ensure_preview_for_metadata=AsyncMock())
     settings = DummySettings(settings_values)
 
@@ -105,12 +109,24 @@ async def test_fetch_and_update_model_success_updates_cache(tmp_path):
     }
     helpers.default_provider.get_model_by_hash.return_value = (civitai_payload, None)
 
-    model_data = {"model_name": "Local", "folder": "root"}
+    model_path = tmp_path / "model.safetensors"
+
+    async def hydrate(payload: Dict[str, Any]) -> Dict[str, Any]:
+        payload["hydrated"] = True
+        return payload
+
+    helpers.metadata_manager.hydrate_model_data.side_effect = hydrate
+
+    model_data = {
+        "model_name": "Local",
+        "folder": "root",
+        "file_path": str(model_path),
+    }
     update_cache = AsyncMock(return_value=True)
 
     ok, error = await helpers.service.fetch_and_update_model(
         sha256="abc",
-        file_path=str(tmp_path / "model.safetensors"),
+        file_path=str(model_path),
         model_data=model_data,
         update_cache_func=update_cache,
     )
@@ -120,10 +136,15 @@ async def test_fetch_and_update_model_success_updates_cache(tmp_path):
     assert model_data["civitai_deleted"] is False
     assert "civitai" in model_data
 
-    metadata_path = str(tmp_path / "model.metadata.json")
+    helpers.metadata_manager.hydrate_model_data.assert_awaited_once()
+    assert model_data["hydrated"] is True
+
+    metadata_path = str(model_path.with_suffix(".metadata.json"))
     await_args = helpers.metadata_manager.save_metadata.await_args_list
     assert await_args, "expected metadata to be persisted"
-    assert await_args[-1][0][0] == metadata_path
+    last_call = await_args[-1]
+    assert last_call.args[0] == metadata_path
+    assert last_call.args[1]["hydrated"] is True
     update_cache.assert_awaited_once()
 
 
@@ -132,14 +153,23 @@ async def test_fetch_and_update_model_handles_missing_remote_metadata(tmp_path):
     helpers = build_service()
     helpers.default_provider.get_model_by_hash.return_value = (None, "Model not found")
 
+    model_path = tmp_path / "model.safetensors"
+
+    async def hydrate(payload: Dict[str, Any]) -> Dict[str, Any]:
+        payload["hydrated"] = True
+        return payload
+
+    helpers.metadata_manager.hydrate_model_data.side_effect = hydrate
+
     model_data = {
         "model_name": "Local",
         "folder": "sub",
+        "file_path": str(model_path),
     }
 
     ok, error = await helpers.service.fetch_and_update_model(
         sha256="missing",
-        file_path=str(tmp_path / "model.safetensors"),
+        file_path=str(model_path),
         model_data=model_data,
         update_cache_func=AsyncMock(),
     )
@@ -149,17 +179,24 @@ async def test_fetch_and_update_model_handles_missing_remote_metadata(tmp_path):
     assert model_data["from_civitai"] is False
     assert model_data["civitai_deleted"] is True
 
+    helpers.metadata_manager.hydrate_model_data.assert_awaited_once()
+    assert model_data["hydrated"] is True
+
     helpers.metadata_manager.save_metadata.assert_awaited_once()
-    args, _ = helpers.metadata_manager.save_metadata.await_args
-    assert args[0].endswith("model.safetensors")
-    assert "folder" not in args[1]
+    call_args = helpers.metadata_manager.save_metadata.await_args
+    assert call_args.args[0].endswith("model.safetensors")
+    assert "folder" not in call_args.args[1]
+    assert call_args.args[1]["hydrated"] is True
 
 
 @pytest.mark.asyncio
 async def test_fetch_and_update_model_respects_deleted_without_archive():
     helpers = build_service(settings_values={"enable_metadata_archive_db": False})
 
-    model_data = {"civitai_deleted": True}
+    model_data = {
+        "civitai_deleted": True,
+        "file_path": "/tmp/model.safetensors",
+    }
     update_cache = AsyncMock()
 
     ok, error = await helpers.service.fetch_and_update_model(
@@ -172,6 +209,7 @@ async def test_fetch_and_update_model_respects_deleted_without_archive():
     assert not ok
     assert "metadata archive DB is not enabled" in error
     helpers.default_provider_factory.assert_not_awaited()
+    helpers.metadata_manager.hydrate_model_data.assert_not_awaited()
     update_cache.assert_not_awaited()
 
 
