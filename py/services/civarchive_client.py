@@ -74,10 +74,20 @@ class CivArchiveClient:
             # Extract the model and version data from CivArchive structure
             model_data = data.get('model', {})
             version_data = model_data.get('version', {})
-            
+            files_data = data.get('files', {})
+
             if not version_data:
-                if data:
-                   return data, "No version data found"
+                if files_data:
+                   logger.error(f"{data}")
+                   # sometimes CivArc returns ONLY file info... but it can then be used to get the rest of the info...
+                   # actually as of now (10/25), api broke and ONLY returns 'files' info...
+                   for file_data in files_data:
+                      logger.error(f"{file_data}")
+                      if file_data["source"] == "civitai":
+                          api_data = await self.get_model_version(file_data["model_id"], file_data["model_version_id"])
+                          logger.error(f"{api_data}")
+                          logger.error(f"found CivArchive model by hash {model_hash[:10]}")
+                          return api_data, None
                 else:
                    logger.error(f"Error fetching version of CivArchive model by hash {model_hash[:10]}")
                    return None, "No version data found"
@@ -89,7 +99,7 @@ class CivArchiveClient:
             result['model'] = {
                 'name': model_data.get('name'),
                 'type': model_data.get('type'),
-                'nsfw': model_data.get('is_nsfw', False),
+                'nsfw': model_data.get('nsfw', False),
                 'description': model_data.get('description'),
                 'tags': model_data.get('tags', [])
             }
@@ -193,7 +203,10 @@ class CivArchiveClient:
             return None
         
         try:
-            url = f"{self.base_url}/models/{model_id}"
+            if version_id is not None:
+               url = f"{self.base_url}/models/{model_id}?modelVersionId={version_id}"
+            else:
+               url = f"{self.base_url}/models/{model_id}"
             
             downloader = await get_downloader()
             session = await downloader.session
@@ -205,17 +218,20 @@ class CivArchiveClient:
             
             # Get the version data - CivArchive returns the latest/default version in 'version' field
             version_data = data.get('version', {})
-            
-            if not version_data:
-                return None
+            versions = data.get('versions', {})
             
             # If version_id is specified, check if it matches
-            if version_id is not None and version_data.get('id') != version_id:
-                # Version mismatch - would need to iterate through versions or make another call
-                # For now, return None as CivArchive API doesn't provide easy version filtering
-                logger.warning(f"Requested version {version_id} doesn't match default version {version_data.get('id')} for model {model_id}")
-                return None
-            
+            if version_id is not None:
+                if version_data.get('id') != version_id:
+                   # Version mismatch - would need to iterate through versions or make another call
+                   # For now, return None as CivArchive API doesn't provide easy version filtering
+                   logger.warning(f"Requested version {version_id} doesn't match default version {version_data.get('id')} for model {model_id}")
+                   return None
+                if version_data.get('modelId') != model_id:
+                   # you can pass ANY model id, and a version number, and get the CORRECT model id from this...
+                   # so recall the api with the correct info now
+                   return await self.get_model_version(version_data.get('modelId'), version_id)
+                         
             # Transform to expected format
             result = version_data.copy()
             
@@ -287,12 +303,8 @@ class CivArchiveClient:
             return None
 
     async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict], Optional[str]]:
-        """Fetch model version metadata using HTML scraping + SHA256 API workaround
-        
-        Since CivArchive lacks a direct version lookup API, this uses a workaround:
-        1. Scrape the HTML page with a dummy model_id and the real version_id
-        2. Extract the SHA256 hash from the version's file data
-        3. Use the SHA256 API to get the complete model/version metadata
+        """ Fetch model version metadata using a known bogus model lookup        
+        CivArchive lacks a direct version lookup API, this uses a workaround (which we handle in the main model request now)
         
         Args:
             version_id: The model version ID
@@ -300,53 +312,7 @@ class CivArchiveClient:
         Returns:
             Tuple[Optional[Dict], Optional[str]]: (version_data, error_message)
         """
-        try:
-            # Use a dummy model_id (1) - the version_id will give us the correct file hash
-            url = f"https://civarchive.com/models/1?modelVersionId={version_id}"
-            
-            downloader = await get_downloader()
-            session = await downloader.session
-            async with session.get(url) as response:
-                if response.status != 200:
-                    return None, f"Failed to fetch version page: HTTP {response.status}"
-                
-                html_content = await response.text()
-            
-            # Parse HTML to extract JSON data
-            soup_parser = _require_beautifulsoup()
-            soup = soup_parser(html_content, 'html.parser')
-            script_tag = soup.find('script', {'id': '__NEXT_DATA__', 'type': 'application/json'})
-            
-            if not script_tag:
-                return None, "Could not find version data in page"
-            
-            # Parse JSON content
-            json_data = json.loads(script_tag.string)
-            model_data = json_data.get('props', {}).get('pageProps', {}).get('model')
-            
-            if not model_data or 'version' not in model_data:
-                return None, "Could not extract version data"
-            
-            version_data = model_data['version']
-            
-            # Extract SHA256 hash from the version's files
-            sha256_hash = None
-            files = version_data.get('files', [])
-            for file_data in files:
-                if file_data.get('type') == 'Model':
-                    sha256_hash = file_data.get('sha256')
-                    if sha256_hash:
-                        break
-            
-            if not sha256_hash:
-                return None, "Could not find SHA256 hash in version data"
-            
-            # Now use the SHA256 API to get the complete, correct model/version data
-            return await self.get_model_by_hash(sha256_hash)
-            
-        except Exception as e:
-            logger.error(f"Error fetching CivArchive version info for {version_id}: {e}")
-            return None, str(e)
+        return await self.get_model_version(1, version_id)
 
     async def get_model_by_url(self, url) -> Optional[Dict]:
         """Get specific model version by parsing CivArchive HTML page (legacy method)
