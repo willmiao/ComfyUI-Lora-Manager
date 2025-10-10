@@ -61,7 +61,7 @@ class RecipeSharingService:
 
         safe_title = recipe.get("title", "").replace(" ", "_").lower()
         filename = f"recipe_{safe_title}{ext}" if safe_title else f"recipe_{recipe_id}{ext}"
-        url_path = f"/api/recipe/{recipe_id}/share/download?t={timestamp}"
+        url_path = f"/api/lm/recipe/{recipe_id}/share/download?t={timestamp}"
         return SharingResult({"success": True, "download_url": url_path, "filename": filename})
 
     async def prepare_download(self, *, recipe_scanner, recipe_id: str) -> DownloadInfo:
