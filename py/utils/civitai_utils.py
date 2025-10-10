@@ -40,7 +40,6 @@ def rewrite_preview_url(source_url: str | None, media_type: str | None = None) -
         return source_url, False
 
     rewritten = urlunparse(parsed._replace(path=updated_path))
-    print(rewritten)
     return rewritten, True
 
 
