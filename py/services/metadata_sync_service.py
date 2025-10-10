@@ -153,7 +153,12 @@ class MetadataSyncService:
         model_data: Dict[str, Any],
         update_cache_func: Callable[[str, str, Dict[str, Any]], Awaitable[bool]],
     ) -> tuple[bool, Optional[str]]:
-        """Fetch metadata for a model and update both disk and cache state."""
+        """Fetch metadata for a model and update both disk and cache state.
+
+        Callers should hydrate ``model_data`` via ``MetadataManager.hydrate_model_data``
+        before invoking this method so that the persisted payload retains all known
+        metadata fields.
+        """
 
         if not isinstance(model_data, dict):
             error = f"Invalid model_data type: {type(model_data)}"
@@ -204,6 +209,36 @@ class MetadataSyncService:
                        logger.error(error_msg)
                        return False, error_msg
  
+            if model_data.get("civitai_deleted") is True:
+                if not enable_archive or model_data.get("db_checked") is True:
+                    if not enable_archive:
+                        error_msg = "CivitAI model is deleted and metadata archive DB is not enabled"
+                    else:
+                        error_msg = "CivitAI model is deleted and not found in metadata archive DB"
+                    return (False, error_msg)
+                metadata_provider = await self._get_provider("sqlite")
+            else:
+                metadata_provider = await self._get_default_provider()
+
+            civitai_metadata, error = await metadata_provider.get_model_by_hash(sha256)
+
+            if not civitai_metadata:
+                if error == "Model not found":
+                    model_data["from_civitai"] = False
+                    model_data["civitai_deleted"] = True
+                    model_data["db_checked"] = enable_archive
+                    model_data["last_checked_at"] = datetime.now().timestamp()
+
+                    data_to_save = model_data.copy()
+                    data_to_save.pop("folder", None)
+                    await self._metadata_manager.save_metadata(file_path, data_to_save)
+
+                error_msg = (
+                    f"Error fetching metadata: {error} (model_name={model_data.get('model_name', '')})"
+                )
+                logger.error(error_msg)
+                return False, error_msg
+
             model_data["from_civitai"] = True
             model_data["civitai_deleted"] = civitai_metadata.get("source") == "archive_db"
             model_data["db_checked"] = enable_archive
