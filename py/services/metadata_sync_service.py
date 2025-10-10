@@ -153,7 +153,12 @@ class MetadataSyncService:
         model_data: Dict[str, Any],
         update_cache_func: Callable[[str, str, Dict[str, Any]], Awaitable[bool]],
     ) -> tuple[bool, Optional[str]]:
-        """Fetch metadata for a model and update both disk and cache state."""
+        """Fetch metadata for a model and update both disk and cache state.
+
+        Callers should hydrate ``model_data`` via ``MetadataManager.hydrate_model_data``
+        before invoking this method so that the persisted payload retains all known
+        metadata fields.
+        """
 
         if not isinstance(model_data, dict):
             error = f"Invalid model_data type: {type(model_data)}"
@@ -176,8 +181,6 @@ class MetadataSyncService:
                 metadata_provider = await self._get_default_provider()
 
             civitai_metadata, error = await metadata_provider.get_model_by_hash(sha256)
-
-            await self._metadata_manager.hydrate_model_data(model_data)
 
             if not civitai_metadata:
                 if error == "Model not found":

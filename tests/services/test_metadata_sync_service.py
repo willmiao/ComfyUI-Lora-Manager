@@ -124,6 +124,9 @@ async def test_fetch_and_update_model_success_updates_cache(tmp_path):
     }
     update_cache = AsyncMock(return_value=True)
 
+    await hydrate(model_data)
+    helpers.metadata_manager.hydrate_model_data.reset_mock()
+
     ok, error = await helpers.service.fetch_and_update_model(
         sha256="abc",
         file_path=str(model_path),
@@ -136,7 +139,7 @@ async def test_fetch_and_update_model_success_updates_cache(tmp_path):
     assert model_data["civitai_deleted"] is False
     assert "civitai" in model_data
 
-    helpers.metadata_manager.hydrate_model_data.assert_awaited_once()
+    helpers.metadata_manager.hydrate_model_data.assert_not_awaited()
     assert model_data["hydrated"] is True
 
     metadata_path = str(model_path.with_suffix(".metadata.json"))
@@ -167,6 +170,9 @@ async def test_fetch_and_update_model_handles_missing_remote_metadata(tmp_path):
         "file_path": str(model_path),
     }
 
+    await hydrate(model_data)
+    helpers.metadata_manager.hydrate_model_data.reset_mock()
+
     ok, error = await helpers.service.fetch_and_update_model(
         sha256="missing",
         file_path=str(model_path),
@@ -179,7 +185,7 @@ async def test_fetch_and_update_model_handles_missing_remote_metadata(tmp_path):
     assert model_data["from_civitai"] is False
     assert model_data["civitai_deleted"] is True
 
-    helpers.metadata_manager.hydrate_model_data.assert_awaited_once()
+    helpers.metadata_manager.hydrate_model_data.assert_not_awaited()
     assert model_data["hydrated"] is True
 
     helpers.metadata_manager.save_metadata.assert_awaited_once()

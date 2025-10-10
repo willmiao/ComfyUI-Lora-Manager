@@ -117,6 +117,7 @@ def test_metadata_sync_fetch_and_update_updates_cache(tmp_path: Path) -> None:
     )
 
     model_data = {"sha256": "abc", "file_path": str(tmp_path / "model.safetensors")}
+    asyncio.run(manager.hydrate_model_data(model_data))
     success, error = asyncio.run(
         service.fetch_and_update_model(
             sha256="abc",
