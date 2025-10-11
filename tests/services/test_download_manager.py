@@ -108,6 +108,7 @@ def metadata_provider(monkeypatch):
                 "creator": {"username": "Author"},
                 "files": [
                     {
+                        "type": "Model",
                         "primary": True,
                         "downloadUrl": "https://example.invalid/file.safetensors",
                         "name": "file.safetensors",
@@ -206,6 +207,7 @@ async def test_download_uses_active_mirrors(monkeypatch, scanners, metadata_prov
         "creator": {"username": "Author"},
         "files": [
             {
+                "type": "Model",
                 "primary": True,
                 "downloadUrl": "https://example.invalid/file.safetensors",
                 "mirrors": [

@@ -167,41 +167,101 @@ class MetadataSyncService:
 
         metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
         enable_archive = self._settings.get("enable_metadata_archive_db", False)
+        previous_source = model_data.get("metadata_source") or (model_data.get("civitai") or {}).get("source")
 
         try:
+            provider_attempts: list[tuple[Optional[str], MetadataProviderProtocol]] = []
+            sqlite_attempted = False
+
             if model_data.get("civitai_deleted") is True:
-                if not enable_archive or model_data.get("db_checked") is True:
+                if previous_source in (None, "civarchive"):
+                    try:
+                        provider_attempts.append(("civarchive_api", await self._get_provider("civarchive_api")))
+                    except Exception as exc:  # pragma: no cover - provider resolution fault
+                        logger.debug("Unable to resolve civarchive provider: %s", exc)
+
+                if enable_archive and model_data.get("db_checked") is not True:
+                    try:
+                        provider_attempts.append(("sqlite", await self._get_provider("sqlite")))
+                    except Exception as exc:  # pragma: no cover - provider resolution fault
+                        logger.debug("Unable to resolve sqlite provider: %s", exc)
+
+                if not provider_attempts:
                     if not enable_archive:
                         error_msg = "CivitAI model is deleted and metadata archive DB is not enabled"
-                    else:
+                    elif model_data.get("db_checked") is True:
                         error_msg = "CivitAI model is deleted and not found in metadata archive DB"
-                    return (False, error_msg)
-                metadata_provider = await self._get_provider("sqlite")
+                    else:
+                        error_msg = "CivitAI model is deleted and no archive provider is available"
+                    return False, error_msg
             else:
-                metadata_provider = await self._get_default_provider()
+                provider_attempts.append((None, await self._get_default_provider()))
 
-            civitai_metadata, error = await metadata_provider.get_model_by_hash(sha256)
+            civitai_metadata: Optional[Dict[str, Any]] = None
+            metadata_provider: Optional[MetadataProviderProtocol] = None
+            provider_used: Optional[str] = None
+            last_error: Optional[str] = None
 
-            if not civitai_metadata:
-                if error == "Model not found":
+            for provider_name, provider in provider_attempts:
+                try:
+                    civitai_metadata_candidate, error = await provider.get_model_by_hash(sha256)
+                except Exception as exc:  # pragma: no cover - defensive logging
+                    logger.error("Provider %s failed for hash %s: %s", provider_name, sha256, exc)
+                    civitai_metadata_candidate, error = None, str(exc)
+
+                if provider_name == "sqlite":
+                    sqlite_attempted = True
+
+                if civitai_metadata_candidate:
+                    civitai_metadata = civitai_metadata_candidate
+                    metadata_provider = provider
+                    provider_used = provider_name
+                    break
+
+                last_error = error or last_error
+
+            if civitai_metadata is None or metadata_provider is None:
+                if sqlite_attempted:
+                    model_data["db_checked"] = True
+
+                if last_error == "Model not found":
                     model_data["from_civitai"] = False
                     model_data["civitai_deleted"] = True
-                    model_data["db_checked"] = enable_archive
+                    model_data["db_checked"] = sqlite_attempted or (enable_archive and model_data.get("db_checked", False))
                     model_data["last_checked_at"] = datetime.now().timestamp()
 
                     data_to_save = model_data.copy()
                     data_to_save.pop("folder", None)
                     await self._metadata_manager.save_metadata(file_path, data_to_save)
 
+                default_error = (
+                    "CivitAI model is deleted and metadata archive DB is not enabled"
+                    if model_data.get("civitai_deleted") and not enable_archive
+                    else "CivitAI model is deleted and not found in metadata archive DB"
+                    if model_data.get("civitai_deleted") and (model_data.get("db_checked") is True or sqlite_attempted)
+                    else "No provider returned metadata"
+                )
+
                 error_msg = (
-                    f"Error fetching metadata: {error} (model_name={model_data.get('model_name', '')})"
+                    f"Error fetching metadata: {last_error or default_error} "
+                    f"(model_name={model_data.get('model_name', '')})"
                 )
                 logger.error(error_msg)
                 return False, error_msg
 
             model_data["from_civitai"] = True
-            model_data["civitai_deleted"] = civitai_metadata.get("source") == "archive_db"
-            model_data["db_checked"] = enable_archive
+            model_data["civitai_deleted"] = civitai_metadata.get("source") == "archive_db" or civitai_metadata.get("source") == "civarchive"
+            model_data["db_checked"] = enable_archive and (
+                civitai_metadata.get("source") == "archive_db" or sqlite_attempted
+            )
+            source = civitai_metadata.get("source") or "civitai_api"
+            if source == "api":
+                source = "civitai_api"
+            elif provider_used == "civarchive_api" and source != "civarchive":
+                source = "civarchive"
+            elif provider_used == "sqlite":
+                source = "archive_db"
+            model_data["metadata_source"] = source
             model_data["last_checked_at"] = datetime.now().timestamp()
 
             local_metadata = model_data.copy()
