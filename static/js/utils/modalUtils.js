@@ -1,8 +1,6 @@
 import { modalManager } from '../managers/ModalManager.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 
-const apiClient = getModelApiClient();
-
 let pendingDeletePath = null;
 let pendingExcludePath = null;
 
@@ -27,7 +25,7 @@ export async function confirmDelete() {
     if (!pendingDeletePath) return;
     
     try {
-        await apiClient.deleteModel(pendingDeletePath);
+        await getModelApiClient().deleteModel(pendingDeletePath);
         
         closeDeleteModal();
 
@@ -72,7 +70,7 @@ export async function confirmExclude() {
     if (!pendingExcludePath) return;
     
     try {
-        await apiClient.excludeModel(pendingExcludePath);
+        await getModelApiClient().excludeModel(pendingExcludePath);
         
         closeExcludeModal();
 

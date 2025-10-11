@@ -4,6 +4,9 @@
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { translate } from '../utils/i18nHelpers.js';
+import { state } from '../state/index.js';
+import { bulkManager } from '../managers/BulkManager.js';
+import { showToast } from '../utils/uiHelpers.js';
 
 export class SidebarManager {
     constructor() {
@@ -22,7 +25,13 @@ export class SidebarManager {
         this.displayMode = 'tree'; // 'tree' or 'list'
         this.foldersList = [];
         this.recursiveSearchEnabled = true;
-        
+        this.draggedFilePaths = null;
+        this.draggedRootPath = null;
+        this.draggedFromBulk = false;
+        this.dragHandlersInitialized = false;
+        this.folderTreeElement = null;
+        this.currentDropTarget = null;
+
         // Bind methods
         this.handleTreeClick = this.handleTreeClick.bind(this);
         this.handleBreadcrumbClick = this.handleBreadcrumbClick.bind(this);
@@ -38,6 +47,12 @@ export class SidebarManager {
         this.handleDisplayModeToggle = this.handleDisplayModeToggle.bind(this);
         this.handleFolderListClick = this.handleFolderListClick.bind(this);
         this.handleRecursiveToggle = this.handleRecursiveToggle.bind(this);
+        this.handleCardDragStart = this.handleCardDragStart.bind(this);
+        this.handleCardDragEnd = this.handleCardDragEnd.bind(this);
+        this.handleFolderDragEnter = this.handleFolderDragEnter.bind(this);
+        this.handleFolderDragOver = this.handleFolderDragOver.bind(this);
+        this.handleFolderDragLeave = this.handleFolderDragLeave.bind(this);
+        this.handleFolderDrop = this.handleFolderDrop.bind(this);
     }
 
     async initialize(pageControls) {
@@ -54,6 +69,7 @@ export class SidebarManager {
         this.setInitialSidebarState();
         
         this.setupEventHandlers();
+        this.initializeDragAndDrop();
         this.updateSidebarTitle();
         this.restoreSidebarState();
         await this.loadFolderTree();
@@ -80,7 +96,22 @@ export class SidebarManager {
         
         // Clean up event handlers
         this.removeEventHandlers();
-        
+
+        this.clearAllDropHighlights();
+        if (this.dragHandlersInitialized) {
+            document.removeEventListener('dragstart', this.handleCardDragStart);
+            document.removeEventListener('dragend', this.handleCardDragEnd);
+            this.dragHandlersInitialized = false;
+        }
+        if (this.folderTreeElement) {
+            this.folderTreeElement.removeEventListener('dragenter', this.handleFolderDragEnter);
+            this.folderTreeElement.removeEventListener('dragover', this.handleFolderDragOver);
+            this.folderTreeElement.removeEventListener('dragleave', this.handleFolderDragLeave);
+            this.folderTreeElement.removeEventListener('drop', this.handleFolderDrop);
+            this.folderTreeElement = null;
+        }
+        this.resetDragState();
+
         // Reset state
         this.pageControls = null;
         this.pageType = null;
@@ -154,6 +185,271 @@ export class SidebarManager {
         }
     }
 
+    initializeDragAndDrop() {
+        if (!this.dragHandlersInitialized) {
+            document.addEventListener('dragstart', this.handleCardDragStart);
+            document.addEventListener('dragend', this.handleCardDragEnd);
+            this.dragHandlersInitialized = true;
+        }
+
+        const folderTree = document.getElementById('sidebarFolderTree');
+        if (folderTree && this.folderTreeElement !== folderTree) {
+            if (this.folderTreeElement) {
+                this.folderTreeElement.removeEventListener('dragenter', this.handleFolderDragEnter);
+                this.folderTreeElement.removeEventListener('dragover', this.handleFolderDragOver);
+                this.folderTreeElement.removeEventListener('dragleave', this.handleFolderDragLeave);
+                this.folderTreeElement.removeEventListener('drop', this.handleFolderDrop);
+            }
+
+            folderTree.addEventListener('dragenter', this.handleFolderDragEnter);
+            folderTree.addEventListener('dragover', this.handleFolderDragOver);
+            folderTree.addEventListener('dragleave', this.handleFolderDragLeave);
+            folderTree.addEventListener('drop', this.handleFolderDrop);
+
+            this.folderTreeElement = folderTree;
+        }
+    }
+
+    handleCardDragStart(event) {
+        const card = event.target.closest('.model-card');
+        if (!card) return;
+
+        const filePath = card.dataset.filepath;
+        if (!filePath) return;
+
+        const selectedSet = state.selectedModels instanceof Set
+            ? state.selectedModels
+            : new Set(state.selectedModels || []);
+        const cardIsSelected = card.classList.contains('selected');
+        const usingBulkSelection = Boolean(state.bulkMode && cardIsSelected && selectedSet && selectedSet.size > 0);
+
+        const paths = usingBulkSelection ? Array.from(selectedSet) : [filePath];
+        const filePaths = Array.from(new Set(paths.filter(Boolean)));
+
+        if (filePaths.length === 0) {
+            return;
+        }
+
+        this.draggedFilePaths = filePaths;
+        this.draggedRootPath = this.getRootPathFromCard(card);
+        this.draggedFromBulk = usingBulkSelection;
+
+        const dataTransfer = event.dataTransfer;
+        if (dataTransfer) {
+            dataTransfer.effectAllowed = 'move';
+            dataTransfer.setData('text/plain', filePaths.join(','));
+            try {
+                dataTransfer.setData('application/json', JSON.stringify({ filePaths }));
+            } catch (error) {
+                // Ignore serialization errors
+            }
+        }
+
+        card.classList.add('dragging');
+    }
+
+    handleCardDragEnd(event) {
+        const card = event.target.closest('.model-card');
+        if (card) {
+            card.classList.remove('dragging');
+        }
+        this.clearAllDropHighlights();
+        this.resetDragState();
+    }
+
+    getRootPathFromCard(card) {
+        if (!card) return null;
+
+        const filePathRaw = card.dataset.filepath || '';
+        const normalizedFilePath = filePathRaw.replace(/\\/g, '/');
+        const lastSlashIndex = normalizedFilePath.lastIndexOf('/');
+        if (lastSlashIndex === -1) {
+            return null;
+        }
+
+        const directory = normalizedFilePath.substring(0, lastSlashIndex);
+        let folderValue = card.dataset.folder;
+        if (!folderValue || folderValue === 'undefined') {
+            folderValue = '';
+        }
+        const normalizedFolder = folderValue.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+
+        if (!normalizedFolder) {
+            return directory;
+        }
+
+        const suffix = `/${normalizedFolder}`;
+        if (directory.endsWith(suffix)) {
+            return directory.slice(0, -suffix.length);
+        }
+
+        return directory;
+    }
+
+    combineRootAndRelativePath(root, relative) {
+        const normalizedRoot = (root || '').replace(/\\/g, '/').replace(/\/+$/g, '');
+        const normalizedRelative = (relative || '').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+
+        if (!normalizedRoot) {
+            return normalizedRelative;
+        }
+
+        if (!normalizedRelative) {
+            return normalizedRoot;
+        }
+
+        return `${normalizedRoot}/${normalizedRelative}`;
+    }
+
+    getFolderElementFromEvent(event) {
+        const folderTree = this.folderTreeElement || document.getElementById('sidebarFolderTree');
+        if (!folderTree) return null;
+
+        const target = event.target instanceof Element ? event.target.closest('[data-path]') : null;
+        if (!target || !folderTree.contains(target)) {
+            return null;
+        }
+
+        return target;
+    }
+
+    setDropTargetHighlight(element, shouldAdd) {
+        if (!element) return;
+
+        let targetElement = element;
+        if (!targetElement.classList.contains('sidebar-tree-node-content') &&
+            !targetElement.classList.contains('sidebar-node-content')) {
+            targetElement = element.querySelector('.sidebar-tree-node-content, .sidebar-node-content');
+        }
+
+        if (targetElement) {
+            targetElement.classList.toggle('drop-target', shouldAdd);
+        }
+    }
+
+    handleFolderDragEnter(event) {
+        if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) return;
+
+        const folderElement = this.getFolderElementFromEvent(event);
+        if (!folderElement) return;
+
+        event.preventDefault();
+
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = 'move';
+        }
+
+        this.setDropTargetHighlight(folderElement, true);
+        this.currentDropTarget = folderElement;
+    }
+
+    handleFolderDragOver(event) {
+        if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) return;
+
+        const folderElement = this.getFolderElementFromEvent(event);
+        if (!folderElement) return;
+
+        event.preventDefault();
+
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = 'move';
+        }
+    }
+
+    handleFolderDragLeave(event) {
+        if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) return;
+
+        const folderElement = this.getFolderElementFromEvent(event);
+        if (!folderElement) return;
+
+        const relatedTarget = event.relatedTarget instanceof Element ? event.relatedTarget : null;
+        if (!relatedTarget || !folderElement.contains(relatedTarget)) {
+            this.setDropTargetHighlight(folderElement, false);
+            if (this.currentDropTarget === folderElement) {
+                this.currentDropTarget = null;
+            }
+        }
+    }
+
+    async handleFolderDrop(event) {
+        if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) return;
+
+        const folderElement = this.getFolderElementFromEvent(event);
+        if (!folderElement) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        this.setDropTargetHighlight(folderElement, false);
+        this.currentDropTarget = null;
+
+        const targetPath = folderElement.dataset.path || '';
+
+        await this.performDragMove(targetPath);
+
+        this.resetDragState();
+        this.clearAllDropHighlights();
+    }
+
+    async performDragMove(targetRelativePath) {
+        if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) {
+            return false;
+        }
+
+        if (!this.apiClient) {
+            this.apiClient = getModelApiClient();
+        }
+
+        const rootPath = this.draggedRootPath ? this.draggedRootPath.replace(/\\/g, '/') : '';
+        if (!rootPath) {
+            showToast(
+                'toast.models.moveFailed',
+                { message: translate('sidebar.dragDrop.unableToResolveRoot', {}, 'Unable to determine destination path for move.') },
+                'error'
+            );
+            return false;
+        }
+
+        const destination = this.combineRootAndRelativePath(rootPath, targetRelativePath);
+        const useBulkMove = this.draggedFromBulk || this.draggedFilePaths.length > 1;
+
+        try {
+            if (useBulkMove) {
+                await this.apiClient.moveBulkModels(this.draggedFilePaths, destination);
+            } else {
+                await this.apiClient.moveSingleModel(this.draggedFilePaths[0], destination);
+            }
+
+            if (this.pageControls && typeof this.pageControls.resetAndReload === 'function') {
+                await this.pageControls.resetAndReload(true);
+            } else {
+                await this.refresh();
+            }
+
+            if (this.draggedFromBulk && state.bulkMode && typeof bulkManager?.toggleBulkMode === 'function') {
+                bulkManager.toggleBulkMode();
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error moving model(s) via drag-and-drop:', error);
+            showToast('toast.models.moveFailed', { message: error.message || 'Unknown error' }, 'error');
+            return false;
+        }
+    }
+
+    resetDragState() {
+        this.draggedFilePaths = null;
+        this.draggedRootPath = null;
+        this.draggedFromBulk = false;
+    }
+
+    clearAllDropHighlights() {
+        const highlighted = document.querySelectorAll('.sidebar-tree-node-content.drop-target, .sidebar-node-content.drop-target');
+        highlighted.forEach((element) => element.classList.remove('drop-target'));
+        this.currentDropTarget = null;
+    }
+
     async init() {
         this.apiClient = getModelApiClient();
         
@@ -161,6 +457,7 @@ export class SidebarManager {
         this.setInitialSidebarState();
         
         this.setupEventHandlers();
+        this.initializeDragAndDrop();
         this.updateSidebarTitle();
         this.restoreSidebarState();
         await this.loadFolderTree();
@@ -464,6 +761,7 @@ export class SidebarManager {
         } else {
             this.renderFolderList();
         }
+        this.initializeDragAndDrop();
     }
 
     renderTree() {
@@ -490,7 +788,7 @@ export class SidebarManager {
             
             return `
                 <div class="sidebar-tree-node" data-path="${currentPath}">
-                    <div class="sidebar-tree-node-content ${isSelected ? 'selected' : ''}">
+                    <div class="sidebar-tree-node-content ${isSelected ? 'selected' : ''}" data-path="${currentPath}">
                         <div class="sidebar-tree-expand-icon ${isExpanded ? 'expanded' : ''}" 
                              style="${hasChildren ? '' : 'opacity: 0; pointer-events: none;'}">
                             <i class="fas fa-chevron-right"></i>
@@ -535,7 +833,7 @@ export class SidebarManager {
             
             return `
                 <div class="sidebar-folder-item ${isSelected ? 'selected' : ''}" data-path="${folder}">
-                    <div class="sidebar-node-content">
+                    <div class="sidebar-node-content" data-path="${folder}">
                         <i class="fas fa-folder sidebar-folder-icon"></i>
                         <div class="sidebar-folder-name" title="${displayName}">${displayName}</div>
                     </div>

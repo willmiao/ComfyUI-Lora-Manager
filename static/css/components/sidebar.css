@@ -184,6 +184,19 @@
     font-weight: 500;
 }
 
+.sidebar-tree-node-content.drop-target,
+.sidebar-node-content.drop-target {
+    background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.15);
+    color: var(--lora-accent);
+    border-left-color: var(--lora-accent);
+}
+
+.sidebar-tree-node-content.drop-target .sidebar-tree-folder-icon,
+.sidebar-node-content.drop-target .sidebar-folder-icon {
+    color: var(--lora-accent);
+    opacity: 1;
+}
+
 .sidebar-tree-expand-icon {
     width: 16px;
     height: 16px;

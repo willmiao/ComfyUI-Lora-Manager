@@ -364,11 +364,12 @@ function showExampleAccessModal(card, modelType) {
 export function createModelCard(model, modelType) {
     const card = document.createElement('div');
     card.className = 'model-card';  // Reuse the same class for styling
+    card.draggable = true;
     card.dataset.sha256 = model.sha256;
     card.dataset.filepath = model.file_path;
     card.dataset.name = model.model_name;
     card.dataset.file_name = model.file_name;
-    card.dataset.folder = model.folder;
+    card.dataset.folder = model.folder || '';
     card.dataset.modified = model.modified;
     card.dataset.file_size = model.file_size;
     card.dataset.from_civitai = model.from_civitai;
