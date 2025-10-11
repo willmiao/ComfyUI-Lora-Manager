@@ -309,7 +309,7 @@ class DownloadManager:
                     download_urls.append(download_url)
 
             if not download_urls:
-                return {'success': False, 'error': 'No download URL found for primary file'}
+                return {'success': False, 'error': 'No mirror URL found'}
 
             # 3. Prepare download
             file_name = file_info['name']
