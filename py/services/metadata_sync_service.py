@@ -264,6 +264,18 @@ class MetadataSyncService:
             model_data["metadata_source"] = source
             model_data["last_checked_at"] = datetime.now().timestamp()
 
+            readable_source = {
+                "civitai_api": "CivitAI API",
+                "civarchive": "CivArchive API",
+                "archive_db": "Archive Database",
+            }.get(source, source)
+
+            logger.info(
+                "Fetched metadata for %s via %s",
+                model_data.get("model_name", ""),
+                readable_source,
+            )
+
             local_metadata = model_data.copy()
             local_metadata.pop("folder", None)
 
