@@ -16,6 +16,9 @@ const MODEL_TYPE_SUGGESTION_KEY_MAP = {
     embeddings: 'embedding',
     embedding: 'embedding',
 };
+const METADATA_ITEM_SELECTOR = '.metadata-item';
+const METADATA_ITEMS_CONTAINER_SELECTOR = '.metadata-items';
+const METADATA_ITEM_DRAGGING_CLASS = 'metadata-item-dragging';
 
 let activeModelTypeKey = '';
 let priorityTagSuggestions = [];
@@ -195,6 +198,7 @@ export function setupTagEditMode(modelType = null) {
                 
                 // Setup delete buttons for existing tags
                 setupDeleteButtons();
+                setupTagDragAndDrop();
                 
                 // Transfer click event from original button to the cloned one
                 const newEditBtn = editContainer.querySelector('.metadata-header-btn');
@@ -210,6 +214,7 @@ export function setupTagEditMode(modelType = null) {
                 // Just show the existing edit container
                 tagsEditContainer.style.display = 'block';
                 editBtn.style.display = 'none';
+                setupTagDragAndDrop();
             }
         } else {
             // Exit edit mode
@@ -483,6 +488,98 @@ function setupDeleteButtons() {
 }
 
 /**
+ * Enable drag-and-drop sorting for tag items
+ */
+function setupTagDragAndDrop() {
+    const container = document.querySelector(METADATA_ITEMS_CONTAINER_SELECTOR);
+    if (!container) {
+        return;
+    }
+
+    if (!container._dragEventsBound) {
+        container.addEventListener('dragover', handleTagContainerDragOver);
+        container.addEventListener('drop', handleTagContainerDrop);
+        container._dragEventsBound = true;
+    }
+
+    container.querySelectorAll(METADATA_ITEM_SELECTOR).forEach((item) => {
+        if (item.dataset.dragInit === 'true') {
+            return;
+        }
+        item.setAttribute('draggable', 'true');
+        item.addEventListener('dragstart', handleTagDragStart);
+        item.addEventListener('dragend', handleTagDragEnd);
+        item.dataset.dragInit = 'true';
+    });
+}
+
+function handleTagDragStart(event) {
+    const item = event.currentTarget;
+    if (!item) {
+        return;
+    }
+    item.classList.add(METADATA_ITEM_DRAGGING_CLASS);
+    if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move';
+        try {
+            event.dataTransfer.setData('text/plain', item.dataset.tag || '');
+        } catch (error) {
+            // Some browsers may throw if dataTransfer is unavailable; ignore.
+        }
+    }
+}
+
+function handleTagDragEnd(event) {
+    const item = event.currentTarget;
+    if (!item) {
+        return;
+    }
+    item.classList.remove(METADATA_ITEM_DRAGGING_CLASS);
+}
+
+function handleTagContainerDragOver(event) {
+    event.preventDefault();
+    const container = event.currentTarget;
+    const draggingItem = container.querySelector(`.${METADATA_ITEM_DRAGGING_CLASS}`);
+    if (!draggingItem) {
+        return;
+    }
+
+    const afterElement = getDragAfterElement(container, event.clientY);
+    if (!afterElement) {
+        container.appendChild(draggingItem);
+        return;
+    }
+
+    if (afterElement !== draggingItem) {
+        container.insertBefore(draggingItem, afterElement);
+    }
+}
+
+function handleTagContainerDrop(event) {
+    event.preventDefault();
+    updateSuggestionsDropdown();
+}
+
+function getDragAfterElement(container, y) {
+    const draggableElements = Array.from(
+        container.querySelectorAll(`${METADATA_ITEM_SELECTOR}:not(.${METADATA_ITEM_DRAGGING_CLASS})`)
+    );
+
+    return draggableElements.reduce(
+        (closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset, element: child };
+            }
+            return closest;
+        },
+        { offset: Number.NEGATIVE_INFINITY, element: null }
+    ).element;
+}
+
+/**
  * Add a new tag
  * @param {string} tag - Tag to add
  */
@@ -535,6 +632,7 @@ function addNewTag(tag) {
     });
     
     tagsContainer.appendChild(newTag);
+    setupTagDragAndDrop();
     
     // Update status of items in the suggestions dropdown
     updateSuggestionsDropdown();
