@@ -6,7 +6,7 @@ import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 export class HelpManager {
     constructor() {
         this.lastViewedTimestamp = getStorageItem('help_last_viewed', 0);
-        this.latestContentTimestamp = new Date('2025-07-09').getTime(); // Will be updated from server or config
+        this.latestContentTimestamp = new Date('2025-10-11').getTime(); // Will be updated from server or config
         this.isInitialized = false;
         
         // Default latest content data - could be fetched from server

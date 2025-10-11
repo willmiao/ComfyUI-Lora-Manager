@@ -197,7 +197,7 @@ export class SettingsManager {
             button.addEventListener('click', () => this.toggleInputVisibility(button));
         });
 
-        const openSettingsLocationButton = document.querySelector('.settings-open-location-button');
+        const openSettingsLocationButton = document.querySelector('.settings-open-location-trigger');
         if (openSettingsLocationButton) {
             openSettingsLocationButton.addEventListener('click', () => {
                 const filePath = openSettingsLocationButton.dataset.settingsPath;
@@ -350,7 +350,8 @@ export class SettingsManager {
             }
 
             textarea.addEventListener('input', () => this.handlePriorityTagInput(modelType));
-            textarea.addEventListener('blur', () => this.handlePriorityTagBlur(modelType));
+            textarea.addEventListener('blur', () => this.handlePriorityTagSave(modelType));
+            textarea.addEventListener('keydown', (event) => this.handlePriorityTagKeyDown(event, modelType));
         });
     }
 
@@ -378,7 +379,20 @@ export class SettingsManager {
         this.displayPriorityTagValidation(modelType, validation.valid, validation.errors);
     }
 
-    async handlePriorityTagBlur(modelType) {
+    handlePriorityTagKeyDown(event, modelType) {
+        if (event.key !== 'Enter') {
+            return;
+        }
+
+        if (event.shiftKey) {
+            return;
+        }
+
+        event.preventDefault();
+        this.handlePriorityTagSave(modelType);
+    }
+
+    async handlePriorityTagSave(modelType) {
         const textarea = document.getElementById(`${modelType}PriorityTagsInput`);
         if (!textarea) {
             return;
@@ -423,7 +437,7 @@ export class SettingsManager {
         }
 
         if (isValid || errors.length === 0) {
-            textarea.classList.remove('input-error');
+            textarea.classList.remove('settings-input-error');
             if (errorElement) {
                 errorElement.textContent = '';
                 errorElement.style.display = 'none';
@@ -431,7 +445,7 @@ export class SettingsManager {
             return;
         }
 
-        textarea.classList.add('input-error');
+        textarea.classList.add('settings-input-error');
         if (errorElement) {
             const message = this.getPriorityTagErrorMessage(errors[0]);
             errorElement.textContent = message;

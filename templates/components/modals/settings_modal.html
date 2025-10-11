@@ -6,7 +6,7 @@
             <h2>{{ t('common.actions.settings') }}</h2>
             <button
                 type="button"
-                class="settings-open-location-button"
+                class="settings-action-link settings-open-location-trigger"
                 data-settings-path="{{ settings.settings_file }}"
                 aria-label="{{ t('settings.openSettingsFileLocation.tooltip') }}"
                 title="{{ t('settings.openSettingsFileLocation.tooltip') }}">
@@ -250,32 +250,6 @@
                 </div>
             </div>
 
-            <div class="settings-section">
-                <h3>{{ t('settings.priorityTags.title') }}</h3>
-                <p class="settings-help-text">{{ t('settings.priorityTags.description') }}</p>
-                <div class="priority-tags-grid">
-                    <div class="priority-tags-group">
-                        <label for="loraPriorityTagsInput">{{ t('settings.priorityTags.modelTypes.lora') }}</label>
-                        <textarea id="loraPriorityTagsInput" class="priority-tags-input" rows="3" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
-                        <div class="input-help">{{ t('settings.priorityTags.help') }}</div>
-                        <div class="input-error-message" id="loraPriorityTagsError"></div>
-                    </div>
-                    <div class="priority-tags-group">
-                        <label for="checkpointPriorityTagsInput">{{ t('settings.priorityTags.modelTypes.checkpoint') }}</label>
-                        <textarea id="checkpointPriorityTagsInput" class="priority-tags-input" rows="3" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
-                        <div class="input-help">{{ t('settings.priorityTags.help') }}</div>
-                        <div class="input-error-message" id="checkpointPriorityTagsError"></div>
-                    </div>
-                    <div class="priority-tags-group">
-                        <label for="embeddingPriorityTagsInput">{{ t('settings.priorityTags.modelTypes.embedding') }}</label>
-                        <textarea id="embeddingPriorityTagsInput" class="priority-tags-input" rows="3" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
-                        <div class="input-help">{{ t('settings.priorityTags.help') }}</div>
-                        <div class="input-error-message" id="embeddingPriorityTagsError"></div>
-                    </div>
-                </div>
-                <p class="settings-help-text subtle">{{ t('settings.priorityTags.aliasHint') }}</p>
-            </div>
-
             <!-- Default Path Customization Section -->
             <div class="settings-section">
                 <h3>{{ t('settings.downloadPathTemplates.title') }}</h3>
@@ -392,6 +366,46 @@
                 <div class="mappings-container">
                     <div id="baseModelMappingsContainer">
                         <!-- Mapping rows will be added dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-item priority-tags-item">
+                <div class="setting-row priority-tags-header">
+                    <div class="setting-info">
+                        <label>{{ t('settings.priorityTags.title') }}</label>
+                    </div>
+                    <div class="setting-control priority-tags-actions">
+                        <a class="settings-action-link priority-tags-help-link" href="https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/Priority-Tags-Configuration-Guide" target="_blank" rel="noopener" aria-label="{{ t('settings.priorityTags.helpLinkLabel') }}" title="{{ t('settings.priorityTags.helpLinkLabel') }}">
+                            <i class="fas fa-question-circle" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="input-help">{{ t('settings.priorityTags.description') }}</div>
+                <div class="priority-tags-tabs">
+                    <input type="radio" id="priority-tags-tab-lora" name="priority-tags-tab" class="priority-tags-tab-input" checked>
+                    <input type="radio" id="priority-tags-tab-checkpoint" name="priority-tags-tab" class="priority-tags-tab-input">
+                    <input type="radio" id="priority-tags-tab-embedding" name="priority-tags-tab" class="priority-tags-tab-input">
+                    
+                    <div class="priority-tags-tablist">
+                        <label class="priority-tags-tab-label" for="priority-tags-tab-lora" id="priority-tags-tab-lora-label">{{ t('settings.priorityTags.modelTypes.lora') }}</label>
+                        <label class="priority-tags-tab-label" for="priority-tags-tab-checkpoint" id="priority-tags-tab-checkpoint-label">{{ t('settings.priorityTags.modelTypes.checkpoint') }}</label>
+                        <label class="priority-tags-tab-label" for="priority-tags-tab-embedding" id="priority-tags-tab-embedding-label">{{ t('settings.priorityTags.modelTypes.embedding') }}</label>
+                    </div>
+                    
+                    <div class="priority-tags-panels">
+                        <div class="priority-tags-panel" id="priority-tags-panel-lora" aria-labelledby="priority-tags-tab-lora-label">
+                            <textarea id="loraPriorityTagsInput" class="priority-tags-input" rows="3" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
+                            <div class="settings-input-error-message" id="loraPriorityTagsError"></div>
+                        </div>
+                        <div class="priority-tags-panel" id="priority-tags-panel-checkpoint" aria-labelledby="priority-tags-tab-checkpoint-label">
+                            <textarea id="checkpointPriorityTagsInput" class="priority-tags-input" rows="3" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
+                            <div class="settings-input-error-message" id="checkpointPriorityTagsError"></div>
+                        </div>
+                        <div class="priority-tags-panel" id="priority-tags-panel-embedding" aria-labelledby="priority-tags-tab-embedding-label">
+                            <textarea id="embeddingPriorityTagsInput" class="priority-tags-input" rows="3" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
+                            <div class="settings-input-error-message" id="embeddingPriorityTagsError"></div>
+                        </div>
                     </div>
                 </div>
             </div>
