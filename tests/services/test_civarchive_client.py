@@ -120,7 +120,7 @@ async def test_get_model_by_hash_transforms_payload(downloader):
     file_meta = result["files"][0]
     assert file_meta["hashes"]["SHA256"] == "E2B7A280D6539556F23F380B3F71E4E22BC4524445C4C96526E117C6005C6AD3"
     assert file_meta["mirrors"][0]["url"] == "https://civitai.com/api/download/models/1976567"
-    assert file_meta["primary"] is False
+    assert file_meta["primary"] is True
     assert result["source"] == "civarchive"
     assert result["images"][0]["url"] == "https://img.genur.art/example.png"
 

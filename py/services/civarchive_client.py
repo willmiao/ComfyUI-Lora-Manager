@@ -392,7 +392,15 @@ class CivArchiveClient:
                     )
                     return None
                 actual_model_id = version_data.get("modelId")
-                if actual_model_id is not None and str(actual_model_id) != str(model_id):
+                context_model_id = context.get("id")
+                # CivArchive can respond with data for a different model id while already
+                # returning the fully resolved model context. Only follow the redirect when
+                # the context itself still points to the original (wrong) model.
+                if (
+                    actual_model_id is not None
+                    and str(actual_model_id) != str(model_id)
+                    and (context_model_id is None or str(context_model_id) != str(actual_model_id))
+                ):
                     return await self.get_model_version(actual_model_id, version_id)
 
             return self._transform_version(context, version_data, fallback_files)

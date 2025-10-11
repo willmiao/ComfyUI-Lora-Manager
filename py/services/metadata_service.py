@@ -58,7 +58,7 @@ async def initialize_metadata_providers():
     # Register CivArchive provider, and all add to fallback providers
     try:
         civarchive_client = await ServiceRegistry.get_civarchive_client()
-        civarchive_provider = CivitaiModelMetadataProvider(civarchive_client)
+        civarchive_provider = CivArchiveModelMetadataProvider(civarchive_client)
         provider_manager.register_provider('civarchive_api', civarchive_provider)
         providers.append(('civarchive_api', civarchive_provider))
         logger.debug("CivArchive metadata provider registered (also included in fallback)")
@@ -67,16 +67,15 @@ async def initialize_metadata_providers():
 
     # Set up fallback provider based on available providers
     if len(providers) > 1:
-        # Always use Civarchive, then Civitai API, then Archive DB
+        # Always use Civitai API (it has better metadata), then CivArchive API, then Archive DB
         ordered_providers = []
-        ordered_providers.extend([p[1] for p in providers if p[0] == 'civarchive_api'])
         ordered_providers.extend([p[1] for p in providers if p[0] == 'civitai_api'])
+        ordered_providers.extend([p[1] for p in providers if p[0] == 'civarchive_api'])
         ordered_providers.extend([p[1] for p in providers if p[0] == 'sqlite'])
         
         if ordered_providers:
             fallback_provider = FallbackMetadataProvider(ordered_providers)
             provider_manager.register_provider('fallback', fallback_provider, is_default=True)
-            logger.info(f"Fallback metadata provider registered with {len(ordered_providers)} providers, Civarchive first")
     elif len(providers) == 1:
         # Only one provider available, set it as default
         provider_name, provider = providers[0]

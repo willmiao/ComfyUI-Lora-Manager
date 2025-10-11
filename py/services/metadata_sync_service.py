@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import asyncio
 from datetime import datetime
 from typing import Any, Awaitable, Callable, Dict, Iterable, Optional
 
@@ -170,46 +169,6 @@ class MetadataSyncService:
         enable_archive = self._settings.get("enable_metadata_archive_db", False)
 
         try:
-            metadata_provider = await self._get_provider("civarchive_api")
-            tryagain = True
-            delay = 5
-            
-            while tryagain:
-                civitai_metadata, error = await metadata_provider.get_model_by_hash(sha256)
-                tryagain = False
-                if not civitai_metadata or error:
-                    if error == "HTTP 429":
-                       error_msg = (f"Error fetching metadata: {error} (model_name={model_data.get('model_name', '')} sha256={sha256})")
-                       logger.error(error_msg)
-                       delay = delay * 2
-                       await asyncio.sleep(delay)
-                       tryagain = True
-                       continue
-                    if error == "Model not found":
-                       model_data["from_civitai"] = False
-                       model_data["civitai_deleted"] = True
-                       #model_data["db_checked"] = enable_archive
-                       model_data["last_checked_at"] = datetime.now().timestamp()
-                       data_to_save = model_data.copy()
-                       data_to_save.pop("folder", None)
-                       await self._metadata_manager.save_metadata(file_path, data_to_save)
-                       await asyncio.sleep(1)
-                    if error == "No version data found":
-                       error_msg = (f"Error - No civitai version found: (model_name={model_data.get('model_name', '')} sha256={sha256})")
-                       logger.error(error_msg)
-                       error = False
-                       if civitai_metadata.get('files'):
-                             for file in civitai_metadata['files']:
-                                 logger.error(f"{file}")
-                                 if 'tensorart' in file['url'] or "seaart" in file['url']:
-                                    civitai_metadata, error = await metadata_provider.get_model_by_hash(file['url'])
-                                    error_msg = (f"Error fetching metadata: {error} {civitai_metadata}")
-                                    logger.error(error_msg)
-                    if error or not civitai_metadata:
-                       error_msg = (f"Error fetching metadata: {error} (model_name={model_data.get('model_name', '')} sha256={sha256})")
-                       logger.error(error_msg)
-                       return False, error_msg
- 
             if model_data.get("civitai_deleted") is True:
                 if not enable_archive or model_data.get("db_checked") is True:
                     if not enable_archive:
@@ -241,8 +200,8 @@ class MetadataSyncService:
                 return False, error_msg
 
             model_data["from_civitai"] = True
-            model_data["civitai_deleted"] = civitai_metadata.get("source") == "archive_db"
-            model_data["db_checked"] = enable_archive
+            model_data["civitai_deleted"] = civitai_metadata.get("source") == "archive_db" or civitai_metadata.get("source") == "civarchive"
+            model_data["db_checked"] = enable_archive and civitai_metadata.get("source") == "archive_db"
             model_data["last_checked_at"] = datetime.now().timestamp()
 
             local_metadata = model_data.copy()
