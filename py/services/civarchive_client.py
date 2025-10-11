@@ -411,10 +411,41 @@ class CivArchiveClient:
         Returns:
             Tuple[Optional[Dict], Optional[str]]: (version_data, error_message)
         """
-        version = await self.get_model_version(1, version_id)
-        if version is None:
-            return None, "Model not found"
-        return version, None
+        try:
+            lookup_payload, error = await self._request_json(
+                "/models/1",
+                params={"modelVersionId": version_id},
+            )
+            if error or lookup_payload is None:
+                logger.error(f"Error performing CivArchive version lookup for {version_id}: {error}")
+                return None, error or "Model lookup failed"
+
+            data = self._normalize_payload(lookup_payload)
+            version_block = data.get("version")
+            if not isinstance(version_block, dict):
+                logger.warning(f"CivArchive lookup for version {version_id} returned no version block")
+                return None, "Model not found"
+
+            actual_version_id = version_block.get("id")
+            actual_model_id = version_block.get("modelId")
+            if actual_version_id is None or actual_model_id is None:
+                logger.warning(
+                    "CivArchive lookup for version %s missing ids (modelId=%s, versionId=%s)",
+                    version_id,
+                    actual_model_id,
+                    actual_version_id,
+                )
+                return None, "Model not found"
+
+            version = await self.get_model_version(actual_model_id, actual_version_id)
+            if version is None:
+                return None, "Model not found"
+
+            return version, None
+
+        except Exception as exc:
+            logger.error(f"Error resolving CivArchive model version info for {version_id}: {exc}")
+            return None, "Model lookup failed"
 
     async def get_model_by_url(self, url) -> Optional[Dict]:
         """Get specific model version by parsing CivArchive HTML page (legacy method)
