@@ -4,7 +4,47 @@
  */
 import { showToast } from '../../utils/uiHelpers.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
-import { PRESET_TAGS } from '../../utils/constants.js';
+import { translate } from '../../utils/i18nHelpers.js';
+import { getPriorityTagSuggestions } from '../../utils/priorityTagHelpers.js';
+
+let priorityTagSuggestions = [];
+let priorityTagSuggestionsLoaded = false;
+let priorityTagSuggestionsPromise = null;
+
+function ensurePriorityTagSuggestions() {
+    if (!priorityTagSuggestionsPromise) {
+        priorityTagSuggestionsPromise = getPriorityTagSuggestions()
+            .then((tags) => {
+                priorityTagSuggestions = tags;
+                priorityTagSuggestionsLoaded = true;
+                return tags;
+            })
+            .catch(() => {
+                priorityTagSuggestions = [];
+                priorityTagSuggestionsLoaded = true;
+                return priorityTagSuggestions;
+            })
+            .finally(() => {
+                priorityTagSuggestionsPromise = null;
+            });
+    }
+
+    return priorityTagSuggestionsLoaded && !priorityTagSuggestionsPromise
+        ? Promise.resolve(priorityTagSuggestions)
+        : priorityTagSuggestionsPromise;
+}
+
+ensurePriorityTagSuggestions();
+
+window.addEventListener('lm:priority-tags-updated', () => {
+    priorityTagSuggestionsLoaded = false;
+    ensurePriorityTagSuggestions().then(() => {
+        document.querySelectorAll('.metadata-edit-container .metadata-suggestions-container').forEach((container) => {
+            renderPriorityTagSuggestions(container, getCurrentEditTags());
+        });
+        updateSuggestionsDropdown();
+    });
+});
 
 // Create a named function so we can remove it later
 let saveTagsHandler = null;
@@ -260,7 +300,7 @@ function createTagEditUI(currentTags, editBtnHTML = '') {
 function createSuggestionsDropdown(existingTags = []) {
     const dropdown = document.createElement('div');
     dropdown.className = 'metadata-suggestions-dropdown';
-    
+
     // Create header
     const header = document.createElement('div');
     header.className = 'metadata-suggestions-header';
@@ -273,11 +313,33 @@ function createSuggestionsDropdown(existingTags = []) {
     // Create tag container
     const container = document.createElement('div');
     container.className = 'metadata-suggestions-container';
-    
-    // Add each preset tag as a suggestion
-    PRESET_TAGS.forEach(tag => {
+    if (priorityTagSuggestionsLoaded && !priorityTagSuggestionsPromise) {
+        renderPriorityTagSuggestions(container, existingTags);
+    } else {
+        container.innerHTML = `<div class="metadata-suggestions-loading">${translate('settings.priorityTags.loadingSuggestions', 'Loading suggestions…')}</div>`;
+        ensurePriorityTagSuggestions().then(() => {
+            if (!container.isConnected) {
+                return;
+            }
+            renderPriorityTagSuggestions(container, getCurrentEditTags());
+            updateSuggestionsDropdown();
+        }).catch(() => {
+            if (container.isConnected) {
+                container.innerHTML = '';
+            }
+        });
+    }
+
+    dropdown.appendChild(container);
+    return dropdown;
+}
+
+function renderPriorityTagSuggestions(container, existingTags = []) {
+    container.innerHTML = '';
+
+    priorityTagSuggestions.forEach((tag) => {
         const isAdded = existingTags.includes(tag);
-        
+
         const item = document.createElement('div');
         item.className = `metadata-suggestion-item ${isAdded ? 'already-added' : ''}`;
         item.title = tag;
@@ -285,28 +347,21 @@ function createSuggestionsDropdown(existingTags = []) {
             <span class="metadata-suggestion-text">${tag}</span>
             ${isAdded ? '<span class="added-indicator"><i class="fas fa-check"></i></span>' : ''}
         `;
-        
+
         if (!isAdded) {
             item.addEventListener('click', () => {
                 addNewTag(tag);
-                
-                // Also populate the input field for potential editing
+
                 const input = document.querySelector('.metadata-input');
                 if (input) input.value = tag;
-                
-                // Focus on the input
                 if (input) input.focus();
-                
-                // Update dropdown without removing it
+
                 updateSuggestionsDropdown();
             });
         }
-        
+
         container.appendChild(item);
     });
-    
-    dropdown.appendChild(container);
-    return dropdown;
 }
 
 /**
@@ -406,10 +461,9 @@ function addNewTag(tag) {
 function updateSuggestionsDropdown() {
     const dropdown = document.querySelector('.metadata-suggestions-dropdown');
     if (!dropdown) return;
-    
+
     // Get all current tags
-    const currentTags = document.querySelectorAll('.metadata-item');
-    const existingTags = Array.from(currentTags).map(tag => tag.dataset.tag);
+    const existingTags = getCurrentEditTags();
     
     // Update status of each item in dropdown
     dropdown.querySelectorAll('.metadata-suggestion-item').forEach(item => {
@@ -454,6 +508,11 @@ function updateSuggestionsDropdown() {
             }
         }
     });
+}
+
+function getCurrentEditTags() {
+    const currentTags = document.querySelectorAll('.metadata-item');
+    return Array.from(currentTags).map(tag => tag.dataset.tag);
 }
 
 /**

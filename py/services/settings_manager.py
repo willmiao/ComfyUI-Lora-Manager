@@ -4,9 +4,16 @@ import os
 import logging
 from datetime import datetime, timezone
 from threading import Lock
-from typing import Any, Dict, Iterable, List, Mapping, Optional
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
+from ..utils.constants import DEFAULT_PRIORITY_TAG_CONFIG
 from ..utils.settings_paths import ensure_settings_file
+from ..utils.tag_priorities import (
+    PriorityTagEntry,
+    collect_canonical_tags,
+    parse_priority_tag_string,
+    resolve_priority_tag,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +43,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "card_info_display": "always",
     "include_trigger_words": False,
     "compact_mode": False,
+    "priority_tags": DEFAULT_PRIORITY_TAG_CONFIG.copy(),
 }
 
 
@@ -63,6 +71,12 @@ class SettingsManager:
     def _ensure_default_settings(self) -> None:
         """Ensure all default settings keys exist"""
         updated = False
+        normalized_priority = self._normalize_priority_tag_config(
+            self.settings.get("priority_tags")
+        )
+        if normalized_priority != self.settings.get("priority_tags"):
+            self.settings["priority_tags"] = normalized_priority
+            updated = True
         for key, value in self._get_default_settings().items():
             if key not in self.settings:
                 if isinstance(value, dict):
@@ -385,7 +399,55 @@ class SettingsManager:
         # Ensure nested dicts are independent copies
         defaults['base_model_path_mappings'] = {}
         defaults['download_path_templates'] = {}
+        defaults['priority_tags'] = DEFAULT_PRIORITY_TAG_CONFIG.copy()
         return defaults
+
+    def _normalize_priority_tag_config(self, value: Any) -> Dict[str, str]:
+        normalized: Dict[str, str] = {}
+        if isinstance(value, Mapping):
+            for key, raw in value.items():
+                if not isinstance(key, str) or not isinstance(raw, str):
+                    continue
+                normalized[key] = raw.strip()
+
+        for model_type, default_value in DEFAULT_PRIORITY_TAG_CONFIG.items():
+            normalized.setdefault(model_type, default_value)
+
+        return normalized
+
+    def get_priority_tag_config(self) -> Dict[str, str]:
+        stored_value = self.settings.get("priority_tags")
+        normalized = self._normalize_priority_tag_config(stored_value)
+        if normalized != stored_value:
+            self.settings["priority_tags"] = normalized
+            self._save_settings()
+        return normalized.copy()
+
+    def get_priority_tag_entries(self, model_type: str) -> List[PriorityTagEntry]:
+        config = self.get_priority_tag_config()
+        raw_config = config.get(model_type, "")
+        return parse_priority_tag_string(raw_config)
+
+    def resolve_priority_tag_for_model(
+        self, tags: Sequence[str] | Iterable[str], model_type: str
+    ) -> str:
+        entries = self.get_priority_tag_entries(model_type)
+        resolved = resolve_priority_tag(tags, entries)
+        if resolved:
+            return resolved
+
+        for tag in tags:
+            if isinstance(tag, str) and tag:
+                return tag
+        return ""
+
+    def get_priority_tag_suggestions(self) -> Dict[str, List[str]]:
+        suggestions: Dict[str, List[str]] = {}
+        config = self.get_priority_tag_config()
+        for model_type, raw_value in config.items():
+            entries = parse_priority_tag_string(raw_value)
+            suggestions[model_type] = collect_canonical_tags(entries)
+        return suggestions
 
     def get(self, key: str, default: Any = None) -> Any:
         """Get setting value"""

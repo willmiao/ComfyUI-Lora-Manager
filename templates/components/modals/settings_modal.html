@@ -250,6 +250,32 @@
                 </div>
             </div>
 
+            <div class="settings-section">
+                <h3>{{ t('settings.priorityTags.title') }}</h3>
+                <p class="settings-help-text">{{ t('settings.priorityTags.description') }}</p>
+                <div class="priority-tags-grid">
+                    <div class="priority-tags-group">
+                        <label for="loraPriorityTagsInput">{{ t('settings.priorityTags.modelTypes.lora') }}</label>
+                        <textarea id="loraPriorityTagsInput" class="priority-tags-input" rows="3" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
+                        <div class="input-help">{{ t('settings.priorityTags.help') }}</div>
+                        <div class="input-error-message" id="loraPriorityTagsError"></div>
+                    </div>
+                    <div class="priority-tags-group">
+                        <label for="checkpointPriorityTagsInput">{{ t('settings.priorityTags.modelTypes.checkpoint') }}</label>
+                        <textarea id="checkpointPriorityTagsInput" class="priority-tags-input" rows="3" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
+                        <div class="input-help">{{ t('settings.priorityTags.help') }}</div>
+                        <div class="input-error-message" id="checkpointPriorityTagsError"></div>
+                    </div>
+                    <div class="priority-tags-group">
+                        <label for="embeddingPriorityTagsInput">{{ t('settings.priorityTags.modelTypes.embedding') }}</label>
+                        <textarea id="embeddingPriorityTagsInput" class="priority-tags-input" rows="3" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
+                        <div class="input-help">{{ t('settings.priorityTags.help') }}</div>
+                        <div class="input-error-message" id="embeddingPriorityTagsError"></div>
+                    </div>
+                </div>
+                <p class="settings-help-text subtle">{{ t('settings.priorityTags.aliasHint') }}</p>
+            </div>
+
             <!-- Default Path Customization Section -->
             <div class="settings-section">
                 <h3>{{ t('settings.downloadPathTemplates.title') }}</h3>

@@ -4,7 +4,6 @@ from typing import Dict
 from ..services.service_registry import ServiceRegistry
 from ..config import config
 from ..services.settings_manager import get_settings_manager
-from .constants import CIVITAI_MODEL_TAGS
 import asyncio
 
 def get_lora_info(lora_name):
@@ -170,16 +169,7 @@ def calculate_relative_path_for_model(model_data: Dict, model_type: str = 'lora'
     base_model_mappings = settings_manager.get('base_model_path_mappings', {})
     mapped_base_model = base_model_mappings.get(base_model, base_model)
 
-    # Find the first Civitai model tag that exists in model_tags
-    first_tag = ''
-    for civitai_tag in CIVITAI_MODEL_TAGS:
-        if civitai_tag in model_tags:
-            first_tag = civitai_tag
-            break
-
-    # If no Civitai model tag found, fallback to first tag
-    if not first_tag and model_tags:
-        first_tag = model_tags[0]
+    first_tag = settings_manager.resolve_priority_tag_for_model(model_tags, model_type)
 
     if not first_tag:
         first_tag = 'no tags'  # Default if no tags available

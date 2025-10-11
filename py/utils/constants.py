@@ -65,3 +65,10 @@ CIVITAI_MODEL_TAGS = [
     'poses', 'background', 'tool', 'vehicle', 'buildings',
     'objects', 'assets', 'animal', 'action'
 ]
+
+# Default priority tag configuration strings for each model type
+DEFAULT_PRIORITY_TAG_CONFIG = {
+    'lora': ', '.join(CIVITAI_MODEL_TAGS),
+    'checkpoint': ', '.join(CIVITAI_MODEL_TAGS),
+    'embedding': ', '.join(CIVITAI_MODEL_TAGS),
+}

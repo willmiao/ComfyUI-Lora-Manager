@@ -6,7 +6,7 @@ import uuid
 from typing import Dict, List
 from urllib.parse import urlparse
 from ..utils.models import LoraMetadata, CheckpointMetadata, EmbeddingMetadata
-from ..utils.constants import CARD_PREVIEW_WIDTH, VALID_LORA_TYPES, CIVITAI_MODEL_TAGS
+from ..utils.constants import CARD_PREVIEW_WIDTH, VALID_LORA_TYPES
 from ..utils.civitai_utils import rewrite_preview_url
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
@@ -386,18 +386,9 @@ class DownloadManager:
         
         # Get model tags
         model_tags = version_info.get('model', {}).get('tags', [])
-        
-        # Find the first Civitai model tag that exists in model_tags
-        first_tag = ''
-        for civitai_tag in CIVITAI_MODEL_TAGS:
-            if civitai_tag in model_tags:
-                first_tag = civitai_tag
-                break
-        
-        # If no Civitai model tag found, fallback to first tag
-        if not first_tag and model_tags:
-            first_tag = model_tags[0]
-        
+
+        first_tag = settings_manager.resolve_priority_tag_for_model(model_tags, model_type)
+
         # Format the template with available data
         formatted_path = path_template
         formatted_path = formatted_path.replace('{base_model}', mapped_base_model)

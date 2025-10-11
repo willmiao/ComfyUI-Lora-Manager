@@ -194,10 +194,16 @@ export const BASE_MODEL_CATEGORIES = {
     ]
 };
 
-// Preset tag suggestions
-export const PRESET_TAGS = [
+// Default priority tag entries for fallback suggestions and initial settings
+export const DEFAULT_PRIORITY_TAG_ENTRIES = [
     'character', 'concept', 'clothing',
     'realistic', 'anime', 'toon', 'furry', 'style',
-    'poses', 'background', 'vehicle', 'buildings',
-    'objects', 'animal'
+    'poses', 'background', 'tool', 'vehicle', 'buildings',
+    'objects', 'assets', 'animal', 'action'
 ];
+
+export const DEFAULT_PRIORITY_TAG_CONFIG = {
+    lora: DEFAULT_PRIORITY_TAG_ENTRIES.join(', '),
+    checkpoint: DEFAULT_PRIORITY_TAG_ENTRIES.join(', '),
+    embedding: DEFAULT_PRIORITY_TAG_ENTRIES.join(', ')
+};

@@ -2,10 +2,11 @@ import { modalManager } from './ModalManager.js';
 import { showToast } from '../utils/uiHelpers.js';
 import { state, createDefaultSettings } from '../state/index.js';
 import { resetAndReload } from '../api/modelApiFactory.js';
-import { DOWNLOAD_PATH_TEMPLATES, MAPPABLE_BASE_MODELS, PATH_TEMPLATE_PLACEHOLDERS, DEFAULT_PATH_TEMPLATES } from '../utils/constants.js';
+import { DOWNLOAD_PATH_TEMPLATES, MAPPABLE_BASE_MODELS, PATH_TEMPLATE_PLACEHOLDERS, DEFAULT_PATH_TEMPLATES, DEFAULT_PRIORITY_TAG_CONFIG } from '../utils/constants.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { i18n } from '../i18n/index.js';
 import { configureModelCardVideo } from '../components/shared/ModelCard.js';
+import { validatePriorityTagString, getPriorityTagSuggestionsMap, invalidatePriorityTagSuggestionsCache } from '../utils/priorityTagHelpers.js';
 
 export class SettingsManager {
     constructor() {
@@ -111,6 +112,17 @@ export class SettingsManager {
 
         merged.download_path_templates = { ...DEFAULT_PATH_TEMPLATES, ...templates };
 
+        const priorityTags = backendSettings?.priority_tags;
+        const normalizedPriority = { ...DEFAULT_PRIORITY_TAG_CONFIG };
+        if (priorityTags && typeof priorityTags === 'object' && !Array.isArray(priorityTags)) {
+            Object.entries(priorityTags).forEach(([modelType, configValue]) => {
+                if (typeof configValue === 'string') {
+                    normalizedPriority[modelType] = configValue.trim();
+                }
+            });
+        }
+        merged.priority_tags = normalizedPriority;
+
         Object.keys(merged).forEach(key => this.backendSettingKeys.add(key));
 
         return merged;
@@ -201,14 +213,14 @@ export class SettingsManager {
                     settingsManager.validateTemplate(modelType, template);
                     settingsManager.updateTemplatePreview(modelType, template);
                 });
-                
+
                 customInput.addEventListener('blur', (e) => {
                     const template = e.target.value;
                     if (settingsManager.validateTemplate(modelType, template)) {
                         settingsManager.updateTemplate(modelType, template);
                     }
                 });
-                
+
                 customInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         e.target.blur();
@@ -216,7 +228,9 @@ export class SettingsManager {
                 });
             }
         });
-        
+
+        this.setupPriorityTagInputs();
+
         this.initialized = true;
     }
 
@@ -291,6 +305,9 @@ export class SettingsManager {
         // Load download path templates
         this.loadDownloadPathTemplates();
 
+        // Load priority tag settings
+        this.loadPriorityTagSettings();
+
         // Set include trigger words setting
         const includeTriggerWordsCheckbox = document.getElementById('includeTriggerWords');
         if (includeTriggerWordsCheckbox) {
@@ -323,6 +340,131 @@ export class SettingsManager {
         }
 
         this.loadProxySettings();
+    }
+
+    setupPriorityTagInputs() {
+        ['lora', 'checkpoint', 'embedding'].forEach((modelType) => {
+            const textarea = document.getElementById(`${modelType}PriorityTagsInput`);
+            if (!textarea) {
+                return;
+            }
+
+            textarea.addEventListener('input', () => this.handlePriorityTagInput(modelType));
+            textarea.addEventListener('blur', () => this.handlePriorityTagBlur(modelType));
+        });
+    }
+
+    loadPriorityTagSettings() {
+        const priorityConfig = state.global.settings.priority_tags || {};
+        ['lora', 'checkpoint', 'embedding'].forEach((modelType) => {
+            const textarea = document.getElementById(`${modelType}PriorityTagsInput`);
+            if (!textarea) {
+                return;
+            }
+
+            const storedValue = priorityConfig[modelType] ?? DEFAULT_PRIORITY_TAG_CONFIG[modelType] ?? '';
+            textarea.value = storedValue;
+            this.displayPriorityTagValidation(modelType, true, []);
+        });
+    }
+
+    handlePriorityTagInput(modelType) {
+        const textarea = document.getElementById(`${modelType}PriorityTagsInput`);
+        if (!textarea) {
+            return;
+        }
+
+        const validation = validatePriorityTagString(textarea.value);
+        this.displayPriorityTagValidation(modelType, validation.valid, validation.errors);
+    }
+
+    async handlePriorityTagBlur(modelType) {
+        const textarea = document.getElementById(`${modelType}PriorityTagsInput`);
+        if (!textarea) {
+            return;
+        }
+
+        const validation = validatePriorityTagString(textarea.value);
+        if (!validation.valid) {
+            this.displayPriorityTagValidation(modelType, false, validation.errors);
+            return;
+        }
+
+        const sanitized = validation.formatted;
+        const currentValue = state.global.settings.priority_tags?.[modelType] || '';
+        this.displayPriorityTagValidation(modelType, true, []);
+
+        if (sanitized === currentValue) {
+            textarea.value = sanitized;
+            return;
+        }
+
+        const updatedConfig = {
+            ...state.global.settings.priority_tags,
+            [modelType]: sanitized,
+        };
+
+        try {
+            textarea.value = sanitized;
+            await this.saveSetting('priority_tags', updatedConfig);
+            showToast('settings.priorityTags.saveSuccess', {}, 'success');
+            await this.refreshPriorityTagSuggestions();
+        } catch (error) {
+            console.error('Failed to save priority tag configuration:', error);
+            showToast('settings.priorityTags.saveError', {}, 'error');
+        }
+    }
+
+    displayPriorityTagValidation(modelType, isValid, errors = []) {
+        const textarea = document.getElementById(`${modelType}PriorityTagsInput`);
+        const errorElement = document.getElementById(`${modelType}PriorityTagsError`);
+        if (!textarea) {
+            return;
+        }
+
+        if (isValid || errors.length === 0) {
+            textarea.classList.remove('input-error');
+            if (errorElement) {
+                errorElement.textContent = '';
+                errorElement.style.display = 'none';
+            }
+            return;
+        }
+
+        textarea.classList.add('input-error');
+        if (errorElement) {
+            const message = this.getPriorityTagErrorMessage(errors[0]);
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+    }
+
+    getPriorityTagErrorMessage(error) {
+        if (!error) {
+            return '';
+        }
+
+        const entryIndex = error.index ?? 0;
+        switch (error.type) {
+            case 'missingClosingParen':
+                return translate('settings.priorityTags.validation.missingClosingParen', { index: entryIndex }, `Entry ${entryIndex} is missing a closing parenthesis.`);
+            case 'missingCanonical':
+                return translate('settings.priorityTags.validation.missingCanonical', { index: entryIndex }, `Entry ${entryIndex} must include a canonical tag.`);
+            case 'duplicateCanonical':
+                return translate('settings.priorityTags.validation.duplicateCanonical', { tag: error.canonical }, `The canonical tag "${error.canonical}" is duplicated.`);
+            default:
+                return translate('settings.priorityTags.validation.unknown', {}, 'Invalid priority tag configuration.');
+        }
+    }
+
+    async refreshPriorityTagSuggestions() {
+        invalidatePriorityTagSuggestionsCache();
+        try {
+            await getPriorityTagSuggestionsMap();
+            window.dispatchEvent(new CustomEvent('lm:priority-tags-updated'));
+        } catch (error) {
+            console.warn('Failed to refresh priority tag suggestions:', error);
+        }
     }
 
     loadProxySettings() {

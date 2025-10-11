@@ -162,6 +162,7 @@ class SettingsHandler:
         "include_trigger_words",
         "show_only_sfw",
         "compact_mode",
+        "priority_tags",
     )
 
     _PROXY_KEYS = {"proxy_enabled", "proxy_host", "proxy_port", "proxy_username", "proxy_password", "proxy_type"}
@@ -205,6 +206,14 @@ class SettingsHandler:
             return web.json_response({"success": True, "settings": response_data})
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Error getting settings: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_priority_tags(self, request: web.Request) -> web.Response:
+        try:
+            suggestions = self._settings.get_priority_tag_suggestions()
+            return web.json_response({"success": True, "tags": suggestions})
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Error getting priority tags: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def activate_library(self, request: web.Request) -> web.Response:
@@ -942,6 +951,7 @@ class MiscHandlerSet:
             "health_check": self.health.health_check,
             "get_settings": self.settings.get_settings,
             "update_settings": self.settings.update_settings,
+            "get_priority_tags": self.settings.get_priority_tags,
             "get_settings_libraries": self.settings.get_libraries,
             "activate_library": self.settings.activate_library,
             "update_usage_stats": self.usage_stats.update_usage_stats,

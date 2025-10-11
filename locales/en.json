@@ -199,6 +199,7 @@
             "videoSettings": "Video Settings",
             "layoutSettings": "Layout Settings",
             "folderSettings": "Folder Settings",
+            "priorityTags": "Priority Tags",
             "downloadPathTemplates": "Download Path Templates",
             "exampleImages": "Example Images",
             "misc": "Misc.",
@@ -252,6 +253,27 @@
             "defaultEmbeddingRoot": "Default Embedding Root",
             "defaultEmbeddingRootHelp": "Set the default embedding root directory for downloads, imports and moves",
             "noDefault": "No Default"
+        },
+        "priorityTags": {
+            "title": "Priority Tags",
+            "description": "Customize the tag priority order for each model type. The first match becomes the folder name and powers tag suggestions.",
+            "placeholder": "celebrity(celeb|celebrity), stylized, character(char)",
+            "help": "Separate entries with commas. Add aliases inside parentheses using the | symbol.",
+            "aliasHint": "Tip: Keep canonical names short and meaningful. You can use new lines to group related entries.",
+            "modelTypes": {
+                "lora": "LoRA priority",
+                "checkpoint": "Checkpoint priority",
+                "embedding": "Embedding priority"
+            },
+            "saveSuccess": "Priority tags updated.",
+            "saveError": "Failed to update priority tags.",
+            "loadingSuggestions": "Loading suggestions…",
+            "validation": {
+                "missingClosingParen": "Entry {index} is missing a closing parenthesis.",
+                "missingCanonical": "Entry {index} must include a canonical tag name.",
+                "duplicateCanonical": "The canonical tag \"{tag}\" appears more than once.",
+                "unknown": "Invalid priority tag configuration."
+            }
         },
         "downloadPathTemplates": {
             "title": "Download Path Templates",
