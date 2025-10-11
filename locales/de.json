@@ -32,7 +32,7 @@
             "korean": "한국어",
             "french": "Français",
             "spanish": "Español",
-			"Hebrew": "עברית"
+            "Hebrew": "עברית"
         },
         "fileSize": {
             "zero": "0 Bytes",
@@ -199,6 +199,7 @@
             "videoSettings": "Video-Einstellungen",
             "layoutSettings": "Layout-Einstellungen",
             "folderSettings": "Ordner-Einstellungen",
+            "priorityTags": "Priority Tags",
             "downloadPathTemplates": "Download-Pfad-Vorlagen",
             "exampleImages": "Beispielbilder",
             "misc": "Verschiedenes",
@@ -252,6 +253,27 @@
             "defaultEmbeddingRoot": "Standard-Embedding-Stammordner",
             "defaultEmbeddingRootHelp": "Legen Sie den Standard-Embedding-Stammordner für Downloads, Importe und Verschiebungen fest",
             "noDefault": "Kein Standard"
+        },
+        "priorityTags": {
+            "title": "Priority Tags",
+            "description": "Customize the tag priority order for each model type. The first match becomes the folder name and powers tag suggestions.",
+            "placeholder": "celebrity(celeb|celebrity), stylized, character(char)",
+            "help": "Separate entries with commas. Add aliases inside parentheses using the | symbol.",
+            "aliasHint": "Tip: Keep canonical names short and meaningful. You can use new lines to group related entries.",
+            "modelTypes": {
+                "lora": "LoRA priority",
+                "checkpoint": "Checkpoint priority",
+                "embedding": "Embedding priority"
+            },
+            "saveSuccess": "Priority tags updated.",
+            "saveError": "Failed to update priority tags.",
+            "loadingSuggestions": "Loading suggestions…",
+            "validation": {
+                "missingClosingParen": "Entry {index} is missing a closing parenthesis.",
+                "missingCanonical": "Entry {index} must include a canonical tag name.",
+                "duplicateCanonical": "The canonical tag \"{tag}\" appears more than once.",
+                "unknown": "Invalid priority tag configuration."
+            }
         },
         "downloadPathTemplates": {
             "title": "Download-Pfad-Vorlagen",

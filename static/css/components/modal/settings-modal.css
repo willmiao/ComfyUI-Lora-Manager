@@ -204,6 +204,71 @@
     width: 100%; /* Full width */
 }
 
+.settings-help-text {
+    font-size: 0.9em;
+    color: var(--text-color);
+    opacity: 0.8;
+    margin-bottom: var(--space-2);
+    line-height: 1.4;
+}
+
+.settings-help-text.subtle {
+    font-size: 0.85em;
+    opacity: 0.7;
+    margin-top: var(--space-1);
+}
+
+.priority-tags-grid {
+    display: grid;
+    gap: var(--space-2);
+}
+
+@media (min-width: 640px) {
+    .priority-tags-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+}
+
+.priority-tags-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.priority-tags-input {
+    width: 100%;
+    min-height: 72px;
+    padding: 8px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    background-color: var(--lora-surface);
+    color: var(--text-color);
+    resize: vertical;
+}
+
+.priority-tags-input:focus {
+    border-color: var(--lora-accent);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+}
+
+.priority-tags-input.input-error {
+    border-color: var(--danger-color, #dc2626);
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12);
+}
+
+.input-error-message {
+    font-size: 0.8em;
+    color: var(--danger-color, #dc2626);
+    display: none;
+}
+
+.metadata-suggestions-loading {
+    font-size: 0.85em;
+    opacity: 0.7;
+    padding: 6px 0;
+}
+
 /* Settings Styles */
 .settings-section {
     margin-top: var(--space-3);

@@ -4,7 +4,8 @@ import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
-import { PRESET_TAGS, BASE_MODEL_CATEGORIES } from '../utils/constants.js';
+import { BASE_MODEL_CATEGORIES } from '../utils/constants.js';
+import { getPriorityTagSuggestions } from '../utils/priorityTagHelpers.js';
 import { eventManager } from '../utils/EventManager.js';
 import { translate } from '../utils/i18nHelpers.js';
 
@@ -59,6 +60,22 @@ export class BulkManager {
                 setContentRating: true
             }
         };
+
+        window.addEventListener('lm:priority-tags-updated', () => {
+            const container = document.querySelector('#bulkAddTagsModal .metadata-suggestions-container');
+            if (!container) {
+                return;
+            }
+            getPriorityTagSuggestions().then((tags) => {
+                if (!container.isConnected) {
+                    return;
+                }
+                this.renderBulkSuggestionItems(container, tags);
+                this.updateBulkSuggestionsDropdown();
+            }).catch(() => {
+                // Ignore refresh failures; UI will retry on next open
+            });
+        });
     }
 
     initialize() {
@@ -565,7 +582,7 @@ export class BulkManager {
         // Create suggestions dropdown
         const tagForm = document.querySelector('#bulkAddTagsModal .metadata-add-form');
         if (tagForm) {
-            const suggestionsDropdown = this.createBulkSuggestionsDropdown(PRESET_TAGS);
+            const suggestionsDropdown = this.createBulkSuggestionsDropdown();
             tagForm.appendChild(suggestionsDropdown);
         }
         
@@ -586,10 +603,10 @@ export class BulkManager {
         }
     }
     
-    createBulkSuggestionsDropdown(presetTags) {
+    createBulkSuggestionsDropdown() {
         const dropdown = document.createElement('div');
         dropdown.className = 'metadata-suggestions-dropdown';
-        
+
         const header = document.createElement('div');
         header.className = 'metadata-suggestions-header';
         header.innerHTML = `
@@ -597,15 +614,34 @@ export class BulkManager {
             <small>Click to add</small>
         `;
         dropdown.appendChild(header);
-        
+
         const container = document.createElement('div');
         container.className = 'metadata-suggestions-container';
-        
-        presetTags.forEach(tag => {
-            // Check if tag is already added
+        container.innerHTML = `<div class="metadata-suggestions-loading">${translate('settings.priorityTags.loadingSuggestions', 'Loading suggestions…')}</div>`;
+
+        getPriorityTagSuggestions().then((tags) => {
+            if (!container.isConnected) {
+                return;
+            }
+            this.renderBulkSuggestionItems(container, tags);
+            this.updateBulkSuggestionsDropdown();
+        }).catch(() => {
+            if (container.isConnected) {
+                container.innerHTML = '';
+            }
+        });
+
+        dropdown.appendChild(container);
+        return dropdown;
+    }
+
+    renderBulkSuggestionItems(container, tags) {
+        container.innerHTML = '';
+
+        tags.forEach(tag => {
             const existingTags = this.getBulkExistingTags();
             const isAdded = existingTags.includes(tag);
-            
+
             const item = document.createElement('div');
             item.className = `metadata-suggestion-item ${isAdded ? 'already-added' : ''}`;
             item.title = tag;
@@ -613,7 +649,7 @@ export class BulkManager {
                 <span class="metadata-suggestion-text">${tag}</span>
                 ${isAdded ? '<span class="added-indicator"><i class="fas fa-check"></i></span>' : ''}
             `;
-            
+
             if (!isAdded) {
                 item.addEventListener('click', () => {
                     this.addBulkTag(tag);
@@ -622,16 +658,12 @@ export class BulkManager {
                         input.value = tag;
                         input.focus();
                     }
-                    // Update dropdown to show added indicator
                     this.updateBulkSuggestionsDropdown();
                 });
             }
-            
+
             container.appendChild(item);
         });
-        
-        dropdown.appendChild(container);
-        return dropdown;
     }
     
     addBulkTag(tag) {

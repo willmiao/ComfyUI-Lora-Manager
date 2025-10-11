@@ -26,19 +26,13 @@
             "english": "English",
             "chinese_simplified": "中文（简体）",
             "chinese_traditional": "中文（繁体）",
-            "russian": "俄语",
-            "german": "德语",
-            "japanese": "日语",
-            "korean": "韩语",
-            "french": "法语",
-            "spanish": "西班牙语",
-		    "Hebrew": "עברית",
             "russian": "Русский",
             "german": "Deutsch",
             "japanese": "日本語",
             "korean": "한국어",
             "french": "Français",
-            "spanish": "Español"
+            "spanish": "Español",
+            "Hebrew": "עברית"
         },
         "fileSize": {
             "zero": "0 字节",
@@ -209,7 +203,8 @@
             "exampleImages": "示例图片",
             "misc": "其他",
             "metadataArchive": "元数据归档数据库",
-            "proxySettings": "代理设置"
+            "proxySettings": "代理设置",
+            "priorityTags": "Priority Tags"
         },
         "contentFiltering": {
             "blurNsfwContent": "模糊 NSFW 内容",
@@ -351,6 +346,27 @@
             "proxyPassword": "密码 (可选)",
             "proxyPasswordPlaceholder": "密码",
             "proxyPasswordHelp": "代理认证的密码 (如果需要)"
+        },
+        "priorityTags": {
+            "title": "Priority Tags",
+            "description": "Customize the tag priority order for each model type. The first match becomes the folder name and powers tag suggestions.",
+            "placeholder": "celebrity(celeb|celebrity), stylized, character(char)",
+            "help": "Separate entries with commas. Add aliases inside parentheses using the | symbol.",
+            "aliasHint": "Tip: Keep canonical names short and meaningful. You can use new lines to group related entries.",
+            "modelTypes": {
+                "lora": "LoRA priority",
+                "checkpoint": "Checkpoint priority",
+                "embedding": "Embedding priority"
+            },
+            "saveSuccess": "Priority tags updated.",
+            "saveError": "Failed to update priority tags.",
+            "loadingSuggestions": "Loading suggestions…",
+            "validation": {
+                "missingClosingParen": "Entry {index} is missing a closing parenthesis.",
+                "missingCanonical": "Entry {index} must include a canonical tag name.",
+                "duplicateCanonical": "The canonical tag \"{tag}\" appears more than once.",
+                "unknown": "Invalid priority tag configuration."
+            }
         }
     },
     "loras": {

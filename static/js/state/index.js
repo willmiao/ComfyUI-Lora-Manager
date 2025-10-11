@@ -1,7 +1,7 @@
 // Create the new hierarchical state structure
 import { getStorageItem, getMapFromStorage } from '../utils/storageHelpers.js';
 import { MODEL_TYPES } from '../api/apiConfig.js';
-import { DEFAULT_PATH_TEMPLATES } from '../utils/constants.js';
+import { DEFAULT_PATH_TEMPLATES, DEFAULT_PRIORITY_TAG_CONFIG } from '../utils/constants.js';
 
 const DEFAULT_SETTINGS_BASE = Object.freeze({
     civitai_api_key: '',
@@ -28,6 +28,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     card_info_display: 'always',
     include_trigger_words: false,
     compact_mode: false,
+    priority_tags: { ...DEFAULT_PRIORITY_TAG_CONFIG },
 });
 
 export function createDefaultSettings() {
@@ -35,6 +36,7 @@ export function createDefaultSettings() {
         ...DEFAULT_SETTINGS_BASE,
         base_model_path_mappings: {},
         download_path_templates: { ...DEFAULT_PATH_TEMPLATES },
+        priority_tags: { ...DEFAULT_PRIORITY_TAG_CONFIG },
     };
 }
 
