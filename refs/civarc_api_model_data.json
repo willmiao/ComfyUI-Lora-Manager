@@ -1,0 +1,134 @@
+{
+    "id": 1746460,
+    "name": "Mixplin Style [Illustrious]",
+    "type": "LORA",
+    "description": "description",
+    "username": "Ty_Lee",
+    "downloadCount": 4207,
+    "favoriteCount": 0,
+    "commentCount": 8,
+    "ratingCount": 0,
+    "rating": 0,
+    "is_nsfw": true,
+    "nsfw_level": 31,
+    "createdAt": "2025-07-06T01:51:42.859Z",
+    "updatedAt": "2025-10-10T23:15:26.714Z",
+    "deletedAt": null,
+    "tags": [
+        "art",
+        "style",
+        "artist style",
+        "styles",
+        "mixplin",
+        "artiststyle"
+    ],
+    "creator_id": "Ty_Lee",
+    "creator_username": "Ty_Lee",
+    "creator_name": "Ty_Lee",
+    "creator_url": "/users/Ty_Lee",
+    "versions": [
+        {
+            "id": 2042594,
+            "name": "v2.0",
+            "href": "/models/1746460?modelVersionId=2042594"
+        },
+        {
+            "id": 1976567,
+            "name": "v1.0",
+            "href": "/models/1746460?modelVersionId=1976567"
+        }
+    ],
+    "version": {
+        "id": 1976567,
+        "modelId": 1746460,
+        "name": "v1.0",
+        "baseModel": "Illustrious",
+        "baseModelType": "Standard",
+        "description": null,
+        "downloadCount": 437,
+        "ratingCount": 0,
+        "rating": 0,
+        "is_nsfw": true,
+        "nsfw_level": 31,
+        "createdAt": "2025-07-05T10:17:28.716Z",
+        "updatedAt": "2025-10-10T23:15:26.756Z",
+        "deletedAt": null,
+        "files": [
+            {
+                "id": 1874043,
+                "name": "mxpln-illustrious-ty_lee.safetensors",
+                "type": "Model",
+                "sizeKB": 223124.37109375,
+                "downloadUrl": "https://civitai.com/api/download/models/1976567",
+                "modelId": 1746460,
+                "modelName": "Mixplin Style [Illustrious]",
+                "modelVersionId": 1976567,
+                "is_nsfw": true,
+                "nsfw_level": 31,
+                "sha256": "e2b7a280d6539556f23f380b3f71e4e22bc4524445c4c96526e117c6005c6ad3",
+                "createdAt": "2025-07-05T10:17:28.716Z",
+                "updatedAt": "2025-10-10T23:15:26.766Z",
+                "is_primary": false,
+                "mirrors": [
+                    {
+                        "filename": "mxpln-illustrious-ty_lee.safetensors",
+                        "url": "https://civitai.com/api/download/models/1976567",
+                        "source": "civitai",
+                        "model_id": 1746460,
+                        "model_version_id": 1976567,
+                        "deletedAt": null,
+                        "is_gated": false,
+                        "is_paid": false
+                    }
+                ]
+            }
+        ],
+        "images": [
+            {
+                "id": 86403595,
+                "url": "https://img.genur.art/sig/width:450/quality:85/aHR0cHM6Ly9jLmdlbnVyLmFydC9hNmE3Njc2YS0wMWQ3LTQ1YzAtOWEzYS1mNWJiYTU4MDNiMDE=",
+                "nsfwLevel": 1,
+                "width": 1560,
+                "height": 2280,
+                "hash": "U7G8Zp0w02%IA6%N00-;D]-W~VNG0nMw-.IV",
+                "type": "image",
+                "minor": false,
+                "poi": false,
+                "hasMeta": true,
+                "hasPositivePrompt": true,
+                "onSite": false,
+                "remixOfId": null,
+                "image_url": "https://img.genur.art/sig/width:450/quality:85/aHR0cHM6Ly9jLmdlbnVyLmFydC9hNmE3Njc2YS0wMWQ3LTQ1YzAtOWEzYS1mNWJiYTU4MDNiMDE=",
+                "link": "https://genur.art/posts/86403595"
+            }
+        ],
+        "trigger": [
+            "mxpln"
+        ],
+        "allow_download": true,
+        "download_url": "/api/download/models/1976567",
+        "platform_url": "https://civitai.com/models/1746460?modelVersionId=1976567",
+        "civitai_model_id": 1746460,
+        "civitai_model_version_id": 1976567,
+        "href": "/models/1746460?modelVersionId=1976567",
+        "mirrors": [
+            {
+                "platform": "tensorart",
+                "href": "/tensorart/models/904473536033245448/versions/904473536033245448",
+                "platform_url": "https://tensor.art/models/904473536033245448",
+                "name": "Mixplin Style MXP",
+                "version_name": "Mixplin",
+                "id": "904473536033245448",
+                "version_id": "904473536033245448"
+            }
+        ]
+    },
+    "platform": "civitai",
+    "platform_name": "CivitAI",
+    "meta": {
+        "title": "Mixplin Style [Illustrious] - v1.0 - CivitAI Archive",
+        "description": "Mixplin Style [Illustrious] v1.0 is a Illustrious LORA AI model created by Ty_Lee for generating images of art, style, artist style, styles, mixplin, artiststyle",
+        "image": "https://img.genur.art/sig/width:450/quality:85/aHR0cHM6Ly9jLmdlbnVyLmFydC9hNmE3Njc2YS0wMWQ3LTQ1YzAtOWEzYS1mNWJiYTU4MDNiMDE=",
+        "canonical": "https://civarchive.com/models/1746460?modelVersionId=1976567"
+    }
+}

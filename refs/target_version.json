@@ -1,0 +1,38 @@
+{
+  "id": 2269146,
+  "modelId": 2004760,
+  "name": "v1.0 Illustrious",
+  "nsfwLevel": 1,
+  "trainedWords": ["PencilSketchDaal"],
+  "baseModel": "Illustrious",
+  "description": "<p>Illustrious. Your pencil may vary with your checkpoint. </p>",
+  "model": {
+    "name": "Pencil Sketch Anime",
+    "type": "LORA",
+    "nsfw": false,
+    "description": "description",
+    "tags": ["style"]
+  },
+  "files": [
+    {
+      "id": 2161260,
+      "sizeKB": 223106.37890625,
+      "name": "Pencil-Sketch-Illustrious.safetensors",
+      "type": "Model",
+      "hashes": {
+        "SHA256": "2C70479CD673B0FE056EAF4FD97C7F33A39F14853805431AC9AB84226ECE3B82"
+      },
+      "primary": true,
+      "downloadUrl": "https://civitai.com/api/download/models/2269146",
+      "mirrors": {}
+    }
+  ],
+  "images": [
+    {},
+    {}
+  ],
+  "creator": {
+    "username": "Daalis",
+    "image": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/eb245b49-edc8-4ed6-ad7b-6d61eb8c51de/width=96/Daalis.jpeg"
+  }
+}

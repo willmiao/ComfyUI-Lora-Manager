@@ -32,6 +32,8 @@ def build_service(
         get_model_by_hash=AsyncMock(),
         get_model_version=AsyncMock(),
     )
+    if default_provider is None:
+        provider.get_model_by_hash.return_value = (None, None)
 
     default_provider_factory = AsyncMock(return_value=provider)
     provider_selector = provider_selector or AsyncMock(return_value=provider)
@@ -138,6 +140,7 @@ async def test_fetch_and_update_model_success_updates_cache(tmp_path):
     assert model_data["from_civitai"] is True
     assert model_data["civitai_deleted"] is False
     assert "civitai" in model_data
+    assert model_data["metadata_source"] == "civitai_api"
 
     helpers.metadata_manager.hydrate_model_data.assert_not_awaited()
     assert model_data["hydrated"] is True
@@ -217,6 +220,124 @@ async def test_fetch_and_update_model_respects_deleted_without_archive():
     helpers.default_provider_factory.assert_not_awaited()
     helpers.metadata_manager.hydrate_model_data.assert_not_awaited()
     update_cache.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_prefers_civarchive_for_deleted_models(tmp_path):
+    default_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(),
+        get_model_version=AsyncMock(),
+    )
+    civarchive_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(
+            return_value=(
+                {
+                    "source": "civarchive",
+                    "model": {"name": "Recovered", "description": "", "tags": []},
+                    "images": [],
+                    "baseModel": "sdxl",
+                },
+                None,
+            )
+        ),
+        get_model_version=AsyncMock(),
+    )
+
+    async def select_provider(name: str):
+        return civarchive_provider if name == "civarchive_api" else default_provider
+
+    provider_selector = AsyncMock(side_effect=select_provider)
+    helpers = build_service(
+        settings_values={"enable_metadata_archive_db": False},
+        default_provider=default_provider,
+        provider_selector=provider_selector,
+    )
+
+    model_path = tmp_path / "model.safetensors"
+    model_data = {
+        "civitai_deleted": True,
+        "metadata_source": "civarchive",
+        "civitai": {"source": "civarchive"},
+        "file_path": str(model_path),
+    }
+    update_cache = AsyncMock()
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="deadbeef",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert ok
+    assert error is None
+    provider_selector.assert_awaited_with("civarchive_api")
+    helpers.default_provider_factory.assert_not_awaited()
+    civarchive_provider.get_model_by_hash.assert_awaited_once_with("deadbeef")
+    update_cache.assert_awaited()
+    assert model_data["metadata_source"] == "civarchive"
+    helpers.metadata_manager.save_metadata.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_falls_back_to_sqlite_after_civarchive_failure(tmp_path):
+    default_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(),
+        get_model_version=AsyncMock(),
+    )
+    civarchive_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(None, "Model not found")),
+        get_model_version=AsyncMock(),
+    )
+    sqlite_payload = {
+        "source": "archive_db",
+        "model": {"name": "Recovered", "description": "", "tags": []},
+        "images": [],
+        "baseModel": "sdxl",
+    }
+    sqlite_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(sqlite_payload, None)),
+        get_model_version=AsyncMock(),
+    )
+
+    async def select_provider(name: str):
+        if name == "civarchive_api":
+            return civarchive_provider
+        if name == "sqlite":
+            return sqlite_provider
+        return default_provider
+
+    provider_selector = AsyncMock(side_effect=select_provider)
+    helpers = build_service(
+        settings_values={"enable_metadata_archive_db": True},
+        default_provider=default_provider,
+        provider_selector=provider_selector,
+    )
+
+    model_path = tmp_path / "model.safetensors"
+    model_data = {
+        "civitai_deleted": True,
+        "db_checked": False,
+        "file_path": str(model_path),
+    }
+    update_cache = AsyncMock()
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="cafe",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert ok and error is None
+    assert civarchive_provider.get_model_by_hash.await_count == 1
+    assert sqlite_provider.get_model_by_hash.await_count == 1
+    assert model_data["metadata_source"] == "archive_db"
+    assert model_data["db_checked"] is True
+    assert provider_selector.await_args_list[0].args == ("civarchive_api",)
+    assert provider_selector.await_args_list[1].args == ("sqlite",)
+    update_cache.assert_awaited()
+    helpers.metadata_manager.save_metadata.assert_awaited()
 
 
 @pytest.mark.asyncio
