@@ -1,5 +1,28 @@
 import { DEFAULT_PRIORITY_TAG_CONFIG } from './constants.js';
 
+const MODEL_TYPE_ALIAS_MAP = {
+    loras: 'lora',
+    lora: 'lora',
+    checkpoints: 'checkpoint',
+    checkpoint: 'checkpoint',
+    embeddings: 'embedding',
+    embedding: 'embedding',
+};
+
+function normalizeModelTypeKey(modelType) {
+    if (typeof modelType !== 'string') {
+        return '';
+    }
+    const lower = modelType.toLowerCase();
+    if (MODEL_TYPE_ALIAS_MAP[lower]) {
+        return MODEL_TYPE_ALIAS_MAP[lower];
+    }
+    if (lower.endsWith('s')) {
+        return lower.slice(0, -1);
+    }
+    return lower;
+}
+
 function splitPriorityEntries(raw = '') {
     const segments = [];
     raw.split('\n').forEach(line => {
@@ -152,7 +175,18 @@ export async function getPriorityTagSuggestionsMap() {
                     if (!Array.isArray(tags)) {
                         return;
                     }
-                    normalized[modelType] = tags.filter(tag => typeof tag === 'string' && tag.trim());
+                    const key = normalizeModelTypeKey(modelType) || (typeof modelType === 'string' ? modelType.toLowerCase() : '');
+                    if (!key) {
+                        return;
+                    }
+                    const filtered = tags
+                        .filter((tag) => typeof tag === 'string')
+                        .map((tag) => tag.trim())
+                        .filter(Boolean);
+                    if (!normalized[key]) {
+                        normalized[key] = [];
+                    }
+                    normalized[key].push(...filtered);
                 });
 
                 const withDefaults = applyDefaultPriorityTagFallback(normalized);
@@ -172,8 +206,35 @@ export async function getPriorityTagSuggestionsMap() {
     return fetchPromise;
 }
 
-export async function getPriorityTagSuggestions() {
+export async function getPriorityTagSuggestions(modelType = null) {
     const map = await getPriorityTagSuggestionsMap();
+
+    if (modelType) {
+        const lower = typeof modelType === 'string' ? modelType.toLowerCase() : '';
+        const normalizedKey = normalizeModelTypeKey(modelType);
+        const candidates = [];
+        if (lower) {
+            candidates.push(lower);
+        }
+        if (normalizedKey && !candidates.includes(normalizedKey)) {
+            candidates.push(normalizedKey);
+        }
+        Object.entries(MODEL_TYPE_ALIAS_MAP).forEach(([alias, target]) => {
+            if (alias === lower || target === normalizedKey) {
+                if (!candidates.includes(target)) {
+                    candidates.push(target);
+                }
+            }
+        });
+
+        for (const key of candidates) {
+            if (Array.isArray(map[key])) {
+                return [...map[key]];
+            }
+        }
+        return [];
+    }
+
     const unique = new Set();
     Object.values(map).forEach((tags) => {
         tags.forEach((tag) => {
@@ -195,7 +256,8 @@ function buildDefaultPriorityTagMap() {
     const map = {};
     Object.entries(DEFAULT_PRIORITY_TAG_CONFIG).forEach(([modelType, configString]) => {
         const entries = parsePriorityTagString(configString);
-        map[modelType] = entries.map((entry) => entry.canonical);
+        const key = normalizeModelTypeKey(modelType) || modelType;
+        map[key] = entries.map((entry) => entry.canonical);
     });
     return map;
 }

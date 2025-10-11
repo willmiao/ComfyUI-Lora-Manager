@@ -37,6 +37,11 @@ vi.mock('../../../static/js/utils/constants.js', () => ({
     DEFAULT_PATH_TEMPLATES: {},
     MAPPABLE_BASE_MODELS: [],
     PATH_TEMPLATE_PLACEHOLDERS: {},
+    DEFAULT_PRIORITY_TAG_CONFIG: {
+        lora: 'character, style',
+        checkpoint: 'base, guide',
+        embedding: 'hint',
+    },
 }));
 
 vi.mock('../../../static/js/utils/i18nHelpers.js', () => ({

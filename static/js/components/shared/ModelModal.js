@@ -236,7 +236,7 @@ export async function showModelModal(model, modelType) {
     setupShowcaseScroll(modalId);
     setupTabSwitching();
     setupTagTooltip();
-    setupTagEditMode();
+    setupTagEditMode(modelType);
     setupModelNameEditing(modelWithFullData.file_path);
     setupBaseModelEditing(modelWithFullData.file_path);
     setupFileNameEditing(modelWithFullData.file_path);

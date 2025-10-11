@@ -6,38 +6,120 @@ import { showToast } from '../../utils/uiHelpers.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { getPriorityTagSuggestions } from '../../utils/priorityTagHelpers.js';
+import { state } from '../../state/index.js';
 
+const MODEL_TYPE_SUGGESTION_KEY_MAP = {
+    loras: 'lora',
+    lora: 'lora',
+    checkpoints: 'checkpoint',
+    checkpoint: 'checkpoint',
+    embeddings: 'embedding',
+    embedding: 'embedding',
+};
+
+let activeModelTypeKey = '';
 let priorityTagSuggestions = [];
 let priorityTagSuggestionsLoaded = false;
 let priorityTagSuggestionsPromise = null;
 
-function ensurePriorityTagSuggestions() {
+function normalizeModelTypeKey(modelType) {
+    if (!modelType) {
+        return '';
+    }
+    const lower = String(modelType).toLowerCase();
+    if (MODEL_TYPE_SUGGESTION_KEY_MAP[lower]) {
+        return MODEL_TYPE_SUGGESTION_KEY_MAP[lower];
+    }
+    if (lower.endsWith('s')) {
+        return lower.slice(0, -1);
+    }
+    return lower;
+}
+
+function resolveModelTypeKey(modelType = null) {
+    if (modelType) {
+        return normalizeModelTypeKey(modelType);
+    }
+    if (activeModelTypeKey) {
+        return activeModelTypeKey;
+    }
+    if (state?.currentPageType) {
+        return normalizeModelTypeKey(state.currentPageType);
+    }
+    return '';
+}
+
+function resetSuggestionState() {
+    priorityTagSuggestions = [];
+    priorityTagSuggestionsLoaded = false;
+    priorityTagSuggestionsPromise = null;
+}
+
+function setActiveModelTypeKey(modelType = null) {
+    const resolvedKey = resolveModelTypeKey(modelType);
+    if (resolvedKey === activeModelTypeKey) {
+        return activeModelTypeKey;
+    }
+    activeModelTypeKey = resolvedKey;
+    resetSuggestionState();
+    return activeModelTypeKey;
+}
+
+function ensurePriorityTagSuggestions(modelType = null) {
+    if (modelType !== null && modelType !== undefined) {
+        setActiveModelTypeKey(modelType);
+    } else if (!activeModelTypeKey) {
+        setActiveModelTypeKey();
+    }
+
+    if (!activeModelTypeKey) {
+        resetSuggestionState();
+        priorityTagSuggestionsLoaded = true;
+        return Promise.resolve([]);
+    }
+
+    if (priorityTagSuggestionsLoaded && !priorityTagSuggestionsPromise) {
+        return Promise.resolve(priorityTagSuggestions);
+    }
+
     if (!priorityTagSuggestionsPromise) {
-        priorityTagSuggestionsPromise = getPriorityTagSuggestions()
+        const requestKey = activeModelTypeKey;
+        priorityTagSuggestionsPromise = getPriorityTagSuggestions(requestKey)
             .then((tags) => {
-                priorityTagSuggestions = tags;
-                priorityTagSuggestionsLoaded = true;
+                if (activeModelTypeKey === requestKey) {
+                    priorityTagSuggestions = tags;
+                    priorityTagSuggestionsLoaded = true;
+                }
                 return tags;
             })
             .catch(() => {
-                priorityTagSuggestions = [];
-                priorityTagSuggestionsLoaded = true;
-                return priorityTagSuggestions;
+                if (activeModelTypeKey === requestKey) {
+                    priorityTagSuggestions = [];
+                    priorityTagSuggestionsLoaded = true;
+                }
+                return [];
             })
             .finally(() => {
-                priorityTagSuggestionsPromise = null;
+                if (activeModelTypeKey === requestKey) {
+                    priorityTagSuggestionsPromise = null;
+                }
             });
     }
 
-    return priorityTagSuggestionsLoaded && !priorityTagSuggestionsPromise
-        ? Promise.resolve(priorityTagSuggestions)
-        : priorityTagSuggestionsPromise;
+    return priorityTagSuggestionsPromise;
 }
 
-ensurePriorityTagSuggestions();
+activeModelTypeKey = resolveModelTypeKey();
+
+if (activeModelTypeKey) {
+    ensurePriorityTagSuggestions();
+}
 
 window.addEventListener('lm:priority-tags-updated', () => {
-    priorityTagSuggestionsLoaded = false;
+    if (!activeModelTypeKey) {
+        return;
+    }
+    resetSuggestionState();
     ensurePriorityTagSuggestions().then(() => {
         document.querySelectorAll('.metadata-edit-container .metadata-suggestions-container').forEach((container) => {
             renderPriorityTagSuggestions(container, getCurrentEditTags());
@@ -52,9 +134,12 @@ let saveTagsHandler = null;
 /**
  * Set up tag editing mode
  */
-export function setupTagEditMode() {
+export function setupTagEditMode(modelType = null) {
     const editBtn = document.querySelector('.edit-tags-btn');
     if (!editBtn) return;
+
+    setActiveModelTypeKey(modelType);
+    ensurePriorityTagSuggestions();
     
     // Store original tags for restoring on cancel
     let originalTags = [];

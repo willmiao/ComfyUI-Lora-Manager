@@ -66,7 +66,11 @@ export class BulkManager {
             if (!container) {
                 return;
             }
-            getPriorityTagSuggestions().then((tags) => {
+            const currentType = state.currentPageType;
+            if (!currentType || currentType === 'recipes') {
+                return;
+            }
+            getPriorityTagSuggestions(currentType).then((tags) => {
                 if (!container.isConnected) {
                     return;
                 }
@@ -619,17 +623,22 @@ export class BulkManager {
         container.className = 'metadata-suggestions-container';
         container.innerHTML = `<div class="metadata-suggestions-loading">${translate('settings.priorityTags.loadingSuggestions', 'Loading suggestions…')}</div>`;
 
-        getPriorityTagSuggestions().then((tags) => {
-            if (!container.isConnected) {
-                return;
-            }
-            this.renderBulkSuggestionItems(container, tags);
-            this.updateBulkSuggestionsDropdown();
-        }).catch(() => {
-            if (container.isConnected) {
-                container.innerHTML = '';
-            }
-        });
+        const currentType = state.currentPageType;
+        if (!currentType || currentType === 'recipes') {
+            container.innerHTML = '';
+        } else {
+            getPriorityTagSuggestions(currentType).then((tags) => {
+                if (!container.isConnected) {
+                    return;
+                }
+                this.renderBulkSuggestionItems(container, tags);
+                this.updateBulkSuggestionsDropdown();
+            }).catch(() => {
+                if (container.isConnected) {
+                    container.innerHTML = '';
+                }
+            });
+        }
 
         dropdown.appendChild(container);
         return dropdown;
