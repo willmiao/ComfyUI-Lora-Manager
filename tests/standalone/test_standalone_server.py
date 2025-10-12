@@ -13,6 +13,9 @@ from aiohttp import web
 from py.utils.settings_paths import ensure_settings_file
 
 
+ROUTE_CALLS_KEY: web.AppKey[List[Tuple[str, dict]]] = web.AppKey("route_calls")
+
+
 @pytest.fixture
 def standalone_module(monkeypatch) -> ModuleType:
     """Load the ``standalone`` module with a lightweight ``LoraManager`` stub."""
@@ -106,7 +109,7 @@ def test_standalone_lora_manager_registers_routes(monkeypatch, tmp_path, standal
 
     app = web.Application()
     route_calls: List[Tuple[str, dict]] = []
-    app["route_calls"] = route_calls
+    app[ROUTE_CALLS_KEY] = route_calls
 
     locales_dir = tmp_path / "locales"
     locales_dir.mkdir()
@@ -180,10 +183,13 @@ def test_standalone_lora_manager_registers_routes(monkeypatch, tmp_path, standal
     monkeypatch.setattr("py.routes.preview_routes.PreviewRoutes", DummyPreviewRoutes)
     monkeypatch.setattr("py.routes.stats_routes.StatsRoutes", DummyStatsRoutes)
 
+    async def _noop_ws_handler(request):
+        return web.Response(status=204)
+
     ws_manager_stub = SimpleNamespace(
-        handle_connection=lambda request: None,
-        handle_download_connection=lambda request: None,
-        handle_init_connection=lambda request: None,
+        handle_connection=_noop_ws_handler,
+        handle_download_connection=_noop_ws_handler,
+        handle_init_connection=_noop_ws_handler,
     )
     monkeypatch.setattr("py.services.websocket_manager.ws_manager", ws_manager_stub)
 
