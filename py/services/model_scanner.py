@@ -189,6 +189,7 @@ class ModelScanner:
             'favorite': bool(get_value('favorite', False)),
             'notes': notes,
             'usage_tips': usage_tips,
+            'metadata_source': get_value('metadata_source', None),
             'exclude': bool(get_value('exclude', False)),
             'db_checked': bool(get_value('db_checked', False)),
             'last_checked_at': float(get_value('last_checked_at', 0.0) or 0.0),
