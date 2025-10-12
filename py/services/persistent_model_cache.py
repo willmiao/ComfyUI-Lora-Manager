@@ -25,6 +25,34 @@ class PersistentModelCache:
     """Persist core model metadata and hash index data in SQLite."""
 
     _DEFAULT_FILENAME = "model_cache.sqlite"
+    _MODEL_COLUMNS: Tuple[str, ...] = (
+        "model_type",
+        "file_path",
+        "file_name",
+        "model_name",
+        "folder",
+        "size",
+        "modified",
+        "sha256",
+        "base_model",
+        "preview_url",
+        "preview_nsfw_level",
+        "from_civitai",
+        "favorite",
+        "notes",
+        "usage_tips",
+        "metadata_source",
+        "civitai_id",
+        "civitai_model_id",
+        "civitai_name",
+        "civitai_creator_username",
+        "trained_words",
+        "civitai_deleted",
+        "exclude",
+        "db_checked",
+        "last_checked_at",
+    )
+    _MODEL_UPDATE_COLUMNS: Tuple[str, ...] = _MODEL_COLUMNS[2:]
     _instances: Dict[str, "PersistentModelCache"] = {}
     _instance_lock = threading.Lock()
 
@@ -64,12 +92,9 @@ class PersistentModelCache:
             with self._db_lock:
                 conn = self._connect(readonly=True)
                 try:
+                    model_columns_sql = ", ".join(self._MODEL_COLUMNS[1:])
                     rows = conn.execute(
-                        "SELECT file_path, file_name, model_name, folder, size, modified, sha256, base_model,"
-                        " preview_url, preview_nsfw_level, from_civitai, favorite, notes, usage_tips,"
-                        " civitai_id, civitai_model_id, civitai_name, trained_words, exclude, db_checked,"
-                        " last_checked_at"
-                        " FROM models WHERE model_type = ?",
+                        f"SELECT {model_columns_sql} FROM models WHERE model_type = ?",
                         (model_type,),
                     ).fetchall()
 
@@ -101,8 +126,12 @@ class PersistentModelCache:
                 except json.JSONDecodeError:
                     trained_words = []
 
+            creator_username = row["civitai_creator_username"]
             civitai: Optional[Dict] = None
-            if any(row[col] is not None for col in ("civitai_id", "civitai_model_id", "civitai_name")):
+            civitai_has_data = any(
+                row[col] is not None for col in ("civitai_id", "civitai_model_id", "civitai_name")
+            ) or trained_words or creator_username
+            if civitai_has_data:
                 civitai = {}
                 if row["civitai_id"] is not None:
                     civitai["id"] = row["civitai_id"]
@@ -112,6 +141,8 @@ class PersistentModelCache:
                     civitai["name"] = row["civitai_name"]
                 if trained_words:
                     civitai["trainedWords"] = trained_words
+                if creator_username:
+                    civitai.setdefault("creator", {})["username"] = creator_username
 
             item = {
                 "file_path": file_path,
@@ -128,11 +159,13 @@ class PersistentModelCache:
                 "favorite": bool(row["favorite"]),
                 "notes": row["notes"] or "",
                 "usage_tips": row["usage_tips"] or "",
+                "metadata_source": row["metadata_source"] or None,
                 "exclude": bool(row["exclude"]),
                 "db_checked": bool(row["db_checked"]),
                 "last_checked_at": row["last_checked_at"] or 0.0,
                 "tags": tags.get(file_path, []),
                 "civitai": civitai,
+                "civitai_deleted": bool(row["civitai_deleted"]),
             }
             raw_data.append(item)
 
@@ -159,45 +192,190 @@ class PersistentModelCache:
                 conn = self._connect()
                 try:
                     conn.execute("PRAGMA foreign_keys = ON")
-                    conn.execute("DELETE FROM models WHERE model_type = ?", (model_type,))
-                    conn.execute("DELETE FROM model_tags WHERE model_type = ?", (model_type,))
-                    conn.execute("DELETE FROM hash_index WHERE model_type = ?", (model_type,))
-                    conn.execute("DELETE FROM excluded_models WHERE model_type = ?", (model_type,))
+                    conn.execute("BEGIN")
 
                     model_rows = [self._prepare_model_row(model_type, item) for item in raw_data]
-                    conn.executemany(self._insert_model_sql(), model_rows)
+                    model_map: Dict[str, Tuple] = {
+                        row[1]: row for row in model_rows if row[1]  # row[1] is file_path
+                    }
 
-                    tag_rows = []
+                    existing_models = conn.execute(
+                        "SELECT "
+                        + ", ".join(self._MODEL_COLUMNS[1:])
+                        + " FROM models WHERE model_type = ?",
+                        (model_type,),
+                    ).fetchall()
+                    existing_model_map: Dict[str, sqlite3.Row] = {
+                        row["file_path"]: row for row in existing_models
+                    }
+
+                    to_remove_models = [
+                        (model_type, path)
+                        for path in existing_model_map.keys()
+                        if path not in model_map
+                    ]
+                    if to_remove_models:
+                        conn.executemany(
+                            "DELETE FROM models WHERE model_type = ? AND file_path = ?",
+                            to_remove_models,
+                        )
+                        conn.executemany(
+                            "DELETE FROM model_tags WHERE model_type = ? AND file_path = ?",
+                            to_remove_models,
+                        )
+                        conn.executemany(
+                            "DELETE FROM hash_index WHERE model_type = ? AND file_path = ?",
+                            to_remove_models,
+                        )
+                        conn.executemany(
+                            "DELETE FROM excluded_models WHERE model_type = ? AND file_path = ?",
+                            to_remove_models,
+                        )
+
+                    insert_rows: List[Tuple] = []
+                    update_rows: List[Tuple] = []
+
+                    for file_path, row in model_map.items():
+                        existing = existing_model_map.get(file_path)
+                        if existing is None:
+                            insert_rows.append(row)
+                            continue
+
+                        existing_values = tuple(
+                            existing[column] for column in self._MODEL_COLUMNS[1:]
+                        )
+                        current_values = row[1:]
+                        if existing_values != current_values:
+                            update_rows.append(row[2:] + (model_type, file_path))
+
+                    if insert_rows:
+                        conn.executemany(self._insert_model_sql(), insert_rows)
+
+                    if update_rows:
+                        set_clause = ", ".join(
+                            f"{column} = ?"
+                            for column in self._MODEL_UPDATE_COLUMNS
+                        )
+                        update_sql = (
+                            f"UPDATE models SET {set_clause} WHERE model_type = ? AND file_path = ?"
+                        )
+                        conn.executemany(update_sql, update_rows)
+
+                    existing_tags_rows = conn.execute(
+                        "SELECT file_path, tag FROM model_tags WHERE model_type = ?",
+                        (model_type,),
+                    ).fetchall()
+                    existing_tags: Dict[str, set] = {}
+                    for row in existing_tags_rows:
+                        existing_tags.setdefault(row["file_path"], set()).add(row["tag"])
+
+                    new_tags: Dict[str, set] = {}
                     for item in raw_data:
                         file_path = item.get("file_path")
                         if not file_path:
                             continue
-                        for tag in item.get("tags") or []:
-                            tag_rows.append((model_type, file_path, tag))
-                    if tag_rows:
+                        tags = set(item.get("tags") or [])
+                        if tags:
+                            new_tags[file_path] = tags
+
+                    tag_inserts: List[Tuple[str, str, str]] = []
+                    tag_deletes: List[Tuple[str, str, str]] = []
+
+                    all_tag_paths = set(existing_tags.keys()) | set(new_tags.keys())
+                    for path in all_tag_paths:
+                        existing_set = existing_tags.get(path, set())
+                        new_set = new_tags.get(path, set())
+                        to_add = new_set - existing_set
+                        to_remove = existing_set - new_set
+
+                        for tag in to_add:
+                            tag_inserts.append((model_type, path, tag))
+                        for tag in to_remove:
+                            tag_deletes.append((model_type, path, tag))
+
+                    if tag_deletes:
+                        conn.executemany(
+                            "DELETE FROM model_tags WHERE model_type = ? AND file_path = ? AND tag = ?",
+                            tag_deletes,
+                        )
+                    if tag_inserts:
                         conn.executemany(
                             "INSERT INTO model_tags (model_type, file_path, tag) VALUES (?, ?, ?)",
-                            tag_rows,
+                            tag_inserts,
                         )
 
-                    hash_rows: List[Tuple[str, str, str]] = []
+                    existing_hash_rows = conn.execute(
+                        "SELECT sha256, file_path FROM hash_index WHERE model_type = ?",
+                        (model_type,),
+                    ).fetchall()
+                    existing_hash_map: Dict[str, set] = {}
+                    for row in existing_hash_rows:
+                        sha_value = (row["sha256"] or "").lower()
+                        if not sha_value:
+                            continue
+                        existing_hash_map.setdefault(sha_value, set()).add(row["file_path"])
+
+                    new_hash_map: Dict[str, set] = {}
                     for sha_value, paths in hash_index.items():
+                        normalized_sha = (sha_value or "").lower()
+                        if not normalized_sha:
+                            continue
+                        bucket = new_hash_map.setdefault(normalized_sha, set())
                         for path in paths:
-                            if not sha_value or not path:
-                                continue
-                            hash_rows.append((model_type, sha_value.lower(), path))
-                    if hash_rows:
+                            if path:
+                                bucket.add(path)
+
+                    hash_inserts: List[Tuple[str, str, str]] = []
+                    hash_deletes: List[Tuple[str, str, str]] = []
+
+                    all_shas = set(existing_hash_map.keys()) | set(new_hash_map.keys())
+                    for sha_value in all_shas:
+                        existing_paths = existing_hash_map.get(sha_value, set())
+                        new_paths = new_hash_map.get(sha_value, set())
+
+                        for path in existing_paths - new_paths:
+                            hash_deletes.append((model_type, sha_value, path))
+                        for path in new_paths - existing_paths:
+                            hash_inserts.append((model_type, sha_value, path))
+
+                    if hash_deletes:
+                        conn.executemany(
+                            "DELETE FROM hash_index WHERE model_type = ? AND sha256 = ? AND file_path = ?",
+                            hash_deletes,
+                        )
+                    if hash_inserts:
                         conn.executemany(
                             "INSERT OR IGNORE INTO hash_index (model_type, sha256, file_path) VALUES (?, ?, ?)",
-                            hash_rows,
+                            hash_inserts,
                         )
 
-                    excluded_rows = [(model_type, path) for path in excluded_models]
-                    if excluded_rows:
+                    existing_excluded_rows = conn.execute(
+                        "SELECT file_path FROM excluded_models WHERE model_type = ?",
+                        (model_type,),
+                    ).fetchall()
+                    existing_excluded = {row["file_path"] for row in existing_excluded_rows}
+                    new_excluded = {path for path in excluded_models if path}
+
+                    excluded_deletes = [
+                        (model_type, path)
+                        for path in existing_excluded - new_excluded
+                    ]
+                    excluded_inserts = [
+                        (model_type, path)
+                        for path in new_excluded - existing_excluded
+                    ]
+
+                    if excluded_deletes:
+                        conn.executemany(
+                            "DELETE FROM excluded_models WHERE model_type = ? AND file_path = ?",
+                            excluded_deletes,
+                        )
+                    if excluded_inserts:
                         conn.executemany(
                             "INSERT OR IGNORE INTO excluded_models (model_type, file_path) VALUES (?, ?)",
-                            excluded_rows,
+                            excluded_inserts,
                         )
+
                     conn.commit()
                 finally:
                     conn.close()
@@ -248,10 +426,13 @@ class PersistentModelCache:
                             favorite INTEGER,
                             notes TEXT,
                             usage_tips TEXT,
+                            metadata_source TEXT,
                             civitai_id INTEGER,
                             civitai_model_id INTEGER,
                             civitai_name TEXT,
+                            civitai_creator_username TEXT,
                             trained_words TEXT,
+                            civitai_deleted INTEGER,
                             exclude INTEGER,
                             db_checked INTEGER,
                             last_checked_at REAL,
@@ -279,10 +460,30 @@ class PersistentModelCache:
                         );
                         """
                     )
+                    self._ensure_additional_model_columns(conn)
                     conn.commit()
                 self._schema_initialized = True
             except Exception as exc:  # pragma: no cover - defensive guard
                 logger.warning("Failed to initialize persistent cache schema: %s", exc)
+
+    def _ensure_additional_model_columns(self, conn: sqlite3.Connection) -> None:
+        try:
+            existing_columns = {
+                row["name"]
+                for row in conn.execute("PRAGMA table_info(models)").fetchall()
+            }
+        except Exception:  # pragma: no cover - defensive guard
+            return
+
+        required_columns = {
+            "metadata_source": "TEXT",
+            "civitai_creator_username": "TEXT",
+            "civitai_deleted": "INTEGER DEFAULT 0",
+        }
+
+        for column, definition in required_columns.items():
+            if column not in existing_columns:
+                conn.execute(f"ALTER TABLE models ADD COLUMN {column} {definition}")
 
     def _connect(self, readonly: bool = False) -> sqlite3.Connection:
         uri = False
@@ -306,6 +507,12 @@ class PersistentModelCache:
         else:
             trained_words_json = json.dumps(trained_words)
 
+        metadata_source = item.get("metadata_source") or None
+        creator_username = None
+        creator_data = civitai.get("creator") if isinstance(civitai, dict) else None
+        if isinstance(creator_data, dict):
+            creator_username = creator_data.get("username") or None
+
         return (
             model_type,
             item.get("file_path"),
@@ -322,22 +529,22 @@ class PersistentModelCache:
             1 if item.get("favorite") else 0,
             item.get("notes"),
             item.get("usage_tips"),
+            metadata_source,
             civitai.get("id"),
             civitai.get("modelId"),
             civitai.get("name"),
+            creator_username,
             trained_words_json,
+            1 if item.get("civitai_deleted") else 0,
             1 if item.get("exclude") else 0,
             1 if item.get("db_checked") else 0,
             float(item.get("last_checked_at") or 0.0),
         )
 
     def _insert_model_sql(self) -> str:
-        return (
-            "INSERT INTO models (model_type, file_path, file_name, model_name, folder, size, modified, sha256,"
-            " base_model, preview_url, preview_nsfw_level, from_civitai, favorite, notes, usage_tips,"
-            " civitai_id, civitai_model_id, civitai_name, trained_words, exclude, db_checked, last_checked_at)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        )
+        columns = ", ".join(self._MODEL_COLUMNS)
+        placeholders = ", ".join(["?"] * len(self._MODEL_COLUMNS))
+        return f"INSERT INTO models ({columns}) VALUES ({placeholders})"
 
     def _load_tags(self, conn: sqlite3.Connection, model_type: str) -> Dict[str, List[str]]:
         tag_rows = conn.execute(
