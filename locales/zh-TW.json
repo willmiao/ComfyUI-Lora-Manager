@@ -560,7 +560,10 @@
         "recursiveOn": "搜尋子資料夾",
         "recursiveOff": "僅搜尋目前資料夾",
         "recursiveUnavailable": "遞迴搜尋僅能在樹狀檢視中使用",
-        "collapseAllDisabled": "列表檢視下不可用"
+        "collapseAllDisabled": "列表檢視下不可用",
+        "dragDrop": {
+            "unableToResolveRoot": "無法確定移動的目標路徑。"
+        }
     },
     "statistics": {
         "title": "統計",

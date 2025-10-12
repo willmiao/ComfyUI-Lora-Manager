@@ -560,7 +560,10 @@
         "recursiveOn": "搜索子文件夹",
         "recursiveOff": "仅搜索当前文件夹",
         "recursiveUnavailable": "仅在树形视图中可使用递归搜索",
-        "collapseAllDisabled": "列表视图下不可用"
+        "collapseAllDisabled": "列表视图下不可用",
+        "dragDrop": {
+            "unableToResolveRoot": "无法确定移动的目标路径。"
+        }
     },
     "statistics": {
         "title": "统计",

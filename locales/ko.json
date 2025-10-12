@@ -560,7 +560,10 @@
         "recursiveOn": "하위 폴더 검색",
         "recursiveOff": "현재 폴더만 검색",
         "recursiveUnavailable": "재귀 검색은 트리 보기에서만 사용할 수 있습니다",
-        "collapseAllDisabled": "목록 보기에서는 사용할 수 없습니다"
+        "collapseAllDisabled": "목록 보기에서는 사용할 수 없습니다",
+        "dragDrop": {
+            "unableToResolveRoot": "이동할 대상 경로를 확인할 수 없습니다."
+        }
     },
     "statistics": {
         "title": "통계",

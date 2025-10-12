@@ -560,7 +560,10 @@
         "recursiveOn": "Rechercher dans les sous-dossiers",
         "recursiveOff": "Rechercher uniquement dans le dossier actuel",
         "recursiveUnavailable": "La recherche récursive n'est disponible qu'en vue arborescente",
-        "collapseAllDisabled": "Non disponible en vue liste"
+        "collapseAllDisabled": "Non disponible en vue liste",
+        "dragDrop": {
+            "unableToResolveRoot": "Impossible de déterminer le chemin de destination pour le déplacement."
+        }
     },
     "statistics": {
         "title": "Statistiques",

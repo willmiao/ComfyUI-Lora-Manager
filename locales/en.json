@@ -560,7 +560,10 @@
         "recursiveOn": "Search subfolders",
         "recursiveOff": "Search current folder only",
         "recursiveUnavailable": "Recursive search is available in tree view only",
-        "collapseAllDisabled": "Not available in list view"
+        "collapseAllDisabled": "Not available in list view",
+        "dragDrop": {
+            "unableToResolveRoot": "Unable to determine destination path for move."
+        }
     },
     "statistics": {
         "title": "Statistics",

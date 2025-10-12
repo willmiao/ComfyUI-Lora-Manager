@@ -560,7 +560,10 @@
         "recursiveOn": "Искать во вложенных папках",
         "recursiveOff": "Искать только в текущей папке",
         "recursiveUnavailable": "Рекурсивный поиск доступен только в режиме дерева",
-        "collapseAllDisabled": "Недоступно в виде списка"
+        "collapseAllDisabled": "Недоступно в виде списка",
+        "dragDrop": {
+            "unableToResolveRoot": "Не удалось определить путь назначения для перемещения."
+        }
     },
     "statistics": {
         "title": "Статистика",

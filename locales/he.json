@@ -560,7 +560,10 @@
         "recursiveOn": "חיפוש בתיקיות משנה",
         "recursiveOff": "חיפוש רק בתיקייה הנוכחית",
         "recursiveUnavailable": "חיפוש רקורסיבי זמין רק בתצוגת עץ",
-        "collapseAllDisabled": "לא זמין בתצוגת רשימה"
+        "collapseAllDisabled": "לא זמין בתצוגת רשימה",
+        "dragDrop": {
+            "unableToResolveRoot": "לא ניתן לקבוע את נתיב היעד להעברה."
+        }
     },
     "statistics": {
         "title": "סטטיסטיקה",

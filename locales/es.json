@@ -560,7 +560,10 @@
         "recursiveOn": "Buscar en subcarpetas",
         "recursiveOff": "Buscar solo en la carpeta actual",
         "recursiveUnavailable": "La búsqueda recursiva solo está disponible en la vista en árbol",
-        "collapseAllDisabled": "No disponible en vista de lista"
+        "collapseAllDisabled": "No disponible en vista de lista",
+        "dragDrop": {
+            "unableToResolveRoot": "No se puede determinar la ruta de destino para el movimiento."
+        }
     },
     "statistics": {
         "title": "Estadísticas",

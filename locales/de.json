@@ -560,7 +560,10 @@
         "recursiveOn": "Unterordner durchsuchen",
         "recursiveOff": "Nur aktuellen Ordner durchsuchen",
         "recursiveUnavailable": "Rekursive Suche ist nur in der Baumansicht verfügbar",
-        "collapseAllDisabled": "Im Listenmodus nicht verfügbar"
+        "collapseAllDisabled": "Im Listenmodus nicht verfügbar",
+        "dragDrop": {
+            "unableToResolveRoot": "Zielpfad für das Verschieben konnte nicht ermittelt werden."
+        }
     },
     "statistics": {
         "title": "Statistiken",

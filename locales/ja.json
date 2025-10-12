@@ -560,7 +560,10 @@
         "recursiveOn": "サブフォルダーを検索",
         "recursiveOff": "現在のフォルダーのみを検索",
         "recursiveUnavailable": "再帰検索はツリービューでのみ利用できます",
-        "collapseAllDisabled": "リストビューでは利用できません"
+        "collapseAllDisabled": "リストビューでは利用できません",
+        "dragDrop": {
+            "unableToResolveRoot": "移動先のパスを特定できません。"
+        }
     },
     "statistics": {
         "title": "統計",
