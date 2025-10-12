@@ -92,6 +92,39 @@
   border-radius: var(--border-radius-xs);
   padding: 4px 8px;
   position: relative;
+  cursor: grab;
+  transition: transform 0.18s ease;
+}
+
+.metadata-item:active {
+  cursor: grabbing;
+}
+
+.metadata-item-dragging {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+  cursor: grabbing;
+  opacity: 0.95;
+  transition: none;
+}
+
+.metadata-item-placeholder {
+  border: 1px dashed var(--lora-accent);
+  border-radius: var(--border-radius-xs);
+  background: rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+}
+
+.metadata-items-sorting .metadata-item {
+  transition: transform 0.18s ease;
+}
+
+body.metadata-drag-active {
+  user-select: none;
+  cursor: grabbing;
+}
+
+body.metadata-drag-active * {
+  cursor: grabbing !important;
 }
 
 .metadata-item-content {

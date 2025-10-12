@@ -19,11 +19,15 @@ const MODEL_TYPE_SUGGESTION_KEY_MAP = {
 const METADATA_ITEM_SELECTOR = '.metadata-item';
 const METADATA_ITEMS_CONTAINER_SELECTOR = '.metadata-items';
 const METADATA_ITEM_DRAGGING_CLASS = 'metadata-item-dragging';
+const METADATA_ITEM_PLACEHOLDER_CLASS = 'metadata-item-placeholder';
+const METADATA_ITEMS_SORTING_CLASS = 'metadata-items-sorting';
+const BODY_DRAGGING_CLASS = 'metadata-drag-active';
 
 let activeModelTypeKey = '';
 let priorityTagSuggestions = [];
 let priorityTagSuggestionsLoaded = false;
 let priorityTagSuggestionsPromise = null;
+let activeTagDragState = null;
 
 function normalizeModelTypeKey(modelType) {
     if (!modelType) {
@@ -496,87 +500,202 @@ function setupTagDragAndDrop() {
         return;
     }
 
-    if (!container._dragEventsBound) {
-        container.addEventListener('dragover', handleTagContainerDragOver);
-        container.addEventListener('drop', handleTagContainerDrop);
-        container._dragEventsBound = true;
-    }
-
     container.querySelectorAll(METADATA_ITEM_SELECTOR).forEach((item) => {
-        if (item.dataset.dragInit === 'true') {
+        item.removeAttribute('draggable');
+        if (item.classList.contains(METADATA_ITEM_PLACEHOLDER_CLASS)) {
             return;
         }
-        item.setAttribute('draggable', 'true');
-        item.addEventListener('dragstart', handleTagDragStart);
-        item.addEventListener('dragend', handleTagDragEnd);
-        item.dataset.dragInit = 'true';
+        if (item.dataset.pointerDragInit === 'true') {
+            return;
+        }
+
+        item.addEventListener('pointerdown', handleTagPointerDown);
+        item.dataset.pointerDragInit = 'true';
     });
 }
 
-function handleTagDragStart(event) {
-    const item = event.currentTarget;
-    if (!item) {
+function handleTagPointerDown(event) {
+    if (event.button !== 0) {
         return;
     }
+
+    if (event.target.closest('.metadata-delete-btn')) {
+        return;
+    }
+
+    const item = event.currentTarget;
+    const container = item?.closest(METADATA_ITEMS_CONTAINER_SELECTOR);
+    if (!item || !container) {
+        return;
+    }
+
+    event.preventDefault();
+    startPointerDrag({ item, container, startEvent: event });
+}
+
+function startPointerDrag({ item, container, startEvent }) {
+    if (activeTagDragState) {
+        finishPointerDrag();
+    }
+
+    const itemRect = item.getBoundingClientRect();
+    const placeholder = document.createElement('div');
+    placeholder.className = `metadata-item ${METADATA_ITEM_PLACEHOLDER_CLASS}`;
+    placeholder.style.width = `${itemRect.width}px`;
+    placeholder.style.height = `${itemRect.height}px`;
+
+    container.insertBefore(placeholder, item);
+
     item.classList.add(METADATA_ITEM_DRAGGING_CLASS);
-    if (event.dataTransfer) {
-        event.dataTransfer.effectAllowed = 'move';
-        try {
-            event.dataTransfer.setData('text/plain', item.dataset.tag || '');
-        } catch (error) {
-            // Some browsers may throw if dataTransfer is unavailable; ignore.
+    item.style.width = `${itemRect.width}px`;
+    item.style.height = `${itemRect.height}px`;
+    item.style.position = 'fixed';
+    item.style.left = `${itemRect.left}px`;
+    item.style.top = `${itemRect.top}px`;
+    item.style.pointerEvents = 'none';
+    item.style.zIndex = '1000';
+
+    container.classList.add(METADATA_ITEMS_SORTING_CLASS);
+    if (document.body) {
+        document.body.classList.add(BODY_DRAGGING_CLASS);
+    }
+
+    const dragState = {
+        container,
+        item,
+        placeholder,
+        offsetX: startEvent.clientX - itemRect.left,
+        offsetY: startEvent.clientY - itemRect.top,
+        lastKnownPointer: { x: startEvent.clientX, y: startEvent.clientY },
+        rafId: null,
+    };
+
+    activeTagDragState = dragState;
+
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
+    document.addEventListener('pointercancel', handlePointerUp);
+}
+
+function handlePointerMove(event) {
+    if (!activeTagDragState) {
+        return;
+    }
+
+    activeTagDragState.lastKnownPointer = { x: event.clientX, y: event.clientY };
+
+    if (activeTagDragState.rafId !== null) {
+        return;
+    }
+
+    activeTagDragState.rafId = requestAnimationFrame(() => {
+        if (!activeTagDragState) {
+            return;
         }
-    }
+        activeTagDragState.rafId = null;
+        updateDraggingItemPosition();
+        updatePlaceholderPosition();
+    });
 }
 
-function handleTagDragEnd(event) {
-    const item = event.currentTarget;
-    if (!item) {
-        return;
-    }
-    item.classList.remove(METADATA_ITEM_DRAGGING_CLASS);
+function handlePointerUp() {
+    finishPointerDrag();
 }
 
-function handleTagContainerDragOver(event) {
-    event.preventDefault();
-    const container = event.currentTarget;
-    const draggingItem = container.querySelector(`.${METADATA_ITEM_DRAGGING_CLASS}`);
-    if (!draggingItem) {
+function updateDraggingItemPosition() {
+    if (!activeTagDragState) {
         return;
     }
 
-    const afterElement = getDragAfterElement(container, event.clientY);
-    if (!afterElement) {
-        container.appendChild(draggingItem);
+    const { item, offsetX, offsetY, lastKnownPointer } = activeTagDragState;
+    const left = lastKnownPointer.x - offsetX;
+    const top = lastKnownPointer.y - offsetY;
+    item.style.left = `${left}px`;
+    item.style.top = `${top}px`;
+}
+
+function updatePlaceholderPosition() {
+    if (!activeTagDragState) {
         return;
     }
 
-    if (afterElement !== draggingItem) {
-        container.insertBefore(draggingItem, afterElement);
-    }
-}
+    const { container, placeholder, item, lastKnownPointer } = activeTagDragState;
+    const siblings = Array.from(
+        container.querySelectorAll(
+            `${METADATA_ITEM_SELECTOR}:not(.${METADATA_ITEM_PLACEHOLDER_CLASS})`
+        )
+    ).filter((element) => element !== item);
 
-function handleTagContainerDrop(event) {
-    event.preventDefault();
-    updateSuggestionsDropdown();
-}
+    let insertAfter = null;
 
-function getDragAfterElement(container, y) {
-    const draggableElements = Array.from(
-        container.querySelectorAll(`${METADATA_ITEM_SELECTOR}:not(.${METADATA_ITEM_DRAGGING_CLASS})`)
-    );
+    for (const sibling of siblings) {
+        const rect = sibling.getBoundingClientRect();
 
-    return draggableElements.reduce(
-        (closest, child) => {
-            const box = child.getBoundingClientRect();
-            const offset = y - box.top - box.height / 2;
-            if (offset < 0 && offset > closest.offset) {
-                return { offset, element: child };
+        if (lastKnownPointer.y < rect.top) {
+            container.insertBefore(placeholder, sibling);
+            return;
+        }
+
+        if (lastKnownPointer.y <= rect.bottom) {
+            if (lastKnownPointer.x < rect.left + rect.width / 2) {
+                container.insertBefore(placeholder, sibling);
+                return;
             }
-            return closest;
-        },
-        { offset: Number.NEGATIVE_INFINITY, element: null }
-    ).element;
+            insertAfter = sibling;
+            continue;
+        }
+
+        insertAfter = sibling;
+    }
+
+    if (!insertAfter) {
+        container.insertBefore(placeholder, container.firstElementChild);
+        return;
+    }
+
+    container.insertBefore(placeholder, insertAfter.nextSibling);
+}
+
+function finishPointerDrag() {
+    if (!activeTagDragState) {
+        return;
+    }
+
+    const { container, item, placeholder, rafId } = activeTagDragState;
+
+    document.removeEventListener('pointermove', handlePointerMove);
+    document.removeEventListener('pointerup', handlePointerUp);
+    document.removeEventListener('pointercancel', handlePointerUp);
+
+    container.classList.remove(METADATA_ITEMS_SORTING_CLASS);
+    if (document.body) {
+        document.body.classList.remove(BODY_DRAGGING_CLASS);
+    }
+
+    if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        activeTagDragState.rafId = null;
+        updateDraggingItemPosition();
+        updatePlaceholderPosition();
+    }
+
+    if (placeholder && placeholder.parentNode === container) {
+        container.insertBefore(item, placeholder);
+        container.removeChild(placeholder);
+    }
+
+    item.classList.remove(METADATA_ITEM_DRAGGING_CLASS);
+    item.style.position = '';
+    item.style.width = '';
+    item.style.height = '';
+    item.style.left = '';
+    item.style.top = '';
+    item.style.pointerEvents = '';
+    item.style.zIndex = '';
+
+    activeTagDragState = null;
+
+    updateSuggestionsDropdown();
 }
 
 /**
@@ -694,8 +813,12 @@ function updateSuggestionsDropdown() {
 }
 
 function getCurrentEditTags() {
-    const currentTags = document.querySelectorAll('.metadata-item');
-    return Array.from(currentTags).map(tag => tag.dataset.tag);
+    const currentTags = document.querySelectorAll(
+        `${METADATA_ITEM_SELECTOR}[data-tag]`
+    );
+    return Array.from(currentTags)
+        .map(tag => tag.dataset.tag)
+        .filter(Boolean);
 }
 
 /**
