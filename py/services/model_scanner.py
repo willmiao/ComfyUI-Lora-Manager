@@ -119,6 +119,12 @@ class ModelScanner:
             if value not in (None, '', []):
                 slim[key] = value
 
+        creator = civitai.get('creator')
+        if isinstance(creator, Mapping):
+            username = creator.get('username')
+            if username:
+                slim['creator'] = {'username': username}
+
         trained_words = civitai.get('trainedWords')
         if trained_words:
             slim['trainedWords'] = list(trained_words) if isinstance(trained_words, list) else trained_words
