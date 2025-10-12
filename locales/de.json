@@ -199,7 +199,7 @@
             "videoSettings": "Video-Einstellungen",
             "layoutSettings": "Layout-Einstellungen",
             "folderSettings": "Ordner-Einstellungen",
-            "priorityTags": "Priority Tags",
+            "priorityTags": "Prioritäts-Tags",
             "downloadPathTemplates": "Download-Pfad-Vorlagen",
             "exampleImages": "Beispielbilder",
             "misc": "Verschiedenes",
@@ -255,24 +255,23 @@
             "noDefault": "Kein Standard"
         },
         "priorityTags": {
-            "title": "Priority Tags",
-            "description": "Customize the tag priority order for each model type. The first match becomes the folder name and powers tag suggestions.",
-            "placeholder": "celebrity(celeb|celebrity), stylized, character(char)",
-            "example": "Example: celebrity(celeb|celebrity), stylized, character(char)",
-            "helpLinkLabel": "Open priority tags help",
+            "title": "Prioritäts-Tags",
+            "description": "Passen Sie die Tag-Prioritätsreihenfolge für jeden Modelltyp an (z. B. character, concept, style(toon|toon_style))",
+            "placeholder": "character, concept, style(toon|toon_style)",
+            "helpLinkLabel": "Prioritäts-Tags-Hilfe öffnen",
             "modelTypes": {
-                "lora": "LoRA priority",
-                "checkpoint": "Checkpoint priority",
-                "embedding": "Embedding priority"
+                "lora": "LoRA",
+                "checkpoint": "Checkpoint",
+                "embedding": "Embedding"
             },
-            "saveSuccess": "Priority tags updated.",
-            "saveError": "Failed to update priority tags.",
-            "loadingSuggestions": "Loading suggestions...",
+            "saveSuccess": "Prioritäts-Tags aktualisiert.",
+            "saveError": "Prioritäts-Tags konnten nicht aktualisiert werden.",
+            "loadingSuggestions": "Lade Vorschläge...",
             "validation": {
-                "missingClosingParen": "Entry {index} is missing a closing parenthesis.",
-                "missingCanonical": "Entry {index} must include a canonical tag name.",
-                "duplicateCanonical": "The canonical tag \"{tag}\" appears more than once.",
-                "unknown": "Invalid priority tag configuration."
+                "missingClosingParen": "Eintrag {index} fehlt eine schließende Klammer.",
+                "missingCanonical": "Eintrag {index} muss einen kanonischen Tag-Namen enthalten.",
+                "duplicateCanonical": "Der kanonische Tag \"{tag}\" kommt mehrfach vor.",
+                "unknown": "Ungültige Prioritäts-Tag-Konfiguration."
             }
         },
         "downloadPathTemplates": {

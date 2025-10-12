@@ -256,9 +256,8 @@
         },
         "priorityTags": {
             "title": "Priority Tags",
-            "description": "Customize the tag priority order for each model type.",
+            "description": "Customize the tag priority order for each model type (e.g., character, concept, style(toon|toon_style))",
             "placeholder": "character, concept, style(toon|toon_style)",
-            "example": "Example: character, concept, style(toon|toon_style)",
             "helpLinkLabel": "Open priority tags help",
             "modelTypes": {
                 "lora": "LoRA",

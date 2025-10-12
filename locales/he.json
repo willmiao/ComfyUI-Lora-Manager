@@ -204,7 +204,7 @@
             "misc": "שונות",
             "metadataArchive": "מסד נתונים של ארכיון מטא-דאטה",
             "proxySettings": "הגדרות פרוקסי",
-            "priorityTags": "Priority Tags"
+            "priorityTags": "תגיות עדיפות"
         },
         "contentFiltering": {
             "blurNsfwContent": "טשטש תוכן NSFW",
@@ -348,24 +348,23 @@
             "proxyPasswordHelp": "סיסמה לאימות מול הפרוקסי (אם נדרש)"
         },
         "priorityTags": {
-            "title": "Priority Tags",
-            "description": "Customize the tag priority order for each model type. The first match becomes the folder name and powers tag suggestions.",
-            "placeholder": "celebrity(celeb|celebrity), stylized, character(char)",
-            "example": "Example: celebrity(celeb|celebrity), stylized, character(char)",
-            "helpLinkLabel": "Open priority tags help",
+            "title": "תגיות עדיפות",
+            "description": "התאם את סדר העדיפות של התגיות עבור כל סוג מודל (לדוגמה: character, concept, style(toon|toon_style))",
+            "placeholder": "character, concept, style(toon|toon_style)",
+            "helpLinkLabel": "פתח עזרה בנושא תגיות עדיפות",
             "modelTypes": {
-                "lora": "LoRA priority",
-                "checkpoint": "Checkpoint priority",
-                "embedding": "Embedding priority"
+                "lora": "LoRA",
+                "checkpoint": "Checkpoint",
+                "embedding": "Embedding"
             },
-            "saveSuccess": "Priority tags updated.",
-            "saveError": "Failed to update priority tags.",
-            "loadingSuggestions": "Loading suggestions...",
+            "saveSuccess": "תגיות העדיפות עודכנו.",
+            "saveError": "עדכון תגיות העדיפות נכשל.",
+            "loadingSuggestions": "טוען הצעות...",
             "validation": {
-                "missingClosingParen": "Entry {index} is missing a closing parenthesis.",
-                "missingCanonical": "Entry {index} must include a canonical tag name.",
-                "duplicateCanonical": "The canonical tag \"{tag}\" appears more than once.",
-                "unknown": "Invalid priority tag configuration."
+                "missingClosingParen": "לרשומה {index} חסר סוגר סוגריים.",
+                "missingCanonical": "על הרשומה {index} לכלול שם תגית קנונית.",
+                "duplicateCanonical": "התגית הקנונית \"{tag}\" מופיעה יותר מפעם אחת.",
+                "unknown": "תצורת תגיות העדיפות שגויה."
             }
         }
     },

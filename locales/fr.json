@@ -204,7 +204,7 @@
             "misc": "Divers",
             "metadataArchive": "Base de données d'archive des métadonnées",
             "proxySettings": "Paramètres du proxy",
-            "priorityTags": "Priority Tags"
+            "priorityTags": "Étiquettes prioritaires"
         },
         "contentFiltering": {
             "blurNsfwContent": "Flouter le contenu NSFW",
@@ -348,24 +348,23 @@
             "proxyPasswordHelp": "Mot de passe pour l'authentification proxy (si nécessaire)"
         },
         "priorityTags": {
-            "title": "Priority Tags",
-            "description": "Customize the tag priority order for each model type. The first match becomes the folder name and powers tag suggestions.",
-            "placeholder": "celebrity(celeb|celebrity), stylized, character(char)",
-            "example": "Example: celebrity(celeb|celebrity), stylized, character(char)",
-            "helpLinkLabel": "Open priority tags help",
+            "title": "Étiquettes prioritaires",
+            "description": "Personnalisez l'ordre de priorité des étiquettes pour chaque type de modèle (par ex. : character, concept, style(toon|toon_style))",
+            "placeholder": "character, concept, style(toon|toon_style)",
+            "helpLinkLabel": "Ouvrir l'aide sur les étiquettes prioritaires",
             "modelTypes": {
-                "lora": "LoRA priority",
-                "checkpoint": "Checkpoint priority",
-                "embedding": "Embedding priority"
+                "lora": "LoRA",
+                "checkpoint": "Checkpoint",
+                "embedding": "Embedding"
             },
-            "saveSuccess": "Priority tags updated.",
-            "saveError": "Failed to update priority tags.",
-            "loadingSuggestions": "Loading suggestions...",
+            "saveSuccess": "Étiquettes prioritaires mises à jour.",
+            "saveError": "Échec de la mise à jour des étiquettes prioritaires.",
+            "loadingSuggestions": "Chargement des suggestions...",
             "validation": {
-                "missingClosingParen": "Entry {index} is missing a closing parenthesis.",
-                "missingCanonical": "Entry {index} must include a canonical tag name.",
-                "duplicateCanonical": "The canonical tag \"{tag}\" appears more than once.",
-                "unknown": "Invalid priority tag configuration."
+                "missingClosingParen": "L'entrée {index} n'a pas de parenthèse fermante.",
+                "missingCanonical": "L'entrée {index} doit inclure un nom d'étiquette canonique.",
+                "duplicateCanonical": "L'étiquette canonique \"{tag}\" apparaît plusieurs fois.",
+                "unknown": "Configuration d'étiquettes prioritaires invalide."
             }
         }
     },

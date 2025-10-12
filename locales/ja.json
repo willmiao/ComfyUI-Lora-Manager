@@ -204,7 +204,7 @@
             "misc": "その他",
             "metadataArchive": "メタデータアーカイブデータベース",
             "proxySettings": "プロキシ設定",
-            "priorityTags": "Priority Tags"
+            "priorityTags": "優先タグ"
         },
         "contentFiltering": {
             "blurNsfwContent": "NSFWコンテンツをぼかす",
@@ -348,24 +348,23 @@
             "proxyPasswordHelp": "プロキシ認証用のパスワード（必要な場合）"
         },
         "priorityTags": {
-            "title": "Priority Tags",
-            "description": "Customize the tag priority order for each model type. The first match becomes the folder name and powers tag suggestions.",
-            "placeholder": "celebrity(celeb|celebrity), stylized, character(char)",
-            "example": "Example: celebrity(celeb|celebrity), stylized, character(char)",
-            "helpLinkLabel": "Open priority tags help",
+            "title": "優先タグ",
+            "description": "各モデルタイプのタグ優先順位をカスタマイズします (例: character, concept, style(toon|toon_style))",
+            "placeholder": "character, concept, style(toon|toon_style)",
+            "helpLinkLabel": "優先タグのヘルプを開く",
             "modelTypes": {
-                "lora": "LoRA priority",
-                "checkpoint": "Checkpoint priority",
-                "embedding": "Embedding priority"
+                "lora": "LoRA",
+                "checkpoint": "チェックポイント",
+                "embedding": "埋め込み"
             },
-            "saveSuccess": "Priority tags updated.",
-            "saveError": "Failed to update priority tags.",
-            "loadingSuggestions": "Loading suggestions...",
+            "saveSuccess": "優先タグを更新しました。",
+            "saveError": "優先タグの更新に失敗しました。",
+            "loadingSuggestions": "候補を読み込み中...",
             "validation": {
-                "missingClosingParen": "Entry {index} is missing a closing parenthesis.",
-                "missingCanonical": "Entry {index} must include a canonical tag name.",
-                "duplicateCanonical": "The canonical tag \"{tag}\" appears more than once.",
-                "unknown": "Invalid priority tag configuration."
+                "missingClosingParen": "エントリ {index} に閉じ括弧がありません。",
+                "missingCanonical": "エントリ {index} には正規タグ名を含める必要があります。",
+                "duplicateCanonical": "正規タグ \"{tag}\" が複数回登場しています。",
+                "unknown": "無効な優先タグ設定です。"
             }
         }
     },

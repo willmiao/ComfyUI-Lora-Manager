@@ -204,7 +204,7 @@
             "misc": "其他",
             "metadataArchive": "元数据归档数据库",
             "proxySettings": "代理设置",
-            "priorityTags": "Priority Tags"
+            "priorityTags": "优先标签"
         },
         "contentFiltering": {
             "blurNsfwContent": "模糊 NSFW 内容",
@@ -348,24 +348,23 @@
             "proxyPasswordHelp": "代理认证的密码 (如果需要)"
         },
         "priorityTags": {
-            "title": "Priority Tags",
-            "description": "Customize the tag priority order for each model type. The first match becomes the folder name and powers tag suggestions.",
-            "placeholder": "celebrity(celeb|celebrity), stylized, character(char)",
-            "example": "Example: celebrity(celeb|celebrity), stylized, character(char)",
-            "helpLinkLabel": "Open priority tags help",
+            "title": "优先标签",
+            "description": "为每种模型类型自定义标签优先级顺序 (例如: character, concept, style(toon|toon_style))",
+            "placeholder": "character, concept, style(toon|toon_style)",
+            "helpLinkLabel": "打开优先标签帮助",
             "modelTypes": {
-                "lora": "LoRA priority",
-                "checkpoint": "Checkpoint priority",
-                "embedding": "Embedding priority"
+                "lora": "LoRA",
+                "checkpoint": "Checkpoint",
+                "embedding": "Embedding"
             },
-            "saveSuccess": "Priority tags updated.",
-            "saveError": "Failed to update priority tags.",
-            "loadingSuggestions": "Loading suggestions...",
+            "saveSuccess": "优先标签已更新。",
+            "saveError": "优先标签更新失败。",
+            "loadingSuggestions": "正在加载建议...",
             "validation": {
-                "missingClosingParen": "Entry {index} is missing a closing parenthesis.",
-                "missingCanonical": "Entry {index} must include a canonical tag name.",
-                "duplicateCanonical": "The canonical tag \"{tag}\" appears more than once.",
-                "unknown": "Invalid priority tag configuration."
+                "missingClosingParen": "条目 {index} 缺少右括号。",
+                "missingCanonical": "条目 {index} 必须包含规范标签名称。",
+                "duplicateCanonical": "规范标签 \"{tag}\" 出现多次。",
+                "unknown": "优先标签配置无效。"
             }
         }
     },

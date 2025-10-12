@@ -204,7 +204,7 @@
             "misc": "기타",
             "metadataArchive": "메타데이터 아카이브 데이터베이스",
             "proxySettings": "프록시 설정",
-            "priorityTags": "Priority Tags"
+            "priorityTags": "우선순위 태그"
         },
         "contentFiltering": {
             "blurNsfwContent": "NSFW 콘텐츠 블러 처리",
@@ -348,24 +348,23 @@
             "proxyPasswordHelp": "프록시 인증에 필요한 비밀번호 (필요한 경우)"
         },
         "priorityTags": {
-            "title": "Priority Tags",
-            "description": "Customize the tag priority order for each model type. The first match becomes the folder name and powers tag suggestions.",
-            "placeholder": "celebrity(celeb|celebrity), stylized, character(char)",
-            "example": "Example: celebrity(celeb|celebrity), stylized, character(char)",
-            "helpLinkLabel": "Open priority tags help",
+            "title": "우선순위 태그",
+            "description": "모델 유형별 태그 우선순위를 사용자 지정합니다(예: character, concept, style(toon|toon_style)).",
+            "placeholder": "character, concept, style(toon|toon_style)",
+            "helpLinkLabel": "우선순위 태그 도움말 열기",
             "modelTypes": {
-                "lora": "LoRA priority",
-                "checkpoint": "Checkpoint priority",
-                "embedding": "Embedding priority"
+                "lora": "LoRA",
+                "checkpoint": "체크포인트",
+                "embedding": "임베딩"
             },
-            "saveSuccess": "Priority tags updated.",
-            "saveError": "Failed to update priority tags.",
-            "loadingSuggestions": "Loading suggestions...",
+            "saveSuccess": "우선순위 태그가 업데이트되었습니다.",
+            "saveError": "우선순위 태그를 업데이트하지 못했습니다.",
+            "loadingSuggestions": "추천을 불러오는 중...",
             "validation": {
-                "missingClosingParen": "Entry {index} is missing a closing parenthesis.",
-                "missingCanonical": "Entry {index} must include a canonical tag name.",
-                "duplicateCanonical": "The canonical tag \"{tag}\" appears more than once.",
-                "unknown": "Invalid priority tag configuration."
+                "missingClosingParen": "{index}번째 항목에 닫는 괄호가 없습니다.",
+                "missingCanonical": "{index}번째 항목에는 정식 태그 이름이 포함되어야 합니다.",
+                "duplicateCanonical": "정식 태그 \"{tag}\"가 여러 번 나타납니다.",
+                "unknown": "잘못된 우선순위 태그 구성입니다."
             }
         }
     },
