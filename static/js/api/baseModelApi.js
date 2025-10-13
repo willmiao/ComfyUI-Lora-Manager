@@ -569,9 +569,15 @@ export class BaseModelApiClient {
         }
     }
 
-    async fetchCivitaiVersions(modelId) {
+    async fetchCivitaiVersions(modelId, source = null) {
         try {
-            const response = await fetch(`${this.apiConfig.endpoints.civitaiVersions}/${modelId}`);
+            let requestUrl = `${this.apiConfig.endpoints.civitaiVersions}/${modelId}`;
+            if (source) {
+                const params = new URLSearchParams({ source });
+                requestUrl = `${requestUrl}?${params.toString()}`;
+            }
+
+            const response = await fetch(requestUrl);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 if (errorData && errorData.error && errorData.error.includes('Model type mismatch')) {
@@ -639,7 +645,7 @@ export class BaseModelApiClient {
         }
     }
 
-    async downloadModel(modelId, versionId, modelRoot, relativePath, useDefaultPaths = false, downloadId) {
+    async downloadModel(modelId, versionId, modelRoot, relativePath, useDefaultPaths = false, downloadId, source = null) {
         try {
             const response = await fetch(DOWNLOAD_ENDPOINTS.download, {
                 method: 'POST',
@@ -650,7 +656,8 @@ export class BaseModelApiClient {
                     model_root: modelRoot,
                     relative_path: relativePath,
                     use_default_paths: useDefaultPaths,
-                    download_id: downloadId
+                    download_id: downloadId,
+                    ...(source ? { source } : {})
                 })
             });
 

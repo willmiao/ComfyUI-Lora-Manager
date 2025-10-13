@@ -14,6 +14,7 @@ export class DownloadManager {
         this.modelInfo = null;
         this.modelVersionId = null;
         this.modelId = null;
+        this.source = null;
         
         this.initialized = false;
         this.selectedFolder = '';
@@ -126,6 +127,7 @@ export class DownloadManager {
         this.modelInfo = null;
         this.modelId = null;
         this.modelVersionId = null;
+        this.source = null;
         
         this.selectedFolder = '';
         
@@ -150,7 +152,7 @@ export class DownloadManager {
                 throw new Error(translate('modals.download.errors.invalidUrl'));
             }
 
-            this.versions = await this.apiClient.fetchCivitaiVersions(this.modelId);
+            this.versions = await this.apiClient.fetchCivitaiVersions(this.modelId, this.source);
             
             if (!this.versions.length) {
                 throw new Error(translate('modals.download.errors.noVersions'));
@@ -170,13 +172,22 @@ export class DownloadManager {
     }
 
     extractModelId(url) {
-        const modelMatch = url.match(/civitai\.com\/models\/(\d+)/);
-        const versionMatch = url.match(/modelVersionId=(\d+)/);
-        
-        if (modelMatch) {
-            this.modelVersionId = versionMatch ? versionMatch[1] : null;
-            return modelMatch[1];
+        const versionMatch = url.match(/modelVersionId=(\d+)/i);
+        this.modelVersionId = versionMatch ? versionMatch[1] : null;
+
+        const civarchiveMatch = url.match(/https?:\/\/(?:www\.)?(?:civitaiarchive|civarchive)\.com\/models\/(\d+)/i);
+        if (civarchiveMatch) {
+            this.source = 'civarchive';
+            return civarchiveMatch[1];
         }
+
+        const civitaiMatch = url.match(/https?:\/\/(?:www\.)?civitai\.com\/models\/(\d+)/i);
+        if (civitaiMatch) {
+            this.source = null;
+            return civitaiMatch[1];
+        }
+
+        this.source = null;
         return null;
     }
 
@@ -484,7 +495,8 @@ export class DownloadManager {
                 modelRoot,
                 targetFolder,
                 useDefaultPaths,
-                downloadId
+                downloadId,
+                this.source
             );
 
             showToast('toast.loras.downloadCompleted', {}, 'success');

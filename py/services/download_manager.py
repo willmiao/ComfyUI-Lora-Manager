@@ -212,13 +212,8 @@ class DownloadManager:
                 # Check embedding scanner
                 if await embedding_scanner.check_model_version_exists(model_version_id):
                     return {'success': False, 'error': 'Model version already exists in embedding library'}
-
-            # Get metadata provider based on source parameter
-            if source == 'civarchive':
-                from .metadata_service import get_metadata_provider
-                metadata_provider = await get_metadata_provider('civarchive')
-            else:
-                metadata_provider = await get_default_metadata_provider()
+          
+            metadata_provider = await get_default_metadata_provider()
 
             # Get version info based on the provided identifier
             version_info = await metadata_provider.get_model_version(model_id, model_version_id)
