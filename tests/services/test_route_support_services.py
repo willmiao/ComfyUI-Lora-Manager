@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 import pytest
 
 from py.services.download_coordinator import DownloadCoordinator
+from py.services.downloader import DownloadProgress
 from py.services.metadata_sync_service import MetadataSyncService
 from py.services.preview_asset_service import PreviewAssetService
 from py.services.tag_update_service import TagUpdateService
@@ -191,10 +192,17 @@ def test_download_coordinator_emits_progress() -> None:
     class DownloadManagerStub:
         def __init__(self) -> None:
             self.calls: List[Dict[str, Any]] = []
+            self.snapshot = DownloadProgress(
+                percent_complete=25.0,
+                bytes_downloaded=256,
+                total_bytes=1024,
+                bytes_per_second=128.0,
+                timestamp=0.0,
+            )
 
         async def download_from_civitai(self, **kwargs) -> Dict[str, Any]:
             self.calls.append(kwargs)
-            await kwargs["progress_callback"](10)
+            await kwargs["progress_callback"](self.snapshot)
             return {"success": True}
 
         async def cancel_download(self, download_id: str) -> Dict[str, Any]:
@@ -216,6 +224,12 @@ def test_download_coordinator_emits_progress() -> None:
     assert result["success"] is True
     assert manager_stub.calls
     assert ws_stub.progress_events
+    expected_progress = round(manager_stub.snapshot.percent_complete)
+    first_event = ws_stub.progress_events[0]
+    assert first_event["progress"] == expected_progress
+    assert first_event["bytes_downloaded"] == manager_stub.snapshot.bytes_downloaded
+    assert first_event["total_bytes"] == manager_stub.snapshot.total_bytes
+    assert first_event["bytes_per_second"] == manager_stub.snapshot.bytes_per_second
 
     cancel_result = asyncio.run(coordinator.cancel_download(result["download_id"]))
     assert cancel_result["success"] is True

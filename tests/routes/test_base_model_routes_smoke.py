@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import types
+from typing import Optional
 
 folder_paths_stub = types.SimpleNamespace(get_folder_paths=lambda *_: [])
 sys.modules.setdefault("folder_paths", folder_paths_stub)
@@ -16,6 +17,7 @@ from aiohttp.test_utils import TestClient, TestServer
 from py.config import config
 from py.routes.base_model_routes import BaseModelRoutes
 from py.services import model_file_service
+from py.services.downloader import DownloadProgress
 from py.services.metadata_sync_service import MetadataSyncService
 from py.services.model_file_service import AutoOrganizeResult
 from py.services.service_registry import ServiceRegistry
@@ -59,12 +61,21 @@ def download_manager_stub():
             self.error = None
             self.cancelled = []
             self.active_downloads = {}
+            self.last_progress_snapshot: Optional[DownloadProgress] = None
 
         async def download_from_civitai(self, **kwargs):
             self.calls.append(kwargs)
             if self.error is not None:
                 raise self.error
-            await kwargs["progress_callback"](42)
+            snapshot = DownloadProgress(
+                percent_complete=50.0,
+                bytes_downloaded=5120,
+                total_bytes=10240,
+                bytes_per_second=2048.0,
+                timestamp=0.0,
+            )
+            self.last_progress_snapshot = snapshot
+            await kwargs["progress_callback"](snapshot)
             return {"success": True, "path": "/tmp/model.safetensors"}
 
         async def cancel_download(self, download_id):
@@ -332,7 +343,11 @@ def test_download_model_invokes_download_manager(
             assert call_args["download_id"] == payload["download_id"]
             progress = ws_manager.get_download_progress(payload["download_id"])
             assert progress is not None
-            assert progress["progress"] == 42
+            expected_progress = round(download_manager_stub.last_progress_snapshot.percent_complete)
+            assert progress["progress"] == expected_progress
+            assert progress["bytes_downloaded"] == download_manager_stub.last_progress_snapshot.bytes_downloaded
+            assert progress["total_bytes"] == download_manager_stub.last_progress_snapshot.total_bytes
+            assert progress["bytes_per_second"] == download_manager_stub.last_progress_snapshot.bytes_per_second
             assert "timestamp" in progress
 
             progress_response = await client.get(
@@ -341,7 +356,13 @@ def test_download_model_invokes_download_manager(
             progress_payload = await progress_response.json()
 
             assert progress_response.status == 200
-            assert progress_payload == {"success": True, "progress": 42}
+            assert progress_payload == {
+                "success": True,
+                "progress": expected_progress,
+                "bytes_downloaded": download_manager_stub.last_progress_snapshot.bytes_downloaded,
+                "total_bytes": download_manager_stub.last_progress_snapshot.total_bytes,
+                "bytes_per_second": download_manager_stub.last_progress_snapshot.bytes_per_second,
+            }
             ws_manager.cleanup_download_progress(payload["download_id"])
         finally:
             await client.close()

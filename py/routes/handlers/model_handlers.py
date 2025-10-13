@@ -766,7 +766,15 @@ class ModelDownloadHandler:
             progress_data = self._ws_manager.get_download_progress(download_id)
             if progress_data is None:
                 return web.json_response({"success": False, "error": "Download ID not found"}, status=404)
-            return web.json_response({"success": True, "progress": progress_data.get("progress", 0)})
+            return web.json_response(
+                {
+                    "success": True,
+                    "progress": progress_data.get("progress", 0),
+                    "bytes_downloaded": progress_data.get("bytes_downloaded"),
+                    "total_bytes": progress_data.get("total_bytes"),
+                    "bytes_per_second": progress_data.get("bytes_per_second", 0.0),
+                }
+            )
         except Exception as exc:
             self._logger.error("Error getting download progress: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
