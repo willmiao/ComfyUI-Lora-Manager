@@ -637,6 +637,14 @@
                 "downloadedPreview": "תמונת תצוגה מקדימה הורדה",
                 "downloadingFile": "מוריד קובץ {type}",
                 "finalizing": "מסיים הורדה..."
+            },
+            "progress": {
+                "currentFile": "הקובץ הנוכחי:",
+                "downloading": "מוריד: {name}",
+                "transferred": "הורד: {downloaded} / {total}",
+                "transferredSimple": "הורד: {downloaded}",
+                "transferredUnknown": "הורד: --",
+                "speed": "מהירות: {speed}"
             }
         },
         "move": {

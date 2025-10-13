@@ -1,3 +1,6 @@
+import { translate } from '../utils/i18nHelpers.js';
+import { formatFileSize } from '../utils/formatters.js';
+
 // Loading management
 export class LoadingManager {
     constructor() {
@@ -65,7 +68,7 @@ export class LoadingManager {
     
     // Show enhanced progress for downloads
     showDownloadProgress(totalItems = 1) {
-        this.show('Preparing download...', 0);
+        this.show(translate('modals.download.status.preparing', {}, 'Preparing download...'), 0);
         
         // Create details container
         const detailsContainer = this.createDetailsContainer();
@@ -76,7 +79,7 @@ export class LoadingManager {
         
         const currentItemLabel = document.createElement('div');
         currentItemLabel.className = 'current-item-label';
-        currentItemLabel.textContent = 'Current file:';
+        currentItemLabel.textContent = translate('modals.download.progress.currentFile', {}, 'Current file:');
         
         const currentItemBar = document.createElement('div');
         currentItemBar.className = 'current-item-bar-container';
@@ -105,16 +108,96 @@ export class LoadingManager {
         
         // Add current item progress to container
         detailsContainer.appendChild(currentItemContainer);
+
+        // Create transfer stats container
+        const transferStats = document.createElement('div');
+        transferStats.className = 'download-transfer-stats';
+
+        const bytesDetail = document.createElement('div');
+        bytesDetail.className = 'download-transfer-bytes';
+        bytesDetail.textContent = translate(
+            'modals.download.progress.transferredUnknown',
+            {},
+            'Transferred: --'
+        );
+
+        const speedDetail = document.createElement('div');
+        speedDetail.className = 'download-transfer-speed';
+        speedDetail.textContent = translate(
+            'modals.download.progress.speed',
+            { speed: '--' },
+            'Speed: --'
+        );
+
+        transferStats.appendChild(bytesDetail);
+        transferStats.appendChild(speedDetail);
+        detailsContainer.appendChild(transferStats);
+
+        const formatMetricSize = (value) => {
+            if (value === undefined || value === null || isNaN(value)) {
+                return '--';
+            }
+            if (value < 1) {
+                return '0 B';
+            }
+            return formatFileSize(value);
+        };
+
+        const updateTransferStats = (metrics = {}) => {
+            const { bytesDownloaded, totalBytes, bytesPerSecond } = metrics;
+
+            if (bytesDetail) {
+                const formattedDownloaded = formatMetricSize(bytesDownloaded);
+                const formattedTotal = formatMetricSize(totalBytes);
+
+                if (formattedDownloaded === '--' && formattedTotal === '--') {
+                    bytesDetail.textContent = translate(
+                        'modals.download.progress.transferredUnknown',
+                        {},
+                        'Transferred: --'
+                    );
+                } else if (formattedTotal === '--') {
+                    bytesDetail.textContent = translate(
+                        'modals.download.progress.transferredSimple',
+                        { downloaded: formattedDownloaded },
+                        `Transferred: ${formattedDownloaded}`
+                    );
+                } else {
+                    bytesDetail.textContent = translate(
+                        'modals.download.progress.transferred',
+                        { downloaded: formattedDownloaded, total: formattedTotal },
+                        `Transferred: ${formattedDownloaded} / ${formattedTotal}`
+                    );
+                }
+            }
+
+            if (speedDetail) {
+                const formattedSpeed = formatMetricSize(bytesPerSecond);
+                const displaySpeed = formattedSpeed === '--' ? '--' : `${formattedSpeed}/s`;
+                speedDetail.textContent = translate(
+                    'modals.download.progress.speed',
+                    { speed: displaySpeed },
+                    `Speed: ${displaySpeed}`
+                );
+            }
+        };
+
+        // Initialize transfer stats with empty data
+        updateTransferStats();
         
         // Return update function
-        return (currentProgress, currentIndex = 0, currentName = '') => {
+        return (currentProgress, currentIndex = 0, currentName = '', metrics = {}) => {
             // Update current item progress
             currentItemProgress.style.width = `${currentProgress}%`;
             currentItemPercent.textContent = `${Math.floor(currentProgress)}%`;
             
             // Update current item label if name provided
             if (currentName) {
-                currentItemLabel.textContent = `Downloading: ${currentName}`;
+                currentItemLabel.textContent = translate(
+                    'modals.download.progress.downloading',
+                    { name: currentName },
+                    `Downloading: ${currentName}`
+                );
             }
             
             // Update overall label if multiple items
@@ -128,6 +211,8 @@ export class LoadingManager {
                 // Single item, just update main progress
                 this.setProgress(currentProgress);
             }
+
+            updateTransferStats(metrics);
         };
     }
 

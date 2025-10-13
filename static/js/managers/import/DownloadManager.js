@@ -164,7 +164,13 @@ export class DownloadManager {
                 const loraName = currentLora ? currentLora.name : '';
                 
                 // Update progress display
-                updateProgress(currentLoraProgress, completedDownloads, loraName);
+                const metrics = {
+                    bytesDownloaded: data.bytes_downloaded,
+                    totalBytes: data.total_bytes,
+                    bytesPerSecond: data.bytes_per_second
+                };
+
+                updateProgress(currentLoraProgress, completedDownloads, loraName, metrics);
                 
                 // Add more detailed status messages based on progress
                 if (currentLoraProgress < 3) {

@@ -637,6 +637,14 @@
                 "downloadedPreview": "プレビュー画像をダウンロードしました",
                 "downloadingFile": "{type}ファイルをダウンロード中",
                 "finalizing": "ダウンロードを完了中..."
+            },
+            "progress": {
+                "currentFile": "現在のファイル:",
+                "downloading": "ダウンロード中: {name}",
+                "transferred": "ダウンロード済み: {downloaded} / {total}",
+                "transferredSimple": "ダウンロード済み: {downloaded}",
+                "transferredUnknown": "ダウンロード済み: --",
+                "speed": "速度: {speed}"
             }
         },
         "move": {

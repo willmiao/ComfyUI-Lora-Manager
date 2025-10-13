@@ -637,6 +637,14 @@
                 "downloadedPreview": "Image d'aperçu téléchargée",
                 "downloadingFile": "Téléchargement du fichier {type}",
                 "finalizing": "Finalisation du téléchargement..."
+            },
+            "progress": {
+                "currentFile": "Fichier actuel :",
+                "downloading": "Téléchargement : {name}",
+                "transferred": "Téléchargé : {downloaded} / {total}",
+                "transferredSimple": "Téléchargé : {downloaded}",
+                "transferredUnknown": "Téléchargé : --",
+                "speed": "Vitesse : {speed}"
             }
         },
         "move": {

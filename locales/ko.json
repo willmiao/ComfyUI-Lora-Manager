@@ -637,6 +637,14 @@
                 "downloadedPreview": "미리보기 이미지 다운로드됨",
                 "downloadingFile": "{type} 파일 다운로드 중",
                 "finalizing": "다운로드 완료 중..."
+            },
+            "progress": {
+                "currentFile": "현재 파일:",
+                "downloading": "다운로드 중: {name}",
+                "transferred": "다운로드됨: {downloaded} / {total}",
+                "transferredSimple": "다운로드됨: {downloaded}",
+                "transferredUnknown": "다운로드됨: --",
+                "speed": "속도: {speed}"
             }
         },
         "move": {

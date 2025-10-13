@@ -637,6 +637,14 @@
                 "downloadedPreview": "Vorschaubild heruntergeladen",
                 "downloadingFile": "{type}-Datei wird heruntergeladen",
                 "finalizing": "Download wird abgeschlossen..."
+            },
+            "progress": {
+                "currentFile": "Aktuelle Datei:",
+                "downloading": "Wird heruntergeladen: {name}",
+                "transferred": "Heruntergeladen: {downloaded} / {total}",
+                "transferredSimple": "Heruntergeladen: {downloaded}",
+                "transferredUnknown": "Heruntergeladen: --",
+                "speed": "Geschwindigkeit: {speed}"
             }
         },
         "move": {

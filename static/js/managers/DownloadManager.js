@@ -453,7 +453,13 @@ export class DownloadManager {
                 }
                 
                 if (data.status === 'progress' && data.download_id === downloadId) {
-                    updateProgress(data.progress, 0, this.currentVersion.name);
+                    const metrics = {
+                        bytesDownloaded: data.bytes_downloaded,
+                        totalBytes: data.total_bytes,
+                        bytesPerSecond: data.bytes_per_second
+                    };
+
+                    updateProgress(data.progress, 0, this.currentVersion.name, metrics);
                     
                     if (data.progress < 3) {
                         this.loadingManager.setStatus(translate('modals.download.status.preparing'));

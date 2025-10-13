@@ -637,6 +637,14 @@
                 "downloadedPreview": "Превью изображение загружено",
                 "downloadingFile": "Загрузка файла {type}",
                 "finalizing": "Завершение загрузки..."
+            },
+            "progress": {
+                "currentFile": "Текущий файл:",
+                "downloading": "Скачивается: {name}",
+                "transferred": "Скачано: {downloaded} / {total}",
+                "transferredSimple": "Скачано: {downloaded}",
+                "transferredUnknown": "Скачано: --",
+                "speed": "Скорость: {speed}"
             }
         },
         "move": {

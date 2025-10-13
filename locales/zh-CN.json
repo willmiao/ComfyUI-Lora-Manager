@@ -637,6 +637,14 @@
                 "downloadedPreview": "预览图片已下载",
                 "downloadingFile": "正在下载 {type} 文件",
                 "finalizing": "正在完成下载..."
+            },
+            "progress": {
+                "currentFile": "当前文件：",
+                "downloading": "下载中：{name}",
+                "transferred": "已下载：{downloaded} / {total}",
+                "transferredSimple": "已下载：{downloaded}",
+                "transferredUnknown": "已下载：--",
+                "speed": "速度：{speed}"
             }
         },
         "move": {
