@@ -2,6 +2,7 @@ try:  # pragma: no cover - import fallback for pytest collection
     from .py.lora_manager import LoraManager
     from .py.nodes.lora_loader import LoraManagerLoader, LoraManagerTextLoader
     from .py.nodes.trigger_word_toggle import TriggerWordToggle
+    from .py.nodes.prompt import PromptLoraManager
     from .py.nodes.lora_stacker import LoraStacker
     from .py.nodes.save_image import SaveImage
     from .py.nodes.debug_metadata import DebugMetadata
@@ -17,6 +18,7 @@ except ImportError:  # pragma: no cover - allows running under pytest without pa
     if str(package_root) not in sys.path:
         sys.path.append(str(package_root))
 
+    PromptLoraManager = importlib.import_module("py.nodes.prompt").PromptLoraManager
     LoraManager = importlib.import_module("py.lora_manager").LoraManager
     LoraManagerLoader = importlib.import_module("py.nodes.lora_loader").LoraManagerLoader
     LoraManagerTextLoader = importlib.import_module("py.nodes.lora_loader").LoraManagerTextLoader
@@ -29,6 +31,7 @@ except ImportError:  # pragma: no cover - allows running under pytest without pa
     init_metadata_collector = importlib.import_module("py.metadata_collector").init
 
 NODE_CLASS_MAPPINGS = {
+    PromptLoraManager.NAME: PromptLoraManager,
     LoraManagerLoader.NAME: LoraManagerLoader,
     LoraManagerTextLoader.NAME: LoraManagerTextLoader,
     TriggerWordToggle.NAME: TriggerWordToggle,

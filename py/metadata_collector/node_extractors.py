@@ -666,6 +666,7 @@ NODE_EXTRACTORS = {
     "LoraManagerLoader": LoraLoaderManagerExtractor,
     # Conditioning
     "CLIPTextEncode": CLIPTextEncodeExtractor,
+    "PromptLoraManager": CLIPTextEncodeExtractor,
     "CLIPTextEncodeFlux": CLIPTextEncodeFluxExtractor,  # Add CLIPTextEncodeFlux
     "WAS_Text_to_Conditioning": CLIPTextEncodeExtractor,
     "AdvancedCLIPTextEncode": CLIPTextEncodeExtractor,  # From https://github.com/BlenderNeko/ComfyUI_ADV_CLIP_emb

@@ -15,15 +15,136 @@ function parseUsageTipNumber(value) {
     return null;
 }
 
+function splitRelativePath(relativePath = '') {
+    const parts = relativePath.split(/[/\\]+/).filter(Boolean);
+    const fileName = parts.pop() ?? '';
+    return {
+        directories: parts,
+        fileName,
+    };
+}
+
+function removeGeneralExtension(fileName = '') {
+    return fileName.replace(/\.[^.]+$/, '');
+}
+
+function removeLoraExtension(fileName = '') {
+    return fileName.replace(/\.(safetensors|ckpt|pt|bin)$/i, '');
+}
+
+function createDefaultBehavior(modelType) {
+    return {
+        enablePreview: false,
+        async getInsertText(_instance, relativePath) {
+            const trimmed = relativePath?.trim() ?? '';
+            if (!trimmed) {
+                return '';
+            }
+            return `${trimmed}, `;
+        },
+    };
+}
+
+const MODEL_BEHAVIORS = {
+    loras: {
+        enablePreview: true,
+        init(instance) {
+            if (!instance.options.showPreview) {
+                return;
+            }
+            instance.initPreviewTooltip({ modelType: instance.modelType });
+        },
+        showPreview(instance, relativePath, itemElement) {
+            if (!instance.previewTooltip) {
+                return;
+            }
+            instance.showPreviewForItem(relativePath, itemElement);
+        },
+        hidePreview(instance) {
+            if (!instance.previewTooltip) {
+                return;
+            }
+            instance.previewTooltip.hide();
+        },
+        destroy(instance) {
+            if (instance.previewTooltip) {
+                instance.previewTooltip.cleanup();
+                instance.previewTooltip = null;
+            }
+        },
+        async getInsertText(_instance, relativePath) {
+            const fileName = removeLoraExtension(splitRelativePath(relativePath).fileName);
+
+            let strength = 1.0;
+            let hasStrength = false;
+            let clipStrength = null;
+
+            try {
+                const response = await api.fetchApi(`/lm/loras/usage-tips-by-path?relative_path=${encodeURIComponent(relativePath)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.usage_tips) {
+                        try {
+                            const usageTips = JSON.parse(data.usage_tips);
+                            const parsedStrength = parseUsageTipNumber(usageTips.strength);
+                            if (parsedStrength !== null) {
+                                strength = parsedStrength;
+                                hasStrength = true;
+                            }
+                            const clipSource = usageTips.clip_strength ?? usageTips.clipStrength;
+                            const parsedClipStrength = parseUsageTipNumber(clipSource);
+                            if (parsedClipStrength !== null) {
+                                clipStrength = parsedClipStrength;
+                                if (!hasStrength) {
+                                    strength = 1.0;
+                                }
+                            }
+                        } catch (parseError) {
+                            console.warn('Failed to parse usage tips JSON:', parseError);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to fetch usage tips:', error);
+            }
+
+            if (clipStrength !== null) {
+                return `<lora:${fileName}:${strength}:${clipStrength}>, `;
+            }
+            return `<lora:${fileName}:${strength}>, `;
+        }
+    },
+    embeddings: {
+        enablePreview: true,
+        init(instance) {
+            if (!instance.options.showPreview) {
+                return;
+            }
+            instance.initPreviewTooltip({ modelType: instance.modelType });
+        },
+        async getInsertText(_instance, relativePath) {
+            const { directories, fileName } = splitRelativePath(relativePath);
+            const trimmedName = removeGeneralExtension(fileName);
+            const folder = directories.length ? `${directories.join('\\')}\\` : '';
+            return `embedding:${folder}${trimmedName}, `;
+        },
+    },
+};
+
+function getModelBehavior(modelType) {
+    return MODEL_BEHAVIORS[modelType] ?? createDefaultBehavior(modelType);
+}
+
 class AutoComplete {
     constructor(inputElement, modelType = 'loras', options = {}) {
         this.inputElement = inputElement;
         this.modelType = modelType;
+        this.behavior = getModelBehavior(modelType);
         this.options = {
             maxItems: 20,
             minChars: 1,
             debounceDelay: 200,
-            showPreview: true,
+            showPreview: this.behavior.enablePreview ?? false,
             ...options
         };
         
@@ -34,6 +155,7 @@ class AutoComplete {
         this.isVisible = false;
         this.currentSearchTerm = '';
         this.previewTooltip = null;
+        this.previewTooltipPromise = null;
         
         // Initialize TextAreaCaretHelper
         this.helper = new TextAreaCaretHelper(inputElement, () => app.canvas.ds.scale);
@@ -88,19 +210,24 @@ class AutoComplete {
         
         // Append to body to avoid overflow issues
         document.body.appendChild(this.dropdown);
-        
-        // Initialize preview tooltip if needed
-        if (this.options.showPreview && this.modelType === 'loras') {
-            this.initPreviewTooltip();
+
+        if (typeof this.behavior.init === 'function') {
+            this.behavior.init(this);
         }
     }
     
-    initPreviewTooltip() {
+    initPreviewTooltip(options = {}) {
+        if (this.previewTooltip || this.previewTooltipPromise) {
+            return;
+        }
         // Dynamically import and create preview tooltip
-        import('./loras_widget_components.js').then(module => {
-            this.previewTooltip = new module.PreviewTooltip();
+        this.previewTooltipPromise = import('./preview_tooltip.js').then(module => {
+            const config = { modelType: this.modelType, ...options };
+            this.previewTooltip = new module.PreviewTooltip(config);
         }).catch(err => {
             console.warn('Failed to load preview tooltip:', err);
+        }).finally(() => {
+            this.previewTooltipPromise = null;
         });
     }
     
@@ -220,7 +347,6 @@ class AutoComplete {
             // Hover and selection handlers
             item.addEventListener('mouseenter', () => {
                 this.selectItem(index);
-                this.showPreviewForItem(relativePath, item);
             });
             
             item.addEventListener('mouseleave', () => {
@@ -256,7 +382,7 @@ class AutoComplete {
     }
     
     showPreviewForItem(relativePath, itemElement) {
-        if (!this.previewTooltip) return;
+        if (!this.options.showPreview || !this.previewTooltip) return;
         
         // Extract filename without extension for preview
         const fileName = relativePath.split(/[/\\]/).pop();
@@ -271,7 +397,12 @@ class AutoComplete {
     }
     
     hidePreview() {
-        if (this.previewTooltip) {
+        if (!this.options.showPreview) {
+            return;
+        }
+        if (typeof this.behavior.hidePreview === 'function') {
+            this.behavior.hidePreview(this);
+        } else if (this.previewTooltip) {
             this.previewTooltip.hide();
         }
     }
@@ -354,7 +485,11 @@ class AutoComplete {
             
             // Show preview for selected item
             if (this.options.showPreview) {
-                this.showPreviewForItem(this.items[index], item);
+                if (typeof this.behavior.showPreview === 'function') {
+                    this.behavior.showPreview(this, this.items[index], item);
+                } else if (this.previewTooltip) {
+                    this.showPreviewForItem(this.items[index], item);
+                }
             }
         }
     }
@@ -390,46 +525,11 @@ class AutoComplete {
     }
     
     async insertSelection(relativePath) {
-        // Extract just the filename for LoRA name
-        const fileName = relativePath.split(/[/\\]/).pop().replace(/\.(safetensors|ckpt|pt|bin)$/i, '');
-
-        // Get usage tips and extract strength information
-        let strength = 1.0; // Default strength
-        let hasStrength = false;
-        let clipStrength = null;
-        try {
-            const response = await api.fetchApi(`/lm/loras/usage-tips-by-path?relative_path=${encodeURIComponent(relativePath)}`);
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.usage_tips) {
-                    try {
-                        const usageTips = JSON.parse(data.usage_tips);
-                        const parsedStrength = parseUsageTipNumber(usageTips.strength);
-                        if (parsedStrength !== null) {
-                            strength = parsedStrength;
-                            hasStrength = true;
-                        }
-                        const clipSource = usageTips.clip_strength ?? usageTips.clipStrength;
-                        const parsedClipStrength = parseUsageTipNumber(clipSource);
-                        if (parsedClipStrength !== null) {
-                            clipStrength = parsedClipStrength;
-                            if (!hasStrength) {
-                                strength = 1.0;
-                            }
-                        }
-                    } catch (parseError) {
-                        console.warn('Failed to parse usage tips JSON:', parseError);
-                    }
-                }
-            }
-        } catch (error) {
-            console.warn('Failed to fetch usage tips:', error);
+        const insertText = await this.getInsertText(relativePath);
+        if (!insertText) {
+            this.hide();
+            return;
         }
-
-        // Format the LoRA code with strength values
-        const loraCode = clipStrength !== null
-            ? `<lora:${fileName}:${strength}:${clipStrength}>, `
-            : `<lora:${fileName}:${strength}>, `;
 
         const currentValue = this.inputElement.value;
         const caretPos = this.getCaretPosition();
@@ -440,8 +540,8 @@ class AutoComplete {
         const searchStartPos = caretPos - searchTerm.length;
 
         // Only replace the search term, not everything after the last comma
-        const newValue = currentValue.substring(0, searchStartPos) + loraCode + currentValue.substring(caretPos);
-        const newCaretPos = searchStartPos + loraCode.length;
+        const newValue = currentValue.substring(0, searchStartPos) + insertText + currentValue.substring(caretPos);
+        const newCaretPos = searchStartPos + insertText.length;
 
         this.inputElement.value = newValue;
 
@@ -455,18 +555,42 @@ class AutoComplete {
         this.inputElement.focus();
         this.inputElement.setSelectionRange(newCaretPos, newCaretPos);
     }
+
+    async getInsertText(relativePath) {
+        if (typeof this.behavior.getInsertText === 'function') {
+            try {
+                const result = await this.behavior.getInsertText(this, relativePath);
+                if (typeof result === 'string' && result.length > 0) {
+                    return result;
+                }
+            } catch (error) {
+                console.warn('Failed to format autocomplete insertion:', error);
+            }
+        }
+
+        const trimmed = typeof relativePath === 'string' ? relativePath.trim() : '';
+        if (!trimmed) {
+            return '';
+        }
+        return `${trimmed}, `;
+    }
     
     destroy() {
         if (this.debounceTimer) {
             clearTimeout(this.debounceTimer);
         }
         
-        if (this.previewTooltip) {
+        if (typeof this.behavior.destroy === 'function') {
+            this.behavior.destroy(this);
+        } else if (this.previewTooltip) {
             this.previewTooltip.cleanup();
+            this.previewTooltip = null;
         }
+        this.previewTooltipPromise = null;
         
         if (this.dropdown && this.dropdown.parentNode) {
             this.dropdown.parentNode.removeChild(this.dropdown);
+            this.dropdown = null;
         }
         
         // Remove event listeners would be added here if we tracked them

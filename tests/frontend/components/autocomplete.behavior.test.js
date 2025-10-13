@@ -10,7 +10,7 @@ const {
   API_MODULE: new URL('../../../scripts/api.js', import.meta.url).pathname,
   APP_MODULE: new URL('../../../scripts/app.js', import.meta.url).pathname,
   CARET_HELPER_MODULE: new URL('../../../web/comfyui/textarea_caret_helper.js', import.meta.url).pathname,
-  PREVIEW_COMPONENT_MODULE: new URL('../../../web/comfyui/loras_widget_components.js', import.meta.url).pathname,
+  PREVIEW_COMPONENT_MODULE: new URL('../../../web/comfyui/preview_tooltip.js', import.meta.url).pathname,
   AUTOCOMPLETE_MODULE: new URL('../../../web/comfyui/autocomplete.js', import.meta.url).pathname,
 }));
 

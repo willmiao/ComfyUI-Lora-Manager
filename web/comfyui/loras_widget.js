@@ -1,4 +1,4 @@
-import { createToggle, createArrowButton, PreviewTooltip, createDragHandle, updateEntrySelection, createExpandButton, updateExpandButtonState } from "./loras_widget_components.js";
+import { createToggle, createArrowButton, createDragHandle, updateEntrySelection, createExpandButton, updateExpandButtonState } from "./loras_widget_components.js";
 import { 
   parseLoraValue, 
   formatLoraValue, 
@@ -12,6 +12,7 @@ import {
 } from "./loras_widget_utils.js";
 import { initDrag, createContextMenu, initHeaderDrag, initReorderDrag, handleKeyboardNavigation } from "./loras_widget_events.js";
 import { forwardMiddleMouseToCanvas } from "./utils.js";
+import { PreviewTooltip } from "./preview_tooltip.js";
 
 export function addLorasWidget(node, name, opts, callback) {
   // Create container for loras
@@ -39,7 +40,7 @@ export function addLorasWidget(node, name, opts, callback) {
   const defaultValue = opts?.defaultVal || [];
 
   // Create preview tooltip instance
-  const previewTooltip = new PreviewTooltip();
+  const previewTooltip = new PreviewTooltip({ modelType: "loras" });
   
   // Selection state - only one LoRA can be selected at a time
   let selectedLora = null;

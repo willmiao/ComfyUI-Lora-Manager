@@ -383,27 +383,31 @@ export function mergeLoras(lorasText, lorasArr) {
  * @param {Object} node - The node instance
  * @param {Object} inputWidget - The input widget to add autocomplete to
  * @param {Function} originalCallback - The original callback function
+ * @param {string} [modelType='loras'] - The model type used by the autocomplete API
+ * @param {Object} [autocompleteOptions] - Additional options for the autocomplete instance
  * @returns {Function} Enhanced callback function with autocomplete
  */
-export function setupInputWidgetWithAutocomplete(node, inputWidget, originalCallback) {
+export function setupInputWidgetWithAutocomplete(node, inputWidget, originalCallback, modelType = 'loras', autocompleteOptions = {}) {
     let autocomplete = null;
+    const defaultOptions = {
+        maxItems: 20,
+        minChars: 1,
+        debounceDelay: 200,
+    };
+    const mergedOptions = { ...defaultOptions, ...autocompleteOptions };
     
     // Enhanced callback that initializes autocomplete and calls original callback
     const enhancedCallback = (value) => {
         // Initialize autocomplete on first callback if not already done
         if (!autocomplete && inputWidget.inputEl) {
-            autocomplete = new AutoComplete(inputWidget.inputEl, 'loras', {
-                maxItems: 20,
-                minChars: 1,
-                debounceDelay: 200
-            });
+            autocomplete = new AutoComplete(inputWidget.inputEl, modelType, mergedOptions);
             // Store reference for cleanup
             node.autocomplete = autocomplete;
         }
         
         // Call the original callback
-        if (originalCallback) {
-            originalCallback(value);
+        if (typeof originalCallback === "function") {
+            originalCallback.call(node, value);
         }
     };
     
