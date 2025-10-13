@@ -175,7 +175,8 @@ class Downloader:
         progress_callback: Optional[Callable[..., Awaitable[None]]] = None,
         use_auth: bool = False,
         custom_headers: Optional[Dict[str, str]] = None,
-        allow_resume: bool = True
+        allow_resume: bool = True,
+        pause_event: Optional[asyncio.Event] = None,
     ) -> Tuple[bool, str]:
         """
         Download a file with resumable downloads and retry mechanism
@@ -187,6 +188,7 @@ class Downloader:
             use_auth: Whether to include authentication headers (e.g., CivitAI API key)
             custom_headers: Additional headers to include in request
             allow_resume: Whether to support resumable downloads
+            pause_event: Optional event that, when cleared, will pause streaming until set again
             
         Returns:
             Tuple[bool, str]: (success, save_path or error message)
@@ -309,6 +311,8 @@ class Downloader:
                     mode = 'ab' if (allow_resume and resume_offset > 0) else 'wb'
                     with open(part_path, mode) as f:
                         async for chunk in response.content.iter_chunked(self.chunk_size):
+                            if pause_event is not None and not pause_event.is_set():
+                                await pause_event.wait()
                             if chunk:
                                 # Run blocking file write in executor
                                 await loop.run_in_executor(None, f.write, chunk)

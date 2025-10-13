@@ -758,6 +758,30 @@ class ModelDownloadHandler:
             self._logger.error("Error cancelling download via GET: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def pause_download_get(self, request: web.Request) -> web.Response:
+        try:
+            download_id = request.query.get("download_id")
+            if not download_id:
+                return web.json_response({"success": False, "error": "Download ID is required"}, status=400)
+            result = await self._download_coordinator.pause_download(download_id)
+            status = 200 if result.get("success") else 400
+            return web.json_response(result, status=status)
+        except Exception as exc:
+            self._logger.error("Error pausing download via GET: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def resume_download_get(self, request: web.Request) -> web.Response:
+        try:
+            download_id = request.query.get("download_id")
+            if not download_id:
+                return web.json_response({"success": False, "error": "Download ID is required"}, status=400)
+            result = await self._download_coordinator.resume_download(download_id)
+            status = 200 if result.get("success") else 400
+            return web.json_response(result, status=status)
+        except Exception as exc:
+            self._logger.error("Error resuming download via GET: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def get_download_progress(self, request: web.Request) -> web.Response:
         try:
             download_id = request.match_info.get("download_id")
@@ -766,15 +790,23 @@ class ModelDownloadHandler:
             progress_data = self._ws_manager.get_download_progress(download_id)
             if progress_data is None:
                 return web.json_response({"success": False, "error": "Download ID not found"}, status=404)
-            return web.json_response(
-                {
-                    "success": True,
-                    "progress": progress_data.get("progress", 0),
-                    "bytes_downloaded": progress_data.get("bytes_downloaded"),
-                    "total_bytes": progress_data.get("total_bytes"),
-                    "bytes_per_second": progress_data.get("bytes_per_second", 0.0),
-                }
-            )
+            response_payload = {
+                "success": True,
+                "progress": progress_data.get("progress", 0),
+                "bytes_downloaded": progress_data.get("bytes_downloaded"),
+                "total_bytes": progress_data.get("total_bytes"),
+                "bytes_per_second": progress_data.get("bytes_per_second", 0.0),
+            }
+
+            status = progress_data.get("status")
+            if status and status != "progress":
+                response_payload["status"] = status
+                if "message" in progress_data:
+                    response_payload["message"] = progress_data["message"]
+            elif status is None and "message" in progress_data:
+                response_payload["message"] = progress_data["message"]
+
+            return web.json_response(response_payload)
         except Exception as exc:
             self._logger.error("Error getting download progress: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
@@ -1025,6 +1057,8 @@ class ModelHandlerSet:
             "download_model": self.download.download_model,
             "download_model_get": self.download.download_model_get,
             "cancel_download_get": self.download.cancel_download_get,
+            "pause_download_get": self.download.pause_download_get,
+            "resume_download_get": self.download.resume_download_get,
             "get_download_progress": self.download.get_download_progress,
             "get_civitai_versions": self.civitai.get_civitai_versions,
             "get_civitai_model_by_version": self.civitai.get_civitai_model_by_version,
