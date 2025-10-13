@@ -14,11 +14,24 @@ import os
 import logging
 import asyncio
 import aiohttp
-from datetime import datetime
-from typing import Optional, Dict, Tuple, Callable, Union
+from collections import deque
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import Optional, Dict, Tuple, Callable, Union, Awaitable
 from ..services.settings_manager import get_settings_manager
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class DownloadProgress:
+    """Snapshot of a download transfer at a moment in time."""
+
+    percent_complete: float
+    bytes_downloaded: int
+    total_bytes: Optional[int]
+    bytes_per_second: float
+    timestamp: float
 
 
 class Downloader:
@@ -159,7 +172,7 @@ class Downloader:
         self,
         url: str,
         save_path: str,
-        progress_callback: Optional[Callable[[float], None]] = None,
+        progress_callback: Optional[Callable[..., Awaitable[None]]] = None,
         use_auth: bool = False,
         custom_headers: Optional[Dict[str, str]] = None,
         allow_resume: bool = True
@@ -248,7 +261,16 @@ class Downloader:
                                     if allow_resume:
                                         os.rename(part_path, save_path)
                                     if progress_callback:
-                                        await progress_callback(100)
+                                        await self._dispatch_progress_callback(
+                                            progress_callback,
+                                            DownloadProgress(
+                                                percent_complete=100.0,
+                                                bytes_downloaded=part_size,
+                                                total_bytes=actual_size,
+                                                bytes_per_second=0.0,
+                                                timestamp=datetime.now().timestamp(),
+                                            ),
+                                        )
                                     return True, save_path
                             # Remove corrupted part file and restart
                             os.remove(part_path)
@@ -276,6 +298,8 @@ class Downloader:
                     
                     current_size = resume_offset
                     last_progress_report_time = datetime.now()
+                    progress_samples: deque[tuple[datetime, int]] = deque()
+                    progress_samples.append((last_progress_report_time, current_size))
                     
                     # Ensure directory exists
                     os.makedirs(os.path.dirname(save_path), exist_ok=True)
@@ -289,14 +313,35 @@ class Downloader:
                                 # Run blocking file write in executor
                                 await loop.run_in_executor(None, f.write, chunk)
                                 current_size += len(chunk)
-                                
+
                                 # Limit progress update frequency to reduce overhead
                                 now = datetime.now()
                                 time_diff = (now - last_progress_report_time).total_seconds()
-                                
-                                if progress_callback and total_size and time_diff >= 1.0:
-                                    progress = (current_size / total_size) * 100
-                                    await progress_callback(progress)
+
+                                if progress_callback and time_diff >= 1.0:
+                                    progress_samples.append((now, current_size))
+                                    cutoff = now - timedelta(seconds=5)
+                                    while progress_samples and progress_samples[0][0] < cutoff:
+                                        progress_samples.popleft()
+
+                                    percent = (current_size / total_size) * 100 if total_size else 0.0
+                                    bytes_per_second = 0.0
+                                    if len(progress_samples) >= 2:
+                                        first_time, first_bytes = progress_samples[0]
+                                        last_time, last_bytes = progress_samples[-1]
+                                        elapsed = (last_time - first_time).total_seconds()
+                                        if elapsed > 0:
+                                            bytes_per_second = (last_bytes - first_bytes) / elapsed
+
+                                    progress_snapshot = DownloadProgress(
+                                        percent_complete=percent,
+                                        bytes_downloaded=current_size,
+                                        total_bytes=total_size or None,
+                                        bytes_per_second=bytes_per_second,
+                                        timestamp=now.timestamp(),
+                                    )
+
+                                    await self._dispatch_progress_callback(progress_callback, progress_snapshot)
                                     last_progress_report_time = now
                     
                     # Download completed successfully
@@ -331,7 +376,15 @@ class Downloader:
                     
                     # Ensure 100% progress is reported
                     if progress_callback:
-                        await progress_callback(100)
+                        final_snapshot = DownloadProgress(
+                            percent_complete=100.0,
+                            bytes_downloaded=final_size,
+                            total_bytes=total_size or final_size,
+                            bytes_per_second=0.0,
+                            timestamp=datetime.now().timestamp(),
+                        )
+                        await self._dispatch_progress_callback(progress_callback, final_snapshot)
+
                     
                     return True, save_path
                     
@@ -363,7 +416,24 @@ class Downloader:
                 return False, str(e)
         
         return False, f"Download failed after {self.max_retries + 1} attempts"
-    
+
+    async def _dispatch_progress_callback(
+        self,
+        progress_callback: Callable[..., Awaitable[None]],
+        snapshot: DownloadProgress,
+    ) -> None:
+        """Invoke a progress callback while preserving backward compatibility."""
+
+        try:
+            result = progress_callback(snapshot, snapshot)
+        except TypeError:
+            result = progress_callback(snapshot.percent_complete)
+
+        if asyncio.iscoroutine(result):
+            await result
+        elif hasattr(result, "__await__"):
+            await result
+
     async def download_to_memory(
         self,
         url: str,

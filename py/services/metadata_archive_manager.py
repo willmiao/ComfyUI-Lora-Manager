@@ -3,7 +3,7 @@ import logging
 import asyncio
 from pathlib import Path
 from typing import Optional
-from .downloader import get_downloader
+from .downloader import get_downloader, DownloadProgress
 
 logger = logging.getLogger(__name__)
 
@@ -77,9 +77,15 @@ class MetadataArchiveManager:
                     progress_callback("download", f"Downloading from {url}")
                 
                 # Custom progress callback to report download progress
-                async def download_progress(progress):
+                async def download_progress(progress, snapshot=None):
                     if progress_callback:
-                        progress_callback("download", f"Downloading archive... {progress:.1f}%")
+                        if isinstance(progress, DownloadProgress):
+                            percent = progress.percent_complete
+                        elif isinstance(snapshot, DownloadProgress):
+                            percent = snapshot.percent_complete
+                        else:
+                            percent = float(progress or 0)
+                        progress_callback("download", f"Downloading archive... {percent:.1f}%")
                 
                 success, result = await downloader.download_file(
                     url=url,

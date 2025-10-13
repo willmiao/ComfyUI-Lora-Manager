@@ -86,10 +86,29 @@ async def test_broadcast_download_progress_tracks_state(manager):
     download_id = "abc"
     manager._download_websockets[download_id] = ws
 
-    await manager.broadcast_download_progress(download_id, {"progress": 55})
+    await manager.broadcast_download_progress(
+        download_id,
+        {
+            "progress": 55,
+            "bytes_downloaded": 512,
+            "total_bytes": 1024,
+            "bytes_per_second": 128.0,
+        },
+    )
 
-    assert ws.messages == [{"progress": 55}]
-    assert manager.get_download_progress(download_id)["progress"] == 55
+    assert ws.messages == [
+        {
+            "progress": 55,
+            "bytes_downloaded": 512,
+            "total_bytes": 1024,
+            "bytes_per_second": 128.0,
+        }
+    ]
+    stored = manager.get_download_progress(download_id)
+    assert stored["progress"] == 55
+    assert stored["bytes_downloaded"] == 512
+    assert stored["total_bytes"] == 1024
+    assert stored["bytes_per_second"] == 128.0
 
 
 async def test_broadcast_download_progress_to_multiple_updates(manager):
@@ -107,7 +126,9 @@ async def test_broadcast_download_progress_to_multiple_updates(manager):
 async def test_broadcast_download_progress_missing_socket(manager):
     await manager.broadcast_download_progress("missing", {"progress": 30})
     # Progress should be stored even without a live websocket
-    assert manager.get_download_progress("missing")["progress"] == 30
+    missing = manager.get_download_progress("missing")
+    assert missing["progress"] == 30
+    assert "bytes_downloaded" not in missing
 
 
 async def test_auto_organize_progress_helpers(manager):

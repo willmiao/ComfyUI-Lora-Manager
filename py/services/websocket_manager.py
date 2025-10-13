@@ -155,11 +155,16 @@ class WebSocketManager:
 
     async def broadcast_download_progress(self, download_id: str, data: Dict):
         """Send progress update to specific download client"""
-        # Store simplified progress data in memory (only progress percentage)
-        self._download_progress[download_id] = {
+        progress_entry = {
             'progress': data.get('progress', 0),
-            'timestamp': datetime.now()
+            'timestamp': datetime.now(),
         }
+
+        for field in ('bytes_downloaded', 'total_bytes', 'bytes_per_second'):
+            if field in data:
+                progress_entry[field] = data[field]
+
+        self._download_progress[download_id] = progress_entry
         
         if download_id not in self._download_websockets:
             logger.debug(f"No WebSocket found for download ID: {download_id}")

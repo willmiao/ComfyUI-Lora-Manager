@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Awaitable, Callable, Dict, Optional
 
+from .downloader import DownloadProgress
+
 
 logger = logging.getLogger(__name__)
 
@@ -29,14 +31,40 @@ class DownloadCoordinator:
         download_id = payload.get("download_id") or self._ws_manager.generate_download_id()
         payload.setdefault("download_id", download_id)
 
-        async def progress_callback(progress: Any) -> None:
+        async def progress_callback(progress: Any, snapshot: Optional[DownloadProgress] = None) -> None:
+            percent = 0.0
+            metrics: Optional[DownloadProgress] = None
+
+            if isinstance(progress, DownloadProgress):
+                metrics = progress
+                percent = progress.percent_complete
+            elif isinstance(snapshot, DownloadProgress):
+                metrics = snapshot
+                percent = snapshot.percent_complete
+            else:
+                try:
+                    percent = float(progress)
+                except (TypeError, ValueError):
+                    percent = 0.0
+
+            payload: Dict[str, Any] = {
+                "status": "progress",
+                "progress": round(percent),
+                "download_id": download_id,
+            }
+
+            if metrics is not None:
+                payload.update(
+                    {
+                        "bytes_downloaded": metrics.bytes_downloaded,
+                        "total_bytes": metrics.total_bytes,
+                        "bytes_per_second": metrics.bytes_per_second,
+                    }
+                )
+
             await self._ws_manager.broadcast_download_progress(
                 download_id,
-                {
-                    "status": "progress",
-                    "progress": progress,
-                    "download_id": download_id,
-                },
+                payload,
             )
 
         model_id = self._parse_optional_int(payload.get("model_id"), "model_id")
