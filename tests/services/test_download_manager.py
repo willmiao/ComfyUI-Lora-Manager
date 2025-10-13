@@ -1,3 +1,4 @@
+import asyncio
 import os
 from pathlib import Path
 from types import SimpleNamespace
@@ -396,6 +397,67 @@ async def test_execute_download_retries_urls(monkeypatch, tmp_path):
     assert result == {"success": True}
     assert [url for url, *_ in dummy_downloader.calls] == download_urls
     assert dummy_scanner.calls  # ensure cache updated
+
+
+async def test_pause_download_updates_state():
+    manager = DownloadManager()
+
+    download_id = "dl"
+    manager._download_tasks[download_id] = object()
+    pause_event = asyncio.Event()
+    pause_event.set()
+    manager._pause_events[download_id] = pause_event
+    manager._active_downloads[download_id] = {
+        "status": "downloading",
+        "bytes_per_second": 42.0,
+    }
+
+    result = await manager.pause_download(download_id)
+
+    assert result == {"success": True, "message": "Download paused successfully"}
+    assert download_id in manager._pause_events
+    assert manager._pause_events[download_id].is_set() is False
+    assert manager._active_downloads[download_id]["status"] == "paused"
+    assert manager._active_downloads[download_id]["bytes_per_second"] == 0.0
+
+
+async def test_pause_download_rejects_unknown_task():
+    manager = DownloadManager()
+
+    result = await manager.pause_download("missing")
+
+    assert result == {"success": False, "error": "Download task not found"}
+
+
+async def test_resume_download_sets_event_and_status():
+    manager = DownloadManager()
+
+    download_id = "dl"
+    pause_event = asyncio.Event()
+    manager._pause_events[download_id] = pause_event
+    manager._active_downloads[download_id] = {
+        "status": "paused",
+        "bytes_per_second": 0.0,
+    }
+
+    result = await manager.resume_download(download_id)
+
+    assert result == {"success": True, "message": "Download resumed successfully"}
+    assert manager._pause_events[download_id].is_set() is True
+    assert manager._active_downloads[download_id]["status"] == "downloading"
+
+
+async def test_resume_download_rejects_when_not_paused():
+    manager = DownloadManager()
+
+    download_id = "dl"
+    pause_event = asyncio.Event()
+    pause_event.set()
+    manager._pause_events[download_id] = pause_event
+
+    result = await manager.resume_download(download_id)
+
+    assert result == {"success": False, "error": "Download is not paused"}
 
 
 @pytest.mark.asyncio

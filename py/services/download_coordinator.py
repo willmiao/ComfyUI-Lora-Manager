@@ -109,6 +109,56 @@ class DownloadCoordinator:
 
         return result
 
+    async def pause_download(self, download_id: str) -> Dict[str, Any]:
+        """Pause an active download and notify listeners."""
+
+        download_manager = await self._download_manager_factory()
+        result = await download_manager.pause_download(download_id)
+
+        if result.get("success"):
+            cached_progress = self._ws_manager.get_download_progress(download_id) or {}
+            payload: Dict[str, Any] = {
+                "status": "paused",
+                "progress": cached_progress.get("progress", 0),
+                "download_id": download_id,
+                "message": "Download paused by user",
+            }
+
+            for field in ("bytes_downloaded", "total_bytes", "bytes_per_second"):
+                if field in cached_progress:
+                    payload[field] = cached_progress[field]
+
+            payload["bytes_per_second"] = 0.0
+
+            await self._ws_manager.broadcast_download_progress(download_id, payload)
+
+        return result
+
+    async def resume_download(self, download_id: str) -> Dict[str, Any]:
+        """Resume a paused download and notify listeners."""
+
+        download_manager = await self._download_manager_factory()
+        result = await download_manager.resume_download(download_id)
+
+        if result.get("success"):
+            cached_progress = self._ws_manager.get_download_progress(download_id) or {}
+            payload: Dict[str, Any] = {
+                "status": "downloading",
+                "progress": cached_progress.get("progress", 0),
+                "download_id": download_id,
+                "message": "Download resumed by user",
+            }
+
+            for field in ("bytes_downloaded", "total_bytes"):
+                if field in cached_progress:
+                    payload[field] = cached_progress[field]
+
+            payload["bytes_per_second"] = cached_progress.get("bytes_per_second", 0.0)
+
+            await self._ws_manager.broadcast_download_progress(download_id, payload)
+
+        return result
+
     async def list_active_downloads(self) -> Dict[str, Any]:
         """Return the active download map from the underlying manager."""
 

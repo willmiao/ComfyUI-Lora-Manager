@@ -164,6 +164,11 @@ class WebSocketManager:
             if field in data:
                 progress_entry[field] = data[field]
 
+        if 'status' in data:
+            progress_entry['status'] = data['status']
+        if 'message' in data:
+            progress_entry['message'] = data['message']
+
         self._download_progress[download_id] = progress_entry
         
         if download_id not in self._download_websockets:
