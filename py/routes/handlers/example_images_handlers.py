@@ -68,6 +68,13 @@ class ExampleImagesDownloadHandler:
         except DownloadNotRunningError as exc:
             return web.json_response({'success': False, 'error': str(exc)}, status=400)
 
+    async def stop_example_images(self, request: web.Request) -> web.StreamResponse:
+        try:
+            result = await self._download_manager.stop_download(request)
+            return web.json_response(result)
+        except DownloadNotRunningError as exc:
+            return web.json_response({'success': False, 'error': str(exc)}, status=400)
+
     async def force_download_example_images(self, request: web.Request) -> web.StreamResponse:
         try:
             payload = await request.json()
@@ -149,6 +156,7 @@ class ExampleImagesHandlerSet:
             "get_example_images_status": self.download.get_example_images_status,
             "pause_example_images": self.download.pause_example_images,
             "resume_example_images": self.download.resume_example_images,
+            "stop_example_images": self.download.stop_example_images,
             "force_download_example_images": self.download.force_download_example_images,
             "import_example_images": self.management.import_example_images,
             "delete_example_image": self.management.delete_example_image,

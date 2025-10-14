@@ -51,6 +51,10 @@ class StubDownloadManager:
         self.calls.append(("resume_download", None))
         return {"operation": "resume_download"}
 
+    async def stop_download(self, request: web.Request) -> dict:
+        self.calls.append(("stop_download", None))
+        return {"operation": "stop_download"}
+
     async def start_force_download(self, payload: Any) -> dict:
         self.calls.append(("start_force_download", payload))
         return {"operation": "start_force_download", "payload": payload}
@@ -195,19 +199,23 @@ async def test_status_route_returns_manager_payload():
         assert harness.download_manager.calls == [("get_status", {"detail": "true"})]
 
 
-async def test_pause_and_resume_routes_delegate():
+async def test_pause_resume_and_stop_routes_delegate():
     async with example_images_app() as harness:
         pause_response = await harness.client.post("/api/lm/pause-example-images")
         resume_response = await harness.client.post("/api/lm/resume-example-images")
+        stop_response = await harness.client.post("/api/lm/stop-example-images")
 
         assert pause_response.status == 200
         assert await pause_response.json() == {"operation": "pause_download"}
         assert resume_response.status == 200
         assert await resume_response.json() == {"operation": "resume_download"}
+        assert stop_response.status == 200
+        assert await stop_response.json() == {"operation": "stop_download"}
 
-        assert harness.download_manager.calls[-2:] == [
+        assert harness.download_manager.calls[-3:] == [
             ("pause_download", None),
             ("resume_download", None),
+            ("stop_download", None),
         ]
 
 
@@ -309,6 +317,10 @@ async def test_download_handler_methods_delegate() -> None:
             self.calls.append(("resume_download", request))
             return {"status": "running"}
 
+        async def stop_download(self, request) -> dict:
+            self.calls.append(("stop_download", request))
+            return {"status": "stopping"}
+
         async def start_force_download(self, payload) -> dict:
             self.calls.append(("start_force_download", payload))
             return {"status": "force", "payload": payload}
@@ -342,6 +354,8 @@ async def test_download_handler_methods_delegate() -> None:
     assert json.loads(pause_response.text) == {"status": "paused"}
     resume_response = await handler.resume_example_images(request)
     assert json.loads(resume_response.text) == {"status": "running"}
+    stop_response = await handler.stop_example_images(request)
+    assert json.loads(stop_response.text) == {"status": "stopping"}
     force_response = await handler.force_download_example_images(request)
     assert json.loads(force_response.text) == {"status": "force", "payload": {"foo": "bar"}}
 
@@ -350,6 +364,7 @@ async def test_download_handler_methods_delegate() -> None:
         ("get_status", request),
         ("pause_download", request),
         ("resume_download", request),
+        ("stop_download", request),
         ("start_force_download", {"foo": "bar"}),
     ]
 
@@ -460,6 +475,7 @@ def test_handler_set_route_mapping_includes_all_handlers() -> None:
         "get_example_images_status",
         "pause_example_images",
         "resume_example_images",
+        "stop_example_images",
         "force_download_example_images",
         "import_example_images",
         "delete_example_image",

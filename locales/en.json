@@ -1245,6 +1245,8 @@
             "pauseFailed": "Failed to pause download: {error}",
             "downloadResumed": "Download resumed",
             "resumeFailed": "Failed to resume download: {error}",
+            "downloadStopped": "Download cancelled",
+            "stopFailed": "Failed to cancel download: {error}",
             "deleted": "Example image deleted",
             "deleteFailed": "Failed to delete example image",
             "setPreviewFailed": "Failed to set preview image"

@@ -1245,6 +1245,8 @@
             "pauseFailed": "השהיית ההורדה נכשלה: {error}",
             "downloadResumed": "ההורדה חודשה",
             "resumeFailed": "חידוש ההורדה נכשל: {error}",
+            "downloadStopped": "ההורדה בוטלה",
+            "stopFailed": "נכשל בביטול ההורדה: {error}",
             "deleted": "תמונת הדוגמה נמחקה",
             "deleteFailed": "מחיקת תמונת הדוגמה נכשלה",
             "setPreviewFailed": "הגדרת תמונת התצוגה המקדימה נכשלה"

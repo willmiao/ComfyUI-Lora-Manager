@@ -1245,6 +1245,8 @@
             "pauseFailed": "ダウンロードの一時停止に失敗しました：{error}",
             "downloadResumed": "ダウンロードが再開されました",
             "resumeFailed": "ダウンロードの再開に失敗しました：{error}",
+            "downloadStopped": "ダウンロードをキャンセルしました",
+            "stopFailed": "ダウンロードのキャンセルに失敗しました：{error}",
             "deleted": "例画像が削除されました",
             "deleteFailed": "例画像の削除に失敗しました",
             "setPreviewFailed": "プレビュー画像の設定に失敗しました"

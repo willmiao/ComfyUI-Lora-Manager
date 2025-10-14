@@ -1245,6 +1245,8 @@
             "pauseFailed": "Échec de la mise en pause du téléchargement : {error}",
             "downloadResumed": "Téléchargement repris",
             "resumeFailed": "Échec de la reprise du téléchargement : {error}",
+            "downloadStopped": "Téléchargement annulé",
+            "stopFailed": "Échec de l'annulation du téléchargement : {error}",
             "deleted": "Image d'exemple supprimée",
             "deleteFailed": "Échec de la suppression de l'image d'exemple",
             "setPreviewFailed": "Échec de la définition de l'image d'aperçu"
