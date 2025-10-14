@@ -5,6 +5,7 @@ import pytest
 
 from py.services import civitai_client as civitai_client_module
 from py.services.civitai_client import CivitaiClient
+from py.services.errors import RateLimitError
 from py.services.model_metadata_provider import ModelMetadataProviderManager
 
 
@@ -104,6 +105,21 @@ async def test_get_model_by_hash_handles_not_found(monkeypatch, downloader):
 
     assert result is None
     assert error == "Model not found"
+
+
+async def test_get_model_by_hash_propagates_rate_limit(monkeypatch, downloader):
+    async def fake_make_request(method, url, use_auth=True):
+        return False, RateLimitError("limited", retry_after=4)
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    with pytest.raises(RateLimitError) as exc_info:
+        await client.get_model_by_hash("limited")
+
+    assert exc_info.value.retry_after == 4
+    assert exc_info.value.provider == "civitai_api"
 
 
 async def test_download_preview_image_writes_file(tmp_path, downloader):

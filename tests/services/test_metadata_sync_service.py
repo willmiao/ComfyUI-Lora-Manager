@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from py.services.errors import RateLimitError
 from py.services.metadata_sync_service import MetadataSyncService
 
 
@@ -338,6 +339,37 @@ async def test_fetch_and_update_model_falls_back_to_sqlite_after_civarchive_fail
     assert provider_selector.await_args_list[1].args == ("sqlite",)
     update_cache.assert_awaited()
     helpers.metadata_manager.save_metadata.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_returns_rate_limit_error(tmp_path):
+    rate_error = RateLimitError("limited", retry_after=7)
+    default_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(side_effect=rate_error),
+        get_model_version=AsyncMock(),
+    )
+    helpers = build_service(default_provider=default_provider)
+
+    model_path = tmp_path / "model.safetensors"
+    model_data = {
+        "file_path": str(model_path),
+        "model_name": "Local",
+    }
+    update_cache = AsyncMock()
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="deadbeef",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert ok is False
+    assert error is not None and "Rate limited" in error
+    assert "7" in error
+    helpers.metadata_manager.save_metadata.assert_not_awaited()
+    update_cache.assert_not_awaited()
+    helpers.provider_selector.assert_not_awaited()
 
 
 @pytest.mark.asyncio
