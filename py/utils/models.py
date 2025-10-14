@@ -18,7 +18,7 @@ class BaseModelMetadata:
     preview_nsfw_level: int = 0 # NSFW level of the preview image
     notes: str = ""             # Additional notes
     from_civitai: bool = True   # Whether from Civitai
-    civitai: Optional[Dict] = None  # Civitai API data if available
+    civitai: Dict[str, Any] = field(default_factory=dict)  # Civitai API data if available
     tags: List[str] = None      # Model tags
     modelDescription: str = ""  # Full model description
     civitai_deleted: bool = False  # Whether deleted from Civitai
@@ -31,6 +31,9 @@ class BaseModelMetadata:
 
     def __post_init__(self):
         # Initialize empty lists to avoid mutable default parameter issue
+        if self.civitai is None:
+            self.civitai = {}
+
         if self.tags is None:
             self.tags = []
 

@@ -270,7 +270,12 @@ class MetadataUpdater:
         """
         try:
             await MetadataManager.hydrate_model_data(model_data)
-            civitai_data = model_data.setdefault('civitai', {})
+            civitai_data = model_data.get('civitai')
+
+            if not isinstance(civitai_data, dict):
+                civitai_data = {}
+                model_data['civitai'] = civitai_data
+
             custom_images = civitai_data.get('customImages')
 
             if not isinstance(custom_images, list):
