@@ -624,6 +624,7 @@ class ModelScanner:
                 for i in range(0, len(new_files), batch_size):
                     batch = new_files[i:i+batch_size]
                     for path in batch:
+                        logger.info(f"{self.model_type.capitalize()} Scanner: Processing {path}")
                         try:
                             # Find the appropriate root path for this file
                             root_path = None
