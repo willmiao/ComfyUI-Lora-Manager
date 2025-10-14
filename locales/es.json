@@ -1245,6 +1245,8 @@
             "pauseFailed": "Error al pausar descarga: {error}",
             "downloadResumed": "Descarga reanudada",
             "resumeFailed": "Error al reanudar descarga: {error}",
+            "downloadStopped": "Descarga cancelada",
+            "stopFailed": "Error al cancelar descarga: {error}",
             "deleted": "Imagen de ejemplo eliminada",
             "deleteFailed": "Error al eliminar imagen de ejemplo",
             "setPreviewFailed": "Error al establecer imagen de vista previa"

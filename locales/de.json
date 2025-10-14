@@ -1245,6 +1245,8 @@
             "pauseFailed": "Fehler beim Pausieren des Downloads: {error}",
             "downloadResumed": "Download fortgesetzt",
             "resumeFailed": "Fehler beim Fortsetzen des Downloads: {error}",
+            "downloadStopped": "Download abgebrochen",
+            "stopFailed": "Download konnte nicht abgebrochen werden: {error}",
             "deleted": "Beispielbild gelöscht",
             "deleteFailed": "Fehler beim Löschen des Beispielbilds",
             "setPreviewFailed": "Fehler beim Setzen des Vorschaubilds"

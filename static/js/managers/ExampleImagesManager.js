@@ -13,8 +13,10 @@ export class ExampleImagesManager {
         this.progressPanel = null;
         this.isProgressPanelCollapsed = false;
         this.pauseButton = null; // Store reference to the pause button
+        this.stopButton = null;
         this.isMigrating = false; // Track migration state separately from downloading
         this.hasShownCompletionToast = false; // Flag to track if completion toast has been shown
+        this.isStopping = false;
         
         // Auto download properties
         this.autoDownloadInterval = null;
@@ -52,10 +54,15 @@ export class ExampleImagesManager {
         
         // Initialize progress panel button handlers
         this.pauseButton = document.getElementById('pauseExampleDownloadBtn');
+        this.stopButton = document.getElementById('stopExampleDownloadBtn');
         const collapseBtn = document.getElementById('collapseProgressBtn');
-        
+
         if (this.pauseButton) {
             this.pauseButton.onclick = () => this.pauseDownload();
+        }
+
+        if (this.stopButton) {
+            this.stopButton.onclick = () => this.stopDownload();
         }
         
         if (collapseBtn) {
@@ -210,9 +217,13 @@ export class ExampleImagesManager {
     updateDownloadButtonText() {
         const btnTextElement = document.getElementById('exampleDownloadBtnText');
         if (btnTextElement) {
-            if (this.isDownloading && this.isPaused) {
+            if (this.isStopping) {
+                btnTextElement.textContent = "Stopping...";
+            } else if (this.isDownloading && this.isPaused) {
                 btnTextElement.textContent = "Resume";
             } else if (!this.isDownloading) {
+                btnTextElement.textContent = "Download";
+            } else {
                 btnTextElement.textContent = "Download";
             }
         }
@@ -239,18 +250,22 @@ export class ExampleImagesManager {
             });
             
             const data = await response.json();
-            
+
             if (data.success) {
                 this.isDownloading = true;
                 this.isPaused = false;
+                this.isStopping = false;
                 this.hasShownCompletionToast = false; // Reset toast flag when starting new download
                 this.startTime = new Date();
                 this.updateUI(data.status);
                 this.showProgressPanel();
                 this.startProgressUpdates();
                 this.updateDownloadButtonText();
+                if (this.stopButton) {
+                    this.stopButton.disabled = false;
+                }
                 showToast('toast.exampleImages.downloadStarted', {}, 'success');
-                
+
                 // Close settings modal
                 modalManager.closeModal('settingsModal');
             } else {
@@ -263,7 +278,7 @@ export class ExampleImagesManager {
     }
     
     async pauseDownload() {
-        if (!this.isDownloading || this.isPaused) {
+        if (!this.isDownloading || this.isPaused || this.isStopping) {
             return;
         }
         
@@ -299,21 +314,21 @@ export class ExampleImagesManager {
     }
     
     async resumeDownload() {
-        if (!this.isDownloading || !this.isPaused) {
+        if (!this.isDownloading || !this.isPaused || this.isStopping) {
             return;
         }
-        
+
         try {
             const response = await fetch('/api/lm/resume-example-images', {
                 method: 'POST'
             });
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 this.isPaused = false;
                 document.getElementById('downloadStatusText').textContent = 'Downloading';
-                
+
                 // Only update the icon element, not the entire innerHTML
                 if (this.pauseButton) {
                     const iconElement = this.pauseButton.querySelector('i');
@@ -322,7 +337,7 @@ export class ExampleImagesManager {
                     }
                     this.pauseButton.onclick = () => this.pauseDownload();
                 }
-                
+
                 this.updateDownloadButtonText();
                 showToast('toast.exampleImages.downloadResumed', {}, 'success');
             } else {
@@ -331,6 +346,60 @@ export class ExampleImagesManager {
         } catch (error) {
             console.error('Failed to resume download:', error);
             showToast('toast.exampleImages.resumeFailed', {}, 'error');
+        }
+    }
+
+    async stopDownload() {
+        if (this.isStopping) {
+            return;
+        }
+
+        if (!this.isDownloading) {
+            this.hideProgressPanel();
+            return;
+        }
+
+        this.isStopping = true;
+        this.isPaused = false;
+        this.updateDownloadButtonText();
+
+        if (this.stopButton) {
+            this.stopButton.disabled = true;
+        }
+
+        try {
+            const response = await fetch('/api/lm/stop-example-images', {
+                method: 'POST'
+            });
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                data = { success: false, error: 'Invalid server response' };
+            }
+
+            if (response.ok && data.success) {
+                showToast('toast.exampleImages.downloadStopped', {}, 'info');
+                this.hideProgressPanel();
+            } else {
+                this.isStopping = false;
+                if (this.stopButton) {
+                    this.stopButton.disabled = false;
+                }
+                const errorMessage = data && data.error ? data.error : 'Unknown error';
+                showToast('toast.exampleImages.stopFailed', { error: errorMessage }, 'error');
+            }
+        } catch (error) {
+            console.error('Failed to stop download:', error);
+            this.isStopping = false;
+            if (this.stopButton) {
+                this.stopButton.disabled = false;
+            }
+            const errorMessage = error && error.message ? error.message : 'Unknown error';
+            showToast('toast.exampleImages.stopFailed', { error: errorMessage }, 'error');
+        } finally {
+            this.updateDownloadButtonText();
         }
     }
     
@@ -352,21 +421,36 @@ export class ExampleImagesManager {
             const data = await response.json();
             
             if (data.success) {
+                const currentStatus = data.status.status;
                 this.isDownloading = data.is_downloading;
-                this.isPaused = data.status.status === 'paused';
+                this.isPaused = currentStatus === 'paused';
                 this.isMigrating = data.is_migrating || false;
-                
+
+                if (currentStatus === 'stopping') {
+                    this.isStopping = true;
+                } else if (
+                    !data.is_downloading ||
+                    currentStatus === 'stopped' ||
+                    currentStatus === 'completed' ||
+                    currentStatus === 'error'
+                ) {
+                    this.isStopping = false;
+                }
+
                 // Update download button text
                 this.updateDownloadButtonText();
-                
+
                 if (this.isDownloading) {
                     this.updateUI(data.status);
                 } else {
                     // Download completed or failed
                     clearInterval(this.progressUpdateInterval);
                     this.progressUpdateInterval = null;
-                    
-                    if (data.status.status === 'completed' && !this.hasShownCompletionToast) {
+                    if (this.stopButton) {
+                        this.stopButton.disabled = true;
+                    }
+
+                    if (currentStatus === 'completed' && !this.hasShownCompletionToast) {
                         const actionType = this.isMigrating ? 'migration' : 'download';
                         showToast('toast.downloads.imagesCompleted', { action: actionType }, 'success');
                         // Mark as shown to prevent duplicate toasts
@@ -375,9 +459,12 @@ export class ExampleImagesManager {
                         this.isMigrating = false;
                         // Hide the panel after a delay
                         setTimeout(() => this.hideProgressPanel(), 5000);
-                    } else if (data.status.status === 'error') {
+                    } else if (currentStatus === 'error') {
                         const actionType = this.isMigrating ? 'migration' : 'download';
                         showToast('toast.downloads.imagesFailed', { action: actionType }, 'error');
+                        this.isMigrating = false;
+                    } else if (currentStatus === 'stopped') {
+                        this.hideProgressPanel();
                         this.isMigrating = false;
                     }
                 }
@@ -434,7 +521,11 @@ export class ExampleImagesManager {
         if (!this.pauseButton) {
             this.pauseButton = document.getElementById('pauseExampleDownloadBtn');
         }
-        
+
+        if (!this.stopButton) {
+            this.stopButton = document.getElementById('stopExampleDownloadBtn');
+        }
+
         if (this.pauseButton) {
             // Check if the button already has the SVG elements
             let hasProgressElements = !!this.pauseButton.querySelector('.mini-progress-circle');
@@ -456,17 +547,28 @@ export class ExampleImagesManager {
                     iconElement.className = status.status === 'paused' ? 'fas fa-play' : 'fas fa-pause';
                 }
             }
-            
+
             // Update click handler
-            this.pauseButton.onclick = status.status === 'paused' 
-                ? () => this.resumeDownload() 
+            this.pauseButton.onclick = status.status === 'paused'
+                ? () => this.resumeDownload()
                 : () => this.pauseDownload();
-            
+
+            this.pauseButton.disabled = ['completed', 'error', 'stopped'].includes(status.status) || status.status === 'stopping';
+
             // Update progress immediately
             const progressBar = document.getElementById('downloadProgressBar');
             if (progressBar) {
                 const progressPercent = status.total > 0 ? (status.completed / status.total) * 100 : 0;
                 this.updateMiniProgress(progressPercent);
+            }
+        }
+
+        if (this.stopButton) {
+            if (status.status === 'stopping' || this.isStopping) {
+                this.stopButton.disabled = true;
+            } else {
+                const canStop = ['running', 'paused'].includes(status.status);
+                this.stopButton.disabled = !canStop;
             }
         }
         
@@ -584,6 +686,8 @@ export class ExampleImagesManager {
             case 'paused': return 'Paused';
             case 'completed': return 'Completed';
             case 'error': return 'Error';
+            case 'stopping': return 'Stopping';
+            case 'stopped': return 'Stopped';
             default: return 'Initializing';
         }
     }
