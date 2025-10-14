@@ -5,6 +5,7 @@ import pytest
 
 from py.services import civarchive_client as civarchive_client_module
 from py.services.civarchive_client import CivArchiveClient
+from py.services.errors import RateLimitError
 from py.services.model_metadata_provider import ModelMetadataProviderManager
 
 
@@ -237,3 +238,18 @@ async def test_get_model_by_hash_handles_not_found(downloader):
 
     assert result is None
     assert error == "Model not found"
+
+
+async def test_get_model_by_hash_propagates_rate_limit(downloader):
+    async def fake_make_request(method, url, use_auth=False, **kwargs):
+        return False, RateLimitError("limited", retry_after=5)
+
+    downloader.make_request = fake_make_request
+
+    client = await CivArchiveClient.get_instance()
+
+    with pytest.raises(RateLimitError) as exc_info:
+        await client.get_model_by_hash("limited")
+
+    assert exc_info.value.retry_after == 5
+    assert exc_info.value.provider == "civarchive_api"

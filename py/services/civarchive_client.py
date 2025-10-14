@@ -6,6 +6,7 @@ from copy import deepcopy
 from typing import Optional, Dict, Tuple, List
 from .model_metadata_provider import CivArchiveModelMetadataProvider, ModelMetadataProviderManager
 from .downloader import get_downloader
+from .errors import RateLimitError
 
 try:
     from bs4 import BeautifulSoup
@@ -56,24 +57,40 @@ class CivArchiveClient:
         params: Optional[Dict[str, str]] = None
     ) -> Tuple[Optional[Dict], Optional[str]]:
         """Call CivArchive API and return JSON payload"""
-        downloader = await get_downloader()
-        kwargs: Dict[str, Dict[str, str]] = {}
-        if params:
-            safe_params = {str(key): str(value) for key, value in params.items() if value is not None}
-            if safe_params:
-                kwargs["params"] = safe_params
-        success, payload = await downloader.make_request(
-            "GET",
-            f"{self.base_url}{path}",
-            use_auth=False,
-            **kwargs
-        )
+        success, payload = await self._make_request(path, params=params)
         if not success:
             error = payload if isinstance(payload, str) else "Request failed"
             return None, error
         if not isinstance(payload, dict):
             return None, "Invalid response structure"
         return payload, None
+
+    async def _make_request(
+        self,
+        path: str,
+        *,
+        params: Optional[Dict[str, str]] = None,
+    ) -> Tuple[bool, Dict | str]:
+        """Wrapper around downloader.make_request that surfaces rate limits."""
+
+        downloader = await get_downloader()
+        kwargs: Dict[str, Dict[str, str]] = {}
+        if params:
+            safe_params = {str(key): str(value) for key, value in params.items() if value is not None}
+            if safe_params:
+                kwargs["params"] = safe_params
+
+        success, payload = await downloader.make_request(
+            "GET",
+            f"{self.base_url}{path}",
+            use_auth=False,
+            **kwargs,
+        )
+        if not success and isinstance(payload, RateLimitError):
+            if payload.provider is None:
+                payload.provider = "civarchive_api"
+            raise payload
+        return success, payload
 
     @staticmethod
     def _normalize_payload(payload: Dict) -> Dict:
@@ -300,6 +317,8 @@ class CivArchiveClient:
             logger.error("Error fetching version of CivArchive model by hash %s", model_hash[:10])
             return None, "No version data found"
 
+        except RateLimitError:
+            raise
         except Exception as e:
             logger.error(f"Error fetching CivArchive model by hash {model_hash[:10]}: {e}")
             return None, str(e)
@@ -350,6 +369,8 @@ class CivArchiveClient:
                 "name": context.get("name", ""),
             }
 
+        except RateLimitError:
+            raise
         except Exception as e:
             logger.error(f"Error fetching CivArchive model versions for {model_id}: {e}")
             return None
@@ -405,6 +426,8 @@ class CivArchiveClient:
 
             return self._transform_version(context, version_data, fallback_files)
 
+        except RateLimitError:
+            raise
         except Exception as e:
             logger.error(f"Error fetching CivArchive model version via API {model_id}/{version_id}: {e}")
             return None
@@ -524,6 +547,8 @@ class CivArchiveClient:
             
             return version
             
+        except RateLimitError:
+            raise
         except Exception as e:
             logger.error(f"Error fetching CivArchive model version (scraping) {url}: {e}")
             return None
