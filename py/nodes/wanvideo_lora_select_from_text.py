@@ -1,5 +1,4 @@
-from comfy.comfy_types import IO
-import folder_paths
+import folder_paths # type: ignore
 from ..utils.utils import get_lora_info
 from .utils import any_type 
 import logging
@@ -20,7 +19,7 @@ class WanVideoLoraSelectFromText:
             "required": {
                 "low_mem_load": ("BOOLEAN", {"default": False, "tooltip": "Load LORA models with less VRAM usage, slower loading. This affects ALL LoRAs, not just the current ones. No effect if merge_loras is False"}),
                 "merge_lora": ("BOOLEAN", {"default": True, "tooltip": "Merge LoRAs into the model, otherwise they are loaded on the fly. Always disabled for GGUF and scaled fp8 models. This affects ALL LoRAs, not just the current one"}),
-                "lora_syntax": (IO.STRING, {
+                "lora_syntax": ("STRING", {
                     "multiline": True,
                     "defaultInput": True,
                     "forceInput": True,
@@ -34,7 +33,7 @@ class WanVideoLoraSelectFromText:
             }
         }
 
-    RETURN_TYPES = ("WANVIDLORA", IO.STRING, IO.STRING)
+    RETURN_TYPES = ("WANVIDLORA", "STRING", "STRING")
     RETURN_NAMES = ("lora", "trigger_words", "active_loras")
 
     FUNCTION = "process_loras_from_syntax"

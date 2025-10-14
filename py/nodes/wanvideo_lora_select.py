@@ -1,4 +1,3 @@
-from comfy.comfy_types import IO # type: ignore
 import folder_paths # type: ignore
 from ..utils.utils import get_lora_info
 from .utils import FlexibleOptionalInputType, any_type, get_loras_list
@@ -16,7 +15,7 @@ class WanVideoLoraSelect:
             "required": {
                 "low_mem_load": ("BOOLEAN", {"default": False, "tooltip": "Load LORA models with less VRAM usage, slower loading. This affects ALL LoRAs, not just the current ones. No effect if merge_loras is False"}),
                 "merge_loras": ("BOOLEAN", {"default": True, "tooltip": "Merge LoRAs into the model, otherwise they are loaded on the fly. Always disabled for GGUF and scaled fp8 models. This affects ALL LoRAs, not just the current one"}),
-                "text": (IO.STRING, {
+                "text": ("STRING", {
                     "multiline": True, 
                     "pysssss.autocomplete": False, 
                     "dynamicPrompts": True, 
@@ -27,7 +26,7 @@ class WanVideoLoraSelect:
             "optional": FlexibleOptionalInputType(any_type),
         }
 
-    RETURN_TYPES = ("WANVIDLORA", IO.STRING, IO.STRING)
+    RETURN_TYPES = ("WANVIDLORA", "STRING", "STRING")
     RETURN_NAMES = ("lora", "trigger_words", "active_loras")
     FUNCTION = "process_loras"
     

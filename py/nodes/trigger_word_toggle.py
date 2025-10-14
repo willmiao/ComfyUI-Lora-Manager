@@ -1,6 +1,5 @@
 import json
 import re
-from server import PromptServer # type: ignore
 from .utils import FlexibleOptionalInputType, any_type
 import logging
 

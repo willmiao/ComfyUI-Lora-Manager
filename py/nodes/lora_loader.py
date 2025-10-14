@@ -1,7 +1,6 @@
 import logging
 import re
 from nodes import LoraLoader
-from comfy.comfy_types import IO # type: ignore
 from ..utils.utils import get_lora_info
 from .utils import FlexibleOptionalInputType, any_type, extract_lora_name, get_loras_list, nunchaku_load_lora
 
@@ -17,7 +16,7 @@ class LoraManagerLoader:
             "required": {
                 "model": ("MODEL",),
                 # "clip": ("CLIP",),
-                "text": (IO.STRING, {
+                "text": ("STRING", {
                     "multiline": True,
                     "pysssss.autocomplete": False, 
                     "dynamicPrompts": True, 
@@ -28,7 +27,7 @@ class LoraManagerLoader:
             "optional": FlexibleOptionalInputType(any_type),
         }
 
-    RETURN_TYPES = ("MODEL", "CLIP", IO.STRING, IO.STRING)
+    RETURN_TYPES = ("MODEL", "CLIP", "STRING", "STRING")
     RETURN_NAMES = ("MODEL", "CLIP", "trigger_words", "loaded_loras")
     FUNCTION = "load_loras"
     
@@ -141,7 +140,7 @@ class LoraManagerTextLoader:
         return {
             "required": {
                 "model": ("MODEL",),
-                "lora_syntax": (IO.STRING, {
+                "lora_syntax": ("STRING", {
                     "defaultInput": True,
                     "forceInput": True,
                     "tooltip": "Format: <lora:lora_name:strength> separated by spaces or punctuation"
@@ -153,7 +152,7 @@ class LoraManagerTextLoader:
             }
         }
 
-    RETURN_TYPES = ("MODEL", "CLIP", IO.STRING, IO.STRING)
+    RETURN_TYPES = ("MODEL", "CLIP", "STRING", "STRING")
     RETURN_NAMES = ("MODEL", "CLIP", "trigger_words", "loaded_loras")
     FUNCTION = "load_loras_from_text"
     

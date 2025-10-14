@@ -1,5 +1,4 @@
 from typing import Any, Optional
-from nodes import CLIPTextEncode  # type: ignore
 
 class PromptLoraManager:
     """Encodes text (and optional trigger words) into CLIP conditioning."""
@@ -55,5 +54,6 @@ class PromptLoraManager:
         if trigger_words:
             prompt = ", ".join([trigger_words, text])
 
+        from nodes import CLIPTextEncode  # type: ignore
         conditioning = CLIPTextEncode().encode(clip, prompt)[0]
         return (conditioning, prompt,)

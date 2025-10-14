@@ -1,4 +1,3 @@
-from comfy.comfy_types import IO # type: ignore
 import os
 from ..utils.utils import get_lora_info
 from .utils import FlexibleOptionalInputType, any_type, extract_lora_name, get_loras_list
@@ -15,7 +14,7 @@ class LoraStacker:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "text": (IO.STRING, {
+                "text": ("STRING", {
                     "multiline": True, 
                     "pysssss.autocomplete": False, 
                     "dynamicPrompts": True, 
@@ -26,7 +25,7 @@ class LoraStacker:
             "optional": FlexibleOptionalInputType(any_type),
         }
 
-    RETURN_TYPES = ("LORA_STACK", IO.STRING, IO.STRING)
+    RETURN_TYPES = ("LORA_STACK", "STRING", "STRING")
     RETURN_NAMES = ("LORA_STACK", "trigger_words", "active_loras")
     FUNCTION = "stack_loras"
     
