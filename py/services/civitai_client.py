@@ -5,6 +5,7 @@ import os
 from typing import Optional, Dict, Tuple, List
 from .model_metadata_provider import CivitaiModelMetadataProvider, ModelMetadataProviderManager
 from .downloader import get_downloader
+from .errors import RateLimitError
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,29 @@ class CivitaiClient:
         self._initialized = True
         
         self.base_url = "https://civitai.com/api/v1"
+
+    async def _make_request(
+        self,
+        method: str,
+        url: str,
+        *,
+        use_auth: bool = False,
+        **kwargs,
+    ) -> Tuple[bool, Dict | str]:
+        """Wrapper around downloader.make_request that surfaces rate limits."""
+
+        downloader = await get_downloader()
+        success, result = await downloader.make_request(
+            method,
+            url,
+            use_auth=use_auth,
+            **kwargs,
+        )
+        if not success and isinstance(result, RateLimitError):
+            if result.provider is None:
+                result.provider = "civitai_api"
+            raise result
+        return success, result
 
     @staticmethod
     def _remove_comfy_metadata(model_version: Optional[Dict]) -> None:
@@ -79,8 +103,7 @@ class CivitaiClient:
 
     async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict], Optional[str]]:
         try:
-            downloader = await get_downloader()
-            success, result = await downloader.make_request(
+            success, result = await self._make_request(
                 'GET',
                 f"{self.base_url}/model-versions/by-hash/{model_hash}",
                 use_auth=True
@@ -90,7 +113,7 @@ class CivitaiClient:
                 model_id = result.get('modelId')
                 if model_id:
                     # Fetch additional model metadata
-                    success_model, data = await downloader.make_request(
+                    success_model, data = await self._make_request(
                         'GET',
                         f"{self.base_url}/models/{model_id}",
                         use_auth=True
@@ -113,6 +136,8 @@ class CivitaiClient:
             # Other error cases
             logger.error(f"Failed to fetch model info for {model_hash[:10]}: {result}")
             return None, str(result)
+        except RateLimitError:
+            raise
         except Exception as e:
             logger.error(f"API Error: {str(e)}")
             return None, str(e)
@@ -138,8 +163,7 @@ class CivitaiClient:
     async def get_model_versions(self, model_id: str) -> List[Dict]:
         """Get all versions of a model with local availability info"""
         try:
-            downloader = await get_downloader()
-            success, result = await downloader.make_request(
+            success, result = await self._make_request(
                 'GET',
                 f"{self.base_url}/models/{model_id}",
                 use_auth=True
@@ -152,6 +176,8 @@ class CivitaiClient:
                     'name': result.get('name', '')
                 }
             return None
+        except RateLimitError:
+            raise
         except Exception as e:
             logger.error(f"Error fetching model versions: {e}")
             return None
@@ -159,23 +185,23 @@ class CivitaiClient:
     async def get_model_version(self, model_id: int = None, version_id: int = None) -> Optional[Dict]:
         """Get specific model version with additional metadata."""
         try:
-            downloader = await get_downloader()
-
             if model_id is None and version_id is not None:
-                return await self._get_version_by_id_only(downloader, version_id)
+                return await self._get_version_by_id_only(version_id)
 
             if model_id is not None:
-                return await self._get_version_with_model_id(downloader, model_id, version_id)
+                return await self._get_version_with_model_id(model_id, version_id)
 
             logger.error("Either model_id or version_id must be provided")
             return None
 
+        except RateLimitError:
+            raise
         except Exception as e:
             logger.error(f"Error fetching model version: {e}")
             return None
 
-    async def _get_version_by_id_only(self, downloader, version_id: int) -> Optional[Dict]:
-        version = await self._fetch_version_by_id(downloader, version_id)
+    async def _get_version_by_id_only(self, version_id: int) -> Optional[Dict]:
+        version = await self._fetch_version_by_id(version_id)
         if version is None:
             return None
 
@@ -184,15 +210,15 @@ class CivitaiClient:
             logger.error(f"No modelId found in version {version_id}")
             return None
 
-        model_data = await self._fetch_model_data(downloader, model_id)
+        model_data = await self._fetch_model_data(model_id)
         if model_data:
             self._enrich_version_with_model_data(version, model_data)
 
         self._remove_comfy_metadata(version)
         return version
 
-    async def _get_version_with_model_id(self, downloader, model_id: int, version_id: Optional[int]) -> Optional[Dict]:
-        model_data = await self._fetch_model_data(downloader, model_id)
+    async def _get_version_with_model_id(self, model_id: int, version_id: Optional[int]) -> Optional[Dict]:
+        model_data = await self._fetch_model_data(model_id)
         if not model_data:
             return None
 
@@ -201,12 +227,12 @@ class CivitaiClient:
             return None
 
         target_version_id = target_version.get('id')
-        version = await self._fetch_version_by_id(downloader, target_version_id) if target_version_id else None
+        version = await self._fetch_version_by_id(target_version_id) if target_version_id else None
 
         if version is None:
             model_hash = self._extract_primary_model_hash(target_version)
             if model_hash:
-                version = await self._fetch_version_by_hash(downloader, model_hash)
+                version = await self._fetch_version_by_hash(model_hash)
             else:
                 logger.warning(
                     f"No primary model hash found for model {model_id} version {target_version_id}"
@@ -219,8 +245,8 @@ class CivitaiClient:
         self._remove_comfy_metadata(version)
         return version
 
-    async def _fetch_model_data(self, downloader, model_id: int) -> Optional[Dict]:
-        success, data = await downloader.make_request(
+    async def _fetch_model_data(self, model_id: int) -> Optional[Dict]:
+        success, data = await self._make_request(
             'GET',
             f"{self.base_url}/models/{model_id}",
             use_auth=True
@@ -230,11 +256,11 @@ class CivitaiClient:
         logger.warning(f"Failed to fetch model data for model {model_id}")
         return None
 
-    async def _fetch_version_by_id(self, downloader, version_id: Optional[int]) -> Optional[Dict]:
+    async def _fetch_version_by_id(self, version_id: Optional[int]) -> Optional[Dict]:
         if version_id is None:
             return None
 
-        success, version = await downloader.make_request(
+        success, version = await self._make_request(
             'GET',
             f"{self.base_url}/model-versions/{version_id}",
             use_auth=True
@@ -245,11 +271,11 @@ class CivitaiClient:
         logger.warning(f"Failed to fetch version by id {version_id}")
         return None
 
-    async def _fetch_version_by_hash(self, downloader, model_hash: Optional[str]) -> Optional[Dict]:
+    async def _fetch_version_by_hash(self, model_hash: Optional[str]) -> Optional[Dict]:
         if not model_hash:
             return None
 
-        success, version = await downloader.make_request(
+        success, version = await self._make_request(
             'GET',
             f"{self.base_url}/model-versions/by-hash/{model_hash}",
             use_auth=True
@@ -323,11 +349,10 @@ class CivitaiClient:
                 - An error message if there was an error, or None on success
         """
         try:
-            downloader = await get_downloader()
             url = f"{self.base_url}/model-versions/{version_id}"
             
             logger.debug(f"Resolving DNS for model version info: {url}")
-            success, result = await downloader.make_request(
+            success, result = await self._make_request(
                 'GET',
                 url,
                 use_auth=True
@@ -347,6 +372,8 @@ class CivitaiClient:
             # Other error cases
             logger.error(f"Failed to fetch model info for {version_id}: {result}")
             return None, str(result)
+        except RateLimitError:
+            raise
         except Exception as e:
             error_msg = f"Error fetching model version info: {e}"
             logger.error(error_msg)
@@ -362,11 +389,10 @@ class CivitaiClient:
             Optional[Dict]: The image data or None if not found
         """
         try:
-            downloader = await get_downloader()
             url = f"{self.base_url}/images?imageId={image_id}&nsfw=X"
             
             logger.debug(f"Fetching image info for ID: {image_id}")
-            success, result = await downloader.make_request(
+            success, result = await self._make_request(
                 'GET',
                 url,
                 use_auth=True
@@ -381,6 +407,8 @@ class CivitaiClient:
             
             logger.error(f"Failed to fetch image info for ID: {image_id}: {result}")
             return None
+        except RateLimitError:
+            raise
         except Exception as e:
             error_msg = f"Error fetching image info: {e}"
             logger.error(error_msg)
@@ -392,9 +420,8 @@ class CivitaiClient:
             return None
 
         try:
-            downloader = await get_downloader()
             url = f"{self.base_url}/models?username={username}"
-            success, result = await downloader.make_request(
+            success, result = await self._make_request(
                 'GET',
                 url,
                 use_auth=True
@@ -416,6 +443,8 @@ class CivitaiClient:
                     self._remove_comfy_metadata(version)
 
             return items
+        except RateLimitError:
+            raise
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Error fetching models for %s: %s", username, exc)
             return None

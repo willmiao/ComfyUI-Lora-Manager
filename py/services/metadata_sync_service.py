@@ -10,6 +10,7 @@ from typing import Any, Awaitable, Callable, Dict, Iterable, Optional
 
 from ..services.settings_manager import SettingsManager
 from ..utils.model_utils import determine_base_model
+from .errors import RateLimitError
 
 logger = logging.getLogger(__name__)
 
@@ -205,6 +206,9 @@ class MetadataSyncService:
             for provider_name, provider in provider_attempts:
                 try:
                     civitai_metadata_candidate, error = await provider.get_model_by_hash(sha256)
+                except RateLimitError as exc:
+                    exc.provider = exc.provider or (provider_name or provider.__class__.__name__)
+                    raise
                 except Exception as exc:  # pragma: no cover - defensive logging
                     logger.error("Provider %s failed for hash %s: %s", provider_name, sha256, exc)
                     civitai_metadata_candidate, error = None, str(exc)
@@ -298,6 +302,16 @@ class MetadataSyncService:
         except KeyError as exc:
             error_msg = f"Error fetching metadata - Missing key: {exc} in model_data={model_data}"
             logger.error(error_msg)
+            return False, error_msg
+        except RateLimitError as exc:
+            provider_label = exc.provider or "metadata provider"
+            wait_hint = (
+                f"; retry after approximately {int(exc.retry_after)}s"
+                if exc.retry_after and exc.retry_after > 0
+                else ""
+            )
+            error_msg = f"Rate limited by {provider_label}{wait_hint}"
+            logger.warning(error_msg)
             return False, error_msg
         except Exception as exc:  # pragma: no cover - error path
             error_msg = f"Error fetching metadata: {exc}"

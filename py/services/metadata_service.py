@@ -1,6 +1,7 @@
 import os
 import logging
 from .model_metadata_provider import (
+    ModelMetadataProvider,
     ModelMetadataProviderManager, 
     SQLiteModelMetadataProvider,
     CivitaiModelMetadataProvider,
@@ -68,10 +69,10 @@ async def initialize_metadata_providers():
     # Set up fallback provider based on available providers
     if len(providers) > 1:
         # Always use Civitai API (it has better metadata), then CivArchive API, then Archive DB
-        ordered_providers = []
-        ordered_providers.extend([p[1] for p in providers if p[0] == 'civitai_api'])
-        ordered_providers.extend([p[1] for p in providers if p[0] == 'civarchive_api'])
-        ordered_providers.extend([p[1] for p in providers if p[0] == 'sqlite'])
+        ordered_providers: list[tuple[str, ModelMetadataProvider]] = []
+        ordered_providers.extend([p for p in providers if p[0] == 'civitai_api'])
+        ordered_providers.extend([p for p in providers if p[0] == 'civarchive_api'])
+        ordered_providers.extend([p for p in providers if p[0] == 'sqlite'])
         
         if ordered_providers:
             fallback_provider = FallbackMetadataProvider(ordered_providers)

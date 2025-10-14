@@ -17,8 +17,10 @@ import aiohttp
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from email.utils import parsedate_to_datetime
 from typing import Optional, Dict, Tuple, Callable, Union, Awaitable
 from ..services.settings_manager import get_settings_manager
+from .errors import RateLimitError
 
 logger = logging.getLogger(__name__)
 
@@ -587,6 +589,19 @@ class Downloader:
                     return False, "Access forbidden"
                 elif response.status == 404:
                     return False, "Resource not found"
+                elif response.status == 429:
+                    retry_after = self._extract_retry_after(response.headers)
+                    error_msg = "Request rate limited"
+                    logger.warning(
+                        "Rate limit encountered for %s %s; retry_after=%s",
+                        method,
+                        url,
+                        retry_after,
+                    )
+                    return False, RateLimitError(
+                        error_msg,
+                        retry_after=retry_after,
+                    )
                 else:
                     return False, f"Request failed with status {response.status}"
                     
@@ -607,6 +622,38 @@ class Downloader:
         """Force refresh the HTTP session (useful when proxy settings change)"""
         await self._create_session()
         logger.info("HTTP session refreshed due to settings change")
+
+    @staticmethod
+    def _extract_retry_after(headers) -> Optional[float]:
+        """Parse the Retry-After header into seconds."""
+        if not headers:
+            return None
+
+        header_value = headers.get("Retry-After")
+        if not header_value:
+            return None
+
+        header_value = header_value.strip()
+        if not header_value:
+            return None
+
+        if header_value.isdigit():
+            try:
+                seconds = float(header_value)
+            except ValueError:
+                return None
+            return max(0.0, seconds)
+
+        try:
+            retry_datetime = parsedate_to_datetime(header_value)
+        except (TypeError, ValueError):
+            return None
+
+        if retry_datetime.tzinfo is None:
+            return None
+
+        delta = retry_datetime - datetime.now(tz=retry_datetime.tzinfo)
+        return max(0.0, delta.total_seconds())
 
 
 # Global instance accessor
