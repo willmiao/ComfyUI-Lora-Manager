@@ -1245,6 +1245,8 @@
             "pauseFailed": "다운로드 일시정지 실패: {error}",
             "downloadResumed": "다운로드가 재개되었습니다",
             "resumeFailed": "다운로드 재개 실패: {error}",
+            "downloadStopped": "다운로드가 취소되었습니다",
+            "stopFailed": "다운로드 취소 실패: {error}",
             "deleted": "예시 이미지가 삭제되었습니다",
             "deleteFailed": "예시 이미지 삭제 실패",
             "setPreviewFailed": "미리보기 이미지 설정 실패"

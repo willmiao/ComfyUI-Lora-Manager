@@ -22,6 +22,7 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("GET", "/api/lm/example-images-status", "get_example_images_status"),
     RouteDefinition("POST", "/api/lm/pause-example-images", "pause_example_images"),
     RouteDefinition("POST", "/api/lm/resume-example-images", "resume_example_images"),
+    RouteDefinition("POST", "/api/lm/stop-example-images", "stop_example_images"),
     RouteDefinition("POST", "/api/lm/open-example-images-folder", "open_example_images_folder"),
     RouteDefinition("GET", "/api/lm/example-image-files", "get_example_image_files"),
     RouteDefinition("GET", "/api/lm/has-example-images", "has_example_images"),

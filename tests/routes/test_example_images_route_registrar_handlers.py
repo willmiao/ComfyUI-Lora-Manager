@@ -41,9 +41,11 @@ class StubDownloadManager:
     def __init__(self) -> None:
         self.pause_calls = 0
         self.resume_calls = 0
+        self.stop_calls = 0
         self.force_payloads: list[dict[str, Any]] = []
         self.pause_error: Exception | None = None
         self.resume_error: Exception | None = None
+        self.stop_error: Exception | None = None
         self.force_error: Exception | None = None
 
     async def get_status(self, request: web.Request) -> dict[str, Any]:
@@ -60,6 +62,12 @@ class StubDownloadManager:
         if self.resume_error:
             raise self.resume_error
         return {"success": True, "message": "resumed"}
+
+    async def stop_download(self, request: web.Request) -> dict[str, Any]:
+        self.stop_calls += 1
+        if self.stop_error:
+            raise self.stop_error
+        return {"success": True, "message": "stopping"}
 
     async def start_force_download(self, payload: dict[str, Any]) -> dict[str, Any]:
         self.force_payloads.append(payload)
@@ -193,17 +201,22 @@ async def test_pause_and_resume_return_client_errors_when_not_running():
     async with registrar_app() as harness:
         harness.download_manager.pause_error = DownloadNotRunningError()
         harness.download_manager.resume_error = DownloadNotRunningError("Stopped")
+        harness.download_manager.stop_error = DownloadNotRunningError("Not running")
 
         pause_response = await harness.client.post("/api/lm/pause-example-images")
         resume_response = await harness.client.post("/api/lm/resume-example-images")
+        stop_response = await harness.client.post("/api/lm/stop-example-images")
 
         assert pause_response.status == 400
         assert resume_response.status == 400
+        assert stop_response.status == 400
 
         pause_body = await _json(pause_response)
         resume_body = await _json(resume_response)
+        stop_body = await _json(stop_response)
         assert pause_body == {"success": False, "error": "No download in progress"}
         assert resume_body == {"success": False, "error": "Stopped"}
+        assert stop_body == {"success": False, "error": "Not running"}
 
 
 async def test_import_route_returns_validation_errors():

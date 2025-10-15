@@ -1245,6 +1245,8 @@
             "pauseFailed": "暫停下載失敗：{error}",
             "downloadResumed": "下載已恢復",
             "resumeFailed": "恢復下載失敗：{error}",
+            "downloadStopped": "下載已取消",
+            "stopFailed": "取消下載失敗：{error}",
             "deleted": "範例圖片已刪除",
             "deleteFailed": "刪除範例圖片失敗",
             "setPreviewFailed": "設定預覽圖片失敗"
