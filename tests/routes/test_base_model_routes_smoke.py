@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import types
+from dataclasses import dataclass, field
 from typing import Optional
 
 folder_paths_stub = types.SimpleNamespace(get_folder_paths=lambda *_: [])
@@ -30,6 +31,41 @@ class DummyRoutes(BaseModelRoutes):
     template_name = "dummy.html"
 
     def setup_specific_routes(self, registrar, prefix: str) -> None:  # pragma: no cover - no extra routes in smoke tests
+        return None
+
+    def __init__(self, service=None):
+        super().__init__(service)
+        self.set_model_update_service(NullModelUpdateService())
+
+
+@dataclass
+class NullUpdateRecord:
+    model_type: str
+    model_id: int
+    largest_version_id: int | None = None
+    version_ids: list[int] = field(default_factory=list)
+    in_library_version_ids: list[int] = field(default_factory=list)
+    last_checked_at: float | None = None
+    should_ignore: bool = False
+
+    def has_update(self) -> bool:
+        return False
+
+
+class NullModelUpdateService:
+    async def refresh_for_model_type(self, *args, **kwargs):
+        return {}
+
+    async def refresh_single_model(self, *args, **kwargs):
+        return None
+
+    async def update_in_library_versions(self, model_type, model_id, version_ids):
+        return NullUpdateRecord(model_type=model_type, model_id=model_id, in_library_version_ids=list(version_ids))
+
+    async def set_should_ignore(self, model_type, model_id, should_ignore):
+        return NullUpdateRecord(model_type=model_type, model_id=model_id, should_ignore=should_ignore)
+
+    async def get_record(self, *args, **kwargs):
         return None
 
 

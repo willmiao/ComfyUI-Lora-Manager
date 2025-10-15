@@ -21,7 +21,9 @@ class CheckpointRoutes(BaseModelRoutes):
         """Initialize services from ServiceRegistry"""
         checkpoint_scanner = await ServiceRegistry.get_checkpoint_scanner()
         self.service = CheckpointService(checkpoint_scanner)
-        
+        update_service = await ServiceRegistry.get_model_update_service()
+        self.set_model_update_service(update_service)
+
         # Attach service dependencies
         self.attach_service(self.service)
     

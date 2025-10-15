@@ -81,6 +81,11 @@ class PersistentModelCache:
     def is_enabled(self) -> bool:
         return os.environ.get("LORA_MANAGER_DISABLE_PERSISTENT_CACHE", "0") != "1"
 
+    def get_database_path(self) -> str:
+        """Expose the resolved SQLite database path."""
+
+        return self._db_path
+
     def load_cache(self, model_type: str) -> Optional[PersistedCacheData]:
         if not self.is_enabled():
             return None
