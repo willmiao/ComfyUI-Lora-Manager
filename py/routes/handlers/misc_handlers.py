@@ -163,6 +163,7 @@ class SettingsHandler:
         "show_only_sfw",
         "compact_mode",
         "priority_tags",
+        "model_name_display",
     )
 
     _PROXY_KEYS = {"proxy_enabled", "proxy_host", "proxy_port", "proxy_username", "proxy_password", "proxy_type"}

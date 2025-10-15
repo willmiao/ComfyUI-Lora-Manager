@@ -225,9 +225,9 @@
             },
             "displayDensityHelp": "한 줄에 표시할 카드 수를 선택하세요:",
             "displayDensityDetails": {
-                "default": "기본: 5개 (1080p), 6개 (2K), 8개 (4K)",
-                "medium": "중간: 6개 (1080p), 7개 (2K), 9개 (4K)",
-                "compact": "조밀: 7개 (1080p), 8개 (2K), 10개 (4K)"
+                "default": "5개 (1080p), 6개 (2K), 8개 (4K)",
+                "medium": "6개 (1080p), 7개 (2K), 9개 (4K)",
+                "compact": "7개 (1080p), 8개 (2K), 10개 (4K)"
             },
             "displayDensityWarning": "경고: 높은 밀도는 리소스가 제한된 시스템에서 성능 문제를 일으킬 수 있습니다.",
             "cardInfoDisplay": "카드 정보 표시",
@@ -237,8 +237,18 @@
             },
             "cardInfoDisplayHelp": "모델 정보 및 액션 버튼을 언제 표시할지 선택하세요:",
             "cardInfoDisplayDetails": {
-                "always": "항상 표시: 헤더와 푸터가 항상 보입니다",
-                "hover": "호버 시 표시: 카드에 마우스를 올렸을 때만 헤더와 푸터가 나타납니다"
+                "always": "헤더와 푸터가 항상 보입니다",
+                "hover": "카드에 마우스를 올렸을 때만 헤더와 푸터가 나타납니다"
+            },
+            "modelNameDisplay": "모델명 표시",
+            "modelNameDisplayOptions": {
+                "modelName": "모델명",
+                "fileName": "파일명"
+            },
+            "modelNameDisplayHelp": "모델 카드 하단에 표시할 내용을 선택하세요:",
+            "modelNameDisplayDetails": {
+                "modelName": "모델의 설명적 이름 표시",
+                "fileName": "디스크의 실제 파일명 표시"
             }
         },
         "folderSettings": {

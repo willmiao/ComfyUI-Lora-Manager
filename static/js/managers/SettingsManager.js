@@ -290,6 +290,12 @@ export class SettingsManager {
             cardInfoDisplaySelect.value = state.global.settings.card_info_display || 'always';
         }
 
+        // Set model name display setting
+        const modelNameDisplaySelect = document.getElementById('modelNameDisplay');
+        if (modelNameDisplaySelect) {
+            modelNameDisplaySelect.value = state.global.settings.model_name_display || 'model_name';
+        }
+
         // Set optimize example images setting
         const optimizeExampleImagesCheckbox = document.getElementById('optimizeExampleImages');
         if (optimizeExampleImagesCheckbox) {
@@ -1211,6 +1217,10 @@ export class SettingsManager {
             }
             
             showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
+
+            if (settingKey === 'model_name_display') {
+                this.reloadContent();
+            }
         } catch (error) {
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
         }

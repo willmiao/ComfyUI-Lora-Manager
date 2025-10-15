@@ -225,9 +225,9 @@
             },
             "displayDensityHelp": "Choisissez combien de cartes afficher par ligne :",
             "displayDensityDetails": {
-                "default": "Par défaut : 5 (1080p), 6 (2K), 8 (4K)",
-                "medium": "Moyen : 6 (1080p), 7 (2K), 9 (4K)",
-                "compact": "Compact : 7 (1080p), 8 (2K), 10 (4K)"
+                "default": "5 (1080p), 6 (2K), 8 (4K)",
+                "medium": "6 (1080p), 7 (2K), 9 (4K)",
+                "compact": "7 (1080p), 8 (2K), 10 (4K)"
             },
             "displayDensityWarning": "Attention : Des densités plus élevées peuvent causer des problèmes de performance sur les systèmes avec des ressources limitées.",
             "cardInfoDisplay": "Affichage des informations de carte",
@@ -237,8 +237,18 @@
             },
             "cardInfoDisplayHelp": "Choisissez quand afficher les informations du modèle et les boutons d'action :",
             "cardInfoDisplayDetails": {
-                "always": "Toujours visible : Les en-têtes et pieds de page sont toujours visibles",
-                "hover": "Révéler au survol : Les en-têtes et pieds de page n'apparaissent qu'au survol d'une carte"
+                "always": "Les en-têtes et pieds de page sont toujours visibles",
+                "hover": "Les en-têtes et pieds de page n'apparaissent qu'au survol d'une carte"
+            },
+            "modelNameDisplay": "Affichage du nom du modèle",
+            "modelNameDisplayOptions": {
+                "modelName": "Nom du modèle",
+                "fileName": "Nom du fichier"
+            },
+            "modelNameDisplayHelp": "Choisissez ce qui doit être affiché dans le pied de page de la carte du modèle :",
+            "modelNameDisplayDetails": {
+                "modelName": "Afficher le nom descriptif du modèle",
+                "fileName": "Afficher le nom réel du fichier sur le disque"
             }
         },
         "folderSettings": {

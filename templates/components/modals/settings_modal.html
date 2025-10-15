@@ -129,6 +129,28 @@
                     </div>
                 </div>
                 
+                <!-- Add Model Name Display setting -->
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="modelNameDisplay">{{ t('settings.layoutSettings.modelNameDisplay') }}</label>
+                        </div>
+                        <div class="setting-control select-control">
+                            <select id="modelNameDisplay" onchange="settingsManager.saveSelectSetting('modelNameDisplay', 'model_name_display')">
+                                <option value="model_name">{{ t('settings.layoutSettings.modelNameDisplayOptions.modelName') }}</option>
+                                <option value="file_name">{{ t('settings.layoutSettings.modelNameDisplayOptions.fileName') }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.layoutSettings.modelNameDisplayHelp') }}
+                        <ul class="list-description">
+                            <li><strong>{{ t('settings.layoutSettings.modelNameDisplayOptions.modelName') }}:</strong> {{ t('settings.layoutSettings.modelNameDisplayDetails.modelName') }}</li>
+                            <li><strong>{{ t('settings.layoutSettings.modelNameDisplayOptions.fileName') }}:</strong> {{ t('settings.layoutSettings.modelNameDisplayDetails.fileName') }}</li>
+                        </ul>
+                    </div>
+                </div>
+                
                 <!-- Add Card Info Display setting -->
                 <div class="setting-item">
                     <div class="setting-row">

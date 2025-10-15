@@ -225,9 +225,9 @@
             },
             "displayDensityHelp": "選擇每行顯示卡片數量：",
             "displayDensityDetails": {
-                "default": "預設：5（1080p）、6（2K）、8（4K）",
-                "medium": "中等：6（1080p）、7（2K）、9（4K）",
-                "compact": "緊湊：7（1080p）、8（2K）、10（4K）"
+                "default": "5（1080p）、6（2K）、8（4K）",
+                "medium": "6（1080p）、7（2K）、9（4K）",
+                "compact": "7（1080p）、8（2K）、10（4K）"
             },
             "displayDensityWarning": "警告：較高密度可能導致資源有限的系統效能下降。",
             "cardInfoDisplay": "卡片資訊顯示",
@@ -237,8 +237,18 @@
             },
             "cardInfoDisplayHelp": "選擇何時顯示模型資訊與操作按鈕：",
             "cardInfoDisplayDetails": {
-                "always": "永遠顯示：標題與頁腳始終可見",
-                "hover": "滑鼠懸停顯示：標題與頁腳僅在滑鼠懸停時顯示"
+                "always": "標題與頁腳始終可見",
+                "hover": "標題與頁腳僅在滑鼠懸停時顯示"
+            },
+            "modelNameDisplay": "模型名稱顯示",
+            "modelNameDisplayOptions": {
+                "modelName": "模型名稱",
+                "fileName": "檔案名稱"
+            },
+            "modelNameDisplayHelp": "選擇在模型卡片底部顯示的內容：",
+            "modelNameDisplayDetails": {
+                "modelName": "顯示模型的描述性名稱",
+                "fileName": "顯示磁碟上的實際檔案名稱"
             }
         },
         "folderSettings": {

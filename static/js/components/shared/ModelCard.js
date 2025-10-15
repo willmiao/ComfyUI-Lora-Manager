@@ -11,6 +11,17 @@ import { showDeleteModal } from '../../utils/modalUtils.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { eventManager } from '../../utils/EventManager.js';
 
+// Helper function to get display name based on settings
+function getDisplayName(model) {
+    const displayNameSetting = state.global.settings.model_name_display || 'model_name';
+    
+    if (displayNameSetting === 'file_name') {
+        return model.file_name || model.model_name || 'Unknown Model';
+    }
+    
+    return model.model_name || model.file_name || 'Unknown Model';
+}
+
 // Add global event delegation handlers using event manager
 export function setupModelCardEventDelegation(modelType) {
     // Remove any existing handler first
@@ -510,7 +521,7 @@ export function createModelCard(model, modelType) {
             ` : ''}
             <div class="card-footer">
                 <div class="model-info">
-                    <span class="model-name">${model.model_name}</span>
+                    <span class="model-name">${getDisplayName(model)}</span>
                     ${model.civitai?.name ? `<span class="version-name">${model.civitai.name}</span>` : ''}
                 </div>
                 <div class="card-actions">

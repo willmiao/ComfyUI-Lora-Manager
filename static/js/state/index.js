@@ -26,6 +26,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     autoplay_on_hover: false,
     display_density: 'default',
     card_info_display: 'always',
+    model_name_display: 'model_name',
     include_trigger_words: false,
     compact_mode: false,
     priority_tags: { ...DEFAULT_PRIORITY_TAG_CONFIG },

@@ -225,9 +225,9 @@
             },
             "displayDensityHelp": "Wählen Sie, wie viele Karten pro Zeile angezeigt werden sollen:",
             "displayDensityDetails": {
-                "default": "Standard: 5 (1080p), 6 (2K), 8 (4K)",
-                "medium": "Mittel: 6 (1080p), 7 (2K), 9 (4K)",
-                "compact": "Kompakt: 7 (1080p), 8 (2K), 10 (4K)"
+                "default": "5 (1080p), 6 (2K), 8 (4K)",
+                "medium": "6 (1080p), 7 (2K), 9 (4K)",
+                "compact": "7 (1080p), 8 (2K), 10 (4K)"
             },
             "displayDensityWarning": "Warnung: Höhere Dichten können bei Systemen mit begrenzten Ressourcen zu Performance-Problemen führen.",
             "cardInfoDisplay": "Karten-Info-Anzeige",
@@ -237,8 +237,18 @@
             },
             "cardInfoDisplayHelp": "Wählen Sie, wann Modellinformationen und Aktionsschaltflächen angezeigt werden sollen:",
             "cardInfoDisplayDetails": {
-                "always": "Immer sichtbar: Kopf- und Fußzeilen sind immer sichtbar",
-                "hover": "Bei Hover anzeigen: Kopf- und Fußzeilen erscheinen nur beim Darüberfahren mit der Maus"
+                "always": "Kopf- und Fußzeilen sind immer sichtbar",
+                "hover": "Kopf- und Fußzeilen erscheinen nur beim Darüberfahren mit der Maus"
+            },
+            "modelNameDisplay": "Anzeige des Modellnamens",
+            "modelNameDisplayOptions": {
+                "modelName": "Modellname",
+                "fileName": "Dateiname"
+            },
+            "modelNameDisplayHelp": "Wählen Sie aus, was in der Fußzeile der Modellkarte angezeigt werden soll:",
+            "modelNameDisplayDetails": {
+                "modelName": "Den beschreibenden Namen des Modells anzeigen",
+                "fileName": "Den tatsächlichen Dateinamen auf der Festplatte anzeigen"
             }
         },
         "folderSettings": {

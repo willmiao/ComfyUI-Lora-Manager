@@ -225,9 +225,9 @@
             },
             "displayDensityHelp": "Elige cuántas tarjetas mostrar por fila:",
             "displayDensityDetails": {
-                "default": "Predeterminado: 5 (1080p), 6 (2K), 8 (4K)",
-                "medium": "Medio: 6 (1080p), 7 (2K), 9 (4K)",
-                "compact": "Compacto: 7 (1080p), 8 (2K), 10 (4K)"
+                "default": "5 (1080p), 6 (2K), 8 (4K)",
+                "medium": "6 (1080p), 7 (2K), 9 (4K)",
+                "compact": "7 (1080p), 8 (2K), 10 (4K)"
             },
             "displayDensityWarning": "Advertencia: Densidades más altas pueden causar problemas de rendimiento en sistemas con recursos limitados.",
             "cardInfoDisplay": "Visualización de información de tarjeta",
@@ -237,8 +237,18 @@
             },
             "cardInfoDisplayHelp": "Elige cuándo mostrar información del modelo y botones de acción:",
             "cardInfoDisplayDetails": {
-                "always": "Siempre visible: Los encabezados y pies de página siempre son visibles",
-                "hover": "Mostrar al pasar el ratón: Los encabezados y pies de página solo aparecen al pasar el ratón sobre una tarjeta"
+                "always": "Los encabezados y pies de página siempre son visibles",
+                "hover": "Los encabezados y pies de página solo aparecen al pasar el ratón sobre una tarjeta"
+            },
+            "modelNameDisplay": "Visualización del nombre del modelo",
+            "modelNameDisplayOptions": {
+                "modelName": "Nombre del modelo",
+                "fileName": "Nombre del archivo"
+            },
+            "modelNameDisplayHelp": "Elige qué mostrar en el pie de la tarjeta del modelo:",
+            "modelNameDisplayDetails": {
+                "modelName": "Mostrar el nombre descriptivo del modelo",
+                "fileName": "Mostrar el nombre real del archivo en el disco"
             }
         },
         "folderSettings": {

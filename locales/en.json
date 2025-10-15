@@ -225,9 +225,9 @@
             },
             "displayDensityHelp": "Choose how many cards to display per row:",
             "displayDensityDetails": {
-                "default": "Default: 5 (1080p), 6 (2K), 8 (4K)",
-                "medium": "Medium: 6 (1080p), 7 (2K), 9 (4K)",
-                "compact": "Compact: 7 (1080p), 8 (2K), 10 (4K)"
+                "default": "5 (1080p), 6 (2K), 8 (4K)",
+                "medium": "6 (1080p), 7 (2K), 9 (4K)",
+                "compact": "7 (1080p), 8 (2K), 10 (4K)"
             },
             "displayDensityWarning": "Warning: Higher densities may cause performance issues on systems with limited resources.",
             "cardInfoDisplay": "Card Info Display",
@@ -237,8 +237,18 @@
             },
             "cardInfoDisplayHelp": "Choose when to display model information and action buttons:",
             "cardInfoDisplayDetails": {
-                "always": "Always Visible: Headers and footers are always visible",
-                "hover": "Reveal on Hover: Headers and footers only appear when hovering over a card"
+                "always": "Headers and footers are always visible",
+                "hover": "Headers and footers only appear when hovering over a card"
+            },
+            "modelNameDisplay": "Model Name Display",
+            "modelNameDisplayOptions": {
+                "modelName": "Model Name",
+                "fileName": "File Name"
+            },
+            "modelNameDisplayHelp": "Choose what to display in the model card footer:",
+            "modelNameDisplayDetails": {
+                "modelName": "Display the model's descriptive name",
+                "fileName": "Display the actual file name on disk"
             }
         },
         "folderSettings": {

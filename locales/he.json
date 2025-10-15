@@ -225,9 +225,9 @@
             },
             "displayDensityHelp": "בחר כמה כרטיסים להציג בכל שורה:",
             "displayDensityDetails": {
-                "default": "ברירת מחדל: 5 (1080p), 6 (2K), 8 (4K)",
-                "medium": "בינוני: 6 (1080p), 7 (2K), 9 (4K)",
-                "compact": "קומפקטי: 7 (1080p), 8 (2K), 10 (4K)"
+                "default": "5 (1080p), 6 (2K), 8 (4K)",
+                "medium": "6 (1080p), 7 (2K), 9 (4K)",
+                "compact": "7 (1080p), 8 (2K), 10 (4K)"
             },
             "displayDensityWarning": "אזהרה: צפיפויות גבוהות יותר עלולות לגרום לבעיות ביצועים במערכות עם משאבים מוגבלים.",
             "cardInfoDisplay": "תצוגת מידע בכרטיס",
@@ -237,8 +237,18 @@
             },
             "cardInfoDisplayHelp": "בחר מתי להציג מידע על המודל וכפתורי פעולה:",
             "cardInfoDisplayDetails": {
-                "always": "תמיד גלוי: כותרות עליונות ותחתונות תמיד גלויות",
-                "hover": "חשוף בריחוף: כותרות עליונות ותחתונות מופיעות רק בעת ריחוף מעל כרטיס"
+                "always": "כותרות עליונות ותחתונות תמיד גלויות",
+                "hover": "כותרות עליונות ותחתונות מופיעות רק בעת ריחוף מעל כרטיס"
+            },
+            "modelNameDisplay": "תצוגת שם מודל",
+            "modelNameDisplayOptions": {
+                "modelName": "שם מודל",
+                "fileName": "שם קובץ"
+            },
+            "modelNameDisplayHelp": "בחר מה להציג בכותרת התחתונה של כרטיס המודל:",
+            "modelNameDisplayDetails": {
+                "modelName": "הצג את השם התיאורי של המודל",
+                "fileName": "הצג את שם הקובץ בפועל בדיסק"
             }
         },
         "folderSettings": {

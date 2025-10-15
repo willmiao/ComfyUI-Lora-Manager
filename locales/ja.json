@@ -225,9 +225,9 @@
             },
             "displayDensityHelp": "1行に表示するカード数を選択：",
             "displayDensityDetails": {
-                "default": "デフォルト：5（1080p）、6（2K）、8（4K）",
-                "medium": "中：6（1080p）、7（2K）、9（4K）",
-                "compact": "コンパクト：7（1080p）、8（2K）、10（4K）"
+                "default": "5（1080p）、6（2K）、8（4K）",
+                "medium": "6（1080p）、7（2K）、9（4K）",
+                "compact": "7（1080p）、8（2K）、10（4K）"
             },
             "displayDensityWarning": "警告：高密度設定は、リソースが限られたシステムでパフォーマンスの問題を引き起こす可能性があります。",
             "cardInfoDisplay": "カード情報表示",
@@ -237,8 +237,18 @@
             },
             "cardInfoDisplayHelp": "モデル情報とアクションボタンの表示タイミングを選択：",
             "cardInfoDisplayDetails": {
-                "always": "常に表示：ヘッダーとフッターが常に表示されます",
-                "hover": "ホバー時に表示：カードにホバーしたときのみヘッダーとフッターが表示されます"
+                "always": "ヘッダーとフッターが常に表示されます",
+                "hover": "カードにホバーしたときのみヘッダーとフッターが表示されます"
+            },
+            "modelNameDisplay": "モデル名表示",
+            "modelNameDisplayOptions": {
+                "modelName": "モデル名",
+                "fileName": "ファイル名"
+            },
+            "modelNameDisplayHelp": "モデルカードのフッターに表示する内容を選択：",
+            "modelNameDisplayDetails": {
+                "modelName": "モデルの説明的な名前を表示",
+                "fileName": "ディスク上の実際のファイル名を表示"
             }
         },
         "folderSettings": {
