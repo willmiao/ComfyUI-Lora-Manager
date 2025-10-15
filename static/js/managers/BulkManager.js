@@ -1146,10 +1146,7 @@ export class BulkManager {
             // Call the auto-organize method with selected file paths
             await apiClient.autoOrganizeModels(filePaths);
             
-            setTimeout(() => {
-                resetAndReload(true);
-            }, 1000);
-            
+            resetAndReload(true);
         } catch (error) {
             console.error('Error during bulk auto-organize:', error);
             showToast('toast.loras.autoOrganizeFailed', { error: error.message }, 'error');
