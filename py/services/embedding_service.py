@@ -11,13 +11,14 @@ logger = logging.getLogger(__name__)
 class EmbeddingService(BaseModelService):
     """Embedding-specific service implementation"""
     
-    def __init__(self, scanner):
+    def __init__(self, scanner, update_service=None):
         """Initialize Embedding service
         
         Args:
             scanner: Embedding scanner instance
+            update_service: Optional service for remote update tracking.
         """
-        super().__init__("embedding", scanner, EmbeddingMetadata)
+        super().__init__("embedding", scanner, EmbeddingMetadata, update_service=update_service)
     
     async def format_response(self, embedding_data: Dict) -> Dict:
         """Format Embedding data for API response"""

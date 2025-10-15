@@ -11,13 +11,14 @@ logger = logging.getLogger(__name__)
 class LoraService(BaseModelService):
     """LoRA-specific service implementation"""
     
-    def __init__(self, scanner):
+    def __init__(self, scanner, update_service=None):
         """Initialize LoRA service
         
         Args:
             scanner: LoRA scanner instance
+            update_service: Optional service for remote update tracking.
         """
-        super().__init__("lora", scanner, LoraMetadata)
+        super().__init__("lora", scanner, LoraMetadata, update_service=update_service)
     
     async def format_response(self, lora_data: Dict) -> Dict:
         """Format LoRA data for API response"""

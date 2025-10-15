@@ -19,8 +19,8 @@ class EmbeddingRoutes(BaseModelRoutes):
     async def initialize_services(self):
         """Initialize services from ServiceRegistry"""
         embedding_scanner = await ServiceRegistry.get_embedding_scanner()
-        self.service = EmbeddingService(embedding_scanner)
         update_service = await ServiceRegistry.get_model_update_service()
+        self.service = EmbeddingService(embedding_scanner, update_service=update_service)
         self.set_model_update_service(update_service)
 
         # Attach service dependencies

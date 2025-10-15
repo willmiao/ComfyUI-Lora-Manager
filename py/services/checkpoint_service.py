@@ -11,13 +11,14 @@ logger = logging.getLogger(__name__)
 class CheckpointService(BaseModelService):
     """Checkpoint-specific service implementation"""
     
-    def __init__(self, scanner):
+    def __init__(self, scanner, update_service=None):
         """Initialize Checkpoint service
         
         Args:
             scanner: Checkpoint scanner instance
+            update_service: Optional service for remote update tracking.
         """
-        super().__init__("checkpoint", scanner, CheckpointMetadata)
+        super().__init__("checkpoint", scanner, CheckpointMetadata, update_service=update_service)
     
     async def format_response(self, checkpoint_data: Dict) -> Dict:
         """Format Checkpoint data for API response"""

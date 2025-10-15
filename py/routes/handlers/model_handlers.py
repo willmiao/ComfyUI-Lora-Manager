@@ -6,7 +6,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Dict, Iterable, Mapping, Optional
+from typing import Awaitable, Callable, Dict, Iterable, List, Mapping, Optional
 
 from aiohttp import web
 import jinja2
@@ -166,6 +166,11 @@ class ModelListingHandler:
             except (json.JSONDecodeError, TypeError):
                 pass
 
+        has_update = request.query.get("has_update", "false")
+        has_update_filter = (
+            has_update.lower() in {"1", "true", "yes"} if isinstance(has_update, str) else False
+        )
+
         return {
             "page": page,
             "page_size": page_size,
@@ -178,6 +183,7 @@ class ModelListingHandler:
             "search_options": search_options,
             "hash_filters": hash_filters,
             "favorites_only": favorites_only,
+            "has_update": has_update_filter,
             **self._parse_specific_params(request),
         }
 

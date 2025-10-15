@@ -23,8 +23,8 @@ class LoraRoutes(BaseModelRoutes):
     async def initialize_services(self):
         """Initialize services from ServiceRegistry"""
         lora_scanner = await ServiceRegistry.get_lora_scanner()
-        self.service = LoraService(lora_scanner)
         update_service = await ServiceRegistry.get_model_update_service()
+        self.service = LoraService(lora_scanner, update_service=update_service)
         self.set_model_update_service(update_service)
 
         # Attach service dependencies
