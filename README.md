@@ -34,15 +34,16 @@ Enhance your Civitai browsing experience with our companion browser extension! S
 
 ## Release Notes
 
-### v0.9.6
-* **Critical Performance Optimization** - Introduced persistent model cache that dramatically accelerates initialization after startup and significantly reduces Python backend memory footprint for improved application performance.
-* **Cross-Browser Settings Synchronization** - Migrated nearly all settings to the backend, ensuring your preferences sync automatically across all browsers for a seamless multi-browser experience.
-* **Protected User Settings Location** - Relocated user settings (settings.json) to the user config directory (accessible via the link icon in Settings), preventing accidental deletion during reinstalls or updates.
-* **Global Context Menu** - Added a new global context menu accessible by right-clicking on empty page areas, providing quick access to global operations with more features coming in future updates.
-* **Multi-Library Support** - Introduced support for managing multiple libraries, allowing you to easily switch between different model collections (advanced usage, documentation in progress).
-* **Bug Fixes & Stability Improvements** - Various bug fixes and enhancements for improved stability and reliability.
+### v0.9.8
+* **Full CivArchive API Support** - Added complete support for the CivArchive API as a fallback metadata source beyond Civitai API. Models deleted from Civitai can now still retrieve metadata through the CivArchive API.
+* **Download Models from CivArchive** - Added support for downloading models directly from CivArchive, similar to downloading from Civitai. Simply click the Download button and paste the model URL to download the corresponding model.
+* **Custom Priority Tags** - Introduced Custom Priority Tags feature, allowing users to define custom priority tags. These tags will appear as suggestions when editing tags or during auto organization/download using default paths, providing more precise and controlled folder organization. [Guide](https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/Priority-Tags-Configuration-Guide)
+* **Drag and Drop Tag Reordering** - Added drag and drop functionality to reorder tags in the tags edit mode for improved usability.
+* **Download Control in Example Images Panel** - Added stop control in the Download Example Images Panel for better download management.
+* **Prompt (LoraManager) Node with Autocomplete** - Added new Prompt (LoraManager) node with autocomplete feature for adding embeddings.
+* **Lora Manager Nodes in Subgraphs** - Lora Manager nodes now support being placed within subgraphs for more flexible workflow organization.
 
-### v0.9.3
+### v0.9.6
 * **Metadata Archive Database Support** - Added the ability to download and utilize a metadata archive database, enabling access to metadata for models that have been deleted from CivitAI.
 * **App-Level Proxy Settings** - Introduced support for configuring a global proxy within the application, making it easier to use the manager behind network restrictions.
 * **Bug Fixes** - Various bug fixes for improved stability and reliability.
