@@ -18,6 +18,7 @@ from .model_lifecycle_service import delete_model_artifacts
 from .service_registry import ServiceRegistry
 from .websocket_manager import ws_manager
 from .persistent_model_cache import get_persistent_cache
+from .settings_manager import get_settings_manager
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +82,7 @@ class ModelScanner:
         self._is_initializing = False  # Flag to track initialization state
         self._excluded_models = []  # List to track excluded models
         self._persistent_cache = get_persistent_cache()
+        self._name_display_mode = self._resolve_name_display_mode()
         self._initialized = True
 
         # Register this service
@@ -94,6 +96,7 @@ class ModelScanner:
         self._tags_count = {}
         self._excluded_models = []
         self._is_initializing = False
+        self._name_display_mode = self._resolve_name_display_mode()
 
         try:
             loop = asyncio.get_running_loop()
@@ -102,7 +105,27 @@ class ModelScanner:
 
         if loop and not loop.is_closed():
             loop.create_task(self.initialize_in_background())
-    
+
+    def _resolve_name_display_mode(self) -> str:
+        """Return the configured display mode for name sorting."""
+
+        try:
+            manager = get_settings_manager()
+        except Exception:  # pragma: no cover - fallback to defaults
+            return "model_name"
+
+        value = manager.get("model_name_display", "model_name")
+        return ModelCache._normalize_display_mode(value)
+
+    async def on_model_name_display_changed(self, display_mode: str) -> None:
+        """Handle updates to the model name display preference."""
+
+        normalized = ModelCache._normalize_display_mode(display_mode)
+        self._name_display_mode = normalized
+
+        if self._cache is not None:
+            await self._cache.update_name_display_mode(normalized)
+
     async def _register_service(self):
         """Register this instance with the ServiceRegistry"""
         service_name = f"{self.model_type}_scanner"
@@ -211,7 +234,8 @@ class ModelScanner:
             if self._cache is None:
                 self._cache = ModelCache(
                     raw_data=[],
-                    folders=[]
+                    folders=[],
+                    name_display_mode=self._name_display_mode,
                 )
             
             # Set initializing flag to true
@@ -516,7 +540,8 @@ class ModelScanner:
         if self._cache is None and not force_refresh:
             return ModelCache(
                 raw_data=[],
-                folders=[]
+                folders=[],
+                name_display_mode=self._name_display_mode,
             )
 
         # If force refresh is requested, initialize the cache directly
@@ -549,7 +574,8 @@ class ModelScanner:
             if self._cache is None:
                 self._cache = ModelCache(
                     raw_data=[],
-                    folders=[]
+                    folders=[],
+                    name_display_mode=self._name_display_mode,
                 )
         finally:
             self._is_initializing = False # Unset flag
@@ -837,7 +863,8 @@ class ModelScanner:
         if self._cache is None:
             self._cache = ModelCache(
                 raw_data=list(scan_result.raw_data),
-                folders=[]
+                folders=[],
+                name_display_mode=self._name_display_mode,
             )
         else:
             self._cache.raw_data = list(scan_result.raw_data)

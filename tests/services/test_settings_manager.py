@@ -4,6 +4,7 @@ import os
 
 import pytest
 
+from py.services import service_registry
 from py.services.settings_manager import SettingsManager
 from py.utils import settings_paths
 
@@ -98,6 +99,38 @@ def test_delete_setting(manager):
     manager.set("example", 1)
     manager.delete("example")
     assert manager.get("example") is None
+
+
+def test_model_name_display_setting_notifies_scanners(tmp_path, monkeypatch):
+    initial = {
+        "libraries": {"default": {"folder_paths": {}, "default_lora_root": "", "default_checkpoint_root": "", "default_embedding_root": ""}},
+        "active_library": "default",
+        "model_name_display": "model_name",
+    }
+
+    manager = _create_manager_with_settings(tmp_path, monkeypatch, initial)
+
+    class DummyScanner:
+        def __init__(self):
+            self.calls = []
+
+        async def on_model_name_display_changed(self, mode: str) -> None:
+            self.calls.append(mode)
+
+    dummy_scanner = DummyScanner()
+
+    def fake_get_service_sync(cls, name):
+        return dummy_scanner if name == "lora_scanner" else None
+
+    monkeypatch.setattr(
+        service_registry.ServiceRegistry,
+        "get_service_sync",
+        classmethod(fake_get_service_sync),
+    )
+
+    manager.set("model_name_display", "file_name")
+
+    assert dummy_scanner.calls == ["file_name"]
 
 
 def test_migrates_legacy_settings_file(tmp_path, monkeypatch):

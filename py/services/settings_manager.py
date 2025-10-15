@@ -1,3 +1,4 @@
+import asyncio
 import copy
 import json
 import os
@@ -465,6 +466,8 @@ class SettingsManager:
             self._update_active_library_entry(default_checkpoint_root=str(value))
         elif key == 'default_embedding_root':
             self._update_active_library_entry(default_embedding_root=str(value))
+        elif key == 'model_name_display':
+            self._notify_model_name_display_change(value)
         self._save_settings()
 
     def delete(self, key: str) -> None:
@@ -473,6 +476,56 @@ class SettingsManager:
             del self.settings[key]
             self._save_settings()
             logger.info(f"Deleted setting: {key}")
+
+    def _notify_model_name_display_change(self, value: Any) -> None:
+        """Trigger cache resorting when the model name display preference updates."""
+
+        try:
+            from .service_registry import ServiceRegistry  # type: ignore
+        except Exception:  # pragma: no cover - registry optional in some contexts
+            return
+
+        display_mode = value if isinstance(value, str) else "model_name"
+        coroutines = []
+
+        for service_name in (
+            "lora_scanner",
+            "checkpoint_scanner",
+            "embedding_scanner",
+            "recipe_scanner",
+        ):
+            service = ServiceRegistry.get_service_sync(service_name)
+            if not service or not hasattr(service, "on_model_name_display_changed"):
+                continue
+
+            try:
+                result = service.on_model_name_display_changed(display_mode)
+            except Exception as exc:  # pragma: no cover - defensive guard
+                logger.debug(
+                    "Service %s failed to schedule name display update: %s",
+                    service_name,
+                    exc,
+                )
+                continue
+
+            if asyncio.iscoroutine(result):
+                coroutines.append(result)
+
+        if not coroutines:
+            return
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            for coroutine in coroutines:
+                try:
+                    asyncio.run(coroutine)
+                except RuntimeError:
+                    # If event loop is already running in another thread, skip execution
+                    logger.debug("Skipping name display update due to running loop")
+        else:
+            for coroutine in coroutines:
+                loop.create_task(coroutine)
 
     def _save_settings(self) -> None:
         """Save settings to file"""
