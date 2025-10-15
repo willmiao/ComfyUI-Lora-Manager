@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Callable, Dict, Mapping
+from typing import TYPE_CHECKING, Callable, Dict, Mapping
 
 import jinja2
 from aiohttp import web
@@ -42,7 +42,11 @@ from .handlers.model_handlers import (
     ModelMoveHandler,
     ModelPageView,
     ModelQueryHandler,
+    ModelUpdateHandler,
 )
+
+if TYPE_CHECKING:
+    from ..services.model_update_service import ModelUpdateService
 
 logger = logging.getLogger(__name__)
 
@@ -99,9 +103,17 @@ class BaseModelRoutes(ABC):
             ws_manager=self._ws_manager,
             download_manager_factory=ServiceRegistry.get_download_manager,
         )
+        self._model_update_service: ModelUpdateService | None = None
 
         if service is not None:
             self.attach_service(service)
+
+    def set_model_update_service(self, service: "ModelUpdateService") -> None:
+        """Attach the model update tracking service."""
+
+        self._model_update_service = service
+        self._handler_set = None
+        self._handler_mapping = None
 
     def attach_service(self, service) -> None:
         """Attach a model service and rebuild handler dependencies."""
@@ -127,6 +139,7 @@ class BaseModelRoutes(ABC):
 
     def _create_handler_set(self) -> ModelHandlerSet:
         service = self._ensure_service()
+        update_service = self._ensure_model_update_service()
         page_view = ModelPageView(
             template_env=self.template_env,
             template_name=self.template_name or "",
@@ -186,6 +199,12 @@ class BaseModelRoutes(ABC):
             ws_manager=self._ws_manager,
             logger=logger,
         )
+        updates = ModelUpdateHandler(
+            service=service,
+            update_service=update_service,
+            metadata_provider_selector=get_metadata_provider,
+            logger=logger,
+        )
         return ModelHandlerSet(
             page_view=page_view,
             listing=listing,
@@ -195,6 +214,7 @@ class BaseModelRoutes(ABC):
             civitai=civitai,
             move=move,
             auto_organize=auto_organize,
+            updates=updates,
         )
 
     @property
@@ -272,4 +292,9 @@ class BaseModelRoutes(ABC):
             return await handler(request)
 
         return proxy
+
+    def _ensure_model_update_service(self) -> "ModelUpdateService":
+        if self._model_update_service is None:
+            raise RuntimeError("Model update service has not been attached")
+        return self._model_update_service
 

@@ -128,22 +128,44 @@ class ServiceRegistry:
     async def get_civitai_client(cls):
         """Get or create CivitAI client instance"""
         service_name = "civitai_client"
-        
+
         if service_name in cls._services:
             return cls._services[service_name]
-        
+
         async with cls._get_lock(service_name):
             # Double-check after acquiring lock
             if service_name in cls._services:
                 return cls._services[service_name]
-            
+
             # Import here to avoid circular imports
             from .civitai_client import CivitaiClient
-            
+
             client = await CivitaiClient.get_instance()
             cls._services[service_name] = client
             logger.debug(f"Created and registered {service_name}")
             return client
+
+    @classmethod
+    async def get_model_update_service(cls):
+        """Get or create the model update tracking service."""
+
+        service_name = "model_update_service"
+
+        if service_name in cls._services:
+            return cls._services[service_name]
+
+        async with cls._get_lock(service_name):
+            if service_name in cls._services:
+                return cls._services[service_name]
+
+            from .model_update_service import ModelUpdateService
+            from .persistent_model_cache import get_persistent_cache
+
+            cache = get_persistent_cache()
+            service = ModelUpdateService(cache.get_database_path())
+            cls._services[service_name] = service
+            logger.debug(f"Created and registered {service_name}")
+            return service
 
     @classmethod
     async def get_civarchive_client(cls):
