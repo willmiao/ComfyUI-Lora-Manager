@@ -743,15 +743,23 @@ export class BaseModelApiClient {
         }
     }
 
-    async moveSingleModel(filePath, targetPath) {
+    async moveSingleModel(filePath, targetPath, pathTemplate = null) {
         // Only allow move if supported
         if (!this.apiConfig.config.supportsMove) {
             showToast('toast.api.moveNotSupported', { type: this.apiConfig.config.displayName }, 'warning');
             return null;
         }
-        if (filePath.substring(0, filePath.lastIndexOf('/')) === targetPath) {
+        if (filePath.substring(0, filePath.lastIndexOf('/')) === targetPath && !pathTemplate) {
             showToast('toast.api.alreadyInFolder', { type: this.apiConfig.config.displayName }, 'info');
             return null;
+        }
+
+        const requestBody = {
+            file_path: filePath,
+            target_path: targetPath
+        };
+        if (pathTemplate) {
+            requestBody.path_template = pathTemplate;
         }
 
         const response = await fetch(this.apiConfig.endpoints.moveModel, {
@@ -759,10 +767,7 @@ export class BaseModelApiClient {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                file_path: filePath,
-                target_path: targetPath
-            })
+            body: JSON.stringify(requestBody)
         });
 
         const result = await response.json();
@@ -789,18 +794,28 @@ export class BaseModelApiClient {
         return null;
     }
 
-    async moveBulkModels(filePaths, targetPath) {
+    async moveBulkModels(filePaths, targetPath, pathTemplate = null) {
         if (!this.apiConfig.config.supportsMove) {
             showToast('toast.api.bulkMoveNotSupported', { type: this.apiConfig.config.displayName }, 'warning');
             return [];
         }
-        const movedPaths = filePaths.filter(path => {
+
+        // Skip filtering if path_template is provided (template handles subfolder logic)
+        const movedPaths = pathTemplate ? filePaths : filePaths.filter(path => {
             return path.substring(0, path.lastIndexOf('/')) !== targetPath;
         });
 
-        if (movedPaths.length === 0) {
+        if (movedPaths.length === 0 && !pathTemplate) {
             showToast('toast.api.allAlreadyInFolder', { type: this.apiConfig.config.displayName }, 'info');
             return [];
+        }
+
+        const requestBody = {
+            file_paths: movedPaths,
+            target_path: targetPath
+        };
+        if (pathTemplate) {
+            requestBody.path_template = pathTemplate;
         }
 
         const response = await fetch(this.apiConfig.endpoints.moveBulk, {
@@ -808,10 +823,7 @@ export class BaseModelApiClient {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                file_paths: movedPaths,
-                target_path: targetPath
-            })
+            body: JSON.stringify(requestBody)
         });
 
         const result = await response.json();

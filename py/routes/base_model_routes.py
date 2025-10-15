@@ -108,7 +108,7 @@ class BaseModelRoutes(ABC):
         self.service = service
         self.model_type = service.model_type
         self.model_file_service = ModelFileService(service.scanner, service.model_type)
-        self.model_move_service = ModelMoveService(service.scanner)
+        self.model_move_service = ModelMoveService(service.scanner, service.model_type)
         self.model_lifecycle_service = ModelLifecycleService(
             scanner=service.scanner,
             metadata_manager=MetadataManager,
@@ -249,7 +249,7 @@ class BaseModelRoutes(ABC):
     def _ensure_move_service(self) -> ModelMoveService:
         if self.model_move_service is None:
             service = self._ensure_service()
-            self.model_move_service = ModelMoveService(service.scanner)
+            self.model_move_service = ModelMoveService(service.scanner, service.model_type)
         return self.model_move_service
 
     def _ensure_lifecycle_service(self) -> ModelLifecycleService:
