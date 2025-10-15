@@ -222,6 +222,7 @@ class ModelUpdateService:
             should_fetch = force_refresh or not existing or self._is_stale(existing, now)
         # release lock during network request
         fetched_versions: List[int] | None = None
+        refresh_succeeded = False
         if metadata_provider and should_fetch:
             try:
                 response = await metadata_provider.get_model_versions(model_id)
@@ -236,7 +237,11 @@ class ModelUpdateService:
                     exc_info=True,
                 )
             else:
-                fetched_versions = self._extract_version_ids(response)
+                if response is not None:
+                    extracted = self._extract_version_ids(response)
+                    if extracted is not None:
+                        fetched_versions = extracted
+                        refresh_succeeded = True
 
         async with self._lock:
             existing = self._get_record(model_type, model_id)
@@ -256,11 +261,11 @@ class ModelUpdateService:
 
             version_ids = (
                 fetched_versions
-                if fetched_versions is not None
+                if refresh_succeeded
                 else (list(existing.version_ids) if existing else [])
             )
             largest = max(version_ids) if version_ids else None
-            last_checked = now if fetched_versions is not None else (
+            last_checked = now if refresh_succeeded else (
                 existing.last_checked_at if existing else None
             )
             record = ModelUpdateRecord(
@@ -315,12 +320,14 @@ class ModelUpdateService:
         ]
         return sorted(dict.fromkeys(normalized))
 
-    def _extract_version_ids(self, response) -> List[int]:
+    def _extract_version_ids(self, response) -> Optional[List[int]]:
         if not isinstance(response, Mapping):
-            return []
+            return None
         versions = response.get("modelVersions")
-        if not isinstance(versions, Iterable):
+        if versions is None:
             return []
+        if not isinstance(versions, Iterable):
+            return None
         normalized = []
         for entry in versions:
             if isinstance(entry, Mapping):
