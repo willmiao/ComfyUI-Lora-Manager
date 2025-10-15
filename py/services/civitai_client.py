@@ -2,7 +2,7 @@ import asyncio
 import copy
 import logging
 import os
-from typing import Optional, Dict, Tuple, List
+from typing import Optional, Dict, Tuple, List, Sequence
 from .model_metadata_provider import CivitaiModelMetadataProvider, ModelMetadataProviderManager
 from .downloader import get_downloader
 from .errors import RateLimitError
@@ -180,6 +180,59 @@ class CivitaiClient:
             raise
         except Exception as e:
             logger.error(f"Error fetching model versions: {e}")
+            return None
+
+    async def get_model_versions_bulk(
+        self, model_ids: Sequence[int]
+    ) -> Optional[Dict[int, Dict]]:
+        """Fetch model metadata for multiple ids using the batch API."""
+
+        deduped: Dict[int, None] = {}
+        for raw_id in model_ids:
+            try:
+                normalized = int(raw_id)
+            except (TypeError, ValueError):
+                continue
+            deduped.setdefault(normalized, None)
+
+        normalized_ids = [str(model_id) for model_id in deduped.keys()]
+        if not normalized_ids:
+            return {}
+
+        try:
+            query = ",".join(normalized_ids)
+            success, result = await self._make_request(
+                'GET',
+                f"{self.base_url}/models",
+                use_auth=True,
+                params={'ids': query},
+            )
+            if not success:
+                return None
+
+            items = result.get('items') if isinstance(result, dict) else None
+            if not isinstance(items, list):
+                return {}
+
+            payload: Dict[int, Dict] = {}
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                model_id = item.get('id')
+                try:
+                    normalized_id = int(model_id)
+                except (TypeError, ValueError):
+                    continue
+                payload[normalized_id] = {
+                    'modelVersions': item.get('modelVersions', []),
+                    'type': item.get('type', ''),
+                    'name': item.get('name', ''),
+                }
+            return payload
+        except RateLimitError:
+            raise
+        except Exception as exc:
+            logger.error(f"Error fetching model versions in bulk: {exc}")
             return None
             
     async def get_model_version(self, model_id: int = None, version_id: int = None) -> Optional[Dict]:

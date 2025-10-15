@@ -53,6 +53,12 @@ class ModelMetadataProvider(ABC):
     async def get_model_versions(self, model_id: str) -> Optional[Dict]:
         """Get all versions of a model with their details"""
         pass
+
+    async def get_model_versions_bulk(
+        self, model_ids: Sequence[int]
+    ) -> Optional[Dict[int, Dict]]:
+        """Fetch model versions for multiple model ids when supported."""
+        raise NotImplementedError
         
     @abstractmethod
     async def get_model_version(self, model_id: int = None, version_id: int = None) -> Optional[Dict]:
@@ -80,6 +86,11 @@ class CivitaiModelMetadataProvider(ModelMetadataProvider):
         
     async def get_model_versions(self, model_id: str) -> Optional[Dict]:
         return await self.client.get_model_versions(model_id)
+
+    async def get_model_versions_bulk(
+        self, model_ids: Sequence[int]
+    ) -> Optional[Dict[int, Dict]]:
+        return await self.client.get_model_versions_bulk(model_ids)
         
     async def get_model_version(self, model_id: int = None, version_id: int = None) -> Optional[Dict]:
         return await self.client.get_model_version(model_id, version_id)
@@ -544,7 +555,19 @@ class ModelMetadataProviderManager:
         """Get model versions using specified or default provider"""
         provider = self._get_provider(provider_name)
         return await provider.get_model_versions(model_id)
-        
+
+    async def get_model_versions_bulk(
+        self,
+        model_ids: Sequence[int],
+        provider_name: str = None,
+    ) -> Optional[Dict[int, Dict]]:
+        """Fetch model versions for multiple model ids when supported by provider."""
+        provider = self._get_provider(provider_name)
+        try:
+            return await provider.get_model_versions_bulk(model_ids)
+        except NotImplementedError:
+            return None
+
     async def get_model_version(self, model_id: int = None, version_id: int = None, provider_name: str = None) -> Optional[Dict]:
         """Get specific model version using specified or default provider"""
         provider = self._get_provider(provider_name)
