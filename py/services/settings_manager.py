@@ -1,10 +1,11 @@
+import asyncio
 import copy
 import json
 import os
 import logging
 from datetime import datetime, timezone
 from threading import Lock
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
+from typing import Any, Awaitable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from ..utils.constants import DEFAULT_PRIORITY_TAG_CONFIG
 from ..utils.settings_paths import ensure_settings_file
@@ -465,6 +466,8 @@ class SettingsManager:
             self._update_active_library_entry(default_checkpoint_root=str(value))
         elif key == 'default_embedding_root':
             self._update_active_library_entry(default_embedding_root=str(value))
+        elif key == 'model_name_display':
+            self._notify_model_name_display_change(value)
         self._save_settings()
 
     def delete(self, key: str) -> None:
@@ -473,6 +476,81 @@ class SettingsManager:
             del self.settings[key]
             self._save_settings()
             logger.info(f"Deleted setting: {key}")
+
+    def _notify_model_name_display_change(self, value: Any) -> None:
+        """Trigger cache resorting when the model name display preference updates."""
+
+        try:
+            from .service_registry import ServiceRegistry  # type: ignore
+        except Exception:  # pragma: no cover - registry optional in some contexts
+            return
+
+        display_mode = value if isinstance(value, str) else "model_name"
+        pending: List[Tuple[Optional[asyncio.AbstractEventLoop], Awaitable[Any]]] = []
+
+        def _resolve_service_loop(service: Any) -> Optional[asyncio.AbstractEventLoop]:
+            loop = getattr(service, "loop", None)
+            if loop is None:
+                loop = getattr(service, "_loop", None)
+            return loop if isinstance(loop, asyncio.AbstractEventLoop) else None
+
+        for service_name in (
+            "lora_scanner",
+            "checkpoint_scanner",
+            "embedding_scanner",
+            "recipe_scanner",
+        ):
+            service = ServiceRegistry.get_service_sync(service_name)
+            if not service or not hasattr(service, "on_model_name_display_changed"):
+                continue
+
+            try:
+                result = service.on_model_name_display_changed(display_mode)
+            except Exception as exc:  # pragma: no cover - defensive guard
+                logger.debug(
+                    "Service %s failed to schedule name display update: %s",
+                    service_name,
+                    exc,
+                )
+                continue
+
+            if asyncio.iscoroutine(result):
+                service_loop = _resolve_service_loop(service)
+                pending.append((service_loop, result))
+
+        if not pending:
+            return
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        for service_loop, coroutine in pending:
+            target_loop = service_loop or loop
+
+            if target_loop is None:
+                try:
+                    asyncio.run(coroutine)
+                except RuntimeError:
+                    logger.debug("Skipping name display update due to missing event loop")
+                continue
+
+            if loop is not None and target_loop is loop:
+                target_loop.create_task(coroutine)
+                continue
+
+            if target_loop.is_running():
+                try:
+                    asyncio.run_coroutine_threadsafe(coroutine, target_loop)
+                except Exception as exc:  # pragma: no cover - defensive guard
+                    logger.debug("Failed to dispatch name display update: %s", exc)
+                continue
+
+            try:
+                asyncio.run(coroutine)
+            except RuntimeError:
+                logger.debug("Skipping name display update due to closed loop")
 
     def _save_settings(self) -> None:
         """Save settings to file"""

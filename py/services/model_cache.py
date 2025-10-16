@@ -15,6 +15,9 @@ SUPPORTED_SORT_MODES = [
     ('size', 'desc'),
 ]
 
+DISPLAY_NAME_MODES = {"model_name", "file_name"}
+
+
 @dataclass
 class ModelCache:
     """Cache structure for model data with extensible sorting."""
@@ -22,15 +25,38 @@ class ModelCache:
     raw_data: List[Dict]
     folders: List[str]
     version_index: Dict[int, Dict] = field(default_factory=dict)
+    name_display_mode: str = "model_name"
 
     def __post_init__(self):
         self._lock = asyncio.Lock()
         # Cache for last sort: (sort_key, order) -> sorted list
         self._last_sort: Tuple[str, str] = (None, None)
         self._last_sorted_data: List[Dict] = []
+        self.name_display_mode = self._normalize_display_mode(self.name_display_mode)
         # Default sort on init
         asyncio.create_task(self.resort())
         self.rebuild_version_index()
+
+    @staticmethod
+    def _normalize_display_mode(value: Optional[str]) -> str:
+        if isinstance(value, str) and value in DISPLAY_NAME_MODES:
+            return value
+        return "model_name"
+
+    def _get_display_name(self, item: Dict) -> str:
+        """Return the value used for name-based sorting based on display settings."""
+
+        if self.name_display_mode == "file_name":
+            primary = item.get("file_name", "")
+            fallback = item.get("model_name", "")
+        else:
+            primary = item.get("model_name", "")
+            fallback = item.get("file_name", "")
+
+        candidate = primary or fallback or ""
+        if isinstance(candidate, str):
+            return candidate
+        return str(candidate)
 
     @staticmethod
     def _normalize_version_id(value: Any) -> Optional[int]:
@@ -101,10 +127,10 @@ class ModelCache:
         """Sort data by sort_key and order"""
         reverse = (order == 'desc')
         if sort_key == 'name':
-            # Natural sort by model_name, case-insensitive
+            # Natural sort by configured display name, case-insensitive
             return natsorted(
                 data,
-                key=lambda x: x['model_name'].lower(),
+                key=lambda x: self._get_display_name(x).lower(),
                 reverse=reverse
             )
         elif sort_key == 'date':
@@ -134,6 +160,20 @@ class ModelCache:
             self._last_sort = (sort_key, order)
             self._last_sorted_data = sorted_data
             return sorted_data
+
+    async def update_name_display_mode(self, display_mode: str) -> None:
+        """Update the display mode used for name sorting and refresh cached results."""
+
+        normalized = self._normalize_display_mode(display_mode)
+        async with self._lock:
+            if self.name_display_mode == normalized:
+                return
+
+            self.name_display_mode = normalized
+
+            if self._last_sort[0] == 'name':
+                sort_key, order = self._last_sort
+                self._last_sorted_data = self._sort_data(self.raw_data, sort_key, order)
 
     async def update_preview_url(self, file_path: str, preview_url: str, preview_nsfw_level: int) -> bool:
         """Update preview_url for a specific model in all cached data

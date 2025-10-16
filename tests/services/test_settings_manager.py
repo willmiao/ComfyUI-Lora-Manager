@@ -1,9 +1,12 @@
+import asyncio
 import copy
+import threading
 import json
 import os
 
 import pytest
 
+from py.services import service_registry
 from py.services.settings_manager import SettingsManager
 from py.utils import settings_paths
 
@@ -98,6 +101,63 @@ def test_delete_setting(manager):
     manager.set("example", 1)
     manager.delete("example")
     assert manager.get("example") is None
+
+
+def test_model_name_display_setting_notifies_scanners(tmp_path, monkeypatch):
+    initial = {
+        "libraries": {"default": {"folder_paths": {}, "default_lora_root": "", "default_checkpoint_root": "", "default_embedding_root": ""}},
+        "active_library": "default",
+        "model_name_display": "model_name",
+    }
+
+    manager = _create_manager_with_settings(tmp_path, monkeypatch, initial)
+
+    loop = asyncio.new_event_loop()
+    thread = threading.Thread(target=loop.run_forever, daemon=True)
+    thread.start()
+
+    class DummyScanner:
+        def __init__(self):
+            self.calls = []
+            self.loop = loop
+
+        async def on_model_name_display_changed(self, mode: str) -> None:
+            self.calls.append(mode)
+
+    dummy_scanner = DummyScanner()
+
+    dispatched_loops = []
+    futures = []
+    original_run_coroutine_threadsafe = asyncio.run_coroutine_threadsafe
+
+    def tracking_run_coroutine_threadsafe(coro, target_loop):
+        dispatched_loops.append(target_loop)
+        future = original_run_coroutine_threadsafe(coro, target_loop)
+        futures.append(future)
+        return future
+
+    def fake_get_service_sync(cls, name):
+        return dummy_scanner if name == "lora_scanner" else None
+
+    monkeypatch.setattr(
+        service_registry.ServiceRegistry,
+        "get_service_sync",
+        classmethod(fake_get_service_sync),
+    )
+    monkeypatch.setattr(asyncio, "run_coroutine_threadsafe", tracking_run_coroutine_threadsafe)
+
+    try:
+        manager.set("model_name_display", "file_name")
+
+        for future in futures:
+            future.result(timeout=1)
+
+        assert dummy_scanner.calls == ["file_name"]
+        assert dispatched_loops == [dummy_scanner.loop]
+    finally:
+        loop.call_soon_threadsafe(loop.stop)
+        thread.join(timeout=1)
+        loop.close()
 
 
 def test_migrates_legacy_settings_file(tmp_path, monkeypatch):
