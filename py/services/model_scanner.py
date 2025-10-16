@@ -83,6 +83,12 @@ class ModelScanner:
         self._excluded_models = []  # List to track excluded models
         self._persistent_cache = get_persistent_cache()
         self._name_display_mode = self._resolve_name_display_mode()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        self._loop = loop
+        self.loop = loop
         self._initialized = True
 
         # Register this service
@@ -104,6 +110,8 @@ class ModelScanner:
             loop = None
 
         if loop and not loop.is_closed():
+            self._loop = loop
+            self.loop = loop
             loop.create_task(self.initialize_in_background())
 
     def _resolve_name_display_mode(self) -> str:

@@ -5,7 +5,7 @@ import os
 import logging
 from datetime import datetime, timezone
 from threading import Lock
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
+from typing import Any, Awaitable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from ..utils.constants import DEFAULT_PRIORITY_TAG_CONFIG
 from ..utils.settings_paths import ensure_settings_file
@@ -486,7 +486,13 @@ class SettingsManager:
             return
 
         display_mode = value if isinstance(value, str) else "model_name"
-        coroutines = []
+        pending: List[Tuple[Optional[asyncio.AbstractEventLoop], Awaitable[Any]]] = []
+
+        def _resolve_service_loop(service: Any) -> Optional[asyncio.AbstractEventLoop]:
+            loop = getattr(service, "loop", None)
+            if loop is None:
+                loop = getattr(service, "_loop", None)
+            return loop if isinstance(loop, asyncio.AbstractEventLoop) else None
 
         for service_name in (
             "lora_scanner",
@@ -509,23 +515,42 @@ class SettingsManager:
                 continue
 
             if asyncio.iscoroutine(result):
-                coroutines.append(result)
+                service_loop = _resolve_service_loop(service)
+                pending.append((service_loop, result))
 
-        if not coroutines:
+        if not pending:
             return
 
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
-            for coroutine in coroutines:
+            loop = None
+
+        for service_loop, coroutine in pending:
+            target_loop = service_loop or loop
+
+            if target_loop is None:
                 try:
                     asyncio.run(coroutine)
                 except RuntimeError:
-                    # If event loop is already running in another thread, skip execution
-                    logger.debug("Skipping name display update due to running loop")
-        else:
-            for coroutine in coroutines:
-                loop.create_task(coroutine)
+                    logger.debug("Skipping name display update due to missing event loop")
+                continue
+
+            if loop is not None and target_loop is loop:
+                target_loop.create_task(coroutine)
+                continue
+
+            if target_loop.is_running():
+                try:
+                    asyncio.run_coroutine_threadsafe(coroutine, target_loop)
+                except Exception as exc:  # pragma: no cover - defensive guard
+                    logger.debug("Failed to dispatch name display update: %s", exc)
+                continue
+
+            try:
+                asyncio.run(coroutine)
+            except RuntimeError:
+                logger.debug("Skipping name display update due to closed loop")
 
     def _save_settings(self) -> None:
         """Save settings to file"""
