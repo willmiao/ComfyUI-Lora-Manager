@@ -625,6 +625,17 @@ class RecipeScanner:
         # Get base dataset
         filtered_data = cache.sorted_by_date if sort_by == 'date' else cache.sorted_by_name
         
+        # Apply SFW filtering if enabled
+        from .settings_manager import get_settings_manager
+        settings = get_settings_manager()
+        if settings.get("show_only_sfw", False):
+            from ..utils.constants import NSFW_LEVELS
+            threshold = NSFW_LEVELS.get("R", 4)  # Default to R level (4) if not found
+            filtered_data = [
+                item for item in filtered_data
+                if not item.get("preview_nsfw_level") or item.get("preview_nsfw_level") < threshold
+            ]
+        
         # Special case: Filter by LoRA hash (takes precedence if bypass_filters is True)
         if lora_hash:
             # Filter recipes that contain this LoRA hash
