@@ -53,6 +53,21 @@ def test_calculate_relative_path_for_model_uses_mappings_and_defaults(isolated_s
     assert relative_path == "SDXL-mapped/no tags/Creator"
 
 
+def test_calculate_relative_path_supports_model_and_version(isolated_settings):
+    isolated_settings["download_path_templates"]["lora"] = "{model_name}/{version_name}"
+
+    model_data = {
+        "model_name": "Fancy Model",
+        "base_model": "SDXL",
+        "tags": ["tag"],
+        "civitai": {"id": 1, "name": "Version One", "creator": {"username": "Creator"}},
+    }
+
+    relative_path = calculate_relative_path_for_model(model_data, "lora")
+
+    assert relative_path == "Fancy Model/Version One"
+
+
 def test_calculate_recipe_fingerprint_filters_and_sorts():
     loras = [
         {"hash": "ABC", "strength": 0.1234},

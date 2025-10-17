@@ -175,10 +175,18 @@ def calculate_relative_path_for_model(model_data: Dict, model_type: str = 'lora'
         first_tag = 'no tags'  # Default if no tags available
 
     # Format the template with available data
+    model_name = model_data.get('model_name', '')
+    version_name = ''
+
+    if isinstance(civitai_data, dict):
+        version_name = civitai_data.get('name') or ''
+
     formatted_path = path_template
     formatted_path = formatted_path.replace('{base_model}', mapped_base_model)
     formatted_path = formatted_path.replace('{first_tag}', first_tag)
     formatted_path = formatted_path.replace('{author}', author)
+    formatted_path = formatted_path.replace('{model_name}', model_name)
+    formatted_path = formatted_path.replace('{version_name}', version_name)
 
     if model_type == 'embedding':
         formatted_path = formatted_path.replace(' ', '_')

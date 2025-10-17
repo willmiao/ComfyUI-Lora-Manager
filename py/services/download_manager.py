@@ -415,8 +415,10 @@ class DownloadManager:
         base_model_mappings = settings_manager.get('base_model_path_mappings', {})
         mapped_base_model = base_model_mappings.get(base_model, base_model)
         
+        model_info = version_info.get('model') or {}
+
         # Get model tags
-        model_tags = version_info.get('model', {}).get('tags', [])
+        model_tags = model_info.get('tags', [])
 
         first_tag = settings_manager.resolve_priority_tag_for_model(model_tags, model_type)
 
@@ -425,6 +427,8 @@ class DownloadManager:
         formatted_path = formatted_path.replace('{base_model}', mapped_base_model)
         formatted_path = formatted_path.replace('{first_tag}', first_tag)
         formatted_path = formatted_path.replace('{author}', author)
+        formatted_path = formatted_path.replace('{model_name}', model_info.get('name', ''))
+        formatted_path = formatted_path.replace('{version_name}', version_info.get('name', ''))
 
         if model_type == 'embedding':
             formatted_path = formatted_path.replace(' ', '_')

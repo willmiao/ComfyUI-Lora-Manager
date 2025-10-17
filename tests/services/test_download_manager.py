@@ -324,6 +324,22 @@ def test_embedding_relative_path_replaces_spaces():
     assert relative_path == "Base_Model/tag_with_space"
 
 
+def test_relative_path_supports_model_and_version_placeholders():
+    manager = DownloadManager()
+    settings_manager = get_settings_manager()
+    settings_manager.settings["download_path_templates"]["lora"] = "{model_name}/{version_name}"
+
+    version_info = {
+        "baseModel": "BaseModel",
+        "name": "Version One",
+        "model": {"name": "Fancy Model", "tags": []},
+    }
+
+    relative_path = manager._calculate_relative_path(version_info, "lora")
+
+    assert relative_path == "Fancy Model/Version One"
+
+
 async def test_execute_download_retries_urls(monkeypatch, tmp_path):
     manager = DownloadManager()
 
