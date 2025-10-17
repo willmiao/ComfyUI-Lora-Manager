@@ -101,7 +101,8 @@
             "checkpointNameCopied": "Checkpoint name copied",
             "toggleBlur": "Toggle blur",
             "show": "Show",
-            "openExampleImages": "Open Example Images Folder"
+            "openExampleImages": "Open Example Images Folder",
+            "replacePreview": "Replace Preview"
         },
         "nsfw": {
             "matureContent": "Mature Content",
@@ -240,6 +241,12 @@
                 "always": "Headers and footers are always visible",
                 "hover": "Headers and footers only appear when hovering over a card"
             },
+            "modelCardFooterAction": "Model Card Button Action",
+            "modelCardFooterActionOptions": {
+                "exampleImages": "Open Example Images",
+                "replacePreview": "Replace Preview"
+            },
+            "modelCardFooterActionHelp": "Choose what the bottom-right card button does.",
             "modelNameDisplay": "Model Name Display",
             "modelNameDisplayOptions": {
                 "modelName": "Model Name",

@@ -163,6 +163,7 @@ class SettingsHandler:
         "show_only_sfw",
         "compact_mode",
         "priority_tags",
+        "model_card_footer_action",
         "model_name_display",
     )
 

@@ -101,7 +101,8 @@
             "checkpointNameCopied": "Checkpoint 名稱已複製",
             "toggleBlur": "切換模糊",
             "show": "顯示",
-            "openExampleImages": "開啟範例圖片資料夾"
+            "openExampleImages": "開啟範例圖片資料夾",
+            "replacePreview": "更換預覽圖"
         },
         "nsfw": {
             "matureContent": "成熟內容",
@@ -240,6 +241,12 @@
                 "always": "標題與頁腳始終可見",
                 "hover": "標題與頁腳僅在滑鼠懸停時顯示"
             },
+            "modelCardFooterAction": "模型卡片按鈕操作",
+            "modelCardFooterActionOptions": {
+                "exampleImages": "開啟範例圖片",
+                "replacePreview": "更換預覽圖"
+            },
+            "modelCardFooterActionHelp": "選擇右下角卡片按鈕的功能。",
             "modelNameDisplay": "模型名稱顯示",
             "modelNameDisplayOptions": {
                 "modelName": "模型名稱",

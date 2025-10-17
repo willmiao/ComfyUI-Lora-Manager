@@ -172,6 +172,23 @@
                         </ul>
                     </div>
                 </div>
+
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="modelCardFooterAction">{{ t('settings.layoutSettings.modelCardFooterAction') }}</label>
+                        </div>
+                        <div class="setting-control select-control">
+                            <select id="modelCardFooterAction" onchange="settingsManager.saveSelectSetting('modelCardFooterAction', 'model_card_footer_action')">
+                                <option value="example_images">{{ t('settings.layoutSettings.modelCardFooterActionOptions.exampleImages') }}</option>
+                                <option value="replace_preview">{{ t('settings.layoutSettings.modelCardFooterActionOptions.replacePreview') }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.layoutSettings.modelCardFooterActionHelp') }}
+                    </div>
+                </div>
                 
                 <!-- Language Selection -->
                 <div class="setting-item">

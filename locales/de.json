@@ -101,7 +101,8 @@
             "checkpointNameCopied": "Checkpoint-Name kopiert",
             "toggleBlur": "Unschärfe umschalten",
             "show": "Anzeigen",
-            "openExampleImages": "Beispielbilder-Ordner öffnen"
+            "openExampleImages": "Beispielbilder-Ordner öffnen",
+            "replacePreview": "Vorschau ersetzen"
         },
         "nsfw": {
             "matureContent": "Nicht jugendfreie Inhalte",
@@ -240,6 +241,12 @@
                 "always": "Kopf- und Fußzeilen sind immer sichtbar",
                 "hover": "Kopf- und Fußzeilen erscheinen nur beim Darüberfahren mit der Maus"
             },
+            "modelCardFooterAction": "Aktion der Modellkarten-Schaltfläche",
+            "modelCardFooterActionOptions": {
+                "exampleImages": "Beispielbilder öffnen",
+                "replacePreview": "Vorschau ersetzen"
+            },
+            "modelCardFooterActionHelp": "Wähle aus, was die Schaltfläche unten rechts auf der Karte ausführt.",
             "modelNameDisplay": "Anzeige des Modellnamens",
             "modelNameDisplayOptions": {
                 "modelName": "Modellname",

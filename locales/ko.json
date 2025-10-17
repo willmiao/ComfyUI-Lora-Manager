@@ -101,7 +101,8 @@
             "checkpointNameCopied": "Checkpoint 이름 복사됨",
             "toggleBlur": "블러 토글",
             "show": "보기",
-            "openExampleImages": "예시 이미지 폴더 열기"
+            "openExampleImages": "예시 이미지 폴더 열기",
+            "replacePreview": "미리보기 교체"
         },
         "nsfw": {
             "matureContent": "성인 콘텐츠",
@@ -240,6 +241,12 @@
                 "always": "헤더와 푸터가 항상 보입니다",
                 "hover": "카드에 마우스를 올렸을 때만 헤더와 푸터가 나타납니다"
             },
+            "modelCardFooterAction": "모델 카드 버튼 동작",
+            "modelCardFooterActionOptions": {
+                "exampleImages": "예시 이미지 열기",
+                "replacePreview": "미리보기 교체"
+            },
+            "modelCardFooterActionHelp": "카드 우측 하단 버튼이 수행할 작업을 선택하세요.",
             "modelNameDisplay": "모델명 표시",
             "modelNameDisplayOptions": {
                 "modelName": "모델명",

@@ -101,7 +101,8 @@
             "checkpointNameCopied": "Имя checkpoint скопировано",
             "toggleBlur": "Переключить размытие",
             "show": "Показать",
-            "openExampleImages": "Открыть папку с примерами"
+            "openExampleImages": "Открыть папку с примерами",
+            "replacePreview": "Заменить превью"
         },
         "nsfw": {
             "matureContent": "Контент для взрослых",
@@ -240,6 +241,12 @@
                 "always": "Заголовки и подписи всегда видны",
                 "hover": "Заголовки и подписи появляются только при наведении на карточку"
             },
+            "modelCardFooterAction": "Действие кнопки карточки модели",
+            "modelCardFooterActionOptions": {
+                "exampleImages": "Открыть примеры изображений",
+                "replacePreview": "Заменить превью"
+            },
+            "modelCardFooterActionHelp": "Выберите, что делает кнопка в правом нижнем углу карточки.",
             "modelNameDisplay": "Отображение названия модели",
             "modelNameDisplayOptions": {
                 "modelName": "Название модели",

@@ -491,7 +491,13 @@ export function createModelCard(model, modelType) {
     // Generate UI text with i18n support
     const toggleBlurTitle = translate('modelCard.actions.toggleBlur', {}, 'Toggle blur');
     const showButtonText = translate('modelCard.actions.show', {}, 'Show');
-    const openExampleImagesTitle = translate('modelCard.actions.openExampleImages', {}, 'Open Example Images Folder');
+    const footerActionSetting = state.global.settings.model_card_footer_action || 'example_images';
+    const footerActionTitle = footerActionSetting === 'replace_preview'
+        ? translate('modelCard.actions.replacePreview', {}, 'Replace Preview')
+        : translate('modelCard.actions.openExampleImages', {}, 'Open Example Images Folder');
+    const footerActionIcon = footerActionSetting === 'replace_preview'
+        ? 'fas fa-image'
+        : 'fas fa-folder-open';
 
     card.innerHTML = `
         <div class="card-preview ${shouldBlur ? 'blurred' : ''}">
@@ -525,8 +531,8 @@ export function createModelCard(model, modelType) {
                     ${model.civitai?.name ? `<span class="version-name">${model.civitai.name}</span>` : ''}
                 </div>
                 <div class="card-actions">
-                    <i class="fas fa-folder-open" 
-                       title="${openExampleImagesTitle}">
+                    <i class="${footerActionIcon}" 
+                       title="${footerActionTitle}">
                     </i>
                 </div>
             </div>

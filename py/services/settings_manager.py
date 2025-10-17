@@ -46,6 +46,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "compact_mode": False,
     "priority_tags": DEFAULT_PRIORITY_TAG_CONFIG.copy(),
     "model_name_display": "model_name",
+    "model_card_footer_action": "example_images",
 }
 
 
@@ -317,6 +318,7 @@ class SettingsManager:
             'cardInfoDisplay': 'card_info_display',
             'includeTriggerWords': 'include_trigger_words',
             'compactMode': 'compact_mode',
+            'modelCardFooterAction': 'model_card_footer_action',
         }
 
         updated = False

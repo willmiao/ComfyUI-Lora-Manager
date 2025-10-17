@@ -101,7 +101,8 @@
             "checkpointNameCopied": "שם Checkpoint הועתק",
             "toggleBlur": "הפעל/כבה טשטוש",
             "show": "הצג",
-            "openExampleImages": "פתח תיקיית תמונות דוגמה"
+            "openExampleImages": "פתח תיקיית תמונות דוגמה",
+            "replacePreview": "החלף תצוגה מקדימה"
         },
         "nsfw": {
             "matureContent": "תוכן למבוגרים",
@@ -240,6 +241,12 @@
                 "always": "כותרות עליונות ותחתונות תמיד גלויות",
                 "hover": "כותרות עליונות ותחתונות מופיעות רק בעת ריחוף מעל כרטיס"
             },
+            "modelCardFooterAction": "פעולת כפתור כרטיס מודל",
+            "modelCardFooterActionOptions": {
+                "exampleImages": "פתח תמונות דוגמה",
+                "replacePreview": "החלף תצוגה מקדימה"
+            },
+            "modelCardFooterActionHelp": "בחר מה עושה הכפתור בפינה הימנית התחתונה של הכרטיס.",
             "modelNameDisplay": "תצוגת שם מודל",
             "modelNameDisplayOptions": {
                 "modelName": "שם מודל",

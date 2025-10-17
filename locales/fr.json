@@ -101,7 +101,8 @@
             "checkpointNameCopied": "Nom du checkpoint copié",
             "toggleBlur": "Basculer le flou",
             "show": "Afficher",
-            "openExampleImages": "Ouvrir le dossier d'images d'exemple"
+            "openExampleImages": "Ouvrir le dossier d'images d'exemple",
+            "replacePreview": "Remplacer l'aperçu"
         },
         "nsfw": {
             "matureContent": "Contenu pour adultes",
@@ -240,6 +241,12 @@
                 "always": "Les en-têtes et pieds de page sont toujours visibles",
                 "hover": "Les en-têtes et pieds de page n'apparaissent qu'au survol d'une carte"
             },
+            "modelCardFooterAction": "Action du bouton de carte de modèle",
+            "modelCardFooterActionOptions": {
+                "exampleImages": "Ouvrir les images d'exemple",
+                "replacePreview": "Remplacer l'aperçu"
+            },
+            "modelCardFooterActionHelp": "Choisissez ce que fait le bouton en bas à droite de la carte.",
             "modelNameDisplay": "Affichage du nom du modèle",
             "modelNameDisplayOptions": {
                 "modelName": "Nom du modèle",

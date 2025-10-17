@@ -101,7 +101,8 @@
             "checkpointNameCopied": "Nombre del checkpoint copiado",
             "toggleBlur": "Alternar difuminado",
             "show": "Mostrar",
-            "openExampleImages": "Abrir carpeta de imágenes de ejemplo"
+            "openExampleImages": "Abrir carpeta de imágenes de ejemplo",
+            "replacePreview": "Reemplazar vista previa"
         },
         "nsfw": {
             "matureContent": "Contenido para adultos",
@@ -240,6 +241,12 @@
                 "always": "Los encabezados y pies de página siempre son visibles",
                 "hover": "Los encabezados y pies de página solo aparecen al pasar el ratón sobre una tarjeta"
             },
+            "modelCardFooterAction": "Acción del botón de tarjeta de modelo",
+            "modelCardFooterActionOptions": {
+                "exampleImages": "Abrir imágenes de ejemplo",
+                "replacePreview": "Reemplazar vista previa"
+            },
+            "modelCardFooterActionHelp": "Elige qué hace el botón en la esquina inferior derecha de la tarjeta.",
             "modelNameDisplay": "Visualización del nombre del modelo",
             "modelNameDisplayOptions": {
                 "modelName": "Nombre del modelo",

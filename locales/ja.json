@@ -101,7 +101,8 @@
             "checkpointNameCopied": "checkpointの名前をコピーしました",
             "toggleBlur": "ぼかしの切り替え",
             "show": "表示",
-            "openExampleImages": "例画像フォルダを開く"
+            "openExampleImages": "例画像フォルダを開く",
+            "replacePreview": "プレビューを置換"
         },
         "nsfw": {
             "matureContent": "成人向けコンテンツ",
@@ -240,6 +241,12 @@
                 "always": "ヘッダーとフッターが常に表示されます",
                 "hover": "カードにホバーしたときのみヘッダーとフッターが表示されます"
             },
+            "modelCardFooterAction": "モデルカードボタンのアクション",
+            "modelCardFooterActionOptions": {
+                "exampleImages": "例画像を開く",
+                "replacePreview": "プレビューを置換"
+            },
+            "modelCardFooterActionHelp": "カード右下のボタンが何をするかを選択します。",
             "modelNameDisplay": "モデル名表示",
             "modelNameDisplayOptions": {
                 "modelName": "モデル名",

@@ -101,7 +101,8 @@
             "checkpointNameCopied": "检查点名称已复制",
             "toggleBlur": "切换模糊",
             "show": "显示",
-            "openExampleImages": "打开示例图片文件夹"
+            "openExampleImages": "打开示例图片文件夹",
+            "replacePreview": "替换预览"
         },
         "nsfw": {
             "matureContent": "成熟内容",
@@ -240,6 +241,12 @@
                 "always": "标题和底部始终显示",
                 "hover": "仅在悬停卡片时显示标题和底部"
             },
+            "modelCardFooterAction": "模型卡片按钮操作",
+            "modelCardFooterActionOptions": {
+                "exampleImages": "打开示例图片",
+                "replacePreview": "替换预览"
+            },
+            "modelCardFooterActionHelp": "选择右下角卡片按钮的功能。",
             "modelNameDisplay": "模型名称显示",
             "modelNameDisplayOptions": {
                 "modelName": "模型名称",
