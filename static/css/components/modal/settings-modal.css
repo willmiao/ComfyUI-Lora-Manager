@@ -245,12 +245,20 @@
 
 .priority-tags-header {
     align-items: center;
+    justify-content: flex-start;
 }
 
-.priority-tags-actions {
+.priority-tags-info {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    gap: var(--space-1);
+    width: auto;
+}
+
+.priority-tags-info label {
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 0;
 }
 
 .priority-tags-example {
