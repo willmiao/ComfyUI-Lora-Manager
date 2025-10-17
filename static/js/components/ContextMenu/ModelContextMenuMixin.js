@@ -8,9 +8,12 @@ import { bulkManager } from '../../managers/BulkManager.js';
 export const ModelContextMenuMixin = {
     // NSFW Selector methods
     initNSFWSelector() {
-        // Close button
+        // Remove any existing event listeners by cloning and replacing elements
+        // This is a simple way to ensure we don't have duplicate event listeners
         const closeBtn = this.nsfwSelector.querySelector('.close-nsfw-selector');
-        closeBtn.addEventListener('click', () => {
+        const newCloseBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+        newCloseBtn.addEventListener('click', () => {
             this.nsfwSelector.style.display = 'none';
             this.resetNSFWSelectorState();
         });
@@ -18,8 +21,12 @@ export const ModelContextMenuMixin = {
         // Level buttons
         const levelButtons = this.nsfwSelector.querySelectorAll('.nsfw-level-btn');
         levelButtons.forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const level = parseInt(btn.dataset.level);
+            // Remove any existing event listeners by cloning and replacing the button
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', async () => {
+                const level = parseInt(newBtn.dataset.level);
                 const mode = this.nsfwSelector.dataset.mode || 'single';
 
                 if (mode === 'bulk') {
@@ -56,15 +63,24 @@ export const ModelContextMenuMixin = {
             });
         });
 
-        // Close when clicking outside
-        document.addEventListener('click', (e) => {
+        // Close when clicking outside - use a named function so we can remove it later
+        const outsideClickListener = (e) => {
             if (this.nsfwSelector.style.display === 'block' &&
                 !this.nsfwSelector.contains(e.target) &&
                 !e.target.closest('.context-menu-item[data-action="set-nsfw"], .context-menu-item[data-action="set-content-rating"]')) {
                 this.nsfwSelector.style.display = 'none';
                 this.resetNSFWSelectorState();
             }
-        });
+        };
+        
+        // Remove previous listener if it exists
+        if (this._outsideClickListener) {
+            document.removeEventListener('click', this._outsideClickListener);
+        }
+        
+        // Store and add new listener
+        this._outsideClickListener = outsideClickListener;
+        document.addEventListener('click', this._outsideClickListener);
     },
 
     resetNSFWSelectorState() {
