@@ -131,19 +131,22 @@ def calculate_recipe_fingerprint(loras):
     
     return fingerprint
 
-def calculate_relative_path_for_model(model_data: Dict, model_type: str = 'lora') -> str:
+def calculate_relative_path_for_model(model_data: Dict, model_type: str = 'lora', path_template: str = None, model_roots: list = None) -> str:
     """Calculate relative path for existing model using template from settings
 
     Args:
         model_data: Model data from scanner cache
         model_type: Type of model ('lora', 'checkpoint', 'embedding')
+        path_template: Optional custom path template (if None, uses settings default)
+        model_roots: Optional list of model roots (needed for {original_path} placeholder)
 
     Returns:
         Relative path string (empty string for flat structure)
     """
     # Get path template from settings for specific model type
     settings_manager = get_settings_manager()
-    path_template = settings_manager.get_download_path_template(model_type)
+    if path_template is None:
+        path_template = settings_manager.get_download_path_template(model_type)
 
     # If template is empty, return empty path (flat structure)
     if not path_template:
@@ -174,14 +177,35 @@ def calculate_relative_path_for_model(model_data: Dict, model_type: str = 'lora'
     if not first_tag:
         first_tag = 'no tags'  # Default if no tags available
 
+    # Calculate {original_path} if placeholder is used
+    original_path = ''
+    if '{original_path}' in path_template:
+        file_path = model_data.get('file_path', '')
+        if file_path and model_roots:
+            # Find which root this file belongs to
+            for root in model_roots:
+                root = root.replace(os.sep, '/')
+                normalized_file = file_path.replace(os.sep, '/')
+                if normalized_file.startswith(root):
+                    # Get directory path (without filename) relative to root
+                    file_dir = os.path.dirname(file_path)
+                    rel_path = os.path.relpath(file_dir, root).replace(os.sep, '/')
+                    # Remove leading './' if present
+                    original_path = rel_path if rel_path != '.' else ''
+                    break
+
     # Format the template with available data
     formatted_path = path_template
+    formatted_path = formatted_path.replace('{original_path}', original_path)
     formatted_path = formatted_path.replace('{base_model}', mapped_base_model)
     formatted_path = formatted_path.replace('{first_tag}', first_tag)
     formatted_path = formatted_path.replace('{author}', author)
 
     if model_type == 'embedding':
         formatted_path = formatted_path.replace(' ', '_')
+
+    # Clean up any double slashes or trailing slashes
+    formatted_path = formatted_path.replace('//', '/').strip('/')
 
     return formatted_path
 

@@ -117,7 +117,8 @@ export const DOWNLOAD_PATH_TEMPLATES = {
 export const PATH_TEMPLATE_PLACEHOLDERS = [
     '{base_model}',
     '{author}',
-    '{first_tag}'
+    '{first_tag}',
+    '{original_path}'
 ];
 
 // Default templates for each model type

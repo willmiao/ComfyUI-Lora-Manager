@@ -47,6 +47,22 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Path template (optional) -->
+            <div class="input-group">
+                <label for="movePathTemplate">
+                    {{ t('modals.moveModel.pathTemplate') }}
+                    <small class="help-text">{{ t('modals.moveModel.pathTemplateHelp') }}</small>
+                </label>
+                <input type="text" id="movePathTemplate" placeholder="{{ t('modals.moveModel.pathTemplatePlaceholder') }}" />
+                <small class="help-text">
+                    {{ t('modals.moveModel.availablePlaceholders') }}:
+                    <code>{original_path}</code>,
+                    <code>{base_model}</code>,
+                    <code>{first_tag}</code>,
+                    <code>{author}</code>
+                </small>
+            </div>
         </div>
         <div class="modal-actions">
             <button class="cancel-btn" onclick="modalManager.closeModal('moveModal')">{{ t('common.actions.cancel') }}</button>

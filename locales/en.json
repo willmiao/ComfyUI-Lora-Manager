@@ -747,7 +747,11 @@
             "browseFolders": "Browse Folders:",
             "createNewFolder": "Create new folder",
             "pathPlaceholder": "Type folder path or select from tree below...",
-            "root": "Root"
+            "root": "Root",
+            "pathTemplate": "Path Template (Optional)",
+            "pathTemplateHelp": "Use placeholders to preserve or customize folder structure when moving",
+            "pathTemplatePlaceholder": "e.g., {original_path} or {base_model}/{original_path}",
+            "availablePlaceholders": "Available"
         },
         "relinkCivitai": {
             "title": "Re-link to Civitai",

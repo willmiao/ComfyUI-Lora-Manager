@@ -160,7 +160,7 @@ class MoveManager {
         const selectedRoot = document.getElementById('moveModelRoot').value;
         const apiClient = getModelApiClient();
         const config = apiClient.apiConfig.config;
-        
+
         if (!selectedRoot) {
             showToast('toast.models.pleaseSelectRoot', { type: config.displayName.toLowerCase() }, 'error');
             return;
@@ -168,7 +168,11 @@ class MoveManager {
 
         // Get selected folder path from folder tree manager
         const targetFolder = this.folderTreeManager.getSelectedPath();
-        
+
+        // Get path template (optional)
+        const pathTemplate = document.getElementById('movePathTemplate')?.value?.trim() || null;
+
+        // Build target path - combine root with folder browser selection
         let targetPath = selectedRoot;
         if (targetFolder) {
             targetPath = `${targetPath}/${targetFolder}`;
@@ -177,7 +181,7 @@ class MoveManager {
         try {
             if (this.bulkFilePaths) {
                 // Bulk move mode
-                const results = await apiClient.moveBulkModels(this.bulkFilePaths, targetPath);
+                const results = await apiClient.moveBulkModels(this.bulkFilePaths, targetPath, pathTemplate);
 
                 // Update virtual scroller if in active folder view
                 const pageState = getCurrentPageState();
@@ -204,7 +208,7 @@ class MoveManager {
                 }
             } else {
                 // Single move mode
-                const result = await apiClient.moveSingleModel(this.currentFilePath, targetPath);
+                const result = await apiClient.moveSingleModel(this.currentFilePath, targetPath, pathTemplate);
 
                 const pageState = getCurrentPageState();
                 if (result && result.new_file_path) {

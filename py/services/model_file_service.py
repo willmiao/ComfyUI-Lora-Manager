@@ -324,11 +324,16 @@ class ModelFileService:
             return current_root
         else:
             # Calculate new relative path based on settings
-            new_relative_path = calculate_relative_path_for_model(model, self.model_type)
-            
+            model_roots = self.get_model_roots()
+            new_relative_path = calculate_relative_path_for_model(
+                model,
+                self.model_type,
+                model_roots=model_roots
+            )
+
             if not new_relative_path:
                 return None  # Signal to skip
-            
+
             return os.path.join(current_root, new_relative_path).replace(os.sep, '/')
     
     def _add_result(
@@ -368,31 +373,63 @@ class ModelFileService:
 
 class ModelMoveService:
     """Service for handling individual model moves"""
-    
-    def __init__(self, scanner):
+
+    def __init__(self, scanner, model_type: str = None):
         """Initialize the service
-        
+
         Args:
             scanner: Model scanner instance
+            model_type: Type of model (e.g., 'lora', 'checkpoint') - needed for path templates
         """
         self.scanner = scanner
+        self.model_type = model_type or getattr(scanner, 'model_type', 'lora')
     
-    async def move_model(self, file_path: str, target_path: str) -> Dict[str, Any]:
+    async def move_model(self, file_path: str, target_path: str, path_template: str = None) -> Dict[str, Any]:
         """Move a single model file
-        
+
         Args:
             file_path: Source file path
-            target_path: Target directory path
-            
+            target_path: Target directory (base path / model root)
+            path_template: Optional path template with placeholders like {original_path}, {base_model}, etc.
+
         Returns:
             Dictionary with move result
         """
         try:
+            # If path_template is provided, calculate the full target path
+            if path_template:
+                from ..utils.utils import calculate_relative_path_for_model
+
+                # Get model data from cache
+                cache = await self.scanner.get_cached_data()
+                model_data = next((m for m in cache.raw_data if m.get('file_path') == file_path), None)
+
+                if not model_data:
+                    return {
+                        'success': False,
+                        'error': 'Model not found in cache',
+                        'original_file_path': file_path,
+                        'new_file_path': None
+                    }
+
+                # Calculate relative path from template
+                model_roots = self.scanner.get_model_roots()
+                relative_path = calculate_relative_path_for_model(
+                    model_data,
+                    self.model_type,
+                    path_template=path_template,
+                    model_roots=model_roots
+                )
+
+                # Combine target_path with calculated relative path
+                if relative_path:
+                    target_path = os.path.join(target_path, relative_path).replace(os.sep, '/')
+
             source_dir = os.path.dirname(file_path)
             if os.path.normpath(source_dir) == os.path.normpath(target_path):
                 logger.info(f"Source and target directories are the same: {source_dir}")
                 return {
-                    'success': True, 
+                    'success': True,
                     'message': 'Source and target directories are the same',
                     'original_file_path': file_path,
                     'new_file_path': file_path
@@ -401,7 +438,7 @@ class ModelMoveService:
             new_file_path = await self.scanner.move_model(file_path, target_path)
             if new_file_path:
                 return {
-                    'success': True, 
+                    'success': True,
                     'original_file_path': file_path,
                     'new_file_path': new_file_path
                 }
@@ -421,31 +458,32 @@ class ModelMoveService:
                 'new_file_path': None
             }
     
-    async def move_models_bulk(self, file_paths: List[str], target_path: str) -> Dict[str, Any]:
+    async def move_models_bulk(self, file_paths: List[str], target_path: str, path_template: str = None) -> Dict[str, Any]:
         """Move multiple model files
-        
+
         Args:
             file_paths: List of source file paths
-            target_path: Target directory path
-            
+            target_path: Target directory (base path / model root)
+            path_template: Optional path template with placeholders like {original_path}, {base_model}, etc.
+
         Returns:
             Dictionary with bulk move results
         """
         try:
             results = []
-            
+
             for file_path in file_paths:
-                result = await self.move_model(file_path, target_path)
+                result = await self.move_model(file_path, target_path, path_template)
                 results.append({
                     "original_file_path": file_path,
                     "new_file_path": result.get('new_file_path'),
                     "success": result['success'],
                     "message": result.get('message', result.get('error', 'Unknown'))
                 })
-            
+
             success_count = sum(1 for r in results if r["success"])
             failure_count = len(results) - success_count
-            
+
             return {
                 'success': True,
                 'message': f'Moved {success_count} of {len(file_paths)} models',
