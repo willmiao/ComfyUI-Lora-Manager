@@ -1,5 +1,6 @@
 from difflib import SequenceMatcher
 import os
+import re
 from typing import Dict
 from ..services.service_registry import ServiceRegistry
 from ..config import config
@@ -84,6 +85,41 @@ def fuzzy_match(text: str, pattern: str, threshold: float = 0.85) -> bool:
         
         # All words found either as substrings or fuzzy matches
         return True
+
+def sanitize_folder_name(name: str, replacement: str = "_") -> str:
+    """Sanitize a folder name by removing or replacing invalid characters.
+
+    Args:
+        name: The original folder name.
+        replacement: The character to use when replacing invalid characters.
+
+    Returns:
+        A sanitized folder name safe to use across common filesystems.
+    """
+
+    if not name:
+        return ""
+
+    # Replace invalid characters commonly restricted on Windows and POSIX
+    invalid_chars_pattern = r'[<>:"/\\|?*\x00-\x1f]'
+    sanitized = re.sub(invalid_chars_pattern, replacement, name)
+
+    # Trim whitespace introduced during sanitization
+    sanitized = sanitized.strip()
+
+    # Collapse repeated replacement characters to a single instance
+    if replacement:
+        sanitized = re.sub(f"{re.escape(replacement)}+", replacement, sanitized)
+        sanitized = sanitized.strip(replacement)
+
+    # Remove trailing spaces or periods which are invalid on Windows
+    sanitized = sanitized.rstrip(" .")
+
+    if not sanitized:
+        return "unnamed"
+
+    return sanitized
+
 
 def calculate_recipe_fingerprint(loras):
     """
@@ -175,11 +211,11 @@ def calculate_relative_path_for_model(model_data: Dict, model_type: str = 'lora'
         first_tag = 'no tags'  # Default if no tags available
 
     # Format the template with available data
-    model_name = model_data.get('model_name', '')
+    model_name = sanitize_folder_name(model_data.get('model_name', ''))
     version_name = ''
 
     if isinstance(civitai_data, dict):
-        version_name = civitai_data.get('name') or ''
+        version_name = sanitize_folder_name(civitai_data.get('name') or '')
 
     formatted_path = path_template
     formatted_path = formatted_path.replace('{base_model}', mapped_base_model)

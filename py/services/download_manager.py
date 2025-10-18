@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from ..utils.models import LoraMetadata, CheckpointMetadata, EmbeddingMetadata
 from ..utils.constants import CARD_PREVIEW_WIDTH, VALID_LORA_TYPES
 from ..utils.civitai_utils import rewrite_preview_url
+from ..utils.utils import sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
 from .service_registry import ServiceRegistry
@@ -427,8 +428,8 @@ class DownloadManager:
         formatted_path = formatted_path.replace('{base_model}', mapped_base_model)
         formatted_path = formatted_path.replace('{first_tag}', first_tag)
         formatted_path = formatted_path.replace('{author}', author)
-        formatted_path = formatted_path.replace('{model_name}', model_info.get('name', ''))
-        formatted_path = formatted_path.replace('{version_name}', version_info.get('name', ''))
+        formatted_path = formatted_path.replace('{model_name}', sanitize_folder_name(model_info.get('name', '')))
+        formatted_path = formatted_path.replace('{version_name}', sanitize_folder_name(version_info.get('name', '')))
 
         if model_type == 'embedding':
             formatted_path = formatted_path.replace(' ', '_')

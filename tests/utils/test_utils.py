@@ -4,6 +4,7 @@ from py.services.settings_manager import SettingsManager, get_settings_manager
 from py.utils.utils import (
     calculate_recipe_fingerprint,
     calculate_relative_path_for_model,
+    sanitize_folder_name,
 )
 
 
@@ -68,6 +69,21 @@ def test_calculate_relative_path_supports_model_and_version(isolated_settings):
     assert relative_path == "Fancy Model/Version One"
 
 
+def test_calculate_relative_path_sanitizes_model_and_version_names(isolated_settings):
+    isolated_settings["download_path_templates"]["lora"] = "{model_name}/{version_name}"
+
+    model_data = {
+        "model_name": "Fancy:Model*",
+        "base_model": "SDXL",
+        "tags": ["tag"],
+        "civitai": {"id": 1, "name": "Version:One?", "creator": {"username": "Creator"}},
+    }
+
+    relative_path = calculate_relative_path_for_model(model_data, "lora")
+
+    assert relative_path == "Fancy_Model/Version_One"
+
+
 def test_calculate_recipe_fingerprint_filters_and_sorts():
     loras = [
         {"hash": "ABC", "strength": 0.1234},
@@ -84,3 +100,17 @@ def test_calculate_recipe_fingerprint_filters_and_sorts():
 
 def test_calculate_recipe_fingerprint_empty_input():
     assert calculate_recipe_fingerprint([]) == ""
+
+
+@pytest.mark.parametrize(
+    "original, expected",
+    [
+        ("ValidName", "ValidName"),
+        ("Invalid:Name", "Invalid_Name"),
+        ("Trailing. ", "Trailing"),
+        ("", ""),
+        (":::", "unnamed"),
+    ],
+)
+def test_sanitize_folder_name(original, expected):
+    assert sanitize_folder_name(original) == expected
