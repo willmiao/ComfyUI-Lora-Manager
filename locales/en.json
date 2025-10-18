@@ -236,27 +236,19 @@
                 "always": "Always Visible",
                 "hover": "Reveal on Hover"
             },
-            "cardInfoDisplayHelp": "Choose when to display model information and action buttons:",
-            "cardInfoDisplayDetails": {
-                "always": "Headers and footers are always visible",
-                "hover": "Headers and footers only appear when hovering over a card"
-            },
+            "cardInfoDisplayHelp": "Choose when to display model information and action buttons",
             "modelCardFooterAction": "Model Card Button Action",
             "modelCardFooterActionOptions": {
                 "exampleImages": "Open Example Images",
                 "replacePreview": "Replace Preview"
             },
-            "modelCardFooterActionHelp": "Choose what the bottom-right card button does.",
+            "modelCardFooterActionHelp": "Choose what the bottom-right card button does",
             "modelNameDisplay": "Model Name Display",
             "modelNameDisplayOptions": {
                 "modelName": "Model Name",
                 "fileName": "File Name"
             },
-            "modelNameDisplayHelp": "Choose what to display in the model card footer:",
-            "modelNameDisplayDetails": {
-                "modelName": "Display the model's descriptive name",
-                "fileName": "Display the actual file name on disk"
-            }
+            "modelNameDisplayHelp": "Choose what to display in the model card footer"
         },
         "folderSettings": {
             "activeLibrary": "Active Library",

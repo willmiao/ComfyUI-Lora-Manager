@@ -236,27 +236,19 @@
                 "always": "永遠顯示",
                 "hover": "滑鼠懸停顯示"
             },
-            "cardInfoDisplayHelp": "選擇何時顯示模型資訊與操作按鈕：",
-            "cardInfoDisplayDetails": {
-                "always": "標題與頁腳始終可見",
-                "hover": "標題與頁腳僅在滑鼠懸停時顯示"
-            },
+            "cardInfoDisplayHelp": "選擇何時顯示模型資訊與操作按鈕",
             "modelCardFooterAction": "模型卡片按鈕操作",
             "modelCardFooterActionOptions": {
                 "exampleImages": "開啟範例圖片",
                 "replacePreview": "更換預覽圖"
             },
-            "modelCardFooterActionHelp": "選擇右下角卡片按鈕的功能。",
+            "modelCardFooterActionHelp": "選擇右下角卡片按鈕的功能",
             "modelNameDisplay": "模型名稱顯示",
             "modelNameDisplayOptions": {
                 "modelName": "模型名稱",
                 "fileName": "檔案名稱"
             },
-            "modelNameDisplayHelp": "選擇在模型卡片底部顯示的內容：",
-            "modelNameDisplayDetails": {
-                "modelName": "顯示模型的描述性名稱",
-                "fileName": "顯示磁碟上的實際檔案名稱"
-            }
+            "modelNameDisplayHelp": "選擇在模型卡片底部顯示的內容"
         },
         "folderSettings": {
             "activeLibrary": "使用中的資料庫",

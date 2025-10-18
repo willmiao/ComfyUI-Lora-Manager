@@ -236,27 +236,19 @@
                 "always": "始终可见",
                 "hover": "悬停时显示"
             },
-            "cardInfoDisplayHelp": "选择何时显示模型信息和操作按钮：",
-            "cardInfoDisplayDetails": {
-                "always": "标题和底部始终显示",
-                "hover": "仅在悬停卡片时显示标题和底部"
-            },
+            "cardInfoDisplayHelp": "选择何时显示模型信息和操作按钮",
             "modelCardFooterAction": "模型卡片按钮操作",
             "modelCardFooterActionOptions": {
                 "exampleImages": "打开示例图片",
                 "replacePreview": "替换预览"
             },
-            "modelCardFooterActionHelp": "选择右下角卡片按钮的功能。",
+            "modelCardFooterActionHelp": "选择右下角卡片按钮的功能",
             "modelNameDisplay": "模型名称显示",
             "modelNameDisplayOptions": {
                 "modelName": "模型名称",
                 "fileName": "文件名"
             },
-            "modelNameDisplayHelp": "选择在模型卡片底部显示的内容：",
-            "modelNameDisplayDetails": {
-                "modelName": "显示模型的描述性名称",
-                "fileName": "显示磁盘上的实际文件名"
-            }
+            "modelNameDisplayHelp": "选择在模型卡片底部显示的内容"
         },
         "folderSettings": {
             "activeLibrary": "活动库",

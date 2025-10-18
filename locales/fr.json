@@ -236,27 +236,19 @@
                 "always": "Toujours visible",
                 "hover": "Révéler au survol"
             },
-            "cardInfoDisplayHelp": "Choisissez quand afficher les informations du modèle et les boutons d'action :",
-            "cardInfoDisplayDetails": {
-                "always": "Les en-têtes et pieds de page sont toujours visibles",
-                "hover": "Les en-têtes et pieds de page n'apparaissent qu'au survol d'une carte"
-            },
+            "cardInfoDisplayHelp": "Choisissez quand afficher les informations du modèle et les boutons d'action",
             "modelCardFooterAction": "Action du bouton de carte de modèle",
             "modelCardFooterActionOptions": {
                 "exampleImages": "Ouvrir les images d'exemple",
                 "replacePreview": "Remplacer l'aperçu"
             },
-            "modelCardFooterActionHelp": "Choisissez ce que fait le bouton en bas à droite de la carte.",
+            "modelCardFooterActionHelp": "Choisissez ce que fait le bouton en bas à droite de la carte",
             "modelNameDisplay": "Affichage du nom du modèle",
             "modelNameDisplayOptions": {
                 "modelName": "Nom du modèle",
                 "fileName": "Nom du fichier"
             },
-            "modelNameDisplayHelp": "Choisissez ce qui doit être affiché dans le pied de page de la carte du modèle :",
-            "modelNameDisplayDetails": {
-                "modelName": "Afficher le nom descriptif du modèle",
-                "fileName": "Afficher le nom réel du fichier sur le disque"
-            }
+            "modelNameDisplayHelp": "Choisissez ce qui doit être affiché dans le pied de page de la carte du modèle"
         },
         "folderSettings": {
             "activeLibrary": "Bibliothèque active",

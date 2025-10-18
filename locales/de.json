@@ -236,27 +236,20 @@
                 "always": "Immer sichtbar",
                 "hover": "Bei Hover anzeigen"
             },
-            "cardInfoDisplayHelp": "Wählen Sie, wann Modellinformationen und Aktionsschaltflächen angezeigt werden sollen:",
-            "cardInfoDisplayDetails": {
-                "always": "Kopf- und Fußzeilen sind immer sichtbar",
-                "hover": "Kopf- und Fußzeilen erscheinen nur beim Darüberfahren mit der Maus"
-            },
+            "cardInfoDisplayHelp": "Wählen Sie, wann Modellinformationen und Aktionsschaltflächen angezeigt werden sollen",
+
             "modelCardFooterAction": "Aktion der Modellkarten-Schaltfläche",
             "modelCardFooterActionOptions": {
                 "exampleImages": "Beispielbilder öffnen",
                 "replacePreview": "Vorschau ersetzen"
             },
-            "modelCardFooterActionHelp": "Wähle aus, was die Schaltfläche unten rechts auf der Karte ausführt.",
+            "modelCardFooterActionHelp": "Wähle aus, was die Schaltfläche unten rechts auf der Karte ausführt",
             "modelNameDisplay": "Anzeige des Modellnamens",
             "modelNameDisplayOptions": {
                 "modelName": "Modellname",
                 "fileName": "Dateiname"
             },
-            "modelNameDisplayHelp": "Wählen Sie aus, was in der Fußzeile der Modellkarte angezeigt werden soll:",
-            "modelNameDisplayDetails": {
-                "modelName": "Den beschreibenden Namen des Modells anzeigen",
-                "fileName": "Den tatsächlichen Dateinamen auf der Festplatte anzeigen"
-            }
+            "modelNameDisplayHelp": "Wählen Sie aus, was in der Fußzeile der Modellkarte angezeigt werden soll"
         },
         "folderSettings": {
             "activeLibrary": "Aktive Bibliothek",

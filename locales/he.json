@@ -236,27 +236,19 @@
                 "always": "תמיד גלוי",
                 "hover": "חשוף בריחוף"
             },
-            "cardInfoDisplayHelp": "בחר מתי להציג מידע על המודל וכפתורי פעולה:",
-            "cardInfoDisplayDetails": {
-                "always": "כותרות עליונות ותחתונות תמיד גלויות",
-                "hover": "כותרות עליונות ותחתונות מופיעות רק בעת ריחוף מעל כרטיס"
-            },
+            "cardInfoDisplayHelp": "בחר מתי להציג מידע על המודל וכפתורי פעולה",
             "modelCardFooterAction": "פעולת כפתור כרטיס מודל",
             "modelCardFooterActionOptions": {
                 "exampleImages": "פתח תמונות דוגמה",
                 "replacePreview": "החלף תצוגה מקדימה"
             },
-            "modelCardFooterActionHelp": "בחר מה עושה הכפתור בפינה הימנית התחתונה של הכרטיס.",
+            "modelCardFooterActionHelp": "בחר מה עושה הכפתור בפינה הימנית התחתונה של הכרטיס",
             "modelNameDisplay": "תצוגת שם מודל",
             "modelNameDisplayOptions": {
                 "modelName": "שם מודל",
                 "fileName": "שם קובץ"
             },
-            "modelNameDisplayHelp": "בחר מה להציג בכותרת התחתונה של כרטיס המודל:",
-            "modelNameDisplayDetails": {
-                "modelName": "הצג את השם התיאורי של המודל",
-                "fileName": "הצג את שם הקובץ בפועל בדיסק"
-            }
+            "modelNameDisplayHelp": "בחר מה להציג בכותרת התחתונה של כרטיס המודל"
         },
         "folderSettings": {
             "activeLibrary": "ספרייה פעילה",

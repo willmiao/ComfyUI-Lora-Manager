@@ -236,27 +236,19 @@
                 "always": "항상 표시",
                 "hover": "호버 시 표시"
             },
-            "cardInfoDisplayHelp": "모델 정보 및 액션 버튼을 언제 표시할지 선택하세요:",
-            "cardInfoDisplayDetails": {
-                "always": "헤더와 푸터가 항상 보입니다",
-                "hover": "카드에 마우스를 올렸을 때만 헤더와 푸터가 나타납니다"
-            },
+            "cardInfoDisplayHelp": "모델 정보 및 액션 버튼을 언제 표시할지 선택하세요",
             "modelCardFooterAction": "모델 카드 버튼 동작",
             "modelCardFooterActionOptions": {
                 "exampleImages": "예시 이미지 열기",
                 "replacePreview": "미리보기 교체"
             },
-            "modelCardFooterActionHelp": "카드 우측 하단 버튼이 수행할 작업을 선택하세요.",
+            "modelCardFooterActionHelp": "카드 우측 하단 버튼이 수행할 작업을 선택하세요",
             "modelNameDisplay": "모델명 표시",
             "modelNameDisplayOptions": {
                 "modelName": "모델명",
                 "fileName": "파일명"
             },
-            "modelNameDisplayHelp": "모델 카드 하단에 표시할 내용을 선택하세요:",
-            "modelNameDisplayDetails": {
-                "modelName": "모델의 설명적 이름 표시",
-                "fileName": "디스크의 실제 파일명 표시"
-            }
+            "modelNameDisplayHelp": "모델 카드 하단에 표시할 내용을 선택하세요"
         },
         "folderSettings": {
             "activeLibrary": "활성 라이브러리",

@@ -236,27 +236,19 @@
                 "always": "Всегда видимо",
                 "hover": "Показать при наведении"
             },
-            "cardInfoDisplayHelp": "Выберите когда отображать информацию о модели и кнопки действий:",
-            "cardInfoDisplayDetails": {
-                "always": "Заголовки и подписи всегда видны",
-                "hover": "Заголовки и подписи появляются только при наведении на карточку"
-            },
+            "cardInfoDisplayHelp": "Выберите когда отображать информацию о модели и кнопки действий",
             "modelCardFooterAction": "Действие кнопки карточки модели",
             "modelCardFooterActionOptions": {
                 "exampleImages": "Открыть примеры изображений",
                 "replacePreview": "Заменить превью"
             },
-            "modelCardFooterActionHelp": "Выберите, что делает кнопка в правом нижнем углу карточки.",
+            "modelCardFooterActionHelp": "Выберите, что делает кнопка в правом нижнем углу карточки",
             "modelNameDisplay": "Отображение названия модели",
             "modelNameDisplayOptions": {
                 "modelName": "Название модели",
                 "fileName": "Имя файла"
             },
-            "modelNameDisplayHelp": "Выберите, что отображать в нижней части карточки модели:",
-            "modelNameDisplayDetails": {
-                "modelName": "Отображать описательное название модели",
-                "fileName": "Отображать фактическое имя файла на диске"
-            }
+            "modelNameDisplayHelp": "Выберите, что отображать в нижней части карточки модели"
         },
         "folderSettings": {
             "activeLibrary": "Активная библиотека",
