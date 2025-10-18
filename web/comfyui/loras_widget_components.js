@@ -220,6 +220,7 @@ export function createExpandButton(isExpanded, onClick) {
   const button = document.createElement("button");
   button.className = "comfy-lora-expand-button";
   button.type = "button";
+  button.tabIndex = -1;
   
   Object.assign(button.style, {
     width: "20px",

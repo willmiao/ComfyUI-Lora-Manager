@@ -75,6 +75,61 @@ export function addLorasWidget(node, name, opts, callback) {
 
     // Parse the loras data
     const lorasData = parseLoraValue(value);
+    const focusSequence = [];
+
+    const createFocusEntry = (loraName, type) => {
+      const entry = { name: loraName, type };
+      focusSequence.push(entry);
+      return entry;
+    };
+
+    const escapeLoraName = (loraName) => {
+      const css =
+        (typeof window !== "undefined" && window.CSS) ||
+        (typeof globalThis !== "undefined" && globalThis.CSS);
+      if (css && typeof css.escape === "function") {
+        return css.escape(loraName);
+      }
+      return loraName.replace(/"|\\/g, "\\$&");
+    };
+
+    const focusAdjacentFrom = (currentEntry, direction) => {
+      const currentIndex = focusSequence.indexOf(currentEntry);
+      if (currentIndex === -1) {
+        return false;
+      }
+
+      const targetEntry = focusSequence[currentIndex + direction];
+      if (!targetEntry) {
+        return false;
+      }
+
+      requestAnimationFrame(() => {
+        const safeName = escapeLoraName(targetEntry.name);
+        let selector = "";
+
+        if (targetEntry.type === "strength") {
+          selector = `.comfy-lora-entry[data-lora-name="${safeName}"] .comfy-lora-strength-input`;
+        } else if (targetEntry.type === "clip") {
+          selector = `.comfy-lora-clip-entry[data-lora-name="${safeName}"] .comfy-lora-clip-strength-input`;
+        }
+
+        if (!selector) {
+          return;
+        }
+
+        const targetInput = container.querySelector(selector);
+        if (targetInput) {
+          targetInput.focus();
+          if (typeof targetInput.select === "function") {
+            targetInput.select();
+          }
+          selectLora(targetEntry.name);
+        }
+      });
+
+      return true;
+    };
 
     if (lorasData.length === 0) {
       // Show message when no loras are added
@@ -194,6 +249,7 @@ export function addLorasWidget(node, name, opts, callback) {
       
       // Determine expansion state using our helper function
       const isExpanded = shouldShowClipEntry(loraData);
+      const strengthFocusEntry = createFocusEntry(name, "strength");
       
       // Create the main LoRA entry
       const loraEl = document.createElement("div");
@@ -351,6 +407,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
       // Strength display
       const strengthEl = document.createElement("input");
+      strengthEl.classList.add("comfy-lora-strength-input");
       strengthEl.type = "text";
       strengthEl.value = typeof strength === 'number' ? strength.toFixed(2) : Number(strength).toFixed(2);
       Object.assign(strengthEl.style, {
@@ -383,6 +440,7 @@ export function addLorasWidget(node, name, opts, callback) {
         strengthEl.style.background = "rgba(0, 0, 0, 0.2)";
         // Auto-select all content
         strengthEl.select();
+        selectLora(name);
       });
 
       strengthEl.addEventListener('blur', () => {
@@ -391,33 +449,41 @@ export function addLorasWidget(node, name, opts, callback) {
       });
 
       // Handle input changes
-      strengthEl.addEventListener('change', () => {
-        let newValue = parseFloat(strengthEl.value);
-        
-        // Validate input
-        if (isNaN(newValue)) {
-          newValue = 1.0;
+      const commitStrengthValue = () => {
+        let parsedValue = parseFloat(strengthEl.value);
+        if (isNaN(parsedValue)) {
+          parsedValue = 1.0;
         }
-        
-        // Update value
-        const lorasData = parseLoraValue(widget.value);
-        const loraIndex = lorasData.findIndex(l => l.name === name);
-        
+        const normalizedValue = parsedValue.toFixed(2);
+
+        const currentLoras = parseLoraValue(widget.value);
+        const loraIndex = currentLoras.findIndex(l => l.name === name);
+
         if (loraIndex >= 0) {
-          lorasData[loraIndex].strength = newValue.toFixed(2);
+          currentLoras[loraIndex].strength = normalizedValue;
           // Sync clipStrength if collapsed
-          syncClipStrengthIfCollapsed(lorasData[loraIndex]);
-          
-          // Update value and trigger callback
-          const newLorasValue = formatLoraValue(lorasData);
+          syncClipStrengthIfCollapsed(currentLoras[loraIndex]);
+
+          strengthEl.value = normalizedValue;
+          const newLorasValue = formatLoraValue(currentLoras);
           widget.value = newLorasValue;
+        } else {
+          strengthEl.value = normalizedValue;
         }
-      });
+      };
+
+      strengthEl.addEventListener('change', commitStrengthValue);
 
       // Handle key events
       strengthEl.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           strengthEl.blur();
+        } else if (e.key === 'Tab') {
+          commitStrengthValue();
+          const moved = focusAdjacentFrom(strengthFocusEntry, e.shiftKey ? -1 : 1);
+          if (moved) {
+            e.preventDefault();
+          }
         }
       });
 
@@ -524,6 +590,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
         // Clip strength display
         const clipStrengthEl = document.createElement("input");
+        clipStrengthEl.classList.add("comfy-lora-strength-input", "comfy-lora-clip-strength-input");
         clipStrengthEl.type = "text";
         clipStrengthEl.value = typeof clipStrength === 'number' ? clipStrength.toFixed(2) : Number(clipStrength).toFixed(2);
         Object.assign(clipStrengthEl.style, {
@@ -556,6 +623,7 @@ export function addLorasWidget(node, name, opts, callback) {
           clipStrengthEl.style.background = "rgba(0, 0, 0, 0.2)";
           // Auto-select all content
           clipStrengthEl.select();
+          selectLora(name);
         });
 
         clipStrengthEl.addEventListener('blur', () => {
@@ -564,31 +632,41 @@ export function addLorasWidget(node, name, opts, callback) {
         });
 
         // Handle input changes
-        clipStrengthEl.addEventListener('change', () => {
-          let newValue = parseFloat(clipStrengthEl.value);
-          
-          // Validate input
-          if (isNaN(newValue)) {
-            newValue = 1.0;
+        const clipFocusEntry = createFocusEntry(name, "clip");
+
+        const commitClipStrengthValue = () => {
+          let parsedValue = parseFloat(clipStrengthEl.value);
+          if (isNaN(parsedValue)) {
+            parsedValue = 1.0;
           }
-          
-          // Update value
-          const lorasData = parseLoraValue(widget.value);
-          const loraIndex = lorasData.findIndex(l => l.name === name);
-          
+          const normalizedValue = parsedValue.toFixed(2);
+
+          const currentLoras = parseLoraValue(widget.value);
+          const loraIndex = currentLoras.findIndex(l => l.name === name);
+
           if (loraIndex >= 0) {
-            lorasData[loraIndex].clipStrength = newValue.toFixed(2);
-            
-            // Update value and trigger callback
-            const newLorasValue = formatLoraValue(lorasData);
+            currentLoras[loraIndex].clipStrength = normalizedValue;
+            clipStrengthEl.value = normalizedValue;
+
+            const newLorasValue = formatLoraValue(currentLoras);
             widget.value = newLorasValue;
+          } else {
+            clipStrengthEl.value = normalizedValue;
           }
-        });
+        };
+
+        clipStrengthEl.addEventListener('change', commitClipStrengthValue);
 
         // Handle key events
         clipStrengthEl.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
             clipStrengthEl.blur();
+          } else if (e.key === 'Tab') {
+            commitClipStrengthValue();
+            const moved = focusAdjacentFrom(clipFocusEntry, e.shiftKey ? -1 : 1);
+            if (moved) {
+              e.preventDefault();
+            }
           }
         });
 
