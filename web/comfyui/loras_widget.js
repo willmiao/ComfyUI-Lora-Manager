@@ -44,6 +44,7 @@ export function addLorasWidget(node, name, opts, callback) {
   
   // Selection state - only one LoRA can be selected at a time
   let selectedLora = null;
+  let pendingFocusTarget = null;
   
   // Function to select a LoRA
   const selectLora = (loraName) => {
@@ -410,6 +411,9 @@ export function addLorasWidget(node, name, opts, callback) {
       strengthEl.classList.add("comfy-lora-strength-input");
       strengthEl.type = "text";
       strengthEl.value = typeof strength === 'number' ? strength.toFixed(2) : Number(strength).toFixed(2);
+      strengthEl.addEventListener('pointerdown', () => {
+        pendingFocusTarget = { name, type: "strength" };
+      });
       Object.assign(strengthEl.style, {
         minWidth: "50px",
         width: "50px",
@@ -436,6 +440,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
       // Handle focus
       strengthEl.addEventListener('focus', () => {
+        pendingFocusTarget = null;
         strengthEl.style.border = "1px solid rgba(66, 153, 225, 0.6)";
         strengthEl.style.background = "rgba(0, 0, 0, 0.2)";
         // Auto-select all content
@@ -593,6 +598,9 @@ export function addLorasWidget(node, name, opts, callback) {
         clipStrengthEl.classList.add("comfy-lora-strength-input", "comfy-lora-clip-strength-input");
         clipStrengthEl.type = "text";
         clipStrengthEl.value = typeof clipStrength === 'number' ? clipStrength.toFixed(2) : Number(clipStrength).toFixed(2);
+        clipStrengthEl.addEventListener('pointerdown', () => {
+          pendingFocusTarget = { name, type: "clip" };
+        });
         Object.assign(clipStrengthEl.style, {
           minWidth: "50px",
           width: "50px",
@@ -619,6 +627,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
         // Handle focus
         clipStrengthEl.addEventListener('focus', () => {
+          pendingFocusTarget = null;
           clipStrengthEl.style.border = "1px solid rgba(72, 118, 255, 0.6)";
           clipStrengthEl.style.background = "rgba(0, 0, 0, 0.2)";
           // Auto-select all content
@@ -728,6 +737,31 @@ export function addLorasWidget(node, name, opts, callback) {
       const entryLoraName = entry.dataset.loraName;
       updateEntrySelection(entry, entryLoraName === selectedLora);
     });
+
+    if (pendingFocusTarget) {
+      const safeName = escapeLoraName(pendingFocusTarget.name);
+      let selector = "";
+
+      if (pendingFocusTarget.type === "strength") {
+        selector = `.comfy-lora-entry[data-lora-name="${safeName}"] .comfy-lora-strength-input`;
+      } else if (pendingFocusTarget.type === "clip") {
+        selector = `.comfy-lora-clip-entry[data-lora-name="${safeName}"] .comfy-lora-clip-strength-input`;
+      }
+
+      if (selector) {
+        const targetInput = container.querySelector(selector);
+        if (targetInput) {
+          requestAnimationFrame(() => {
+            targetInput.focus();
+            if (typeof targetInput.select === "function") {
+              targetInput.select();
+            }
+          });
+        }
+      }
+
+      pendingFocusTarget = null;
+    }
   };
 
   // Store the value in a variable to avoid recursion
