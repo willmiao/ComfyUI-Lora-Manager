@@ -61,7 +61,8 @@ class ModelCache:
             return
 
         for field in ("model_name", "file_name", "folder"):
-            item[field] = self._ensure_string(item.get(field))
+            if field in item:
+                item[field] = self._ensure_string(item.get(field))
 
     def _normalize_raw_data(self) -> None:
         """Normalize every cached entry before it is consumed."""
