@@ -84,6 +84,33 @@ export function addLorasWidget(node, name, opts, callback) {
       return entry;
     };
 
+    const findFocusEntryIndex = (entry) =>
+      focusSequence.findIndex(
+        (sequenceEntry) =>
+          sequenceEntry?.name === entry?.name && sequenceEntry?.type === entry?.type
+      );
+
+    const getAdjacentFocusEntry = (currentEntry, direction) => {
+      const currentIndex = findFocusEntryIndex(currentEntry);
+      if (currentIndex === -1) {
+        return null;
+      }
+      return focusSequence[currentIndex + direction] || null;
+    };
+
+    const queueFocusEntry = (entry) => {
+      if (!entry) {
+        return false;
+      }
+      pendingFocusTarget = { ...entry };
+      return true;
+    };
+
+    const queueFocusAdjacentFrom = (currentEntry, direction) => {
+      const targetEntry = getAdjacentFocusEntry(currentEntry, direction);
+      return queueFocusEntry(targetEntry);
+    };
+
     const escapeLoraName = (loraName) => {
       const css =
         (typeof window !== "undefined" && window.CSS) ||
@@ -92,44 +119,6 @@ export function addLorasWidget(node, name, opts, callback) {
         return css.escape(loraName);
       }
       return loraName.replace(/"|\\/g, "\\$&");
-    };
-
-    const focusAdjacentFrom = (currentEntry, direction) => {
-      const currentIndex = focusSequence.indexOf(currentEntry);
-      if (currentIndex === -1) {
-        return false;
-      }
-
-      const targetEntry = focusSequence[currentIndex + direction];
-      if (!targetEntry) {
-        return false;
-      }
-
-      requestAnimationFrame(() => {
-        const safeName = escapeLoraName(targetEntry.name);
-        let selector = "";
-
-        if (targetEntry.type === "strength") {
-          selector = `.comfy-lora-entry[data-lora-name="${safeName}"] .comfy-lora-strength-input`;
-        } else if (targetEntry.type === "clip") {
-          selector = `.comfy-lora-clip-entry[data-lora-name="${safeName}"] .comfy-lora-clip-strength-input`;
-        }
-
-        if (!selector) {
-          return;
-        }
-
-        const targetInput = container.querySelector(selector);
-        if (targetInput) {
-          targetInput.focus();
-          if (typeof targetInput.select === "function") {
-            targetInput.select();
-          }
-          selectLora(targetEntry.name);
-        }
-      });
-
-      return true;
     };
 
     if (lorasData.length === 0) {
@@ -484,8 +473,8 @@ export function addLorasWidget(node, name, opts, callback) {
         if (e.key === 'Enter') {
           strengthEl.blur();
         } else if (e.key === 'Tab') {
+          const moved = queueFocusAdjacentFrom(strengthFocusEntry, e.shiftKey ? -1 : 1);
           commitStrengthValue();
-          const moved = focusAdjacentFrom(strengthFocusEntry, e.shiftKey ? -1 : 1);
           if (moved) {
             e.preventDefault();
           }
@@ -671,8 +660,8 @@ export function addLorasWidget(node, name, opts, callback) {
           if (e.key === 'Enter') {
             clipStrengthEl.blur();
           } else if (e.key === 'Tab') {
+            const moved = queueFocusAdjacentFrom(clipFocusEntry, e.shiftKey ? -1 : 1);
             commitClipStrengthValue();
-            const moved = focusAdjacentFrom(clipFocusEntry, e.shiftKey ? -1 : 1);
             if (moved) {
               e.preventDefault();
             }
@@ -739,12 +728,13 @@ export function addLorasWidget(node, name, opts, callback) {
     });
 
     if (pendingFocusTarget) {
-      const safeName = escapeLoraName(pendingFocusTarget.name);
+      const focusTarget = pendingFocusTarget;
+      const safeName = escapeLoraName(focusTarget.name);
       let selector = "";
 
-      if (pendingFocusTarget.type === "strength") {
+      if (focusTarget.type === "strength") {
         selector = `.comfy-lora-entry[data-lora-name="${safeName}"] .comfy-lora-strength-input`;
-      } else if (pendingFocusTarget.type === "clip") {
+      } else if (focusTarget.type === "clip") {
         selector = `.comfy-lora-clip-entry[data-lora-name="${safeName}"] .comfy-lora-clip-strength-input`;
       }
 
@@ -756,6 +746,7 @@ export function addLorasWidget(node, name, opts, callback) {
             if (typeof targetInput.select === "function") {
               targetInput.select();
             }
+            selectLora(focusTarget.name);
           });
         }
       }
