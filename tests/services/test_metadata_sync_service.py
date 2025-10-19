@@ -373,7 +373,7 @@ async def test_fetch_and_update_model_returns_rate_limit_error(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_relink_metadata_fetches_version_and_updates_sha(tmp_path):
+async def test_relink_metadata_fetches_version_without_overwriting_sha(tmp_path):
     provider = SimpleNamespace(
         get_model_by_hash=AsyncMock(),
         get_model_version=AsyncMock(
@@ -393,7 +393,7 @@ async def test_relink_metadata_fetches_version_and_updates_sha(tmp_path):
 
     helpers = build_service(default_provider=provider)
 
-    metadata = {"model_name": "Local"}
+    metadata = {"model_name": "Local", "sha256": "original"}
     result = await helpers.service.relink_metadata(
         file_path=str(tmp_path / "model.safetensors"),
         metadata=metadata,
@@ -401,7 +401,8 @@ async def test_relink_metadata_fetches_version_and_updates_sha(tmp_path):
         model_version_id=2,
     )
 
-    assert result["sha256"] == "abcdef"
+    assert result["model_name"] == "Remote"
+    assert result["sha256"] == "original"
     helpers.metadata_manager.save_metadata.assert_awaited_once()
 
 

@@ -344,15 +344,6 @@ class MetadataSyncService:
                 + (f" with version: {model_version_id}" if model_version_id else "")
             )
 
-        primary_model_file: Optional[Dict[str, Any]] = None
-        for file_info in civitai_metadata.get("files", []):
-            if file_info.get("primary", False) and file_info.get("type") == "Model":
-                primary_model_file = file_info
-                break
-
-        if primary_model_file and primary_model_file.get("hashes", {}).get("SHA256"):
-            metadata["sha256"] = primary_model_file["hashes"]["SHA256"].lower()
-
         metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
         await self.update_model_metadata(
             metadata_path,
