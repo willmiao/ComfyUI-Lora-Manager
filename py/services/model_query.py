@@ -187,6 +187,9 @@ class SearchStrategy:
         return results
 
     def _matches(self, candidate: str, search_term: str, search_lower: str, fuzzy: bool) -> bool:
+        if not isinstance(candidate, str):
+            candidate = "" if candidate is None else str(candidate)
+
         if not candidate:
             return False
 

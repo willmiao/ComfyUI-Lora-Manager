@@ -32,6 +32,7 @@ class ModelCache:
         # Cache for last sort: (sort_key, order) -> sorted list
         self._last_sort: Tuple[str, str] = (None, None)
         self._last_sorted_data: List[Dict] = []
+        self._normalize_raw_data()
         self.name_display_mode = self._normalize_display_mode(self.name_display_mode)
         # Default sort on init
         asyncio.create_task(self.resort())
@@ -43,20 +44,44 @@ class ModelCache:
             return value
         return "model_name"
 
+    @staticmethod
+    def _ensure_string(value: Any) -> str:
+        """Return a safe string representation for metadata fields."""
+
+        if isinstance(value, str):
+            return value
+        if value is None:
+            return ""
+        return str(value)
+
+    def _normalize_item(self, item: Dict) -> None:
+        """Ensure core metadata fields are present and string typed."""
+
+        if not isinstance(item, dict):
+            return
+
+        for field in ("model_name", "file_name", "folder"):
+            if field in item:
+                item[field] = self._ensure_string(item.get(field))
+
+    def _normalize_raw_data(self) -> None:
+        """Normalize every cached entry before it is consumed."""
+
+        for item in self.raw_data:
+            self._normalize_item(item)
+
     def _get_display_name(self, item: Dict) -> str:
         """Return the value used for name-based sorting based on display settings."""
 
         if self.name_display_mode == "file_name":
-            primary = item.get("file_name", "")
-            fallback = item.get("model_name", "")
+            primary = self._ensure_string(item.get("file_name"))
+            fallback = self._ensure_string(item.get("model_name"))
         else:
-            primary = item.get("model_name", "")
-            fallback = item.get("file_name", "")
+            primary = self._ensure_string(item.get("model_name"))
+            fallback = self._ensure_string(item.get("file_name"))
 
-        candidate = primary or fallback or ""
-        if isinstance(candidate, str):
-            return candidate
-        return str(candidate)
+        candidate = primary or fallback
+        return candidate or ""
 
     @staticmethod
     def _normalize_version_id(value: Any) -> Optional[int]:
@@ -119,7 +144,11 @@ class ModelCache:
                 # Update folder list
             # else: do nothing
 
-            all_folders = set(l['folder'] for l in self.raw_data)
+            all_folders = {
+                self._ensure_string(item.get('folder'))
+                for item in self.raw_data
+                if isinstance(item, dict)
+            }
             self.folders = sorted(list(all_folders), key=lambda x: x.lower())
             self.rebuild_version_index()
 
