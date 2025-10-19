@@ -131,7 +131,7 @@
             "unavailable": "Le téléchargement des images d'exemple n'est pas encore disponible. Réessayez après le chargement complet de la page."
         },
         "cleanupExampleImages": {
-            "label": "Nettoyer les dossiers d'images d'exemple",
+            "label": "Supprimer les dossiers d'exemples orphelins",
             "success": "{count} dossier(s) déplacé(s) vers le dossier supprimé",
             "none": "Aucun dossier d'images d'exemple à nettoyer",
             "partial": "Nettoyage terminé avec {failures} dossier(s) ignoré(s)",
