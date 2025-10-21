@@ -21,7 +21,6 @@ class WanVideoLoraSelectFromText:
                 "merge_lora": ("BOOLEAN", {"default": True, "tooltip": "Merge LoRAs into the model, otherwise they are loaded on the fly. Always disabled for GGUF and scaled fp8 models. This affects ALL LoRAs, not just the current one"}),
                 "lora_syntax": ("STRING", {
                     "multiline": True,
-                    "defaultInput": True,
                     "forceInput": True,
                     "tooltip": "Connect a TEXT output for LoRA syntax: <lora:name:strength>"
                 }),

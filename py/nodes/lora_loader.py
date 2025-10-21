@@ -141,7 +141,6 @@ class LoraManagerTextLoader:
             "required": {
                 "model": ("MODEL",),
                 "lora_syntax": ("STRING", {
-                    "defaultInput": True,
                     "forceInput": True,
                     "tooltip": "Format: <lora:lora_name:strength> separated by spaces or punctuation"
                 }),
