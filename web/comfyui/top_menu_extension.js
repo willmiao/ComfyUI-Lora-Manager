@@ -1,147 +1,104 @@
 import { app } from "../../scripts/app.js";
-const extension = {
-    name: "lora-manager.widget",
-};
+import { ComfyButtonGroup } from "../../scripts/ui/components/buttonGroup.js";
+import { ComfyButton } from "../../scripts/ui/components/button.js";
 
-app.registerExtension(extension);
-const config = {
-    newTab: true,
-    newWindow: {
-        width: 1200,
-        height: 800,
-    }
-};
+const BUTTON_GROUP_CLASS = "lora-manager-top-menu-group";
+const BUTTON_TOOLTIP = "Launch LoRA Manager (Shift+Click opens in new window)";
+const LORA_MANAGER_PATH = "/loras";
+const NEW_WINDOW_FEATURES = "width=1200,height=800,resizable=yes,scrollbars=yes,status=yes";
+const MAX_ATTACH_ATTEMPTS = 120;
 
-const createWidget = ({ className, text, tooltip, includeIcon, svgMarkup }) => {
-    const button = document.createElement('button');
-    button.className = className;
-    button.setAttribute('aria-label', tooltip);
-    button.title = tooltip;
+const openLoraManager = (event) => {
+    const url = `${window.location.origin}${LORA_MANAGER_PATH}`;
 
-    if (includeIcon && svgMarkup) {
-        const iconContainer = document.createElement('span');
-        iconContainer.innerHTML = svgMarkup;
-        iconContainer.style.display = 'flex';
-        iconContainer.style.alignItems = 'center';
-        iconContainer.style.justifyContent = 'center';
-        iconContainer.style.width = '20px';
-        iconContainer.style.height = '16px';
-        button.appendChild(iconContainer);
-    }
-
-    const textNode = document.createTextNode(text);
-    button.appendChild(textNode);
-
-    button.addEventListener('click', onClick);
-    return button;
-};
-
-const onClick = (e) => {
-    const loraManagerUrl = `${window.location.origin}/loras`;
-    
-    // Check if Shift key is pressed to determine how to open
-    if (e.shiftKey) {
-        // Open in new window
-        const { width, height } = config.newWindow;
-        const windowFeatures = `width=${width},height=${height},resizable=yes,scrollbars=yes,status=yes`;
-        window.open(loraManagerUrl, '_blank', windowFeatures);
-    } else {
-        // Default behavior: open in new tab
-        window.open(loraManagerUrl, '_blank');
-    }
-};
-
-const addWidgetMenuRight = (menuRight) => {
-    let buttonGroup = menuRight.querySelector('.comfyui-button-group');
-
-    if (!buttonGroup) {
-        buttonGroup = document.createElement('div');
-        buttonGroup.className = 'comfyui-button-group';
-        menuRight.appendChild(buttonGroup);
-    }
-
-    const loraManagerButton = createWidget({
-        className: 'comfyui-button comfyui-menu-mobile-collapse primary',
-        text: '',
-        tooltip: 'Launch Lora Manager (Shift+Click to open in new window)',
-        includeIcon: true,
-        svgMarkup: getLoraManagerIcon(),
-    });
-
-    buttonGroup.appendChild(loraManagerButton);
-};
-
-const addWidgetMenu = (menu) => {
-    const resetViewButton = menu.querySelector('#comfy-reset-view-button');
-    if (!resetViewButton) {
+    if (event.shiftKey) {
+        window.open(url, "_blank", NEW_WINDOW_FEATURES);
         return;
     }
 
-    const loraManagerButton = createWidget({
-        className: 'comfy-lora-manager-button',
-        text: 'Lora Manager',
-        tooltip: 'Launch Lora Manager (Shift+Click to open in new window)',
-        includeIcon: false,
-    });
-
-    resetViewButton.insertAdjacentElement('afterend', loraManagerButton);
+    window.open(url, "_blank");
 };
 
-const addWidget = (selector, callback) => {
-    const observer = new MutationObserver((mutations, obs) => {
-        const element = document.querySelector(selector);
-        if (element) {
-            callback(element);
-            obs.disconnect();
+const createTopMenuButton = () => {
+    const button = new ComfyButton({
+        icon: "loramanager",
+        tooltip: BUTTON_TOOLTIP,
+        app,
+        enabled: true,
+        classList: "comfyui-button comfyui-menu-mobile-collapse primary",
+    });
+
+    button.element.setAttribute("aria-label", BUTTON_TOOLTIP);
+    button.element.title = BUTTON_TOOLTIP;
+
+    if (button.iconElement) {
+        button.iconElement.innerHTML = getLoraManagerIcon();
+        button.iconElement.style.width = "1.2rem";
+        button.iconElement.style.height = "1.2rem";
+    }
+
+    button.element.addEventListener("click", openLoraManager);
+    return button;
+};
+
+const attachTopMenuButton = (attempt = 0) => {
+    if (document.querySelector(`.${BUTTON_GROUP_CLASS}`)) {
+        return;
+    }
+
+    const settingsGroup = app.menu?.settingsGroup;
+    if (!settingsGroup?.element?.parentElement) {
+        if (attempt >= MAX_ATTACH_ATTEMPTS) {
+            console.warn("LoRA Manager: unable to locate the ComfyUI settings button group.");
+            return;
         }
-    });
 
-    observer.observe(document.body, { childList: true, subtree: true });
+        requestAnimationFrame(() => attachTopMenuButton(attempt + 1));
+        return;
+    }
+
+    const loraManagerButton = createTopMenuButton();
+    const buttonGroup = new ComfyButtonGroup(loraManagerButton);
+    buttonGroup.element.classList.add(BUTTON_GROUP_CLASS);
+
+    settingsGroup.element.before(buttonGroup.element);
 };
 
-const initializeWidgets = () => {
-    addWidget('.comfyui-menu-right', addWidgetMenuRight);
-    addWidget('.comfy-menu', addWidgetMenu);
-};
-
-// Fetch version info from the API
 const fetchVersionInfo = async () => {
     try {
-        const response = await fetch('/api/lm/version-info');
+        const response = await fetch("/api/lm/version-info");
         const data = await response.json();
-        
+
         if (data.success) {
             return data.version;
         }
-        return '';
     } catch (error) {
-        console.error('Error fetching version info:', error);
-        return '';
+        console.error("LoRA Manager: error fetching version info:", error);
     }
+
+    return "";
 };
 
-// Register about badge with version info
-const registerAboutBadge = async () => {
-    let version = await fetchVersionInfo();
-    const label = version ? `LoRA-Manager v${version}` : 'LoRA-Manager';
-    
-    app.registerExtension({
-        name: 'LoraManager.AboutBadge',
-        aboutPageBadges: [
-            {
-                label: label,
-                url: 'https://github.com/willmiao/ComfyUI-Lora-Manager',
-                icon: 'pi pi-tags'
-            }
-        ]
-    });
+const createAboutBadge = (version) => {
+    const label = version ? `LoRA Manager v${version}` : "LoRA Manager";
+
+    return {
+        label,
+        url: "https://github.com/willmiao/ComfyUI-Lora-Manager",
+        icon: "pi pi-tags",
+    };
 };
 
-// Initialize everything
-const initialize = () => {
-    initializeWidgets();
-    registerAboutBadge();
-};
+app.registerExtension({
+    name: "LoraManager.TopMenu",
+    aboutPageBadges: [createAboutBadge()],
+    async setup() {
+        attachTopMenuButton();
+
+        const version = await fetchVersionInfo();
+        this.aboutPageBadges = [createAboutBadge(version)];
+    },
+});
 
 const getLoraManagerIcon = () => {
     return `
@@ -182,5 +139,3 @@ const getLoraManagerIcon = () => {
         </svg>
     `;
 };
-
-initialize();
