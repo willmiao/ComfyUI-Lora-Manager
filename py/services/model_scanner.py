@@ -376,12 +376,16 @@ class ModelScanner:
                 hash_index.add_entry(sha_value.lower(), path)
 
         tags_count: Dict[str, int] = {}
+        adjusted_raw_data: List[Dict[str, Any]] = []
         for item in persisted.raw_data:
-            for tag in item.get('tags') or []:
+            adjusted_item = self.adjust_cached_entry(dict(item))
+            adjusted_raw_data.append(adjusted_item)
+
+            for tag in adjusted_item.get('tags') or []:
                 tags_count[tag] = tags_count.get(tag, 0) + 1
 
         scan_result = CacheBuildResult(
-            raw_data=list(persisted.raw_data),
+            raw_data=adjusted_raw_data,
             hash_index=hash_index,
             tags_count=tags_count,
             excluded_models=list(persisted.excluded_models)
@@ -765,6 +769,41 @@ class ModelScanner:
     def adjust_metadata(self, metadata, file_path, root_path):
         """Hook for subclasses: adjust metadata during scanning"""
         return metadata
+
+    def adjust_cached_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
+        """Hook for subclasses: adjust entries loaded from the persisted cache."""
+        return entry
+
+    @staticmethod
+    def _normalize_path_value(path: Optional[str]) -> str:
+        if not path:
+            return ''
+
+        normalized = os.path.normpath(path)
+        if normalized == '.':
+            return ''
+
+        return normalized.replace('\\', '/')
+
+    def _find_root_for_file(self, file_path: Optional[str]) -> Optional[str]:
+        """Return the configured root directory that contains ``file_path``."""
+
+        normalized_path = self._normalize_path_value(file_path)
+        if not normalized_path:
+            return None
+
+        for root in self.get_model_roots() or []:
+            normalized_root = self._normalize_path_value(root)
+            if not normalized_root:
+                continue
+
+            if (
+                normalized_path == normalized_root
+                or normalized_path.startswith(f"{normalized_root}/")
+            ):
+                return root
+
+        return None
 
     async def _process_model_file(
         self,
