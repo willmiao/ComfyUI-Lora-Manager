@@ -17,9 +17,48 @@ const PATH_CORRECTION_TARGETS = [
     { comfyClass: "easy loraStack", widgetNamePattern: "lora_\\d+_name", modelType: "loras" }
 ];
 
+const AUTO_PATH_CORRECTION_SETTING_ID = "loramanager.auto_path_correction";
+const AUTO_PATH_CORRECTION_DEFAULT = true;
+
+const getAutoPathCorrectionPreference = (() => {
+    let settingsUnavailableLogged = false;
+
+    return () => {
+        const settingManager = app?.extensionManager?.setting;
+        if (!settingManager || typeof settingManager.get !== "function") {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: settings API unavailable, defaulting auto path correction to enabled.");
+                settingsUnavailableLogged = true;
+            }
+            return AUTO_PATH_CORRECTION_DEFAULT;
+        }
+
+        try {
+            const value = settingManager.get(AUTO_PATH_CORRECTION_SETTING_ID);
+            return value ?? AUTO_PATH_CORRECTION_DEFAULT;
+        } catch (error) {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: unable to read auto path correction setting, defaulting to enabled.", error);
+                settingsUnavailableLogged = true;
+            }
+            return AUTO_PATH_CORRECTION_DEFAULT;
+        }
+    };
+})();
+
 // Register the extension
 app.registerExtension({
     name: "LoraManager.UsageStats",
+    settings: [
+        {
+            id: AUTO_PATH_CORRECTION_SETTING_ID,
+            name: "Auto path correction",
+            type: "boolean",
+            defaultValue: AUTO_PATH_CORRECTION_DEFAULT,
+            tooltip: "Automatically update model paths to their current file locations.",
+            category: ["LoRA Manager", "Automation", "Auto path correction"],
+        },
+    ],
     
     setup() {
         // Listen for successful executions
@@ -108,6 +147,10 @@ app.registerExtension({
     },
 
     async loadedGraphNode(node) {
+        if (!getAutoPathCorrectionPreference()) {
+            return;
+        }
+
         // Check if this node type needs path correction
         const target = PATH_CORRECTION_TARGETS.find(t => t.comfyClass === node.comfyClass);
         if (!target) {
