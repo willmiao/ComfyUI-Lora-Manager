@@ -1,4 +1,5 @@
 import { api } from "../../scripts/api.js";
+import { ensureLmStyles } from "./lm_styles_loader.js";
 
 /**
  * Lightweight preview tooltip that can display images or videos for different model types.
@@ -21,18 +22,10 @@ export class PreviewTooltip {
         ? displayNameFormatter
         : (name) => name;
 
+    ensureLmStyles();
+
     this.element = document.createElement("div");
-    Object.assign(this.element.style, {
-      position: "fixed",
-      zIndex: 9999,
-      background: "rgba(0, 0, 0, 0.85)",
-      borderRadius: "6px",
-      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-      display: "none",
-      overflow: "hidden",
-      maxWidth: "300px",
-      pointerEvents: "none",
-    });
+    this.element.className = "lm-tooltip";
     document.body.appendChild(this.element);
     this.hideTimeout = null;
     this.isFromAutocomplete = false;
@@ -119,23 +112,13 @@ export class PreviewTooltip {
       }
 
       const mediaContainer = document.createElement("div");
-      Object.assign(mediaContainer.style, {
-        position: "relative",
-        maxWidth: "300px",
-        maxHeight: "300px",
-      });
+      mediaContainer.className = "lm-tooltip__media-container";
 
       const isVideo = previewUrl.endsWith(".mp4");
       const mediaElement = isVideo
         ? document.createElement("video")
         : document.createElement("img");
-
-      Object.assign(mediaElement.style, {
-        maxWidth: "300px",
-        maxHeight: "300px",
-        objectFit: "contain",
-        display: "block",
-      });
+      mediaElement.classList.add("lm-tooltip__media");
 
       if (isVideo) {
         mediaElement.autoplay = true;
@@ -146,24 +129,7 @@ export class PreviewTooltip {
 
       const nameLabel = document.createElement("div");
       nameLabel.textContent = displayName;
-      Object.assign(nameLabel.style, {
-        position: "absolute",
-        bottom: "0",
-        left: "0",
-        right: "0",
-        padding: "8px",
-        color: "white",
-        fontSize: "13px",
-        fontFamily:
-          "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif",
-        background: "linear-gradient(transparent, rgba(0, 0, 0, 0.8))",
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        textAlign: "center",
-        backdropFilter: "blur(4px)",
-        WebkitBackdropFilter: "blur(4px)",
-      });
+      nameLabel.className = "lm-tooltip__label";
 
       mediaContainer.appendChild(mediaElement);
       mediaContainer.appendChild(nameLabel);

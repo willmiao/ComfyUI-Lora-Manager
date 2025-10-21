@@ -13,28 +13,19 @@ import {
 import { initDrag, createContextMenu, initHeaderDrag, initReorderDrag, handleKeyboardNavigation } from "./loras_widget_events.js";
 import { forwardMiddleMouseToCanvas } from "./utils.js";
 import { PreviewTooltip } from "./preview_tooltip.js";
+import { ensureLmStyles } from "./lm_styles_loader.js";
 
 export function addLorasWidget(node, name, opts, callback) {
+  ensureLmStyles();
+
   // Create container for loras
   const container = document.createElement("div");
-  container.className = "comfy-loras-container";
+  container.className = "lm-loras-container";
 
   forwardMiddleMouseToCanvas(container);
 
   // Set initial height using CSS variables approach
   const defaultHeight = 200;
-  
-  Object.assign(container.style, {
-    display: "flex",
-    flexDirection: "column",
-    gap: "5px",
-    padding: "6px",
-    backgroundColor: "rgba(40, 44, 52, 0.6)",
-    borderRadius: "6px",
-    width: "100%",
-    boxSizing: "border-box",
-    overflow: "auto"
-  });
 
   // Initialize default value
   const defaultValue = opts?.defaultVal || [];
@@ -50,7 +41,7 @@ export function addLorasWidget(node, name, opts, callback) {
   const selectLora = (loraName) => {
     selectedLora = loraName;
     // Update visual feedback for all entries
-    container.querySelectorAll('.comfy-lora-entry').forEach(entry => {
+    container.querySelectorAll('.lm-lora-entry').forEach(entry => {
       const entryLoraName = entry.dataset.loraName;
       updateEntrySelection(entry, entryLoraName === selectedLora);
     });
@@ -65,7 +56,6 @@ export function addLorasWidget(node, name, opts, callback) {
   
   // Make container focusable for keyboard events
   container.tabIndex = 0;
-  container.style.outline = 'none';
   
   // Function to render loras from data
   const renderLoras = (value, widget) => {
@@ -125,17 +115,7 @@ export function addLorasWidget(node, name, opts, callback) {
       // Show message when no loras are added
       const emptyMessage = document.createElement("div");
       emptyMessage.textContent = "No LoRAs added";
-      Object.assign(emptyMessage.style, {
-        textAlign: "center",
-        padding: "20px 0",
-        color: "rgba(226, 232, 240, 0.8)",
-        fontStyle: "italic",
-        userSelect: "none",
-        WebkitUserSelect: "none",
-        MozUserSelect: "none",
-        msUserSelect: "none",
-        width: "100%"
-      });
+      emptyMessage.className = "lm-lora-empty-state";
       container.appendChild(emptyMessage);
       
       // Set fixed height for empty state
@@ -145,16 +125,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
     // Create header
     const header = document.createElement("div");
-    header.className = "comfy-loras-header";
-    Object.assign(header.style, {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      padding: "4px 8px",
-      borderBottom: "1px solid rgba(226, 232, 240, 0.2)",
-      marginBottom: "5px",
-      position: "relative" // Added for positioning the drag hint
-    });
+    header.className = "lm-loras-header";
 
     // Add toggle all control
     const allActive = lorasData.every(lora => lora.active);
@@ -170,58 +141,23 @@ export function addLorasWidget(node, name, opts, callback) {
     // Add label to toggle all
     const toggleLabel = document.createElement("div");
     toggleLabel.textContent = "Toggle All";
-    Object.assign(toggleLabel.style, {
-      color: "rgba(226, 232, 240, 0.8)",
-      fontSize: "13px",
-      marginLeft: "8px",
-      userSelect: "none",
-      WebkitUserSelect: "none",
-      MozUserSelect: "none",
-      msUserSelect: "none",
-    });
+    toggleLabel.className = "lm-toggle-label";
 
     const toggleContainer = document.createElement("div");
-    Object.assign(toggleContainer.style, {
-      display: "flex",
-      alignItems: "center",
-    });
+    toggleContainer.className = "lm-toggle-container";
     toggleContainer.appendChild(toggleAll);
     toggleContainer.appendChild(toggleLabel);
 
     // Strength label with drag hint
     const strengthLabel = document.createElement("div");
     strengthLabel.textContent = "Strength";
-    Object.assign(strengthLabel.style, {
-      color: "rgba(226, 232, 240, 0.8)",
-      fontSize: "13px",
-      marginRight: "8px",
-      userSelect: "none",
-      WebkitUserSelect: "none",
-      MozUserSelect: "none",
-      msUserSelect: "none",
-      display: "flex",
-      alignItems: "center"
-    });
-    
+    strengthLabel.className = "lm-strength-label";
+
     // Add drag hint icon next to strength label
     const dragHint = document.createElement("span");
     dragHint.innerHTML = "↔"; // Simple left-right arrow as drag indicator
-    Object.assign(dragHint.style, {
-      marginLeft: "5px",
-      fontSize: "11px",
-      opacity: "0.6",
-      transition: "opacity 0.2s ease"
-    });
+    dragHint.className = "lm-drag-hint";
     strengthLabel.appendChild(dragHint);
-    
-    // Add hover effect to improve discoverability
-    header.addEventListener("mouseenter", () => {
-      dragHint.style.opacity = "1";
-    });
-    
-    header.addEventListener("mouseleave", () => {
-      dragHint.style.opacity = "0.6";
-    });
 
     header.appendChild(toggleContainer);
     header.appendChild(strengthLabel);
@@ -243,30 +179,20 @@ export function addLorasWidget(node, name, opts, callback) {
       
       // Create the main LoRA entry
       const loraEl = document.createElement("div");
-      loraEl.className = "comfy-lora-entry";
-      Object.assign(loraEl.style, {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "6px",
-        borderRadius: "6px",
-        backgroundColor: active ? "rgba(45, 55, 72, 0.7)" : "rgba(35, 40, 50, 0.5)",
-        transition: "all 0.2s ease",
-        marginBottom: "4px",
-      });
+      loraEl.className = "lm-lora-entry";
 
       // Store lora name and active state in dataset for selection
       loraEl.dataset.loraName = name;
-      loraEl.dataset.active = active;
+      loraEl.dataset.active = active ? "true" : "false";
 
       // Add click handler for selection
       loraEl.addEventListener('click', (e) => {
         // Skip if clicking on interactive elements
-        if (e.target.closest('.comfy-lora-toggle') || 
+        if (e.target.closest('.lm-lora-toggle') || 
             e.target.closest('input') || 
-            e.target.closest('.comfy-lora-arrow') ||
-            e.target.closest('.comfy-lora-drag-handle') ||
-            e.target.closest('.comfy-lora-expand-button')) {
+            e.target.closest('.lm-lora-arrow') ||
+            e.target.closest('.lm-lora-drag-handle') ||
+            e.target.closest('.lm-lora-expand-button')) {
           return;
         }
         
@@ -322,19 +248,7 @@ export function addLorasWidget(node, name, opts, callback) {
       // Create name display
       const nameEl = document.createElement("div");
       nameEl.textContent = name;
-      Object.assign(nameEl.style, {
-        marginLeft: "4px",
-        flex: "1",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
-        color: active ? "rgba(226, 232, 240, 0.9)" : "rgba(226, 232, 240, 0.6)",
-        fontSize: "13px",
-        userSelect: "none",
-        WebkitUserSelect: "none",
-        MozUserSelect: "none",
-        msUserSelect: "none",
-      });
+      nameEl.className = "lm-lora-name";
 
       // Move preview tooltip events to nameEl instead of loraEl
       let previewTimer; // Timer for delayed preview
@@ -355,15 +269,6 @@ export function addLorasWidget(node, name, opts, callback) {
       // Initialize drag functionality for strength adjustment
       initDrag(loraEl, name, widget, false, previewTooltip, renderLoras);
 
-      // Remove the preview tooltip events from loraEl
-      loraEl.onmouseenter = () => {
-        loraEl.style.backgroundColor = active ? "rgba(50, 60, 80, 0.8)" : "rgba(40, 45, 55, 0.6)";
-      };
-      
-      loraEl.onmouseleave = () => {
-        loraEl.style.backgroundColor = active ? "rgba(45, 55, 72, 0.7)" : "rgba(35, 40, 50, 0.5)";
-      };
-
       // Add context menu event
       loraEl.addEventListener('contextmenu', (e) => {
         e.preventDefault();
@@ -373,11 +278,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
       // Create strength control
       const strengthControl = document.createElement("div");
-      Object.assign(strengthControl.style, {
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-      });
+      strengthControl.className = "lm-lora-strength-control";
 
       // Left arrow
       const leftArrow = createArrowButton("left", () => {
@@ -397,49 +298,19 @@ export function addLorasWidget(node, name, opts, callback) {
 
       // Strength display
       const strengthEl = document.createElement("input");
-      strengthEl.classList.add("comfy-lora-strength-input");
+      strengthEl.classList.add("lm-lora-strength-input");
       strengthEl.type = "text";
       strengthEl.value = typeof strength === 'number' ? strength.toFixed(2) : Number(strength).toFixed(2);
       strengthEl.addEventListener('pointerdown', () => {
         pendingFocusTarget = { name, type: "strength" };
       });
-      Object.assign(strengthEl.style, {
-        minWidth: "50px",
-        width: "50px",
-        textAlign: "center",
-        color: active ? "rgba(226, 232, 240, 0.9)" : "rgba(226, 232, 240, 0.6)",
-        fontSize: "13px",
-        background: "none",
-        border: "1px solid transparent",
-        padding: "2px 4px",
-        borderRadius: "3px",
-        outline: "none",
-      });
-
-      // Add hover effect
-      strengthEl.addEventListener('mouseenter', () => {
-        strengthEl.style.border = "1px solid rgba(226, 232, 240, 0.2)";
-      });
-
-      strengthEl.addEventListener('mouseleave', () => {
-        if (document.activeElement !== strengthEl) {
-          strengthEl.style.border = "1px solid transparent";
-        }
-      });
 
       // Handle focus
       strengthEl.addEventListener('focus', () => {
         pendingFocusTarget = null;
-        strengthEl.style.border = "1px solid rgba(66, 153, 225, 0.6)";
-        strengthEl.style.background = "rgba(0, 0, 0, 0.2)";
         // Auto-select all content
         strengthEl.select();
         selectLora(name);
-      });
-
-      strengthEl.addEventListener('blur', () => {
-        strengthEl.style.border = "1px solid transparent";
-        strengthEl.style.background = "none";
       });
 
       // Handle input changes
@@ -503,12 +374,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
       // Assemble entry
       const leftSection = document.createElement("div");
-      Object.assign(leftSection.style, {
-        display: "flex",
-        alignItems: "center",
-        flex: "1",
-        minWidth: "0", // Allow shrinking
-      });
+      leftSection.className = "lm-lora-entry-left";
       
       leftSection.appendChild(dragHandle); // Add drag handle first
       leftSection.appendChild(toggle);
@@ -524,49 +390,20 @@ export function addLorasWidget(node, name, opts, callback) {
       if (isExpanded) {
         totalVisibleEntries++;
         const clipEl = document.createElement("div");
-        clipEl.className = "comfy-lora-clip-entry";
-        Object.assign(clipEl.style, {
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "6px",
-          paddingLeft: "20px", // Indent to align with parent name
-          borderRadius: "6px",
-          backgroundColor: active ? "rgba(65, 70, 90, 0.6)" : "rgba(50, 55, 65, 0.5)",
-          borderLeft: "2px solid rgba(72, 118, 255, 0.6)",
-          transition: "all 0.2s ease",
-          marginBottom: "4px",
-          marginLeft: "10px",
-          marginTop: "-2px"
-        });
+        clipEl.className = "lm-lora-clip-entry";
 
         // Store the same lora name in clip entry dataset
         clipEl.dataset.loraName = name;
-        clipEl.dataset.active = active;
+        clipEl.dataset.active = active ? "true" : "false";
 
         // Create clip name display
         const clipNameEl = document.createElement("div");
         clipNameEl.textContent = "[clip] " + name;
-        Object.assign(clipNameEl.style, {
-          flex: "1",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-          color: active ? "rgba(200, 215, 240, 0.9)" : "rgba(200, 215, 240, 0.6)",
-          fontSize: "13px",
-          userSelect: "none",
-          WebkitUserSelect: "none",
-          MozUserSelect: "none",
-          msUserSelect: "none",
-        });
+        clipNameEl.className = "lm-lora-name";
 
         // Create clip strength control
         const clipStrengthControl = document.createElement("div");
-        Object.assign(clipStrengthControl.style, {
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        });
+        clipStrengthControl.className = "lm-lora-strength-control";
 
         // Left arrow for clip
         const clipLeftArrow = createArrowButton("left", () => {
@@ -584,49 +421,19 @@ export function addLorasWidget(node, name, opts, callback) {
 
         // Clip strength display
         const clipStrengthEl = document.createElement("input");
-        clipStrengthEl.classList.add("comfy-lora-strength-input", "comfy-lora-clip-strength-input");
+        clipStrengthEl.classList.add("lm-lora-strength-input", "lm-lora-clip-strength-input");
         clipStrengthEl.type = "text";
         clipStrengthEl.value = typeof clipStrength === 'number' ? clipStrength.toFixed(2) : Number(clipStrength).toFixed(2);
         clipStrengthEl.addEventListener('pointerdown', () => {
           pendingFocusTarget = { name, type: "clip" };
         });
-        Object.assign(clipStrengthEl.style, {
-          minWidth: "50px",
-          width: "50px",
-          textAlign: "center",
-          color: active ? "rgba(200, 215, 240, 0.9)" : "rgba(200, 215, 240, 0.6)",
-          fontSize: "13px",
-          background: "none",
-          border: "1px solid transparent",
-          padding: "2px 4px",
-          borderRadius: "3px",
-          outline: "none",
-        });
-
-        // Add hover effect
-        clipStrengthEl.addEventListener('mouseenter', () => {
-          clipStrengthEl.style.border = "1px solid rgba(226, 232, 240, 0.2)";
-        });
-
-        clipStrengthEl.addEventListener('mouseleave', () => {
-          if (document.activeElement !== clipStrengthEl) {
-            clipStrengthEl.style.border = "1px solid transparent";
-          }
-        });
 
         // Handle focus
         clipStrengthEl.addEventListener('focus', () => {
           pendingFocusTarget = null;
-          clipStrengthEl.style.border = "1px solid rgba(72, 118, 255, 0.6)";
-          clipStrengthEl.style.background = "rgba(0, 0, 0, 0.2)";
           // Auto-select all content
           clipStrengthEl.select();
           selectLora(name);
-        });
-
-        clipStrengthEl.addEventListener('blur', () => {
-          clipStrengthEl.style.border = "1px solid transparent";
-          clipStrengthEl.style.background = "none";
         });
 
         // Handle input changes
@@ -688,26 +495,12 @@ export function addLorasWidget(node, name, opts, callback) {
 
         // Assemble clip entry
         const clipLeftSection = document.createElement("div");
-        Object.assign(clipLeftSection.style, {
-          display: "flex",
-          alignItems: "center",
-          flex: "1",
-          minWidth: "0", // Allow shrinking
-        });
-        
+        clipLeftSection.className = "lm-lora-entry-left";
+
         clipLeftSection.appendChild(clipNameEl);
-        
+
         clipEl.appendChild(clipLeftSection);
         clipEl.appendChild(clipStrengthControl);
-
-        // Hover effects for clip entry
-        clipEl.onmouseenter = () => {
-          clipEl.style.backgroundColor = active ? "rgba(70, 75, 95, 0.7)" : "rgba(55, 60, 70, 0.6)";
-        };
-        
-        clipEl.onmouseleave = () => {
-          clipEl.style.backgroundColor = active ? "rgba(65, 70, 90, 0.6)" : "rgba(50, 55, 65, 0.5)";
-        };
 
         // Add drag functionality to clip entry
         initDrag(clipEl, name, widget, true, previewTooltip, renderLoras);
@@ -722,7 +515,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
     // After all LoRA elements are created, apply selection state as the last step
     // This ensures the selection state is not overwritten
-    container.querySelectorAll('.comfy-lora-entry').forEach(entry => {
+    container.querySelectorAll('.lm-lora-entry').forEach(entry => {
       const entryLoraName = entry.dataset.loraName;
       updateEntrySelection(entry, entryLoraName === selectedLora);
     });
@@ -733,9 +526,9 @@ export function addLorasWidget(node, name, opts, callback) {
       let selector = "";
 
       if (focusTarget.type === "strength") {
-        selector = `.comfy-lora-entry[data-lora-name="${safeName}"] .comfy-lora-strength-input`;
+        selector = `.lm-lora-entry[data-lora-name="${safeName}"] .lm-lora-strength-input`;
       } else if (focusTarget.type === "clip") {
-        selector = `.comfy-lora-clip-entry[data-lora-name="${safeName}"] .comfy-lora-clip-strength-input`;
+        selector = `.lm-lora-clip-entry[data-lora-name="${safeName}"] .lm-lora-clip-strength-input`;
       }
 
       if (selector) {

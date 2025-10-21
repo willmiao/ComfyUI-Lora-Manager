@@ -28,14 +28,14 @@ vi.mock(COMPONENTS_MODULE, () => ({
 describe('LoRA widget drag interactions', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
-    const dragStyle = document.getElementById('comfy-lora-drag-style');
+    const dragStyle = document.getElementById('lm-lora-shared-styles');
     if (dragStyle) {
       dragStyle.remove();
     }
   });
 
   afterEach(() => {
-    document.body.classList.remove('comfy-lora-dragging');
+    document.body.classList.remove('lm-lora-strength-dragging');
   });
 
   it('adjusts a single LoRA strength while syncing collapsed clip strength', async () => {
@@ -84,7 +84,7 @@ describe('LoRA widget drag interactions', () => {
     const previewSpy = { hide: vi.fn() };
 
     const dragEl = document.createElement('div');
-    dragEl.className = 'comfy-lora-entry';
+    dragEl.className = 'lm-lora-entry';
     document.body.append(dragEl);
 
     const widget = {
@@ -95,7 +95,7 @@ describe('LoRA widget drag interactions', () => {
     module.initDrag(dragEl, 'Test', widget, false, previewSpy, renderSpy);
 
     dragEl.dispatchEvent(new MouseEvent('mousedown', { clientX: 50, bubbles: true }));
-    expect(document.body.classList.contains('comfy-lora-dragging')).toBe(true);
+    expect(document.body.classList.contains('lm-lora-strength-dragging')).toBe(true);
 
     document.dispatchEvent(new MouseEvent('mousemove', { clientX: 70, bubbles: true }));
     expect(renderSpy).toHaveBeenCalledWith(widget.value, widget);
@@ -103,6 +103,6 @@ describe('LoRA widget drag interactions', () => {
     expect(widget.value[0].strength).not.toBe(0.5);
 
     document.dispatchEvent(new MouseEvent('mouseup'));
-    expect(document.body.classList.contains('comfy-lora-dragging')).toBe(false);
+    expect(document.body.classList.contains('lm-lora-strength-dragging')).toBe(false);
   });
 });

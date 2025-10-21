@@ -219,7 +219,7 @@ export function moveLoraByDirection(loras, loraName, direction) {
  * @returns {number} - Target index for dropping
  */
 export function getDropTargetIndex(container, clientY) {
-  const entries = container.querySelectorAll('.comfy-lora-entry');
+  const entries = container.querySelectorAll('.lm-lora-entry');
   let targetIndex = entries.length;
   
   for (let i = 0; i < entries.length; i++) {

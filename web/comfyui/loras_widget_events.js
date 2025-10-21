@@ -102,27 +102,14 @@ export function initDrag(dragEl, name, widget, isClipStrength = false, previewTo
   let initialX = 0;
   let initialStrength = 0;
   
-  // Create a style element for drag cursor override if it doesn't exist
-  if (!document.getElementById('comfy-lora-drag-style')) {
-    const styleEl = document.createElement('style');
-    styleEl.id = 'comfy-lora-drag-style';
-    styleEl.textContent = `
-      body.comfy-lora-dragging,
-      body.comfy-lora-dragging * {
-        cursor: ew-resize !important;
-      }
-    `;
-    document.head.appendChild(styleEl);
-  }
-  
   // Create a drag handler
   dragEl.addEventListener('mousedown', (e) => {
     // Skip if clicking on toggle or strength control areas
-    if (e.target.closest('.comfy-lora-toggle') || 
-        e.target.closest('input') || 
-        e.target.closest('.comfy-lora-arrow') ||
-        e.target.closest('.comfy-lora-drag-handle') ||
-        e.target.closest('.comfy-lora-expand-button')) {
+    if (e.target.closest('.lm-lora-toggle') ||
+        e.target.closest('input') ||
+        e.target.closest('.lm-lora-arrow') ||
+        e.target.closest('.lm-lora-drag-handle') ||
+        e.target.closest('.lm-lora-expand-button')) {
       return;
     }
     
@@ -137,7 +124,7 @@ export function initDrag(dragEl, name, widget, isClipStrength = false, previewTo
     isDragging = true;
     
     // Add class to body to enforce cursor style globally
-    document.body.classList.add('comfy-lora-dragging');
+    document.body.classList.add('lm-lora-strength-dragging');
     
     // Prevent text selection during drag
     e.preventDefault();
@@ -166,7 +153,7 @@ export function initDrag(dragEl, name, widget, isClipStrength = false, previewTo
     if (isDragging) {
       isDragging = false;
       // Remove the class to restore normal cursor behavior
-      document.body.classList.remove('comfy-lora-dragging');
+      document.body.classList.remove('lm-lora-strength-dragging');
     }
   });
 }
@@ -178,12 +165,10 @@ export function initHeaderDrag(headerEl, widget, renderFunction) {
   let initialStrengths = [];
   
   // Add cursor style to indicate draggable
-  headerEl.style.cursor = 'ew-resize';
-  
   // Create a drag handler
   headerEl.addEventListener('mousedown', (e) => {
     // Skip if clicking on toggle or other interactive elements
-    if (e.target.closest('.comfy-lora-toggle') || 
+    if (e.target.closest('.lm-lora-toggle') ||
         e.target.closest('input')) {
       return;
     }
@@ -201,7 +186,7 @@ export function initHeaderDrag(headerEl, widget, renderFunction) {
     isDragging = true;
     
     // Add class to body to enforce cursor style globally
-    document.body.classList.add('comfy-lora-dragging');
+    document.body.classList.add('lm-lora-strength-dragging');
     
     // Prevent text selection during drag
     e.preventDefault();
@@ -225,7 +210,7 @@ export function initHeaderDrag(headerEl, widget, renderFunction) {
     if (isDragging) {
       isDragging = false;
       // Remove the class to restore normal cursor behavior
-      document.body.classList.remove('comfy-lora-dragging');
+      document.body.classList.remove('lm-lora-strength-dragging');
     }
   });
 }
@@ -243,14 +228,12 @@ export function initReorderDrag(dragHandle, loraName, widget, renderFunction) {
     e.stopPropagation();
     
     isDragging = true;
-    draggedElement = dragHandle.closest('.comfy-lora-entry');
+    draggedElement = dragHandle.closest('.lm-lora-entry');
     container = draggedElement.parentElement;
     
     // Add dragging class and visual feedback
-    draggedElement.classList.add('comfy-lora-dragging');
-    draggedElement.style.opacity = '0.5';
-    draggedElement.style.transform = 'scale(0.98)';
-    
+    draggedElement.classList.add('lm-lora-entry--dragging');
+
     // Create single drop indicator with absolute positioning
     dropIndicator = createDropIndicator();
     
@@ -263,7 +246,7 @@ export function initReorderDrag(dragHandle, loraName, widget, renderFunction) {
     container._originalPosition = originalPosition;
     
     // Add global cursor style
-    document.body.style.cursor = 'grabbing';
+    document.body.classList.add('lm-lora-reordering');
 
     // Store workflow scale for accurate positioning
     scale = app.canvas.ds.scale;
@@ -273,7 +256,7 @@ export function initReorderDrag(dragHandle, loraName, widget, renderFunction) {
     if (!isDragging || !draggedElement || !dropIndicator) return;
     
     const targetIndex = getDropTargetIndex(container, e.clientY);
-    const entries = container.querySelectorAll('.comfy-lora-entry, .comfy-lora-clip-entry');
+    const entries = container.querySelectorAll('.lm-lora-entry, .lm-lora-clip-entry');
     
     if (targetIndex === 0) {
       // Show at top
@@ -307,7 +290,7 @@ export function initReorderDrag(dragHandle, loraName, widget, renderFunction) {
   
   document.addEventListener('mouseup', (e) => {
     // Always reset cursor regardless of isDragging state
-    document.body.style.cursor = '';
+    document.body.classList.remove('lm-lora-reordering');
     
     if (!isDragging || !draggedElement) return;
     
@@ -319,7 +302,7 @@ export function initReorderDrag(dragHandle, loraName, widget, renderFunction) {
     
     if (currentIndex !== -1 && currentIndex !== targetIndex) {
       // Calculate actual target index (excluding clip entries from count)
-      const loraEntries = container.querySelectorAll('.comfy-lora-entry');
+      const loraEntries = container.querySelectorAll('.lm-lora-entry');
       let actualTargetIndex = targetIndex;
       
       // Adjust target index if it's beyond the number of actual LoRA entries
@@ -347,9 +330,7 @@ export function initReorderDrag(dragHandle, loraName, widget, renderFunction) {
     // Cleanup
     isDragging = false;
     if (draggedElement) {
-      draggedElement.classList.remove('comfy-lora-dragging');
-      draggedElement.style.opacity = '';
-      draggedElement.style.transform = '';
+      draggedElement.classList.remove('lm-lora-entry--dragging');
       draggedElement = null;
     }
     
@@ -366,7 +347,7 @@ export function initReorderDrag(dragHandle, loraName, widget, renderFunction) {
   
   // Also reset cursor when mouse leaves the document
   document.addEventListener('mouseleave', () => {
-    document.body.style.cursor = '';
+    document.body.classList.remove('lm-lora-reordering');
   });
 }
 
@@ -461,25 +442,15 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
   }
 
   // Remove existing context menu if any
-  const existingMenu = document.querySelector('.comfy-lora-context-menu');
+  const existingMenu = document.querySelector('.lm-lora-context-menu');
   if (existingMenu) {
     existingMenu.remove();
   }
 
   const menu = document.createElement('div');
-  menu.className = 'comfy-lora-context-menu';
-  Object.assign(menu.style, {
-    position: 'fixed',
-    left: `${x}px`,
-    top: `${y}px`,
-    backgroundColor: 'rgba(30, 30, 30, 0.95)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderRadius: '4px',
-    padding: '4px 0',
-    zIndex: 1000,
-    boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-    minWidth: '180px',
-  });
+  menu.className = 'lm-lora-context-menu';
+  menu.style.left = `${x}px`;
+  menu.style.top = `${y}px`;
 
   // View on Civitai option with globe icon
   const viewOnCivitaiOption = createMenuItem(
@@ -713,25 +684,13 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
   );
 
   // Add separator
-  const separator1 = document.createElement('div');
-  Object.assign(separator1.style, {
-    margin: '4px 0',
-    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-  });
-  
+  const separator1 = document.createElement('hr');
+
   // Add second separator
-  const separator2 = document.createElement('div');
-  Object.assign(separator2.style, {
-    margin: '4px 0',
-    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-  });
+  const separator2 = document.createElement('hr');
 
   // Add separator for order options
-  const orderSeparator = document.createElement('div');
-  Object.assign(orderSeparator.style, {
-    margin: '4px 0',
-    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-  });
+  const orderSeparator = document.createElement('hr');
 
   menu.appendChild(viewOnCivitaiOption);
   menu.appendChild(deleteOption);
