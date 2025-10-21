@@ -156,10 +156,15 @@ class AutoComplete {
         this.currentSearchTerm = '';
         this.previewTooltip = null;
         this.previewTooltipPromise = null;
-        
+
         // Initialize TextAreaCaretHelper
         this.helper = new TextAreaCaretHelper(inputElement, () => app.canvas.ds.scale);
-        
+
+        this.onInput = null;
+        this.onKeyDown = null;
+        this.onBlur = null;
+        this.onDocumentClick = null;
+
         this.init();
     }
     
@@ -233,29 +238,42 @@ class AutoComplete {
     
     bindEvents() {
         // Handle input changes
-        this.inputElement.addEventListener('input', (e) => {
+        this.onInput = (e) => {
             this.handleInput(e.target.value);
-        });
-        
+        };
+        this.inputElement.addEventListener('input', this.onInput);
+
         // Handle keyboard navigation
-        this.inputElement.addEventListener('keydown', (e) => {
+        this.onKeyDown = (e) => {
             this.handleKeyDown(e);
-        });
-        
+        };
+        this.inputElement.addEventListener('keydown', this.onKeyDown);
+
         // Handle focus out to hide dropdown
-        this.inputElement.addEventListener('blur', (e) => {
+        this.onBlur = () => {
             // Delay hiding to allow for clicks on dropdown items
             setTimeout(() => {
                 this.hide();
             }, 150);
-        });
-        
+        };
+        this.inputElement.addEventListener('blur', this.onBlur);
+
         // Handle clicks outside to hide dropdown
-        document.addEventListener('click', (e) => {
-            if (!this.dropdown.contains(e.target) && e.target !== this.inputElement) {
+        this.onDocumentClick = (e) => {
+            if (!this.dropdown) {
+                return;
+            }
+
+            const target = e.target;
+            if (!(target instanceof Node)) {
+                return;
+            }
+
+            if (!this.dropdown.contains(target) && target !== this.inputElement) {
                 this.hide();
             }
-        });
+        };
+        document.addEventListener('click', this.onDocumentClick);
     }
     
     handleInput(value = '') {
@@ -450,6 +468,10 @@ class AutoComplete {
     }
     
     hide() {
+        if (!this.dropdown) {
+            return;
+        }
+
         this.dropdown.style.display = 'none';
         this.isVisible = false;
         this.selectedIndex = -1;
@@ -579,7 +601,27 @@ class AutoComplete {
         if (this.debounceTimer) {
             clearTimeout(this.debounceTimer);
         }
-        
+
+        if (this.onInput) {
+            this.inputElement.removeEventListener('input', this.onInput);
+            this.onInput = null;
+        }
+
+        if (this.onKeyDown) {
+            this.inputElement.removeEventListener('keydown', this.onKeyDown);
+            this.onKeyDown = null;
+        }
+
+        if (this.onBlur) {
+            this.inputElement.removeEventListener('blur', this.onBlur);
+            this.onBlur = null;
+        }
+
+        if (this.onDocumentClick) {
+            document.removeEventListener('click', this.onDocumentClick);
+            this.onDocumentClick = null;
+        }
+
         if (typeof this.behavior.destroy === 'function') {
             this.behavior.destroy(this);
         } else if (this.previewTooltip) {
@@ -593,7 +635,6 @@ class AutoComplete {
             this.dropdown = null;
         }
         
-        // Remove event listeners would be added here if we tracked them
     }
 }
 
