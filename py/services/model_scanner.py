@@ -678,6 +678,9 @@ class ModelScanner:
                             if root_path:
                                 model_data = await self._process_model_file(path, root_path)
                                 if model_data:
+                                    model_data = self.adjust_cached_entry(dict(model_data))
+                                    if not model_data:
+                                        continue
                                     # Add to cache
                                     self._cache.raw_data.append(model_data)
                                     self._cache.add_to_version_index(model_data)
