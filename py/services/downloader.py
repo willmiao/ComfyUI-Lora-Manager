@@ -70,7 +70,10 @@ class Downloader:
         
         # Default headers
         self.default_headers = {
-            'User-Agent': 'ComfyUI-LoRA-Manager/1.0'
+            'User-Agent': 'ComfyUI-LoRA-Manager/1.0',
+            # Explicitly request uncompressed payloads so aiohttp doesn't need optional
+            # decoders (e.g. zstandard) that may be missing in runtime environments.
+            'Accept-Encoding': 'identity',
         }
     
     @property
