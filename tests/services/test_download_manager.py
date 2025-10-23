@@ -1,5 +1,6 @@
 import asyncio
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 from types import SimpleNamespace
@@ -8,6 +9,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from py.services.download_manager import DownloadManager
+from py.services.downloader import DownloadStreamControl
 from py.services import download_manager
 from py.services.service_registry import ServiceRegistry
 from py.services.settings_manager import SettingsManager, get_settings_manager
@@ -528,9 +530,8 @@ async def test_pause_download_updates_state():
 
     download_id = "dl"
     manager._download_tasks[download_id] = object()
-    pause_event = asyncio.Event()
-    pause_event.set()
-    manager._pause_events[download_id] = pause_event
+    pause_control = DownloadStreamControl()
+    manager._pause_events[download_id] = pause_control
     manager._active_downloads[download_id] = {
         "status": "downloading",
         "bytes_per_second": 42.0,
@@ -557,8 +558,10 @@ async def test_resume_download_sets_event_and_status():
     manager = DownloadManager()
 
     download_id = "dl"
-    pause_event = asyncio.Event()
-    manager._pause_events[download_id] = pause_event
+    pause_control = DownloadStreamControl()
+    pause_control.pause()
+    pause_control.mark_progress()
+    manager._pause_events[download_id] = pause_control
     manager._active_downloads[download_id] = {
         "status": "paused",
         "bytes_per_second": 0.0,
@@ -571,13 +574,32 @@ async def test_resume_download_sets_event_and_status():
     assert manager._active_downloads[download_id]["status"] == "downloading"
 
 
+async def test_resume_download_requests_reconnect_for_stalled_stream():
+    manager = DownloadManager()
+
+    download_id = "dl"
+    pause_control = DownloadStreamControl(stall_timeout=40)
+    pause_control.pause()
+    pause_control.last_progress_timestamp = (datetime.now().timestamp() - 120)
+    manager._pause_events[download_id] = pause_control
+    manager._active_downloads[download_id] = {
+        "status": "paused",
+        "bytes_per_second": 0.0,
+    }
+
+    result = await manager.resume_download(download_id)
+
+    assert result == {"success": True, "message": "Download resumed successfully"}
+    assert pause_control.is_set() is True
+    assert pause_control.has_reconnect_request() is True
+
+
 async def test_resume_download_rejects_when_not_paused():
     manager = DownloadManager()
 
     download_id = "dl"
-    pause_event = asyncio.Event()
-    pause_event.set()
-    manager._pause_events[download_id] = pause_event
+    pause_control = DownloadStreamControl()
+    manager._pause_events[download_id] = pause_control
 
     result = await manager.resume_download(download_id)
 
