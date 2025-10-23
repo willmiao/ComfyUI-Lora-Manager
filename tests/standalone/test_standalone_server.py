@@ -84,6 +84,15 @@ async def test_standalone_server_sets_up_routes(tmp_path, standalone_module):
     assert server.app.on_shutdown, "shutdown callbacks must be attached"
 
 
+def test_standalone_server_raises_header_limits(standalone_module):
+    """``StandaloneServer`` configures ``handler_args`` to tolerate large headers."""
+
+    server = standalone_module.StandaloneServer()
+
+    assert server.app._handler_args["max_field_size"] == standalone_module.HEADER_SIZE_LIMIT
+    assert server.app._handler_args["max_line_size"] == standalone_module.HEADER_SIZE_LIMIT
+
+
 def test_validate_settings_warns_for_missing_model_paths(caplog, standalone_module):
     """Missing model folders trigger the configuration warning."""
 

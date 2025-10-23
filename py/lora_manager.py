@@ -23,6 +23,18 @@ logger = logging.getLogger(__name__)
 # Check if we're in standalone mode
 STANDALONE_MODE = 'nodes' not in sys.modules
 
+HEADER_SIZE_LIMIT = 16384
+
+
+def _sanitize_size_limit(value):
+    """Return a non-negative integer size for ``handler_args`` comparisons."""
+
+    try:
+        coerced = int(value)
+    except (TypeError, ValueError):
+        return 0
+    return coerced if coerced >= 0 else 0
+
 
 class _SettingsProxy:
     def __init__(self):
@@ -49,6 +61,24 @@ class LoraManager:
     def add_routes(cls):
         """Initialize and register all routes using the new refactored architecture"""
         app = PromptServer.instance.app
+
+        # Increase allowed header sizes so browsers with large localhost cookie
+        # jars (multiple UIs on 127.0.0.1) don't trip aiohttp's 8KB default
+        # limits. Cookies for unrelated apps are still sent to the plugin and
+        # may otherwise raise LineTooLong errors when the request parser reads
+        # them. Preserve any previously configured handler arguments while
+        # ensuring our minimum sizes are applied.
+        handler_args = getattr(app, "_handler_args", {}) or {}
+        updated_handler_args = dict(handler_args)
+        updated_handler_args["max_field_size"] = max(
+            _sanitize_size_limit(handler_args.get("max_field_size", 0)),
+            HEADER_SIZE_LIMIT,
+        )
+        updated_handler_args["max_line_size"] = max(
+            _sanitize_size_limit(handler_args.get("max_line_size", 0)),
+            HEADER_SIZE_LIMIT,
+        )
+        app._handler_args = updated_handler_args
 
         # Configure aiohttp access logger to be less verbose
         logging.getLogger('aiohttp.access').setLevel(logging.WARNING)

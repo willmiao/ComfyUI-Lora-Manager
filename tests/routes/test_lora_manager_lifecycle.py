@@ -33,6 +33,7 @@ class _DummyWSManager:
 
 async def test_lora_manager_lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     app = web.Application()
+    app._handler_args = {"max_field_size": 1024, "foo": "bar"}
     monkeypatch.setattr(lora_manager.PromptServer, "instance", SimpleNamespace(app=app))
 
     added_static_routes: list[tuple[str, Path]] = []
@@ -174,6 +175,9 @@ async def test_lora_manager_lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path:
         lora_manager.LoraManager.add_routes()
         assert lora_manager.LoraManager._cleanup in app.on_shutdown
         assert app.on_startup, "startup hooks should be registered"
+        assert app._handler_args["max_field_size"] == lora_manager.HEADER_SIZE_LIMIT
+        assert app._handler_args["max_line_size"] == lora_manager.HEADER_SIZE_LIMIT
+        assert app._handler_args["foo"] == "bar"
         assert register_calls == [True]
         assert model_factory_calls == [app]
         assert stats_setup == [app]
