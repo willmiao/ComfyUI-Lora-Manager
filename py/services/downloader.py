@@ -354,12 +354,60 @@ class Downloader:
                                     last_progress_report_time = now
                     
                     # Download completed successfully
-                    # Verify file size if total_size was provided
-                    final_size = os.path.getsize(part_path)
-                    if total_size > 0 and final_size != total_size:
-                        logger.warning(f"File size mismatch. Expected: {total_size}, Got: {final_size}")
-                        # Don't treat this as fatal error, continue anyway
-                    
+                    # Verify file size integrity before finalizing
+                    final_size = os.path.getsize(part_path) if os.path.exists(part_path) else 0
+                    expected_size = total_size if total_size > 0 else None
+
+                    integrity_error: Optional[str] = None
+                    if final_size <= 0:
+                        integrity_error = "Downloaded file is empty"
+                    elif expected_size is not None and final_size != expected_size:
+                        integrity_error = (
+                            f"File size mismatch. Expected: {expected_size}, Got: {final_size}"
+                        )
+
+                    if integrity_error is not None:
+                        logger.error(
+                            "Download integrity check failed for %s: %s",
+                            save_path,
+                            integrity_error,
+                        )
+
+                        # Remove the corrupted payload so future attempts start fresh
+                        if os.path.exists(part_path):
+                            try:
+                                os.remove(part_path)
+                            except OSError as remove_error:
+                                logger.warning(
+                                    "Failed to delete corrupted download %s: %s",
+                                    part_path,
+                                    remove_error,
+                                )
+                        if part_path != save_path and os.path.exists(save_path):
+                            try:
+                                os.remove(save_path)
+                            except OSError as remove_error:
+                                logger.warning(
+                                    "Failed to delete target file %s after integrity error: %s",
+                                    save_path,
+                                    remove_error,
+                                )
+
+                        retry_count += 1
+                        if retry_count <= self.max_retries:
+                            delay = self.base_delay * (2 ** (retry_count - 1))
+                            logger.info(
+                                "Retrying download in %s seconds due to integrity check failure",
+                                delay,
+                            )
+                            await asyncio.sleep(delay)
+                            resume_offset = 0
+                            total_size = 0
+                            await self._create_session()
+                            continue
+
+                        return False, integrity_error
+
                     # Atomically rename .part to final file (only if using resume)
                     if allow_resume and part_path != save_path:
                         max_rename_attempts = 5
@@ -382,7 +430,9 @@ class Downloader:
                                 else:
                                     logger.error(f"Failed to rename file after {max_rename_attempts} attempts: {e}")
                                     return False, f"Failed to finalize download: {str(e)}"
-                    
+
+                        final_size = os.path.getsize(save_path)
+
                     # Ensure 100% progress is reported
                     if progress_callback:
                         final_snapshot = DownloadProgress(
