@@ -1,6 +1,7 @@
 import asyncio
 import os
 from pathlib import Path
+from typing import Optional
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -429,6 +430,97 @@ async def test_execute_download_retries_urls(monkeypatch, tmp_path):
     assert result == {"success": True}
     assert [url for url, *_ in dummy_downloader.calls] == download_urls
     assert dummy_scanner.calls  # ensure cache updated
+
+
+async def test_execute_download_adjusts_checkpoint_model_type(monkeypatch, tmp_path):
+    manager = DownloadManager()
+
+    root_dir = tmp_path / "checkpoints"
+    root_dir.mkdir()
+    save_dir = root_dir
+    target_path = save_dir / "model.safetensors"
+
+    class DummyMetadata:
+        def __init__(self, path: Path):
+            self.file_path = path.as_posix()
+            self.sha256 = "sha256"
+            self.file_name = path.stem
+            self.preview_url = None
+            self.preview_nsfw_level = 0
+            self.model_type = "checkpoint"
+
+        def generate_unique_filename(self, *_args, **_kwargs):
+            return os.path.basename(self.file_path)
+
+        def update_file_info(self, updated_path):
+            self.file_path = Path(updated_path).as_posix()
+
+        def to_dict(self):
+            return {
+                "file_path": self.file_path,
+                "model_type": self.model_type,
+                "sha256": self.sha256,
+            }
+
+    metadata = DummyMetadata(target_path)
+    version_info = {"images": []}
+    download_urls = ["https://example.invalid/model.safetensors"]
+
+    class DummyDownloader:
+        async def download_file(self, _url, path, progress_callback=None, use_auth=None):
+            Path(path).write_text("content")
+            return True, "ok"
+
+    monkeypatch.setattr(
+        download_manager,
+        "get_downloader",
+        AsyncMock(return_value=DummyDownloader()),
+    )
+
+    class DummyCheckpointScanner:
+        def __init__(self, root: Path):
+            self.root = root.as_posix()
+            self.add_calls = []
+
+        def _find_root_for_file(self, file_path: str):
+            return self.root if file_path.startswith(self.root) else None
+
+        def adjust_metadata(self, metadata_obj, _file_path: str, root_path: Optional[str]):
+            if root_path:
+                metadata_obj.model_type = "diffusion_model"
+            return metadata_obj
+
+        def adjust_cached_entry(self, entry):
+            if entry.get("file_path", "").startswith(self.root):
+                entry["model_type"] = "diffusion_model"
+            return entry
+
+        async def add_model_to_cache(self, metadata_dict, relative_path):
+            self.add_calls.append((metadata_dict, relative_path))
+            return True
+
+    dummy_scanner = DummyCheckpointScanner(root_dir)
+    monkeypatch.setattr(DownloadManager, "_get_checkpoint_scanner", AsyncMock(return_value=dummy_scanner))
+    monkeypatch.setattr(MetadataManager, "save_metadata", AsyncMock(return_value=True))
+
+    result = await manager._execute_download(
+        download_urls=download_urls,
+        save_dir=str(save_dir),
+        metadata=metadata,
+        version_info=version_info,
+        relative_path="",
+        progress_callback=None,
+        model_type="checkpoint",
+        download_id=None,
+    )
+
+    assert result == {"success": True}
+    assert metadata.model_type == "diffusion_model"
+    saved_metadata = MetadataManager.save_metadata.await_args.args[1]
+    assert saved_metadata.model_type == "diffusion_model"
+    assert dummy_scanner.add_calls
+    cached_entry, _ = dummy_scanner.add_calls[0]
+    assert cached_entry["model_type"] == "diffusion_model"
 
 
 async def test_pause_download_updates_state():

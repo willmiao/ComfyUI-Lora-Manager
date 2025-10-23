@@ -3,6 +3,7 @@ import os
 import sqlite3
 from pathlib import Path
 from typing import List
+from types import MethodType
 
 import pytest
 
@@ -468,6 +469,37 @@ async def test_reconcile_cache_adds_new_files_and_updates_hash_index(tmp_path: P
     assert scanner._hash_index.get_path("hash-two") is None
     assert scanner._tags_count == {"alpha": 1, "beta": 1}
     assert cache.folders == [""]
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_applies_adjust_cached_entry(tmp_path: Path):
+    existing = tmp_path / "one.txt"
+    existing.write_text("one", encoding="utf-8")
+
+    scanner = DummyScanner(tmp_path)
+
+    applied: List[str] = []
+
+    def _adjust(self, entry: dict) -> dict:
+        applied.append(entry["file_path"])
+        entry["model_type"] = "adjusted"
+        return entry
+
+    scanner.adjust_cached_entry = MethodType(_adjust, scanner)
+
+    await scanner._initialize_cache()
+    applied.clear()
+
+    new_file = tmp_path / "two.txt"
+    new_file.write_text("two", encoding="utf-8")
+
+    await scanner._reconcile_cache()
+
+    normalized_new = _normalize_path(new_file)
+    assert normalized_new in applied
+
+    new_entry = next(item for item in scanner._cache.raw_data if item["file_path"] == normalized_new)
+    assert new_entry["model_type"] == "adjusted"
 
 
 @pytest.mark.asyncio

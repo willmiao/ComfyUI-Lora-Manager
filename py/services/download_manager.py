@@ -643,10 +643,10 @@ class DownloadManager:
             # 4. Update file information (size and modified time)
             metadata.update_file_info(save_path)
 
-            # 5. Final metadata update
-            await MetadataManager.save_metadata(save_path, metadata)
+            scanner = None
+            adjust_root: Optional[str] = None
 
-            # 6. Update cache based on model type
+            # 5. Determine scanner and adjust metadata for cache consistency
             if model_type == "checkpoint":
                 scanner = await self._get_checkpoint_scanner()
                 logger.info(f"Updating checkpoint cache for {save_path}")
@@ -656,9 +656,33 @@ class DownloadManager:
             elif model_type == "embedding":
                 scanner = await ServiceRegistry.get_embedding_scanner()
                 logger.info(f"Updating embedding cache for {save_path}")
-                
+
+            if scanner is not None:
+                file_path_for_adjust = getattr(metadata, "file_path", save_path)
+                if isinstance(file_path_for_adjust, str):
+                    normalized_file_path = file_path_for_adjust.replace(os.sep, "/")
+                else:
+                    normalized_file_path = str(file_path_for_adjust)
+
+                find_root = getattr(scanner, "_find_root_for_file", None)
+                if callable(find_root):
+                    try:
+                        adjust_root = find_root(normalized_file_path)
+                    except TypeError:
+                        adjust_root = None
+
+                adjust_metadata = getattr(scanner, "adjust_metadata", None)
+                if callable(adjust_metadata):
+                    metadata = adjust_metadata(metadata, normalized_file_path, adjust_root)
+
+            # 6. Persist metadata with any adjustments
+            await MetadataManager.save_metadata(save_path, metadata)
+
             # Convert metadata to dictionary
             metadata_dict = metadata.to_dict()
+            adjust_cached_entry = getattr(scanner, "adjust_cached_entry", None) if scanner is not None else None
+            if callable(adjust_cached_entry):
+                metadata_dict = adjust_cached_entry(metadata_dict)
 
             # Add model to cache and save to disk in a single operation
             await scanner.add_model_to_cache(metadata_dict, relative_path)
