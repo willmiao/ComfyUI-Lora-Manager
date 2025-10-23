@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime
 from pathlib import Path
+from typing import Sequence
 
 import pytest
 
@@ -8,13 +9,24 @@ from py.services.downloader import Downloader
 
 
 class FakeStream:
-    def __init__(self, chunks):
+    def __init__(self, chunks: Sequence[Sequence] | Sequence[bytes]):
         self._chunks = list(chunks)
 
-    async def iter_chunked(self, _chunk_size):
-        for chunk in self._chunks:
+    async def read(self, _chunk_size: int) -> bytes:
+        if not self._chunks:
             await asyncio.sleep(0)
-            yield chunk
+            return b""
+
+        item = self._chunks.pop(0)
+        delay = 0.0
+        payload = item
+
+        if isinstance(item, tuple):
+            payload = item[0]
+            delay = item[1]
+
+        await asyncio.sleep(delay)
+        return payload
 
 
 class FakeResponse:
@@ -53,6 +65,12 @@ def _build_downloader(responses, *, max_retries=0):
     downloader._session = fake_session
     downloader._session_created_at = datetime.now()
     downloader._proxy_url = None
+    async def _noop_create_session():
+        downloader._session = fake_session
+        downloader._session_created_at = datetime.now()
+        downloader._proxy_url = None
+
+    downloader._create_session = _noop_create_session  # type: ignore[assignment]
     return downloader
 
 
@@ -122,4 +140,35 @@ async def test_download_file_succeeds_when_sizes_match(tmp_path):
 
     assert success is True
     assert Path(result_path).read_bytes() == payload
+    assert not Path(str(target_path) + ".part").exists()
+
+
+@pytest.mark.asyncio
+async def test_download_file_recovers_from_stall(tmp_path):
+    target_path = tmp_path / "model" / "file.bin"
+    target_path.parent.mkdir()
+
+    payload = b"abcdef"
+
+    responses = [
+        lambda: FakeResponse(
+            status=200,
+            headers={"content-length": str(len(payload))},
+            chunks=[(b"abc", 0.0), (b"def", 0.1)],
+        ),
+        lambda: FakeResponse(
+            status=206,
+            headers={"content-length": "3", "Content-Range": "bytes 3-5/6"},
+            chunks=[(b"def", 0.0)],
+        ),
+    ]
+
+    downloader = _build_downloader(responses, max_retries=1)
+    downloader.stall_timeout = 0.05
+
+    success, result_path = await downloader.download_file("https://example.com/file", str(target_path))
+
+    assert success is True
+    assert Path(result_path).read_bytes() == payload
+    assert downloader._session._get_calls == 2
     assert not Path(str(target_path) + ".part").exists()
