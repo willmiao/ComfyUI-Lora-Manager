@@ -33,6 +33,7 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("GET", "/api/lm/trained-words", "get_trained_words"),
     RouteDefinition("GET", "/api/lm/model-example-files", "get_model_example_files"),
     RouteDefinition("POST", "/api/lm/register-nodes", "register_nodes"),
+    RouteDefinition("POST", "/api/lm/update-node-widget", "update_node_widget"),
     RouteDefinition("GET", "/api/lm/get-registry", "get_registry"),
     RouteDefinition("GET", "/api/lm/check-model-exists", "check_model_exists"),
     RouteDefinition("GET", "/api/lm/civitai/user-models", "get_civitai_user_models"),

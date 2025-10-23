@@ -1,7 +1,7 @@
 // ComfyUI extension to track model usage statistics
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
-import { getAllGraphNodes, getNodeReference, showToast } from "./utils.js";
+import { showToast } from "./utils.js";
 
 // Define target nodes and their widget configurations
 const PATH_CORRECTION_TARGETS = [
@@ -68,12 +68,8 @@ app.registerExtension({
             }
         });
 
-        // Listen for registry refresh requests
-        api.addEventListener("lora_registry_refresh", () => {
-            this.refreshRegistry();
-        });
     },
-    
+
     async updateUsageStats(promptId) {
         try {
             // Call backend endpoint with the prompt_id
@@ -90,59 +86,6 @@ app.registerExtension({
             }
         } catch (error) {
             console.error("Error updating usage statistics:", error);
-        }
-    },
-
-    async refreshRegistry() {
-        try {
-            const loraNodes = [];
-            const nodeEntries = getAllGraphNodes(app.graph);
-
-            for (const { graph, node } of nodeEntries) {
-                if (!node || !node.comfyClass) {
-                    continue;
-                }
-
-                if (
-                    node.comfyClass === "Lora Loader (LoraManager)" ||
-                    node.comfyClass === "Lora Stacker (LoraManager)" ||
-                    node.comfyClass === "WanVideo Lora Select (LoraManager)"
-                ) {
-                    const reference = getNodeReference(node);
-                    if (!reference) {
-                        continue;
-                    }
-
-                    const graphName = typeof graph?.name === "string" && graph.name.trim()
-                        ? graph.name
-                        : null;
-
-                    loraNodes.push({
-                        node_id: reference.node_id,
-                        graph_id: reference.graph_id,
-                        graph_name: graphName,
-                        bgcolor: node.bgcolor ?? node.color ?? null,
-                        title: node.title || node.comfyClass,
-                        type: node.comfyClass,
-                    });
-                }
-            }
-
-            const response = await fetch('/api/lm/register-nodes', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ nodes: loraNodes }),
-            });
-
-            if (!response.ok) {
-                console.warn("Failed to register Lora nodes:", response.statusText);
-            } else {
-                console.log(`Successfully registered ${loraNodes.length} Lora nodes`);
-            }
-        } catch (error) {
-            console.error("Error refreshing registry:", error);
         }
     },
 

@@ -1,4 +1,4 @@
-import { showToast, openCivitai, copyToClipboard, copyLoraSyntax, sendLoraToWorkflow, openExampleImagesFolder, buildLoraSyntax } from '../../utils/uiHelpers.js';
+import { showToast, openCivitai, copyToClipboard, copyLoraSyntax, sendLoraToWorkflow, openExampleImagesFolder, buildLoraSyntax, sendModelPathToWorkflow } from '../../utils/uiHelpers.js';
 import { state, getCurrentPageState } from '../../state/index.js';
 import { showModelModal } from './ModelModal.js';
 import { toggleShowcase } from './showcase/ShowcaseView.js';
@@ -168,8 +168,53 @@ function handleSendToWorkflow(card, replaceMode, modelType) {
         const usageTips = JSON.parse(card.dataset.usage_tips || '{}');
         const loraSyntax = buildLoraSyntax(card.dataset.file_name, usageTips);
         sendLoraToWorkflow(loraSyntax, replaceMode, 'lora');
+    } else if (modelType === MODEL_TYPES.CHECKPOINT) {
+        const modelPath = card.dataset.filepath;
+        if (!modelPath) {
+            const message = translate('modelCard.sendToWorkflow.missingPath', {}, 'Unable to determine model path for this card');
+            showToast(message, {}, 'error');
+            return;
+        }
+
+        const subtype = (card.dataset.model_type || 'checkpoint').toLowerCase();
+        const isDiffusionModel = subtype === 'diffusion_model';
+        const widgetName = isDiffusionModel ? 'unet_name' : 'ckpt_name';
+        const actionTypeText = translate(
+            isDiffusionModel ? 'uiHelpers.nodeSelector.diffusionModel' : 'uiHelpers.nodeSelector.checkpoint',
+            {},
+            isDiffusionModel ? 'Diffusion Model' : 'Checkpoint'
+        );
+        const successMessage = translate(
+            isDiffusionModel ? 'uiHelpers.workflow.diffusionModelUpdated' : 'uiHelpers.workflow.checkpointUpdated',
+            {},
+            isDiffusionModel ? 'Diffusion model updated in workflow' : 'Checkpoint updated in workflow'
+        );
+        const failureMessage = translate(
+            isDiffusionModel ? 'uiHelpers.workflow.diffusionModelFailed' : 'uiHelpers.workflow.checkpointFailed',
+            {},
+            isDiffusionModel ? 'Failed to update diffusion model node' : 'Failed to update checkpoint node'
+        );
+        const missingNodesMessage = translate(
+            'uiHelpers.workflow.noMatchingNodes',
+            {},
+            'No compatible nodes available in the current workflow'
+        );
+        const missingTargetMessage = translate(
+            'uiHelpers.workflow.noTargetNodeSelected',
+            {},
+            'No target node selected'
+        );
+
+        sendModelPathToWorkflow(modelPath, {
+            widgetName,
+            collectionType: MODEL_TYPES.CHECKPOINT,
+            actionTypeText,
+            successMessage,
+            failureMessage,
+            missingNodesMessage,
+            missingTargetMessage,
+        });
     } else {
-        // Checkpoint send functionality - to be implemented
         showToast('modelCard.sendToWorkflow.checkpointNotImplemented', {}, 'info');
     }
 }
@@ -470,8 +515,21 @@ export function createModelCard(model, modelType) {
     const globeTitle = model.from_civitai ? 
         translate('modelCard.actions.viewOnCivitai', {}, 'View on Civitai') :
         translate('modelCard.actions.notAvailableFromCivitai', {}, 'Not available from Civitai');
-    const sendTitle = translate('modelCard.actions.sendToWorkflow', {}, 'Send to ComfyUI (Click: Append, Shift+Click: Replace)');
-    const copyTitle = translate('modelCard.actions.copyLoRASyntax', {}, 'Copy LoRA Syntax');
+    let sendTitle;
+    let copyTitle;
+    if (modelType === MODEL_TYPES.LORA) {
+        sendTitle = translate('modelCard.actions.sendToWorkflow', {}, 'Send to ComfyUI (Click: Append, Shift+Click: Replace)');
+        copyTitle = translate('modelCard.actions.copyLoRASyntax', {}, 'Copy LoRA Syntax');
+    } else if (modelType === MODEL_TYPES.CHECKPOINT) {
+        sendTitle = translate('modelCard.actions.sendCheckpointToWorkflow', {}, 'Send to ComfyUI');
+        copyTitle = translate('modelCard.actions.copyCheckpointName', {}, 'Copy checkpoint name');
+    } else if (modelType === MODEL_TYPES.EMBEDDING) {
+        sendTitle = translate('modelCard.actions.sendEmbeddingToWorkflow', {}, 'Send to ComfyUI');
+        copyTitle = translate('modelCard.actions.copyEmbeddingName', {}, 'Copy embedding name');
+    } else {
+        sendTitle = translate('modelCard.actions.sendToWorkflow', {}, 'Send to ComfyUI');
+        copyTitle = translate('modelCard.actions.copyLoRASyntax', {}, 'Copy value');
+    }
 
     const actionIcons = `
         <i class="${isFavorite ? 'fas fa-star favorite-active' : 'far fa-star'}" 
@@ -831,5 +889,3 @@ export function updateCardsForBulkMode(isBulkMode) {
         bulkManager.applySelectionState();
     }
 }
-
-

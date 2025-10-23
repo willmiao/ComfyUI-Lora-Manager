@@ -398,6 +398,97 @@ export function copyLoraSyntax(card) {
   }
 }
 
+async function fetchWorkflowRegistry() {
+  try {
+    const response = await fetch('/api/lm/get-registry');
+    const registryData = await response.json();
+
+    if (!registryData.success) {
+      if (registryData.error === 'Standalone Mode Active') {
+        showToast('toast.general.cannotInteractStandalone', {}, 'warning');
+      } else {
+        showToast('toast.general.failedWorkflowInfo', {}, 'error');
+      }
+      return null;
+    }
+
+    return registryData.data;
+  } catch (error) {
+    console.error('Failed to get registry:', error);
+    showToast('uiHelpers.workflow.communicationFailed', {}, 'error');
+    return null;
+  }
+}
+
+function filterRegistryNodes(nodes = {}, predicate) {
+  if (typeof nodes !== 'object' || nodes === null) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(nodes).filter(([, node]) => {
+      try {
+        return predicate(node);
+      } catch (error) {
+        console.warn('Failed to evaluate registry node predicate', error);
+        return false;
+      }
+    }),
+  );
+}
+
+function getWidgetNames(node) {
+  if (!node) {
+    return [];
+  }
+
+  if (Array.isArray(node.widget_names)) {
+    return node.widget_names;
+  }
+
+  if (node.capabilities && Array.isArray(node.capabilities.widget_names)) {
+    return node.capabilities.widget_names;
+  }
+
+  return [];
+}
+
+function isAbsolutePath(path) {
+  if (typeof path !== 'string') {
+    return false;
+  }
+
+  return path.startsWith('/') || path.startsWith('\\') || /^[a-zA-Z]:[\\/]/.test(path);
+}
+
+async function ensureRelativeModelPath(modelPath, collectionType) {
+  if (!modelPath || !isAbsolutePath(modelPath)) {
+    return modelPath;
+  }
+
+  const fileName = modelPath.split(/[/\\]/).pop();
+  if (!fileName) {
+    return modelPath;
+  }
+
+  try {
+    const response = await fetch(`/api/lm/${collectionType}/relative-paths?search=${encodeURIComponent(fileName)}&limit=10`);
+    if (!response.ok) {
+      return modelPath;
+    }
+    const data = await response.json();
+    const relativePaths = Array.isArray(data?.relative_paths) ? data.relative_paths : [];
+    if (relativePaths.length === 0) {
+      return modelPath;
+    }
+    const exactMatch = relativePaths.find((path) => path.endsWith(fileName));
+    return exactMatch || relativePaths[0] || modelPath;
+  } catch (error) {
+    console.warn('LoRA Manager: failed to resolve relative path for model', error);
+    return modelPath;
+  }
+}
+
 /**
  * Sends LoRA syntax to the active ComfyUI workflow
  * @param {string} loraSyntax - The LoRA syntax to send
@@ -406,44 +497,106 @@ export function copyLoraSyntax(card) {
  * @returns {Promise<boolean>} - Whether the operation was successful
  */
 export async function sendLoraToWorkflow(loraSyntax, replaceMode = false, syntaxType = 'lora') {
-  try {
-    // Get registry information from the new endpoint
-    const registryResponse = await fetch('/api/lm/get-registry');
-    const registryData = await registryResponse.json();
-    
-    if (!registryData.success) {
-      // Handle specific error cases
-      if (registryData.error === 'Standalone Mode Active') {
-        // Standalone mode - show warning with specific message
-        showToast('toast.general.cannotInteractStandalone', {}, 'warning');
-        return false;
-      } else {
-        // Other errors - show error toast
-        showToast('toast.general.failedWorkflowInfo', {}, 'error');
-        return false;
-      }
-    }
-    
-    // Success case - check node count
-    if (registryData.data.node_count === 0) {
-      // No nodes found - show warning
-      showToast('uiHelpers.workflow.noSupportedNodes', {}, 'warning');
-      return false;
-    } else if (registryData.data.node_count > 1) {
-      // Multiple nodes - show selector
-      showNodeSelector(registryData.data.nodes, loraSyntax, replaceMode, syntaxType);
-      return true;
-    } else {
-      // Single node - send directly
-      const nodes = registryData.data.nodes;
-      const nodeId = Object.keys(nodes)[0];
-      return await sendToSpecificNode([nodeId], nodes, loraSyntax, replaceMode, syntaxType);
-    }
-  } catch (error) {
-    console.error('Failed to get registry:', error);
-    showToast('uiHelpers.workflow.communicationFailed', {}, 'error');
+  const registry = await fetchWorkflowRegistry();
+  if (!registry) {
     return false;
   }
+
+  const loraNodes = filterRegistryNodes(registry.nodes, (node) => {
+    if (!node) {
+      return false;
+    }
+    if (node.capabilities && typeof node.capabilities === 'object') {
+      if (node.capabilities.supports_lora === true) {
+        return true;
+      }
+    }
+    return typeof node.type === 'number' && node.type > 0;
+  });
+
+  const nodeKeys = Object.keys(loraNodes);
+  if (nodeKeys.length === 0) {
+    showToast('uiHelpers.workflow.noSupportedNodes', {}, 'warning');
+    return false;
+  }
+
+  if (nodeKeys.length === 1) {
+    return await sendLoraToNodes([nodeKeys[0]], loraNodes, loraSyntax, replaceMode, syntaxType);
+  }
+
+  const actionType =
+    syntaxType === 'recipe'
+      ? translate('uiHelpers.nodeSelector.recipe', {}, 'Recipe')
+      : translate('uiHelpers.nodeSelector.lora', {}, 'LoRA');
+  const actionMode = replaceMode
+    ? translate('uiHelpers.nodeSelector.replace', {}, 'Replace')
+    : translate('uiHelpers.nodeSelector.append', {}, 'Append');
+
+  showNodeSelector(loraNodes, {
+    actionType,
+    actionMode,
+    onSend: (selectedNodeIds) =>
+      sendLoraToNodes(selectedNodeIds, loraNodes, loraSyntax, replaceMode, syntaxType),
+  });
+  return true;
+}
+
+export async function sendModelPathToWorkflow(modelPath, options) {
+  const {
+    widgetName,
+    collectionType = 'checkpoints',
+    actionTypeText = 'Checkpoint',
+    successMessage = 'Updated workflow node',
+    failureMessage = 'Failed to update workflow node',
+    missingNodesMessage = 'No compatible nodes available in the current workflow',
+    missingTargetMessage = 'No target node selected',
+  } = options;
+
+  if (!widgetName) {
+    console.warn('LoRA Manager: widget name is required to send model to workflow');
+    return false;
+  }
+
+  const relativePath = await ensureRelativeModelPath(modelPath, collectionType);
+
+  const registry = await fetchWorkflowRegistry();
+  if (!registry) {
+    return false;
+  }
+
+  const targetNodes = filterRegistryNodes(registry.nodes, (node) => {
+    const widgetNames = getWidgetNames(node);
+    return widgetNames.includes(widgetName);
+  });
+
+  const nodeKeys = Object.keys(targetNodes);
+  if (nodeKeys.length === 0) {
+    showToast(missingNodesMessage, {}, 'warning');
+    return false;
+  }
+
+  const actionType = actionTypeText;
+  const actionMode = translate('uiHelpers.nodeSelector.replace', {}, 'Replace');
+
+  const messages = {
+    successMessage,
+    failureMessage,
+    missingTargetMessage,
+  };
+
+  const handleSend = (selectedNodeIds) =>
+    sendWidgetValueToNodes(selectedNodeIds, targetNodes, widgetName, relativePath, messages);
+
+  if (nodeKeys.length === 1) {
+    return await handleSend([nodeKeys[0]]);
+  }
+
+  showNodeSelector(targetNodes, {
+    actionType,
+    actionMode,
+    onSend: handleSend,
+  });
+  return true;
 }
 
 /**
@@ -483,7 +636,7 @@ function resolveNodeReference(nodeKey, nodesMap) {
   };
 }
 
-async function sendToSpecificNode(nodeIds, nodesMap, loraSyntax, replaceMode, syntaxType) {
+async function sendLoraToNodes(nodeIds, nodesMap, loraSyntax, replaceMode, syntaxType) {
   try {
     // Call the backend API to update the lora code
     const requestBody = {
@@ -547,29 +700,96 @@ async function sendToSpecificNode(nodeIds, nodesMap, loraSyntax, replaceMode, sy
   }
 }
 
+async function sendWidgetValueToNodes(nodeIds, nodesMap, widgetName, value, messages = {}) {
+  const {
+    successMessage = 'Updated workflow node',
+    failureMessage = 'Failed to update workflow node',
+    missingTargetMessage = 'No target node selected',
+  } = messages;
+
+  const targetIds = Array.isArray(nodeIds) ? nodeIds : [];
+  if (targetIds.length === 0) {
+    showToast(missingTargetMessage, {}, 'warning');
+    return false;
+  }
+
+  const references = targetIds
+    .map((nodeKey) => resolveNodeReference(nodeKey, nodesMap))
+    .filter((reference) => reference && reference.node_id !== undefined);
+
+  if (references.length === 0) {
+    showToast(missingTargetMessage, {}, 'warning');
+    return false;
+  }
+
+  try {
+    const response = await fetch('/api/lm/update-node-widget', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        widget_name: widgetName,
+        value,
+        node_ids: references,
+      }),
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      showToast(successMessage, {}, 'success');
+      return true;
+    }
+
+    const errorMessage = result?.error || failureMessage;
+    showToast(errorMessage, {}, 'error');
+    return false;
+  } catch (error) {
+    console.error('Failed to send widget value to workflow:', error);
+    showToast(failureMessage, {}, 'error');
+    return false;
+  }
+}
+
 // Global variable to track active node selector state
 let nodeSelectorState = {
   isActive: false,
   clickHandler: null,
-  selectorClickHandler: null
+  selectorClickHandler: null,
+  currentNodes: {},
+  onSend: null,
+  enableSendAll: true,
 };
 
 /**
  * Show node selector popup near mouse position
  * @param {Object} nodes - Registry nodes data
- * @param {string} loraSyntax - The LoRA syntax to send
- * @param {boolean} replaceMode - Whether to replace existing LoRAs
- * @param {string} syntaxType - The type of syntax ('lora' or 'recipe')
+ * @param {Object} options - Configuration for display and actions
+ * @param {string} options.actionType - Display label for the action type (e.g. LoRA)
+ * @param {string} options.actionMode - Display label for the action mode (e.g. Replace)
+ * @param {Function} options.onSend - Callback invoked with selected node ids
+ * @param {boolean} [options.enableSendAll=true] - Whether to show the "send to all" option
  */
-function showNodeSelector(nodes, loraSyntax, replaceMode, syntaxType) {
+function showNodeSelector(nodes, options = {}) {
   const selector = document.getElementById('nodeSelector');
   if (!selector) return;
   
   // Clean up any existing state
   hideNodeSelector();
+
+  const safeNodes = nodes || {};
+  const onSend = typeof options.onSend === 'function' ? options.onSend : null;
+  if (!onSend) {
+    console.warn('LoRA Manager: node selector invoked without send handler');
+    return;
+  }
+
+  nodeSelectorState.currentNodes = safeNodes;
+  nodeSelectorState.onSend = onSend;
+  nodeSelectorState.enableSendAll = options.enableSendAll !== false;
   
   // Generate node list HTML with icons and proper colors
-  const nodeItems = Object.entries(nodes).map(([nodeKey, node]) => {
+  const nodeItems = Object.entries(safeNodes).map(([nodeKey, node]) => {
     const iconClass = NODE_TYPE_ICONS[node.type] || 'fas fa-question-circle';
     const bgColor = node.bgcolor || DEFAULT_NODE_COLOR;
     const graphLabel = node.graph_name ? ` (${node.graph_name})` : '';
@@ -585,14 +805,20 @@ function showNodeSelector(nodes, loraSyntax, replaceMode, syntaxType) {
   }).join('');
   
   // Add header with action mode indicator
-  const actionType = syntaxType === 'recipe' ? 
-    translate('uiHelpers.nodeSelector.recipe', {}, 'Recipe') :
-    translate('uiHelpers.nodeSelector.lora', {}, 'LoRA');
-  const actionMode = replaceMode ? 
-    translate('uiHelpers.nodeSelector.replace', {}, 'Replace') :
-    translate('uiHelpers.nodeSelector.append', {}, 'Append');
+  const actionType = options.actionType ?? translate('uiHelpers.nodeSelector.lora', {}, 'LoRA');
+  const actionMode = options.actionMode ?? translate('uiHelpers.nodeSelector.replace', {}, 'Replace');
   const selectTargetNodeText = translate('uiHelpers.nodeSelector.selectTargetNode', {}, 'Select target node');
   const sendToAllText = translate('uiHelpers.nodeSelector.sendToAll', {}, 'Send to All');
+
+  const sendAllMarkup = nodeSelectorState.enableSendAll
+    ? `
+    <div class="node-item send-all-item" data-action="send-all">
+      <div class="node-icon-indicator all-nodes">
+        <i class="fas fa-broadcast-tower"></i>
+      </div>
+      <span>${sendToAllText}</span>
+    </div>`
+    : '';
   
   selector.innerHTML = `
     <div class="node-selector-header">
@@ -600,12 +826,7 @@ function showNodeSelector(nodes, loraSyntax, replaceMode, syntaxType) {
       <span class="selector-instruction">${selectTargetNodeText}</span>
     </div>
     ${nodeItems}
-    <div class="node-item send-all-item" data-action="send-all">
-      <div class="node-icon-indicator all-nodes">
-        <i class="fas fa-broadcast-tower"></i>
-      </div>
-      <span>${sendToAllText}</span>
-    </div>
+    ${sendAllMarkup}
   `;
   
   // Position near mouse
@@ -619,18 +840,14 @@ function showNodeSelector(nodes, loraSyntax, replaceMode, syntaxType) {
   eventManager.setState('nodeSelectorActive', true);
   
   // Setup event listeners with proper cleanup through event manager
-  setupNodeSelectorEvents(selector, nodes, loraSyntax, replaceMode, syntaxType);
+  setupNodeSelectorEvents(selector);
 }
 
 /**
  * Setup event listeners for node selector using event manager
  * @param {HTMLElement} selector - The selector element
- * @param {Object} nodes - Registry nodes data
- * @param {string} loraSyntax - The LoRA syntax to send
- * @param {boolean} replaceMode - Whether to replace existing LoRAs
- * @param {string} syntaxType - The type of syntax ('lora' or 'recipe')
  */
-function setupNodeSelectorEvents(selector, nodes, loraSyntax, replaceMode, syntaxType) {
+function setupNodeSelectorEvents(selector) {
   // Clean up any existing event listeners
   cleanupNodeSelectorEvents();
   
@@ -650,21 +867,32 @@ function setupNodeSelectorEvents(selector, nodes, loraSyntax, replaceMode, synta
     const nodeItem = e.target.closest('.node-item');
     if (!nodeItem) return false; // Continue with other handlers
     
+    const onSend = nodeSelectorState.onSend;
+    if (typeof onSend !== 'function') {
+      hideNodeSelector();
+      return true;
+    }
+
     e.stopPropagation();
     
     const action = nodeItem.dataset.action;
     const nodeId = nodeItem.dataset.nodeId;
+    const nodes = nodeSelectorState.currentNodes || {};
     
-    if (action === 'send-all') {
-      // Send to all nodes
-      const allNodeIds = Object.keys(nodes);
-      await sendToSpecificNode(allNodeIds, nodes, loraSyntax, replaceMode, syntaxType);
-    } else if (nodeId) {
-      // Send to specific node
-      await sendToSpecificNode([nodeId], nodes, loraSyntax, replaceMode, syntaxType);
+    try {
+      if (action === 'send-all') {
+        if (!nodeSelectorState.enableSendAll) {
+          return true;
+        }
+        const allNodeIds = Object.keys(nodes);
+        await onSend(allNodeIds);
+      } else if (nodeId) {
+        await onSend([nodeId]);
+      }
+    } finally {
+      hideNodeSelector();
     }
-    
-    hideNodeSelector();
+
     return true; // Stop propagation
   }, {
     priority: 150, // High priority but lower than outside click
@@ -699,6 +927,9 @@ function hideNodeSelector() {
   // Clean up event listeners
   cleanupNodeSelectorEvents();
   nodeSelectorState.isActive = false;
+  nodeSelectorState.currentNodes = {};
+  nodeSelectorState.onSend = null;
+  nodeSelectorState.enableSendAll = true;
   
   // Update event manager state
   eventManager.setState('nodeSelectorActive', false);
