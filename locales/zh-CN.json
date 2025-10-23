@@ -102,7 +102,11 @@
             "toggleBlur": "切换模糊",
             "show": "显示",
             "openExampleImages": "打开示例图片文件夹",
-            "replacePreview": "替换预览"
+            "replacePreview": "替换预览",
+            "copyCheckpointName": "复制 Checkpoint 名称",
+            "copyEmbeddingName": "复制 Embedding 名称",
+            "sendCheckpointToWorkflow": "发送到 ComfyUI",
+            "sendEmbeddingToWorkflow": "发送到 ComfyUI"
         },
         "nsfw": {
             "matureContent": "成熟内容",
@@ -116,7 +120,8 @@
             "updateFailed": "收藏状态更新失败"
         },
         "sendToWorkflow": {
-            "checkpointNotImplemented": "发送检查点到工作流 - 功能待实现"
+            "checkpointNotImplemented": "发送检查点到工作流 - 功能待实现",
+            "missingPath": "无法确定此卡片的模型路径"
         },
         "exampleImages": {
             "checkError": "检查示例图片时出错",
@@ -950,7 +955,9 @@
             "loraFailedToSend": "发送 LoRA 到工作流失败",
             "recipeAdded": "配方已追加到工作流",
             "recipeReplaced": "配方已替换到工作流",
-            "recipeFailedToSend": "发送配方到工作流失败"
+            "recipeFailedToSend": "发送配方到工作流失败",
+            "noMatchingNodes": "当前工作流中没有兼容的节点",
+            "noTargetNodeSelected": "未选择目标节点"
         },
         "nodeSelector": {
             "recipe": "配方",

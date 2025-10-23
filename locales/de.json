@@ -102,7 +102,11 @@
             "toggleBlur": "Unschärfe umschalten",
             "show": "Anzeigen",
             "openExampleImages": "Beispielbilder-Ordner öffnen",
-            "replacePreview": "Vorschau ersetzen"
+            "replacePreview": "Vorschau ersetzen",
+            "copyCheckpointName": "Checkpoint-Name kopieren",
+            "copyEmbeddingName": "Embedding-Name kopieren",
+            "sendCheckpointToWorkflow": "An ComfyUI senden",
+            "sendEmbeddingToWorkflow": "An ComfyUI senden"
         },
         "nsfw": {
             "matureContent": "Nicht jugendfreie Inhalte",
@@ -116,7 +120,8 @@
             "updateFailed": "Fehler beim Aktualisieren des Favoriten-Status"
         },
         "sendToWorkflow": {
-            "checkpointNotImplemented": "Checkpoint an Workflow senden - Funktion wird implementiert"
+            "checkpointNotImplemented": "Checkpoint an Workflow senden - Funktion wird implementiert",
+            "missingPath": "Modellpfad für diese Karte konnte nicht ermittelt werden"
         },
         "exampleImages": {
             "checkError": "Fehler beim Überprüfen der Beispielbilder",
@@ -951,7 +956,9 @@
             "loraFailedToSend": "Fehler beim Senden der LoRA an den Workflow",
             "recipeAdded": "Rezept zum Workflow hinzugefügt",
             "recipeReplaced": "Rezept im Workflow ersetzt",
-            "recipeFailedToSend": "Fehler beim Senden des Rezepts an den Workflow"
+            "recipeFailedToSend": "Fehler beim Senden des Rezepts an den Workflow",
+            "noMatchingNodes": "Keine kompatiblen Knoten im aktuellen Workflow verfügbar",
+            "noTargetNodeSelected": "Kein Zielknoten ausgewählt"
         },
         "nodeSelector": {
             "recipe": "Rezept",

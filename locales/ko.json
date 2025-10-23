@@ -102,7 +102,11 @@
             "toggleBlur": "블러 토글",
             "show": "보기",
             "openExampleImages": "예시 이미지 폴더 열기",
-            "replacePreview": "미리보기 교체"
+            "replacePreview": "미리보기 교체",
+            "copyCheckpointName": "Checkpoint 이름 복사",
+            "copyEmbeddingName": "Embedding 이름 복사",
+            "sendCheckpointToWorkflow": "ComfyUI로 전송",
+            "sendEmbeddingToWorkflow": "ComfyUI로 전송"
         },
         "nsfw": {
             "matureContent": "성인 콘텐츠",
@@ -116,7 +120,8 @@
             "updateFailed": "즐겨찾기 상태 업데이트 실패"
         },
         "sendToWorkflow": {
-            "checkpointNotImplemented": "Checkpoint을 워크플로로 전송 - 구현 예정 기능"
+            "checkpointNotImplemented": "Checkpoint을 워크플로로 전송 - 구현 예정 기능",
+            "missingPath": "이 카드의 모델 경로를 확인할 수 없습니다"
         },
         "exampleImages": {
             "checkError": "예시 이미지 확인 중 오류",
@@ -950,7 +955,9 @@
             "loraFailedToSend": "LoRA를 워크플로로 전송하지 못했습니다",
             "recipeAdded": "레시피가 워크플로에 추가되었습니다",
             "recipeReplaced": "레시피가 워크플로에서 교체되었습니다",
-            "recipeFailedToSend": "레시피를 워크플로로 전송하지 못했습니다"
+            "recipeFailedToSend": "레시피를 워크플로로 전송하지 못했습니다",
+            "noMatchingNodes": "현재 워크플로에서 호환되는 노드가 없습니다",
+            "noTargetNodeSelected": "대상 노드가 선택되지 않았습니다"
         },
         "nodeSelector": {
             "recipe": "레시피",

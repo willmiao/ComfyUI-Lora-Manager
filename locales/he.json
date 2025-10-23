@@ -102,7 +102,11 @@
             "toggleBlur": "הפעל/כבה טשטוש",
             "show": "הצג",
             "openExampleImages": "פתח תיקיית תמונות דוגמה",
-            "replacePreview": "החלף תצוגה מקדימה"
+            "replacePreview": "החלף תצוגה מקדימה",
+            "copyCheckpointName": "העתק שם Checkpoint",
+            "copyEmbeddingName": "העתק שם Embedding",
+            "sendCheckpointToWorkflow": "שלח ל-ComfyUI",
+            "sendEmbeddingToWorkflow": "שלח ל-ComfyUI"
         },
         "nsfw": {
             "matureContent": "תוכן למבוגרים",
@@ -116,7 +120,8 @@
             "updateFailed": "עדכון סטטוס מועדפים נכשל"
         },
         "sendToWorkflow": {
-            "checkpointNotImplemented": "שליחת checkpoint ל-workflow - תכונה שתיושם בעתיד"
+            "checkpointNotImplemented": "שליחת checkpoint ל-workflow - תכונה שתיושם בעתיד",
+            "missingPath": "לא ניתן לקבוע את נתיב המודל לכרטיס זה"
         },
         "exampleImages": {
             "checkError": "שגיאה בבדיקת תמונות דוגמה",
@@ -950,7 +955,9 @@
             "loraFailedToSend": "שליחת LoRA ל-workflow נכשלה",
             "recipeAdded": "מתכון נוסף ל-workflow",
             "recipeReplaced": "מתכון הוחלף ב-workflow",
-            "recipeFailedToSend": "שליחת מתכון ל-workflow נכשלה"
+            "recipeFailedToSend": "שליחת מתכון ל-workflow נכשלה",
+            "noMatchingNodes": "אין צמתים תואמים זמינים ב-workflow הנוכחי",
+            "noTargetNodeSelected": "לא נבחר צומת יעד"
         },
         "nodeSelector": {
             "recipe": "מתכון",

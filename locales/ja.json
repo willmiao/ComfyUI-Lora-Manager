@@ -102,7 +102,11 @@
             "toggleBlur": "ぼかしの切り替え",
             "show": "表示",
             "openExampleImages": "例画像フォルダを開く",
-            "replacePreview": "プレビューを置換"
+            "replacePreview": "プレビューを置換",
+            "copyCheckpointName": "checkpoint名をコピー",
+            "copyEmbeddingName": "embedding名をコピー",
+            "sendCheckpointToWorkflow": "ComfyUIに送信",
+            "sendEmbeddingToWorkflow": "ComfyUIに送信"
         },
         "nsfw": {
             "matureContent": "成人向けコンテンツ",
@@ -116,7 +120,8 @@
             "updateFailed": "お気に入り状態の更新に失敗しました"
         },
         "sendToWorkflow": {
-            "checkpointNotImplemented": "checkpointをワークフローに送信 - 実装予定の機能"
+            "checkpointNotImplemented": "checkpointをワークフローに送信 - 実装予定の機能",
+            "missingPath": "このカードのモデルパスを特定できません"
         },
         "exampleImages": {
             "checkError": "例画像の確認中にエラーが発生しました",
@@ -950,7 +955,9 @@
             "loraFailedToSend": "LoRAをワークフローに送信できませんでした",
             "recipeAdded": "レシピがワークフローに追加されました",
             "recipeReplaced": "レシピがワークフローで置換されました",
-            "recipeFailedToSend": "レシピをワークフローに送信できませんでした"
+            "recipeFailedToSend": "レシピをワークフローに送信できませんでした",
+            "noMatchingNodes": "現在のワークフローには互換性のあるノードがありません",
+            "noTargetNodeSelected": "ターゲットノードが選択されていません"
         },
         "nodeSelector": {
             "recipe": "レシピ",

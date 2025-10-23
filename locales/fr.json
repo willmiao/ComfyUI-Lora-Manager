@@ -102,7 +102,11 @@
             "toggleBlur": "Basculer le flou",
             "show": "Afficher",
             "openExampleImages": "Ouvrir le dossier d'images d'exemple",
-            "replacePreview": "Remplacer l'aperçu"
+            "replacePreview": "Remplacer l'aperçu",
+            "copyCheckpointName": "Copier le nom du checkpoint",
+            "copyEmbeddingName": "Copier le nom de l'embedding",
+            "sendCheckpointToWorkflow": "Envoyer vers ComfyUI",
+            "sendEmbeddingToWorkflow": "Envoyer vers ComfyUI"
         },
         "nsfw": {
             "matureContent": "Contenu pour adultes",
@@ -116,7 +120,8 @@
             "updateFailed": "Échec de la mise à jour du statut des favoris"
         },
         "sendToWorkflow": {
-            "checkpointNotImplemented": "Envoyer le checkpoint vers le workflow - fonctionnalité à implémenter"
+            "checkpointNotImplemented": "Envoyer le checkpoint vers le workflow - fonctionnalité à implémenter",
+            "missingPath": "Impossible de déterminer le chemin du modèle pour cette carte"
         },
         "exampleImages": {
             "checkError": "Erreur lors de la vérification des images d'exemple",
@@ -950,7 +955,9 @@
             "loraFailedToSend": "Échec de l'envoi du LoRA au workflow",
             "recipeAdded": "Recipe ajoutée au workflow",
             "recipeReplaced": "Recipe remplacée dans le workflow",
-            "recipeFailedToSend": "Échec de l'envoi de la recipe au workflow"
+            "recipeFailedToSend": "Échec de l'envoi de la recipe au workflow",
+            "noMatchingNodes": "Aucun nœud compatible disponible dans le workflow actuel",
+            "noTargetNodeSelected": "Aucun nœud cible sélectionné"
         },
         "nodeSelector": {
             "recipe": "Recipe",

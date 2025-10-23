@@ -102,7 +102,11 @@
             "toggleBlur": "Переключить размытие",
             "show": "Показать",
             "openExampleImages": "Открыть папку с примерами",
-            "replacePreview": "Заменить превью"
+            "replacePreview": "Заменить превью",
+            "copyCheckpointName": "Копировать имя checkpoint",
+            "copyEmbeddingName": "Копировать имя embedding",
+            "sendCheckpointToWorkflow": "Отправить в ComfyUI",
+            "sendEmbeddingToWorkflow": "Отправить в ComfyUI"
         },
         "nsfw": {
             "matureContent": "Контент для взрослых",
@@ -116,7 +120,8 @@
             "updateFailed": "Не удалось обновить статус избранного"
         },
         "sendToWorkflow": {
-            "checkpointNotImplemented": "Отправка checkpoint в workflow - функция будет реализована"
+            "checkpointNotImplemented": "Отправка checkpoint в workflow - функция будет реализована",
+            "missingPath": "Невозможно определить путь модели для этой карточки"
         },
         "exampleImages": {
             "checkError": "Ошибка проверки примеров изображений",
@@ -950,7 +955,9 @@
             "loraFailedToSend": "Не удалось отправить LoRA в workflow",
             "recipeAdded": "Рецепт добавлен в workflow",
             "recipeReplaced": "Рецепт заменён в workflow",
-            "recipeFailedToSend": "Не удалось отправить рецепт в workflow"
+            "recipeFailedToSend": "Не удалось отправить рецепт в workflow",
+            "noMatchingNodes": "В текущем workflow нет совместимых узлов",
+            "noTargetNodeSelected": "Целевой узел не выбран"
         },
         "nodeSelector": {
             "recipe": "Рецепт",

@@ -102,7 +102,11 @@
             "toggleBlur": "切換模糊",
             "show": "顯示",
             "openExampleImages": "開啟範例圖片資料夾",
-            "replacePreview": "更換預覽圖"
+            "replacePreview": "更換預覽圖",
+            "copyCheckpointName": "複製檢查點名稱",
+            "copyEmbeddingName": "複製嵌入名稱",
+            "sendCheckpointToWorkflow": "傳送到 ComfyUI",
+            "sendEmbeddingToWorkflow": "傳送到 ComfyUI"
         },
         "nsfw": {
             "matureContent": "成熟內容",
@@ -116,7 +120,8 @@
             "updateFailed": "更新收藏狀態失敗"
         },
         "sendToWorkflow": {
-            "checkpointNotImplemented": "傳送 checkpoint 到工作流 - 功能尚未實現"
+            "checkpointNotImplemented": "傳送 checkpoint 到工作流 - 功能尚未實現",
+            "missingPath": "無法確定此卡片的模型路徑"
         },
         "exampleImages": {
             "checkError": "檢查範例圖片時發生錯誤",
@@ -950,7 +955,9 @@
             "loraFailedToSend": "傳送 LoRA 到工作流失敗",
             "recipeAdded": "配方已附加到工作流",
             "recipeReplaced": "配方已取代於工作流",
-            "recipeFailedToSend": "傳送配方到工作流失敗"
+            "recipeFailedToSend": "傳送配方到工作流失敗",
+            "noMatchingNodes": "目前工作流程中沒有相容的節點",
+            "noTargetNodeSelected": "未選擇目標節點"
         },
         "nodeSelector": {
             "recipe": "配方",

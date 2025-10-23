@@ -102,7 +102,11 @@
             "toggleBlur": "Toggle blur",
             "show": "Show",
             "openExampleImages": "Open Example Images Folder",
-            "replacePreview": "Replace Preview"
+            "replacePreview": "Replace Preview",
+            "copyCheckpointName": "Copy checkpoint name",
+            "copyEmbeddingName": "Copy embedding name",
+            "sendCheckpointToWorkflow": "Send to ComfyUI",
+            "sendEmbeddingToWorkflow": "Send to ComfyUI"
         },
         "nsfw": {
             "matureContent": "Mature Content",
@@ -116,7 +120,8 @@
             "updateFailed": "Failed to update favorite status"
         },
         "sendToWorkflow": {
-            "checkpointNotImplemented": "Send checkpoint to workflow - feature to be implemented"
+            "checkpointNotImplemented": "Send checkpoint to workflow - feature to be implemented",
+            "missingPath": "Unable to determine model path for this card"
         },
         "exampleImages": {
             "checkError": "Error checking for example images",
@@ -950,7 +955,9 @@
             "loraFailedToSend": "Failed to send LoRA to workflow",
             "recipeAdded": "Recipe appended to workflow",
             "recipeReplaced": "Recipe replaced in workflow",
-            "recipeFailedToSend": "Failed to send recipe to workflow"
+            "recipeFailedToSend": "Failed to send recipe to workflow",
+            "noMatchingNodes": "No compatible nodes available in the current workflow",
+            "noTargetNodeSelected": "No target node selected"
         },
         "nodeSelector": {
             "recipe": "Recipe",

@@ -102,7 +102,11 @@
             "toggleBlur": "Alternar difuminado",
             "show": "Mostrar",
             "openExampleImages": "Abrir carpeta de imágenes de ejemplo",
-            "replacePreview": "Reemplazar vista previa"
+            "replacePreview": "Reemplazar vista previa",
+            "copyCheckpointName": "Copiar nombre del checkpoint",
+            "copyEmbeddingName": "Copiar nombre del embedding",
+            "sendCheckpointToWorkflow": "Enviar a ComfyUI",
+            "sendEmbeddingToWorkflow": "Enviar a ComfyUI"
         },
         "nsfw": {
             "matureContent": "Contenido para adultos",
@@ -116,7 +120,8 @@
             "updateFailed": "Error al actualizar estado de favoritos"
         },
         "sendToWorkflow": {
-            "checkpointNotImplemented": "Enviar checkpoint al flujo de trabajo - función por implementar"
+            "checkpointNotImplemented": "Enviar checkpoint al flujo de trabajo - función por implementar",
+            "missingPath": "No se puede determinar la ruta del modelo para esta tarjeta"
         },
         "exampleImages": {
             "checkError": "Error al verificar imágenes de ejemplo",
@@ -950,7 +955,9 @@
             "loraFailedToSend": "Error al enviar LoRA al flujo de trabajo",
             "recipeAdded": "Receta añadida al flujo de trabajo",
             "recipeReplaced": "Receta reemplazada en el flujo de trabajo",
-            "recipeFailedToSend": "Error al enviar receta al flujo de trabajo"
+            "recipeFailedToSend": "Error al enviar receta al flujo de trabajo",
+            "noMatchingNodes": "No hay nodos compatibles disponibles en el flujo de trabajo actual",
+            "noTargetNodeSelected": "No se ha seleccionado ningún nodo de destino"
         },
         "nodeSelector": {
             "recipe": "Receta",
