@@ -102,8 +102,11 @@ import asyncio
 import logging
 from aiohttp import web
 
+# Increase allowable header size to align with in-ComfyUI configuration.
+HEADER_SIZE_LIMIT = 16384
+
 # Setup logging
-logging.basicConfig(level=logging.INFO, 
+logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("lora-manager-standalone")
 
@@ -133,7 +136,14 @@ class StandaloneServer:
     """Server implementation for standalone mode"""
     
     def __init__(self):
-        self.app = web.Application(logger=logger, middlewares=[cache_control])
+        self.app = web.Application(
+            logger=logger,
+            middlewares=[cache_control],
+            handler_args={
+                "max_field_size": HEADER_SIZE_LIMIT,
+                "max_line_size": HEADER_SIZE_LIMIT,
+            },
+        )
         self.instance = self  # Make it compatible with PromptServer.instance pattern
         
         # Ensure the app's access logger is configured to reduce verbosity
