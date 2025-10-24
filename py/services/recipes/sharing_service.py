@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import tempfile
 import time
+import unicodedata
 from dataclasses import dataclass
 from typing import Any, Dict
 
@@ -59,8 +61,9 @@ class RecipeSharingService:
         }
         self._cleanup_shared_recipes()
 
-        safe_title = recipe.get("title", "").replace(" ", "_").lower()
-        filename = f"recipe_{safe_title}{ext}" if safe_title else f"recipe_{recipe_id}{ext}"
+        filename = self._build_download_filename(
+            title=recipe.get("title", ""), recipe_id=recipe_id, ext=ext
+        )
         url_path = f"/api/lm/recipe/{recipe_id}/share/download?t={timestamp}"
         return SharingResult({"success": True, "download_url": url_path, "filename": filename})
 
@@ -78,12 +81,37 @@ class RecipeSharingService:
             raise RecipeNotFoundError("Shared recipe file not found")
 
         recipe = await recipe_scanner.get_recipe_by_id(recipe_id)
-        filename_base = (
-            f"recipe_{recipe.get('title', '').replace(' ', '_').lower()}" if recipe else recipe_id
-        )
         ext = os.path.splitext(file_path)[1]
-        download_filename = f"{filename_base}{ext}"
+        download_filename = self._build_download_filename(
+            title=recipe.get("title", "") if recipe else "",
+            recipe_id=recipe_id,
+            ext=ext,
+        )
         return DownloadInfo(file_path=file_path, download_filename=download_filename)
+
+    @staticmethod
+    def _build_download_filename(*, title: str, recipe_id: str, ext: str) -> str:
+        """Generate a sanitized filename safe for HTTP headers and filesystems."""
+
+        ext = ext or ""
+        safe_title = RecipeSharingService._slugify(title)
+        fallback = RecipeSharingService._slugify(recipe_id)
+        identifier = safe_title or fallback or "recipe"
+        return f"recipe_{identifier}{ext}"
+
+    @staticmethod
+    def _slugify(value: str) -> str:
+        """Convert arbitrary input into a lowercase, header-safe slug."""
+
+        if not value:
+            return ""
+
+        normalized = unicodedata.normalize("NFKD", value)
+        ascii_value = normalized.encode("ascii", "ignore").decode("ascii")
+        ascii_value = ascii_value.replace("\n", " ").replace("\r", " ")
+        sanitized = re.sub(r"[^A-Za-z0-9._-]+", "_", ascii_value)
+        sanitized = re.sub(r"_+", "_", sanitized).strip("._-")
+        return sanitized.lower()
 
     def _cleanup_shared_recipes(self) -> None:
         for recipe_id in list(self._shared_recipes.keys()):
