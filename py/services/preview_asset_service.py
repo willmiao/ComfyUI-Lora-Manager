@@ -9,6 +9,8 @@ from urllib.parse import urlparse
 
 from ..utils.constants import CARD_PREVIEW_WIDTH, PREVIEW_EXTENSIONS
 from ..utils.civitai_utils import rewrite_preview_url
+from ..utils.preview_selection import select_preview_media
+from .settings_manager import get_settings_manager
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +45,18 @@ class PreviewAssetService:
         if not images:
             return
 
-        first_preview = images[0]
+        settings_manager = get_settings_manager()
+        blur_mature_content = bool(
+            settings_manager.get("blur_mature_content", True)
+        )
+        first_preview, nsfw_level = select_preview_media(
+            images,
+            blur_mature_content=blur_mature_content,
+        )
+
+        if not first_preview:
+            return
+
         base_name = os.path.splitext(os.path.splitext(os.path.basename(metadata_path))[0])[0]
         preview_dir = os.path.dirname(metadata_path)
         is_video = first_preview.get("type") == "video"
@@ -81,7 +94,7 @@ class PreviewAssetService:
                 success, _ = await downloader.download_file(candidate, preview_path, use_auth=False)
                 if success:
                     local_metadata["preview_url"] = preview_path.replace(os.sep, "/")
-                    local_metadata["preview_nsfw_level"] = first_preview.get("nsfwLevel", 0)
+                    local_metadata["preview_nsfw_level"] = nsfw_level
                     return
         else:
             rewritten_url, rewritten = rewrite_preview_url(preview_url, media_type="image")
@@ -93,7 +106,7 @@ class PreviewAssetService:
                 )
                 if success:
                     local_metadata["preview_url"] = preview_path.replace(os.sep, "/")
-                    local_metadata["preview_nsfw_level"] = first_preview.get("nsfwLevel", 0)
+                    local_metadata["preview_nsfw_level"] = nsfw_level
                     return
 
             extension = ".webp"
@@ -124,7 +137,7 @@ class PreviewAssetService:
                     return
 
             local_metadata["preview_url"] = preview_path.replace(os.sep, "/")
-            local_metadata["preview_nsfw_level"] = first_preview.get("nsfwLevel", 0)
+            local_metadata["preview_nsfw_level"] = nsfw_level
 
     async def replace_preview(
         self,

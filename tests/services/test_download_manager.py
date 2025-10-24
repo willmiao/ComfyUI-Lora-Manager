@@ -699,3 +699,116 @@ async def test_execute_download_uses_rewritten_civitai_preview(monkeypatch, tmp_
     stored_preview = manager._active_downloads["dl"]["preview_path"]
     assert stored_preview.endswith(".jpeg")
     assert Path(stored_preview).exists()
+
+
+@pytest.mark.asyncio
+async def test_execute_download_respects_blur_setting(monkeypatch, tmp_path):
+    manager = DownloadManager()
+    save_dir = tmp_path / "downloads"
+    save_dir.mkdir()
+    target_path = save_dir / "file.safetensors"
+
+    manager._active_downloads["dl"] = {}
+
+    class DummyMetadata:
+        def __init__(self, path: Path):
+            self.file_path = str(path)
+            self.sha256 = "sha256"
+            self.file_name = path.stem
+            self.preview_url = None
+            self.preview_nsfw_level = None
+
+        def generate_unique_filename(self, *_args, **_kwargs):
+            return os.path.basename(self.file_path)
+
+        def update_file_info(self, _path):
+            return None
+
+        def to_dict(self):
+            return {"file_path": self.file_path}
+
+    metadata = DummyMetadata(target_path)
+    version_info = {
+        "images": [
+            {
+                "url": "https://image.civitai.com/container/example/original=true/nsfw.jpeg",
+                "type": "image",
+                "nsfwLevel": 8,
+            },
+            {
+                "url": "https://image.civitai.com/container/example/original=true/safe.jpeg",
+                "type": "image",
+                "nsfwLevel": 1,
+            },
+        ],
+        "files": [
+            {
+                "type": "Model",
+                "primary": True,
+                "downloadUrl": "https://example.invalid/file.safetensors",
+                "name": "file.safetensors",
+            }
+        ],
+    }
+    download_urls = ["https://example.invalid/file.safetensors"]
+
+    class DummyDownloader:
+        def __init__(self):
+            self.file_calls: list[tuple[str, str]] = []
+
+        async def download_file(self, url, path, progress_callback=None, use_auth=None):
+            self.file_calls.append((url, path))
+            if url.endswith(".safetensors"):
+                Path(path).write_bytes(b"model")
+                return True, None
+            if "safe.jpeg" in url:
+                Path(path).write_bytes(b"preview")
+                return True, None
+            return False, "unexpected url"
+
+        async def download_to_memory(self, *_args, **_kwargs):
+            return False, b"", {}
+
+    dummy_downloader = DummyDownloader()
+
+    class StubSettingsManager:
+        def __init__(self, blur: bool) -> None:
+            self.blur = blur
+
+        def get(self, key: str, default=None):
+            if key == "blur_mature_content":
+                return self.blur
+            return default
+
+    monkeypatch.setattr(
+        download_manager,
+        "get_settings_manager",
+        lambda: StubSettingsManager(True),
+    )
+
+    monkeypatch.setattr(download_manager, "get_downloader", AsyncMock(return_value=dummy_downloader))
+    monkeypatch.setattr(download_manager.ExifUtils, "optimize_image", staticmethod(lambda **_kwargs: (b"", {})))
+    monkeypatch.setattr(MetadataManager, "save_metadata", AsyncMock(return_value=True))
+
+    dummy_scanner = SimpleNamespace(add_model_to_cache=AsyncMock(return_value=None))
+    monkeypatch.setattr(DownloadManager, "_get_lora_scanner", AsyncMock(return_value=dummy_scanner))
+
+    result = await manager._execute_download(
+        download_urls=download_urls,
+        save_dir=str(save_dir),
+        metadata=metadata,
+        version_info=version_info,
+        relative_path="",
+        progress_callback=None,
+        model_type="lora",
+        download_id="dl",
+    )
+
+    assert result == {"success": True}
+    preview_urls = [url for url, _ in dummy_downloader.file_calls if url.endswith(".jpeg")]
+    assert preview_urls
+    assert all("nsfw.jpeg" not in url for url in preview_urls)
+    assert any("safe.jpeg" in url for url in preview_urls)
+    assert metadata.preview_nsfw_level == 1
+    stored_preview = manager._active_downloads["dl"].get("preview_path")
+    assert stored_preview and stored_preview.endswith(".jpeg")
