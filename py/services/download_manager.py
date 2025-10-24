@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from ..utils.models import LoraMetadata, CheckpointMetadata, EmbeddingMetadata
 from ..utils.constants import CARD_PREVIEW_WIDTH, VALID_LORA_TYPES
 from ..utils.civitai_utils import rewrite_preview_url
+from ..utils.preview_selection import select_preview_media
 from ..utils.utils import sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
@@ -495,10 +496,21 @@ class DownloadManager:
                 if progress_callback:
                     await progress_callback(1)  # 1% progress for starting preview download
 
-                first_image = images[0] if isinstance(images[0], dict) else None
-                preview_url = first_image.get('url') if first_image else None
-                media_type = (first_image.get('type') or '').lower() if first_image else ''
-                nsfw_level = first_image.get('nsfwLevel', 0) if first_image else 0
+                settings_manager = get_settings_manager()
+                blur_mature_content = bool(
+                    settings_manager.get('blur_mature_content', True)
+                )
+                selected_image, nsfw_level = select_preview_media(
+                    images,
+                    blur_mature_content=blur_mature_content,
+                )
+
+                preview_url = selected_image.get('url') if selected_image else None
+                media_type = (
+                    (selected_image.get('type') or '').lower()
+                    if selected_image
+                    else ''
+                )
 
                 def _extension_from_url(url: str, fallback: str) -> str:
                     try:
