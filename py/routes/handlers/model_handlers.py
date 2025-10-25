@@ -1066,10 +1066,16 @@ class ModelUpdateHandler:
             self._logger.error("Failed to refresh model updates: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+        serialized_records = []
+        for record in records.values():
+            has_update_fn = getattr(record, "has_update", None)
+            if callable(has_update_fn) and has_update_fn():
+                serialized_records.append(self._serialize_record(record))
+
         return web.json_response(
             {
                 "success": True,
-                "records": [self._serialize_record(record) for record in records.values()],
+                "records": serialized_records,
             }
         )
 
@@ -1331,4 +1337,3 @@ class ModelHandlerSet:
             "get_model_update_status": self.updates.get_model_update_status,
             "get_model_versions": self.updates.get_model_versions,
         }
-
