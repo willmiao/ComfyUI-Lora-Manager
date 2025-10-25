@@ -63,13 +63,27 @@ class ModelUpdateRecord:
         return [version.version_id for version in self.versions if version.is_in_library]
 
     def has_update(self) -> bool:
-        """Return True when a non-ignored remote version is missing locally."""
+        """Return True when a non-ignored remote version newer than the newest local copy is available."""
 
         if self.should_ignore_model:
             return False
-        return any(
-            not version.is_in_library and not version.should_ignore for version in self.versions
-        )
+        max_in_library = None
+        for version in self.versions:
+            if version.is_in_library:
+                if max_in_library is None or version.version_id > max_in_library:
+                    max_in_library = version.version_id
+
+        if max_in_library is None:
+            return any(
+                not version.is_in_library and not version.should_ignore for version in self.versions
+            )
+
+        for version in self.versions:
+            if version.is_in_library or version.should_ignore:
+                continue
+            if version.version_id > max_in_library:
+                return True
+        return False
 
 
 class ModelUpdateService:

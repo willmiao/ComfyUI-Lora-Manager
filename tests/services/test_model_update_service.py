@@ -2,7 +2,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from py.services.model_update_service import ModelUpdateService
+from py.services.model_update_service import (
+    ModelUpdateRecord,
+    ModelUpdateService,
+    ModelVersionRecord,
+)
 
 
 class DummyScanner:
@@ -29,6 +33,49 @@ class DummyProvider:
             raise NotImplementedError
         self.bulk_calls.append(list(model_ids))
         return {model_id: self.response for model_id in model_ids}
+
+
+def make_version(version_id, *, in_library, should_ignore=False):
+    return ModelVersionRecord(
+        version_id=version_id,
+        name=None,
+        base_model=None,
+        released_at=None,
+        size_bytes=None,
+        preview_url=None,
+        is_in_library=in_library,
+        should_ignore=should_ignore,
+    )
+
+
+def make_record(*versions, should_ignore_model=False):
+    return ModelUpdateRecord(
+        model_type="lora",
+        model_id=999,
+        versions=list(versions),
+        last_checked_at=None,
+        should_ignore_model=should_ignore_model,
+    )
+
+
+def test_has_update_requires_newer_version_than_library():
+    record = make_record(
+        make_version(5, in_library=True),
+        make_version(4, in_library=False),
+        make_version(8, in_library=False, should_ignore=True),
+    )
+
+    assert record.has_update() is False
+
+
+def test_has_update_detects_newer_remote_version():
+    record = make_record(
+        make_version(5, in_library=True),
+        make_version(7, in_library=False),
+        make_version(6, in_library=False, should_ignore=True),
+    )
+
+    assert record.has_update() is True
 
 
 @pytest.mark.asyncio
