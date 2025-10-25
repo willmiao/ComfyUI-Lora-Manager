@@ -127,6 +127,10 @@
             "checkError": "Ошибка проверки примеров изображений",
             "missingHash": "Отсутствует хеш модели.",
             "noRemoteImagesAvailable": "Нет удаленных примеров изображений для этой модели на Civitai"
+        },
+        "badges": {
+            "update": "Обновление",
+            "updateAvailable": "Доступно обновление"
         }
     },
     "globalContextMenu": {

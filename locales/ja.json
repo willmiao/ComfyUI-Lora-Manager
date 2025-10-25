@@ -127,6 +127,10 @@
             "checkError": "例画像の確認中にエラーが発生しました",
             "missingHash": "モデルハッシュ情報がありません。",
             "noRemoteImagesAvailable": "このモデルのCivitaiでのリモート例画像は利用できません"
+        },
+        "badges": {
+            "update": "アップデート",
+            "updateAvailable": "アップデートがあります"
         }
     },
     "globalContextMenu": {

@@ -127,6 +127,10 @@
             "checkError": "שגיאה בבדיקת תמונות דוגמה",
             "missingHash": "חסר מידע hash של המודל.",
             "noRemoteImagesAvailable": "אין תמונות דוגמה מרוחקות זמינות למודל זה ב-Civitai"
+        },
+        "badges": {
+            "update": "עדכון",
+            "updateAvailable": "עדכון זמין"
         }
     },
     "globalContextMenu": {

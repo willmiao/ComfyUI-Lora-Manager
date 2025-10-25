@@ -432,6 +432,8 @@ export function createModelCard(model, modelType) {
     card.dataset.notes = model.notes || '';
     card.dataset.base_model = model.base_model || 'Unknown';
     card.dataset.favorite = model.favorite ? 'true' : 'false';
+    const hasUpdateAvailable = Boolean(model.update_available);
+    card.dataset.update_available = hasUpdateAvailable ? 'true' : 'false';
 
     // LoRA specific data
     if (modelType === MODEL_TYPES.LORA) {
@@ -507,6 +509,9 @@ export function createModelCard(model, modelType) {
 
     // Get favorite status from model data
     const isFavorite = model.favorite === true;
+    if (hasUpdateAvailable) {
+        card.classList.add('has-update');
+    }
 
     // Generate action icons based on model type with i18n support
     const favoriteTitle = isFavorite ? 
@@ -531,6 +536,8 @@ export function createModelCard(model, modelType) {
         copyTitle = translate('modelCard.actions.copyLoRASyntax', {}, 'Copy value');
     }
 
+    const updateBadgeLabel = translate('modelCard.badges.update', {}, 'Update');
+    const updateBadgeTooltip = translate('modelCard.badges.updateAvailable', {}, 'Update available');
     const actionIcons = `
         <i class="${isFavorite ? 'fas fa-star favorite-active' : 'far fa-star'}" 
            title="${favoriteTitle}">
@@ -568,9 +575,16 @@ export function createModelCard(model, modelType) {
                   `<button class="toggle-blur-btn" title="${toggleBlurTitle}">
                       <i class="fas fa-eye"></i>
                   </button>` : ''}
-                <span class="base-model-label ${shouldBlur ? 'with-toggle' : ''}" title="${model.base_model}">
-                    ${model.base_model}
-                </span>
+                <div class="card-header-info">
+                    <span class="base-model-label ${shouldBlur ? 'with-toggle' : ''}" title="${model.base_model}">
+                        ${model.base_model}
+                    </span>
+                    ${hasUpdateAvailable ? `
+                        <span class="model-update-badge" title="${updateBadgeTooltip}">
+                            ${updateBadgeLabel}
+                        </span>
+                    ` : ''}
+                </div>
                 <div class="card-actions">
                     ${actionIcons}
                 </div>

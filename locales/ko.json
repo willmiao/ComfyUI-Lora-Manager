@@ -127,6 +127,10 @@
             "checkError": "예시 이미지 확인 중 오류",
             "missingHash": "모델 해시 정보가 없습니다.",
             "noRemoteImagesAvailable": "Civitai에서 이 모델의 원격 예시 이미지를 사용할 수 없습니다"
+        },
+        "badges": {
+            "update": "업데이트",
+            "updateAvailable": "업데이트 가능"
         }
     },
     "globalContextMenu": {

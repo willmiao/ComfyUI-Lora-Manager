@@ -53,6 +53,9 @@ html, body {
     --lora-error: oklch(75% 0.32 29);
     --lora-warning: oklch(var(--lora-warning-l) var(--lora-warning-c) var(--lora-warning-h));
     --lora-success: oklch(var(--lora-success-l) var(--lora-success-c) var(--lora-success-h));
+    --badge-update-bg: oklch(72% 0.2 220);
+    --badge-update-text: oklch(28% 0.03 220);
+    --badge-update-glow: oklch(72% 0.2 220 / 0.28);
     
     /* Spacing Scale */
     --space-1: calc(8px * 1);
@@ -100,6 +103,9 @@ html[data-theme="light"] {
     --lora-border: oklch(90% 0.02 256 / 0.15);
     --lora-text: oklch(98% 0.02 256);
     --lora-warning: oklch(75% 0.25 80); /* Modified to be used with oklch() */
+    --badge-update-bg: oklch(62% 0.18 220);
+    --badge-update-text: oklch(98% 0.02 240);
+    --badge-update-glow: oklch(62% 0.18 220 / 0.4);
 }
 
 body {

@@ -127,6 +127,10 @@
             "checkError": "檢查範例圖片時發生錯誤",
             "missingHash": "缺少模型雜湊資訊。",
             "noRemoteImagesAvailable": "此模型在 Civitai 上無遠端範例圖片"
+        },
+        "badges": {
+            "update": "更新",
+            "updateAvailable": "有可用更新"
         }
     },
     "globalContextMenu": {

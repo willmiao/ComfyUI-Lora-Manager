@@ -127,6 +127,10 @@
             "checkError": "Erreur lors de la vérification des images d'exemple",
             "missingHash": "Informations de hachage du modèle manquantes.",
             "noRemoteImagesAvailable": "Aucune image d'exemple distante disponible pour ce modèle sur Civitai"
+        },
+        "badges": {
+            "update": "Mise à jour",
+            "updateAvailable": "Mise à jour disponible"
         }
     },
     "globalContextMenu": {

@@ -127,6 +127,10 @@
             "checkError": "Error checking for example images",
             "missingHash": "Missing model hash information.",
             "noRemoteImagesAvailable": "No remote example images available for this model on Civitai"
+        },
+        "badges": {
+            "update": "Update",
+            "updateAvailable": "Update available"
         }
     },
     "globalContextMenu": {
