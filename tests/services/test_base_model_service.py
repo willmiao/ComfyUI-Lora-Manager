@@ -1,6 +1,9 @@
 import pytest
 
 from py.services.base_model_service import BaseModelService
+from py.services.lora_service import LoraService
+from py.services.checkpoint_service import CheckpointService
+from py.services.embedding_service import EmbeddingService
 from py.services.model_query import (
     ModelCacheRepository,
     ModelFilterSet,
@@ -455,3 +458,54 @@ async def test_get_paginated_data_annotates_update_flags_with_bulk_dedup():
     assert [item["update_available"] for item in response["items"]] == [True, True, False]
     assert response["total"] == 3
     assert response["total_pages"] == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "service_cls, extra_fields",
+    [
+        (LoraService, {"usage_tips": "tips"}),
+        (CheckpointService, {"model_type": "checkpoint"}),
+        (EmbeddingService, {"model_type": "embedding"}),
+    ],
+)
+async def test_format_response_includes_update_flag(service_cls, extra_fields):
+    service = service_cls(scanner=object())
+    payload = {
+        "model_name": "Demo",
+        "file_name": "demo.safetensors",
+        "folder": "root",
+        "file_path": "root/demo.safetensors",
+        **extra_fields,
+    }
+    payload["update_available"] = True
+
+    formatted = await service.format_response(payload)
+
+    assert "update_available" in formatted
+    assert formatted["update_available"] is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "service_cls, extra_fields",
+    [
+        (LoraService, {"usage_tips": "tips"}),
+        (CheckpointService, {"model_type": "checkpoint"}),
+        (EmbeddingService, {"model_type": "embedding"}),
+    ],
+)
+async def test_format_response_defaults_update_flag_false(service_cls, extra_fields):
+    service = service_cls(scanner=object())
+    payload = {
+        "model_name": "Demo",
+        "file_name": "demo.safetensors",
+        "folder": "root",
+        "file_path": "root/demo.safetensors",
+        **extra_fields,
+    }
+
+    formatted = await service.format_response(payload)
+
+    assert "update_available" in formatted
+    assert formatted["update_available"] is False

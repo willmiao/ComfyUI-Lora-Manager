@@ -38,6 +38,7 @@ class LoraService(BaseModelService):
             "usage_tips": lora_data.get("usage_tips", ""),
             "notes": lora_data.get("notes", ""),
             "favorite": lora_data.get("favorite", False),
+            "update_available": bool(lora_data.get("update_available", False)),
             "civitai": self.filter_civitai_data(lora_data.get("civitai", {}), minimal=True)
         }
     

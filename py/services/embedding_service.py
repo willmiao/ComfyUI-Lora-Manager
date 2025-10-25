@@ -38,6 +38,7 @@ class EmbeddingService(BaseModelService):
             "notes": embedding_data.get("notes", ""),
             "model_type": embedding_data.get("model_type", "embedding"),
             "favorite": embedding_data.get("favorite", False),
+            "update_available": bool(embedding_data.get("update_available", False)),
             "civitai": self.filter_civitai_data(embedding_data.get("civitai", {}), minimal=True)
         }
     
