@@ -55,6 +55,116 @@ export const BASE_MODELS = {
     UNKNOWN: "Other"
 };
 
+export const BASE_MODEL_ABBREVIATIONS = {
+    // Stable Diffusion 1.x models
+    [BASE_MODELS.SD_1_4]: 'SD1',
+    [BASE_MODELS.SD_1_5]: 'SD1',
+    [BASE_MODELS.SD_1_5_LCM]: 'SD1',
+    [BASE_MODELS.SD_1_5_HYPER]: 'SD1',
+
+    // Stable Diffusion 2.x models
+    [BASE_MODELS.SD_2_0]: 'SD2',
+    [BASE_MODELS.SD_2_1]: 'SD2',
+
+    // Stable Diffusion 3.x models
+    [BASE_MODELS.SD_3]: 'SD3',
+    [BASE_MODELS.SD_3_5]: 'SD3',
+    [BASE_MODELS.SD_3_5_MEDIUM]: 'SD3',
+    [BASE_MODELS.SD_3_5_LARGE]: 'SD3',
+    [BASE_MODELS.SD_3_5_LARGE_TURBO]: 'SD3',
+
+    // SDXL models
+    [BASE_MODELS.SDXL]: 'XL',
+    [BASE_MODELS.SDXL_LIGHTNING]: 'XL',
+    [BASE_MODELS.SDXL_HYPER]: 'XL',
+
+    // Flux models
+    [BASE_MODELS.FLUX_1_D]: 'F1D',
+    [BASE_MODELS.FLUX_1_S]: 'F1S',
+    [BASE_MODELS.FLUX_1_KREA]: 'F1KR',
+    [BASE_MODELS.FLUX_1_KONTEXT]: 'F1KX',
+
+    // Other diffusion models
+    [BASE_MODELS.AURAFLOW]: 'AF',
+    [BASE_MODELS.CHROMA]: 'CHR',
+    [BASE_MODELS.PIXART_A]: 'PXA',
+    [BASE_MODELS.PIXART_E]: 'PXE',
+    [BASE_MODELS.HUNYUAN_1]: 'HY',
+    [BASE_MODELS.LUMINA]: 'L',
+    [BASE_MODELS.KOLORS]: 'KLR',
+    [BASE_MODELS.NOOBAI]: 'NAI',
+    [BASE_MODELS.ILLUSTRIOUS]: 'IL',
+    [BASE_MODELS.PONY]: 'PONY',
+    [BASE_MODELS.HIDREAM]: 'HID',
+    [BASE_MODELS.QWEN]: 'QWEN',
+
+    // Video models
+    [BASE_MODELS.SVD]: 'SVD',
+    [BASE_MODELS.LTXV]: 'LTXV',
+    [BASE_MODELS.WAN_VIDEO]: 'WAN',
+    [BASE_MODELS.WAN_VIDEO_1_3B_T2V]: 'WAN',
+    [BASE_MODELS.WAN_VIDEO_14B_T2V]: 'WAN',
+    [BASE_MODELS.WAN_VIDEO_14B_I2V_480P]: 'WAN',
+    [BASE_MODELS.WAN_VIDEO_14B_I2V_720P]: 'WAN',
+    [BASE_MODELS.WAN_VIDEO_2_2_TI2V_5B]: 'WAN',
+    [BASE_MODELS.WAN_VIDEO_2_2_T2V_A14B]: 'WAN',
+    [BASE_MODELS.WAN_VIDEO_2_2_I2V_A14B]: 'WAN',
+    [BASE_MODELS.HUNYUAN_VIDEO]: 'HYV',
+
+    // Default
+    [BASE_MODELS.UNKNOWN]: 'OTH'
+};
+
+const ABBREVIATION_MAX_LENGTH = 4;
+
+const NORMALIZED_BASE_MODEL_ABBREVIATIONS = Object.entries(BASE_MODEL_ABBREVIATIONS).reduce((accumulator, [name, abbreviation]) => {
+    if (typeof name === 'string') {
+        accumulator[name.toLowerCase()] = abbreviation;
+    }
+    return accumulator;
+}, {});
+
+function buildFallbackAbbreviation(baseModel) {
+    if (!baseModel || typeof baseModel !== 'string') {
+        return BASE_MODEL_ABBREVIATIONS[BASE_MODELS.UNKNOWN];
+    }
+
+    const tokens = baseModel.split(/[\s_-]+/).filter(Boolean);
+    const initialism = tokens.map((token) => token[0]).join('').slice(0, ABBREVIATION_MAX_LENGTH);
+    if (initialism.length >= 2) {
+        return initialism.toUpperCase();
+    }
+
+    const alphanumeric = baseModel.replace(/[^A-Za-z0-9]/g, '');
+    if (!alphanumeric) {
+        return BASE_MODEL_ABBREVIATIONS[BASE_MODELS.UNKNOWN];
+    }
+
+    return alphanumeric.slice(0, ABBREVIATION_MAX_LENGTH).toUpperCase();
+}
+
+export function getBaseModelAbbreviation(baseModel) {
+    if (!baseModel || typeof baseModel !== 'string') {
+        return BASE_MODEL_ABBREVIATIONS[BASE_MODELS.UNKNOWN];
+    }
+
+    const normalizedName = baseModel.trim().toLowerCase();
+    if (!normalizedName) {
+        return BASE_MODEL_ABBREVIATIONS[BASE_MODELS.UNKNOWN];
+    }
+
+    if (normalizedName.includes('wan video')) {
+        return 'WAN';
+    }
+
+    const directMatch = NORMALIZED_BASE_MODEL_ABBREVIATIONS[normalizedName];
+    if (directMatch) {
+        return directMatch;
+    }
+
+    return buildFallbackAbbreviation(baseModel);
+}
+
 // Path template constants for download organization
 export const DOWNLOAD_PATH_TEMPLATES = {
     FLAT: {

@@ -4,7 +4,7 @@ import { showModelModal } from './ModelModal.js';
 import { toggleShowcase } from './showcase/ShowcaseView.js';
 import { bulkManager } from '../../managers/BulkManager.js';
 import { modalManager } from '../../managers/ModalManager.js';
-import { NSFW_LEVELS } from '../../utils/constants.js';
+import { NSFW_LEVELS, getBaseModelAbbreviation } from '../../utils/constants.js';
 import { MODEL_TYPES } from '../../api/apiConfig.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { showDeleteModal } from '../../utils/modalUtils.js';
@@ -564,6 +564,9 @@ export function createModelCard(model, modelType) {
         ? 'fas fa-image'
         : 'fas fa-folder-open';
 
+    const baseModelLabel = model.base_model || 'Unknown';
+    const baseModelAbbreviation = getBaseModelAbbreviation(baseModelLabel);
+
     card.innerHTML = `
         <div class="card-preview ${shouldBlur ? 'blurred' : ''}">
             ${isVideo ? 
@@ -576,8 +579,8 @@ export function createModelCard(model, modelType) {
                       <i class="fas fa-eye"></i>
                   </button>` : ''}
                 <div class="card-header-info">
-                    <span class="base-model-label ${shouldBlur ? 'with-toggle' : ''}" title="${model.base_model}">
-                        ${model.base_model}
+                    <span class="base-model-label ${shouldBlur ? 'with-toggle' : ''}" title="${baseModelLabel}">
+                        ${baseModelAbbreviation}
                     </span>
                     ${hasUpdateAvailable ? `
                         <span class="model-update-badge" title="${updateBadgeTooltip}">
