@@ -68,9 +68,23 @@ class StubSearchStrategy:
 
 
 class StubUpdateService:
-    def __init__(self, decisions):
+    def __init__(self, decisions, *, bulk_error: bool = False):
         self.decisions = dict(decisions)
         self.calls = []
+        self.bulk_calls = []
+        self.bulk_error = bulk_error
+
+    async def has_updates_bulk(self, model_type, model_ids):
+        self.bulk_calls.append((model_type, list(model_ids)))
+        if self.bulk_error:
+            raise RuntimeError("bulk failure")
+        results = {}
+        for model_id in model_ids:
+            result = self.decisions.get(model_id, False)
+            if isinstance(result, Exception):
+                raise result
+            results[model_id] = result
+        return results
 
     async def has_update(self, model_type, model_id):
         self.calls.append((model_type, model_id))
@@ -131,7 +145,11 @@ async def test_get_paginated_data_uses_injected_collaborators():
     assert search_strategy.normalize_calls == [{"recursive": False}, {"recursive": False}]
     assert search_strategy.apply_calls == [([{"model_name": "Filtered"}], "query", {"recursive": False}, True)]
 
-    assert response["items"] == search_strategy.search_result
+    assert [item["model_name"] for item in response["items"]] == [
+        entry["model_name"] for entry in search_strategy.search_result
+    ]
+    assert all("update_available" in item for item in response["items"])
+    assert all(item["update_available"] is False for item in response["items"])
     assert response["total"] == len(search_strategy.search_result)
     assert response["page"] == 1
     assert response["page_size"] == 5
@@ -218,7 +236,9 @@ async def test_get_paginated_data_filters_and_searches_combination():
         favorites_only=True,
     )
 
-    assert response["items"] == [items[2]]
+    assert len(response["items"]) == 1
+    assert response["items"][0]["model_name"] == items[2]["model_name"]
+    assert response["items"][0]["update_available"] is False
     assert response["total"] == 1
     assert response["page"] == 1
     assert response["page_size"] == 1
@@ -280,7 +300,10 @@ async def test_get_paginated_data_paginates_without_search():
     assert len(repository.fetch_sorted_calls) == 1
     assert filter_set.calls and filter_set.calls[0].favorites_only is False
     assert search_strategy.apply_called is False
-    assert response["items"] == items[2:4]
+    assert [item["model_name"] for item in response["items"]] == [
+        entry["model_name"] for entry in items[2:4]
+    ]
+    assert all(item["update_available"] is False for item in response["items"])
     assert response["total"] == len(items)
     assert response["page"] == 2
     assert response["page_size"] == 2
@@ -318,8 +341,10 @@ async def test_get_paginated_data_filters_by_update_status():
         has_update=True,
     )
 
-    assert update_service.calls == [("stub", 1), ("stub", 2), ("stub", 3)]
-    assert response["items"] == [items[0], items[2]]
+    assert update_service.bulk_calls == [("stub", [1, 2, 3])]
+    assert update_service.calls == []
+    assert [item["model_name"] for item in response["items"]] == ["A", "C"]
+    assert all(item["update_available"] is True for item in response["items"])
     assert response["total"] == 2
     assert response["page"] == 1
     assert response["page_size"] == 5
@@ -389,7 +414,44 @@ async def test_get_paginated_data_skips_items_when_update_check_fails():
         has_update=True,
     )
 
+    assert update_service.bulk_calls == [("stub", [1, 2])]
     assert update_service.calls == [("stub", 1), ("stub", 2)]
-    assert response["items"] == [items[0]]
-    assert response["total"] == 1
+    assert [item["model_name"] for item in response["items"]] == ["A"]
+    assert response["items"][0]["update_available"] is True
+
+
+@pytest.mark.asyncio
+async def test_get_paginated_data_annotates_update_flags_with_bulk_dedup():
+    items = [
+        {"model_name": "Alpha", "civitai": {"modelId": 7}},
+        {"model_name": "Beta", "civitai": {"modelId": 7}},
+        {"model_name": "Gamma", "civitai": {"modelId": 8}},
+    ]
+    repository = StubRepository(items)
+    filter_set = PassThroughFilterSet()
+    search_strategy = NoSearchStrategy()
+    update_service = StubUpdateService({7: True, 8: False})
+    settings = StubSettings({})
+
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=repository,
+        filter_set=filter_set,
+        search_strategy=search_strategy,
+        settings_provider=settings,
+        update_service=update_service,
+    )
+
+    response = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="name:asc",
+    )
+
+    assert update_service.bulk_calls == [("stub", [7, 8])]
+    assert update_service.calls == []
+    assert [item["update_available"] for item in response["items"]] == [True, True, False]
+    assert response["total"] == 3
     assert response["total_pages"] == 1

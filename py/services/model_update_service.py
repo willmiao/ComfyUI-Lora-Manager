@@ -307,6 +307,25 @@ class ModelUpdateService:
         record = await self.get_record(model_type, model_id)
         return record.has_update() if record else False
 
+    async def has_updates_bulk(
+        self,
+        model_type: str,
+        model_ids: Sequence[int],
+    ) -> Dict[int, bool]:
+        """Return update availability for each model id in a single database pass."""
+
+        normalized_ids = self._normalize_sequence(model_ids)
+        if not normalized_ids:
+            return {}
+
+        async with self._lock:
+            records = self._get_records_bulk(model_type, normalized_ids)
+
+        return {
+            model_id: records.get(model_id).has_update() if records.get(model_id) else False
+            for model_id in normalized_ids
+        }
+
     async def _refresh_single_model(
         self,
         model_type: str,
@@ -680,36 +699,47 @@ class ModelUpdateService:
         return rewritten or url
 
     def _get_record(self, model_type: str, model_id: int) -> Optional[ModelUpdateRecord]:
+        records = self._get_records_bulk(model_type, [model_id])
+        return records.get(model_id)
+
+    def _get_records_bulk(
+        self,
+        model_type: str,
+        model_ids: Sequence[int],
+    ) -> Dict[int, ModelUpdateRecord]:
+        if not model_ids:
+            return {}
+
+        params = tuple(model_ids)
+        placeholders = ",".join("?" for _ in params)
+
         with self._connect() as conn:
-            status_row = conn.execute(
-                """
+            status_rows = conn.execute(
+                f"""
                 SELECT model_id, model_type, last_checked_at, should_ignore_model
                 FROM model_update_status
-                WHERE model_id = ?
+                WHERE model_id IN ({placeholders})
                 """,
-                (model_id,),
-            ).fetchone()
-            if not status_row:
-                return None
-            stored_type = status_row["model_type"]
-            if stored_type and stored_type != model_type:
-                logger.debug(
-                    "Model id %s requested as %s but stored as %s", model_id, model_type, stored_type
-                )
+                params,
+            ).fetchall()
+            if not status_rows:
+                return {}
+
             version_rows = conn.execute(
-                """
-                SELECT version_id, sort_index, name, base_model, released_at, size_bytes,
-                       preview_url, is_in_library, should_ignore
+                f"""
+                SELECT model_id, version_id, sort_index, name, base_model, released_at,
+                       size_bytes, preview_url, is_in_library, should_ignore
                 FROM model_update_versions
-                WHERE model_id = ?
-                ORDER BY sort_index ASC, version_id ASC
+                WHERE model_id IN ({placeholders})
+                ORDER BY model_id ASC, sort_index ASC, version_id ASC
                 """,
-                (model_id,),
+                params,
             ).fetchall()
 
-        versions: List[ModelVersionRecord] = []
+        versions_by_model: Dict[int, List[ModelVersionRecord]] = {}
         for row in version_rows:
-            versions.append(
+            model_id = int(row["model_id"])
+            versions_by_model.setdefault(model_id, []).append(
                 ModelVersionRecord(
                     version_id=int(row["version_id"]),
                     name=row["name"],
@@ -723,13 +753,28 @@ class ModelUpdateService:
                 )
             )
 
-        return ModelUpdateRecord(
-            model_type=stored_type or model_type,
-            model_id=int(status_row["model_id"]),
-            versions=self._sorted_versions(versions),
-            last_checked_at=status_row["last_checked_at"],
-            should_ignore_model=bool(status_row["should_ignore_model"]),
-        )
+        records: Dict[int, ModelUpdateRecord] = {}
+        for status in status_rows:
+            model_id = int(status["model_id"])
+            stored_type = status["model_type"]
+            if stored_type and stored_type != model_type:
+                logger.debug(
+                    "Model id %s requested as %s but stored as %s",
+                    model_id,
+                    model_type,
+                    stored_type,
+                )
+
+            record = ModelUpdateRecord(
+                model_type=stored_type or model_type,
+                model_id=model_id,
+                versions=self._sorted_versions(versions_by_model.get(model_id, [])),
+                last_checked_at=status["last_checked_at"],
+                should_ignore_model=bool(status["should_ignore_model"]),
+            )
+            records[model_id] = record
+
+        return records
 
     def _upsert_record(self, record: ModelUpdateRecord) -> None:
         payload = (

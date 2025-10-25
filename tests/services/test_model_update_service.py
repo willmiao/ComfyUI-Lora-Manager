@@ -201,6 +201,28 @@ async def test_version_ignore_blocks_update_flag(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_has_updates_bulk_returns_mapping(tmp_path):
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path), ttl_seconds=3600)
+    raw_data = [{"civitai": {"modelId": 9, "id": 91}}]
+    scanner = DummyScanner(raw_data)
+    provider = DummyProvider(
+        {
+            "modelVersions": [
+                {"id": 91, "files": [], "images": []},
+                {"id": 92, "files": [], "images": []},
+            ]
+        }
+    )
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+    mapping = await service.has_updates_bulk("lora", [9, 9, 42])
+
+    assert mapping == {9: True, 42: False}
+    assert await service.has_update("lora", 9) is True
+
+
+@pytest.mark.asyncio
 async def test_refresh_rewrites_remote_preview_urls(tmp_path):
     db_path = tmp_path / "updates.sqlite"
     service = ModelUpdateService(str(db_path), ttl_seconds=1)
