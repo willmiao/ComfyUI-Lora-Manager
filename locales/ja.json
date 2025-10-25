@@ -139,6 +139,13 @@
             "missingPath": "例画像をダウンロードする前にダウンロード場所を設定してください。",
             "unavailable": "例画像のダウンロードはまだ利用できません。ページの読み込みが完了してから再度お試しください。"
         },
+        "checkModelUpdates": {
+            "label": "アップデートを確認",
+            "loading": "{type} のアップデートを確認中…",
+            "success": "{type} のアップデートが {count} 件見つかりました",
+            "none": "すべての {type} は最新です",
+            "error": "{type} のアップデート確認に失敗しました: {message}"
+        },
         "cleanupExampleImages": {
             "label": "例画像フォルダをクリーンアップ",
             "success": "{count} 個のフォルダを削除フォルダに移動しました",

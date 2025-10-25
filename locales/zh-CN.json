@@ -139,6 +139,13 @@
             "missingPath": "请先设置下载位置后再下载示例图片。",
             "unavailable": "示例图片下载当前不可用。请在页面加载完成后重试。"
         },
+        "checkModelUpdates": {
+            "label": "检查更新",
+            "loading": "正在检查 {type} 更新...",
+            "success": "找到 {count} 条 {type} 更新",
+            "none": "所有 {type} 均已是最新版本",
+            "error": "检查 {type} 更新失败：{message}"
+        },
         "cleanupExampleImages": {
             "label": "清理示例图片文件夹",
             "success": "已将 {count} 个文件夹移动到已删除文件夹",

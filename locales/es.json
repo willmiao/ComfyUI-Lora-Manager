@@ -139,6 +139,13 @@
             "missingPath": "Establece una ubicación de descarga antes de descargar imágenes de ejemplo.",
             "unavailable": "Las descargas de imágenes de ejemplo aún no están disponibles. Intenta de nuevo después de que la página termine de cargar."
         },
+        "checkModelUpdates": {
+            "label": "Buscar actualizaciones",
+            "loading": "Buscando actualizaciones de {type}...",
+            "success": "Se encontraron {count} actualización(es) para {type}",
+            "none": "Todos los {type} están actualizados",
+            "error": "Error al buscar actualizaciones de {type}: {message}"
+        },
         "cleanupExampleImages": {
             "label": "Limpiar carpetas de imágenes de ejemplo",
             "success": "Se movieron {count} carpeta(s) a la carpeta de eliminados",

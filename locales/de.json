@@ -139,6 +139,13 @@
             "missingPath": "Bitte legen Sie einen Speicherort fest, bevor Sie Beispielbilder herunterladen.",
             "unavailable": "Beispielbild-Downloads sind noch nicht verfügbar. Versuchen Sie es erneut, nachdem die Seite vollständig geladen ist."
         },
+        "checkModelUpdates": {
+            "label": "Auf Updates prüfen",
+            "loading": "Prüfe auf {type}-Updates...",
+            "success": "{count} Update(s) für {type} gefunden",
+            "none": "Alle {type} sind auf dem neuesten Stand",
+            "error": "Fehler beim Prüfen auf {type}-Updates: {message}"
+        },
         "cleanupExampleImages": {
             "label": "Beispielbild-Ordner bereinigen",
             "success": "{count} Ordner wurden in den Papierkorb verschoben",

@@ -139,6 +139,13 @@
             "missingPath": "Définissez un emplacement de téléchargement avant de télécharger les images d'exemple.",
             "unavailable": "Le téléchargement des images d'exemple n'est pas encore disponible. Réessayez après le chargement complet de la page."
         },
+        "checkModelUpdates": {
+            "label": "Vérifier les mises à jour",
+            "loading": "Recherche de mises à jour pour {type}...",
+            "success": "{count} mise(s) à jour trouvée(s) pour {type}",
+            "none": "Tous les {type} sont à jour",
+            "error": "Échec de la vérification des mises à jour pour {type} : {message}"
+        },
         "cleanupExampleImages": {
             "label": "Supprimer les dossiers d'exemples orphelins",
             "success": "{count} dossier(s) déplacé(s) vers le dossier supprimé",

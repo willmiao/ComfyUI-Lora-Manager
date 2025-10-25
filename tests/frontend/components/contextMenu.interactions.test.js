@@ -1,6 +1,7 @@
 import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
 
 const showToastMock = vi.fn();
+const translateMock = vi.fn((key, params, fallback) => (typeof fallback === 'string' ? fallback : key));
 const copyToClipboardMock = vi.fn();
 const getNSFWLevelNameMock = vi.fn((level) => {
   if (level >= 16) return 'XXX';
@@ -27,6 +28,7 @@ const loadingManagerStub = {
   showSimpleLoading: vi.fn(),
   hide: vi.fn(),
   show: vi.fn(),
+  restoreProgressBar: vi.fn(),
 };
 
 const stateStub = {
@@ -40,6 +42,11 @@ const downloadExampleImagesApiMock = vi.fn();
 const replaceModelPreviewMock = vi.fn();
 const refreshSingleModelMetadataMock = vi.fn();
 const resetAndReloadMock = vi.fn();
+const getCompleteApiConfigMock = vi.fn(() => ({
+  config: { displayName: 'LoRA' },
+  endpoints: { refreshUpdates: '/api/lm/loras/updates/refresh' },
+}));
+const getCurrentModelTypeMock = vi.fn(() => 'loras');
 
 const getModelApiClientMock = vi.fn(() => ({
   saveModelMetadata: saveModelMetadataMock,
@@ -75,6 +82,16 @@ vi.mock('../../../static/js/api/modelApiFactory.js', () => ({
   resetAndReload: resetAndReloadMock,
 }));
 
+vi.mock('../../../static/js/api/apiConfig.js', () => ({
+  getCompleteApiConfig: getCompleteApiConfigMock,
+  getCurrentModelType: getCurrentModelTypeMock,
+  MODEL_TYPES: {
+    LORA: 'loras',
+    CHECKPOINT: 'checkpoints',
+    EMBEDDING: 'embeddings',
+  },
+}));
+
 vi.mock('../../../static/js/state/index.js', () => ({
   state: stateStub,
 }));
@@ -92,6 +109,10 @@ vi.mock('../../../static/js/api/recipeApi.js', () => ({
   updateRecipeMetadata: updateRecipeMetadataMock,
 }));
 
+vi.mock('../../../static/js/utils/i18nHelpers.js', () => ({
+  translate: translateMock,
+}));
+
 async function flushAsyncTasks() {
   await Promise.resolve();
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -106,6 +127,13 @@ describe('Interaction-level regression coverage', () => {
     saveModelMetadataMock.mockResolvedValue(undefined);
     downloadExampleImagesApiMock.mockResolvedValue(undefined);
     updateRecipeMetadataMock.mockResolvedValue({ success: true });
+    resetAndReloadMock.mockResolvedValue(undefined);
+    getCompleteApiConfigMock.mockReturnValue({
+      config: { displayName: 'LoRA' },
+      endpoints: { refreshUpdates: '/api/lm/loras/updates/refresh' },
+    });
+    getCurrentModelTypeMock.mockReturnValue('loras');
+    translateMock.mockImplementation((key, params, fallback) => (typeof fallback === 'string' ? fallback : key));
     global.modalManager = modalManagerMock;
   });
 
@@ -275,6 +303,7 @@ describe('Interaction-level regression coverage', () => {
       <div id="globalContextMenu" class="context-menu">
         <div class="context-menu-item" data-action="download-example-images"></div>
         <div class="context-menu-item" data-action="cleanup-example-images-folders"></div>
+        <div class="context-menu-item" data-action="check-model-updates"></div>
       </div>
     `;
 
@@ -297,10 +326,15 @@ describe('Interaction-level regression coverage', () => {
     expect(downloadItem.classList.contains('disabled')).toBe(false);
     expect(document.getElementById('globalContextMenu').style.display).toBe('none');
 
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: true, moved_total: 2 }),
-    });
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, moved_total: 2 }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, records: [{ id: 1 }] }),
+      });
 
     menu.showMenu(240, 320);
     const cleanupItem = document.querySelector('[data-action="cleanup-example-images-folders"]');
@@ -315,5 +349,30 @@ describe('Interaction-level regression coverage', () => {
     await flushAsyncTasks();
     expect(cleanupItem.classList.contains('disabled')).toBe(false);
     expect(menu._cleanupInProgress).toBe(false);
+
+    menu.showMenu(360, 420);
+    const checkUpdatesItem = document.querySelector('[data-action="check-model-updates"]');
+    checkUpdatesItem.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(checkUpdatesItem.classList.contains('disabled')).toBe(true);
+
+    expect(global.fetch).toHaveBeenLastCalledWith('/api/lm/loras/updates/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ force: false }),
+    });
+
+    const updateResponse = await global.fetch.mock.results[1].value;
+    await updateResponse.json();
+    await flushAsyncTasks();
+
+    expect(showToastMock).toHaveBeenCalledWith(
+      'globalContextMenu.checkModelUpdates.success',
+      { count: 1, type: 'LoRA' },
+      'success'
+    );
+    expect(loadingManagerStub.showSimpleLoading).toHaveBeenCalledWith('Checking for LoRA updates...');
+    expect(loadingManagerStub.hide).toHaveBeenCalled();
+    expect(resetAndReloadMock).toHaveBeenCalledWith(false);
+    expect(checkUpdatesItem.classList.contains('disabled')).toBe(false);
   });
 });

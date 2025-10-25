@@ -1,11 +1,15 @@
 import { BaseContextMenu } from './BaseContextMenu.js';
 import { showToast } from '../../utils/uiHelpers.js';
 import { state } from '../../state/index.js';
+import { translate } from '../../utils/i18nHelpers.js';
+import { getCompleteApiConfig, getCurrentModelType } from '../../api/apiConfig.js';
+import { resetAndReload } from '../../api/modelApiFactory.js';
 
 export class GlobalContextMenu extends BaseContextMenu {
     constructor() {
         super('globalContextMenu');
         this._cleanupInProgress = false;
+        this._updateCheckInProgress = false;
     }
 
     showMenu(x, y, origin = null) {
@@ -23,6 +27,11 @@ export class GlobalContextMenu extends BaseContextMenu {
             case 'download-example-images':
                 this.downloadExampleImages(menuItem).catch((error) => {
                     console.error('Failed to trigger example images download:', error);
+                });
+                break;
+            case 'check-model-updates':
+                this.checkModelUpdates(menuItem).catch((error) => {
+                    console.error('Failed to check model updates:', error);
                 });
                 break;
             default:
@@ -99,6 +108,76 @@ export class GlobalContextMenu extends BaseContextMenu {
         } finally {
             this._cleanupInProgress = false;
             menuItem?.classList.remove('disabled');
+        }
+    }
+
+    async checkModelUpdates(menuItem) {
+        if (this._updateCheckInProgress) {
+            return;
+        }
+
+        const modelType = getCurrentModelType();
+        const apiConfig = getCompleteApiConfig(modelType);
+
+        if (!apiConfig?.endpoints?.refreshUpdates) {
+            console.warn('Refresh updates endpoint not configured for model type:', modelType);
+            return;
+        }
+
+        this._updateCheckInProgress = true;
+        menuItem?.classList.add('disabled');
+
+        const displayName = apiConfig.config?.displayName ?? 'Model';
+        const loadingMessage = translate(
+            'globalContextMenu.checkModelUpdates.loading',
+            { type: displayName },
+            `Checking for ${displayName} updates...`
+        );
+
+        state.loadingManager?.showSimpleLoading?.(loadingMessage);
+
+        try {
+            const response = await fetch(apiConfig.endpoints.refreshUpdates, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ force: false })
+            });
+
+            let payload = {};
+            try {
+                payload = await response.json();
+            } catch {
+                payload = {};
+            }
+
+            if (!response.ok || payload.success !== true) {
+                const errorMessage = payload?.error || response.statusText || 'Unknown error';
+                throw new Error(errorMessage);
+            }
+
+            const records = Array.isArray(payload.records) ? payload.records : [];
+
+            if (records.length > 0) {
+                showToast('globalContextMenu.checkModelUpdates.success', { count: records.length, type: displayName }, 'success');
+            } else {
+                showToast('globalContextMenu.checkModelUpdates.none', { type: displayName }, 'info');
+            }
+
+            await resetAndReload(false);
+        } catch (error) {
+            console.error('Error checking model updates:', error);
+            showToast(
+                'globalContextMenu.checkModelUpdates.error',
+                { message: error?.message ?? 'Unknown error', type: displayName },
+                'error'
+            );
+        } finally {
+            state.loadingManager?.hide?.();
+            if (typeof state.loadingManager?.restoreProgressBar === 'function') {
+                state.loadingManager.restoreProgressBar();
+            }
+            menuItem?.classList.remove('disabled');
+            this._updateCheckInProgress = false;
         }
     }
 }

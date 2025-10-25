@@ -139,6 +139,13 @@
             "missingPath": "예시 이미지를 다운로드하기 전에 다운로드 위치를 설정하세요.",
             "unavailable": "예시 이미지 다운로드는 아직 사용할 수 없습니다. 페이지 로딩이 완료된 후 다시 시도하세요."
         },
+        "checkModelUpdates": {
+            "label": "업데이트 확인",
+            "loading": "{type} 업데이트를 확인 중...",
+            "success": "{type} 업데이트 {count}개를 찾았습니다",
+            "none": "모든 {type}가 최신 상태입니다",
+            "error": "{type} 업데이트 확인 실패: {message}"
+        },
         "cleanupExampleImages": {
             "label": "예시 이미지 폴더 정리",
             "success": "{count}개의 폴더가 삭제 폴더로 이동되었습니다",

@@ -139,6 +139,13 @@
             "missingPath": "請先設定下載位置再下載範例圖片。",
             "unavailable": "範例圖片下載目前尚不可用。請在頁面載入完成後再試一次。"
         },
+        "checkModelUpdates": {
+            "label": "檢查更新",
+            "loading": "正在檢查 {type} 更新...",
+            "success": "找到 {count} 個 {type} 更新",
+            "none": "所有 {type} 都是最新版本",
+            "error": "檢查 {type} 更新失敗：{message}"
+        },
         "cleanupExampleImages": {
             "label": "清理範例圖片資料夾",
             "success": "已將 {count} 個資料夾移至已刪除資料夾",
