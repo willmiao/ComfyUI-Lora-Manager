@@ -77,15 +77,13 @@ class ModelUpdateService:
 
     _SCHEMA = """
         PRAGMA foreign_keys = ON;
-        DROP TABLE IF EXISTS model_update_versions;
-        DROP TABLE IF EXISTS model_update_status;
-        CREATE TABLE model_update_status (
+        CREATE TABLE IF NOT EXISTS model_update_status (
             model_id INTEGER PRIMARY KEY,
             model_type TEXT NOT NULL,
             last_checked_at REAL,
             should_ignore_model INTEGER NOT NULL DEFAULT 0
         );
-        CREATE TABLE model_update_versions (
+        CREATE TABLE IF NOT EXISTS model_update_versions (
             version_id INTEGER PRIMARY KEY,
             model_id INTEGER NOT NULL,
             sort_index INTEGER NOT NULL DEFAULT 0,
@@ -129,10 +127,67 @@ class ModelUpdateService:
                 conn.execute("PRAGMA journal_mode=WAL")
                 conn.execute("PRAGMA foreign_keys = ON")
                 conn.executescript(self._SCHEMA)
+                self._apply_migrations(conn)
             self._schema_initialized = True
         except Exception as exc:  # pragma: no cover - defensive guard
             logger.error("Failed to initialize update schema: %s", exc, exc_info=True)
             raise
+
+    def _apply_migrations(self, conn: sqlite3.Connection) -> None:
+        """Ensure legacy databases match the current schema without dropping data."""
+
+        status_columns = self._get_table_columns(conn, "model_update_status")
+        if "should_ignore_model" not in status_columns:
+            conn.execute(
+                "ALTER TABLE model_update_status "
+                "ADD COLUMN should_ignore_model INTEGER NOT NULL DEFAULT 0"
+            )
+
+        version_columns = self._get_table_columns(conn, "model_update_versions")
+        migrations = {
+            "sort_index": (
+                "ALTER TABLE model_update_versions "
+                "ADD COLUMN sort_index INTEGER NOT NULL DEFAULT 0"
+            ),
+            "name": (
+                "ALTER TABLE model_update_versions "
+                "ADD COLUMN name TEXT"
+            ),
+            "base_model": (
+                "ALTER TABLE model_update_versions "
+                "ADD COLUMN base_model TEXT"
+            ),
+            "released_at": (
+                "ALTER TABLE model_update_versions "
+                "ADD COLUMN released_at TEXT"
+            ),
+            "size_bytes": (
+                "ALTER TABLE model_update_versions "
+                "ADD COLUMN size_bytes INTEGER"
+            ),
+            "preview_url": (
+                "ALTER TABLE model_update_versions "
+                "ADD COLUMN preview_url TEXT"
+            ),
+            "is_in_library": (
+                "ALTER TABLE model_update_versions "
+                "ADD COLUMN is_in_library INTEGER NOT NULL DEFAULT 0"
+            ),
+            "should_ignore": (
+                "ALTER TABLE model_update_versions "
+                "ADD COLUMN should_ignore INTEGER NOT NULL DEFAULT 0"
+            ),
+        }
+
+        for column, statement in migrations.items():
+            if column not in version_columns:
+                conn.execute(statement)
+
+    def _get_table_columns(self, conn: sqlite3.Connection, table: str) -> set[str]:
+        """Return the set of existing columns for a table."""
+
+        cursor = conn.execute(f"PRAGMA table_info({table})")
+        return {row["name"] for row in cursor.fetchall()}
 
     async def refresh_for_model_type(
         self,
