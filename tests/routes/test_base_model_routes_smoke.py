@@ -21,6 +21,7 @@ from py.services import model_file_service
 from py.services.downloader import DownloadProgress
 from py.services.metadata_sync_service import MetadataSyncService
 from py.services.model_file_service import AutoOrganizeResult
+from py.services.model_update_service import ModelVersionRecord
 from py.services.service_registry import ServiceRegistry
 from py.services.websocket_manager import ws_manager
 from py.utils.exif_utils import ExifUtils
@@ -42,11 +43,23 @@ class DummyRoutes(BaseModelRoutes):
 class NullUpdateRecord:
     model_type: str
     model_id: int
-    largest_version_id: int | None = None
-    version_ids: list[int] = field(default_factory=list)
-    in_library_version_ids: list[int] = field(default_factory=list)
+    versions: list[ModelVersionRecord] = field(default_factory=list)
     last_checked_at: float | None = None
-    should_ignore: bool = False
+    should_ignore_model: bool = False
+
+    @property
+    def largest_version_id(self) -> int | None:
+        if not self.versions:
+            return None
+        return max(version.version_id for version in self.versions)
+
+    @property
+    def version_ids(self) -> list[int]:
+        return [version.version_id for version in self.versions]
+
+    @property
+    def in_library_version_ids(self) -> list[int]:
+        return [version.version_id for version in self.versions if version.is_in_library]
 
     def has_update(self) -> bool:
         return False
@@ -60,10 +73,30 @@ class NullModelUpdateService:
         return None
 
     async def update_in_library_versions(self, model_type, model_id, version_ids):
-        return NullUpdateRecord(model_type=model_type, model_id=model_id, in_library_version_ids=list(version_ids))
+        versions = [
+            ModelVersionRecord(
+                version_id=version_id,
+                name=None,
+                base_model=None,
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=True,
+                should_ignore=False,
+            )
+            for version_id in version_ids
+        ]
+        return NullUpdateRecord(model_type=model_type, model_id=model_id, versions=versions)
 
     async def set_should_ignore(self, model_type, model_id, should_ignore):
-        return NullUpdateRecord(model_type=model_type, model_id=model_id, should_ignore=should_ignore)
+        return NullUpdateRecord(
+            model_type=model_type,
+            model_id=model_id,
+            should_ignore_model=should_ignore,
+        )
+
+    async def set_version_should_ignore(self, model_type, model_id, version_id, should_ignore):
+        return await self.set_should_ignore(model_type, model_id, should_ignore)
 
     async def get_record(self, *args, **kwargs):
         return None
