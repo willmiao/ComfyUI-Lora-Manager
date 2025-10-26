@@ -24,6 +24,35 @@ def manager(tmp_path, monkeypatch):
     return mgr
 
 
+def test_initial_save_persists_minimal_template(tmp_path, monkeypatch):
+    settings_path = tmp_path / "settings.json"
+
+    monkeypatch.setattr(
+        "py.services.settings_manager.ensure_settings_file",
+        lambda logger=None: str(settings_path),
+    )
+
+    template = {
+        "_note": "template note",
+        "language": "fr",
+        "folder_paths": {"loras": ["/loras"]},
+    }
+
+    def fake_template_loader(self):
+        self._seed_template = copy.deepcopy(template)
+        return copy.deepcopy(template)
+
+    monkeypatch.setattr(SettingsManager, "_load_settings_template", fake_template_loader)
+
+    manager = SettingsManager()
+
+    persisted = json.loads(settings_path.read_text(encoding="utf-8"))
+    assert persisted["_note"] == "template note"
+    assert "libraries" not in persisted
+    assert persisted["folder_paths"]["loras"] == ["/loras"]
+    assert manager.get_libraries()["default"]["folder_paths"]["loras"] == ["/loras"]
+
+
 def test_environment_variable_overrides_settings(tmp_path, monkeypatch):
     monkeypatch.setattr(SettingsManager, "_save_settings", lambda self: None)
     monkeypatch.setenv("CIVITAI_API_KEY", "secret")

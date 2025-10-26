@@ -3,6 +3,7 @@ import copy
 import json
 import os
 import logging
+from pathlib import Path
 from datetime import datetime, timezone
 from threading import Lock
 from typing import Any, Awaitable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
@@ -17,6 +18,12 @@ from ..utils.tag_priorities import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+CORE_USER_SETTING_KEYS: Tuple[str, ...] = (
+    "civitai_api_key",
+    "folder_paths",
+)
 
 
 DEFAULT_SETTINGS: Dict[str, Any] = {
@@ -35,6 +42,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "default_embedding_root": "",
     "base_model_path_mappings": {},
     "download_path_templates": {},
+    "folder_paths": {},
     "example_images_path": "",
     "optimize_example_images": True,
     "auto_download_example_images": False,
@@ -57,6 +65,7 @@ class SettingsManager:
         self._startup_messages: List[Dict[str, Any]] = []
         self._needs_initial_save = False
         self._bootstrap_reason: Optional[str] = None
+        self._seed_template: Optional[Dict[str, Any]] = None
         self.settings = self._load_settings()
         self._migrate_setting_keys()
         self._ensure_default_settings()
@@ -114,31 +123,99 @@ class SettingsManager:
         if not os.path.exists(self.settings_file):
             self._needs_initial_save = True
             self._bootstrap_reason = "missing"
+            seeded = self._load_settings_template()
+            if seeded is not None:
+                defaults = self._get_default_settings()
+                merged = self._merge_template_with_defaults(defaults, seeded)
+                return merged
         return self._get_default_settings()
+
+    def _load_settings_template(self) -> Optional[Dict[str, Any]]:
+        """Load the bundled template when no user settings are found."""
+
+        template_path = Path(__file__).resolve().parents[2] / "settings.json.example"
+        try:
+            with template_path.open("r", encoding="utf-8") as handle:
+                data = json.load(handle)
+        except FileNotFoundError:
+            logger.debug("settings.json.example not found at %s", template_path)
+            return None
+        except json.JSONDecodeError as exc:
+            logger.warning("Failed to parse settings.json.example: %s", exc)
+            return None
+
+        if not isinstance(data, dict):
+            logger.debug("settings.json.example is not a JSON object; ignoring template")
+            return None
+
+        self._seed_template = copy.deepcopy(data)
+        return copy.deepcopy(data)
+
+    def _merge_template_with_defaults(
+        self, defaults: Dict[str, Any], template: Mapping[str, Any]
+    ) -> Dict[str, Any]:
+        """Merge template values into the in-memory defaults."""
+
+        merged = copy.deepcopy(defaults)
+        for key, value in template.items():
+            if key == "folder_paths" and isinstance(value, Mapping):
+                merged[key] = self._normalize_folder_paths(value)
+            else:
+                merged[key] = copy.deepcopy(value)
+
+        merged.setdefault("language", "en")
+        merged.setdefault("folder_paths", {})
+        library_name = merged.get("active_library") or "default"
+        merged["libraries"] = {
+            library_name: self._build_library_payload(
+                folder_paths=merged.get("folder_paths", {}),
+                default_lora_root=merged.get("default_lora_root"),
+                default_checkpoint_root=merged.get("default_checkpoint_root"),
+                default_embedding_root=merged.get("default_embedding_root"),
+            )
+        }
+        merged["active_library"] = library_name
+        return merged
 
     def _ensure_default_settings(self) -> None:
         """Ensure all default settings keys exist"""
-        updated = False
-        normalized_priority = self._normalize_priority_tag_config(
-            self.settings.get("priority_tags")
-        )
-        if normalized_priority != self.settings.get("priority_tags"):
-            self.settings["priority_tags"] = normalized_priority
-            updated = True
-        for key, value in self._get_default_settings().items():
+        defaults = self._get_default_settings()
+        updated_existing = False
+        inserted_defaults = False
+
+        if "priority_tags" in self.settings:
+            normalized_priority = self._normalize_priority_tag_config(
+                self.settings.get("priority_tags")
+            )
+            if normalized_priority != self.settings.get("priority_tags"):
+                self.settings["priority_tags"] = normalized_priority
+                updated_existing = True
+        else:
+            self.settings["priority_tags"] = copy.deepcopy(
+                defaults.get("priority_tags", DEFAULT_PRIORITY_TAG_CONFIG)
+            )
+            inserted_defaults = True
+
+        for key, value in defaults.items():
+            if key == "priority_tags":
+                continue
             if key not in self.settings:
                 if isinstance(value, dict):
-                    self.settings[key] = value.copy()
+                    self.settings[key] = copy.deepcopy(value)
                 else:
                     self.settings[key] = value
-                updated = True
-        if updated:
+                inserted_defaults = True
+
+        if updated_existing or (
+            inserted_defaults and self._bootstrap_reason in {"invalid", "unreadable"}
+        ):
             self._save_settings()
 
     def _migrate_to_library_registry(self) -> None:
         """Ensure settings include the multi-library registry structure."""
         libraries = self.settings.get("libraries")
         active_name = self.settings.get("active_library")
+        initial_bootstrap = self._bootstrap_reason == "missing"
 
         if not isinstance(libraries, dict) or not libraries:
             library_name = active_name or "default"
@@ -152,7 +229,8 @@ class SettingsManager:
             self.settings["libraries"] = libraries
             self.settings["active_library"] = library_name
             self._sync_active_library_to_root(save=False)
-            self._save_settings()
+            if not initial_bootstrap:
+                self._save_settings()
             return
 
         sanitized_libraries: Dict[str, Dict[str, Any]] = {}
@@ -177,12 +255,15 @@ class SettingsManager:
             self.settings["libraries"] = sanitized_libraries
 
         if not active_name or active_name not in sanitized_libraries:
+            changed = True
             if sanitized_libraries:
                 self.settings["active_library"] = next(iter(sanitized_libraries.keys()))
             else:
                 self.settings["active_library"] = "default"
 
-        self._sync_active_library_to_root(save=changed)
+        self._sync_active_library_to_root(save=changed and not initial_bootstrap)
+        if changed and initial_bootstrap:
+            self._needs_initial_save = True
 
     def _sync_active_library_to_root(self, *, save: bool = False) -> None:
         """Update top-level folder path settings to mirror the active library."""
@@ -427,7 +508,10 @@ class SettingsManager:
                 default_checkpoint_root=self.settings.get('default_checkpoint_root'),
                 default_embedding_root=self.settings.get('default_embedding_root'),
             )
-            self._save_settings()
+            if self._bootstrap_reason == "missing":
+                self._needs_initial_save = True
+            else:
+                self._save_settings()
 
     def _check_environment_variables(self) -> None:
         """Check for environment variables and update settings if needed"""
@@ -524,11 +608,21 @@ class SettingsManager:
 
     def _get_default_settings(self) -> Dict[str, Any]:
         """Return default settings"""
-        defaults = DEFAULT_SETTINGS.copy()
-        # Ensure nested dicts are independent copies
+        defaults = copy.deepcopy(DEFAULT_SETTINGS)
         defaults['base_model_path_mappings'] = {}
         defaults['download_path_templates'] = {}
         defaults['priority_tags'] = DEFAULT_PRIORITY_TAG_CONFIG.copy()
+        defaults.setdefault('folder_paths', {})
+
+        library_name = defaults.get("active_library") or "default"
+        default_library = self._build_library_payload(
+            folder_paths=defaults.get("folder_paths", {}),
+            default_lora_root=defaults.get("default_lora_root"),
+            default_checkpoint_root=defaults.get("default_checkpoint_root"),
+            default_embedding_root=defaults.get("default_embedding_root"),
+        )
+        defaults['libraries'] = {library_name: default_library}
+        defaults['active_library'] = library_name
         return defaults
 
     def _normalize_priority_tag_config(self, value: Any) -> Dict[str, str]:
@@ -685,10 +779,32 @@ class SettingsManager:
     def _save_settings(self) -> None:
         """Save settings to file"""
         try:
+            payload = self._serialize_settings_for_disk()
             with open(self.settings_file, 'w', encoding='utf-8') as f:
-                json.dump(self.settings, f, indent=2)
+                json.dump(payload, f, indent=2)
         except Exception as e:
             logger.error(f"Error saving settings: {e}")
+        else:
+            if self._bootstrap_reason == "missing":
+                self._bootstrap_reason = None
+            self._seed_template = None
+
+    def _serialize_settings_for_disk(self) -> Dict[str, Any]:
+        """Return the settings payload that should be persisted to disk."""
+
+        if self._bootstrap_reason == "missing":
+            minimal: Dict[str, Any] = {}
+            for key in CORE_USER_SETTING_KEYS:
+                if key in self.settings:
+                    minimal[key] = copy.deepcopy(self.settings[key])
+
+            if self._seed_template:
+                for key, value in self._seed_template.items():
+                    minimal.setdefault(key, copy.deepcopy(value))
+
+            return minimal
+
+        return copy.deepcopy(self.settings)
 
     def get_libraries(self) -> Dict[str, Dict[str, Any]]:
         """Return a copy of the registered libraries."""
