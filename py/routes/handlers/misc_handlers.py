@@ -238,7 +238,16 @@ class SettingsHandler:
                 value = self._settings.get(key)
                 if value is not None:
                     response_data[key] = value
-            return web.json_response({"success": True, "settings": response_data})
+            settings_file = getattr(self._settings, "settings_file", None)
+            if settings_file:
+                response_data["settings_file"] = settings_file
+            messages_getter = getattr(self._settings, "get_startup_messages", None)
+            messages = list(messages_getter()) if callable(messages_getter) else []
+            return web.json_response({
+                "success": True,
+                "settings": response_data,
+                "messages": messages,
+            })
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Error getting settings: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)

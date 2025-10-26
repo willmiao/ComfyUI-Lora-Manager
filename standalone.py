@@ -2,7 +2,7 @@ import os
 import sys
 import json
 from py.middleware.cache_middleware import cache_control
-from py.utils.settings_paths import ensure_settings_file, get_settings_dir
+from py.utils.settings_paths import ensure_settings_file
 
 # Set environment variable to indicate standalone mode
 os.environ["LORA_MANAGER_STANDALONE"] = "1"
@@ -228,54 +228,43 @@ class StandaloneServer:
 from py.lora_manager import LoraManager
 
 def validate_settings():
-    """Validate that settings.json exists and has required configuration"""
-    settings_path = ensure_settings_file(logger)
-    if not os.path.exists(settings_path):
-        logger.error("=" * 80)
-        logger.error("CONFIGURATION ERROR: settings.json file not found!")
-        logger.error("")
-        logger.error("Expected location: %s", settings_path)
-        logger.error("")
-        logger.error("To run in standalone mode, you need to create a settings.json file.")
-        logger.error("Please follow these steps:")
-        logger.error("")
-        logger.error("1. Copy the provided settings.json.example file to create a new file")
-        logger.error("   named settings.json inside the LoRA Manager settings folder:")
-        logger.error("   %s", get_settings_dir())
-        logger.error("")
-        logger.error("2. Edit settings.json to include your correct model folder paths")
-        logger.error("   and CivitAI API key")
-        logger.error("=" * 80)
-        return False
-    
-    # Check if settings.json has valid folder paths
+    """Initialize settings and log any startup warnings."""
     try:
-        with open(settings_path, 'r', encoding='utf-8') as f:
-            settings = json.load(f)
-        
-        folder_paths = settings.get('folder_paths', {})
-        has_valid_paths = False
-        
-        for path_type in ['loras', 'checkpoints', 'embeddings']:
-            paths = folder_paths.get(path_type, [])
-            if paths and any(os.path.exists(p) for p in paths):
-                has_valid_paths = True
-                break
-        
-        if not has_valid_paths:
-            logger.warning("=" * 80)
-            logger.warning("CONFIGURATION WARNING: No valid model folder paths found!")
-            logger.warning("")
-            logger.warning("Your settings.json exists but doesn't contain valid folder paths.")
-            logger.warning("Please check and update the folder_paths section in settings.json")
-            logger.warning("to include existing directories for your models.")
-            logger.warning("=" * 80)
-            return False
-            
-    except Exception as e:
-        logger.error(f"Error reading settings.json: {e}")
+        from py.services.settings_manager import get_settings_manager
+
+        manager = get_settings_manager()
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.error("Failed to initialise settings manager: %s", exc, exc_info=True)
         return False
-    
+
+    messages = manager.get_startup_messages()
+    if messages:
+        logger.warning("=" * 80)
+        logger.warning("Standalone mode is using fallback configuration values.")
+        for message in messages:
+            severity = (message.get("severity") or "info").lower()
+            title = message.get("title")
+            body = message.get("message") or ""
+            details = message.get("details")
+            location = message.get("settings_file") or manager.settings_file
+
+            text = f"{title}: {body}" if title else body
+            log_method = logger.info
+            if severity == "error":
+                log_method = logger.error
+            elif severity == "warning":
+                log_method = logger.warning
+
+            log_method(text)
+            if details:
+                log_method("Details: %s", details)
+            if location:
+                log_method("Settings file: %s", location)
+
+        logger.warning("=" * 80)
+    else:
+        logger.info("Loaded settings from %s", manager.settings_file)
+
     return True
 
 class StandaloneLoraManager(LoraManager):

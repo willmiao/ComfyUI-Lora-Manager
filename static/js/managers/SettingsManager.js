@@ -7,6 +7,7 @@ import { translate } from '../utils/i18nHelpers.js';
 import { i18n } from '../i18n/index.js';
 import { configureModelCardVideo } from '../components/shared/ModelCard.js';
 import { validatePriorityTagString, getPriorityTagSuggestionsMap, invalidatePriorityTagSuggestionsCache } from '../utils/priorityTagHelpers.js';
+import { bannerService } from './BannerService.js';
 
 export class SettingsManager {
     constructor() {
@@ -15,6 +16,8 @@ export class SettingsManager {
         this.initializationPromise = null;
         this.availableLibraries = {};
         this.activeLibrary = '';
+        this.settingsFilePath = null;
+        this.registeredStartupBannerIds = new Set();
         
         // Add initialization to sync with modal state
         this.currentPage = document.body.dataset.page || 'loras';
@@ -52,14 +55,18 @@ export class SettingsManager {
             const data = await response.json();
             if (data.success && data.settings) {
                 state.global.settings = this.mergeSettingsWithDefaults(data.settings);
+                this.settingsFilePath = data.settings.settings_file || this.settingsFilePath;
+                this.registerStartupMessages(data.messages);
                 console.log('Settings synced from backend');
             } else {
                 console.error('Failed to sync settings from backend:', data.error);
                 state.global.settings = this.mergeSettingsWithDefaults();
+                this.registerStartupMessages(data?.messages);
             }
         } catch (error) {
             console.error('Failed to sync settings from backend:', error);
             state.global.settings = this.mergeSettingsWithDefaults();
+            this.registerStartupMessages();
         }
 
         await this.applyLanguageSetting();
@@ -126,6 +133,90 @@ export class SettingsManager {
         Object.keys(merged).forEach(key => this.backendSettingKeys.add(key));
 
         return merged;
+    }
+
+    registerStartupMessages(messages = []) {
+        if (!Array.isArray(messages) || messages.length === 0) {
+            return;
+        }
+
+        const severityPriority = {
+            error: 90,
+            warning: 60,
+            info: 30,
+        };
+
+        messages.forEach((message, index) => {
+            if (!message || typeof message !== 'object') {
+                return;
+            }
+
+            if (!this.settingsFilePath && typeof message.settings_file === 'string') {
+                this.settingsFilePath = message.settings_file;
+            }
+
+            const bannerId = `startup-${message.code || index}`;
+            if (this.registeredStartupBannerIds.has(bannerId)) {
+                return;
+            }
+
+            const severity = (message.severity || 'info').toLowerCase();
+            const bannerTitle = message.title || 'Configuration notice';
+            const bannerContent = message.message || message.content || '';
+            const priority = typeof message.priority === 'number'
+                ? message.priority
+                : severityPriority[severity] || severityPriority.info;
+            const dismissible = message.dismissible !== false;
+
+            const normalizedActions = Array.isArray(message.actions)
+                ? message.actions.map(action => ({
+                    text: action.label || action.text || 'Review settings',
+                    icon: action.icon || 'fas fa-cog',
+                    action: action.action,
+                    type: action.type || 'primary',
+                    url: action.url,
+                }))
+                : [];
+
+            bannerService.registerBanner(bannerId, {
+                id: bannerId,
+                title: bannerTitle,
+                content: bannerContent,
+                actions: normalizedActions,
+                dismissible,
+                priority,
+                onRegister: (bannerElement) => {
+                    normalizedActions.forEach(action => {
+                        if (!action.action) {
+                            return;
+                        }
+
+                        const button = bannerElement.querySelector(`.banner-action[data-action="${action.action}"]`);
+                        if (button) {
+                            button.addEventListener('click', (event) => {
+                                event.preventDefault();
+                                this.handleStartupBannerAction(action.action);
+                            });
+                        }
+                    });
+                },
+            });
+
+            this.registeredStartupBannerIds.add(bannerId);
+        });
+    }
+
+    handleStartupBannerAction(action) {
+        switch (action) {
+            case 'open-settings-modal':
+                modalManager.showModal('settingsModal');
+                break;
+            case 'open-settings-location':
+                this.openSettingsFileLocation();
+                break;
+            default:
+                console.warn('Unhandled startup banner action:', action);
+        }
     }
 
     // Helper method to determine if a setting should be saved to backend
@@ -199,6 +290,9 @@ export class SettingsManager {
 
         const openSettingsLocationButton = document.querySelector('.settings-open-location-trigger');
         if (openSettingsLocationButton) {
+            if (openSettingsLocationButton.dataset.settingsPath) {
+                this.settingsFilePath = openSettingsLocationButton.dataset.settingsPath;
+            }
             openSettingsLocationButton.addEventListener('click', () => {
                 const filePath = openSettingsLocationButton.dataset.settingsPath;
                 this.openSettingsFileLocation(filePath);
@@ -235,7 +329,9 @@ export class SettingsManager {
     }
 
     async openSettingsFileLocation(filePath) {
-        if (!filePath) {
+        const targetPath = filePath || this.settingsFilePath || document.querySelector('.settings-open-location-trigger')?.dataset.settingsPath;
+
+        if (!targetPath) {
             showToast('settings.openSettingsFileLocation.failed', {}, 'error');
             return;
         }
@@ -246,12 +342,14 @@ export class SettingsManager {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ file_path: filePath }),
+                body: JSON.stringify({ file_path: targetPath }),
             });
 
             if (!response.ok) {
                 throw new Error(`Request failed with status ${response.status}`);
             }
+
+            this.settingsFilePath = targetPath;
 
             showToast('settings.openSettingsFileLocation.success', {}, 'success');
         } catch (error) {

@@ -53,6 +53,10 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
 class SettingsManager:
     def __init__(self):
         self.settings_file = ensure_settings_file(logger)
+        self._standalone_mode = self._detect_standalone_mode()
+        self._startup_messages: List[Dict[str, Any]] = []
+        self._needs_initial_save = False
+        self._bootstrap_reason: Optional[str] = None
         self.settings = self._load_settings()
         self._migrate_setting_keys()
         self._ensure_default_settings()
@@ -60,6 +64,16 @@ class SettingsManager:
         self._migrate_download_path_template()
         self._auto_set_default_roots()
         self._check_environment_variables()
+        self._collect_configuration_warnings()
+
+        if self._needs_initial_save:
+            self._save_settings()
+            self._needs_initial_save = False
+
+    def _detect_standalone_mode(self) -> bool:
+        """Return ``True`` when running in standalone mode."""
+
+        return os.environ.get("LORA_MANAGER_STANDALONE") == "1"
 
     def _load_settings(self) -> Dict[str, Any]:
         """Load settings from file"""
@@ -67,8 +81,39 @@ class SettingsManager:
             try:
                 with open(self.settings_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
-            except Exception as e:
-                logger.error(f"Error loading settings: {e}")
+            except json.JSONDecodeError as exc:
+                logger.error("Failed to parse settings.json: %s", exc)
+                self._add_startup_message(
+                    code="settings-json-invalid",
+                    title="Settings file could not be parsed",
+                    message=(
+                        "LoRA Manager could not parse settings.json. Default settings "
+                        "will be used for this session."
+                    ),
+                    severity="error",
+                    actions=self._default_settings_actions(),
+                    details=str(exc),
+                    dismissible=False,
+                )
+                self._needs_initial_save = True
+                self._bootstrap_reason = "invalid"
+            except Exception as exc:  # pragma: no cover - defensive guard
+                logger.error("Unexpected error loading settings: %s", exc)
+                self._add_startup_message(
+                    code="settings-json-unreadable",
+                    title="Settings file could not be read",
+                    message="LoRA Manager could not read settings.json. Default settings will be used for this session.",
+                    severity="error",
+                    actions=self._default_settings_actions(),
+                    details=str(exc),
+                    dismissible=False,
+                )
+                self._needs_initial_save = True
+                self._bootstrap_reason = "unreadable"
+
+        if not os.path.exists(self.settings_file):
+            self._needs_initial_save = True
+            self._bootstrap_reason = "missing"
         return self._get_default_settings()
 
     def _ensure_default_settings(self) -> None:
@@ -393,6 +438,86 @@ class SettingsManager:
             self.settings['civitai_api_key'] = env_api_key
             self._save_settings()
 
+    def _default_settings_actions(self) -> List[Dict[str, Any]]:
+        return [
+            {
+                "action": "open-settings-location",
+                "label": "Open settings folder",
+                "type": "primary",
+                "icon": "fas fa-folder-open",
+            }
+        ]
+
+    def _add_startup_message(
+        self,
+        *,
+        code: str,
+        title: str,
+        message: str,
+        severity: str = "info",
+        actions: Optional[List[Dict[str, Any]]] = None,
+        details: Optional[str] = None,
+        dismissible: bool = False,
+    ) -> None:
+        if any(existing.get("code") == code for existing in self._startup_messages):
+            return
+
+        payload: Dict[str, Any] = {
+            "code": code,
+            "title": title,
+            "message": message,
+            "severity": severity.lower(),
+            "dismissible": bool(dismissible),
+        }
+
+        if actions:
+            payload["actions"] = [dict(action) for action in actions]
+        if details:
+            payload["details"] = details
+        payload["settings_file"] = self.settings_file
+
+        self._startup_messages.append(payload)
+
+    def _collect_configuration_warnings(self) -> None:
+        if not self._standalone_mode:
+            return
+
+        folder_paths = self.settings.get('folder_paths', {}) or {}
+        monitored_keys = ('loras', 'checkpoints', 'embeddings')
+
+        has_valid_paths = False
+        for key in monitored_keys:
+            raw_paths = folder_paths.get(key) or []
+            if isinstance(raw_paths, str):
+                raw_paths = [raw_paths]
+            try:
+                iterator = list(raw_paths)
+            except TypeError:
+                continue
+            if any(isinstance(path, str) and path and os.path.exists(path) for path in iterator):
+                has_valid_paths = True
+                break
+
+        if not has_valid_paths:
+            if self._bootstrap_reason == "missing":
+                message = (
+                    "LoRA Manager created a default settings.json because no configuration was found. "
+                    "Edit settings.json to add your model directories so library scanning can run."
+                )
+            else:
+                message = (
+                    "LoRA Manager could not locate any configured model directories. "
+                    "Edit settings.json to add your model folders so library scanning can run."
+                )
+            self._add_startup_message(
+                code="missing-model-paths",
+                title="Model folders need setup",
+                message=message,
+                severity="warning",
+                actions=self._default_settings_actions(),
+                dismissible=False,
+            )
+
     def refresh_environment_variables(self) -> None:
         """Refresh settings from environment variables"""
         self._check_environment_variables()
@@ -426,6 +551,9 @@ class SettingsManager:
             self.settings["priority_tags"] = normalized
             self._save_settings()
         return normalized.copy()
+
+    def get_startup_messages(self) -> List[Dict[str, Any]]:
+        return [message.copy() for message in self._startup_messages]
 
     def get_priority_tag_entries(self, model_type: str) -> List[PriorityTagEntry]:
         config = self.get_priority_tag_config()

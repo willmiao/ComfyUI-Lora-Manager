@@ -108,9 +108,10 @@ def test_validate_settings_warns_for_missing_model_paths(caplog, standalone_modu
         }
     )
 
-    assert standalone_module.validate_settings() is False
+    assert standalone_module.validate_settings() is True
     warning_lines = [record.message for record in caplog.records if record.levelname == "WARNING"]
-    assert any("CONFIGURATION WARNING" in line for line in warning_lines)
+    assert any("Standalone mode is using fallback" in line for line in warning_lines)
+    assert any("Model folders need setup" in line for line in warning_lines)
 
 
 def test_standalone_lora_manager_registers_routes(monkeypatch, tmp_path, standalone_module):
