@@ -391,7 +391,7 @@ export function initVersionsTab({
         try {
             const client = ensureClient();
             const response = await client.fetchModelUpdateVersions(modelId, {
-                refresh: false,
+                refresh: true,
             });
             if (!response?.success) {
                 throw new Error(response?.error || 'Request failed');
@@ -509,11 +509,34 @@ export function initVersionsTab({
         }
     }
 
-    function handleDownloadVersion(versionId) {
+    async function handleDownloadVersion(button, versionId) {
         if (!controller.record) {
             return;
         }
-        downloadManager.openForModelVersion(modelType, modelId, versionId);
+
+        const version = controller.record.versions.find(item => item.versionId === versionId);
+        if (!version) {
+            console.warn('Target version missing from record for download:', versionId);
+            return;
+        }
+
+        button.disabled = true;
+
+        try {
+            const success = await downloadManager.downloadVersionWithDefaults(modelType, modelId, versionId, {
+                versionName: version.name || `#${version.versionId}`,
+            });
+
+            if (success) {
+                await refresh();
+            }
+        } catch (error) {
+            console.error('Failed to start direct download for version:', error);
+        } finally {
+            if (document.body.contains(button)) {
+                button.disabled = false;
+            }
+        }
     }
 
     container.addEventListener('click', async event => {
@@ -541,7 +564,7 @@ export function initVersionsTab({
         switch (action) {
             case 'download':
                 event.preventDefault();
-                handleDownloadVersion(versionId);
+                await handleDownloadVersion(actionButton, versionId);
                 break;
             case 'delete':
                 event.preventDefault();

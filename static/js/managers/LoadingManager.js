@@ -38,6 +38,7 @@ export class LoadingManager {
         this.setProgress(0);
         this.setStatus('');
         this.removeDetailsContainer();
+        this.progressBar.style.display = 'block';
     }
 
     // Create a details container for enhanced progress display
@@ -69,6 +70,7 @@ export class LoadingManager {
     // Show enhanced progress for downloads
     showDownloadProgress(totalItems = 1) {
         this.show(translate('modals.download.status.preparing', {}, 'Preparing download...'), 0);
+        this.progressBar.style.display = 'none';
         
         // Create details container
         const detailsContainer = this.createDetailsContainer();

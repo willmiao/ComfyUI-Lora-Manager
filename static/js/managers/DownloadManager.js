@@ -428,6 +428,125 @@ export class DownloadManager {
         this.updateTargetPath();
     }
 
+    async executeDownloadWithProgress({
+        modelId,
+        versionId,
+        versionName = '',
+        modelRoot = '',
+        targetFolder = '',
+        useDefaultPaths = false,
+        source = null,
+        closeModal = false,
+    }) {
+        const config = this.apiClient?.apiConfig?.config;
+
+        if (!this.apiClient || !config) {
+            throw new Error('Download manager is not initialized with an API client');
+        }
+
+        const displayName = versionName || `#${versionId}`;
+        let ws = null;
+        let updateProgress = () => {};
+
+        try {
+            this.loadingManager.restoreProgressBar();
+            updateProgress = this.loadingManager.showDownloadProgress(1);
+            updateProgress(0, 0, displayName);
+
+            const downloadId = Date.now().toString();
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            ws = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${downloadId}`);
+
+            ws.onmessage = event => {
+                const data = JSON.parse(event.data);
+
+                if (data.type === 'download_id') {
+                    console.log(`Connected to download progress with ID: ${data.download_id}`);
+                    return;
+                }
+
+                if (data.status === 'progress' && data.download_id === downloadId) {
+                    const metrics = {
+                        bytesDownloaded: data.bytes_downloaded,
+                        totalBytes: data.total_bytes,
+                        bytesPerSecond: data.bytes_per_second,
+                    };
+
+                    updateProgress(data.progress, 0, displayName, metrics);
+
+                    if (data.progress < 3) {
+                        this.loadingManager.setStatus(translate('modals.download.status.preparing'));
+                    } else if (data.progress === 3) {
+                        this.loadingManager.setStatus(translate('modals.download.status.downloadedPreview'));
+                    } else if (data.progress > 3 && data.progress < 100) {
+                        this.loadingManager.setStatus(
+                            translate('modals.download.status.downloadingFile', { type: config.singularName })
+                        );
+                    } else {
+                        this.loadingManager.setStatus(translate('modals.download.status.finalizing'));
+                    }
+                }
+            };
+
+            ws.onerror = error => {
+                console.error('WebSocket error:', error);
+            };
+
+            await this.apiClient.downloadModel(
+                modelId,
+                versionId,
+                modelRoot,
+                targetFolder,
+                useDefaultPaths,
+                downloadId,
+                source
+            );
+
+            showToast('toast.loras.downloadCompleted', {}, 'success');
+
+            if (closeModal) {
+                modalManager.closeModal('downloadModal');
+            }
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close();
+                ws = null;
+            }
+
+            const pageState = this.apiClient.getPageState();
+
+            if (!useDefaultPaths && targetFolder) {
+                pageState.activeFolder = targetFolder;
+                setStorageItem(`${this.apiClient.modelType}_activeFolder`, targetFolder);
+
+                document.querySelectorAll('.folder-tags .tag').forEach(tag => {
+                    const isActive = tag.dataset.folder === targetFolder;
+                    tag.classList.toggle('active', isActive);
+                    if (isActive && !tag.parentNode.classList.contains('collapsed')) {
+                        tag.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                });
+            }
+
+            await resetAndReload(true);
+
+            return true;
+        } catch (error) {
+            console.error('Failed to download model version:', error);
+            showToast('toast.downloads.downloadError', { message: error?.message }, 'error');
+            return false;
+        } finally {
+            try {
+                if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+                    ws.close();
+                }
+            } catch (closeError) {
+                console.debug('Failed to close download progress socket:', closeError);
+            }
+            this.loadingManager.hide();
+        }
+    }
+
     updatePathSelectionUI() {
         const manualSelection = document.getElementById('manualPathSelection');
         
@@ -489,92 +608,38 @@ export class DownloadManager {
         } else {
             targetFolder = this.folderTreeManager.getSelectedPath();
         }
+        return this.executeDownloadWithProgress({
+            modelId: this.modelId,
+            versionId: this.currentVersion.id,
+            versionName: this.currentVersion.name,
+            modelRoot,
+            targetFolder,
+            useDefaultPaths,
+            source: this.source,
+            closeModal: true,
+        });
+    }
 
+    async downloadVersionWithDefaults(modelType, modelId, versionId, { versionName = '', source = null } = {}) {
         try {
-            const updateProgress = this.loadingManager.showDownloadProgress(1);
-            updateProgress(0, 0, this.currentVersion.name);
-
-            const downloadId = Date.now().toString();
-            
-            // Setup WebSocket for progress updates
-            const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-            const ws = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${downloadId}`);
-            
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                
-                if (data.type === 'download_id') {
-                    console.log(`Connected to download progress with ID: ${data.download_id}`);
-                    return;
-                }
-                
-                if (data.status === 'progress' && data.download_id === downloadId) {
-                    const metrics = {
-                        bytesDownloaded: data.bytes_downloaded,
-                        totalBytes: data.total_bytes,
-                        bytesPerSecond: data.bytes_per_second
-                    };
-
-                    updateProgress(data.progress, 0, this.currentVersion.name, metrics);
-                    
-                    if (data.progress < 3) {
-                        this.loadingManager.setStatus(translate('modals.download.status.preparing'));
-                    } else if (data.progress === 3) {
-                        this.loadingManager.setStatus(translate('modals.download.status.downloadedPreview'));
-                    } else if (data.progress > 3 && data.progress < 100) {
-                        this.loadingManager.setStatus(translate('modals.download.status.downloadingFile', { type: config.singularName }));
-                    } else {
-                        this.loadingManager.setStatus(translate('modals.download.status.finalizing'));
-                    }
-                }
-            };
-            
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-            };
-
-            // Start download with use_default_paths parameter
-            await this.apiClient.downloadModel(
-                this.modelId,
-                this.currentVersion.id,
-                modelRoot,
-                targetFolder,
-                useDefaultPaths,
-                downloadId,
-                this.source
-            );
-
-            showToast('toast.loras.downloadCompleted', {}, 'success');
-            modalManager.closeModal('downloadModal');
-            
-            ws.close();
-            
-            // Update state and trigger reload
-            const pageState = this.apiClient.getPageState();
-            
-            if (!useDefaultPaths) {
-                pageState.activeFolder = targetFolder;
-                
-                // Save the active folder preference
-                setStorageItem(`${this.apiClient.modelType}_activeFolder`, targetFolder);
-                
-                // Update UI folder selection
-                document.querySelectorAll('.folder-tags .tag').forEach(tag => {
-                    const isActive = tag.dataset.folder === targetFolder;
-                    tag.classList.toggle('active', isActive);
-                    if (isActive && !tag.parentNode.classList.contains('collapsed')) {
-                        tag.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    }
-                });
-            }
-
-            await resetAndReload(true);
-
+            this.apiClient = getModelApiClient(modelType);
         } catch (error) {
-            showToast('toast.downloads.downloadError', { message: error.message }, 'error');
-        } finally {
-            this.loadingManager.hide();
+            this.apiClient = getModelApiClient();
         }
+
+        this.modelId = modelId ? modelId.toString() : null;
+        this.source = source;
+
+        return this.executeDownloadWithProgress({
+            modelId,
+            versionId,
+            versionName,
+            modelRoot: '',
+            targetFolder: '',
+            useDefaultPaths: true,
+            source,
+            closeModal: false,
+        });
     }
 
     async initializeFolderTree() {
