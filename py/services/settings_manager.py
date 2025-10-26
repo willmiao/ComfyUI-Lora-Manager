@@ -153,6 +153,7 @@ class SettingsManager:
             self.settings["active_library"] = library_name
             self._sync_active_library_to_root(save=False)
             self._save_settings()
+            self._notify_library_change(library_name)
             return
 
         sanitized_libraries: Dict[str, Dict[str, Any]] = {}
@@ -183,6 +184,10 @@ class SettingsManager:
                 self.settings["active_library"] = "default"
 
         self._sync_active_library_to_root(save=changed)
+
+        active_library = self.settings.get("active_library")
+        if active_library and active_library in self.settings.get("libraries", {}):
+            self._notify_library_change(active_library)
 
     def _sync_active_library_to_root(self, *, save: bool = False) -> None:
         """Update top-level folder path settings to mirror the active library."""
