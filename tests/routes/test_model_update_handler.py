@@ -41,7 +41,7 @@ class DummyUpdateService:
 
 
 @pytest.mark.asyncio
-async def test_build_preview_overrides_uses_static_urls():
+async def test_build_version_context_includes_static_urls():
     cache = SimpleNamespace(version_index={123: {"preview_url": "/tmp/previews/example.png"}})
     service = DummyService(cache)
     handler = ModelUpdateHandler(
@@ -70,9 +70,9 @@ async def test_build_preview_overrides_uses_static_urls():
         should_ignore_model=False,
     )
 
-    overrides = await handler._build_preview_overrides(record)
+    overrides = await handler._build_version_context(record)
     expected = config.get_preview_static_url("/tmp/previews/example.png")
-    assert overrides == {123: expected}
+    assert overrides == {123: {"file_path": None, "file_name": None, "preview_override": expected}}
 
 
 @pytest.mark.asyncio

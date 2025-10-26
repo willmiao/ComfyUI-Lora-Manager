@@ -853,13 +853,55 @@
             "tabs": {
                 "examples": "例",
                 "description": "モデル説明",
-                "recipes": "レシピ"
+                "recipes": "レシピ",
+                "versions": "バージョン"
             },
             "loading": {
                 "exampleImages": "例画像を読み込み中...",
                 "description": "モデル説明を読み込み中...",
                 "recipes": "レシピを読み込み中...",
-                "examples": "例を読み込み中..."
+                "examples": "例を読み込み中...",
+                "versions": "バージョンを読み込み中..."
+            },
+            "versions": {
+                "heading": "モデルバージョン",
+                "copy": "このモデルのすべてのバージョンを一か所で管理します。",
+                "media": {
+                    "placeholder": "プレビューなし"
+                },
+                "labels": {
+                    "unnamed": "名前のないバージョン",
+                    "noDetails": "追加情報なし"
+                },
+                "badges": {
+                    "current": "現在のバージョン",
+                    "inLibrary": "ライブラリにあります",
+                    "newer": "新しいバージョン",
+                    "ignored": "無視中"
+                },
+                "actions": {
+                    "download": "ダウンロード",
+                    "delete": "削除",
+                    "ignore": "無視",
+                    "unignore": "無視を解除",
+                    "resumeModelUpdates": "このモデルの更新を再開",
+                    "ignoreModelUpdates": "このモデルの更新を無視",
+                    "viewLocalVersions": "ローカルの全バージョンを表示",
+                    "viewLocalTooltip": "近日対応予定"
+                },
+                "empty": "このモデルにはまだバージョン履歴がありません。",
+                "error": "バージョンの読み込みに失敗しました。",
+                "missingModelId": "このモデルにはCivitaiのモデルIDがありません。",
+                "confirm": {
+                    "delete": "このバージョンをライブラリから削除しますか？"
+                },
+                "toast": {
+                    "modelIgnored": "このモデルの更新は無視されます",
+                    "modelResumed": "更新の監視を再開しました",
+                    "versionIgnored": "このバージョンの更新は無視されます",
+                    "versionUnignored": "バージョンを再度有効にしました",
+                    "versionDeleted": "バージョンを削除しました"
+                }
             }
         }
     },

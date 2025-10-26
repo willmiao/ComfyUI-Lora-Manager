@@ -17,6 +17,7 @@ import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { renderCompactTags, setupTagTooltip, formatFileSize } from './utils.js';
 import { renderTriggerWords, setupTriggerWordsEditMode } from './TriggerWords.js';
 import { parsePresets, renderPresetTags } from './PresetTags.js';
+import { initVersionsTab } from './ModelVersionsTab.js';
 import { loadRecipesForLora } from './RecipeTab.js';
 import { translate } from '../../utils/i18nHelpers.js';
 
@@ -65,19 +66,26 @@ export async function showModelModal(model, modelType) {
     const examplesText = translate('modals.model.tabs.examples', {}, 'Examples');
     const descriptionText = translate('modals.model.tabs.description', {}, 'Model Description');
     const recipesText = translate('modals.model.tabs.recipes', {}, 'Recipes');
+    const versionsText = translate('modals.model.tabs.versions', {}, 'Versions');
     
     const tabsContent = modelType === 'loras' ? 
         `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
             <button class="tab-btn" data-tab="description">${descriptionText}</button>
-            <button class="tab-btn" data-tab="recipes">${recipesText}</button>` :
+            <button class="tab-btn" data-tab="recipes">${recipesText}</button>
+            <button class="tab-btn" data-tab="versions">${versionsText}</button>` :
         `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
-            <button class="tab-btn" data-tab="description">${descriptionText}</button>`;
+            <button class="tab-btn" data-tab="description">${descriptionText}</button>
+            <button class="tab-btn" data-tab="versions">${versionsText}</button>`;
     
     const loadingExampleImagesText = translate('modals.model.loading.exampleImages', {}, 'Loading example images...');
     const loadingDescriptionText = translate('modals.model.loading.description', {}, 'Loading model description...');
     const loadingRecipesText = translate('modals.model.loading.recipes', {}, 'Loading recipes...');
     const loadingExamplesText = translate('modals.model.loading.examples', {}, 'Loading examples...');
     
+    const loadingVersionsText = translate('modals.model.loading.versions', {}, 'Loading versions...');
+    const civitaiModelId = modelWithFullData.civitai?.modelId || '';
+    const civitaiVersionId = modelWithFullData.civitai?.id || '';
+
     const tabPanesContent = modelType === 'loras' ? 
         `<div id="showcase-tab" class="tab-pane active">
             <div class="example-images-loading">
@@ -99,6 +107,14 @@ export async function showModelModal(model, modelType) {
             <div class="recipes-loading">
                 <i class="fas fa-spinner fa-spin"></i> ${loadingRecipesText}
             </div>
+        </div>
+
+        <div id="versions-tab" class="tab-pane">
+            <div class="model-versions-tab" data-model-id="${civitaiModelId}" data-model-type="${modelType}" data-current-version-id="${civitaiVersionId}">
+                <div class="versions-loading-state">
+                    <i class="fas fa-spinner fa-spin"></i> ${loadingVersionsText}
+                </div>
+            </div>
         </div>` :
         `<div id="showcase-tab" class="tab-pane active">
             <div class="recipes-loading">
@@ -112,6 +128,14 @@ export async function showModelModal(model, modelType) {
                     <i class="fas fa-spinner fa-spin"></i> ${loadingDescriptionText}
                 </div>
                 <div class="model-description-content hidden">
+                </div>
+            </div>
+        </div>
+
+        <div id="versions-tab" class="tab-pane">
+            <div class="model-versions-tab" data-model-id="${civitaiModelId}" data-model-type="${modelType}" data-current-version-id="${civitaiVersionId}">
+                <div class="versions-loading-state">
+                    <i class="fas fa-spinner fa-spin"></i> ${loadingVersionsText}
                 </div>
             </div>
         </div>`;
@@ -232,9 +256,22 @@ export async function showModelModal(model, modelType) {
     };
     
     modalManager.showModal(modalId, content, null, onCloseCallback);
+    const versionsTabController = initVersionsTab({
+        modalId,
+        modelType,
+        modelId: civitaiModelId,
+        currentVersionId: civitaiVersionId,
+    });
     setupEditableFields(modelWithFullData.file_path, modelType);
     setupShowcaseScroll(modalId);
-    setupTabSwitching();
+    setupTabSwitching({
+        onTabChange: async (tab) => {
+            if (tab === 'versions') {
+                await versionsTabController.load();
+            }
+        },
+    });
+    versionsTabController.load({ eager: true });
     setupTagTooltip();
     setupTagEditMode(modelType);
     setupModelNameEditing(modelWithFullData.file_path);

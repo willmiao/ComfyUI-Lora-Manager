@@ -77,6 +77,10 @@ export function getApiEndpoints(modelType) {
         relinkCivitai: `/api/lm/${modelType}/relink-civitai`,
         civitaiVersions: `/api/lm/${modelType}/civitai/versions`,
         refreshUpdates: `/api/lm/${modelType}/updates/refresh`,
+        modelUpdateStatus: `/api/lm/${modelType}/updates/status`,
+        modelUpdateVersions: `/api/lm/${modelType}/updates/versions`,
+        ignoreModelUpdate: `/api/lm/${modelType}/updates/ignore`,
+        ignoreVersionUpdate: `/api/lm/${modelType}/updates/ignore-version`,
         
         // Preview management
         replacePreview: `/api/lm/${modelType}/replace-preview`,

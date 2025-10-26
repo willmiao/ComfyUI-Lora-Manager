@@ -853,13 +853,55 @@
             "tabs": {
                 "examples": "示例",
                 "description": "模型描述",
-                "recipes": "配方"
+                "recipes": "配方",
+                "versions": "版本"
             },
             "loading": {
                 "exampleImages": "正在加载示例图片...",
                 "description": "正在加载模型描述...",
                 "recipes": "正在加载配方...",
-                "examples": "正在加载示例..."
+                "examples": "正在加载示例...",
+                "versions": "正在加载版本..."
+            },
+            "versions": {
+                "heading": "模型版本",
+                "copy": "在一个位置管理该模型的所有版本。",
+                "media": {
+                    "placeholder": "无预览"
+                },
+                "labels": {
+                    "unnamed": "未命名版本",
+                    "noDetails": "暂无更多信息"
+                },
+                "badges": {
+                    "current": "当前版本",
+                    "inLibrary": "已在库中",
+                    "newer": "较新的版本",
+                    "ignored": "已忽略"
+                },
+                "actions": {
+                    "download": "下载",
+                    "delete": "删除",
+                    "ignore": "忽略",
+                    "unignore": "取消忽略",
+                    "resumeModelUpdates": "继续跟踪该模型的更新",
+                    "ignoreModelUpdates": "忽略该模型的更新",
+                    "viewLocalVersions": "查看所有本地版本",
+                    "viewLocalTooltip": "敬请期待"
+                },
+                "empty": "该模型还没有版本历史。",
+                "error": "加载版本失败。",
+                "missingModelId": "该模型缺少 Civitai 模型 ID。",
+                "confirm": {
+                    "delete": "从库中删除此版本？"
+                },
+                "toast": {
+                    "modelIgnored": "已忽略该模型的更新",
+                    "modelResumed": "已恢复更新跟踪",
+                    "versionIgnored": "已忽略该版本的更新",
+                    "versionUnignored": "已重新启用该版本",
+                    "versionDeleted": "版本已删除"
+                }
             }
         }
     },

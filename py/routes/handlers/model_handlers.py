@@ -1108,9 +1108,9 @@ class ModelUpdateHandler:
             version_id,
             should_ignore,
         )
-        overrides = await self._build_preview_overrides(record)
+        overrides = await self._build_version_context(record)
         return web.json_response(
-            {"success": True, "record": self._serialize_record(record, preview_overrides=overrides)}
+            {"success": True, "record": self._serialize_record(record, version_context=overrides)}
         )
 
     async def get_model_update_status(self, request: web.Request) -> web.Response:
@@ -1157,9 +1157,9 @@ class ModelUpdateHandler:
                 {"success": False, "error": "Model not tracked"}, status=404
             )
 
-        overrides = await self._build_preview_overrides(record)
+        overrides = await self._build_version_context(record)
         return web.json_response(
-            {"success": True, "record": self._serialize_record(record, preview_overrides=overrides)}
+            {"success": True, "record": self._serialize_record(record, version_context=overrides)}
         )
 
     async def _get_or_refresh_record(
@@ -1219,9 +1219,9 @@ class ModelUpdateHandler:
         self,
         record,
         *,
-        preview_overrides: Optional[Dict[int, Optional[str]]] = None,
+        version_context: Optional[Dict[int, Dict[str, Optional[str]]]] = None,
     ) -> Dict:
-        overrides = preview_overrides or {}
+        context = version_context or {}
         return {
             "modelType": record.model_type,
             "modelId": record.model_id,
@@ -1232,14 +1232,16 @@ class ModelUpdateHandler:
             "shouldIgnore": record.should_ignore_model,
             "hasUpdate": record.has_update(),
             "versions": [
-                self._serialize_version(version, overrides.get(version.version_id))
+                self._serialize_version(version, context.get(version.version_id))
                 for version in record.versions
             ],
         }
 
     @staticmethod
-    def _serialize_version(version, override_preview: Optional[str]) -> Dict:
-        preview_url = override_preview if override_preview is not None else version.preview_url
+    def _serialize_version(version, context: Optional[Dict[str, Optional[str]]]) -> Dict:
+        context = context or {}
+        preview_override = context.get("preview_override")
+        preview_url = preview_override if preview_override is not None else version.preview_url
         return {
             "versionId": version.version_id,
             "name": version.name,
@@ -1249,19 +1251,21 @@ class ModelUpdateHandler:
             "previewUrl": preview_url,
             "isInLibrary": version.is_in_library,
             "shouldIgnore": version.should_ignore,
+            "filePath": context.get("file_path"),
+            "fileName": context.get("file_name"),
         }
 
-    async def _build_preview_overrides(self, record) -> Dict[int, Optional[str]]:
-        overrides: Dict[int, Optional[str]] = {}
+    async def _build_version_context(self, record) -> Dict[int, Dict[str, Optional[str]]]:
+        context: Dict[int, Dict[str, Optional[str]]] = {}
         try:
             cache = await self._service.scanner.get_cached_data()
         except Exception as exc:  # pragma: no cover - defensive logging
             self._logger.debug("Failed to load cache while building preview overrides: %s", exc)
-            return overrides
+            return context
 
         version_index = getattr(cache, "version_index", None)
         if not version_index:
-            return overrides
+            return context
 
         for version in record.versions:
             if not version.is_in_library:
@@ -1269,9 +1273,15 @@ class ModelUpdateHandler:
             cache_entry = version_index.get(version.version_id)
             if isinstance(cache_entry, Mapping):
                 preview = cache_entry.get("preview_url")
+                context_entry: Dict[str, Optional[str]] = {
+                    "file_path": cache_entry.get("file_path"),
+                    "file_name": cache_entry.get("file_name"),
+                    "preview_override": None,
+                }
                 if isinstance(preview, str) and preview:
-                    overrides[version.version_id] = config.get_preview_static_url(preview)
-        return overrides
+                    context_entry["preview_override"] = config.get_preview_static_url(preview)
+                context[version.version_id] = context_entry
+        return context
 
 
 @dataclass

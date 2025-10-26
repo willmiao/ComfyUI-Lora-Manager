@@ -9,7 +9,8 @@ import { translate } from '../../utils/i18nHelpers.js';
 /**
  * Set up tab switching functionality
  */
-export function setupTabSwitching() {
+export function setupTabSwitching(options = {}) {
+    const { onTabChange } = options;
     const tabButtons = document.querySelectorAll('.showcase-tabs .tab-btn');
     
     tabButtons.forEach(button => {
@@ -30,6 +31,14 @@ export function setupTabSwitching() {
             // If switching to description tab, load content lazily
             if (button.dataset.tab === 'description') {
                 await loadModelDescription();
+            }
+
+            if (typeof onTabChange === 'function') {
+                try {
+                    await onTabChange(button.dataset.tab);
+                } catch (error) {
+                    console.error('Error handling tab change:', error);
+                }
             }
         });
     });

@@ -853,13 +853,55 @@
             "tabs": {
                 "examples": "Examples",
                 "description": "Model Description",
-                "recipes": "Recipes"
+                "recipes": "Recipes",
+                "versions": "Versions"
             },
             "loading": {
                 "exampleImages": "Loading example images...",
                 "description": "Loading model description...",
                 "recipes": "Loading recipes...",
-                "examples": "Loading examples..."
+                "examples": "Loading examples...",
+                "versions": "Loading versions..."
+            },
+            "versions": {
+                "heading": "Model versions",
+                "copy": "Track and manage every version of this model in one place.",
+                "media": {
+                    "placeholder": "No preview"
+                },
+                "labels": {
+                    "unnamed": "Untitled Version",
+                    "noDetails": "No additional details"
+                },
+                "badges": {
+                    "current": "Current Version",
+                    "inLibrary": "In Library",
+                    "newer": "Newer Version",
+                    "ignored": "Ignored"
+                },
+                "actions": {
+                    "download": "Download",
+                    "delete": "Delete",
+                    "ignore": "Ignore",
+                    "unignore": "Unignore",
+                    "resumeModelUpdates": "Resume updates for this model",
+                    "ignoreModelUpdates": "Ignore updates for this model",
+                    "viewLocalVersions": "View all local versions",
+                    "viewLocalTooltip": "Coming soon"
+                },
+                "empty": "No version history available for this model yet.",
+                "error": "Failed to load versions.",
+                "missingModelId": "This model is missing a Civitai model id.",
+                "confirm": {
+                    "delete": "Delete this version from your library?"
+                },
+                "toast": {
+                    "modelIgnored": "Updates ignored for this model",
+                    "modelResumed": "Update tracking resumed",
+                    "versionIgnored": "Updates ignored for this version",
+                    "versionUnignored": "Version re-enabled",
+                    "versionDeleted": "Version deleted"
+                }
             }
         }
     },

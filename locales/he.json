@@ -853,13 +853,55 @@
             "tabs": {
                 "examples": "דוגמאות",
                 "description": "תיאור המודל",
-                "recipes": "מתכונים"
+                "recipes": "מתכונים",
+                "versions": "גרסאות"
             },
             "loading": {
                 "exampleImages": "טוען תמונות דוגמה...",
                 "description": "טוען תיאור מודל...",
                 "recipes": "טוען מתכונים...",
-                "examples": "טוען דוגמאות..."
+                "examples": "טוען דוגמאות...",
+                "versions": "טוען גרסאות..."
+            },
+            "versions": {
+                "heading": "גרסאות המודל",
+                "copy": "נהל את כל הגרסאות של המודל הזה במקום אחד.",
+                "media": {
+                    "placeholder": "אין תצוגה מקדימה"
+                },
+                "labels": {
+                    "unnamed": "גרסה ללא שם",
+                    "noDetails": "אין פרטים נוספים"
+                },
+                "badges": {
+                    "current": "גרסה נוכחית",
+                    "inLibrary": "בספרייה",
+                    "newer": "גרסה חדשה יותר",
+                    "ignored": "התעלם"
+                },
+                "actions": {
+                    "download": "הורדה",
+                    "delete": "מחיקה",
+                    "ignore": "התעלם",
+                    "unignore": "בטל התעלמות",
+                    "resumeModelUpdates": "המשך עדכונים עבור מודל זה",
+                    "ignoreModelUpdates": "התעלם מעדכונים עבור מודל זה",
+                    "viewLocalVersions": "הצג את כל הגרסאות המקומיות",
+                    "viewLocalTooltip": "יגיע בקרוב"
+                },
+                "empty": "אין עדיין היסטוריית גרסאות למודל זה.",
+                "error": "טעינת הגרסאות נכשלה.",
+                "missingModelId": "למודל זה אין מזהה מודל של Civitai.",
+                "confirm": {
+                    "delete": "למחוק גרסה זו מהספרייה שלך?"
+                },
+                "toast": {
+                    "modelIgnored": "העדכונים עבור מודל זה נוגבו",
+                    "modelResumed": "מעקב העדכונים חודש",
+                    "versionIgnored": "העדכונים עבור גרסה זו נוגבו",
+                    "versionUnignored": "הגרסה הופעלה מחדש",
+                    "versionDeleted": "הגרסה נמחקה"
+                }
             }
         }
     },

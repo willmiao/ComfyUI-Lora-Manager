@@ -853,13 +853,55 @@
             "tabs": {
                 "examples": "예시",
                 "description": "모델 설명",
-                "recipes": "레시피"
+                "recipes": "레시피",
+                "versions": "버전"
             },
             "loading": {
                 "exampleImages": "예시 이미지 로딩 중...",
                 "description": "모델 설명 로딩 중...",
                 "recipes": "레시피 로딩 중...",
-                "examples": "예시 로딩 중..."
+                "examples": "예시 로딩 중...",
+                "versions": "버전 로딩 중..."
+            },
+            "versions": {
+                "heading": "모델 버전",
+                "copy": "이 모델의 모든 버전을 한 곳에서 관리하세요.",
+                "media": {
+                    "placeholder": "미리보기 없음"
+                },
+                "labels": {
+                    "unnamed": "이름 없는 버전",
+                    "noDetails": "추가 정보 없음"
+                },
+                "badges": {
+                    "current": "현재 버전",
+                    "inLibrary": "라이브러리에 있음",
+                    "newer": "최신 버전",
+                    "ignored": "무시됨"
+                },
+                "actions": {
+                    "download": "다운로드",
+                    "delete": "삭제",
+                    "ignore": "무시",
+                    "unignore": "무시 해제",
+                    "resumeModelUpdates": "이 모델 업데이트 재개",
+                    "ignoreModelUpdates": "이 모델 업데이트 무시",
+                    "viewLocalVersions": "로컬 버전 모두 보기",
+                    "viewLocalTooltip": "곧 제공 예정"
+                },
+                "empty": "이 모델에는 아직 버전 기록이 없습니다.",
+                "error": "버전을 불러오지 못했습니다.",
+                "missingModelId": "이 모델에는 Civitai 모델 ID가 없습니다.",
+                "confirm": {
+                    "delete": "이 버전을 라이브러리에서 삭제하시겠습니까?"
+                },
+                "toast": {
+                    "modelIgnored": "이 모델의 업데이트가 무시됩니다",
+                    "modelResumed": "업데이트 추적이 재개되었습니다",
+                    "versionIgnored": "이 버전의 업데이트가 무시됩니다",
+                    "versionUnignored": "버전이 다시 활성화되었습니다",
+                    "versionDeleted": "버전이 삭제되었습니다"
+                }
             }
         }
     },

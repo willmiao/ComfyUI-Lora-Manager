@@ -592,6 +592,73 @@ export class BaseModelApiClient {
         }
     }
 
+    async fetchModelUpdateVersions(modelId, { refresh = false, force = false } = {}) {
+        try {
+            const params = new URLSearchParams();
+            if (refresh) params.append('refresh', 'true');
+            if (force) params.append('force', 'true');
+            const query = params.toString();
+            const requestUrl = `${this.apiConfig.endpoints.modelUpdateVersions}/${modelId}${query ? `?${query}` : ''}`;
+
+            const response = await fetch(requestUrl);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to fetch model versions');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching model update versions:', error);
+            throw error;
+        }
+    }
+
+    async setModelUpdateIgnore(modelId, shouldIgnore) {
+        try {
+            const response = await fetch(this.apiConfig.endpoints.ignoreModelUpdate, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    modelId,
+                    shouldIgnore,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to update model ignore status');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error updating model ignore status:', error);
+            throw error;
+        }
+    }
+
+    async setVersionUpdateIgnore(modelId, versionId, shouldIgnore) {
+        try {
+            const response = await fetch(this.apiConfig.endpoints.ignoreVersionUpdate, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    modelId,
+                    versionId,
+                    shouldIgnore,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to update version ignore status');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error updating version ignore status:', error);
+            throw error;
+        }
+    }
+
     async fetchModelRoots() {
         try {
             const response = await fetch(this.apiConfig.endpoints.roots);

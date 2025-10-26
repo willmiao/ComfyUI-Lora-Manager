@@ -140,6 +140,14 @@ export class DownloadManager {
         this.loadDefaultPathSetting();
     }
 
+    async retrieveVersionsForModel(modelId, source = null) {
+        this.versions = await this.apiClient.fetchCivitaiVersions(modelId, source);
+        if (!this.versions || !this.versions.length) {
+            throw new Error(translate('modals.download.errors.noVersions'));
+        }
+        return this.versions;
+    }
+
     async validateAndFetchVersions() {
         const url = document.getElementById('modelUrl').value.trim();
         const errorElement = document.getElementById('urlError');
@@ -152,12 +160,8 @@ export class DownloadManager {
                 throw new Error(translate('modals.download.errors.invalidUrl'));
             }
 
-            this.versions = await this.apiClient.fetchCivitaiVersions(this.modelId, this.source);
-            
-            if (!this.versions.length) {
-                throw new Error(translate('modals.download.errors.noVersions'));
-            }
-            
+            await this.retrieveVersionsForModel(this.modelId, this.source);
+
             // If we have a version ID from URL, pre-select it
             if (this.modelVersionId) {
                 this.currentVersion = this.versions.find(v => v.id.toString() === this.modelVersionId);
@@ -166,6 +170,27 @@ export class DownloadManager {
             this.showVersionStep();
         } catch (error) {
             errorElement.textContent = error.message;
+        } finally {
+            this.loadingManager.hide();
+        }
+    }
+
+    async fetchVersionsForCurrentModel() {
+        const errorElement = document.getElementById('urlError');
+        if (errorElement) {
+            errorElement.textContent = '';
+        }
+        try {
+            this.loadingManager.showSimpleLoading(translate('modals.download.fetchingVersions'));
+            await this.retrieveVersionsForModel(this.modelId, this.source);
+            if (this.modelVersionId) {
+                this.currentVersion = this.versions.find(v => v.id.toString() === this.modelVersionId);
+            }
+            this.showVersionStep();
+        } catch (error) {
+            if (errorElement) {
+                errorElement.textContent = error.message;
+            }
         } finally {
             this.loadingManager.hide();
         }
@@ -189,6 +214,26 @@ export class DownloadManager {
 
         this.source = null;
         return null;
+    }
+
+    async openForModelVersion(modelType, modelId, versionId = null) {
+        try {
+            this.apiClient = getModelApiClient(modelType);
+        } catch (error) {
+            this.apiClient = getModelApiClient();
+        }
+
+        this.showDownloadModal();
+
+        this.modelId = modelId ? modelId.toString() : null;
+        this.modelVersionId = versionId ? versionId.toString() : null;
+        this.source = null;
+
+        if (!this.modelId) {
+            return;
+        }
+
+        await this.fetchVersionsForCurrentModel();
     }
 
     showVersionStep() {

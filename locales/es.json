@@ -853,13 +853,55 @@
             "tabs": {
                 "examples": "Ejemplos",
                 "description": "Descripción del modelo",
-                "recipes": "Recetas"
+                "recipes": "Recetas",
+                "versions": "Versiones"
             },
             "loading": {
                 "exampleImages": "Cargando imágenes de ejemplo...",
                 "description": "Cargando descripción del modelo...",
                 "recipes": "Cargando recetas...",
-                "examples": "Cargando ejemplos..."
+                "examples": "Cargando ejemplos...",
+                "versions": "Cargando versiones..."
+            },
+            "versions": {
+                "heading": "Versiones del modelo",
+                "copy": "Administra todas las versiones de este modelo en un solo lugar.",
+                "media": {
+                    "placeholder": "Sin vista previa"
+                },
+                "labels": {
+                    "unnamed": "Versión sin nombre",
+                    "noDetails": "Sin detalles adicionales"
+                },
+                "badges": {
+                    "current": "Versión actual",
+                    "inLibrary": "En la biblioteca",
+                    "newer": "Versión más reciente",
+                    "ignored": "Ignorada"
+                },
+                "actions": {
+                    "download": "Descargar",
+                    "delete": "Eliminar",
+                    "ignore": "Ignorar",
+                    "unignore": "Dejar de ignorar",
+                    "resumeModelUpdates": "Reanudar actualizaciones para este modelo",
+                    "ignoreModelUpdates": "Ignorar actualizaciones para este modelo",
+                    "viewLocalVersions": "Ver todas las versiones locales",
+                    "viewLocalTooltip": "Disponible pronto"
+                },
+                "empty": "Aún no hay historial de versiones para este modelo.",
+                "error": "No se pudieron cargar las versiones.",
+                "missingModelId": "Este modelo no tiene un ID de modelo de Civitai.",
+                "confirm": {
+                    "delete": "¿Eliminar esta versión de tu biblioteca?"
+                },
+                "toast": {
+                    "modelIgnored": "Se ignoran las actualizaciones de este modelo",
+                    "modelResumed": "Seguimiento de actualizaciones reanudado",
+                    "versionIgnored": "Se ignoran las actualizaciones de esta versión",
+                    "versionUnignored": "Versión habilitada nuevamente",
+                    "versionDeleted": "Versión eliminada"
+                }
             }
         }
     },
