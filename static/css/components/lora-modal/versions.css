@@ -156,10 +156,9 @@
     gap: 8px;
     font-weight: 600;
     font-size: 0.95rem;
-    color: color-mix(in oklch, var(--text-color) 92%, black 8%);
 }
 
-.version-name {
+.versions-tab-version-name {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

@@ -170,7 +170,7 @@ function renderRow(version, options) {
             ${renderMediaMarkup(version)}
             <div class="version-details">
                 <div class="version-title">
-                    <span class="version-name">${escapeHtml(version.name || translate('modals.model.versions.labels.unnamed', {}, 'Untitled Version'))}</span>
+                    <span class="versions-tab-version-name">${escapeHtml(version.name || translate('modals.model.versions.labels.unnamed', {}, 'Untitled Version'))}</span>
                     <span class="version-id">#${escapeHtml(version.versionId)}</span>
                 </div>
                 <div class="version-badges">${badges.join('')}</div>
@@ -391,7 +391,7 @@ export function initVersionsTab({
         try {
             const client = ensureClient();
             const response = await client.fetchModelUpdateVersions(modelId, {
-                refresh: true,
+                refresh: false,
             });
             if (!response?.success) {
                 throw new Error(response?.error || 'Request failed');
