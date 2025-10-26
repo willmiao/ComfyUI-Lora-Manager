@@ -5,8 +5,40 @@ import { formatFileSize } from '../utils/formatters.js';
 export class LoadingManager {
     constructor() {
         this.overlay = document.getElementById('loading-overlay');
-        this.progressBar = this.overlay.querySelector('.progress-bar');
-        this.statusText = this.overlay.querySelector('.loading-status');
+
+        if (!this.overlay) {
+            this.overlay = document.createElement('div');
+            this.overlay.id = 'loading-overlay';
+            this.overlay.style.display = 'none';
+            document.body.appendChild(this.overlay);
+        }
+
+        this.loadingContent = this.overlay.querySelector('.loading-content');
+        if (!this.loadingContent) {
+            this.loadingContent = document.createElement('div');
+            this.loadingContent.className = 'loading-content';
+            this.overlay.appendChild(this.loadingContent);
+        }
+
+        this.progressBar = this.loadingContent.querySelector('.progress-bar');
+        if (!this.progressBar) {
+            this.progressBar = document.createElement('div');
+            this.progressBar.className = 'progress-bar';
+            this.progressBar.setAttribute('role', 'progressbar');
+            this.progressBar.setAttribute('aria-valuemin', '0');
+            this.progressBar.setAttribute('aria-valuemax', '100');
+            this.progressBar.setAttribute('aria-valuenow', '0');
+            this.progressBar.style.width = '0%';
+            this.loadingContent.appendChild(this.progressBar);
+        }
+
+        this.statusText = this.loadingContent.querySelector('.loading-status');
+        if (!this.statusText) {
+            this.statusText = document.createElement('div');
+            this.statusText.className = 'loading-status';
+            this.loadingContent.appendChild(this.statusText);
+        }
+
         this.detailsContainer = null; // Will be created when needed
     }
 
@@ -51,9 +83,8 @@ export class LoadingManager {
         this.detailsContainer.className = 'progress-details-container';
         
         // Insert after the main progress bar
-        const loadingContent = this.overlay.querySelector('.loading-content');
-        if (loadingContent) {
-            loadingContent.appendChild(this.detailsContainer);
+        if (this.loadingContent) {
+            this.loadingContent.appendChild(this.detailsContainer);
         }
         
         return this.detailsContainer;
