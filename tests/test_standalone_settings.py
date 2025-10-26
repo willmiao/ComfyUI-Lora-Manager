@@ -26,6 +26,12 @@ def read_settings_file(path: Path) -> dict:
         return json.load(handle)
 
 
+def read_example_settings() -> dict:
+    example_path = Path(__file__).resolve().parents[1] / "settings.json.example"
+    with example_path.open('r', encoding='utf-8') as handle:
+        return json.load(handle)
+
+
 def test_missing_settings_creates_defaults_and_emits_warnings(tmp_path):
     manager = get_settings_manager()
     settings_path = Path(manager.settings_file)
@@ -50,6 +56,20 @@ def test_missing_settings_creates_defaults_and_emits_warnings(tmp_path):
             "icon": "fas fa-folder-open",
         }
     ]
+
+
+def test_template_settings_are_preserved_on_restart(tmp_path):
+    manager = get_settings_manager()
+    settings_path = Path(manager.settings_file)
+
+    example_payload = read_example_settings()
+    assert read_settings_file(settings_path) == example_payload
+
+    reset_settings_manager()
+
+    manager = get_settings_manager()
+    assert Path(manager.settings_file) == settings_path
+    assert read_settings_file(settings_path) == example_payload
 
 
 def test_invalid_settings_recovers_with_defaults(tmp_path):
