@@ -47,6 +47,7 @@ export async function showModelModal(model, modelType) {
         ...model,
         civitai: completeCivitaiData
     };
+    const hasUpdateAvailable = Boolean(modelWithFullData.update_available);
     
     // Prepare LoRA specific data with complete civitai data
     const escapedWords = (modelType === 'loras' || modelType === 'embeddings') && modelWithFullData.civitai?.trainedWords?.length ? 
@@ -67,15 +68,27 @@ export async function showModelModal(model, modelType) {
     const descriptionText = translate('modals.model.tabs.description', {}, 'Model Description');
     const recipesText = translate('modals.model.tabs.recipes', {}, 'Recipes');
     const versionsText = translate('modals.model.tabs.versions', {}, 'Versions');
-    
+    const versionsBadgeLabel = translate('modelCard.badges.update', {}, 'Update');
+    const versionsTabBadge = hasUpdateAvailable
+        ? `<span class="tab-badge tab-badge--update">${versionsBadgeLabel}</span>`
+        : '';
+    const versionsTabClasses = ['tab-btn'];
+    if (hasUpdateAvailable) {
+        versionsTabClasses.push('tab-btn--has-update');
+    }
+    const versionsTabButton = `<button class="${versionsTabClasses.join(' ')}" data-tab="versions">
+                <span class="tab-label">${versionsText}</span>
+                ${versionsTabBadge}
+            </button>`.trim();
+
     const tabsContent = modelType === 'loras' ? 
         `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
             <button class="tab-btn" data-tab="description">${descriptionText}</button>
-            <button class="tab-btn" data-tab="recipes">${recipesText}</button>
-            <button class="tab-btn" data-tab="versions">${versionsText}</button>` :
+            ${versionsTabButton}
+            <button class="tab-btn" data-tab="recipes">${recipesText}</button>` :
         `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
             <button class="tab-btn" data-tab="description">${descriptionText}</button>
-            <button class="tab-btn" data-tab="versions">${versionsText}</button>`;
+            ${versionsTabButton}`;
     
     const loadingExampleImagesText = translate('modals.model.loading.exampleImages', {}, 'Loading example images...');
     const loadingDescriptionText = translate('modals.model.loading.description', {}, 'Loading model description...');
@@ -102,18 +115,18 @@ export async function showModelModal(model, modelType) {
                 </div>
             </div>
         </div>
-        
-        <div id="recipes-tab" class="tab-pane">
-            <div class="recipes-loading">
-                <i class="fas fa-spinner fa-spin"></i> ${loadingRecipesText}
-            </div>
-        </div>
 
         <div id="versions-tab" class="tab-pane">
             <div class="model-versions-tab" data-model-id="${civitaiModelId}" data-model-type="${modelType}" data-current-version-id="${civitaiVersionId}">
                 <div class="versions-loading-state">
                     <i class="fas fa-spinner fa-spin"></i> ${loadingVersionsText}
                 </div>
+            </div>
+        </div>
+
+        <div id="recipes-tab" class="tab-pane">
+            <div class="recipes-loading">
+                <i class="fas fa-spinner fa-spin"></i> ${loadingRecipesText}
             </div>
         </div>` :
         `<div id="showcase-tab" class="tab-pane active">

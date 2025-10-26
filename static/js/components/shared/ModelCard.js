@@ -287,6 +287,7 @@ async function showModelModalFromCard(card, modelType) {
         // Parse civitai metadata from the card's dataset
         civitai: JSON.parse(card.dataset.meta || '{}'),
         tags: JSON.parse(card.dataset.tags || '[]'),
+        update_available: card.dataset.update_available === 'true',
         modelDescription: card.dataset.modelDescription || '',
         // LoRA specific fields
         ...(modelType === MODEL_TYPES.LORA && {

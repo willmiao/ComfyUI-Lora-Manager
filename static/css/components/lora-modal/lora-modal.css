@@ -323,6 +323,10 @@
 }
 
 .tab-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
     padding: var(--space-1) var(--space-2);
     background: transparent;
     border: none;
@@ -344,6 +348,51 @@
     border-bottom: 2px solid var(--lora-accent);
     opacity: 1;
     font-weight: 600;
+}
+
+.tab-btn .tab-label {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.2;
+}
+
+.tab-btn .tab-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: var(--border-radius-xs);
+    background: var(--badge-update-bg);
+    color: var(--badge-update-text);
+    font-size: 0.68em;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    box-shadow: 0 3px 10px var(--badge-update-glow);
+    border: 1px solid color-mix(in oklab, var(--badge-update-bg) 55%, transparent);
+    line-height: 1;
+}
+
+.tab-badge--update {
+    animation: tab-badge-pulse 2.8s ease-in-out infinite;
+}
+
+.tab-btn--has-update:not(.active) {
+    color: color-mix(in oklch, var(--text-color) 70%, var(--badge-update-bg) 30%);
+}
+
+.tab-btn--has-update.active {
+    border-bottom-color: var(--badge-update-bg);
+}
+
+@keyframes tab-badge-pulse {
+    0%, 100% {
+        box-shadow: 0 3px 10px color-mix(in oklch, var(--badge-update-glow) 100%, transparent);
+        transform: translateY(0);
+    }
+    50% {
+        box-shadow: 0 5px 14px color-mix(in oklch, var(--badge-update-glow) 90%, transparent);
+        transform: translateY(-1px);
+    }
 }
 
 .tab-content {
