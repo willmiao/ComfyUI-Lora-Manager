@@ -38,14 +38,34 @@ class MockFolderPaths:
                 with open(settings_path, 'r', encoding='utf-8') as f:
                     settings = json.load(f)
                 
+                folder_maps = settings.get('folder_paths', {})
+                if not isinstance(folder_maps, dict) or not folder_maps:
+                    libraries = settings.get('libraries', {})
+                    if isinstance(libraries, dict) and libraries:
+                        active_name = settings.get('active_library')
+                        active_library = None
+                        if isinstance(active_name, str) and active_name in libraries:
+                            candidate = libraries.get(active_name)
+                            if isinstance(candidate, dict):
+                                active_library = candidate
+                        if active_library is None:
+                            for candidate in libraries.values():
+                                if isinstance(candidate, dict):
+                                    active_library = candidate
+                                    break
+                        if isinstance(active_library, dict):
+                            folder_maps = active_library.get('folder_paths', {})
+
+                if not isinstance(folder_maps, dict):
+                    folder_maps = {}
+
                 # For diffusion_models, combine unet and diffusers paths
                 if folder_name == "diffusion_models":
                     paths = []
-                    if 'folder_paths' in settings:
-                        if 'unet' in settings['folder_paths']:
-                            paths.extend(settings['folder_paths']['unet'])
-                        if 'diffusers' in settings['folder_paths']:
-                            paths.extend(settings['folder_paths']['diffusers'])
+                    if 'unet' in folder_maps:
+                        paths.extend(folder_maps['unet'])
+                    if 'diffusers' in folder_maps:
+                        paths.extend(folder_maps['diffusers'])
                     # Filter out paths that don't exist
                     valid_paths = [p for p in paths if os.path.exists(p)]
                     if valid_paths:
@@ -53,8 +73,8 @@ class MockFolderPaths:
                     else:
                         print(f"Warning: No valid paths found for {folder_name}")
                 # For other folder names, return their paths directly
-                elif 'folder_paths' in settings and folder_name in settings['folder_paths']:
-                    paths = settings['folder_paths'][folder_name]
+                elif folder_name in folder_maps:
+                    paths = folder_maps[folder_name]
                     valid_paths = [p for p in paths if os.path.exists(p)]
                     if valid_paths:
                         return valid_paths

@@ -4,7 +4,7 @@ import json
 import os
 import logging
 from datetime import datetime, timezone
-from threading import Lock
+from threading import RLock
 from typing import Any, Awaitable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from ..utils.constants import DEFAULT_PRIORITY_TAG_CONFIG
@@ -153,6 +153,7 @@ class SettingsManager:
             self.settings["active_library"] = library_name
             self._sync_active_library_to_root(save=False)
             self._save_settings()
+            self._notify_library_change(library_name)
             return
 
         sanitized_libraries: Dict[str, Dict[str, Any]] = {}
@@ -183,6 +184,10 @@ class SettingsManager:
                 self.settings["active_library"] = "default"
 
         self._sync_active_library_to_root(save=changed)
+
+        active_library = self.settings.get("active_library")
+        if active_library and active_library in self.settings.get("libraries", {}):
+            self._notify_library_change(active_library)
 
     def _sync_active_library_to_root(self, *, save: bool = False) -> None:
         """Update top-level folder path settings to mirror the active library."""
@@ -882,12 +887,34 @@ class SettingsManager:
         library_config = libraries.get(library_name, {})
         library_snapshot = copy.deepcopy(library_config)
 
-        try:
-            from ..config import config  # Local import to avoid circular dependency
+        def _has_folder_paths(payload: Mapping[str, object]) -> bool:
+            raw_paths = payload.get("folder_paths")
+            if not isinstance(raw_paths, Mapping):
+                return False
 
-            config.apply_library_settings(library_snapshot)
-        except Exception as exc:  # pragma: no cover - defensive logging
-            logger.debug("Failed to apply library settings to config: %s", exc)
+            for values in raw_paths.values():
+                if isinstance(values, str):
+                    if values.strip():
+                        return True
+                    continue
+
+                try:
+                    iterator = iter(values)
+                except TypeError:
+                    continue
+
+                if any(isinstance(path, str) and path.strip() for path in iterator):
+                    return True
+
+            return False
+
+        if _has_folder_paths(library_snapshot):
+            try:
+                from ..config import config  # Local import to avoid circular dependency
+
+                config.apply_library_settings(library_snapshot)
+            except Exception as exc:  # pragma: no cover - defensive logging
+                logger.debug("Failed to apply library settings to config: %s", exc)
 
         try:
             from .service_registry import ServiceRegistry  # type: ignore
@@ -962,7 +989,7 @@ class SettingsManager:
 
 
 _SETTINGS_MANAGER: Optional["SettingsManager"] = None
-_SETTINGS_MANAGER_LOCK = Lock()
+_SETTINGS_MANAGER_LOCK = RLock()
 # Legacy module-level alias for backwards compatibility with callers that
 # monkeypatch ``py.services.settings_manager.settings`` during tests.
 settings: Optional["SettingsManager"] = None
