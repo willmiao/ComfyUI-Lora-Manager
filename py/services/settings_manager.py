@@ -217,10 +217,32 @@ class SettingsManager:
         active_name = self.settings.get("active_library")
         initial_bootstrap = self._bootstrap_reason == "missing"
 
-        if not isinstance(libraries, dict) or not libraries:
+        raw_top_level_paths = self.settings.get("folder_paths", {})
+        normalized_top_level_paths: Dict[str, List[str]] = {}
+        if isinstance(raw_top_level_paths, Mapping):
+            normalized_top_level_paths = self._normalize_folder_paths(raw_top_level_paths)
+            if normalized_top_level_paths != raw_top_level_paths:
+                self.settings["folder_paths"] = copy.deepcopy(normalized_top_level_paths)
+
+        top_level_has_paths = self._has_configured_paths(normalized_top_level_paths)
+
+        needs_library_bootstrap = not isinstance(libraries, dict) or not libraries
+
+        if (
+            not needs_library_bootstrap
+            and top_level_has_paths
+            and len(libraries) == 1
+        ):
+            only_library_payload = next(iter(libraries.values()))
+            if isinstance(only_library_payload, Mapping):
+                folder_payload = only_library_payload.get("folder_paths")
+                if not self._has_configured_paths(folder_payload):
+                    needs_library_bootstrap = True
+
+        if needs_library_bootstrap:
             library_name = active_name or "default"
             library_payload = self._build_library_payload(
-                folder_paths=self.settings.get("folder_paths", {}),
+                folder_paths=normalized_top_level_paths,
                 default_lora_root=self.settings.get("default_lora_root", ""),
                 default_checkpoint_root=self.settings.get("default_checkpoint_root", ""),
                 default_embedding_root=self.settings.get("default_embedding_root", ""),
@@ -233,14 +255,36 @@ class SettingsManager:
                 self._save_settings()
             return
 
+        seed_library_name: Optional[str] = None
+        if top_level_has_paths and isinstance(libraries, dict):
+            target_name: Optional[str] = None
+            if active_name and active_name in libraries:
+                target_name = active_name
+            elif len(libraries) == 1:
+                target_name = next(iter(libraries.keys()))
+
+            if target_name:
+                candidate_payload = libraries.get(target_name)
+                if isinstance(candidate_payload, Mapping) and not self._has_configured_paths(candidate_payload.get("folder_paths")):
+                    seed_library_name = target_name
+
         sanitized_libraries: Dict[str, Dict[str, Any]] = {}
         changed = False
         for name, data in libraries.items():
             if not isinstance(data, dict):
                 data = {}
                 changed = True
+
+            candidate_folder_paths = data.get("folder_paths")
+            if (
+                seed_library_name == name
+                and not self._has_configured_paths(candidate_folder_paths)
+                and top_level_has_paths
+            ):
+                candidate_folder_paths = normalized_top_level_paths
+
             payload = self._build_library_payload(
-                folder_paths=data.get("folder_paths"),
+                folder_paths=candidate_folder_paths,
                 default_lora_root=data.get("default_lora_root"),
                 default_checkpoint_root=data.get("default_checkpoint_root"),
                 default_embedding_root=data.get("default_embedding_root"),
@@ -351,6 +395,25 @@ class SettingsManager:
                     seen.add(stripped)
             normalized[key] = cleaned
         return normalized
+
+    def _has_configured_paths(self, folder_paths: Any) -> bool:
+        if not isinstance(folder_paths, Mapping):
+            return False
+
+        for values in folder_paths.values():
+            if isinstance(values, str):
+                candidate_values = [values]
+            else:
+                try:
+                    candidate_values = list(values)  # type: ignore[arg-type]
+                except TypeError:
+                    continue
+
+            for path in candidate_values:
+                if isinstance(path, str) and path.strip():
+                    return True
+
+        return False
 
     def _validate_folder_paths(
         self,

@@ -53,6 +53,45 @@ def test_initial_save_persists_minimal_template(tmp_path, monkeypatch):
     assert manager.get_libraries()["default"]["folder_paths"]["loras"] == ["/loras"]
 
 
+def test_existing_folder_paths_seed_default_library(tmp_path, monkeypatch):
+    monkeypatch.setenv("LORA_MANAGER_STANDALONE", "1")
+
+    lora_dir = tmp_path / "loras"
+    checkpoint_dir = tmp_path / "checkpoints"
+    unet_dir = tmp_path / "unet"
+    diffusion_dir = tmp_path / "diffusion_models"
+    embedding_dir = tmp_path / "embeddings"
+
+    for directory in (lora_dir, checkpoint_dir, unet_dir, diffusion_dir, embedding_dir):
+        directory.mkdir()
+
+    initial = {
+        "folder_paths": {
+            "loras": [str(lora_dir)],
+            "checkpoints": [str(checkpoint_dir)],
+            "unet": [str(diffusion_dir), str(unet_dir)],
+            "embeddings": [str(embedding_dir)],
+        }
+    }
+
+    manager = _create_manager_with_settings(tmp_path, monkeypatch, initial)
+
+    stored_paths = manager.get("folder_paths")
+    assert stored_paths["loras"] == [str(lora_dir)]
+    assert stored_paths["checkpoints"] == [str(checkpoint_dir)]
+    assert stored_paths["unet"] == [str(diffusion_dir), str(unet_dir)]
+    assert stored_paths["embeddings"] == [str(embedding_dir)]
+
+    libraries = manager.get_libraries()
+    assert "default" in libraries
+    assert libraries["default"]["folder_paths"]["loras"] == [str(lora_dir)]
+    assert libraries["default"]["folder_paths"]["checkpoints"] == [str(checkpoint_dir)]
+    assert libraries["default"]["folder_paths"]["unet"] == [str(diffusion_dir), str(unet_dir)]
+    assert libraries["default"]["folder_paths"]["embeddings"] == [str(embedding_dir)]
+
+    assert manager.get_startup_messages() == []
+
+
 def test_environment_variable_overrides_settings(tmp_path, monkeypatch):
     monkeypatch.setattr(SettingsManager, "_save_settings", lambda self: None)
     monkeypatch.setenv("CIVITAI_API_KEY", "secret")
