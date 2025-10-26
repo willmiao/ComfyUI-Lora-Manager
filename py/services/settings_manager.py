@@ -66,6 +66,11 @@ class SettingsManager:
         self._needs_initial_save = False
         self._bootstrap_reason: Optional[str] = None
         self._seed_template: Optional[Dict[str, Any]] = None
+        self._template_payload_cache: Optional[Dict[str, Any]] = None
+        self._template_payload_cache_loaded = False
+        self._original_disk_payload: Optional[Dict[str, Any]] = None
+        self._preserve_disk_template = False
+        self._template_path = Path(__file__).resolve().parents[2] / "settings.json.example"
         self.settings = self._load_settings()
         self._migrate_setting_keys()
         self._ensure_default_settings()
@@ -89,7 +94,12 @@ class SettingsManager:
         if os.path.exists(self.settings_file):
             try:
                 with open(self.settings_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                    data = json.load(f)
+                if isinstance(data, dict):
+                    self._original_disk_payload = copy.deepcopy(data)
+                    if self._matches_template_payload(data):
+                        self._preserve_disk_template = True
+                return data
             except json.JSONDecodeError as exc:
                 logger.error("Failed to parse settings.json: %s", exc)
                 self._add_startup_message(
@@ -133,12 +143,28 @@ class SettingsManager:
     def _load_settings_template(self) -> Optional[Dict[str, Any]]:
         """Load the bundled template when no user settings are found."""
 
-        template_path = Path(__file__).resolve().parents[2] / "settings.json.example"
+        payload = self._read_template_payload()
+        if payload is None:
+            return None
+
+        self._seed_template = copy.deepcopy(payload)
+        return copy.deepcopy(payload)
+
+    def _read_template_payload(self) -> Optional[Dict[str, Any]]:
+        """Return the cached contents of ``settings.json.example`` when available."""
+
+        if self._template_payload_cache_loaded:
+            if self._template_payload_cache is None:
+                return None
+            return copy.deepcopy(self._template_payload_cache)
+
+        self._template_payload_cache_loaded = True
+
         try:
-            with template_path.open("r", encoding="utf-8") as handle:
+            with self._template_path.open("r", encoding="utf-8") as handle:
                 data = json.load(handle)
         except FileNotFoundError:
-            logger.debug("settings.json.example not found at %s", template_path)
+            logger.debug("settings.json.example not found at %s", self._template_path)
             return None
         except json.JSONDecodeError as exc:
             logger.warning("Failed to parse settings.json.example: %s", exc)
@@ -148,8 +174,17 @@ class SettingsManager:
             logger.debug("settings.json.example is not a JSON object; ignoring template")
             return None
 
-        self._seed_template = copy.deepcopy(data)
-        return copy.deepcopy(data)
+        self._template_payload_cache = copy.deepcopy(data)
+        return copy.deepcopy(self._template_payload_cache)
+
+    def _matches_template_payload(self, payload: Mapping[str, Any]) -> bool:
+        """Return ``True`` when ``payload`` matches the bundled template."""
+
+        template = self._read_template_payload()
+        if template is None:
+            return False
+
+        return payload == template
 
     def _merge_template_with_defaults(
         self, defaults: Dict[str, Any], template: Mapping[str, Any]
@@ -251,7 +286,7 @@ class SettingsManager:
             self.settings["libraries"] = libraries
             self.settings["active_library"] = library_name
             self._sync_active_library_to_root(save=False)
-            if not initial_bootstrap:
+            if not initial_bootstrap and not self._preserve_disk_template:
                 self._save_settings()
             return
 
