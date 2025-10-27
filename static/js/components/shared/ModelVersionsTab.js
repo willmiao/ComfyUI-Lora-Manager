@@ -19,19 +19,77 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+function extractExtension(value) {
+    if (value == null) {
+        return '';
+    }
+    const targets = [];
+    const stringValue = String(value);
+    if (stringValue) {
+        targets.push(stringValue);
+        stringValue.split(/[?&=]/).forEach(fragment => {
+            if (fragment) {
+                targets.push(fragment);
+            }
+        });
+    }
+
+    for (const target of targets) {
+        let candidate = target;
+        try {
+            candidate = decodeURIComponent(candidate);
+        } catch (error) {
+            // ignoring malformed sequences, fallback to raw value
+        }
+        const lastDot = candidate.lastIndexOf('.');
+        if (lastDot === -1) {
+            continue;
+        }
+        const extension = candidate.slice(lastDot).toLowerCase();
+        if (extension.includes('/') || extension.includes('\\')) {
+            continue;
+        }
+        return extension;
+    }
+
+    return '';
+}
+
 function isVideoUrl(url) {
     if (!url || typeof url !== 'string') {
         return false;
     }
+
+    const candidates = new Set();
+    const addCandidate = value => {
+        if (value == null) {
+            return;
+        }
+        const stringValue = String(value);
+        if (!stringValue) {
+            return;
+        }
+        candidates.add(stringValue);
+    };
+
+    addCandidate(url);
+
     try {
         const parsed = new URL(url, window.location.origin);
-        const pathname = parsed.pathname || '';
-        const extension = pathname.slice(pathname.lastIndexOf('.')).toLowerCase();
-        return VIDEO_EXTENSIONS.includes(extension);
+        addCandidate(parsed.pathname);
+        parsed.searchParams.forEach(value => addCandidate(value));
     } catch (error) {
-        const normalized = url.split('?')[0].toLowerCase();
-        return VIDEO_EXTENSIONS.some(ext => normalized.endsWith(ext));
+        // ignore parse errors and rely on fallbacks below
     }
+
+    for (const candidate of candidates) {
+        const extension = extractExtension(candidate);
+        if (extension && VIDEO_EXTENSIONS.includes(extension)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 function formatDateLabel(value) {
