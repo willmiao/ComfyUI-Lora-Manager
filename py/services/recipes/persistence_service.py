@@ -73,7 +73,8 @@ class RecipePersistenceService:
         )
         image_filename = f"{recipe_id}{extension}"
         image_path = os.path.join(recipes_dir, image_filename)
-        with open(image_path, "wb") as file_obj:
+        normalized_image_path = os.path.normpath(image_path)
+        with open(normalized_image_path, "wb") as file_obj:
             file_obj.write(optimized_image)
 
         current_time = time.time()
@@ -97,7 +98,7 @@ class RecipePersistenceService:
         fingerprint = calculate_recipe_fingerprint(loras_data)
         recipe_data: Dict[str, Any] = {
             "id": recipe_id,
-            "file_path": image_path,
+            "file_path": normalized_image_path,
             "title": name,
             "modified": current_time,
             "created_date": current_time,
@@ -116,10 +117,11 @@ class RecipePersistenceService:
 
         json_filename = f"{recipe_id}.recipe.json"
         json_path = os.path.join(recipes_dir, json_filename)
+        json_path = os.path.normpath(json_path)
         with open(json_path, "w", encoding="utf-8") as file_obj:
             json.dump(recipe_data, file_obj, indent=4, ensure_ascii=False)
 
-        self._exif_utils.append_recipe_metadata(image_path, recipe_data)
+        self._exif_utils.append_recipe_metadata(normalized_image_path, recipe_data)
 
         matching_recipes = await self._find_matching_recipes(recipe_scanner, fingerprint, exclude_id=recipe_id)
         await recipe_scanner.add_recipe(recipe_data)
@@ -128,7 +130,7 @@ class RecipePersistenceService:
             {
                 "success": True,
                 "recipe_id": recipe_id,
-                "image_path": image_path,
+                "image_path": normalized_image_path,
                 "json_path": json_path,
                 "matching_recipes": matching_recipes,
             }

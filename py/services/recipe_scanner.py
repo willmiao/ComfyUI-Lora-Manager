@@ -384,16 +384,32 @@ class RecipeScanner:
             
             # Ensure the image file exists
             image_path = recipe_data.get('file_path')
-            if not os.path.exists(image_path):
+            normalized_image_path = os.path.normpath(image_path) if image_path else image_path
+            path_updated = False
+            if image_path and normalized_image_path != image_path:
+                recipe_data['file_path'] = normalized_image_path
+                image_path = normalized_image_path
+                path_updated = True
+
+            if image_path and not os.path.exists(image_path):
                 logger.warning(f"Recipe image not found: {image_path}")
                 # Try to find the image in the same directory as the recipe
                 recipe_dir = os.path.dirname(recipe_path)
                 image_filename = os.path.basename(image_path)
                 alternative_path = os.path.join(recipe_dir, image_filename)
                 if os.path.exists(alternative_path):
-                    recipe_data['file_path'] = alternative_path
+                    normalized_alternative = os.path.normpath(alternative_path)
+                    recipe_data['file_path'] = normalized_alternative
+                    image_path = normalized_alternative
+                    path_updated = True
+                    logger.info(
+                        "Updated recipe image path to %s after relocating asset", normalized_alternative
+                    )
                 else:
                     logger.warning(f"Could not find alternative image path for {image_path}")
+
+            if path_updated:
+                self._write_recipe_file(recipe_path, recipe_data)
             
             # Ensure loras array exists
             if 'loras' not in recipe_data:
@@ -413,18 +429,24 @@ class RecipeScanner:
                 
                 # Write updated recipe data back to file
                 try:
-                    with open(recipe_path, 'w', encoding='utf-8') as f:
-                        json.dump(recipe_data, f, indent=4, ensure_ascii=False)
+                    self._write_recipe_file(recipe_path, recipe_data)
                     logger.info(f"Added fingerprint to recipe: {recipe_path}")
                 except Exception as e:
                     logger.error(f"Error writing updated recipe with fingerprint: {e}")
-            
+
             return recipe_data
         except Exception as e:
             logger.error(f"Error loading recipe file {recipe_path}: {e}")
             import traceback
             traceback.print_exc(file=sys.stderr)
             return None
+
+    @staticmethod
+    def _write_recipe_file(recipe_path: str, recipe_data: Dict[str, Any]) -> None:
+        """Persist ``recipe_data`` back to ``recipe_path`` with standard formatting."""
+
+        with open(recipe_path, 'w', encoding='utf-8') as file_obj:
+            json.dump(recipe_data, file_obj, indent=4, ensure_ascii=False)
     
     async def _update_lora_information(self, recipe_data: Dict) -> bool:
         """Update LoRA information with hash and file_name
