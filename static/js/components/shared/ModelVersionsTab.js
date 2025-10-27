@@ -229,7 +229,6 @@ function renderRow(version, options) {
             <div class="version-details">
                 <div class="version-title">
                     <span class="versions-tab-version-name">${escapeHtml(version.name || translate('modals.model.versions.labels.unnamed', {}, 'Untitled Version'))}</span>
-                    <span class="version-id">#${escapeHtml(version.versionId)}</span>
                 </div>
                 <div class="version-badges">${badges.join('')}</div>
                 <div class="version-meta">

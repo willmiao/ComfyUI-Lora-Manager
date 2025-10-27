@@ -170,12 +170,6 @@
     max-width: 100%;
 }
 
-.version-id {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    font-weight: 500;
-}
-
 .version-badges {
     display: flex;
     flex-wrap: wrap;
