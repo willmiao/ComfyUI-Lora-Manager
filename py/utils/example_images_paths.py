@@ -199,10 +199,13 @@ def is_valid_example_images_root(folder_path: str) -> bool:
             if item == "_deleted":
                 # Allow cleanup staging folders
                 continue
-            # When multi-library mode is active we expect nested hash folders
-            if uses_library_scoped_folders():
-                if _library_folder_has_only_hash_dirs(item_path):
-                    continue
+            # Accept legacy library folders even when current settings do not
+            # explicitly enable multi-library mode. This allows users to reuse a
+            # previously configured example images directory after settings are
+            # reset, as long as the nested structure still looks like dedicated
+            # hash folders.
+            if _library_folder_has_only_hash_dirs(item_path):
+                continue
         return False
 
     return True
