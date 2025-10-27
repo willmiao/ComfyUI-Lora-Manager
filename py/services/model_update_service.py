@@ -214,6 +214,17 @@ class ModelUpdateService:
         """Refresh update information for every model present in the cache."""
 
         local_versions = await self._collect_local_versions(scanner)
+        total_models = len(local_versions)
+        if total_models == 0:
+            logger.info(
+                "No %s models found while refreshing update metadata", model_type
+            )
+            return {}
+
+        logger.info(
+            "Refreshing update metadata for %d %s models", total_models, model_type
+        )
+
         results: Dict[int, ModelUpdateRecord] = {}
         prefetched: Dict[int, Mapping] = {}
 
@@ -229,6 +240,17 @@ class ModelUpdateService:
                         fetch_targets.append(model_id)
 
             if fetch_targets:
+                provider_name = (
+                    metadata_provider.__class__.__name__
+                    if metadata_provider is not None
+                    else "unknown"
+                )
+                logger.info(
+                    "Fetching remote metadata for %d %s models via bulk API using %s",
+                    len(fetch_targets),
+                    model_type,
+                    provider_name,
+                )
                 try:
                     prefetched = await self._fetch_model_versions_bulk(
                         metadata_provider,
@@ -237,7 +259,10 @@ class ModelUpdateService:
                 except NotImplementedError:
                     prefetched = {}
 
-        for model_id, version_ids in local_versions.items():
+        progress_interval = max(1, total_models // 10)
+        for index, (model_id, version_ids) in enumerate(
+            local_versions.items(), start=1
+        ):
             record = await self._refresh_single_model(
                 model_type,
                 model_id,
@@ -248,6 +273,19 @@ class ModelUpdateService:
             )
             if record:
                 results[model_id] = record
+            if index % progress_interval == 0 or index == total_models:
+                logger.info(
+                    "Refreshed update metadata for %d/%d %s models",
+                    index,
+                    total_models,
+                    model_type,
+                )
+        logger.info(
+            "Completed update refresh for %d %s models; %d records stored",
+            total_models,
+            model_type,
+            len(results),
+        )
         return results
 
     async def refresh_single_model(
@@ -486,8 +524,22 @@ class ModelUpdateService:
             return {}
 
         aggregated: Dict[int, Mapping] = {}
-        for index in range(0, len(normalized), BATCH_SIZE):
-            chunk = normalized[index : index + BATCH_SIZE]
+        total_ids = len(normalized)
+        total_batches = (total_ids + BATCH_SIZE - 1) // BATCH_SIZE
+        provider_name = (
+            metadata_provider.__class__.__name__
+            if metadata_provider is not None
+            else "unknown"
+        )
+        for batch_index, start in enumerate(range(0, total_ids, BATCH_SIZE), start=1):
+            chunk = normalized[start : start + BATCH_SIZE]
+            logger.info(
+                "Requesting bulk metadata for %d models (batch %d/%d) from %s",
+                len(chunk),
+                batch_index,
+                total_batches,
+                provider_name,
+            )
             try:
                 response = await metadata_provider.get_model_versions_bulk(chunk)
             except RateLimitError:
@@ -505,6 +557,11 @@ class ModelUpdateService:
                     continue
                 if isinstance(value, Mapping):
                     aggregated[normalized_key] = value
+        logger.info(
+            "Completed bulk metadata fetch for %d models using %s",
+            len(aggregated),
+            provider_name,
+        )
         return aggregated
 
     async def _collect_local_versions(self, scanner) -> Dict[int, List[int]]:
