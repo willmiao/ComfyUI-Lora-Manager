@@ -125,3 +125,18 @@ def test_is_valid_example_images_root_accepts_hash_directories(tmp_path, setting
     # Add a non-hash file to make it clearly invalid
     (invalid_folder / 'invalid.txt').write_text('invalid', encoding='utf-8')
     assert is_valid_example_images_root(str(tmp_path)) is False
+
+
+def test_is_valid_example_images_root_accepts_legacy_library_structure(tmp_path, settings_manager):
+    settings_manager.settings['example_images_path'] = str(tmp_path)
+    # Simulate settings reset where libraries configuration is missing
+    settings_manager.settings['libraries'] = {'default': {}}
+    settings_manager.settings['active_library'] = 'default'
+
+    legacy_library = tmp_path / 'My Library'
+    legacy_library.mkdir()
+    hash_folder = legacy_library / ('e' * 64)
+    hash_folder.mkdir()
+    (hash_folder / 'image.png').write_text('data', encoding='utf-8')
+
+    assert is_valid_example_images_root(str(tmp_path)) is True
