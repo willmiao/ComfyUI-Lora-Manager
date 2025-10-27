@@ -8,6 +8,88 @@ import { showToast } from '../../utils/uiHelpers.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 
 /**
+ * Resolve the active file path for the currently open model modal.
+ * Falls back to the provided value when DOM state has not been initialised yet.
+ * @param {string} fallback - Optional fallback path
+ * @returns {string}
+ */
+function getActiveModalFilePath(fallback = '') {
+    const modalElement = document.getElementById('modelModal');
+    if (modalElement && modalElement.dataset && modalElement.dataset.filePath) {
+        return modalElement.dataset.filePath;
+    }
+
+    const fileNameContent = document.querySelector('.file-name-content');
+    if (fileNameContent && fileNameContent.dataset && fileNameContent.dataset.filePath) {
+        return fileNameContent.dataset.filePath;
+    }
+
+    return fallback;
+}
+
+/**
+ * Update all modal controls that cache the current model file path.
+ * Keeps metadata interactions in sync after renames or moves.
+ * @param {string} newFilePath - Updated model file path
+ */
+function updateModalFilePathReferences(newFilePath) {
+    if (!newFilePath) {
+        return;
+    }
+
+    const modalElement = document.getElementById('modelModal');
+    if (modalElement) {
+        modalElement.dataset.filePath = newFilePath;
+        modalElement.setAttribute('data-file-path', newFilePath);
+    }
+
+    const modelNameContent = document.querySelector('.model-name-content');
+    if (modelNameContent && modelNameContent.dataset) {
+        modelNameContent.dataset.filePath = newFilePath;
+        modelNameContent.setAttribute('data-file-path', newFilePath);
+    }
+
+    const baseModelContent = document.querySelector('.base-model-content');
+    if (baseModelContent && baseModelContent.dataset) {
+        baseModelContent.dataset.filePath = newFilePath;
+        baseModelContent.setAttribute('data-file-path', newFilePath);
+    }
+
+    const fileNameContent = document.querySelector('.file-name-content');
+    if (fileNameContent && fileNameContent.dataset) {
+        fileNameContent.dataset.filePath = newFilePath;
+        fileNameContent.setAttribute('data-file-path', newFilePath);
+    }
+
+    const editTagsBtn = document.querySelector('.edit-tags-btn');
+    if (editTagsBtn) {
+        editTagsBtn.dataset.filePath = newFilePath;
+        editTagsBtn.setAttribute('data-file-path', newFilePath);
+    }
+
+    const editTriggerWordsBtn = document.querySelector('.edit-trigger-words-btn');
+    if (editTriggerWordsBtn) {
+        editTriggerWordsBtn.dataset.filePath = newFilePath;
+        editTriggerWordsBtn.setAttribute('data-file-path', newFilePath);
+    }
+
+    document.querySelectorAll('[data-action="open-file-location"]').forEach((el) => {
+        el.dataset.filepath = newFilePath;
+        el.setAttribute('data-filepath', newFilePath);
+    });
+
+    document.querySelectorAll('[data-file-path]').forEach((el) => {
+        el.dataset.filePath = newFilePath;
+        el.setAttribute('data-file-path', newFilePath);
+    });
+
+    document.querySelectorAll('[data-filepath]').forEach((el) => {
+        el.dataset.filepath = newFilePath;
+        el.setAttribute('data-filepath', newFilePath);
+    });
+}
+
+/**
  * Set up model name editing functionality
  * @param {string} filePath - File path
  */
@@ -110,9 +192,9 @@ export function setupModelNameEditing(filePath) {
         }
         
         try {
-            // Get the file path from the dataset
-            const filePath = this.dataset.filePath;
-            
+            // Resolve current file path from modal state
+            const filePath = getActiveModalFilePath(this.dataset.filePath);
+
             await getModelApiClient().saveModelMetadata(filePath, { model_name: newModelName });
             
             showToast('toast.models.nameUpdatedSuccessfully', {}, 'success');
@@ -230,11 +312,8 @@ export function setupBaseModelEditing(filePath) {
             
             // Only save if the value has actually changed
             if (valueChanged || baseModelContent.textContent.trim() !== originalValue) {
-                // Get file path from the dataset
-                const filePath = baseModelContent.dataset.filePath;
-                
-                // Save the changes, passing the original value for comparison
-                saveBaseModel(filePath, originalValue);
+                const resolvedPath = getActiveModalFilePath(baseModelContent.dataset.filePath);
+                saveBaseModel(resolvedPath, originalValue);
             }
             
             // Remove this event listener
@@ -277,9 +356,14 @@ async function saveBaseModel(filePath, originalValue) {
     if (newBaseModel === originalValue) {
         return; // No change, no need to save
     }
+
+    const resolvedPath = getActiveModalFilePath(filePath);
+    if (!resolvedPath) {
+        return;
+    }
     
     try {
-        await getModelApiClient().saveModelMetadata(filePath, { base_model: newBaseModel });
+        await getModelApiClient().saveModelMetadata(resolvedPath, { base_model: newBaseModel });
         
         showToast('toast.models.baseModelUpdated', {}, 'success');
     } catch (error) {
@@ -396,10 +480,22 @@ export function setupFileNameEditing(filePath) {
         }
         
         try {
-            // Get the file path from the dataset
-            const filePath = this.dataset.filePath;
-            
-            await getModelApiClient().renameModelFile(filePath, newFileName);
+            const currentFilePath = getActiveModalFilePath(this.dataset.filePath);
+            const result = await getModelApiClient().renameModelFile(currentFilePath, newFileName);
+
+            if (result && result.success && result.new_file_path) {
+                const newFilePath = result.new_file_path;
+                this.dataset.filePath = newFilePath;
+                this.setAttribute('data-file-path', newFilePath);
+
+                const modalElement = document.getElementById('modelModal');
+                if (modalElement) {
+                    modalElement.dataset.filePath = newFilePath;
+                    modalElement.setAttribute('data-file-path', newFilePath);
+                }
+
+                updateModalFilePathReferences(newFilePath);
+            }
         } catch (error) {
             console.error('Error renaming file:', error);
             this.textContent = originalValue; // Restore original file name

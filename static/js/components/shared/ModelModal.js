@@ -21,6 +21,14 @@ import { initVersionsTab } from './ModelVersionsTab.js';
 import { loadRecipesForLora } from './RecipeTab.js';
 import { translate } from '../../utils/i18nHelpers.js';
 
+function getModalFilePath(fallback = '') {
+    const modalElement = document.getElementById('modelModal');
+    if (modalElement && modalElement.dataset && modalElement.dataset.filePath) {
+        return modalElement.dataset.filePath;
+    }
+    return fallback;
+}
+
 /**
  * Display the model modal with the given model data
  * @param {Object} model - Model data object
@@ -269,6 +277,10 @@ export async function showModelModal(model, modelType) {
     };
     
     modalManager.showModal(modalId, content, null, onCloseCallback);
+    const activeModalElement = document.getElementById(modalId);
+    if (activeModalElement) {
+        activeModalElement.dataset.filePath = modelWithFullData.file_path || '';
+    }
     const versionsTabController = initVersionsTab({
         modalId,
         modelType,
@@ -374,7 +386,7 @@ function setupEventHandlers(filePath) {
                 }
                 break;
             case 'open-file-location':
-                const filePath = target.dataset.filepath;
+                const filePath = target.dataset.filepath || getModalFilePath();
                 if (filePath) {
                     openFileLocation(filePath);
                 }
@@ -423,7 +435,7 @@ function setupEditableFields(filePath, modelType) {
                     return;
                 }
                 e.preventDefault();
-                await saveNotes(filePath);
+                await saveNotes();
             }
         });
     }
@@ -439,6 +451,7 @@ function setupLoraSpecificFields(filePath) {
     const presetValue = document.getElementById('preset-value');
     const addPresetBtn = document.querySelector('.add-preset-btn');
     const presetTags = document.querySelector('.preset-tags');
+    const resolveFilePath = () => getModalFilePath(filePath);
 
     if (!presetSelector || !presetValue || !addPresetBtn || !presetTags) return;
 
@@ -466,13 +479,16 @@ function setupLoraSpecificFields(filePath) {
         
         if (!key || !value) return;
 
-        const loraCard = document.querySelector(`.model-card[data-filepath="${filePath}"]`);
+        const currentPath = resolveFilePath();
+        if (!currentPath) return;
+        const loraCard = document.querySelector(`.model-card[data-filepath="${currentPath}"]`) ||
+            document.querySelector(`.model-card[data-filepath="${filePath}"]`);
         const currentPresets = parsePresets(loraCard?.dataset.usage_tips);
         
         currentPresets[key] = parseFloat(value);
         const newPresetsJson = JSON.stringify(currentPresets);
 
-        await getModelApiClient().saveModelMetadata(filePath, { usage_tips: newPresetsJson });
+        await getModelApiClient().saveModelMetadata(currentPath, { usage_tips: newPresetsJson });
 
         presetTags.innerHTML = renderPresetTags(currentPresets);
         
@@ -491,10 +507,13 @@ function setupLoraSpecificFields(filePath) {
 }
 
 /**
- * Save model notes
- * @param {string} filePath - Path to the model file
+ * Save model notes using the current modal file path.
  */
-async function saveNotes(filePath) {
+async function saveNotes() {
+    const filePath = getModalFilePath();
+    if (!filePath) {
+        return;
+    }
     const content = document.querySelector('.notes-content').textContent;
     try {
         await getModelApiClient().saveModelMetadata(filePath, { notes: content });
