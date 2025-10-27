@@ -132,6 +132,11 @@
     object-fit: cover;
 }
 
+.version-media img {
+    /* Bias cropping toward the upper region to keep faces visible */
+    object-position: center 20%;
+}
+
 .version-media video {
     background: #000;
 }
