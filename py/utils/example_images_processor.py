@@ -86,6 +86,16 @@ class ExampleImagesProcessor:
         return '.jpg'
 
     @staticmethod
+    def _is_not_found_error(error) -> bool:
+        """Return True when the downloader response represents a 404/Not Found."""
+
+        if not error:
+            return False
+
+        message = str(error).lower()
+        return '404' in message or 'file not found' in message
+
+    @staticmethod
     async def download_model_images(model_hash, model_name, model_images, model_dir, optimize, downloader):
         """Download images for a single model
         
@@ -98,7 +108,15 @@ class ExampleImagesProcessor:
             image_url = image.get('url')
             if not image_url:
                 continue
-            
+
+            if image.get('downloadFailed'):
+                logger.debug(
+                    "Skipping example image %s for %s because it previously failed to download",
+                    image_url,
+                    model_name,
+                )
+                continue
+
             # Apply optimization for Civitai URLs if enabled
             original_url = image_url
             if optimize and 'civitai.com' in image_url:
@@ -142,7 +160,7 @@ class ExampleImagesProcessor:
                     with open(save_path, 'wb') as f:
                         f.write(content)
                     
-                elif "404" in str(content):
+                elif ExampleImagesProcessor._is_not_found_error(content):
                     error_msg = f"Failed to download file: {image_url}, status code: 404 - Model metadata might be stale"
                     logger.warning(error_msg)
                     model_success = False  # Mark the model as failed due to 404 error
@@ -173,7 +191,15 @@ class ExampleImagesProcessor:
             image_url = image.get('url')
             if not image_url:
                 continue
-            
+
+            if image.get('downloadFailed'):
+                logger.debug(
+                    "Skipping example image %s for %s because it previously failed to download",
+                    image_url,
+                    model_name,
+                )
+                continue
+
             # Apply optimization for Civitai URLs if enabled
             original_url = image_url
             if optimize and 'civitai.com' in image_url:
@@ -217,7 +243,7 @@ class ExampleImagesProcessor:
                     with open(save_path, 'wb') as f:
                         f.write(content)
                     
-                elif "404" in str(content):
+                elif ExampleImagesProcessor._is_not_found_error(content):
                     error_msg = f"Failed to download file: {image_url}, status code: 404 - Model metadata might be stale"
                     logger.warning(error_msg)
                     model_success = False  # Mark the model as failed due to 404 error
