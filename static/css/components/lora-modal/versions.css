@@ -107,6 +107,10 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
+.model-version-row.is-clickable {
+    cursor: pointer;
+}
+
 .model-version-row.is-current {
     border-color: var(--lora-accent);
     box-shadow: 0 0 0 1px color-mix(in oklch, var(--lora-accent) 65%, transparent),

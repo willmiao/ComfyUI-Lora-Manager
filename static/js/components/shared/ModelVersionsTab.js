@@ -7,6 +7,20 @@ import { formatFileSize } from './utils.js';
 
 const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.mkv'];
 
+function buildCivitaiVersionUrl(modelId, versionId) {
+    if (modelId == null || versionId == null) {
+        return null;
+    }
+    const normalizedModelId = String(modelId).trim();
+    const normalizedVersionId = String(versionId).trim();
+    if (!normalizedModelId || !normalizedVersionId) {
+        return null;
+    }
+    const encodedModelId = encodeURIComponent(normalizedModelId);
+    const encodedVersionId = encodeURIComponent(normalizedVersionId);
+    return `https://civitai.com/models/${encodedModelId}?modelVersionId=${encodedVersionId}`;
+}
+
 function escapeHtml(value) {
     if (value == null) {
         return '';
@@ -176,7 +190,7 @@ function renderMediaMarkup(version) {
 }
 
 function renderRow(version, options) {
-    const { latestLibraryVersionId, currentVersionId } = options;
+    const { latestLibraryVersionId, currentVersionId, modelId: parentModelId } = options;
     const isCurrent = currentVersionId && version.versionId === currentVersionId;
     const isNewer =
         typeof latestLibraryVersionId === 'number' &&
@@ -201,8 +215,8 @@ function renderRow(version, options) {
     const deleteLabel = translate('modals.model.versions.actions.delete', {}, 'Delete');
     const ignoreLabel = translate(
         version.shouldIgnore
-            ? 'modals.model.versions.actions.unignore'
-            : 'modals.model.versions.actions.ignore',
+        ? 'modals.model.versions.actions.unignore'
+        : 'modals.model.versions.actions.ignore',
         {},
         version.shouldIgnore ? 'Unignore' : 'Ignore'
     );
@@ -223,12 +237,37 @@ function renderRow(version, options) {
         }">${escapeHtml(ignoreLabel)}</button>`
     );
 
+    const versionName =
+        version.name ||
+        translate('modals.model.versions.labels.unnamed', {}, 'Untitled Version');
+    const linkTarget = buildCivitaiVersionUrl(
+        version.modelId || parentModelId,
+        version.versionId
+    );
+    const civitaiTooltip = translate(
+        'modals.model.actions.viewOnCivitai',
+        {},
+        'View on Civitai'
+    );
+    const versionNameMarkup = linkTarget
+        ? `<a class="versions-tab-version-name" href="${escapeHtml(linkTarget)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(civitaiTooltip)}">${escapeHtml(versionName)}</a>`
+        : `<span class="versions-tab-version-name">${escapeHtml(versionName)}</span>`;
+
+    const rowAttributes = [
+        `class="model-version-row${isCurrent ? ' is-current' : ''}${linkTarget ? ' is-clickable' : ''}"`,
+        `data-version-id="${escapeHtml(version.versionId)}"`,
+    ];
+    if (linkTarget) {
+        rowAttributes.push(`data-civitai-url="${escapeHtml(linkTarget)}"`);
+        rowAttributes.push(`title="${escapeHtml(civitaiTooltip)}"`);
+    }
+
     return `
-        <div class="model-version-row${isCurrent ? ' is-current' : ''}" data-version-id="${escapeHtml(version.versionId)}">
+        <div ${rowAttributes.join(' ')}>
             ${renderMediaMarkup(version)}
             <div class="version-details">
                 <div class="version-title">
-                    <span class="versions-tab-version-name">${escapeHtml(version.name || translate('modals.model.versions.labels.unnamed', {}, 'Untitled Version'))}</span>
+                    ${versionNameMarkup}
                 </div>
                 <div class="version-badges">${badges.join('')}</div>
                 <div class="version-meta">
@@ -413,6 +452,7 @@ export function initVersionsTab({
                 markup += renderRow(version, {
                     latestLibraryVersionId,
                     currentVersionId: normalizedCurrentVersionId,
+                    modelId: record?.modelId ?? modelId,
                 });
                 return markup;
             })
@@ -608,32 +648,53 @@ export function initVersionsTab({
         }
 
         const actionButton = event.target.closest('[data-version-action]');
-        if (!actionButton) {
+        if (actionButton) {
+            const row = actionButton.closest('.model-version-row');
+            if (!row) {
+                return;
+            }
+            const versionId = Number(row.dataset.versionId);
+            const action = actionButton.dataset.versionAction;
+
+            switch (action) {
+                case 'download':
+                    event.preventDefault();
+                    await handleDownloadVersion(actionButton, versionId);
+                    break;
+                case 'delete':
+                    event.preventDefault();
+                    await handleDeleteVersion(actionButton, versionId);
+                    break;
+                case 'toggle-ignore':
+                    event.preventDefault();
+                    await handleToggleVersionIgnore(actionButton, versionId);
+                    break;
+                default:
+                    break;
+            }
             return;
         }
-        const row = actionButton.closest('.model-version-row');
+
+        const row = event.target.closest('.model-version-row.is-clickable');
         if (!row) {
             return;
         }
-        const versionId = Number(row.dataset.versionId);
-        const action = actionButton.dataset.versionAction;
-
-        switch (action) {
-            case 'download':
-                event.preventDefault();
-                await handleDownloadVersion(actionButton, versionId);
-                break;
-            case 'delete':
-                event.preventDefault();
-                await handleDeleteVersion(actionButton, versionId);
-                break;
-            case 'toggle-ignore':
-                event.preventDefault();
-                await handleToggleVersionIgnore(actionButton, versionId);
-                break;
-            default:
-                break;
+        if (event.target.closest('button')) {
+            return;
         }
+        if (event.target.closest('.version-actions')) {
+            return;
+        }
+        if (event.target.closest('a')) {
+            return;
+        }
+
+        const targetUrl = row.dataset.civitaiUrl;
+        if (!targetUrl) {
+            return;
+        }
+        event.preventDefault();
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
     });
 
     return {
