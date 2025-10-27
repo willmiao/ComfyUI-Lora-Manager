@@ -5,8 +5,10 @@ import json
 import time
 import logging
 import os
+import re
 import shutil
-from typing import Any, Dict
+import uuid
+from typing import Any, Dict, Iterable, List, Set, Tuple
 
 from ..services.service_registry import ServiceRegistry
 from ..utils.example_images_paths import (
@@ -516,9 +518,11 @@ class DownloadManager:
             if civitai_payload.get('images'):
                 images = civitai_payload.get('images', [])
 
-                success, is_stale = await ExampleImagesProcessor.download_model_images(
+                success, is_stale, failed_images = await ExampleImagesProcessor.download_model_images_with_tracking(
                     model_hash, model_name, images, model_dir, optimize, downloader
                 )
+
+                failed_urls: Set[str] = set(failed_images)
 
                 # If metadata is stale, try to refresh it
                 if is_stale and model_hash not in self._progress['refreshed_models']:
@@ -536,20 +540,36 @@ class DownloadManager:
                     if updated_civitai.get('images'):
                         # Retry download with updated metadata
                         updated_images = updated_civitai.get('images', [])
-                        success, _ = await ExampleImagesProcessor.download_model_images(
+                        success, _, additional_failed = await ExampleImagesProcessor.download_model_images_with_tracking(
                             model_hash, model_name, updated_images, model_dir, optimize, downloader
                         )
 
+                        failed_urls.update(additional_failed)
+
                     self._progress['refreshed_models'].add(model_hash)
 
-                # Mark as processed if successful, or as failed if unsuccessful after refresh
-                if success:
+                if failed_urls:
+                    await self._remove_failed_images_from_metadata(
+                        model_hash,
+                        model_name,
+                        model_dir,
+                        failed_urls,
+                        scanner,
+                    )
+
+                if failed_urls:
+                    self._progress['failed_models'].add(model_hash)
+                    self._progress['processed_models'].add(model_hash)
+                    logger.info(
+                        "Removed %s failed example images for %s", len(failed_urls), model_name
+                    )
+                elif success:
                     self._progress['processed_models'].add(model_hash)
                 else:
-                    # If we refreshed metadata and still failed, mark as permanently failed
-                    if model_hash in self._progress['refreshed_models']:
-                        self._progress['failed_models'].add(model_hash)
-                        logger.info(f"Marking model {model_name} as failed after metadata refresh")
+                    self._progress['failed_models'].add(model_hash)
+                    logger.info(
+                        "Example images download failed for %s despite metadata refresh", model_name
+                    )
 
                 return True  # Return True to indicate a remote download happened
             else:
@@ -888,6 +908,8 @@ class DownloadManager:
                     model_hash, model_name, images, model_dir, optimize, downloader
                 )
 
+                failed_urls: Set[str] = set(failed_images)
+
                 # If metadata is stale, try to refresh it
                 if is_stale and model_hash not in self._progress['refreshed_models']:
                     await MetadataUpdater.refresh_model_metadata(
@@ -909,19 +931,18 @@ class DownloadManager:
                         )
 
                         # Combine failed images from both attempts
-                        failed_images.extend(additional_failed_images)
+                        failed_urls.update(additional_failed_images)
 
                     self._progress['refreshed_models'].add(model_hash)
 
                 # For forced downloads, remove failed images from metadata
-                if failed_images:
-                    # Create a copy of images excluding failed ones
+                if failed_urls:
                     await self._remove_failed_images_from_metadata(
-                        model_hash, model_name, failed_images, scanner
+                        model_hash, model_name, model_dir, failed_urls, scanner
                     )
 
                 # Mark as processed
-                if success or failed_images:  # Mark as processed if we successfully downloaded some images or removed failed ones
+                if success or failed_urls:  # Mark as processed if we successfully downloaded some images or removed failed ones
                     self._progress['processed_models'].add(model_hash)
 
                 return True  # Return True to indicate a remote download happened
@@ -938,49 +959,112 @@ class DownloadManager:
             self._progress['last_error'] = error_msg
             return False  # Return False on exception
 
-    async def _remove_failed_images_from_metadata(self, model_hash, model_name, failed_images, scanner):
-        """Remove failed images from model metadata"""
+    async def _remove_failed_images_from_metadata(
+        self,
+        model_hash: str,
+        model_name: str,
+        model_dir: str,
+        failed_images: Iterable[str],
+        scanner,
+    ) -> None:
+        """Mark failed images in model metadata so they won't be retried."""
+
+        failed_set: Set[str] = {url for url in failed_images if url}
+        if not failed_set:
+            return
+
         try:
             # Get current model data
             model_data = await MetadataUpdater.get_updated_model(model_hash, scanner)
             if not model_data:
                 logger.warning(f"Could not find model data for {model_name} to remove failed images")
                 return
-                
-            if not model_data.get('civitai', {}).get('images'):
+
+            civitai_payload = model_data.get('civitai') or {}
+            current_images = civitai_payload.get('images') or []
+            if not current_images:
                 logger.warning(f"No images in metadata for {model_name}")
                 return
-                
-            # Get current images
-            current_images = model_data['civitai']['images']
-            
-            # Filter out failed images
-            updated_images = [img for img in current_images if img.get('url') not in failed_images]
-            
-            # If images were removed, update metadata
-            if len(updated_images) < len(current_images):
-                removed_count = len(current_images) - len(updated_images)
-                logger.info(f"Removing {removed_count} failed images from metadata for {model_name}")
-                
-                # Update the images list
-                model_data['civitai']['images'] = updated_images
-                
-                # Save metadata to file
-                file_path = model_data.get('file_path')
-                if file_path:
-                    # Create a copy of model data without 'folder' field
-                    model_copy = model_data.copy()
-                    model_copy.pop('folder', None)
-                    
-                    # Write metadata to file
-                    await MetadataManager.save_metadata(file_path, model_copy)
-                    logger.info(f"Saved updated metadata for {model_name} after removing failed images")
-                    
-                    # Update the scanner cache
+
+            updated = False
+
+            for image in current_images:
+                image_url = image.get('url')
+                optimized_url = (
+                    ExampleImagesProcessor.get_civitai_optimized_url(image_url)
+                    if image_url and 'civitai.com' in image_url
+                    else None
+                )
+
+                if image_url not in failed_set and optimized_url not in failed_set:
+                    continue
+
+                if image.get('downloadFailed'):
+                    continue
+
+                image['downloadFailed'] = True
+                image.setdefault('downloadError', 'not_found')
+                logger.debug(
+                    "Marked example image %s for %s as failed due to missing remote asset",
+                    image_url,
+                    model_name,
+                )
+                updated = True
+
+            if not updated:
+                return
+
+            file_path = model_data.get('file_path')
+            if file_path:
+                model_copy = model_data.copy()
+                model_copy.pop('folder', None)
+                await MetadataManager.save_metadata(file_path, model_copy)
+
+                try:
                     await scanner.update_single_model_cache(file_path, file_path, model_data)
-                    
-        except Exception as e:
-            logger.error(f"Error removing failed images from metadata for {model_name}: {e}", exc_info=True)
+                except AttributeError:
+                    logger.debug("Scanner does not expose cache update for %s", model_name)
+
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error(
+                "Error removing failed images from metadata for %s: %s", model_name, exc, exc_info=True
+            )
+
+    def _renumber_example_image_files(self, model_dir: str) -> None:
+        if not model_dir or not os.path.isdir(model_dir):
+            return
+
+        pattern = re.compile(r'^image_(\d+)(\.[^.]+)$', re.IGNORECASE)
+        matches: List[Tuple[int, str, str]] = []
+
+        for entry in os.listdir(model_dir):
+            match = pattern.match(entry)
+            if match:
+                matches.append((int(match.group(1)), entry, match.group(2)))
+
+        if not matches:
+            return
+
+        matches.sort(key=lambda item: item[0])
+        staged_paths: List[Tuple[str, str]] = []
+
+        for _, original_name, extension in matches:
+            source_path = os.path.join(model_dir, original_name)
+            temp_name = f"tmp_{uuid.uuid4().hex}_{original_name}"
+            temp_path = os.path.join(model_dir, temp_name)
+            try:
+                os.rename(source_path, temp_path)
+                staged_paths.append((temp_path, extension))
+            except OSError as exc:
+                logger.warning("Failed to stage rename for %s: %s", source_path, exc)
+
+        for new_index, (temp_path, extension) in enumerate(staged_paths):
+            final_name = f"image_{new_index}{extension}"
+            final_path = os.path.join(model_dir, final_name)
+            try:
+                os.rename(temp_path, final_path)
+            except OSError as exc:
+                logger.warning("Failed to finalise rename for %s: %s", final_path, exc)
 
     async def _broadcast_progress(
         self,

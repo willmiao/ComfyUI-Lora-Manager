@@ -30,6 +30,14 @@ class StubScanner:
     async def get_cached_data(self):
         return self._cache
 
+    async def update_single_model_cache(self, _old_path, _new_path, metadata):
+        # Replace the cached entry with the updated metadata for assertions.
+        for index, model in enumerate(self._cache.raw_data):
+            if model.get("file_path") == metadata.get("file_path"):
+                self._cache.raw_data[index] = metadata
+                break
+        return True
+
 
 def _patch_scanner(monkeypatch: pytest.MonkeyPatch, scanner: StubScanner) -> None:
     async def _get_lora_scanner(cls):
@@ -156,7 +164,7 @@ async def test_pause_resume_blocks_processing(
             await first_release.wait()
         else:
             second_call_started.set()
-        return True, False
+        return True, False, []
 
     async def fake_get_downloader():
         class _Downloader:
@@ -177,7 +185,7 @@ async def test_pause_resume_blocks_processing(
     )
     monkeypatch.setattr(
         download_module.ExampleImagesProcessor,
-        "download_model_images",
+        "download_model_images_with_tracking",
         staticmethod(fake_download_model_images),
     )
     monkeypatch.setattr(download_module, "get_downloader", fake_get_downloader)
@@ -280,7 +288,7 @@ async def test_legacy_folder_migrated_and_skipped(
     async def fake_download_model_images(*_args, **_kwargs):
         nonlocal download_called
         download_called = True
-        return True, False
+        return True, False, []
 
     async def fake_get_downloader():
         class _Downloader:
@@ -296,7 +304,7 @@ async def test_legacy_folder_migrated_and_skipped(
     )
     monkeypatch.setattr(
         download_module.ExampleImagesProcessor,
-        "download_model_images",
+        "download_model_images_with_tracking",
         staticmethod(fake_download_model_images),
     )
     monkeypatch.setattr(download_module, "get_downloader", fake_get_downloader)
@@ -375,7 +383,7 @@ async def test_legacy_progress_file_migrates(
     )
     monkeypatch.setattr(
         download_module.ExampleImagesProcessor,
-        "download_model_images",
+        "download_model_images_with_tracking",
         staticmethod(fake_download_model_images),
     )
     monkeypatch.setattr(download_module, "get_downloader", fake_get_downloader)
@@ -474,6 +482,124 @@ async def test_download_remains_in_initial_library(
     assert (model_dir / "local.txt").exists()
     assert not (library_b_root / ".download_progress.json").exists()
     assert not (library_b_root / model_hash).exists()
+
+@pytest.mark.usefixtures("tmp_path")
+async def test_not_found_example_images_are_cleaned(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    ws_manager = RecordingWebSocketManager()
+    manager = download_module.DownloadManager(ws_manager=ws_manager)
+
+    images_root = tmp_path / "examples"
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(images_root))
+
+    model_hash = "f" * 64
+    model_path = tmp_path / "missing-model.safetensors"
+    model_path.write_text("data", encoding="utf-8")
+
+    missing_url = "https://example.com/missing.png"
+    valid_url = "https://example.com/valid.png"
+
+    model_metadata = {
+        "sha256": model_hash,
+        "model_name": "Missing Example",
+        "file_path": str(model_path),
+        "file_name": "missing-model.safetensors",
+        "civitai": {
+            "images": [
+                {"url": missing_url},
+                {"url": valid_url},
+            ]
+        },
+    }
+
+    scanner = StubScanner([model_metadata.copy()])
+    _patch_scanner(monkeypatch, scanner)
+
+    model_dir = images_root / model_hash
+    model_dir.mkdir(parents=True, exist_ok=True)
+    (model_dir / "image_0.png").write_bytes(b"first")
+    (model_dir / "image_1.png").write_bytes(b"second")
+
+    async def fake_process_local_examples(*_args, **_kwargs):
+        return False
+
+    refresh_calls: list[str] = []
+
+    async def fake_refresh(model_hash_arg, *_args, **_kwargs):
+        refresh_calls.append(model_hash_arg)
+        return True
+
+    async def fake_get_updated_model(model_hash_arg, _scanner):
+        assert model_hash_arg == model_hash
+        return model_metadata
+
+    async def fake_save_metadata(_path, metadata):
+        model_metadata.update(metadata)
+        return True
+
+    class DownloaderStub:
+        def __init__(self):
+            self.calls: list[str] = []
+
+        async def download_to_memory(self, url, *_args, **_kwargs):
+            self.calls.append(url)
+            if url == missing_url:
+                return False, "File not found", None
+            return True, b"\x89PNG\r\n\x1a\n", {"content-type": "image/png"}
+
+    downloader = DownloaderStub()
+
+    async def fake_get_downloader():
+        return downloader
+
+    monkeypatch.setattr(
+        download_module.ExampleImagesProcessor,
+        "process_local_examples",
+        staticmethod(fake_process_local_examples),
+    )
+    monkeypatch.setattr(
+        download_module.MetadataUpdater,
+        "refresh_model_metadata",
+        staticmethod(fake_refresh),
+    )
+    monkeypatch.setattr(
+        download_module.MetadataUpdater,
+        "get_updated_model",
+        staticmethod(fake_get_updated_model),
+    )
+    monkeypatch.setattr(
+        download_module.MetadataManager,
+        "save_metadata",
+        staticmethod(fake_save_metadata),
+    )
+    monkeypatch.setattr(download_module, "get_downloader", fake_get_downloader)
+    monkeypatch.setattr(download_module, "_model_directory_has_files", lambda _path: False)
+
+    result = await manager.start_download({"model_types": ["lora"], "delay": 0, "optimize": False})
+    assert result["success"] is True
+
+    if manager._download_task is not None:
+        await asyncio.wait_for(manager._download_task, timeout=1)
+
+    assert refresh_calls == [model_hash]
+    assert missing_url in downloader.calls
+    assert manager._progress["failed_models"] == {model_hash}
+    assert model_hash in manager._progress["processed_models"]
+
+    remaining_images = model_metadata["civitai"]["images"]
+    assert remaining_images == [
+        {"url": missing_url, "downloadFailed": True, "downloadError": "not_found"},
+        {"url": valid_url},
+    ]
+
+    files = sorted(p.name for p in model_dir.iterdir())
+    assert files == ["image_0.png", "image_1.png"]
+    assert (model_dir / "image_0.png").read_bytes() == b"first"
+    assert (model_dir / "image_1.png").read_bytes() == b"second"
+
 
 @pytest.fixture
 def settings_manager():
