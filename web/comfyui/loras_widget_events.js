@@ -354,9 +354,11 @@ export function initReorderDrag(dragHandle, loraName, widget, renderFunction) {
 // Function to handle keyboard navigation
 export function handleKeyboardNavigation(event, selectedLora, widget, renderFunction, selectLora) {
   if (!selectedLora) return false;
-  
+
   const lorasData = parseLoraValue(widget.value);
   let handled = false;
+  const isStrengthInputFocused =
+    event?.target?.classList?.contains('lm-lora-strength-input') ?? false;
   
   // Check for Ctrl/Cmd modifier for reordering
   if (event.ctrlKey || event.metaKey) {
@@ -420,6 +422,9 @@ export function handleKeyboardNavigation(event, selectedLora, widget, renderFunc
         
       case 'Delete':
       case 'Backspace':
+        if (isStrengthInputFocused) {
+          break;
+        }
         event.preventDefault();
         const filtered = lorasData.filter(l => l.name !== selectedLora);
         widget.value = formatLoraValue(filtered);

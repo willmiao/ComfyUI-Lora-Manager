@@ -105,4 +105,62 @@ describe('LoRA widget drag interactions', () => {
     document.dispatchEvent(new MouseEvent('mouseup'));
     expect(document.body.classList.contains('lm-lora-strength-dragging')).toBe(false);
   });
+
+  it('deletes the selected LoRA when backspace is pressed outside of strength inputs', async () => {
+    const { handleKeyboardNavigation } = await import(EVENTS_MODULE);
+    const widget = {
+      value: [{ name: 'Test', strength: 0.5, clipStrength: 0.5 }],
+      callback: vi.fn(),
+    };
+    const preventDefault = vi.fn();
+    const renderSpy = vi.fn();
+    const selectLora = vi.fn();
+    const event = {
+      key: 'Backspace',
+      preventDefault,
+      ctrlKey: false,
+      metaKey: false,
+      target: document.createElement('div'),
+    };
+
+    const handled = handleKeyboardNavigation(event, 'Test', widget, renderSpy, selectLora);
+
+    expect(handled).toBe(true);
+    expect(preventDefault).toHaveBeenCalled();
+    expect(widget.value).toEqual([]);
+    expect(widget.callback).toHaveBeenCalledWith([]);
+    expect(renderSpy).toHaveBeenCalledWith([], widget);
+    expect(selectLora).toHaveBeenCalledWith(null);
+  });
+
+  it('keeps the LoRA entry when editing strength input and pressing backspace', async () => {
+    const { handleKeyboardNavigation } = await import(EVENTS_MODULE);
+    const strengthInput = document.createElement('input');
+    strengthInput.classList.add('lm-lora-strength-input');
+
+    const widget = {
+      value: [{ name: 'Test', strength: 0.5, clipStrength: 0.5 }],
+      callback: vi.fn(),
+    };
+    const preventDefault = vi.fn();
+    const renderSpy = vi.fn();
+    const selectLora = vi.fn();
+
+    const event = {
+      key: 'Backspace',
+      preventDefault,
+      ctrlKey: false,
+      metaKey: false,
+      target: strengthInput,
+    };
+
+    const handled = handleKeyboardNavigation(event, 'Test', widget, renderSpy, selectLora);
+
+    expect(handled).toBe(false);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(widget.value).toHaveLength(1);
+    expect(widget.callback).not.toHaveBeenCalled();
+    expect(renderSpy).not.toHaveBeenCalled();
+    expect(selectLora).not.toHaveBeenCalled();
+  });
 });
