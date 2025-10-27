@@ -236,10 +236,20 @@ class ModelLifecycleService:
     def _get_multipart_ext(filename: str) -> str:
         """Return the extension for files with compound suffixes."""
 
-        parts = filename.split(".")
-        if len(parts) == 3:
-            return "." + ".".join(parts[-2:])
-        if len(parts) >= 4:
-            return "." + ".".join(parts[-3:])
-        return os.path.splitext(filename)[1]
+        known_suffixes = [
+            ".metadata.json.bak",
+            ".metadata.json",
+            ".safetensors",
+            *PREVIEW_EXTENSIONS,
+        ]
 
+        for suffix in sorted(known_suffixes, key=len, reverse=True):
+            if filename.endswith(suffix):
+                return suffix
+
+        basename = os.path.basename(filename)
+        dot_index = basename.find(".")
+        if dot_index != -1:
+            return basename[dot_index:]
+
+        return os.path.splitext(basename)[1]
