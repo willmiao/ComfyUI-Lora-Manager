@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -183,3 +184,35 @@ async def test_update_lora_entry_updates_cache_and_file(tmp_path: Path, recipe_s
     cached_recipe = next(item for item in cache.raw_data if item["id"] == recipe_id)
     assert cached_recipe["loras"][0]["hash"] == target_hash
     assert cached_recipe["fingerprint"] == expected_fingerprint
+
+
+@pytest.mark.asyncio
+async def test_load_recipe_rewrites_missing_image_path(tmp_path: Path, recipe_scanner):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe_id = "moved"
+    old_root = tmp_path / "old_root"
+    old_path = old_root / "recipes" / f"{recipe_id}.webp"
+    recipe_path = recipes_dir / f"{recipe_id}.recipe.json"
+    current_image = recipes_dir / f"{recipe_id}.webp"
+    current_image.write_bytes(b"image-bytes")
+
+    recipe_data = {
+        "id": recipe_id,
+        "file_path": str(old_path),
+        "title": "Relocated",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "loras": [],
+    }
+    recipe_path.write_text(json.dumps(recipe_data))
+
+    loaded = await scanner._load_recipe_file(str(recipe_path))
+
+    expected_path = os.path.normpath(str(current_image))
+    assert loaded["file_path"] == expected_path
+
+    persisted = json.loads(recipe_path.read_text())
+    assert persisted["file_path"] == expected_path

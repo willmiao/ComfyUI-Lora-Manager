@@ -1,5 +1,7 @@
+import json
 import logging
 import os
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -148,3 +150,8 @@ async def test_save_recipe_reports_duplicates(tmp_path):
     assert scanner.last_fingerprint is not None
     assert os.path.exists(result.payload["json_path"])
     assert scanner._cache.raw_data
+
+    stored = json.loads(Path(result.payload["json_path"]).read_text())
+    expected_image_path = os.path.normpath(result.payload["image_path"])
+    assert stored["file_path"] == expected_image_path
+    assert service._exif_utils.appended[0] == expected_image_path
