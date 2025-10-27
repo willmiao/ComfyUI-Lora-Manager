@@ -1,5 +1,6 @@
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { downloadManager } from '../../managers/DownloadManager.js';
+import { modalManager } from '../../managers/ModalManager.js';
 import { showToast } from '../../utils/uiHelpers.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { state } from '../../state/index.js';
@@ -566,14 +567,189 @@ export function initVersionsTab({
         }
     }
 
+    async function performDeleteVersion({
+        triggerButton,
+        confirmButton,
+        closeModal,
+        version,
+    }) {
+        if (!version?.filePath) {
+            console.warn('Missing file path for deletion.');
+            return;
+        }
+
+        if (triggerButton) {
+            triggerButton.disabled = true;
+        }
+
+        let confirmOriginalText = '';
+        if (confirmButton) {
+            confirmOriginalText = confirmButton.textContent;
+            confirmButton.disabled = true;
+        }
+
+        let deletionSucceeded = false;
+
+        try {
+            const client = ensureClient();
+            await client.deleteModel(version.filePath);
+            deletionSucceeded = true;
+            showToast(
+                translate('modals.model.versions.toast.versionDeleted', {}, 'Version deleted'),
+                {},
+                'success'
+            );
+        } catch (error) {
+            console.error('Failed to delete version:', error);
+            showToast(error?.message || 'Failed to delete version', {}, 'error');
+        } finally {
+            if (triggerButton && document.body.contains(triggerButton)) {
+                triggerButton.disabled = false;
+            }
+
+            if (
+                confirmButton &&
+                document.body.contains(confirmButton) &&
+                !deletionSucceeded
+            ) {
+                confirmButton.disabled = false;
+                if (confirmOriginalText) {
+                    confirmButton.textContent = confirmOriginalText;
+                }
+            }
+        }
+
+        if (!deletionSucceeded) {
+            return;
+        }
+
+        if (typeof closeModal === 'function') {
+            closeModal();
+        }
+
+        await refresh();
+    }
+
+    function showDeleteVersionModal(version, triggerButton) {
+        const modalRecord = modalManager?.getModal?.('deleteModal');
+        if (!modalRecord?.element) {
+            return false;
+        }
+
+        const deleteLabel = translate('modals.model.versions.actions.delete', {}, 'Delete');
+        const cancelLabel = translate('common.actions.cancel', {}, 'Cancel');
+        const title = translate('modals.model.versions.actions.delete', {}, 'Delete');
+        const confirmMessage = translate(
+            'modals.model.versions.confirm.delete',
+            {},
+            'Delete this version from your library?'
+        );
+        const versionName =
+            version.name ||
+            translate('modals.model.versions.labels.unnamed', {}, 'Untitled Version');
+        const previewUrl =
+            version.previewUrl || '/loras_static/images/no-preview.png';
+        const metaMarkup = buildMetaMarkup(version);
+
+        const modalElement = modalRecord.element;
+        const originalMarkup = modalElement.innerHTML;
+
+        const content = `
+            <div class="modal-content delete-modal-content version-delete-modal">
+                <h2>${escapeHtml(title)}</h2>
+                <p class="delete-message">${escapeHtml(confirmMessage)}</p>
+                <div class="delete-model-info">
+                    <div class="delete-preview">
+                        <img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(versionName)}" onerror="this.src='/loras_static/images/no-preview.png'">
+                    </div>
+                    <div class="delete-info">
+                        <h3>${escapeHtml(versionName)}</h3>
+                        ${
+                            version.baseModel
+                                ? `<p class="version-base-model">${escapeHtml(version.baseModel)}</p>`
+                                : ''
+                        }
+                        ${metaMarkup ? `<div class="version-meta">${metaMarkup}</div>` : ''}
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="cancel-btn">${escapeHtml(cancelLabel)}</button>
+                    <button class="delete-btn">${escapeHtml(deleteLabel)}</button>
+                </div>
+            </div>
+        `;
+
+        const cleanupHandlers = [];
+
+        modalManager.showModal(
+            'deleteModal',
+            content,
+            null,
+            () => {
+                cleanupHandlers.forEach(handler => {
+                    try {
+                        handler();
+                    } catch (error) {
+                        console.error('Failed to cleanup delete modal handler:', error);
+                    }
+                });
+                cleanupHandlers.length = 0;
+                modalElement.innerHTML = originalMarkup;
+                delete modalElement.dataset.versionId;
+            }
+        );
+
+        modalElement.dataset.versionId = String(version.versionId ?? '');
+
+        const cancelButton = modalElement.querySelector('.cancel-btn');
+        const confirmButton = modalElement.querySelector('.delete-btn');
+
+        const closeModal = () => modalManager.closeModal('deleteModal');
+
+        if (cancelButton) {
+            const handleCancel = event => {
+                event.preventDefault();
+                closeModal();
+            };
+            cancelButton.addEventListener('click', handleCancel);
+            cleanupHandlers.push(() => {
+                cancelButton.removeEventListener('click', handleCancel);
+            });
+        }
+
+        if (confirmButton) {
+            const handleConfirm = async event => {
+                event.preventDefault();
+                await performDeleteVersion({
+                    triggerButton,
+                    confirmButton,
+                    closeModal,
+                    version,
+                });
+            };
+            confirmButton.addEventListener('click', handleConfirm);
+            cleanupHandlers.push(() => {
+                confirmButton.removeEventListener('click', handleConfirm);
+            });
+        }
+
+        return true;
+    }
+
     async function handleDeleteVersion(button, versionId) {
         if (!controller.record) {
             return;
         }
         const version = controller.record.versions.find(item => item.versionId === versionId);
-        if (!version?.filePath) {
+        if (!version) {
+            console.warn('Target version missing from record for delete:', versionId);
             return;
         }
+
+        if (showDeleteVersionModal(version, button)) {
+            return;
+        }
+
         const confirmText = translate(
             'modals.model.versions.confirm.delete',
             {},
@@ -582,22 +758,11 @@ export function initVersionsTab({
         if (!window.confirm(confirmText)) {
             return;
         }
-        button.disabled = true;
-        try {
-            const client = ensureClient();
-            await client.deleteModel(version.filePath);
-            showToast(
-                translate('modals.model.versions.toast.versionDeleted', {}, 'Version deleted'),
-                {},
-                'success'
-            );
-            await refresh();
-        } catch (error) {
-            console.error('Failed to delete version:', error);
-            showToast(error?.message || 'Failed to delete version', {}, 'error');
-        } finally {
-            button.disabled = false;
-        }
+
+        await performDeleteVersion({
+            triggerButton: button,
+            version,
+        });
     }
 
     async function handleDownloadVersion(button, versionId) {
