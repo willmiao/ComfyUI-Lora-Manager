@@ -237,9 +237,6 @@ function renderRow(version, options) {
         }">${escapeHtml(ignoreLabel)}</button>`
     );
 
-    const versionName =
-        version.name ||
-        translate('modals.model.versions.labels.unnamed', {}, 'Untitled Version');
     const linkTarget = buildCivitaiVersionUrl(
         version.modelId || parentModelId,
         version.versionId
@@ -249,9 +246,6 @@ function renderRow(version, options) {
         {},
         'View on Civitai'
     );
-    const versionNameMarkup = linkTarget
-        ? `<a class="versions-tab-version-name" href="${escapeHtml(linkTarget)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(civitaiTooltip)}">${escapeHtml(versionName)}</a>`
-        : `<span class="versions-tab-version-name">${escapeHtml(versionName)}</span>`;
 
     const rowAttributes = [
         `class="model-version-row${isCurrent ? ' is-current' : ''}${linkTarget ? ' is-clickable' : ''}"`,
@@ -267,7 +261,7 @@ function renderRow(version, options) {
             ${renderMediaMarkup(version)}
             <div class="version-details">
                 <div class="version-title">
-                    ${versionNameMarkup}
+                    <span class="versions-tab-version-name">${escapeHtml(version.name || translate('modals.model.versions.labels.unnamed', {}, 'Untitled Version'))}</span>
                 </div>
                 <div class="version-badges">${badges.join('')}</div>
                 <div class="version-meta">
