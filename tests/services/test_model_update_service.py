@@ -1,7 +1,9 @@
+import logging
 from types import SimpleNamespace
 
 import pytest
 
+from py.services.errors import ResourceNotFoundError
 from py.services.model_update_service import (
     ModelUpdateRecord,
     ModelUpdateService,
@@ -33,6 +35,20 @@ class DummyProvider:
             raise NotImplementedError
         self.bulk_calls.append(list(model_ids))
         return {model_id: self.response for model_id in model_ids}
+
+
+class NotFoundProvider:
+    def __init__(self):
+        self.calls = 0
+        self.bulk_calls: list[list[int]] = []
+
+    async def get_model_versions(self, model_id):
+        self.calls += 1
+        raise ResourceNotFoundError("Resource not found")
+
+    async def get_model_versions_bulk(self, model_ids):
+        self.bulk_calls.append(list(model_ids))
+        return {}
 
 
 def make_version(version_id, *, in_library, should_ignore=False):
@@ -153,6 +169,43 @@ async def test_refresh_respects_ignore_flag(tmp_path):
     record = await service.get_record("lora", 2)
     assert record is not None
     assert record.should_ignore_model is True
+
+
+@pytest.mark.asyncio
+async def test_refresh_marks_model_ignored_when_remote_missing(tmp_path):
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path), ttl_seconds=3600)
+    raw_data = [{"civitai": {"modelId": 5, "id": 51}}]
+    scanner = DummyScanner(raw_data)
+    provider = NotFoundProvider()
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+    record = await service.get_record("lora", 5)
+
+    assert provider.bulk_calls == [[5]]
+    assert provider.calls == 1
+    assert record is not None
+    assert record.should_ignore_model is True
+    assert record.in_library_version_ids == [51]
+    assert record.last_checked_at is not None
+
+
+@pytest.mark.asyncio
+async def test_refresh_logs_info_for_missing_remote(tmp_path, caplog):
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path), ttl_seconds=3600)
+    raw_data = [{"civitai": {"modelId": 6, "id": 61}}]
+    scanner = DummyScanner(raw_data)
+    provider = NotFoundProvider()
+
+    with caplog.at_level(logging.INFO, logger="py.services.model_update_service"):
+        await service.refresh_for_model_type("lora", scanner, provider)
+
+    relevant = [
+        record for record in caplog.records if "Single lookup for model" in record.message
+    ]
+    assert relevant, "expected single lookup log entry"
+    assert all(record.levelno == logging.INFO for record in relevant)
 
 
 @pytest.mark.asyncio

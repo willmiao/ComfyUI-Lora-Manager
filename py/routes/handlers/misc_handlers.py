@@ -27,6 +27,7 @@ from ...services.service_registry import ServiceRegistry
 from ...services.settings_manager import get_settings_manager
 from ...services.websocket_manager import ws_manager
 from ...services.downloader import get_downloader
+from ...services.errors import ResourceNotFoundError
 from ...utils.constants import (
     CIVITAI_USER_MODEL_TYPES,
     DEFAULT_NODE_COLOR,
@@ -618,7 +619,10 @@ class ModelLibraryHandler:
             if not metadata_provider:
                 return web.json_response({"success": False, "error": "Metadata provider not available"}, status=503)
 
-            response = await metadata_provider.get_model_versions(model_id)
+            try:
+                response = await metadata_provider.get_model_versions(model_id)
+            except ResourceNotFoundError:
+                return web.json_response({"success": False, "error": "Model not found"}, status=404)
             if not response or not response.get("modelVersions"):
                 return web.json_response({"success": False, "error": "Model not found"}, status=404)
 

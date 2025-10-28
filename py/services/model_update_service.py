@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass, replace
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence
 
-from .errors import RateLimitError
+from .errors import RateLimitError, ResourceNotFoundError
 from .settings_manager import get_settings_manager
 from ..utils.civitai_utils import rewrite_preview_url
 from ..utils.preview_selection import select_preview_media
@@ -459,14 +459,21 @@ class ModelUpdateService:
         # release lock during network request
         fetched_versions: List[ModelVersionRecord] | None = None
         refresh_succeeded = False
+        fallback_attempted = False
+        fallback_error_message: Optional[str] = None
+        mark_model_as_ignored = False
         response: Optional[Mapping] = None
         if metadata_provider and should_fetch:
             response = prefetched_response
             if response is None:
+                fallback_attempted = True
                 try:
                     response = await metadata_provider.get_model_versions(model_id)
                 except RateLimitError:
                     raise
+                except ResourceNotFoundError as exc:
+                    fallback_error_message = str(exc) or "resource not found"
+                    mark_model_as_ignored = True
                 except Exception as exc:  # pragma: no cover - defensive log
                     logger.error(
                         "Failed to fetch versions for model %s (%s): %s",
@@ -475,11 +482,39 @@ class ModelUpdateService:
                         exc,
                         exc_info=True,
                     )
+                    fallback_error_message = str(exc)
             if response is not None:
                 extracted = self._extract_versions(response)
                 if extracted is not None:
                     fetched_versions = extracted
                     refresh_succeeded = True
+                elif fallback_attempted and fallback_error_message is None:
+                    fallback_error_message = "no versions returned"
+            elif fallback_attempted and fallback_error_message is None:
+                fallback_error_message = "no response"
+
+        if fallback_attempted:
+            if refresh_succeeded and isinstance(fetched_versions, list):
+                logger.info(
+                    "Fetched metadata via single lookup for model %s (%s); received %d versions",
+                    model_id,
+                    model_type,
+                    len(fetched_versions),
+                )
+            elif mark_model_as_ignored:
+                logger.info(
+                    "Single lookup for model %s (%s) reported missing remote resource: %s",
+                    model_id,
+                    model_type,
+                    fallback_error_message or "resource not found",
+                )
+            else:
+                logger.warning(
+                    "Single lookup for model %s (%s) failed: %s",
+                    model_id,
+                    model_type,
+                    fallback_error_message or "unknown error",
+                )
 
         async with self._lock:
             existing = self._get_record(model_type, model_id)
@@ -489,6 +524,23 @@ class ModelUpdateService:
                     normalized_local,
                 )
                 self._upsert_record(record)
+                return record
+
+            if mark_model_as_ignored:
+                record = self._merge_with_local_versions(
+                    existing,
+                    normalized_local,
+                    model_type=model_type,
+                    model_id=model_id,
+                    last_checked_at=now,
+                )
+                record = replace(record, should_ignore_model=True)
+                self._upsert_record(record)
+                logger.info(
+                    "Marked model %s (%s) as ignored after remote resource was not found",
+                    model_id,
+                    model_type,
+                )
                 return record
 
             if refresh_succeeded and isinstance(fetched_versions, list):
