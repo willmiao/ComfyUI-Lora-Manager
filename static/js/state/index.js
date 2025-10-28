@@ -81,6 +81,7 @@ export const state = {
             selectedLoras: new Set(),
             loraMetadataCache: new Map(),
             showFavoritesOnly: false,
+            showUpdateAvailableOnly: false,
             duplicatesMode: false,
         },
         
@@ -131,6 +132,7 @@ export const state = {
             selectedModels: new Set(),
             metadataCache: new Map(),
             showFavoritesOnly: false,
+            showUpdateAvailableOnly: false,
             duplicatesMode: false,
         },
         
@@ -158,6 +160,7 @@ export const state = {
             selectedModels: new Set(),
             metadataCache: new Map(),
             showFavoritesOnly: false,
+            showUpdateAvailableOnly: false,
             duplicatesMode: false,
         }
     },

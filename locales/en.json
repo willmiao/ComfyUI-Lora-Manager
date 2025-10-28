@@ -431,6 +431,10 @@
             "favorites": {
                 "title": "Show Favorites Only",
                 "action": "Favorites"
+            },
+            "updates": {
+                "title": "Show models with updates available",
+                "action": "Updates"
             }
         },
         "bulkOperations": {

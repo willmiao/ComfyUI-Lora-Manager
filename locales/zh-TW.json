@@ -431,6 +431,10 @@
             "favorites": {
                 "title": "僅顯示收藏",
                 "action": "收藏"
+            },
+            "updates": {
+                "title": "僅顯示可用更新的模型",
+                "action": "更新"
             }
         },
         "bulkOperations": {

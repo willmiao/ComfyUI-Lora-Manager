@@ -749,7 +749,11 @@ export class BaseModelApiClient {
         if (pageState.showFavoritesOnly) {
             params.append('favorites_only', 'true');
         }
-        
+
+        if (pageState.showUpdateAvailableOnly) {
+            params.append('update_available_only', 'true');
+        }
+
         if (this.apiConfig.config.supportsLetterFilter && pageState.activeLetterFilter) {
             params.append('first_letter', pageState.activeLetterFilter);
         }

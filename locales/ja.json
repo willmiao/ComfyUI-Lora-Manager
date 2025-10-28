@@ -431,6 +431,10 @@
             "favorites": {
                 "title": "お気に入りのみ表示",
                 "action": "お気に入り"
+            },
+            "updates": {
+                "title": "アップデート可能なモデルのみ表示",
+                "action": "アップデート"
             }
         },
         "bulkOperations": {

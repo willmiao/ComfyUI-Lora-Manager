@@ -432,6 +432,10 @@
             "favorites": {
                 "title": "Nur Favoriten anzeigen",
                 "action": "Favoriten"
+            },
+            "updates": {
+                "title": "Nur Modelle mit verfügbaren Updates anzeigen",
+                "action": "Updates"
             }
         },
         "bulkOperations": {

@@ -105,7 +105,8 @@
 }
 
 /* Controls */
-.control-group button.favorite-filter {
+.control-group button.favorite-filter,
+.control-group button.update-filter {
     position: relative;
     overflow: hidden;
 }
@@ -118,6 +119,20 @@
 .control-group button.favorite-filter i {
     margin-right: 4px;
     color: #ffc107;
+}
+
+.control-group button.update-filter i {
+    margin-right: 4px;
+    color: var(--lora-accent);
+}
+
+.control-group button.update-filter.active {
+    background: var(--lora-accent);
+    color: white;
+}
+
+.control-group button.update-filter.active i {
+    color: white;
 }
 
 /* Active state for buttons that can be toggled */

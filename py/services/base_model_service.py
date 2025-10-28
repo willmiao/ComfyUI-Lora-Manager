@@ -63,10 +63,11 @@ class BaseModelService(ABC):
         search_options: dict = None,
         hash_filters: dict = None,
         favorites_only: bool = False,
-        has_update: bool = False,
+        update_available_only: bool = False,
         **kwargs,
     ) -> Dict:
         """Get paginated and filtered model data"""
+
         sort_params = self.cache_repository.parse_sort(sort_by)
         sorted_data = await self.cache_repository.fetch_sorted(sort_params)
 
@@ -92,14 +93,23 @@ class BaseModelService(ABC):
 
             filtered_data = await self._apply_specific_filters(filtered_data, **kwargs)
 
-            if has_update:
-                filtered_data = await self._apply_update_filter(filtered_data)
+        annotated_for_filter: Optional[List[Dict]] = None
+        if update_available_only:
+            annotated_for_filter = await self._annotate_update_flags(filtered_data)
+            filtered_data = [
+                item for item in annotated_for_filter
+                if item.get('update_available')
+            ]
 
         paginated = self._paginate(filtered_data, page, page_size)
-        paginated['items'] = await self._annotate_update_flags(
-            paginated['items'],
-            assume_true=has_update,
-        )
+
+        if update_available_only:
+            # Items already include update flags thanks to the pre-filter annotation.
+            paginated['items'] = list(paginated['items'])
+        else:
+            paginated['items'] = await self._annotate_update_flags(
+                paginated['items'],
+            )
         return paginated
 
     
@@ -160,91 +170,18 @@ class BaseModelService(ABC):
         """Apply model-specific filters - to be overridden by subclasses if needed"""
         return data
 
-    async def _apply_update_filter(self, data: List[Dict]) -> List[Dict]:
-        """Filter models to those with remote updates available when requested."""
-        if not data:
-            return []
-        if self.update_service is None:
-            logger.warning(
-                "Requested has_update filter for %s models but update service is unavailable",
-                self.model_type,
-            )
-            return []
-
-        id_to_items: Dict[int, List[Dict]] = {}
-        ordered_ids: List[int] = []
-        for item in data:
-            model_id = self._extract_model_id(item)
-            if model_id is None:
-                continue
-            if model_id not in id_to_items:
-                id_to_items[model_id] = []
-                ordered_ids.append(model_id)
-            id_to_items[model_id].append(item)
-
-        if not ordered_ids:
-            return []
-
-        resolved: Optional[Dict[int, bool]] = None
-        bulk_method = getattr(self.update_service, "has_updates_bulk", None)
-        if callable(bulk_method):
-            try:
-                resolved = await bulk_method(self.model_type, ordered_ids)
-            except Exception as exc:
-                logger.error(
-                    "Failed to resolve update status in bulk for %s models (%s): %s",
-                    self.model_type,
-                    ordered_ids,
-                    exc,
-                    exc_info=True,
-                )
-                resolved = None
-
-        if resolved is None:
-            tasks = [
-                self.update_service.has_update(self.model_type, model_id)
-                for model_id in ordered_ids
-            ]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            resolved = {}
-            for model_id, result in zip(ordered_ids, results):
-                if isinstance(result, Exception):
-                    logger.error(
-                        "Failed to resolve update status for model %s (%s): %s",
-                        model_id,
-                        self.model_type,
-                        result,
-                    )
-                    continue
-                resolved[model_id] = bool(result)
-
-        filtered: List[Dict] = []
-        for item in data:
-            model_id = self._extract_model_id(item)
-            if model_id is not None and resolved.get(model_id, False):
-                filtered.append(item)
-        return filtered
-
     async def _annotate_update_flags(
         self,
         items: List[Dict],
-        *,
-        assume_true: bool = False,
     ) -> List[Dict]:
         """Attach an update_available flag to each response item.
 
-        Items without a civitai model id default to False. When the caller already
-        filtered for updates we can skip the lookup and mark everything True.
+        Items without a civitai model id default to False.
         """
         if not items:
             return []
 
         annotated = [dict(item) for item in items]
-
-        if assume_true:
-            for item in annotated:
-                item['update_available'] = True
-            return annotated
 
         if self.update_service is None:
             for item in annotated:

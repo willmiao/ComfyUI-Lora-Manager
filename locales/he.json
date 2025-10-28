@@ -431,6 +431,10 @@
             "favorites": {
                 "title": "הצג מועדפים בלבד",
                 "action": "מועדפים"
+            },
+            "updates": {
+                "title": "הצג רק דגמים עם עדכונים זמינים",
+                "action": "עדכונים"
             }
         },
         "bulkOperations": {

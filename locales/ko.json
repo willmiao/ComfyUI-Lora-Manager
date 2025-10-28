@@ -431,6 +431,10 @@
             "favorites": {
                 "title": "즐겨찾기만 보기",
                 "action": "즐겨찾기"
+            },
+            "updates": {
+                "title": "업데이트 가능한 모델만 표시",
+                "action": "업데이트"
             }
         },
         "bulkOperations": {

@@ -135,6 +135,9 @@ function renderControlsDom(pageKey) {
           <div class="control-group">
             <button id="favoriteFilterBtn" class="favorite-filter"></button>
           </div>
+          <div class="control-group">
+            <button id="updateFilterBtn" class="update-filter"></button>
+          </div>
         </div>
       </div>
     </div>
@@ -306,6 +309,84 @@ describe('PageControls favorites, sorting, and duplicates scenarios', () => {
     expect(sessionStorage.getItem('lora_manager_show_favorites_only_checkpoints')).toBe('false');
     expect(stateModule.getCurrentPageState().showFavoritesOnly).toBe(false);
     expect(document.getElementById('favoriteFilterBtn').classList.contains('active')).toBe(false);
+    expect(resetAndReloadMock).toHaveBeenCalledWith(true);
+  });
+
+  it('persists update-available toggle for LoRAs and triggers reload', async () => {
+    renderControlsDom('loras');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('loras');
+    const { LorasControls } = await import('../../../static/js/components/controls/LorasControls.js');
+
+    const controls = new LorasControls();
+
+    await controls.toggleUpdateAvailableOnly();
+
+    expect(sessionStorage.getItem('lora_manager_show_update_available_only_loras')).toBe('true');
+    expect(stateModule.getCurrentPageState().showUpdateAvailableOnly).toBe(true);
+    expect(document.getElementById('updateFilterBtn').classList.contains('active')).toBe(true);
+    expect(resetAndReloadMock).toHaveBeenCalledWith(true);
+
+    resetAndReloadMock.mockClear();
+
+    await controls.toggleUpdateAvailableOnly();
+
+    expect(sessionStorage.getItem('lora_manager_show_update_available_only_loras')).toBe('false');
+    expect(stateModule.getCurrentPageState().showUpdateAvailableOnly).toBe(false);
+    expect(document.getElementById('updateFilterBtn').classList.contains('active')).toBe(false);
+    expect(resetAndReloadMock).toHaveBeenCalledWith(true);
+  });
+
+  it('does not change filter badge or button when toggling update availability', async () => {
+    renderControlsDom('loras');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('loras');
+    const { LorasControls } = await import('../../../static/js/components/controls/LorasControls.js');
+
+    const controls = new LorasControls();
+
+    const filterBadge = document.getElementById('activeFiltersCount');
+    const filterButton = document.getElementById('filterButton');
+
+    expect(filterBadge.style.display).toBe('none');
+    expect(filterBadge.textContent).toBe('0');
+    expect(filterButton.classList.contains('active')).toBe(false);
+
+    await controls.toggleUpdateAvailableOnly();
+
+    expect(filterBadge.style.display).toBe('none');
+    expect(filterBadge.textContent).toBe('0');
+    expect(filterButton.classList.contains('active')).toBe(false);
+
+    await controls.toggleUpdateAvailableOnly();
+
+    expect(filterBadge.style.display).toBe('none');
+    expect(filterBadge.textContent).toBe('0');
+    expect(filterButton.classList.contains('active')).toBe(false);
+  });
+
+  it('persists update-available toggle for checkpoints and triggers reload', async () => {
+    renderControlsDom('checkpoints');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('checkpoints');
+    const { CheckpointsControls } = await import('../../../static/js/components/controls/CheckpointsControls.js');
+
+    const controls = new CheckpointsControls();
+
+    await controls.toggleUpdateAvailableOnly();
+
+    expect(sessionStorage.getItem('lora_manager_show_update_available_only_checkpoints')).toBe('true');
+    expect(stateModule.getCurrentPageState().showUpdateAvailableOnly).toBe(true);
+    expect(document.getElementById('updateFilterBtn').classList.contains('active')).toBe(true);
+    expect(resetAndReloadMock).toHaveBeenCalledWith(true);
+
+    resetAndReloadMock.mockClear();
+
+    await controls.toggleUpdateAvailableOnly();
+
+    expect(sessionStorage.getItem('lora_manager_show_update_available_only_checkpoints')).toBe('false');
+    expect(stateModule.getCurrentPageState().showUpdateAvailableOnly).toBe(false);
+    expect(document.getElementById('updateFilterBtn').classList.contains('active')).toBe(false);
     expect(resetAndReloadMock).toHaveBeenCalledWith(true);
   });
 

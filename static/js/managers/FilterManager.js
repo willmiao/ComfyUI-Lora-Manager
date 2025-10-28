@@ -312,7 +312,11 @@ export class FilterManager {
         removeStorageItem(storageKey);
         
         // Update UI
-        this.filterButton.classList.remove('active');
+        if (this.hasActiveFilters()) {
+            this.filterButton.classList.add('active');
+        } else {
+            this.filterButton.classList.remove('active');
+        }
         
         // Reload data using the appropriate method for the current page
         if (this.currentPage === 'recipes' && window.recipeManager) {

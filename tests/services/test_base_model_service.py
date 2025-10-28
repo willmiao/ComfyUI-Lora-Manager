@@ -341,7 +341,7 @@ async def test_get_paginated_data_filters_by_update_status():
         page=1,
         page_size=5,
         sort_by="name:asc",
-        has_update=True,
+        update_available_only=True,
     )
 
     assert update_service.bulk_calls == [("stub", [1, 2, 3])]
@@ -379,7 +379,7 @@ async def test_get_paginated_data_has_update_without_service_returns_empty():
         page=1,
         page_size=10,
         sort_by="name:asc",
-        has_update=True,
+        update_available_only=True,
     )
 
     assert response["items"] == []
@@ -414,7 +414,7 @@ async def test_get_paginated_data_skips_items_when_update_check_fails():
         page=1,
         page_size=10,
         sort_by="name:asc",
-        has_update=True,
+        update_available_only=True,
     )
 
     assert update_service.bulk_calls == [("stub", [1, 2])]
@@ -458,6 +458,79 @@ async def test_get_paginated_data_annotates_update_flags_with_bulk_dedup():
     assert [item["update_available"] for item in response["items"]] == [True, True, False]
     assert response["total"] == 3
     assert response["total_pages"] == 1
+
+
+@pytest.mark.asyncio
+async def test_get_paginated_data_filters_update_available_only():
+    items = [
+        {"model_name": "Alpha", "civitai": {"modelId": 101}},
+        {"model_name": "Beta", "civitai": {"modelId": 102}},
+        {"model_name": "Gamma", "civitai": {"modelId": 103}},
+    ]
+    repository = StubRepository(items)
+    filter_set = PassThroughFilterSet()
+    search_strategy = NoSearchStrategy()
+    update_service = StubUpdateService({101: True, 102: False, 103: True})
+    settings = StubSettings({})
+
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=repository,
+        filter_set=filter_set,
+        search_strategy=search_strategy,
+        settings_provider=settings,
+        update_service=update_service,
+    )
+
+    response = await service.get_paginated_data(
+        page=1,
+        page_size=5,
+        sort_by="name:asc",
+        update_available_only=True,
+    )
+
+    assert update_service.bulk_calls == [("stub", [101, 102, 103])]
+    assert update_service.calls == []
+    assert [item["model_name"] for item in response["items"]] == ["Alpha", "Gamma"]
+    assert all(item["update_available"] is True for item in response["items"])
+    assert response["total"] == 2
+    assert response["total_pages"] == 1
+
+
+@pytest.mark.asyncio
+async def test_get_paginated_data_update_available_only_without_update_service():
+    items = [
+        {"model_name": "Alpha", "civitai": {"modelId": 201}},
+        {"model_name": "Beta", "civitai": {"modelId": 202}},
+    ]
+    repository = StubRepository(items)
+    filter_set = PassThroughFilterSet()
+    search_strategy = NoSearchStrategy()
+    settings = StubSettings({})
+
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=repository,
+        filter_set=filter_set,
+        search_strategy=search_strategy,
+        settings_provider=settings,
+        update_service=None,
+    )
+
+    response = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="name:asc",
+        update_available_only=True,
+    )
+
+    assert response["items"] == []
+    assert response["total"] == 0
+    assert response["total_pages"] == 0
 
 
 @pytest.mark.asyncio

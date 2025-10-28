@@ -30,6 +30,9 @@ export class PageControls {
         // Initialize event listeners
         this.initEventListeners();
         
+        // Initialize update availability filter button state
+        this.initUpdateAvailableFilter();
+
         // Initialize favorites filter button state
         this.initFavoritesFilter();
         
@@ -189,11 +192,16 @@ export class PageControls {
         if (bulkButton) {
             bulkButton.addEventListener('click', () => this.toggleBulkMode());
         }
-        
+
         // Favorites filter button handler
         const favoriteFilterBtn = document.getElementById('favoriteFilterBtn');
         if (favoriteFilterBtn) {
             favoriteFilterBtn.addEventListener('click', () => this.toggleFavoritesOnly());
+        }
+
+        const updateFilterBtn = document.getElementById('updateFilterBtn');
+        if (updateFilterBtn) {
+            updateFilterBtn.addEventListener('click', () => this.toggleUpdateAvailableOnly());
         }
     }
     
@@ -378,17 +386,33 @@ export class PageControls {
             // Get current state from session storage with page-specific key
             const storageKey = `show_favorites_only_${this.pageType}`;
             const showFavoritesOnly = getSessionItem(storageKey, false);
-            
+
             // Update button state
             if (showFavoritesOnly) {
                 favoriteFilterBtn.classList.add('active');
             }
-            
+
             // Update app state
             this.pageState.showFavoritesOnly = showFavoritesOnly;
         }
     }
-    
+
+    /**
+     * Initialize update availability filter button state
+     */
+    initUpdateAvailableFilter() {
+        const storageKey = `show_update_available_only_${this.pageType}`;
+        const storedValue = getSessionItem(storageKey, false);
+        const showUpdatesOnly = storedValue === true || storedValue === 'true';
+
+        this.pageState.showUpdateAvailableOnly = showUpdatesOnly;
+
+        const updateFilterBtn = document.getElementById('updateFilterBtn');
+        if (updateFilterBtn) {
+            updateFilterBtn.classList.toggle('active', showUpdatesOnly);
+        }
+    }
+
     /**
      * Toggle favorites-only filter and reload models
      */
@@ -410,8 +434,27 @@ export class PageControls {
         if (favoriteFilterBtn) {
             favoriteFilterBtn.classList.toggle('active', newState);
         }
-        
+
         // Reload models with new filter
+        await this.resetAndReload(true);
+    }
+
+    /**
+     * Toggle update-available-only filter and reload models
+     */
+    async toggleUpdateAvailableOnly() {
+        const updateFilterBtn = document.getElementById('updateFilterBtn');
+        const storageKey = `show_update_available_only_${this.pageType}`;
+        const newState = !this.pageState.showUpdateAvailableOnly;
+
+        setSessionItem(storageKey, newState);
+
+        this.pageState.showUpdateAvailableOnly = newState;
+
+        if (updateFilterBtn) {
+            updateFilterBtn.classList.toggle('active', newState);
+        }
+
         await this.resetAndReload(true);
     }
     
