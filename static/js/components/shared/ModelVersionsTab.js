@@ -483,7 +483,7 @@ export function initVersionsTab({
         try {
             const client = ensureClient();
             const response = await client.fetchModelUpdateVersions(modelId, {
-                refresh: true,
+                refresh: false,
             });
             if (!response?.success) {
                 throw new Error(response?.error || 'Request failed');
