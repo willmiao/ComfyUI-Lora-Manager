@@ -1048,6 +1048,21 @@ class ModelUpdateHandler:
         force_refresh = self._parse_bool(request.query.get("force")) or self._parse_bool(
             payload.get("force")
         )
+
+        raw_model_ids = payload.get("modelIds")
+        if raw_model_ids is None:
+            raw_model_ids = payload.get("model_ids")
+
+        target_model_ids: list[int] = []
+        if isinstance(raw_model_ids, (list, tuple, set)):
+            for value in raw_model_ids:
+                normalized = self._normalize_model_id(value)
+                if normalized is not None:
+                    target_model_ids.append(normalized)
+
+        if target_model_ids:
+            target_model_ids = sorted(set(target_model_ids))
+
         provider = await self._get_civitai_provider()
         if provider is None:
             return web.json_response(
@@ -1060,6 +1075,7 @@ class ModelUpdateHandler:
                 self._service.scanner,
                 provider,
                 force_refresh=force_refresh,
+                target_model_ids=target_model_ids or None,
             )
         except RateLimitError as exc:
             return web.json_response(
