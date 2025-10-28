@@ -29,7 +29,7 @@ from ...services.use_cases import (
 )
 from ...services.websocket_manager import WebSocketManager
 from ...services.websocket_progress_callback import WebSocketProgressCallback
-from ...services.errors import RateLimitError
+from ...services.errors import RateLimitError, ResourceNotFoundError
 from ...utils.file_utils import calculate_sha256
 from ...utils.metadata_manager import MetadataManager
 
@@ -863,7 +863,10 @@ class ModelCivitaiHandler:
         try:
             model_id = request.match_info["model_id"]
             metadata_provider = await self._metadata_provider_factory()
-            response = await metadata_provider.get_model_versions(model_id)
+            try:
+                response = await metadata_provider.get_model_versions(model_id)
+            except ResourceNotFoundError:
+                return web.Response(status=404, text="Model not found")
             if not response or not response.get("modelVersions"):
                 return web.Response(status=404, text="Model not found")
 

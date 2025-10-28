@@ -5,7 +5,7 @@ import pytest
 
 from py.services import civitai_client as civitai_client_module
 from py.services.civitai_client import CivitaiClient
-from py.services.errors import RateLimitError
+from py.services.errors import RateLimitError, ResourceNotFoundError
 from py.services.model_metadata_provider import ModelMetadataProviderManager
 
 
@@ -160,6 +160,42 @@ async def test_get_model_versions_success(monkeypatch, downloader):
     result = await client.get_model_versions("123")
 
     assert result == {"modelVersions": [{"id": 1}], "type": "LORA", "name": "Model"}
+
+
+async def test_get_model_versions_raises_on_not_found(monkeypatch, downloader):
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return False, {"message": "Resource not found"}
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    with pytest.raises(ResourceNotFoundError):
+        await client.get_model_versions("missing")
+
+
+async def test_get_model_versions_raises_on_nested_not_found(monkeypatch, downloader):
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return False, {"error": {"message": "Resource not found"}}
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    with pytest.raises(ResourceNotFoundError):
+        await client.get_model_versions("missing")
+
+
+async def test_get_model_versions_raises_on_other_errors(monkeypatch, downloader):
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return False, {"error": {"message": "Server error"}}
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    with pytest.raises(RuntimeError):
+        await client.get_model_versions("oops")
 
 
 async def test_get_model_versions_bulk_success(monkeypatch, downloader):

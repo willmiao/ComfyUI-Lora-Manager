@@ -19,3 +19,9 @@ class RateLimitError(RuntimeError):
         self.retry_after = retry_after
         self.provider = provider
 
+
+class ResourceNotFoundError(RuntimeError):
+    """Raised when a remote resource is permanently missing."""
+
+    pass
+

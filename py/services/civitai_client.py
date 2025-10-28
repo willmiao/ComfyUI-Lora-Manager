@@ -2,10 +2,10 @@ import asyncio
 import copy
 import logging
 import os
-from typing import Optional, Dict, Tuple, List, Sequence
+from typing import Any, Optional, Dict, Tuple, List, Sequence
 from .model_metadata_provider import CivitaiModelMetadataProvider, ModelMetadataProviderManager
 from .downloader import get_downloader
-from .errors import RateLimitError
+from .errors import RateLimitError, ResourceNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +160,29 @@ class CivitaiClient:
             logger.error(f"Download Error: {str(e)}")
             return False
             
-    async def get_model_versions(self, model_id: str) -> List[Dict]:
+    @staticmethod
+    def _extract_error_message(payload: Any) -> str:
+        """Return a human-readable error message from an API payload."""
+
+        def _from_value(value: Any) -> str:
+            if isinstance(value, str):
+                return value
+            if isinstance(value, dict):
+                for key in ("message", "error", "detail", "details"):
+                    if key in value:
+                        candidate = _from_value(value[key])
+                        if candidate:
+                            return candidate
+            if isinstance(value, list):
+                for item in value:
+                    candidate = _from_value(item)
+                    if candidate:
+                        return candidate
+            return ""
+
+        return _from_value(payload)
+
+    async def get_model_versions(self, model_id: str) -> Optional[Dict]:
         """Get all versions of a model with local availability info"""
         try:
             success, result = await self._make_request(
@@ -175,12 +197,20 @@ class CivitaiClient:
                     'type': result.get('type', ''),
                     'name': result.get('name', '')
                 }
+            message = self._extract_error_message(result)
+            if message and 'not found' in message.lower():
+                raise ResourceNotFoundError(f"Resource not found for model {model_id}")
+            if message:
+                raise RuntimeError(message)
             return None
         except RateLimitError:
             raise
+        except ResourceNotFoundError as exc:
+            logger.info("Model %s is no longer available on Civitai: %s", model_id, exc)
+            raise
         except Exception as e:
-            logger.error(f"Error fetching model versions: {e}")
-            return None
+            logger.error("Error fetching model versions: %s", e, exc_info=True)
+            raise
 
     async def get_model_versions_bulk(
         self, model_ids: Sequence[int]
