@@ -25,6 +25,7 @@ class ModelCache:
     raw_data: List[Dict]
     folders: List[str]
     version_index: Dict[int, Dict] = field(default_factory=dict)
+    model_id_index: Dict[int, List[Dict[str, Any]]] = field(default_factory=dict)
     name_display_mode: str = "model_name"
 
     def __post_init__(self):
@@ -97,14 +98,15 @@ class ModelCache:
         return None
 
     def rebuild_version_index(self) -> None:
-        """Rebuild the version index from the current raw data."""
+        """Rebuild the version and model indexes from the current raw data."""
 
         self.version_index = {}
+        self.model_id_index = {}
         for item in self.raw_data:
             self.add_to_version_index(item)
 
     def add_to_version_index(self, item: Dict) -> None:
-        """Register a cache item in the version index if possible."""
+        """Register a cache item in the version/model indexes if possible."""
 
         civitai_data = item.get('civitai') if isinstance(item, dict) else None
         if not isinstance(civitai_data, dict):
@@ -116,8 +118,24 @@ class ModelCache:
 
         self.version_index[version_id] = item
 
+        model_id = self._normalize_version_id(civitai_data.get('modelId'))
+        if model_id is None:
+            return
+
+        descriptor = self._build_version_descriptor(item, civitai_data, version_id)
+        if descriptor is None:
+            return
+
+        versions = self.model_id_index.setdefault(model_id, [])
+        for index, existing in enumerate(versions):
+            if existing.get('versionId') == descriptor['versionId']:
+                versions[index] = descriptor
+                break
+        else:
+            versions.append(descriptor)
+
     def remove_from_version_index(self, item: Dict) -> None:
-        """Remove a cache item from the version index if present."""
+        """Remove a cache item from the version/model indexes if present."""
 
         civitai_data = item.get('civitai') if isinstance(item, dict) else None
         if not isinstance(civitai_data, dict):
@@ -133,6 +151,46 @@ class ModelCache:
             and existing.get('file_path') == item.get('file_path')
         ):
             self.version_index.pop(version_id, None)
+
+        model_id = self._normalize_version_id(civitai_data.get('modelId'))
+        if model_id is None:
+            return
+
+        versions = self.model_id_index.get(model_id)
+        if not versions:
+            return
+
+        filtered = [v for v in versions if v.get('versionId') != version_id]
+        if filtered:
+            self.model_id_index[model_id] = filtered
+        else:
+            self.model_id_index.pop(model_id, None)
+
+    def _build_version_descriptor(
+        self,
+        item: Dict,
+        civitai_data: Dict[str, Any],
+        version_id: int,
+    ) -> Optional[Dict[str, Any]]:
+        """Create a lightweight descriptor for a version entry."""
+
+        model_name = self._ensure_string(civitai_data.get('name'))
+        file_name = self._ensure_string(item.get('file_name'))
+        return {
+            'versionId': version_id,
+            'name': model_name,
+            'fileName': file_name,
+        }
+
+    def get_versions_by_model_id(self, model_id: Any) -> List[Dict[str, Any]]:
+        """Return cached version descriptors for a given model ID."""
+
+        normalized_id = self._normalize_version_id(model_id)
+        if normalized_id is None:
+            return []
+
+        versions = self.model_id_index.get(normalized_id, [])
+        return [dict(version) for version in versions]
 
     async def resort(self):
         """Resort cached data according to last sort mode if set"""

@@ -1520,21 +1520,10 @@ class ModelScanner:
         """
         try:
             cache = await self.get_cached_data()
-            if not cache or not cache.raw_data:
+            if not cache:
                 return []
-                
-            versions = []
-            for item in cache.raw_data:
-                if (item.get('civitai') and 
-                    item['civitai'].get('modelId') == model_id and 
-                    item['civitai'].get('id')):
-                    versions.append({
-                        'versionId': item['civitai'].get('id'),
-                        'name': item['civitai'].get('name'),
-                        'fileName': item.get('file_name', '')
-                    })
-                    
-            return versions
+
+            return cache.get_versions_by_model_id(model_id)
         except Exception as e:
             logger.error(f"Error getting model versions: {e}")
             return []
