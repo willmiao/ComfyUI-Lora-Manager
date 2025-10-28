@@ -339,6 +339,19 @@ async def fake_scanner_factory():
     return FakeScanner()
 
 
+class RecordingVersionScanner:
+    def __init__(self, versions):
+        self._versions = versions
+        self.version_calls: list[int] = []
+
+    async def check_model_version_exists(self, _version_id):
+        return False
+
+    async def get_model_versions_by_id(self, model_id):
+        self.version_calls.append(model_id)
+        return self._versions
+
+
 class FakeExistenceScanner:
     def __init__(self, existing=None):
         self._existing = set(existing or [])
@@ -712,6 +725,44 @@ def test_ensure_handler_mapping_caches_result():
 
     assert first_mapping is second_mapping, "Expected cached handler mapping to be reused"
     assert len(call_records) == 1, "Handler set factory should only be invoked once"
+
+
+@pytest.mark.asyncio
+async def test_check_model_exists_returns_local_versions():
+    versions = [
+        {'versionId': 11, 'name': 'v1', 'fileName': 'model-one'},
+        {'versionId': 12, 'name': 'v2', 'fileName': 'model-two'},
+    ]
+
+    lora_scanner = RecordingVersionScanner(versions)
+    checkpoint_scanner = RecordingVersionScanner([])
+    embedding_scanner = RecordingVersionScanner([])
+
+    async def lora_factory():
+        return lora_scanner
+
+    async def checkpoint_factory():
+        return checkpoint_scanner
+
+    async def embedding_factory():
+        return embedding_scanner
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=lora_factory,
+            get_checkpoint_scanner=checkpoint_factory,
+            get_embedding_scanner=embedding_factory,
+        ),
+        metadata_provider_factory=fake_metadata_provider_factory,
+    )
+
+    response = await handler.check_model_exists(FakeRequest(query={'modelId': '5'}))
+    payload = json.loads(response.text)
+
+    assert payload['success'] is True
+    assert payload['modelType'] == 'lora'
+    assert payload['versions'] == versions
+    assert lora_scanner.version_calls == [5]
 
 
 def test_create_handler_set_uses_provided_dependencies():
