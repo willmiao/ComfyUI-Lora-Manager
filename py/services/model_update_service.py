@@ -197,11 +197,78 @@ class ModelUpdateService:
             if column not in version_columns:
                 conn.execute(statement)
 
+        if not self._has_unique_constraint(conn, "model_update_status", "model_id"):
+            self._deduplicate_model_update_status(conn)
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS "
+                "uq_model_update_status_model_id ON model_update_status(model_id)"
+            )
+
     def _get_table_columns(self, conn: sqlite3.Connection, table: str) -> set[str]:
         """Return the set of existing columns for a table."""
 
         cursor = conn.execute(f"PRAGMA table_info({table})")
         return {row["name"] for row in cursor.fetchall()}
+
+    def _has_unique_constraint(
+        self, conn: sqlite3.Connection, table: str, column: str
+    ) -> bool:
+        """Return True when the column already enforces uniqueness."""
+
+        cursor = conn.execute(f"PRAGMA table_info({table})")
+        rows = cursor.fetchall()
+        column_info = next((row for row in rows if row["name"] == column), None)
+        if column_info is None:
+            return False
+
+        if column_info["pk"] == 1 and all(
+            other["pk"] == 0 for other in rows if other["name"] != column
+        ):
+            return True
+
+        index_list = conn.execute(f"PRAGMA index_list({table})").fetchall()
+        for index in index_list:
+            if not index["unique"]:
+                continue
+            index_name = index["name"]
+            index_info = conn.execute(f"PRAGMA index_info({index_name})").fetchall()
+            if len(index_info) == 1 and index_info[0]["name"] == column:
+                return True
+        return False
+
+    def _deduplicate_model_update_status(self, conn: sqlite3.Connection) -> None:
+        """Remove duplicate status rows before applying uniqueness constraints."""
+
+        duplicates = conn.execute(
+            """
+            SELECT model_id
+            FROM model_update_status
+            GROUP BY model_id
+            HAVING COUNT(*) > 1
+            """
+        ).fetchall()
+        if not duplicates:
+            return
+
+        for row in duplicates:
+            model_id = row["model_id"]
+            conn.execute(
+                """
+                DELETE FROM model_update_status
+                WHERE model_id = ?
+                  AND rowid NOT IN (
+                    SELECT rowid
+                    FROM model_update_status
+                    WHERE model_id = ?
+                    ORDER BY
+                        CASE WHEN last_checked_at IS NULL THEN 0 ELSE 1 END DESC,
+                        last_checked_at DESC,
+                        rowid DESC
+                    LIMIT 1
+                )
+                """,
+                (model_id, model_id),
+            )
 
     async def refresh_for_model_type(
         self,
