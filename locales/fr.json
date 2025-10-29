@@ -434,7 +434,10 @@
             },
             "updates": {
                 "title": "Afficher uniquement les modèles avec des mises à jour disponibles",
-                "action": "Mises à jour"
+                "action": "Mises à jour",
+                "menuLabel": "Afficher les options de mise à jour",
+                "check": "Rechercher des mises à jour",
+                "checkTooltip": "La vérification peut prendre du temps."
             }
         },
         "bulkOperations": {

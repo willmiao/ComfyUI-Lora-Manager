@@ -104,6 +104,19 @@
     opacity: 1;
 }
 
+.control-group button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.control-group button.loading,
+.dropdown-toggle.loading {
+    cursor: wait;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
 /* Controls */
 .control-group button.favorite-filter,
 .control-group button.update-filter {
@@ -133,6 +146,16 @@
 
 .control-group button.update-filter.active i {
     color: white;
+}
+
+.update-filter-group .dropdown-main.update-filter.active + .dropdown-toggle {
+    background: var(--lora-accent);
+    border-color: var(--lora-accent);
+    color: white;
+}
+
+.update-filter-group .dropdown-main.update-filter.active + .dropdown-toggle i {
+    color: inherit;
 }
 
 /* Active state for buttons that can be toggled */
@@ -322,6 +345,9 @@
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
     padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .dropdown-menu {
@@ -352,6 +378,12 @@
     color: var(--text-color);
     cursor: pointer;
     transition: background-color 0.2s ease;
+}
+
+.dropdown-item.disabled {
+    cursor: default;
+    opacity: 0.6;
+    pointer-events: none;
 }
 
 .dropdown-item:hover {

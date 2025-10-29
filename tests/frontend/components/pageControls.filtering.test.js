@@ -28,6 +28,8 @@ const sidebarManagerMock = {
 
 const createAlphabetBarMock = vi.fn(() => ({ destroy: vi.fn() }));
 
+const performModelUpdateCheckMock = vi.fn();
+
 getModelApiClientMock.mockReturnValue(apiClientMock);
 
 vi.mock('../../../static/js/api/modelApiFactory.js', () => ({
@@ -52,6 +54,10 @@ vi.mock('../../../static/js/components/alphabet/index.js', () => ({
   createAlphabetBar: createAlphabetBarMock,
 }));
 
+vi.mock('../../../static/js/utils/updateCheckHelpers.js', () => ({
+  performModelUpdateCheck: performModelUpdateCheckMock,
+}));
+
 beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
@@ -61,6 +67,7 @@ beforeEach(() => {
   fetchCivitaiMetadataMock.mockResolvedValue(undefined);
   resetAndReloadMock.mockResolvedValue(undefined);
   getModelApiClientMock.mockReturnValue(apiClientMock);
+  performModelUpdateCheckMock.mockResolvedValue({ status: 'success', displayName: 'LoRA', records: [] });
 
   sidebarManagerMock.isInitialized = false;
   sidebarManagerMock.initialize.mockImplementation(async () => {
@@ -135,8 +142,20 @@ function renderControlsDom(pageKey) {
           <div class="control-group">
             <button id="favoriteFilterBtn" class="favorite-filter"></button>
           </div>
-          <div class="control-group">
-            <button id="updateFilterBtn" class="update-filter"></button>
+          <div class="control-group dropdown-group update-filter-group">
+            <button id="updateFilterBtn" class="dropdown-main update-filter" aria-busy="false">
+              <i class="fas fa-exclamation-circle"></i>
+              <span>Updates</span>
+            </button>
+            <button id="updateFilterMenuToggle" class="dropdown-toggle">
+              <i class="fas fa-caret-down"></i>
+            </button>
+            <div class="dropdown-menu">
+              <div id="checkUpdatesMenuItem" class="dropdown-item" data-action="check-updates">
+                <i class="fas fa-sync-alt"></i>
+                <span>Check updates</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -147,6 +166,15 @@ function renderControlsDom(pageKey) {
       </div>
     </div>
   `;
+}
+
+function createDeferred() {
+  let resolve;
+  const promise = new Promise((res) => {
+    resolve = res;
+  });
+
+  return { promise, resolve };
 }
 
 describe('SearchManager filtering scenarios', () => {
@@ -388,6 +416,63 @@ describe('PageControls favorites, sorting, and duplicates scenarios', () => {
     expect(stateModule.getCurrentPageState().showUpdateAvailableOnly).toBe(false);
     expect(document.getElementById('updateFilterBtn').classList.contains('active')).toBe(false);
     expect(resetAndReloadMock).toHaveBeenCalledWith(true);
+  });
+
+  it('disables update controls while checking for model updates and restores them afterwards', async () => {
+    const deferred = createDeferred();
+    performModelUpdateCheckMock.mockImplementation(async () => {
+      await deferred.promise;
+      return { status: 'success', displayName: 'LoRA', records: [] };
+    });
+
+    renderControlsDom('loras');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('loras');
+    const { LorasControls } = await import('../../../static/js/components/controls/LorasControls.js');
+
+    new LorasControls();
+
+    const updateButton = document.getElementById('updateFilterBtn');
+    const toggleButton = document.getElementById('updateFilterMenuToggle');
+    const menuItem = document.getElementById('checkUpdatesMenuItem');
+    const dropdownGroup = menuItem.closest('.dropdown-group');
+    const icon = updateButton.querySelector('i');
+
+    expect(updateButton.disabled).toBe(false);
+    expect(toggleButton.disabled).toBe(false);
+    expect(menuItem.classList.contains('disabled')).toBe(false);
+
+    menuItem.dispatchEvent(new Event('click', { bubbles: true }));
+
+    expect(performModelUpdateCheckMock).toHaveBeenCalledTimes(1);
+    expect(updateButton.disabled).toBe(true);
+    expect(updateButton.classList.contains('loading')).toBe(true);
+    expect(updateButton.getAttribute('aria-busy')).toBe('true');
+    expect(toggleButton.disabled).toBe(true);
+    expect(toggleButton.classList.contains('loading')).toBe(true);
+    expect(menuItem.classList.contains('disabled')).toBe(true);
+    expect(menuItem.getAttribute('aria-disabled')).toBe('true');
+    expect(icon.classList.contains('fa-spinner')).toBe(true);
+    expect(icon.classList.contains('fa-spin')).toBe(true);
+
+    deferred.resolve();
+    await performModelUpdateCheckMock.mock.results[0].value;
+    await Promise.resolve();
+
+    await vi.waitFor(() => {
+      expect(updateButton.disabled).toBe(false);
+      expect(updateButton.classList.contains('loading')).toBe(false);
+      expect(toggleButton.disabled).toBe(false);
+      expect(toggleButton.classList.contains('loading')).toBe(false);
+      expect(menuItem.classList.contains('disabled')).toBe(false);
+    });
+
+    expect(updateButton.getAttribute('aria-busy')).toBe('false');
+    expect(menuItem.hasAttribute('aria-disabled')).toBe(false);
+    expect(icon.classList.contains('fa-spinner')).toBe(false);
+    expect(icon.classList.contains('fa-spin')).toBe(false);
+    expect(icon.classList.contains('fa-exclamation-circle')).toBe(true);
+    expect(dropdownGroup.classList.contains('active')).toBe(false);
   });
 
   it('saves sort selection and reloads models', async () => {

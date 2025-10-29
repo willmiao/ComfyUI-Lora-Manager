@@ -435,7 +435,10 @@
             },
             "updates": {
                 "title": "Nur Modelle mit verfügbaren Updates anzeigen",
-                "action": "Updates"
+                "action": "Updates",
+                "menuLabel": "Weitere Update-Optionen anzeigen",
+                "check": "Updates prüfen",
+                "checkTooltip": "Die Aktualisierungssuche kann einige Zeit dauern."
             }
         },
         "bulkOperations": {

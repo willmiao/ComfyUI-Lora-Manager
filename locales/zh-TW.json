@@ -434,7 +434,10 @@
             },
             "updates": {
                 "title": "僅顯示可用更新的模型",
-                "action": "更新"
+                "action": "更新",
+                "menuLabel": "顯示更新選項",
+                "check": "檢查更新",
+                "checkTooltip": "檢查更新可能耗時。"
             }
         },
         "bulkOperations": {

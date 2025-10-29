@@ -56,10 +56,18 @@
                     <i class="fas fa-star"></i> <span>{{ t('loras.controls.favorites.action') }}</span>
                 </button>
             </div>
-            <div class="control-group">
-                <button id="updateFilterBtn" data-action="toggle-updates" class="update-filter" title="{{ t('loras.controls.updates.title') }}">
+            <div class="control-group dropdown-group update-filter-group">
+                <button id="updateFilterBtn" data-action="toggle-updates" class="dropdown-main update-filter" title="{{ t('loras.controls.updates.title') }}">
                     <i class="fas fa-exclamation-circle"></i> <span>{{ t('loras.controls.updates.action') }}</span>
                 </button>
+                <button id="updateFilterMenuToggle" class="dropdown-toggle" aria-label="{{ t('loras.controls.updates.menuLabel') }}">
+                    <i class="fas fa-caret-down"></i>
+                </button>
+                <div class="dropdown-menu">
+                    <div id="checkUpdatesMenuItem" class="dropdown-item" data-action="check-updates" title="{{ t('loras.controls.updates.checkTooltip') }}">
+                        <i class="fas fa-sync-alt"></i> <span>{{ t('loras.controls.updates.check') }}</span>
+                    </div>
+                </div>
             </div>
             <div id="customFilterIndicator" class="control-group hidden">
                 <div class="filter-active">

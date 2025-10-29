@@ -2,6 +2,7 @@
 import { getCurrentPageState, setCurrentPageType } from '../../state/index.js';
 import { getStorageItem, setStorageItem, getSessionItem, setSessionItem } from '../../utils/storageHelpers.js';
 import { showToast } from '../../utils/uiHelpers.js';
+import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
 import { sidebarManager } from '../SidebarManager.js';
 
 /**
@@ -26,7 +27,9 @@ export class PageControls {
         
         // Use global sidebar manager
         this.sidebarManager = sidebarManager;
-        
+
+        this._updateCheckInProgress = false;
+
         // Initialize event listeners
         this.initEventListeners();
         
@@ -156,7 +159,15 @@ export class PageControls {
                 document.querySelector('.dropdown-group.active')?.classList.remove('active');
             });
         }
-        
+
+        const checkUpdatesOption = document.getElementById('checkUpdatesMenuItem');
+        if (checkUpdatesOption) {
+            checkUpdatesOption.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await this.handleCheckModelUpdates(e.currentTarget);
+            });
+        }
+
         // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.dropdown-group')) {
@@ -166,7 +177,73 @@ export class PageControls {
             }
         });
     }
-    
+
+    async handleCheckModelUpdates(menuItem) {
+        if (this._updateCheckInProgress) {
+            return;
+        }
+
+        const updateFilterBtn = document.getElementById('updateFilterBtn');
+        const dropdownToggle = document.getElementById('updateFilterMenuToggle');
+        const dropdownGroup = menuItem?.closest('.dropdown-group');
+        const iconElement = updateFilterBtn?.querySelector('i');
+
+        const setLoadingState = (isLoading) => {
+            if (updateFilterBtn) {
+                updateFilterBtn.disabled = isLoading;
+                updateFilterBtn.classList.toggle('loading', isLoading);
+                updateFilterBtn.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+
+                if (iconElement) {
+                    if (isLoading) {
+                        if (!iconElement.dataset.originalClass) {
+                            iconElement.dataset.originalClass = iconElement.className;
+                        }
+                        iconElement.className = 'fas fa-spinner fa-spin';
+                    } else {
+                        const originalClass = iconElement.dataset.originalClass;
+                        if (originalClass) {
+                            iconElement.className = originalClass;
+                            delete iconElement.dataset.originalClass;
+                        } else {
+                            iconElement.classList.remove('fa-spinner', 'fa-spin');
+                            if (!iconElement.classList.contains('fa-exclamation-circle')) {
+                                iconElement.classList.add('fa-exclamation-circle');
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (dropdownToggle) {
+                dropdownToggle.disabled = isLoading;
+                dropdownToggle.classList.toggle('loading', isLoading);
+            }
+
+            if (menuItem) {
+                menuItem.classList.toggle('disabled', isLoading);
+                if (isLoading) {
+                    menuItem.setAttribute('aria-disabled', 'true');
+                } else {
+                    menuItem.removeAttribute('aria-disabled');
+                }
+            }
+        };
+
+        this._updateCheckInProgress = true;
+        setLoadingState(true);
+
+        try {
+            await performModelUpdateCheck();
+        } catch (error) {
+            console.error('Failed to check model updates:', error);
+        } finally {
+            this._updateCheckInProgress = false;
+            setLoadingState(false);
+            dropdownGroup?.classList.remove('active');
+        }
+    }
+
     /**
      * Initialize page-specific event listeners
      */

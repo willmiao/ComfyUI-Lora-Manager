@@ -434,7 +434,10 @@
             },
             "updates": {
                 "title": "アップデート可能なモデルのみ表示",
-                "action": "アップデート"
+                "action": "アップデート",
+                "menuLabel": "更新オプションを表示",
+                "check": "アップデートを確認",
+                "checkTooltip": "確認には時間がかかる場合があります。"
             }
         },
         "bulkOperations": {

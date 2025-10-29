@@ -434,7 +434,10 @@
             },
             "updates": {
                 "title": "Show models with updates available",
-                "action": "Updates"
+                "action": "Updates",
+                "menuLabel": "Show update options",
+                "check": "Check updates",
+                "checkTooltip": "Checking updates may take a while."
             }
         },
         "bulkOperations": {
