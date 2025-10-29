@@ -1,6 +1,5 @@
 import { app } from "../../scripts/app.js";
 import {
-  LORA_PATTERN,
   getActiveLorasFromNode,
   collectActiveLorasFromChain,
   updateConnectedTriggerWords,
@@ -11,6 +10,7 @@ import {
   getNodeKey,
 } from "./utils.js";
 import { addLorasWidget } from "./loras_widget.js";
+import { applyLoraValuesToText, debounce } from "./lora_syntax_utils.js";
 
 app.registerExtension({
   name: "LoraManager.LoraStacker",
@@ -25,8 +25,36 @@ app.registerExtension({
           shape: 7, // 7 is the shape of the optional input
         });
 
-        // Add flag to prevent callback loops
+        // Add flags to prevent callback loops
         let isUpdating = false;
+        let isSyncingInput = false;
+
+        const inputWidget = this.widgets[0];
+        inputWidget.options.getMaxHeight = () => 100;
+        this.inputWidget = inputWidget;
+
+        const scheduleInputSync = debounce((lorasValue) => {
+          if (isSyncingInput) {
+            return;
+          }
+
+          isSyncingInput = true;
+          isUpdating = true;
+
+          try {
+            const nextText = applyLoraValuesToText(
+              inputWidget.value,
+              lorasValue
+            );
+
+            if (inputWidget.value !== nextText) {
+              inputWidget.value = nextText;
+            }
+          } finally {
+            isUpdating = false;
+            isSyncingInput = false;
+          }
+        });
 
         const result = addLorasWidget(this, "loras", {}, (value) => {
           // Prevent recursive calls
@@ -34,27 +62,6 @@ app.registerExtension({
           isUpdating = true;
 
           try {
-            // Remove loras that are not in the value array
-            const inputWidget = this.widgets[0];
-            const currentLoras = value.map((l) => l.name);
-
-            // Use the constant pattern here as well
-            let newText = inputWidget.value.replace(
-              LORA_PATTERN,
-              (match, name, strength) => {
-                return currentLoras.includes(name) ? match : "";
-              }
-            );
-
-            // Clean up multiple spaces, extra commas, and trim; remove trailing comma if it's the only content
-            newText = newText
-              .replace(/\s+/g, " ")
-              .replace(/,\s*,+/g, ",")
-              .trim();
-            if (newText === ",") newText = "";
-
-            inputWidget.value = newText;
-
             // Update this stacker's direct trigger toggles with its own active loras
             const activeLoraNames = new Set();
             value.forEach((lora) => {
@@ -69,14 +76,12 @@ app.registerExtension({
           } finally {
             isUpdating = false;
           }
+
+          scheduleInputSync(value);
         });
 
         this.lorasWidget = result.widget;
 
-        // Update input widget callback
-        const inputWidget = this.widgets[0];
-        inputWidget.options.getMaxHeight = () => 100;
-        this.inputWidget = inputWidget;
         // Wrap the callback with autocomplete setup
         const originalCallback = (value) => {
           if (isUpdating) return;

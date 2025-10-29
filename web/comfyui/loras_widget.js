@@ -68,6 +68,14 @@ export function addLorasWidget(node, name, opts, callback) {
     const lorasData = parseLoraValue(value);
     const focusSequence = [];
 
+    const updateWidgetValue = (newValue) => {
+      widget.value = newValue;
+
+      if (typeof widget.callback === "function") {
+        widget.callback(widget.value);
+      }
+    };
+
     const createFocusEntry = (loraName, type) => {
       const entry = { name: loraName, type };
       focusSequence.push(entry);
@@ -135,7 +143,7 @@ export function addLorasWidget(node, name, opts, callback) {
       lorasData.forEach(lora => lora.active = active);
       
       const newValue = formatLoraValue(lorasData);
-      widget.value = newValue;
+      updateWidgetValue(newValue);
     });
 
     // Add label to toggle all
@@ -218,7 +226,7 @@ export function addLorasWidget(node, name, opts, callback) {
           lorasData[loraIndex].active = newActive;
           
           const newValue = formatLoraValue(lorasData);
-          widget.value = newValue;
+          updateWidgetValue(newValue);
         }
       });
 
@@ -238,8 +246,8 @@ export function addLorasWidget(node, name, opts, callback) {
           } 
           
           // Update the widget value
-          widget.value = formatLoraValue(lorasData);
-          
+          updateWidgetValue(formatLoraValue(lorasData));
+
           // Re-render to show/hide clip entry
           renderLoras(widget.value, widget);
         }
@@ -292,7 +300,7 @@ export function addLorasWidget(node, name, opts, callback) {
           syncClipStrengthIfCollapsed(lorasData[loraIndex]);
           
           const newValue = formatLoraValue(lorasData);
-          widget.value = newValue;
+          updateWidgetValue(newValue);
         }
       });
 
@@ -331,7 +339,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
           strengthEl.value = normalizedValue;
           const newLorasValue = formatLoraValue(currentLoras);
-          widget.value = newLorasValue;
+          updateWidgetValue(newLorasValue);
         } else {
           strengthEl.value = normalizedValue;
         }
@@ -364,7 +372,7 @@ export function addLorasWidget(node, name, opts, callback) {
           syncClipStrengthIfCollapsed(lorasData[loraIndex]);
           
           const newValue = formatLoraValue(lorasData);
-          widget.value = newValue;
+          updateWidgetValue(newValue);
         }
       });
 
@@ -415,7 +423,7 @@ export function addLorasWidget(node, name, opts, callback) {
             lorasData[loraIndex].clipStrength = (parseFloat(lorasData[loraIndex].clipStrength) - 0.05).toFixed(2);
             
             const newValue = formatLoraValue(lorasData);
-            widget.value = newValue;
+            updateWidgetValue(newValue);
           }
         });
 
@@ -454,7 +462,7 @@ export function addLorasWidget(node, name, opts, callback) {
             clipStrengthEl.value = normalizedValue;
 
             const newLorasValue = formatLoraValue(currentLoras);
-            widget.value = newLorasValue;
+            updateWidgetValue(newLorasValue);
           } else {
             clipStrengthEl.value = normalizedValue;
           }
@@ -485,7 +493,7 @@ export function addLorasWidget(node, name, opts, callback) {
             lorasData[loraIndex].clipStrength = (parseFloat(lorasData[loraIndex].clipStrength) + 0.05).toFixed(2);
             
             const newValue = formatLoraValue(lorasData);
-            widget.value = newValue;
+            updateWidgetValue(newValue);
           }
         });
 
