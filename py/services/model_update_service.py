@@ -930,18 +930,39 @@ class ModelUpdateService:
     def _extract_size_bytes(self, files) -> Optional[int]:
         if not isinstance(files, Iterable):
             return None
+
+        def parse_size(entry: Mapping) -> Optional[int]:
+            size_kb = entry.get("sizeKB")
+            if size_kb is None:
+                return None
+            try:
+                return int(float(size_kb) * 1024)
+            except (TypeError, ValueError):
+                return None
+
+        preferred_size: Optional[int] = None
+        fallback_size: Optional[int] = None
         for entry in files:
             if not isinstance(entry, Mapping):
                 continue
-            size_kb = entry.get("sizeKB")
-            if size_kb is None:
+            size_bytes = parse_size(entry)
+            if size_bytes is None:
                 continue
-            try:
-                size_float = float(size_kb)
-            except (TypeError, ValueError):
-                continue
-            return int(size_float * 1024)
-        return None
+
+            entry_type = entry.get("type")
+            is_model_type = isinstance(entry_type, str) and entry_type.lower() == "model"
+            primary_flag = entry.get("primary")
+            is_primary = primary_flag is True or (
+                isinstance(primary_flag, str) and primary_flag.strip().lower() == "true"
+            )
+
+            if is_model_type and is_primary:
+                preferred_size = size_bytes
+                break
+            if fallback_size is None:
+                fallback_size = size_bytes
+
+        return preferred_size if preferred_size is not None else fallback_size
 
     def _extract_preview_url(self, images) -> Optional[str]:
         if not isinstance(images, Iterable):

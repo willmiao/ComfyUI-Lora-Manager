@@ -74,6 +74,58 @@ def make_record(*versions, should_ignore_model=False):
     )
 
 
+def test_extract_size_bytes_prefers_primary_model_file(tmp_path):
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path))
+
+    response = {
+        "modelVersions": [
+            {
+                "id": 42,
+                "files": [
+                    {"sizeKB": 2018.0400390625, "type": "Training Data", "primary": False},
+                    {
+                        "sizeKB": 1152322.3515625,
+                        "type": "Model",
+                        "primary": "True",
+                    },
+                ],
+                "images": [],
+            }
+        ]
+    }
+
+    versions = service._extract_versions(response)
+    assert versions is not None
+    assert versions[0].size_bytes == int(1152322.3515625 * 1024)
+
+
+def test_extract_size_bytes_falls_back_without_primary(tmp_path):
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path))
+
+    response = {
+        "modelVersions": [
+            {
+                "id": 43,
+                "files": [
+                    {
+                        "sizeKB": 2048,
+                        "type": "Training Data",
+                        "primary": True,
+                    },
+                    {"sizeKB": 1024, "type": "Archive", "primary": False},
+                ],
+                "images": [],
+            }
+        ]
+    }
+
+    versions = service._extract_versions(response)
+    assert versions is not None
+    assert versions[0].size_bytes == int(2048 * 1024)
+
+
 def test_has_update_requires_newer_version_than_library():
     record = make_record(
         make_version(5, in_library=True),
