@@ -409,8 +409,10 @@
             },
             "refresh": {
                 "title": "重新整理模型列表",
-                "quick": "快速刷新（增量）",
-                "full": "完整重建（全部）"
+                "quick": "同步變更",
+                "quickTooltip": "掃描新的或缺少的模型檔案，讓清單保持最新。",
+                "full": "重建快取",
+                "fullTooltip": "從中繼資料檔重新載入所有模型資訊；適用於清單過時或手動編輯後。"
             },
             "fetch": {
                 "title": "從 Civitai 取得 metadata",

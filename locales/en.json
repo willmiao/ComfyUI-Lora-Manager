@@ -409,8 +409,10 @@
             },
             "refresh": {
                 "title": "Refresh model list",
-                "quick": "Quick Refresh (incremental)",
-                "full": "Full Rebuild (complete)"
+                "quick": "Sync Changes",
+                "quickTooltip": "Scan for new or missing model files so the list stays current.",
+                "full": "Rebuild Cache",
+                "fullTooltip": "Reload all model details from metadata files—use if the library looks out of date or after manual edits."
             },
             "fetch": {
                 "title": "Fetch metadata from Civitai",

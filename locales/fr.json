@@ -409,8 +409,10 @@
             },
             "refresh": {
                 "title": "Actualiser la liste des modèles",
-                "quick": "Actualisation rapide (incrémentale)",
-                "full": "Reconstruction complète"
+                "quick": "Synchroniser les changements",
+                "quickTooltip": "Analyse les nouveaux fichiers de modèle ou les fichiers manquants pour garder la liste à jour.",
+                "full": "Reconstruire le cache",
+                "fullTooltip": "Recharge tous les détails des modèles depuis les fichiers metadata — à utiliser si la bibliothèque paraît obsolète ou après des modifications manuelles."
             },
             "fetch": {
                 "title": "Récupérer les métadonnées depuis Civitai",
