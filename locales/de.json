@@ -410,8 +410,10 @@
             },
             "refresh": {
                 "title": "Modelliste aktualisieren",
-                "quick": "Schnelle Aktualisierung (inkrementell)",
-                "full": "Vollständiger Neuaufbau (komplett)"
+                "quick": "Änderungen synchronisieren",
+                "quickTooltip": "Nach neuen oder fehlenden Modelldateien suchen, damit die Liste aktuell bleibt.",
+                "full": "Cache neu aufbauen",
+                "fullTooltip": "Alle Modelldetails aus Metadatendateien neu laden – nutzen, wenn die Bibliothek veraltet wirkt oder nach manuellen Änderungen."
             },
             "fetch": {
                 "title": "Metadaten von Civitai abrufen",
