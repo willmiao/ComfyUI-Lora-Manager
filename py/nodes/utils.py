@@ -110,10 +110,14 @@ def nunchaku_load_lora(model, lora_name, lora_strength):
     model_wrapper.model = transformer
     ret_model_wrapper.model = transformer
     
-    # Get full path to the LoRA file
-    lora_path = folder_paths.get_full_path("loras", lora_name)
+    # Get full path to the LoRA file. Allow both direct paths and registered LoRA names.
+    lora_path = lora_name if os.path.isfile(lora_name) else folder_paths.get_full_path("loras", lora_name)
+    if not lora_path or not os.path.isfile(lora_path):
+        logger.warning("Skipping LoRA '%s' because it could not be found", lora_name)
+        return model
+
     ret_model_wrapper.loras.append((lora_path, lora_strength))
-    
+
     # Convert the LoRA to diffusers format
     sd = to_diffusers(lora_path)
     
