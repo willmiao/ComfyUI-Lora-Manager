@@ -436,6 +436,12 @@ export function createModelCard(model, modelType) {
     const hasUpdateAvailable = Boolean(model.update_available);
     card.dataset.update_available = hasUpdateAvailable ? 'true' : 'false';
 
+    const civitaiData = model.civitai || {};
+    const modelId = civitaiData?.modelId ?? civitaiData?.model_id;
+    if (modelId !== undefined && modelId !== null && modelId !== '') {
+        card.dataset.modelId = modelId;
+    }
+
     // LoRA specific data
     if (modelType === MODEL_TYPES.LORA) {
         card.dataset.usage_tips = model.usage_tips;

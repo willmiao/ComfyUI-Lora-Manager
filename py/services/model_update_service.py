@@ -277,15 +277,33 @@ class ModelUpdateService:
         metadata_provider,
         *,
         force_refresh: bool = False,
+        target_model_ids: Optional[Sequence[int]] = None,
     ) -> Dict[int, ModelUpdateRecord]:
         """Refresh update information for every model present in the cache."""
 
-        local_versions = await self._collect_local_versions(scanner)
+        normalized_targets = (
+            self._normalize_sequence(target_model_ids)
+            if target_model_ids is not None
+            else []
+        )
+        target_filter = normalized_targets or None
+
+        local_versions = await self._collect_local_versions(
+            scanner,
+            target_model_ids=target_filter,
+        )
         total_models = len(local_versions)
         if total_models == 0:
-            logger.info(
-                "No %s models found while refreshing update metadata", model_type
-            )
+            if target_filter:
+                logger.info(
+                    "No %s models matched requested ids %s while refreshing update metadata",
+                    model_type,
+                    target_filter,
+                )
+            else:
+                logger.info(
+                    "No %s models found while refreshing update metadata", model_type
+                )
             return {}
 
         logger.info(
@@ -683,11 +701,22 @@ class ModelUpdateService:
         )
         return aggregated
 
-    async def _collect_local_versions(self, scanner) -> Dict[int, List[int]]:
+    async def _collect_local_versions(
+        self,
+        scanner,
+        *,
+        target_model_ids: Optional[Sequence[int]] = None,
+    ) -> Dict[int, List[int]]:
         cache = await scanner.get_cached_data()
         mapping: Dict[int, set[int]] = {}
         if not cache or not getattr(cache, "raw_data", None):
             return {}
+
+        target_set = None
+        if target_model_ids:
+            target_set = set(target_model_ids)
+            if not target_set:
+                return {}
 
         for item in cache.raw_data:
             civitai = item.get("civitai") if isinstance(item, dict) else None
@@ -696,6 +725,8 @@ class ModelUpdateService:
             model_id = self._normalize_int(civitai.get("modelId"))
             version_id = self._normalize_int(civitai.get("id"))
             if model_id is None or version_id is None:
+                continue
+            if target_set is not None and model_id not in target_set:
                 continue
             mapping.setdefault(model_id, set()).add(version_id)
 

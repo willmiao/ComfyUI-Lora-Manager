@@ -144,6 +144,47 @@ async def test_refresh_persists_versions_and_uses_cache(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_refresh_filters_to_requested_models(tmp_path):
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path), ttl_seconds=3600)
+    raw_data = [
+        {"civitai": {"modelId": 1, "id": 11}},
+        {"civitai": {"modelId": 2, "id": 21}},
+    ]
+    scanner = DummyScanner(raw_data)
+    provider = DummyProvider({"modelVersions": []})
+
+    result = await service.refresh_for_model_type(
+        "lora",
+        scanner,
+        provider,
+        target_model_ids=[2],
+    )
+
+    assert list(result.keys()) == [2]
+    assert provider.bulk_calls == [[2]]
+
+
+@pytest.mark.asyncio
+async def test_refresh_returns_empty_when_targets_missing(tmp_path):
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path), ttl_seconds=3600)
+    raw_data = [{"civitai": {"modelId": 1, "id": 11}}]
+    scanner = DummyScanner(raw_data)
+    provider = DummyProvider({"modelVersions": []})
+
+    result = await service.refresh_for_model_type(
+        "lora",
+        scanner,
+        provider,
+        target_model_ids=[5],
+    )
+
+    assert result == {}
+    assert provider.bulk_calls == []
+
+
+@pytest.mark.asyncio
 async def test_refresh_respects_ignore_flag(tmp_path):
     db_path = tmp_path / "updates.sqlite"
     service = ModelUpdateService(str(db_path), ttl_seconds=3600)

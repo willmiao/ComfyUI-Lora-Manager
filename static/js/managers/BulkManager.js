@@ -34,6 +34,7 @@ export class BulkManager {
                 sendToWorkflow: true,
                 copyAll: true,
                 refreshAll: true,
+                checkUpdates: true,
                 moveAll: true,
                 autoOrganize: true,
                 deleteAll: true,
@@ -44,6 +45,7 @@ export class BulkManager {
                 sendToWorkflow: false,
                 copyAll: false,
                 refreshAll: true,
+                checkUpdates: true,
                 moveAll: true,
                 autoOrganize: true,
                 deleteAll: true,
@@ -54,6 +56,7 @@ export class BulkManager {
                 sendToWorkflow: false,
                 copyAll: false,
                 refreshAll: true,
+                checkUpdates: true,
                 moveAll: false,
                 autoOrganize: true,
                 deleteAll: true,
@@ -271,14 +274,9 @@ export class BulkManager {
         } else {
             card.classList.add('selected');
             state.selectedModels.add(filepath);
-            
+
             // Cache the metadata for this model
-            const metadataCache = this.getMetadataCache();
-            metadataCache.set(filepath, {
-                fileName: card.dataset.file_name,
-                usageTips: card.dataset.usage_tips,
-                modelName: card.dataset.name
-            });
+            this.updateMetadataCacheFromCard(filepath, card);
         }
         
         // Update context menu header if visible
@@ -290,7 +288,7 @@ export class BulkManager {
     getMetadataCache() {
         const currentType = state.currentPageType;
         const pageState = getCurrentPageState();
-        
+
         // Initialize metadata cache if it doesn't exist
         if (currentType === MODEL_TYPES.LORA) {
             if (!state.loraMetadataCache) {
@@ -305,6 +303,89 @@ export class BulkManager {
         }
     }
 
+    parseModelId(value) {
+        if (value === undefined || value === null || value === '') {
+            return null;
+        }
+
+        const parsed = Number.parseInt(value, 10);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    updateMetadataCacheFromCard(filepath, card) {
+        if (!card) {
+            return;
+        }
+
+        const metadataCache = this.getMetadataCache();
+        const existing = metadataCache.get(filepath) || {};
+        const modelId = this.parseModelId(card.dataset.modelId);
+
+        const updated = {
+            ...existing,
+            fileName: card.dataset.file_name ?? existing.fileName,
+            usageTips: card.dataset.usage_tips ?? existing.usageTips,
+            modelName: card.dataset.name ?? existing.modelName,
+        };
+
+        if (modelId !== null) {
+            updated.modelId = modelId;
+        }
+
+        metadataCache.set(filepath, updated);
+    }
+
+    escapeAttributeValue(value) {
+        if (value === undefined || value === null) {
+            return '';
+        }
+
+        return String(value)
+            .replace(/\\/g, '\\\\')
+            .replace(/"/g, '\\"');
+    }
+
+    getModelIdForFilePath(filePath) {
+        const metadataCache = this.getMetadataCache();
+        const cached = metadataCache.get(filePath);
+        if (cached && typeof cached.modelId === 'number') {
+            return cached.modelId;
+        }
+
+        const escapedPath = this.escapeAttributeValue(filePath);
+        const card = document.querySelector(`.model-card[data-filepath="${escapedPath}"]`);
+        if (!card) {
+            return null;
+        }
+
+        this.updateMetadataCacheFromCard(filePath, card);
+        const updated = metadataCache.get(filePath);
+        return updated && typeof updated.modelId === 'number' ? updated.modelId : null;
+    }
+
+    collectSelectedModelIds() {
+        const metadataCache = this.getMetadataCache();
+        const ids = [];
+        let missingCount = 0;
+
+        for (const filepath of state.selectedModels) {
+            const cached = metadataCache.get(filepath);
+            let modelId = cached && typeof cached.modelId === 'number' ? cached.modelId : null;
+            if (modelId === null) {
+                modelId = this.getModelIdForFilePath(filepath);
+            }
+
+            if (typeof modelId === 'number') {
+                ids.push(modelId);
+            } else {
+                missingCount++;
+            }
+        }
+
+        const uniqueIds = Array.from(new Set(ids));
+        return { ids: uniqueIds, missingCount };
+    }
+
     applySelectionState() {
         if (!state.bulkMode) return;
         
@@ -312,13 +393,8 @@ export class BulkManager {
             const filepath = card.dataset.filepath;
             if (state.selectedModels.has(filepath)) {
                 card.classList.add('selected');
-                
-                const metadataCache = this.getMetadataCache();
-                metadataCache.set(filepath, {
-                    fileName: card.dataset.file_name,
-                    usageTips: card.dataset.usage_tips,
-                    modelName: card.dataset.name
-                });
+
+                this.updateMetadataCacheFromCard(filepath, card);
             } else {
                 card.classList.remove('selected');
             }
@@ -477,12 +553,14 @@ export class BulkManager {
         state.virtualScroller.items.forEach(item => {
             if (item && item.file_path) {
                 state.selectedModels.add(item.file_path);
-                
+
                 if (!metadataCache.has(item.file_path)) {
+                    const modelId = this.parseModelId(item?.civitai?.modelId);
                     metadataCache.set(item.file_path, {
                         fileName: item.file_name,
                         usageTips: item.usage_tips || '{}',
-                        modelName: item.name || item.file_name
+                        modelName: item.name || item.file_name,
+                        ...(modelId !== null ? { modelId } : {})
                     });
                 }
             }
@@ -521,12 +599,7 @@ export class BulkManager {
                     if (metadata) {
                         const card = document.querySelector(`.model-card[data-filepath="${filepath}"]`);
                         if (card) {
-                            metadataCache.set(filepath, {
-                                ...metadata,
-                                fileName: card.dataset.file_name,
-                                usageTips: card.dataset.usage_tips,
-                                modelName: card.dataset.name
-                            });
+                            this.updateMetadataCacheFromCard(filepath, card);
                         }
                     }
                 }
@@ -541,7 +614,71 @@ export class BulkManager {
             showToast('toast.models.refreshMetadataFailed', {}, 'error');
         }
     }
-    
+
+    async checkUpdatesForSelectedModels() {
+        if (state.selectedModels.size === 0) {
+            showToast('toast.models.noModelsSelected', {}, 'warning');
+            return;
+        }
+
+        const currentType = state.currentPageType;
+        const currentConfig = MODEL_CONFIG[currentType] || MODEL_CONFIG[MODEL_TYPES.LORA];
+        const typeLabel = (currentConfig?.displayName || 'Model').toLowerCase();
+
+        const { ids: modelIds, missingCount } = this.collectSelectedModelIds();
+
+        if (modelIds.length === 0) {
+            showToast('toast.models.bulkUpdatesMissing', { type: typeLabel }, 'warning');
+            return;
+        }
+
+        if (missingCount > 0) {
+            showToast('toast.models.bulkUpdatesPartialMissing', { missing: missingCount, type: typeLabel }, 'info');
+        }
+
+        const apiClient = getModelApiClient();
+        if (!apiClient || typeof apiClient.refreshUpdatesForModels !== 'function') {
+            console.warn('Model API client does not support refreshUpdatesForModels');
+            showToast('toast.models.bulkUpdatesFailed', { type: typeLabel, message: 'Operation not supported' }, 'error');
+            return;
+        }
+
+        const loadingMessage = translate(
+            'toast.models.bulkUpdatesChecking',
+            { count: state.selectedModels.size, type: typeLabel },
+            `Checking selected ${typeLabel}(s) for updates...`
+        );
+        state.loadingManager?.showSimpleLoading?.(loadingMessage);
+
+        try {
+            const response = await apiClient.refreshUpdatesForModels(modelIds);
+            const records = Array.isArray(response?.records) ? response.records : [];
+            const updatesCount = records.length;
+
+            if (updatesCount > 0) {
+                showToast('toast.models.bulkUpdatesSuccess', { count: updatesCount, type: typeLabel }, 'success');
+            } else {
+                showToast('toast.models.bulkUpdatesNone', { type: typeLabel }, 'info');
+            }
+
+            await resetAndReload(false);
+        } catch (error) {
+            console.error('Error checking updates for selected models:', error);
+            showToast(
+                'toast.models.bulkUpdatesFailed',
+                { type: typeLabel, message: error?.message ?? 'Unknown error' },
+                'error'
+            );
+        } finally {
+            if (state.loadingManager?.hide) {
+                state.loadingManager.hide();
+            }
+            if (typeof state.loadingManager?.restoreProgressBar === 'function') {
+                state.loadingManager.restoreProgressBar();
+            }
+        }
+    }
+
     showBulkAddTagsModal() {
         if (state.selectedModels.size === 0) {
             showToast('toast.models.noModelsSelected', {}, 'warning');
@@ -1263,15 +1400,11 @@ export class BulkManager {
                 // Add to selection if intersecting
                 newSelection.add(filepath);
                 card.classList.add('selected');
-                
+
                 // Cache metadata if not already cached
                 const metadataCache = this.getMetadataCache();
                 if (!metadataCache.has(filepath)) {
-                    metadataCache.set(filepath, {
-                        fileName: card.dataset.file_name,
-                        usageTips: card.dataset.usage_tips,
-                        modelName: card.dataset.name
-                    });
+                    this.updateMetadataCacheFromCard(filepath, card);
                 }
             } else if (!this.initialSelectedModels.has(filepath)) {
                 // Remove from selection if not intersecting and wasn't initially selected
