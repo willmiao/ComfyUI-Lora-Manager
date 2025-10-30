@@ -28,6 +28,7 @@ CORE_USER_SETTING_KEYS: Tuple[str, ...] = (
 
 DEFAULT_SETTINGS: Dict[str, Any] = {
     "civitai_api_key": "",
+    "use_portable_settings": False,
     "language": "en",
     "show_only_sfw": False,
     "enable_metadata_archive_db": False,

@@ -1,4 +1,5 @@
 {
+  "use_portable_settings": false,
   "civitai_api_key": "your_civitai_api_key_here",
   "folder_paths": {
     "loras": [

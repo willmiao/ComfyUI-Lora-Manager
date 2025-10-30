@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import shutil
@@ -64,6 +65,11 @@ def ensure_settings_file(logger: Optional[logging.Logger] = None) -> str:
     """
 
     logger = logger or _LOGGER
+    legacy_path = get_legacy_settings_path()
+
+    if _should_use_portable_settings(legacy_path, logger):
+        return legacy_path
+
     target_path = get_settings_file_path(create_dir=True)
     preferred_dir = user_config_dir(APP_NAME, appauthor=False)
     preferred_path = os.path.join(preferred_dir, "settings.json")
@@ -71,7 +77,6 @@ def ensure_settings_file(logger: Optional[logging.Logger] = None) -> str:
     if os.path.abspath(target_path) != os.path.abspath(preferred_path):
         os.makedirs(preferred_dir, exist_ok=True)
         target_path = preferred_path
-    legacy_path = get_legacy_settings_path()
 
     if os.path.exists(legacy_path) and not os.path.exists(target_path):
         try:
@@ -87,4 +92,35 @@ def ensure_settings_file(logger: Optional[logging.Logger] = None) -> str:
                 logger.error("Could not migrate settings.json: %s", copy_exc)
 
     return target_path
+
+
+def _should_use_portable_settings(path: str, logger: logging.Logger) -> bool:
+    """Return ``True`` when the repository settings file enables portable mode."""
+
+    if not os.path.exists(path):
+        return False
+
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except json.JSONDecodeError as exc:
+        logger.warning("Failed to parse %s for portable mode flag: %s", path, exc)
+        return False
+    except OSError as exc:
+        logger.warning("Could not read %s to determine portable mode: %s", path, exc)
+        return False
+
+    if not isinstance(payload, dict):
+        logger.debug("Portable settings file %s does not contain a JSON object", path)
+        return False
+
+    flag = payload.get("use_portable_settings")
+    if isinstance(flag, bool):
+        return flag
+
+    if flag is not None:
+        logger.warning(
+            "Ignoring non-boolean use_portable_settings value in %s", path
+        )
+    return False
 
