@@ -246,6 +246,27 @@ def test_migrates_legacy_settings_file(tmp_path, monkeypatch):
     assert not legacy_file.exists()
 
 
+def test_uses_portable_settings_file_when_enabled(tmp_path, monkeypatch):
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    repo_settings = repo_root / "settings.json"
+    repo_settings.write_text(
+        json.dumps({"use_portable_settings": True, "value": 1}),
+        encoding="utf-8",
+    )
+
+    user_dir = tmp_path / "user"
+
+    monkeypatch.setattr(settings_paths, "get_project_root", lambda: str(repo_root))
+    monkeypatch.setattr(settings_paths, "user_config_dir", lambda *_, **__: str(user_dir))
+
+    resolved = settings_paths.ensure_settings_file()
+
+    assert resolved == str(repo_settings)
+    assert repo_settings.exists()
+    assert not user_dir.exists()
+
+
 def test_migrate_creates_default_library(manager):
     libraries = manager.get_libraries()
     assert "default" in libraries
