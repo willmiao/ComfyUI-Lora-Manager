@@ -1,4 +1,5 @@
 import logging
+import sqlite3
 from types import SimpleNamespace
 
 import pytest
@@ -413,6 +414,44 @@ async def test_has_updates_bulk_returns_mapping(tmp_path):
 
     assert mapping == {9: True, 42: False}
     assert await service.has_update("lora", 9) is True
+
+
+@pytest.mark.asyncio
+async def test_refresh_allows_duplicate_version_ids_across_models(tmp_path):
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path), ttl_seconds=0)
+    raw_data = [
+        {"civitai": {"modelId": 1, "id": 42}},
+        {"civitai": {"modelId": 2, "id": 42}},
+    ]
+    scanner = DummyScanner(raw_data)
+    provider = DummyProvider(
+        {
+            "modelVersions": [
+                {
+                    "id": 42,
+                    "name": "shared",
+                    "baseModel": "SD15",
+                    "publishedAt": "2024-03-01T00:00:00Z",
+                    "files": [{"sizeKB": 256}],
+                    "images": [],
+                }
+            ]
+        }
+    )
+
+    results = await service.refresh_for_model_type("lora", scanner, provider)
+
+    assert set(results.keys()) == {1, 2}
+    assert results[1].version_ids == [42]
+    assert results[2].version_ids == [42]
+
+    with sqlite3.connect(str(db_path)) as conn:
+        count = conn.execute(
+            "SELECT COUNT(*) FROM model_update_versions WHERE version_id = 42"
+        ).fetchone()[0]
+
+    assert count == 2
 
 
 @pytest.mark.asyncio
