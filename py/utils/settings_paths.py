@@ -6,7 +6,7 @@ import json
 import logging
 import os
 import shutil
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from platformdirs import user_config_dir
 
@@ -128,4 +128,33 @@ def _should_use_portable_settings(path: str, logger: logging.Logger) -> bool:
             "Ignoring non-boolean use_portable_settings value in %s", path
         )
     return False
+
+
+def load_settings_template() -> Optional[Dict[str, Any]]:
+    """Return the parsed contents of ``settings.json.example`` when available."""
+
+    template_path = os.path.join(get_project_root(), "settings.json.example")
+
+    try:
+        with open(template_path, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except FileNotFoundError:
+        _LOGGER.debug("settings.json.example not found at %s", template_path)
+        return None
+    except json.JSONDecodeError as exc:
+        _LOGGER.warning("Failed to parse settings.json.example: %s", exc)
+        return None
+    except OSError as exc:
+        _LOGGER.warning(
+            "Could not read settings.json.example at %s: %s", template_path, exc
+        )
+        return None
+
+    if not isinstance(payload, dict):
+        _LOGGER.debug(
+            "settings.json.example at %s does not contain a JSON object", template_path
+        )
+        return None
+
+    return payload
 
