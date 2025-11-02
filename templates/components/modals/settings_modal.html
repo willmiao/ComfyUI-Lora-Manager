@@ -104,7 +104,25 @@
             <!-- Add Layout Settings Section -->
             <div class="settings-section">
                 <h3>{{ t('settings.sections.layoutSettings') }}</h3>
-                
+
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="showFolderSidebar">{{ t('settings.layoutSettings.showFolderSidebar') }}</label>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="showFolderSidebar"
+                                       onchange="settingsManager.saveToggleSetting('showFolderSidebar', 'show_folder_sidebar')">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.layoutSettings.showFolderSidebarHelp') }}
+                    </div>
+                </div>
+
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">

@@ -248,6 +248,8 @@
                 "compact": "7（1080p）、8（2K）、10（4K）"
             },
             "displayDensityWarning": "警告：高密度設定は、リソースが限られたシステムでパフォーマンスの問題を引き起こす可能性があります。",
+            "showFolderSidebar": "フォルダサイドバーを表示",
+            "showFolderSidebarHelp": "モデルページのフォルダナビゲーションサイドバーを表示/非表示にします。無効にするとサイドバーとホバーエリアは表示されません。",
             "cardInfoDisplay": "カード情報表示",
             "cardInfoDisplayOptions": {
                 "always": "常に表示",

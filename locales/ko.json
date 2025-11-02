@@ -248,6 +248,8 @@
                 "compact": "7개 (1080p), 8개 (2K), 10개 (4K)"
             },
             "displayDensityWarning": "경고: 높은 밀도는 리소스가 제한된 시스템에서 성능 문제를 일으킬 수 있습니다.",
+            "showFolderSidebar": "폴더 사이드바 표시",
+            "showFolderSidebarHelp": "모델 페이지에서 폴더 탐색 사이드바를 켜거나 끕니다. 비활성화하면 사이드바와 호버 영역이 표시되지 않습니다.",
             "cardInfoDisplay": "카드 정보 표시",
             "cardInfoDisplayOptions": {
                 "always": "항상 표시",

@@ -18,7 +18,8 @@ const downloadManagerMock = {
 };
 
 const sidebarManagerMock = {
-  initialize: vi.fn(async () => {
+  setHostPageControls: vi.fn(),
+  setSidebarEnabled: vi.fn(async () => {
     sidebarManagerMock.isInitialized = true;
   }),
   refresh: vi.fn(async () => {}),
@@ -70,8 +71,8 @@ beforeEach(() => {
   performModelUpdateCheckMock.mockResolvedValue({ status: 'success', displayName: 'LoRA', records: [] });
 
   sidebarManagerMock.isInitialized = false;
-  sidebarManagerMock.initialize.mockImplementation(async () => {
-    sidebarManagerMock.isInitialized = true;
+  sidebarManagerMock.setSidebarEnabled.mockImplementation(async (enabled) => {
+    sidebarManagerMock.isInitialized = enabled;
   });
 
   global.fetch = vi.fn().mockResolvedValue({

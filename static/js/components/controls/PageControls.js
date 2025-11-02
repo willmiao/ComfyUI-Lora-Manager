@@ -1,5 +1,5 @@
 // PageControls.js - Manages controls for both LoRAs and Checkpoints pages
-import { getCurrentPageState, setCurrentPageType } from '../../state/index.js';
+import { state, getCurrentPageState, setCurrentPageType } from '../../state/index.js';
 import { getStorageItem, setStorageItem, getSessionItem, setSessionItem } from '../../utils/storageHelpers.js';
 import { showToast } from '../../utils/uiHelpers.js';
 import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
@@ -75,7 +75,9 @@ export class PageControls {
      */
     async initSidebarManager() {
         try {
-            await this.sidebarManager.initialize(this);
+            this.sidebarManager.setHostPageControls(this);
+            const shouldShowSidebar = state?.global?.settings?.show_folder_sidebar !== false;
+            await this.sidebarManager.setSidebarEnabled(shouldShowSidebar);
         } catch (error) {
             console.error('Failed to initialize SidebarManager:', error);
         }
