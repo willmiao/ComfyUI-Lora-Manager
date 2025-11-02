@@ -43,6 +43,7 @@ def test_save_paths_renames_default_library(monkeypatch: pytest.MonkeyPatch, tmp
         def __init__(self, default_paths: Dict[str, List[str]]):
             self._default_paths = default_paths
             self.rename_calls = []
+            self.delete_calls = []
             self.upsert_calls = []
             self._renamed = False
 
@@ -61,6 +62,10 @@ def test_save_paths_renames_default_library(monkeypatch: pytest.MonkeyPatch, tmp
         def rename_library(self, old_name: str, new_name: str):
             self.rename_calls.append((old_name, new_name))
             self._renamed = True
+
+        def delete_library(self, name: str):  # pragma: no cover - defensive guard
+            self.delete_calls.append(name)
+            raise AssertionError("delete_library should not be invoked in this scenario")
 
         def upsert_library(self, name: str, **payload):
             self.upsert_calls.append((name, payload))
@@ -124,3 +129,89 @@ def test_save_paths_logs_warning_when_upsert_fails(
     assert isinstance(config_instance, config_module.Config)
     assert fake_settings.upsert_attempts and fake_settings.upsert_attempts[0][0] == "comfyui"
     assert "Failed to save folder paths: boom" in caplog.text
+
+
+def test_save_paths_removes_template_default_library(monkeypatch, tmp_path):
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+
+    placeholder_paths = {
+        "loras": [
+            "C:/path/to/your/loras_folder",
+            "C:/path/to/another/loras_folder",
+        ],
+        "checkpoints": [
+            "C:/path/to/your/checkpoints_folder",
+            "C:/path/to/another/checkpoints_folder",
+        ],
+        "embeddings": [
+            "C:/path/to/your/embeddings_folder",
+            "C:/path/to/another/embeddings_folder",
+        ],
+    }
+
+    class FakeSettingsService:
+        def __init__(self):
+            self.libraries = {
+                "default": {
+                    "folder_paths": placeholder_paths,
+                    "default_lora_root": "",
+                    "default_checkpoint_root": "",
+                    "default_embedding_root": "",
+                }
+            }
+            self.rename_calls = []
+            self.delete_calls = []
+            self.upsert_calls = []
+
+        def get_libraries(self):
+            return self.libraries
+
+        def rename_library(self, old_name: str, new_name: str):
+            self.rename_calls.append((old_name, new_name))
+            self.libraries[new_name] = self.libraries.pop(old_name)
+
+        def delete_library(self, name: str):
+            self.delete_calls.append(name)
+            self.libraries.pop(name, None)
+
+        def upsert_library(self, name: str, **payload):
+            self.upsert_calls.append((name, payload))
+            self.libraries[name] = {**payload}
+
+    fake_settings = FakeSettingsService()
+    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+
+    monkeypatch.setattr(
+        config_module,
+        "load_settings_template",
+        lambda: {"folder_paths": placeholder_paths},
+    )
+
+    config_instance = config_module.Config()
+
+    assert isinstance(config_instance, config_module.Config)
+    assert fake_settings.rename_calls == [("default", "comfyui")]
+    assert not fake_settings.delete_calls
+    assert len(fake_settings.upsert_calls) == 1
+    assert "default" not in fake_settings.libraries
+    assert set(fake_settings.libraries.keys()) == {"comfyui"}
+
+    name, payload = fake_settings.upsert_calls[0]
+    assert name == "comfyui"
+
+    expected_folder_paths = {
+        key: [path.replace("\\", "/") for path in paths]
+        for key, paths in folder_paths.items()
+    }
+    assert payload["folder_paths"] == expected_folder_paths
+    assert payload["default_lora_root"] == folder_paths["loras"][0].replace("\\", "/")
+    assert (
+        payload["default_checkpoint_root"]
+        == folder_paths["checkpoints"][0].replace("\\", "/")
+    )
+    assert (
+        payload["default_embedding_root"]
+        == folder_paths["embeddings"][0].replace("\\", "/")
+    )
+    assert payload["metadata"] == {"display_name": "ComfyUI", "source": "comfyui"}
+    assert payload["activate"] is True

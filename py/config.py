@@ -2,12 +2,12 @@ import os
 import platform
 from pathlib import Path
 import folder_paths # type: ignore
-from typing import Dict, Iterable, List, Mapping, Set
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Set
 import logging
 import json
 import urllib.parse
 
-from .utils.settings_paths import ensure_settings_file
+from .utils.settings_paths import ensure_settings_file, load_settings_template
 
 # Use an environment variable to control standalone mode
 standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1" or os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
@@ -43,6 +43,30 @@ def _normalize_folder_paths_for_comparison(
             normalized[key] = normalized_values
 
     return normalized
+
+
+def _normalize_library_folder_paths(
+    library_payload: Mapping[str, Any]
+) -> Dict[str, Set[str]]:
+    """Return normalized folder paths extracted from a library payload."""
+
+    folder_paths = library_payload.get("folder_paths")
+    if isinstance(folder_paths, Mapping):
+        return _normalize_folder_paths_for_comparison(folder_paths)
+    return {}
+
+
+def _get_template_folder_paths() -> Dict[str, Set[str]]:
+    """Return normalized folder paths defined in the bundled template."""
+
+    template_payload = load_settings_template()
+    if not template_payload:
+        return {}
+
+    folder_paths = template_payload.get("folder_paths")
+    if isinstance(folder_paths, Mapping):
+        return _normalize_folder_paths_for_comparison(folder_paths)
+    return {}
 
 
 class Config:
@@ -81,6 +105,43 @@ class Config:
             comfy_library = libraries.get("comfyui", {})
             default_library = libraries.get("default", {})
 
+            template_folder_paths = _get_template_folder_paths()
+            default_library_paths: Dict[str, Set[str]] = {}
+            if isinstance(default_library, Mapping):
+                default_library_paths = _normalize_library_folder_paths(default_library)
+
+            libraries_changed = False
+            if (
+                isinstance(default_library, Mapping)
+                and template_folder_paths
+                and default_library_paths == template_folder_paths
+            ):
+                if "comfyui" in libraries:
+                    try:
+                        settings_service.delete_library("default")
+                        libraries_changed = True
+                        logger.info("Removed template 'default' library entry")
+                    except Exception as delete_error:
+                        logger.debug(
+                            "Failed to delete template 'default' library: %s",
+                            delete_error,
+                        )
+                else:
+                    try:
+                        settings_service.rename_library("default", "comfyui")
+                        libraries_changed = True
+                        logger.info("Renamed template 'default' library to 'comfyui'")
+                    except Exception as rename_error:
+                        logger.debug(
+                            "Failed to rename template 'default' library: %s",
+                            rename_error,
+                        )
+
+            if libraries_changed:
+                libraries = settings_service.get_libraries()
+                comfy_library = libraries.get("comfyui", {})
+                default_library = libraries.get("default", {})
+
             target_folder_paths = {
                 'loras': list(self.loras_roots),
                 'checkpoints': list(self.checkpoints_roots or []),
@@ -90,9 +151,16 @@ class Config:
 
             normalized_target_paths = _normalize_folder_paths_for_comparison(target_folder_paths)
 
-            if (not comfy_library and default_library and normalized_target_paths and
-                    _normalize_folder_paths_for_comparison(default_library.get("folder_paths", {})) ==
-                    normalized_target_paths):
+            normalized_default_paths: Optional[Dict[str, Set[str]]] = None
+            if isinstance(default_library, Mapping):
+                normalized_default_paths = _normalize_library_folder_paths(default_library)
+
+            if (
+                not comfy_library
+                and default_library
+                and normalized_target_paths
+                and normalized_default_paths == normalized_target_paths
+            ):
                 try:
                     settings_service.rename_library("default", "comfyui")
                     logger.info("Renamed legacy 'default' library to 'comfyui'")
