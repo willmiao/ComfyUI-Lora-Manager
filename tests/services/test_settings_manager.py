@@ -11,6 +11,37 @@ from py.services.settings_manager import SettingsManager
 from py.utils import settings_paths
 
 
+@pytest.mark.no_settings_dir_isolation
+def test_portable_settings_use_project_root(tmp_path, monkeypatch):
+    from importlib import reload
+
+    settings_paths_module = reload(settings_paths)
+    monkeypatch.setattr(settings_paths_module, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(
+        settings_paths_module,
+        "user_config_dir",
+        lambda *_args, **_kwargs: str(tmp_path / "user_config"),
+    )
+
+    portable_settings = {"use_portable_settings": True}
+    (tmp_path / "settings.json").write_text(json.dumps(portable_settings), encoding="utf-8")
+
+    config_dir = settings_paths_module.get_settings_dir(create=True)
+    assert config_dir == str(tmp_path)
+
+    from py.services import persistent_model_cache as persistent_model_cache_module
+
+    cache_module = reload(persistent_model_cache_module)
+    monkeypatch.setattr(cache_module.PersistentModelCache, "_instances", {})
+    monkeypatch.delenv("LORA_MANAGER_CACHE_DB", raising=False)
+
+    cache = cache_module.PersistentModelCache(library_name="portable_lib")
+    expected_cache_path = tmp_path / "model_cache" / "portable_lib.sqlite"
+
+    assert cache.get_database_path() == str(expected_cache_path)
+    assert expected_cache_path.parent.is_dir()
+
+
 @pytest.fixture
 def manager(tmp_path, monkeypatch):
     monkeypatch.setattr(SettingsManager, "_save_settings", lambda self: None)

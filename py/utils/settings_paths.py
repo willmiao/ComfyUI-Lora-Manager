@@ -37,8 +37,13 @@ def get_settings_dir(create: bool = True) -> str:
         The absolute path to the user configuration directory.
     """
 
-    config_dir = user_config_dir(APP_NAME, appauthor=False)
-    if create:
+    legacy_path = get_legacy_settings_path()
+    if _should_use_portable_settings(legacy_path, _LOGGER):
+        config_dir = os.path.dirname(legacy_path)
+    else:
+        config_dir = user_config_dir(APP_NAME, appauthor=False)
+
+    if create and config_dir:
         os.makedirs(config_dir, exist_ok=True)
     return config_dir
 

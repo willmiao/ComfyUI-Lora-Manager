@@ -74,8 +74,16 @@ sys.modules['nodes'] = nodes_mock
 
 
 @pytest.fixture(autouse=True)
-def _isolate_settings_dir(tmp_path_factory, monkeypatch):
+def _isolate_settings_dir(tmp_path_factory, monkeypatch, request):
     """Redirect settings.json into a temporary directory for each test."""
+
+    if request.node.get_closest_marker("no_settings_dir_isolation"):
+        from py.services import settings_manager as settings_manager_module
+
+        settings_manager_module.reset_settings_manager()
+        yield
+        settings_manager_module.reset_settings_manager()
+        return
 
     settings_dir = tmp_path_factory.mktemp("settings_dir")
 

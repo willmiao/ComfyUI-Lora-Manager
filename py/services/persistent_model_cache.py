@@ -7,7 +7,7 @@ import threading
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Sequence, Tuple
 
-from ..utils.settings_paths import get_settings_dir
+from ..utils.settings_paths import get_project_root, get_settings_dir
 
 logger = logging.getLogger(__name__)
 
@@ -397,7 +397,7 @@ class PersistentModelCache:
             settings_dir = get_settings_dir(create=True)
         except Exception as exc:  # pragma: no cover - defensive guard
             logger.warning("Falling back to project directory for cache: %s", exc)
-            settings_dir = os.path.dirname(os.path.dirname(self._db_path)) if hasattr(self, "_db_path") else os.getcwd()
+            settings_dir = get_project_root()
         safe_name = re.sub(r"[^A-Za-z0-9_.-]", "_", library_name or "default")
         if safe_name.lower() in ("default", ""):
             legacy_path = os.path.join(settings_dir, self._DEFAULT_FILENAME)
