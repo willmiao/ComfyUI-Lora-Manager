@@ -62,8 +62,10 @@ export class SidebarManager {
         this.lastPageControls = pageControls;
     }
 
-    async initialize(pageControls) {
-        if (this.isDisabledBySetting) {
+    async initialize(pageControls, options = {}) {
+        const { forceInitialize = false } = options;
+
+        if (this.isDisabledBySetting && !forceInitialize) {
             return;
         }
 
@@ -85,7 +87,7 @@ export class SidebarManager {
         this.updateSidebarTitle();
         this.restoreSidebarState();
         await this.loadFolderTree();
-        if (this.isDisabledBySetting) {
+        if (this.isDisabledBySetting && !forceInitialize) {
             this.cleanup();
             return;
         }
@@ -773,17 +775,39 @@ export class SidebarManager {
         this.isDisabledBySetting = !enabled;
         this.updateDomVisibility(enabled);
 
+        const shouldForceInitialization = !enabled && !this.isInitialized;
+        const needsInitialization = !this.isInitialized || shouldForceInitialization;
+
+        if (this.lastPageControls && needsInitialization) {
+            if (!this.initializationPromise) {
+                this.initializationPromise = this.initialize(this.lastPageControls, {
+                    forceInitialize: shouldForceInitialization,
+                })
+                    .catch((error) => {
+                        console.error('Sidebar initialization failed:', error);
+                    })
+                    .finally(() => {
+                        this.initializationPromise = null;
+                    });
+            }
+
+            await this.initializationPromise;
+        } else if (this.initializationPromise) {
+            await this.initializationPromise;
+        }
+
         if (!enabled) {
             this.isHovering = false;
             this.isVisible = false;
 
+            const container = document.querySelector('.container');
+            if (container) {
+                container.style.marginLeft = '';
+            }
+
             if (this.isInitialized) {
-                this.cleanup();
-            } else {
-                const container = document.querySelector('.container');
-                if (container) {
-                    container.style.marginLeft = '';
-                }
+                this.updateBreadcrumbs();
+                this.updateSidebarHeader();
             }
 
             return;
@@ -791,24 +815,7 @@ export class SidebarManager {
 
         if (this.isInitialized) {
             this.updateAutoHideState();
-            return;
         }
-
-        if (!this.lastPageControls) {
-            return;
-        }
-
-        if (!this.initializationPromise) {
-            this.initializationPromise = this.initialize(this.lastPageControls)
-                .catch((error) => {
-                    console.error('Sidebar initialization failed:', error);
-                })
-                .finally(() => {
-                    this.initializationPromise = null;
-                });
-        }
-
-        await this.initializationPromise;
     }
 
     updatePinButton() {
