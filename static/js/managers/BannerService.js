@@ -1,13 +1,17 @@
 import {
     getStorageItem,
-    setStorageItem
+    setStorageItem,
+    removeStorageItem
 } from '../utils/storageHelpers.js';
 import { translate } from '../utils/i18nHelpers.js';
 
 const COMMUNITY_SUPPORT_BANNER_ID = 'community-support';
 const COMMUNITY_SUPPORT_BANNER_DELAY_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
 const COMMUNITY_SUPPORT_FIRST_SEEN_AT_KEY = 'community_support_banner_first_seen_at';
-const COMMUNITY_SUPPORT_SHOWN_KEY = 'community_support_banner_shown';
+const COMMUNITY_SUPPORT_VERSION_KEY = 'community_support_banner_state_version';
+// Increment this version to reset the banner schedule after significant updates
+const COMMUNITY_SUPPORT_STATE_VERSION = 'v2';
+const COMMUNITY_SUPPORT_SHOWN_KEY_LEGACY = 'community_support_banner_shown';
 const KO_FI_URL = 'https://ko-fi.com/pixelpawsai';
 const BANNER_HISTORY_KEY = 'banner_history';
 const BANNER_HISTORY_VIEWED_AT_KEY = 'banner_history_viewed_at';
@@ -26,6 +30,8 @@ class BannerService {
         this.communitySupportBannerRegistered = false;
         this.recentHistory = this.loadBannerHistory();
         this.bannerHistoryViewedAt = this.loadBannerHistoryViewedAt();
+
+        this.initializeCommunitySupportState();
     }
 
     /**
@@ -229,7 +235,7 @@ class BannerService {
             this.communitySupportBannerTimer = null;
         }
 
-        if (getStorageItem(COMMUNITY_SUPPORT_SHOWN_KEY, false)) {
+        if (this.isBannerDismissed(COMMUNITY_SUPPORT_BANNER_ID)) {
             return;
         }
 
@@ -254,7 +260,7 @@ class BannerService {
     }
 
     registerCommunitySupportBanner() {
-        if (this.communitySupportBannerRegistered || getStorageItem(COMMUNITY_SUPPORT_SHOWN_KEY, false)) {
+        if (this.communitySupportBannerRegistered || this.isBannerDismissed(COMMUNITY_SUPPORT_BANNER_ID)) {
             return;
         }
 
@@ -264,7 +270,6 @@ class BannerService {
         }
 
         this.communitySupportBannerRegistered = true;
-        setStorageItem(COMMUNITY_SUPPORT_SHOWN_KEY, true);
 
         this.registerBanner(COMMUNITY_SUPPORT_BANNER_ID, {
             id: COMMUNITY_SUPPORT_BANNER_ID,
@@ -305,6 +310,18 @@ class BannerService {
         });
 
         this.updateContainerVisibility();
+    }
+
+    initializeCommunitySupportState() {
+        const storedVersion = getStorageItem(COMMUNITY_SUPPORT_VERSION_KEY, null);
+
+        if (storedVersion === COMMUNITY_SUPPORT_STATE_VERSION) {
+            return;
+        }
+
+        setStorageItem(COMMUNITY_SUPPORT_VERSION_KEY, COMMUNITY_SUPPORT_STATE_VERSION);
+        setStorageItem(COMMUNITY_SUPPORT_FIRST_SEEN_AT_KEY, Date.now());
+        removeStorageItem(COMMUNITY_SUPPORT_SHOWN_KEY_LEGACY);
     }
 
     loadBannerHistory() {
