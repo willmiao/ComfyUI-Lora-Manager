@@ -198,6 +198,7 @@
         },
         "actions": {
             "checkUpdates": "Vérifier les mises à jour",
+            "notifications": "Notifications",
             "support": "Support"
         }
     },
@@ -1065,6 +1066,11 @@
     },
     "update": {
         "title": "Vérifier les mises à jour",
+        "notificationsTitle": "Notifications",
+        "tabs": {
+            "updates": "Mises à jour",
+            "messages": "Messages"
+        },
         "updateAvailable": "Mise à jour disponible",
         "noChangelogAvailable": "Aucun journal des modifications détaillé disponible. Consultez GitHub pour plus d'informations.",
         "currentVersion": "Version actuelle",
@@ -1096,6 +1102,13 @@
         "nightly": {
             "warning": "Attention : Les versions nightly peuvent contenir des fonctionnalités expérimentales et être instables.",
             "enable": "Activer les mises à jour nightly"
+        },
+        "banners": {
+            "recent": "Messages récents",
+            "empty": "Aucune bannière récente.",
+            "shown": "Affiché {time}",
+            "dismissed": "Ignoré {time}",
+            "active": "Actif"
         }
     },
     "support": {

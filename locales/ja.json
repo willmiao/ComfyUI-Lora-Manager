@@ -198,6 +198,7 @@
         },
         "actions": {
             "checkUpdates": "更新確認",
+            "notifications": "通知",
             "support": "サポート"
         }
     },
@@ -1065,6 +1066,11 @@
     },
     "update": {
         "title": "更新確認",
+        "notificationsTitle": "通知センター",
+        "tabs": {
+            "updates": "更新",
+            "messages": "メッセージ"
+        },
         "updateAvailable": "更新が利用可能",
         "noChangelogAvailable": "詳細な変更ログは利用できません。詳細はGitHubでご確認ください。",
         "currentVersion": "現在のバージョン",
@@ -1096,6 +1102,13 @@
         "nightly": {
             "warning": "警告：ナイトリービルドには実験的機能が含まれており、不安定な場合があります。",
             "enable": "ナイトリー更新を有効にする"
+        },
+        "banners": {
+            "recent": "最近の通知",
+            "empty": "最近のバナーはありません。",
+            "shown": "{time} に表示",
+            "dismissed": "{time} に非表示",
+            "active": "アクティブ"
         }
     },
     "support": {

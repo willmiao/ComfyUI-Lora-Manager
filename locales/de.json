@@ -198,6 +198,7 @@
         },
         "actions": {
             "checkUpdates": "Updates prüfen",
+            "notifications": "Benachrichtigungen",
             "support": "Unterstützung"
         }
     },
@@ -1066,6 +1067,11 @@
     },
     "update": {
         "title": "Nach Updates suchen",
+        "notificationsTitle": "Benachrichtigungszentrum",
+        "tabs": {
+            "updates": "Aktualisierungen",
+            "messages": "Mitteilungen"
+        },
         "updateAvailable": "Update verfügbar",
         "noChangelogAvailable": "Kein detailliertes Changelog verfügbar. Weitere Informationen auf GitHub.",
         "currentVersion": "Aktuelle Version",
@@ -1097,6 +1103,13 @@
         "nightly": {
             "warning": "Warnung: Nightly Builds können experimentelle Funktionen enthalten und könnten instabil sein.",
             "enable": "Nightly Updates aktivieren"
+        },
+        "banners": {
+            "recent": "Neueste Mitteilungen",
+            "empty": "Keine aktuellen Banner verfügbar.",
+            "shown": "{time} angezeigt",
+            "dismissed": "{time} geschlossen",
+            "active": "Aktiv"
         }
     },
     "support": {

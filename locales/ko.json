@@ -198,6 +198,7 @@
         },
         "actions": {
             "checkUpdates": "업데이트 확인",
+            "notifications": "알림",
             "support": "지원"
         }
     },
@@ -1065,6 +1066,11 @@
     },
     "update": {
         "title": "업데이트 확인",
+        "notificationsTitle": "알림 센터",
+        "tabs": {
+            "updates": "업데이트",
+            "messages": "메시지"
+        },
         "updateAvailable": "업데이트 사용 가능",
         "noChangelogAvailable": "상세한 변경 로그가 없습니다. 더 많은 정보는 GitHub를 확인하세요.",
         "currentVersion": "현재 버전",
@@ -1096,6 +1102,13 @@
         "nightly": {
             "warning": "경고: 나이틀리 빌드는 실험적 기능을 포함할 수 있으며 불안정할 수 있습니다.",
             "enable": "나이틀리 업데이트 활성화"
+        },
+        "banners": {
+            "recent": "최근 알림",
+            "empty": "최근 배너가 없습니다.",
+            "shown": "{time}에 표시",
+            "dismissed": "{time}에 닫힘",
+            "active": "활성"
         }
     },
     "support": {

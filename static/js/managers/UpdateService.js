@@ -28,6 +28,9 @@ export class UpdateService {
         this.nightlyMode = getStorageItem('nightly_updates', false);
         this.currentVersionInfo = null;
         this.versionMismatch = false;
+        this.activeNotificationTab = 'updates';
+        this.handleBannerHistoryUpdated = this.handleBannerHistoryUpdated.bind(this);
+        this.handleNotificationTabKeydown = this.handleNotificationTabKeydown.bind(this);
     }
 
     initialize() {
@@ -61,6 +64,10 @@ export class UpdateService {
             });
             this.updateNightlyWarning();
         }
+
+        this.setupNotificationCenter();
+        window.addEventListener('lm:banner-history-updated', this.handleBannerHistoryUpdated);
+        this.updateTabBadges();
         
         // Perform update check if needed
         this.checkForUpdates().then(() => {
@@ -79,6 +86,272 @@ export class UpdateService {
         const warning = document.getElementById('nightlyWarning');
         if (warning) {
             warning.style.display = this.nightlyMode ? 'flex' : 'none';
+        }
+    }
+
+    setupNotificationCenter() {
+        const modal = document.getElementById('updateModal');
+        if (!modal) {
+            this.notificationTabs = [];
+            this.notificationPanels = [];
+            return;
+        }
+
+        this.notificationTabs = Array.from(modal.querySelectorAll('[data-notification-tab]'));
+        this.notificationPanels = Array.from(modal.querySelectorAll('[data-notification-panel]'));
+
+        this.notificationTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.getAttribute('data-notification-tab');
+                this.switchNotificationTab(tabName, { markRead: true });
+            });
+            tab.addEventListener('keydown', this.handleNotificationTabKeydown);
+        });
+
+        this.renderRecentBanners();
+        this.switchNotificationTab(this.activeNotificationTab);
+    }
+
+    switchNotificationTab(tabName, { markRead = false } = {}) {
+        if (!tabName) return;
+
+        this.activeNotificationTab = tabName;
+
+        if (Array.isArray(this.notificationTabs)) {
+            this.notificationTabs.forEach(tab => {
+                const isActive = tab.getAttribute('data-notification-tab') === tabName;
+                tab.classList.toggle('active', isActive);
+                tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                tab.setAttribute('tabindex', isActive ? '0' : '-1');
+            });
+        }
+
+        if (Array.isArray(this.notificationPanels)) {
+            this.notificationPanels.forEach(panel => {
+                const isActive = panel.getAttribute('data-notification-panel') === tabName;
+                panel.classList.toggle('active', isActive);
+                panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+                panel.setAttribute('tabindex', isActive ? '0' : '-1');
+            });
+        }
+
+        if (tabName === 'banners') {
+            this.renderRecentBanners();
+            if (markRead && typeof bannerService.markBannerHistoryViewed === 'function') {
+                bannerService.markBannerHistoryViewed();
+            }
+        }
+
+        this.updateTabBadges();
+    }
+
+    handleNotificationTabKeydown(event) {
+        if (!Array.isArray(this.notificationTabs) || this.notificationTabs.length === 0) {
+            return;
+        }
+
+        const { key } = event;
+        const supportedKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+
+        if (!supportedKeys.includes(key)) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const currentIndex = this.notificationTabs.indexOf(event.currentTarget);
+        if (currentIndex === -1) {
+            return;
+        }
+
+        let targetIndex = currentIndex;
+
+        if (key === 'ArrowLeft' || key === 'ArrowUp') {
+            targetIndex = (currentIndex - 1 + this.notificationTabs.length) % this.notificationTabs.length;
+        } else if (key === 'ArrowRight' || key === 'ArrowDown') {
+            targetIndex = (currentIndex + 1) % this.notificationTabs.length;
+        } else if (key === 'Home') {
+            targetIndex = 0;
+        } else if (key === 'End') {
+            targetIndex = this.notificationTabs.length - 1;
+        }
+
+        const nextTab = this.notificationTabs[targetIndex];
+        if (!nextTab) {
+            return;
+        }
+
+        const tabName = nextTab.getAttribute('data-notification-tab');
+        nextTab.focus();
+        this.switchNotificationTab(tabName, { markRead: true });
+    }
+
+    isNotificationModalOpen() {
+        const updateModal = modalManager.getModal('updateModal');
+        return !!(updateModal && updateModal.isOpen);
+    }
+
+    handleBannerHistoryUpdated() {
+        this.updateBadgeVisibility();
+
+        if (this.isNotificationModalOpen() && this.activeNotificationTab === 'banners') {
+            this.renderRecentBanners();
+        }
+    }
+
+    updateTabBadges() {
+        const updatesBadge = document.getElementById('updatesTabBadge');
+        const bannerBadge = document.getElementById('bannerTabBadge');
+        const hasUpdate = this.updateNotificationsEnabled && this.updateAvailable;
+        const unreadBanners = typeof bannerService.getUnreadBannerCount === 'function'
+            ? bannerService.getUnreadBannerCount()
+            : 0;
+
+        if (updatesBadge) {
+            updatesBadge.classList.toggle('visible', hasUpdate);
+            updatesBadge.classList.toggle('is-dot', hasUpdate);
+            updatesBadge.textContent = '';
+        }
+
+        if (bannerBadge) {
+            if (unreadBanners > 0) {
+                bannerBadge.textContent = unreadBanners > 9 ? '9+' : unreadBanners.toString();
+            } else {
+                bannerBadge.textContent = '';
+            }
+            bannerBadge.classList.toggle('visible', unreadBanners > 0);
+            bannerBadge.classList.remove('is-dot');
+        }
+    }
+
+    renderRecentBanners() {
+        const list = document.getElementById('bannerHistoryList');
+        const emptyState = document.getElementById('bannerHistoryEmpty');
+
+        if (!list || !emptyState) return;
+
+        const banners = typeof bannerService.getRecentBanners === 'function'
+            ? bannerService.getRecentBanners()
+            : [];
+
+        list.innerHTML = '';
+
+        if (!banners.length) {
+            emptyState.style.display = 'block';
+            return;
+        }
+
+        emptyState.style.display = 'none';
+
+        banners.forEach(banner => {
+            const item = document.createElement('li');
+            item.className = 'banner-history-item';
+
+            const title = document.createElement('h4');
+            title.className = 'banner-history-title';
+            title.textContent = banner.title || translate('update.banners.recent', {}, 'Recent banners');
+            item.appendChild(title);
+
+            if (banner.content) {
+                const description = document.createElement('p');
+                description.className = 'banner-history-description';
+                description.textContent = banner.content;
+                item.appendChild(description);
+            }
+
+            const meta = document.createElement('div');
+            meta.className = 'banner-history-meta';
+
+            const status = document.createElement('span');
+            status.className = 'banner-history-status';
+            if (banner.dismissedAt) {
+                status.classList.add('dismissed');
+                const dismissedRelative = this.formatRelativeTime(banner.dismissedAt);
+                status.textContent = translate('update.banners.dismissed', {
+                    time: dismissedRelative
+                }, `Dismissed ${dismissedRelative}`);
+            } else {
+                status.classList.add('active');
+                status.textContent = translate('update.banners.active', {}, 'Active');
+            }
+            meta.appendChild(status);
+
+            const shownRelative = this.formatRelativeTime(banner.timestamp);
+            const timestamp = document.createElement('span');
+            timestamp.className = 'banner-history-time';
+            timestamp.textContent = translate('update.banners.shown', {
+                time: shownRelative
+            }, `Shown ${shownRelative}`);
+            meta.appendChild(timestamp);
+
+            item.appendChild(meta);
+
+            if (Array.isArray(banner.actions) && banner.actions.length > 0) {
+                const actionsContainer = document.createElement('div');
+                actionsContainer.className = 'banner-history-actions';
+
+                banner.actions.forEach(action => {
+                    if (!action?.url) {
+                        return;
+                    }
+
+                    const link = document.createElement('a');
+                    link.className = `banner-history-action banner-history-action-${action.type || 'secondary'}`;
+                    link.href = action.url;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.textContent = action.text || action.url;
+
+                    if (action.icon) {
+                        const icon = document.createElement('i');
+                        icon.className = action.icon;
+                        link.prepend(icon);
+                    }
+
+                    actionsContainer.appendChild(link);
+                });
+
+                if (actionsContainer.children.length > 0) {
+                    item.appendChild(actionsContainer);
+                }
+            }
+
+            list.appendChild(item);
+        });
+    }
+
+    formatRelativeTime(timestamp) {
+        if (!timestamp) {
+            return '';
+        }
+
+        const locale = window?.i18n?.getCurrentLocale?.() || navigator.language || 'en';
+
+        try {
+            const formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+            const divisions = [
+                { amount: 60, unit: 'second' },
+                { amount: 60, unit: 'minute' },
+                { amount: 24, unit: 'hour' },
+                { amount: 7, unit: 'day' },
+                { amount: 4.34524, unit: 'week' },
+                { amount: 12, unit: 'month' },
+                { amount: Infinity, unit: 'year' }
+            ];
+
+            let duration = (timestamp - Date.now()) / 1000;
+
+            for (const division of divisions) {
+                if (Math.abs(duration) < division.amount) {
+                    return formatter.format(Math.round(duration), division.unit);
+                }
+                duration /= division.amount;
+            }
+
+            return formatter.format(Math.round(duration), 'year');
+        } catch (error) {
+            console.warn('RelativeTimeFormat not available, falling back to locale string.', error);
+            return new Date(timestamp).toLocaleString(locale);
         }
     }
     
@@ -167,20 +440,29 @@ export class UpdateService {
     updateBadgeVisibility() {
         const updateToggle = document.querySelector('.update-toggle');
         const updateBadge = document.querySelector('.update-toggle .update-badge');
-        
+        const unreadBanners = typeof bannerService.getUnreadBannerCount === 'function'
+            ? bannerService.getUnreadBannerCount()
+            : 0;
+
         if (updateToggle) {
-            updateToggle.title = this.updateNotificationsEnabled && this.updateAvailable 
-                ? translate('update.updateAvailable') 
-                : translate('update.title');
+            let tooltipKey = 'header.actions.notifications';
+            if (this.updateNotificationsEnabled && this.updateAvailable) {
+                tooltipKey = 'update.updateAvailable';
+            } else if (unreadBanners > 0) {
+                tooltipKey = 'update.tabs.messages';
+            }
+            updateToggle.title = translate(tooltipKey);
         }
-        
+
         // Force updating badges visibility based on current state
-        const shouldShow = this.updateNotificationsEnabled && this.updateAvailable;
-        
+        const shouldShowUpdate = this.updateNotificationsEnabled && this.updateAvailable;
+        const shouldShow = shouldShowUpdate || unreadBanners > 0;
+
         if (updateBadge) {
             updateBadge.classList.toggle('visible', shouldShow);
-            console.log("Update badge visibility:", shouldShow ? "visible" : "hidden");
         }
+
+        this.updateTabBadges();
     }
     
     updateModalContent() {
@@ -190,9 +472,9 @@ export class UpdateService {
         // Update title based on update availability
         const headerTitle = modal.querySelector('.update-header h2');
         if (headerTitle) {
-            headerTitle.textContent = this.updateAvailable ? 
-                translate('update.updateAvailable') : 
-                translate('update.title');
+            headerTitle.textContent = this.updateAvailable ?
+                translate('update.updateAvailable') :
+                translate('update.notificationsTitle');
         }
         
         // Always update version information, even if updateInfo is null
@@ -418,23 +700,32 @@ export class UpdateService {
     
     toggleUpdateModal() {
         const updateModal = modalManager.getModal('updateModal');
-        
+
         // If modal is already open, just close it
         if (updateModal && updateModal.isOpen) {
             modalManager.closeModal('updateModal');
             return;
         }
-        
+
+        if (!Array.isArray(this.notificationTabs) || !this.notificationTabs.length) {
+            this.setupNotificationCenter();
+        }
+
         // Update the modal content immediately with current data
         this.updateModalContent();
-        
+        this.renderRecentBanners();
+
         // Show the modal with current data
         modalManager.showModal('updateModal');
-        
+        this.switchNotificationTab(this.activeNotificationTab, { markRead: true });
+
         // Then check for updates in the background
         this.manualCheckForUpdates().then(() => {
             // Update the modal content again after the check completes
             this.updateModalContent();
+            if (this.activeNotificationTab === 'banners' && this.isNotificationModalOpen()) {
+                this.renderRecentBanners();
+            }
         });
     }
     
