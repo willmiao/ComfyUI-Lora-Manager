@@ -205,8 +205,8 @@ class UpdateRoutes:
 
             zip_path = tmp_zip_path
 
-            # Skip both settings.json and civitai folder
-            UpdateRoutes._clean_plugin_folder(plugin_root, skip_files=['settings.json', 'civitai'])
+            # Skip both settings.json, civitai and model cache folder
+            UpdateRoutes._clean_plugin_folder(plugin_root, skip_files=['settings.json', 'civitai', 'model_cache'])
 
             # Extract ZIP to temp dir
             with tempfile.TemporaryDirectory() as tmp_dir:
