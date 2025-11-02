@@ -198,6 +198,7 @@
         },
         "actions": {
             "checkUpdates": "בדוק עדכונים",
+            "notifications": "התראות",
             "support": "תמיכה"
         }
     },
@@ -1065,6 +1066,11 @@
     },
     "update": {
         "title": "בדוק עדכונים",
+        "notificationsTitle": "מרכז התראות",
+        "tabs": {
+            "updates": "עדכונים",
+            "messages": "הודעות"
+        },
         "updateAvailable": "עדכון זמין",
         "noChangelogAvailable": "אין יומן שינויים מפורט זמין. בדוק ב-GitHub למידע נוסף.",
         "currentVersion": "גרסה נוכחית",
@@ -1096,6 +1102,13 @@
         "nightly": {
             "warning": "אזהרה: גרסאות ליליות עשויות להכיל תכונות ניסיוניות ועלולות להיות לא יציבות.",
             "enable": "הפעל עדכונים ליליים"
+        },
+        "banners": {
+            "recent": "הודעות אחרונות",
+            "empty": "אין כרגע באנרים אחרונים.",
+            "shown": "הוצג {time}",
+            "dismissed": "הוסר {time}",
+            "active": "פעיל"
         }
     },
     "support": {

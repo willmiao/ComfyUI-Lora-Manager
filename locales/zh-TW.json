@@ -198,6 +198,7 @@
         },
         "actions": {
             "checkUpdates": "檢查更新",
+            "notifications": "通知",
             "support": "支援"
         }
     },
@@ -1065,6 +1066,11 @@
     },
     "update": {
         "title": "檢查更新",
+        "notificationsTitle": "通知中心",
+        "tabs": {
+            "updates": "更新",
+            "messages": "訊息"
+        },
         "updateAvailable": "有新版本可用",
         "noChangelogAvailable": "無詳細更新日誌。請至 GitHub 查看更多資訊。",
         "currentVersion": "目前版本",
@@ -1096,6 +1102,13 @@
         "nightly": {
             "warning": "警告：Nightly 版本可能包含實驗性功能且可能不穩定。",
             "enable": "啟用 Nightly 更新"
+        },
+        "banners": {
+            "recent": "最新通知",
+            "empty": "目前沒有最近的橫幅通知。",
+            "shown": "{time} 顯示",
+            "dismissed": "{time} 關閉",
+            "active": "仍在顯示"
         }
     },
     "support": {

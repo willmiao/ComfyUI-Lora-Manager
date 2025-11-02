@@ -198,6 +198,7 @@
         },
         "actions": {
             "checkUpdates": "检查更新",
+            "notifications": "通知",
             "support": "支持"
         }
     },
@@ -1065,6 +1066,11 @@
     },
     "update": {
         "title": "检查更新",
+        "notificationsTitle": "通知中心",
+        "tabs": {
+            "updates": "更新",
+            "messages": "消息"
+        },
         "updateAvailable": "更新可用",
         "noChangelogAvailable": "没有详细的更新日志可用。请查看 GitHub 以获取更多信息。",
         "currentVersion": "当前版本",
@@ -1096,6 +1102,13 @@
         "nightly": {
             "warning": "警告：Nightly 版本可能包含实验性功能，可能不稳定。",
             "enable": "启用 Nightly 更新"
+        },
+        "banners": {
+            "recent": "最近的通知",
+            "empty": "暂无最近的横幅通知。",
+            "shown": "{time} 显示",
+            "dismissed": "{time} 关闭",
+            "active": "仍在显示"
         }
     },
     "support": {

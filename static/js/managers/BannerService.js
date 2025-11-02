@@ -9,6 +9,10 @@ const COMMUNITY_SUPPORT_BANNER_DELAY_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
 const COMMUNITY_SUPPORT_FIRST_SEEN_AT_KEY = 'community_support_banner_first_seen_at';
 const COMMUNITY_SUPPORT_SHOWN_KEY = 'community_support_banner_shown';
 const KO_FI_URL = 'https://ko-fi.com/pixelpawsai';
+const BANNER_HISTORY_KEY = 'banner_history';
+const BANNER_HISTORY_VIEWED_AT_KEY = 'banner_history_viewed_at';
+const BANNER_HISTORY_LIMIT = 20;
+const HISTORY_EXCLUDED_IDS = new Set(['version-mismatch']);
 
 /**
  * Banner Service for managing notification banners
@@ -20,6 +24,8 @@ class BannerService {
         this.initialized = false;
         this.communitySupportBannerTimer = null;
         this.communitySupportBannerRegistered = false;
+        this.recentHistory = this.loadBannerHistory();
+        this.bannerHistoryViewedAt = this.loadBannerHistoryViewedAt();
     }
 
     /**
@@ -120,6 +126,8 @@ class BannerService {
                 this.updateContainerVisibility();
             }, 300);
         }
+
+        this.markBannerDismissed(bannerId);
     }
 
     /**
@@ -178,7 +186,9 @@ class BannerService {
         `;
 
         this.container.appendChild(bannerElement);
-        
+
+        this.recordBannerAppearance(banner);
+
         // Call onRegister callback if provided
         if (typeof banner.onRegister === 'function') {
             banner.onRegister(bannerElement);
@@ -295,6 +305,95 @@ class BannerService {
         });
 
         this.updateContainerVisibility();
+    }
+
+    loadBannerHistory() {
+        const stored = getStorageItem(BANNER_HISTORY_KEY, []);
+        if (!Array.isArray(stored)) {
+            return [];
+        }
+
+        return stored.slice(0, BANNER_HISTORY_LIMIT).map(entry => ({
+            ...entry,
+            timestamp: typeof entry.timestamp === 'number' ? entry.timestamp : Date.now(),
+            dismissedAt: typeof entry.dismissedAt === 'number' ? entry.dismissedAt : null,
+            actions: Array.isArray(entry.actions) ? entry.actions : []
+        }));
+    }
+
+    loadBannerHistoryViewedAt() {
+        const stored = getStorageItem(BANNER_HISTORY_VIEWED_AT_KEY, 0);
+        return typeof stored === 'number' ? stored : 0;
+    }
+
+    saveBannerHistory() {
+        setStorageItem(BANNER_HISTORY_KEY, this.recentHistory.slice(0, BANNER_HISTORY_LIMIT));
+    }
+
+    notifyBannerHistoryUpdated() {
+        window.dispatchEvent(new CustomEvent('lm:banner-history-updated'));
+    }
+
+    recordBannerAppearance(banner) {
+        if (!banner?.id || HISTORY_EXCLUDED_IDS.has(banner.id)) {
+            return;
+        }
+
+        const sanitizedActions = Array.isArray(banner.actions)
+            ? banner.actions.map(action => ({
+                text: action.text,
+                icon: action.icon,
+                url: action.url || null,
+                type: action.type || 'secondary'
+            }))
+            : [];
+
+        const entry = {
+            id: banner.id,
+            title: banner.title,
+            content: banner.content,
+            actions: sanitizedActions,
+            timestamp: Date.now(),
+            dismissedAt: null
+        };
+
+        this.recentHistory.unshift(entry);
+        if (this.recentHistory.length > BANNER_HISTORY_LIMIT) {
+            this.recentHistory.length = BANNER_HISTORY_LIMIT;
+        }
+
+        this.saveBannerHistory();
+        this.notifyBannerHistoryUpdated();
+    }
+
+    markBannerDismissed(bannerId) {
+        if (!bannerId || HISTORY_EXCLUDED_IDS.has(bannerId)) {
+            return;
+        }
+
+        for (const entry of this.recentHistory) {
+            if (entry.id === bannerId && !entry.dismissedAt) {
+                entry.dismissedAt = Date.now();
+                break;
+            }
+        }
+
+        this.saveBannerHistory();
+        this.notifyBannerHistoryUpdated();
+    }
+
+    getRecentBanners() {
+        return this.recentHistory.slice();
+    }
+
+    getUnreadBannerCount() {
+        return this.recentHistory.filter(entry => entry.timestamp > this.bannerHistoryViewedAt).length;
+    }
+
+    markBannerHistoryViewed() {
+        this.bannerHistoryViewedAt = Date.now();
+        setStorageItem(BANNER_HISTORY_VIEWED_AT_KEY, this.bannerHistoryViewedAt);
+        this.notifyBannerHistoryUpdated();
     }
 }
 
