@@ -63,6 +63,15 @@ class NunchakuQwenImageDiTLoaderExtractor(NodeMetadataExtractor):
         model_name = inputs.get("model_name")
         _store_checkpoint_metadata(metadata, node_id, model_name)
 
+class GGUFLoaderExtractor(NodeMetadataExtractor):
+    @staticmethod
+    def extract(node_id, inputs, outputs, metadata):
+        if not inputs or "gguf_name" not in inputs:
+            return
+
+        model_name = inputs.get("gguf_name")
+        _store_checkpoint_metadata(metadata, node_id, model_name)
+
 class TSCCheckpointLoaderExtractor(NodeMetadataExtractor):
     @staticmethod
     def extract(node_id, inputs, outputs, metadata):
@@ -684,6 +693,8 @@ NODE_EXTRACTORS = {
     "TSC_EfficientLoader": TSCCheckpointLoaderExtractor,  # Efficient Nodes
     "NunchakuFluxDiTLoader": NunchakuFluxDiTLoaderExtractor,  # ComfyUI-Nunchaku
     "NunchakuQwenImageDiTLoader": NunchakuQwenImageDiTLoaderExtractor,  # ComfyUI-Nunchaku
+    "LoaderGGUF": GGUFLoaderExtractor,  # calcuis gguf
+    "LoaderGGUFAdvanced": GGUFLoaderExtractor,  # calcuis gguf
     "UNETLoader": UNETLoaderExtractor,          # Updated to use dedicated extractor
     "UnetLoaderGGUF": UNETLoaderExtractor,  # Updated to use dedicated extractor
     "LoraLoader": LoraLoaderExtractor,
