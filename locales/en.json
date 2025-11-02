@@ -238,7 +238,7 @@
             "displayDensity": "Display Density",
             "displayDensityOptions": {
                 "default": "Default",
-                "medium": "Medium", 
+                "medium": "Medium",
                 "compact": "Compact"
             },
             "displayDensityHelp": "Choose how many cards to display per row:",
@@ -248,6 +248,8 @@
                 "compact": "7 (1080p), 8 (2K), 10 (4K)"
             },
             "displayDensityWarning": "Warning: Higher densities may cause performance issues on systems with limited resources.",
+            "showFolderSidebar": "Show Folder Sidebar",
+            "showFolderSidebarHelp": "Toggle the folder navigation sidebar on model pages. When disabled, the sidebar and hover area stay hidden.",
             "cardInfoDisplay": "Card Info Display",
             "cardInfoDisplayOptions": {
                 "always": "Always Visible",

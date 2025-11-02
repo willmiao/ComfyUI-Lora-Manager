@@ -31,6 +31,9 @@ export class SidebarManager {
         this.dragHandlersInitialized = false;
         this.folderTreeElement = null;
         this.currentDropTarget = null;
+        this.lastPageControls = null;
+        this.isDisabledBySetting = false;
+        this.initializationPromise = null;
 
         // Bind methods
         this.handleTreeClick = this.handleTreeClick.bind(this);
@@ -55,7 +58,15 @@ export class SidebarManager {
         this.handleFolderDrop = this.handleFolderDrop.bind(this);
     }
 
+    setHostPageControls(pageControls) {
+        this.lastPageControls = pageControls;
+    }
+
     async initialize(pageControls) {
+        if (this.isDisabledBySetting) {
+            return;
+        }
+
         // Clean up previous initialization if exists
         if (this.isInitialized) {
             this.cleanup();
@@ -63,6 +74,7 @@ export class SidebarManager {
 
         this.pageControls = pageControls;
         this.pageType = pageControls.pageType;
+        this.lastPageControls = pageControls;
         this.apiClient = getModelApiClient();
         
         // Set initial sidebar state immediately (hidden by default)
@@ -73,6 +85,10 @@ export class SidebarManager {
         this.updateSidebarTitle();
         this.restoreSidebarState();
         await this.loadFolderTree();
+        if (this.isDisabledBySetting) {
+            this.cleanup();
+            return;
+        }
         this.restoreSelectedFolder();
         
         // Apply final state with animation after everything is loaded
@@ -132,8 +148,9 @@ export class SidebarManager {
         
         // Remove resize event listener
         window.removeEventListener('resize', this.updateContainerMargin);
-        
+
         console.log('SidebarManager cleaned up');
+        this.initializationPromise = null;
     }
 
     removeEventHandlers() {
@@ -471,9 +488,11 @@ export class SidebarManager {
     }
 
     setInitialSidebarState() {
+        if (this.isDisabledBySetting) return;
+
         const sidebar = document.getElementById('folderSidebar');
         const hoverArea = document.getElementById('sidebarHoverArea');
-        
+
         if (!sidebar || !hoverArea) return;
         
         // Get stored pin state
@@ -492,6 +511,8 @@ export class SidebarManager {
     }
 
     applyFinalSidebarState() {
+        if (this.isDisabledBySetting) return;
+
         // Use requestAnimationFrame to ensure DOM is ready
         requestAnimationFrame(() => {
             this.updateAutoHideState();
@@ -668,6 +689,8 @@ export class SidebarManager {
     }
 
     updateAutoHideState() {
+        if (this.isDisabledBySetting) return;
+
         const sidebar = document.getElementById('folderSidebar');
         const hoverArea = document.getElementById('sidebarHoverArea');
         
@@ -708,8 +731,8 @@ export class SidebarManager {
     updateContainerMargin() {
         const container = document.querySelector('.container');
         const sidebar = document.getElementById('folderSidebar');
-        
-        if (!container || !sidebar) return;
+
+        if (!container || !sidebar || this.isDisabledBySetting) return;
         
         // Reset margin to default
         container.style.marginLeft = '';
@@ -727,6 +750,65 @@ export class SidebarManager {
                 container.style.marginLeft = `${sidebarWidth + 10}px`;
             }
         }
+    }
+
+    updateDomVisibility(enabled) {
+        const sidebar = document.getElementById('folderSidebar');
+        const hoverArea = document.getElementById('sidebarHoverArea');
+
+        if (sidebar) {
+            sidebar.classList.toggle('hidden-by-setting', !enabled);
+            sidebar.setAttribute('aria-hidden', (!enabled).toString());
+        }
+
+        if (hoverArea) {
+            hoverArea.classList.toggle('hidden-by-setting', !enabled);
+            if (!enabled) {
+                hoverArea.classList.add('disabled');
+            }
+        }
+    }
+
+    async setSidebarEnabled(enabled) {
+        this.isDisabledBySetting = !enabled;
+        this.updateDomVisibility(enabled);
+
+        if (!enabled) {
+            this.isHovering = false;
+            this.isVisible = false;
+
+            if (this.isInitialized) {
+                this.cleanup();
+            } else {
+                const container = document.querySelector('.container');
+                if (container) {
+                    container.style.marginLeft = '';
+                }
+            }
+
+            return;
+        }
+
+        if (this.isInitialized) {
+            this.updateAutoHideState();
+            return;
+        }
+
+        if (!this.lastPageControls) {
+            return;
+        }
+
+        if (!this.initializationPromise) {
+            this.initializationPromise = this.initialize(this.lastPageControls)
+                .catch((error) => {
+                    console.error('Sidebar initialization failed:', error);
+                })
+                .finally(() => {
+                    this.initializationPromise = null;
+                });
+        }
+
+        await this.initializationPromise;
     }
 
     updatePinButton() {
@@ -1327,6 +1409,10 @@ export class SidebarManager {
     }
 
     async refresh() {
+        if (this.isDisabledBySetting || !this.isInitialized) {
+            return;
+        }
+
         await this.loadFolderTree();
         this.restoreSelectedFolder();
     }

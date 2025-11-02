@@ -193,6 +193,7 @@ class SettingsHandler:
         "autoplay_on_hover",
         "display_density",
         "card_info_display",
+        "show_folder_sidebar",
         "include_trigger_words",
         "show_only_sfw",
         "compact_mode",

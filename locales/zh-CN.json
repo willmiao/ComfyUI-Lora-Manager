@@ -248,6 +248,8 @@
                 "compact": "7（1080p），8（2K），10（4K）"
             },
             "displayDensityWarning": "警告：高密度可能导致资源有限的系统性能下降。",
+            "showFolderSidebar": "显示文件夹侧边栏",
+            "showFolderSidebarHelp": "在模型页面启用或禁用文件夹导航侧边栏。关闭后，侧边栏和悬停区域将保持隐藏。",
             "cardInfoDisplay": "卡片信息显示",
             "cardInfoDisplayOptions": {
                 "always": "始终可见",

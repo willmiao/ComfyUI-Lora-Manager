@@ -248,6 +248,8 @@
                 "compact": "7 (1080p), 8 (2K), 10 (4K)"
             },
             "displayDensityWarning": "Advertencia: Densidades más altas pueden causar problemas de rendimiento en sistemas con recursos limitados.",
+            "showFolderSidebar": "Mostrar barra lateral de carpetas",
+            "showFolderSidebarHelp": "Activa o desactiva la barra lateral de navegación de carpetas en las páginas de modelos. Cuando está desactivada, la barra lateral y el área de desplazamiento permanecen ocultas.",
             "cardInfoDisplay": "Visualización de información de tarjeta",
             "cardInfoDisplayOptions": {
                 "always": "Siempre visible",
