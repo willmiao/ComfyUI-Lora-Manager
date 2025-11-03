@@ -4,6 +4,7 @@ import {
     removeStorageItem
 } from '../utils/storageHelpers.js';
 import { translate } from '../utils/i18nHelpers.js';
+import { state } from '../state/index.js'
 
 const COMMUNITY_SUPPORT_BANNER_ID = 'community-support';
 const COMMUNITY_SUPPORT_BANNER_DELAY_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
@@ -13,6 +14,7 @@ const COMMUNITY_SUPPORT_VERSION_KEY = 'community_support_banner_state_version';
 const COMMUNITY_SUPPORT_STATE_VERSION = 'v2';
 const COMMUNITY_SUPPORT_SHOWN_KEY_LEGACY = 'community_support_banner_shown';
 const KO_FI_URL = 'https://ko-fi.com/pixelpawsai';
+const AFDIAN_URL = 'https://afdian.com/a/pixelpawsai';
 const BANNER_HISTORY_KEY = 'banner_history';
 const BANNER_HISTORY_VIEWED_AT_KEY = 'banner_history_viewed_at';
 const BANNER_HISTORY_LIMIT = 20;
@@ -271,6 +273,13 @@ class BannerService {
 
         this.communitySupportBannerRegistered = true;
 
+        // Determine support URL based on user language
+        const currentLanguage = state.global.settings.language;
+        const supportUrl = currentLanguage === 'zh-CN' ? AFDIAN_URL : KO_FI_URL;
+        const tutorialUrl = currentLanguage === 'zh-CN' 
+            ? 'https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/Lora-Manager-%E6%B5%8F%E8%A7%88%E5%99%A8%E6%8F%92%E4%BB%B6' 
+            : 'https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/LoRA-Manager-Civitai-Extension-(Chrome-Extension)';
+
         this.registerBanner(COMMUNITY_SUPPORT_BANNER_ID, {
             id: COMMUNITY_SUPPORT_BANNER_ID,
             title: translate(
@@ -291,7 +300,7 @@ class BannerService {
                         'Support on Ko-fi'
                     ),
                     icon: 'fas fa-heart',
-                    url: KO_FI_URL,
+                    url: supportUrl,
                     type: 'primary'
                 },
                 {
@@ -301,7 +310,7 @@ class BannerService {
                         'LM Civitai Extension Tutorial'
                     ),
                     icon: 'fas fa-book',
-                    url: 'https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/LoRA-Manager-Civitai-Extension-(Chrome-Extension)',
+                    url: tutorialUrl,
                     type: 'tertiary'
                 }
             ],
