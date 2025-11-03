@@ -348,6 +348,13 @@ class BannerService {
             return;
         }
 
+        // Check if banner with this ID already exists in recent history
+        // Only record if it's not already in history (prevents duplicates on page refresh)
+        const existingEntry = this.recentHistory.find(entry => entry.id === banner.id);
+        if (existingEntry) {
+            return; // Banner already exists in history, don't add again
+        }
+
         const sanitizedActions = Array.isArray(banner.actions)
             ? banner.actions.map(action => ({
                 text: action.text,

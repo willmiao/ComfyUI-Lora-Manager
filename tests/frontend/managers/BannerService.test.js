@@ -35,6 +35,7 @@ describe('BannerService', () => {
         // Reset banner service state
         bannerService.banners.clear();
         bannerService.initialized = false;
+        bannerService.recentHistory = []; // Clear history for each test
         
         // Clear DOM
         document.body.innerHTML = '<div id="banner-container"></div>';
@@ -214,6 +215,83 @@ describe('BannerService', () => {
             
             // Should not have been called again since it's already dismissed
             expect(storageHelpers.setStorageItem).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('Banner History', () => {
+        const testBanner = {
+            id: 'test-banner',
+            title: 'Test Banner',
+            content: 'This is a test banner',
+            actions: [
+                {
+                    text: 'Action 1',
+                    icon: 'fas fa-check',
+                    url: 'https://example.com',
+                    type: 'primary'
+                }
+            ]
+        };
+
+        it('should add banner to history when first recorded', () => {
+            // Mock storage to return empty array
+            storageHelpers.getStorageItem.mockImplementation((key, defaultValue) => {
+                if (key === 'banner_history') {
+                    return [];
+                }
+                return defaultValue;
+            });
+
+            // Record the banner appearance
+            bannerService.recordBannerAppearance(testBanner);
+
+            // Should have added the banner to history
+            expect(bannerService.recentHistory).toHaveLength(1);
+            expect(bannerService.recentHistory[0].id).toBe('test-banner');
+            expect(bannerService.recentHistory[0].title).toBe('Test Banner');
+        });
+
+        it('should not add duplicate banner to history when recorded multiple times', () => {
+            // Mock storage to return empty array
+            storageHelpers.getStorageItem.mockImplementation((key, defaultValue) => {
+                if (key === 'banner_history') {
+                    return [];
+                }
+                return defaultValue;
+            });
+
+            // Record the same banner twice
+            bannerService.recordBannerAppearance(testBanner);
+            bannerService.recordBannerAppearance(testBanner);
+
+            // Should only have one entry in history
+            expect(bannerService.recentHistory).toHaveLength(1);
+            expect(bannerService.recentHistory[0].id).toBe('test-banner');
+        });
+
+        it('should add different banners to history', () => {
+            // Mock storage to return empty array
+            storageHelpers.getStorageItem.mockImplementation((key, defaultValue) => {
+                if (key === 'banner_history') {
+                    return [];
+                }
+                return defaultValue;
+            });
+
+            const anotherBanner = {
+                id: 'another-banner',
+                title: 'Another Banner',
+                content: 'This is another test banner'
+            };
+
+            // Record two different banners
+            bannerService.recordBannerAppearance(testBanner);
+            bannerService.recordBannerAppearance(anotherBanner);
+
+            // Should have two entries in history
+            expect(bannerService.recentHistory).toHaveLength(2);
+            expect(bannerService.recentHistory[0].id).toBe('another-banner');
+            expect(bannerService.recentHistory[1].id).toBe('test-banner');
         });
     });
 });
