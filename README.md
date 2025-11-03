@@ -34,6 +34,14 @@ Enhance your Civitai browsing experience with our companion browser extension! S
 
 ## Release Notes
 
+### v0.9.9
+* **Check for Updates Feature** - Users can now check for updates for all models or selected models in bulk mode. Models with available updates will display an "update available" badge on their model card, and users can filter to show only models with updates.
+* **Model Versions Management** - Added a new Versions tab in the model modal that centralizes all versions of a model, providing download, delete, and ignore update functions.
+* **Send Checkpoint to ComfyUI** - Users can now click the send button on a checkpoint card to send the checkpoint directly to the current workflow's checkpoint or diffusion model loader node in ComfyUI.
+* **Customizable Model Card Display** - Added a new setting that allows users to choose whether to display the model name or filename on model cards.
+* **New Path Template Placeholders** - Added new path template placeholders: `{model_name}` and `{version_name}` for more flexible organization.
+* **ComfyUI Auto Path Correction Setting** - Added a new setting within ComfyUI to enable or disable the auto path correction feature.
+
 ### v0.9.8
 * **Full CivArchive API Support** - Added complete support for the CivArchive API as a fallback metadata source beyond Civitai API. Models deleted from Civitai can now still retrieve metadata through the CivArchive API.
 * **Download Models from CivArchive** - Added support for downloading models directly from CivArchive, similar to downloading from Civitai. Simply click the Download button and paste the model URL to download the corresponding model.
