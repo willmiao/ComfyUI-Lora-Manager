@@ -730,6 +730,12 @@
             "countMessage": "模型將被永久刪除。",
             "action": "全部刪除"
         },
+        "checkUpdates": {
+            "title": "要檢查所有 {type} 的更新嗎？",
+            "message": "這會為資料庫中的每個 {type} 檢查更新，大型收藏可能會花上一些時間。",
+            "tip": "想分批處理？切換到批次模式，選擇需要的模型，然後使用「檢查所選更新」。",
+            "action": "全部檢查"
+        },
         "bulkAddTags": {
             "title": "新增標籤到多個模型",
             "description": "新增標籤到",

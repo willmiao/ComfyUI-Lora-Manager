@@ -730,6 +730,12 @@
             "countMessage": "modèles seront définitivement supprimés.",
             "action": "Tout supprimer"
         },
+        "checkUpdates": {
+            "title": "Vérifier les mises à jour pour tous les {typePlural} ?",
+            "message": "Cette action vérifie les mises à jour pour tous les {typePlural} de votre bibliothèque. Les grandes collections peuvent prendre un peu plus de temps.",
+            "tip": "Besoin de procéder par étapes ? Passez en mode lot, sélectionnez les modèles souhaités puis utilisez \"Vérifier les mises à jour pour la sélection\".",
+            "action": "Tout vérifier"
+        },
         "bulkAddTags": {
             "title": "Ajouter des tags à plusieurs modèles",
             "description": "Ajouter des tags à",

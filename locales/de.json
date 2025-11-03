@@ -731,6 +731,12 @@
             "countMessage": "Modelle werden dauerhaft gelöscht.",
             "action": "Alle löschen"
         },
+        "checkUpdates": {
+            "title": "Alle {typePlural} auf Updates prüfen?",
+            "message": "Damit werden alle {typePlural} in deiner Bibliothek auf Updates geprüft. Bei großen Sammlungen kann das etwas länger dauern.",
+            "tip": "Du möchtest in Etappen prüfen? Wechsle in den Sammelmodus, wähle die benötigten Modelle aus und nutze anschließend \"Auswahl auf Updates prüfen\".",
+            "action": "Alles prüfen"
+        },
         "bulkAddTags": {
             "title": "Tags zu mehreren Modellen hinzufügen",
             "description": "Tags hinzufügen zu",
