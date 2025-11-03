@@ -178,6 +178,9 @@ app.registerExtension({
             const mergedLoras = mergeLoras(value, currentLoras);
 
             this.lorasWidget.value = mergedLoras;
+
+            const allActiveLoraNames = collectActiveLorasFromChain(this);
+            updateConnectedTriggerWords(this, allActiveLoraNames);
           } finally {
             isUpdating = false;
           }
