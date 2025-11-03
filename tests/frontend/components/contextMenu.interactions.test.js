@@ -75,6 +75,26 @@ vi.mock('../../../static/js/utils/storageHelpers.js', () => ({
   setSessionItem: vi.fn(),
   removeSessionItem: vi.fn(),
   getSessionItem: vi.fn(),
+  getStorageItem: vi.fn((key, defaultValue = null) => {
+    const value = localStorage.getItem(`lora_manager_${key}`);
+    if (value === null) {
+      return defaultValue;
+    }
+
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return value;
+    }
+  }),
+  setStorageItem: vi.fn((key, value) => {
+    const prefixedKey = `lora_manager_${key}`;
+    if (typeof value === 'object' && value !== null) {
+      localStorage.setItem(prefixedKey, JSON.stringify(value));
+    } else {
+      localStorage.setItem(prefixedKey, value);
+    }
+  }),
 }));
 
 vi.mock('../../../static/js/api/modelApiFactory.js', () => ({
@@ -350,10 +370,14 @@ describe('Interaction-level regression coverage', () => {
     expect(cleanupItem.classList.contains('disabled')).toBe(false);
     expect(menu._cleanupInProgress).toBe(false);
 
+    localStorage.setItem('lora_manager_ack_check_updates_for_all_models', 'true');
+
     menu.showMenu(360, 420);
     const checkUpdatesItem = document.querySelector('[data-action="check-model-updates"]');
     checkUpdatesItem.dispatchEvent(new Event('click', { bubbles: true }));
     expect(checkUpdatesItem.classList.contains('disabled')).toBe(true);
+
+    await flushAsyncTasks();
 
     expect(global.fetch).toHaveBeenLastCalledWith('/api/lm/loras/updates/refresh', {
       method: 'POST',

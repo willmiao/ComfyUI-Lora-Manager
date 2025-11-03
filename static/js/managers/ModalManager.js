@@ -195,6 +195,18 @@ export class ModalManager {
             });
         }
 
+        // Add checkUpdatesConfirmModal registration
+        const checkUpdatesConfirmModal = document.getElementById('checkUpdatesConfirmModal');
+        if (checkUpdatesConfirmModal) {
+            this.registerModal('checkUpdatesConfirmModal', {
+                element: checkUpdatesConfirmModal,
+                onClose: () => {
+                    this.getModal('checkUpdatesConfirmModal').element.classList.remove('show');
+                    document.body.classList.remove('modal-open');
+                }
+            });
+        }
+
         // Add helpModal registration
         const helpModal = document.getElementById('helpModal');
         if (helpModal) {
@@ -339,7 +351,8 @@ export class ModalManager {
           id === "duplicateDeleteModal" ||
           id === "modelDuplicateDeleteModal" ||
           id === "clearCacheModal" ||
-          id === "bulkDeleteModal"
+          id === "bulkDeleteModal" ||
+          id === "checkUpdatesConfirmModal"
         ) {
           modal.element.classList.add("show");
         } else {

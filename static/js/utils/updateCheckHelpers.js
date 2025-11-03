@@ -3,6 +3,10 @@ import { translate } from './i18nHelpers.js';
 import { showToast } from './uiHelpers.js';
 import { getCompleteApiConfig, getCurrentModelType } from '../api/apiConfig.js';
 import { resetAndReload } from '../api/modelApiFactory.js';
+import { getStorageItem, setStorageItem } from './storageHelpers.js';
+import { modalManager } from '../managers/ModalManager.js';
+
+const CHECK_UPDATES_CONFIRMATION_KEY = 'ack_check_updates_for_all_models';
 
 /**
  * Perform a model update check using the shared backend endpoint.
@@ -20,6 +24,12 @@ export async function performModelUpdateCheck({ onStart, onComplete } = {}) {
         console.warn('Refresh updates endpoint not configured for model type:', modelType);
         onComplete?.({ status: 'unsupported', displayName, records: [], error: null });
         return { status: 'unsupported', displayName, records: [], error: null };
+    }
+
+    const proceed = await ensureCheckUpdatesConfirmation(displayName);
+    if (!proceed) {
+        onComplete?.({ status: 'cancelled', displayName, records: [], error: null });
+        return { status: 'cancelled', displayName, records: [], error: null };
     }
 
     const loadingMessage = translate(
@@ -82,4 +92,102 @@ export async function performModelUpdateCheck({ onStart, onComplete } = {}) {
     }
 
     return { status, displayName, records, error };
+}
+
+function getTypePlural(displayName) {
+    if (!displayName) {
+        return 'models';
+    }
+
+    const lower = displayName.toLowerCase();
+    if (lower.endsWith('s')) {
+        return displayName;
+    }
+
+    return `${displayName}s`;
+}
+
+async function ensureCheckUpdatesConfirmation(displayName) {
+    const hasConfirmed = getStorageItem(CHECK_UPDATES_CONFIRMATION_KEY, false);
+    if (hasConfirmed) {
+        return true;
+    }
+
+    const modalElement = document.getElementById('checkUpdatesConfirmModal');
+    if (!modalElement) {
+        return true;
+    }
+
+    const typePlural = getTypePlural(displayName);
+
+    const titleElement = modalElement.querySelector('[data-role="title"]');
+    if (titleElement) {
+        titleElement.textContent = translate(
+            'modals.checkUpdates.title',
+            { type: displayName, typePlural },
+            `Check updates for all ${typePlural}?`
+        );
+    }
+
+    const messageElement = modalElement.querySelector('[data-role="message"]');
+    if (messageElement) {
+        messageElement.textContent = translate(
+            'modals.checkUpdates.message',
+            { type: displayName, typePlural },
+            `This checks every ${typePlural} in your library for updates. Large collections may take a little longer.`
+        );
+    }
+
+    const tipElement = modalElement.querySelector('[data-role="tip"]');
+    if (tipElement) {
+        tipElement.textContent = translate(
+            'modals.checkUpdates.tip',
+            { type: displayName, typePlural },
+            'To work in smaller batches, switch to bulk mode, pick the ones you need, then use "Check Updates for Selected".'
+        );
+    }
+
+    const confirmButton = modalElement.querySelector('[data-action="confirm-check-updates"]');
+    const cancelButton = modalElement.querySelector('[data-action="cancel-check-updates"]');
+
+    if (!confirmButton || !cancelButton) {
+        return true;
+    }
+
+    return new Promise((resolve) => {
+        let resolved = false;
+
+        const cleanup = () => {
+            confirmButton.removeEventListener('click', handleConfirm);
+            cancelButton.removeEventListener('click', handleCancel);
+        };
+
+        const finalize = (proceed) => {
+            if (resolved) {
+                return;
+            }
+
+            resolved = true;
+            cleanup();
+            resolve(proceed);
+        };
+
+        const handleConfirm = (event) => {
+            event.preventDefault();
+            setStorageItem(CHECK_UPDATES_CONFIRMATION_KEY, true);
+            finalize(true);
+            modalManager.closeModal('checkUpdatesConfirmModal');
+        };
+
+        const handleCancel = (event) => {
+            event.preventDefault();
+            finalize(false);
+            modalManager.closeModal('checkUpdatesConfirmModal');
+        };
+
+        confirmButton.addEventListener('click', handleConfirm);
+        cancelButton.addEventListener('click', handleCancel);
+
+        modalManager.showModal('checkUpdatesConfirmModal', null, () => finalize(false));
+    });
 }

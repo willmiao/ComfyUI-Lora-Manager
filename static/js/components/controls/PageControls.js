@@ -235,13 +235,22 @@ export class PageControls {
         this._updateCheckInProgress = true;
         setLoadingState(true);
 
+        const handleComplete = () => {
+            this._updateCheckInProgress = false;
+            setLoadingState(false);
+        };
+
         try {
-            await performModelUpdateCheck();
+            await performModelUpdateCheck({
+                onComplete: handleComplete,
+            });
         } catch (error) {
             console.error('Failed to check model updates:', error);
         } finally {
-            this._updateCheckInProgress = false;
-            setLoadingState(false);
+            if (this._updateCheckInProgress) {
+                this._updateCheckInProgress = false;
+                setLoadingState(false);
+            }
             dropdownGroup?.classList.remove('active');
         }
     }

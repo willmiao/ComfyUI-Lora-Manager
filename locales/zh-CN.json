@@ -730,6 +730,12 @@
             "countMessage": "模型将被永久删除。",
             "action": "全部删除"
         },
+        "checkUpdates": {
+            "title": "检查所有 {type} 的更新？",
+            "message": "这会为库中的每个 {type} 检查更新，大型集合可能需要一些时间。",
+            "tip": "想分批进行？切换到批量模式，选中需要的模型，然后使用“检查所选更新”。",
+            "action": "检查全部"
+        },
         "bulkAddTags": {
             "title": "批量添加标签",
             "description": "为多个模型添加标签",

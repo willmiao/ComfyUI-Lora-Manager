@@ -730,6 +730,12 @@
             "countMessage": "modelos serán eliminados permanentemente.",
             "action": "Eliminar todo"
         },
+        "checkUpdates": {
+            "title": "¿Comprobar actualizaciones para todos los {typePlural}?",
+            "message": "Esto comprobará las actualizaciones de todos los {typePlural} de tu biblioteca. En colecciones grandes puede tardar un poco más.",
+            "tip": "¿Quieres hacerlo por partes? Activa el modo por lotes, selecciona los modelos que necesites y usa \"Comprobar actualizaciones para la selección\".",
+            "action": "Comprobar todo"
+        },
         "bulkAddTags": {
             "title": "Añadir etiquetas a múltiples modelos",
             "description": "Añadir etiquetas a",
