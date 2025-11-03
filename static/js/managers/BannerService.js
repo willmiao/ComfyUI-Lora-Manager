@@ -12,7 +12,6 @@ const COMMUNITY_SUPPORT_FIRST_SEEN_AT_KEY = 'community_support_banner_first_seen
 const COMMUNITY_SUPPORT_VERSION_KEY = 'community_support_banner_state_version';
 // Increment this version to reset the banner schedule after significant updates
 const COMMUNITY_SUPPORT_STATE_VERSION = 'v2';
-const COMMUNITY_SUPPORT_SHOWN_KEY_LEGACY = 'community_support_banner_shown';
 const KO_FI_URL = 'https://ko-fi.com/pixelpawsai';
 const AFDIAN_URL = 'https://afdian.com/a/pixelpawsai';
 const BANNER_HISTORY_KEY = 'banner_history';
@@ -28,8 +27,6 @@ class BannerService {
         this.banners = new Map();
         this.container = null;
         this.initialized = false;
-        this.communitySupportBannerTimer = null;
-        this.communitySupportBannerRegistered = false;
         this.recentHistory = this.loadBannerHistory();
         this.bannerHistoryViewedAt = this.loadBannerHistoryViewedAt();
 
@@ -114,7 +111,9 @@ class BannerService {
      */
     dismissBanner(bannerId) {
         const dismissedBanners = getStorageItem('dismissed_banners', []);
-        if (!dismissedBanners.includes(bannerId)) {
+        let bannerAlreadyDismissed = dismissedBanners.includes(bannerId);
+        
+        if (!bannerAlreadyDismissed) {
             dismissedBanners.push(bannerId);
             setStorageItem('dismissed_banners', dismissedBanners);
         }
@@ -135,7 +134,9 @@ class BannerService {
             }, 300);
         }
 
-        this.markBannerDismissed(bannerId);
+        if (!bannerAlreadyDismissed) {
+            this.markBannerDismissed(bannerId);
+        }
     }
 
     /**
@@ -232,11 +233,6 @@ class BannerService {
     }
 
     prepareCommunitySupportBanner() {
-        if (this.communitySupportBannerTimer) {
-            clearTimeout(this.communitySupportBannerTimer);
-            this.communitySupportBannerTimer = null;
-        }
-
         if (this.isBannerDismissed(COMMUNITY_SUPPORT_BANNER_ID)) {
             return;
         }
@@ -250,28 +246,16 @@ class BannerService {
         }
 
         const availableAt = firstSeenAt + COMMUNITY_SUPPORT_BANNER_DELAY_MS;
-        const delay = Math.max(availableAt - now, 0);
-
-        if (delay === 0) {
+        
+        if (now >= availableAt) {
             this.registerCommunitySupportBanner();
-        } else {
-            this.communitySupportBannerTimer = setTimeout(() => {
-                this.registerCommunitySupportBanner();
-            }, delay);
         }
     }
 
     registerCommunitySupportBanner() {
-        if (this.communitySupportBannerRegistered || this.isBannerDismissed(COMMUNITY_SUPPORT_BANNER_ID)) {
+        if (this.isBannerDismissed(COMMUNITY_SUPPORT_BANNER_ID)) {
             return;
         }
-
-        if (this.communitySupportBannerTimer) {
-            clearTimeout(this.communitySupportBannerTimer);
-            this.communitySupportBannerTimer = null;
-        }
-
-        this.communitySupportBannerRegistered = true;
 
         // Determine support URL based on user language
         const currentLanguage = state.global.settings.language;
@@ -330,7 +314,6 @@ class BannerService {
 
         setStorageItem(COMMUNITY_SUPPORT_VERSION_KEY, COMMUNITY_SUPPORT_STATE_VERSION);
         setStorageItem(COMMUNITY_SUPPORT_FIRST_SEEN_AT_KEY, Date.now());
-        removeStorageItem(COMMUNITY_SUPPORT_SHOWN_KEY_LEGACY);
     }
 
     loadBannerHistory() {
