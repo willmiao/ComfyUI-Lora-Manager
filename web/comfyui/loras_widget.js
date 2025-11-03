@@ -36,6 +36,28 @@ export function addLorasWidget(node, name, opts, callback) {
   // Selection state - only one LoRA can be selected at a time
   let selectedLora = null;
   let pendingFocusTarget = null;
+
+  const PREVIEW_SUPPRESSION_AFTER_DRAG_MS = 500;
+  let strengthDragActive = false;
+  let lastStrengthDragEndAt = 0;
+
+  const shouldSuppressPreview = () => {
+    if (strengthDragActive) {
+      return true;
+    }
+    return Date.now() - lastStrengthDragEndAt < PREVIEW_SUPPRESSION_AFTER_DRAG_MS;
+  };
+
+  const markStrengthDragStart = () => {
+    strengthDragActive = true;
+    previewTooltip.hide();
+  };
+
+  const markStrengthDragEnd = () => {
+    strengthDragActive = false;
+    lastStrengthDragEndAt = Date.now();
+    previewTooltip.hide();
+  };
   
   // Function to select a LoRA
   const selectLora = (loraName) => {
@@ -259,23 +281,47 @@ export function addLorasWidget(node, name, opts, callback) {
       nameEl.className = "lm-lora-name";
 
       // Move preview tooltip events to nameEl instead of loraEl
-      let previewTimer; // Timer for delayed preview
-      nameEl.addEventListener('mouseenter', async (e) => {
+      let previewTimer = null; // Timer for delayed preview
+
+      const clearPreviewTimer = () => {
+        if (previewTimer) {
+          clearTimeout(previewTimer);
+          previewTimer = null;
+        }
+      };
+
+      nameEl.addEventListener('mouseenter', (e) => {
         e.stopPropagation();
-        const rect = nameEl.getBoundingClientRect();
+        if (shouldSuppressPreview()) {
+          return;
+        }
         previewTimer = setTimeout(async () => {
+          previewTimer = null;
+          if (shouldSuppressPreview()) {
+            return;
+          }
+          const rect = nameEl.getBoundingClientRect();
           await previewTooltip.show(name, rect.right, rect.top);
         }, 400); // 400ms delay
       });
 
       nameEl.addEventListener('mouseleave', (e) => {
         e.stopPropagation();
-        clearTimeout(previewTimer); // Cancel if not triggered
+        clearPreviewTimer(); // Cancel if not triggered
         previewTooltip.hide();
       });
       
       // Initialize drag functionality for strength adjustment
-      initDrag(loraEl, name, widget, false, previewTooltip, renderLoras);
+      initDrag(loraEl, name, widget, false, previewTooltip, renderLoras, {
+        onDragStart: () => {
+          clearPreviewTimer();
+          markStrengthDragStart();
+        },
+        onDragEnd: () => {
+          clearPreviewTimer();
+          markStrengthDragEnd();
+        }
+      });
 
       // Add context menu event
       loraEl.addEventListener('contextmenu', (e) => {
@@ -511,7 +557,10 @@ export function addLorasWidget(node, name, opts, callback) {
         clipEl.appendChild(clipStrengthControl);
 
         // Add drag functionality to clip entry
-        initDrag(clipEl, name, widget, true, previewTooltip, renderLoras);
+        initDrag(clipEl, name, widget, true, previewTooltip, renderLoras, {
+          onDragStart: markStrengthDragStart,
+          onDragEnd: markStrengthDragEnd
+        });
 
         container.appendChild(clipEl);
       }

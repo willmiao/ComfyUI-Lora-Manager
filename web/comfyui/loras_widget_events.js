@@ -97,10 +97,19 @@ export function handleAllStrengthsDrag(initialStrengths, initialX, event, widget
 }
 
 // Function to initialize drag operation
-export function initDrag(dragEl, name, widget, isClipStrength = false, previewTooltip, renderFunction) {
+export function initDrag(
+  dragEl,
+  name,
+  widget,
+  isClipStrength = false,
+  previewTooltip,
+  renderFunction,
+  dragCallbacks = {}
+) {
   let isDragging = false;
   let initialX = 0;
   let initialStrength = 0;
+  const { onDragStart, onDragEnd } = dragCallbacks;
   
   // Create a drag handler
   dragEl.addEventListener('mousedown', (e) => {
@@ -122,10 +131,14 @@ export function initDrag(dragEl, name, widget, isClipStrength = false, previewTo
     initialX = e.clientX;
     initialStrength = isClipStrength ? loraData.clipStrength : loraData.strength;
     isDragging = true;
-    
+
     // Add class to body to enforce cursor style globally
     document.body.classList.add('lm-lora-strength-dragging');
-    
+
+    if (typeof onDragStart === 'function') {
+      onDragStart();
+    }
+
     // Prevent text selection during drag
     e.preventDefault();
   });
@@ -154,6 +167,10 @@ export function initDrag(dragEl, name, widget, isClipStrength = false, previewTo
       isDragging = false;
       // Remove the class to restore normal cursor behavior
       document.body.classList.remove('lm-lora-strength-dragging');
+
+      if (typeof onDragEnd === 'function') {
+        onDragEnd();
+      }
     }
   });
 }

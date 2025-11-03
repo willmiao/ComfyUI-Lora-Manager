@@ -82,6 +82,8 @@ describe('LoRA widget drag interactions', () => {
     const module = await import(EVENTS_MODULE);
     const renderSpy = vi.fn();
     const previewSpy = { hide: vi.fn() };
+    const onDragStart = vi.fn();
+    const onDragEnd = vi.fn();
 
     const dragEl = document.createElement('div');
     dragEl.className = 'lm-lora-entry';
@@ -92,10 +94,14 @@ describe('LoRA widget drag interactions', () => {
       callback: vi.fn(),
     };
 
-    module.initDrag(dragEl, 'Test', widget, false, previewSpy, renderSpy);
+    module.initDrag(dragEl, 'Test', widget, false, previewSpy, renderSpy, {
+      onDragStart,
+      onDragEnd,
+    });
 
     dragEl.dispatchEvent(new MouseEvent('mousedown', { clientX: 50, bubbles: true }));
     expect(document.body.classList.contains('lm-lora-strength-dragging')).toBe(true);
+    expect(onDragStart).toHaveBeenCalledTimes(1);
 
     document.dispatchEvent(new MouseEvent('mousemove', { clientX: 70, bubbles: true }));
     expect(renderSpy).toHaveBeenCalledWith(widget.value, widget);
@@ -104,6 +110,7 @@ describe('LoRA widget drag interactions', () => {
 
     document.dispatchEvent(new MouseEvent('mouseup'));
     expect(document.body.classList.contains('lm-lora-strength-dragging')).toBe(false);
+    expect(onDragEnd).toHaveBeenCalledTimes(1);
   });
 
   it('deletes the selected LoRA when backspace is pressed outside of strength inputs', async () => {
