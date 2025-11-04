@@ -240,7 +240,7 @@ def test_download_coordinator_emits_progress() -> None:
 
 def test_tag_update_service_adds_unique_tags(tmp_path: Path) -> None:
     metadata_path = tmp_path / "model.metadata.json"
-    metadata_path.write_text(json.dumps({"tags": ["Existing"]}))
+    metadata_path.write_text(json.dumps({"tags": ["existing"]}))
 
     async def loader(path: str) -> Dict[str, Any]:
         return json.loads(Path(path).read_text())
@@ -258,12 +258,12 @@ def test_tag_update_service_adds_unique_tags(tmp_path: Path) -> None:
     tags = asyncio.run(
         service.add_tags(
             file_path=str(tmp_path / "model.safetensors"),
-            new_tags=["New", "existing"],
+            new_tags=["new", "existing"],
             metadata_loader=loader,
             update_cache=update_cache,
         )
     )
 
-    assert tags == ["Existing", "New"]
+    assert tags == ["existing", "new"]
     assert manager.saved
     assert cache_updates

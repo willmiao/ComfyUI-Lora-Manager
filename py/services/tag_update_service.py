@@ -33,7 +33,8 @@ class TagUpdateService:
         tags_added: List[str] = []
         for tag in new_tags:
             if isinstance(tag, str) and tag.strip():
-                normalized = tag.strip()
+                # Convert all tags to lowercase to avoid case sensitivity issues on Windows
+                normalized = tag.strip().lower()
                 if normalized.lower() not in existing_lower:
                     existing_tags.append(normalized)
                     existing_lower.append(normalized.lower())

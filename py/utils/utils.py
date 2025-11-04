@@ -205,7 +205,9 @@ def calculate_relative_path_for_model(model_data: Dict, model_type: str = 'lora'
     base_model_mappings = settings_manager.get('base_model_path_mappings', {})
     mapped_base_model = base_model_mappings.get(base_model, base_model)
 
-    first_tag = settings_manager.resolve_priority_tag_for_model(model_tags, model_type)
+    # Convert all tags to lowercase to avoid case sensitivity issues on Windows
+    lowercase_tags = [tag.lower() for tag in model_tags if isinstance(tag, str)]
+    first_tag = settings_manager.resolve_priority_tag_for_model(lowercase_tags, model_type)
 
     if not first_tag:
         first_tag = 'no tags'  # Default if no tags available
