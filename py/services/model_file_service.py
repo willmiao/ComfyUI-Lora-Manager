@@ -4,7 +4,7 @@ import logging
 from typing import List, Dict, Optional, Any, Set
 from abc import ABC, abstractmethod
 
-from ..utils.utils import calculate_relative_path_for_model, remove_empty_dirs
+from ..utils.utils import calculate_relative_path_for_model, remove_empty_dirs, validate_path_length
 from ..utils.constants import AUTO_ORGANIZE_BATCH_SIZE
 from ..services.settings_manager import get_settings_manager
 
@@ -261,18 +261,25 @@ class ModelFileService:
                 return
             
             current_dir = os.path.dirname(file_path)
-            
+
             # Skip if already in correct location
             if current_dir.replace(os.sep, '/') == target_dir.replace(os.sep, '/'):
                 result.skipped_count += 1
                 return
-            
+
             # Check for conflicts
             file_name = os.path.basename(file_path)
             target_file_path = os.path.join(target_dir, file_name)
-            
+
+            # Validate path length before attempting move
+            is_valid, error_msg = validate_path_length(target_file_path)
+            if not is_valid:
+                self._add_result(result, model_name, False, f"Path length error: {error_msg}")
+                result.failure_count += 1
+                return
+
             if os.path.exists(target_file_path):
-                self._add_result(result, model_name, False, 
+                self._add_result(result, model_name, False,
                                f"Target file already exists: {target_file_path}")
                 result.failure_count += 1
                 return
@@ -433,6 +440,19 @@ class ModelMoveService:
                     'message': 'Source and target directories are the same',
                     'original_file_path': file_path,
                     'new_file_path': file_path
+                }
+
+            # Validate final path length before attempting move
+            file_name = os.path.basename(file_path)
+            final_path = os.path.join(target_path, file_name)
+            is_valid, error_msg = validate_path_length(final_path)
+            if not is_valid:
+                logger.warning(f"Path length validation failed: {error_msg}")
+                return {
+                    'success': False,
+                    'error': error_msg,
+                    'original_file_path': file_path,
+                    'new_file_path': None
                 }
 
             new_file_path = await self.scanner.move_model(file_path, target_path)

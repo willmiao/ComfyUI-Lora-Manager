@@ -143,9 +143,9 @@ class MoveManager {
         const modelRoot = document.getElementById('moveModelRoot').value;
         const apiClient = getModelApiClient();
         const config = apiClient.apiConfig.config;
-        
+
         let fullPath = modelRoot || `Select a ${config.displayName.toLowerCase()} root directory`;
-        
+
         if (modelRoot) {
             const selectedPath = this.folderTreeManager ? this.folderTreeManager.getSelectedPath() : '';
             if (selectedPath) {
@@ -154,6 +154,20 @@ class MoveManager {
         }
 
         pathDisplay.innerHTML = `<span class="path-text">${fullPath}</span>`;
+    }
+
+    validatePathLength(modelFilePath, targetDirectory, maxLength = 260) {
+        const fileName = modelFilePath.substring(modelFilePath.lastIndexOf('/') + 1);
+        const fullPath = `${targetDirectory}/${fileName}`;
+
+        if (fullPath.length > maxLength) {
+            return {
+                valid: false,
+                message: `Path exceeds maximum length of ${maxLength} characters (${fullPath.length} characters): ${fullPath}`
+            };
+        }
+
+        return { valid: true, message: '' };
     }
 
     async moveModel() {
@@ -176,6 +190,16 @@ class MoveManager {
         let targetPath = selectedRoot;
         if (targetFolder) {
             targetPath = `${targetPath}/${targetFolder}`;
+        }
+
+        // Validate path length before attempting move
+        const filePaths = this.bulkFilePaths || [this.currentFilePath];
+        for (const filePath of filePaths) {
+            const validation = this.validatePathLength(filePath, targetPath);
+            if (!validation.valid) {
+                showToast('toast.models.pathTooLong', { message: validation.message }, 'error');
+                return;
+            }
         }
 
         try {

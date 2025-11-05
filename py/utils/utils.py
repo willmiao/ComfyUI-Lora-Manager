@@ -239,5 +239,25 @@ def remove_empty_dirs(path):
             removed_count += 1
         except OSError:
             pass
-    
+
     return removed_count
+
+def validate_path_length(file_path: str, max_length: int = 260) -> tuple[bool, str]:
+    """Validate that a file path doesn't exceed filesystem limits
+
+    Args:
+        file_path: The full path to validate
+        max_length: Maximum allowed path length (default 260 for Windows NTFS)
+                   Linux typically supports much longer paths (4096+)
+
+    Returns:
+        Tuple of (is_valid: bool, message: str)
+    """
+    # Normalize path for accurate length calculation
+    normalized_path = os.path.normpath(file_path)
+    current_length = len(normalized_path)
+
+    if current_length > max_length:
+        return False, f"Path exceeds maximum length of {max_length} characters ({current_length} characters): {normalized_path}"
+
+    return True, ""

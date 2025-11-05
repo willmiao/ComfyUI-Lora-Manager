@@ -1144,6 +1144,7 @@
             "filenameCannotBeEmpty": "File name cannot be empty",
             "renameFailed": "Failed to rename file: {message}",
             "moveFailed": "Failed to move model(s): {message}",
+            "pathTooLong": "Path is too long and exceeds filesystem limits: {message}",
             "pleaseSelectRoot": "Please select a {type} root directory",
             "nameTooLong": "Model name is limited to 100 characters",
             "verificationAlreadyDone": "This group has already been verified",
