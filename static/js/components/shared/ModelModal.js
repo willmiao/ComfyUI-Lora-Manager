@@ -34,25 +34,25 @@ const COMMERCIAL_ICON_CONFIG = [
         key: 'sell',
         icon: 'shopping-cart-off.svg',
         titleKey: 'modals.model.license.noSell',
-        fallback: 'Selling not allowed'
+        fallback: 'No selling models'
     },
     {
         key: 'rent',
         icon: 'world-off.svg',
         titleKey: 'modals.model.license.noRent',
-        fallback: 'Rental not allowed'
+        fallback: 'No generation services'
     },
     {
         key: 'rentcivit',
         icon: 'brush-off.svg',
         titleKey: 'modals.model.license.noRentCivit',
-        fallback: 'Civitai rental not allowed'
+        fallback: 'No Civitai generation'
     },
     {
         key: 'image',
         icon: 'photo-off.svg',
-        titleKey: 'modals.model.license.noImageUse',
-        fallback: 'Image use not allowed'
+        titleKey: 'modals.model.license.noImageSell',
+        fallback: 'No selling generated content'
     }
 ];
 
@@ -156,7 +156,7 @@ function renderLicenseIcons(modelData) {
 
     const icons = [];
     if (hasLicenseField(license, 'allowNoCredit') && license.allowNoCredit === false) {
-        const label = translate('modals.model.license.creditRequired', {}, 'Credit required');
+        const label = translate('modals.model.license.creditRequired', {}, 'Creator credit required');
         icons.push(createLicenseIconMarkup('user-check.svg', label));
     }
 
@@ -169,12 +169,12 @@ function renderLicenseIcons(modelData) {
     }
 
     if (hasLicenseField(license, 'allowDerivatives') && license.allowDerivatives === false) {
-        const label = translate('modals.model.license.noDerivatives', {}, 'Derivatives not allowed');
+        const label = translate('modals.model.license.noDerivatives', {}, 'No sharing merges');
         icons.push(createLicenseIconMarkup('exchange-off.svg', label));
     }
 
     if (hasLicenseField(license, 'allowDifferentLicense') && license.allowDifferentLicense === false) {
-        const label = translate('modals.model.license.noReLicense', {}, 'Relicensing not allowed');
+        const label = translate('modals.model.license.noReLicense', {}, 'Same permissions required');
         icons.push(createLicenseIconMarkup('rotate-2.svg', label));
     }
 
