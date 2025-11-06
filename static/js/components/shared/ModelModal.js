@@ -29,6 +29,166 @@ function getModalFilePath(fallback = '') {
     return fallback;
 }
 
+const COMMERCIAL_ICON_CONFIG = [
+    {
+        key: 'sell',
+        icon: 'shopping-cart-off.svg',
+        titleKey: 'modals.model.license.noSell',
+        fallback: 'Selling not allowed'
+    },
+    {
+        key: 'rent',
+        icon: 'world-off.svg',
+        titleKey: 'modals.model.license.noRent',
+        fallback: 'Rental not allowed'
+    },
+    {
+        key: 'rentcivit',
+        icon: 'brush-off.svg',
+        titleKey: 'modals.model.license.noRentCivit',
+        fallback: 'Civitai rental not allowed'
+    },
+    {
+        key: 'image',
+        icon: 'photo-off.svg',
+        titleKey: 'modals.model.license.noImageUse',
+        fallback: 'Image use not allowed'
+    }
+];
+
+function hasLicenseField(license, field) {
+    return Object.prototype.hasOwnProperty.call(license || {}, field);
+}
+
+function escapeAttribute(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;');
+}
+
+function indentMarkup(markup, spaces) {
+    if (!markup) {
+        return '';
+    }
+    const padding = ' '.repeat(spaces);
+    return markup
+        .split('\n')
+        .map(line => (line ? padding + line : line))
+        .join('\n');
+}
+
+function normalizeCommercialValues(value) {
+    if (!value && value !== '') {
+        return ['Sell'];
+    }
+    if (Array.isArray(value)) {
+        return value.filter(item => item !== null && item !== undefined);
+    }
+    if (typeof value === 'string') {
+        return [value];
+    }
+    if (value && typeof value[Symbol.iterator] === 'function') {
+        const result = [];
+        for (const item of value) {
+            if (item === null || item === undefined) {
+                continue;
+            }
+            result.push(String(item));
+        }
+        if (result.length > 0) {
+            return result;
+        }
+    }
+    return ['Sell'];
+}
+
+function sanitiseCommercialValue(value) {
+    if (!value && value !== '') {
+        return '';
+    }
+    return String(value)
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_-]+/g, '')
+        .replace(/[^a-z]/g, '');
+}
+
+function resolveCommercialRestrictions(value) {
+    const normalizedValues = normalizeCommercialValues(value);
+    const allowed = new Set();
+    normalizedValues.forEach(item => {
+        const cleaned = sanitiseCommercialValue(item);
+        if (!cleaned) {
+            return;
+        }
+        allowed.add(cleaned);
+    });
+
+    if (allowed.has('sell')) {
+        allowed.add('rent');
+        allowed.add('rentcivit');
+        allowed.add('image');
+    }
+    if (allowed.has('rent')) {
+        allowed.add('rentcivit');
+    }
+
+    const disallowed = [];
+    COMMERCIAL_ICON_CONFIG.forEach(config => {
+        if (!allowed.has(config.key)) {
+            disallowed.push(config);
+        }
+    });
+    return disallowed;
+}
+
+function createLicenseIconMarkup(icon, label) {
+    const safeLabel = escapeAttribute(label);
+    const iconPath = `/loras_static/images/tabler/${icon}`;
+    return `<span class="license-icon" role="img" aria-label="${safeLabel}" title="${safeLabel}" style="--license-icon-image: url('${iconPath}')"></span>`;
+}
+
+function renderLicenseIcons(modelData) {
+    const license = modelData?.civitai?.model;
+    if (!license) {
+        return '';
+    }
+
+    const icons = [];
+    if (hasLicenseField(license, 'allowNoCredit') && license.allowNoCredit === false) {
+        const label = translate('modals.model.license.creditRequired', {}, 'Credit required');
+        icons.push(createLicenseIconMarkup('user-check.svg', label));
+    }
+
+    if (hasLicenseField(license, 'allowCommercialUse')) {
+        const restrictions = resolveCommercialRestrictions(license.allowCommercialUse);
+        restrictions.forEach(({ icon, titleKey, fallback }) => {
+            const label = translate(titleKey, {}, fallback);
+            icons.push(createLicenseIconMarkup(icon, label));
+        });
+    }
+
+    if (hasLicenseField(license, 'allowDerivatives') && license.allowDerivatives === false) {
+        const label = translate('modals.model.license.noDerivatives', {}, 'Derivatives not allowed');
+        icons.push(createLicenseIconMarkup('exchange-off.svg', label));
+    }
+
+    if (hasLicenseField(license, 'allowDifferentLicense') && license.allowDifferentLicense === false) {
+        const label = translate('modals.model.license.noReLicense', {}, 'Relicensing not allowed');
+        icons.push(createLicenseIconMarkup('rotate-2.svg', label));
+    }
+
+    if (!icons.length) {
+        return '';
+    }
+
+    const containerLabel = translate('modals.model.license.restrictionsLabel', {}, 'License restrictions');
+    const safeContainerLabel = escapeAttribute(containerLabel);
+    return `<div class="license-restrictions" aria-label="${safeContainerLabel}" role="group">
+        ${icons.join('\n        ')}
+    </div>`;
+}
+
 /**
  * Display the model modal with the given model data
  * @param {Object} model - Model data object
@@ -55,6 +215,51 @@ export async function showModelModal(model, modelType) {
         ...model,
         civitai: completeCivitaiData
     };
+    const licenseIcons = renderLicenseIcons(modelWithFullData);
+    const viewOnCivitaiAction = modelWithFullData.from_civitai ? `
+<div class="civitai-view" title="${translate('modals.model.actions.viewOnCivitai', {}, 'View on Civitai')}" data-action="view-civitai" data-filepath="${modelWithFullData.file_path}">
+    <i class="fas fa-globe"></i> ${translate('modals.model.actions.viewOnCivitaiText', {}, 'View on Civitai')}
+</div>`.trim() : '';
+    const creatorInfoAction = modelWithFullData.civitai?.creator ? `
+<div class="creator-info" data-username="${modelWithFullData.civitai.creator.username}" data-action="view-creator" title="${translate('modals.model.actions.viewCreatorProfile', {}, 'View Creator Profile')}">
+    ${modelWithFullData.civitai.creator.image ? 
+        `<div class="creator-avatar">
+            <img src="${modelWithFullData.civitai.creator.image}" alt="${modelWithFullData.civitai.creator.username}" onerror="this.onerror=null; this.src='/loras_static/icons/user-placeholder.png';">
+        </div>` : 
+        `<div class="creator-avatar creator-placeholder">
+            <i class="fas fa-user"></i>
+        </div>`
+    }
+    <span class="creator-username">${modelWithFullData.civitai.creator.username}</span>
+</div>`.trim() : '';
+    const creatorActionItems = [];
+    if (viewOnCivitaiAction) {
+        creatorActionItems.push(indentMarkup(viewOnCivitaiAction, 24));
+    }
+    if (creatorInfoAction) {
+        creatorActionItems.push(indentMarkup(creatorInfoAction, 24));
+    }
+    const creatorActionsMarkup = creatorActionItems.length
+        ? [
+            '                    <div class="creator-actions">',
+            creatorActionItems.join('\n'),
+            '                    </div>'
+        ].join('\n')
+        : '';
+    const headerActionItems = [];
+    if (creatorActionsMarkup) {
+        headerActionItems.push(creatorActionsMarkup);
+    }
+    if (licenseIcons) {
+        headerActionItems.push(indentMarkup(licenseIcons.trim(), 20));
+    }
+    const headerActionsMarkup = headerActionItems.length
+        ? [
+            '                <div class="modal-header-actions">',
+            headerActionItems.join('\n'),
+            '                </div>'
+        ].join('\n')
+        : '';
     const hasUpdateAvailable = Boolean(modelWithFullData.update_available);
     
     // Prepare LoRA specific data with complete civitai data
@@ -172,25 +377,7 @@ export async function showModelModal(model, modelType) {
                     </button>
                 </div>
 
-                <div class="creator-actions">
-                    ${modelWithFullData.from_civitai ? `
-                    <div class="civitai-view" title="${translate('modals.model.actions.viewOnCivitai', {}, 'View on Civitai')}" data-action="view-civitai" data-filepath="${modelWithFullData.file_path}">
-                        <i class="fas fa-globe"></i> ${translate('modals.model.actions.viewOnCivitaiText', {}, 'View on Civitai')}
-                    </div>` : ''}
-
-                    ${modelWithFullData.civitai?.creator ? `
-                    <div class="creator-info" data-username="${modelWithFullData.civitai.creator.username}" data-action="view-creator" title="${translate('modals.model.actions.viewCreatorProfile', {}, 'View Creator Profile')}">
-                        ${modelWithFullData.civitai.creator.image ? 
-                            `<div class="creator-avatar">
-                                <img src="${modelWithFullData.civitai.creator.image}" alt="${modelWithFullData.civitai.creator.username}" onerror="this.onerror=null; this.src='static/icons/user-placeholder.png';">
-                            </div>` : 
-                            `<div class="creator-avatar creator-placeholder">
-                                <i class="fas fa-user"></i>
-                            </div>`
-                        }
-                        <span class="creator-username">${modelWithFullData.civitai.creator.username}</span>
-                    </div>` : ''}
-                </div>
+                ${headerActionsMarkup}
 
                 ${renderCompactTags(modelWithFullData.tags || [], modelWithFullData.file_path)}
             </header>
