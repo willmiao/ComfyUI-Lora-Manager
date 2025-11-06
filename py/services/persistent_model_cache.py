@@ -21,7 +21,7 @@ class PersistedCacheData:
     excluded_models: List[str]
 
 
-DEFAULT_LICENSE_FLAGS = 57  # 57 (0b111001) encodes CivitAI's documented default license permissions.
+DEFAULT_LICENSE_FLAGS = 127  # 127 (0b1111111) encodes default CivitAI permissions with all commercial modes enabled.
 
 
 class PersistentModelCache:

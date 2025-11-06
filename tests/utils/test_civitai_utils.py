@@ -1,9 +1,4 @@
-from py.utils.civitai_utils import (
-    CommercialUseLevel,
-    build_license_flags,
-    resolve_license_info,
-    resolve_license_payload,
-)
+from py.utils.civitai_utils import build_license_flags, resolve_license_info, resolve_license_payload
 
 
 def test_resolve_license_payload_defaults():
@@ -13,7 +8,7 @@ def test_resolve_license_payload_defaults():
     assert payload["allowDerivatives"] is True
     assert payload["allowDifferentLicense"] is True
     assert payload["allowCommercialUse"] == ["Sell"]
-    assert flags == 57
+    assert flags == 127
 
 
 def test_build_license_flags_custom_values():
@@ -31,5 +26,23 @@ def test_build_license_flags_custom_values():
     assert payload["allowDifferentLicense"] is False
 
     flags = build_license_flags(source)
-    # Highest commercial level is SELL -> level 4 -> shifted by 1 == 8.
-    assert flags == (CommercialUseLevel.SELL << 1)
+    # Sell automatically enables all commercial bits including image.
+    assert flags == 30
+
+
+def test_build_license_flags_respects_commercial_hierarchy():
+    base = {
+        "allowNoCredit": False,
+        "allowDerivatives": False,
+        "allowDifferentLicense": False,
+    }
+
+    assert build_license_flags({**base, "allowCommercialUse": []}) == 0
+    # Rent adds rent and rentcivit permissions.
+    assert build_license_flags({**base, "allowCommercialUse": ["Rent"]}) == 12
+    # RentCivit alone should only set its own bit.
+    assert build_license_flags({**base, "allowCommercialUse": ["RentCivit"]}) == 4
+    # Image only toggles the image bit.
+    assert build_license_flags({**base, "allowCommercialUse": ["Image"]}) == 2
+    # Sell forces all commercial bits regardless of image listing.
+    assert build_license_flags({**base, "allowCommercialUse": ["Sell"]}) == 30
