@@ -75,6 +75,10 @@ async def test_update_model_metadata_merges_and_persists():
             "description": "desc",
             "tags": ["style"],
             "creator": {"id": 2},
+            "allowNoCredit": False,
+            "allowCommercialUse": ["Image"],
+            "allowDerivatives": False,
+            "allowDifferentLicense": True,
         },
         "baseModel": "sdxl",
         "images": ["img"],
@@ -92,6 +96,13 @@ async def test_update_model_metadata_merges_and_persists():
     assert result["modelDescription"] == "desc"
     assert result["tags"] == ["style"]
     assert result["base_model"] == "SDXL 1.0"
+    civitai_model = result["civitai"]["model"]
+    assert civitai_model["allowNoCredit"] is False
+    assert civitai_model["allowCommercialUse"] == ["Image"]
+    assert civitai_model["allowDerivatives"] is False
+    assert civitai_model["allowDifferentLicense"] is True
+    for key in ("allowNoCredit", "allowCommercialUse", "allowDerivatives", "allowDifferentLicense"):
+        assert key not in result
 
     helpers.preview_service.ensure_preview_for_metadata.assert_awaited_once()
     helpers.metadata_manager.save_metadata.assert_awaited_once_with(
@@ -142,6 +153,13 @@ async def test_fetch_and_update_model_success_updates_cache(tmp_path):
     assert model_data["civitai_deleted"] is False
     assert "civitai" in model_data
     assert model_data["metadata_source"] == "civitai_api"
+    civitai_model = model_data["civitai"]["model"]
+    assert civitai_model["allowNoCredit"] is True
+    assert civitai_model["allowDerivatives"] is True
+    assert civitai_model["allowDifferentLicense"] is True
+    assert civitai_model["allowCommercialUse"] == ["Sell"]
+    for key in ("allowNoCredit", "allowCommercialUse", "allowDerivatives", "allowDifferentLicense"):
+        assert key not in model_data
 
     helpers.metadata_manager.hydrate_model_data.assert_not_awaited()
     assert model_data["hydrated"] is True
@@ -151,7 +169,13 @@ async def test_fetch_and_update_model_success_updates_cache(tmp_path):
     assert await_args, "expected metadata to be persisted"
     last_call = await_args[-1]
     assert last_call.args[0] == metadata_path
-    assert last_call.args[1]["hydrated"] is True
+    persisted_payload = last_call.args[1]
+    assert persisted_payload["hydrated"] is True
+    civitai_model = persisted_payload["civitai"]["model"]
+    assert civitai_model["allowNoCredit"] is True
+    assert civitai_model["allowCommercialUse"] == ["Sell"]
+    for key in ("allowNoCredit", "allowCommercialUse", "allowDerivatives", "allowDifferentLicense"):
+        assert key not in persisted_payload
     update_cache.assert_awaited_once()
 
 
@@ -422,4 +446,3 @@ async def test_relink_metadata_raises_when_version_missing():
             model_id=9,
             model_version_id=None,
         )
-

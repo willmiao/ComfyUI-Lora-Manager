@@ -21,6 +21,9 @@ class PersistedCacheData:
     excluded_models: List[str]
 
 
+DEFAULT_LICENSE_FLAGS = 57  # 57 (0b111001) encodes CivitAI's documented default license permissions.
+
+
 class PersistentModelCache:
     """Persist core model metadata and hash index data in SQLite."""
 
@@ -47,6 +50,7 @@ class PersistentModelCache:
         "civitai_name",
         "civitai_creator_username",
         "trained_words",
+        "license_flags",
         "civitai_deleted",
         "exclude",
         "db_checked",
@@ -149,6 +153,10 @@ class PersistentModelCache:
                 if creator_username:
                     civitai.setdefault("creator", {})["username"] = creator_username
 
+            license_value = row["license_flags"]
+            if license_value is None:
+                license_value = DEFAULT_LICENSE_FLAGS
+
             item = {
                 "file_path": file_path,
                 "file_name": row["file_name"],
@@ -171,6 +179,7 @@ class PersistentModelCache:
                 "tags": tags.get(file_path, []),
                 "civitai": civitai,
                 "civitai_deleted": bool(row["civitai_deleted"]),
+                "license_flags": int(license_value),
             }
             raw_data.append(item)
 
@@ -484,6 +493,8 @@ class PersistentModelCache:
             "metadata_source": "TEXT",
             "civitai_creator_username": "TEXT",
             "civitai_deleted": "INTEGER DEFAULT 0",
+            # Persisting without explicit flags should assume CivitAI's documented defaults (0b111001 == 57).
+            "license_flags": f"INTEGER DEFAULT {DEFAULT_LICENSE_FLAGS}",
         }
 
         for column, definition in required_columns.items():
@@ -518,6 +529,10 @@ class PersistentModelCache:
         if isinstance(creator_data, dict):
             creator_username = creator_data.get("username") or None
 
+        license_flags = item.get("license_flags")
+        if license_flags is None:
+            license_flags = DEFAULT_LICENSE_FLAGS
+
         return (
             model_type,
             item.get("file_path"),
@@ -540,6 +555,7 @@ class PersistentModelCache:
             civitai.get("name"),
             creator_username,
             trained_words_json,
+            int(license_flags),
             1 if item.get("civitai_deleted") else 0,
             1 if item.get("exclude") else 0,
             1 if item.get("db_checked") else 0,

@@ -11,7 +11,8 @@ from py.services import model_scanner
 from py.services.model_cache import ModelCache
 from py.services.model_hash_index import ModelHashIndex
 from py.services.model_scanner import CacheBuildResult, ModelScanner
-from py.services.persistent_model_cache import PersistentModelCache
+from py.services.persistent_model_cache import PersistentModelCache, DEFAULT_LICENSE_FLAGS
+from py.utils.civitai_utils import build_license_flags
 from py.utils.models import BaseModelMetadata
 
 
@@ -122,6 +123,7 @@ async def test_initialize_cache_populates_cache(tmp_path: Path):
         _normalize_path(tmp_path / "one.txt"),
         _normalize_path(tmp_path / "nested" / "two.txt"),
     }
+    assert {item["license_flags"] for item in cache.raw_data} == {DEFAULT_LICENSE_FLAGS}
 
     assert scanner._hash_index.get_path("hash-one") == _normalize_path(tmp_path / "one.txt")
     assert scanner._hash_index.get_path("hash-two") == _normalize_path(tmp_path / "nested" / "two.txt")
@@ -179,10 +181,47 @@ async def test_initialize_in_background_applies_scan_result(tmp_path: Path, monk
         _normalize_path(tmp_path / "one.txt"),
         _normalize_path(tmp_path / "nested" / "two.txt"),
     }
+    assert {item["license_flags"] for item in cache.raw_data} == {DEFAULT_LICENSE_FLAGS}
     assert scanner._hash_index.get_path("hash-two") == _normalize_path(tmp_path / "nested" / "two.txt")
     assert scanner._tags_count == {"alpha": 1, "beta": 1}
     assert scanner._excluded_models == [_normalize_path(tmp_path / "skip-file.txt")]
     assert ws_stub.payloads[-1]["progress"] == 100
+
+
+@pytest.mark.asyncio
+async def test_build_cache_entry_encodes_license_flags(tmp_path: Path):
+    scanner = DummyScanner(tmp_path)
+
+    metadata = {
+        "file_path": _normalize_path(tmp_path / "sample.txt"),
+        "file_name": "sample",
+        "model_name": "Sample",
+        "folder": "",
+        "size": 1,
+        "modified": 1.0,
+        "sha256": "hash",
+        "tags": [],
+        "civitai": {
+            "model": {
+                "allowNoCredit": False,
+                "allowCommercialUse": ["Image", "Rent"],
+                "allowDerivatives": True,
+                "allowDifferentLicense": False,
+            }
+        },
+    }
+
+    expected_flags = build_license_flags(
+        {
+            "allowNoCredit": False,
+            "allowCommercialUse": ["Image", "Rent"],
+            "allowDerivatives": True,
+            "allowDifferentLicense": False,
+        }
+    )
+
+    entry = scanner._build_cache_entry(metadata)
+    assert entry["license_flags"] == expected_flags
 
 
 @pytest.mark.asyncio

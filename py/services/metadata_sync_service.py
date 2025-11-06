@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Any, Awaitable, Callable, Dict, Iterable, Optional
 
 from ..services.settings_manager import SettingsManager
+from ..utils.civitai_utils import resolve_license_payload
 from ..utils.model_utils import determine_base_model
 from .errors import RateLimitError
 
@@ -134,6 +135,17 @@ class MetadataSyncService:
                 "creator"
             ):
                 local_metadata.setdefault("civitai", {})["creator"] = model_data["creator"]
+
+            merged_civitai = local_metadata.get("civitai") or {}
+            civitai_model = merged_civitai.get("model")
+            if not isinstance(civitai_model, dict):
+                civitai_model = {}
+
+            license_payload = resolve_license_payload(model_data)
+            civitai_model.update(license_payload)
+
+            merged_civitai["model"] = civitai_model
+            local_metadata["civitai"] = merged_civitai
 
         local_metadata["base_model"] = determine_base_model(
             civitai_metadata.get("baseModel")
@@ -295,6 +307,7 @@ class MetadataSyncService:
                 "preview_url": local_metadata.get("preview_url"),
                 "civitai": local_metadata.get("civitai"),
             }
+
             model_data.update(update_payload)
 
             await update_cache_func(file_path, file_path, local_metadata)
@@ -436,4 +449,3 @@ class MetadataSyncService:
                 results["verified_as_duplicates"] = False
 
         return results
-

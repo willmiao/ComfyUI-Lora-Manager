@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from py.services.persistent_model_cache import PersistentModelCache
+from py.services.persistent_model_cache import PersistentModelCache, DEFAULT_LICENSE_FLAGS
 
 
 def test_persistent_cache_roundtrip(tmp_path: Path, monkeypatch) -> None:
@@ -43,6 +43,7 @@ def test_persistent_cache_roundtrip(tmp_path: Path, monkeypatch) -> None:
                 'trainedWords': ['word1'],
                 'creator': {'username': 'artist42'},
             },
+            'license_flags': 13,
         },
         {
             'file_path': file_b,
@@ -91,12 +92,14 @@ def test_persistent_cache_roundtrip(tmp_path: Path, monkeypatch) -> None:
     assert first['metadata_source'] == 'civitai_api'
     assert first['civitai']['creator']['username'] == 'artist42'
     assert first['civitai_deleted'] is False
+    assert first['license_flags'] == 13
 
     second = items[file_b]
     assert second['exclude'] is True
     assert second['civitai'] is None
     assert second['metadata_source'] is None
     assert second['civitai_deleted'] is True
+    assert second['license_flags'] == DEFAULT_LICENSE_FLAGS
 
     expected_hash_pairs = {
         ('hash-a', file_a),

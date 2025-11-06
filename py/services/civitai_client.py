@@ -6,6 +6,7 @@ from typing import Any, Optional, Dict, Tuple, List, Sequence
 from .model_metadata_provider import CivitaiModelMetadataProvider, ModelMetadataProviderManager
 from .downloader import get_downloader
 from .errors import RateLimitError, ResourceNotFoundError
+from ..utils.civitai_utils import resolve_license_payload
 
 logger = logging.getLogger(__name__)
 
@@ -419,6 +420,10 @@ class CivitaiClient:
         model_info['description'] = model_data.get("description")
         model_info['tags'] = model_data.get("tags", [])
         version['creator'] = model_data.get("creator")
+
+        license_payload = resolve_license_payload(model_data)
+        for field, value in license_payload.items():
+            model_info[field] = value
 
     async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict], Optional[str]]:
         """Fetch model version metadata from Civitai
