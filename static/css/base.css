@@ -48,7 +48,7 @@ html, body {
     /* Composed Colors */
     --lora-accent: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h));
     --lora-surface: oklch(97% 0 0 / 0.95);
-    --lora-border: oklch(90% 0.02 256 / 0.15);
+    --lora-border: oklch(72% 0.03 256 / 0.45);
     --lora-text: oklch(95% 0.02 256);
     --lora-error: oklch(75% 0.32 29);
     --lora-warning: oklch(var(--lora-warning-l) var(--lora-warning-c) var(--lora-warning-h));
