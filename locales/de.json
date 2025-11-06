@@ -876,6 +876,12 @@
                 "recipes": "Rezepte",
                 "versions": "Versionen"
             },
+            "license": {
+                "creditRequired": "Ersteller-Angabe erforderlich",
+                "noDerivatives": "Keine gemeinsamen Zusammenführungen",
+                "noReLicense": "Gleiche Berechtigungen erforderlich",
+                "restrictionsLabel": "Lizenzbeschränkungen"
+            },
             "loading": {
                 "exampleImages": "Beispielbilder werden geladen...",
                 "description": "Modellbeschreibung wird geladen...",

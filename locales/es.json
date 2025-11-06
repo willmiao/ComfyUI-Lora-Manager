@@ -875,6 +875,12 @@
                 "recipes": "Recetas",
                 "versions": "Versiones"
             },
+            "license": {
+                "creditRequired": "Crédito del creador requerido",
+                "noDerivatives": "No se permiten fusiones",
+                "noReLicense": "Se requieren mismos permisos",
+                "restrictionsLabel": "Restricciones de licencia"
+            },
             "loading": {
                 "exampleImages": "Cargando imágenes de ejemplo...",
                 "description": "Cargando descripción del modelo...",

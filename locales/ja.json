@@ -875,6 +875,12 @@
                 "recipes": "レシピ",
                 "versions": "バージョン"
             },
+            "license": {
+                "creditRequired": "作成者のクレジットが必要",
+                "noDerivatives": "共有マージ不可",
+                "noReLicense": "同じ権限が必要",
+                "restrictionsLabel": "ライセンス制限"
+            },
             "loading": {
                 "exampleImages": "例画像を読み込み中...",
                 "description": "モデル説明を読み込み中...",

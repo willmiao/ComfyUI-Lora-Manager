@@ -875,6 +875,12 @@
                 "recipes": "配方",
                 "versions": "版本"
             },
+            "license": {
+                "creditRequired": "需要創作者標示",
+                "noDerivatives": "禁止分享合併作品",
+                "noReLicense": "需要相同授權",
+                "restrictionsLabel": "授權限制"
+            },
             "loading": {
                 "exampleImages": "載入範例圖片中...",
                 "description": "載入模型描述中...",

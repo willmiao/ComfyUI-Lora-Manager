@@ -875,6 +875,12 @@
                 "recipes": "מתכונים",
                 "versions": "גרסאות"
             },
+            "license": {
+                "creditRequired": "נדרש ייחוס ליוצר",
+                "noDerivatives": "אין שיתוף מיזוגים",
+                "noReLicense": "נדרשות אותן הרשאות",
+                "restrictionsLabel": "הגבלות רישיון"
+            },
             "loading": {
                 "exampleImages": "טוען תמונות דוגמה...",
                 "description": "טוען תיאור מודל...",

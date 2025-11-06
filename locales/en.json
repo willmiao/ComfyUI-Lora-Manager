@@ -875,6 +875,12 @@
                 "recipes": "Recipes",
                 "versions": "Versions"
             },
+            "license": {
+                "creditRequired": "Creator credit required",
+                "noDerivatives": "No sharing merges",
+                "noReLicense": "Same permissions required",
+                "restrictionsLabel": "License restrictions"
+            },
             "loading": {
                 "exampleImages": "Loading example images...",
                 "description": "Loading model description...",

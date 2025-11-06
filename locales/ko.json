@@ -875,6 +875,12 @@
                 "recipes": "레시피",
                 "versions": "버전"
             },
+            "license": {
+                "creditRequired": "제작자 크레딧 필요",
+                "noDerivatives": "공유 병합 불가",
+                "noReLicense": "동일한 권한 필요",
+                "restrictionsLabel": "라이선스 제한"
+            },
             "loading": {
                 "exampleImages": "예시 이미지 로딩 중...",
                 "description": "모델 설명 로딩 중...",

@@ -875,6 +875,12 @@
                 "recipes": "配方",
                 "versions": "版本"
             },
+            "license": {
+                "creditRequired": "需要创作者署名",
+                "noDerivatives": "禁止分享合并作品",
+                "noReLicense": "需要相同权限",
+                "restrictionsLabel": "许可证限制"
+            },
             "loading": {
                 "exampleImages": "正在加载示例图片...",
                 "description": "正在加载模型描述...",
