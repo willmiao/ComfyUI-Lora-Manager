@@ -31,16 +31,10 @@ function getModalFilePath(fallback = '') {
 
 const COMMERCIAL_ICON_CONFIG = [
     {
-        key: 'sell',
-        icon: 'shopping-cart-off.svg',
-        titleKey: 'modals.model.license.noSell',
-        fallback: 'No selling models'
-    },
-    {
-        key: 'rent',
-        icon: 'world-off.svg',
-        titleKey: 'modals.model.license.noRent',
-        fallback: 'No generation services'
+        key: 'image',
+        icon: 'photo-off.svg',
+        titleKey: 'modals.model.license.noImageSell',
+        fallback: 'No selling generated content'
     },
     {
         key: 'rentcivit',
@@ -49,10 +43,16 @@ const COMMERCIAL_ICON_CONFIG = [
         fallback: 'No Civitai generation'
     },
     {
-        key: 'image',
-        icon: 'photo-off.svg',
-        titleKey: 'modals.model.license.noImageSell',
-        fallback: 'No selling generated content'
+        key: 'rent',
+        icon: 'world-off.svg',
+        titleKey: 'modals.model.license.noRent',
+        fallback: 'No generation services'
+    },
+    {
+        key: 'sell',
+        icon: 'shopping-cart-off.svg',
+        titleKey: 'modals.model.license.noSell',
+        fallback: 'No selling models'
     }
 ];
 
