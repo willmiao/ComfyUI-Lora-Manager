@@ -104,44 +104,32 @@ class CivitaiClient:
 
     async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict], Optional[str]]:
         try:
-            success, result = await self._make_request(
+            success, version = await self._make_request(
                 'GET',
                 f"{self.base_url}/model-versions/by-hash/{model_hash}",
                 use_auth=True
             )
-            if success:
-                # Get model ID from version data
-                model_id = result.get('modelId')
-                if model_id:
-                    # Fetch additional model metadata
-                    success_model, data = await self._make_request(
-                        'GET',
-                        f"{self.base_url}/models/{model_id}",
-                        use_auth=True
-                    )
-                    if success_model:
-                        # Enrich version_info with model data
-                        result['model']['description'] = data.get("description")
-                        result['model']['tags'] = data.get("tags", [])
+            if not success:
+                message = str(version)
+                if "not found" in message.lower():
+                    return None, "Model not found"
 
-                        # Add creator from model data
-                        result['creator'] = data.get("creator")
+                logger.error("Failed to fetch model info for %s: %s", model_hash[:10], message)
+                return None, message
 
-                self._remove_comfy_metadata(result)
-                return result, None
-            
-            # Handle specific error cases
-            if "not found" in str(result):
-                return None, "Model not found"
-            
-            # Other error cases
-            logger.error(f"Failed to fetch model info for {model_hash[:10]}: {result}")
-            return None, str(result)
+            model_id = version.get('modelId')
+            if model_id:
+                model_data = await self._fetch_model_data(model_id)
+                if model_data:
+                    self._enrich_version_with_model_data(version, model_data)
+
+            self._remove_comfy_metadata(version)
+            return version, None
         except RateLimitError:
             raise
-        except Exception as e:
-            logger.error(f"API Error: {str(e)}")
-            return None, str(e)
+        except Exception as exc:
+            logger.error("API Error: %s", exc)
+            return None, str(exc)
 
     async def download_preview_image(self, image_url: str, save_path: str):
         try:
