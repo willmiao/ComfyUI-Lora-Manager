@@ -2,11 +2,12 @@ import os
 import logging
 from .model_metadata_provider import (
     ModelMetadataProvider,
-    ModelMetadataProviderManager, 
+    ModelMetadataProviderManager,
     SQLiteModelMetadataProvider,
     CivitaiModelMetadataProvider,
     CivArchiveModelMetadataProvider,
-    FallbackMetadataProvider
+    FallbackMetadataProvider,
+    RateLimitRetryingProvider,
 )
 from .settings_manager import get_settings_manager
 from .metadata_archive_manager import MetadataArchiveManager
@@ -108,14 +109,24 @@ async def get_metadata_archive_manager():
     base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
     return MetadataArchiveManager(base_path)
 
+def _wrap_provider_with_rate_limit(provider_name: str | None, provider: ModelMetadataProvider) -> ModelMetadataProvider:
+    if isinstance(provider, (FallbackMetadataProvider, RateLimitRetryingProvider)):
+        return provider
+    return RateLimitRetryingProvider(provider, label=provider_name)
+
+
 async def get_metadata_provider(provider_name: str = None):
-    """Get a specific metadata provider or default provider"""
+    """Get a specific metadata provider or default provider with rate-limit handling."""
+
     provider_manager = await ModelMetadataProviderManager.get_instance()
-    
-    if provider_name:
-        return provider_manager._get_provider(provider_name)
-    
-    return provider_manager._get_provider()
+
+    provider = (
+        provider_manager._get_provider(provider_name)
+        if provider_name
+        else provider_manager._get_provider()
+    )
+
+    return _wrap_provider_with_rate_limit(provider_name, provider)
 
 async def get_default_metadata_provider():
     """Get the default metadata provider (fallback or single provider)"""
