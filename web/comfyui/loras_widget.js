@@ -29,12 +29,17 @@ export function addLorasWidget(node, name, opts, callback) {
 
   // Initialize default value
   const defaultValue = opts?.defaultVal || [];
+  const onSelectionChange = typeof opts?.onSelectionChange === "function"
+    ? opts.onSelectionChange
+    : null;
 
   // Create preview tooltip instance
   const previewTooltip = new PreviewTooltip({ modelType: "loras" });
   
   // Selection state - only one LoRA can be selected at a time
   let selectedLora = null;
+  let currentLorasData = parseLoraValue(defaultValue);
+  let lastSelectionKey = "__none__";
   let pendingFocusTarget = null;
 
   const PREVIEW_SUPPRESSION_AFTER_DRAG_MS = 500;
@@ -60,13 +65,51 @@ export function addLorasWidget(node, name, opts, callback) {
   };
   
   // Function to select a LoRA
-  const selectLora = (loraName) => {
+  const buildSelectionPayload = (loraName) => {
+    if (!loraName) {
+      return null;
+    }
+
+    const entry = currentLorasData.find((lora) => lora.name === loraName);
+    if (!entry) {
+      return null;
+    }
+
+    return {
+      name: entry.name,
+      active: !!entry.active,
+      entry: { ...entry },
+    };
+  };
+
+  const emitSelectionChange = (payload, options = {}) => {
+    if (!onSelectionChange) {
+      return;
+    }
+
+    const key = payload
+      ? `${payload.name || ""}|${payload.active ? "1" : "0"}`
+      : "__null__";
+
+    if (!options.force && key === lastSelectionKey) {
+      return;
+    }
+
+    lastSelectionKey = key;
+    onSelectionChange(payload);
+  };
+
+  const selectLora = (loraName, options = {}) => {
     selectedLora = loraName;
     // Update visual feedback for all entries
     container.querySelectorAll('.lm-lora-entry').forEach(entry => {
       const entryLoraName = entry.dataset.loraName;
       updateEntrySelection(entry, entryLoraName === selectedLora);
     });
+
+    if (!options.silent) {
+      emitSelectionChange(buildSelectionPayload(loraName));
+    }
   };
   
   // Add keyboard event listener to container
@@ -88,6 +131,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
     // Parse the loras data
     const lorasData = parseLoraValue(value);
+    currentLorasData = lorasData;
     const focusSequence = [];
 
     const updateWidgetValue = (newValue) => {
@@ -247,6 +291,14 @@ export function addLorasWidget(node, name, opts, callback) {
         if (loraIndex >= 0) {
           lorasData[loraIndex].active = newActive;
           
+          if (selectedLora === name) {
+            emitSelectionChange({
+              name,
+              active: newActive,
+              entry: { ...lorasData[loraIndex] },
+            });
+          }
+
           const newValue = formatLoraValue(lorasData);
           updateWidgetValue(newValue);
         }
@@ -359,13 +411,13 @@ export function addLorasWidget(node, name, opts, callback) {
         pendingFocusTarget = { name, type: "strength" };
       });
 
-      // Handle focus
-      strengthEl.addEventListener('focus', () => {
-        pendingFocusTarget = null;
-        // Auto-select all content
-        strengthEl.select();
-        selectLora(name);
-      });
+        // Handle focus
+        strengthEl.addEventListener('focus', () => {
+          pendingFocusTarget = null;
+          // Auto-select all content
+          strengthEl.select();
+          selectLora(name);
+        });
 
       // Handle input changes
       const commitStrengthValue = () => {
@@ -577,6 +629,16 @@ export function addLorasWidget(node, name, opts, callback) {
       updateEntrySelection(entry, entryLoraName === selectedLora);
     });
 
+    const selectionExists = selectedLora
+      ? currentLorasData.some((lora) => lora.name === selectedLora)
+      : false;
+
+    if (selectedLora && !selectionExists) {
+      selectLora(null);
+    } else if (selectedLora) {
+      emitSelectionChange(buildSelectionPayload(selectedLora));
+    }
+
     if (pendingFocusTarget) {
       const focusTarget = pendingFocusTarget;
       const safeName = escapeLoraName(focusTarget.name);
@@ -596,7 +658,7 @@ export function addLorasWidget(node, name, opts, callback) {
             if (typeof targetInput.select === "function") {
               targetInput.select();
             }
-            selectLora(focusTarget.name);
+            selectLora(focusTarget.name, { silent: true });
           });
         }
       }

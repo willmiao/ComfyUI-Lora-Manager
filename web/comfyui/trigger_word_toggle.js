@@ -33,6 +33,66 @@ app.registerExtension({
                 
                 node.tagWidget = result.widget;
 
+                const normalizeTagText = (text) =>
+                    (typeof text === 'string' ? text.trim().toLowerCase() : '');
+
+                const collectHighlightTokens = (wordsArray) => {
+                    const tokens = new Set();
+
+                    const addToken = (text) => {
+                        const normalized = normalizeTagText(text);
+                        if (normalized) {
+                            tokens.add(normalized);
+                        }
+                    };
+
+                    wordsArray.forEach((rawWord) => {
+                        if (typeof rawWord !== 'string') {
+                            return;
+                        }
+
+                        addToken(rawWord);
+
+                        const groupParts = rawWord.split(/,{2,}/);
+                        groupParts.forEach((groupPart) => {
+                            addToken(groupPart);
+                            groupPart.split(',').forEach(addToken);
+                        });
+
+                        rawWord.split(',').forEach(addToken);
+                    });
+
+                    return tokens;
+                };
+
+                const applyHighlightState = () => {
+                    if (!node.tagWidget) return;
+                    const highlightSet = node._highlightedTriggerWords || new Set();
+                    const updatedTags = (node.tagWidget.value || []).map(tag => ({
+                        ...tag,
+                        highlighted: highlightSet.size > 0 && highlightSet.has(normalizeTagText(tag.text))
+                    }));
+                    node.tagWidget.value = updatedTags;
+                };
+
+                node.highlightTriggerWords = (triggerWords) => {
+                    const wordsArray = Array.isArray(triggerWords)
+                        ? triggerWords
+                        : triggerWords
+                            ? [triggerWords]
+                            : [];
+                    node._highlightedTriggerWords = collectHighlightTokens(wordsArray);
+                    applyHighlightState();
+                };
+
+                if (node.__pendingHighlightWords !== undefined) {
+                    const pending = node.__pendingHighlightWords;
+                    delete node.__pendingHighlightWords;
+                    node.highlightTriggerWords(pending);
+                }
+
+                node.applyTriggerHighlightState = applyHighlightState;
+
                 // Add hidden widget to store original message
                 const hiddenWidget = node.addWidget('text', 'orinalMessage', '');
                 hiddenWidget.type = CONVERTED_TYPE;
@@ -52,6 +112,8 @@ app.registerExtension({
                     }
                 }
 
+                requestAnimationFrame(() => node.applyTriggerHighlightState?.());
+
                 const groupModeWidget = node.widgets[0];
                 groupModeWidget.callback = (value) => {
                     if (node.widgets[3].value) {
@@ -69,6 +131,7 @@ app.registerExtension({
                             active: value
                         }));
                         node.tagWidget.value = updatedTags;
+                        node.applyTriggerHighlightState?.();
                     }
                 }
             });
@@ -147,5 +210,6 @@ app.registerExtension({
         }
         
         node.tagWidget.value = tagArray;
+        node.applyTriggerHighlightState?.();
     }
 });

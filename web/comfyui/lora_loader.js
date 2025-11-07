@@ -11,6 +11,7 @@ import {
 } from "./utils.js";
 import { addLorasWidget } from "./loras_widget.js";
 import { applyLoraValuesToText, debounce } from "./lora_syntax_utils.js";
+import { applySelectionHighlight } from "./trigger_word_highlight.js";
 
 app.registerExtension({
   name: "LoraManager.LoraLoader",
@@ -178,7 +179,10 @@ app.registerExtension({
         this.lorasWidget = addLorasWidget(
           this,
           "loras",
-          {},
+          {
+            onSelectionChange: (selection) =>
+              applySelectionHighlight(this, selection),
+          },
           (value) => {
             // Prevent recursive calls
             if (isUpdating) return;

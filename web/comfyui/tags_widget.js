@@ -78,11 +78,11 @@ export function addTagsWidget(node, name, opts, callback) {
 
     let tagCount = 0;
     normalizedTags.forEach((tagData, index) => {
-      const { text, active } = tagData;
+      const { text, active, highlighted } = tagData;
       const tagEl = document.createElement("div");
       tagEl.className = "comfy-tag";
-      
-      updateTagStyle(tagEl, active);
+
+      updateTagStyle(tagEl, active, highlighted);
 
       tagEl.textContent = text;
       tagEl.title = text; // Set tooltip for full content
@@ -94,7 +94,14 @@ export function addTagsWidget(node, name, opts, callback) {
         // Toggle active state for this specific tag using its index
         const updatedTags = [...widget.value];
         updatedTags[index].active = !updatedTags[index].active;
-        updateTagStyle(tagEl, updatedTags[index].active);
+        updateTagStyle(
+          tagEl,
+          updatedTags[index].active,
+          updatedTags[index].highlighted
+        );
+
+        tagEl.dataset.active = updatedTags[index].active ? "true" : "false";
+        tagEl.dataset.highlighted = updatedTags[index].highlighted ? "true" : "false";
 
         widget.value = updatedTags;
       });
@@ -130,7 +137,7 @@ export function addTagsWidget(node, name, opts, callback) {
   };
 
   // Helper function to update tag style based on active state
-  function updateTagStyle(tagEl, active) {
+  function updateTagStyle(tagEl, active, highlighted = false) {
     const baseStyles = {
       padding: "3px 10px", // Adjusted vertical padding to balance text
       borderRadius: "6px",
@@ -160,12 +167,24 @@ export function addTagsWidget(node, name, opts, callback) {
       textAlign: "center", // Center text horizontally
     };
 
+    const highlightStyles = highlighted
+      ? {
+          boxShadow: "0 0 0 2px rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0,0,0,0.15)",
+          borderColor: "rgba(246, 224, 94, 0.8)",
+          backgroundImage: "linear-gradient(120deg, rgba(255,255,255,0.08), rgba(255,255,255,0))",
+        }
+      : {
+          boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+          backgroundImage: "none",
+        };
+
     if (active) {
       Object.assign(tagEl.style, {
         ...baseStyles,
         backgroundColor: "rgba(66, 153, 225, 0.9)",
         color: "white",
         borderColor: "rgba(66, 153, 225, 0.9)",
+        ...highlightStyles,
       });
     } else {
       Object.assign(tagEl.style, {
@@ -173,19 +192,24 @@ export function addTagsWidget(node, name, opts, callback) {
         backgroundColor: "rgba(45, 55, 72, 0.7)",
         color: "rgba(226, 232, 240, 0.8)",
         borderColor: "rgba(226, 232, 240, 0.2)",
+        ...highlightStyles,
       });
     }
 
     // Add hover effect
     tagEl.onmouseenter = () => {
       tagEl.style.transform = "translateY(-1px)";
-      tagEl.style.boxShadow = "0 2px 4px rgba(0,0,0,0.15)";
+      tagEl.dataset.prevBoxShadow = tagEl.style.boxShadow || "";
+      tagEl.style.boxShadow = "0 2px 4px rgba(0,0,0,0.2)";
     };
 
     tagEl.onmouseleave = () => {
       tagEl.style.transform = "translateY(0)";
-      tagEl.style.boxShadow = "0 1px 2px rgba(0,0,0,0.1)";
+      tagEl.style.boxShadow = tagEl.dataset.prevBoxShadow || "0 1px 2px rgba(0,0,0,0.1)";
     };
+
+    tagEl.dataset.active = active ? "true" : "false";
+    tagEl.dataset.highlighted = highlighted ? "true" : "false";
   }
 
   // Store the value as array
