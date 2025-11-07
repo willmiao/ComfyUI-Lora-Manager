@@ -63,12 +63,16 @@ app.registerExtension({
 
           try {
             // Update this stacker's direct trigger toggles with its own active loras
+            // Only if the stacker node itself is active (mode 0 for Always, mode 3 for On Trigger)
+            const isNodeActive = this.mode === undefined || this.mode === 0 || this.mode === 3;
             const activeLoraNames = new Set();
-            value.forEach((lora) => {
-              if (lora.active) {
-                activeLoraNames.add(lora.name);
-              }
-            });
+            if (isNodeActive) {
+              value.forEach((lora) => {
+                if (lora.active) {
+                  activeLoraNames.add(lora.name);
+                }
+              });
+            }
             updateConnectedTriggerWords(this, activeLoraNames);
 
             // Find all Lora Loader nodes in the chain that might need updates
@@ -94,7 +98,9 @@ app.registerExtension({
             this.lorasWidget.value = mergedLoras;
 
             // Update this stacker's direct trigger toggles with its own active loras
-            const activeLoraNames = getActiveLorasFromNode(this);
+            // Only if the stacker node itself is active (mode 0 for Always, mode 3 for On Trigger)
+            const isNodeActive = this.mode === undefined || this.mode === 0 || this.mode === 3;
+            const activeLoraNames = isNodeActive ? getActiveLorasFromNode(this) : new Set();
             updateConnectedTriggerWords(this, activeLoraNames);
 
             // Find all Lora Loader nodes in the chain that might need updates
@@ -103,6 +109,7 @@ app.registerExtension({
             isUpdating = false;
           }
         };
+           
         inputWidget.callback = setupInputWidgetWithAutocomplete(
           this,
           inputWidget,

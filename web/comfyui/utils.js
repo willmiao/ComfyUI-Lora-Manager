@@ -287,6 +287,7 @@ export function getActiveLorasFromNode(node) {
 }
 
 // Recursively collect all active loras from a node and its input chain
+// A node is considered active only if its mode is 0 (Always) or 3 (On Trigger)
 export function collectActiveLorasFromChain(node, visited = new Set()) {
     // Prevent infinite loops from circular references
     const nodeKey = getNodeKey(node);
@@ -298,8 +299,12 @@ export function collectActiveLorasFromChain(node, visited = new Set()) {
     }
     visited.add(nodeKey);
 
-    // Get active loras from current node
-    const allActiveLoraNames = getActiveLorasFromNode(node);
+    // Check if node is active (mode 0 for Always, mode 3 for On Trigger)
+    // Mode 2 is Never, Mode 4 is Bypass
+    const isNodeActive = node.mode === undefined || node.mode === 0 || node.mode === 3;
+    
+    // Get active loras from current node only if node is active
+    const allActiveLoraNames = isNodeActive ? getActiveLorasFromNode(node) : new Set();
     
     // Get connected input stackers and collect their active loras
     const inputStackers = getConnectedInputStackers(node);
