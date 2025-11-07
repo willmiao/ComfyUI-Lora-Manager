@@ -118,6 +118,35 @@ app.registerExtension({
         let isUpdating = false;
         let isSyncingInput = false;
 
+        // Mechanism: Property descriptor to listen for mode changes
+        const self = this;
+        let _mode = this.mode;
+        Object.defineProperty(this, 'mode', {
+          get() {
+            return _mode;
+          },
+          set(value) {
+            const oldValue = _mode;
+            _mode = value;
+            
+            // Trigger mode change handler
+            if (self.onModeChange) {
+              self.onModeChange(value, oldValue);
+            }
+            
+            console.log(`[Lora Loader] Node mode changed from ${oldValue} to ${value}`);
+          }
+        });
+
+        // Define the mode change handler
+        this.onModeChange = function(newMode, oldMode) {
+          console.log(`Lora Loader node mode changed: from ${oldMode} to ${newMode}`);
+          
+          // Update connected trigger word toggle nodes when mode changes
+          const allActiveLoraNames = collectActiveLorasFromChain(self);
+          updateConnectedTriggerWords(self, allActiveLoraNames);
+        };
+
         const inputWidget = this.widgets[0];
         inputWidget.options.getMaxHeight = () => 100;
         this.inputWidget = inputWidget;
