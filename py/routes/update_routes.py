@@ -344,6 +344,11 @@ class UpdateRoutes:
             origin.fetch()
             
             if nightly:
+                # Reset to discard any local changes
+                repo.git.reset('--hard')
+                # Clean untracked files
+                repo.git.clean('-fd')
+                
                 # Switch to main branch and pull latest
                 main_branch = 'main'
                 if main_branch not in [branch.name for branch in repo.branches]:
@@ -357,6 +362,11 @@ class UpdateRoutes:
                 new_version = f"main-{repo.head.commit.hexsha[:7]}"
                 
             else:
+                # Reset to discard any local changes
+                repo.git.reset('--hard')
+                # Clean untracked files
+                repo.git.clean('-fd')
+                
                 # Get latest release tag
                 tags = sorted(repo.tags, key=lambda t: t.commit.committed_datetime, reverse=True)
                 if not tags:
