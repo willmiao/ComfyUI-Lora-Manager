@@ -4,7 +4,10 @@ import pytest
 
 from py.services import model_metadata_provider as provider_module
 from py.services.errors import RateLimitError
-from py.services.model_metadata_provider import FallbackMetadataProvider
+from py.services.model_metadata_provider import (
+    FallbackMetadataProvider,
+    RateLimitRetryingProvider,
+)
 
 
 class RateLimitThenSuccessProvider:
@@ -79,4 +82,38 @@ async def test_fallback_respects_retry_limit(monkeypatch):
     assert exc_info.value.provider == "primary"
     assert primary.calls == 2
     assert secondary.calls == 0
+    sleep_mock.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_retrying_provider_retries(monkeypatch):
+    sleep_mock = AsyncMock()
+    monkeypatch.setattr(provider_module.asyncio, "sleep", sleep_mock)
+    monkeypatch.setattr(provider_module.random, "uniform", lambda *_: 0.0)
+
+    inner = RateLimitThenSuccessProvider()
+    wrapper = RateLimitRetryingProvider(inner, label="inner", rate_limit_base_delay=0.1)
+
+    result, error = await wrapper.get_model_by_hash("abc")
+
+    assert error is None
+    assert result == {"id": "ok"}
+    assert inner.calls == 2
+    sleep_mock.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_retrying_provider_respects_limit(monkeypatch):
+    sleep_mock = AsyncMock()
+    monkeypatch.setattr(provider_module.asyncio, "sleep", sleep_mock)
+    monkeypatch.setattr(provider_module.random, "uniform", lambda *_: 0.0)
+
+    inner = AlwaysRateLimitedProvider()
+    wrapper = RateLimitRetryingProvider(inner, label="inner", rate_limit_retry_limit=2)
+
+    with pytest.raises(RateLimitError) as exc_info:
+        await wrapper.get_model_by_hash("abc")
+
+    assert exc_info.value.provider == "inner"
+    assert inner.calls == 2
     sleep_mock.assert_awaited_once()
