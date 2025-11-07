@@ -1,6 +1,6 @@
 import { forwardMiddleMouseToCanvas } from "./utils.js";
 
-export function addTagsWidget(node, name, opts, callback) {
+export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.02) {
   // Create container for tags
   const container = document.createElement("div");
   container.className = "comfy-tags-container";
@@ -78,13 +78,19 @@ export function addTagsWidget(node, name, opts, callback) {
 
     let tagCount = 0;
     normalizedTags.forEach((tagData, index) => {
-      const { text, active, highlighted } = tagData;
+      const { text, active, highlighted, strength } = tagData;
       const tagEl = document.createElement("div");
       tagEl.className = "comfy-tag";
 
-      updateTagStyle(tagEl, active, highlighted);
+      updateTagStyle(tagEl, active, highlighted, strength);
 
-      tagEl.textContent = text;
+      // Set the text content to include strength if present
+      // Always show strength if it has been modified to avoid layout shift
+      if (strength !== undefined && strength !== null) {
+        tagEl.textContent = `${text}:${strength.toFixed(2)}`;
+      } else {
+        tagEl.textContent = text;
+      }
       tagEl.title = text; // Set tooltip for full content
 
       // Add click handler to toggle state
@@ -97,11 +103,56 @@ export function addTagsWidget(node, name, opts, callback) {
         updateTagStyle(
           tagEl,
           updatedTags[index].active,
-          updatedTags[index].highlighted
+          updatedTags[index].highlighted,
+          updatedTags[index].strength
         );
 
         tagEl.dataset.active = updatedTags[index].active ? "true" : "false";
         tagEl.dataset.highlighted = updatedTags[index].highlighted ? "true" : "false";
+
+        widget.value = updatedTags;
+      });
+
+      // Add mouse wheel handler to adjust strength
+      tagEl.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Only adjust strength if the mouse is over the tag
+        const updatedTags = [...widget.value];
+        let currentStrength = updatedTags[index].strength;
+        
+        // If no strength is set, default to 1.0
+        if (currentStrength === undefined || currentStrength === null) {
+          currentStrength = 1.0;
+        }
+
+        // Adjust strength based on scroll direction
+        // DeltaY < 0 is scroll up, deltaY > 0 is scroll down
+        if (e.deltaY < 0) {
+          // Scroll up: increase strength by wheelSensitivity
+          currentStrength += wheelSensitivity;
+        } else {
+          // Scroll down: decrease strength by wheelSensitivity
+          currentStrength -= wheelSensitivity;
+        }
+
+        // Ensure strength doesn't go below 0
+        currentStrength = Math.max(0, currentStrength);
+
+        // Update the strength value
+        updatedTags[index].strength = currentStrength;
+
+        // Update the tag display to show the strength value
+        // Always show strength once it has been modified to avoid layout shift
+        tagEl.textContent = `${updatedTags[index].text}:${currentStrength.toFixed(2)}`;
+
+        updateTagStyle(
+          tagEl,
+          updatedTags[index].active,
+          updatedTags[index].highlighted,
+          updatedTags[index].strength
+        );
 
         widget.value = updatedTags;
       });
@@ -137,7 +188,7 @@ export function addTagsWidget(node, name, opts, callback) {
   };
 
   // Helper function to update tag style based on active state
-  function updateTagStyle(tagEl, active, highlighted = false) {
+  function updateTagStyle(tagEl, active, highlighted = false, strength = null) {
     const baseStyles = {
       padding: "3px 10px", // Adjusted vertical padding to balance text
       borderRadius: "6px",
@@ -178,6 +229,14 @@ export function addTagsWidget(node, name, opts, callback) {
           backgroundImage: "none",
         };
 
+    // Additional styles for tags with modified strength
+    const strengthStyles = (strength !== null && strength !== undefined && strength !== 1.0)
+      ? {
+          border: "1px solid rgba(255, 215, 0, 0.7)", // Gold border for modified strength
+          backgroundImage: "linear-gradient(120deg, rgba(255,215,0,0.1), rgba(255,215,0,0.05))",
+        }
+      : {};
+
     if (active) {
       Object.assign(tagEl.style, {
         ...baseStyles,
@@ -185,6 +244,7 @@ export function addTagsWidget(node, name, opts, callback) {
         color: "white",
         borderColor: "rgba(66, 153, 225, 0.9)",
         ...highlightStyles,
+        ...strengthStyles,
       });
     } else {
       Object.assign(tagEl.style, {
@@ -193,6 +253,7 @@ export function addTagsWidget(node, name, opts, callback) {
         color: "rgba(226, 232, 240, 0.8)",
         borderColor: "rgba(226, 232, 240, 0.2)",
         ...highlightStyles,
+        ...strengthStyles,
       });
     }
 

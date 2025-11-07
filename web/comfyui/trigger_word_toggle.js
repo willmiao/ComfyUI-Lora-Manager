@@ -3,9 +3,56 @@ import { api } from "../../scripts/api.js";
 import { CONVERTED_TYPE, getNodeFromGraph } from "./utils.js";
 import { addTagsWidget } from "./tags_widget.js";
 
+// Setting ID for wheel sensitivity
+const TRIGGER_WORD_WHEEL_SENSITIVITY_ID = "loramanager.trigger_word_wheel_sensitivity";
+const TRIGGER_WORD_WHEEL_SENSITIVITY_DEFAULT = 0.02;
+
+// Get the wheel sensitivity setting value
+const getWheelSensitivity = (() => {
+    let settingsUnavailableLogged = false;
+
+    return () => {
+        const settingManager = app?.extensionManager?.setting;
+        if (!settingManager || typeof settingManager.get !== "function") {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: settings API unavailable, using default wheel sensitivity.");
+                settingsUnavailableLogged = true;
+            }
+            return TRIGGER_WORD_WHEEL_SENSITIVITY_DEFAULT;
+        }
+
+        try {
+            const value = settingManager.get(TRIGGER_WORD_WHEEL_SENSITIVITY_ID);
+            return value ?? TRIGGER_WORD_WHEEL_SENSITIVITY_DEFAULT;
+        } catch (error) {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: unable to read wheel sensitivity setting, using default.", error);
+                settingsUnavailableLogged = true;
+            }
+            return TRIGGER_WORD_WHEEL_SENSITIVITY_DEFAULT;
+        }
+    };
+})();
+
 // TriggerWordToggle extension for ComfyUI
 app.registerExtension({
     name: "LoraManager.TriggerWordToggle",
+    
+    settings: [
+        {
+            id: TRIGGER_WORD_WHEEL_SENSITIVITY_ID,
+            name: "Trigger Word Wheel Sensitivity",
+            type: "slider",
+            attrs: {
+                min: 0.01,
+                max: 0.1,
+                step: 0.01,
+            },
+            defaultValue: TRIGGER_WORD_WHEEL_SENSITIVITY_DEFAULT,
+            tooltip: "Mouse wheel sensitivity for adjusting trigger word strength (default: 0.02)",
+            category: ["LoRA Manager", "Trigger Word Toggle", "Wheel Sensitivity"],
+        },
+    ],
     
     setup() {
         // Add message handler to listen for messages from Python
@@ -26,10 +73,13 @@ app.registerExtension({
 
             // Wait for node to be properly initialized
             requestAnimationFrame(async () => {
+                // Get the wheel sensitivity setting
+                const wheelSensitivity = getWheelSensitivity();
+                
                 // Get the widget object directly from the returned object
                 const result = addTagsWidget(node, "toggle_trigger_words", {
                     defaultVal: []
-                });
+                }, null, wheelSensitivity);
                 
                 node.tagWidget = result.widget;
 
@@ -134,6 +184,24 @@ app.registerExtension({
                         node.applyTriggerHighlightState?.();
                     }
                 }
+                
+                // Override the serializeValue method to properly format trigger words with strength
+                const originalSerializeValue = result.widget.serializeValue;
+                result.widget.serializeValue = function() {
+                    const value = this.value || [];
+                    // Transform the values to include strength in the proper format
+                    const transformedValue = value.map(tag => {
+                        // If strength is defined (even if it's 1.0), format as {text: "(original_text:strength)", ...}
+                        if (tag.strength !== undefined && tag.strength !== null) {
+                            return {
+                                ...tag,
+                                text: `(${tag.text}:${tag.strength.toFixed(2)})`
+                            };
+                        }
+                        return tag;
+                    });
+                    return transformedValue;
+                };
             });
         }
     },
@@ -157,59 +225,74 @@ app.registerExtension({
     },
     
     // Update tags display based on group mode
-    updateTagsBasedOnMode(node, message, groupMode) {
-        if (!node.tagWidget) return;
-        
-        const existingTags = node.tagWidget.value || [];
-        const existingTagMap = {};
-        
-        // Create a map of existing tags and their active states
-        existingTags.forEach(tag => {
-            existingTagMap[tag.text] = tag.active;
+  updateTagsBasedOnMode(node, message, groupMode) {
+    if (!node.tagWidget) return;
+    
+    const existingTags = node.tagWidget.value || [];
+    const existingTagMap = {};
+    
+    // Create a map of existing tags and their active states and strengths
+    existingTags.forEach(tag => {
+      existingTagMap[tag.text] = {
+        active: tag.active,
+        strength: tag.strength
+      };
+    });
+    
+    // Get default active state from the widget
+    const defaultActive = node.widgets[1] ? node.widgets[1].value : true;
+    
+    let tagArray = [];
+    
+    if (groupMode) {
+      if (message.trim() === '') {
+        tagArray = [];
+      }
+      // Group mode: split by ',,' and treat each group as a single tag
+      else if (message.includes(',,')) {
+        const groups = message.split(/,{2,}/); // Match 2 or more consecutive commas
+        tagArray = groups
+          .map(group => group.trim())
+          .filter(group => group)
+          .map(group => {
+            // Check if this group already exists with strength info
+            const existing = existingTagMap[group];
+            return {
+              text: group,
+              // Use existing values if available, otherwise use defaults
+              active: existing ? existing.active : defaultActive,
+              strength: existing ? existing.strength : null
+            };
+          });
+      } else {
+        // If no ',,' delimiter, treat the entire message as one group
+        const existing = existingTagMap[message.trim()];
+        tagArray = [{
+          text: message.trim(),
+          // Use existing values if available, otherwise use defaults
+          active: existing ? existing.active : defaultActive,
+          strength: existing ? existing.strength : null
+        }];
+      }
+    } else {
+      // Normal mode: split by commas and treat each word as a separate tag
+      tagArray = message
+        .split(',')
+        .map(word => word.trim())
+        .filter(word => word)
+        .map(word => {
+          // Check if this word already exists with strength info
+          const existing = existingTagMap[word];
+          return {
+            text: word,
+            // Use existing values if available, otherwise use defaults
+            active: existing ? existing.active : defaultActive,
+            strength: existing ? existing.strength : null
+          };
         });
-        
-        // Get default active state from the widget
-        const defaultActive = node.widgets[1] ? node.widgets[1].value : true;
-        
-        let tagArray = [];
-        
-        if (groupMode) {
-            if (message.trim() === '') {
-                tagArray = [];
-            }
-            // Group mode: split by ',,' and treat each group as a single tag
-            else if (message.includes(',,')) {
-                const groups = message.split(/,{2,}/); // Match 2 or more consecutive commas
-                tagArray = groups
-                    .map(group => group.trim())
-                    .filter(group => group)
-                    .map(group => ({
-                        text: group,
-                        // Use defaultActive only for new tags
-                        active: existingTagMap[group] !== undefined ? existingTagMap[group] : defaultActive
-                    }));
-            } else {
-                // If no ',,' delimiter, treat the entire message as one group
-                tagArray = [{
-                    text: message.trim(),
-                    // Use defaultActive only for new tags
-                    active: existingTagMap[message.trim()] !== undefined ? existingTagMap[message.trim()] : defaultActive
-                }];
-            }
-        } else {
-            // Normal mode: split by commas and treat each word as a separate tag
-            tagArray = message
-                .split(',')
-                .map(word => word.trim())
-                .filter(word => word)
-                .map(word => ({
-                    text: word,
-                    // Use defaultActive only for new tags
-                    active: existingTagMap[word] !== undefined ? existingTagMap[word] : defaultActive
-                }));
-        }
-        
-        node.tagWidget.value = tagArray;
-        node.applyTriggerHighlightState?.();
     }
+    
+    node.tagWidget.value = tagArray;
+    node.applyTriggerHighlightState?.();
+  }
 });
