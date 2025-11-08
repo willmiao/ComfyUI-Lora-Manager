@@ -5,6 +5,7 @@ from py.services.lora_service import LoraService
 from py.services.checkpoint_service import CheckpointService
 from py.services.embedding_service import EmbeddingService
 from py.services.model_query import (
+    FilterCriteria,
     ModelCacheRepository,
     ModelFilterSet,
     SearchStrategy,
@@ -126,7 +127,7 @@ async def test_get_paginated_data_uses_injected_collaborators():
         search="query",
         fuzzy_search=True,
         base_models=["base"],
-        tags=["tag"],
+        tags={"tag": "include"},
         search_options={"recursive": False},
         favorites_only=True,
     )
@@ -141,7 +142,7 @@ async def test_get_paginated_data_uses_injected_collaborators():
     assert call_data == data
     assert criteria.folder == "root"
     assert criteria.base_models == ["base"]
-    assert criteria.tags == ["tag"]
+    assert criteria.tags == {"tag": "include"}
     assert criteria.favorites_only is True
     assert criteria.search_options.get("recursive") is False
 
@@ -234,7 +235,7 @@ async def test_get_paginated_data_filters_and_searches_combination():
         folder="root",
         search="artist",
         base_models=["v1"],
-        tags=["tag1"],
+        tags={"tag1": "include"},
         search_options={"creator": True, "tags": True},
         favorites_only=True,
     )
@@ -531,6 +532,36 @@ async def test_get_paginated_data_update_available_only_without_update_service()
     assert response["items"] == []
     assert response["total"] == 0
     assert response["total_pages"] == 0
+
+
+def test_model_filter_set_handles_include_and_exclude_tag_filters():
+    settings = StubSettings({})
+    filter_set = ModelFilterSet(settings)
+    data = [
+        {"model_name": "StyleOnly", "tags": ["style"]},
+        {"model_name": "StyleAnime", "tags": ["style", "anime"]},
+        {"model_name": "AnimeOnly", "tags": ["anime"]},
+    ]
+
+    criteria = FilterCriteria(tags={"style": "include", "anime": "exclude"})
+    result = filter_set.apply(data, criteria)
+
+    assert [item["model_name"] for item in result] == ["StyleOnly"]
+
+
+def test_model_filter_set_supports_legacy_tag_arrays():
+    settings = StubSettings({})
+    filter_set = ModelFilterSet(settings)
+    data = [
+        {"model_name": "StyleOnly", "tags": ["style"]},
+        {"model_name": "StyleAnime", "tags": ["style", "anime"]},
+        {"model_name": "AnimeOnly", "tags": ["anime"]},
+    ]
+
+    criteria = FilterCriteria(tags=["style"])
+    result = filter_set.apply(data, criteria)
+
+    assert [item["model_name"] for item in result] == ["StyleOnly", "StyleAnime"]
 
 
 @pytest.mark.asyncio

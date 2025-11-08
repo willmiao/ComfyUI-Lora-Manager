@@ -59,7 +59,7 @@ class BaseModelService(ABC):
         search: str = None,
         fuzzy_search: bool = False,
         base_models: list = None,
-        tags: list = None,
+        tags: Optional[Dict[str, str]] = None,
         search_options: dict = None,
         hash_filters: dict = None,
         favorites_only: bool = False,
@@ -149,7 +149,7 @@ class BaseModelService(ABC):
         data: List[Dict],
         folder: str = None,
         base_models: list = None,
-        tags: list = None,
+        tags: Optional[Dict[str, str]] = None,
         favorites_only: bool = False,
         search_options: dict = None,
     ) -> List[Dict]:

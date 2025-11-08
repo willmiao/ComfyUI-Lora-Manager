@@ -66,8 +66,14 @@ export async function fetchRecipesPage(page = 1, pageSize = 100) {
             }
             
             // Add tag filters
-            if (pageState.filters?.tags && pageState.filters.tags.length) {
-                params.append('tags', pageState.filters.tags.join(','));
+            if (pageState.filters?.tags && Object.keys(pageState.filters.tags).length) {
+                Object.entries(pageState.filters.tags).forEach(([tag, state]) => {
+                    if (state === 'include') {
+                        params.append('tag_include', tag);
+                    } else if (state === 'exclude') {
+                        params.append('tag_exclude', tag);
+                    }
+                });
             }
         }
 

@@ -66,18 +66,19 @@ export const state = {
             activeFolder: getStorageItem(`${MODEL_TYPES.LORA}_activeFolder`),
             activeLetterFilter: null,
             previewVersions: loraPreviewVersions,
-            searchManager: null,
-            searchOptions: {
-                filename: true,
-                modelname: true,
-                tags: false,
-                creator: false,
-                recursive: getStorageItem(`${MODEL_TYPES.LORA}_recursiveSearch`, true),
-            },
-            filters: {
-                baseModel: [],
-                tags: []
-            },
+        searchManager: null,
+        searchOptions: {
+            filename: true,
+            modelname: true,
+            tags: false,
+            creator: false,
+            recursive: getStorageItem(`${MODEL_TYPES.LORA}_recursiveSearch`, true),
+        },
+        filters: {
+            baseModel: [],
+            tags: {},
+            license: {}
+        },
             bulkMode: false,
             selectedLoras: new Set(),
             loraMetadataCache: new Map(),
@@ -91,18 +92,19 @@ export const state = {
             isLoading: false,
             hasMore: true,
             sortBy: 'date',
-            searchManager: null,
-            searchOptions: {
-                title: true,
-                tags: true,
-                loraName: true,
-                loraModel: true
-            },
-            filters: {
-                baseModel: [],
-                tags: [],
-                search: ''
-            },
+        searchManager: null,
+        searchOptions: {
+            title: true,
+            tags: true,
+            loraName: true,
+            loraModel: true
+        },
+        filters: {
+            baseModel: [],
+            tags: {},
+            license: {},
+            search: ''
+        },
             pageSize: 20,
             showFavoritesOnly: false,
             duplicatesMode: false,
@@ -117,17 +119,18 @@ export const state = {
             sortBy: 'name',
             activeFolder: getStorageItem(`${MODEL_TYPES.CHECKPOINT}_activeFolder`),
             previewVersions: checkpointPreviewVersions,
-            searchManager: null,
-            searchOptions: {
-                filename: true,
-                modelname: true,
-                creator: false,
-                recursive: getStorageItem(`${MODEL_TYPES.CHECKPOINT}_recursiveSearch`, true),
-            },
-            filters: {
-                baseModel: [],
-                tags: []
-            },
+        searchManager: null,
+        searchOptions: {
+            filename: true,
+            modelname: true,
+            creator: false,
+            recursive: getStorageItem(`${MODEL_TYPES.CHECKPOINT}_recursiveSearch`, true),
+        },
+        filters: {
+            baseModel: [],
+            tags: {},
+            license: {}
+        },
             modelType: 'checkpoint', // 'checkpoint' or 'diffusion_model'
             bulkMode: false,
             selectedModels: new Set(),
@@ -145,18 +148,19 @@ export const state = {
             activeFolder: getStorageItem(`${MODEL_TYPES.EMBEDDING}_activeFolder`),
             activeLetterFilter: null,
             previewVersions: embeddingPreviewVersions,
-            searchManager: null,
-            searchOptions: {
-                filename: true,
-                modelname: true,
-                tags: false,
-                creator: false,
-                recursive: getStorageItem(`${MODEL_TYPES.EMBEDDING}_recursiveSearch`, true),
-            },
-            filters: {
-                baseModel: [],
-                tags: []
-            },
+        searchManager: null,
+        searchOptions: {
+            filename: true,
+            modelname: true,
+            tags: false,
+            creator: false,
+            recursive: getStorageItem(`${MODEL_TYPES.EMBEDDING}_recursiveSearch`, true),
+        },
+        filters: {
+            baseModel: [],
+            tags: {},
+            license: {}
+        },
             bulkMode: false,
             selectedModels: new Set(),
             metadataCache: new Map(),
