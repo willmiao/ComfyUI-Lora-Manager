@@ -659,9 +659,16 @@ class ModelQueryHandler:
             model_name = request.query.get("name")
             if not model_name:
                 return web.Response(text=f"{self._service.model_type.capitalize()} file name is required", status=400)
+            include_license_flags = (request.query.get("license_flags", "").strip().lower() in {"1", "true", "yes", "on"})
             preview_url = await self._service.get_model_preview_url(model_name)
             if preview_url:
-                return web.json_response({"success": True, "preview_url": preview_url})
+                response_payload: dict[str, object] = {"success": True, "preview_url": preview_url}
+                if include_license_flags:
+                    model_data = await self._service.get_model_info_by_name(model_name)
+                    license_flags = (model_data or {}).get("license_flags")
+                    if license_flags is not None:
+                        response_payload["license_flags"] = int(license_flags)
+                return web.json_response(response_payload)
             return web.json_response({"success": False, "error": f"No preview URL found for the specified {self._service.model_type}"}, status=404)
         except Exception as exc:
             self._logger.error("Error getting %s preview URL: %s", self._service.model_type, exc, exc_info=True)
