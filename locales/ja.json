@@ -188,6 +188,9 @@
             "title": "モデルをフィルタ",
             "baseModel": "ベースモデル",
             "modelTags": "タグ（上位20）",
+            "license": "ライセンス",
+            "noCreditRequired": "クレジット不要",
+            "allowSellingGeneratedContent": "販売許可",
             "clearAll": "すべてのフィルタをクリア"
         },
         "theme": {

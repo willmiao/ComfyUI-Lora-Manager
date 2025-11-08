@@ -188,6 +188,9 @@
             "title": "Filter Models",
             "baseModel": "Base Model",
             "modelTags": "Tags (Top 20)",
+            "license": "License",
+            "noCreditRequired": "No Credit Required",
+            "allowSellingGeneratedContent": "Allow Selling",
             "clearAll": "Clear All Filters"
         },
         "theme": {

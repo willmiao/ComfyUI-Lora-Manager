@@ -188,6 +188,9 @@
             "title": "סנן מודלים",
             "baseModel": "מודל בסיס",
             "modelTags": "תגיות (20 המובילות)",
+            "license": "רישיון",
+            "noCreditRequired": "ללא קרדיט נדרש",
+            "allowSellingGeneratedContent": "אפשר מכירה",
             "clearAll": "נקה את כל המסננים"
         },
         "theme": {

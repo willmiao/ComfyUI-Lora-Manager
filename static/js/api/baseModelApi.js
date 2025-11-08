@@ -817,6 +817,33 @@ export class BaseModelApiClient {
                     params.append('base_model', model);
                 });
             }
+            
+            // Add license filters
+            if (pageState.filters.license) {
+                const licenseFilters = pageState.filters.license;
+                
+                if (licenseFilters.noCredit) {
+                    // For noCredit filter: 
+                    // - 'include' means credit_required=False (no credit required)
+                    // - 'exclude' means credit_required=True (credit required)
+                    if (licenseFilters.noCredit === 'include') {
+                        params.append('credit_required', 'false');
+                    } else if (licenseFilters.noCredit === 'exclude') {
+                        params.append('credit_required', 'true');
+                    }
+                }
+                
+                if (licenseFilters.allowSelling) {
+                    // For allowSelling filter:
+                    // - 'include' means allow_selling_generated_content=True
+                    // - 'exclude' means allow_selling_generated_content=False
+                    if (licenseFilters.allowSelling === 'include') {
+                        params.append('allow_selling_generated_content', 'true');
+                    } else if (licenseFilters.allowSelling === 'exclude') {
+                        params.append('allow_selling_generated_content', 'false');
+                    }
+                }
+            }
         }
 
         this._addModelSpecificParams(params, pageState);

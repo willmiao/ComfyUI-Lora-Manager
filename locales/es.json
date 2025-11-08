@@ -188,6 +188,9 @@
             "title": "Filtrar modelos",
             "baseModel": "Modelo base",
             "modelTags": "Etiquetas (Top 20)",
+            "license": "Licencia",
+            "noCreditRequired": "Sin crédito requerido",
+            "allowSellingGeneratedContent": "Venta permitida",
             "clearAll": "Limpiar todos los filtros"
         },
         "theme": {
