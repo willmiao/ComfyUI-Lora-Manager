@@ -152,14 +152,31 @@ class RecipeListingHandler:
                 "lora_model": request.query.get("search_lora_model", "true").lower() == "true",
             }
 
-            filters: Dict[str, list[str]] = {}
+            filters: Dict[str, Any] = {}
             base_models = request.query.get("base_models")
             if base_models:
                 filters["base_model"] = base_models.split(",")
 
-            tags = request.query.get("tags")
-            if tags:
-                filters["tags"] = tags.split(",")
+            tag_filters: Dict[str, str] = {}
+            legacy_tags = request.query.get("tags")
+            if legacy_tags:
+                for tag in legacy_tags.split(","):
+                    tag = tag.strip()
+                    if tag:
+                        tag_filters[tag] = "include"
+
+            include_tags = request.query.getall("tag_include", [])
+            for tag in include_tags:
+                if tag:
+                    tag_filters[tag] = "include"
+
+            exclude_tags = request.query.getall("tag_exclude", [])
+            for tag in exclude_tags:
+                if tag:
+                    tag_filters[tag] = "exclude"
+
+            if tag_filters:
+                filters["tags"] = tag_filters
 
             lora_hash = request.query.get("lora_hash")
 

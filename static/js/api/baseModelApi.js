@@ -806,9 +806,13 @@ export class BaseModelApiClient {
         params.append('recursive', pageState.searchOptions.recursive ? 'true' : 'false');
         
         if (pageState.filters) {
-            if (pageState.filters.tags && pageState.filters.tags.length > 0) {
-                pageState.filters.tags.forEach(tag => {
-                    params.append('tag', tag);
+            if (pageState.filters.tags && Object.keys(pageState.filters.tags).length > 0) {
+                Object.entries(pageState.filters.tags).forEach(([tag, state]) => {
+                    if (state === 'include') {
+                        params.append('tag_include', tag);
+                    } else if (state === 'exclude') {
+                        params.append('tag_exclude', tag);
+                    }
                 });
             }
             

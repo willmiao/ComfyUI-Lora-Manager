@@ -144,7 +144,28 @@ class ModelListingHandler:
         fuzzy_search = request.query.get("fuzzy_search", "false").lower() == "true"
 
         base_models = request.query.getall("base_model", [])
-        tags = request.query.getall("tag", [])
+        # Support legacy ?tag=foo plus new ?tag_include/foo & ?tag_exclude parameters
+        legacy_tags = request.query.getall("tag", [])
+        if not legacy_tags:
+            legacy_csv = request.query.get("tags")
+            if legacy_csv:
+                legacy_tags = [tag.strip() for tag in legacy_csv.split(",") if tag.strip()]
+
+        include_tags = request.query.getall("tag_include", [])
+        exclude_tags = request.query.getall("tag_exclude", [])
+
+        tag_filters: Dict[str, str] = {}
+        for tag in legacy_tags:
+            if tag:
+                tag_filters[tag] = "include"
+
+        for tag in include_tags:
+            if tag:
+                tag_filters[tag] = "include"
+
+        for tag in exclude_tags:
+            if tag:
+                tag_filters[tag] = "exclude"
         favorites_only = request.query.get("favorites_only", "false").lower() == "true"
 
         search_options = {
@@ -189,7 +210,7 @@ class ModelListingHandler:
             "search": search,
             "fuzzy_search": fuzzy_search,
             "base_models": base_models,
-            "tags": tags,
+            "tags": tag_filters,
             "search_options": search_options,
             "hash_filters": hash_filters,
             "favorites_only": favorites_only,

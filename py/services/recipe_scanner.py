@@ -729,10 +729,32 @@ class RecipeScanner:
                 
                 # Filter by tags
                 if 'tags' in filters and filters['tags']:
-                    filtered_data = [
-                        item for item in filtered_data
-                        if any(tag in item.get('tags', []) for tag in filters['tags'])
-                    ]
+                    tag_spec = filters['tags']
+                    include_tags = set()
+                    exclude_tags = set()
+                    
+                    if isinstance(tag_spec, dict):
+                        for tag, state in tag_spec.items():
+                            if not tag:
+                                continue
+                            if state == 'exclude':
+                                exclude_tags.add(tag)
+                            else:
+                                include_tags.add(tag)
+                    else:
+                        include_tags = {tag for tag in tag_spec if tag}
+
+                    if include_tags:
+                        filtered_data = [
+                            item for item in filtered_data
+                            if any(tag in include_tags for tag in (item.get('tags', []) or []))
+                        ]
+
+                    if exclude_tags:
+                        filtered_data = [
+                            item for item in filtered_data
+                            if not any(tag in exclude_tags for tag in (item.get('tags', []) or []))
+                        ]
 
         # Calculate pagination
         total_items = len(filtered_data)

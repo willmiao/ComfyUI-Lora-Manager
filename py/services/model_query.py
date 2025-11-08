@@ -28,7 +28,7 @@ class FilterCriteria:
 
     folder: Optional[str] = None
     base_models: Optional[Sequence[str]] = None
-    tags: Optional[Sequence[str]] = None
+    tags: Optional[Dict[str, str]] = None
     favorites_only: bool = False
     search_options: Optional[Dict[str, Any]] = None
 
@@ -108,12 +108,30 @@ class ModelFilterSet:
             base_model_set = set(base_models)
             items = [item for item in items if item.get("base_model") in base_model_set]
 
-        tags = criteria.tags or []
-        if tags:
-            tag_set = set(tags)
+        tag_filters = criteria.tags or {}
+        include_tags = set()
+        exclude_tags = set()
+        if isinstance(tag_filters, dict):
+            for tag, state in tag_filters.items():
+                if not tag:
+                    continue
+                if state == "exclude":
+                    exclude_tags.add(tag)
+                else:
+                    include_tags.add(tag)
+        else:
+            include_tags = {tag for tag in tag_filters if tag}
+
+        if include_tags:
             items = [
                 item for item in items
-                if any(tag in tag_set for tag in item.get("tags", []))
+                if any(tag in include_tags for tag in (item.get("tags", []) or []))
+            ]
+
+        if exclude_tags:
+            items = [
+                item for item in items
+                if not any(tag in exclude_tags for tag in (item.get("tags", []) or []))
             ]
 
         return items

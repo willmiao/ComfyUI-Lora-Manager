@@ -225,21 +225,31 @@ describe('FilterManager tag and base model filters', () => {
     tagChip.dispatchEvent(new Event('click', { bubbles: true }));
     await vi.waitFor(() => expect(loadMoreWithVirtualScrollMock).toHaveBeenCalledTimes(1));
 
-    expect(getCurrentPageState().filters.tags).toEqual(['style']);
+    expect(getCurrentPageState().filters.tags).toEqual({ style: 'include' });
     expect(tagChip.classList.contains('active')).toBe(true);
     expect(document.getElementById('activeFiltersCount').textContent).toBe('1');
     expect(document.getElementById('activeFiltersCount').style.display).toBe('inline-flex');
 
     const storageKey = `lora_manager_${pageKey}_filters`;
     const storedFilters = JSON.parse(localStorage.getItem(storageKey));
-    expect(storedFilters.tags).toEqual(['style']);
+    expect(storedFilters.tags).toEqual({ style: 'include' });
 
     loadMoreWithVirtualScrollMock.mockClear();
 
     tagChip.dispatchEvent(new Event('click', { bubbles: true }));
     await vi.waitFor(() => expect(loadMoreWithVirtualScrollMock).toHaveBeenCalledTimes(1));
 
-    expect(getCurrentPageState().filters.tags).toEqual([]);
+    expect(getCurrentPageState().filters.tags).toEqual({ style: 'exclude' });
+    expect(tagChip.classList.contains('exclude')).toBe(true);
+    expect(tagChip.classList.contains('active')).toBe(false);
+    expect(document.getElementById('activeFiltersCount').textContent).toBe('1');
+
+    loadMoreWithVirtualScrollMock.mockClear();
+
+    tagChip.dispatchEvent(new Event('click', { bubbles: true }));
+    await vi.waitFor(() => expect(loadMoreWithVirtualScrollMock).toHaveBeenCalledTimes(1));
+
+    expect(getCurrentPageState().filters.tags).toEqual({});
     expect(document.getElementById('activeFiltersCount').style.display).toBe('none');
   });
 
