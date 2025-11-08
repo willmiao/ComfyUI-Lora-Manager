@@ -188,6 +188,9 @@
             "title": "Фильтр моделей",
             "baseModel": "Базовая модель",
             "modelTags": "Теги (Топ 20)",
+            "license": "Лицензия",
+            "noCreditRequired": "Без указания авторства",
+            "allowSellingGeneratedContent": "Продажа разрешена",
             "clearAll": "Очистить все фильтры"
         },
         "theme": {

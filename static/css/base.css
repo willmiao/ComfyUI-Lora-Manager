@@ -51,6 +51,8 @@ html, body {
     --lora-border: oklch(72% 0.03 256 / 0.45);
     --lora-text: oklch(95% 0.02 256);
     --lora-error: oklch(75% 0.32 29);
+    --lora-error-bg: color-mix(in oklch, var(--lora-error) 20%, transparent);
+    --lora-error-border: color-mix(in oklch, var(--lora-error) 50%, transparent);
     --lora-warning: oklch(var(--lora-warning-l) var(--lora-warning-c) var(--lora-warning-h));
     --lora-success: oklch(var(--lora-success-l) var(--lora-success-c) var(--lora-success-h));
     --badge-update-bg: oklch(72% 0.2 220);
@@ -103,6 +105,8 @@ html[data-theme="light"] {
     --lora-border: oklch(90% 0.02 256 / 0.15);
     --lora-text: oklch(98% 0.02 256);
     --lora-warning: oklch(75% 0.25 80); /* Modified to be used with oklch() */
+    --lora-error-bg: color-mix(in oklch, var(--lora-error) 15%, transparent);
+    --lora-error-border: color-mix(in oklch, var(--lora-error) 40%, transparent);
     --badge-update-bg: oklch(62% 0.18 220);
     --badge-update-text: oklch(98% 0.02 240);
     --badge-update-glow: oklch(62% 0.18 220 / 0.4);

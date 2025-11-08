@@ -188,6 +188,9 @@
             "title": "篩選模型",
             "baseModel": "基礎模型",
             "modelTags": "標籤（前 20）",
+            "license": "授權",
+            "noCreditRequired": "無需署名",
+            "allowSellingGeneratedContent": "允許銷售",
             "clearAll": "清除所有篩選"
         },
         "theme": {

@@ -14,7 +14,8 @@ export class FilterManager {
         
         this.filters = pageState.filters || {
             baseModel: [],
-            tags: []
+            tags: [],
+            license: {}
         };
         
         this.filterPanel = document.getElementById('filterPanel');
@@ -35,6 +36,9 @@ export class FilterManager {
         if (document.getElementById('baseModelTags')) {
             this.createBaseModelTags();
         }
+
+        // Add click handlers for license filter tags
+        this.initializeLicenseFilters();
 
         // Add click handler for filter button
         if (this.filterButton) {
@@ -126,6 +130,85 @@ export class FilterManager {
             });
             
             tagsContainer.appendChild(tagEl);
+        });
+    }
+    
+    initializeLicenseFilters() {
+        const licenseTags = document.querySelectorAll('.license-tag');
+        licenseTags.forEach(tag => {
+            tag.addEventListener('click', async () => {
+                const licenseType = tag.dataset.license;
+                
+                // Ensure license object exists
+                if (!this.filters.license) {
+                    this.filters.license = {};
+                }
+                
+                // Get current state
+                let currentState = this.filters.license[licenseType] || 'none'; // none, include, exclude
+                
+                // Cycle through states: none -> include -> exclude -> none
+                let newState;
+                switch (currentState) {
+                    case 'none':
+                        newState = 'include';
+                        tag.classList.remove('exclude');
+                        tag.classList.add('active');
+                        break;
+                    case 'include':
+                        newState = 'exclude';
+                        tag.classList.remove('active');
+                        tag.classList.add('exclude');
+                        break;
+                    case 'exclude':
+                        newState = 'none';
+                        tag.classList.remove('active', 'exclude');
+                        break;
+                }
+                
+                // Update filter state
+                if (newState === 'none') {
+                    delete this.filters.license[licenseType];
+                    // Clean up empty license object
+                    if (Object.keys(this.filters.license).length === 0) {
+                        delete this.filters.license;
+                    }
+                } else {
+                    this.filters.license[licenseType] = newState;
+                }
+                
+                this.updateActiveFiltersCount();
+                
+                // Auto-apply filter when tag is clicked
+                await this.applyFilters(false);
+            });
+        });
+        
+        // Update selections based on stored filters
+        this.updateLicenseSelections();
+    }
+    
+    updateLicenseSelections() {
+        const licenseTags = document.querySelectorAll('.license-tag');
+        licenseTags.forEach(tag => {
+            const licenseType = tag.dataset.license;
+            const state = (this.filters.license && this.filters.license[licenseType]) || 'none';
+            
+            // Reset classes
+            tag.classList.remove('active', 'exclude');
+            
+            // Apply appropriate class based on state
+            switch (state) {
+                case 'include':
+                    tag.classList.add('active');
+                    break;
+                case 'exclude':
+                    tag.classList.add('exclude');
+                    break;
+                default:
+                    // none state - no classes needed
+                    break;
+            }
         });
     }
     
@@ -233,10 +316,15 @@ export class FilterManager {
                 tag.classList.remove('active');
             }
         });
+        
+        // Update license tags
+        this.updateLicenseSelections();
     }
     
     updateActiveFiltersCount() {
-        const totalActiveFilters = this.filters.baseModel.length + this.filters.tags.length;
+        const totalActiveFilters = this.filters.baseModel.length + 
+                                  this.filters.tags.length + 
+                                  (this.filters.license ? Object.keys(this.filters.license).length : 0);
         
         if (this.activeFiltersCount) {
             if (totalActiveFilters > 0) {
@@ -296,7 +384,8 @@ export class FilterManager {
         // Clear all filters
         this.filters = {
             baseModel: [],
-            tags: []
+            tags: [],
+            license: {}  // Initialize with empty object instead of deleting
         };
         
         // Update state
@@ -337,7 +426,8 @@ export class FilterManager {
                 // Ensure backward compatibility with older filter format
                 this.filters = {
                     baseModel: savedFilters.baseModel || [],
-                    tags: savedFilters.tags || []
+                    tags: savedFilters.tags || [],
+                    license: savedFilters.license || {}
                 };
                 
                 // Update state with loaded filters
@@ -357,6 +447,8 @@ export class FilterManager {
     }
     
     hasActiveFilters() {
-        return this.filters.baseModel.length > 0 || this.filters.tags.length > 0;
+        return this.filters.baseModel.length > 0 || 
+               this.filters.tags.length > 0 || 
+               (this.filters.license && Object.keys(this.filters.license).length > 0);
     }
 }

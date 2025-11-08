@@ -188,6 +188,9 @@
             "title": "筛选模型",
             "baseModel": "基础模型",
             "modelTags": "标签（前20）",
+            "license": "许可证",
+            "noCreditRequired": "无需署名",
+            "allowSellingGeneratedContent": "允许销售",
             "clearAll": "清除所有筛选"
         },
         "theme": {

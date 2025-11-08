@@ -235,6 +235,13 @@
     border-color: var(--lora-accent);
 }
 
+/* Exclude state styling for filter tags */
+.filter-tag.exclude {
+    background-color: var(--lora-error-bg);
+    color: var(--lora-error);
+    border-color: var(--lora-error-border);
+}
+
 /* Tag filter styles */
 .tag-filter {
     display: flex;

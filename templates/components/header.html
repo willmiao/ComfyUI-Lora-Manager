@@ -139,6 +139,17 @@
       <div class="tags-loading">{{ t('common.status.loading') }}</div>
     </div>
   </div>
+  <div class="filter-section">
+    <h4>{{ t('header.filter.license') }}</h4>
+    <div class="filter-tags">
+      <div class="filter-tag license-tag" data-license="noCredit">
+        {{ t('header.filter.noCreditRequired') }}
+      </div>
+      <div class="filter-tag license-tag" data-license="allowSelling">
+        {{ t('header.filter.allowSellingGeneratedContent') }}
+      </div>
+    </div>
+  </div>
   <div class="filter-actions">
     <button class="clear-filters-btn" onclick="filterManager.clearFilters()">
       {{ t('header.filter.clearAll') }}

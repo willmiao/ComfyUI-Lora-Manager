@@ -167,6 +167,19 @@ class ModelListingHandler:
                 pass
 
         update_available_only = request.query.get("update_available_only", "false").lower() == "true"
+        
+        # New license-based query filters
+        credit_required = request.query.get("credit_required")
+        if credit_required is not None:
+            credit_required = credit_required.lower() not in ("false", "0", "")
+        else:
+            credit_required = None  # None means no filter applied
+        
+        allow_selling_generated_content = request.query.get("allow_selling_generated_content")
+        if allow_selling_generated_content is not None:
+            allow_selling_generated_content = allow_selling_generated_content.lower() not in ("false", "0", "")
+        else:
+            allow_selling_generated_content = None  # None means no filter applied
 
         return {
             "page": page,
@@ -181,6 +194,8 @@ class ModelListingHandler:
             "hash_filters": hash_filters,
             "favorites_only": favorites_only,
             "update_available_only": update_available_only,
+            "credit_required": credit_required,
+            "allow_selling_generated_content": allow_selling_generated_content,
             **self._parse_specific_params(request),
         }
 

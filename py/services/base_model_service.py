@@ -64,6 +64,8 @@ class BaseModelService(ABC):
         hash_filters: dict = None,
         favorites_only: bool = False,
         update_available_only: bool = False,
+        credit_required: Optional[bool] = None,
+        allow_selling_generated_content: Optional[bool] = None,
         **kwargs,
     ) -> Dict:
         """Get paginated and filtered model data"""
@@ -92,6 +94,13 @@ class BaseModelService(ABC):
                 )
 
             filtered_data = await self._apply_specific_filters(filtered_data, **kwargs)
+
+            # Apply license-based filters
+            if credit_required is not None:
+                filtered_data = await self._apply_credit_required_filter(filtered_data, credit_required)
+            
+            if allow_selling_generated_content is not None:
+                filtered_data = await self._apply_allow_selling_filter(filtered_data, allow_selling_generated_content)
 
         annotated_for_filter: Optional[List[Dict]] = None
         if update_available_only:
@@ -169,6 +178,61 @@ class BaseModelService(ABC):
     async def _apply_specific_filters(self, data: List[Dict], **kwargs) -> List[Dict]:
         """Apply model-specific filters - to be overridden by subclasses if needed"""
         return data
+
+    async def _apply_credit_required_filter(self, data: List[Dict], credit_required: bool) -> List[Dict]:
+        """Apply credit required filtering based on license_flags.
+        
+        Args:
+            data: List of model data items
+            credit_required: 
+                - True: Return items where credit is required (allowNoCredit=False)
+                - False: Return items where credit is not required (allowNoCredit=True)
+        """
+        filtered_data = []
+        for item in data:
+            license_flags = item.get("license_flags", 127)  # Default to all permissions enabled
+            
+            # Bit 0 represents allowNoCredit (1 = no credit required, 0 = credit required)
+            allow_no_credit = bool(license_flags & (1 << 0))
+            
+            # If credit_required is True, we want items where allowNoCredit is False (credit required)
+            # If credit_required is False, we want items where allowNoCredit is True (no credit required)
+            if credit_required:
+                if not allow_no_credit:  # Credit is required
+                    filtered_data.append(item)
+            else:
+                if allow_no_credit:  # Credit is not required
+                    filtered_data.append(item)
+        
+        return filtered_data
+
+    async def _apply_allow_selling_filter(self, data: List[Dict], allow_selling: bool) -> List[Dict]:
+        """Apply allow selling generated content filtering based on license_flags.
+        
+        Args:
+            data: List of model data items
+            allow_selling: 
+                - True: Return items where selling generated content is allowed (allowCommercialUse contains Image)
+                - False: Return items where selling generated content is not allowed (allowCommercialUse does not contain Image)
+        """
+        filtered_data = []
+        for item in data:
+            license_flags = item.get("license_flags", 127)  # Default to all permissions enabled
+            
+            # Bits 1-4 represent commercial use permissions
+            # Bit 1 specifically represents Image permission (allowCommercialUse contains Image)
+            has_image_permission = bool(license_flags & (1 << 1))
+            
+            # If allow_selling is True, we want items where Image permission is granted
+            # If allow_selling is False, we want items where Image permission is not granted
+            if allow_selling:
+                if has_image_permission:  # Selling generated content is allowed
+                    filtered_data.append(item)
+            else:
+                if not has_image_permission:  # Selling generated content is not allowed
+                    filtered_data.append(item)
+        
+        return filtered_data
 
     async def _annotate_update_flags(
         self,
