@@ -62,7 +62,7 @@ app.registerExtension({
         });
     },
     
-    async loadedGraphNode(node) {
+    async nodeCreated(node) {
         if (node.comfyClass === "TriggerWord Toggle (LoraManager)") {
             // Enable widget serialization
             node.serialize_widgets = true;
@@ -71,135 +71,138 @@ app.registerExtension({
                 "shape": 7  // 7 is the shape of the optional input
             });
 
-            // Get the wheel sensitivity setting
-            const wheelSensitivity = getWheelSensitivity();
-            
-            // Get the widget object directly from the returned object
-            const result = addTagsWidget(node, "toggle_trigger_words", {
-                defaultVal: []
-            }, null, wheelSensitivity);
-            
-            node.tagWidget = result.widget;
+            // Wait for node to be properly initialized
+            requestAnimationFrame(async () => {
+                // Get the wheel sensitivity setting
+                const wheelSensitivity = getWheelSensitivity();
+                
+                // Get the widget object directly from the returned object
+                const result = addTagsWidget(node, "toggle_trigger_words", {
+                    defaultVal: []
+                }, null, wheelSensitivity);
+                
+                node.tagWidget = result.widget;
 
-            const normalizeTagText = (text) =>
-                (typeof text === 'string' ? text.trim().toLowerCase() : '');
+                const normalizeTagText = (text) =>
+                    (typeof text === 'string' ? text.trim().toLowerCase() : '');
 
-            const collectHighlightTokens = (wordsArray) => {
-                const tokens = new Set();
+                const collectHighlightTokens = (wordsArray) => {
+                    const tokens = new Set();
 
-                const addToken = (text) => {
-                    const normalized = normalizeTagText(text);
-                    if (normalized) {
-                        tokens.add(normalized);
-                    }
-                };
+                    const addToken = (text) => {
+                        const normalized = normalizeTagText(text);
+                        if (normalized) {
+                            tokens.add(normalized);
+                        }
+                    };
 
-                wordsArray.forEach((rawWord) => {
-                    if (typeof rawWord !== 'string') {
-                        return;
-                    }
+                    wordsArray.forEach((rawWord) => {
+                        if (typeof rawWord !== 'string') {
+                            return;
+                        }
 
-                    addToken(rawWord);
+                        addToken(rawWord);
 
-                    const groupParts = rawWord.split(/,{2,}/);
-                    groupParts.forEach((groupPart) => {
-                        addToken(groupPart);
-                        groupPart.split(',').forEach(addToken);
+                        const groupParts = rawWord.split(/,{2,}/);
+                        groupParts.forEach((groupPart) => {
+                            addToken(groupPart);
+                            groupPart.split(',').forEach(addToken);
+                        });
+
+                        rawWord.split(',').forEach(addToken);
                     });
 
-                    rawWord.split(',').forEach(addToken);
-                });
+                    return tokens;
+                };
 
-                return tokens;
-            };
-
-            const applyHighlightState = () => {
-                if (!node.tagWidget) return;
-                const highlightSet = node._highlightedTriggerWords || new Set();
-                const updatedTags = (node.tagWidget.value || []).map(tag => ({
-                    ...tag,
-                    highlighted: highlightSet.size > 0 && highlightSet.has(normalizeTagText(tag.text))
-                }));
-                node.tagWidget.value = updatedTags;
-            };
-
-            node.highlightTriggerWords = (triggerWords) => {
-                const wordsArray = Array.isArray(triggerWords)
-                    ? triggerWords
-                    : triggerWords
-                        ? [triggerWords]
-                        : [];
-                node._highlightedTriggerWords = collectHighlightTokens(wordsArray);
-                applyHighlightState();
-            };
-
-            if (node.__pendingHighlightWords !== undefined) {
-                const pending = node.__pendingHighlightWords;
-                delete node.__pendingHighlightWords;
-                node.highlightTriggerWords(pending);
-            }
-
-            node.applyTriggerHighlightState = applyHighlightState;
-
-            // Add hidden widget to store original message
-            const hiddenWidget = node.addWidget('text', 'orinalMessage', '');
-            hiddenWidget.type = CONVERTED_TYPE;
-            hiddenWidget.hidden = true;
-            hiddenWidget.computeSize = () => [0, -4];
-
-            // Restore saved value if exists
-            if (node.widgets_values && node.widgets_values.length > 0) {
-                // 0 is group mode, 1 is default_active, 2 is tag widget, 3 is original message
-                const savedValue = node.widgets_values[2];
-                if (savedValue) {
-                    result.widget.value = Array.isArray(savedValue) ? savedValue : [];
-                }
-                const originalMessage = node.widgets_values[3];
-                if (originalMessage) {
-                    hiddenWidget.value = originalMessage;
-                }
-            }
-
-            requestAnimationFrame(() => node.applyTriggerHighlightState?.());
-
-            const groupModeWidget = node.widgets[0];
-            groupModeWidget.callback = (value) => {
-                if (node.widgets[3].value) {
-                    this.updateTagsBasedOnMode(node, node.widgets[3].value, value);
-                }
-            }
-
-            // Add callback for default_active widget
-            const defaultActiveWidget = node.widgets[1];
-            defaultActiveWidget.callback = (value) => {
-                // Set all existing tags' active state to the new value
-                if (node.tagWidget && node.tagWidget.value) {
-                    const updatedTags = node.tagWidget.value.map(tag => ({
+                const applyHighlightState = () => {
+                    if (!node.tagWidget) return;
+                    const highlightSet = node._highlightedTriggerWords || new Set();
+                    const updatedTags = (node.tagWidget.value || []).map(tag => ({
                         ...tag,
-                        active: value
+                        highlighted: highlightSet.size > 0 && highlightSet.has(normalizeTagText(tag.text))
                     }));
                     node.tagWidget.value = updatedTags;
-                    node.applyTriggerHighlightState?.();
+                };
+
+                node.highlightTriggerWords = (triggerWords) => {
+                    const wordsArray = Array.isArray(triggerWords)
+                        ? triggerWords
+                        : triggerWords
+                            ? [triggerWords]
+                            : [];
+                    node._highlightedTriggerWords = collectHighlightTokens(wordsArray);
+                    applyHighlightState();
+                };
+
+                if (node.__pendingHighlightWords !== undefined) {
+                    const pending = node.__pendingHighlightWords;
+                    delete node.__pendingHighlightWords;
+                    node.highlightTriggerWords(pending);
                 }
-            }
-            
-            // Override the serializeValue method to properly format trigger words with strength
-            const originalSerializeValue = result.widget.serializeValue;
-            result.widget.serializeValue = function() {
-                const value = this.value || [];
-                // Transform the values to include strength in the proper format
-                const transformedValue = value.map(tag => {
-                    // If strength is defined (even if it's 1.0), format as {text: "(original_text:strength)", ...}
-                    if (tag.strength !== undefined && tag.strength !== null) {
-                        return {
-                            ...tag,
-                            text: `(${tag.text}:${tag.strength.toFixed(2)})`
-                        };
+
+                node.applyTriggerHighlightState = applyHighlightState;
+
+                // Add hidden widget to store original message
+                const hiddenWidget = node.addWidget('text', 'orinalMessage', '');
+                hiddenWidget.type = CONVERTED_TYPE;
+                hiddenWidget.hidden = true;
+                hiddenWidget.computeSize = () => [0, -4];
+
+                // Restore saved value if exists
+                if (node.widgets_values && node.widgets_values.length > 0) {
+                    // 0 is group mode, 1 is default_active, 2 is tag widget, 3 is original message
+                    const savedValue = node.widgets_values[2];
+                    if (savedValue) {
+                        result.widget.value = Array.isArray(savedValue) ? savedValue : [];
                     }
-                    return tag;
-                });
-                return transformedValue;
-            };
+                    const originalMessage = node.widgets_values[3];
+                    if (originalMessage) {
+                        hiddenWidget.value = originalMessage;
+                    }
+                }
+
+                requestAnimationFrame(() => node.applyTriggerHighlightState?.());
+
+                const groupModeWidget = node.widgets[0];
+                groupModeWidget.callback = (value) => {
+                    if (node.widgets[3].value) {
+                        this.updateTagsBasedOnMode(node, node.widgets[3].value, value);
+                    }
+                }
+
+                // Add callback for default_active widget
+                const defaultActiveWidget = node.widgets[1];
+                defaultActiveWidget.callback = (value) => {
+                    // Set all existing tags' active state to the new value
+                    if (node.tagWidget && node.tagWidget.value) {
+                        const updatedTags = node.tagWidget.value.map(tag => ({
+                            ...tag,
+                            active: value
+                        }));
+                        node.tagWidget.value = updatedTags;
+                        node.applyTriggerHighlightState?.();
+                    }
+                }
+                
+                // Override the serializeValue method to properly format trigger words with strength
+                const originalSerializeValue = result.widget.serializeValue;
+                result.widget.serializeValue = function() {
+                    const value = this.value || [];
+                    // Transform the values to include strength in the proper format
+                    const transformedValue = value.map(tag => {
+                        // If strength is defined (even if it's 1.0), format as {text: "(original_text:strength)", ...}
+                        if (tag.strength !== undefined && tag.strength !== null) {
+                            return {
+                                ...tag,
+                                text: `(${tag.text}:${tag.strength.toFixed(2)})`
+                            };
+                        }
+                        return tag;
+                    });
+                    return transformedValue;
+                };
+            });
         }
     },
 
