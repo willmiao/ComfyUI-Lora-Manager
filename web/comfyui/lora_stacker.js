@@ -154,20 +154,18 @@ app.registerExtension({
       });
     }
   },
-  async nodeCreated(node) {
+  async loadedGraphNode(node) {
     if (node.comfyClass == "Lora Stacker (LoraManager)") {
-      requestAnimationFrame(async () => {
-        // Restore saved value if exists
-        let existingLoras = [];
-        if (node.widgets_values && node.widgets_values.length > 0) {
-          // 0 for input widget, 1 for loras widget
-          const savedValue = node.widgets_values[1];
-          existingLoras = savedValue || [];
-        }
-        // Merge the loras data
-        const mergedLoras = mergeLoras(node.widgets[0].value, existingLoras);
-        node.lorasWidget.value = mergedLoras;
-      });
+      // Restore saved value if exists
+      let existingLoras = [];
+      if (node.widgets_values && node.widgets_values.length > 0) {
+        // 0 for input widget, 1 for loras widget
+        const savedValue = node.widgets_values[1];
+        existingLoras = savedValue || [];
+      }
+      // Merge the loras data
+      const mergedLoras = mergeLoras(node.widgets[0].value, existingLoras);
+      node.lorasWidget.value = mergedLoras;
     }
   },
 });

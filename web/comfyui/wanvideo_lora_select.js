@@ -107,20 +107,18 @@ app.registerExtension({
       });
     }
   },
-  async nodeCreated(node) {
+  async loadedGraphNode(node) {
     if (node.comfyClass == "WanVideo Lora Select (LoraManager)") {
-      requestAnimationFrame(async () => {
-        // Restore saved value if exists
-        let existingLoras = [];
-        if (node.widgets_values && node.widgets_values.length > 0) {
-          // 0 for low_mem_load, 1 for merge_loras, 2 for text widget, 3 for loras widget
-          const savedValue = node.widgets_values[3];
-          existingLoras = savedValue || [];
-        }
-        // Merge the loras data
-        const mergedLoras = mergeLoras(node.widgets[2].value, existingLoras);
-        node.lorasWidget.value = mergedLoras;
-      });
+      // Restore saved value if exists
+      let existingLoras = [];
+      if (node.widgets_values && node.widgets_values.length > 0) {
+        // 0 for low_mem_load, 1 for merge_loras, 2 for text widget, 3 for loras widget
+        const savedValue = node.widgets_values[3];
+        existingLoras = savedValue || [];
+      }
+      // Merge the loras data
+      const mergedLoras = mergeLoras(node.widgets[2].value, existingLoras);
+      node.lorasWidget.value = mergedLoras;
     }
   },
 });
