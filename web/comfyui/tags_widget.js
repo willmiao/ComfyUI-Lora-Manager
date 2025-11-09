@@ -229,14 +229,6 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
           backgroundImage: "none",
         };
 
-    // Additional styles for tags with modified strength
-    const strengthStyles = (strength !== null && strength !== undefined && strength !== 1.0)
-      ? {
-          border: "1px solid rgba(255, 215, 0, 0.7)", // Gold border for modified strength
-          backgroundImage: "linear-gradient(120deg, rgba(255,215,0,0.1), rgba(255,215,0,0.05))",
-        }
-      : {};
-
     if (active) {
       Object.assign(tagEl.style, {
         ...baseStyles,
@@ -244,7 +236,6 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
         color: "white",
         borderColor: "rgba(66, 153, 225, 0.9)",
         ...highlightStyles,
-        ...strengthStyles,
       });
     } else {
       Object.assign(tagEl.style, {
@@ -253,7 +244,6 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
         color: "rgba(226, 232, 240, 0.8)",
         borderColor: "rgba(226, 232, 240, 0.2)",
         ...highlightStyles,
-        ...strengthStyles,
       });
     }
 
