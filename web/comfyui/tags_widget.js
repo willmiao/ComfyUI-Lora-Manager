@@ -1,9 +1,11 @@
 import { forwardMiddleMouseToCanvas } from "./utils.js";
 
-export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.02) {
+export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.02, options = {}) {
   // Create container for tags
   const container = document.createElement("div");
   container.className = "comfy-tags-container";
+
+  const { allowStrengthAdjustment = true } = options;
 
   forwardMiddleMouseToCanvas(container);
   
@@ -41,6 +43,7 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
     }
 
     const normalizedTags = tagsData;
+    const showStrengthInfo = widget.allowStrengthAdjustment ?? allowStrengthAdjustment;
 
     if (normalizedTags.length === 0) {
       // Show message when no tags are present
@@ -82,16 +85,44 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
       const tagEl = document.createElement("div");
       tagEl.className = "comfy-tag";
 
-      updateTagStyle(tagEl, active, highlighted, strength);
+      const textSpan = document.createElement("span");
+      textSpan.className = "comfy-tag-text";
+      textSpan.textContent = text;
+      Object.assign(textSpan.style, {
+        display: "inline-block",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        minWidth: "0",
+        flexGrow: "1",
+      });
+      tagEl.appendChild(textSpan);
 
-      // Set the text content to include strength if present
-      // Always show strength if it has been modified to avoid layout shift
-      if (strength !== undefined && strength !== null) {
-        tagEl.textContent = `${text}:${strength.toFixed(2)}`;
-      } else {
-        tagEl.textContent = text;
+      const strengthBadge = showStrengthInfo ? document.createElement("span") : null;
+      if (strengthBadge) {
+        strengthBadge.className = "comfy-tag-strength";
+        Object.assign(strengthBadge.style, {
+          fontSize: "11px",
+          fontWeight: "600",
+          padding: "1px 6px",
+          borderRadius: "999px",
+          letterSpacing: "0.2px",
+          backgroundColor: "rgba(255,255,255,0.08)",
+          color: "rgba(255,255,255,0.95)",
+          border: "1px solid rgba(255,255,255,0.25)",
+          lineHeight: "normal",
+          minWidth: "34px",
+          textAlign: "center",
+          pointerEvents: "none",
+          opacity: "0",
+          visibility: "hidden",
+          transition: "opacity 0.2s ease",
+        });
+        tagEl.appendChild(strengthBadge);
       }
-      tagEl.title = text; // Set tooltip for full content
+
+      updateTagStyle(tagEl, active, highlighted, strength);
+      updateStrengthDisplay(tagEl, strength, text, showStrengthInfo);
 
       // Add click handler to toggle state
       tagEl.addEventListener("click", (e) => {
@@ -100,12 +131,14 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
         // Toggle active state for this specific tag using its index
         const updatedTags = [...widget.value];
         updatedTags[index].active = !updatedTags[index].active;
+        textSpan.textContent = updatedTags[index].text;
         updateTagStyle(
           tagEl,
           updatedTags[index].active,
           updatedTags[index].highlighted,
           updatedTags[index].strength
         );
+        updateStrengthDisplay(tagEl, updatedTags[index].strength, updatedTags[index].text);
 
         tagEl.dataset.active = updatedTags[index].active ? "true" : "false";
         tagEl.dataset.highlighted = updatedTags[index].highlighted ? "true" : "false";
@@ -114,48 +147,42 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
       });
 
       // Add mouse wheel handler to adjust strength
-      tagEl.addEventListener("wheel", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+      if (showStrengthInfo) {
+        tagEl.addEventListener("wheel", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
 
-        // Only adjust strength if the mouse is over the tag
-        const updatedTags = [...widget.value];
-        let currentStrength = updatedTags[index].strength;
-        
-        // If no strength is set, default to 1.0
-        if (currentStrength === undefined || currentStrength === null) {
-          currentStrength = 1.0;
-        }
+          // Only adjust strength if the mouse is over the tag
+          const updatedTags = [...widget.value];
+          let currentStrength = updatedTags[index].strength;
+          
+          // If no strength is set, default to 1.0
+          if (currentStrength === undefined || currentStrength === null) {
+            currentStrength = 1.0;
+          }
 
-        // Adjust strength based on scroll direction
-        // DeltaY < 0 is scroll up, deltaY > 0 is scroll down
-        if (e.deltaY < 0) {
-          // Scroll up: increase strength by wheelSensitivity
-          currentStrength += wheelSensitivity;
-        } else {
-          // Scroll down: decrease strength by wheelSensitivity
-          currentStrength -= wheelSensitivity;
-        }
+          // Adjust strength based on scroll direction
+          // DeltaY < 0 is scroll up, deltaY > 0 is scroll down
+          if (e.deltaY < 0) {
+            // Scroll up: increase strength by wheelSensitivity
+            currentStrength += wheelSensitivity;
+          } else {
+            // Scroll down: decrease strength by wheelSensitivity
+            currentStrength -= wheelSensitivity;
+          }
 
-        // Ensure strength doesn't go below 0
-        currentStrength = Math.max(0, currentStrength);
+          // Ensure strength doesn't go below 0
+          currentStrength = Math.max(0, currentStrength);
 
-        // Update the strength value
-        updatedTags[index].strength = currentStrength;
+          // Update the strength value
+          updatedTags[index].strength = currentStrength;
+          textSpan.textContent = updatedTags[index].text;
 
-        // Update the tag display to show the strength value
-        // Always show strength once it has been modified to avoid layout shift
-        tagEl.textContent = `${updatedTags[index].text}:${currentStrength.toFixed(2)}`;
+          updateStrengthDisplay(tagEl, currentStrength, updatedTags[index].text, showStrengthInfo);
 
-        updateTagStyle(
-          tagEl,
-          updatedTags[index].active,
-          updatedTags[index].highlighted,
-          updatedTags[index].strength
-        );
-
-        widget.value = updatedTags;
-      });
+          widget.value = updatedTags;
+        });
+      }
 
       rowContainer.appendChild(tagEl);
       tagCount++;
@@ -190,7 +217,7 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
   // Helper function to update tag style based on active state
   function updateTagStyle(tagEl, active, highlighted = false, strength = null) {
     const baseStyles = {
-      padding: "3px 10px", // Adjusted vertical padding to balance text
+      padding: "3px 10px",
       borderRadius: "6px",
       maxWidth: "200px",
       overflow: "hidden",
@@ -200,7 +227,9 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
       cursor: "pointer",
       transition: "all 0.2s ease",
       border: "1px solid transparent",
-      display: "inline-block", // inline-block for better text truncation
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "6px",
       boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
       margin: "1px", 
       userSelect: "none",
@@ -214,7 +243,6 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
       maxWidth: "200px",
       lineHeight: "16px", // Added explicit line-height
       verticalAlign: "middle", // Added vertical alignment
-      position: "relative", // For better text positioning
       textAlign: "center", // Center text horizontally
     };
 
@@ -261,6 +289,42 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
 
     tagEl.dataset.active = active ? "true" : "false";
     tagEl.dataset.highlighted = highlighted ? "true" : "false";
+  }
+
+  function formatStrengthValue(value) {
+    if (value === undefined || value === null) {
+      return null;
+    }
+    const num = Number(value);
+    if (!Number.isFinite(num)) {
+      return null;
+    }
+    return num.toFixed(2);
+  }
+
+  function updateStrengthDisplay(tagEl, strength, baseText, showStrengthInfo) {
+    if (!showStrengthInfo) {
+      tagEl.title = baseText;
+      return;
+    }
+    const badge = tagEl.querySelector(".comfy-tag-strength");
+    if (!badge) {
+      tagEl.title = baseText;
+      return;
+    }
+    const displayValue = strength === undefined || strength === null ? 1 : strength;
+    const formatted = formatStrengthValue(displayValue);
+    if (formatted !== null) {
+      badge.textContent = formatted;
+      badge.style.opacity = "1";
+      badge.style.visibility = "visible";
+      tagEl.title = `${baseText} (${formatted})`;
+    } else {
+      badge.textContent = "";
+      badge.style.opacity = "0";
+      badge.style.visibility = "hidden";
+      tagEl.title = baseText;
+    }
   }
 
   // Store the value as array

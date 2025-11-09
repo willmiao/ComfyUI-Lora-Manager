@@ -23,6 +23,10 @@ class TriggerWordToggle:
                     "default": True,
                     "tooltip": "Sets the default initial state (active or inactive) when trigger words are added."
                 }),
+                "allow_strength_adjustment": ("BOOLEAN", {
+                    "default": False,
+                    "tooltip": "Enable mouse wheel adjustment of each trigger word's strength."
+                }),
             },
             "optional": FlexibleOptionalInputType(any_type),
             "hidden": {
@@ -47,7 +51,14 @@ class TriggerWordToggle:
         else:
             return data
 
-    def process_trigger_words(self, id, group_mode, default_active, **kwargs):
+    def process_trigger_words(
+        self,
+        id,
+        group_mode,
+        default_active,
+        allow_strength_adjustment=False,
+        **kwargs,
+    ):
         # Handle both old and new formats for trigger_words
         trigger_words_data = self._get_toggle_data(kwargs, 'orinalMessage')
         trigger_words = trigger_words_data if isinstance(trigger_words_data, str) else ""
@@ -73,50 +84,60 @@ class TriggerWordToggle:
                     # Extract strength if it's in the format "(word:strength)"
                     strength_match = re.match(r'\((.+):([\d.]+)\)', text)
                     if strength_match:
-                        original_word = strength_match.group(1)
+                        original_word = strength_match.group(1).strip()
                         strength = float(strength_match.group(2))
                         active_state[original_word] = active
-                        strength_map[original_word] = strength
+                        if allow_strength_adjustment:
+                            strength_map[original_word] = strength
                     else:
-                        active_state[text] = active
-                
+                        active_state[text.strip()] = active
+
                 if group_mode:
-                    # Split by two or more consecutive commas to get groups
-                    groups = re.split(r',{2,}', trigger_words)
-                    # Remove leading/trailing whitespace from each group
-                    groups = [group.strip() for group in groups]
-                    
-                    # Process groups: keep those not in toggle_trigger_words or those that are active
-                    filtered_groups = []
-                    for group in groups:
-                        # Check if this group contains any words that are in the active_state
-                        group_words = [word.strip() for word in group.split(',')]
-                        active_group_words = []
-                        
-                        for word in group_words:
-                            # Remove any existing strength formatting for comparison
-                            word_comparison = re.sub(r'\((.+):([\d.]+)\)', r'\1', word).strip()
-                            
-                            if word_comparison not in active_state or active_state[word_comparison]:
-                                # If this word has a strength value, use that instead of the original
-                                if word_comparison in strength_map:
-                                    active_group_words.append(f"({word_comparison}:{strength_map[word_comparison]:.2f})")
-                                else:
-                                    # Preserve existing strength formatting if the word was previously modified
-                                    # Check if the original word had strength formatting
-                                    strength_match = re.match(r'\((.+):([\d.]+)\)', word)
-                                    if strength_match:
-                                        active_group_words.append(word)
-                                    else:
-                                        active_group_words.append(word)
-                        
-                        if active_group_words:
-                            filtered_groups.append(', '.join(active_group_words))
-                    
-                    if filtered_groups:
-                        filtered_triggers = ', '.join(filtered_groups)
+                    if isinstance(trigger_data, list):
+                        filtered_groups = []
+                        for item in trigger_data:
+                            text = (item.get('text') or "").strip()
+                            if not text:
+                                continue
+                            if item.get('active', False):
+                                filtered_groups.append(text)
+
+                        if filtered_groups:
+                            filtered_triggers = ', '.join(filtered_groups)
+                        else:
+                            filtered_triggers = ""
                     else:
-                        filtered_triggers = ""
+                        # Split by two or more consecutive commas to get groups
+                        groups = re.split(r',{2,}', trigger_words)
+                        # Remove leading/trailing whitespace from each group
+                        groups = [group.strip() for group in groups]
+                        
+                        # Process groups: keep those not in toggle_trigger_words or those that are active
+                        filtered_groups = []
+                        for group in groups:
+                            # Check if this group contains any words that are in the active_state
+                            group_words = [word.strip() for word in group.split(',')]
+                            active_group_words = []
+                            
+                            for word in group_words:
+                                word_comparison = re.sub(r'\((.+):([\d.]+)\)', r'\1', word).strip()
+                                
+                                if word_comparison not in active_state or active_state[word_comparison]:
+                                    active_group_words.append(
+                                        self._format_word_output(
+                                            word_comparison,
+                                            strength_map,
+                                            allow_strength_adjustment,
+                                        )
+                                    )
+                            
+                            if active_group_words:
+                                filtered_groups.append(', '.join(active_group_words))
+                        
+                        if filtered_groups:
+                            filtered_triggers = ', '.join(filtered_groups)
+                        else:
+                            filtered_triggers = ""
                 else:
                     # Normal mode: split by commas and treat each word as a separate tag
                     original_words = [word.strip() for word in trigger_words.split(',')]
@@ -129,17 +150,13 @@ class TriggerWordToggle:
                         word_comparison = re.sub(r'\((.+):([\d.]+)\)', r'\1', word).strip()
                         
                         if word_comparison not in active_state or active_state[word_comparison]:
-                            # If this word has a strength value, use that instead of the original
-                            if word_comparison in strength_map:
-                                filtered_words.append(f"({word_comparison}:{strength_map[word_comparison]:.2f})")
-                            else:
-                                # Preserve existing strength formatting if the word was previously modified
-                                # Check if the original word had strength formatting
-                                strength_match = re.match(r'\((.+):([\d.]+)\)', word)
-                                if strength_match:
-                                    filtered_words.append(word)
-                                else:
-                                    filtered_words.append(word)
+                            filtered_words.append(
+                                self._format_word_output(
+                                    word_comparison,
+                                    strength_map,
+                                    allow_strength_adjustment,
+                                )
+                            )
                     
                     if filtered_words:
                         filtered_triggers = ', '.join(filtered_words)
@@ -150,3 +167,8 @@ class TriggerWordToggle:
                 logger.error(f"Error processing trigger words: {e}")
             
         return (filtered_triggers,)
+
+    def _format_word_output(self, base_word, strength_map, allow_strength_adjustment):
+        if allow_strength_adjustment and base_word in strength_map:
+            return f"({base_word}:{strength_map[base_word]:.2f})"
+        return base_word

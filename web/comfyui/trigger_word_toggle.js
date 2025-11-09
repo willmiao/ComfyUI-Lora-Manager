@@ -75,13 +75,20 @@ app.registerExtension({
             requestAnimationFrame(async () => {
                 // Get the wheel sensitivity setting
                 const wheelSensitivity = getWheelSensitivity();
+                const groupModeWidget = node.widgets[0];
+                const defaultActiveWidget = node.widgets[1];
+                const strengthAdjustmentWidget = node.widgets[2];
+                const initialStrengthAdjustment = Boolean(strengthAdjustmentWidget?.value);
                 
                 // Get the widget object directly from the returned object
                 const result = addTagsWidget(node, "toggle_trigger_words", {
                     defaultVal: []
-                }, null, wheelSensitivity);
+                }, null, wheelSensitivity, {
+                    allowStrengthAdjustment: initialStrengthAdjustment
+                });
                 
                 node.tagWidget = result.widget;
+                node.tagWidget.allowStrengthAdjustment = initialStrengthAdjustment;
 
                 const normalizeTagText = (text) =>
                     (typeof text === 'string' ? text.trim().toLowerCase() : '');
@@ -148,31 +155,40 @@ app.registerExtension({
                 hiddenWidget.type = CONVERTED_TYPE;
                 hiddenWidget.hidden = true;
                 hiddenWidget.computeSize = () => [0, -4];
+                node.originalMessageWidget = hiddenWidget;
 
                 // Restore saved value if exists
+                const tagWidgetIndex = node.widgets.indexOf(result.widget);
+                const originalMessageWidgetIndex = node.widgets.indexOf(hiddenWidget);
                 if (node.widgets_values && node.widgets_values.length > 0) {
-                    // 0 is group mode, 1 is default_active, 2 is tag widget, 3 is original message
-                    const savedValue = node.widgets_values[2];
-                    if (savedValue) {
-                        result.widget.value = Array.isArray(savedValue) ? savedValue : [];
+                    if (tagWidgetIndex >= 0) {
+                        const savedValue = node.widgets_values[tagWidgetIndex];
+                        if (savedValue) {
+                            result.widget.value = Array.isArray(savedValue) ? savedValue : [];
+                        }
                     }
-                    const originalMessage = node.widgets_values[3];
-                    if (originalMessage) {
-                        hiddenWidget.value = originalMessage;
+                    if (originalMessageWidgetIndex >= 0) {
+                        const originalMessage = node.widgets_values[originalMessageWidgetIndex];
+                        if (originalMessage) {
+                            hiddenWidget.value = originalMessage;
+                        }
                     }
                 }
 
                 requestAnimationFrame(() => node.applyTriggerHighlightState?.());
 
-                const groupModeWidget = node.widgets[0];
                 groupModeWidget.callback = (value) => {
-                    if (node.widgets[3].value) {
-                        this.updateTagsBasedOnMode(node, node.widgets[3].value, value);
+                    if (node.originalMessageWidget?.value) {
+                        this.updateTagsBasedOnMode(
+                            node,
+                            node.originalMessageWidget.value,
+                            value,
+                            Boolean(strengthAdjustmentWidget?.value)
+                        );
                     }
                 }
 
                 // Add callback for default_active widget
-                const defaultActiveWidget = node.widgets[1];
                 defaultActiveWidget.callback = (value) => {
                     // Set all existing tags' active state to the new value
                     if (node.tagWidget && node.tagWidget.value) {
@@ -183,6 +199,21 @@ app.registerExtension({
                         node.tagWidget.value = updatedTags;
                         node.applyTriggerHighlightState?.();
                     }
+                }
+                
+                if (strengthAdjustmentWidget) {
+                    strengthAdjustmentWidget.callback = (value) => {
+                        const allowStrengthAdjustment = Boolean(value);
+                        if (node.tagWidget) {
+                            node.tagWidget.allowStrengthAdjustment = allowStrengthAdjustment;
+                        }
+                        this.updateTagsBasedOnMode(
+                            node,
+                            node.originalMessageWidget?.value || "",
+                            groupModeWidget?.value ?? false,
+                            allowStrengthAdjustment
+                        );
+                    };
                 }
                 
                 // Override the serializeValue method to properly format trigger words with strength
@@ -215,27 +246,32 @@ app.registerExtension({
         }
         
         // Store the original message for mode switching
-        node.widgets[3].value = message;
+        if (node.originalMessageWidget) {
+            node.originalMessageWidget.value = message;
+        }
 
         if (node.tagWidget) {
             // Parse tags based on current group mode
             const groupMode = node.widgets[0] ? node.widgets[0].value : false;
-            this.updateTagsBasedOnMode(node, message, groupMode);
+            const allowStrengthAdjustment = Boolean(node.widgets[2]?.value);
+            node.tagWidget.allowStrengthAdjustment = allowStrengthAdjustment;
+            this.updateTagsBasedOnMode(node, message, groupMode, allowStrengthAdjustment);
         }
     },
     
     // Update tags display based on group mode
-  updateTagsBasedOnMode(node, message, groupMode) {
+  updateTagsBasedOnMode(node, message, groupMode, allowStrengthAdjustment = false) {
     if (!node.tagWidget) return;
+    node.tagWidget.allowStrengthAdjustment = allowStrengthAdjustment;
     
     const existingTags = node.tagWidget.value || [];
     const existingTagMap = {};
-    
+
     // Create a map of existing tags and their active states and strengths
     existingTags.forEach(tag => {
       existingTagMap[tag.text] = {
         active: tag.active,
-        strength: tag.strength
+        strength: allowStrengthAdjustment ? tag.strength : null
       };
     });
     
