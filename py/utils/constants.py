@@ -55,6 +55,9 @@ CIVITAI_USER_MODEL_TYPES = [
     'checkpoint',
 ]
 
+# Default chunk size in megabytes used for hashing large files.
+DEFAULT_HASH_CHUNK_SIZE_MB = 4
+
 # Auto-organize settings
 AUTO_ORGANIZE_BATCH_SIZE = 50  # Process models in batches to avoid overwhelming the system
 

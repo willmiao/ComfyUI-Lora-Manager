@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from threading import Lock
 from typing import Any, Awaitable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
-from ..utils.constants import DEFAULT_PRIORITY_TAG_CONFIG
+from ..utils.constants import DEFAULT_HASH_CHUNK_SIZE_MB, DEFAULT_PRIORITY_TAG_CONFIG
 from ..utils.settings_paths import ensure_settings_file
 from ..utils.tag_priorities import (
     PriorityTagEntry,
@@ -29,6 +29,7 @@ CORE_USER_SETTING_KEYS: Tuple[str, ...] = (
 DEFAULT_SETTINGS: Dict[str, Any] = {
     "civitai_api_key": "",
     "use_portable_settings": False,
+    "hash_chunk_size_mb": DEFAULT_HASH_CHUNK_SIZE_MB,
     "language": "en",
     "show_only_sfw": False,
     "enable_metadata_archive_db": False,
