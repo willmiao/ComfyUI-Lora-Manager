@@ -1,17 +1,41 @@
+
+import hashlib
 import logging
 import os
-import hashlib
 
-from .constants import PREVIEW_EXTENSIONS, CARD_PREVIEW_WIDTH
+from .constants import (
+    CARD_PREVIEW_WIDTH,
+    DEFAULT_HASH_CHUNK_SIZE_MB,
+    PREVIEW_EXTENSIONS,
+)
 from .exif_utils import ExifUtils
+from ..services.settings_manager import get_settings_manager
 
 logger = logging.getLogger(__name__)
+
+
+def _get_hash_chunk_size_bytes() -> int:
+    """Return the chunk size used for hashing, in bytes."""
+
+    settings_manager = get_settings_manager()
+    chunk_size_mb = settings_manager.get("hash_chunk_size_mb", DEFAULT_HASH_CHUNK_SIZE_MB)
+    try:
+        chunk_size_value = float(chunk_size_mb)
+    except (TypeError, ValueError):
+        chunk_size_value = float(DEFAULT_HASH_CHUNK_SIZE_MB)
+
+    if chunk_size_value <= 0:
+        chunk_size_value = float(DEFAULT_HASH_CHUNK_SIZE_MB)
+
+    return max(1, int(chunk_size_value * 1024 * 1024))
+
 
 async def calculate_sha256(file_path: str) -> str:
     """Calculate SHA256 hash of a file"""
     sha256_hash = hashlib.sha256()
+    chunk_size = _get_hash_chunk_size_bytes()
     with open(file_path, "rb") as f:
-        for byte_block in iter(lambda: f.read(128 * 1024), b""):
+        for byte_block in iter(lambda: f.read(chunk_size), b""):
             sha256_hash.update(byte_block)
     return sha256_hash.hexdigest()
 
