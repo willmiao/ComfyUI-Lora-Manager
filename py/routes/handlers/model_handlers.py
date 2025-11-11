@@ -1394,20 +1394,24 @@ class ModelUpdateHandler:
         if not model_ids:
             return {}
 
-        response = await provider.get_model_versions_bulk(model_ids)
-        if not isinstance(response, Mapping):
-            return {}
-
-        license_map: Dict[int, Dict[str, Any]] = {}
-        for raw_id, payload in response.items():
-            normalized_id = self._normalize_model_id(raw_id)
-            if normalized_id is None or not isinstance(payload, Mapping):
+        BATCH_SIZE = 100
+        aggregated: Dict[int, Dict[str, Any]] = {}
+        for start in range(0, len(model_ids), BATCH_SIZE):
+            chunk = model_ids[start : start + BATCH_SIZE]
+            response = await provider.get_model_versions_bulk(chunk)
+            if not isinstance(response, Mapping):
                 continue
-            license_data: Dict[str, Any] = {}
-            for field in LICENSE_FIELDS:
-                license_data[field] = payload.get(field)
-            license_map[normalized_id] = license_data
-        return license_map
+
+            for raw_id, payload in response.items():
+                normalized_id = self._normalize_model_id(raw_id)
+                if normalized_id is None or not isinstance(payload, Mapping):
+                    continue
+                license_data: Dict[str, Any] = {}
+                for field in LICENSE_FIELDS:
+                    license_data[field] = payload.get(field)
+                aggregated[normalized_id] = license_data
+
+        return aggregated
 
     def _extract_target_model_ids(self, payload: Dict) -> Optional[List[int]]:
         if not isinstance(payload, Mapping):
