@@ -152,6 +152,13 @@
             "none": "No hay carpetas de imágenes de ejemplo que necesiten limpieza",
             "partial": "Limpieza completada con {failures} carpeta(s) omitidas",
             "error": "No se pudieron limpiar las carpetas de imágenes de ejemplo: {message}"
+        },
+        "fetchMissingLicenses": {
+            "label": "Refresh license metadata",
+            "loading": "Refreshing license metadata for {typePlural}...",
+            "success": "Updated license metadata for {count} {typePlural}",
+            "none": "All {typePlural} already have license metadata",
+            "error": "Failed to refresh license metadata for {typePlural}: {message}"
         }
     },
     "header": {

@@ -56,6 +56,7 @@ COMMON_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("GET", "/api/lm/{prefix}/civitai/model/version/{modelVersionId}", "get_civitai_model_by_version"),
     RouteDefinition("GET", "/api/lm/{prefix}/civitai/model/hash/{hash}", "get_civitai_model_by_hash"),
     RouteDefinition("POST", "/api/lm/{prefix}/updates/refresh", "refresh_model_updates"),
+    RouteDefinition("POST", "/api/lm/{prefix}/updates/fetch-missing-license", "fetch_missing_civitai_license_data"),
     RouteDefinition("POST", "/api/lm/{prefix}/updates/ignore", "set_model_update_ignore"),
     RouteDefinition("POST", "/api/lm/{prefix}/updates/ignore-version", "set_version_update_ignore"),
     RouteDefinition("GET", "/api/lm/{prefix}/updates/status/{model_id}", "get_model_update_status"),
@@ -103,4 +104,3 @@ class ModelRouteRegistrar:
         add_method_name = self._METHOD_MAP[method.upper()]
         add_method = getattr(self._app.router, add_method_name)
         add_method(path, handler)
-

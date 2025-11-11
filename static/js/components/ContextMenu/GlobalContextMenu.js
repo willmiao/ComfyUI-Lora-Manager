@@ -1,6 +1,8 @@
 import { BaseContextMenu } from './BaseContextMenu.js';
 import { showToast } from '../../utils/uiHelpers.js';
+import { translate } from '../../utils/i18nHelpers.js';
 import { state } from '../../state/index.js';
+import { getCompleteApiConfig, getCurrentModelType } from '../../api/apiConfig.js';
 import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
 
 export class GlobalContextMenu extends BaseContextMenu {
@@ -8,6 +10,7 @@ export class GlobalContextMenu extends BaseContextMenu {
         super('globalContextMenu');
         this._cleanupInProgress = false;
         this._updateCheckInProgress = false;
+        this._licenseRefreshInProgress = false;
     }
 
     showMenu(x, y, origin = null) {
@@ -30,6 +33,11 @@ export class GlobalContextMenu extends BaseContextMenu {
             case 'check-model-updates':
                 this.checkModelUpdates(menuItem).catch((error) => {
                     console.error('Failed to check model updates:', error);
+                });
+                break;
+            case 'fetch-missing-licenses':
+                this.fetchMissingLicenses(menuItem).catch((error) => {
+                    console.error('Failed to refresh missing license metadata:', error);
                 });
                 break;
             default:
@@ -132,5 +140,99 @@ export class GlobalContextMenu extends BaseContextMenu {
                 menuItem?.classList.remove('disabled');
             }
         }
+    }
+
+    async fetchMissingLicenses(menuItem) {
+        if (this._licenseRefreshInProgress) {
+            return;
+        }
+
+        const modelType = getCurrentModelType();
+        const apiConfig = getCompleteApiConfig(modelType);
+        const displayName = apiConfig?.config?.displayName ?? 'Model';
+        const typePlural = this._buildTypePlural(displayName);
+        const loadingMessage = translate(
+            'globalContextMenu.fetchMissingLicenses.loading',
+            { type: displayName, typePlural },
+            `Refreshing license metadata for ${typePlural}...`
+        );
+
+        const endpoint = apiConfig?.endpoints?.fetchMissingLicenses;
+        if (!endpoint) {
+            console.warn('Fetch missing license endpoint not configured for model type:', modelType);
+            showToast(
+                'globalContextMenu.fetchMissingLicenses.error',
+                { message: 'Endpoint unavailable', type: displayName, typePlural },
+                'warning'
+            );
+            return;
+        }
+
+        this._licenseRefreshInProgress = true;
+        menuItem?.classList?.add('disabled');
+        state.loadingManager?.showSimpleLoading?.(loadingMessage);
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}),
+            });
+
+            let payload = {};
+            try {
+                payload = await response.json();
+            } catch {
+                payload = {};
+            }
+
+            if (!response.ok || payload.success !== true) {
+                const errorMessage = payload?.error || response.statusText || 'Unknown error';
+                throw new Error(errorMessage);
+            }
+
+            const updated = Array.isArray(payload.updated) ? payload.updated : [];
+            if (updated.length > 0) {
+                showToast(
+                    'globalContextMenu.fetchMissingLicenses.success',
+                    { count: updated.length, type: displayName, typePlural },
+                    'success'
+                );
+            } else {
+                showToast(
+                    'globalContextMenu.fetchMissingLicenses.none',
+                    { type: displayName, typePlural },
+                    'info'
+                );
+            }
+        } catch (error) {
+            console.error('Failed to refresh missing license metadata:', error);
+            showToast(
+                'globalContextMenu.fetchMissingLicenses.error',
+                { message: error?.message ?? 'Unknown error', type: displayName, typePlural },
+                'error'
+            );
+        } finally {
+            state.loadingManager?.hide?.();
+            if (typeof state.loadingManager?.restoreProgressBar === 'function') {
+                state.loadingManager.restoreProgressBar();
+            }
+
+            this._licenseRefreshInProgress = false;
+            menuItem?.classList?.remove('disabled');
+        }
+    }
+
+    _buildTypePlural(displayName) {
+        if (!displayName) {
+            return 'models';
+        }
+
+        const lower = displayName.toLowerCase();
+        if (lower.endsWith('s')) {
+            return displayName;
+        }
+
+        return `${displayName}s`;
     }
 }

@@ -152,6 +152,13 @@
             "none": "クリーンアップが必要な例画像フォルダはありません",
             "partial": "クリーンアップが完了しましたが、{failures} 個のフォルダはスキップされました",
             "error": "例画像フォルダのクリーンアップに失敗しました：{message}"
+        },
+        "fetchMissingLicenses": {
+            "label": "Refresh license metadata",
+            "loading": "Refreshing license metadata for {typePlural}...",
+            "success": "Updated license metadata for {count} {typePlural}",
+            "none": "All {typePlural} already have license metadata",
+            "error": "Failed to refresh license metadata for {typePlural}: {message}"
         }
     },
     "header": {

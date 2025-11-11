@@ -152,6 +152,13 @@
             "none": "Aucun dossier d'images d'exemple à nettoyer",
             "partial": "Nettoyage terminé avec {failures} dossier(s) ignoré(s)",
             "error": "Échec du nettoyage des dossiers d'images d'exemple : {message}"
+        },
+        "fetchMissingLicenses": {
+            "label": "Refresh license metadata",
+            "loading": "Refreshing license metadata for {typePlural}...",
+            "success": "Updated license metadata for {count} {typePlural}",
+            "none": "All {typePlural} already have license metadata",
+            "error": "Failed to refresh license metadata for {typePlural}: {message}"
         }
     },
     "header": {
