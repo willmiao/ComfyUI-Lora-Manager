@@ -152,6 +152,13 @@
             "none": "אין תיקיות תמונות דוגמה שזקוקות לניקוי",
             "partial": "הניקוי הושלם עם דילוג על {failures} תיקיות",
             "error": "ניקוי תיקיות תמונות הדוגמה נכשל: {message}"
+        },
+        "fetchMissingLicenses": {
+            "label": "Refresh license metadata",
+            "loading": "Refreshing license metadata for {typePlural}...",
+            "success": "Updated license metadata for {count} {typePlural}",
+            "none": "All {typePlural} already have license metadata",
+            "error": "Failed to refresh license metadata for {typePlural}: {message}"
         }
     },
     "header": {

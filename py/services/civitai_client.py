@@ -246,6 +246,10 @@ class CivitaiClient:
                     'modelVersions': item.get('modelVersions', []),
                     'type': item.get('type', ''),
                     'name': item.get('name', ''),
+                    'allowNoCredit': item.get('allowNoCredit'),
+                    'allowCommercialUse': item.get('allowCommercialUse'),
+                    'allowDerivatives': item.get('allowDerivatives'),
+                    'allowDifferentLicense': item.get('allowDifferentLicense'),
                 }
             return payload
         except RateLimitError:

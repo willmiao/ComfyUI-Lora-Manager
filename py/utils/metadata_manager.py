@@ -22,7 +22,7 @@ class MetadataManager:
     """
     
     @staticmethod
-    async def load_metadata(file_path: str, model_class: Type[BaseModelMetadata] = LoraMetadata) -> Optional[BaseModelMetadata]:
+    async def load_metadata(file_path: str, model_class: Type[BaseModelMetadata] = LoraMetadata) -> tuple[Optional[BaseModelMetadata], bool]:
         """
         Load metadata safely.
         

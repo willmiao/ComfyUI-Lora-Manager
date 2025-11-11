@@ -204,8 +204,26 @@ async def test_get_model_versions_bulk_success(monkeypatch, downloader):
         assert kwargs.get("params") == {"ids": "1,2"}
         return True, {
             "items": [
-                {"id": 1, "modelVersions": [{"id": 11}], "type": "LORA", "name": "One"},
-                {"id": 2, "modelVersions": [], "type": "Checkpoint", "name": "Two"},
+                {
+                    "id": 1,
+                    "modelVersions": [{"id": 11}],
+                    "type": "LORA",
+                    "name": "One",
+                    "allowNoCredit": True,
+                    "allowCommercialUse": ["Sell"],
+                    "allowDerivatives": True,
+                    "allowDifferentLicense": True,
+                },
+                {
+                    "id": 2,
+                    "modelVersions": [],
+                    "type": "Checkpoint",
+                    "name": "Two",
+                    "allowNoCredit": False,
+                    "allowCommercialUse": ["Image"],
+                    "allowDerivatives": False,
+                    "allowDifferentLicense": False,
+                },
             ]
         }
 
@@ -216,8 +234,24 @@ async def test_get_model_versions_bulk_success(monkeypatch, downloader):
     result = await client.get_model_versions_bulk([1, "2", 2])
 
     assert result == {
-        1: {"modelVersions": [{"id": 11}], "type": "LORA", "name": "One"},
-        2: {"modelVersions": [], "type": "Checkpoint", "name": "Two"},
+        1: {
+            "modelVersions": [{"id": 11}],
+            "type": "LORA",
+            "name": "One",
+            "allowNoCredit": True,
+            "allowCommercialUse": ["Sell"],
+            "allowDerivatives": True,
+            "allowDifferentLicense": True,
+        },
+        2: {
+            "modelVersions": [],
+            "type": "Checkpoint",
+            "name": "Two",
+            "allowNoCredit": False,
+            "allowCommercialUse": ["Image"],
+            "allowDerivatives": False,
+            "allowDifferentLicense": False,
+        },
     }
 
 

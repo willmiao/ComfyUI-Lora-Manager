@@ -152,6 +152,13 @@
             "none": "沒有需要清理的範例圖片資料夾",
             "partial": "清理完成，有 {failures} 個資料夾略過",
             "error": "清理範例圖片資料夾失敗：{message}"
+        },
+        "fetchMissingLicenses": {
+            "label": "Refresh license metadata",
+            "loading": "Refreshing license metadata for {typePlural}...",
+            "success": "Updated license metadata for {count} {typePlural}",
+            "none": "All {typePlural} already have license metadata",
+            "error": "Failed to refresh license metadata for {typePlural}: {message}"
         }
     },
     "header": {

@@ -44,7 +44,10 @@ const refreshSingleModelMetadataMock = vi.fn();
 const resetAndReloadMock = vi.fn();
 const getCompleteApiConfigMock = vi.fn(() => ({
   config: { displayName: 'LoRA' },
-  endpoints: { refreshUpdates: '/api/lm/loras/updates/refresh' },
+  endpoints: {
+    refreshUpdates: '/api/lm/loras/updates/refresh',
+    fetchMissingLicenses: '/api/lm/loras/updates/fetch-missing-license',
+  },
 }));
 const getCurrentModelTypeMock = vi.fn(() => 'loras');
 
@@ -150,7 +153,10 @@ describe('Interaction-level regression coverage', () => {
     resetAndReloadMock.mockResolvedValue(undefined);
     getCompleteApiConfigMock.mockReturnValue({
       config: { displayName: 'LoRA' },
-      endpoints: { refreshUpdates: '/api/lm/loras/updates/refresh' },
+      endpoints: {
+        refreshUpdates: '/api/lm/loras/updates/refresh',
+        fetchMissingLicenses: '/api/lm/loras/updates/fetch-missing-license',
+      },
     });
     getCurrentModelTypeMock.mockReturnValue('loras');
     translateMock.mockImplementation((key, params, fallback) => (typeof fallback === 'string' ? fallback : key));
@@ -322,8 +328,9 @@ describe('Interaction-level regression coverage', () => {
     document.body.innerHTML = `
       <div id="globalContextMenu" class="context-menu">
         <div class="context-menu-item" data-action="download-example-images"></div>
-        <div class="context-menu-item" data-action="cleanup-example-images-folders"></div>
         <div class="context-menu-item" data-action="check-model-updates"></div>
+        <div class="context-menu-item" data-action="fetch-missing-licenses"></div>
+        <div class="context-menu-item" data-action="cleanup-example-images-folders"></div>
       </div>
     `;
 
@@ -354,6 +361,10 @@ describe('Interaction-level regression coverage', () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ success: true, records: [{ id: 1 }] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, updated: [{ modelId: 42 }] }),
       });
 
     menu.showMenu(240, 320);
@@ -379,7 +390,7 @@ describe('Interaction-level regression coverage', () => {
 
     await flushAsyncTasks();
 
-    expect(global.fetch).toHaveBeenLastCalledWith('/api/lm/loras/updates/refresh', {
+    expect(global.fetch).toHaveBeenNthCalledWith(2, '/api/lm/loras/updates/refresh', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ force: false }),
@@ -398,5 +409,28 @@ describe('Interaction-level regression coverage', () => {
     expect(loadingManagerStub.hide).toHaveBeenCalled();
     expect(resetAndReloadMock).toHaveBeenCalledWith(false);
     expect(checkUpdatesItem.classList.contains('disabled')).toBe(false);
+
+    menu.showMenu(480, 520);
+    const fetchMissingItem = document.querySelector('[data-action="fetch-missing-licenses"]');
+    fetchMissingItem.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(fetchMissingItem.classList.contains('disabled')).toBe(true);
+
+    const fetchMissingResponse = await global.fetch.mock.results[2].value;
+    await fetchMissingResponse.json();
+    await flushAsyncTasks();
+
+    expect(global.fetch).toHaveBeenNthCalledWith(3, '/api/lm/loras/updates/fetch-missing-license', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    expect(showToastMock).toHaveBeenCalledWith(
+      'globalContextMenu.fetchMissingLicenses.success',
+      { count: 1, type: 'LoRA', typePlural: 'LoRAs' },
+      'success'
+    );
+    expect(loadingManagerStub.showSimpleLoading).toHaveBeenNthCalledWith(2, 'Refreshing license metadata for LoRAs...');
+    expect(fetchMissingItem.classList.contains('disabled')).toBe(false);
   });
 });
