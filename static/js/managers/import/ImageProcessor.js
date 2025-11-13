@@ -76,20 +76,23 @@ export class ImageProcessor {
             }
             
             // Get recipe data from response
-            this.importManager.recipeData = await response.json();
-            
+            const recipeData = await response.json();
+
+            if (!recipeData) {
+                throw new Error('No recipe data returned from image analysis');
+            }
+
+            this.importManager.recipeData = recipeData;
+
             // Check if we have an error message
             if (this.importManager.recipeData.error) {
                 throw new Error(this.importManager.recipeData.error);
             }
-            
-            // Check if we have valid recipe data
-            if (!this.importManager.recipeData || 
-                !this.importManager.recipeData.loras || 
-                this.importManager.recipeData.loras.length === 0) {
-                throw new Error('No LoRA information found in this image');
-            }
-            
+
+            this.importManager.recipeData.loras = Array.isArray(this.importManager.recipeData.loras)
+                ? this.importManager.recipeData.loras
+                : [];
+
             // Find missing LoRAs
             this.importManager.missingLoras = this.importManager.recipeData.loras.filter(
                 lora => !lora.existsLocally
@@ -124,20 +127,23 @@ export class ImageProcessor {
             }
             
             // Get recipe data from response
-            this.importManager.recipeData = await response.json();
-            
+            const recipeData = await response.json();
+
+            if (!recipeData) {
+                throw new Error('No recipe data returned from image analysis');
+            }
+
+            this.importManager.recipeData = recipeData;
+
             // Check if we have an error message
             if (this.importManager.recipeData.error) {
                 throw new Error(this.importManager.recipeData.error);
             }
-            
-            // Check if we have valid recipe data
-            if (!this.importManager.recipeData || 
-                !this.importManager.recipeData.loras || 
-                this.importManager.recipeData.loras.length === 0) {
-                throw new Error('No LoRA information found in this image');
-            }
-            
+
+            this.importManager.recipeData.loras = Array.isArray(this.importManager.recipeData.loras)
+                ? this.importManager.recipeData.loras
+                : [];
+
             // Find missing LoRAs
             this.importManager.missingLoras = this.importManager.recipeData.loras.filter(
                 lora => !lora.existsLocally
@@ -175,19 +181,22 @@ export class ImageProcessor {
             });
              
             // Get recipe data from response
-            this.importManager.recipeData = await response.json();
+            const recipeData = await response.json();
+
+            if (!recipeData) {
+                throw new Error('No recipe data returned from image analysis');
+            }
+
+            this.importManager.recipeData = recipeData;
 
             // Check if we have an error message
             if (this.importManager.recipeData.error) {
                 throw new Error(this.importManager.recipeData.error);
             }
-            
-            // Check if we have valid recipe data
-            if (!this.importManager.recipeData || 
-                !this.importManager.recipeData.loras || 
-                this.importManager.recipeData.loras.length === 0) {
-                throw new Error('No LoRA information found in this image');
-            }
+
+            this.importManager.recipeData.loras = Array.isArray(this.importManager.recipeData.loras)
+                ? this.importManager.recipeData.loras
+                : [];
             
             // Find missing LoRAs
             this.importManager.missingLoras = this.importManager.recipeData.loras.filter(
