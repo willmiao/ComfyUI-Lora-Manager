@@ -295,8 +295,6 @@ class RecipePersistenceService:
 
         lora_stack = metadata.get("loras", "")
         lora_matches = re.findall(r"<lora:([^:]+):([^>]+)>", lora_stack)
-        if not lora_matches:
-            raise RecipeValidationError("No LoRAs found in the generation metadata")
 
         loras_data = []
         base_model_counts: Dict[str, int] = {}
