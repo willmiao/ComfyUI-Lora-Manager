@@ -155,3 +155,45 @@ async def test_save_recipe_reports_duplicates(tmp_path):
     expected_image_path = os.path.normpath(result.payload["image_path"])
     assert stored["file_path"] == expected_image_path
     assert service._exif_utils.appended[0] == expected_image_path
+
+
+@pytest.mark.asyncio
+async def test_save_recipe_from_widget_allows_empty_lora(tmp_path):
+    exif_utils = DummyExifUtils()
+
+    class DummyScanner:
+        def __init__(self, root):
+            self.recipes_dir = str(root)
+            self.added = []
+
+        async def get_local_lora(self, name):  # pragma: no cover - no lookups expected
+            return None
+
+        async def add_recipe(self, recipe_data):
+            self.added.append(recipe_data)
+
+    scanner = DummyScanner(tmp_path)
+    service = RecipePersistenceService(
+        exif_utils=exif_utils,
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    metadata = {
+        "loras": "",  # no matches present in the stack
+        "checkpoint": "base-model.safetensors",
+        "prompt": "a calm scene",
+        "negative_prompt": "",
+    }
+
+    result = await service.save_recipe_from_widget(
+        recipe_scanner=scanner,
+        metadata=metadata,
+        image_bytes=b"image-bytes",
+    )
+
+    stored = json.loads(Path(result.payload["json_path"]).read_text())
+
+    assert stored["loras"] == []
+    assert stored["title"] == "recipe"
+    assert scanner.added and scanner.added[0]["loras"] == []
