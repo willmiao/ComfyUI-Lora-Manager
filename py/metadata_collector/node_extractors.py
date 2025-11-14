@@ -72,6 +72,18 @@ class GGUFLoaderExtractor(NodeMetadataExtractor):
         model_name = inputs.get("gguf_name")
         _store_checkpoint_metadata(metadata, node_id, model_name)
 
+
+class KJNodesModelLoaderExtractor(NodeMetadataExtractor):
+    """Extract metadata from KJNodes loaders that expose `model_name`."""
+
+    @staticmethod
+    def extract(node_id, inputs, outputs, metadata):
+        if not inputs or "model_name" not in inputs:
+            return
+
+        model_name = inputs.get("model_name")
+        _store_checkpoint_metadata(metadata, node_id, model_name)
+
 class TSCCheckpointLoaderExtractor(NodeMetadataExtractor):
     @staticmethod
     def extract(node_id, inputs, outputs, metadata):
@@ -695,6 +707,8 @@ NODE_EXTRACTORS = {
     "NunchakuQwenImageDiTLoader": NunchakuQwenImageDiTLoaderExtractor,  # ComfyUI-Nunchaku
     "LoaderGGUF": GGUFLoaderExtractor,  # calcuis gguf
     "LoaderGGUFAdvanced": GGUFLoaderExtractor,  # calcuis gguf
+    "GGUFLoaderKJ": KJNodesModelLoaderExtractor,  # KJNodes
+    "DiffusionModelLoaderKJ": KJNodesModelLoaderExtractor,  # KJNodes
     "UNETLoader": UNETLoaderExtractor,          # Updated to use dedicated extractor
     "UnetLoaderGGUF": UNETLoaderExtractor,  # Updated to use dedicated extractor
     "LoraLoader": LoraLoaderExtractor,
