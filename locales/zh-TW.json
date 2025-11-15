@@ -1318,7 +1318,7 @@
         },
         "triggerWords": {
             "loadFailed": "無法載入訓練詞",
-            "tooLong": "觸發詞不可超過 30 個字",
+            "tooLong": "觸發詞不可超過 100 個字",
             "tooMany": "最多允許 30 個觸發詞",
             "alreadyExists": "此觸發詞已存在",
             "updateSuccess": "觸發詞已更新",

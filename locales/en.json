@@ -1318,7 +1318,7 @@
         },
         "triggerWords": {
             "loadFailed": "Could not load trained words",
-            "tooLong": "Trigger word should not exceed 30 words",
+            "tooLong": "Trigger word should not exceed 100 words",
             "tooMany": "Maximum 30 trigger words allowed",
             "alreadyExists": "This trigger word already exists",
             "updateSuccess": "Trigger words updated successfully",
