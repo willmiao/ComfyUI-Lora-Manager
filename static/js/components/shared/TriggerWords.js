@@ -499,7 +499,7 @@ function addNewTriggerWord(word) {
     }
     
     // Validation: Check length
-    if (word.split(/\s+/).length > 30) {
+    if (word.split(/\s+/).length > 100) {
         showToast('toast.triggerWords.tooLong', {}, 'error');
         return;
     }
