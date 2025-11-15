@@ -63,12 +63,6 @@ export function applyLoraValuesToText(originalText, loras) {
     if (!lora || !lora.name) {
       return;
     }
-    // Only include active LoRAs in the map
-    // If active property is missing (undefined/null), treat as active for backward compatibility
-    const isActive = lora.active === undefined || lora.active === null || lora.active === true;
-    if (!isActive) {
-      return;
-    }
     loraMap.set(lora.name, lora);
   });
 
