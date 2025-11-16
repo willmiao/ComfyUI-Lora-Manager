@@ -14,6 +14,7 @@ import os
 import subprocess
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Awaitable, Callable, Dict, Mapping, Protocol
 
 from aiohttp import web
@@ -68,6 +69,8 @@ class MetadataProviderProtocol(Protocol):
 
 
 class MetadataArchiveManagerProtocol(Protocol):
+    base_path: Path  # pragma: no cover - protocol
+    
     async def download_and_extract_database(
         self, progress_callback: Callable[[str, str], None]
     ) -> bool:  # pragma: no cover - protocol
@@ -80,6 +83,9 @@ class MetadataArchiveManagerProtocol(Protocol):
         ...
 
     def get_database_path(self) -> str | None:  # pragma: no cover - protocol
+        ...
+    
+    def move_database(self, new_path: str) -> bool:  # pragma: no cover - protocol
         ...
 
 
@@ -831,21 +837,123 @@ class MetadataArchiveHandler:
             is_available = archive_manager.is_database_available()
             is_enabled = self._settings.get("enable_metadata_archive_db", False)
             db_size = 0
+            db_path_str = None
             if is_available:
                 db_path = archive_manager.get_database_path()
                 if db_path and os.path.exists(db_path):
                     db_size = os.path.getsize(db_path)
+                    db_path_str = str(db_path)
             return web.json_response(
                 {
                     "success": True,
                     "isAvailable": is_available,
                     "isEnabled": is_enabled,
                     "databaseSize": db_size,
-                    "databasePath": archive_manager.get_database_path() if is_available else None,
+                    "databasePath": db_path_str,
                 }
             )
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Error getting metadata archive status: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+    
+    async def update_metadata_archive_path(self, request: web.Request) -> web.Response:
+        """Update the metadata archive database path and move existing database if needed"""
+        try:
+            data = await request.json()
+            new_path = data.get("path", "").strip()
+            
+            archive_manager = await self._metadata_archive_manager_factory()
+            old_path = archive_manager.get_database_path()
+            database_exists = archive_manager.is_database_available()
+            
+            # Get current custom path from settings
+            current_custom_path = self._settings.get("metadata_archive_db_path", "")
+            
+            # Normalize the new path - if it's a directory, append the database filename
+            if new_path:
+                from pathlib import Path
+                new_path_obj = Path(new_path)
+                # Check if it's a directory (exists and is a directory, or doesn't exist but has no extension)
+                if new_path_obj.exists() and new_path_obj.is_dir():
+                    # It's a directory, append the database filename
+                    new_path = str(new_path_obj / "civitai.sqlite")
+                    logger.info(f"Path is a directory, using: {new_path}")
+                elif not new_path_obj.suffix:
+                    # No extension, assume it's a directory path
+                    new_path = str(new_path_obj / "civitai.sqlite")
+                    logger.info(f"Path has no extension, treating as directory: {new_path}")
+                # Otherwise, use it as-is (should be a file path)
+            
+            # If path changed and database exists, move it
+            # Empty path means use default location
+            moved = False
+            if database_exists and old_path:
+                if new_path:
+                    # Moving to custom path
+                    if str(old_path) != new_path:
+                        # Move the database
+                        if not archive_manager.move_database(new_path):
+                            return web.json_response(
+                                {"success": False, "error": "Failed to move database to new location"}, 
+                                status=500
+                            )
+                        moved = True
+                        logger.info(f"Moved metadata archive database from {old_path} to {new_path}")
+                elif current_custom_path:
+                    # Moving from custom path back to default
+                    # Get default path using the archive manager's base_path
+                    from pathlib import Path
+                    default_db_path = archive_manager.base_path / "civitai" / "civitai.sqlite"
+                    default_path = str(default_db_path)
+                    
+                    if str(old_path) != default_path:
+                        # Move the database
+                        if not archive_manager.move_database(default_path):
+                            return web.json_response(
+                                {"success": False, "error": "Failed to move database to default location"}, 
+                                status=500
+                            )
+                        moved = True
+                        logger.info(f"Moved metadata archive database from {old_path} to {default_path}")
+            
+            # Update settings (empty string means use default)
+            self._settings.set("metadata_archive_db_path", new_path)
+            
+            # Renew archive manager instance with the new path
+            updated_manager = await self._metadata_archive_manager_factory()
+            
+            # Verify the database is available at the new location (if it was moved)
+            if moved:
+                # Wait a moment to ensure file system operations are complete
+                import asyncio
+                await asyncio.sleep(0.1)
+                
+                # Verify the database exists and is accessible
+                if not updated_manager.is_database_available():
+                    logger.warning(f"Database not found at new location after move. Expected at: {updated_manager.get_database_path()}")
+                    return web.json_response({
+                        "success": False,
+                        "error": "Database was moved but not found at new location"
+                    }, status=500)
+                else:
+                    logger.info(f"Database verified at new location: {updated_manager.get_database_path()}")
+            
+            # Always reinitialize providers if enabled (this will pick up the new database location)
+            # This ensures the database is properly loaded even if path changed without moving
+            if self._settings.get("enable_metadata_archive_db", False):
+                await self._metadata_provider_updater()
+                logger.info("Metadata providers reinitialized after path update")
+            
+            # Get the actual path that will be used
+            actual_path = updated_manager.get_database_path()
+            
+            return web.json_response({
+                "success": True,
+                "message": "Database path updated successfully" + (" and database moved" if moved else ""),
+                "databasePath": str(actual_path) if actual_path else None
+            })
+        except Exception as exc:
+            logger.error("Error updating metadata archive path: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
@@ -1098,6 +1206,7 @@ class MiscHandlerSet:
             "download_metadata_archive": self.metadata_archive.download_metadata_archive,
             "remove_metadata_archive": self.metadata_archive.remove_metadata_archive,
             "get_metadata_archive_status": self.metadata_archive.get_metadata_archive_status,
+            "update_metadata_archive_path": self.metadata_archive.update_metadata_archive_path,
             "get_model_versions_status": self.model_library.get_model_versions_status,
             "open_file_location": self.filesystem.open_file_location,
         }

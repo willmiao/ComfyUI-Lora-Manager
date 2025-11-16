@@ -365,7 +365,15 @@
             "preparing": "다운로드 준비 중...",
             "connecting": "다운로드 서버에 연결 중...",
             "completed": "완료됨",
-            "downloadComplete": "다운로드가 성공적으로 완료되었습니다"
+            "downloadComplete": "다운로드가 성공적으로 완료되었습니다",
+            "customPath": "사용자 지정 데이터베이스 경로",
+            "customPathPlaceholder": "비워두면 기본 위치 사용",
+            "customPathHelp": "메타데이터 아카이브 데이터베이스 파일의 사용자 지정 위치를 지정합니다. 데이터베이스가 이미 존재하고 이 경로를 변경하면 자동으로 새 위치로 이동됩니다.",
+            "path": "데이터베이스 경로",
+            "pathUpdated": "데이터베이스 경로가 성공적으로 업데이트되었습니다",
+            "pathUpdatedAndMoved": "데이터베이스 경로가 업데이트되고 데이터베이스가 이동되었습니다",
+            "pathUpdateError": "데이터베이스 경로 업데이트 실패",
+            "movingDatabase": "데이터베이스 이동 중..."
         },
         "proxySettings": {
             "enableProxy": "앱 수준 프록시 활성화",

@@ -385,7 +385,15 @@
             "preparing": "Preparando descarga...",
             "connecting": "Conectando al servidor de descarga...",
             "completed": "Completado",
-            "downloadComplete": "Descarga completada exitosamente"
+            "downloadComplete": "Descarga completada exitosamente",
+            "customPath": "Ruta personalizada de la base de datos",
+            "customPathPlaceholder": "Dejar vacío para usar la ubicación predeterminada",
+            "customPathHelp": "Especifica una ubicación personalizada para el archivo de base de datos del archivo de metadatos. Si ya existe una base de datos y cambias esta ruta, se moverá automáticamente a la nueva ubicación.",
+            "path": "Ruta de la base de datos",
+            "pathUpdated": "Ruta de la base de datos actualizada exitosamente",
+            "pathUpdatedAndMoved": "Ruta de la base de datos actualizada y base de datos movida exitosamente",
+            "pathUpdateError": "Error al actualizar la ruta de la base de datos",
+            "movingDatabase": "Moviendo base de datos..."
         },
         "proxySettings": {
             "enableProxy": "Habilitar proxy a nivel de aplicación",

@@ -365,7 +365,15 @@
             "preparing": "ダウンロードを準備中...",
             "connecting": "ダウンロードサーバーに接続中...",
             "completed": "完了",
-            "downloadComplete": "ダウンロードが正常に完了しました"
+            "downloadComplete": "ダウンロードが正常に完了しました",
+            "customPath": "カスタムデータベースパス",
+            "customPathPlaceholder": "空欄の場合はデフォルトの場所を使用",
+            "customPathHelp": "メタデータアーカイブデータベースファイルのカスタム場所を指定します。データベースが既に存在し、このパスを変更すると、自動的に新しい場所に移動されます。",
+            "path": "データベースパス",
+            "pathUpdated": "データベースパスが正常に更新されました",
+            "pathUpdatedAndMoved": "データベースパスが更新され、データベースが移動されました",
+            "pathUpdateError": "データベースパスの更新に失敗しました",
+            "movingDatabase": "データベースを移動中..."
         },
         "proxySettings": {
             "enableProxy": "アプリレベルのプロキシを有効化",

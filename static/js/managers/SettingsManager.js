@@ -326,6 +326,19 @@ export class SettingsManager {
 
         this.setupPriorityTagInputs();
 
+        // Setup metadata archive database path input
+        const metadataArchiveDbPathInput = document.getElementById('metadataArchiveDbPath');
+        if (metadataArchiveDbPathInput) {
+            metadataArchiveDbPathInput.addEventListener('blur', () => {
+                this.saveMetadataArchivePath();
+            });
+            metadataArchiveDbPathInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.target.blur();
+                }
+            });
+        }
+
         this.initialized = true;
     }
 
@@ -1348,11 +1361,99 @@ export class SettingsManager {
             if (enableMetadataArchiveCheckbox) {
                 enableMetadataArchiveCheckbox.checked = state.global.settings.enable_metadata_archive_db || false;
             }
+            
+            // Load custom path
+            const pathInput = document.getElementById('metadataArchiveDbPath');
+            if (pathInput) {
+                pathInput.value = state.global.settings.metadata_archive_db_path || '';
+            }
 
             // Load status
             await this.updateMetadataArchiveStatus();
         } catch (error) {
             console.error('Error loading metadata archive settings:', error);
+        }
+    }
+    
+    async saveMetadataArchivePath() {
+        try {
+            const pathInput = document.getElementById('metadataArchiveDbPath');
+            if (!pathInput) return;
+            
+            const newPath = pathInput.value.trim();
+            const currentPath = state.global.settings.metadata_archive_db_path || '';
+            
+            // Only update if path changed
+            if (newPath === currentPath) {
+                return;
+            }
+            
+            // Check if we need to move the database (path changed and database exists)
+            const statusResponse = await fetch('/api/lm/metadata-archive-status');
+            const statusData = await statusResponse.json();
+            const needsMove = statusData.success && statusData.isAvailable && 
+                            ((newPath && currentPath && newPath !== currentPath) || 
+                             (!newPath && currentPath));
+            
+            // Show "Moving Database..." status if a move is needed
+            if (needsMove) {
+                this.showMovingStatus();
+            }
+            
+            const response = await fetch('/api/lm/update-metadata-archive-path', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ path: newPath })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Update local state
+                await this.saveSetting('metadata_archive_db_path', newPath);
+                
+                // Refresh status to show new path
+                await this.updateMetadataArchiveStatus();
+                
+                if (data.message && data.message.includes('moved')) {
+                    showToast('settings.metadataArchive.pathUpdatedAndMoved', 'success');
+                } else {
+                    showToast('settings.metadataArchive.pathUpdated', 'success');
+                }
+            } else {
+                // Refresh status on error to clear moving status
+                await this.updateMetadataArchiveStatus();
+                showToast('settings.metadataArchive.pathUpdateError' + ': ' + data.error, 'error');
+                // Revert input value on error
+                pathInput.value = currentPath;
+            }
+        } catch (error) {
+            console.error('Error saving metadata archive path:', error);
+            // Refresh status on error to clear moving status
+            await this.updateMetadataArchiveStatus();
+            showToast('settings.metadataArchive.pathUpdateError' + ': ' + error.message, 'error');
+        }
+    }
+    
+    showMovingStatus() {
+        const statusContainer = document.getElementById('metadataArchiveStatus');
+        if (statusContainer) {
+            statusContainer.innerHTML = `
+                <div class="archive-status-item">
+                    <span class="archive-status-label">${translate('settings.metadataArchive.status')}:</span>
+                    <span class="archive-status-value status-moving" style="color: #ffa500;">
+                        ${translate('settings.metadataArchive.movingDatabase')}
+                    </span>
+                </div>
+                <div class="archive-status-item">
+                    <span class="archive-status-label">${translate('settings.metadataArchive.enabled')}:</span>
+                    <span class="archive-status-value status-enabled">
+                        ${translate('common.status.enabled')}
+                    </span>
+                </div>
+            `;
         }
     }
 

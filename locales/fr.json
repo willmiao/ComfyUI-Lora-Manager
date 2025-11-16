@@ -365,7 +365,15 @@
             "preparing": "Préparation du téléchargement...",
             "connecting": "Connexion au serveur de téléchargement...",
             "completed": "Terminé",
-            "downloadComplete": "Téléchargement terminé avec succès"
+            "downloadComplete": "Téléchargement terminé avec succès",
+            "customPath": "Chemin personnalisé de la base de données",
+            "customPathPlaceholder": "Laisser vide pour utiliser l'emplacement par défaut",
+            "customPathHelp": "Spécifiez un emplacement personnalisé pour le fichier de base de données d'archive des métadonnées. Si une base de données existe déjà et que vous modifiez ce chemin, elle sera automatiquement déplacée vers le nouvel emplacement.",
+            "path": "Chemin de la base de données",
+            "pathUpdated": "Chemin de la base de données mis à jour avec succès",
+            "pathUpdatedAndMoved": "Chemin de la base de données mis à jour et base de données déplacée avec succès",
+            "pathUpdateError": "Échec de la mise à jour du chemin de la base de données",
+            "movingDatabase": "Déplacement de la base de données..."
         },
         "proxySettings": {
             "enableProxy": "Activer le proxy au niveau de l'application",
