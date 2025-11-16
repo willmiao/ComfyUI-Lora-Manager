@@ -1327,7 +1327,9 @@
             "loadError": "שגיאה בטעינת הורדות: {message}",
             "downloadError": "שגיאת הורדה: {message}",
             "downloadCancelled": "ההורדה בוטלה",
-            "cancelFailed": "ביטול ההורדה נכשל: {error}"
+            "cancelFailed": "ביטול ההורדה נכשל: {error}",
+            "removedFromQueue": "הוסר מתור ההורדות",
+            "removeFailed": "הסרה מתור ההורדות נכשלה: {error}"
         },
         "import": {
             "folderTreeFailed": "טעינת עץ התיקיות נכשלה",

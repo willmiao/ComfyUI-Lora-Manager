@@ -154,8 +154,11 @@ class DownloadManager:
             if task_id in self._download_tasks:
                 del self._download_tasks[task_id]
             self._pause_events.pop(task_id, None)
-            # Ensure cancelled download is removed from tracking (in case it wasn't already)
-            self._active_downloads.pop(task_id, None)
+            # Only remove cancelled downloads from tracking in finally block
+            # Completed downloads remain until _cleanup_download_record removes them
+            download_info = self._active_downloads.get(task_id)
+            if download_info and download_info.get('status') == 'cancelled':
+                self._active_downloads.pop(task_id, None)
 
     async def _download_with_semaphore(self, task_id: str, model_id: int, model_version_id: int,
                                      save_dir: str, relative_path: str,

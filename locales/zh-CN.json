@@ -1327,7 +1327,9 @@
             "loadError": "加载下载项出错：{message}",
             "downloadError": "下载错误：{message}",
             "downloadCancelled": "下载已取消",
-            "cancelFailed": "取消下载失败：{error}"
+            "cancelFailed": "取消下载失败：{error}",
+            "removedFromQueue": "已从下载队列中移除",
+            "removeFailed": "从队列中移除失败：{error}"
         },
         "import": {
             "folderTreeFailed": "加载文件夹树失败",

@@ -1327,7 +1327,9 @@
             "loadError": "Ошибка загрузки downloads: {message}",
             "downloadError": "Ошибка загрузки: {message}",
             "downloadCancelled": "Загрузка отменена",
-            "cancelFailed": "Не удалось отменить загрузку: {error}"
+            "cancelFailed": "Не удалось отменить загрузку: {error}",
+            "removedFromQueue": "Удалено из очереди загрузки",
+            "removeFailed": "Не удалось удалить из очереди: {error}"
         },
         "import": {
             "folderTreeFailed": "Не удалось загрузить дерево папок",

@@ -1327,7 +1327,9 @@
             "loadError": "載入下載時發生錯誤：{message}",
             "downloadError": "下載錯誤：{message}",
             "downloadCancelled": "下載已取消",
-            "cancelFailed": "取消下載失敗：{error}"
+            "cancelFailed": "取消下載失敗：{error}",
+            "removedFromQueue": "已從下載佇列中移除",
+            "removeFailed": "從佇列中移除失敗：{error}"
         },
         "import": {
             "folderTreeFailed": "載入資料夾樹狀結構失敗",

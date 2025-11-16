@@ -1327,7 +1327,9 @@
             "loadError": "다운로드 로딩 오류: {message}",
             "downloadError": "다운로드 오류: {message}",
             "downloadCancelled": "다운로드가 취소되었습니다",
-            "cancelFailed": "다운로드 취소 실패: {error}"
+            "cancelFailed": "다운로드 취소 실패: {error}",
+            "removedFromQueue": "다운로드 대기열에서 제거됨",
+            "removeFailed": "대기열에서 제거 실패: {error}"
         },
         "import": {
             "folderTreeFailed": "폴더 트리 로딩 실패",

@@ -39,8 +39,6 @@ export class DownloadManager {
     }
 
     showDownloadModal() {
-        console.log('Showing unified download modal...');
-        
         // Get API client for current page type
         this.apiClient = getModelApiClient();
         const config = this.apiClient.apiConfig.config;
@@ -367,10 +365,7 @@ export class DownloadManager {
             const singularType = this.apiClient.modelType.replace(/s$/, '');
             const defaultRootKey = `default_${singularType}_root`;
             const defaultRoot = state.global.settings[defaultRootKey];
-            console.log(`Default root for ${this.apiClient.modelType}:`, defaultRoot);
-            console.log('Available roots:', rootsData.roots);
             if (defaultRoot && rootsData.roots.includes(defaultRoot)) {
-                console.log(`Setting default root: ${defaultRoot}`);
                 modelRoot.value = defaultRoot;
             }
 
@@ -466,7 +461,6 @@ export class DownloadManager {
                 // Always use the current active download ID from loadingManager
                 // This gets updated when updateQueueDisplay runs
                 const activeId = this.loadingManager.activeDownloadId || this.currentDownloadId || downloadId;
-                console.log('Cancel button clicked, canceling download:', activeId);
                 this.cancelDownload(activeId);
             };
             updateProgress = this.loadingManager.showDownloadProgress(1, cancelHandler);
@@ -480,15 +474,12 @@ export class DownloadManager {
 
             ws.onmessage = event => {
                 const data = JSON.parse(event.data);
-                console.log('WebSocket message received:', data); // Debug log
 
                 if (data.type === 'download_id') {
                     // Update downloadId to match backend's ID
                     const backendDownloadId = data.download_id;
-                    console.log(`Connected to download progress with ID: ${backendDownloadId}`);
                     // Use backend's download_id for matching messages
                     if (backendDownloadId && backendDownloadId !== downloadId) {
-                        console.log(`Updating downloadId from ${downloadId} to ${backendDownloadId}`);
                         downloadId = backendDownloadId;
                         this.currentDownloadId = backendDownloadId; // Update tracked download ID
                     }
@@ -742,26 +733,21 @@ export class DownloadManager {
                     // Update cancel callback to always fetch current active download and cancel it
                     // This ensures we cancel the correct download even if the queue changes
                     this.loadingManager.onCancelCallback = async () => {
-                        console.log('Cancel button clicked');
                         // Fetch current active downloads to ensure we cancel the right one
                         try {
                             const currentData = await this.checkQueueStatus();
                             if (currentData && currentData.downloads && Array.isArray(currentData.downloads)) {
                                 const currentActive = currentData.downloads.find(d => d.status === 'downloading');
                                 if (currentActive && currentActive.download_id) {
-                                    console.log('Canceling active download:', currentActive.download_id);
                                     await this.cancelDownload(currentActive.download_id);
                                 } else {
-                                    console.warn('No active download found when cancel button clicked');
                                     // Fallback to stored ID
                                     if (activeDownloadId) {
-                                        console.log('Using stored active download ID:', activeDownloadId);
                                         await this.cancelDownload(activeDownloadId);
                                     }
                                 }
                             } else {
                                 // Fallback to stored ID if fetch fails
-                                console.log('Failed to fetch current downloads, using stored ID:', activeDownloadId);
                                 await this.cancelDownload(activeDownloadId);
                             }
                         } catch (error) {
@@ -770,10 +756,8 @@ export class DownloadManager {
                             await this.cancelDownload(activeDownloadId);
                         }
                     };
-                    console.log('Updated cancel callback to use active download ID:', activeDownloadId);
                 } else {
                     // No active download - clear the cancel callback or set it to null
-                    console.log('No active download found, clearing cancel callback');
                     this.loadingManager.onCancelCallback = null;
                 }
                 
@@ -833,7 +817,6 @@ export class DownloadManager {
             return;
         }
         
-        console.log('cancelDownload called with downloadId:', downloadId, 'currentDownloadId:', this.currentDownloadId, 'activeDownloadId:', this.loadingManager.activeDownloadId);
         this.isCancelling = true;
         
         // Clear any existing timeout

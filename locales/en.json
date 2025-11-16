@@ -1327,7 +1327,9 @@
             "loadError": "Error loading downloads: {message}",
             "downloadError": "Download error: {message}",
             "downloadCancelled": "Download cancelled",
-            "cancelFailed": "Failed to cancel download: {error}"
+            "cancelFailed": "Failed to cancel download: {error}",
+            "removedFromQueue": "Removed from download queue",
+            "removeFailed": "Failed to remove from queue: {error}"
         },
         "import": {
             "folderTreeFailed": "Failed to load folder tree",

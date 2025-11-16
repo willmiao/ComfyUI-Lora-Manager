@@ -1327,7 +1327,9 @@
             "loadError": "Error al cargar descargas: {message}",
             "downloadError": "Error de descarga: {message}",
             "downloadCancelled": "Descarga cancelada",
-            "cancelFailed": "Error al cancelar la descarga: {error}"
+            "cancelFailed": "Error al cancelar la descarga: {error}",
+            "removedFromQueue": "Eliminado de la cola de descarga",
+            "removeFailed": "Error al eliminar de la cola: {error}"
         },
         "import": {
             "folderTreeFailed": "Error al cargar árbol de carpetas",

@@ -1327,7 +1327,9 @@
             "loadError": "Erreur lors du chargement des téléchargements : {message}",
             "downloadError": "Erreur de téléchargement : {message}",
             "downloadCancelled": "Téléchargement annulé",
-            "cancelFailed": "Échec de l'annulation du téléchargement : {error}"
+            "cancelFailed": "Échec de l'annulation du téléchargement : {error}",
+            "removedFromQueue": "Retiré de la file d'attente de téléchargement",
+            "removeFailed": "Échec du retrait de la file d'attente : {error}"
         },
         "import": {
             "folderTreeFailed": "Échec du chargement de l'arborescence des dossiers",

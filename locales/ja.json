@@ -1327,7 +1327,9 @@
             "loadError": "ダウンロード読み込みエラー：{message}",
             "downloadError": "ダウンロードエラー：{message}",
             "downloadCancelled": "ダウンロードがキャンセルされました",
-            "cancelFailed": "ダウンロードのキャンセルに失敗しました：{error}"
+            "cancelFailed": "ダウンロードのキャンセルに失敗しました：{error}",
+            "removedFromQueue": "ダウンロードキューから削除されました",
+            "removeFailed": "キューからの削除に失敗しました：{error}"
         },
         "import": {
             "folderTreeFailed": "フォルダツリーの読み込みに失敗しました",
