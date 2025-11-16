@@ -231,8 +231,13 @@
             "exampleImages": "Images d'exemple",
             "misc": "Divers",
             "metadataArchive": "Base de données d'archive des métadonnées",
+            "storageLocation": "Emplacement des paramètres",
             "proxySettings": "Paramètres du proxy",
             "priorityTags": "Étiquettes prioritaires"
+        },
+        "storage": {
+            "locationLabel": "Mode portable",
+            "locationHelp": "Activez pour garder settings.json dans le dépôt ; désactivez pour le placer dans votre dossier de configuration utilisateur."
         },
         "contentFiltering": {
             "blurNsfwContent": "Flouter le contenu NSFW",

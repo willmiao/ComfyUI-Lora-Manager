@@ -5,6 +5,7 @@ import { DEFAULT_PATH_TEMPLATES, DEFAULT_PRIORITY_TAG_CONFIG } from '../utils/co
 
 const DEFAULT_SETTINGS_BASE = Object.freeze({
     civitai_api_key: '',
+    use_portable_settings: false,
     language: 'en',
     show_only_sfw: false,
     enable_metadata_archive_db: false,

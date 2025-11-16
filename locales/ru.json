@@ -231,8 +231,13 @@
             "exampleImages": "Примеры изображений",
             "misc": "Разное",
             "metadataArchive": "Архив метаданных",
+            "storageLocation": "Расположение настроек",
             "proxySettings": "Настройки прокси",
             "priorityTags": "Приоритетные теги"
+        },
+        "storage": {
+            "locationLabel": "Портативный режим",
+            "locationHelp": "Включите, чтобы хранить settings.json в репозитории; выключите, чтобы сохранить его в папке конфигурации пользователя."
         },
         "contentFiltering": {
             "blurNsfwContent": "Размывать NSFW контент",

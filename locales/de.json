@@ -232,7 +232,12 @@
             "exampleImages": "Beispielbilder",
             "misc": "Verschiedenes",
             "metadataArchive": "Metadaten-Archiv-Datenbank",
+            "storageLocation": "Einstellungsort",
             "proxySettings": "Proxy-Einstellungen"
+        },
+        "storage": {
+            "locationLabel": "Portabler Modus",
+            "locationHelp": "Aktiviere, um settings.json im Repository zu belassen; deaktiviere, um es im Benutzerkonfigurationsordner zu speichern."
         },
         "contentFiltering": {
             "blurNsfwContent": "NSFW-Inhalte unscharf stellen",

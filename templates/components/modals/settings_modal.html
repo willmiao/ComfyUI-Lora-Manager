@@ -39,6 +39,27 @@
             </div>
             
             <div class="settings-section">
+                <h3>{{ t('settings.sections.storageLocation') }}</h3>
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="usePortableSettings">{{ t('settings.storage.locationLabel') }}</label>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="usePortableSettings" {% if settings.get('use_portable_settings', False) %}checked{% endif %}
+                                       onchange="settingsManager.saveToggleSetting('usePortableSettings', 'use_portable_settings')">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.storage.locationHelp') }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
                 <h3>{{ t('settings.sections.contentFiltering') }}</h3>
                 
                 <div class="setting-item">

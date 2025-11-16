@@ -231,8 +231,13 @@
             "exampleImages": "예시 이미지",
             "misc": "기타",
             "metadataArchive": "메타데이터 아카이브 데이터베이스",
+            "storageLocation": "설정 위치",
             "proxySettings": "프록시 설정",
             "priorityTags": "우선순위 태그"
+        },
+        "storage": {
+            "locationLabel": "휴대용 모드",
+            "locationHelp": "활성화하면 settings.json을 리포지토리에 유지하고, 비활성화하면 사용자 구성 디렉터리에 저장합니다."
         },
         "contentFiltering": {
             "blurNsfwContent": "NSFW 콘텐츠 블러 처리",

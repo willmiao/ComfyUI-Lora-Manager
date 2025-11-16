@@ -231,8 +231,13 @@
             "exampleImages": "תמונות דוגמה",
             "misc": "שונות",
             "metadataArchive": "מסד נתונים של ארכיון מטא-דאטה",
+            "storageLocation": "מיקום ההגדרות",
             "proxySettings": "הגדרות פרוקסי",
             "priorityTags": "תגיות עדיפות"
+        },
+        "storage": {
+            "locationLabel": "מצב נייד",
+            "locationHelp": "הפעל כדי לשמור את settings.json בתוך המאגר; בטל כדי לשמור אותו בתיקיית ההגדרות של המשתמש."
         },
         "contentFiltering": {
             "blurNsfwContent": "טשטש תוכן NSFW",
