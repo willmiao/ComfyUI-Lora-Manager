@@ -684,10 +684,14 @@
                 "preparing": "ダウンロードを準備中...",
                 "downloadedPreview": "プレビュー画像をダウンロードしました",
                 "downloadingFile": "{type}ファイルをダウンロード中",
-                "finalizing": "ダウンロードを完了中..."
+                "finalizing": "ダウンロードを完了中...",
+                "cancelling": "ダウンロードをキャンセル中...",
+                "cancelled": "ダウンロードがキャンセルされました"
             },
             "minimize": "最小化",
             "clickToRestore": "クリックして復元",
+            "cancel": "キャンセル",
+            "remove": "キューから削除",
             "queue": {
                 "title": "ダウンロードキュー",
                 "downloading": "ダウンロード中: {name}",
@@ -1322,7 +1326,8 @@
             "imagesFailed": "例画像 {action} が失敗しました",
             "loadError": "ダウンロード読み込みエラー：{message}",
             "downloadError": "ダウンロードエラー：{message}",
-            "downloadCancelled": "ダウンロードがキャンセルされました"
+            "downloadCancelled": "ダウンロードがキャンセルされました",
+            "cancelFailed": "ダウンロードのキャンセルに失敗しました：{error}"
         },
         "import": {
             "folderTreeFailed": "フォルダツリーの読み込みに失敗しました",

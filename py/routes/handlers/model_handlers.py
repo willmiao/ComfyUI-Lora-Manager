@@ -845,6 +845,17 @@ class ModelDownloadHandler:
             self._logger.error("Error listing active downloads: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def remove_queued_download_get(self, request: web.Request) -> web.Response:
+        try:
+            download_id = request.query.get("download_id")
+            if not download_id:
+                return web.json_response({"success": False, "error": "Download ID is required"}, status=400)
+            result = await self._download_coordinator.remove_queued_download(download_id)
+            return web.json_response(result)
+        except Exception as exc:
+            self._logger.error("Error removing queued download via GET: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def get_download_progress(self, request: web.Request) -> web.Response:
         try:
             download_id = request.match_info.get("download_id")
@@ -1600,6 +1611,7 @@ class ModelHandlerSet:
             "pause_download_get": self.download.pause_download_get,
             "resume_download_get": self.download.resume_download_get,
             "list_active_downloads_get": self.download.list_active_downloads_get,
+            "remove_queued_download_get": self.download.remove_queued_download_get,
             "get_download_progress": self.download.get_download_progress,
             "get_civitai_versions": self.civitai.get_civitai_versions,
             "get_civitai_model_by_version": self.civitai.get_civitai_model_by_version,

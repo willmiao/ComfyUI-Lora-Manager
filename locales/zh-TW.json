@@ -684,10 +684,14 @@
                 "preparing": "準備下載中...",
                 "downloadedPreview": "已下載預覽圖片",
                 "downloadingFile": "正在下載 {type} 檔案",
-                "finalizing": "完成下載中..."
+                "finalizing": "完成下載中...",
+                "cancelling": "正在取消下載...",
+                "cancelled": "下載已取消"
             },
             "minimize": "最小化",
             "clickToRestore": "點擊恢復",
+            "cancel": "取消",
+            "remove": "從佇列中移除",
             "queue": {
                 "title": "下載佇列",
                 "downloading": "正在下載：{name}",
@@ -1322,7 +1326,8 @@
             "imagesFailed": "範例圖片{action}失敗",
             "loadError": "載入下載時發生錯誤：{message}",
             "downloadError": "下載錯誤：{message}",
-            "downloadCancelled": "下載已取消"
+            "downloadCancelled": "下載已取消",
+            "cancelFailed": "取消下載失敗：{error}"
         },
         "import": {
             "folderTreeFailed": "載入資料夾樹狀結構失敗",

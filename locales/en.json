@@ -684,10 +684,14 @@
                 "preparing": "Preparing download...",
                 "downloadedPreview": "Downloaded preview image",
                 "downloadingFile": "Downloading {type} file",
-                "finalizing": "Finalizing download..."
+                "finalizing": "Finalizing download...",
+                "cancelling": "Cancelling download...",
+                "cancelled": "Download cancelled"
             },
             "minimize": "Minimize",
             "clickToRestore": "Click to restore",
+            "cancel": "Cancel",
+            "remove": "Remove from queue",
             "queue": {
                 "title": "Download Queue",
                 "downloading": "Downloading: {name}",
@@ -1322,7 +1326,8 @@
             "imagesFailed": "Example images {action} failed",
             "loadError": "Error loading downloads: {message}",
             "downloadError": "Download error: {message}",
-            "downloadCancelled": "Download cancelled"
+            "downloadCancelled": "Download cancelled",
+            "cancelFailed": "Failed to cancel download: {error}"
         },
         "import": {
             "folderTreeFailed": "Failed to load folder tree",

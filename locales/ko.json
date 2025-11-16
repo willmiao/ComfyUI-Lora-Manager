@@ -684,10 +684,14 @@
                 "preparing": "다운로드 준비 중...",
                 "downloadedPreview": "미리보기 이미지 다운로드됨",
                 "downloadingFile": "{type} 파일 다운로드 중",
-                "finalizing": "다운로드 완료 중..."
+                "finalizing": "다운로드 완료 중...",
+                "cancelling": "다운로드 취소 중...",
+                "cancelled": "다운로드가 취소되었습니다"
             },
             "minimize": "최소화",
             "clickToRestore": "클릭하여 복원",
+            "cancel": "취소",
+            "remove": "대기열에서 제거",
             "queue": {
                 "title": "다운로드 대기열",
                 "downloading": "다운로드 중: {name}",
@@ -1322,7 +1326,8 @@
             "imagesFailed": "예시 이미지 {action}이(가) 실패했습니다",
             "loadError": "다운로드 로딩 오류: {message}",
             "downloadError": "다운로드 오류: {message}",
-            "downloadCancelled": "다운로드가 취소되었습니다"
+            "downloadCancelled": "다운로드가 취소되었습니다",
+            "cancelFailed": "다운로드 취소 실패: {error}"
         },
         "import": {
             "folderTreeFailed": "폴더 트리 로딩 실패",

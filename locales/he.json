@@ -684,10 +684,14 @@
                 "preparing": "מכין הורדה...",
                 "downloadedPreview": "תמונת תצוגה מקדימה הורדה",
                 "downloadingFile": "מוריד קובץ {type}",
-                "finalizing": "מסיים הורדה..."
+                "finalizing": "מסיים הורדה...",
+                "cancelling": "מבטל הורדה...",
+                "cancelled": "ההורדה בוטלה"
             },
             "minimize": "מזער",
             "clickToRestore": "לחץ לשחזור",
+            "cancel": "בטל",
+            "remove": "הסר מהתור",
             "queue": {
                 "title": "תור הורדות",
                 "downloading": "מוריד: {name}",
@@ -1322,7 +1326,8 @@
             "imagesFailed": "{action} תמונות הדוגמה נכשל",
             "loadError": "שגיאה בטעינת הורדות: {message}",
             "downloadError": "שגיאת הורדה: {message}",
-            "downloadCancelled": "ההורדה בוטלה"
+            "downloadCancelled": "ההורדה בוטלה",
+            "cancelFailed": "ביטול ההורדה נכשל: {error}"
         },
         "import": {
             "folderTreeFailed": "טעינת עץ התיקיות נכשלה",

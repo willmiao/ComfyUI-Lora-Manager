@@ -241,16 +241,19 @@ function renderRow(version, options) {
     );
 
     const actions = [];
-    if (!version.isInLibrary) {
+    // Show Delete button if file exists locally, otherwise show Download button
+    // This ensures Download button appears even after deletion (when filePath is null but isInLibrary might still be true)
+    if (version.filePath) {
+        actions.push(
+            `<button class="version-action version-action-danger" data-version-action="delete">${escapeHtml(deleteLabel)}</button>`
+        );
+    } else {
+        // Show Download button when file doesn't exist locally (not downloaded or was deleted)
         const disabledAttr = downloadDisabled ? 'disabled' : '';
         const titleAttr = downloadTitle ? `title="${escapeHtml(downloadTitle)}"` : '';
         const disabledClass = downloadDisabled ? ' version-action-disabled' : '';
         actions.push(
             `<button class="version-action version-action-primary${disabledClass}" data-version-action="download" ${disabledAttr} ${titleAttr}>${escapeHtml(downloadLabel)}</button>`
-        );
-    } else if (version.filePath) {
-        actions.push(
-            `<button class="version-action version-action-danger" data-version-action="delete">${escapeHtml(deleteLabel)}</button>`
         );
     }
     actions.push(

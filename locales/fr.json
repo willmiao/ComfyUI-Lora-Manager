@@ -684,10 +684,14 @@
                 "preparing": "Préparation du téléchargement...",
                 "downloadedPreview": "Image d'aperçu téléchargée",
                 "downloadingFile": "Téléchargement du fichier {type}",
-                "finalizing": "Finalisation du téléchargement..."
+                "finalizing": "Finalisation du téléchargement...",
+                "cancelling": "Annulation du téléchargement...",
+                "cancelled": "Téléchargement annulé"
             },
             "minimize": "Réduire",
             "clickToRestore": "Cliquez pour restaurer",
+            "cancel": "Annuler",
+            "remove": "Retirer de la file d'attente",
             "queue": {
                 "title": "File d'attente de téléchargement",
                 "downloading": "Téléchargement : {name}",
@@ -1322,7 +1326,8 @@
             "imagesFailed": "Images d'exemple {action} échouées",
             "loadError": "Erreur lors du chargement des téléchargements : {message}",
             "downloadError": "Erreur de téléchargement : {message}",
-            "downloadCancelled": "Téléchargement annulé"
+            "downloadCancelled": "Téléchargement annulé",
+            "cancelFailed": "Échec de l'annulation du téléchargement : {error}"
         },
         "import": {
             "folderTreeFailed": "Échec du chargement de l'arborescence des dossiers",

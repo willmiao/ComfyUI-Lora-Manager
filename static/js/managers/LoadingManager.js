@@ -46,6 +46,76 @@ export class LoadingManager {
         this.currentProgress = 0;
         this.queueContainer = null; // Container for download queue display
         this.activeDownloadId = null; // ID of currently active download
+        this.onCancelCallback = null;
+        this.onRemoveCallback = null;
+        this.mouseDownOnBackground = false; // Track mousedown on overlay background for outside click detection
+        
+        // Setup outside click detection to minimize popup
+        this.setupOutsideClickHandlers();
+    }
+    
+    setupOutsideClickHandlers() {
+        // Track mousedown to detect outside clicks
+        const handleMouseDown = (e) => {
+            // Only track if popup is visible and not minimized
+            if (this.isMinimized || this.overlay.style.display !== 'flex') {
+                this.mouseDownOnBackground = false;
+                return;
+            }
+            
+            const isOnContent = this.loadingContent.contains(e.target) || e.target === this.loadingContent;
+            const isOnMinimizedWidget = this.minimizedWidget && (this.minimizedWidget.contains(e.target) || e.target === this.minimizedWidget);
+            // Exclude modal elements (don't minimize when clicking on modals)
+            const isOnModal = e.target.closest('.modal, [role="dialog"]');
+            
+            // Track if mousedown is outside content (on overlay background or elsewhere)
+            // But exclude modals and minimized widget
+            if (!isOnContent && !isOnMinimizedWidget && !isOnModal) {
+                this.mouseDownOnBackground = true;
+            } else {
+                this.mouseDownOnBackground = false;
+            }
+        };
+        
+        // Handle mouseup to minimize on outside click
+        const handleMouseUp = (e) => {
+            // Only minimize if popup is visible and not minimized
+            if (this.isMinimized || this.overlay.style.display !== 'flex') {
+                this.mouseDownOnBackground = false;
+                return;
+            }
+            
+            const isOnContent = this.loadingContent.contains(e.target) || e.target === this.loadingContent;
+            const isOnMinimizedWidget = this.minimizedWidget && (this.minimizedWidget.contains(e.target) || e.target === this.minimizedWidget);
+            // Exclude modal elements (don't minimize when clicking on modals)
+            const isOnModal = e.target.closest('.modal, [role="dialog"]');
+            
+            // Minimize if mouseup is also outside content (but exclude modals and minimized widget)
+            if (!isOnContent && !isOnMinimizedWidget && !isOnModal && this.mouseDownOnBackground) {
+                // Only minimize if there's an active download (has detailsContainer)
+                if (this.detailsContainer) {
+                    this.minimize();
+                }
+            }
+            
+            // Reset flag regardless of target
+            this.mouseDownOnBackground = false;
+        };
+        
+        // Use document-level listeners to catch clicks anywhere on the page
+        document.addEventListener('mousedown', handleMouseDown);
+        document.addEventListener('mouseup', handleMouseUp);
+        
+        // Cancel the flag if mouse leaves the document entirely
+        document.addEventListener('mouseleave', () => {
+            this.mouseDownOnBackground = false;
+        });
+        
+        // Store handlers for potential cleanup
+        this._outsideClickHandlers = {
+            mousedown: handleMouseDown,
+            mouseup: handleMouseUp
+        };
     }
 
     show(message = 'Loading...', progress = 0) {
@@ -110,13 +180,16 @@ export class LoadingManager {
     }
     
     // Show enhanced progress for downloads
-    showDownloadProgress(totalItems = 1) {
+    showDownloadProgress(totalItems = 1, onCancel = null) {
         this.show(translate('modals.download.status.preparing', {}, 'Preparing download...'), 0);
         this.progressBar.style.display = 'none';
         this.isMinimized = false;
         
         // Create details container
         const detailsContainer = this.createDetailsContainer();
+        
+        // Store cancel callback
+        this.onCancelCallback = onCancel;
         
         // Add minimize button
         this.loadingContent.style.position = 'relative';
@@ -282,6 +355,48 @@ export class LoadingManager {
 
         // Initialize transfer stats with empty data
         updateTransferStats();
+        
+        // Create cancel button for active download (at the bottom, aligned right)
+        if (onCancel) {
+            const cancelButtonContainer = document.createElement('div');
+            cancelButtonContainer.style.cssText = `
+                margin-top: 20px;
+                display: flex;
+                justify-content: flex-end;
+            `;
+            
+            const cancelButton = document.createElement('button');
+            cancelButton.className = 'download-cancel-btn';
+            cancelButton.textContent = translate('modals.download.cancel', {}, 'Cancel');
+            cancelButton.style.cssText = `
+                padding: 8px 16px;
+                background: rgba(255, 77, 77, 0.2);
+                border: 1px solid rgba(255, 77, 77, 0.5);
+                color: rgba(255, 255, 255, 0.9);
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 13px;
+                transition: background 0.2s, border-color 0.2s;
+            `;
+            cancelButton.addEventListener('mouseenter', () => {
+                cancelButton.style.background = 'rgba(255, 77, 77, 0.3)';
+                cancelButton.style.borderColor = 'rgba(255, 77, 77, 0.7)';
+            });
+            cancelButton.addEventListener('mouseleave', () => {
+                cancelButton.style.background = 'rgba(255, 77, 77, 0.2)';
+                cancelButton.style.borderColor = 'rgba(255, 77, 77, 0.5)';
+            });
+            cancelButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (onCancel) {
+                    onCancel();
+                }
+            });
+            
+            cancelButtonContainer.appendChild(cancelButton);
+            detailsContainer.appendChild(cancelButtonContainer);
+            this.cancelButton = cancelButton;
+        }
         
         // Store references for minimize widget updates
         this.currentItemProgress = currentItemProgress;
@@ -551,7 +666,7 @@ export class LoadingManager {
         itemHeader.style.cssText = `
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             font-size: ${isActive ? '13px' : '12px'};
         `;
         
@@ -617,6 +732,51 @@ export class LoadingManager {
             }
         } else {
             itemStatus.textContent = translate('modals.download.queue.pending', {}, 'Pending');
+        }
+        
+        // Add remove button for queued items (not active downloads)
+        if (!isActive && (download.status === 'queued' || download.status === 'waiting')) {
+            const removeButton = document.createElement('button');
+            removeButton.className = 'download-remove-btn';
+            removeButton.innerHTML = '×'; // Unicode multiplication sign
+            removeButton.title = translate('modals.download.remove', {}, 'Remove from queue');
+            removeButton.style.cssText = `
+                background: rgba(255, 77, 77, 0.2);
+                border: 1px solid rgba(255, 77, 77, 0.5);
+                color: rgba(255, 255, 255, 0.9);
+                cursor: pointer;
+                padding: 0;
+                font-size: 16px;
+                line-height: 1;
+                border-radius: 4px;
+                margin-left: 8px;
+                margin-right: 8px;
+                transition: background 0.2s, border-color 0.2s;
+                width: 24px;
+                height: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+            removeButton.addEventListener('mouseenter', () => {
+                removeButton.style.background = 'rgba(255, 77, 77, 0.3)';
+                removeButton.style.borderColor = 'rgba(255, 77, 77, 0.7)';
+            });
+            removeButton.addEventListener('mouseleave', () => {
+                removeButton.style.background = 'rgba(255, 77, 77, 0.2)';
+                removeButton.style.borderColor = 'rgba(255, 77, 77, 0.5)';
+            });
+            removeButton.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (download.download_id) {
+                    // Call remove callback if set, otherwise use default handler
+                    if (this.onRemoveCallback) {
+                        await this.onRemoveCallback(download.download_id);
+                    }
+                }
+            });
+            
+            itemHeader.appendChild(removeButton);
         }
         
         itemHeader.appendChild(itemNameContainer);

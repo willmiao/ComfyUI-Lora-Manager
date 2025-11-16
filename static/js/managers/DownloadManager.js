@@ -26,6 +26,7 @@ export class DownloadManager {
         this.folderClickHandler = null;
         this.updateTargetPath = this.updateTargetPath.bind(this);
         this.queuePollInterval = null; // Interval for polling download queue
+        this.currentDownloadId = null; // Track the current active download ID for cancellation
         
         // Bound methods for event handling
         this.handleValidateAndFetchVersions = this.validateAndFetchVersions.bind(this);
@@ -449,10 +450,26 @@ export class DownloadManager {
         let ws = null;
         let updateProgress = () => {};
         let downloadId = Date.now().toString(); // Use let so it can be updated
+        
+        // Store current download ID for cancellation
+        this.currentDownloadId = downloadId;
 
         try {
             this.loadingManager.restoreProgressBar();
-            updateProgress = this.loadingManager.showDownloadProgress(1);
+            // Set up remove callback
+            this.loadingManager.onRemoveCallback = async (removeDownloadId) => {
+                await this.removeQueuedDownload(removeDownloadId);
+            };
+            // Set up cancel callback that uses the current active download ID
+            // This will be updated in updateQueueDisplay when the active download changes
+            const cancelHandler = () => {
+                // Always use the current active download ID from loadingManager
+                // This gets updated when updateQueueDisplay runs
+                const activeId = this.loadingManager.activeDownloadId || this.currentDownloadId || downloadId;
+                console.log('Cancel button clicked, canceling download:', activeId);
+                this.cancelDownload(activeId);
+            };
+            updateProgress = this.loadingManager.showDownloadProgress(1, cancelHandler);
             this.currentUpdateProgress = updateProgress; // Store reference for queue updates
             updateProgress(0, 0, displayName);
             const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -473,6 +490,7 @@ export class DownloadManager {
                     if (backendDownloadId && backendDownloadId !== downloadId) {
                         console.log(`Updating downloadId from ${downloadId} to ${backendDownloadId}`);
                         downloadId = backendDownloadId;
+                        this.currentDownloadId = backendDownloadId; // Update tracked download ID
                     }
                     return;
                 }
@@ -483,6 +501,7 @@ export class DownloadManager {
                     // Update downloadId if we receive a message with a different ID (backend might have generated one)
                     if (data.download_id !== downloadId) {
                         downloadId = data.download_id;
+                        this.currentDownloadId = data.download_id; // Update tracked download ID
                     }
                     
                     // Only update if this is the active download (queue polling handles the main display)
@@ -517,15 +536,38 @@ export class DownloadManager {
                         this.cancellationTimeout = null;
                     }
                     
-                    // Check queue before hiding (async check)
-                    this.checkQueueStatus().then(queueData => {
-                        const hasOtherDownloads = queueData && queueData.downloads && queueData.downloads.some(d => 
-                            d.status === 'downloading' || d.status === 'waiting' || d.status === 'queued'
-                        );
-                        
-                        if (!hasOtherDownloads) {
-                            this.loadingManager.hide();
-                        }
+                    // Immediately refresh queue display to show next download (if any)
+                    // The backend semaphore will automatically start the next download
+                    this.updateQueueDisplay().then(() => {
+                        // Check queue after refresh
+                        return this.checkQueueStatus().then(queueData => {
+                            const hasOtherDownloads = queueData && queueData.downloads && queueData.downloads.some(d => 
+                                d.status === 'downloading' || d.status === 'waiting' || d.status === 'queued'
+                            );
+                            
+                            if (!hasOtherDownloads) {
+                                this.loadingManager.hide();
+                            }
+                        });
+                    }).catch(error => {
+                        // Handle errors in queue update/check
+                        console.error('Error updating queue after cancellation:', error);
+                        // Still try to check queue status as fallback
+                        this.checkQueueStatus().then(queueData => {
+                            const hasOtherDownloads = queueData && queueData.downloads && queueData.downloads.some(d => 
+                                d.status === 'downloading' || d.status === 'waiting' || d.status === 'queued'
+                            );
+                            
+                            if (!hasOtherDownloads) {
+                                this.loadingManager.hide();
+                            }
+                        }).catch(err => {
+                            console.error('Error checking queue status:', err);
+                            // If all else fails, hide the popup after a delay
+                            setTimeout(() => {
+                                this.loadingManager.hide();
+                            }, 1000);
+                        });
                     });
                     
                     showToast('toast.downloads.downloadCancelled', {}, 'info');
@@ -580,8 +622,35 @@ export class DownloadManager {
 
             return true;
         } catch (error) {
+            // Don't show error toast if download was cancelled (cancellation is handled by WebSocket message handler)
+            let errorMessage = error?.message || error?.error || String(error || '');
+            
+            // Try to parse JSON error response if it looks like JSON
+            let parsedError = null;
+            try {
+                if (errorMessage.trim().startsWith('{')) {
+                    parsedError = JSON.parse(errorMessage);
+                    if (parsedError.error) {
+                        errorMessage = parsedError.error;
+                    }
+                }
+            } catch (e) {
+                // Not JSON, use original error message
+            }
+            
+            const isCancellation = this.isCancelling || 
+                                  errorMessage.toLowerCase().includes('cancelled') ||
+                                  errorMessage.toLowerCase().includes('cancel') ||
+                                  (parsedError && parsedError.error && parsedError.error.toLowerCase().includes('cancelled'));
+            
+            if (isCancellation) {
+                console.debug('Download was cancelled:', errorMessage);
+                // Cancellation is already handled by WebSocket message handler, no need to show error
+                return false;
+            }
+            
             console.error('Failed to download model version:', error);
-            showToast('toast.downloads.downloadError', { message: error?.message }, 'error');
+            showToast('toast.downloads.downloadError', { message: errorMessage }, 'error');
             return false;
         } finally {
             try {
@@ -663,6 +732,51 @@ export class DownloadManager {
                 // Update the queue display
                 this.loadingManager.updateQueueDisplay(data.downloads);
                 
+                // Update cancel callback to use the current active download ID
+                // IMPORTANT: Only cancel downloads with status 'downloading', not 'queued' or 'waiting'
+                const activeDownload = data.downloads.find(d => d.status === 'downloading');
+                if (activeDownload && activeDownload.download_id) {
+                    const activeDownloadId = activeDownload.download_id;
+                    this.currentDownloadId = activeDownloadId;
+                    
+                    // Update cancel callback to always fetch current active download and cancel it
+                    // This ensures we cancel the correct download even if the queue changes
+                    this.loadingManager.onCancelCallback = async () => {
+                        console.log('Cancel button clicked');
+                        // Fetch current active downloads to ensure we cancel the right one
+                        try {
+                            const currentData = await this.checkQueueStatus();
+                            if (currentData && currentData.downloads && Array.isArray(currentData.downloads)) {
+                                const currentActive = currentData.downloads.find(d => d.status === 'downloading');
+                                if (currentActive && currentActive.download_id) {
+                                    console.log('Canceling active download:', currentActive.download_id);
+                                    await this.cancelDownload(currentActive.download_id);
+                                } else {
+                                    console.warn('No active download found when cancel button clicked');
+                                    // Fallback to stored ID
+                                    if (activeDownloadId) {
+                                        console.log('Using stored active download ID:', activeDownloadId);
+                                        await this.cancelDownload(activeDownloadId);
+                                    }
+                                }
+                            } else {
+                                // Fallback to stored ID if fetch fails
+                                console.log('Failed to fetch current downloads, using stored ID:', activeDownloadId);
+                                await this.cancelDownload(activeDownloadId);
+                            }
+                        } catch (error) {
+                            console.error('Error fetching current downloads for cancellation:', error);
+                            // Fallback to stored ID
+                            await this.cancelDownload(activeDownloadId);
+                        }
+                    };
+                    console.log('Updated cancel callback to use active download ID:', activeDownloadId);
+                } else {
+                    // No active download - clear the cancel callback or set it to null
+                    console.log('No active download found, clearing cancel callback');
+                    this.loadingManager.onCancelCallback = null;
+                }
+                
                 // Check if there are active downloads OR queued downloads
                 // Keep popup visible as long as there are any downloads (active, waiting, or queued)
                 const hasActiveDownloads = data.downloads.some(d => 
@@ -710,6 +824,103 @@ export class DownloadManager {
                     this.loadingManager.overlay.style.display = 'flex';
                 }
             }
+        }
+    }
+
+    async cancelDownload(downloadId) {
+        if (!downloadId) {
+            console.warn('Cannot cancel download: no download ID provided');
+            return;
+        }
+        
+        console.log('cancelDownload called with downloadId:', downloadId, 'currentDownloadId:', this.currentDownloadId, 'activeDownloadId:', this.loadingManager.activeDownloadId);
+        this.isCancelling = true;
+        
+        // Clear any existing timeout
+        if (this.cancellationTimeout) {
+            clearTimeout(this.cancellationTimeout);
+        }
+        
+        // Set a timeout to ensure UI updates even if WebSocket message doesn't arrive
+        this.cancellationTimeout = setTimeout(() => {
+            this.isCancelling = false;
+            this.cancellationTimeout = null;
+            
+            // Check if there are other downloads in queue
+            this.checkQueueStatus().then(queueData => {
+                const hasOtherDownloads = queueData && queueData.downloads && queueData.downloads.some(d => 
+                    d.status === 'downloading' || d.status === 'waiting' || d.status === 'queued'
+                );
+                
+                if (!hasOtherDownloads) {
+                    this.loadingManager.hide();
+                } else {
+                    // Refresh queue display to show next download
+                    this.updateQueueDisplay().catch(error => {
+                        console.error('Error updating queue display after cancellation timeout:', error);
+                        // Fallback: try to hide if update fails
+                        this.loadingManager.hide();
+                    });
+                }
+            }).catch(error => {
+                console.error('Error checking queue status after cancellation timeout:', error);
+                // If queue check fails, hide the popup
+                this.loadingManager.hide();
+            });
+            
+            showToast('toast.downloads.downloadCancelled', {}, 'info');
+        }, 2000);
+        
+        try {
+            // Update UI immediately
+            this.loadingManager.setStatus(translate('modals.download.status.cancelling', {}, 'Cancelling download...'));
+            
+            // Call backend to cancel
+            const response = await fetch(`/api/lm/cancel-download-get?download_id=${encodeURIComponent(downloadId)}`);
+            const data = await response.json();
+            
+            if (!data.success) {
+                console.error('Failed to cancel download:', data.error);
+                showToast('toast.downloads.cancelFailed', { error: data.error }, 'error');
+                this.isCancelling = false;
+                if (this.cancellationTimeout) {
+                    clearTimeout(this.cancellationTimeout);
+                    this.cancellationTimeout = null;
+                }
+            }
+            // If successful, WebSocket message will handle cleanup, or timeout will handle it
+        } catch (error) {
+            console.error('Error cancelling download:', error);
+            this.isCancelling = false;
+            if (this.cancellationTimeout) {
+                clearTimeout(this.cancellationTimeout);
+                this.cancellationTimeout = null;
+            }
+            showToast('toast.downloads.cancelFailed', { error: error.message }, 'error');
+        }
+    }
+    
+    async removeQueuedDownload(downloadId) {
+        if (!downloadId) {
+            console.warn('Cannot remove queued download: no download ID provided');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/lm/remove-queued-download?download_id=${encodeURIComponent(downloadId)}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                // Refresh queue display to update counts and order
+                await this.updateQueueDisplay();
+                showToast('toast.downloads.removedFromQueue', {}, 'info');
+            } else {
+                console.error('Failed to remove queued download:', data.error);
+                showToast('toast.downloads.removeFailed', { error: data.error }, 'error');
+            }
+        } catch (error) {
+            console.error('Error removing queued download:', error);
+            showToast('toast.downloads.removeFailed', { error: error.message }, 'error');
         }
     }
 

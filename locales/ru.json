@@ -684,10 +684,14 @@
                 "preparing": "Подготовка загрузки...",
                 "downloadedPreview": "Превью изображение загружено",
                 "downloadingFile": "Загрузка файла {type}",
-                "finalizing": "Завершение загрузки..."
+                "finalizing": "Завершение загрузки...",
+                "cancelling": "Отмена загрузки...",
+                "cancelled": "Загрузка отменена"
             },
             "minimize": "Свернуть",
             "clickToRestore": "Нажмите, чтобы восстановить",
+            "cancel": "Отмена",
+            "remove": "Удалить из очереди",
             "queue": {
                 "title": "Очередь загрузки",
                 "downloading": "Загрузка: {name}",
@@ -1322,7 +1326,8 @@
             "imagesFailed": "Примеры изображений {action} не удались",
             "loadError": "Ошибка загрузки downloads: {message}",
             "downloadError": "Ошибка загрузки: {message}",
-            "downloadCancelled": "Загрузка отменена"
+            "downloadCancelled": "Загрузка отменена",
+            "cancelFailed": "Не удалось отменить загрузку: {error}"
         },
         "import": {
             "folderTreeFailed": "Не удалось загрузить дерево папок",

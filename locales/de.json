@@ -685,10 +685,14 @@
                 "preparing": "Download wird vorbereitet...",
                 "downloadedPreview": "Vorschaubild heruntergeladen",
                 "downloadingFile": "{type}-Datei wird heruntergeladen",
-                "finalizing": "Download wird abgeschlossen..."
+                "finalizing": "Download wird abgeschlossen...",
+                "cancelling": "Download wird abgebrochen...",
+                "cancelled": "Download abgebrochen"
             },
             "minimize": "Minimieren",
             "clickToRestore": "Zum Wiederherstellen klicken",
+            "cancel": "Abbrechen",
+            "remove": "Aus Warteschlange entfernen",
             "queue": {
                 "title": "Download-Warteschlange",
                 "downloading": "Wird heruntergeladen: {name}",
@@ -1323,7 +1327,8 @@
             "imagesFailed": "Beispielbilder {action} fehlgeschlagen",
             "loadError": "Fehler beim Laden der Downloads: {message}",
             "downloadError": "Download-Fehler: {message}",
-            "downloadCancelled": "Download abgebrochen"
+            "downloadCancelled": "Download abgebrochen",
+            "cancelFailed": "Download konnte nicht abgebrochen werden: {error}"
         },
         "import": {
             "folderTreeFailed": "Fehler beim Laden des Ordnerbaums",
