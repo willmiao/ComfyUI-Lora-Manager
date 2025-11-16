@@ -688,6 +688,13 @@
             },
             "minimize": "Minimize",
             "clickToRestore": "Click to restore",
+            "queue": {
+                "title": "Download Queue",
+                "downloading": "Downloading: {name}",
+                "queued": "Queued #{position}: {name}",
+                "waiting": "Waiting...",
+                "pending": "Pending"
+            },
             "progress": {
                 "currentFile": "Current file:",
                 "downloading": "Downloading: {name}",
@@ -918,6 +925,10 @@
                 },
                 "actions": {
                     "download": "Download",
+                    "downloading": "Downloading...",
+                    "downloadingTooltip": "This version is currently downloading",
+                    "queued": "Queued",
+                    "queuedTooltip": "This version is queued for download",
                     "delete": "Delete",
                     "ignore": "Ignore",
                     "unignore": "Unignore",
@@ -1310,7 +1321,8 @@
             "imagesCompleted": "Example images {action} completed",
             "imagesFailed": "Example images {action} failed",
             "loadError": "Error loading downloads: {message}",
-            "downloadError": "Download error: {message}"
+            "downloadError": "Download error: {message}",
+            "downloadCancelled": "Download cancelled"
         },
         "import": {
             "folderTreeFailed": "Failed to load folder tree",

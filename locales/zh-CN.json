@@ -688,6 +688,13 @@
             },
             "minimize": "最小化",
             "clickToRestore": "点击恢复",
+            "queue": {
+                "title": "下载队列",
+                "downloading": "正在下载：{name}",
+                "queued": "队列 #{position}：{name}",
+                "waiting": "等待中...",
+                "pending": "等待中"
+            },
             "progress": {
                 "currentFile": "当前文件：",
                 "downloading": "下载中：{name}",
@@ -918,6 +925,10 @@
                 },
                 "actions": {
                     "download": "下载",
+                    "downloading": "下载中...",
+                    "downloadingTooltip": "此版本正在下载中",
+                    "queued": "已排队",
+                    "queuedTooltip": "此版本已加入下载队列",
                     "delete": "删除",
                     "ignore": "忽略",
                     "unignore": "取消忽略",
@@ -1310,7 +1321,8 @@
             "imagesCompleted": "示例图片{action}完成",
             "imagesFailed": "示例图片{action}失败",
             "loadError": "加载下载项出错：{message}",
-            "downloadError": "下载错误：{message}"
+            "downloadError": "下载错误：{message}",
+            "downloadCancelled": "下载已取消"
         },
         "import": {
             "folderTreeFailed": "加载文件夹树失败",

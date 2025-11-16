@@ -689,6 +689,13 @@
             },
             "minimize": "Minimieren",
             "clickToRestore": "Zum Wiederherstellen klicken",
+            "queue": {
+                "title": "Download-Warteschlange",
+                "downloading": "Wird heruntergeladen: {name}",
+                "queued": "Warteschlange #{position}: {name}",
+                "waiting": "Warten...",
+                "pending": "Ausstehend"
+            },
             "progress": {
                 "currentFile": "Aktuelle Datei:",
                 "downloading": "Wird heruntergeladen: {name}",
@@ -919,6 +926,10 @@
                 },
                 "actions": {
                     "download": "Herunterladen",
+                    "downloading": "Wird heruntergeladen...",
+                    "downloadingTooltip": "Diese Version wird gerade heruntergeladen",
+                    "queued": "Warteschlange",
+                    "queuedTooltip": "Diese Version ist in der Download-Warteschlange",
                     "delete": "Löschen",
                     "ignore": "Ignorieren",
                     "unignore": "Ignorierung aufheben",
@@ -1311,7 +1322,8 @@
             "imagesCompleted": "Beispielbilder {action} abgeschlossen",
             "imagesFailed": "Beispielbilder {action} fehlgeschlagen",
             "loadError": "Fehler beim Laden der Downloads: {message}",
-            "downloadError": "Download-Fehler: {message}"
+            "downloadError": "Download-Fehler: {message}",
+            "downloadCancelled": "Download abgebrochen"
         },
         "import": {
             "folderTreeFailed": "Fehler beim Laden des Ordnerbaums",

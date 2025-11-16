@@ -191,7 +191,7 @@ function renderMediaMarkup(version) {
 }
 
 function renderRow(version, options) {
-    const { latestLibraryVersionId, currentVersionId, modelId: parentModelId } = options;
+    const { latestLibraryVersionId, currentVersionId, modelId: parentModelId, downloadStatus } = options;
     const isCurrent = currentVersionId && version.versionId === currentVersionId;
     const isNewer =
         typeof latestLibraryVersionId === 'number' &&
@@ -212,7 +212,25 @@ function renderRow(version, options) {
         badges.push(buildBadge(translate('modals.model.versions.badges.ignored', {}, 'Ignored'), 'muted'));
     }
 
-    const downloadLabel = translate('modals.model.versions.actions.download', {}, 'Download');
+    // Check if this version is downloading or queued
+    const versionDownloadStatus = downloadStatus?.[version.versionId];
+    const isDownloading = versionDownloadStatus === 'downloading';
+    const isQueued = versionDownloadStatus === 'queued' || versionDownloadStatus === 'waiting';
+    
+    let downloadLabel = translate('modals.model.versions.actions.download', {}, 'Download');
+    let downloadDisabled = false;
+    let downloadTitle = '';
+    
+    if (isDownloading) {
+        downloadLabel = translate('modals.model.versions.actions.downloading', {}, 'Downloading...');
+        downloadDisabled = true;
+        downloadTitle = translate('modals.model.versions.actions.downloadingTooltip', {}, 'This version is currently downloading');
+    } else if (isQueued) {
+        downloadLabel = translate('modals.model.versions.actions.queued', {}, 'Queued');
+        downloadDisabled = true;
+        downloadTitle = translate('modals.model.versions.actions.queuedTooltip', {}, 'This version is queued for download');
+    }
+    
     const deleteLabel = translate('modals.model.versions.actions.delete', {}, 'Delete');
     const ignoreLabel = translate(
         version.shouldIgnore
@@ -224,8 +242,11 @@ function renderRow(version, options) {
 
     const actions = [];
     if (!version.isInLibrary) {
+        const disabledAttr = downloadDisabled ? 'disabled' : '';
+        const titleAttr = downloadTitle ? `title="${escapeHtml(downloadTitle)}"` : '';
+        const disabledClass = downloadDisabled ? ' version-action-disabled' : '';
         actions.push(
-            `<button class="version-action version-action-primary" data-version-action="download">${escapeHtml(downloadLabel)}</button>`
+            `<button class="version-action version-action-primary${disabledClass}" data-version-action="download" ${disabledAttr} ${titleAttr}>${escapeHtml(downloadLabel)}</button>`
         );
     } else if (version.filePath) {
         actions.push(
@@ -414,13 +435,32 @@ export function initVersionsTab({
         `;
     }
 
-    function render(record) {
+    async function render(record) {
         controller.record = record;
         controller.hasLoaded = true;
 
         if (!record || !Array.isArray(record.versions) || record.versions.length === 0) {
             renderEmptyState(container);
             return;
+        }
+
+        // Fetch active downloads to check status
+        let downloadStatus = {};
+        try {
+            const response = await fetch('/api/lm/active-downloads');
+            if (response.ok) {
+                const data = await response.json();
+                if (data && data.downloads && Array.isArray(data.downloads)) {
+                    // Create a map of version_id -> status
+                    data.downloads.forEach(download => {
+                        if (download.model_version_id) {
+                            downloadStatus[download.model_version_id] = download.status;
+                        }
+                    });
+                }
+            }
+        } catch (error) {
+            console.debug('Failed to fetch active downloads for version status:', error);
         }
 
         const latestLibraryVersionId = getLatestLibraryVersionId(record);
@@ -448,6 +488,7 @@ export function initVersionsTab({
                     latestLibraryVersionId,
                     currentVersionId: normalizedCurrentVersionId,
                     modelId: record?.modelId ?? modelId,
+                    downloadStatus,
                 });
                 return markup;
             })
@@ -488,7 +529,7 @@ export function initVersionsTab({
             if (!response?.success) {
                 throw new Error(response?.error || 'Request failed');
             }
-            render(response.record);
+            await render(response.record);
         } catch (error) {
             console.error('Failed to load model versions:', error);
             renderErrorState(container, error?.message);
@@ -818,6 +859,10 @@ export function initVersionsTab({
             switch (action) {
                 case 'download':
                     event.preventDefault();
+                    // Check if button is disabled (downloading/queued)
+                    if (actionButton.disabled) {
+                        return;
+                    }
                     await handleDownloadVersion(actionButton, versionId);
                     break;
                 case 'delete':

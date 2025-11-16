@@ -43,7 +43,7 @@ class DownloadManager:
         
         # Add download management
         self._active_downloads = OrderedDict()  # download_id -> download_info
-        self._download_semaphore = asyncio.Semaphore(5)  # Limit concurrent downloads
+        self._download_semaphore = asyncio.Semaphore(1)  # Sequential queue: only one active download at a time
         self._download_tasks = {}  # download_id -> asyncio.Task
         self._pause_events: Dict[str, DownloadStreamControl] = {}
     
@@ -81,10 +81,26 @@ class DownloadManager:
         # Use provided download_id or generate new one
         task_id = download_id or str(uuid.uuid4())
         
+        # Fetch model metadata early to get model_name and version_name for display
+        model_name = ''
+        version_name = ''
+        try:
+            metadata_provider = await get_default_metadata_provider()
+            version_info = await metadata_provider.get_model_version(model_id, model_version_id)
+            if version_info:
+                model_info = version_info.get('model') or {}
+                model_name = model_info.get('name', '')
+                version_name = version_info.get('name', '')
+        except Exception as e:
+            # If fetching metadata fails, continue anyway - names will be empty
+            logger.debug(f"Failed to fetch metadata early for display: {e}")
+        
         # Register download task in tracking dict
         self._active_downloads[task_id] = {
             'model_id': model_id,
             'model_version_id': model_version_id,
+            'model_name': model_name,
+            'version_name': version_name,
             'progress': 0,
             'status': 'queued',
             'bytes_downloaded': 0,
@@ -247,7 +263,13 @@ class DownloadManager:
             
             if not version_info:
                 return {'success': False, 'error': 'Failed to fetch model metadata'}
-
+            
+            # Store model_name and version_name in active_downloads early for display
+            if download_id and download_id in self._active_downloads:
+                model_info = version_info.get('model') or {}
+                self._active_downloads[download_id]['model_name'] = model_info.get('name', '')
+                self._active_downloads[download_id]['version_name'] = version_info.get('name', '')
+            
             model_type_from_info = version_info.get('model', {}).get('type', '').lower()
             if model_type_from_info == 'checkpoint':
                 model_type = 'checkpoint'
@@ -588,10 +610,14 @@ class DownloadManager:
 
             pause_control = self._pause_events.get(download_id) if download_id else None
 
-            # Store file paths in active_downloads for potential cleanup
+            # Store file paths, model_name, and version_name in active_downloads for potential cleanup and display
             if download_id and download_id in self._active_downloads:
                 self._active_downloads[download_id]['file_path'] = save_path
                 self._active_downloads[download_id]['part_path'] = part_path
+                # Extract model name and version name from version_info
+                model_info = version_info.get('model') or {}
+                self._active_downloads[download_id]['model_name'] = model_info.get('name', '')
+                self._active_downloads[download_id]['version_name'] = version_info.get('name', '')
 
             # Download preview image if available
             images = version_info.get('images', [])
@@ -1062,6 +1088,8 @@ class DownloadManager:
                     'download_id': task_id,
                     'model_id': info.get('model_id'),
                     'model_version_id': info.get('model_version_id'),
+                    'model_name': info.get('model_name'),
+                    'version_name': info.get('version_name'),
                     'progress': info.get('progress', 0),
                     'status': info.get('status', 'unknown'),
                     'error': info.get('error', None),

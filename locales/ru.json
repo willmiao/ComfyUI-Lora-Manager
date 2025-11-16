@@ -688,6 +688,13 @@
             },
             "minimize": "Свернуть",
             "clickToRestore": "Нажмите, чтобы восстановить",
+            "queue": {
+                "title": "Очередь загрузки",
+                "downloading": "Загрузка: {name}",
+                "queued": "В очереди #{position}: {name}",
+                "waiting": "Ожидание...",
+                "pending": "Ожидает"
+            },
             "progress": {
                 "currentFile": "Текущий файл:",
                 "downloading": "Скачивается: {name}",
@@ -918,6 +925,10 @@
                 },
                 "actions": {
                     "download": "Скачать",
+                    "downloading": "Загрузка...",
+                    "downloadingTooltip": "Эта версия сейчас загружается",
+                    "queued": "В очереди",
+                    "queuedTooltip": "Эта версия находится в очереди загрузки",
                     "delete": "Удалить",
                     "ignore": "Игнорировать",
                     "unignore": "Перестать игнорировать",
@@ -1310,7 +1321,8 @@
             "imagesCompleted": "Примеры изображений {action} завершены",
             "imagesFailed": "Примеры изображений {action} не удались",
             "loadError": "Ошибка загрузки downloads: {message}",
-            "downloadError": "Ошибка загрузки: {message}"
+            "downloadError": "Ошибка загрузки: {message}",
+            "downloadCancelled": "Загрузка отменена"
         },
         "import": {
             "folderTreeFailed": "Не удалось загрузить дерево папок",

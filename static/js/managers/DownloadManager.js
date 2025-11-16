@@ -25,6 +25,7 @@ export class DownloadManager {
         this.folderTreeManager = new FolderTreeManager();
         this.folderClickHandler = null;
         this.updateTargetPath = this.updateTargetPath.bind(this);
+        this.queuePollInterval = null; // Interval for polling download queue
         
         // Bound methods for event handling
         this.handleValidateAndFetchVersions = this.validateAndFetchVersions.bind(this);
@@ -447,44 +448,91 @@ export class DownloadManager {
         const displayName = versionName || `#${versionId}`;
         let ws = null;
         let updateProgress = () => {};
+        let downloadId = Date.now().toString(); // Use let so it can be updated
 
         try {
             this.loadingManager.restoreProgressBar();
             updateProgress = this.loadingManager.showDownloadProgress(1);
+            this.currentUpdateProgress = updateProgress; // Store reference for queue updates
             updateProgress(0, 0, displayName);
-
-            const downloadId = Date.now().toString();
             const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
             ws = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${downloadId}`);
 
+            // Start polling for queue updates
+            this.startQueuePolling();
+
             ws.onmessage = event => {
                 const data = JSON.parse(event.data);
+                console.log('WebSocket message received:', data); // Debug log
 
                 if (data.type === 'download_id') {
-                    console.log(`Connected to download progress with ID: ${data.download_id}`);
+                    // Update downloadId to match backend's ID
+                    const backendDownloadId = data.download_id;
+                    console.log(`Connected to download progress with ID: ${backendDownloadId}`);
+                    // Use backend's download_id for matching messages
+                    if (backendDownloadId && backendDownloadId !== downloadId) {
+                        console.log(`Updating downloadId from ${downloadId} to ${backendDownloadId}`);
+                        downloadId = backendDownloadId;
+                    }
                     return;
                 }
 
-                if (data.status === 'progress' && data.download_id === downloadId) {
-                    const metrics = {
-                        bytesDownloaded: data.bytes_downloaded,
-                        totalBytes: data.total_bytes,
-                        bytesPerSecond: data.bytes_per_second,
-                    };
-
-                    updateProgress(data.progress, 0, displayName, metrics);
-
-                    if (data.progress < 3) {
-                        this.loadingManager.setStatus(translate('modals.download.status.preparing'));
-                    } else if (data.progress === 3) {
-                        this.loadingManager.setStatus(translate('modals.download.status.downloadedPreview'));
-                    } else if (data.progress > 3 && data.progress < 100) {
-                        this.loadingManager.setStatus(
-                            translate('modals.download.status.downloadingFile', { type: config.singularName })
-                        );
-                    } else {
-                        this.loadingManager.setStatus(translate('modals.download.status.finalizing'));
+                // Match by download_id - only update if this matches the active download
+                // The queue polling will handle updating the main display with the correct active download
+                if (data.status === 'progress' && data.download_id) {
+                    // Update downloadId if we receive a message with a different ID (backend might have generated one)
+                    if (data.download_id !== downloadId) {
+                        downloadId = data.download_id;
                     }
+                    
+                    // Only update if this is the active download (queue polling handles the main display)
+                    // WebSocket messages are used for real-time updates, but queue polling ensures correct active download
+                    const activeDownloadId = this.loadingManager.activeDownloadId;
+                    if (!activeDownloadId || data.download_id === activeDownloadId) {
+                        const metrics = {
+                            bytesDownloaded: data.bytes_downloaded,
+                            totalBytes: data.total_bytes,
+                            bytesPerSecond: data.bytes_per_second,
+                        };
+
+                        updateProgress(data.progress, 0, displayName, metrics);
+
+                        if (data.progress < 3) {
+                            this.loadingManager.setStatus(translate('modals.download.status.preparing'));
+                        } else if (data.progress === 3) {
+                            this.loadingManager.setStatus(translate('modals.download.status.downloadedPreview'));
+                        } else if (data.progress > 3 && data.progress < 100) {
+                            this.loadingManager.setStatus(
+                                translate('modals.download.status.downloadingFile', { type: config.singularName })
+                            );
+                        } else {
+                            this.loadingManager.setStatus(translate('modals.download.status.finalizing'));
+                        }
+                    }
+                } else if (data.status === 'cancelled' || data.status === 'canceled') {
+                    // Handle cancellation - check if there are other downloads before hiding
+                    this.isCancelling = false;
+                    if (this.cancellationTimeout) {
+                        clearTimeout(this.cancellationTimeout);
+                        this.cancellationTimeout = null;
+                    }
+                    
+                    // Check queue before hiding (async check)
+                    this.checkQueueStatus().then(queueData => {
+                        const hasOtherDownloads = queueData && queueData.downloads && queueData.downloads.some(d => 
+                            d.status === 'downloading' || d.status === 'waiting' || d.status === 'queued'
+                        );
+                        
+                        if (!hasOtherDownloads) {
+                            this.loadingManager.hide();
+                        }
+                    });
+                    
+                    showToast('toast.downloads.downloadCancelled', {}, 'info');
+                } else if (data.status === 'completed' || data.status === 'success') {
+                    // Handle completion - don't hide here, let queue polling handle it
+                    updateProgress(100, 0, displayName);
+                    this.loadingManager.setStatus(translate('modals.download.status.finalizing'));
                 }
             };
 
@@ -543,7 +591,125 @@ export class DownloadManager {
             } catch (closeError) {
                 console.debug('Failed to close download progress socket:', closeError);
             }
-            this.loadingManager.hide();
+            
+            // Check if there are still active or queued downloads before hiding
+            // Only hide if this download was cancelled AND there are no other downloads
+            if (!this.isCancelling) {
+                // Download completed normally - check queue status
+                const queueData = await this.checkQueueStatus();
+                const hasActiveOrQueued = queueData && queueData.downloads && queueData.downloads.some(d => 
+                    d.status === 'downloading' || d.status === 'waiting' || d.status === 'queued'
+                );
+                
+                if (!hasActiveOrQueued) {
+                    // No active or queued downloads - safe to hide
+                    this.stopQueuePolling();
+                    this.currentUpdateProgress = null;
+                    this.loadingManager.hide();
+                } else {
+                    // There are other downloads - keep polling and showing
+                    // Don't clear currentUpdateProgress yet, as queue polling will handle updates
+                }
+            }
+            // If isCancelling, the cancellation handler above will check the queue
+        }
+    }
+
+    startQueuePolling() {
+        // Clear any existing interval
+        this.stopQueuePolling();
+        
+        // Poll immediately, but with a small delay to allow download to register
+        // This ensures the popup stays visible when starting the first download
+        setTimeout(() => {
+            this.updateQueueDisplay();
+        }, 100);
+        
+        // Then poll every 2 seconds
+        this.queuePollInterval = setInterval(() => {
+            this.updateQueueDisplay();
+        }, 2000);
+    }
+
+    stopQueuePolling() {
+        if (this.queuePollInterval) {
+            clearInterval(this.queuePollInterval);
+            this.queuePollInterval = null;
+        }
+    }
+
+    async checkQueueStatus() {
+        try {
+            const response = await fetch('/api/lm/active-downloads');
+            if (!response.ok) {
+                return null;
+            }
+            return await response.json();
+        } catch (error) {
+            console.debug('Failed to check queue status:', error);
+            return null;
+        }
+    }
+
+    async updateQueueDisplay() {
+        try {
+            const response = await fetch('/api/lm/active-downloads');
+            if (!response.ok) {
+                return;
+            }
+            
+            const data = await response.json();
+            if (data && data.downloads && Array.isArray(data.downloads)) {
+                // Update the queue display
+                this.loadingManager.updateQueueDisplay(data.downloads);
+                
+                // Check if there are active downloads OR queued downloads
+                // Keep popup visible as long as there are any downloads (active, waiting, or queued)
+                const hasActiveDownloads = data.downloads.some(d => 
+                    d.status === 'downloading' || d.status === 'waiting' || d.status === 'queued'
+                );
+                
+                if (!hasActiveDownloads) {
+                    // No active downloads - check if we should keep popup visible
+                    if (!this.currentUpdateProgress) {
+                        // No downloads and no download was just initiated - safe to hide
+                        this.stopQueuePolling();
+                        this.currentUpdateProgress = null;
+                        this.loadingManager.hide();
+                    } else {
+                        // Download was just initiated but not yet registered - keep popup visible
+                        // But respect minimized state - don't force restore if minimized
+                        if (this.loadingManager.overlay && !this.loadingManager.isMinimized) {
+                            this.loadingManager.overlay.style.display = 'flex';
+                        }
+                    }
+                } else {
+                    // There are active/queued downloads - ensure popup is visible
+                    // But respect minimized state - don't force restore if user minimized it
+                    if (this.loadingManager.overlay && !this.loadingManager.isMinimized) {
+                        this.loadingManager.overlay.style.display = 'flex';
+                    }
+                    // If minimized, the minimized widget will be updated by updateQueueDisplay
+                }
+            } else {
+                // No downloads data yet, but if we have a current update function, keep popup visible
+                if (this.currentUpdateProgress) {
+                    // Keep popup visible while waiting for download to register
+                    // But respect minimized state - don't force restore if minimized
+                    if (this.loadingManager.overlay && !this.loadingManager.isMinimized) {
+                        this.loadingManager.overlay.style.display = 'flex';
+                    }
+                }
+            }
+        } catch (error) {
+            console.debug('Failed to fetch active downloads:', error);
+            // On error, if we have a current update function, keep popup visible
+            // But respect minimized state - don't force restore if minimized
+            if (this.currentUpdateProgress) {
+                if (this.loadingManager.overlay && !this.loadingManager.isMinimized) {
+                    this.loadingManager.overlay.style.display = 'flex';
+                }
+            }
         }
     }
 

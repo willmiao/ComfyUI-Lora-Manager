@@ -44,6 +44,8 @@ export class LoadingManager {
         this.minimizedWidget = null;
         this.currentFileName = '';
         this.currentProgress = 0;
+        this.queueContainer = null; // Container for download queue display
+        this.activeDownloadId = null; // ID of currently active download
     }
 
     show(message = 'Loading...', progress = 0) {
@@ -102,6 +104,9 @@ export class LoadingManager {
             this.detailsContainer.remove();
             this.detailsContainer = null;
         }
+        this.queueContainer = null;
+        this.queueList = null;
+        this.activeDownloadId = null;
     }
     
     // Show enhanced progress for downloads
@@ -163,6 +168,16 @@ export class LoadingManager {
         currentItemLabel.className = 'current-item-label';
         currentItemLabel.textContent = translate('modals.download.progress.currentFile', {}, 'Current file:');
         
+        // Create version name label (shown below model name)
+        const currentItemVersionLabel = document.createElement('div');
+        currentItemVersionLabel.className = 'current-item-version-label';
+        currentItemVersionLabel.style.cssText = `
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 2px;
+        `;
+        currentItemVersionLabel.textContent = '';
+        
         const currentItemBar = document.createElement('div');
         currentItemBar.className = 'current-item-bar-container';
         
@@ -176,6 +191,7 @@ export class LoadingManager {
         
         currentItemBar.appendChild(currentItemProgress);
         currentItemContainer.appendChild(currentItemLabel);
+        currentItemContainer.appendChild(currentItemVersionLabel);
         currentItemContainer.appendChild(currentItemBar);
         currentItemContainer.appendChild(currentItemPercent);
         
@@ -270,6 +286,7 @@ export class LoadingManager {
         // Store references for minimize widget updates
         this.currentItemProgress = currentItemProgress;
         this.currentItemLabel = currentItemLabel;
+        this.currentItemVersionLabel = currentItemVersionLabel;
         this.currentItemPercent = currentItemPercent;
         
         // Return update function
@@ -284,14 +301,8 @@ export class LoadingManager {
             currentItemProgress.style.width = `${currentProgress}%`;
             currentItemPercent.textContent = `${Math.floor(currentProgress)}%`;
             
-            // Update current item label if name provided
-            if (currentName) {
-                currentItemLabel.textContent = translate(
-                    'modals.download.progress.downloading',
-                    { name: currentName },
-                    `Downloading: ${currentName}`
-                );
-            }
+            // Note: Labels are updated from queue polling which has both model_name and version_name
+            // This function is called from WebSocket updates, but queue polling will override with correct values
             
             // Update overall label if multiple items
             if (totalItems > 1 && overallLabel) {
@@ -312,6 +323,330 @@ export class LoadingManager {
                 this.updateMinimizedWidget();
             }
         };
+    }
+
+    createQueueContainer() {
+        if (this.queueContainer) {
+            return this.queueContainer;
+        }
+        
+        if (!this.detailsContainer) {
+            this.detailsContainer = this.createDetailsContainer();
+        }
+        
+        this.queueContainer = document.createElement('div');
+        this.queueContainer.className = 'download-queue-container';
+        this.queueContainer.style.cssText = `
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        `;
+        
+        const queueTitle = document.createElement('div');
+        queueTitle.className = 'download-queue-title';
+        queueTitle.style.cssText = `
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+        `;
+        queueTitle.textContent = translate('modals.download.queue.title', {}, 'Download Queue');
+        
+        this.queueList = document.createElement('div');
+        this.queueList.className = 'download-queue-list';
+        this.queueList.style.cssText = `
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        `;
+        
+        this.queueContainer.appendChild(queueTitle);
+        this.queueContainer.appendChild(this.queueList);
+        
+        // Insert queue container before cancel button (if it exists) or at the end
+        const cancelButton = this.detailsContainer.querySelector('.download-cancel-btn');
+        if (cancelButton && cancelButton.parentNode === this.detailsContainer) {
+            this.detailsContainer.insertBefore(this.queueContainer, cancelButton);
+        } else {
+            this.detailsContainer.appendChild(this.queueContainer);
+        }
+        
+        return this.queueContainer;
+    }
+
+    updateQueueDisplay(downloads) {
+        if (!downloads || !Array.isArray(downloads)) {
+            return;
+        }
+        
+        // Create queue container if it doesn't exist
+        if (!this.queueContainer) {
+            this.createQueueContainer();
+        }
+        
+        // Clear existing queue items
+        this.queueList.innerHTML = '';
+        
+        // Separate active and queued downloads
+        // 'downloading' = actively downloading
+        // 'waiting' = waiting for semaphore (should be shown as active/next in queue)
+        // 'queued' = queued but not yet waiting (should be shown as queued)
+        const activeDownloads = downloads.filter(d => 
+            d.status === 'downloading'
+        );
+        const waitingDownloads = downloads.filter(d => 
+            d.status === 'waiting'
+        );
+        const queuedDownloads = downloads.filter(d => 
+            d.status === 'queued'
+        );
+        
+        // Clamp all download counts to ensure they're never negative (defensive programming)
+        const activeCount = Math.max(0, activeDownloads.length);
+        const waitingCount = Math.max(0, waitingDownloads.length);
+        const queuedCount = Math.max(0, queuedDownloads.length);
+        
+        // Combine waiting and queued for display - waiting is next to download, queued are after
+        const allQueued = [...waitingDownloads, ...queuedDownloads];
+        
+        // Update main progress indicator with active download (if any)
+        // The active download should be shown in the main progress area, NOT in the queue
+        if (activeCount > 0) {
+            const active = activeDownloads[0];
+            this.activeDownloadId = active.download_id;
+            
+            // Update main progress display with active download info
+            if (this.currentItemProgress && this.currentItemLabel && this.currentItemPercent) {
+                // Always show model name (no switching)
+                const modelName = active.model_name || 
+                                 `Model #${active.model_id || active.download_id}`;
+                const versionName = active.version_name || '';
+                
+                // Use model name for display name (for minimized widget)
+                this.currentFileName = modelName;
+                this.currentProgress = active.progress || 0;
+                
+                this.currentItemProgress.style.width = `${active.progress || 0}%`;
+                this.currentItemPercent.textContent = `${Math.floor(active.progress || 0)}%`;
+                
+                // Show model name on main label
+                this.currentItemLabel.textContent = translate(
+                    'modals.download.progress.downloading',
+                    { name: modelName },
+                    `Downloading: ${modelName}`
+                );
+                
+                // Show version name on separate line below (if available)
+                if (this.currentItemVersionLabel) {
+                    if (versionName) {
+                        this.currentItemVersionLabel.textContent = versionName;
+                        this.currentItemVersionLabel.style.display = '';
+                    } else {
+                        this.currentItemVersionLabel.textContent = '';
+                        this.currentItemVersionLabel.style.display = 'none';
+                    }
+                }
+                
+                // Update transfer stats if available
+                const bytesDetail = this.detailsContainer?.querySelector('.download-transfer-bytes');
+                const speedDetail = this.detailsContainer?.querySelector('.download-transfer-speed');
+                
+                if (bytesDetail || speedDetail) {
+                    const formatMetricSize = (value) => {
+                        if (value === undefined || value === null || isNaN(value)) {
+                            return '--';
+                        }
+                        if (value < 1) {
+                            return '0 B';
+                        }
+                        return formatFileSize(value);
+                    };
+                    
+                    if (bytesDetail) {
+                        const formattedDownloaded = formatMetricSize(active.bytes_downloaded);
+                        const formattedTotal = formatMetricSize(active.total_bytes);
+                        
+                        if (formattedDownloaded === '--' && formattedTotal === '--') {
+                            bytesDetail.textContent = translate(
+                                'modals.download.progress.transferredUnknown',
+                                {},
+                                'Transferred: --'
+                            );
+                        } else if (formattedTotal === '--') {
+                            bytesDetail.textContent = translate(
+                                'modals.download.progress.transferredSimple',
+                                { downloaded: formattedDownloaded },
+                                `Transferred: ${formattedDownloaded}`
+                            );
+                        } else {
+                            bytesDetail.textContent = translate(
+                                'modals.download.progress.transferred',
+                                { downloaded: formattedDownloaded, total: formattedTotal },
+                                `Transferred: ${formattedDownloaded} / ${formattedTotal}`
+                            );
+                        }
+                    }
+                    
+                    if (speedDetail) {
+                        const formattedSpeed = formatMetricSize(active.bytes_per_second);
+                        const displaySpeed = formattedSpeed === '--' ? '--' : `${formattedSpeed}/s`;
+                        speedDetail.textContent = translate(
+                            'modals.download.progress.speed',
+                            { speed: displaySpeed },
+                            `Speed: ${displaySpeed}`
+                        );
+                    }
+                }
+            }
+        } else {
+            // No active download - clear the active download ID
+            // Main progress will remain at whatever it was (or show "Preparing...")
+            this.activeDownloadId = null;
+        }
+        
+        // Queue should ONLY show queued/waiting downloads, NOT the active one
+        // Show waiting download (next in queue, waiting for semaphore)
+        if (waitingCount > 0) {
+            waitingDownloads.forEach((download, index) => {
+                const waitingItem = this.createQueueItem(download, false, index + 1);
+                this.queueList.appendChild(waitingItem);
+            });
+        }
+        
+        // Show queued downloads (after waiting)
+        if (queuedCount > 0) {
+            const startPosition = waitingCount + 1;
+            queuedDownloads.forEach((download, index) => {
+                const queueItem = this.createQueueItem(download, false, startPosition + index);
+                this.queueList.appendChild(queueItem);
+            });
+        }
+        
+        // If one or less downloads, hide queue container
+        if (activeCount <= 1 && waitingCount === 0 && queuedCount === 0) {
+            if (this.queueContainer) {
+                this.queueContainer.style.display = 'none';
+            }
+        } else {
+            if (this.queueContainer) {
+                this.queueContainer.style.display = 'block';
+            }
+        }
+    }
+
+    createQueueItem(download, isActive = false, queuePosition = null) {
+        const item = document.createElement('div');
+        item.className = `download-queue-item ${isActive ? 'active' : 'queued'}`;
+        item.style.cssText = `
+            padding: 10px;
+            background: ${isActive ? 'rgba(74, 158, 255, 0.1)' : 'rgba(255, 255, 255, 0.05)'};
+            border: 1px solid ${isActive ? 'rgba(74, 158, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)'};
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        `;
+        
+        const itemHeader = document.createElement('div');
+        itemHeader.style.cssText = `
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            font-size: ${isActive ? '13px' : '12px'};
+        `;
+        
+        const itemNameContainer = document.createElement('div');
+        itemNameContainer.style.cssText = `
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+        `;
+        
+        // Model name line
+        const itemModelName = document.createElement('div');
+        itemModelName.style.cssText = `
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: ${isActive ? '600' : '500'};
+            font-size: ${isActive ? '13px' : '12px'};
+        `;
+        
+        // Version name line (smaller, lighter)
+        const itemVersionName = document.createElement('div');
+        itemVersionName.style.cssText = `
+            color: rgba(255, 255, 255, 0.7);
+            font-size: ${isActive ? '11px' : '10px'};
+            font-weight: 400;
+        `;
+        
+        // Get model name and version name
+        const modelName = download.model_name || 
+                         `Model #${download.model_id || download.download_id}`;
+        const versionName = download.version_name || '';
+        
+        // Set model name
+        if (isActive) {
+            itemModelName.textContent = translate('modals.download.queue.downloading', { name: modelName }, `Downloading: ${modelName}`);
+        } else {
+            itemModelName.textContent = translate('modals.download.queue.queued', { name: modelName, position: queuePosition }, `Queued #${queuePosition}: ${modelName}`);
+        }
+        
+        // Set version name (if available)
+        if (versionName) {
+            itemVersionName.textContent = versionName;
+        } else {
+            itemVersionName.style.display = 'none';
+        }
+        
+        itemNameContainer.appendChild(itemModelName);
+        itemNameContainer.appendChild(itemVersionName);
+        
+        const itemStatus = document.createElement('div');
+        itemStatus.style.cssText = `
+            color: rgba(255, 255, 255, 0.7);
+            font-size: ${isActive ? '11px' : '10px'};
+            margin-left: 8px;
+            white-space: nowrap;
+        `;
+        
+        if (isActive) {
+            if (download.status === 'waiting') {
+                itemStatus.textContent = translate('modals.download.queue.waiting', {}, 'Waiting...');
+            } else {
+                itemStatus.textContent = `${download.progress || 0}%`;
+            }
+        } else {
+            itemStatus.textContent = translate('modals.download.queue.pending', {}, 'Pending');
+        }
+        
+        itemHeader.appendChild(itemNameContainer);
+        itemHeader.appendChild(itemStatus);
+        item.appendChild(itemHeader);
+        
+        // Add progress bar for active download
+        if (isActive && download.status === 'downloading') {
+            const progressBar = document.createElement('div');
+            progressBar.style.cssText = `
+                width: 100%;
+                height: 4px;
+                background-color: rgba(255, 255, 255, 0.1);
+                border-radius: 2px;
+                overflow: hidden;
+            `;
+            
+            const progressFill = document.createElement('div');
+            progressFill.style.cssText = `
+                width: ${download.progress || 0}%;
+                height: 100%;
+                background-color: var(--lora-accent, #4a9eff);
+                transition: width 200ms ease-out;
+            `;
+            
+            progressBar.appendChild(progressFill);
+            item.appendChild(progressBar);
+        }
+        
+        return item;
     }
 
     async showWithProgress(callback, options = {}) {

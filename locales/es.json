@@ -688,6 +688,13 @@
             },
             "minimize": "Minimizar",
             "clickToRestore": "Haga clic para restaurar",
+            "queue": {
+                "title": "Cola de descarga",
+                "downloading": "Descargando: {name}",
+                "queued": "En cola #{position}: {name}",
+                "waiting": "Esperando...",
+                "pending": "Pendiente"
+            },
             "progress": {
                 "currentFile": "Archivo actual:",
                 "downloading": "Descargando: {name}",
@@ -918,6 +925,10 @@
                 },
                 "actions": {
                     "download": "Descargar",
+                    "downloading": "Descargando...",
+                    "downloadingTooltip": "Esta versión se está descargando actualmente",
+                    "queued": "En cola",
+                    "queuedTooltip": "Esta versión está en cola de descarga",
                     "delete": "Eliminar",
                     "ignore": "Ignorar",
                     "unignore": "Dejar de ignorar",
@@ -1310,7 +1321,8 @@
             "imagesCompleted": "Imágenes de ejemplo {action} completadas",
             "imagesFailed": "Imágenes de ejemplo {action} fallidas",
             "loadError": "Error al cargar descargas: {message}",
-            "downloadError": "Error de descarga: {message}"
+            "downloadError": "Error de descarga: {message}",
+            "downloadCancelled": "Descarga cancelada"
         },
         "import": {
             "folderTreeFailed": "Error al cargar árbol de carpetas",

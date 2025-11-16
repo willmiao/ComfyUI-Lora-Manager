@@ -688,6 +688,13 @@
             },
             "minimize": "最小化",
             "clickToRestore": "點擊恢復",
+            "queue": {
+                "title": "下載佇列",
+                "downloading": "正在下載：{name}",
+                "queued": "佇列 #{position}：{name}",
+                "waiting": "等待中...",
+                "pending": "等待中"
+            },
             "progress": {
                 "currentFile": "目前檔案：",
                 "downloading": "下載中：{name}",
@@ -918,6 +925,10 @@
                 },
                 "actions": {
                     "download": "下載",
+                    "downloading": "下載中...",
+                    "downloadingTooltip": "此版本正在下載中",
+                    "queued": "已排隊",
+                    "queuedTooltip": "此版本已加入下載佇列",
                     "delete": "刪除",
                     "ignore": "忽略",
                     "unignore": "取消忽略",
@@ -1310,7 +1321,8 @@
             "imagesCompleted": "範例圖片{action}完成",
             "imagesFailed": "範例圖片{action}失敗",
             "loadError": "載入下載時發生錯誤：{message}",
-            "downloadError": "下載錯誤：{message}"
+            "downloadError": "下載錯誤：{message}",
+            "downloadCancelled": "下載已取消"
         },
         "import": {
             "folderTreeFailed": "載入資料夾樹狀結構失敗",

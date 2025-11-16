@@ -688,6 +688,13 @@
             },
             "minimize": "Réduire",
             "clickToRestore": "Cliquez pour restaurer",
+            "queue": {
+                "title": "File d'attente de téléchargement",
+                "downloading": "Téléchargement : {name}",
+                "queued": "En file d'attente #{position} : {name}",
+                "waiting": "En attente...",
+                "pending": "En attente"
+            },
             "progress": {
                 "currentFile": "Fichier actuel :",
                 "downloading": "Téléchargement : {name}",
@@ -918,6 +925,10 @@
                 },
                 "actions": {
                     "download": "Télécharger",
+                    "downloading": "Téléchargement en cours...",
+                    "downloadingTooltip": "Cette version est en cours de téléchargement",
+                    "queued": "En attente",
+                    "queuedTooltip": "Cette version est en file d'attente de téléchargement",
                     "delete": "Supprimer",
                     "ignore": "Ignorer",
                     "unignore": "Ne plus ignorer",
@@ -1310,7 +1321,8 @@
             "imagesCompleted": "Images d'exemple {action} terminées",
             "imagesFailed": "Images d'exemple {action} échouées",
             "loadError": "Erreur lors du chargement des téléchargements : {message}",
-            "downloadError": "Erreur de téléchargement : {message}"
+            "downloadError": "Erreur de téléchargement : {message}",
+            "downloadCancelled": "Téléchargement annulé"
         },
         "import": {
             "folderTreeFailed": "Échec du chargement de l'arborescence des dossiers",

@@ -688,6 +688,13 @@
             },
             "minimize": "最小化",
             "clickToRestore": "クリックして復元",
+            "queue": {
+                "title": "ダウンロードキュー",
+                "downloading": "ダウンロード中: {name}",
+                "queued": "キュー #{position}: {name}",
+                "waiting": "待機中...",
+                "pending": "保留中"
+            },
             "progress": {
                 "currentFile": "現在のファイル:",
                 "downloading": "ダウンロード中: {name}",
@@ -918,6 +925,10 @@
                 },
                 "actions": {
                     "download": "ダウンロード",
+                    "downloading": "ダウンロード中...",
+                    "downloadingTooltip": "このバージョンは現在ダウンロード中です",
+                    "queued": "待機中",
+                    "queuedTooltip": "このバージョンはダウンロード待ちです",
                     "delete": "削除",
                     "ignore": "無視",
                     "unignore": "無視を解除",
@@ -1310,7 +1321,8 @@
             "imagesCompleted": "例画像 {action} が完了しました",
             "imagesFailed": "例画像 {action} が失敗しました",
             "loadError": "ダウンロード読み込みエラー：{message}",
-            "downloadError": "ダウンロードエラー：{message}"
+            "downloadError": "ダウンロードエラー：{message}",
+            "downloadCancelled": "ダウンロードがキャンセルされました"
         },
         "import": {
             "folderTreeFailed": "フォルダツリーの読み込みに失敗しました",

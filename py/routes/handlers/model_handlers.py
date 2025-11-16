@@ -837,6 +837,14 @@ class ModelDownloadHandler:
             self._logger.error("Error resuming download via GET: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def list_active_downloads_get(self, request: web.Request) -> web.Response:
+        try:
+            result = await self._download_coordinator.list_active_downloads()
+            return web.json_response(result)
+        except Exception as exc:
+            self._logger.error("Error listing active downloads: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def get_download_progress(self, request: web.Request) -> web.Response:
         try:
             download_id = request.match_info.get("download_id")
@@ -1591,6 +1599,7 @@ class ModelHandlerSet:
             "cancel_download_get": self.download.cancel_download_get,
             "pause_download_get": self.download.pause_download_get,
             "resume_download_get": self.download.resume_download_get,
+            "list_active_downloads_get": self.download.list_active_downloads_get,
             "get_download_progress": self.download.get_download_progress,
             "get_civitai_versions": self.civitai.get_civitai_versions,
             "get_civitai_model_by_version": self.civitai.get_civitai_model_by_version,
