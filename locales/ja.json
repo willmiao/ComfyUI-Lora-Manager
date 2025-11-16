@@ -231,8 +231,13 @@
             "exampleImages": "例画像",
             "misc": "その他",
             "metadataArchive": "メタデータアーカイブデータベース",
+            "storageLocation": "設定の場所",
             "proxySettings": "プロキシ設定",
             "priorityTags": "優先タグ"
+        },
+        "storage": {
+            "locationLabel": "ポータブルモード",
+            "locationHelp": "有効にすると settings.json をリポジトリ内に保持し、無効にするとユーザー設定ディレクトリに格納します。"
         },
         "contentFiltering": {
             "blurNsfwContent": "NSFWコンテンツをぼかす",

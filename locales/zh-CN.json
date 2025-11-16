@@ -231,8 +231,13 @@
             "exampleImages": "示例图片",
             "misc": "其他",
             "metadataArchive": "元数据归档数据库",
+            "storageLocation": "设置位置",
             "proxySettings": "代理设置",
             "priorityTags": "优先标签"
+        },
+        "storage": {
+            "locationLabel": "便携模式",
+            "locationHelp": "开启可将 settings.json 保存在仓库中；关闭则保存在用户配置目录。"
         },
         "contentFiltering": {
             "blurNsfwContent": "模糊 NSFW 内容",

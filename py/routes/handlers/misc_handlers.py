@@ -180,6 +180,7 @@ class SettingsHandler:
         "download_path_templates",
         "enable_metadata_archive_db",
         "language",
+        "use_portable_settings",
         "proxy_enabled",
         "proxy_type",
         "proxy_host",

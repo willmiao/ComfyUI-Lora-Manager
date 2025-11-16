@@ -371,6 +371,11 @@ export class SettingsManager {
             showOnlySFWCheckbox.checked = state.global.settings.show_only_sfw ?? false;
         }
 
+        const usePortableCheckbox = document.getElementById('usePortableSettings');
+        if (usePortableCheckbox) {
+            usePortableCheckbox.checked = !!state.global.settings.use_portable_settings;
+        }
+
         // Set video autoplay on hover setting
         const autoplayOnHoverCheckbox = document.getElementById('autoplayOnHover');
         if (autoplayOnHoverCheckbox) {
