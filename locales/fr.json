@@ -686,6 +686,8 @@
                 "downloadingFile": "Téléchargement du fichier {type}",
                 "finalizing": "Finalisation du téléchargement..."
             },
+            "minimize": "Réduire",
+            "clickToRestore": "Cliquez pour restaurer",
             "progress": {
                 "currentFile": "Fichier actuel :",
                 "downloading": "Téléchargement : {name}",

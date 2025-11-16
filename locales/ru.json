@@ -686,6 +686,8 @@
                 "downloadingFile": "Загрузка файла {type}",
                 "finalizing": "Завершение загрузки..."
             },
+            "minimize": "Свернуть",
+            "clickToRestore": "Нажмите, чтобы восстановить",
             "progress": {
                 "currentFile": "Текущий файл:",
                 "downloading": "Скачивается: {name}",

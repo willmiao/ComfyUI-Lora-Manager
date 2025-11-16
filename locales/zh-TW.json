@@ -686,6 +686,8 @@
                 "downloadingFile": "正在下載 {type} 檔案",
                 "finalizing": "完成下載中..."
             },
+            "minimize": "最小化",
+            "clickToRestore": "點擊恢復",
             "progress": {
                 "currentFile": "目前檔案：",
                 "downloading": "下載中：{name}",

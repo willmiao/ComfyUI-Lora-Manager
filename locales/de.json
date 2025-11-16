@@ -687,6 +687,8 @@
                 "downloadingFile": "{type}-Datei wird heruntergeladen",
                 "finalizing": "Download wird abgeschlossen..."
             },
+            "minimize": "Minimieren",
+            "clickToRestore": "Zum Wiederherstellen klicken",
             "progress": {
                 "currentFile": "Aktuelle Datei:",
                 "downloading": "Wird heruntergeladen: {name}",

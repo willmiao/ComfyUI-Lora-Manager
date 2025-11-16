@@ -686,6 +686,8 @@
                 "downloadingFile": "מוריד קובץ {type}",
                 "finalizing": "מסיים הורדה..."
             },
+            "minimize": "מזער",
+            "clickToRestore": "לחץ לשחזור",
             "progress": {
                 "currentFile": "הקובץ הנוכחי:",
                 "downloading": "מוריד: {name}",

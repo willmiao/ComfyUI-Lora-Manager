@@ -686,6 +686,8 @@
                 "downloadingFile": "{type} 파일 다운로드 중",
                 "finalizing": "다운로드 완료 중..."
             },
+            "minimize": "최소화",
+            "clickToRestore": "클릭하여 복원",
             "progress": {
                 "currentFile": "현재 파일:",
                 "downloading": "다운로드 중: {name}",
