@@ -61,6 +61,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "priority_tags": DEFAULT_PRIORITY_TAG_CONFIG.copy(),
     "model_name_display": "model_name",
     "model_card_footer_action": "example_images",
+    "update_flag_strategy": "any",
 }
 
 

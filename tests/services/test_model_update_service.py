@@ -52,11 +52,11 @@ class NotFoundProvider:
         return {}
 
 
-def make_version(version_id, *, in_library, should_ignore=False):
+def make_version(version_id, *, in_library, base_model=None, should_ignore=False):
     return ModelVersionRecord(
         version_id=version_id,
         name=None,
-        base_model=None,
+        base_model=base_model,
         released_at=None,
         size_bytes=None,
         preview_url=None,
@@ -145,6 +145,25 @@ def test_has_update_detects_newer_remote_version():
     )
 
     assert record.has_update() is True
+
+
+def test_has_update_for_base_matches_same_base_model():
+    record = make_record(
+        make_version(5, in_library=True, base_model="Pony"),
+        make_version(6, in_library=False, base_model="Pony"),
+        make_version(7, in_library=False, base_model="Flux.1"),
+    )
+
+    assert record.has_update_for_base(5, "Pony") is True
+
+
+def test_has_update_for_base_rejects_other_base_models():
+    record = make_record(
+        make_version(10, in_library=True, base_model="Flux"),
+        make_version(20, in_library=False, base_model="SDXL"),
+    )
+
+    assert record.has_update_for_base(10, "Flux") is False
 
 
 @pytest.mark.asyncio
