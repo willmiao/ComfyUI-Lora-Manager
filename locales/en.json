@@ -230,6 +230,7 @@
             "priorityTags": "Priority Tags",
             "downloadPathTemplates": "Download Path Templates",
             "exampleImages": "Example Images",
+            "updateFlags": "Update Flags",
             "misc": "Misc.",
             "metadataArchive": "Metadata Archive Database",
             "storageLocation": "Settings Location",
@@ -363,6 +364,14 @@
             "optimizeImagesHelp": "Optimize example images to reduce file size and improve loading speed (metadata will be preserved)",
             "download": "Download",
             "restartRequired": "Requires restart"
+        },
+        "updateFlagStrategy": {
+            "label": "Update Flag Strategy",
+            "help": "Decide whether update badges should only appear when a new release shares the same base model as your local files or whenever any newer version exists for that model.",
+            "options": {
+                "sameBase": "Match updates by base model",
+                "any": "Flag any available update"
+            }
         },
         "misc": {
             "includeTriggerWords": "Include Trigger Words in LoRA Syntax",

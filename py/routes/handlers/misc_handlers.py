@@ -201,6 +201,7 @@ class SettingsHandler:
         "priority_tags",
         "model_card_footer_action",
         "model_name_display",
+        "update_flag_strategy",
     )
 
     _PROXY_KEYS = {"proxy_enabled", "proxy_host", "proxy_port", "proxy_username", "proxy_password", "proxy_type"}

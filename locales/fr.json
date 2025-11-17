@@ -227,13 +227,14 @@
             "videoSettings": "Paramètres vidéo",
             "layoutSettings": "Paramètres d'affichage",
             "folderSettings": "Paramètres des dossiers",
+            "priorityTags": "Étiquettes prioritaires",
             "downloadPathTemplates": "Modèles de chemin de téléchargement",
             "exampleImages": "Images d'exemple",
+            "updateFlags": "Indicateurs de mise à jour",
             "misc": "Divers",
             "metadataArchive": "Base de données d'archive des métadonnées",
             "storageLocation": "Emplacement des paramètres",
-            "proxySettings": "Paramètres du proxy",
-            "priorityTags": "Étiquettes prioritaires"
+            "proxySettings": "Paramètres du proxy"
         },
         "storage": {
             "locationLabel": "Mode portable",
@@ -297,6 +298,26 @@
             "defaultEmbeddingRootHelp": "Définir le répertoire racine embedding par défaut pour les téléchargements, imports et déplacements",
             "noDefault": "Aucun par défaut"
         },
+        "priorityTags": {
+            "title": "Étiquettes prioritaires",
+            "description": "Personnalisez l'ordre de priorité des étiquettes pour chaque type de modèle (par ex. : character, concept, style(toon|toon_style))",
+            "placeholder": "character, concept, style(toon|toon_style)",
+            "helpLinkLabel": "Ouvrir l'aide sur les étiquettes prioritaires",
+            "modelTypes": {
+                "lora": "LoRA",
+                "checkpoint": "Checkpoint",
+                "embedding": "Embedding"
+            },
+            "saveSuccess": "Étiquettes prioritaires mises à jour.",
+            "saveError": "Échec de la mise à jour des étiquettes prioritaires.",
+            "loadingSuggestions": "Chargement des suggestions...",
+            "validation": {
+                "missingClosingParen": "L'entrée {index} n'a pas de parenthèse fermante.",
+                "missingCanonical": "L'entrée {index} doit inclure un nom d'étiquette canonique.",
+                "duplicateCanonical": "L'étiquette canonique \"{tag}\" apparaît plusieurs fois.",
+                "unknown": "Configuration d'étiquettes prioritaires invalide."
+            }
+        },
         "downloadPathTemplates": {
             "title": "Modèles de chemin de téléchargement",
             "help": "Configurer les structures de dossiers pour différents types de modèles lors du téléchargement depuis Civitai.",
@@ -344,6 +365,14 @@
             "download": "Télécharger",
             "restartRequired": "Redémarrage requis"
         },
+        "updateFlagStrategy": {
+            "label": "Stratégie des indicateurs de mise à jour",
+            "help": "Choisissez si les badges de mise à jour doivent apparaître uniquement lorsqu’une nouvelle version partage le même modèle de base que vos fichiers locaux, ou dès qu’il existe une version plus récente pour ce modèle.",
+            "options": {
+                "sameBase": "Faire correspondre les mises à jour par modèle de base",
+                "any": "Signaler n’importe quelle mise à jour disponible"
+            }
+        },
         "misc": {
             "includeTriggerWords": "Inclure les mots-clés dans la syntaxe LoRA",
             "includeTriggerWordsHelp": "Inclure les mots-clés d'entraînement lors de la copie de la syntaxe LoRA dans le presse-papiers"
@@ -389,26 +418,6 @@
             "proxyPassword": "Mot de passe (optionnel)",
             "proxyPasswordPlaceholder": "mot_de_passe",
             "proxyPasswordHelp": "Mot de passe pour l'authentification proxy (si nécessaire)"
-        },
-        "priorityTags": {
-            "title": "Étiquettes prioritaires",
-            "description": "Personnalisez l'ordre de priorité des étiquettes pour chaque type de modèle (par ex. : character, concept, style(toon|toon_style))",
-            "placeholder": "character, concept, style(toon|toon_style)",
-            "helpLinkLabel": "Ouvrir l'aide sur les étiquettes prioritaires",
-            "modelTypes": {
-                "lora": "LoRA",
-                "checkpoint": "Checkpoint",
-                "embedding": "Embedding"
-            },
-            "saveSuccess": "Étiquettes prioritaires mises à jour.",
-            "saveError": "Échec de la mise à jour des étiquettes prioritaires.",
-            "loadingSuggestions": "Chargement des suggestions...",
-            "validation": {
-                "missingClosingParen": "L'entrée {index} n'a pas de parenthèse fermante.",
-                "missingCanonical": "L'entrée {index} doit inclure un nom d'étiquette canonique.",
-                "duplicateCanonical": "L'étiquette canonique \"{tag}\" apparaît plusieurs fois.",
-                "unknown": "Configuration d'étiquettes prioritaires invalide."
-            }
         }
     },
     "loras": {

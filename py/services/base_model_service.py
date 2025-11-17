@@ -271,7 +271,7 @@ class BaseModelService(ABC):
         if isinstance(strategy_value, str) and strategy_value.strip():
             strategy = strategy_value.strip().lower()
         else:
-            strategy = "any"
+            strategy = "same_base"
         same_base_mode = strategy == "same_base"
 
         records = None

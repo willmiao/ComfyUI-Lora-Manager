@@ -227,13 +227,14 @@
             "videoSettings": "비디오 설정",
             "layoutSettings": "레이아웃 설정",
             "folderSettings": "폴더 설정",
+            "priorityTags": "우선순위 태그",
             "downloadPathTemplates": "다운로드 경로 템플릿",
             "exampleImages": "예시 이미지",
+            "updateFlags": "업데이트 표시",
             "misc": "기타",
             "metadataArchive": "메타데이터 아카이브 데이터베이스",
             "storageLocation": "설정 위치",
-            "proxySettings": "프록시 설정",
-            "priorityTags": "우선순위 태그"
+            "proxySettings": "프록시 설정"
         },
         "storage": {
             "locationLabel": "휴대용 모드",
@@ -297,6 +298,26 @@
             "defaultEmbeddingRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 Embedding 루트 디렉토리를 설정합니다",
             "noDefault": "기본값 없음"
         },
+        "priorityTags": {
+            "title": "우선순위 태그",
+            "description": "모델 유형별 태그 우선순위를 사용자 지정합니다(예: character, concept, style(toon|toon_style)).",
+            "placeholder": "character, concept, style(toon|toon_style)",
+            "helpLinkLabel": "우선순위 태그 도움말 열기",
+            "modelTypes": {
+                "lora": "LoRA",
+                "checkpoint": "체크포인트",
+                "embedding": "임베딩"
+            },
+            "saveSuccess": "우선순위 태그가 업데이트되었습니다.",
+            "saveError": "우선순위 태그를 업데이트하지 못했습니다.",
+            "loadingSuggestions": "추천을 불러오는 중...",
+            "validation": {
+                "missingClosingParen": "{index}번째 항목에 닫는 괄호가 없습니다.",
+                "missingCanonical": "{index}번째 항목에는 정식 태그 이름이 포함되어야 합니다.",
+                "duplicateCanonical": "정식 태그 \"{tag}\"가 여러 번 나타납니다.",
+                "unknown": "잘못된 우선순위 태그 구성입니다."
+            }
+        },
         "downloadPathTemplates": {
             "title": "다운로드 경로 템플릿",
             "help": "Civitai에서 다운로드할 때 다양한 모델 유형의 폴더 구조를 구성합니다.",
@@ -344,6 +365,14 @@
             "download": "다운로드",
             "restartRequired": "재시작 필요"
         },
+        "updateFlagStrategy": {
+            "label": "업데이트 표시 전략",
+            "help": "새 릴리스가 로컬 파일과 동일한 베이스 모델을 공유할 때만 업데이트 배지를 표시할지, 또는 해당 모델에 사용 가능한 새 버전이 있으면 항상 표시할지 결정합니다.",
+            "options": {
+                "sameBase": "베이스 모델로 업데이트 일치",
+                "any": "사용 가능한 모든 업데이트 표시"
+            }
+        },
         "misc": {
             "includeTriggerWords": "LoRA 문법에 트리거 단어 포함",
             "includeTriggerWordsHelp": "LoRA 문법을 클립보드에 복사할 때 학습된 트리거 단어를 포함합니다"
@@ -389,26 +418,6 @@
             "proxyPassword": "비밀번호 (선택사항)",
             "proxyPasswordPlaceholder": "password",
             "proxyPasswordHelp": "프록시 인증에 필요한 비밀번호 (필요한 경우)"
-        },
-        "priorityTags": {
-            "title": "우선순위 태그",
-            "description": "모델 유형별 태그 우선순위를 사용자 지정합니다(예: character, concept, style(toon|toon_style)).",
-            "placeholder": "character, concept, style(toon|toon_style)",
-            "helpLinkLabel": "우선순위 태그 도움말 열기",
-            "modelTypes": {
-                "lora": "LoRA",
-                "checkpoint": "체크포인트",
-                "embedding": "임베딩"
-            },
-            "saveSuccess": "우선순위 태그가 업데이트되었습니다.",
-            "saveError": "우선순위 태그를 업데이트하지 못했습니다.",
-            "loadingSuggestions": "추천을 불러오는 중...",
-            "validation": {
-                "missingClosingParen": "{index}번째 항목에 닫는 괄호가 없습니다.",
-                "missingCanonical": "{index}번째 항목에는 정식 태그 이름이 포함되어야 합니다.",
-                "duplicateCanonical": "정식 태그 \"{tag}\"가 여러 번 나타납니다.",
-                "unknown": "잘못된 우선순위 태그 구성입니다."
-            }
         }
     },
     "loras": {

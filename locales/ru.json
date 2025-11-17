@@ -227,13 +227,14 @@
             "videoSettings": "Настройки видео",
             "layoutSettings": "Настройки макета",
             "folderSettings": "Настройки папок",
+            "priorityTags": "Приоритетные теги",
             "downloadPathTemplates": "Шаблоны путей загрузки",
             "exampleImages": "Примеры изображений",
+            "updateFlags": "Метки обновлений",
             "misc": "Разное",
             "metadataArchive": "Архив метаданных",
             "storageLocation": "Расположение настроек",
-            "proxySettings": "Настройки прокси",
-            "priorityTags": "Приоритетные теги"
+            "proxySettings": "Настройки прокси"
         },
         "storage": {
             "locationLabel": "Портативный режим",
@@ -297,6 +298,26 @@
             "defaultEmbeddingRootHelp": "Установить корневую папку embedding по умолчанию для загрузок, импорта и перемещений",
             "noDefault": "Не задано"
         },
+        "priorityTags": {
+            "title": "Приоритетные теги",
+            "description": "Настройте порядок приоритетов тегов для каждого типа моделей (например, character, concept, style(toon|toon_style)).",
+            "placeholder": "character, concept, style(toon|toon_style)",
+            "helpLinkLabel": "Открыть справку по приоритетным тегам",
+            "modelTypes": {
+                "lora": "LoRA",
+                "checkpoint": "Чекпойнт",
+                "embedding": "Эмбеддинг"
+            },
+            "saveSuccess": "Приоритетные теги обновлены.",
+            "saveError": "Не удалось обновить приоритетные теги.",
+            "loadingSuggestions": "Загрузка подсказок...",
+            "validation": {
+                "missingClosingParen": "В записи {index} отсутствует закрывающая скобка.",
+                "missingCanonical": "Запись {index} должна содержать каноническое имя тега.",
+                "duplicateCanonical": "Канонический тег \"{tag}\" встречается более одного раза.",
+                "unknown": "Недопустимая конфигурация приоритетных тегов."
+            }
+        },
         "downloadPathTemplates": {
             "title": "Шаблоны путей загрузки",
             "help": "Настройте структуру папок для разных типов моделей при загрузке с Civitai.",
@@ -344,6 +365,14 @@
             "download": "Загрузить",
             "restartRequired": "Требует перезапуска"
         },
+        "updateFlagStrategy": {
+            "label": "Стратегия меток обновлений",
+            "help": "Выберите, отображать ли значки обновления только когда новая версия имеет тот же базовый модель, что и локальные файлы, или всегда при наличии любого нового релиза для этой модели.",
+            "options": {
+                "sameBase": "Совпадение обновлений по базовой модели",
+                "any": "Отмечать любые доступные обновления"
+            }
+        },
         "misc": {
             "includeTriggerWords": "Включать триггерные слова в синтаксис LoRA",
             "includeTriggerWordsHelp": "Включать обученные триггерные слова при копировании синтаксиса LoRA в буфер обмена"
@@ -389,26 +418,6 @@
             "proxyPassword": "Пароль (необязательно)",
             "proxyPasswordPlaceholder": "пароль",
             "proxyPasswordHelp": "Пароль для аутентификации на прокси (если требуется)"
-        },
-        "priorityTags": {
-            "title": "Приоритетные теги",
-            "description": "Настройте порядок приоритетов тегов для каждого типа моделей (например, character, concept, style(toon|toon_style)).",
-            "placeholder": "character, concept, style(toon|toon_style)",
-            "helpLinkLabel": "Открыть справку по приоритетным тегам",
-            "modelTypes": {
-                "lora": "LoRA",
-                "checkpoint": "Чекпойнт",
-                "embedding": "Эмбеддинг"
-            },
-            "saveSuccess": "Приоритетные теги обновлены.",
-            "saveError": "Не удалось обновить приоритетные теги.",
-            "loadingSuggestions": "Загрузка подсказок...",
-            "validation": {
-                "missingClosingParen": "В записи {index} отсутствует закрывающая скобка.",
-                "missingCanonical": "Запись {index} должна содержать каноническое имя тега.",
-                "duplicateCanonical": "Канонический тег \"{tag}\" встречается более одного раза.",
-                "unknown": "Недопустимая конфигурация приоритетных тегов."
-            }
         }
     },
     "loras": {
