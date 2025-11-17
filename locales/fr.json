@@ -938,6 +938,18 @@
                     "viewLocalVersions": "Voir toutes les versions locales",
                     "viewLocalTooltip": "Bientôt disponible"
                 },
+                "filters": {
+                    "label": "Filtre de base",
+                    "state": {
+                        "showAll": "Toutes les versions",
+                        "showSameBase": "Même modèle de base"
+                    },
+                    "tooltip": {
+                        "showAllVersions": "Passer à l'affichage de toutes les versions",
+                        "showSameBaseVersions": "Passer à l'affichage des versions du même modèle de base"
+                    },
+                    "empty": "Aucune version ne correspond au filtre du modèle de base actuel."
+                },
                 "empty": "Aucun historique de versions n'est disponible pour ce modèle pour le moment.",
                 "error": "Échec du chargement des versions.",
                 "missingModelId": "Ce modèle ne possède pas d'identifiant de modèle Civitai.",

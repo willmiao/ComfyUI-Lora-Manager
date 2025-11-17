@@ -24,10 +24,27 @@
     color: var(--text-color);
 }
 
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
 .versions-toolbar-info p {
     margin: 0;
     font-size: 0.85rem;
     color: var(--text-muted);
+}
+
+.versions-toolbar-info-heading {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
 }
 
 .versions-toolbar-actions {
@@ -66,6 +83,41 @@
 
 .versions-toolbar-btn-secondary:hover:not(:disabled) {
     color: var(--text-color);
+}
+
+.versions-filter-toggle {
+    appearance: none;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: 0;
+    margin-bottom: 4px;
+    width: 30px;
+    height: 30px;
+    background: color-mix(in oklch, var(--card-bg) 80%, var(--bg-color));
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    position: relative;
+    cursor: pointer;
+}
+
+.versions-filter-toggle i {
+    font-size: 1rem;
+}
+
+.versions-filter-toggle:hover:not(:disabled) {
+    border-color: var(--text-color);
+    color: var(--text-color);
+    transform: translateY(-1px);
+}
+
+.versions-filter-toggle[data-filter-active="true"] {
+    border-color: color-mix(in oklch, var(--lora-accent) 65%, transparent);
+    color: var(--lora-accent);
+    background: color-mix(in oklch, var(--lora-accent) 20%, var(--card-bg) 80%);
 }
 
 .versions-toolbar-btn:disabled {

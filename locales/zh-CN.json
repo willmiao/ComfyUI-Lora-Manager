@@ -938,6 +938,18 @@
                     "viewLocalVersions": "查看所有本地版本",
                     "viewLocalTooltip": "敬请期待"
                 },
+                "filters": {
+                    "label": "基础筛选",
+                    "state": {
+                        "showAll": "全部版本",
+                        "showSameBase": "相同基模型"
+                    },
+                    "tooltip": {
+                        "showAllVersions": "切换为显示所有版本",
+                        "showSameBaseVersions": "仅显示与当前基模型匹配的版本"
+                    },
+                    "empty": "没有与当前基模型筛选匹配的版本。"
+                },
                 "empty": "该模型还没有版本历史。",
                 "error": "加载版本失败。",
                 "missingModelId": "该模型缺少 Civitai 模型 ID。",

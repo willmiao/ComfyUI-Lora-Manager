@@ -152,6 +152,81 @@ function buildBadge(label, tone) {
     return `<span class="version-badge version-badge-${tone}">${escapeHtml(label)}</span>`;
 }
 
+const DISPLAY_FILTER_MODES = Object.freeze({
+    SAME_BASE: 'same_base',
+    ANY: 'any',
+});
+
+const FILTER_LABEL_KEY = 'modals.model.versions.filters.label';
+const FILTER_STATE_KEYS = {
+    [DISPLAY_FILTER_MODES.SAME_BASE]: 'modals.model.versions.filters.state.showSameBase',
+    [DISPLAY_FILTER_MODES.ANY]: 'modals.model.versions.filters.state.showAll',
+};
+const FILTER_TOOLTIP_KEYS = {
+    [DISPLAY_FILTER_MODES.SAME_BASE]: 'modals.model.versions.filters.tooltip.showAllVersions',
+    [DISPLAY_FILTER_MODES.ANY]: 'modals.model.versions.filters.tooltip.showSameBaseVersions',
+};
+
+function normalizeBaseModelName(value) {
+    if (typeof value !== 'string') {
+        return null;
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+        return null;
+    }
+    return trimmed.toLowerCase();
+}
+
+function getToggleLabelText() {
+    return translate(FILTER_LABEL_KEY, {}, 'Base filter');
+}
+
+function getToggleStateText(mode) {
+    const key = FILTER_STATE_KEYS[mode] || FILTER_STATE_KEYS[DISPLAY_FILTER_MODES.ANY];
+    const fallback =
+        mode === DISPLAY_FILTER_MODES.SAME_BASE ? 'Same base' : 'All versions';
+    return translate(key, {}, fallback);
+}
+
+function getToggleTooltipText(mode) {
+    const key =
+        FILTER_TOOLTIP_KEYS[mode] || FILTER_TOOLTIP_KEYS[DISPLAY_FILTER_MODES.ANY];
+    const fallback =
+        mode === DISPLAY_FILTER_MODES.SAME_BASE
+            ? 'Switch to showing all versions'
+            : 'Switch to showing only versions with the current base model';
+    return translate(key, {}, fallback);
+}
+
+function getDefaultDisplayMode() {
+    const strategy = state?.global?.settings?.update_flag_strategy;
+    return strategy === DISPLAY_FILTER_MODES.SAME_BASE
+        ? DISPLAY_FILTER_MODES.SAME_BASE
+        : DISPLAY_FILTER_MODES.ANY;
+}
+
+function getCurrentVersionBaseModel(record, versionId) {
+    if (!record || typeof versionId !== 'number' || !Array.isArray(record.versions)) {
+        return {
+            normalized: null,
+            raw: null,
+        };
+    }
+    const currentVersion = record.versions.find(v => v.versionId === versionId);
+    if (!currentVersion) {
+        return {
+            normalized: null,
+            raw: null,
+        };
+    }
+    const baseModelRaw = currentVersion.baseModel ?? null;
+    return {
+        normalized: normalizeBaseModelName(baseModelRaw),
+        raw: baseModelRaw,
+    };
+}
+
 function getAutoplaySetting() {
     try {
         return Boolean(state?.global?.settings?.autoplay_on_hover);
@@ -314,7 +389,7 @@ function getLatestLibraryVersionId(record) {
     return Math.max(...record.inLibraryVersionIds);
 }
 
-function renderToolbar(record) {
+function renderToolbar(record, toolbarState = {}) {
     const ignoreText = record.shouldIgnore
         ? translate('modals.model.versions.actions.resumeModelUpdates', {}, 'Resume updates for this model')
         : translate('modals.model.versions.actions.ignoreModelUpdates', {}, 'Ignore updates for this model');
@@ -325,10 +400,23 @@ function renderToolbar(record) {
         'Track and manage every version of this model in one place.'
     );
 
+    const displayMode = toolbarState.displayMode || DISPLAY_FILTER_MODES.ANY;
+    const toggleLabel = getToggleLabelText();
+    const toggleState = getToggleStateText(displayMode);
+    const toggleTooltip = getToggleTooltipText(displayMode);
+    const filterActive = toolbarState.isFilteringActive ? 'true' : 'false';
+    const screenReaderText = [toggleLabel, toggleState].filter(Boolean).join(': ');
+
     return `
         <header class="versions-toolbar">
             <div class="versions-toolbar-info">
-                <h3>${translate('modals.model.versions.heading', {}, 'Model versions')}</h3>
+                <div class="versions-toolbar-info-heading">
+                    <h3>${translate('modals.model.versions.heading', {}, 'Model versions')}</h3>
+                    <button class="versions-filter-toggle" data-versions-action="toggle-version-display-mode" type="button" title="${escapeHtml(toggleTooltip)}" aria-label="${escapeHtml(toggleTooltip)}" data-filter-active="${filterActive}" aria-pressed="${filterActive}">
+                        <i class="fas fa-th-list" aria-hidden="true"></i>
+                        <span class="sr-only">${escapeHtml(screenReaderText)}</span>
+                    </button>
+                </div>
                 <p>${escapeHtml(infoText)}</p>
             </div>
             <div class="versions-toolbar-actions">
@@ -347,6 +435,20 @@ function renderEmptyState(container) {
     const message = translate('modals.model.versions.empty', {}, 'No version history available for this model yet.');
     container.innerHTML = `
         <div class="versions-empty">
+            <i class="fas fa-info-circle"></i>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
+function renderFilteredEmptyState(baseModelLabel) {
+    const message = translate(
+        'modals.model.versions.filters.empty',
+        { baseModel: baseModelLabel },
+        'No versions match the current base model filter.'
+    );
+    return `
+        <div class="versions-empty versions-empty-filter">
             <i class="fas fa-info-circle"></i>
             <p>${escapeHtml(message)}</p>
         </div>
@@ -391,6 +493,8 @@ export function initVersionsTab({
         record: null,
     };
 
+    let displayMode = getDefaultDisplayMode();
+
     let apiClient;
 
     function ensureClient() {
@@ -414,54 +518,91 @@ export function initVersionsTab({
         `;
     }
 
-    function render(record) {
-        controller.record = record;
-        controller.hasLoaded = true;
+function render(record) {
+    controller.record = record;
+    controller.hasLoaded = true;
 
-        if (!record || !Array.isArray(record.versions) || record.versions.length === 0) {
-            renderEmptyState(container);
-            return;
-        }
-
-        const latestLibraryVersionId = getLatestLibraryVersionId(record);
-        let dividerInserted = false;
-
-        const sortedVersions = [...record.versions].sort(
-            (a, b) => Number(b.versionId) - Number(a.versionId)
-        );
-
-        const rowsMarkup = sortedVersions
-            .map(version => {
-                const isNewer =
-                    typeof latestLibraryVersionId === 'number' &&
-                    version.versionId > latestLibraryVersionId;
-                let markup = '';
-                if (
-                    !dividerInserted &&
-                    typeof latestLibraryVersionId === 'number' &&
-                    !isNewer
-                ) {
-                    dividerInserted = true;
-                markup += '<div class="version-divider" role="presentation"></div>';
-                }
-                markup += renderRow(version, {
-                    latestLibraryVersionId,
-                    currentVersionId: normalizedCurrentVersionId,
-                    modelId: record?.modelId ?? modelId,
-                });
-                return markup;
-            })
-            .join('');
-
-        container.innerHTML = `
-            ${renderToolbar(record)}
-            <div class="versions-list">
-                ${rowsMarkup}
-            </div>
-        `;
-
-        setupMediaHoverInteractions(container);
+    if (!record || !Array.isArray(record.versions) || record.versions.length === 0) {
+        renderEmptyState(container);
+        return;
     }
+
+    const latestLibraryVersionId = getLatestLibraryVersionId(record);
+    const { normalized: currentBaseModelNormalized, raw: currentBaseModelLabel } =
+        getCurrentVersionBaseModel(record, normalizedCurrentVersionId);
+    const isFilteringActive =
+        displayMode === DISPLAY_FILTER_MODES.SAME_BASE &&
+        Boolean(currentBaseModelNormalized);
+
+    const sortedVersions = [...record.versions].sort(
+        (a, b) => Number(b.versionId) - Number(a.versionId)
+    );
+
+    const filteredVersions = sortedVersions.filter(version => {
+        if (!isFilteringActive) {
+            return true;
+        }
+        return normalizeBaseModelName(version.baseModel) === currentBaseModelNormalized;
+    });
+
+    const dividerThresholdVersionId = (() => {
+        if (!isFilteringActive) {
+            return latestLibraryVersionId;
+        }
+        const baseLocalVersionIds = record.versions
+            .filter(
+                version =>
+                    version.isInLibrary &&
+                    normalizeBaseModelName(version.baseModel) === currentBaseModelNormalized &&
+                    typeof version.versionId === 'number'
+            )
+            .map(version => version.versionId);
+        if (!baseLocalVersionIds.length) {
+            return null;
+        }
+        return Math.max(...baseLocalVersionIds);
+    })();
+
+    let dividerInserted = false;
+
+    const rowsMarkup = filteredVersions
+        .map(version => {
+            const isNewer =
+                typeof latestLibraryVersionId === 'number' &&
+                version.versionId > latestLibraryVersionId;
+            let markup = '';
+            if (
+                !dividerInserted &&
+                typeof dividerThresholdVersionId === 'number' &&
+                !(version.versionId > dividerThresholdVersionId)
+            ) {
+                dividerInserted = true;
+                markup += '<div class="version-divider" role="presentation"></div>';
+            }
+            markup += renderRow(version, {
+                latestLibraryVersionId,
+                currentVersionId: normalizedCurrentVersionId,
+                modelId: record?.modelId ?? modelId,
+            });
+            return markup;
+        })
+        .join('');
+
+    const listContent =
+        rowsMarkup || renderFilteredEmptyState(currentBaseModelLabel);
+
+    container.innerHTML = `
+        ${renderToolbar(record, {
+            displayMode,
+            isFilteringActive,
+        })}
+        <div class="versions-list">
+            ${listContent}
+        </div>
+    `;
+
+    setupMediaHoverInteractions(container);
+}
 
     async function loadVersions({ forceRefresh = false, eager = false } = {}) {
         if (controller.isLoading) {
@@ -529,6 +670,17 @@ export function initVersionsTab({
         } finally {
             button.disabled = false;
         }
+    }
+
+    function handleToggleVersionDisplayMode() {
+        displayMode =
+            displayMode === DISPLAY_FILTER_MODES.SAME_BASE
+                ? DISPLAY_FILTER_MODES.ANY
+                : DISPLAY_FILTER_MODES.SAME_BASE;
+        if (!controller.record) {
+            return;
+        }
+        render(controller.record);
     }
 
     async function handleToggleVersionIgnore(button, versionId) {
@@ -799,9 +951,17 @@ export function initVersionsTab({
         const toolbarAction = event.target.closest('[data-versions-action]');
         if (toolbarAction) {
             const action = toolbarAction.dataset.versionsAction;
-            if (action === 'toggle-model-ignore') {
-                event.preventDefault();
-                await handleToggleModelIgnore(toolbarAction);
+            switch (action) {
+                case 'toggle-model-ignore':
+                    event.preventDefault();
+                    await handleToggleModelIgnore(toolbarAction);
+                    break;
+                case 'toggle-version-display-mode':
+                    event.preventDefault();
+                    handleToggleVersionDisplayMode();
+                    break;
+                default:
+                    break;
             }
             return;
         }

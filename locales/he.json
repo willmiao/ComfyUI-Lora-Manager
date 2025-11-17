@@ -938,6 +938,18 @@
                     "viewLocalVersions": "הצג את כל הגרסאות המקומיות",
                     "viewLocalTooltip": "יגיע בקרוב"
                 },
+                "filters": {
+                    "label": "מסנן בסיס",
+                    "state": {
+                        "showAll": "כל הגרסאות",
+                        "showSameBase": "אותו מודל בסיס"
+                    },
+                    "tooltip": {
+                        "showAllVersions": "החלף להצגת כל הגרסאות",
+                        "showSameBaseVersions": "החלף להצגת גרסאות עם אותו מודל בסיס"
+                    },
+                    "empty": "אין גרסאות התואמות את המסנן של מודל הבסיס הנוכחי."
+                },
                 "empty": "אין עדיין היסטוריית גרסאות למודל זה.",
                 "error": "טעינת הגרסאות נכשלה.",
                 "missingModelId": "למודל זה אין מזהה מודל של Civitai.",

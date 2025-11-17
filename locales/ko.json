@@ -938,6 +938,18 @@
                     "viewLocalVersions": "로컬 버전 모두 보기",
                     "viewLocalTooltip": "곧 제공 예정"
                 },
+                "filters": {
+                    "label": "기본 필터",
+                    "state": {
+                        "showAll": "모든 버전",
+                        "showSameBase": "같은 베이스"
+                    },
+                    "tooltip": {
+                        "showAllVersions": "모든 버전을 표시하도록 전환",
+                        "showSameBaseVersions": "같은 베이스 모델 버전만 표시하도록 전환"
+                    },
+                    "empty": "현재 베이스 모델 필터와 일치하는 버전이 없습니다."
+                },
                 "empty": "이 모델에는 아직 버전 기록이 없습니다.",
                 "error": "버전을 불러오지 못했습니다.",
                 "missingModelId": "이 모델에는 Civitai 모델 ID가 없습니다.",

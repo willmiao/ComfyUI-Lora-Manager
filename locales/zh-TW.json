@@ -938,6 +938,18 @@
                     "viewLocalVersions": "檢視所有本地版本",
                     "viewLocalTooltip": "敬請期待"
                 },
+                "filters": {
+                    "label": "基礎篩選",
+                    "state": {
+                        "showAll": "所有版本",
+                        "showSameBase": "相同基礎模型"
+                    },
+                    "tooltip": {
+                        "showAllVersions": "切換為顯示所有版本",
+                        "showSameBaseVersions": "僅顯示與目前基礎模型相符的版本"
+                    },
+                    "empty": "沒有符合目前基礎模型篩選的版本。"
+                },
                 "empty": "此模型尚無版本歷史。",
                 "error": "載入版本失敗。",
                 "missingModelId": "此模型缺少 Civitai 模型 ID。",

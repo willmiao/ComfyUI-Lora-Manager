@@ -938,6 +938,18 @@
                     "viewLocalVersions": "ローカルの全バージョンを表示",
                     "viewLocalTooltip": "近日対応予定"
                 },
+                "filters": {
+                    "label": "ベースフィルター",
+                    "state": {
+                        "showAll": "すべてのバージョン",
+                        "showSameBase": "同じベース"
+                    },
+                    "tooltip": {
+                        "showAllVersions": "すべてのバージョンを表示する",
+                        "showSameBaseVersions": "同じベースモデルのバージョンのみ表示する"
+                    },
+                    "empty": "現在のベースモデルフィルターに一致するバージョンがありません。"
+                },
                 "empty": "このモデルにはまだバージョン履歴がありません。",
                 "error": "バージョンの読み込みに失敗しました。",
                 "missingModelId": "このモデルにはCivitaiのモデルIDがありません。",
