@@ -185,6 +185,26 @@ def test_list_models_returns_formatted_items(mock_service, mock_scanner):
     asyncio.run(scenario())
 
 
+def test_model_types_endpoint_returns_counts(mock_service, mock_scanner):
+    mock_service.model_types = [
+        {"type": "LoRa", "count": 3},
+        {"type": "Checkpoint", "count": 1},
+    ]
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.get("/api/lm/test-models/model-types?limit=1")
+            payload = await response.json()
+
+            assert response.status == 200
+            assert payload["model_types"] == mock_service.model_types[:1]
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
 def test_routes_return_service_not_ready_when_unattached():
     async def scenario():
         client = await create_test_client(None)

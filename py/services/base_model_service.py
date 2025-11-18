@@ -1,12 +1,19 @@
 from abc import ABC, abstractmethod
 import asyncio
-from typing import Dict, List, Optional, Type, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Type, TYPE_CHECKING
 import logging
 import os
 
 from ..utils.models import BaseModelMetadata
 from ..utils.metadata_manager import MetadataManager
-from .model_query import FilterCriteria, ModelCacheRepository, ModelFilterSet, SearchStrategy, SettingsProvider
+from .model_query import (
+    FilterCriteria,
+    ModelCacheRepository,
+    ModelFilterSet,
+    SearchStrategy,
+    SettingsProvider,
+    resolve_civitai_model_type,
+)
 from .settings_manager import get_settings_manager
 
 logger = logging.getLogger(__name__)
@@ -59,6 +66,7 @@ class BaseModelService(ABC):
         search: str = None,
         fuzzy_search: bool = False,
         base_models: list = None,
+        model_types: list = None,
         tags: Optional[Dict[str, str]] = None,
         search_options: dict = None,
         hash_filters: dict = None,
@@ -80,6 +88,7 @@ class BaseModelService(ABC):
                 sorted_data,
                 folder=folder,
                 base_models=base_models,
+                model_types=model_types,
                 tags=tags,
                 favorites_only=favorites_only,
                 search_options=search_options,
@@ -149,6 +158,7 @@ class BaseModelService(ABC):
         data: List[Dict],
         folder: str = None,
         base_models: list = None,
+        model_types: list = None,
         tags: Optional[Dict[str, str]] = None,
         favorites_only: bool = False,
         search_options: dict = None,
@@ -158,6 +168,7 @@ class BaseModelService(ABC):
         criteria = FilterCriteria(
             folder=folder,
             base_models=base_models,
+            model_types=model_types,
             tags=tags,
             favorites_only=favorites_only,
             search_options=normalized_options,
@@ -456,6 +467,22 @@ class BaseModelService(ABC):
     async def get_base_models(self, limit: int = 20) -> List[Dict]:
         """Get base models sorted by frequency"""
         return await self.scanner.get_base_models(limit)
+
+    async def get_model_types(self, limit: int = 20) -> List[Dict[str, Any]]:
+        """Get counts of CivitAI model types present in the cache."""
+        cache = await self.scanner.get_cached_data()
+        type_counts: Dict[str, int] = {}
+        for entry in cache.raw_data:
+            model_type = resolve_civitai_model_type(entry)
+            type_counts[model_type] = type_counts.get(model_type, 0) + 1
+
+        sorted_types = sorted(
+            [{"type": model_type, "count": count} for model_type, count in type_counts.items()],
+            key=lambda value: value["count"],
+            reverse=True,
+        )
+
+        return sorted_types[:limit]
     
     def has_hash(self, sha256: str) -> bool:
         """Check if a model with given hash exists"""

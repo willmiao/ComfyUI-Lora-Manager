@@ -152,6 +152,8 @@ class ModelListingHandler:
         fuzzy_search = request.query.get("fuzzy_search", "false").lower() == "true"
 
         base_models = request.query.getall("base_model", [])
+        model_types = list(request.query.getall("model_type", []))
+        model_types.extend(request.query.getall("civitai_model_type", []))
         # Support legacy ?tag=foo plus new ?tag_include/foo & ?tag_exclude parameters
         legacy_tags = request.query.getall("tag", [])
         if not legacy_tags:
@@ -225,6 +227,7 @@ class ModelListingHandler:
             "update_available_only": update_available_only,
             "credit_required": credit_required,
             "allow_selling_generated_content": allow_selling_generated_content,
+            "model_types": model_types,
             **self._parse_specific_params(request),
         }
 
@@ -555,6 +558,17 @@ class ModelQueryHandler:
             return web.json_response({"success": True, "base_models": base_models})
         except Exception as exc:
             self._logger.error("Error retrieving base models: %s", exc)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_model_types(self, request: web.Request) -> web.Response:
+        try:
+            limit = int(request.query.get("limit", "20"))
+            if limit < 1 or limit > 100:
+                limit = 20
+            model_types = await self._service.get_model_types(limit)
+            return web.json_response({"success": True, "model_types": model_types})
+        except Exception as exc:
+            self._logger.error("Error retrieving model types: %s", exc)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def scan_models(self, request: web.Request) -> web.Response:
@@ -1579,6 +1593,7 @@ class ModelHandlerSet:
             "verify_duplicates": self.management.verify_duplicates,
             "get_top_tags": self.query.get_top_tags,
             "get_base_models": self.query.get_base_models,
+            "get_model_types": self.query.get_model_types,
             "scan_models": self.query.scan_models,
             "get_model_roots": self.query.get_model_roots,
             "get_folders": self.query.get_folders,

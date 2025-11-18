@@ -5,7 +5,7 @@ import re
 import sqlite3
 import threading
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 from ..utils.settings_paths import get_project_root, get_settings_dir
 
@@ -47,6 +47,7 @@ class PersistentModelCache:
         "metadata_source",
         "civitai_id",
         "civitai_model_id",
+        "civitai_model_type",
         "civitai_name",
         "civitai_creator_username",
         "trained_words",
@@ -138,7 +139,8 @@ class PersistentModelCache:
             creator_username = row["civitai_creator_username"]
             civitai: Optional[Dict] = None
             civitai_has_data = any(
-                row[col] is not None for col in ("civitai_id", "civitai_model_id", "civitai_name")
+                row[col] is not None
+                for col in ("civitai_id", "civitai_model_id", "civitai_model_type", "civitai_name")
             ) or trained_words or creator_username
             if civitai_has_data:
                 civitai = {}
@@ -152,6 +154,9 @@ class PersistentModelCache:
                     civitai["trainedWords"] = trained_words
                 if creator_username:
                     civitai.setdefault("creator", {})["username"] = creator_username
+                model_type_value = row["civitai_model_type"]
+                if model_type_value:
+                    civitai.setdefault("model", {})["type"] = model_type_value
 
             license_value = row["license_flags"]
             if license_value is None:
@@ -443,6 +448,7 @@ class PersistentModelCache:
                             metadata_source TEXT,
                             civitai_id INTEGER,
                             civitai_model_id INTEGER,
+                            civitai_model_type TEXT,
                             civitai_name TEXT,
                             civitai_creator_username TEXT,
                             trained_words TEXT,
@@ -492,6 +498,7 @@ class PersistentModelCache:
         required_columns = {
             "metadata_source": "TEXT",
             "civitai_creator_username": "TEXT",
+            "civitai_model_type": "TEXT",
             "civitai_deleted": "INTEGER DEFAULT 0",
             # Persisting without explicit flags should assume CivitAI's documented defaults (0b111001 == 57).
             "license_flags": f"INTEGER DEFAULT {DEFAULT_LICENSE_FLAGS}",
@@ -528,6 +535,13 @@ class PersistentModelCache:
         creator_data = civitai.get("creator") if isinstance(civitai, dict) else None
         if isinstance(creator_data, dict):
             creator_username = creator_data.get("username") or None
+        model_type_value = None
+        if isinstance(civitai, Mapping):
+            civitai_model_info = civitai.get("model")
+            if isinstance(civitai_model_info, Mapping):
+                candidate_type = civitai_model_info.get("type")
+                if candidate_type not in (None, "", []):
+                    model_type_value = candidate_type
 
         license_flags = item.get("license_flags")
         if license_flags is None:
@@ -552,6 +566,7 @@ class PersistentModelCache:
             metadata_source,
             civitai.get("id"),
             civitai.get("modelId"),
+            model_type_value,
             civitai.get("name"),
             creator_username,
             trained_words_json,

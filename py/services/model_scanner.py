@@ -161,6 +161,12 @@ class ModelScanner:
         if trained_words:
             slim['trainedWords'] = list(trained_words) if isinstance(trained_words, list) else trained_words
 
+        civitai_model = civitai.get('model')
+        if isinstance(civitai_model, Mapping):
+            model_type_value = civitai_model.get('type')
+            if model_type_value not in (None, '', []):
+                slim['model'] = {'type': model_type_value}
+
         return slim or None
 
     def _build_cache_entry(
