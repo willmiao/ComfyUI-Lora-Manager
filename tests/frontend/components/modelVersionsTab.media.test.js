@@ -283,4 +283,70 @@ describe('ModelVersionsTab media rendering', () => {
     const toggleTextAfter = document.querySelector('.versions-filter-toggle .sr-only');
     expect(toggleTextAfter?.textContent?.trim()).toContain('All versions');
   });
+
+  it('shows a newer version badge when viewing same-base results', async () => {
+    stateMock.global.settings.update_flag_strategy = 'same_base';
+    fetchModelUpdateVersions.mockResolvedValue({
+      success: true,
+      record: {
+        shouldIgnore: false,
+        inLibraryVersionIds: [3, 1],
+        versions: [
+          {
+            versionId: 4,
+            name: 'V4',
+            baseModel: 'Base IL',
+            previewUrl: '/api/lm/previews/v4.png',
+            sizeBytes: 1024,
+            isInLibrary: false,
+            shouldIgnore: false,
+          },
+          {
+            versionId: 3,
+            name: 'V3',
+            baseModel: 'Base IL',
+            previewUrl: '/api/lm/previews/v3.png',
+            sizeBytes: 2048,
+            isInLibrary: true,
+            shouldIgnore: false,
+          },
+          {
+            versionId: 2,
+            name: 'V2',
+            baseModel: 'Base Flux',
+            previewUrl: '/api/lm/previews/v2.png',
+            sizeBytes: 4096,
+            isInLibrary: false,
+            shouldIgnore: false,
+          },
+          {
+            versionId: 1,
+            name: 'V1',
+            baseModel: 'Base Flux',
+            previewUrl: '/api/lm/previews/v1.png',
+            sizeBytes: 8192,
+            isInLibrary: true,
+            shouldIgnore: false,
+          },
+        ],
+      },
+    });
+
+    const { initVersionsTab } = await import(MODEL_VERSIONS_MODULE);
+    const controller = initVersionsTab({
+      modalId: 'model-versions-modal',
+      modelType: 'loras',
+      modelId: 333,
+      currentVersionId: 1,
+    });
+
+    await controller.load();
+
+    const rows = document.querySelectorAll('.model-version-row');
+    expect(rows.length).toBe(2);
+    const firstBadges = Array.from(rows[0].querySelectorAll('.version-badge')).map(
+      badge => badge.textContent?.trim()
+    );
+    expect(firstBadges).toContain('Newer Version');
+  });
 });

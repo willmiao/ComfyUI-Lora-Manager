@@ -567,9 +567,6 @@ function render(record) {
 
     const rowsMarkup = filteredVersions
         .map(version => {
-            const isNewer =
-                typeof latestLibraryVersionId === 'number' &&
-                version.versionId > latestLibraryVersionId;
             let markup = '';
             if (
                 !dividerInserted &&
@@ -580,7 +577,7 @@ function render(record) {
                 markup += '<div class="version-divider" role="presentation"></div>';
             }
             markup += renderRow(version, {
-                latestLibraryVersionId,
+                latestLibraryVersionId: dividerThresholdVersionId,
                 currentVersionId: normalizedCurrentVersionId,
                 modelId: record?.modelId ?? modelId,
             });
