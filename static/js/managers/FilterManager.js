@@ -2,6 +2,7 @@ import { getCurrentPageState } from '../state/index.js';
 import { showToast, updatePanelPositions } from '../utils/uiHelpers.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { removeStorageItem, setStorageItem, getStorageItem } from '../utils/storageHelpers.js';
+import { MODEL_TYPE_DISPLAY_NAMES } from '../utils/constants.js';
 
 export class FilterManager {
     constructor(options = {}) {
@@ -32,6 +33,10 @@ export class FilterManager {
         // Create base model filter tags if they exist
         if (document.getElementById('baseModelTags')) {
             this.createBaseModelTags();
+        }
+
+        if (document.getElementById('modelTypeTags')) {
+            this.createModelTypeTags();
         }
 
         // Add click handlers for license filter tags
@@ -248,12 +253,86 @@ export class FilterManager {
                     
                     // Update selections based on stored filters
                     this.updateTagSelections();
+            }
+        })
+        .catch(error => {
+            console.error(`Error fetching base models for ${this.currentPage}:`, error);
+            baseModelTagsContainer.innerHTML = '<div class="tags-error">Failed to load base models</div>';
+        });
+    }
+
+    async createModelTypeTags() {
+        const modelTypeContainer = document.getElementById('modelTypeTags');
+        if (!modelTypeContainer) return;
+
+        modelTypeContainer.innerHTML = '<div class="tags-loading">Loading model types...</div>';
+
+        try {
+            const response = await fetch(`/api/lm/${this.currentPage}/model-types?limit=20`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch model types');
+            }
+
+            const data = await response.json();
+            if (!data.success || !Array.isArray(data.model_types)) {
+                throw new Error('Invalid response format');
+            }
+
+            const normalizedTypes = data.model_types
+                .map(entry => {
+                    if (!entry || !entry.type) {
+                        return null;
+                    }
+                    const typeKey = entry.type.toString().trim().toLowerCase();
+                    if (!typeKey || !MODEL_TYPE_DISPLAY_NAMES[typeKey]) {
+                        return null;
+                    }
+                    return {
+                        type: typeKey,
+                        count: Number(entry.count) || 0,
+                    };
+                })
+                .filter(Boolean);
+
+            if (!normalizedTypes.length) {
+                modelTypeContainer.innerHTML = '<div class="no-tags">No model types available</div>';
+                return;
+            }
+
+            modelTypeContainer.innerHTML = '';
+
+            normalizedTypes.forEach(({ type, count }) => {
+                const tag = document.createElement('div');
+                tag.className = 'filter-tag model-type-tag';
+                tag.dataset.modelType = type;
+                tag.innerHTML = `${MODEL_TYPE_DISPLAY_NAMES[type]} <span class="tag-count">${count}</span>`;
+
+                if (this.filters.modelTypes.includes(type)) {
+                    tag.classList.add('active');
                 }
-            })
-            .catch(error => {
-                console.error(`Error fetching base models for ${this.currentPage}:`, error);
-                baseModelTagsContainer.innerHTML = '<div class="tags-error">Failed to load base models</div>';
+
+                tag.addEventListener('click', async () => {
+                    const isSelected = this.filters.modelTypes.includes(type);
+                    if (isSelected) {
+                        this.filters.modelTypes = this.filters.modelTypes.filter(value => value !== type);
+                        tag.classList.remove('active');
+                    } else {
+                        this.filters.modelTypes.push(type);
+                        tag.classList.add('active');
+                    }
+
+                    this.updateActiveFiltersCount();
+                    await this.applyFilters(false);
+                });
+
+                modelTypeContainer.appendChild(tag);
             });
+
+            this.updateModelTypeSelections();
+        } catch (error) {
+            console.error('Error loading model types:', error);
+            modelTypeContainer.innerHTML = '<div class="tags-error">Failed to load model types</div>';
+        }
     }
     
     toggleFilterPanel() {       
@@ -309,12 +388,26 @@ export class FilterManager {
         
         // Update license tags
         this.updateLicenseSelections();
+        this.updateModelTypeSelections();
+    }
+
+    updateModelTypeSelections() {
+        const typeTags = document.querySelectorAll('.model-type-tag');
+        typeTags.forEach(tag => {
+            const modelType = tag.dataset.modelType;
+            if (this.filters.modelTypes.includes(modelType)) {
+                tag.classList.add('active');
+            } else {
+                tag.classList.remove('active');
+            }
+        });
     }
     
     updateActiveFiltersCount() {
         const tagFilterCount = this.filters.tags ? Object.keys(this.filters.tags).length : 0;
         const licenseFilterCount = this.filters.license ? Object.keys(this.filters.license).length : 0;
-        const totalActiveFilters = this.filters.baseModel.length + tagFilterCount + licenseFilterCount;
+        const modelTypeFilterCount = this.filters.modelTypes.length;
+        const totalActiveFilters = this.filters.baseModel.length + tagFilterCount + licenseFilterCount + modelTypeFilterCount;
         
         if (this.activeFiltersCount) {
             if (totalActiveFilters > 0) {
@@ -377,7 +470,8 @@ export class FilterManager {
             ...this.filters,
             baseModel: [],
             tags: {},
-            license: {}
+            license: {},
+            modelTypes: []
         });
         
         // Update state
@@ -437,7 +531,13 @@ export class FilterManager {
     hasActiveFilters() {
         const tagCount = this.filters.tags ? Object.keys(this.filters.tags).length : 0;
         const licenseCount = this.filters.license ? Object.keys(this.filters.license).length : 0;
-        return this.filters.baseModel.length > 0 || tagCount > 0 || licenseCount > 0;
+        const modelTypeCount = this.filters.modelTypes.length;
+        return (
+            this.filters.baseModel.length > 0 ||
+            tagCount > 0 ||
+            licenseCount > 0 ||
+            modelTypeCount > 0
+        );
     }
 
     initializeFilters(existingFilters = {}) {
@@ -446,7 +546,8 @@ export class FilterManager {
             ...source,
             baseModel: Array.isArray(source.baseModel) ? [...source.baseModel] : [],
             tags: this.normalizeTagFilters(source.tags),
-            license: this.normalizeLicenseFilters(source.license)
+            license: this.normalizeLicenseFilters(source.license),
+            modelTypes: this.normalizeModelTypeFilters(source.modelTypes)
         };
     }
 
@@ -496,12 +597,35 @@ export class FilterManager {
         return normalized;
     }
 
+    normalizeModelTypeFilters(modelTypes) {
+        if (!Array.isArray(modelTypes)) {
+            return [];
+        }
+
+        const seen = new Set();
+        return modelTypes.reduce((acc, type) => {
+            if (typeof type !== 'string') {
+                return acc;
+            }
+
+            const normalized = type.trim().toLowerCase();
+            if (!normalized || seen.has(normalized)) {
+                return acc;
+            }
+
+            seen.add(normalized);
+            acc.push(normalized);
+            return acc;
+        }, []);
+    }
+
     cloneFilters() {
         return {
             ...this.filters,
             baseModel: [...(this.filters.baseModel || [])],
             tags: { ...(this.filters.tags || {}) },
-            license: { ...(this.filters.license || {}) }
+            license: { ...(this.filters.license || {}) },
+            modelTypes: [...(this.filters.modelTypes || [])]
         };
     }
 

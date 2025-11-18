@@ -195,6 +195,7 @@
             "title": "סנן מודלים",
             "baseModel": "מודל בסיס",
             "modelTags": "תגיות (20 המובילות)",
+            "modelTypes": "Model Types",
             "license": "רישיון",
             "noCreditRequired": "ללא קרדיט נדרש",
             "allowSellingGeneratedContent": "אפשר מכירה",

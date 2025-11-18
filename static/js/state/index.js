@@ -79,7 +79,8 @@ export const state = {
         filters: {
             baseModel: [],
             tags: {},
-            license: {}
+            license: {},
+            modelTypes: []
         },
             bulkMode: false,
             selectedLoras: new Set(),
@@ -105,6 +106,7 @@ export const state = {
             baseModel: [],
             tags: {},
             license: {},
+            modelTypes: [],
             search: ''
         },
             pageSize: 20,
@@ -131,7 +133,8 @@ export const state = {
         filters: {
             baseModel: [],
             tags: {},
-            license: {}
+            license: {},
+            modelTypes: []
         },
             modelType: 'checkpoint', // 'checkpoint' or 'diffusion_model'
             bulkMode: false,
@@ -161,7 +164,8 @@ export const state = {
         filters: {
             baseModel: [],
             tags: {},
-            license: {}
+            license: {},
+            modelTypes: []
         },
             bulkMode: false,
             selectedModels: new Set(),

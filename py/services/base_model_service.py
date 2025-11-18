@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Type, TYPE_CHECKING
 import logging
 import os
 
+from ..utils.constants import VALID_LORA_TYPES
 from ..utils.models import BaseModelMetadata
 from ..utils.metadata_manager import MetadataManager
 from .model_query import (
@@ -12,6 +13,7 @@ from .model_query import (
     ModelFilterSet,
     SearchStrategy,
     SettingsProvider,
+    normalize_civitai_model_type,
     resolve_civitai_model_type,
 )
 from .settings_manager import get_settings_manager
@@ -469,12 +471,15 @@ class BaseModelService(ABC):
         return await self.scanner.get_base_models(limit)
 
     async def get_model_types(self, limit: int = 20) -> List[Dict[str, Any]]:
-        """Get counts of CivitAI model types present in the cache."""
+        """Get counts of normalized CivitAI model types present in the cache."""
         cache = await self.scanner.get_cached_data()
+
         type_counts: Dict[str, int] = {}
         for entry in cache.raw_data:
-            model_type = resolve_civitai_model_type(entry)
-            type_counts[model_type] = type_counts.get(model_type, 0) + 1
+            normalized_type = normalize_civitai_model_type(resolve_civitai_model_type(entry))
+            if not normalized_type or normalized_type not in VALID_LORA_TYPES:
+                continue
+            type_counts[normalized_type] = type_counts.get(normalized_type, 0) + 1
 
         sorted_types = sorted(
             [{"type": model_type, "count": count} for model_type, count in type_counts.items()],

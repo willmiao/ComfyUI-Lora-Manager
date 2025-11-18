@@ -195,6 +195,7 @@
             "title": "Filtrar modelos",
             "baseModel": "Modelo base",
             "modelTags": "Etiquetas (Top 20)",
+            "modelTypes": "Model Types",
             "license": "Licencia",
             "noCreditRequired": "Sin crédito requerido",
             "allowSellingGeneratedContent": "Venta permitida",

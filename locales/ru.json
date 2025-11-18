@@ -195,6 +195,7 @@
             "title": "Фильтр моделей",
             "baseModel": "Базовая модель",
             "modelTags": "Теги (Топ 20)",
+            "modelTypes": "Model Types",
             "license": "Лицензия",
             "noCreditRequired": "Без указания авторства",
             "allowSellingGeneratedContent": "Продажа разрешена",

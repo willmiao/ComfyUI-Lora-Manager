@@ -834,7 +834,7 @@ async def test_get_model_types_counts_and_limits():
 
     types = await service.get_model_types(limit=1)
 
-    assert types == [{"type": "LoRa", "count": 2}]
+    assert types == [{"type": "lora", "count": 3}]
 
 
 @pytest.mark.asyncio
