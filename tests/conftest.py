@@ -212,6 +212,7 @@ class MockModelService:
         self.model_type = "test-model"
         self.paginated_items: List[Dict[str, Any]] = []
         self.formatted: List[Dict[str, Any]] = []
+        self.model_types: List[Dict[str, Any]] = []
 
     async def get_paginated_data(self, **params: Any) -> Dict[str, Any]:
         items = [dict(item) for item in self.paginated_items]
@@ -257,6 +258,9 @@ class MockModelService:
     async def get_relative_paths(self, *_args, **_kwargs):  # pragma: no cover
         return []
 
+    async def get_model_types(self, limit: int = 20):
+        return list(self.model_types)[:limit]
+
     def has_hash(self, *_args, **_kwargs):  # pragma: no cover
         return False
 
@@ -282,5 +286,4 @@ def mock_scanner(mock_cache: MockCache, mock_hash_index: MockHashIndex) -> MockS
 @pytest.fixture
 def mock_service(mock_scanner: MockScanner) -> MockModelService:
     return MockModelService(scanner=mock_scanner)
-
 

@@ -848,6 +848,12 @@ export class BaseModelApiClient {
                     }
                 }
             }
+            
+            if (pageState.filters.modelTypes && pageState.filters.modelTypes.length > 0) {
+                pageState.filters.modelTypes.forEach((type) => {
+                    params.append('model_type', type);
+                });
+            }
         }
 
         this._addModelSpecificParams(params, pageState);

@@ -55,6 +55,12 @@ export const BASE_MODELS = {
     UNKNOWN: "Other"
 };
 
+export const MODEL_TYPE_DISPLAY_NAMES = {
+    lora: "LoRA",
+    locon: "LyCORIS",
+    dora: "DoRA",
+};
+
 export const BASE_MODEL_ABBREVIATIONS = {
     // Stable Diffusion 1.x models
     [BASE_MODELS.SD_1_4]: 'SD1',

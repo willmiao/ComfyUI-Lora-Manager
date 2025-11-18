@@ -195,6 +195,7 @@
             "title": "Modelle filtern",
             "baseModel": "Basis-Modell",
             "modelTags": "Tags (Top 20)",
+            "modelTypes": "Model Types",
             "license": "Lizenz",
             "noCreditRequired": "Kein Credit erforderlich",
             "allowSellingGeneratedContent": "Verkauf erlaubt",

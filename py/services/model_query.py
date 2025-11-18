@@ -1,10 +1,47 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Protocol, Callable
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Protocol, Callable
 
 from ..utils.constants import NSFW_LEVELS
 from ..utils.utils import fuzzy_match as default_fuzzy_match
+
+
+DEFAULT_CIVITAI_MODEL_TYPE = "LORA"
+
+
+def _coerce_to_str(value: Any) -> Optional[str]:
+    if value is None:
+        return None
+
+    candidate = str(value).strip()
+    return candidate if candidate else None
+
+
+def normalize_civitai_model_type(value: Any) -> Optional[str]:
+    """Return a lowercase string suitable for comparisons."""
+    candidate = _coerce_to_str(value)
+    return candidate.lower() if candidate else None
+
+
+def resolve_civitai_model_type(entry: Mapping[str, Any]) -> str:
+    """Extract the model type from CivitAI metadata, defaulting to LORA."""
+    if not isinstance(entry, Mapping):
+        return DEFAULT_CIVITAI_MODEL_TYPE
+
+    civitai = entry.get("civitai")
+    if isinstance(civitai, Mapping):
+        civitai_model = civitai.get("model")
+        if isinstance(civitai_model, Mapping):
+            model_type = _coerce_to_str(civitai_model.get("type"))
+            if model_type:
+                return model_type
+
+    model_type = _coerce_to_str(entry.get("model_type"))
+    if model_type:
+        return model_type
+
+    return DEFAULT_CIVITAI_MODEL_TYPE
 
 
 class SettingsProvider(Protocol):
@@ -31,6 +68,7 @@ class FilterCriteria:
     tags: Optional[Dict[str, str]] = None
     favorites_only: bool = False
     search_options: Optional[Dict[str, Any]] = None
+    model_types: Optional[Sequence[str]] = None
 
 
 class ModelCacheRepository:
@@ -132,6 +170,19 @@ class ModelFilterSet:
             items = [
                 item for item in items
                 if not any(tag in exclude_tags for tag in (item.get("tags", []) or []))
+            ]
+
+        model_types = criteria.model_types or []
+        normalized_model_types = {
+            model_type for model_type in (
+                normalize_civitai_model_type(value) for value in model_types
+            )
+            if model_type
+        }
+        if normalized_model_types:
+            items = [
+                item for item in items
+                if normalize_civitai_model_type(resolve_civitai_model_type(item)) in normalized_model_types
             ]
 
         return items

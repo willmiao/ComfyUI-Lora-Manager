@@ -195,6 +195,7 @@
             "title": "モデルをフィルタ",
             "baseModel": "ベースモデル",
             "modelTags": "タグ（上位20）",
+            "modelTypes": "Model Types",
             "license": "ライセンス",
             "noCreditRequired": "クレジット不要",
             "allowSellingGeneratedContent": "販売許可",

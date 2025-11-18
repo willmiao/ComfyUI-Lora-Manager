@@ -39,6 +39,7 @@ COMMON_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("GET", "/api/lm/{prefix}/auto-organize-progress", "get_auto_organize_progress"),
     RouteDefinition("GET", "/api/lm/{prefix}/top-tags", "get_top_tags"),
     RouteDefinition("GET", "/api/lm/{prefix}/base-models", "get_base_models"),
+    RouteDefinition("GET", "/api/lm/{prefix}/model-types", "get_model_types"),
     RouteDefinition("GET", "/api/lm/{prefix}/scan", "scan_models"),
     RouteDefinition("GET", "/api/lm/{prefix}/roots", "get_model_roots"),
     RouteDefinition("GET", "/api/lm/{prefix}/folders", "get_folders"),

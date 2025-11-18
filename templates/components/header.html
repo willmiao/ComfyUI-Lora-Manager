@@ -139,6 +139,14 @@
       <div class="tags-loading">{{ t('common.status.loading') }}</div>
     </div>
   </div>
+  {% if current_page == 'loras' %}
+  <div class="filter-section">
+    <h4>{{ t('header.filter.modelTypes') }}</h4>
+    <div class="filter-tags" id="modelTypeTags">
+      <div class="tags-loading">{{ t('common.status.loading') }}</div>
+    </div>
+  </div>
+  {% endif %}
   <div class="filter-section">
     <h4>{{ t('header.filter.license') }}</h4>
     <div class="filter-tags">
@@ -156,4 +164,3 @@
     </button>
   </div>
 </div>
-

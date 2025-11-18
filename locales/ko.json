@@ -195,6 +195,7 @@
             "title": "모델 필터",
             "baseModel": "베이스 모델",
             "modelTags": "태그 (상위 20개)",
+            "modelTypes": "Model Types",
             "license": "라이선스",
             "noCreditRequired": "크레딧 표기 없음",
             "allowSellingGeneratedContent": "판매 허용",
