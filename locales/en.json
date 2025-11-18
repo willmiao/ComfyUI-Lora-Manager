@@ -230,9 +230,15 @@
             "priorityTags": "Priority Tags",
             "downloadPathTemplates": "Download Path Templates",
             "exampleImages": "Example Images",
+            "updateFlags": "Update Flags",
             "misc": "Misc.",
             "metadataArchive": "Metadata Archive Database",
+            "storageLocation": "Settings Location",
             "proxySettings": "Proxy Settings"
+        },
+        "storage": {
+            "locationLabel": "Portable mode",
+            "locationHelp": "Enable to keep settings.json inside the repository; disable to store it in your user config directory."
         },
         "contentFiltering": {
             "blurNsfwContent": "Blur NSFW Content",
@@ -358,6 +364,14 @@
             "optimizeImagesHelp": "Optimize example images to reduce file size and improve loading speed (metadata will be preserved)",
             "download": "Download",
             "restartRequired": "Requires restart"
+        },
+        "updateFlagStrategy": {
+            "label": "Update Flag Strategy",
+            "help": "Decide whether update badges should only appear when a new release shares the same base model as your local files or whenever any newer version exists for that model.",
+            "options": {
+                "sameBase": "Match updates by base model",
+                "any": "Flag any available update"
+            }
         },
         "misc": {
             "includeTriggerWords": "Include Trigger Words in LoRA Syntax",
@@ -899,6 +913,10 @@
                 "versions": "Versions"
             },
             "license": {
+                "noImageSell": "No selling generated content",
+                "noRentCivit": "No Civitai generation",
+                "noRent": "No generation services",
+                "noSell": "No selling models",
                 "creditRequired": "Creator credit required",
                 "noDerivatives": "No sharing merges",
                 "noReLicense": "Same permissions required",
@@ -940,6 +958,18 @@
                     "ignoreModelUpdates": "Ignore updates for this model",
                     "viewLocalVersions": "View all local versions",
                     "viewLocalTooltip": "Coming soon"
+                },
+                "filters": {
+                    "label": "Base filter",
+                    "state": {
+                        "showAll": "All versions",
+                        "showSameBase": "Same base"
+                    },
+                    "tooltip": {
+                        "showAllVersions": "Switch to showing all versions",
+                        "showSameBaseVersions": "Switch to showing only versions that match the current base model"
+                    },
+                    "empty": "No versions match the current base model filter."
                 },
                 "empty": "No version history available for this model yet.",
                 "error": "Failed to load versions.",

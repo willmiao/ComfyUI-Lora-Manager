@@ -2,14 +2,17 @@ import asyncio
 import copy
 import json
 import os
+import shutil
 import logging
 from pathlib import Path
 from datetime import datetime, timezone
 from threading import Lock
 from typing import Any, Awaitable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
+from platformdirs import user_config_dir
+
 from ..utils.constants import DEFAULT_HASH_CHUNK_SIZE_MB, DEFAULT_PRIORITY_TAG_CONFIG
-from ..utils.settings_paths import ensure_settings_file
+from ..utils.settings_paths import APP_NAME, ensure_settings_file, get_legacy_settings_path
 from ..utils.tag_priorities import (
     PriorityTagEntry,
     collect_canonical_tags,
@@ -58,12 +61,14 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "priority_tags": DEFAULT_PRIORITY_TAG_CONFIG.copy(),
     "model_name_display": "model_name",
     "model_card_footer_action": "example_images",
+    "update_flag_strategy": "same_base",
 }
 
 
 class SettingsManager:
     def __init__(self):
         self.settings_file = ensure_settings_file(logger)
+        self._pending_portable_switch: Optional[Dict[str, str]] = None
         self._standalone_mode = self._detect_standalone_mode()
         self._startup_messages: List[Dict[str, Any]] = []
         self._needs_initial_save = False
@@ -783,6 +788,10 @@ class SettingsManager:
     def set(self, key: str, value: Any) -> None:
         """Set setting value and save"""
         self.settings[key] = value
+        portable_switch_pending = False
+        if key == "use_portable_settings" and isinstance(value, bool):
+            portable_switch_pending = True
+            self._prepare_portable_switch(value)
         if key == 'folder_paths' and isinstance(value, Mapping):
             self._update_active_library_entry(folder_paths=value)  # type: ignore[arg-type]
         elif key == 'default_lora_root':
@@ -794,6 +803,8 @@ class SettingsManager:
         elif key == 'model_name_display':
             self._notify_model_name_display_change(value)
         self._save_settings()
+        if portable_switch_pending:
+            self._finalize_portable_switch()
 
     def delete(self, key: str) -> None:
         """Delete setting key and save"""
@@ -801,6 +812,113 @@ class SettingsManager:
             del self.settings[key]
             self._save_settings()
             logger.info(f"Deleted setting: {key}")
+
+    def _prepare_portable_switch(self, use_portable: bool) -> None:
+        """Prepare switching the settings storage location."""
+
+        legacy_path = get_legacy_settings_path()
+        user_dir = self._get_user_config_directory()
+        user_settings_path = os.path.join(user_dir, "settings.json")
+
+        target_path = legacy_path if use_portable else user_settings_path
+        other_path = user_settings_path if use_portable else legacy_path
+        target_dir = os.path.dirname(target_path)
+        os.makedirs(target_dir, exist_ok=True)
+
+        previous_path = self.settings_file or target_path
+        previous_dir = os.path.dirname(previous_path) or target_dir
+
+        if os.path.abspath(previous_path) != os.path.abspath(target_path):
+            self._copy_model_cache_directory(previous_dir, target_dir)
+
+        self._pending_portable_switch = {"other_path": other_path}
+        self.settings_file = target_path
+
+    def _finalize_portable_switch(self) -> None:
+        """Mirror the latest settings file to the secondary location."""
+
+        info = self._pending_portable_switch
+        if not info:
+            return
+
+        other_path = info.get("other_path")
+        current_path = self.settings_file
+
+        if not other_path or not current_path:
+            self._pending_portable_switch = None
+            return
+
+        if os.path.abspath(other_path) == os.path.abspath(current_path):
+            self._pending_portable_switch = None
+            return
+
+        other_dir = os.path.dirname(other_path) or os.path.dirname(current_path)
+        if other_dir:
+            os.makedirs(other_dir, exist_ok=True)
+
+        try:
+            shutil.copy2(current_path, other_path)
+        except Exception as exc:
+            logger.warning("Failed to mirror settings.json to %s: %s", other_path, exc)
+        finally:
+            self._pending_portable_switch = None
+
+    def _copy_model_cache_directory(self, source_dir: str, target_dir: str) -> None:
+        """Copy model_cache artifacts when switching storage locations."""
+
+        if not source_dir or not target_dir:
+            return
+
+        source_cache_dir = os.path.join(source_dir, "model_cache")
+        target_cache_dir = os.path.join(target_dir, "model_cache")
+        if (
+            os.path.isdir(source_cache_dir)
+            and os.path.abspath(source_cache_dir) != os.path.abspath(target_cache_dir)
+        ):
+            try:
+                shutil.copytree(source_cache_dir, target_cache_dir, dirs_exist_ok=True)
+            except Exception as exc:
+                logger.warning(
+                    "Failed to copy model_cache directory from %s to %s: %s",
+                    source_cache_dir,
+                    target_cache_dir,
+                    exc,
+                )
+
+        source_cache_file = os.path.join(source_dir, "model_cache.sqlite")
+        target_cache_file = os.path.join(target_dir, "model_cache.sqlite")
+        if (
+            os.path.isfile(source_cache_file)
+            and os.path.abspath(source_cache_file) != os.path.abspath(target_cache_file)
+        ):
+            try:
+                shutil.copy2(source_cache_file, target_cache_file)
+            except Exception as exc:
+                logger.warning(
+                    "Failed to copy model_cache.sqlite from %s to %s: %s",
+                    source_cache_file,
+                    target_cache_file,
+                    exc,
+                )
+
+    def _get_user_config_directory(self) -> str:
+        """Return the user configuration directory, falling back to ~/.config."""
+
+        try:
+            config_dir = user_config_dir(APP_NAME, appauthor=False) or ""
+        except Exception as exc:  # pragma: no cover - defensive fallback
+            logger.warning("Failed to determine user config directory: %s", exc)
+            config_dir = ""
+
+        if not config_dir:
+            config_dir = os.path.join(os.path.expanduser("~"), f".config/{APP_NAME}")
+
+        try:
+            os.makedirs(config_dir, exist_ok=True)
+        except Exception as exc:
+            logger.warning("Failed to create user config directory %s: %s", config_dir, exc)
+
+        return config_dir
 
     def _notify_model_name_display_change(self, value: Any) -> None:
         """Trigger cache resorting when the model name display preference updates."""

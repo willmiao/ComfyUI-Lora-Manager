@@ -709,6 +709,7 @@ NODE_EXTRACTORS = {
     "LoaderGGUFAdvanced": GGUFLoaderExtractor,  # calcuis gguf
     "GGUFLoaderKJ": KJNodesModelLoaderExtractor,  # KJNodes
     "DiffusionModelLoaderKJ": KJNodesModelLoaderExtractor,  # KJNodes
+    "CheckpointLoaderKJ": CheckpointLoaderExtractor,  # KJNodes
     "UNETLoader": UNETLoaderExtractor,          # Updated to use dedicated extractor
     "UnetLoaderGGUF": UNETLoaderExtractor,  # Updated to use dedicated extractor
     "LoraLoader": LoraLoaderExtractor,

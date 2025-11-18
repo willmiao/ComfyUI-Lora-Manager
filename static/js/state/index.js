@@ -5,6 +5,7 @@ import { DEFAULT_PATH_TEMPLATES, DEFAULT_PRIORITY_TAG_CONFIG } from '../utils/co
 
 const DEFAULT_SETTINGS_BASE = Object.freeze({
     civitai_api_key: '',
+    use_portable_settings: false,
     language: 'en',
     show_only_sfw: false,
     enable_metadata_archive_db: false,
@@ -32,6 +33,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     include_trigger_words: false,
     compact_mode: false,
     priority_tags: { ...DEFAULT_PRIORITY_TAG_CONFIG },
+    update_flag_strategy: 'same_base',
 });
 
 export function createDefaultSettings() {

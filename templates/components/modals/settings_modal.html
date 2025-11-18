@@ -39,6 +39,27 @@
             </div>
             
             <div class="settings-section">
+                <h3>{{ t('settings.sections.storageLocation') }}</h3>
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="usePortableSettings">{{ t('settings.storage.locationLabel') }}</label>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="usePortableSettings" {% if settings.get('use_portable_settings', False) %}checked{% endif %}
+                                       onchange="settingsManager.saveToggleSetting('usePortableSettings', 'use_portable_settings')">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.storage.locationHelp') }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
                 <h3>{{ t('settings.sections.contentFiltering') }}</h3>
                 
                 <div class="setting-item">
@@ -295,6 +316,27 @@
                     </div>
                     <div class="input-help">
                         {{ t('settings.folderSettings.defaultEmbeddingRootHelp') }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Update Flag Strategy Section -->
+            <div class="settings-section">
+                <h3>{{ t('settings.sections.updateFlags') }}</h3>
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="updateFlagStrategy">{{ t('settings.updateFlagStrategy.label') }}</label>
+                        </div>
+                        <div class="setting-control select-control">
+                            <select id="updateFlagStrategy" onchange="settingsManager.saveSelectSetting('updateFlagStrategy', 'update_flag_strategy')">
+                                <option value="same_base">{{ t('settings.updateFlagStrategy.options.sameBase') }}</option>
+                                <option value="any">{{ t('settings.updateFlagStrategy.options.any') }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.updateFlagStrategy.help') }}
                     </div>
                 </div>
             </div>

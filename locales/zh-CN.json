@@ -227,12 +227,18 @@
             "videoSettings": "视频设置",
             "layoutSettings": "布局设置",
             "folderSettings": "文件夹设置",
+            "priorityTags": "优先标签",
             "downloadPathTemplates": "下载路径模板",
             "exampleImages": "示例图片",
+            "updateFlags": "更新标记",
             "misc": "其他",
             "metadataArchive": "元数据归档数据库",
-            "proxySettings": "代理设置",
-            "priorityTags": "优先标签"
+            "storageLocation": "设置位置",
+            "proxySettings": "代理设置"
+        },
+        "storage": {
+            "locationLabel": "便携模式",
+            "locationHelp": "开启可将 settings.json 保存在仓库中；关闭则保存在用户配置目录。"
         },
         "contentFiltering": {
             "blurNsfwContent": "模糊 NSFW 内容",
@@ -292,6 +298,26 @@
             "defaultEmbeddingRootHelp": "设置下载、导入和移动时的默认 Embedding 根目录",
             "noDefault": "无默认"
         },
+        "priorityTags": {
+            "title": "优先标签",
+            "description": "为每种模型类型自定义标签优先级顺序 (例如: character, concept, style(toon|toon_style))",
+            "placeholder": "character, concept, style(toon|toon_style)",
+            "helpLinkLabel": "打开优先标签帮助",
+            "modelTypes": {
+                "lora": "LoRA",
+                "checkpoint": "Checkpoint",
+                "embedding": "Embedding"
+            },
+            "saveSuccess": "优先标签已更新。",
+            "saveError": "优先标签更新失败。",
+            "loadingSuggestions": "正在加载建议...",
+            "validation": {
+                "missingClosingParen": "条目 {index} 缺少右括号。",
+                "missingCanonical": "条目 {index} 必须包含规范标签名称。",
+                "duplicateCanonical": "规范标签 \"{tag}\" 出现多次。",
+                "unknown": "优先标签配置无效。"
+            }
+        },
         "downloadPathTemplates": {
             "title": "下载路径模板",
             "help": "配置从 Civitai 下载不同模型类型的文件夹结构。",
@@ -339,6 +365,14 @@
             "download": "下载",
             "restartRequired": "需要重启"
         },
+        "updateFlagStrategy": {
+            "label": "更新标记策略",
+            "help": "决定更新徽章是否仅在新版本与本地文件共享相同基础模型时显示，或只要该模型有任何更新版本就显示。",
+            "options": {
+                "sameBase": "按基础模型匹配更新",
+                "any": "显示任何可用更新"
+            }
+        },
         "misc": {
             "includeTriggerWords": "复制 LoRA 语法时包含触发词",
             "includeTriggerWordsHelp": "复制 LoRA 语法到剪贴板时包含训练触发词"
@@ -384,26 +418,6 @@
             "proxyPassword": "密码 (可选)",
             "proxyPasswordPlaceholder": "密码",
             "proxyPasswordHelp": "代理认证的密码 (如果需要)"
-        },
-        "priorityTags": {
-            "title": "优先标签",
-            "description": "为每种模型类型自定义标签优先级顺序 (例如: character, concept, style(toon|toon_style))",
-            "placeholder": "character, concept, style(toon|toon_style)",
-            "helpLinkLabel": "打开优先标签帮助",
-            "modelTypes": {
-                "lora": "LoRA",
-                "checkpoint": "Checkpoint",
-                "embedding": "Embedding"
-            },
-            "saveSuccess": "优先标签已更新。",
-            "saveError": "优先标签更新失败。",
-            "loadingSuggestions": "正在加载建议...",
-            "validation": {
-                "missingClosingParen": "条目 {index} 缺少右括号。",
-                "missingCanonical": "条目 {index} 必须包含规范标签名称。",
-                "duplicateCanonical": "规范标签 \"{tag}\" 出现多次。",
-                "unknown": "优先标签配置无效。"
-            }
         }
     },
     "loras": {
@@ -899,6 +913,10 @@
                 "versions": "版本"
             },
             "license": {
+                "noImageSell": "No selling generated content",
+                "noRentCivit": "No Civitai generation",
+                "noRent": "No generation services",
+                "noSell": "No selling models",
                 "creditRequired": "需要创作者署名",
                 "noDerivatives": "禁止分享合并作品",
                 "noReLicense": "需要相同权限",
@@ -940,6 +958,18 @@
                     "ignoreModelUpdates": "忽略该模型的更新",
                     "viewLocalVersions": "查看所有本地版本",
                     "viewLocalTooltip": "敬请期待"
+                },
+                "filters": {
+                    "label": "基础筛选",
+                    "state": {
+                        "showAll": "全部版本",
+                        "showSameBase": "相同基模型"
+                    },
+                    "tooltip": {
+                        "showAllVersions": "切换为显示所有版本",
+                        "showSameBaseVersions": "仅显示与当前基模型匹配的版本"
+                    },
+                    "empty": "没有与当前基模型筛选匹配的版本。"
                 },
                 "empty": "该模型还没有版本历史。",
                 "error": "加载版本失败。",

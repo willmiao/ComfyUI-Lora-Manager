@@ -371,6 +371,11 @@ export class SettingsManager {
             showOnlySFWCheckbox.checked = state.global.settings.show_only_sfw ?? false;
         }
 
+        const usePortableCheckbox = document.getElementById('usePortableSettings');
+        if (usePortableCheckbox) {
+            usePortableCheckbox.checked = !!state.global.settings.use_portable_settings;
+        }
+
         // Set video autoplay on hover setting
         const autoplayOnHoverCheckbox = document.getElementById('autoplayOnHover');
         if (autoplayOnHoverCheckbox) {
@@ -405,6 +410,11 @@ export class SettingsManager {
         const modelNameDisplaySelect = document.getElementById('modelNameDisplay');
         if (modelNameDisplaySelect) {
             modelNameDisplaySelect.value = state.global.settings.model_name_display || 'model_name';
+        }
+
+        const updateFlagStrategySelect = document.getElementById('updateFlagStrategy');
+        if (updateFlagStrategySelect) {
+            updateFlagStrategySelect.value = state.global.settings.update_flag_strategy || 'same_base';
         }
 
         // Set optimize example images setting
@@ -1329,11 +1339,7 @@ export class SettingsManager {
             
             showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
 
-            if (settingKey === 'model_name_display') {
-                this.reloadContent();
-            }
-
-            if (settingKey === 'model_card_footer_action') {
+            if (settingKey === 'model_name_display' || settingKey === 'model_card_footer_action' || settingKey === 'update_flag_strategy') {
                 this.reloadContent();
             }
         } catch (error) {

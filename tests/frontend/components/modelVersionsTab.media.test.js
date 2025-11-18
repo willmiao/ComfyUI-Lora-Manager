@@ -28,7 +28,14 @@ vi.mock(UI_HELPERS_MODULE, () => ({
   showToast: vi.fn(),
 }));
 
-const stateMock = { global: { settings: { autoplay_on_hover: false } } };
+const stateMock = {
+  global: {
+    settings: {
+      autoplay_on_hover: false,
+      update_flag_strategy: 'any',
+    },
+  },
+};
 vi.mock(STATE_MODULE, () => ({
   state: stateMock,
 }));
@@ -59,6 +66,7 @@ describe('ModelVersionsTab media rendering', () => {
       </div>
     `;
     stateMock.global.settings.autoplay_on_hover = false;
+    stateMock.global.settings.update_flag_strategy = 'any';
     ({ getModelApiClient } = await import(API_FACTORY_MODULE));
     fetchModelUpdateVersions = vi.fn();
     getModelApiClient.mockReturnValue({
@@ -145,5 +153,200 @@ describe('ModelVersionsTab media rendering', () => {
     expect(imageElement).toBeTruthy();
     expect(imageElement?.getAttribute('src')).toBe(previewUrl);
     expect(document.querySelector('.version-media video')).toBeFalsy();
+  });
+
+  it('shows a stable label with a short state indicator', async () => {
+    stateMock.global.settings.update_flag_strategy = 'any';
+    fetchModelUpdateVersions.mockResolvedValue({
+      success: true,
+      record: {
+        shouldIgnore: false,
+        inLibraryVersionIds: [5],
+        versions: [
+          {
+            versionId: 5,
+            name: 'base',
+            baseModel: 'SDXL',
+            previewUrl: '/api/lm/previews/v-base.png',
+            sizeBytes: 1024,
+            isInLibrary: true,
+            shouldIgnore: false,
+          },
+        ],
+      },
+    });
+
+    const { initVersionsTab } = await import(MODEL_VERSIONS_MODULE);
+    const controller = initVersionsTab({
+      modalId: 'model-versions-modal',
+      modelType: 'loras',
+      modelId: 321,
+      currentVersionId: 5,
+    });
+
+    await controller.load();
+
+    const toggleText = document.querySelector('.versions-filter-toggle .sr-only');
+    expect(toggleText?.textContent?.trim()).toBe('Base filter: All versions');
+  });
+
+  it('filters versions to the current base model when strategy is same_base', async () => {
+    stateMock.global.settings.update_flag_strategy = 'same_base';
+    fetchModelUpdateVersions.mockResolvedValue({
+      success: true,
+      record: {
+        shouldIgnore: false,
+        inLibraryVersionIds: [10],
+        versions: [
+          {
+            versionId: 10,
+            name: 'v1.0',
+            baseModel: 'SDXL',
+            previewUrl: '/api/lm/previews/v1.png',
+            sizeBytes: 1024,
+            isInLibrary: true,
+            shouldIgnore: false,
+          },
+          {
+            versionId: 11,
+            name: 'v1.1',
+            baseModel: 'Realistic',
+            previewUrl: '/api/lm/previews/v1-1.png',
+            sizeBytes: 2048,
+            isInLibrary: false,
+            shouldIgnore: false,
+          },
+        ],
+      },
+    });
+
+    const { initVersionsTab } = await import(MODEL_VERSIONS_MODULE);
+    const controller = initVersionsTab({
+      modalId: 'model-versions-modal',
+      modelType: 'loras',
+      modelId: 789,
+      currentVersionId: 10,
+    });
+
+    await controller.load();
+
+    expect(document.querySelectorAll('.model-version-row').length).toBe(1);
+  });
+
+  it('toggle button can switch to display all versions', async () => {
+    stateMock.global.settings.update_flag_strategy = 'same_base';
+    fetchModelUpdateVersions.mockResolvedValue({
+      success: true,
+      record: {
+        shouldIgnore: false,
+        inLibraryVersionIds: [10],
+        versions: [
+          {
+            versionId: 10,
+            name: 'v1.0',
+            baseModel: 'SDXL',
+            previewUrl: '/api/lm/previews/v1.png',
+            sizeBytes: 1024,
+            isInLibrary: true,
+            shouldIgnore: false,
+          },
+          {
+            versionId: 11,
+            name: 'v1.1',
+            baseModel: 'Realistic',
+            previewUrl: '/api/lm/previews/v1-1.png',
+            sizeBytes: 2048,
+            isInLibrary: false,
+            shouldIgnore: false,
+          },
+        ],
+      },
+    });
+
+    const { initVersionsTab } = await import(MODEL_VERSIONS_MODULE);
+    const controller = initVersionsTab({
+      modalId: 'model-versions-modal',
+      modelType: 'loras',
+      modelId: 987,
+      currentVersionId: 10,
+    });
+
+    await controller.load();
+
+    expect(document.querySelectorAll('.model-version-row').length).toBe(1);
+    const toggleButton = document.querySelector('[data-versions-action="toggle-version-display-mode"]');
+    expect(toggleButton).toBeTruthy();
+    const toggleTextBefore = document.querySelector('.versions-filter-toggle .sr-only');
+    expect(toggleTextBefore?.textContent?.trim()).toContain('Same base');
+    toggleButton?.click();
+    expect(document.querySelectorAll('.model-version-row').length).toBe(2);
+    const toggleTextAfter = document.querySelector('.versions-filter-toggle .sr-only');
+    expect(toggleTextAfter?.textContent?.trim()).toContain('All versions');
+  });
+
+  it('shows a newer version badge when viewing same-base results', async () => {
+    stateMock.global.settings.update_flag_strategy = 'same_base';
+    fetchModelUpdateVersions.mockResolvedValue({
+      success: true,
+      record: {
+        shouldIgnore: false,
+        inLibraryVersionIds: [3, 1],
+        versions: [
+          {
+            versionId: 4,
+            name: 'V4',
+            baseModel: 'Base IL',
+            previewUrl: '/api/lm/previews/v4.png',
+            sizeBytes: 1024,
+            isInLibrary: false,
+            shouldIgnore: false,
+          },
+          {
+            versionId: 3,
+            name: 'V3',
+            baseModel: 'Base IL',
+            previewUrl: '/api/lm/previews/v3.png',
+            sizeBytes: 2048,
+            isInLibrary: true,
+            shouldIgnore: false,
+          },
+          {
+            versionId: 2,
+            name: 'V2',
+            baseModel: 'Base Flux',
+            previewUrl: '/api/lm/previews/v2.png',
+            sizeBytes: 4096,
+            isInLibrary: false,
+            shouldIgnore: false,
+          },
+          {
+            versionId: 1,
+            name: 'V1',
+            baseModel: 'Base Flux',
+            previewUrl: '/api/lm/previews/v1.png',
+            sizeBytes: 8192,
+            isInLibrary: true,
+            shouldIgnore: false,
+          },
+        ],
+      },
+    });
+
+    const { initVersionsTab } = await import(MODEL_VERSIONS_MODULE);
+    const controller = initVersionsTab({
+      modalId: 'model-versions-modal',
+      modelType: 'loras',
+      modelId: 333,
+      currentVersionId: 1,
+    });
+
+    await controller.load();
+
+    const rows = document.querySelectorAll('.model-version-row');
+    expect(rows.length).toBe(2);
+    const firstBadges = Array.from(rows[0].querySelectorAll('.version-badge')).map(
+      badge => badge.textContent?.trim()
+    );
+    expect(firstBadges).toContain('Newer Version');
   });
 });

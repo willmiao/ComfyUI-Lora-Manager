@@ -394,7 +394,7 @@ class DownloadManager:
                 await progress_callback(0)
 
             # 2. Get file information
-            file_info = next((f for f in version_info.get('files', []) if f.get('primary') and f.get('type') == 'Model'), None)
+            file_info = next((f for f in version_info.get('files', []) if f.get('primary') and f.get('type') in ('Model', 'Negative')), None)
             if not file_info:
                 return {'success': False, 'error': 'No primary file found in metadata'}
             mirrors = file_info.get('mirrors') or []

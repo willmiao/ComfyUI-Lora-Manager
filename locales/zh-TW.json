@@ -227,12 +227,18 @@
             "videoSettings": "影片設定",
             "layoutSettings": "版面設定",
             "folderSettings": "資料夾設定",
+            "priorityTags": "優先標籤",
             "downloadPathTemplates": "下載路徑範本",
             "exampleImages": "範例圖片",
+            "updateFlags": "更新標記",
             "misc": "其他",
             "metadataArchive": "中繼資料封存資料庫",
-            "proxySettings": "代理設定",
-            "priorityTags": "優先標籤"
+            "storageLocation": "設定位置",
+            "proxySettings": "代理設定"
+        },
+        "storage": {
+            "locationLabel": "可攜式模式",
+            "locationHelp": "啟用可將 settings.json 保存在儲存庫中；停用則保存在使用者設定目錄。"
         },
         "contentFiltering": {
             "blurNsfwContent": "模糊 NSFW 內容",
@@ -292,6 +298,26 @@
             "defaultEmbeddingRootHelp": "設定下載、匯入和移動時的預設 Embedding 根目錄",
             "noDefault": "未設定預設"
         },
+        "priorityTags": {
+            "title": "優先標籤",
+            "description": "為每種模型類型自訂標籤的優先順序 (例如: character, concept, style(toon|toon_style))",
+            "placeholder": "character, concept, style(toon|toon_style)",
+            "helpLinkLabel": "開啟優先標籤說明",
+            "modelTypes": {
+                "lora": "LoRA",
+                "checkpoint": "Checkpoint",
+                "embedding": "Embedding"
+            },
+            "saveSuccess": "優先標籤已更新。",
+            "saveError": "更新優先標籤失敗。",
+            "loadingSuggestions": "正在載入建議...",
+            "validation": {
+                "missingClosingParen": "項目 {index} 缺少右括號。",
+                "missingCanonical": "項目 {index} 必須包含正規標籤名稱。",
+                "duplicateCanonical": "正規標籤 \"{tag}\" 出現多於一次。",
+                "unknown": "優先標籤設定無效。"
+            }
+        },
         "downloadPathTemplates": {
             "title": "下載路徑範本",
             "help": "設定從 Civitai 下載時不同模型類型的資料夾結構。",
@@ -339,6 +365,14 @@
             "download": "下載",
             "restartRequired": "需要重新啟動"
         },
+        "updateFlagStrategy": {
+            "label": "更新標記策略",
+            "help": "決定更新徽章是否僅在新版本與本地檔案共享相同基礎模型時顯示，或只要該模型有任何更新版本就顯示。",
+            "options": {
+                "sameBase": "依基礎模型匹配更新",
+                "any": "顯示任何可用更新"
+            }
+        },
         "misc": {
             "includeTriggerWords": "在 LoRA 語法中包含觸發詞",
             "includeTriggerWordsHelp": "複製 LoRA 語法到剪貼簿時包含訓練觸發詞"
@@ -384,26 +418,6 @@
             "proxyPassword": "密碼（選填）",
             "proxyPasswordPlaceholder": "password",
             "proxyPasswordHelp": "代理驗證所需的密碼（如有需要）"
-        },
-        "priorityTags": {
-            "title": "優先標籤",
-            "description": "為每種模型類型自訂標籤的優先順序 (例如: character, concept, style(toon|toon_style))",
-            "placeholder": "character, concept, style(toon|toon_style)",
-            "helpLinkLabel": "開啟優先標籤說明",
-            "modelTypes": {
-                "lora": "LoRA",
-                "checkpoint": "Checkpoint",
-                "embedding": "Embedding"
-            },
-            "saveSuccess": "優先標籤已更新。",
-            "saveError": "更新優先標籤失敗。",
-            "loadingSuggestions": "正在載入建議...",
-            "validation": {
-                "missingClosingParen": "項目 {index} 缺少右括號。",
-                "missingCanonical": "項目 {index} 必須包含正規標籤名稱。",
-                "duplicateCanonical": "正規標籤 \"{tag}\" 出現多於一次。",
-                "unknown": "優先標籤設定無效。"
-            }
         }
     },
     "loras": {
@@ -899,6 +913,10 @@
                 "versions": "版本"
             },
             "license": {
+                "noImageSell": "No selling generated content",
+                "noRentCivit": "No Civitai generation",
+                "noRent": "No generation services",
+                "noSell": "No selling models",
                 "creditRequired": "需要創作者標示",
                 "noDerivatives": "禁止分享合併作品",
                 "noReLicense": "需要相同授權",
@@ -940,6 +958,18 @@
                     "ignoreModelUpdates": "忽略此模型的更新",
                     "viewLocalVersions": "檢視所有本地版本",
                     "viewLocalTooltip": "敬請期待"
+                },
+                "filters": {
+                    "label": "基礎篩選",
+                    "state": {
+                        "showAll": "所有版本",
+                        "showSameBase": "相同基礎模型"
+                    },
+                    "tooltip": {
+                        "showAllVersions": "切換為顯示所有版本",
+                        "showSameBaseVersions": "僅顯示與目前基礎模型相符的版本"
+                    },
+                    "empty": "沒有符合目前基礎模型篩選的版本。"
                 },
                 "empty": "此模型尚無版本歷史。",
                 "error": "載入版本失敗。",

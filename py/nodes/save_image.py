@@ -273,9 +273,15 @@ class SaveImage:
                     length = int(parts[1])
                     prompt = prompt[:length]
                 filename = filename.replace(segment, prompt.strip())
-            elif key == "model" and 'checkpoint' in metadata_dict:
-                model = metadata_dict.get('checkpoint', '')
-                model = os.path.splitext(os.path.basename(model))[0]
+            elif key == "model":
+                model_value = metadata_dict.get('checkpoint')
+                if isinstance(model_value, (bytes, os.PathLike)):
+                    model_value = str(model_value)
+
+                if not isinstance(model_value, str) or not model_value:
+                    model = "model_unavailable"
+                else:
+                    model = os.path.splitext(os.path.basename(model_value))[0]
                 if len(parts) >= 2:
                     length = int(parts[1])
                     model = model[:length]

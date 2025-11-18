@@ -227,12 +227,18 @@
             "videoSettings": "動画設定",
             "layoutSettings": "レイアウト設定",
             "folderSettings": "フォルダ設定",
+            "priorityTags": "優先タグ",
             "downloadPathTemplates": "ダウンロードパステンプレート",
             "exampleImages": "例画像",
+            "updateFlags": "アップデートフラグ",
             "misc": "その他",
             "metadataArchive": "メタデータアーカイブデータベース",
-            "proxySettings": "プロキシ設定",
-            "priorityTags": "優先タグ"
+            "storageLocation": "設定の場所",
+            "proxySettings": "プロキシ設定"
+        },
+        "storage": {
+            "locationLabel": "ポータブルモード",
+            "locationHelp": "有効にすると settings.json をリポジトリ内に保持し、無効にするとユーザー設定ディレクトリに格納します。"
         },
         "contentFiltering": {
             "blurNsfwContent": "NSFWコンテンツをぼかす",
@@ -292,6 +298,26 @@
             "defaultEmbeddingRootHelp": "ダウンロード、インポート、移動用のデフォルトembeddingルートディレクトリを設定",
             "noDefault": "デフォルトなし"
         },
+        "priorityTags": {
+            "title": "優先タグ",
+            "description": "各モデルタイプのタグ優先順位をカスタマイズします (例: character, concept, style(toon|toon_style))",
+            "placeholder": "character, concept, style(toon|toon_style)",
+            "helpLinkLabel": "優先タグのヘルプを開く",
+            "modelTypes": {
+                "lora": "LoRA",
+                "checkpoint": "チェックポイント",
+                "embedding": "埋め込み"
+            },
+            "saveSuccess": "優先タグを更新しました。",
+            "saveError": "優先タグの更新に失敗しました。",
+            "loadingSuggestions": "候補を読み込み中...",
+            "validation": {
+                "missingClosingParen": "エントリ {index} に閉じ括弧がありません。",
+                "missingCanonical": "エントリ {index} には正規タグ名を含める必要があります。",
+                "duplicateCanonical": "正規タグ \"{tag}\" が複数回登場しています。",
+                "unknown": "無効な優先タグ設定です。"
+            }
+        },
         "downloadPathTemplates": {
             "title": "ダウンロードパステンプレート",
             "help": "Civitaiからダウンロードする際の異なるモデルタイプのフォルダ構造を設定します。",
@@ -339,6 +365,14 @@
             "download": "ダウンロード",
             "restartRequired": "再起動が必要"
         },
+        "updateFlagStrategy": {
+            "label": "アップデートフラグの表示戦略",
+            "help": "新リリースがローカルファイルと同じベースモデルを共有する場合にのみ更新バッジを表示するか、そのモデルに新しいバージョンがあれば常に表示するかを決めます。",
+            "options": {
+                "sameBase": "ベースモデルで更新をマッチ",
+                "any": "利用可能な更新すべてを表示"
+            }
+        },
         "misc": {
             "includeTriggerWords": "LoRA構文にトリガーワードを含める",
             "includeTriggerWordsHelp": "LoRA構文をクリップボードにコピーする際、学習済みトリガーワードを含めます"
@@ -384,26 +418,6 @@
             "proxyPassword": "パスワード（任意）",
             "proxyPasswordPlaceholder": "パスワード",
             "proxyPasswordHelp": "プロキシ認証用のパスワード（必要な場合）"
-        },
-        "priorityTags": {
-            "title": "優先タグ",
-            "description": "各モデルタイプのタグ優先順位をカスタマイズします (例: character, concept, style(toon|toon_style))",
-            "placeholder": "character, concept, style(toon|toon_style)",
-            "helpLinkLabel": "優先タグのヘルプを開く",
-            "modelTypes": {
-                "lora": "LoRA",
-                "checkpoint": "チェックポイント",
-                "embedding": "埋め込み"
-            },
-            "saveSuccess": "優先タグを更新しました。",
-            "saveError": "優先タグの更新に失敗しました。",
-            "loadingSuggestions": "候補を読み込み中...",
-            "validation": {
-                "missingClosingParen": "エントリ {index} に閉じ括弧がありません。",
-                "missingCanonical": "エントリ {index} には正規タグ名を含める必要があります。",
-                "duplicateCanonical": "正規タグ \"{tag}\" が複数回登場しています。",
-                "unknown": "無効な優先タグ設定です。"
-            }
         }
     },
     "loras": {
@@ -899,6 +913,10 @@
                 "versions": "バージョン"
             },
             "license": {
+                "noImageSell": "No selling generated content",
+                "noRentCivit": "No Civitai generation",
+                "noRent": "No generation services",
+                "noSell": "No selling models",
                 "creditRequired": "作成者のクレジットが必要",
                 "noDerivatives": "共有マージ不可",
                 "noReLicense": "同じ権限が必要",
@@ -940,6 +958,18 @@
                     "ignoreModelUpdates": "このモデルの更新を無視",
                     "viewLocalVersions": "ローカルの全バージョンを表示",
                     "viewLocalTooltip": "近日対応予定"
+                },
+                "filters": {
+                    "label": "ベースフィルター",
+                    "state": {
+                        "showAll": "すべてのバージョン",
+                        "showSameBase": "同じベース"
+                    },
+                    "tooltip": {
+                        "showAllVersions": "すべてのバージョンを表示する",
+                        "showSameBaseVersions": "同じベースモデルのバージョンのみ表示する"
+                    },
+                    "empty": "現在のベースモデルフィルターに一致するバージョンがありません。"
                 },
                 "empty": "このモデルにはまだバージョン履歴がありません。",
                 "error": "バージョンの読み込みに失敗しました。",

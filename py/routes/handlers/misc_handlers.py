@@ -180,6 +180,7 @@ class SettingsHandler:
         "download_path_templates",
         "enable_metadata_archive_db",
         "language",
+        "use_portable_settings",
         "proxy_enabled",
         "proxy_type",
         "proxy_host",
@@ -200,6 +201,7 @@ class SettingsHandler:
         "priority_tags",
         "model_card_footer_action",
         "model_name_display",
+        "update_flag_strategy",
     )
 
     _PROXY_KEYS = {"proxy_enabled", "proxy_host", "proxy_port", "proxy_username", "proxy_password", "proxy_type"}
