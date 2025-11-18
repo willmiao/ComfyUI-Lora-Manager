@@ -1,8 +1,10 @@
 import { showToast, getNSFWLevelName, openExampleImagesFolder } from '../../utils/uiHelpers.js';
 import { modalManager } from '../../managers/ModalManager.js';
 import { state } from '../../state/index.js';
-import { getModelApiClient } from '../../api/modelApiFactory.js';
+import { getModelApiClient, resetAndReload } from '../../api/modelApiFactory.js';
 import { bulkManager } from '../../managers/BulkManager.js';
+import { MODEL_CONFIG } from '../../api/apiConfig.js';
+import { translate } from '../../utils/i18nHelpers.js';
 
 // Mixin with shared functionality for LoraContextMenu and CheckpointContextMenu
 export const ModelContextMenuMixin = {
@@ -245,7 +247,102 @@ export const ModelContextMenuMixin = {
             return { modelId: null, modelVersionId: null };
         }
     },
-    
+
+    parseModelId(value) {
+        if (value === undefined || value === null || value === '') {
+            return null;
+        }
+
+        const parsed = Number.parseInt(value, 10);
+        return Number.isNaN(parsed) ? null : parsed;
+    },
+
+    getModelIdFromCard(card) {
+        if (!card) {
+            return null;
+        }
+
+        const directValue = this.parseModelId(card.dataset?.modelId);
+        if (directValue !== null) {
+            return directValue;
+        }
+
+        if (card.dataset?.meta) {
+            try {
+                const meta = JSON.parse(card.dataset.meta);
+                const metaValue = this.parseModelId(meta?.modelId ?? meta?.model_id);
+                if (metaValue !== null) {
+                    return metaValue;
+                }
+            } catch (error) {
+                console.warn('Unable to parse card metadata for model ID', error);
+            }
+        }
+
+        return null;
+    },
+
+    async checkUpdatesForCurrentModel() {
+        const card = this.currentCard;
+        if (!card) {
+            return;
+        }
+
+        const modelId = this.getModelIdFromCard(card);
+        const typeConfig = MODEL_CONFIG[this.modelType] || {};
+        const typeLabel = (typeConfig.displayName || 'Model').toLowerCase();
+
+        if (modelId === null) {
+            showToast('toast.models.bulkUpdatesMissing', { type: typeLabel }, 'warning');
+            return;
+        }
+
+        const apiClient = getModelApiClient();
+        if (!apiClient || typeof apiClient.refreshUpdatesForModels !== 'function') {
+            console.warn('Model API client does not support refreshUpdatesForModels');
+            showToast('toast.models.bulkUpdatesFailed', { type: typeLabel, message: 'Operation not supported' }, 'error');
+            return;
+        }
+
+        const loadingMessage = translate(
+            'toast.models.bulkUpdatesChecking',
+            { count: 1, type: typeLabel },
+            `Checking selected ${typeLabel}(s) for updates...`
+        );
+        state.loadingManager?.showSimpleLoading?.(loadingMessage);
+
+        try {
+            const response = await apiClient.refreshUpdatesForModels([modelId]);
+            const records = Array.isArray(response?.records) ? response.records : [];
+            const updatesCount = records.length;
+
+            if (updatesCount > 0) {
+                showToast('toast.models.bulkUpdatesSuccess', { count: updatesCount, type: typeLabel }, 'success');
+            } else {
+                showToast('toast.models.bulkUpdatesNone', { type: typeLabel }, 'info');
+            }
+
+            const resetFn = this.resetAndReload || resetAndReload;
+            if (typeof resetFn === 'function') {
+                await resetFn(false);
+            }
+        } catch (error) {
+            console.error('Error checking updates for model:', error);
+            showToast(
+                'toast.models.bulkUpdatesFailed',
+                { type: typeLabel, message: error?.message ?? 'Unknown error' },
+                'error'
+            );
+        } finally {
+            if (state.loadingManager?.hide) {
+                state.loadingManager.hide();
+            }
+            if (typeof state.loadingManager?.restoreProgressBar === 'function') {
+                state.loadingManager.restoreProgressBar();
+            }
+        }
+    },
+
     // Common action handlers
     handleCommonMenuActions(action) {
         switch(action) {
@@ -271,6 +368,9 @@ export const ModelContextMenuMixin = {
                 return true;
             case 'set-nsfw':
                 this.showNSFWLevelSelector(null, null, this.currentCard);
+                return true;
+            case 'check-updates':
+                this.checkUpdatesForCurrentModel();
                 return true;
             default:
                 return false;

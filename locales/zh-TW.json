@@ -496,6 +496,7 @@
         },
         "contextMenu": {
             "refreshMetadata": "刷新 Civitai 資料",
+            "checkUpdates": "檢查更新",
             "relinkCivitai": "重新連結 Civitai",
             "copySyntax": "複製 LoRA 語法",
             "copyFilename": "複製模型檔名",

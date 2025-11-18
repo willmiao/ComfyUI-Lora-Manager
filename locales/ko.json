@@ -496,6 +496,7 @@
         },
         "contextMenu": {
             "refreshMetadata": "Civitai 데이터 새로고침",
+            "checkUpdates": "업데이트 확인",
             "relinkCivitai": "Civitai에 다시 연결",
             "copySyntax": "LoRA 문법 복사",
             "copyFilename": "모델 파일명 복사",
