@@ -412,6 +412,11 @@ export class SettingsManager {
             modelNameDisplaySelect.value = state.global.settings.model_name_display || 'model_name';
         }
 
+        const updateFlagStrategySelect = document.getElementById('updateFlagStrategy');
+        if (updateFlagStrategySelect) {
+            updateFlagStrategySelect.value = state.global.settings.update_flag_strategy || 'same_base';
+        }
+
         // Set optimize example images setting
         const optimizeExampleImagesCheckbox = document.getElementById('optimizeExampleImages');
         if (optimizeExampleImagesCheckbox) {
@@ -1334,11 +1339,7 @@ export class SettingsManager {
             
             showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
 
-            if (settingKey === 'model_name_display') {
-                this.reloadContent();
-            }
-
-            if (settingKey === 'model_card_footer_action') {
+            if (settingKey === 'model_name_display' || settingKey === 'model_card_footer_action' || settingKey === 'update_flag_strategy') {
                 this.reloadContent();
             }
         } catch (error) {

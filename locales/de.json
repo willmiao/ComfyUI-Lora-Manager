@@ -230,6 +230,7 @@
             "priorityTags": "Prioritäts-Tags",
             "downloadPathTemplates": "Download-Pfad-Vorlagen",
             "exampleImages": "Beispielbilder",
+            "updateFlags": "Update-Markierungen",
             "misc": "Verschiedenes",
             "metadataArchive": "Metadaten-Archiv-Datenbank",
             "storageLocation": "Einstellungsort",
@@ -271,7 +272,6 @@
                 "hover": "Bei Hover anzeigen"
             },
             "cardInfoDisplayHelp": "Wählen Sie, wann Modellinformationen und Aktionsschaltflächen angezeigt werden sollen",
-
             "modelCardFooterAction": "Aktion der Modellkarten-Schaltfläche",
             "modelCardFooterActionOptions": {
                 "exampleImages": "Beispielbilder öffnen",
@@ -364,6 +364,14 @@
             "optimizeImagesHelp": "Beispielbilder optimieren, um Dateigröße zu reduzieren und Ladegeschwindigkeit zu verbessern (Metadaten bleiben erhalten)",
             "download": "Herunterladen",
             "restartRequired": "Neustart erforderlich"
+        },
+        "updateFlagStrategy": {
+            "label": "Strategie für Update-Markierungen",
+            "help": "Entscheide, ob Update-Badges nur dann erscheinen, wenn eine neue Version dasselbe Basismodell wie deine lokalen Dateien verwendet, oder sobald es irgendein neueres Release für dieses Modell gibt.",
+            "options": {
+                "sameBase": "Updates nach Basismodell abgleichen",
+                "any": "Jede verfügbare Aktualisierung markieren"
+            }
         },
         "misc": {
             "includeTriggerWords": "Trigger Words in LoRA-Syntax einschließen",
@@ -929,6 +937,18 @@
                     "ignoreModelUpdates": "Aktualisierungen für dieses Modell ignorieren",
                     "viewLocalVersions": "Alle lokalen Versionen anzeigen",
                     "viewLocalTooltip": "Demnächst verfügbar"
+                },
+                "filters": {
+                    "label": "Basisfilter",
+                    "state": {
+                        "showAll": "Alle Versionen",
+                        "showSameBase": "Gleiches Basismodell"
+                    },
+                    "tooltip": {
+                        "showAllVersions": "Wechseln, um alle Versionen anzuzeigen",
+                        "showSameBaseVersions": "Wechseln, um nur Versionen mit demselben Basismodell anzuzeigen"
+                    },
+                    "empty": "Keine Versionen entsprechen dem Filter für das aktuelle Basismodell."
                 },
                 "empty": "Noch keine Versionshistorie für dieses Modell vorhanden.",
                 "error": "Versionen konnten nicht geladen werden.",

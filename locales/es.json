@@ -230,6 +230,7 @@
             "priorityTags": "Etiquetas prioritarias",
             "downloadPathTemplates": "Plantillas de rutas de descarga",
             "exampleImages": "Imágenes de ejemplo",
+            "updateFlags": "Indicadores de actualización",
             "misc": "Varios",
             "metadataArchive": "Base de datos de archivo de metadatos",
             "storageLocation": "Ubicación de ajustes",
@@ -363,6 +364,14 @@
             "optimizeImagesHelp": "Optimizar imágenes de ejemplo para reducir el tamaño del archivo y mejorar la velocidad de carga (se preservarán los metadatos)",
             "download": "Descargar",
             "restartRequired": "Requiere reinicio"
+        },
+        "updateFlagStrategy": {
+            "label": "Estrategia de indicadores de actualización",
+            "help": "Decide si las insignias de actualización deben mostrarse solo cuando una nueva versión comparte el mismo modelo base que tus archivos locales o siempre que exista cualquier versión más reciente de ese modelo.",
+            "options": {
+                "sameBase": "Coincidir actualizaciones por modelo base",
+                "any": "Marcar cualquier actualización disponible"
+            }
         },
         "misc": {
             "includeTriggerWords": "Incluir palabras clave en la sintaxis de LoRA",
@@ -928,6 +937,18 @@
                     "ignoreModelUpdates": "Ignorar actualizaciones para este modelo",
                     "viewLocalVersions": "Ver todas las versiones locales",
                     "viewLocalTooltip": "Disponible pronto"
+                },
+                "filters": {
+                    "label": "Filtro base",
+                    "state": {
+                        "showAll": "Todas las versiones",
+                        "showSameBase": "Mismo modelo base"
+                    },
+                    "tooltip": {
+                        "showAllVersions": "Cambiar para mostrar todas las versiones",
+                        "showSameBaseVersions": "Cambiar para mostrar solo versiones del mismo modelo base"
+                    },
+                    "empty": "Ninguna versión coincide con el filtro del modelo base actual."
                 },
                 "empty": "Aún no hay historial de versiones para este modelo.",
                 "error": "No se pudieron cargar las versiones.",

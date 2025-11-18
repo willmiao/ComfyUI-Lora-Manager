@@ -320,6 +320,27 @@
                 </div>
             </div>
 
+            <!-- Update Flag Strategy Section -->
+            <div class="settings-section">
+                <h3>{{ t('settings.sections.updateFlags') }}</h3>
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="updateFlagStrategy">{{ t('settings.updateFlagStrategy.label') }}</label>
+                        </div>
+                        <div class="setting-control select-control">
+                            <select id="updateFlagStrategy" onchange="settingsManager.saveSelectSetting('updateFlagStrategy', 'update_flag_strategy')">
+                                <option value="same_base">{{ t('settings.updateFlagStrategy.options.sameBase') }}</option>
+                                <option value="any">{{ t('settings.updateFlagStrategy.options.any') }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.updateFlagStrategy.help') }}
+                    </div>
+                </div>
+            </div>
+
             <!-- Default Path Customization Section -->
             <div class="settings-section">
                 <h3>{{ t('settings.downloadPathTemplates.title') }}</h3>
