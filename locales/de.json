@@ -496,6 +496,7 @@
         },
         "contextMenu": {
             "refreshMetadata": "Civitai-Daten aktualisieren",
+            "checkUpdates": "Updates prüfen",
             "relinkCivitai": "Mit Civitai neu verknüpfen",
             "copySyntax": "LoRA-Syntax kopieren",
             "copyFilename": "Modell-Dateiname kopieren",

@@ -496,6 +496,7 @@
         },
         "contextMenu": {
             "refreshMetadata": "רענן נתוני Civitai",
+            "checkUpdates": "בדוק עדכונים",
             "relinkCivitai": "קשר מחדש ל-Civitai",
             "copySyntax": "העתק תחביר LoRA",
             "copyFilename": "העתק שם קובץ מודל",

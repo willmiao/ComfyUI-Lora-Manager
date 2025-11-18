@@ -496,6 +496,7 @@
         },
         "contextMenu": {
             "refreshMetadata": "Civitaiデータを更新",
+            "checkUpdates": "更新確認",
             "relinkCivitai": "Civitaiに再リンク",
             "copySyntax": "LoRA構文をコピー",
             "copyFilename": "モデルファイル名をコピー",
