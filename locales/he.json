@@ -900,6 +900,10 @@
                 "versions": "גרסאות"
             },
             "license": {
+                "noImageSell": "No selling generated content",
+                "noRentCivit": "No Civitai generation",
+                "noRent": "No generation services",
+                "noSell": "No selling models",
                 "creditRequired": "נדרש ייחוס ליוצר",
                 "noDerivatives": "אין שיתוף מיזוגים",
                 "noReLicense": "נדרשות אותן הרשאות",

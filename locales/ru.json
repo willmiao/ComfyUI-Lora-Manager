@@ -900,6 +900,10 @@
                 "versions": "Версии"
             },
             "license": {
+                "noImageSell": "No selling generated content",
+                "noRentCivit": "No Civitai generation",
+                "noRent": "No generation services",
+                "noSell": "No selling models",
                 "creditRequired": "Требуется указание авторства",
                 "noDerivatives": "Запрет на совместное использование производных работ",
                 "noReLicense": "Требуются те же права",

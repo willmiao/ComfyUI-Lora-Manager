@@ -900,6 +900,10 @@
                 "versions": "Versions"
             },
             "license": {
+                "noImageSell": "No selling generated content",
+                "noRentCivit": "No Civitai generation",
+                "noRent": "No generation services",
+                "noSell": "No selling models",
                 "creditRequired": "Creator credit required",
                 "noDerivatives": "No sharing merges",
                 "noReLicense": "Same permissions required",

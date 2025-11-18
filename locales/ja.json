@@ -900,6 +900,10 @@
                 "versions": "バージョン"
             },
             "license": {
+                "noImageSell": "No selling generated content",
+                "noRentCivit": "No Civitai generation",
+                "noRent": "No generation services",
+                "noSell": "No selling models",
                 "creditRequired": "作成者のクレジットが必要",
                 "noDerivatives": "共有マージ不可",
                 "noReLicense": "同じ権限が必要",

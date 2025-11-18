@@ -900,6 +900,10 @@
                 "versions": "버전"
             },
             "license": {
+                "noImageSell": "No selling generated content",
+                "noRentCivit": "No Civitai generation",
+                "noRent": "No generation services",
+                "noSell": "No selling models",
                 "creditRequired": "제작자 크레딧 필요",
                 "noDerivatives": "공유 병합 불가",
                 "noReLicense": "동일한 권한 필요",

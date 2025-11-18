@@ -900,6 +900,10 @@
                 "versions": "版本"
             },
             "license": {
+                "noImageSell": "No selling generated content",
+                "noRentCivit": "No Civitai generation",
+                "noRent": "No generation services",
+                "noSell": "No selling models",
                 "creditRequired": "需要创作者署名",
                 "noDerivatives": "禁止分享合并作品",
                 "noReLicense": "需要相同权限",
