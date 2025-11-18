@@ -126,6 +126,7 @@ class BaseModelRoutes(ABC):
             metadata_manager=MetadataManager,
             metadata_loader=self._metadata_sync_service.load_local_metadata,
             recipe_scanner_factory=ServiceRegistry.get_recipe_scanner,
+            update_service=self._model_update_service,
         )
         self._handler_set = None
         self._handler_mapping = None
@@ -297,4 +298,3 @@ class BaseModelRoutes(ABC):
         if self._model_update_service is None:
             raise RuntimeError("Model update service has not been attached")
         return self._model_update_service
-
