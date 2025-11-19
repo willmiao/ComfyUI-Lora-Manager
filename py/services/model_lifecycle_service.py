@@ -15,18 +15,18 @@ if TYPE_CHECKING:
     from ..services.model_update_service import ModelUpdateService
 
 
-async def delete_model_artifacts(target_dir: str, file_name: str) -> List[str]:
+async def delete_model_artifacts(
+    target_dir: str, file_name: str, main_extension: str | None = None
+) -> List[str]:
     """Delete the primary model artefacts within ``target_dir``."""
 
-    patterns = [
-        f"{file_name}.safetensors",
-        f"{file_name}.metadata.json",
-    ]
+    main_extension = ".safetensors" if main_extension is None else main_extension
+    main_file = f"{file_name}{main_extension}" if main_extension else file_name
+    patterns = [main_file, f"{file_name}.metadata.json"]
     for ext in PREVIEW_EXTENSIONS:
         patterns.append(f"{file_name}{ext}")
 
     deleted: List[str] = []
-    main_file = patterns[0]
     main_path = os.path.join(target_dir, main_file).replace(os.sep, "/")
 
     if os.path.exists(main_path):
@@ -94,8 +94,11 @@ class ModelLifecycleService:
         )
 
         target_dir = os.path.dirname(file_path)
-        file_name = os.path.splitext(os.path.basename(file_path))[0]
-        deleted_files = await delete_model_artifacts(target_dir, file_name)
+        base_name = os.path.basename(file_path)
+        file_name, main_extension = os.path.splitext(base_name)
+        deleted_files = await delete_model_artifacts(
+            target_dir, file_name, main_extension=main_extension
+        )
 
         if cache:
             cache.raw_data = [

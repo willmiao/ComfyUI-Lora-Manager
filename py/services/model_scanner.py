@@ -1444,11 +1444,13 @@ class ModelScanner:
             for file_path in file_paths:
                 try:
                     target_dir = os.path.dirname(file_path)
-                    file_name = os.path.splitext(os.path.basename(file_path))[0]
-                    
+                    base_name = os.path.basename(file_path)
+                    file_name, main_extension = os.path.splitext(base_name)
+
                     deleted_files = await delete_model_artifacts(
                         target_dir,
-                        file_name
+                        file_name,
+                        main_extension=main_extension,
                     )
                     
                     if deleted_files:

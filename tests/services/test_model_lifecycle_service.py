@@ -182,3 +182,42 @@ async def test_delete_model_updates_update_service(tmp_path: Path):
     assert result["success"] is True
     assert not model_path.exists()
     assert update_service.calls == [("lora", 42, [1002])]
+
+
+@pytest.mark.asyncio
+async def test_delete_model_removes_gguf_file(tmp_path: Path):
+    model_path = tmp_path / "model.gguf"
+    model_path.write_bytes(b"content")
+
+    metadata_path = tmp_path / "model.metadata.json"
+    metadata_path.write_text(json.dumps({}))
+
+    preview_path = tmp_path / "model.preview.png"
+    preview_path.write_bytes(b"preview")
+
+    raw_data = [
+        {
+            "file_path": model_path.as_posix(),
+            "civitai": {"modelId": 1, "id": 10},
+        }
+    ]
+
+    scanner = VersionAwareScanner(raw_data)
+    metadata_manager = DummyMetadataManager({"civitai": {"modelId": 1, "id": 10}})
+
+    async def metadata_loader(path: str):
+        return {}
+
+    service = ModelLifecycleService(
+        scanner=scanner,
+        metadata_manager=metadata_manager,
+        metadata_loader=metadata_loader,
+    )
+
+    result = await service.delete_model(model_path.as_posix())
+
+    assert result["success"] is True
+    assert not model_path.exists()
+    assert not metadata_path.exists()
+    assert not preview_path.exists()
+    assert any(item.endswith("model.gguf") for item in result["deleted_files"])
