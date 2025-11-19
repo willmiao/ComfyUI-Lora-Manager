@@ -7,6 +7,7 @@ import { state } from '../../state/index.js';
 import { formatFileSize } from './utils.js';
 
 const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.mkv'];
+const PREVIEW_PLACEHOLDER_URL = '/loras_static/images/no-preview.png';
 
 function buildCivitaiVersionUrl(modelId, versionId) {
     if (modelId == null || versionId == null) {
@@ -263,6 +264,25 @@ function renderMediaMarkup(version) {
             <img src="${escapeHtml(version.previewUrl)}" alt="${escapeHtml(version.name || 'preview')}">
         </div>
     `;
+}
+
+function renderDeletePreview(version, versionName) {
+    const previewUrl = version?.previewUrl;
+    if (previewUrl && isVideoUrl(previewUrl)) {
+        return `
+            <video
+                src="${escapeHtml(previewUrl)}"
+                controls
+                muted
+                loop
+                playsinline
+                preload="metadata"
+            ></video>
+        `;
+    }
+
+    const imageUrl = previewUrl || PREVIEW_PLACEHOLDER_URL;
+    return `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(versionName)}" onerror="this.src='${PREVIEW_PLACEHOLDER_URL}'">`;
 }
 
 function renderRow(version, options) {
@@ -796,9 +816,8 @@ function render(record) {
         const versionName =
             version.name ||
             translate('modals.model.versions.labels.unnamed', {}, 'Untitled Version');
-        const previewUrl =
-            version.previewUrl || '/loras_static/images/no-preview.png';
         const metaMarkup = buildMetaMarkup(version);
+        const previewMarkup = renderDeletePreview(version, versionName);
 
         const modalElement = modalRecord.element;
         const originalMarkup = modalElement.innerHTML;
@@ -809,7 +828,7 @@ function render(record) {
                 <p class="delete-message">${escapeHtml(confirmMessage)}</p>
                 <div class="delete-model-info">
                     <div class="delete-preview">
-                        <img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(versionName)}" onerror="this.src='/loras_static/images/no-preview.png'">
+                        ${previewMarkup}
                     </div>
                     <div class="delete-info">
                         <h3>${escapeHtml(versionName)}</h3>

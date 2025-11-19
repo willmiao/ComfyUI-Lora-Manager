@@ -315,7 +315,8 @@ button:disabled,
     overflow: hidden;
 }
 
-.delete-preview img {
+.delete-preview img,
+.delete-preview video {
     width: 100%;
     height: auto;
     max-height: 150px;
