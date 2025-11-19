@@ -185,6 +185,107 @@ async def test_delete_model_updates_update_service(tmp_path: Path):
 
 
 @pytest.mark.asyncio
+async def test_rename_model_preserves_extension(tmp_path: Path):
+    old_name = "model"
+    old_extension = ".gguf"
+    new_name = "model-renamed"
+
+    model_path = tmp_path / f"{old_name}{old_extension}"
+    model_path.write_bytes(b"model")
+
+    preview_path = tmp_path / f"{old_name}.preview.png"
+    preview_path.write_bytes(b"preview")
+
+    metadata_path = tmp_path / f"{old_name}.metadata.json"
+    metadata_payload = {
+        "file_name": old_name,
+        "file_path": model_path.as_posix(),
+        "preview_url": preview_path.as_posix(),
+    }
+    metadata_path.write_text(json.dumps(metadata_payload))
+
+    async def metadata_loader(path: str):
+        with open(path, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+
+    scanner = DummyScanner()
+    metadata_manager = PassthroughMetadataManager()
+    service = ModelLifecycleService(
+        scanner=scanner,
+        metadata_manager=metadata_manager,
+        metadata_loader=metadata_loader,
+    )
+
+    result = await service.rename_model(
+        file_path=model_path.as_posix(),
+        new_file_name=new_name,
+    )
+
+    expected_main = tmp_path / f"{new_name}{old_extension}"
+    expected_metadata = tmp_path / f"{new_name}.metadata.json"
+    expected_preview = tmp_path / f"{new_name}.preview.png"
+
+    assert expected_main.exists()
+    assert not model_path.exists()
+    assert result["new_file_path"].endswith(f"{new_name}{old_extension}")
+    assert expected_preview.exists()
+    assert not preview_path.exists()
+
+    saved_metadata = json.loads(expected_metadata.read_text())
+    assert saved_metadata["file_name"] == new_name
+    assert saved_metadata["file_path"].endswith(f"{new_name}{old_extension}")
+    assert saved_metadata["preview_url"].endswith(f"{new_name}.preview.png")
+
+    assert scanner.calls
+    old_call_path, new_call_path, payload = scanner.calls[0]
+    assert old_call_path.endswith(f"{old_name}{old_extension}")
+    assert new_call_path.endswith(f"{new_name}{old_extension}")
+    assert payload["file_name"] == new_name
+
+
+@pytest.mark.asyncio
+async def test_rename_model_with_dotted_basename(tmp_path: Path):
+    old_name = "model.v1"
+    old_extension = ".gguf"
+    new_name = "renamed-model"
+
+    model_path = tmp_path / f"{old_name}{old_extension}"
+    model_path.write_bytes(b"content")
+
+    metadata_path = tmp_path / f"{old_name}.metadata.json"
+    metadata_payload = {
+        "file_name": old_name,
+        "file_path": model_path.as_posix(),
+    }
+    metadata_path.write_text(json.dumps(metadata_payload))
+
+    async def metadata_loader(path: str):
+        with open(path, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+
+    scanner = DummyScanner()
+    metadata_manager = PassthroughMetadataManager()
+    service = ModelLifecycleService(
+        scanner=scanner,
+        metadata_manager=metadata_manager,
+        metadata_loader=metadata_loader,
+    )
+
+    result = await service.rename_model(
+        file_path=model_path.as_posix(),
+        new_file_name=new_name,
+    )
+
+    expected_main = tmp_path / f"{new_name}{old_extension}"
+    assert expected_main.exists()
+    assert result["new_file_path"] == expected_main.as_posix()
+    assert any(p.endswith(f"{new_name}{old_extension}") for p in result["renamed_files"])
+
+    saved_metadata = json.loads((tmp_path / f"{new_name}.metadata.json").read_text())
+    assert saved_metadata["file_name"] == new_name
+    assert saved_metadata["file_path"].endswith(f"{new_name}{old_extension}")
+
+@pytest.mark.asyncio
 async def test_delete_model_removes_gguf_file(tmp_path: Path):
     model_path = tmp_path / "model.gguf"
     model_path.write_bytes(b"content")
