@@ -43,7 +43,7 @@ class DownloadManager:
         
         # Add download management
         self._active_downloads = OrderedDict()  # download_id -> download_info
-        self._download_semaphore = asyncio.Semaphore(5)  # Limit concurrent downloads
+        self._download_semaphore = asyncio.Semaphore(1)  # Sequential queue: only one active download at a time
         self._download_tasks = {}  # download_id -> asyncio.Task
         self._pause_events: Dict[str, DownloadStreamControl] = {}
     
@@ -81,10 +81,26 @@ class DownloadManager:
         # Use provided download_id or generate new one
         task_id = download_id or str(uuid.uuid4())
         
+        # Fetch model metadata early to get model_name and version_name for display
+        model_name = ''
+        version_name = ''
+        try:
+            metadata_provider = await get_default_metadata_provider()
+            version_info = await metadata_provider.get_model_version(model_id, model_version_id)
+            if version_info:
+                model_info = version_info.get('model') or {}
+                model_name = model_info.get('name', '')
+                version_name = version_info.get('name', '')
+        except Exception as e:
+            # If fetching metadata fails, continue anyway - names will be empty
+            logger.debug(f"Failed to fetch metadata early for display: {e}")
+        
         # Register download task in tracking dict
         self._active_downloads[task_id] = {
             'model_id': model_id,
             'model_version_id': model_version_id,
+            'model_name': model_name,
+            'version_name': version_name,
             'progress': 0,
             'status': 'queued',
             'bytes_downloaded': 0,
@@ -113,12 +129,36 @@ class DownloadManager:
             result['download_id'] = task_id  # Include download_id in result
             return result
         except asyncio.CancelledError:
+            # Clean up partial files before removing from tracking
+            download_info = self._active_downloads.get(task_id)
+            if download_info:
+                # Clean up .part file if it exists
+                part_path = download_info.get('part_path')
+                if not part_path and 'file_path' in download_info:
+                    part_path = download_info['file_path'] + '.part'
+                
+                if part_path and os.path.exists(part_path):
+                    try:
+                        # Wait briefly for file handle to be released
+                        await asyncio.sleep(0.3)
+                        os.unlink(part_path)
+                        logger.debug(f"Deleted partial download on cancellation: {part_path}")
+                    except Exception as e:
+                        logger.warning(f"Could not delete part file {part_path} on cancellation: {e}")
+            
+            # Ensure cancelled download is removed from tracking
+            self._active_downloads.pop(task_id, None)
             return {'success': False, 'error': 'Download was cancelled', 'download_id': task_id}
         finally:
             # Clean up task reference
             if task_id in self._download_tasks:
                 del self._download_tasks[task_id]
             self._pause_events.pop(task_id, None)
+            # Only remove cancelled downloads from tracking in finally block
+            # Completed downloads remain until _cleanup_download_record removes them
+            download_info = self._active_downloads.get(task_id)
+            if download_info and download_info.get('status') == 'cancelled':
+                self._active_downloads.pop(task_id, None)
 
     async def _download_with_semaphore(self, task_id: str, model_id: int, model_version_id: int,
                                      save_dir: str, relative_path: str,
@@ -184,10 +224,27 @@ class DownloadManager:
                     
                     return result
                 except asyncio.CancelledError:
-                    # Handle cancellation
-                    if task_id in self._active_downloads:
+                    # Handle cancellation - clean up partial files and remove from tracking
+                    download_info = self._active_downloads.get(task_id)
+                    if download_info:
+                        # Clean up .part file if it exists
+                        part_path = download_info.get('part_path')
+                        if not part_path and 'file_path' in download_info:
+                            part_path = download_info['file_path'] + '.part'
+                        
+                        if part_path and os.path.exists(part_path):
+                            try:
+                                # Wait briefly for file handle to be released
+                                await asyncio.sleep(0.3)
+                                os.unlink(part_path)
+                                logger.debug(f"Deleted partial download on cancellation: {part_path}")
+                            except Exception as e:
+                                logger.warning(f"Could not delete part file {part_path} on cancellation: {e}")
+                        
                         self._active_downloads[task_id]['status'] = 'cancelled'
                         self._active_downloads[task_id]['bytes_per_second'] = 0.0
+                        # Remove immediately so it doesn't show in queue
+                        self._active_downloads.pop(task_id, None)
                     logger.info(f"Download cancelled for task {task_id}")
                     raise
                 except Exception as e:
@@ -247,7 +304,13 @@ class DownloadManager:
             
             if not version_info:
                 return {'success': False, 'error': 'Failed to fetch model metadata'}
-
+            
+            # Store model_name and version_name in active_downloads early for display
+            if download_id and download_id in self._active_downloads:
+                model_info = version_info.get('model') or {}
+                self._active_downloads[download_id]['model_name'] = model_info.get('name', '')
+                self._active_downloads[download_id]['version_name'] = version_info.get('name', '')
+            
             model_type_from_info = version_info.get('model', {}).get('type', '').lower()
             if model_type_from_info == 'checkpoint':
                 model_type = 'checkpoint'
@@ -588,10 +651,14 @@ class DownloadManager:
 
             pause_control = self._pause_events.get(download_id) if download_id else None
 
-            # Store file paths in active_downloads for potential cleanup
+            # Store file paths, model_name, and version_name in active_downloads for potential cleanup and display
             if download_id and download_id in self._active_downloads:
                 self._active_downloads[download_id]['file_path'] = save_path
                 self._active_downloads[download_id]['part_path'] = part_path
+                # Extract model name and version name from version_info
+                model_info = version_info.get('model') or {}
+                self._active_downloads[download_id]['model_name'] = model_info.get('name', '')
+                self._active_downloads[download_id]['version_name'] = version_info.get('name', '')
 
             # Download preview image if available
             images = version_info.get('images', [])
@@ -872,6 +939,17 @@ class DownloadManager:
         if download_id not in self._download_tasks:
             return {'success': False, 'error': 'Download task not found'}
         
+        # Verify this is an active download, not just a queued one
+        download_info = self._active_downloads.get(download_id)
+        if download_info:
+            status = download_info.get('status', 'unknown')
+            # Only allow canceling downloads that are actively downloading or waiting
+            # Don't allow canceling downloads that are just queued (they should be removed instead)
+            if status not in {'downloading', 'waiting', 'cancelling'}:
+                logger.warning(f"Attempted to cancel download {download_id} with status {status}, but it's not actively downloading")
+                # Still allow cancellation if it's in _download_tasks (might be transitioning)
+                # But log a warning
+        
         try:
             # Get the task and cancel it
             task = self._download_tasks[download_id]
@@ -895,6 +973,9 @@ class DownloadManager:
             # Clean up ALL files including .part when user cancels
             download_info = self._active_downloads.get(download_id)
             if download_info:
+                # Wait a brief moment for file handles to be released
+                await asyncio.sleep(0.5)
+                
                 # Delete the main file
                 if 'file_path' in download_info:
                     file_path = download_info['file_path']
@@ -906,14 +987,41 @@ class DownloadManager:
                             logger.error(f"Error deleting file: {e}")
                 
                 # Delete the .part file (only on user cancellation)
-                if 'part_path' in download_info:
-                    part_path = download_info['part_path']
-                    if os.path.exists(part_path):
+                # Try to get part_path from download_info, or derive it from file_path
+                part_path = download_info.get('part_path')
+                if not part_path and 'file_path' in download_info:
+                    part_path = download_info['file_path'] + '.part'
+                
+                if part_path and os.path.exists(part_path):
+                    # Retry deletion in case file is still locked
+                    max_retries = 5
+                    retry_delay = 0.5
+                    deleted = False
+                    for attempt in range(max_retries):
                         try:
                             os.unlink(part_path)
                             logger.debug(f"Deleted partial download: {part_path}")
+                            deleted = True
+                            break
+                        except (PermissionError, OSError) as e:
+                            if attempt < max_retries - 1:
+                                logger.debug(f"Part file still locked, retrying in {retry_delay}s (attempt {attempt + 1}/{max_retries})")
+                                await asyncio.sleep(retry_delay)
+                            else:
+                                logger.error(f"Error deleting part file after {max_retries} attempts: {e}")
                         except Exception as e:
                             logger.error(f"Error deleting part file: {e}")
+                            break
+                    
+                    if not deleted:
+                        # Try one more time after a longer delay
+                        await asyncio.sleep(1.0)
+                        try:
+                            if os.path.exists(part_path):
+                                os.unlink(part_path)
+                                logger.debug(f"Deleted partial download after delay: {part_path}")
+                        except Exception as e:
+                            logger.warning(f"Could not delete part file {part_path} after retries: {e}")
                 
                 # Delete metadata file if exists
                 if 'file_path' in download_info:
@@ -942,6 +1050,10 @@ class DownloadManager:
                                 logger.debug(f"Deleted preview file: {preview_path}")
                             except Exception as e:
                                 logger.error(f"Error deleting preview file: {e}")
+            
+            # Remove cancelled download from tracking immediately so it doesn't show in queue
+            # The task cleanup in finally block will handle _download_tasks and _pause_events
+            self._active_downloads.pop(download_id, None)
             
             return {'success': True, 'message': 'Download cancelled successfully'}
         except Exception as e:
@@ -1050,18 +1162,54 @@ class DownloadManager:
         elif asyncio.iscoroutine(result):
             await result
 
+    async def remove_queued_download(self, download_id: str) -> Dict:
+        """Remove a queued download (not yet started) by download_id
+        
+        Args:
+            download_id: The unique identifier of the queued download task
+            
+        Returns:
+            Dict: Status of the removal operation
+        """
+        if download_id not in self._active_downloads:
+            return {'success': False, 'error': 'Download not found'}
+        
+        download_info = self._active_downloads[download_id]
+        status = download_info.get('status', 'unknown')
+        
+        # Only allow removal of queued/waiting downloads, not active ones
+        if status == 'downloading':
+            return {'success': False, 'error': 'Cannot remove active download. Use cancel instead.'}
+        
+        # If there's a task, cancel it first
+        task = self._download_tasks.get(download_id)
+        if task:
+            task.cancel()
+        
+        # Remove from tracking dicts
+        self._active_downloads.pop(download_id, None)
+        self._download_tasks.pop(download_id, None)
+        self._pause_events.pop(download_id, None)
+        
+        logger.info(f"Removed queued download: {download_id}")
+        return {'success': True, 'message': 'Queued download removed successfully'}
+
     async def get_active_downloads(self) -> Dict:
         """Get information about all active downloads
         
         Returns:
             Dict: List of active downloads and their status
         """
+        # Filter out cancelled/completed downloads - only return active, waiting, or queued
+        active_statuses = {'downloading', 'waiting', 'queued'}
         return {
             'downloads': [
                 {
                     'download_id': task_id,
                     'model_id': info.get('model_id'),
                     'model_version_id': info.get('model_version_id'),
+                    'model_name': info.get('model_name'),
+                    'version_name': info.get('version_name'),
                     'progress': info.get('progress', 0),
                     'status': info.get('status', 'unknown'),
                     'error': info.get('error', None),
@@ -1070,5 +1218,6 @@ class DownloadManager:
                     'bytes_per_second': info.get('bytes_per_second', 0.0),
                 }
                 for task_id, info in self._active_downloads.items()
+                if info.get('status', 'unknown') in active_statuses
             ]
         }

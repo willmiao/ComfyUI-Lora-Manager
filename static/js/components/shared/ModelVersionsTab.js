@@ -286,7 +286,7 @@ function renderDeletePreview(version, versionName) {
 }
 
 function renderRow(version, options) {
-    const { latestLibraryVersionId, currentVersionId, modelId: parentModelId } = options;
+    const { latestLibraryVersionId, currentVersionId, modelId: parentModelId, downloadStatus } = options;
     const isCurrent = currentVersionId && version.versionId === currentVersionId;
     const isNewer =
         typeof latestLibraryVersionId === 'number' &&
@@ -307,7 +307,25 @@ function renderRow(version, options) {
         badges.push(buildBadge(translate('modals.model.versions.badges.ignored', {}, 'Ignored'), 'muted'));
     }
 
-    const downloadLabel = translate('modals.model.versions.actions.download', {}, 'Download');
+    // Check if this version is downloading or queued
+    const versionDownloadStatus = downloadStatus?.[version.versionId];
+    const isDownloading = versionDownloadStatus === 'downloading';
+    const isQueued = versionDownloadStatus === 'queued' || versionDownloadStatus === 'waiting';
+    
+    let downloadLabel = translate('modals.model.versions.actions.download', {}, 'Download');
+    let downloadDisabled = false;
+    let downloadTitle = '';
+    
+    if (isDownloading) {
+        downloadLabel = translate('modals.model.versions.actions.downloading', {}, 'Downloading...');
+        downloadDisabled = true;
+        downloadTitle = translate('modals.model.versions.actions.downloadingTooltip', {}, 'This version is currently downloading');
+    } else if (isQueued) {
+        downloadLabel = translate('modals.model.versions.actions.queued', {}, 'Queued');
+        downloadDisabled = true;
+        downloadTitle = translate('modals.model.versions.actions.queuedTooltip', {}, 'This version is queued for download');
+    }
+    
     const deleteLabel = translate('modals.model.versions.actions.delete', {}, 'Delete');
     const ignoreLabel = translate(
         version.shouldIgnore
@@ -318,13 +336,19 @@ function renderRow(version, options) {
     );
 
     const actions = [];
-    if (!version.isInLibrary) {
-        actions.push(
-            `<button class="version-action version-action-primary" data-version-action="download">${escapeHtml(downloadLabel)}</button>`
-        );
-    } else if (version.filePath) {
+    // Show Delete button if file exists locally, otherwise show Download button
+    // This ensures Download button appears even after deletion (when filePath is null but isInLibrary might still be true)
+    if (version.filePath) {
         actions.push(
             `<button class="version-action version-action-danger" data-version-action="delete">${escapeHtml(deleteLabel)}</button>`
+        );
+    } else {
+        // Show Download button when file doesn't exist locally (not downloaded or was deleted)
+        const disabledAttr = downloadDisabled ? 'disabled' : '';
+        const titleAttr = downloadTitle ? `title="${escapeHtml(downloadTitle)}"` : '';
+        const disabledClass = downloadDisabled ? ' version-action-disabled' : '';
+        actions.push(
+            `<button class="version-action version-action-primary${disabledClass}" data-version-action="download" ${disabledAttr} ${titleAttr}>${escapeHtml(downloadLabel)}</button>`
         );
     }
     actions.push(
@@ -538,21 +562,36 @@ export function initVersionsTab({
         `;
     }
 
-function render(record) {
-    controller.record = record;
-    controller.hasLoaded = true;
+    async function render(record) {
+        controller.record = record;
+        controller.hasLoaded = true;
 
     if (!record || !Array.isArray(record.versions) || record.versions.length === 0) {
         renderEmptyState(container);
         return;
     }
 
-    const latestLibraryVersionId = getLatestLibraryVersionId(record);
-    const { normalized: currentBaseModelNormalized, raw: currentBaseModelLabel } =
-        getCurrentVersionBaseModel(record, normalizedCurrentVersionId);
-    const isFilteringActive =
-        displayMode === DISPLAY_FILTER_MODES.SAME_BASE &&
-        Boolean(currentBaseModelNormalized);
+        // Fetch active downloads to check status
+        let downloadStatus = {};
+        try {
+            const response = await fetch('/api/lm/active-downloads');
+            if (response.ok) {
+                const data = await response.json();
+                if (data && data.downloads && Array.isArray(data.downloads)) {
+                    // Create a map of version_id -> status
+                    data.downloads.forEach(download => {
+                        if (download.model_version_id) {
+                            downloadStatus[download.model_version_id] = download.status;
+                        }
+                    });
+                }
+            }
+        } catch (error) {
+            console.debug('Failed to fetch active downloads for version status:', error);
+        }
+
+        const latestLibraryVersionId = getLatestLibraryVersionId(record);
+        let dividerInserted = false;
 
     const sortedVersions = [...record.versions].sort(
         (a, b) => Number(b.versionId) - Number(a.versionId)
@@ -595,15 +634,16 @@ function render(record) {
             ) {
                 dividerInserted = true;
                 markup += '<div class="version-divider" role="presentation"></div>';
-            }
-            markup += renderRow(version, {
-                latestLibraryVersionId: dividerThresholdVersionId,
-                currentVersionId: normalizedCurrentVersionId,
-                modelId: record?.modelId ?? modelId,
-            });
-            return markup;
-        })
-        .join('');
+                }
+                markup += renderRow(version, {
+                    latestLibraryVersionId,
+                    currentVersionId: normalizedCurrentVersionId,
+                    modelId: record?.modelId ?? modelId,
+                    downloadStatus,
+                });
+                return markup;
+            })
+            .join('');
 
     const listContent =
         rowsMarkup || renderFilteredEmptyState(currentBaseModelLabel);
@@ -646,7 +686,7 @@ function render(record) {
             if (!response?.success) {
                 throw new Error(response?.error || 'Request failed');
             }
-            render(response.record);
+            await render(response.record);
         } catch (error) {
             console.error('Failed to load model versions:', error);
             renderErrorState(container, error?.message);
@@ -994,6 +1034,10 @@ function render(record) {
             switch (action) {
                 case 'download':
                     event.preventDefault();
+                    // Check if button is disabled (downloading/queued)
+                    if (actionButton.disabled) {
+                        return;
+                    }
                     await handleDownloadVersion(actionButton, versionId);
                     break;
                 case 'delete':

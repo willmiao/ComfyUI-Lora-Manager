@@ -700,7 +700,20 @@
                 "preparing": "Préparation du téléchargement...",
                 "downloadedPreview": "Image d'aperçu téléchargée",
                 "downloadingFile": "Téléchargement du fichier {type}",
-                "finalizing": "Finalisation du téléchargement..."
+                "finalizing": "Finalisation du téléchargement...",
+                "cancelling": "Annulation du téléchargement...",
+                "cancelled": "Téléchargement annulé"
+            },
+            "minimize": "Réduire",
+            "clickToRestore": "Cliquez pour restaurer",
+            "cancel": "Annuler",
+            "remove": "Retirer de la file d'attente",
+            "queue": {
+                "title": "File d'attente de téléchargement",
+                "downloading": "Téléchargement : {name}",
+                "queued": "En file d'attente #{position} : {name}",
+                "waiting": "En attente...",
+                "pending": "En attente"
             },
             "progress": {
                 "currentFile": "Fichier actuel :",
@@ -936,6 +949,10 @@
                 },
                 "actions": {
                     "download": "Télécharger",
+                    "downloading": "Téléchargement en cours...",
+                    "downloadingTooltip": "Cette version est en cours de téléchargement",
+                    "queued": "En attente",
+                    "queuedTooltip": "Cette version est en file d'attente de téléchargement",
                     "delete": "Supprimer",
                     "ignore": "Ignorer",
                     "unignore": "Ne plus ignorer",
@@ -1340,7 +1357,11 @@
             "imagesCompleted": "Images d'exemple {action} terminées",
             "imagesFailed": "Images d'exemple {action} échouées",
             "loadError": "Erreur lors du chargement des téléchargements : {message}",
-            "downloadError": "Erreur de téléchargement : {message}"
+            "downloadError": "Erreur de téléchargement : {message}",
+            "downloadCancelled": "Téléchargement annulé",
+            "cancelFailed": "Échec de l'annulation du téléchargement : {error}",
+            "removedFromQueue": "Retiré de la file d'attente de téléchargement",
+            "removeFailed": "Échec du retrait de la file d'attente : {error}"
         },
         "import": {
             "folderTreeFailed": "Échec du chargement de l'arborescence des dossiers",

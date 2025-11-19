@@ -700,7 +700,20 @@
                 "preparing": "Download wird vorbereitet...",
                 "downloadedPreview": "Vorschaubild heruntergeladen",
                 "downloadingFile": "{type}-Datei wird heruntergeladen",
-                "finalizing": "Download wird abgeschlossen..."
+                "finalizing": "Download wird abgeschlossen...",
+                "cancelling": "Download wird abgebrochen...",
+                "cancelled": "Download abgebrochen"
+            },
+            "minimize": "Minimieren",
+            "clickToRestore": "Zum Wiederherstellen klicken",
+            "cancel": "Abbrechen",
+            "remove": "Aus Warteschlange entfernen",
+            "queue": {
+                "title": "Download-Warteschlange",
+                "downloading": "Wird heruntergeladen: {name}",
+                "queued": "Warteschlange #{position}: {name}",
+                "waiting": "Warten...",
+                "pending": "Ausstehend"
             },
             "progress": {
                 "currentFile": "Aktuelle Datei:",
@@ -936,6 +949,10 @@
                 },
                 "actions": {
                     "download": "Herunterladen",
+                    "downloading": "Wird heruntergeladen...",
+                    "downloadingTooltip": "Diese Version wird gerade heruntergeladen",
+                    "queued": "Warteschlange",
+                    "queuedTooltip": "Diese Version ist in der Download-Warteschlange",
                     "delete": "Löschen",
                     "ignore": "Ignorieren",
                     "unignore": "Ignorierung aufheben",
@@ -1340,7 +1357,11 @@
             "imagesCompleted": "Beispielbilder {action} abgeschlossen",
             "imagesFailed": "Beispielbilder {action} fehlgeschlagen",
             "loadError": "Fehler beim Laden der Downloads: {message}",
-            "downloadError": "Download-Fehler: {message}"
+            "downloadError": "Download-Fehler: {message}",
+            "downloadCancelled": "Download abgebrochen",
+            "cancelFailed": "Download konnte nicht abgebrochen werden: {error}",
+            "removedFromQueue": "Aus Download-Warteschlange entfernt",
+            "removeFailed": "Entfernen aus Warteschlange fehlgeschlagen: {error}"
         },
         "import": {
             "folderTreeFailed": "Fehler beim Laden des Ordnerbaums",

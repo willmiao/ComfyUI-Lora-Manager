@@ -700,7 +700,20 @@
                 "preparing": "Preparing download...",
                 "downloadedPreview": "Downloaded preview image",
                 "downloadingFile": "Downloading {type} file",
-                "finalizing": "Finalizing download..."
+                "finalizing": "Finalizing download...",
+                "cancelling": "Cancelling download...",
+                "cancelled": "Download cancelled"
+            },
+            "minimize": "Minimize",
+            "clickToRestore": "Click to restore",
+            "cancel": "Cancel",
+            "remove": "Remove from queue",
+            "queue": {
+                "title": "Download Queue",
+                "downloading": "Downloading: {name}",
+                "queued": "Queued #{position}: {name}",
+                "waiting": "Waiting...",
+                "pending": "Pending"
             },
             "progress": {
                 "currentFile": "Current file:",
@@ -936,6 +949,10 @@
                 },
                 "actions": {
                     "download": "Download",
+                    "downloading": "Downloading...",
+                    "downloadingTooltip": "This version is currently downloading",
+                    "queued": "Queued",
+                    "queuedTooltip": "This version is queued for download",
                     "delete": "Delete",
                     "ignore": "Ignore",
                     "unignore": "Unignore",
@@ -1340,7 +1357,11 @@
             "imagesCompleted": "Example images {action} completed",
             "imagesFailed": "Example images {action} failed",
             "loadError": "Error loading downloads: {message}",
-            "downloadError": "Download error: {message}"
+            "downloadError": "Download error: {message}",
+            "downloadCancelled": "Download cancelled",
+            "cancelFailed": "Failed to cancel download: {error}",
+            "removedFromQueue": "Removed from download queue",
+            "removeFailed": "Failed to remove from queue: {error}"
         },
         "import": {
             "folderTreeFailed": "Failed to load folder tree",

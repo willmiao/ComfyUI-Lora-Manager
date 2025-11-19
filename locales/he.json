@@ -700,7 +700,20 @@
                 "preparing": "מכין הורדה...",
                 "downloadedPreview": "תמונת תצוגה מקדימה הורדה",
                 "downloadingFile": "מוריד קובץ {type}",
-                "finalizing": "מסיים הורדה..."
+                "finalizing": "מסיים הורדה...",
+                "cancelling": "מבטל הורדה...",
+                "cancelled": "ההורדה בוטלה"
+            },
+            "minimize": "מזער",
+            "clickToRestore": "לחץ לשחזור",
+            "cancel": "בטל",
+            "remove": "הסר מהתור",
+            "queue": {
+                "title": "תור הורדות",
+                "downloading": "מוריד: {name}",
+                "queued": "בתור #{position}: {name}",
+                "waiting": "ממתין...",
+                "pending": "ממתין"
             },
             "progress": {
                 "currentFile": "הקובץ הנוכחי:",
@@ -936,6 +949,10 @@
                 },
                 "actions": {
                     "download": "הורדה",
+                    "downloading": "מוריד...",
+                    "downloadingTooltip": "גרסה זו נמצאת כעת בתהליך הורדה",
+                    "queued": "בתור",
+                    "queuedTooltip": "גרסה זו נמצאת בתור להורדה",
                     "delete": "מחיקה",
                     "ignore": "התעלם",
                     "unignore": "בטל התעלמות",
@@ -1340,7 +1357,11 @@
             "imagesCompleted": "{action} תמונות הדוגמה הושלם",
             "imagesFailed": "{action} תמונות הדוגמה נכשל",
             "loadError": "שגיאה בטעינת הורדות: {message}",
-            "downloadError": "שגיאת הורדה: {message}"
+            "downloadError": "שגיאת הורדה: {message}",
+            "downloadCancelled": "ההורדה בוטלה",
+            "cancelFailed": "ביטול ההורדה נכשל: {error}",
+            "removedFromQueue": "הוסר מתור ההורדות",
+            "removeFailed": "הסרה מתור ההורדות נכשלה: {error}"
         },
         "import": {
             "folderTreeFailed": "טעינת עץ התיקיות נכשלה",

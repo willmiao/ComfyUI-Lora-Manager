@@ -165,6 +165,25 @@ class DownloadCoordinator:
         download_manager = await self._download_manager_factory()
         return await download_manager.get_active_downloads()
 
+    async def remove_queued_download(self, download_id: str) -> Dict[str, Any]:
+        """Remove a queued download and notify listeners."""
+        download_manager = await self._download_manager_factory()
+        result = await download_manager.remove_queued_download(download_id)
+        
+        if result.get('success'):
+            # Broadcast removal event
+            await self._ws_manager.broadcast_download_progress(
+                download_id,
+                {
+                    "status": "removed",
+                    "progress": 0,
+                    "download_id": download_id,
+                    "message": "Download removed from queue",
+                },
+            )
+        
+        return result
+
     def _parse_optional_int(self, value: Any, field: str) -> Optional[int]:
         """Parse an optional integer from user input."""
 
