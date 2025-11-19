@@ -214,6 +214,7 @@ class MetadataSyncService:
             metadata_provider: Optional[MetadataProviderProtocol] = None
             provider_used: Optional[str] = None
             last_error: Optional[str] = None
+            civitai_api_not_found = False
 
             for provider_name, provider in provider_attempts:
                 try:
@@ -228,11 +229,16 @@ class MetadataSyncService:
                 if provider_name == "sqlite":
                     sqlite_attempted = True
 
+                is_default_provider = provider_name is None
+
                 if civitai_metadata_candidate:
                     civitai_metadata = civitai_metadata_candidate
                     metadata_provider = provider
                     provider_used = provider_name
                     break
+
+                if is_default_provider and error == "Model not found":
+                    civitai_api_not_found = True
 
                 last_error = error or last_error
 
@@ -240,7 +246,7 @@ class MetadataSyncService:
                 if sqlite_attempted:
                     model_data["db_checked"] = True
 
-                if last_error == "Model not found":
+                if civitai_api_not_found:
                     model_data["from_civitai"] = False
                     model_data["civitai_deleted"] = True
                     model_data["db_checked"] = sqlite_attempted or (enable_archive and model_data.get("db_checked", False))
@@ -266,7 +272,10 @@ class MetadataSyncService:
                 return False, error_msg
 
             model_data["from_civitai"] = True
-            model_data["civitai_deleted"] = civitai_metadata.get("source") == "archive_db" or civitai_metadata.get("source") == "civarchive"
+            if provider_used is None:
+                model_data["civitai_deleted"] = False
+            elif civitai_api_not_found:
+                model_data["civitai_deleted"] = True
             model_data["db_checked"] = enable_archive and (
                 civitai_metadata.get("source") == "archive_db" or sqlite_attempted
             )

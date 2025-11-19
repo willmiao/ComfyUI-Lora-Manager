@@ -180,6 +180,39 @@ async def test_fetch_and_update_model_success_updates_cache(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_fetch_and_update_model_keeps_deleted_flag_false_for_archive_source(tmp_path):
+    helpers = build_service()
+
+    civitai_payload = {
+        "source": "archive_db",
+        "model": {"name": "Recovered", "description": "", "tags": ["tag"]},
+        "images": [],
+        "baseModel": "sd15",
+    }
+    helpers.default_provider.get_model_by_hash.return_value = (civitai_payload, None)
+
+    model_path = tmp_path / "model.safetensors"
+    model_data = {
+        "model_name": "Local",
+        "folder": "root",
+        "file_path": str(model_path),
+    }
+    update_cache = AsyncMock(return_value=True)
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="abc",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert ok and error is None
+    assert model_data["metadata_source"] == "archive_db"
+    assert model_data["civitai_deleted"] is False
+    update_cache.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_fetch_and_update_model_handles_missing_remote_metadata(tmp_path):
     helpers = build_service()
     helpers.default_provider.get_model_by_hash.return_value = (None, "Model not found")
@@ -301,6 +334,7 @@ async def test_fetch_and_update_model_prefers_civarchive_for_deleted_models(tmp_
     civarchive_provider.get_model_by_hash.assert_awaited_once_with("deadbeef")
     update_cache.assert_awaited()
     assert model_data["metadata_source"] == "civarchive"
+    assert model_data["civitai_deleted"] is True
     helpers.metadata_manager.save_metadata.assert_awaited()
 
 
@@ -359,6 +393,7 @@ async def test_fetch_and_update_model_falls_back_to_sqlite_after_civarchive_fail
     assert sqlite_provider.get_model_by_hash.await_count == 1
     assert model_data["metadata_source"] == "archive_db"
     assert model_data["db_checked"] is True
+    assert model_data["civitai_deleted"] is True
     assert provider_selector.await_args_list[0].args == ("civarchive_api",)
     assert provider_selector.await_args_list[1].args == ("sqlite",)
     update_cache.assert_awaited()
