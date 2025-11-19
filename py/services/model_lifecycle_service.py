@@ -339,7 +339,7 @@ class ModelLifecycleService:
                 return suffix
 
         basename = os.path.basename(filename)
-        dot_index = basename.find(".")
+        dot_index = basename.rfind(".")
         if dot_index != -1:
             return basename[dot_index:]
 
