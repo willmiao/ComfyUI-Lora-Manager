@@ -234,16 +234,19 @@ class ModelLifecycleService:
             raise ValueError("Invalid characters in file name")
 
         target_dir = os.path.dirname(file_path)
-        old_file_name = os.path.splitext(os.path.basename(file_path))[0]
-        new_file_path = os.path.join(target_dir, f"{new_file_name}.safetensors").replace(
-            os.sep, "/"
-        )
+        base_name = os.path.basename(file_path)
+        old_file_name, old_extension = os.path.splitext(base_name)
+        if not old_extension:
+            old_extension = ".safetensors"
+        new_file_path = os.path.join(
+            target_dir, f"{new_file_name}{old_extension}"
+        ).replace(os.sep, "/")
 
         if os.path.exists(new_file_path):
             raise ValueError("A file with this name already exists")
 
         patterns = [
-            f"{old_file_name}.safetensors",
+            f"{old_file_name}{old_extension}",
             f"{old_file_name}.metadata.json",
             f"{old_file_name}.metadata.json.bak",
         ]
