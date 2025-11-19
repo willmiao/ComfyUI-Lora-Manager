@@ -147,6 +147,7 @@
     </div>
   </div>
   {% endif %}
+  {% if current_page != 'recipes' %}
   <div class="filter-section">
     <h4>{{ t('header.filter.license') }}</h4>
     <div class="filter-tags">
@@ -158,6 +159,7 @@
       </div>
     </div>
   </div>
+  {% endif %}
   <div class="filter-actions">
     <button class="clear-filters-btn" onclick="filterManager.clearFilters()">
       {{ t('header.filter.clearAll') }}

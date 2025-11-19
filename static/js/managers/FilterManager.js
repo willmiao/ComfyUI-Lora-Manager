@@ -39,8 +39,10 @@ export class FilterManager {
             this.createModelTypeTags();
         }
 
-        // Add click handlers for license filter tags
-        this.initializeLicenseFilters();
+        // Add click handlers for license filter tags if supported on this page
+        if (this.shouldShowLicenseFilters()) {
+            this.initializeLicenseFilters();
+        }
 
         // Add click handler for filter button
         if (this.filterButton) {
@@ -386,8 +388,10 @@ export class FilterManager {
             this.applyTagElementState(tag, state);
         });
         
-        // Update license tags
-        this.updateLicenseSelections();
+        // Update license tags if visible on this page
+        if (this.shouldShowLicenseFilters()) {
+            this.updateLicenseSelections();
+        }
         this.updateModelTypeSelections();
     }
 
@@ -546,9 +550,13 @@ export class FilterManager {
             ...source,
             baseModel: Array.isArray(source.baseModel) ? [...source.baseModel] : [],
             tags: this.normalizeTagFilters(source.tags),
-            license: this.normalizeLicenseFilters(source.license),
+            license: this.shouldShowLicenseFilters() ? this.normalizeLicenseFilters(source.license) : {},
             modelTypes: this.normalizeModelTypeFilters(source.modelTypes)
         };
+    }
+
+    shouldShowLicenseFilters() {
+        return this.currentPage !== 'recipes';
     }
 
     normalizeTagFilters(tagFilters) {
