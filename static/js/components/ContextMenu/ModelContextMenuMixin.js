@@ -262,15 +262,10 @@ export const ModelContextMenuMixin = {
             return null;
         }
 
-        const directValue = this.parseModelId(card.dataset?.modelId);
-        if (directValue !== null) {
-            return directValue;
-        }
-
         if (card.dataset?.meta) {
             try {
                 const meta = JSON.parse(card.dataset.meta);
-                const metaValue = this.parseModelId(meta?.modelId ?? meta?.model_id);
+                const metaValue = this.parseModelId(meta?.modelId);
                 if (metaValue !== null) {
                     return metaValue;
                 }
@@ -298,18 +293,13 @@ export const ModelContextMenuMixin = {
         }
 
         const apiClient = getModelApiClient();
-        if (!apiClient || typeof apiClient.refreshUpdatesForModels !== 'function') {
-            console.warn('Model API client does not support refreshUpdatesForModels');
-            showToast('toast.models.bulkUpdatesFailed', { type: typeLabel, message: 'Operation not supported' }, 'error');
-            return;
-        }
 
         const loadingMessage = translate(
             'toast.models.bulkUpdatesChecking',
             { count: 1, type: typeLabel },
             `Checking selected ${typeLabel}(s) for updates...`
         );
-        state.loadingManager?.showSimpleLoading?.(loadingMessage);
+        state.loadingManager.showSimpleLoading(loadingMessage);
 
         try {
             const response = await apiClient.refreshUpdatesForModels([modelId]);
@@ -334,12 +324,8 @@ export const ModelContextMenuMixin = {
                 'error'
             );
         } finally {
-            if (state.loadingManager?.hide) {
-                state.loadingManager.hide();
-            }
-            if (typeof state.loadingManager?.restoreProgressBar === 'function') {
-                state.loadingManager.restoreProgressBar();
-            }
+            state.loadingManager.hide();
+            state.loadingManager.restoreProgressBar();
         }
     },
 
