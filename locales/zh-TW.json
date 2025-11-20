@@ -253,12 +253,12 @@
             "autoplayOnHoverHelp": "僅在滑鼠懸停時播放影片預覽"
         },
         "autoOrganizeExclusions": {
-            "label": "Auto-organize exclusions",
-            "placeholder": "Example: extras/*, */backups/*; *_temp.safetensors",
-            "help": "Skip moving files that match these wildcard patterns. Separate multiple patterns with commas or semicolons.",
+            "label": "自動整理排除項目",
+            "placeholder": "範例: curated/*, */backups/*; *_temp.safetensors",
+            "help": "跳過符合這些萬用字元模式的檔案。多個模式請用逗號或分號分隔。",
             "validation": {
-                "noPatterns": "Enter at least one pattern separated by commas or semicolons.",
-                "saveFailed": "Unable to save exclusions: {message}"
+                "noPatterns": "請輸入至少一個以逗號或分號分隔的模式。",
+                "saveFailed": "無法儲存排除項目：{message}"
             }
         },
         "layoutSettings": {

@@ -253,12 +253,12 @@
             "autoplayOnHoverHelp": "Solo reproducir vistas previas de video al pasar el ratón sobre ellas"
         },
         "autoOrganizeExclusions": {
-            "label": "Auto-organize exclusions",
-            "placeholder": "Example: extras/*, */backups/*; *_temp.safetensors",
-            "help": "Skip moving files that match these wildcard patterns. Separate multiple patterns with commas or semicolons.",
+            "label": "Exclusiones de auto-organización",
+            "placeholder": "Ejemplo: curated/*, */backups/*; *_temp.safetensors",
+            "help": "Omitir archivos que coincidan con estos patrones comodín. Separe múltiples patrones con comas o puntos y comas.",
             "validation": {
-                "noPatterns": "Enter at least one pattern separated by commas or semicolons.",
-                "saveFailed": "Unable to save exclusions: {message}"
+                "noPatterns": "Ingrese al menos un patrón separado por comas o puntos y comas.",
+                "saveFailed": "No se pudieron guardar las exclusiones: {message}"
             }
         },
         "layoutSettings": {

@@ -253,12 +253,12 @@
             "autoplayOnHoverHelp": "마우스를 올렸을 때만 비디오 미리보기를 재생합니다"
         },
         "autoOrganizeExclusions": {
-            "label": "Auto-organize exclusions",
-            "placeholder": "Example: extras/*, */backups/*; *_temp.safetensors",
-            "help": "Skip moving files that match these wildcard patterns. Separate multiple patterns with commas or semicolons.",
+            "label": "자동 정리 제외 항목",
+            "placeholder": "예: curated/*, */backups/*; *_temp.safetensors",
+            "help": "이 와일드카드 패턴과 일치하는 파일 이동을 건너뜁니다. 여러 패턴은 쉼표 또는 세미콜론으로 구분하십시오.",
             "validation": {
-                "noPatterns": "Enter at least one pattern separated by commas or semicolons.",
-                "saveFailed": "Unable to save exclusions: {message}"
+                "noPatterns": "쉼표 또는 세미콜론으로 구분된 최소한 하나의 패턴을 입력하십시오.",
+                "saveFailed": "제외 항목을 저장할 수 없습니다: {message}"
             }
         },
         "layoutSettings": {

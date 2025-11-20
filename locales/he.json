@@ -253,12 +253,12 @@
             "autoplayOnHoverHelp": "נגן תצוגות מקדימות של וידאו רק בעת ריחוף מעליהן"
         },
         "autoOrganizeExclusions": {
-            "label": "Auto-organize exclusions",
-            "placeholder": "Example: extras/*, */backups/*; *_temp.safetensors",
-            "help": "Skip moving files that match these wildcard patterns. Separate multiple patterns with commas or semicolons.",
+            "label": "יוצא דופן של ארגון אוטומטי",
+            "placeholder": "דוגמה: curated/*, */backups/*; *_temp.safetensors",
+            "help": "דלג על העברת קבצים התואמים לתבניות אלו. הפרד תבניות מרובות בפסיקים או בנקודותיים.",
             "validation": {
-                "noPatterns": "Enter at least one pattern separated by commas or semicolons.",
-                "saveFailed": "Unable to save exclusions: {message}"
+                "noPatterns": "הזן לפחות תבנית אחת מופרדת בפסיקים או בנקודותיים.",
+                "saveFailed": "לא ניתן לשמור את ההוצאות: {message}"
             }
         },
         "layoutSettings": {

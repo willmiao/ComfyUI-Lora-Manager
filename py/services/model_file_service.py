@@ -117,19 +117,18 @@ class ModelFileService:
             else:
                 result.operation_type = 'all'
 
+            model_roots = self.get_model_roots()
+            if not model_roots:
+                raise ValueError('No model roots configured')
+
             if normalized_exclusions:
                 all_models = [
                     model
                     for model in all_models
                     if not self._should_exclude_model(
-                        model.get('file_path'), normalized_exclusions
+                        model.get('file_path'), normalized_exclusions, model_roots
                     )
                 ]
-
-            # Get model roots for this scanner
-            model_roots = self.get_model_roots()
-            if not model_roots:
-                raise ValueError('No model roots configured')
             
             # Check if flat structure is configured for this model type
             settings_manager = get_settings_manager()
@@ -151,7 +150,34 @@ class ModelFileService:
                     'skipped': 0,
                     'operation_type': result.operation_type
                 })
-            
+
+            if result.total == 0:
+                if progress_callback:
+                    await asyncio.sleep(0.1)
+                    payload = {
+                        'type': 'auto_organize_progress',
+                        'total': 0,
+                        'processed': 0,
+                        'success': 0,
+                        'failures': 0,
+                        'skipped': 0,
+                        'operation_type': result.operation_type
+                    }
+                    await progress_callback.on_progress({**payload, 'status': 'processing'})
+                    await progress_callback.on_progress({
+                        **payload,
+                        'status': 'cleaning',
+                        'message': 'Cleaning up empty directories...'
+                    })
+                    result.cleanup_counts = {}
+                    await progress_callback.on_progress({
+                        **payload,
+                        'status': 'completed',
+                        'cleanup': result.cleanup_counts
+                    })
+
+                return result
+
             # Process models in batches
             await self._process_models_in_batches(
                 all_models, 
@@ -325,16 +351,35 @@ class ModelFileService:
         return None
 
     def _should_exclude_model(
-        self, file_path: Optional[str], patterns: Sequence[str]
+        self,
+        file_path: Optional[str],
+        patterns: Sequence[str],
+        model_roots: Sequence[str],
     ) -> bool:
         if not file_path or not patterns:
             return False
 
         normalized_path = os.path.normpath(file_path).replace(os.sep, '/')
         filename = os.path.basename(normalized_path)
+        relative_path = None
+
+        if model_roots:
+            root = self._find_model_root(file_path, list(model_roots))
+            if root:
+                normalized_root = os.path.normpath(root)
+                try:
+                    relative = os.path.relpath(file_path, normalized_root)
+                except ValueError:
+                    relative = None
+                if relative is not None:
+                    relative_path = relative.replace(os.sep, '/')
 
         for pattern in patterns:
-            if fnmatch.fnmatch(filename, pattern) or fnmatch.fnmatch(normalized_path, pattern):
+            if fnmatch.fnmatch(filename, pattern):
+                return True
+            if relative_path and fnmatch.fnmatch(relative_path, pattern):
+                return True
+            if fnmatch.fnmatch(normalized_path, pattern):
                 return True
         return False
     

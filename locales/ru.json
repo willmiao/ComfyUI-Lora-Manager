@@ -253,12 +253,12 @@
             "autoplayOnHoverHelp": "Воспроизводить превью видео только при наведении курсора"
         },
         "autoOrganizeExclusions": {
-            "label": "Auto-organize exclusions",
-            "placeholder": "Example: extras/*, */backups/*; *_temp.safetensors",
-            "help": "Skip moving files that match these wildcard patterns. Separate multiple patterns with commas or semicolons.",
+            "label": "Исключения автосортировки",
+            "placeholder": "Пример: curated/*, */backups/*; *_temp.safetensors",
+            "help": "Пропускать перемещение файлов, соответствующих этим шаблонам. Разделяйте несколько шаблонов запятыми или точками с запятой.",
             "validation": {
-                "noPatterns": "Enter at least one pattern separated by commas or semicolons.",
-                "saveFailed": "Unable to save exclusions: {message}"
+                "noPatterns": "Введите хотя бы один шаблон, разделенный запятыми или точками с запятой.",
+                "saveFailed": "Не удалось сохранить исключения: {message}"
             }
         },
         "layoutSettings": {

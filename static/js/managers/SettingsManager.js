@@ -349,6 +349,16 @@ export class SettingsManager {
             }
         });
 
+        const autoOrganizeInput = document.getElementById('autoOrganizeExclusions');
+        if (autoOrganizeInput) {
+            autoOrganizeInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    this.saveAutoOrganizeExclusions();
+                }
+            });
+        }
+
         this.setupPriorityTagInputs();
 
         this.initialized = true;

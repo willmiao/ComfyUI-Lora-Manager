@@ -253,12 +253,12 @@
             "autoplayOnHoverHelp": "動画プレビューはホバー時にのみ再生されます"
         },
         "autoOrganizeExclusions": {
-            "label": "Auto-organize exclusions",
-            "placeholder": "Example: extras/*, */backups/*; *_temp.safetensors",
-            "help": "Skip moving files that match these wildcard patterns. Separate multiple patterns with commas or semicolons.",
+            "label": "自動整理除外設定",
+            "placeholder": "例: curated/*, */backups/*; *_temp.safetensors",
+            "help": "これらのワイルドカードパターンに一致するファイルの移動をスキップします。複数のパターンはカンマまたはセミコロンで区切ってください。",
             "validation": {
-                "noPatterns": "Enter at least one pattern separated by commas or semicolons.",
-                "saveFailed": "Unable to save exclusions: {message}"
+                "noPatterns": "カンマまたはセミコロンで区切られた少なくとも1つのパターンを入力してください。",
+                "saveFailed": "除外設定を保存できませんでした: {message}"
             }
         },
         "layoutSettings": {

@@ -254,7 +254,7 @@
         },
         "autoOrganizeExclusions": {
             "label": "Auto-organize exclusions",
-            "placeholder": "Example: extras/*, */backups/*; *_temp.safetensors",
+            "placeholder": "Example: curated/*, */backups/*; *_temp.safetensors",
             "help": "Skip moving files that match these wildcard patterns. Separate multiple patterns with commas or semicolons.",
             "validation": {
                 "noPatterns": "Enter at least one pattern separated by commas or semicolons.",
