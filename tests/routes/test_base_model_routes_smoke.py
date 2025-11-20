@@ -540,7 +540,7 @@ def test_auto_organize_progress_returns_latest_snapshot(mock_service):
 
 
 def test_auto_organize_route_emits_progress(mock_service, monkeypatch: pytest.MonkeyPatch):
-    async def fake_auto_organize(self, file_paths=None, progress_callback=None):
+    async def fake_auto_organize(self, file_paths=None, progress_callback=None, exclusion_patterns=None):
         result = AutoOrganizeResult()
         result.total = 1
         result.processed = 1

@@ -62,6 +62,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "model_name_display": "model_name",
     "model_card_footer_action": "example_images",
     "update_flag_strategy": "same_base",
+    "auto_organize_exclusions": [],
 }
 
 
@@ -237,6 +238,17 @@ class SettingsManager:
             self.settings["priority_tags"] = copy.deepcopy(
                 defaults.get("priority_tags", DEFAULT_PRIORITY_TAG_CONFIG)
             )
+            inserted_defaults = True
+
+        if "auto_organize_exclusions" in self.settings:
+            normalized_exclusions = self.normalize_auto_organize_exclusions(
+                self.settings.get("auto_organize_exclusions")
+            )
+            if normalized_exclusions != self.settings.get("auto_organize_exclusions"):
+                self.settings["auto_organize_exclusions"] = normalized_exclusions
+                updated_existing = True
+        else:
+            self.settings["auto_organize_exclusions"] = []
             inserted_defaults = True
 
         for key, value in defaults.items():
@@ -719,6 +731,7 @@ class SettingsManager:
         defaults['download_path_templates'] = {}
         defaults['priority_tags'] = DEFAULT_PRIORITY_TAG_CONFIG.copy()
         defaults.setdefault('folder_paths', {})
+        defaults['auto_organize_exclusions'] = []
 
         library_name = defaults.get("active_library") or "default"
         default_library = self._build_library_payload(
@@ -744,6 +757,35 @@ class SettingsManager:
 
         return normalized
 
+    def normalize_auto_organize_exclusions(self, value: Any) -> List[str]:
+        if value is None:
+            return []
+
+        if isinstance(value, str):
+            candidates: Iterable[str] = (
+                value.replace("\n", ",").replace(";", ",").split(",")
+            )
+        elif isinstance(value, Sequence) and not isinstance(value, (bytes, bytearray, str)):
+            candidates = value
+        else:
+            return []
+
+        patterns: List[str] = []
+        for raw in candidates:
+            if isinstance(raw, str):
+                token = raw.strip()
+                if token:
+                    patterns.append(token)
+
+        unique_patterns: List[str] = []
+        seen = set()
+        for pattern in patterns:
+            if pattern not in seen:
+                seen.add(pattern)
+                unique_patterns.append(pattern)
+
+        return unique_patterns
+
     def get_priority_tag_config(self) -> Dict[str, str]:
         stored_value = self.settings.get("priority_tags")
         normalized = self._normalize_priority_tag_config(stored_value)
@@ -751,6 +793,15 @@ class SettingsManager:
             self.settings["priority_tags"] = normalized
             self._save_settings()
         return normalized.copy()
+
+    def get_auto_organize_exclusions(self) -> List[str]:
+        exclusions = self.normalize_auto_organize_exclusions(
+            self.settings.get("auto_organize_exclusions")
+        )
+        if exclusions != self.settings.get("auto_organize_exclusions"):
+            self.settings["auto_organize_exclusions"] = exclusions
+            self._save_settings()
+        return exclusions
 
     def get_startup_messages(self) -> List[Dict[str, Any]]:
         return [message.copy() for message in self._startup_messages]
@@ -787,6 +838,8 @@ class SettingsManager:
 
     def set(self, key: str, value: Any) -> None:
         """Set setting value and save"""
+        if key == "auto_organize_exclusions":
+            value = self.normalize_auto_organize_exclusions(value)
         self.settings[key] = value
         portable_switch_pending = False
         if key == "use_portable_settings" and isinstance(value, bool):

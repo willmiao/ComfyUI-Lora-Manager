@@ -232,6 +232,7 @@
             "downloadPathTemplates": "下載路徑範本",
             "exampleImages": "範例圖片",
             "updateFlags": "更新標記",
+            "autoOrganize": "Auto-organize",
             "misc": "其他",
             "metadataArchive": "中繼資料封存資料庫",
             "storageLocation": "設定位置",
@@ -250,6 +251,15 @@
         "videoSettings": {
             "autoplayOnHover": "滑鼠懸停自動播放影片",
             "autoplayOnHoverHelp": "僅在滑鼠懸停時播放影片預覽"
+        },
+        "autoOrganizeExclusions": {
+            "label": "Auto-organize exclusions",
+            "placeholder": "Example: extras/*, */backups/*; *_temp.safetensors",
+            "help": "Skip moving files that match these wildcard patterns. Separate multiple patterns with commas or semicolons.",
+            "validation": {
+                "noPatterns": "Enter at least one pattern separated by commas or semicolons.",
+                "saveFailed": "Unable to save exclusions: {message}"
+            }
         },
         "layoutSettings": {
             "displayDensity": "顯示密度",

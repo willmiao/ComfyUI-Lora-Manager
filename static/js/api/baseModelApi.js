@@ -1252,15 +1252,24 @@ export class BaseModelApiClient {
                 
                 // Start the auto-organize operation
                 const endpoint = this.apiConfig.endpoints.autoOrganize;
-                const requestOptions = {
-                    method: filePaths ? 'POST' : 'GET',
-                    headers: filePaths ? { 'Content-Type': 'application/json' } : {}
-                };
-                
+                const exclusionPatterns = (state.global.settings.auto_organize_exclusions || [])
+                    .filter(pattern => typeof pattern === 'string' && pattern.trim())
+                    .map(pattern => pattern.trim());
+
+                const requestBody = {};
                 if (filePaths) {
-                    requestOptions.body = JSON.stringify({ file_paths: filePaths });
+                    requestBody.file_paths = filePaths;
                 }
-                
+                if (exclusionPatterns.length > 0) {
+                    requestBody.exclusion_patterns = exclusionPatterns;
+                }
+
+                const requestOptions = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody),
+                };
+
                 const response = await fetch(endpoint, requestOptions);
                 
                 if (!response.ok) {

@@ -341,6 +341,29 @@
                 </div>
             </div>
 
+            <div class="settings-section">
+                <h3>{{ t('settings.sections.autoOrganize') }}</h3>
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="autoOrganizeExclusions">{{ t('settings.autoOrganizeExclusions.label') }}</label>
+                        </div>
+                        <div class="setting-control">
+                            <textarea
+                                id="autoOrganizeExclusions"
+                                rows="3"
+                                placeholder="{{ t('settings.autoOrganizeExclusions.placeholder') }}"
+                                onblur="settingsManager.saveAutoOrganizeExclusions()"
+                            ></textarea>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.autoOrganizeExclusions.help') }}
+                    </div>
+                    <div class="settings-input-error-message" id="autoOrganizeExclusionsError"></div>
+                </div>
+            </div>
+
             <!-- Default Path Customization Section -->
             <div class="settings-section">
                 <h3>{{ t('settings.downloadPathTemplates.title') }}</h3>
