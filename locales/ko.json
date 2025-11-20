@@ -232,6 +232,7 @@
             "downloadPathTemplates": "다운로드 경로 템플릿",
             "exampleImages": "예시 이미지",
             "updateFlags": "업데이트 표시",
+            "autoOrganize": "Auto-organize",
             "misc": "기타",
             "metadataArchive": "메타데이터 아카이브 데이터베이스",
             "storageLocation": "설정 위치",
@@ -250,6 +251,15 @@
         "videoSettings": {
             "autoplayOnHover": "호버 시 비디오 자동 재생",
             "autoplayOnHoverHelp": "마우스를 올렸을 때만 비디오 미리보기를 재생합니다"
+        },
+        "autoOrganizeExclusions": {
+            "label": "Auto-organize exclusions",
+            "placeholder": "Example: extras/*, */backups/*; *_temp.safetensors",
+            "help": "Skip moving files that match these wildcard patterns. Separate multiple patterns with commas or semicolons.",
+            "validation": {
+                "noPatterns": "Enter at least one pattern separated by commas or semicolons.",
+                "saveFailed": "Unable to save exclusions: {message}"
+            }
         },
         "layoutSettings": {
             "displayDensity": "표시 밀도",

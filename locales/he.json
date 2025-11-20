@@ -231,6 +231,7 @@
             "downloadPathTemplates": "תבניות נתיב הורדה",
             "exampleImages": "תמונות דוגמה",
             "updateFlags": "תגי עדכון",
+            "autoOrganize": "Auto-organize",
             "misc": "שונות",
             "metadataArchive": "מסד נתונים של ארכיון מטא-דאטה",
             "storageLocation": "מיקום ההגדרות",
@@ -250,6 +251,15 @@
         "videoSettings": {
             "autoplayOnHover": "נגן וידאו אוטומטית בריחוף",
             "autoplayOnHoverHelp": "נגן תצוגות מקדימות של וידאו רק בעת ריחוף מעליהן"
+        },
+        "autoOrganizeExclusions": {
+            "label": "Auto-organize exclusions",
+            "placeholder": "Example: extras/*, */backups/*; *_temp.safetensors",
+            "help": "Skip moving files that match these wildcard patterns. Separate multiple patterns with commas or semicolons.",
+            "validation": {
+                "noPatterns": "Enter at least one pattern separated by commas or semicolons.",
+                "saveFailed": "Unable to save exclusions: {message}"
+            }
         },
         "layoutSettings": {
             "displayDensity": "צפיפות תצוגה",

@@ -1,7 +1,8 @@
 import asyncio
+import fnmatch
 import os
 import logging
-from typing import List, Dict, Optional, Any, Set
+from typing import Any, Dict, List, Optional, Sequence, Set
 from abc import ABC, abstractmethod
 
 from ..utils.utils import calculate_relative_path_for_model, remove_empty_dirs
@@ -79,9 +80,10 @@ class ModelFileService:
         return self.scanner.get_model_roots()
     
     async def auto_organize_models(
-        self, 
+        self,
         file_paths: Optional[List[str]] = None,
-        progress_callback: Optional[ProgressCallback] = None
+        progress_callback: Optional[ProgressCallback] = None,
+        exclusion_patterns: Optional[Sequence[str]] = None,
     ) -> AutoOrganizeResult:
         """Auto-organize models based on current settings
         
@@ -100,6 +102,13 @@ class ModelFileService:
             # Get all models from cache
             cache = await self.scanner.get_cached_data()
             all_models = cache.raw_data
+
+            settings_manager = get_settings_manager()
+            normalized_exclusions = settings_manager.normalize_auto_organize_exclusions(
+                exclusion_patterns
+                if exclusion_patterns is not None
+                else settings_manager.get_auto_organize_exclusions()
+            )
             
             # Filter models if specific file paths are provided
             if file_paths:
@@ -107,7 +116,16 @@ class ModelFileService:
                 result.operation_type = 'bulk'
             else:
                 result.operation_type = 'all'
-            
+
+            if normalized_exclusions:
+                all_models = [
+                    model
+                    for model in all_models
+                    if not self._should_exclude_model(
+                        model.get('file_path'), normalized_exclusions
+                    )
+                ]
+
             # Get model roots for this scanner
             model_roots = self.get_model_roots()
             if not model_roots:
@@ -301,10 +319,24 @@ class ModelFileService:
             # Normalize paths for comparison
             normalized_root = os.path.normpath(root).replace(os.sep, '/')
             normalized_file = os.path.normpath(file_path).replace(os.sep, '/')
-            
+
             if normalized_file.startswith(normalized_root):
                 return root
         return None
+
+    def _should_exclude_model(
+        self, file_path: Optional[str], patterns: Sequence[str]
+    ) -> bool:
+        if not file_path or not patterns:
+            return False
+
+        normalized_path = os.path.normpath(file_path).replace(os.sep, '/')
+        filename = os.path.basename(normalized_path)
+
+        for pattern in patterns:
+            if fnmatch.fnmatch(filename, pattern) or fnmatch.fnmatch(normalized_path, pattern):
+                return True
+        return False
     
     async def _calculate_target_directory(
         self, 

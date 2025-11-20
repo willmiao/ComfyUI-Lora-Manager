@@ -131,9 +131,34 @@ export class SettingsManager {
         }
         merged.priority_tags = normalizedPriority;
 
+        merged.auto_organize_exclusions = this.normalizePatternList(
+            backendSettings?.auto_organize_exclusions ?? defaults.auto_organize_exclusions
+        );
+
         Object.keys(merged).forEach(key => this.backendSettingKeys.add(key));
 
         return merged;
+    }
+
+    normalizePatternList(value) {
+        if (Array.isArray(value)) {
+            const sanitized = value
+                .map(item => typeof item === 'string' ? item.trim() : '')
+                .filter(Boolean);
+            return [...new Set(sanitized)];
+        }
+
+        if (typeof value === 'string') {
+            const sanitized = value
+                .replace(/\n/g, ',')
+                .replace(/;/g, ',')
+                .split(',')
+                .map(part => part.trim())
+                .filter(Boolean);
+            return [...new Set(sanitized)];
+        }
+
+        return [];
     }
 
     registerStartupMessages(messages = []) {
@@ -374,6 +399,16 @@ export class SettingsManager {
         const usePortableCheckbox = document.getElementById('usePortableSettings');
         if (usePortableCheckbox) {
             usePortableCheckbox.checked = !!state.global.settings.use_portable_settings;
+        }
+
+        const autoOrganizeExclusionsInput = document.getElementById('autoOrganizeExclusions');
+        if (autoOrganizeExclusionsInput) {
+            const patterns = this.normalizePatternList(state.global.settings.auto_organize_exclusions);
+            autoOrganizeExclusionsInput.value = patterns.join(', ');
+        }
+        const autoOrganizeExclusionsError = document.getElementById('autoOrganizeExclusionsError');
+        if (autoOrganizeExclusionsError) {
+            autoOrganizeExclusionsError.textContent = '';
         }
 
         // Set video autoplay on hover setting
@@ -1592,11 +1627,63 @@ export class SettingsManager {
             }
         }
     }
-    
+
+    async saveAutoOrganizeExclusions() {
+        const input = document.getElementById('autoOrganizeExclusions');
+        const errorElement = document.getElementById('autoOrganizeExclusionsError');
+        if (!input) return;
+
+        const normalized = this.normalizePatternList(input.value);
+
+        if (input.value.trim() && normalized.length === 0) {
+            if (errorElement) {
+                errorElement.textContent = translate(
+                    'settings.autoOrganizeExclusions.validation.noPatterns',
+                    {},
+                    'Enter at least one pattern separated by commas or semicolons.'
+                );
+            }
+            return;
+        }
+
+        const current = this.normalizePatternList(state.global.settings.auto_organize_exclusions);
+        if (normalized.join('|') === current.join('|')) {
+            if (errorElement) {
+                errorElement.textContent = '';
+            }
+            return;
+        }
+
+        try {
+            if (errorElement) {
+                errorElement.textContent = '';
+            }
+
+            await this.saveSetting('auto_organize_exclusions', normalized);
+            input.value = normalized.join(', ');
+
+            showToast(
+                'toast.settings.settingsUpdated',
+                { setting: translate('settings.autoOrganizeExclusions.label') },
+                'success'
+            );
+        } catch (error) {
+            console.error('Failed to save auto-organize exclusions:', error);
+            if (errorElement) {
+                errorElement.textContent = translate(
+                    'settings.autoOrganizeExclusions.validation.saveFailed',
+                    { message: error.message },
+                    `Unable to save exclusions: ${error.message}`
+                );
+            }
+            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
+        }
+    }
+
     async saveInputSetting(elementId, settingKey) {
         const element = document.getElementById(elementId);
         if (!element) return;
-        
+
         const value = element.value.trim(); // Trim whitespace
         
         try {

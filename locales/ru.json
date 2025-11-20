@@ -232,6 +232,7 @@
             "downloadPathTemplates": "Шаблоны путей загрузки",
             "exampleImages": "Примеры изображений",
             "updateFlags": "Метки обновлений",
+            "autoOrganize": "Auto-organize",
             "misc": "Разное",
             "metadataArchive": "Архив метаданных",
             "storageLocation": "Расположение настроек",
@@ -250,6 +251,15 @@
         "videoSettings": {
             "autoplayOnHover": "Автовоспроизведение видео при наведении",
             "autoplayOnHoverHelp": "Воспроизводить превью видео только при наведении курсора"
+        },
+        "autoOrganizeExclusions": {
+            "label": "Auto-organize exclusions",
+            "placeholder": "Example: extras/*, */backups/*; *_temp.safetensors",
+            "help": "Skip moving files that match these wildcard patterns. Separate multiple patterns with commas or semicolons.",
+            "validation": {
+                "noPatterns": "Enter at least one pattern separated by commas or semicolons.",
+                "saveFailed": "Unable to save exclusions: {message}"
+            }
         },
         "layoutSettings": {
             "displayDensity": "Плотность отображения",

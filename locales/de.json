@@ -232,6 +232,7 @@
             "downloadPathTemplates": "Download-Pfad-Vorlagen",
             "exampleImages": "Beispielbilder",
             "updateFlags": "Update-Markierungen",
+            "autoOrganize": "Auto-organize",
             "misc": "Verschiedenes",
             "metadataArchive": "Metadaten-Archiv-Datenbank",
             "storageLocation": "Einstellungsort",
@@ -250,6 +251,15 @@
         "videoSettings": {
             "autoplayOnHover": "Videos bei Hover automatisch abspielen",
             "autoplayOnHoverHelp": "Video-Vorschauen nur beim Darüberfahren mit der Maus abspielen"
+        },
+        "autoOrganizeExclusions": {
+            "label": "Auto-organize exclusions",
+            "placeholder": "Example: extras/*, */backups/*; *_temp.safetensors",
+            "help": "Skip moving files that match these wildcard patterns. Separate multiple patterns with commas or semicolons.",
+            "validation": {
+                "noPatterns": "Enter at least one pattern separated by commas or semicolons.",
+                "saveFailed": "Unable to save exclusions: {message}"
+            }
         },
         "layoutSettings": {
             "displayDensity": "Anzeige-Dichte",

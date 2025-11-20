@@ -16,7 +16,7 @@ from ...services.download_coordinator import DownloadCoordinator
 from ...services.metadata_sync_service import MetadataSyncService
 from ...services.model_file_service import ModelMoveService
 from ...services.preview_asset_service import PreviewAssetService
-from ...services.settings_manager import SettingsManager
+from ...services.settings_manager import SettingsManager, get_settings_manager
 from ...services.tag_update_service import TagUpdateService
 from ...services.use_cases import (
     AutoOrganizeInProgressError,
@@ -1051,16 +1051,23 @@ class ModelAutoOrganizeHandler:
     async def auto_organize_models(self, request: web.Request) -> web.Response:
         try:
             file_paths = None
+            exclusion_patterns = None
+            settings_manager = get_settings_manager()
             if request.method == "POST":
                 try:
                     data = await request.json()
                     file_paths = data.get("file_paths")
+                    if "exclusion_patterns" in data:
+                        exclusion_patterns = settings_manager.normalize_auto_organize_exclusions(
+                            data.get("exclusion_patterns")
+                        )
                 except Exception:  # pragma: no cover - permissive path
                     pass
 
             result = await self._use_case.execute(
                 file_paths=file_paths,
                 progress_callback=self._progress_callback,
+                exclusion_patterns=exclusion_patterns,
             )
             return web.json_response(result.to_dict())
         except AutoOrganizeInProgressError:

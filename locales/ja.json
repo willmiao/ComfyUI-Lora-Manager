@@ -232,6 +232,7 @@
             "downloadPathTemplates": "ダウンロードパステンプレート",
             "exampleImages": "例画像",
             "updateFlags": "アップデートフラグ",
+            "autoOrganize": "Auto-organize",
             "misc": "その他",
             "metadataArchive": "メタデータアーカイブデータベース",
             "storageLocation": "設定の場所",
@@ -250,6 +251,15 @@
         "videoSettings": {
             "autoplayOnHover": "ホバー時に動画を自動再生",
             "autoplayOnHoverHelp": "動画プレビューはホバー時にのみ再生されます"
+        },
+        "autoOrganizeExclusions": {
+            "label": "Auto-organize exclusions",
+            "placeholder": "Example: extras/*, */backups/*; *_temp.safetensors",
+            "help": "Skip moving files that match these wildcard patterns. Separate multiple patterns with commas or semicolons.",
+            "validation": {
+                "noPatterns": "Enter at least one pattern separated by commas or semicolons.",
+                "saveFailed": "Unable to save exclusions: {message}"
+            }
         },
         "layoutSettings": {
             "displayDensity": "表示密度",
