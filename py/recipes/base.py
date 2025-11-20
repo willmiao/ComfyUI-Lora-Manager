@@ -8,6 +8,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from abc import ABC, abstractmethod
 from ..config import config
 from ..utils.constants import VALID_LORA_TYPES
+from ..utils.civitai_utils import rewrite_preview_url
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +79,7 @@ class RecipeMetadataParser(ABC):
             # Update model name if available
             if 'model' in civitai_info and 'name' in civitai_info['model']:
                 lora_entry['name'] = civitai_info['model']['name']
-            
+
             lora_entry['id'] = civitai_info.get('id')
             lora_entry['modelId'] = civitai_info.get('modelId')
             
@@ -88,7 +89,10 @@ class RecipeMetadataParser(ABC):
             
             # Get thumbnail URL from first image
             if 'images' in civitai_info and civitai_info['images']:
-                lora_entry['thumbnailUrl'] = civitai_info['images'][0].get('url', '')
+                image_url = civitai_info['images'][0].get('url')
+                if image_url:
+                    rewritten_image_url, _ = rewrite_preview_url(image_url, media_type='image')
+                    lora_entry['thumbnailUrl'] = rewritten_image_url or image_url
             
             # Get base model
             current_base_model = civitai_info.get('baseModel', '')
@@ -151,33 +155,59 @@ class RecipeMetadataParser(ABC):
         
         Args:
             checkpoint: The checkpoint entry to populate
-            civitai_info: The response from Civitai API
+            civitai_info: The response from Civitai API or a (data, error_msg) tuple
             
         Returns:
             The populated checkpoint dict
         """
         try:
-            if civitai_info and civitai_info.get("error") != "Model not found":
-                # Update model name if available
-                if 'model' in civitai_info and 'name' in civitai_info['model']:
-                    checkpoint['name'] = civitai_info['model']['name']
-                
-                # Update version if available
-                if 'name' in civitai_info:
-                    checkpoint['version'] = civitai_info.get('name', '')
-                
-                # Get thumbnail URL from first image
-                if 'images' in civitai_info and civitai_info['images']:
-                    checkpoint['thumbnailUrl'] = civitai_info['images'][0].get('url', '')
-                
-                # Get base model
-                checkpoint['baseModel'] = civitai_info.get('baseModel', '')
-                
-                # Get download URL
-                checkpoint['downloadUrl'] = civitai_info.get('downloadUrl', '')
-            else:
-                # Model not found or deleted
+            civitai_data, error_msg = (
+                (civitai_info, None)
+                if not isinstance(civitai_info, tuple)
+                else civitai_info
+            )
+
+            if not civitai_data or error_msg == "Model not found":
                 checkpoint['isDeleted'] = True
+                return checkpoint
+
+            if 'model' in civitai_data and 'name' in civitai_data['model']:
+                checkpoint['name'] = civitai_data['model']['name']
+
+            if 'name' in civitai_data:
+                checkpoint['version'] = civitai_data.get('name', '')
+
+            if 'images' in civitai_data and civitai_data['images']:
+                image_url = civitai_data['images'][0].get('url')
+                if image_url:
+                    rewritten_image_url, _ = rewrite_preview_url(image_url, media_type='image')
+                    checkpoint['thumbnailUrl'] = rewritten_image_url or image_url
+
+            checkpoint['baseModel'] = civitai_data.get('baseModel', '')
+            checkpoint['downloadUrl'] = civitai_data.get('downloadUrl', '')
+
+            checkpoint['modelId'] = civitai_data.get('modelId', checkpoint.get('modelId', 0))
+
+            if 'files' in civitai_data:
+                model_file = next(
+                    (
+                        file
+                        for file in civitai_data.get('files', [])
+                        if file.get('type') == 'Model'
+                    ),
+                    None,
+                )
+
+                if model_file:
+                    checkpoint['size'] = model_file.get('sizeKB', 0) * 1024
+
+                    sha256 = model_file.get('hashes', {}).get('SHA256')
+                    if sha256:
+                        checkpoint['hash'] = sha256.lower()
+
+                    file_name = model_file.get('name', '')
+                    if file_name:
+                        checkpoint['file_name'] = os.path.splitext(file_name)[0]
         except Exception as e:
             logger.error(f"Error populating checkpoint from Civitai info: {e}")
             

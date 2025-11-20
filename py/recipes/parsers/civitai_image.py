@@ -50,6 +50,7 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
             result = {
                 'base_model': None,
                 'loras': [],
+                'model': None,
                 'gen_params': {},
                 'from_civitai_image': True
             }
@@ -174,13 +175,48 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
             # Process civitaiResources array
             if "civitaiResources" in metadata and isinstance(metadata["civitaiResources"], list):
                 for resource in metadata["civitaiResources"]:
-                    # Get unique identifier for deduplication
+                    # Get resource type and identifier
+                    resource_type = str(resource.get("type") or "").lower()
                     version_id = str(resource.get("modelVersionId", ""))
-                    
+
+                    if resource_type == "checkpoint":
+                        checkpoint_entry = {
+                            'id': resource.get("modelVersionId", 0),
+                            'modelId': resource.get("modelId", 0),
+                            'name': resource.get("modelName", "Unknown Checkpoint"),
+                            'version': resource.get("modelVersionName", ""),
+                            'type': resource.get("type", "checkpoint"),
+                            'existsLocally': False,
+                            'localPath': None,
+                            'file_name': resource.get("modelName", ""),
+                            'hash': resource.get("hash", "") or "",
+                            'thumbnailUrl': '/loras_static/images/no-preview.png',
+                            'baseModel': '',
+                            'size': 0,
+                            'downloadUrl': '',
+                            'isDeleted': False
+                        }
+
+                        if version_id and metadata_provider:
+                            try:
+                                civitai_info = await metadata_provider.get_model_version_info(version_id)
+
+                                checkpoint_entry = await self.populate_checkpoint_from_civitai(
+                                    checkpoint_entry,
+                                    civitai_info
+                                )
+                            except Exception as e:
+                                logger.error(f"Error fetching Civitai info for checkpoint version {version_id}: {e}")
+
+                        if result["model"] is None:
+                            result["model"] = checkpoint_entry
+
+                        continue
+
                     # Skip if we've already added this LoRA
                     if version_id and version_id in added_loras:
                         continue
-                    
+
                     # Initialize lora entry
                     lora_entry = {
                         'id': resource.get("modelVersionId", 0),
@@ -196,31 +232,31 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                         'downloadUrl': '',
                         'isDeleted': False
                     }
-                    
+
                     # Try to get info from Civitai if modelVersionId is available
                     if version_id and metadata_provider:
                         try:
                             # Use get_model_version_info instead of get_model_version
                             civitai_info = await metadata_provider.get_model_version_info(version_id)
-                            
+
                             populated_entry = await self.populate_lora_from_civitai(
                                 lora_entry,
                                 civitai_info,
                                 recipe_scanner,
                                 base_model_counts
                             )
-                            
+
                             if populated_entry is None:
                                 continue  # Skip invalid LoRA types
-                                
+
                             lora_entry = populated_entry
                         except Exception as e:
                             logger.error(f"Error fetching Civitai info for model version {version_id}: {e}")
-                    
+
                     # Track this LoRA in our deduplication dict
                     if version_id:
                         added_loras[version_id] = len(result["loras"])
-                        
+
                     result["loras"].append(lora_entry)
             
             # Process additionalResources array

@@ -59,3 +59,98 @@ async def test_parse_metadata_creates_loras_from_hashes(monkeypatch):
         "绪儿 厚涂构图光影质感增强V3",
     }
 
+
+@pytest.mark.asyncio
+async def test_parse_metadata_populates_checkpoint_and_rewrites_thumbnails(monkeypatch):
+    checkpoint_info = {
+        "id": 222,
+        "modelId": 111,
+        "model": {"name": "Checkpoint Example", "type": "checkpoint"},
+        "name": "Checkpoint Version",
+        "images": [{"url": "https://image.civitai.com/checkpoints/original=true"}],
+        "baseModel": "Illustrious",
+        "downloadUrl": "https://civitai.com/checkpoint/download",
+        "files": [
+            {
+                "type": "Model",
+                "primary": True,
+                "sizeKB": 1024,
+                "name": "Checkpoint Example.safetensors",
+                "hashes": {"SHA256": "FFAA0011"},
+            }
+        ],
+    }
+
+    lora_info = {
+        "id": 444,
+        "modelId": 333,
+        "model": {"name": "Example Lora Model", "type": "lora"},
+        "name": "Example Lora Version",
+        "images": [{"url": "https://image.civitai.com/loras/original=true"}],
+        "baseModel": "Illustrious",
+        "downloadUrl": "https://civitai.com/lora/download",
+        "files": [
+            {
+                "type": "Model",
+                "primary": True,
+                "sizeKB": 512,
+                "hashes": {"SHA256": "abc123"},
+            }
+        ],
+    }
+
+    async def fake_metadata_provider():
+        class Provider:
+            async def get_model_version_info(self, version_id):
+                if version_id == "222":
+                    return checkpoint_info, None
+                if version_id == "444":
+                    return lora_info, None
+                return None, "Model not found"
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.civitai_image.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+
+    parser = CivitaiApiMetadataParser()
+
+    metadata = {
+        "prompt": "test prompt",
+        "negativePrompt": "test negative prompt",
+        "civitaiResources": [
+            {
+                "type": "checkpoint",
+                "modelId": 111,
+                "modelVersionId": 222,
+                "modelName": "Checkpoint Example",
+                "modelVersionName": "Checkpoint Version",
+            },
+            {
+                "type": "lora",
+                "modelId": 333,
+                "modelVersionId": 444,
+                "modelName": "Example Lora",
+                "modelVersionName": "Lora Version",
+                "weight": 0.7,
+            },
+        ],
+    }
+
+    result = await parser.parse_metadata(metadata)
+
+    assert result["model"] is not None
+    assert result["model"]["name"] == "Checkpoint Example"
+    assert result["model"]["type"] == "checkpoint"
+    assert result["model"]["thumbnailUrl"] == "https://image.civitai.com/checkpoints/width=450,optimized=true"
+    assert result["model"]["modelId"] == 111
+    assert result["model"]["size"] == 1024 * 1024
+    assert result["model"]["hash"] == "ffaa0011"
+    assert result["model"]["file_name"] == "Checkpoint Example"
+
+    assert result["loras"]
+    assert result["loras"][0]["name"] == "Example Lora Model"
+    assert result["loras"][0]["thumbnailUrl"] == "https://image.civitai.com/loras/width=450,optimized=true"
+    assert result["loras"][0]["hash"] == "abc123"
