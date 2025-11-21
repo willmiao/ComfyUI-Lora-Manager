@@ -3,7 +3,7 @@ import { showToast, copyToClipboard, sendLoraToWorkflow } from '../utils/uiHelpe
 import { modalManager } from '../managers/ModalManager.js';
 import { getCurrentPageState } from '../state/index.js';
 import { state } from '../state/index.js';
-import { NSFW_LEVELS } from '../utils/constants.js';
+import { NSFW_LEVELS, getBaseModelAbbreviation } from '../utils/constants.js';
 
 class RecipeCard {
     constructor(recipe, clickHandler) {
@@ -24,8 +24,10 @@ class RecipeCard {
         card.dataset.created = this.recipe.created_date;
         card.dataset.id = this.recipe.id || '';
         
-        // Get base model
-        const baseModel = this.recipe.base_model || '';
+        // Get base model with fallback
+        const baseModelLabel = (this.recipe.base_model || '').trim() || 'Unknown';
+        const baseModelAbbreviation = getBaseModelAbbreviation(baseModelLabel);
+        const baseModelDisplay = baseModelLabel === 'Unknown' ? 'Unknown' : baseModelAbbreviation;
         
         // Ensure loras array exists
         const loras = this.recipe.loras || [];
@@ -71,7 +73,7 @@ class RecipeCard {
                       `<button class="toggle-blur-btn" title="Toggle blur">
                           <i class="fas fa-eye"></i>
                       </button>` : ''}
-                    ${baseModel ? `<span class="base-model-label ${shouldBlur ? 'with-toggle' : ''}" title="${baseModel}">${baseModel}</span>` : ''}
+                    <span class="base-model-label ${shouldBlur ? 'with-toggle' : ''}" title="${baseModelLabel}">${baseModelDisplay}</span>
                     <div class="card-actions">
                         <i class="fas fa-share-alt" title="Share Recipe"></i>
                         <i class="fas fa-paper-plane" title="Send Recipe to Workflow (Click: Append, Shift+Click: Replace)"></i>
