@@ -441,7 +441,12 @@ class RecipeScanner:
             await self._update_lora_information(recipe_data)
 
             if recipe_data.get('checkpoint'):
-                recipe_data['checkpoint'] = self._enrich_checkpoint_entry(dict(recipe_data['checkpoint']))
+                checkpoint_entry = self._normalize_checkpoint_entry(recipe_data['checkpoint'])
+                if checkpoint_entry:
+                    recipe_data['checkpoint'] = self._enrich_checkpoint_entry(checkpoint_entry)
+                else:
+                    logger.warning("Dropping invalid checkpoint entry in %s", recipe_path)
+                    recipe_data.pop('checkpoint', None)
 
             # Calculate and update fingerprint if missing
             if 'loras' in recipe_data and 'fingerprint' not in recipe_data:
@@ -664,6 +669,29 @@ class RecipeScanner:
         except Exception as e:
             logger.error(f"Error getting base model for lora: {e}")
             return None
+
+    def _normalize_checkpoint_entry(self, checkpoint_raw: Any) -> Optional[Dict[str, Any]]:
+        """Coerce legacy or malformed checkpoint entries into a dict."""
+
+        if isinstance(checkpoint_raw, dict):
+            return dict(checkpoint_raw)
+
+        if isinstance(checkpoint_raw, (list, tuple)) and len(checkpoint_raw) == 1:
+            return self._normalize_checkpoint_entry(checkpoint_raw[0])
+
+        if isinstance(checkpoint_raw, str):
+            name = checkpoint_raw.strip()
+            if not name:
+                return None
+
+            file_name = os.path.splitext(os.path.basename(name))[0]
+            return {
+                "name": name,
+                "file_name": file_name,
+            }
+
+        logger.warning("Unexpected checkpoint payload type %s", type(checkpoint_raw).__name__)
+        return None
 
     def _enrich_checkpoint_entry(self, checkpoint: Dict[str, Any]) -> Dict[str, Any]:
         """Populate convenience fields for a checkpoint entry."""

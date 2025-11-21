@@ -226,6 +226,36 @@ async def test_load_recipe_rewrites_missing_image_path(tmp_path: Path, recipe_sc
     assert persisted["file_path"] == expected_path
 
 
+@pytest.mark.asyncio
+async def test_load_recipe_upgrades_string_checkpoint(tmp_path: Path, recipe_scanner):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe_id = "legacy-checkpoint"
+    image_path = recipes_dir / f"{recipe_id}.webp"
+    recipe_path = recipes_dir / f"{recipe_id}.recipe.json"
+    recipe_path.write_text(
+        json.dumps(
+            {
+                "id": recipe_id,
+                "file_path": str(image_path),
+                "title": "Legacy",
+                "modified": 0.0,
+                "created_date": 0.0,
+                "loras": [],
+                "checkpoint": "sd15.safetensors",
+            }
+        )
+    )
+
+    loaded = await scanner._load_recipe_file(str(recipe_path))
+
+    assert isinstance(loaded["checkpoint"], dict)
+    assert loaded["checkpoint"]["name"] == "sd15.safetensors"
+    assert loaded["checkpoint"]["file_name"] == "sd15"
+
+
 def test_enrich_uses_version_index_when_hash_missing(recipe_scanner):
     scanner, stub = recipe_scanner
     version_id = 77
