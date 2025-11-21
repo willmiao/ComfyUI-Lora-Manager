@@ -637,7 +637,9 @@ class RecipeScanner:
         try:
             if hash_value:
                 lora['inLibrary'] = self._lora_scanner.has_hash(hash_value)
-                lora['preview_url'] = self._lora_scanner.get_preview_url_by_hash(hash_value)
+                lora['preview_url'] = self._normalize_preview_url(
+                    self._lora_scanner.get_preview_url_by_hash(hash_value)
+                )
                 lora['localPath'] = self._lora_scanner.get_path_by_hash(hash_value)
             elif version_entry:
                 lora['inLibrary'] = True
@@ -650,15 +652,33 @@ class RecipeScanner:
                 if version_entry.get('sha256') and not lora.get('hash'):
                     lora['hash'] = version_entry.get('sha256')
 
-                preview_url = version_entry.get('preview_url')
+                preview_url = self._normalize_preview_url(version_entry.get('preview_url'))
                 if preview_url:
                     lora.setdefault('preview_url', preview_url)
             else:
                 lora.setdefault('inLibrary', False)
+
+            if lora.get('preview_url'):
+                lora['preview_url'] = self._normalize_preview_url(lora['preview_url'])
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.debug("Error enriching lora entry %s: %s", hash_value, exc)
 
         return lora
+
+    def _normalize_preview_url(self, preview_url: Optional[str]) -> Optional[str]:
+        """Return a preview URL that is reachable from the browser."""
+
+        if not preview_url or not isinstance(preview_url, str):
+            return preview_url
+
+        normalized = preview_url.strip()
+        if normalized.startswith("/api/lm/previews?path="):
+            return normalized
+
+        if os.path.isabs(normalized):
+            return config.get_preview_static_url(normalized)
+
+        return normalized
 
     async def get_local_lora(self, name: str) -> Optional[Dict[str, Any]]:
         """Lookup a local LoRA model by name."""

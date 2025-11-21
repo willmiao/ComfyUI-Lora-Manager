@@ -247,3 +247,29 @@ def test_enrich_uses_version_index_when_hash_missing(recipe_scanner):
     assert enriched["localPath"] == file_path
     assert enriched["file_name"] == Path(file_path).stem
     assert enriched["preview_url"] == registered["preview_url"]
+
+
+def test_enrich_formats_absolute_preview_paths(recipe_scanner, tmp_path):
+    scanner, stub = recipe_scanner
+    version_id = 88
+    preview_path = tmp_path / "loras" / "version-entry.preview.jpeg"
+    preview_path.parent.mkdir(parents=True, exist_ok=True)
+    preview_path.write_text("preview")
+    model_path = tmp_path / "loras" / "version-entry.safetensors"
+    model_path.write_text("weights")
+
+    stub.register_model(
+        "absolute-preview",
+        {
+            "sha256": "feedface",
+            "file_path": str(model_path),
+            "preview_url": str(preview_path),
+            "civitai": {"id": version_id},
+        },
+    )
+
+    lora = {"hash": "", "file_name": "", "modelVersionId": version_id, "strength": 0.5}
+
+    enriched = scanner._enrich_lora_entry(dict(lora))
+
+    assert enriched["preview_url"] == config.get_preview_static_url(str(preview_path))
