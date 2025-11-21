@@ -79,7 +79,7 @@ class RecipePersistenceService:
 
         current_time = time.time()
         loras_data = [self._normalise_lora_entry(lora) for lora in (metadata.get("loras") or [])]
-        checkpoint_entry = metadata.get("checkpoint")
+        checkpoint_entry = self._sanitize_checkpoint_entry(self._extract_checkpoint_entry(metadata))
 
         gen_params = metadata.get("gen_params") or {}
         if not gen_params and "raw_metadata" in metadata:
@@ -87,7 +87,6 @@ class RecipePersistenceService:
             gen_params = {
                 "prompt": raw_metadata.get("prompt", ""),
                 "negative_prompt": raw_metadata.get("negative_prompt", ""),
-                "checkpoint": raw_metadata.get("checkpoint", {}),
                 "steps": raw_metadata.get("steps", ""),
                 "sampler": raw_metadata.get("sampler", ""),
                 "cfg_scale": raw_metadata.get("cfg_scale", ""),
@@ -95,8 +94,9 @@ class RecipePersistenceService:
                 "size": raw_metadata.get("size", ""),
                 "clip_skip": raw_metadata.get("clip_skip", ""),
             }
-        if checkpoint_entry and "checkpoint" not in gen_params:
-            gen_params["checkpoint"] = checkpoint_entry
+
+        # Drop checkpoint duplication from generation parameters to store it only at top level
+        gen_params.pop("checkpoint", None)
 
         fingerprint = calculate_recipe_fingerprint(loras_data)
         recipe_data: Dict[str, Any] = {
@@ -335,7 +335,7 @@ class RecipePersistenceService:
             "created_date": time.time(),
             "base_model": most_common_base_model,
             "loras": loras_data,
-            "checkpoint": metadata.get("checkpoint", ""),
+            "checkpoint": self._sanitize_checkpoint_entry(metadata.get("checkpoint", "")),
             "gen_params": {
                 key: value
                 for key, value in metadata.items()
@@ -363,6 +363,30 @@ class RecipePersistenceService:
         )
 
     # Helper methods ---------------------------------------------------
+
+    def _extract_checkpoint_entry(self, metadata: dict[str, Any]) -> Optional[dict[str, Any]]:
+        """Pull a checkpoint entry from various metadata locations."""
+
+        checkpoint_entry = metadata.get("checkpoint") or metadata.get("model")
+        if not checkpoint_entry:
+            gen_params = metadata.get("gen_params") or {}
+            checkpoint_entry = gen_params.get("checkpoint")
+
+        return checkpoint_entry if isinstance(checkpoint_entry, dict) else None
+
+    def _sanitize_checkpoint_entry(self, checkpoint_entry: Optional[dict[str, Any]]) -> Optional[dict[str, Any]]:
+        """Remove transient/local-only fields from checkpoint metadata."""
+
+        if not checkpoint_entry:
+            return None
+
+        if not isinstance(checkpoint_entry, dict):
+            return checkpoint_entry
+
+        pruned = dict(checkpoint_entry)
+        for key in ("existsLocally", "localPath", "thumbnailUrl", "size", "downloadUrl"):
+            pruned.pop(key, None)
+        return pruned
 
     def _resolve_image_bytes(self, image_bytes: bytes | None, image_base64: str | None) -> bytes:
         if image_bytes is not None:

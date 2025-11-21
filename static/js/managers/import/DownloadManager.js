@@ -56,6 +56,15 @@ export class DownloadManager {
                     gen_params: this.importManager.recipeData.gen_params || {},
                     raw_metadata: this.importManager.recipeData.raw_metadata || {}
                 };
+
+                const checkpointMetadata =
+                    this.importManager.recipeData.checkpoint ||
+                    this.importManager.recipeData.model ||
+                    (this.importManager.recipeData.gen_params || {}).checkpoint;
+
+                if (checkpointMetadata && typeof checkpointMetadata === 'object') {
+                    completeMetadata.checkpoint = checkpointMetadata;
+                }
                 
                 // Add source_path to metadata to track where the recipe was imported from
                 if (this.importManager.importMode === 'url') {
