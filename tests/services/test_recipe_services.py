@@ -158,6 +158,55 @@ async def test_save_recipe_reports_duplicates(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_save_recipe_persists_checkpoint_metadata(tmp_path):
+    exif_utils = DummyExifUtils()
+
+    class DummyScanner:
+        def __init__(self, root):
+            self.recipes_dir = str(root)
+
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+        async def add_recipe(self, recipe_data):
+            return None
+
+    scanner = DummyScanner(tmp_path)
+    service = RecipePersistenceService(
+        exif_utils=exif_utils,
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    checkpoint_meta = {
+        "type": "checkpoint",
+        "modelId": 10,
+        "modelVersionId": 20,
+        "modelName": "Flux",
+        "modelVersionName": "Dev",
+    }
+
+    metadata = {
+        "base_model": "Flux",
+        "loras": [],
+        "checkpoint": checkpoint_meta,
+    }
+
+    result = await service.save_recipe(
+        recipe_scanner=scanner,
+        image_bytes=b"img",
+        image_base64=None,
+        name="Checkpointed",
+        tags=[],
+        metadata=metadata,
+    )
+
+    stored = json.loads(Path(result.payload["json_path"]).read_text())
+    assert stored["checkpoint"] == checkpoint_meta
+    assert stored["gen_params"]["checkpoint"] == checkpoint_meta
+
+
+@pytest.mark.asyncio
 async def test_save_recipe_from_widget_allows_empty_lora(tmp_path):
     exif_utils = DummyExifUtils()
 

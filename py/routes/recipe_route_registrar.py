@@ -20,6 +20,7 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("GET", "/loras/recipes", "render_page"),
     RouteDefinition("GET", "/api/lm/recipes", "list_recipes"),
     RouteDefinition("GET", "/api/lm/recipe/{recipe_id}", "get_recipe"),
+    RouteDefinition("GET", "/api/lm/recipes/import-remote", "import_remote_recipe"),
     RouteDefinition("POST", "/api/lm/recipes/analyze-image", "analyze_uploaded_image"),
     RouteDefinition("POST", "/api/lm/recipes/analyze-local-image", "analyze_local_image"),
     RouteDefinition("POST", "/api/lm/recipes/save", "save_recipe"),
@@ -61,4 +62,3 @@ class RecipeRouteRegistrar:
         add_method_name = self._METHOD_MAP[method.upper()]
         add_method = getattr(self._app.router, add_method_name)
         add_method(path, handler)
-

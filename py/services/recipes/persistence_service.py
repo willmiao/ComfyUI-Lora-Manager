@@ -78,9 +78,10 @@ class RecipePersistenceService:
             file_obj.write(optimized_image)
 
         current_time = time.time()
-        loras_data = [self._normalise_lora_entry(lora) for lora in metadata.get("loras", [])]
+        loras_data = [self._normalise_lora_entry(lora) for lora in (metadata.get("loras") or [])]
+        checkpoint_entry = metadata.get("checkpoint")
 
-        gen_params = metadata.get("gen_params", {})
+        gen_params = metadata.get("gen_params") or {}
         if not gen_params and "raw_metadata" in metadata:
             raw_metadata = metadata.get("raw_metadata", {})
             gen_params = {
@@ -94,6 +95,8 @@ class RecipePersistenceService:
                 "size": raw_metadata.get("size", ""),
                 "clip_skip": raw_metadata.get("clip_skip", ""),
             }
+        if checkpoint_entry and "checkpoint" not in gen_params:
+            gen_params["checkpoint"] = checkpoint_entry
 
         fingerprint = calculate_recipe_fingerprint(loras_data)
         recipe_data: Dict[str, Any] = {
@@ -107,6 +110,8 @@ class RecipePersistenceService:
             "gen_params": gen_params,
             "fingerprint": fingerprint,
         }
+        if checkpoint_entry:
+            recipe_data["checkpoint"] = checkpoint_entry
 
         tags_list = list(tags)
         if tags_list:

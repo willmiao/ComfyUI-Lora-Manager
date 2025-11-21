@@ -191,6 +191,8 @@ class BaseRecipeRoutes:
             logger=logger,
             persistence_service=persistence_service,
             analysis_service=analysis_service,
+            downloader_factory=get_downloader,
+            civitai_client_getter=civitai_client_getter,
         )
         analysis = RecipeAnalysisHandler(
             ensure_dependencies_ready=self.ensure_dependencies_ready,
@@ -214,4 +216,3 @@ class BaseRecipeRoutes:
             analysis=analysis,
             sharing=sharing,
         )
-

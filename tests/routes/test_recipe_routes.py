@@ -27,6 +27,7 @@ class RecipeRouteHarness:
     analysis: "StubAnalysisService"
     persistence: "StubPersistenceService"
     sharing: "StubSharingService"
+    downloader: "StubDownloader"
     tmp_dir: Path
 
 
@@ -175,6 +176,18 @@ class StubSharingService:
         return self.download_info
 
 
+class StubDownloader:
+    """Downloader stub that writes deterministic bytes to requested locations."""
+
+    def __init__(self) -> None:
+        self.urls: List[str] = []
+
+    async def download_file(self, url: str, destination: str, use_auth: bool = False):  # noqa: ARG002 - use_auth unused
+        self.urls.append(url)
+        Path(destination).write_bytes(b"imported-image")
+        return True, destination
+
+
 @asynccontextmanager
 async def recipe_harness(monkeypatch, tmp_path: Path) -> AsyncIterator[RecipeRouteHarness]:
     """Context manager that yields a fully wired recipe route harness."""
@@ -191,11 +204,17 @@ async def recipe_harness(monkeypatch, tmp_path: Path) -> AsyncIterator[RecipeRou
     async def fake_get_civitai_client():
         return object()
 
+    downloader = StubDownloader()
+
+    async def fake_get_downloader():
+        return downloader
+
     monkeypatch.setattr(ServiceRegistry, "get_recipe_scanner", fake_get_recipe_scanner)
     monkeypatch.setattr(ServiceRegistry, "get_civitai_client", fake_get_civitai_client)
     monkeypatch.setattr(base_recipe_routes, "RecipeAnalysisService", StubAnalysisService)
     monkeypatch.setattr(base_recipe_routes, "RecipePersistenceService", StubPersistenceService)
     monkeypatch.setattr(base_recipe_routes, "RecipeSharingService", StubSharingService)
+    monkeypatch.setattr(base_recipe_routes, "get_downloader", fake_get_downloader)
     monkeypatch.setattr(config, "loras_roots", [str(tmp_path)], raising=False)
 
     app = web.Application()
@@ -211,6 +230,7 @@ async def recipe_harness(monkeypatch, tmp_path: Path) -> AsyncIterator[RecipeRou
         analysis=StubAnalysisService.instances[-1],
         persistence=StubPersistenceService.instances[-1],
         sharing=StubSharingService.instances[-1],
+        downloader=downloader,
         tmp_dir=tmp_path,
     )
 
@@ -275,6 +295,54 @@ async def test_save_and_delete_recipe_round_trip(monkeypatch, tmp_path: Path) ->
         assert harness.persistence.delete_calls == ["saved-id"]
 
 
+async def test_import_remote_recipe(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        resources = [
+            {
+                "type": "checkpoint",
+                "modelId": 10,
+                "modelVersionId": 33,
+                "modelName": "Flux",
+                "modelVersionName": "Dev",
+            },
+            {
+                "type": "lora",
+                "modelId": 20,
+                "modelVersionId": 44,
+                "modelName": "Painterly",
+                "modelVersionName": "v2",
+                "weight": 0.25,
+            },
+        ]
+        response = await harness.client.get(
+            "/api/lm/recipes/import-remote",
+            params={
+                "image_url": "https://example.com/images/1",
+                "name": "Remote Recipe",
+                "resources": json.dumps(resources),
+                "tags": "foo,bar",
+                "base_model": "Flux",
+                "source_path": "https://example.com/images/1",
+                "gen_params": json.dumps({"prompt": "hello world", "cfg_scale": 7}),
+            },
+        )
+
+        payload = await response.json()
+        assert response.status == 200
+        assert payload["success"] is True
+
+        call = harness.persistence.save_calls[-1]
+        assert call["name"] == "Remote Recipe"
+        assert call["tags"] == ["foo", "bar"]
+        metadata = call["metadata"]
+        assert metadata["base_model"] == "Flux"
+        assert metadata["checkpoint"]["modelVersionId"] == 33
+        assert metadata["loras"][0]["weight"] == 0.25
+        assert metadata["gen_params"]["prompt"] == "hello world"
+        assert metadata["gen_params"]["checkpoint"]["modelVersionId"] == 33
+        assert harness.downloader.urls == ["https://example.com/images/1"]
+
+
 async def test_analyze_uploaded_image_error_path(monkeypatch, tmp_path: Path) -> None:
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         harness.analysis.raise_for_uploaded = RecipeValidationError("No image data provided")
@@ -327,4 +395,3 @@ async def test_share_and_download_recipe(monkeypatch, tmp_path: Path) -> None:
         assert body == b"stub"
 
         download_path.unlink(missing_ok=True)
-
