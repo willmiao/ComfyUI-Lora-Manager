@@ -136,4 +136,23 @@ describe('AutoComplete widget interactions', () => {
     expect(input.focus).toHaveBeenCalled();
     expect(input.setSelectionRange).toHaveBeenCalled();
   });
+
+  it('highlights multiple include tokens while ignoring excluded ones', async () => {
+    const input = document.createElement('textarea');
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'loras', { showPreview: false });
+
+    const highlighted = autoComplete.highlightMatch(
+      'models/flux/beta-detail.safetensors',
+      'flux detail -beta',
+    );
+
+    const highlightCount = (highlighted.match(/<span/g) || []).length;
+    expect(highlightCount).toBe(2);
+    expect(highlighted).toContain('flux');
+    expect(highlighted).toContain('detail');
+    expect(highlighted).not.toMatch(/beta<\/span>/i);
+  });
 });

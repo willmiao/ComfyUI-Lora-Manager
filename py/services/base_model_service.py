@@ -648,13 +648,55 @@ class BaseModelService(ABC):
             return None
         return metadata.modelDescription or ''
 
+    @staticmethod
+    def _parse_search_tokens(search_term: str) -> tuple[List[str], List[str]]:
+        """Split a search string into include and exclude tokens."""
+        include_terms: List[str] = []
+        exclude_terms: List[str] = []
+
+        for raw_term in search_term.split():
+            term = raw_term.strip()
+            if not term:
+                continue
+
+            if term.startswith("-") and len(term) > 1:
+                exclude_terms.append(term[1:].lower())
+            else:
+                include_terms.append(term.lower())
+
+        return include_terms, exclude_terms
+
+    @staticmethod
+    def _relative_path_matches_tokens(
+        path_lower: str, include_terms: List[str], exclude_terms: List[str]
+    ) -> bool:
+        """Determine whether a relative path string satisfies include/exclude tokens."""
+        if any(term and term in path_lower for term in exclude_terms):
+            return False
+
+        for term in include_terms:
+            if term and term not in path_lower:
+                return False
+
+        return True
+
+    @staticmethod
+    def _relative_path_sort_key(relative_path: str, include_terms: List[str]) -> tuple:
+        """Sort paths by how well they satisfy the include tokens."""
+        path_lower = relative_path.lower()
+        prefix_hits = sum(1 for term in include_terms if term and path_lower.startswith(term))
+        match_positions = [path_lower.find(term) for term in include_terms if term and term in path_lower]
+        first_match_index = min(match_positions) if match_positions else 0
+
+        return (-prefix_hits, first_match_index, len(relative_path), path_lower)
+
 
     async def search_relative_paths(self, search_term: str, limit: int = 15) -> List[str]:
         """Search model relative file paths for autocomplete functionality"""
         cache = await self.scanner.get_cached_data()
+        include_terms, exclude_terms = self._parse_search_tokens(search_term)
         
         matching_paths = []
-        search_lower = search_term.lower()
         
         # Get model roots for path calculation
         model_roots = self.scanner.get_model_roots()
@@ -676,17 +718,19 @@ class BaseModelService(ABC):
                     relative_path = normalized_file[len(normalized_root):].lstrip(os.sep)
                     break
             
-            if relative_path and search_lower in relative_path.lower():
+            if not relative_path:
+                continue
+
+            relative_lower = relative_path.lower()
+            if self._relative_path_matches_tokens(relative_lower, include_terms, exclude_terms):
                 matching_paths.append(relative_path)
                 
                 if len(matching_paths) >= limit * 2:  # Get more for better sorting
                     break
         
-        # Sort by relevance (exact matches first, then by length)
-        matching_paths.sort(key=lambda x: (
-            not x.lower().startswith(search_lower),  # Exact prefix matches first
-            len(x),  # Then by length (shorter first)
-            x.lower()  # Then alphabetically
-        ))
+        # Sort by relevance (prefix and earliest hits first, then by length and alphabetically)
+        matching_paths.sort(
+            key=lambda relative: self._relative_path_sort_key(relative, include_terms)
+        )
         
         return matching_paths[:limit]
