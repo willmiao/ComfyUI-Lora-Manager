@@ -24,7 +24,7 @@ class StubLoraScanner:
         self._hash_index = StubHashIndex()
         self._hash_meta: dict[str, dict[str, str]] = {}
         self._models_by_name: dict[str, dict] = {}
-        self._cache = SimpleNamespace(raw_data=[])
+        self._cache = SimpleNamespace(raw_data=[], version_index={})
 
     async def get_cached_data(self):
         return self._cache
@@ -46,12 +46,20 @@ class StubLoraScanner:
     def register_model(self, name: str, info: dict) -> None:
         self._models_by_name[name] = info
         hash_value = (info.get("sha256") or "").lower()
+        version_id = info.get("civitai", {}).get("id")
         if hash_value:
             self._hash_meta[hash_value] = {
                 "path": info.get("file_path", ""),
                 "preview_url": info.get("preview_url", ""),
             }
             self._hash_index._hash_to_path[hash_value] = info.get("file_path", "")
+        if version_id is not None:
+            self._cache.version_index[int(version_id)] = {
+                "file_path": info.get("file_path", ""),
+                "sha256": hash_value,
+                "preview_url": info.get("preview_url", ""),
+                "civitai": info.get("civitai", {}),
+            }
         self._cache.raw_data.append({
             "sha256": info.get("sha256", ""),
             "path": info.get("file_path", ""),
@@ -216,3 +224,26 @@ async def test_load_recipe_rewrites_missing_image_path(tmp_path: Path, recipe_sc
 
     persisted = json.loads(recipe_path.read_text())
     assert persisted["file_path"] == expected_path
+
+
+def test_enrich_uses_version_index_when_hash_missing(recipe_scanner):
+    scanner, stub = recipe_scanner
+    version_id = 77
+    file_path = str(Path(config.loras_roots[0]) / "loras" / "version-entry.safetensors")
+    registered = {
+        "sha256": "deadbeef",
+        "file_path": file_path,
+        "preview_url": "preview-from-cache.png",
+        "civitai": {"id": version_id},
+    }
+    stub.register_model("version-entry", registered)
+
+    lora = {"hash": "", "file_name": "", "modelVersionId": version_id, "strength": 0.5}
+
+    enriched = scanner._enrich_lora_entry(dict(lora))
+
+    assert enriched["inLibrary"] is True
+    assert enriched["hash"] == registered["sha256"]
+    assert enriched["localPath"] == file_path
+    assert enriched["file_name"] == Path(file_path).stem
+    assert enriched["preview_url"] == registered["preview_url"]

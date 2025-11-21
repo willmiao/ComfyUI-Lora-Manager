@@ -564,6 +564,27 @@ class RecipeScanner:
             logger.error(f"Error getting hash from Civitai: {e}")
             return None, False
 
+    def _get_lora_from_version_index(self, model_version_id: Any) -> Optional[Dict[str, Any]]:
+        """Quickly fetch a cached LoRA entry by modelVersionId using the version index."""
+
+        if not self._lora_scanner:
+            return None
+
+        cache = getattr(self._lora_scanner, "_cache", None)
+        if cache is None:
+            return None
+
+        version_index = getattr(cache, "version_index", None)
+        if not version_index:
+            return None
+
+        try:
+            normalized_id = int(model_version_id)
+        except (TypeError, ValueError):
+            return None
+
+        return version_index.get(normalized_id)
+
     async def _determine_base_model(self, loras: List[Dict]) -> Optional[str]:
         """Determine the most common base model among LoRAs"""
         base_models = {}
@@ -609,13 +630,31 @@ class RecipeScanner:
             return lora
 
         hash_value = (lora.get('hash') or '').lower()
-        if not hash_value:
-            return lora
+        version_entry = None
+        if not hash_value and lora.get('modelVersionId') is not None:
+            version_entry = self._get_lora_from_version_index(lora.get('modelVersionId'))
 
         try:
-            lora['inLibrary'] = self._lora_scanner.has_hash(hash_value)
-            lora['preview_url'] = self._lora_scanner.get_preview_url_by_hash(hash_value)
-            lora['localPath'] = self._lora_scanner.get_path_by_hash(hash_value)
+            if hash_value:
+                lora['inLibrary'] = self._lora_scanner.has_hash(hash_value)
+                lora['preview_url'] = self._lora_scanner.get_preview_url_by_hash(hash_value)
+                lora['localPath'] = self._lora_scanner.get_path_by_hash(hash_value)
+            elif version_entry:
+                lora['inLibrary'] = True
+                cached_path = version_entry.get('file_path') or version_entry.get('path')
+                if cached_path:
+                    lora.setdefault('localPath', cached_path)
+                    if not lora.get('file_name'):
+                        lora['file_name'] = os.path.splitext(os.path.basename(cached_path))[0]
+
+                if version_entry.get('sha256') and not lora.get('hash'):
+                    lora['hash'] = version_entry.get('sha256')
+
+                preview_url = version_entry.get('preview_url')
+                if preview_url:
+                    lora.setdefault('preview_url', preview_url)
+            else:
+                lora.setdefault('inLibrary', False)
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.debug("Error enriching lora entry %s: %s", hash_value, exc)
 
