@@ -256,6 +256,52 @@ async def test_load_recipe_upgrades_string_checkpoint(tmp_path: Path, recipe_sca
     assert loaded["checkpoint"]["file_name"] == "sd15"
 
 
+@pytest.mark.asyncio
+async def test_get_paginated_data_normalizes_legacy_checkpoint(recipe_scanner):
+    scanner, _ = recipe_scanner
+    image_path = Path(config.loras_roots[0]) / "legacy.webp"
+    await scanner.add_recipe(
+        {
+            "id": "legacy-checkpoint",
+            "file_path": str(image_path),
+            "title": "Legacy",
+            "modified": 0.0,
+            "created_date": 0.0,
+            "loras": [],
+            "checkpoint": ["legacy.safetensors"],
+        }
+    )
+    await asyncio.sleep(0)
+
+    result = await scanner.get_paginated_data(page=1, page_size=5)
+
+    checkpoint = result["items"][0]["checkpoint"]
+    assert checkpoint["name"] == "legacy.safetensors"
+    assert checkpoint["file_name"] == "legacy"
+
+
+@pytest.mark.asyncio
+async def test_get_recipe_by_id_handles_non_dict_checkpoint(recipe_scanner):
+    scanner, _ = recipe_scanner
+    image_path = Path(config.loras_roots[0]) / "by-id.webp"
+    await scanner.add_recipe(
+        {
+            "id": "by-id-checkpoint",
+            "file_path": str(image_path),
+            "title": "ById",
+            "modified": 0.0,
+            "created_date": 0.0,
+            "loras": [],
+            "checkpoint": ("by-id.safetensors",),
+        }
+    )
+
+    recipe = await scanner.get_recipe_by_id("by-id-checkpoint")
+
+    assert recipe["checkpoint"]["name"] == "by-id.safetensors"
+    assert recipe["checkpoint"]["file_name"] == "by-id"
+
+
 def test_enrich_uses_version_index_when_hash_missing(recipe_scanner):
     scanner, stub = recipe_scanner
     version_id = 77

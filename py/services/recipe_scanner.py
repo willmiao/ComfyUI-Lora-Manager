@@ -949,7 +949,11 @@ class RecipeScanner:
             if 'loras' in item:
                 item['loras'] = [self._enrich_lora_entry(dict(lora)) for lora in item['loras']]
             if item.get('checkpoint'):
-                item['checkpoint'] = self._enrich_checkpoint_entry(dict(item['checkpoint']))
+                checkpoint_entry = self._normalize_checkpoint_entry(item['checkpoint'])
+                if checkpoint_entry:
+                    item['checkpoint'] = self._enrich_checkpoint_entry(checkpoint_entry)
+                else:
+                    item.pop('checkpoint', None)
 
         result = {
             'items': paginated_items,
@@ -998,7 +1002,11 @@ class RecipeScanner:
         if 'loras' in formatted_recipe:
             formatted_recipe['loras'] = [self._enrich_lora_entry(dict(lora)) for lora in formatted_recipe['loras']]
         if formatted_recipe.get('checkpoint'):
-            formatted_recipe['checkpoint'] = self._enrich_checkpoint_entry(dict(formatted_recipe['checkpoint']))
+            checkpoint_entry = self._normalize_checkpoint_entry(formatted_recipe['checkpoint'])
+            if checkpoint_entry:
+                formatted_recipe['checkpoint'] = self._enrich_checkpoint_entry(checkpoint_entry)
+            else:
+                formatted_recipe.pop('checkpoint', None)
 
         return formatted_recipe
         
