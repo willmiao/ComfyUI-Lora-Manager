@@ -351,6 +351,7 @@ class RecipeModal {
             if (recipe.checkpoint && typeof recipe.checkpoint === 'object') {
                 checkpointContainer.innerHTML = this.renderCheckpoint(recipe.checkpoint);
                 this.setupCheckpointActions(checkpointContainer, recipe.checkpoint);
+                this.setupCheckpointNavigation(checkpointContainer, recipe.checkpoint);
             }
         }
         
@@ -1150,6 +1151,15 @@ class RecipeModal {
         }
     }
 
+    setupCheckpointNavigation(container, checkpoint) {
+        const checkpointItem = container.querySelector('.checkpoint-item');
+        if (!checkpointItem) return;
+
+        checkpointItem.addEventListener('click', () => {
+            this.navigateToCheckpointPage(checkpoint);
+        });
+    }
+
     canDownloadCheckpoint(checkpoint) {
         if (!checkpoint) return false;
         const modelId = checkpoint.modelId || checkpoint.modelID || checkpoint.model_id;
@@ -1238,8 +1248,42 @@ class RecipeModal {
         }
     }
 
+    navigateToCheckpointPage(checkpoint) {
+        const checkpointHash = this._getCheckpointHash(checkpoint);
+
+        if (!checkpointHash) {
+            showToast('toast.recipes.missingCheckpointInfo', {}, 'error');
+            return;
+        }
+
+        modalManager.closeModal('recipeModal');
+
+        removeSessionItem('recipe_to_checkpoint_filterHash');
+        removeSessionItem('recipe_to_checkpoint_filterHashes');
+        removeSessionItem('filterCheckpointRecipeName');
+
+        setSessionItem('recipe_to_checkpoint_filterHash', checkpointHash.toLowerCase());
+        if (this.currentRecipe?.title) {
+            setSessionItem('filterCheckpointRecipeName', this.currentRecipe.title);
+        }
+
+        window.location.href = '/checkpoints';
+    }
+
+    _getCheckpointHash(checkpoint) {
+        if (!checkpoint) return '';
+        const hash =
+            checkpoint.hash ||
+            checkpoint.sha256 ||
+            checkpoint.sha256_hash ||
+            checkpoint.sha256Hash ||
+            checkpoint.SHA256;
+        return hash ? hash.toString() : '';
+    }
+
     // New method to navigate to the LoRAs page
     navigateToLorasPage(specificLoraIndex = null) {
+        debugger;
         // Close the current modal
         modalManager.closeModal('recipeModal');
         
@@ -1278,7 +1322,7 @@ class RecipeModal {
 
     // New method to make LoRA items clickable
     setupLoraItemsClickable() {
-        const loraItems = document.querySelectorAll('.recipe-lora-item');
+        const loraItems = document.querySelectorAll('.recipe-lora-item:not(.checkpoint-item)');
         loraItems.forEach(item => {
             // Get the lora index from the data attribute
             const loraIndex = parseInt(item.dataset.loraIndex);

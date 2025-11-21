@@ -1,4 +1,5 @@
 import logging
+from typing import Dict
 from aiohttp import web
 
 from .base_model_routes import BaseModelRoutes
@@ -51,6 +52,19 @@ class CheckpointRoutes(BaseModelRoutes):
     def _get_expected_model_types(self) -> str:
         """Get expected model types string for error messages"""
         return "Checkpoint"
+
+    def _parse_specific_params(self, request: web.Request) -> Dict:
+        """Parse Checkpoint-specific parameters"""
+        params: Dict = {}
+
+        if 'checkpoint_hash' in request.query:
+            params['hash_filters'] = {'single_hash': request.query['checkpoint_hash'].lower()}
+        elif 'checkpoint_hashes' in request.query:
+            params['hash_filters'] = {
+                'multiple_hashes': [h.lower() for h in request.query['checkpoint_hashes'].split(',')]
+            }
+
+        return params
     
     async def get_checkpoint_info(self, request: web.Request) -> web.Response:
         """Get detailed information for a specific checkpoint by name"""

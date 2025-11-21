@@ -528,6 +528,9 @@
     },
     "recipes": {
         "title": "Рецепты LoRA",
+        "actions": {
+            "sendCheckpoint": "Отправить в ComfyUI"
+        },
         "controls": {
             "import": {
                 "action": "Импортировать",
@@ -1254,6 +1257,9 @@
             "cannotSend": "Невозможно отправить рецепт: отсутствует ID рецепта",
             "sendFailed": "Не удалось отправить рецепт в workflow",
             "sendError": "Ошибка отправки рецепта в workflow",
+            "missingCheckpointPath": "Путь к чекпойнту недоступен",
+            "missingCheckpointInfo": "Отсутствуют данные о чекпойнте",
+            "downloadCheckpointFailed": "Не удалось скачать чекпойнт: {message}",
             "cannotDelete": "Невозможно удалить рецепт: отсутствует ID рецепта",
             "deleteConfirmationError": "Ошибка отображения подтверждения удаления",
             "deletedSuccessfully": "Рецепт успешно удален",

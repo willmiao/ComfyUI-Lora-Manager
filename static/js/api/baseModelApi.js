@@ -877,6 +877,21 @@ export class BaseModelApiClient {
                     console.error('Error parsing lora hashes from session storage:', error);
                 }
             }
+        } else if (this.modelType === 'checkpoints') {
+            const filterCheckpointHash = getSessionItem('recipe_to_checkpoint_filterHash');
+            const filterCheckpointHashes = getSessionItem('recipe_to_checkpoint_filterHashes');
+
+            if (filterCheckpointHash) {
+                params.append('checkpoint_hash', filterCheckpointHash);
+            } else if (filterCheckpointHashes) {
+                try {
+                    if (Array.isArray(filterCheckpointHashes) && filterCheckpointHashes.length > 0) {
+                        params.append('checkpoint_hashes', filterCheckpointHashes.join(','));
+                    }
+                } catch (error) {
+                    console.error('Error parsing checkpoint hashes from session storage:', error);
+                }
+            }
         }
     }
 

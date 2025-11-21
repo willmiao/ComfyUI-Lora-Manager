@@ -528,6 +528,9 @@
     },
     "recipes": {
         "title": "LoRA 配方",
+        "actions": {
+            "sendCheckpoint": "发送到 ComfyUI"
+        },
         "controls": {
             "import": {
                 "action": "导入",
@@ -1254,6 +1257,9 @@
             "cannotSend": "无法发送配方：缺少配方 ID",
             "sendFailed": "发送配方到工作流失败",
             "sendError": "发送配方到工作流出错",
+            "missingCheckpointPath": "缺少检查点路径",
+            "missingCheckpointInfo": "缺少检查点信息",
+            "downloadCheckpointFailed": "下载检查点失败：{message}",
             "cannotDelete": "无法删除配方：缺少配方 ID",
             "deleteConfirmationError": "显示删除确认出错",
             "deletedSuccessfully": "配方删除成功",

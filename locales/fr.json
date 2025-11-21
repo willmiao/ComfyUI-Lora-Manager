@@ -528,6 +528,9 @@
     },
     "recipes": {
         "title": "LoRA Recipes",
+        "actions": {
+            "sendCheckpoint": "Envoyer vers ComfyUI"
+        },
         "controls": {
             "import": {
                 "action": "Importer",
@@ -1254,6 +1257,9 @@
             "cannotSend": "Impossible d'envoyer la recipe : ID de recipe manquant",
             "sendFailed": "Échec de l'envoi de la recipe vers le workflow",
             "sendError": "Erreur lors de l'envoi de la recipe vers le workflow",
+            "missingCheckpointPath": "Chemin du checkpoint indisponible",
+            "missingCheckpointInfo": "Informations sur le checkpoint manquantes",
+            "downloadCheckpointFailed": "Échec du téléchargement du checkpoint : {message}",
             "cannotDelete": "Impossible de supprimer la recipe : ID de recipe manquant",
             "deleteConfirmationError": "Erreur lors de l'affichage de la confirmation de suppression",
             "deletedSuccessfully": "Recipe supprimée avec succès",

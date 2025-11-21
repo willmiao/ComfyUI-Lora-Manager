@@ -528,6 +528,9 @@
     },
     "recipes": {
         "title": "LoRAレシピ",
+        "actions": {
+            "sendCheckpoint": "ComfyUIへ送信"
+        },
         "controls": {
             "import": {
                 "action": "インポート",
@@ -1254,6 +1257,9 @@
             "cannotSend": "レシピを送信できません：レシピIDがありません",
             "sendFailed": "レシピのワークフローへの送信に失敗しました",
             "sendError": "レシピのワークフロー送信エラー",
+            "missingCheckpointPath": "チェックポイントのパスがありません",
+            "missingCheckpointInfo": "チェックポイント情報が不足しています",
+            "downloadCheckpointFailed": "チェックポイントのダウンロードに失敗しました: {message}",
             "cannotDelete": "レシピを削除できません：レシピIDがありません",
             "deleteConfirmationError": "削除確認の表示中にエラーが発生しました",
             "deletedSuccessfully": "レシピが正常に削除されました",

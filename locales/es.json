@@ -528,6 +528,9 @@
     },
     "recipes": {
         "title": "Recetas de LoRA",
+        "actions": {
+            "sendCheckpoint": "Enviar a ComfyUI"
+        },
         "controls": {
             "import": {
                 "action": "Importar",
@@ -1254,6 +1257,9 @@
             "cannotSend": "No se puede enviar receta: Falta ID de receta",
             "sendFailed": "Error al enviar receta al flujo de trabajo",
             "sendError": "Error enviando receta al flujo de trabajo",
+            "missingCheckpointPath": "Ruta del checkpoint no disponible",
+            "missingCheckpointInfo": "Falta información del checkpoint",
+            "downloadCheckpointFailed": "Error al descargar el checkpoint: {message}",
             "cannotDelete": "No se puede eliminar receta: Falta ID de receta",
             "deleteConfirmationError": "Error mostrando confirmación de eliminación",
             "deletedSuccessfully": "Receta eliminada exitosamente",

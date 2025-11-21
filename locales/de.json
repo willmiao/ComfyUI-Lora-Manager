@@ -528,6 +528,9 @@
     },
     "recipes": {
         "title": "LoRA-Rezepte",
+        "actions": {
+            "sendCheckpoint": "Send to ComfyUI"
+        },
         "controls": {
             "import": {
                 "action": "Importieren",
@@ -1254,6 +1257,9 @@
             "cannotSend": "Kann Rezept nicht senden: Fehlende Rezept-ID",
             "sendFailed": "Fehler beim Senden des Rezepts an Workflow",
             "sendError": "Fehler beim Senden des Rezepts an Workflow",
+            "missingCheckpointPath": "Checkpoint-Pfad nicht verfügbar",
+            "missingCheckpointInfo": "Checkpoint-Informationen fehlen",
+            "downloadCheckpointFailed": "Checkpoint-Download fehlgeschlagen: {message}",
             "cannotDelete": "Kann Rezept nicht löschen: Fehlende Rezept-ID",
             "deleteConfirmationError": "Fehler beim Anzeigen der Löschbestätigung",
             "deletedSuccessfully": "Rezept erfolgreich gelöscht",

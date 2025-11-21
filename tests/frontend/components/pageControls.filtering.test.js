@@ -62,6 +62,8 @@ vi.mock('../../../static/js/utils/updateCheckHelpers.js', () => ({
 beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
+  localStorage.clear();
+  sessionStorage.clear();
 
   loadMoreWithVirtualScrollMock.mockResolvedValue(undefined);
   refreshModelsMock.mockResolvedValue(undefined);
@@ -163,6 +165,8 @@ function renderControlsDom(pageKey) {
     </div>
     <div id="customFilterIndicator" class="control-group hidden">
       <div class="filter-active">
+        <i class="fas fa-filter"></i>
+        <span class="customFilterText" title=""></span>
         <i class="fas fa-times-circle clear-filter"></i>
       </div>
     </div>
@@ -516,6 +520,35 @@ describe('PageControls favorites, sorting, and duplicates scenarios', () => {
     const sortSelect = document.getElementById('sortSelect');
     expect(sortSelect.value).toBe('date:desc');
     expect(stateModule.getCurrentPageState().sortBy).toBe('date:desc');
+  });
+
+  it('shows checkpoint custom filter indicator from recipes and clears it', async () => {
+    renderControlsDom('checkpoints');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('checkpoints');
+
+    sessionStorage.setItem('lora_manager_recipe_to_checkpoint_filterHash', 'abc123');
+    sessionStorage.setItem('lora_manager_filterCheckpointRecipeName', 'Flux Recipe With Long Name');
+
+    const { CheckpointsControls } = await import('../../../static/js/components/controls/CheckpointsControls.js');
+
+    const controls = new CheckpointsControls();
+
+    const indicator = document.getElementById('customFilterIndicator');
+    expect(indicator.classList.contains('hidden')).toBe(false);
+
+    const filterText = indicator.querySelector('.customFilterText');
+    expect(filterText.textContent.startsWith('Viewing checkpoint from:')).toBe(true);
+    expect(filterText.getAttribute('title')).toBe('Viewing checkpoint from: Flux Recipe With Long Name');
+
+    resetAndReloadMock.mockClear();
+
+    await controls.clearCustomFilter();
+
+    expect(sessionStorage.getItem('lora_manager_recipe_to_checkpoint_filterHash')).toBeNull();
+    expect(sessionStorage.getItem('lora_manager_filterCheckpointRecipeName')).toBeNull();
+    expect(indicator.classList.contains('hidden')).toBe(true);
+    expect(resetAndReloadMock).toHaveBeenCalled();
   });
 
   it('updates duplicate badge after refresh and toggles duplicate mode from controls', async () => {

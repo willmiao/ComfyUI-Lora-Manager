@@ -528,6 +528,9 @@
     },
     "recipes": {
         "title": "מתכוני LoRA",
+        "actions": {
+            "sendCheckpoint": "שלח ל-ComfyUI"
+        },
         "controls": {
             "import": {
                 "action": "ייבא",
@@ -1254,6 +1257,9 @@
             "cannotSend": "לא ניתן לשלוח מתכון: חסר מזהה מתכון",
             "sendFailed": "שליחת המתכון ל-workflow נכשלה",
             "sendError": "שגיאה בשליחת המתכון ל-workflow",
+            "missingCheckpointPath": "נתיב ה-checkpoint אינו זמין",
+            "missingCheckpointInfo": "חסרים פרטי checkpoint",
+            "downloadCheckpointFailed": "הורדת checkpoint נכשלה: {message}",
             "cannotDelete": "לא ניתן למחוק מתכון: חסר מזהה מתכון",
             "deleteConfirmationError": "שגיאה בהצגת אישור המחיקה",
             "deletedSuccessfully": "המתכון נמחק בהצלחה",
