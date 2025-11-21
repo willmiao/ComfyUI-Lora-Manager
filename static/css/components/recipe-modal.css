@@ -588,6 +588,26 @@
     padding-top: 4px; /* Add padding to prevent first item from being cut off when hovered */
 }
 
+.recipe-resources-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+}
+
+.recipe-checkpoint-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.version-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: var(--space-1) 0;
+}
+
 .recipe-lora-item {
     display: flex;
     gap: var(--space-2);
@@ -612,6 +632,13 @@
 .recipe-lora-item.exists-locally {
     background: oklch(var(--lora-accent) / 0.05);
     border-left: 4px solid var(--lora-accent);
+}
+
+.recipe-lora-item.checkpoint-item {
+    cursor: default;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    align-items: center;
 }
 
 .recipe-lora-item.missing-locally {
@@ -962,6 +989,10 @@
     z-index: 100;
 }
 
+.badge-container .resource-action {
+    margin-left: auto;
+}
+
 /* Add styles for missing LoRAs download feature */
 .recipe-status.missing {
     position: relative;
@@ -1003,4 +1034,62 @@
 
 .recipe-status.clickable:hover {
     background-color: rgba(var(--lora-warning-rgb, 255, 165, 0), 0.2);
+}
+
+.recipe-checkpoint-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.85em;
+    margin-bottom: 2px;
+}
+
+.recipe-checkpoint-meta .checkpoint-type {
+    background: var(--lora-surface);
+    padding: 2px 8px;
+    border-radius: var(--border-radius-xs);
+    color: var(--text-color);
+}
+
+.recipe-resource-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.resource-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.resource-action.compact {
+    padding: 4px 10px;
+    font-size: 0.88em;
+}
+
+.resource-action:hover {
+    background: var(--lora-surface);
+    transform: translateY(-1px);
+}
+
+.resource-action.primary {
+    background: var(--lora-accent);
+    color: white;
+    border-color: var(--lora-accent);
+}
+
+.resource-action.primary:hover {
+    background: color-mix(in oklch, var(--lora-accent), black 10%);
 }

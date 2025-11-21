@@ -1,8 +1,11 @@
 // Recipe Modal Component
-import { showToast, copyToClipboard } from '../utils/uiHelpers.js';
+import { showToast, copyToClipboard, sendModelPathToWorkflow } from '../utils/uiHelpers.js';
+import { translate } from '../utils/i18nHelpers.js';
 import { state } from '../state/index.js';
 import { setSessionItem, removeSessionItem } from '../utils/storageHelpers.js';
 import { updateRecipeMetadata } from '../api/recipeApi.js';
+import { downloadManager } from '../managers/DownloadManager.js';
+import { MODEL_TYPES } from '../api/apiConfig.js';
 
 class RecipeModal {
     constructor() {
@@ -339,6 +342,17 @@ class RecipeModal {
             if (negativePromptElement) promptElement.textContent = 'No negative prompt information available';
             if (otherParamsElement) otherParamsElement.innerHTML = '<div class="no-params">No parameters available</div>';
         }
+
+        const checkpointContainer = document.getElementById('recipeCheckpoint');
+        const resourceDivider = document.getElementById('recipeResourceDivider');
+        
+        if (checkpointContainer) {
+            checkpointContainer.innerHTML = '';
+            if (recipe.checkpoint && typeof recipe.checkpoint === 'object') {
+                checkpointContainer.innerHTML = this.renderCheckpoint(recipe.checkpoint);
+                this.setupCheckpointActions(checkpointContainer, recipe.checkpoint);
+            }
+        }
         
         // Set LoRAs list and count
         const lorasListElement = document.getElementById('recipeLorasList');
@@ -491,6 +505,12 @@ class RecipeModal {
         } else if (lorasListElement) {
             lorasListElement.innerHTML = '<div class="no-loras">No LoRAs associated with this recipe</div>';
             this.recipeLorasSyntax = '';
+        }
+
+        if (resourceDivider) {
+            const hasCheckpoint = checkpointContainer && checkpointContainer.querySelector('.recipe-lora-item');
+            const hasLoraItems = lorasListElement && lorasListElement.querySelector('.recipe-lora-item');
+            resourceDivider.style.display = hasCheckpoint && hasLoraItems ? 'block' : 'none';
         }
         
         // Show the modal
@@ -1044,6 +1064,177 @@ class RecipeModal {
             showToast('toast.recipes.reconnectFailed', { message: error.message }, 'error');
         } finally {
             state.loadingManager.hide();
+        }
+    }
+
+    renderCheckpoint(checkpoint) {
+        const existsLocally = !!checkpoint.inLibrary;
+        const localPath = checkpoint.localPath || '';
+        const previewUrl = checkpoint.preview_url || checkpoint.thumbnailUrl || '/loras_static/images/no-preview.png';
+        const isPreviewVideo = typeof previewUrl === 'string' && previewUrl.toLowerCase().endsWith('.mp4');
+        const checkpointName = checkpoint.name || checkpoint.modelName || checkpoint.file_name || 'Checkpoint';
+        const versionLabel = checkpoint.version || checkpoint.modelVersionName || '';
+        const baseModel = checkpoint.baseModel || checkpoint.base_model || '';
+        const modelTypeRaw = (checkpoint.model_type || checkpoint.type || 'checkpoint').toLowerCase();
+        const modelTypeLabel = modelTypeRaw === 'diffusion_model' ? 'Diffusion Model' : 'Checkpoint';
+
+        const previewMedia = isPreviewVideo ? `
+            <video class="thumbnail-video" autoplay loop muted playsinline>
+                <source src="${previewUrl}" type="video/mp4">
+            </video>
+        ` : `<img src="${previewUrl}" alt="Checkpoint preview">`;
+
+        const badge = existsLocally ? `
+            <div class="local-badge">
+                <i class="fas fa-check"></i> In Library
+                <div class="local-path">${localPath}</div>
+            </div>
+        ` : `
+            <div class="missing-badge">
+                <i class="fas fa-exclamation-triangle"></i> Not in Library
+            </div>
+        `;
+
+        let headerAction = '';
+        if (existsLocally && localPath) {
+            headerAction = `
+                <button class="resource-action primary compact checkpoint-send">
+                    <i class="fas fa-paper-plane"></i>
+                    <span>${translate('recipes.actions.sendCheckpoint', {}, 'Send to ComfyUI')}</span>
+                </button>
+            `;
+        } else if (this.canDownloadCheckpoint(checkpoint)) {
+            headerAction = `
+                <button class="resource-action primary compact checkpoint-download">
+                    <i class="fas fa-download"></i>
+                    <span>${translate('modals.model.versions.actions.download', {}, 'Download')}</span>
+                </button>
+            `;
+        }
+
+        return `
+            <div class="recipe-lora-item checkpoint-item ${existsLocally ? 'exists-locally' : 'missing-locally'}">
+                <div class="recipe-lora-thumbnail">
+                    ${previewMedia}
+                </div>
+                <div class="recipe-lora-content">
+                    <div class="recipe-lora-header">
+                        <h4>${checkpointName}</h4>
+                        <div class="badge-container">${headerAction}</div>
+                    </div>
+                    <div class="recipe-lora-info recipe-checkpoint-meta">
+                        ${versionLabel ? `<div class="recipe-lora-version">${versionLabel}</div>` : ''}
+                        ${baseModel ? `<div class="base-model">${baseModel}</div>` : ''}
+                        ${modelTypeLabel ? `<div class="checkpoint-type">${modelTypeLabel}</div>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    setupCheckpointActions(container, checkpoint) {
+        const sendBtn = container.querySelector('.checkpoint-send');
+        if (sendBtn) {
+            sendBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.sendCheckpointToWorkflow(checkpoint);
+            });
+        }
+
+        const downloadBtn = container.querySelector('.checkpoint-download');
+        if (downloadBtn) {
+            downloadBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await this.downloadCheckpoint(checkpoint, downloadBtn);
+            });
+        }
+    }
+
+    canDownloadCheckpoint(checkpoint) {
+        if (!checkpoint) return false;
+        const modelId = checkpoint.modelId || checkpoint.modelID || checkpoint.model_id;
+        const versionId = checkpoint.id || checkpoint.modelVersionId;
+        return !!(modelId && versionId);
+    }
+
+    async sendCheckpointToWorkflow(checkpoint) {
+        if (!checkpoint || !checkpoint.localPath) {
+            showToast('toast.recipes.missingCheckpointPath', {}, 'error');
+            return;
+        }
+
+        const modelType = (checkpoint.model_type || checkpoint.type || 'checkpoint').toLowerCase();
+        const isDiffusionModel = modelType === 'diffusion_model' || modelType === 'unet';
+        const widgetName = isDiffusionModel ? 'unet_name' : 'ckpt_name';
+
+        const actionTypeText = translate(
+            isDiffusionModel ? 'uiHelpers.nodeSelector.diffusionModel' : 'uiHelpers.nodeSelector.checkpoint',
+            {},
+            isDiffusionModel ? 'Diffusion Model' : 'Checkpoint'
+        );
+        const successMessage = translate(
+            isDiffusionModel ? 'uiHelpers.workflow.diffusionModelUpdated' : 'uiHelpers.workflow.checkpointUpdated',
+            {},
+            isDiffusionModel ? 'Diffusion model updated in workflow' : 'Checkpoint updated in workflow'
+        );
+        const failureMessage = translate(
+            isDiffusionModel ? 'uiHelpers.workflow.diffusionModelFailed' : 'uiHelpers.workflow.checkpointFailed',
+            {},
+            isDiffusionModel ? 'Failed to update diffusion model node' : 'Failed to update checkpoint node'
+        );
+        const missingNodesMessage = translate(
+            'uiHelpers.workflow.noMatchingNodes',
+            {},
+            'No compatible nodes available in the current workflow'
+        );
+        const missingTargetMessage = translate(
+            'uiHelpers.workflow.noTargetNodeSelected',
+            {},
+            'No target node selected'
+        );
+
+        await sendModelPathToWorkflow(checkpoint.localPath, {
+            widgetName,
+            collectionType: MODEL_TYPES.CHECKPOINT,
+            actionTypeText,
+            successMessage,
+            failureMessage,
+            missingNodesMessage,
+            missingTargetMessage,
+        });
+    }
+
+    async downloadCheckpoint(checkpoint, button) {
+        if (!this.canDownloadCheckpoint(checkpoint)) {
+            showToast('toast.recipes.missingCheckpointInfo', {}, 'error');
+            return;
+        }
+
+        const modelId = checkpoint.modelId || checkpoint.modelID || checkpoint.model_id;
+        const versionId = checkpoint.id || checkpoint.modelVersionId;
+        const versionName = checkpoint.version || checkpoint.modelVersionName || checkpoint.name || 'Checkpoint';
+
+        if (button) {
+            button.disabled = true;
+        }
+
+        try {
+            await downloadManager.downloadVersionWithDefaults(
+                MODEL_TYPES.CHECKPOINT,
+                modelId,
+                versionId,
+                {
+                    versionName,
+                    source: 'recipe-modal',
+                }
+            );
+        } catch (error) {
+            console.error('Error downloading checkpoint:', error);
+            showToast('toast.recipes.downloadCheckpointFailed', { message: error.message }, 'error');
+        } finally {
+            if (button) {
+                button.disabled = false;
+            }
         }
     }
 
