@@ -13,6 +13,7 @@ from aiohttp.test_utils import TestClient, TestServer
 
 from py.config import config
 from py.routes import base_recipe_routes
+from py.routes.handlers import recipe_handlers
 from py.routes.recipe_routes import RecipeRoutes
 from py.services.recipes import RecipeValidationError
 from py.services.service_registry import ServiceRegistry
@@ -296,6 +297,18 @@ async def test_save_and_delete_recipe_round_trip(monkeypatch, tmp_path: Path) ->
 
 
 async def test_import_remote_recipe(monkeypatch, tmp_path: Path) -> None:
+    provider_calls: list[int] = []
+
+    class Provider:
+        async def get_model_version_info(self, model_version_id):
+            provider_calls.append(model_version_id)
+            return {"baseModel": "Flux Provider"}, None
+
+    async def fake_get_default_metadata_provider():
+        return Provider()
+
+    monkeypatch.setattr(recipe_handlers, "get_default_metadata_provider", fake_get_default_metadata_provider)
+
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         resources = [
             {
@@ -335,12 +348,56 @@ async def test_import_remote_recipe(monkeypatch, tmp_path: Path) -> None:
         assert call["name"] == "Remote Recipe"
         assert call["tags"] == ["foo", "bar"]
         metadata = call["metadata"]
-        assert metadata["base_model"] == "Flux"
+        assert metadata["base_model"] == "Flux Provider"
+        assert provider_calls == [33]
         assert metadata["checkpoint"]["modelVersionId"] == 33
         assert metadata["loras"][0]["weight"] == 0.25
         assert metadata["gen_params"]["prompt"] == "hello world"
         assert metadata["gen_params"]["checkpoint"]["modelVersionId"] == 33
         assert harness.downloader.urls == ["https://example.com/images/1"]
+
+
+async def test_import_remote_recipe_falls_back_to_request_base_model(monkeypatch, tmp_path: Path) -> None:
+    provider_calls: list[int] = []
+
+    class Provider:
+        async def get_model_version_info(self, model_version_id):
+            provider_calls.append(model_version_id)
+            return {}, None
+
+    async def fake_get_default_metadata_provider():
+        return Provider()
+
+    monkeypatch.setattr(recipe_handlers, "get_default_metadata_provider", fake_get_default_metadata_provider)
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        resources = [
+            {
+                "type": "checkpoint",
+                "modelId": 11,
+                "modelVersionId": 77,
+                "modelName": "Flux",
+                "modelVersionName": "Dev",
+            },
+        ]
+        response = await harness.client.get(
+            "/api/lm/recipes/import-remote",
+            params={
+                "image_url": "https://example.com/images/1",
+                "name": "Remote Recipe",
+                "resources": json.dumps(resources),
+                "tags": "foo,bar",
+                "base_model": "Flux",
+            },
+        )
+
+        payload = await response.json()
+        assert response.status == 200
+        assert payload["success"] is True
+
+        metadata = harness.persistence.save_calls[-1]["metadata"]
+        assert metadata["base_model"] == "Flux"
+        assert provider_calls == [77]
 
 
 async def test_analyze_uploaded_image_error_path(monkeypatch, tmp_path: Path) -> None:

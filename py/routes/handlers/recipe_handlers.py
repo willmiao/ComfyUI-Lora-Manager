@@ -22,6 +22,7 @@ from ...services.recipes import (
     RecipeSharingService,
     RecipeValidationError,
 )
+from ...services.metadata_service import get_default_metadata_provider
 
 Logger = logging.Logger
 EnsureDependenciesCallable = Callable[[], Awaitable[None]]
@@ -451,7 +452,6 @@ class RecipeManagementHandler:
                 raise RuntimeError("Recipe scanner unavailable")
 
             params = request.rel_url.query
-            print(params)
             image_url = params.get("image_url")
             name = params.get("name")
             resources_raw = params.get("resources")
@@ -478,6 +478,9 @@ class RecipeManagementHandler:
                 gen_params_ref = metadata.setdefault("gen_params", {})
                 if "checkpoint" not in gen_params_ref:
                     gen_params_ref["checkpoint"] = checkpoint_entry
+                base_model_from_metadata = await self._resolve_base_model_from_checkpoint(checkpoint_entry)
+                if base_model_from_metadata:
+                    metadata["base_model"] = base_model_from_metadata
 
             tags = self._parse_tags(params.get("tags"))
             image_bytes = await self._download_image_bytes(image_url)
@@ -768,6 +771,29 @@ class RecipeManagementHandler:
             return int(value)
         except (TypeError, ValueError):
             return 0
+
+    async def _resolve_base_model_from_checkpoint(self, checkpoint_entry: Dict[str, Any]) -> str:
+        version_id = self._safe_int(checkpoint_entry.get("modelVersionId"))
+
+        if not version_id:
+            return ""
+
+        try:
+            provider = await get_default_metadata_provider()
+            if not provider:
+                return ""
+
+            version_info = await provider.get_model_version_info(version_id)
+            if isinstance(version_info, tuple):
+                version_info = version_info[0]
+
+            if isinstance(version_info, dict):
+                base_model = version_info.get("baseModel") or ""
+                return str(base_model) if base_model is not None else ""
+        except Exception as exc:  # pragma: no cover - defensive logging
+            self._logger.warning("Failed to resolve base model from checkpoint metadata: %s", exc)
+
+        return ""
 
 
 class RecipeAnalysisHandler:
