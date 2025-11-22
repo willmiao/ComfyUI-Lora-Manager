@@ -694,6 +694,7 @@ NODE_EXTRACTORS = {
     "KSamplerAdvancedBasicPipe": KSamplerAdvancedBasicPipeExtractor,    # comfyui-impact-pack
     "KSampler_inspire_pipe": KSamplerBasicPipeExtractor,    # comfyui-inspire-pack
     "KSamplerAdvanced_inspire_pipe": KSamplerAdvancedBasicPipeExtractor,  # comfyui-inspire-pack
+    "KSampler_inspire": SamplerExtractor,  # comfyui-inspire-pack
     # Sampling Selectors
     "KSamplerSelect": KSamplerSelectExtractor,  # Add KSamplerSelect
     "BasicScheduler": BasicSchedulerExtractor,  # Add BasicScheduler
