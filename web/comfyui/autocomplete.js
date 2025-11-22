@@ -300,10 +300,23 @@ class AutoComplete {
         if (this.debounceTimer) {
             clearTimeout(this.debounceTimer);
         }
-        
-        // Get the search term (text after last comma)
-        const searchTerm = this.getSearchTerm(value);
-        
+
+        // Get the search term (text after last comma / '>')
+        const rawSearchTerm = this.getSearchTerm(value);
+        let searchTerm = rawSearchTerm;
+
+        // For embeddings, only trigger autocomplete when the current token
+        // starts with the explicit "emb:" prefix. This avoids interrupting
+        // normal prompt typing while still allowing quick manual triggering.
+        if (this.modelType === 'embeddings') {
+            const match = rawSearchTerm.match(/^emb:(.*)$/i);
+            if (!match) {
+                this.hide();
+                return;
+            }
+            searchTerm = (match[1] || '').trim();
+        }
+
         if (searchTerm.length < this.options.minChars) {
             this.hide();
             return;
