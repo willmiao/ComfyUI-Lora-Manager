@@ -34,6 +34,15 @@ Enhance your Civitai browsing experience with our companion browser extension! S
 
 ## Release Notes
 
+### v0.9.10
+* **Smarter Update Matching** - Users can now choose to check and group updates by matching base model only or with no base-model constraint; version lists also support toggling between same-base versions or all versions.
+* **Flexible Tag Filtering** - The filter panel now supports tag exclusion: click a tag to include, click again to exclude, and click a third time to clear, enabling stronger and more flexible tag filters.
+* **License Visibility & Controls** - Model detail headers and ComfyUI preview popups now show Civitai license icons. The filter panel gains license include/exclude options, and a new global context menu action, "Refresh license metadata," fetches missing license data.
+* **Recipe Improvements** - Recipes now allow importing with zero LoRAs, and recipe detail pages show the related checkpoint for easier reference.
+* **Better ZIP Downloads** - When downloading models packaged in ZIPs, model files are extracted into the target model folder; ZIPs containing multiple model files (e.g., WanVideo high/low LoRA pairs) are added as separate models.
+* **Template Workflow Update** - Refreshed the "Illustrious Pony Example" template workflow with usage guidance for each LoRA Manager node.
+* **Bug Fixes & Stability** - General fixes and stability improvements.
+
 ### v0.9.9
 * **Check for Updates Feature** - Users can now check for updates for all models or selected models in bulk mode. Models with available updates will display an "update available" badge on their model card, and users can filter to show only models with updates.
 * **Model Versions Management** - Added a new Versions tab in the model modal that centralizes all versions of a model, providing download, delete, and ignore update functions.
@@ -70,34 +79,6 @@ Enhance your Civitai browsing experience with our companion browser extension! S
 * **Internationalization Support** - Introduced multi-language support, now available in English, Simplified Chinese, Traditional Chinese, Spanish, Japanese, Korean, French, Russian, and German. Feedback from native speakers is welcome to improve the translations.
 * **Automatic Filename Conflict Resolution** - Implemented automatic file renaming (`original name + short hash`) to prevent conflicts when downloading or moving models.
 * **Performance Optimizations & Bug Fixes** - Various performance improvements and bug fixes for a more stable and responsive experience.
-
-### v0.8.30
-* **Automatic Model Path Correction** - Added auto-correction for model paths in built-in nodes such as Load Checkpoint, Load Diffusion Model, Load LoRA, and other custom nodes with similar functionality. Workflows containing outdated or incorrect model paths will now be automatically updated to reflect the current location of your models.
-* **Node UI Enhancements** - Improved node interface for a smoother and more intuitive user experience.
-* **Bug Fixes** - Addressed various bugs to enhance stability and reliability.
-
-### v0.8.29
-* **Enhanced Recipe Imports** - Improved recipe importing with new target folder selection, featuring path input autocomplete and interactive folder tree navigation. Added a "Use Default Path" option when downloading missing LoRAs.
-* **WanVideo Lora Select Node Update** - Updated the WanVideo Lora Select node with a 'merge_loras' option to match the counterpart node in the WanVideoWrapper node package.
-* **Autocomplete Conflict Resolution** - Resolved an autocomplete feature conflict in LoRA nodes with pysssss autocomplete.
-* **Improved Download Functionality** - Enhanced download functionality with resumable downloads and improved error handling.
-* **Bug Fixes** - Addressed several bugs for improved stability and performance.
-
-### v0.8.28
-* **Autocomplete for Node Inputs** - Instantly find and add LoRAs by filename directly in Lora Loader, Lora Stacker, and WanVideo Lora Select nodes. Autocomplete suggestions include preview tooltips and preset weights, allowing you to quickly select LoRAs without opening the LoRA Manager UI.
-* **Duplicate Notification Control** - Added a switch to duplicates mode, enabling users to turn off duplicate model notifications for a more streamlined experience.
-* **Download Example Images from Context Menu** - Introduced a new context menu option to download example images for individual models.
-
-### v0.8.27
-* **User Experience Enhancements** - Improved the model download target folder selection with path input autocomplete and interactive folder tree navigation, making it easier and faster to choose where models are saved.
-* **Default Path Option for Downloads** - Added a "Use Default Path" option when downloading models. When enabled, models are automatically organized and stored according to your configured path template settings.
-* **Advanced Download Path Templates** - Expanded path template settings, allowing users to set individual templates for LoRA, checkpoint, and embedding models for greater flexibility. Introduced the `{author}` placeholder, enabling automatic organization of model files by creator name.
-* **Bug Fixes & Stability Improvements** - Addressed various bugs and improved overall stability for a smoother experience.
-
-### v0.8.26
-* **Creator Search Option** - Added ability to search models by creator name, making it easier to find models from specific authors.
-* **Enhanced Node Usability** - Improved user experience for Lora Loader, Lora Stacker, and WanVideo Lora Select nodes by fixing the maximum height of the text input area. Users can now freely and conveniently adjust the LoRA region within these nodes.
-* **Compatibility Fixes** - Resolved compatibility issues with ComfyUI and certain custom nodes, including ComfyUI-Custom-Scripts, ensuring smoother integration and operation.
 
 [View Update History](./update_logs.md)
 

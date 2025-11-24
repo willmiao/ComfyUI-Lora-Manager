@@ -2,6 +2,34 @@
 
 ---
 
+### v0.8.30
+* **Automatic Model Path Correction** - Added auto-correction for model paths in built-in nodes such as Load Checkpoint, Load Diffusion Model, Load LoRA, and other custom nodes with similar functionality. Workflows containing outdated or incorrect model paths will now be automatically updated to reflect the current location of your models.
+* **Node UI Enhancements** - Improved node interface for a smoother and more intuitive user experience.
+* **Bug Fixes** - Addressed various bugs to enhance stability and reliability.
+
+### v0.8.29
+* **Enhanced Recipe Imports** - Improved recipe importing with new target folder selection, featuring path input autocomplete and interactive folder tree navigation. Added a "Use Default Path" option when downloading missing LoRAs.
+* **WanVideo Lora Select Node Update** - Updated the WanVideo Lora Select node with a 'merge_loras' option to match the counterpart node in the WanVideoWrapper node package.
+* **Autocomplete Conflict Resolution** - Resolved an autocomplete feature conflict in LoRA nodes with pysssss autocomplete.
+* **Improved Download Functionality** - Enhanced download functionality with resumable downloads and improved error handling.
+* **Bug Fixes** - Addressed several bugs for improved stability and performance.
+
+### v0.8.28
+* **Autocomplete for Node Inputs** - Instantly find and add LoRAs by filename directly in Lora Loader, Lora Stacker, and WanVideo Lora Select nodes. Autocomplete suggestions include preview tooltips and preset weights, allowing you to quickly select LoRAs without opening the LoRA Manager UI.
+* **Duplicate Notification Control** - Added a switch to duplicates mode, enabling users to turn off duplicate model notifications for a more streamlined experience.
+* **Download Example Images from Context Menu** - Introduced a new context menu option to download example images for individual models.
+
+### v0.8.27
+* **User Experience Enhancements** - Improved the model download target folder selection with path input autocomplete and interactive folder tree navigation, making it easier and faster to choose where models are saved.
+* **Default Path Option for Downloads** - Added a "Use Default Path" option when downloading models. When enabled, models are automatically organized and stored according to your configured path template settings.
+* **Advanced Download Path Templates** - Expanded path template settings, allowing users to set individual templates for LoRA, checkpoint, and embedding models for greater flexibility. Introduced the `{author}` placeholder, enabling automatic organization of model files by creator name.
+* **Bug Fixes & Stability Improvements** - Addressed various bugs and improved overall stability for a smoother experience.
+
+### v0.8.26
+* **Creator Search Option** - Added ability to search models by creator name, making it easier to find models from specific authors.
+* **Enhanced Node Usability** - Improved user experience for Lora Loader, Lora Stacker, and WanVideo Lora Select nodes by fixing the maximum height of the text input area. Users can now freely and conveniently adjust the LoRA region within these nodes.
+* **Compatibility Fixes** - Resolved compatibility issues with ComfyUI and certain custom nodes, including ComfyUI-Custom-Scripts, ensuring smoother integration and operation.
+
 ### v0.8.25
 * **LoRA List Reordering**  
   - Drag & Drop: Easily rearrange LoRA entries using the drag handle.
