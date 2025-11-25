@@ -12,17 +12,19 @@ const RECIPE_ENDPOINTS = {
     folderTree: '/api/lm/recipes/folder-tree',
     unifiedFolderTree: '/api/lm/recipes/unified-folder-tree',
     move: '/api/lm/recipe/move',
+    moveBulk: '/api/lm/recipes/move-bulk',
+    bulkDelete: '/api/lm/recipes/bulk-delete',
 };
 
 const RECIPE_SIDEBAR_CONFIG = {
     config: {
-        displayName: 'Recipes',
+        displayName: 'Recipe',
         supportsMove: true,
     },
     endpoints: RECIPE_ENDPOINTS,
 };
 
-function extractRecipeId(filePath) {
+export function extractRecipeId(filePath) {
     if (!filePath) return null;
     const basename = filePath.split('/').pop().split('\\').pop();
     const dotIndex = basename.lastIndexOf('.');
@@ -373,26 +375,71 @@ export class RecipeSidebarApiClient {
     }
 
     async moveBulkModels(filePaths, targetPath) {
-        const results = [];
-        for (const path of filePaths) {
-            try {
-                const result = await this.moveSingleModel(path, targetPath);
-                results.push({
-                    original_file_path: path,
-                    new_file_path: result?.new_file_path,
-                    success: !!result,
-                    message: result?.message,
-                });
-            } catch (error) {
-                results.push({
-                    original_file_path: path,
-                    new_file_path: null,
-                    success: false,
-                    message: error.message,
-                });
-            }
+        if (!this.apiConfig.config.supportsMove) {
+            showToast('toast.api.bulkMoveNotSupported', { type: this.apiConfig.config.displayName }, 'warning');
+            return [];
         }
-        return results;
+
+        const recipeIds = filePaths
+            .map((path) => extractRecipeId(path))
+            .filter((id) => !!id);
+
+        if (recipeIds.length === 0) {
+            showToast('toast.models.noModelsSelected', {}, 'warning');
+            return [];
+        }
+
+        const response = await fetch(this.apiConfig.endpoints.moveBulk, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                recipe_ids: recipeIds,
+                target_path: targetPath,
+            }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.error || `Failed to move ${this.apiConfig.config.displayName}s`);
+        }
+
+        if (result.failure_count > 0) {
+            showToast(
+                'toast.api.bulkMovePartial',
+                {
+                    successCount: result.success_count,
+                    type: this.apiConfig.config.displayName,
+                    failureCount: result.failure_count,
+                },
+                'warning'
+            );
+
+            const failedFiles = (result.results || [])
+                .filter((item) => !item.success)
+                .map((item) => item.message || 'Unknown error');
+
+            if (failedFiles.length > 0) {
+                const failureMessage =
+                    failedFiles.length <= 3
+                        ? failedFiles.join('\n')
+                        : `${failedFiles.slice(0, 3).join('\n')}\n(and ${failedFiles.length - 3} more)`;
+                showToast('toast.api.bulkMoveFailures', { failures: failureMessage }, 'warning', 6000);
+            }
+        } else {
+            showToast(
+                'toast.api.bulkMoveSuccess',
+                {
+                    successCount: result.success_count,
+                    type: this.apiConfig.config.displayName,
+                },
+                'success'
+            );
+        }
+
+        return result.results || [];
     }
 
     async moveSingleModel(filePath, targetPath) {
@@ -436,5 +483,48 @@ export class RecipeSidebarApiClient {
             folder: result.folder || '',
             message: result.message,
         };
+    }
+
+    async bulkDeleteModels(filePaths) {
+        if (!filePaths || filePaths.length === 0) {
+            throw new Error('No file paths provided');
+        }
+
+        const recipeIds = filePaths
+            .map((path) => extractRecipeId(path))
+            .filter((id) => !!id);
+
+        if (recipeIds.length === 0) {
+            throw new Error('No recipe IDs could be derived from file paths');
+        }
+
+        try {
+            state.loadingManager?.showSimpleLoading('Deleting recipes...');
+
+            const response = await fetch(this.apiConfig.endpoints.bulkDelete, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    recipe_ids: recipeIds,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Failed to delete recipes');
+            }
+
+            return {
+                success: true,
+                deleted_count: result.total_deleted,
+                failed_count: result.total_failed || 0,
+                errors: result.failed || [],
+            };
+        } finally {
+            state.loadingManager?.hide();
+        }
     }
 }

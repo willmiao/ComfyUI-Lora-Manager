@@ -3,6 +3,7 @@ import { showToast, copyToClipboard, sendLoraToWorkflow } from '../utils/uiHelpe
 import { modalManager } from '../managers/ModalManager.js';
 import { getCurrentPageState } from '../state/index.js';
 import { state } from '../state/index.js';
+import { bulkManager } from '../managers/BulkManager.js';
 import { NSFW_LEVELS, getBaseModelAbbreviation } from '../utils/constants.js';
 
 class RecipeCard {
@@ -137,6 +138,10 @@ class RecipeCard {
         // Recipe card click event - only attach if not in duplicates mode
         if (!isDuplicatesMode) {
             card.addEventListener('click', () => {
+                if (state.bulkMode) {
+                    bulkManager.toggleCardSelection(card);
+                    return;
+                }
                 this.clickHandler(this.recipe);
             });
             
