@@ -96,12 +96,14 @@ export const state = {
             isLoading: false,
             hasMore: true,
             sortBy: 'date',
+            activeFolder: getStorageItem('recipes_activeFolder'),
         searchManager: null,
         searchOptions: {
             title: true,
             tags: true,
             loraName: true,
-            loraModel: true
+            loraModel: true,
+            recursive: getStorageItem('recipes_recursiveSearch', true),
         },
         filters: {
             baseModel: [],

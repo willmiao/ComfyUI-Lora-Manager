@@ -2,6 +2,24 @@ import { RecipeCard } from '../components/RecipeCard.js';
 import { state, getCurrentPageState } from '../state/index.js';
 import { showToast } from '../utils/uiHelpers.js';
 
+const RECIPE_ENDPOINTS = {
+    list: '/api/lm/recipes',
+    detail: '/api/lm/recipe',
+    scan: '/api/lm/recipes/scan',
+    update: '/api/lm/recipe',
+    folders: '/api/lm/recipes/folders',
+    folderTree: '/api/lm/recipes/folder-tree',
+    unifiedFolderTree: '/api/lm/recipes/unified-folder-tree',
+};
+
+const RECIPE_SIDEBAR_CONFIG = {
+    config: {
+        displayName: 'Recipes',
+        supportsMove: false,
+    },
+    endpoints: RECIPE_ENDPOINTS,
+};
+
 /**
  * Fetch recipes with pagination for virtual scrolling
  * @param {number} page - Page number to fetch
@@ -17,11 +35,18 @@ export async function fetchRecipesPage(page = 1, pageSize = 100) {
             page_size: pageSize || pageState.pageSize || 20,
             sort_by: pageState.sortBy
         });
+
+        if (pageState.activeFolder) {
+            params.append('folder', pageState.activeFolder);
+            params.append('recursive', pageState.searchOptions?.recursive !== false);
+        } else if (pageState.searchOptions?.recursive !== undefined) {
+            params.append('recursive', pageState.searchOptions.recursive);
+        }
         
         // If we have a specific recipe ID to load
         if (pageState.customFilter?.active && pageState.customFilter?.recipeId) {
             // Special case: load specific recipe
-            const response = await fetch(`/api/lm/recipe/${pageState.customFilter.recipeId}`);
+            const response = await fetch(`${RECIPE_ENDPOINTS.detail}/${pageState.customFilter.recipeId}`);
             
             if (!response.ok) {
                 throw new Error(`Failed to load recipe: ${response.statusText}`);
@@ -78,7 +103,7 @@ export async function fetchRecipesPage(page = 1, pageSize = 100) {
         }
 
         // Fetch recipes
-        const response = await fetch(`/api/lm/recipes?${params.toString()}`);
+        const response = await fetch(`${RECIPE_ENDPOINTS.list}?${params.toString()}`);
         
         if (!response.ok) {
             throw new Error(`Failed to load recipes: ${response.statusText}`);
@@ -213,7 +238,7 @@ export async function refreshRecipes() {
         state.loadingManager.showSimpleLoading('Refreshing recipes...');
         
         // Call the API endpoint to rebuild the recipe cache
-        const response = await fetch('/api/lm/recipes/scan');
+        const response = await fetch(RECIPE_ENDPOINTS.scan);
         
         if (!response.ok) {
             const data = await response.json();
@@ -280,7 +305,7 @@ export async function updateRecipeMetadata(filePath, updates) {
         const basename = filePath.split('/').pop().split('\\').pop();
         const recipeId = basename.substring(0, basename.lastIndexOf('.'));
         
-        const response = await fetch(`/api/lm/recipe/${recipeId}/update`, {
+        const response = await fetch(`${RECIPE_ENDPOINTS.update}/${recipeId}/update`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -304,5 +329,35 @@ export async function updateRecipeMetadata(filePath, updates) {
         throw error;
     } finally {
         state.loadingManager.hide();
+    }
+}
+
+export class RecipeSidebarApiClient {
+    constructor() {
+        this.apiConfig = RECIPE_SIDEBAR_CONFIG;
+    }
+
+    async fetchUnifiedFolderTree() {
+        const response = await fetch(this.apiConfig.endpoints.unifiedFolderTree);
+        if (!response.ok) {
+            throw new Error('Failed to fetch recipe folder tree');
+        }
+        return response.json();
+    }
+
+    async fetchModelFolders() {
+        const response = await fetch(this.apiConfig.endpoints.folders);
+        if (!response.ok) {
+            throw new Error('Failed to fetch recipe folders');
+        }
+        return response.json();
+    }
+
+    async moveBulkModels() {
+        throw new Error('Recipe move operations are not supported.');
+    }
+
+    async moveSingleModel() {
+        throw new Error('Recipe move operations are not supported.');
     }
 }

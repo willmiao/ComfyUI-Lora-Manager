@@ -77,7 +77,9 @@ export class SidebarManager {
         this.pageControls = pageControls;
         this.pageType = pageControls.pageType;
         this.lastPageControls = pageControls;
-        this.apiClient = getModelApiClient();
+        this.apiClient = pageControls?.getSidebarApiClient?.()
+            || pageControls?.sidebarApiClient
+            || getModelApiClient();
         
         // Set initial sidebar state immediately (hidden by default)
         this.setInitialSidebarState();
@@ -205,6 +207,10 @@ export class SidebarManager {
     }
 
     initializeDragAndDrop() {
+        if (this.apiClient?.apiConfig?.config?.supportsMove === false) {
+            return;
+        }
+
         if (!this.dragHandlersInitialized) {
             document.addEventListener('dragstart', this.handleCardDragStart);
             document.addEventListener('dragend', this.handleCardDragEnd);
@@ -416,7 +422,14 @@ export class SidebarManager {
         }
 
         if (!this.apiClient) {
-            this.apiClient = getModelApiClient();
+            this.apiClient = this.pageControls?.getSidebarApiClient?.()
+                || this.pageControls?.sidebarApiClient
+                || getModelApiClient();
+        }
+
+        if (this.apiClient?.apiConfig?.config?.supportsMove === false) {
+            showToast('toast.models.moveFailed', { message: translate('sidebar.dragDrop.moveUnsupported', {}, 'Move not supported for this page') }, 'error');
+            return false;
         }
 
         const rootPath = this.draggedRootPath ? this.draggedRootPath.replace(/\\/g, '/') : '';
@@ -470,7 +483,9 @@ export class SidebarManager {
     }
 
     async init() {
-        this.apiClient = getModelApiClient();
+        this.apiClient = this.pageControls?.getSidebarApiClient?.()
+            || this.pageControls?.sidebarApiClient
+            || getModelApiClient();
         
         // Set initial sidebar state immediately (hidden by default)
         this.setInitialSidebarState();

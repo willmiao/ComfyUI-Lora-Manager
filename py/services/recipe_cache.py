@@ -7,12 +7,18 @@ from natsort import natsorted
 @dataclass
 class RecipeCache:
     """Cache structure for Recipe data"""
+
     raw_data: List[Dict]
     sorted_by_name: List[Dict]
     sorted_by_date: List[Dict]
+    folders: List[str] | None = None
+    folder_tree: Dict | None = None
 
     def __post_init__(self):
         self._lock = asyncio.Lock()
+        # Normalize optional metadata containers
+        self.folders = self.folders or []
+        self.folder_tree = self.folder_tree or {}
 
     async def resort(self, name_only: bool = False):
         """Resort all cached data views"""

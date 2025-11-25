@@ -2,17 +2,46 @@
 import { appCore } from './core.js';
 import { ImportManager } from './managers/ImportManager.js';
 import { RecipeModal } from './components/RecipeModal.js';
-import { getCurrentPageState } from './state/index.js';
+import { state, getCurrentPageState } from './state/index.js';
 import { getSessionItem, removeSessionItem } from './utils/storageHelpers.js';
 import { RecipeContextMenu } from './components/ContextMenu/index.js';
 import { DuplicatesManager } from './components/DuplicatesManager.js';
 import { refreshVirtualScroll } from './utils/infiniteScroll.js';
-import { refreshRecipes } from './api/recipeApi.js';
+import { refreshRecipes, RecipeSidebarApiClient } from './api/recipeApi.js';
+import { sidebarManager } from './components/SidebarManager.js';
+
+class RecipePageControls {
+    constructor() {
+        this.pageType = 'recipes';
+        this.pageState = getCurrentPageState();
+        this.sidebarApiClient = new RecipeSidebarApiClient();
+    }
+
+    async resetAndReload() {
+        refreshVirtualScroll();
+    }
+
+    async refreshModels(fullRebuild = false) {
+        if (fullRebuild) {
+            await refreshRecipes();
+            return;
+        }
+
+        refreshVirtualScroll();
+    }
+
+    getSidebarApiClient() {
+        return this.sidebarApiClient;
+    }
+}
 
 class RecipeManager {
     constructor() {
         // Get page state
         this.pageState = getCurrentPageState();
+
+        // Page controls for shared sidebar behaviors
+        this.pageControls = new RecipePageControls();
         
         // Initialize ImportManager
         this.importManager = new ImportManager();
@@ -51,9 +80,22 @@ class RecipeManager {
         
         // Expose necessary functions to the page
         this._exposeGlobalFunctions();
+
+        // Initialize sidebar navigation
+        await this._initSidebar();
         
         // Initialize common page features
         appCore.initializePageFeatures();
+    }
+
+    async _initSidebar() {
+        try {
+            sidebarManager.setHostPageControls(this.pageControls);
+            const shouldShowSidebar = state?.global?.settings?.show_folder_sidebar !== false;
+            await sidebarManager.setSidebarEnabled(shouldShowSidebar);
+        } catch (error) {
+            console.error('Failed to initialize recipe sidebar:', error);
+        }
     }
     
     _initSearchOptions() {
@@ -63,7 +105,8 @@ class RecipeManager {
                 title: true,       // Recipe title
                 tags: true,        // Recipe tags
                 loraName: true,    // LoRA file name
-                loraModel: true    // LoRA model name
+                loraModel: true,   // LoRA model name
+                recursive: true
             };
         }
     }

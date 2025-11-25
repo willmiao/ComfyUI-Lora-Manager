@@ -1,7 +1,9 @@
-import os
-import logging
+from __future__ import annotations
+
 import asyncio
 import json
+import logging
+import os
 import time
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 from ..config import config
@@ -117,7 +119,9 @@ class RecipeScanner:
                 self._cache = RecipeCache(
                     raw_data=[],
                     sorted_by_name=[],
-                    sorted_by_date=[]
+                    sorted_by_date=[],
+                    folders=[],
+                    folder_tree={},
                 )
             
             # Mark as initializing to prevent concurrent initializations
@@ -218,6 +222,7 @@ class RecipeScanner:
                 
                 # Update cache with the collected data
                 self._cache.raw_data = recipes
+                self._update_folder_metadata(self._cache)
                 
                 # Create a simplified resort function that doesn't use await
                 if hasattr(self._cache, "resort"):
@@ -336,6 +341,9 @@ class RecipeScanner:
         if not self._cache:
             return
 
+        # Keep folder metadata up to date alongside sort order
+        self._update_folder_metadata()
+
         async def _resort_wrapper() -> None:
             try:
                 await self._cache.resort(name_only=name_only)
@@ -345,6 +353,75 @@ class RecipeScanner:
         task = asyncio.create_task(_resort_wrapper())
         self._resort_tasks.add(task)
         task.add_done_callback(lambda finished: self._resort_tasks.discard(finished))
+
+    def _calculate_folder(self, recipe_path: str) -> str:
+        """Calculate a normalized folder path relative to ``recipes_dir``."""
+
+        recipes_dir = self.recipes_dir
+        if not recipes_dir:
+            return ""
+
+        try:
+            recipe_dir = os.path.dirname(os.path.normpath(recipe_path))
+            relative_dir = os.path.relpath(recipe_dir, recipes_dir)
+            if relative_dir in (".", ""):
+                return ""
+            return relative_dir.replace(os.path.sep, "/")
+        except Exception:
+            return ""
+
+    def _build_folder_tree(self, folders: list[str]) -> dict:
+        """Build a nested folder tree structure from relative folder paths."""
+
+        tree: dict[str, dict] = {}
+        for folder in folders:
+            if not folder:
+                continue
+
+            parts = folder.split("/")
+            current_level = tree
+
+            for part in parts:
+                if part not in current_level:
+                    current_level[part] = {}
+                current_level = current_level[part]
+
+        return tree
+
+    def _update_folder_metadata(self, cache: RecipeCache | None = None) -> None:
+        """Ensure folder lists and tree metadata are synchronized with cache contents."""
+
+        cache = cache or self._cache
+        if cache is None:
+            return
+
+        folders: set[str] = set()
+        for item in cache.raw_data:
+            folder_value = item.get("folder", "")
+            if folder_value is None:
+                folder_value = ""
+            if folder_value == ".":
+                folder_value = ""
+            normalized = str(folder_value).replace("\\", "/")
+            item["folder"] = normalized
+            folders.add(normalized)
+
+        cache.folders = sorted(folders, key=lambda entry: entry.lower())
+        cache.folder_tree = self._build_folder_tree(cache.folders)
+
+    async def get_folders(self) -> list[str]:
+        """Return a sorted list of recipe folders relative to the recipes root."""
+
+        cache = await self.get_cached_data()
+        self._update_folder_metadata(cache)
+        return cache.folders
+
+    async def get_folder_tree(self) -> dict:
+        """Return a hierarchical tree of recipe folders for sidebar navigation."""
+
+        cache = await self.get_cached_data()
+        self._update_folder_metadata(cache)
+        return cache.folder_tree
 
     @property
     def recipes_dir(self) -> str:
@@ -362,11 +439,14 @@ class RecipeScanner:
         """Get cached recipe data, refresh if needed"""
         # If cache is already initialized and no refresh is needed, return it immediately
         if self._cache is not None and not force_refresh:
+            self._update_folder_metadata()
             return self._cache
 
         # If another initialization is already in progress, wait for it to complete
         if self._is_initializing and not force_refresh:
-            return self._cache or RecipeCache(raw_data=[], sorted_by_name=[], sorted_by_date=[])
+            return self._cache or RecipeCache(
+                raw_data=[], sorted_by_name=[], sorted_by_date=[], folders=[], folder_tree={}
+            )
 
         # If force refresh is requested, initialize the cache directly
         if force_refresh:
@@ -384,11 +464,14 @@ class RecipeScanner:
                         self._cache = RecipeCache(
                             raw_data=raw_data,
                             sorted_by_name=[],
-                            sorted_by_date=[]
+                            sorted_by_date=[],
+                            folders=[],
+                            folder_tree={},
                         )
-                        
+
                         # Resort cache
                         await self._cache.resort()
+                        self._update_folder_metadata(self._cache)
                         
                         return self._cache
                     
@@ -398,7 +481,9 @@ class RecipeScanner:
                         self._cache = RecipeCache(
                             raw_data=[],
                             sorted_by_name=[],
-                            sorted_by_date=[]
+                            sorted_by_date=[],
+                            folders=[],
+                            folder_tree={},
                         )
                         return self._cache
                     finally:
@@ -409,7 +494,9 @@ class RecipeScanner:
                 logger.error(f"Unexpected error in get_cached_data: {e}")
         
         # Return the cache (may be empty or partially initialized)
-        return self._cache or RecipeCache(raw_data=[], sorted_by_name=[], sorted_by_date=[])
+        return self._cache or RecipeCache(
+            raw_data=[], sorted_by_name=[], sorted_by_date=[], folders=[], folder_tree={}
+        )
 
     async def refresh_cache(self, force: bool = False) -> RecipeCache:
         """Public helper to refresh or return the recipe cache."""
@@ -424,6 +511,7 @@ class RecipeScanner:
 
         cache = await self.get_cached_data()
         await cache.add_recipe(recipe_data, resort=False)
+        self._update_folder_metadata(cache)
         self._schedule_resort()
 
     async def remove_recipe(self, recipe_id: str) -> bool:
@@ -437,6 +525,7 @@ class RecipeScanner:
         if removed is None:
             return False
 
+        self._update_folder_metadata(cache)
         self._schedule_resort()
         return True
 
@@ -521,6 +610,9 @@ class RecipeScanner:
 
             if path_updated:
                 self._write_recipe_file(recipe_path, recipe_data)
+
+            # Track folder placement relative to recipes directory
+            recipe_data['folder'] = recipe_data.get('folder') or self._calculate_folder(recipe_path)
             
             # Ensure loras array exists
             if 'loras' not in recipe_data:
@@ -914,7 +1006,7 @@ class RecipeScanner:
 
         return await self._lora_scanner.get_model_info_by_name(name)
 
-    async def get_paginated_data(self, page: int, page_size: int, sort_by: str = 'date', search: str = None, filters: dict = None, search_options: dict = None, lora_hash: str = None, bypass_filters: bool = True):
+    async def get_paginated_data(self, page: int, page_size: int, sort_by: str = 'date', search: str = None, filters: dict = None, search_options: dict = None, lora_hash: str = None, bypass_filters: bool = True, folder: str | None = None, recursive: bool = True):
         """Get paginated and filtered recipe data
 
         Args:
@@ -926,6 +1018,8 @@ class RecipeScanner:
             search_options: Dictionary of search options to apply
             lora_hash: Optional SHA256 hash of a LoRA to filter recipes by
             bypass_filters: If True, ignore other filters when a lora_hash is provided
+            folder: Optional folder filter relative to recipes directory
+            recursive: Whether to include recipes in subfolders of the selected folder
         """
         cache = await self.get_cached_data()
 
@@ -961,6 +1055,22 @@ class RecipeScanner:
         
         # Skip further filtering if we're only filtering by LoRA hash with bypass enabled
         if not (lora_hash and bypass_filters):
+            # Apply folder filter before other criteria
+            normalized_folder = (folder or "").strip("/")
+            if normalized_folder:
+                def matches_folder(item_folder: str) -> bool:
+                    item_path = (item_folder or "").strip("/")
+                    if not item_path:
+                        return False
+                    if recursive:
+                        return item_path == normalized_folder or item_path.startswith(f"{normalized_folder}/")
+                    return item_path == normalized_folder
+
+                filtered_data = [
+                    item for item in filtered_data
+                    if matches_folder(item.get('folder', ''))
+                ]
+
             # Apply search filter
             if search:
                 # Default search options if none provided

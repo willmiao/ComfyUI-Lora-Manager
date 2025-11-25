@@ -56,6 +56,9 @@ class RecipeHandlerSet:
             "delete_recipe": self.management.delete_recipe,
             "get_top_tags": self.query.get_top_tags,
             "get_base_models": self.query.get_base_models,
+            "get_folders": self.query.get_folders,
+            "get_folder_tree": self.query.get_folder_tree,
+            "get_unified_folder_tree": self.query.get_unified_folder_tree,
             "share_recipe": self.sharing.share_recipe,
             "download_shared_recipe": self.sharing.download_shared_recipe,
             "get_recipe_syntax": self.query.get_recipe_syntax,
@@ -149,6 +152,8 @@ class RecipeListingHandler:
             page_size = int(request.query.get("page_size", "20"))
             sort_by = request.query.get("sort_by", "date")
             search = request.query.get("search")
+            folder = request.query.get("folder")
+            recursive = request.query.get("recursive", "true").lower() == "true"
 
             search_options = {
                 "title": request.query.get("search_title", "true").lower() == "true",
@@ -193,6 +198,8 @@ class RecipeListingHandler:
                 filters=filters,
                 search_options=search_options,
                 lora_hash=lora_hash,
+                folder=folder,
+                recursive=recursive,
             )
 
             for item in result.get("items", []):
@@ -297,6 +304,45 @@ class RecipeQueryHandler:
             return web.json_response({"success": True, "base_models": sorted_models})
         except Exception as exc:
             self._logger.error("Error retrieving base models: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_folders(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            folders = await recipe_scanner.get_folders()
+            return web.json_response({"success": True, "folders": folders})
+        except Exception as exc:
+            self._logger.error("Error retrieving recipe folders: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_folder_tree(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            folder_tree = await recipe_scanner.get_folder_tree()
+            return web.json_response({"success": True, "tree": folder_tree})
+        except Exception as exc:
+            self._logger.error("Error retrieving recipe folder tree: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_unified_folder_tree(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            folder_tree = await recipe_scanner.get_folder_tree()
+            return web.json_response({"success": True, "tree": folder_tree})
+        except Exception as exc:
+            self._logger.error("Error retrieving unified recipe folder tree: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_recipes_for_lora(self, request: web.Request) -> web.Response:
