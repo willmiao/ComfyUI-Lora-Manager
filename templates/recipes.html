@@ -59,6 +59,13 @@
             <button onclick="recipeManager.findDuplicateRecipes()"><i class="fas fa-clone"></i> {{
                 t('loras.controls.duplicates.action') }}</button>
         </div>
+        <div class="control-group" title="{{ t('loras.controls.bulk.title') }}">
+            <button id="bulkOperationsBtn" data-action="bulk" title="{{ t('loras.controls.bulk.title') }}">
+                <i class="fas fa-th-large"></i> <span><span>{{ t('loras.controls.bulk.action') }}</span>
+                    <div class="shortcut-key">B</div>
+                </span>
+            </button>
+        </div>
         <!-- Custom filter indicator button (hidden by default) -->
         <div id="customFilterIndicator" class="control-group hidden">
             <div class="filter-active">
@@ -96,6 +103,10 @@
     <!-- Remove the server-side conditional rendering and placeholder -->
     <!-- Virtual scrolling will handle the display logic on the client side -->
 </div>
+{% endblock %}
+
+{% block overlay %}
+<div class="bulk-mode-overlay"></div>
 {% endblock %}
 
 {% block main_script %}

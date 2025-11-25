@@ -3,6 +3,7 @@ import { showToast, copyToClipboard, sendLoraToWorkflow, buildLoraSyntax, getNSF
 import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
+import { RecipeSidebarApiClient } from '../api/recipeApi.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
 import { BASE_MODEL_CATEGORIES } from '../utils/constants.js';
 import { getPriorityTagSuggestions } from '../utils/priorityTagHelpers.js';
@@ -62,8 +63,21 @@ export class BulkManager {
                 autoOrganize: true,
                 deleteAll: true,
                 setContentRating: true
+            },
+            recipes: {
+                addTags: false,
+                sendToWorkflow: false,
+                copyAll: false,
+                refreshAll: false,
+                checkUpdates: false,
+                moveAll: true,
+                autoOrganize: false,
+                deleteAll: true,
+                setContentRating: false
             }
         };
+
+        this.recipeApiClient = null;
 
         window.addEventListener('lm:priority-tags-updated', () => {
             const container = document.querySelector('#bulkAddTagsModal .metadata-suggestions-container');
@@ -87,14 +101,28 @@ export class BulkManager {
     }
 
     initialize() {
-        // Do not initialize on recipes page
-        if (state.currentPageType === 'recipes') return;
-        
         // Register with event manager for coordinated event handling
         this.registerEventHandlers();
         
         // Initialize bulk mode state in event manager
         eventManager.setState('bulkMode', state.bulkMode || false);
+    }
+
+    getActiveApiClient() {
+        if (state.currentPageType === 'recipes') {
+            if (!this.recipeApiClient) {
+                this.recipeApiClient = new RecipeSidebarApiClient();
+            }
+            return this.recipeApiClient;
+        }
+        return getModelApiClient();
+    }
+
+    getCurrentDisplayConfig() {
+        if (state.currentPageType === 'recipes') {
+            return { displayName: 'Recipe' };
+        }
+        return MODEL_CONFIG[state.currentPageType] || { displayName: 'Model' };
     }
 
     setBulkContextMenu(bulkContextMenu) {
@@ -240,7 +268,9 @@ export class BulkManager {
         // Update event manager state
         eventManager.setState('bulkMode', state.bulkMode);
         
-        this.bulkBtn.classList.toggle('active', state.bulkMode);
+        if (this.bulkBtn) {
+            this.bulkBtn.classList.toggle('active', state.bulkMode);
+        }
         
         updateCardsForBulkMode(state.bulkMode);
         
@@ -504,13 +534,13 @@ export class BulkManager {
         modalManager.closeModal('bulkDeleteModal');
         
         try {
-            const apiClient = getModelApiClient();
+            const apiClient = this.getActiveApiClient();
             const filePaths = Array.from(state.selectedModels);
             
             const result = await apiClient.bulkDeleteModels(filePaths);
             
             if (result.success) {
-                const currentConfig = MODEL_CONFIG[state.currentPageType];
+                const currentConfig = this.getCurrentDisplayConfig();
                 showToast('toast.models.deletedSuccessfully', { 
                     count: result.deleted_count, 
                     type: currentConfig.displayName.toLowerCase() 
@@ -570,7 +600,7 @@ export class BulkManager {
         this.applySelectionState();
         
         const newlySelected = state.selectedModels.size - oldCount;
-        const currentConfig = MODEL_CONFIG[state.currentPageType];
+        const currentConfig = this.getCurrentDisplayConfig();
         showToast('toast.models.selectedAdditional', { 
             count: newlySelected, 
             type: currentConfig.displayName.toLowerCase() 
@@ -622,8 +652,7 @@ export class BulkManager {
             return;
         }
 
-        const currentType = state.currentPageType;
-        const currentConfig = MODEL_CONFIG[currentType] || MODEL_CONFIG[MODEL_TYPES.LORA];
+        const currentConfig = this.getCurrentDisplayConfig();
         const typeLabel = (currentConfig?.displayName || 'Model').toLowerCase();
 
         const { ids: modelIds, missingCount } = this.collectSelectedModelIds();
@@ -969,7 +998,7 @@ export class BulkManager {
             modalManager.closeModal('bulkAddTagsModal');
             
             if (successCount > 0) {
-                const currentConfig = MODEL_CONFIG[state.currentPageType];
+                const currentConfig = this.getCurrentDisplayConfig();
                 const toastKey = mode === 'replace' ? 'toast.models.tagsReplacedSuccessfully' : 'toast.models.tagsAddedSuccessfully';
                 showToast(toastKey, { 
                     count: successCount, 

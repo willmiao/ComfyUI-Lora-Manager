@@ -66,6 +66,7 @@ class RecipeHandlerSet:
             "update_recipe": self.management.update_recipe,
             "reconnect_lora": self.management.reconnect_lora,
             "find_duplicates": self.query.find_duplicates,
+            "move_recipes_bulk": self.management.move_recipes_bulk,
             "bulk_delete": self.management.bulk_delete,
             "save_recipe_from_widget": self.management.save_recipe_from_widget,
             "get_recipes_for_lora": self.query.get_recipes_for_lora,
@@ -633,6 +634,35 @@ class RecipeManagementHandler:
             return web.json_response({"success": False, "error": str(exc)}, status=404)
         except Exception as exc:
             self._logger.error("Error moving recipe: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def move_recipes_bulk(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            data = await request.json()
+            recipe_ids = data.get("recipe_ids") or []
+            target_path = data.get("target_path")
+            if not recipe_ids or not target_path:
+                return web.json_response(
+                    {"success": False, "error": "recipe_ids and target_path are required"}, status=400
+                )
+
+            result = await self._persistence_service.move_recipes_bulk(
+                recipe_scanner=recipe_scanner,
+                recipe_ids=recipe_ids,
+                target_path=str(target_path),
+            )
+            return web.json_response(result.payload, status=result.status)
+        except RecipeValidationError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except RecipeNotFoundError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=404)
+        except Exception as exc:
+            self._logger.error("Error moving recipes in bulk: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def reconnect_lora(self, request: web.Request) -> web.Response:

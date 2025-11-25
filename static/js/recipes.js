@@ -220,6 +220,11 @@ class RecipeManager {
                 refreshVirtualScroll();
             });
         }
+
+        const bulkButton = document.querySelector('[data-action="bulk"]');
+        if (bulkButton) {
+            bulkButton.addEventListener('click', () => window.bulkManager?.toggleBulkMode());
+        }
     }
     
     // This method is kept for compatibility but now uses virtual scrolling
