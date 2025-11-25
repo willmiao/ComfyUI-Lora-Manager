@@ -56,6 +56,7 @@ class RecipeHandlerSet:
             "delete_recipe": self.management.delete_recipe,
             "get_top_tags": self.query.get_top_tags,
             "get_base_models": self.query.get_base_models,
+            "get_roots": self.query.get_roots,
             "get_folders": self.query.get_folders,
             "get_folder_tree": self.query.get_folder_tree,
             "get_unified_folder_tree": self.query.get_unified_folder_tree,
@@ -69,6 +70,7 @@ class RecipeHandlerSet:
             "save_recipe_from_widget": self.management.save_recipe_from_widget,
             "get_recipes_for_lora": self.query.get_recipes_for_lora,
             "scan_recipes": self.query.scan_recipes,
+            "move_recipe": self.management.move_recipe,
         }
 
 
@@ -304,6 +306,19 @@ class RecipeQueryHandler:
             return web.json_response({"success": True, "base_models": sorted_models})
         except Exception as exc:
             self._logger.error("Error retrieving base models: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_roots(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            roots = [recipe_scanner.recipes_dir] if recipe_scanner.recipes_dir else []
+            return web.json_response({"success": True, "roots": roots})
+        except Exception as exc:
+            self._logger.error("Error retrieving recipe roots: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_folders(self, request: web.Request) -> web.Response:
@@ -590,6 +605,35 @@ class RecipeManagementHandler:
         except Exception as exc:
             self._logger.error("Error updating recipe: %s", exc, exc_info=True)
             return web.json_response({"error": str(exc)}, status=500)
+
+    async def move_recipe(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            data = await request.json()
+            recipe_id = data.get("recipe_id")
+            target_path = data.get("target_path")
+            if not recipe_id or not target_path:
+                return web.json_response(
+                    {"success": False, "error": "recipe_id and target_path are required"}, status=400
+                )
+
+            result = await self._persistence_service.move_recipe(
+                recipe_scanner=recipe_scanner,
+                recipe_id=str(recipe_id),
+                target_path=str(target_path),
+            )
+            return web.json_response(result.payload, status=result.status)
+        except RecipeValidationError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except RecipeNotFoundError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=404)
+        except Exception as exc:
+            self._logger.error("Error moving recipe: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def reconnect_lora(self, request: web.Request) -> web.Response:
         try:

@@ -638,7 +638,8 @@
         "recursiveUnavailable": "La recherche récursive n'est disponible qu'en vue arborescente",
         "collapseAllDisabled": "Non disponible en vue liste",
         "dragDrop": {
-            "unableToResolveRoot": "Impossible de déterminer le chemin de destination pour le déplacement."
+            "unableToResolveRoot": "Impossible de déterminer le chemin de destination pour le déplacement.",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1460,7 +1461,8 @@
             "bulkMoveFailures": "Échecs de déplacement :\n{failures}",
             "bulkMoveSuccess": "{successCount} {type}s déplacés avec succès",
             "exampleImagesDownloadSuccess": "Images d'exemple téléchargées avec succès !",
-            "exampleImagesDownloadFailed": "Échec du téléchargement des images d'exemple : {message}"
+            "exampleImagesDownloadFailed": "Échec du téléchargement des images d'exemple : {message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

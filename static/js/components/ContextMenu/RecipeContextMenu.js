@@ -4,6 +4,7 @@ import { showToast, copyToClipboard, sendLoraToWorkflow } from '../../utils/uiHe
 import { setSessionItem, removeSessionItem } from '../../utils/storageHelpers.js';
 import { updateRecipeMetadata } from '../../api/recipeApi.js';
 import { state } from '../../state/index.js';
+import { moveManager } from '../../managers/MoveManager.js';
 
 export class RecipeContextMenu extends BaseContextMenu {
     constructor() {
@@ -76,6 +77,9 @@ export class RecipeContextMenu extends BaseContextMenu {
             case 'share':
                 // Share recipe
                 this.currentCard.querySelector('.fa-share-alt')?.click();
+                break;
+            case 'move':
+                moveManager.showMoveModal(this.currentCard.dataset.filepath);
                 break;
             case 'delete':
                 // Delete recipe

@@ -638,7 +638,8 @@
         "recursiveUnavailable": "再帰検索はツリービューでのみ利用できます",
         "collapseAllDisabled": "リストビューでは利用できません",
         "dragDrop": {
-            "unableToResolveRoot": "移動先のパスを特定できません。"
+            "unableToResolveRoot": "移動先のパスを特定できません。",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1460,7 +1461,8 @@
             "bulkMoveFailures": "失敗した移動：\n{failures}",
             "bulkMoveSuccess": "{successCount} {type}が正常に移動されました",
             "exampleImagesDownloadSuccess": "例画像が正常にダウンロードされました！",
-            "exampleImagesDownloadFailed": "例画像のダウンロードに失敗しました：{message}"
+            "exampleImagesDownloadFailed": "例画像のダウンロードに失敗しました：{message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

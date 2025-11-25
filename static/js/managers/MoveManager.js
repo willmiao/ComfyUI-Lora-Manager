@@ -3,6 +3,7 @@ import { state, getCurrentPageState } from '../state/index.js';
 import { modalManager } from './ModalManager.js';
 import { bulkManager } from './BulkManager.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
+import { RecipeSidebarApiClient } from '../api/recipeApi.js';
 import { FolderTreeManager } from '../components/FolderTreeManager.js';
 import { sidebarManager } from '../components/SidebarManager.js';
 
@@ -12,9 +13,20 @@ class MoveManager {
         this.bulkFilePaths = null;
         this.folderTreeManager = new FolderTreeManager();
         this.initialized = false;
+        this.recipeApiClient = null;
         
         // Bind methods
         this.updateTargetPath = this.updateTargetPath.bind(this);
+    }
+
+    _getApiClient(modelType = null) {
+        if (state.currentPageType === 'recipes') {
+            if (!this.recipeApiClient) {
+                this.recipeApiClient = new RecipeSidebarApiClient();
+            }
+            return this.recipeApiClient;
+        }
+        return getModelApiClient(modelType);
     }
 
     initializeEventListeners() {
@@ -36,7 +48,7 @@ class MoveManager {
         this.currentFilePath = null;
         this.bulkFilePaths = null;
         
-        const apiClient = getModelApiClient();
+        const apiClient = this._getApiClient(modelType);
         const currentPageType = state.currentPageType;
         const modelConfig = apiClient.apiConfig.config;
         
@@ -121,7 +133,7 @@ class MoveManager {
 
     async initializeFolderTree() {
         try {
-            const apiClient = getModelApiClient();
+            const apiClient = this._getApiClient();
             // Fetch unified folder tree
             const treeData = await apiClient.fetchUnifiedFolderTree();
             
@@ -141,7 +153,7 @@ class MoveManager {
     updateTargetPath() {
         const pathDisplay = document.getElementById('moveTargetPathDisplay');
         const modelRoot = document.getElementById('moveModelRoot').value;
-        const apiClient = getModelApiClient();
+        const apiClient = this._getApiClient();
         const config = apiClient.apiConfig.config;
         
         let fullPath = modelRoot || `Select a ${config.displayName.toLowerCase()} root directory`;
@@ -158,7 +170,7 @@ class MoveManager {
 
     async moveModel() {
         const selectedRoot = document.getElementById('moveModelRoot').value;
-        const apiClient = getModelApiClient();
+        const apiClient = this._getApiClient();
         const config = apiClient.apiConfig.config;
         
         if (!selectedRoot) {

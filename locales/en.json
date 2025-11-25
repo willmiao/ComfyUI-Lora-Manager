@@ -32,7 +32,7 @@
             "korean": "한국어",
             "french": "Français",
             "spanish": "Español",
-			"Hebrew": "עברית"
+            "Hebrew": "עברית"
         },
         "fileSize": {
             "zero": "0 Bytes",
@@ -336,7 +336,7 @@
             "templateOptions": {
                 "flatStructure": "Flat Structure",
                 "byBaseModel": "By Base Model",
-                "byAuthor": "By Author", 
+                "byAuthor": "By Author",
                 "byFirstTag": "By First Tag",
                 "baseModelFirstTag": "Base Model + First Tag",
                 "baseModelAuthor": "Base Model + Author",
@@ -347,7 +347,7 @@
             "customTemplatePlaceholder": "Enter custom template (e.g., {base_model}/{author}/{first_tag})",
             "modelTypes": {
                 "lora": "LoRA",
-                "checkpoint": "Checkpoint", 
+                "checkpoint": "Checkpoint",
                 "embedding": "Embedding"
             },
             "baseModelPathMappings": "Base Model Path Mappings",
@@ -420,11 +420,11 @@
             "proxyHost": "Proxy Host",
             "proxyHostPlaceholder": "proxy.example.com",
             "proxyHostHelp": "The hostname or IP address of your proxy server",
-            "proxyPort": "Proxy Port", 
+            "proxyPort": "Proxy Port",
             "proxyPortPlaceholder": "8080",
             "proxyPortHelp": "The port number of your proxy server",
             "proxyUsername": "Username (Optional)",
-            "proxyUsernamePlaceholder": "username", 
+            "proxyUsernamePlaceholder": "username",
             "proxyUsernameHelp": "Username for proxy authentication (if required)",
             "proxyPassword": "Password (Optional)",
             "proxyPasswordPlaceholder": "password",
@@ -638,7 +638,8 @@
         "recursiveUnavailable": "Recursive search is available in tree view only",
         "collapseAllDisabled": "Not available in list view",
         "dragDrop": {
-            "unableToResolveRoot": "Unable to determine destination path for move."
+            "unableToResolveRoot": "Unable to determine destination path for move.",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1460,7 +1461,8 @@
             "bulkMoveFailures": "Failed moves:\n{failures}",
             "bulkMoveSuccess": "Successfully moved {successCount} {type}s",
             "exampleImagesDownloadSuccess": "Successfully downloaded example images!",
-            "exampleImagesDownloadFailed": "Failed to download example images: {message}"
+            "exampleImagesDownloadFailed": "Failed to download example images: {message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

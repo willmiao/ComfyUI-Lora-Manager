@@ -7,18 +7,27 @@ const RECIPE_ENDPOINTS = {
     detail: '/api/lm/recipe',
     scan: '/api/lm/recipes/scan',
     update: '/api/lm/recipe',
+    roots: '/api/lm/recipes/roots',
     folders: '/api/lm/recipes/folders',
     folderTree: '/api/lm/recipes/folder-tree',
     unifiedFolderTree: '/api/lm/recipes/unified-folder-tree',
+    move: '/api/lm/recipe/move',
 };
 
 const RECIPE_SIDEBAR_CONFIG = {
     config: {
         displayName: 'Recipes',
-        supportsMove: false,
+        supportsMove: true,
     },
     endpoints: RECIPE_ENDPOINTS,
 };
+
+function extractRecipeId(filePath) {
+    if (!filePath) return null;
+    const basename = filePath.split('/').pop().split('\\').pop();
+    const dotIndex = basename.lastIndexOf('.');
+    return dotIndex > 0 ? basename.substring(0, dotIndex) : basename;
+}
 
 /**
  * Fetch recipes with pagination for virtual scrolling
@@ -302,8 +311,10 @@ export async function updateRecipeMetadata(filePath, updates) {
         state.loadingManager.showSimpleLoading('Saving metadata...');
 
         // Extract recipeId from filePath (basename without extension)
-        const basename = filePath.split('/').pop().split('\\').pop();
-        const recipeId = basename.substring(0, basename.lastIndexOf('.'));
+        const recipeId = extractRecipeId(filePath);
+        if (!recipeId) {
+            throw new Error('Unable to determine recipe ID');
+        }
         
         const response = await fetch(`${RECIPE_ENDPOINTS.update}/${recipeId}/update`, {
             method: 'PUT',
@@ -345,6 +356,14 @@ export class RecipeSidebarApiClient {
         return response.json();
     }
 
+    async fetchModelRoots() {
+        const response = await fetch(this.apiConfig.endpoints.roots);
+        if (!response.ok) {
+            throw new Error('Failed to fetch recipe roots');
+        }
+        return response.json();
+    }
+
     async fetchModelFolders() {
         const response = await fetch(this.apiConfig.endpoints.folders);
         if (!response.ok) {
@@ -353,11 +372,69 @@ export class RecipeSidebarApiClient {
         return response.json();
     }
 
-    async moveBulkModels() {
-        throw new Error('Recipe move operations are not supported.');
+    async moveBulkModels(filePaths, targetPath) {
+        const results = [];
+        for (const path of filePaths) {
+            try {
+                const result = await this.moveSingleModel(path, targetPath);
+                results.push({
+                    original_file_path: path,
+                    new_file_path: result?.new_file_path,
+                    success: !!result,
+                    message: result?.message,
+                });
+            } catch (error) {
+                results.push({
+                    original_file_path: path,
+                    new_file_path: null,
+                    success: false,
+                    message: error.message,
+                });
+            }
+        }
+        return results;
     }
 
-    async moveSingleModel() {
-        throw new Error('Recipe move operations are not supported.');
+    async moveSingleModel(filePath, targetPath) {
+        if (!this.apiConfig.config.supportsMove) {
+            showToast('toast.api.moveNotSupported', { type: this.apiConfig.config.displayName }, 'warning');
+            return null;
+        }
+
+        const recipeId = extractRecipeId(filePath);
+        if (!recipeId) {
+            showToast('toast.api.moveFailed', { message: 'Recipe ID missing' }, 'error');
+            return null;
+        }
+
+        const response = await fetch(this.apiConfig.endpoints.move, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                recipe_id: recipeId,
+                target_path: targetPath,
+            }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.error || `Failed to move ${this.apiConfig.config.displayName}`);
+        }
+
+        if (result.message) {
+            showToast('toast.api.moveInfo', { message: result.message }, 'info');
+        } else {
+            showToast('toast.api.moveSuccess', { type: this.apiConfig.config.displayName }, 'success');
+        }
+
+        return {
+            original_file_path: result.original_file_path || filePath,
+            new_file_path: result.new_file_path || filePath,
+            folder: result.folder || '',
+            message: result.message,
+        };
     }
 }

@@ -638,7 +638,8 @@
         "recursiveUnavailable": "Рекурсивный поиск доступен только в режиме дерева",
         "collapseAllDisabled": "Недоступно в виде списка",
         "dragDrop": {
-            "unableToResolveRoot": "Не удалось определить путь назначения для перемещения."
+            "unableToResolveRoot": "Не удалось определить путь назначения для перемещения.",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1460,7 +1461,8 @@
             "bulkMoveFailures": "Неудачные перемещения:\n{failures}",
             "bulkMoveSuccess": "Успешно перемещено {successCount} {type}s",
             "exampleImagesDownloadSuccess": "Примеры изображений успешно загружены!",
-            "exampleImagesDownloadFailed": "Не удалось загрузить примеры изображений: {message}"
+            "exampleImagesDownloadFailed": "Не удалось загрузить примеры изображений: {message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

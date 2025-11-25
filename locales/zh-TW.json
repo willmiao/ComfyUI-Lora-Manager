@@ -638,7 +638,8 @@
         "recursiveUnavailable": "遞迴搜尋僅能在樹狀檢視中使用",
         "collapseAllDisabled": "列表檢視下不可用",
         "dragDrop": {
-            "unableToResolveRoot": "無法確定移動的目標路徑。"
+            "unableToResolveRoot": "無法確定移動的目標路徑。",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1460,7 +1461,8 @@
             "bulkMoveFailures": "移動失敗：\n{failures}",
             "bulkMoveSuccess": "已成功移動 {successCount} 個 {type}",
             "exampleImagesDownloadSuccess": "範例圖片下載成功！",
-            "exampleImagesDownloadFailed": "下載範例圖片失敗：{message}"
+            "exampleImagesDownloadFailed": "下載範例圖片失敗：{message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

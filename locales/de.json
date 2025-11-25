@@ -638,7 +638,8 @@
         "recursiveUnavailable": "Rekursive Suche ist nur in der Baumansicht verfügbar",
         "collapseAllDisabled": "Im Listenmodus nicht verfügbar",
         "dragDrop": {
-            "unableToResolveRoot": "Zielpfad für das Verschieben konnte nicht ermittelt werden."
+            "unableToResolveRoot": "Zielpfad für das Verschieben konnte nicht ermittelt werden.",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1460,7 +1461,8 @@
             "bulkMoveFailures": "Fehlgeschlagene Verschiebungen:\n{failures}",
             "bulkMoveSuccess": "{successCount} {type}s erfolgreich verschoben",
             "exampleImagesDownloadSuccess": "Beispielbilder erfolgreich heruntergeladen!",
-            "exampleImagesDownloadFailed": "Fehler beim Herunterladen der Beispielbilder: {message}"
+            "exampleImagesDownloadFailed": "Fehler beim Herunterladen der Beispielbilder: {message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

@@ -15,17 +15,26 @@
 
 <div id="recipeContextMenu" class="context-menu" style="display: none;">
     <!-- <div class="context-menu-item" data-action="details"><i class="fas fa-info-circle"></i> View Details</div> -->
-    <div class="context-menu-item" data-action="share"><i class="fas fa-share-alt"></i> {{ t('loras.contextMenu.shareRecipe') }}</div>
-    <div class="context-menu-item" data-action="copy"><i class="fas fa-copy"></i> {{ t('loras.contextMenu.copyRecipeSyntax') }}</div>
-    <div class="context-menu-item" data-action="sendappend"><i class="fas fa-paper-plane"></i> {{ t('loras.contextMenu.sendToWorkflowAppend') }}</div>
-    <div class="context-menu-item" data-action="sendreplace"><i class="fas fa-exchange-alt"></i> {{ t('loras.contextMenu.sendToWorkflowReplace') }}</div>
-    <div class="context-menu-item" data-action="viewloras"><i class="fas fa-layer-group"></i> {{ t('loras.contextMenu.viewAllLoras') }}</div>
-    <div class="context-menu-item download-missing-item" data-action="download-missing"><i class="fas fa-download"></i> {{ t('loras.contextMenu.downloadMissingLoras') }}</div>
+    <div class="context-menu-item" data-action="share"><i class="fas fa-share-alt"></i> {{
+        t('loras.contextMenu.shareRecipe') }}</div>
+    <div class="context-menu-item" data-action="copy"><i class="fas fa-copy"></i> {{
+        t('loras.contextMenu.copyRecipeSyntax') }}</div>
+    <div class="context-menu-item" data-action="sendappend"><i class="fas fa-paper-plane"></i> {{
+        t('loras.contextMenu.sendToWorkflowAppend') }}</div>
+    <div class="context-menu-item" data-action="sendreplace"><i class="fas fa-exchange-alt"></i> {{
+        t('loras.contextMenu.sendToWorkflowReplace') }}</div>
+    <div class="context-menu-item" data-action="viewloras"><i class="fas fa-layer-group"></i> {{
+        t('loras.contextMenu.viewAllLoras') }}</div>
+    <div class="context-menu-item download-missing-item" data-action="download-missing"><i class="fas fa-download"></i>
+        {{ t('loras.contextMenu.downloadMissingLoras') }}</div>
     <div class="context-menu-item" data-action="set-nsfw">
         <i class="fas fa-exclamation-triangle"></i> {{ t('loras.contextMenu.setContentRating') }}
     </div>
+    <div class="context-menu-item" data-action="move"><i class="fas fa-folder-open"></i> {{
+        t('loras.contextMenu.moveToFolder') }}</div>
     <div class="context-menu-separator"></div>
-    <div class="context-menu-item delete-item" data-action="delete"><i class="fas fa-trash"></i> {{ t('loras.contextMenu.deleteRecipe') }}</div>
+    <div class="context-menu-item delete-item" data-action="delete"><i class="fas fa-trash"></i> {{
+        t('loras.contextMenu.deleteRecipe') }}</div>
 </div>
 {% endblock %}
 
@@ -34,55 +43,59 @@
 {% block init_check_url %}/api/recipes?page=1&page_size=1{% endblock %}
 
 {% block content %}
-    <!-- Recipe controls -->
-    <div class="controls">
-        <div class="action-buttons">
-            <div title="{{ t('recipes.controls.refresh.title') }}" class="control-group">
-                <button onclick="recipeManager.refreshRecipes()"><i class="fas fa-sync"></i> {{ t('common.actions.refresh') }}</button>
-            </div>
-            <div title="{{ t('recipes.controls.import.title') }}" class="control-group">
-                <button onclick="importManager.showImportModal()"><i class="fas fa-file-import"></i> {{ t('recipes.controls.import.action') }}</button>
-            </div>
-            <!-- Add duplicate detection button -->
-            <div title="{{ t('loras.controls.duplicates.title') }}" class="control-group">
-                <button onclick="recipeManager.findDuplicateRecipes()"><i class="fas fa-clone"></i> {{ t('loras.controls.duplicates.action') }}</button>
-            </div>
-            <!-- Custom filter indicator button (hidden by default) -->
-            <div id="customFilterIndicator" class="control-group hidden">
-                <div class="filter-active">
-                    <i class="fas fa-filter"></i> <span id="customFilterText">{{ t('recipes.controls.filteredByLora') }}</span>
-                    <i class="fas fa-times-circle clear-filter"></i>
-                </div>
+<!-- Recipe controls -->
+<div class="controls">
+    <div class="action-buttons">
+        <div title="{{ t('recipes.controls.refresh.title') }}" class="control-group">
+            <button onclick="recipeManager.refreshRecipes()"><i class="fas fa-sync"></i> {{ t('common.actions.refresh')
+                }}</button>
+        </div>
+        <div title="{{ t('recipes.controls.import.title') }}" class="control-group">
+            <button onclick="importManager.showImportModal()"><i class="fas fa-file-import"></i> {{
+                t('recipes.controls.import.action') }}</button>
+        </div>
+        <!-- Add duplicate detection button -->
+        <div title="{{ t('loras.controls.duplicates.title') }}" class="control-group">
+            <button onclick="recipeManager.findDuplicateRecipes()"><i class="fas fa-clone"></i> {{
+                t('loras.controls.duplicates.action') }}</button>
+        </div>
+        <!-- Custom filter indicator button (hidden by default) -->
+        <div id="customFilterIndicator" class="control-group hidden">
+            <div class="filter-active">
+                <i class="fas fa-filter"></i> <span id="customFilterText">{{ t('recipes.controls.filteredByLora')
+                    }}</span>
+                <i class="fas fa-times-circle clear-filter"></i>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Duplicates banner (hidden by default) -->
-    <div id="duplicatesBanner" class="duplicates-banner" style="display: none;">
-        <div class="banner-content">
-          <i class="fas fa-exclamation-triangle"></i>
-          <span id="duplicatesCount">{{ t('recipes.duplicates.found', count=0) }}</span>
-          <div class="banner-actions">
+<!-- Duplicates banner (hidden by default) -->
+<div id="duplicatesBanner" class="duplicates-banner" style="display: none;">
+    <div class="banner-content">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="duplicatesCount">{{ t('recipes.duplicates.found', count=0) }}</span>
+        <div class="banner-actions">
             <button class="btn-select-latest" onclick="recipeManager.selectLatestDuplicates()">
-              {{ t('recipes.duplicates.keepLatest') }}
+                {{ t('recipes.duplicates.keepLatest') }}
             </button>
             <button class="btn-delete-selected disabled" onclick="recipeManager.deleteSelectedDuplicates()">
-              {{ t('recipes.duplicates.deleteSelected') }} (<span id="duplicatesSelectedCount">0</span>)
+                {{ t('recipes.duplicates.deleteSelected') }} (<span id="duplicatesSelectedCount">0</span>)
             </button>
             <button class="btn-exit" onclick="recipeManager.exitDuplicateMode()">
-              <i class="fas fa-times"></i>
+                <i class="fas fa-times"></i>
             </button>
-          </div>
         </div>
     </div>
+</div>
 
-    {% include 'components/folder_sidebar.html' %}
+{% include 'components/folder_sidebar.html' %}
 
-    <!-- Recipe grid -->
-    <div class="card-grid" id="recipeGrid">
-        <!-- Remove the server-side conditional rendering and placeholder -->
-        <!-- Virtual scrolling will handle the display logic on the client side -->
-    </div>
+<!-- Recipe grid -->
+<div class="card-grid" id="recipeGrid">
+    <!-- Remove the server-side conditional rendering and placeholder -->
+    <!-- Virtual scrolling will handle the display logic on the client side -->
+</div>
 {% endblock %}
 
 {% block main_script %}

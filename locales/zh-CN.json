@@ -638,7 +638,8 @@
         "recursiveUnavailable": "仅在树形视图中可使用递归搜索",
         "collapseAllDisabled": "列表视图下不可用",
         "dragDrop": {
-            "unableToResolveRoot": "无法确定移动的目标路径。"
+            "unableToResolveRoot": "无法确定移动的目标路径。",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1460,7 +1461,8 @@
             "bulkMoveFailures": "移动失败：\n{failures}",
             "bulkMoveSuccess": "成功移动 {successCount} 个 {type}",
             "exampleImagesDownloadSuccess": "示例图片下载成功！",
-            "exampleImagesDownloadFailed": "示例图片下载失败：{message}"
+            "exampleImagesDownloadFailed": "示例图片下载失败：{message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

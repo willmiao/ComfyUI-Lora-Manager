@@ -638,7 +638,8 @@
         "recursiveUnavailable": "חיפוש רקורסיבי זמין רק בתצוגת עץ",
         "collapseAllDisabled": "לא זמין בתצוגת רשימה",
         "dragDrop": {
-            "unableToResolveRoot": "לא ניתן לקבוע את נתיב היעד להעברה."
+            "unableToResolveRoot": "לא ניתן לקבוע את נתיב היעד להעברה.",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1460,7 +1461,8 @@
             "bulkMoveFailures": "העברות שנכשלו:\n{failures}",
             "bulkMoveSuccess": "הועברו בהצלחה {successCount} {type}s",
             "exampleImagesDownloadSuccess": "תמונות הדוגמה הורדו בהצלחה!",
-            "exampleImagesDownloadFailed": "הורדת תמונות הדוגמה נכשלה: {message}"
+            "exampleImagesDownloadFailed": "הורדת תמונות הדוגמה נכשלה: {message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

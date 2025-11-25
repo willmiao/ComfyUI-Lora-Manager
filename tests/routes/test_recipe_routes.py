@@ -69,6 +69,10 @@ class StubRecipeScanner:
     async def get_recipe_by_id(self, recipe_id: str) -> Optional[Dict[str, Any]]:
         return self.recipes.get(recipe_id)
 
+    async def get_recipe_json_path(self, recipe_id: str) -> Optional[str]:
+        candidate = Path(self.recipes_dir) / f"{recipe_id}.recipe.json"
+        return str(candidate) if candidate.exists() else None
+
     async def remove_recipe(self, recipe_id: str) -> None:
         self.removed.append(recipe_id)
         self.recipes.pop(recipe_id, None)
@@ -119,6 +123,7 @@ class StubPersistenceService:
     def __init__(self, **_: Any) -> None:
         self.save_calls: List[Dict[str, Any]] = []
         self.delete_calls: List[str] = []
+        self.move_calls: List[Dict[str, str]] = []
         self.save_result = SimpleNamespace(payload={"success": True, "recipe_id": "stub-id"}, status=200)
         self.delete_result = SimpleNamespace(payload={"success": True}, status=200)
         StubPersistenceService.instances.append(self)
@@ -141,6 +146,12 @@ class StubPersistenceService:
         self.delete_calls.append(recipe_id)
         await recipe_scanner.remove_recipe(recipe_id)
         return self.delete_result
+
+    async def move_recipe(self, *, recipe_scanner, recipe_id: str, target_path: str) -> SimpleNamespace:  # noqa: D401
+        self.move_calls.append({"recipe_id": recipe_id, "target_path": target_path})
+        return SimpleNamespace(
+            payload={"success": True, "recipe_id": recipe_id, "new_file_path": target_path}, status=200
+        )
 
     async def update_recipe(self, *, recipe_scanner, recipe_id: str, updates: Dict[str, Any]) -> SimpleNamespace:  # pragma: no cover - unused by smoke tests
         return SimpleNamespace(payload={"success": True, "recipe_id": recipe_id, "updates": updates}, status=200)
@@ -308,6 +319,21 @@ async def test_save_and_delete_recipe_round_trip(monkeypatch, tmp_path: Path) ->
         assert delete_response.status == 200
         assert delete_payload["success"] is True
         assert harness.persistence.delete_calls == ["saved-id"]
+
+
+async def test_move_recipe_invokes_persistence(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipe/move",
+            json={"recipe_id": "move-me", "target_path": str(tmp_path / "recipes" / "subdir")},
+        )
+
+        payload = await response.json()
+        assert response.status == 200
+        assert payload["recipe_id"] == "move-me"
+        assert harness.persistence.move_calls == [
+            {"recipe_id": "move-me", "target_path": str(tmp_path / "recipes" / "subdir")}
+        ]
 
 
 async def test_import_remote_recipe(monkeypatch, tmp_path: Path) -> None:

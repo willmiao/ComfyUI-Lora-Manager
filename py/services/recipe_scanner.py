@@ -1246,6 +1246,30 @@ class RecipeScanner:
         from datetime import datetime
         return datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
 
+    async def get_recipe_json_path(self, recipe_id: str) -> Optional[str]:
+        """Locate the recipe JSON file, accounting for folder placement."""
+
+        recipes_dir = self.recipes_dir
+        if not recipes_dir:
+            return None
+
+        cache = await self.get_cached_data()
+        folder = ""
+        for item in cache.raw_data:
+            if str(item.get("id")) == str(recipe_id):
+                folder = item.get("folder") or ""
+                break
+
+        candidate = os.path.normpath(os.path.join(recipes_dir, folder, f"{recipe_id}.recipe.json"))
+        if os.path.exists(candidate):
+            return candidate
+
+        for root, _, files in os.walk(recipes_dir):
+            if f"{recipe_id}.recipe.json" in files:
+                return os.path.join(root, f"{recipe_id}.recipe.json")
+
+        return None
+
     async def update_recipe_metadata(self, recipe_id: str, metadata: dict) -> bool:
         """Update recipe metadata (like title and tags) in both file system and cache
         
@@ -1256,13 +1280,9 @@ class RecipeScanner:
         Returns:
             bool: True if successful, False otherwise
         """
-        import os
-        import json
-        
         # First, find the recipe JSON file path
-        recipe_json_path = os.path.join(self.recipes_dir, f"{recipe_id}.recipe.json")
-        
-        if not os.path.exists(recipe_json_path):
+        recipe_json_path = await self.get_recipe_json_path(recipe_id)
+        if not recipe_json_path or not os.path.exists(recipe_json_path):
             return False
             
         try:
@@ -1311,8 +1331,8 @@ class RecipeScanner:
         if target_name is None:
             raise ValueError("target_name must be provided")
 
-        recipe_json_path = os.path.join(self.recipes_dir, f"{recipe_id}.recipe.json")
-        if not os.path.exists(recipe_json_path):
+        recipe_json_path = await self.get_recipe_json_path(recipe_id)
+        if not recipe_json_path or not os.path.exists(recipe_json_path):
             raise RecipeNotFoundError("Recipe not found")
 
         async with self._mutation_lock:

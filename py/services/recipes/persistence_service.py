@@ -5,6 +5,7 @@ import base64
 import json
 import os
 import re
+import shutil
 import time
 import uuid
 from dataclasses import dataclass
@@ -154,12 +155,8 @@ class RecipePersistenceService:
     async def delete_recipe(self, *, recipe_scanner, recipe_id: str) -> PersistenceResult:
         """Delete an existing recipe."""
 
-        recipes_dir = recipe_scanner.recipes_dir
-        if not recipes_dir or not os.path.exists(recipes_dir):
-            raise RecipeNotFoundError("Recipes directory not found")
-
-        recipe_json_path = os.path.join(recipes_dir, f"{recipe_id}.recipe.json")
-        if not os.path.exists(recipe_json_path):
+        recipe_json_path = await recipe_scanner.get_recipe_json_path(recipe_id)
+        if not recipe_json_path or not os.path.exists(recipe_json_path):
             raise RecipeNotFoundError("Recipe not found")
 
         with open(recipe_json_path, "r", encoding="utf-8") as file_obj:
@@ -187,6 +184,83 @@ class RecipePersistenceService:
 
         return PersistenceResult({"success": True, "recipe_id": recipe_id, "updates": updates})
 
+    async def move_recipe(self, *, recipe_scanner, recipe_id: str, target_path: str) -> PersistenceResult:
+        """Move a recipe's assets into a new folder under the recipes root."""
+
+        if not target_path:
+            raise RecipeValidationError("Target path is required")
+
+        recipes_root = recipe_scanner.recipes_dir
+        if not recipes_root:
+            raise RecipeNotFoundError("Recipes directory not found")
+
+        normalized_target = os.path.normpath(target_path)
+        recipes_root = os.path.normpath(recipes_root)
+        if not os.path.isabs(normalized_target):
+            normalized_target = os.path.normpath(os.path.join(recipes_root, normalized_target))
+
+        try:
+            common_root = os.path.commonpath([normalized_target, recipes_root])
+        except ValueError as exc:
+            raise RecipeValidationError("Invalid target path") from exc
+
+        if common_root != recipes_root:
+            raise RecipeValidationError("Target path must be inside the recipes directory")
+
+        recipe_json_path = await recipe_scanner.get_recipe_json_path(recipe_id)
+        if not recipe_json_path or not os.path.exists(recipe_json_path):
+            raise RecipeNotFoundError("Recipe not found")
+
+        recipe_data = await recipe_scanner.get_recipe_by_id(recipe_id)
+        if not recipe_data:
+            raise RecipeNotFoundError("Recipe not found")
+
+        current_json_dir = os.path.dirname(recipe_json_path)
+        normalized_image_path = os.path.normpath(recipe_data.get("file_path") or "") if recipe_data.get("file_path") else None
+
+        os.makedirs(normalized_target, exist_ok=True)
+
+        if os.path.normpath(current_json_dir) == normalized_target:
+            return PersistenceResult(
+                {
+                    "success": True,
+                    "message": "Recipe is already in the target folder",
+                    "recipe_id": recipe_id,
+                    "original_file_path": recipe_data.get("file_path"),
+                    "new_file_path": recipe_data.get("file_path"),
+                }
+            )
+
+        new_json_path = os.path.normpath(os.path.join(normalized_target, os.path.basename(recipe_json_path)))
+        shutil.move(recipe_json_path, new_json_path)
+
+        new_image_path = normalized_image_path
+        if normalized_image_path:
+            target_image_path = os.path.normpath(os.path.join(normalized_target, os.path.basename(normalized_image_path)))
+            if os.path.exists(normalized_image_path) and normalized_image_path != target_image_path:
+                shutil.move(normalized_image_path, target_image_path)
+            new_image_path = target_image_path
+
+        relative_folder = os.path.relpath(normalized_target, recipes_root)
+        if relative_folder in (".", ""):
+            relative_folder = ""
+        updates = {"file_path": new_image_path or recipe_data.get("file_path"), "folder": relative_folder.replace(os.path.sep, "/")}
+
+        updated = await recipe_scanner.update_recipe_metadata(recipe_id, updates)
+        if not updated:
+            raise RecipeNotFoundError("Recipe not found after move")
+
+        return PersistenceResult(
+            {
+                "success": True,
+                "recipe_id": recipe_id,
+                "original_file_path": recipe_data.get("file_path"),
+                "new_file_path": updates["file_path"],
+                "json_path": new_json_path,
+                "folder": updates["folder"],
+            }
+        )
+
     async def reconnect_lora(
         self,
         *,
@@ -197,8 +271,8 @@ class RecipePersistenceService:
     ) -> PersistenceResult:
         """Reconnect a LoRA entry within an existing recipe."""
 
-        recipe_path = os.path.join(recipe_scanner.recipes_dir, f"{recipe_id}.recipe.json")
-        if not os.path.exists(recipe_path):
+        recipe_path = await recipe_scanner.get_recipe_json_path(recipe_id)
+        if not recipe_path or not os.path.exists(recipe_path):
             raise RecipeNotFoundError("Recipe not found")
 
         target_lora = await recipe_scanner.get_local_lora(target_name)
@@ -243,16 +317,12 @@ class RecipePersistenceService:
         if not recipe_ids:
             raise RecipeValidationError("No recipe IDs provided")
 
-        recipes_dir = recipe_scanner.recipes_dir
-        if not recipes_dir or not os.path.exists(recipes_dir):
-            raise RecipeNotFoundError("Recipes directory not found")
-
         deleted_recipes: list[str] = []
         failed_recipes: list[dict[str, Any]] = []
 
         for recipe_id in recipe_ids:
-            recipe_json_path = os.path.join(recipes_dir, f"{recipe_id}.recipe.json")
-            if not os.path.exists(recipe_json_path):
+            recipe_json_path = await recipe_scanner.get_recipe_json_path(recipe_id)
+            if not recipe_json_path or not os.path.exists(recipe_json_path):
                 failed_recipes.append({"id": recipe_id, "reason": "Recipe not found"})
                 continue
 

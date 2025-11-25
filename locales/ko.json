@@ -638,7 +638,8 @@
         "recursiveUnavailable": "재귀 검색은 트리 보기에서만 사용할 수 있습니다",
         "collapseAllDisabled": "목록 보기에서는 사용할 수 없습니다",
         "dragDrop": {
-            "unableToResolveRoot": "이동할 대상 경로를 확인할 수 없습니다."
+            "unableToResolveRoot": "이동할 대상 경로를 확인할 수 없습니다.",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1460,7 +1461,8 @@
             "bulkMoveFailures": "실패한 이동:\n{failures}",
             "bulkMoveSuccess": "{successCount}개 {type}이(가) 성공적으로 이동되었습니다",
             "exampleImagesDownloadSuccess": "예시 이미지가 성공적으로 다운로드되었습니다!",
-            "exampleImagesDownloadFailed": "예시 이미지 다운로드 실패: {message}"
+            "exampleImagesDownloadFailed": "예시 이미지 다운로드 실패: {message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

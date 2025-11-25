@@ -9,6 +9,8 @@ const removeSessionItemMock = vi.fn();
 const RecipeContextMenuMock = vi.fn();
 const refreshVirtualScrollMock = vi.fn();
 const refreshRecipesMock = vi.fn();
+const fetchUnifiedFolderTreeMock = vi.fn();
+const fetchModelFoldersMock = vi.fn();
 
 let importManagerInstance;
 let recipeModalInstance;
@@ -35,6 +37,15 @@ vi.mock('../../../static/js/components/RecipeModal.js', () => ({
 
 vi.mock('../../../static/js/state/index.js', () => ({
   getCurrentPageState: getCurrentPageStateMock,
+  state: {
+    currentPageType: 'recipes',
+    global: { settings: {} },
+    virtualScroller: {
+      removeItemByFilePath: vi.fn(),
+      updateSingleItem: vi.fn(),
+      refreshWithData: vi.fn(),
+    },
+  },
 }));
 
 vi.mock('../../../static/js/utils/storageHelpers.js', () => ({
@@ -56,6 +67,14 @@ vi.mock('../../../static/js/utils/infiniteScroll.js', () => ({
 
 vi.mock('../../../static/js/api/recipeApi.js', () => ({
   refreshRecipes: refreshRecipesMock,
+  RecipeSidebarApiClient: vi.fn(() => ({
+    apiConfig: { config: { displayName: 'Recipes', supportsMove: true } },
+    fetchUnifiedFolderTree: fetchUnifiedFolderTreeMock.mockResolvedValue({ success: true, tree: {} }),
+    fetchModelFolders: fetchModelFoldersMock.mockResolvedValue({ success: true, folders: [] }),
+    fetchModelRoots: vi.fn().mockResolvedValue({ roots: ['/recipes'] }),
+    moveBulkModels: vi.fn(),
+    moveSingleModel: vi.fn(),
+  })),
 }));
 
 describe('RecipeManager', () => {
@@ -139,6 +158,7 @@ describe('RecipeManager', () => {
       tags: true,
       loraName: true,
       loraModel: true,
+      recursive: true,
     });
 
     expect(pageState.customFilter).toEqual({
