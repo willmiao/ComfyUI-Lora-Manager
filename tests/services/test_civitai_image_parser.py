@@ -61,6 +61,46 @@ async def test_parse_metadata_creates_loras_from_hashes(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_parse_metadata_handles_nested_meta_and_lowercase_hashes(monkeypatch):
+    async def fake_metadata_provider():
+        return None
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.civitai_image.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+
+    parser = CivitaiApiMetadataParser()
+
+    metadata = {
+        "id": 106706587,
+        "meta": {
+            "prompt": "An enigmatic silhouette",
+            "hashes": {
+                "model": "ee75fd24a4",
+                "lora:mj": "de49e1e98c",
+                "LORA:Another_Earth_2": "dc11b64a8b",
+            },
+            "resources": [
+                {
+                    "hash": "ee75fd24a4",
+                    "name": "stoiqoNewrealityFLUXSD35_f1DAlphaTwo",
+                    "type": "model",
+                }
+            ],
+        },
+    }
+
+    assert parser.is_metadata_matching(metadata)
+
+    result = await parser.parse_metadata(metadata)
+
+    assert result["gen_params"]["prompt"] == "An enigmatic silhouette"
+    assert {l["name"] for l in result["loras"]} == {"mj", "Another_Earth_2"}
+    assert {l["hash"] for l in result["loras"]} == {"de49e1e98c", "dc11b64a8b"}
+
+
+@pytest.mark.asyncio
 async def test_parse_metadata_populates_checkpoint_and_rewrites_thumbnails(monkeypatch):
     checkpoint_info = {
         "id": 222,

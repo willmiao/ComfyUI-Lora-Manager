@@ -107,6 +107,12 @@ class RecipeAnalysisService:
                     raise RecipeDownloadError("No image URL found in Civitai response")
                 await self._download_image(image_url, temp_path)
                 metadata = image_info.get("meta") if "meta" in image_info else None
+                if (
+                    isinstance(metadata, dict)
+                    and "meta" in metadata
+                    and isinstance(metadata["meta"], dict)
+                ):
+                    metadata = metadata["meta"]
             else:
                 await self._download_image(url, temp_path)
 
