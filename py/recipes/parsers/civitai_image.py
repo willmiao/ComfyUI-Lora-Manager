@@ -25,27 +25,41 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
             return False
 
         def has_markers(payload: Dict[str, Any]) -> bool:
-            return any(
-                key in payload
-                for key in (
-                    "resources",
-                    "civitaiResources",
-                    "additionalResources",
-                )
+            # Check for common CivitAI image metadata fields
+            civitai_image_fields = (
+                "resources",
+                "civitaiResources", 
+                "additionalResources",
+                "hashes",
+                "prompt",
+                "negativePrompt",
+                "steps",
+                "sampler",
+                "cfgScale",
+                "seed",
+                "width",
+                "height",
+                "Model",
+                "Model hash"
             )
+            return any(key in payload for key in civitai_image_fields)
 
+        # Check the main metadata object
         if has_markers(metadata):
             return True
 
+        # Check for LoRA hash patterns
         hashes = metadata.get("hashes")
         if isinstance(hashes, dict) and any(str(key).lower().startswith("lora:") for key in hashes):
             return True
 
+        # Check nested meta object (common in CivitAI image responses)
         nested_meta = metadata.get("meta")
         if isinstance(nested_meta, dict):
             if has_markers(nested_meta):
                 return True
 
+            # Also check for LoRA hash patterns in nested meta
             hashes = nested_meta.get("hashes")
             if isinstance(hashes, dict) and any(str(key).lower().startswith("lora:") for key in hashes):
                 return True
