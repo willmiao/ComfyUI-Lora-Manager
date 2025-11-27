@@ -38,52 +38,57 @@ function updateModalFilePathReferences(newFilePath) {
     }
 
     const modalElement = document.getElementById('modelModal');
-    if (modalElement) {
-        modalElement.dataset.filePath = newFilePath;
-        modalElement.setAttribute('data-file-path', newFilePath);
+    if (!modalElement) {
+        return;
     }
 
-    const modelNameContent = document.querySelector('.model-name-content');
+    modalElement.dataset.filePath = newFilePath;
+    modalElement.setAttribute('data-file-path', newFilePath);
+
+    const scopedQuery = (selector) => modalElement.querySelector(selector);
+    const scopedQueryAll = (selector) => modalElement.querySelectorAll(selector);
+
+    const modelNameContent = scopedQuery('.model-name-content');
     if (modelNameContent && modelNameContent.dataset) {
         modelNameContent.dataset.filePath = newFilePath;
         modelNameContent.setAttribute('data-file-path', newFilePath);
     }
 
-    const baseModelContent = document.querySelector('.base-model-content');
+    const baseModelContent = scopedQuery('.base-model-content');
     if (baseModelContent && baseModelContent.dataset) {
         baseModelContent.dataset.filePath = newFilePath;
         baseModelContent.setAttribute('data-file-path', newFilePath);
     }
 
-    const fileNameContent = document.querySelector('.file-name-content');
+    const fileNameContent = scopedQuery('.file-name-content');
     if (fileNameContent && fileNameContent.dataset) {
         fileNameContent.dataset.filePath = newFilePath;
         fileNameContent.setAttribute('data-file-path', newFilePath);
     }
 
-    const editTagsBtn = document.querySelector('.edit-tags-btn');
+    const editTagsBtn = scopedQuery('.edit-tags-btn');
     if (editTagsBtn) {
         editTagsBtn.dataset.filePath = newFilePath;
         editTagsBtn.setAttribute('data-file-path', newFilePath);
     }
 
-    const editTriggerWordsBtn = document.querySelector('.edit-trigger-words-btn');
+    const editTriggerWordsBtn = scopedQuery('.edit-trigger-words-btn');
     if (editTriggerWordsBtn) {
         editTriggerWordsBtn.dataset.filePath = newFilePath;
         editTriggerWordsBtn.setAttribute('data-file-path', newFilePath);
     }
 
-    document.querySelectorAll('[data-action="open-file-location"]').forEach((el) => {
+    scopedQueryAll('[data-action="open-file-location"]').forEach((el) => {
         el.dataset.filepath = newFilePath;
         el.setAttribute('data-filepath', newFilePath);
     });
 
-    document.querySelectorAll('[data-file-path]').forEach((el) => {
+    scopedQueryAll('[data-file-path]').forEach((el) => {
         el.dataset.filePath = newFilePath;
         el.setAttribute('data-file-path', newFilePath);
     });
 
-    document.querySelectorAll('[data-filepath]').forEach((el) => {
+    scopedQueryAll('[data-filepath]').forEach((el) => {
         el.dataset.filepath = newFilePath;
         el.setAttribute('data-filepath', newFilePath);
     });
