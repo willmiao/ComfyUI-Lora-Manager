@@ -454,12 +454,18 @@ export async function showModelModal(model, modelType) {
         </div>
     `;
     
+    let showcaseCleanup;
+
     const onCloseCallback = function() {
         // Clean up all handlers when modal closes for LoRA
         const modalElement = document.getElementById(modalId);
         if (modalElement && modalElement._clickHandler) {
             modalElement.removeEventListener('click', modalElement._clickHandler);
             delete modalElement._clickHandler;
+        }
+        if (showcaseCleanup) {
+            showcaseCleanup();
+            showcaseCleanup = null;
         }
     };
     
@@ -475,7 +481,7 @@ export async function showModelModal(model, modelType) {
         currentVersionId: civitaiVersionId,
     });
     setupEditableFields(modelWithFullData.file_path, modelType);
-    setupShowcaseScroll(modalId);
+    showcaseCleanup = setupShowcaseScroll(modalId);
     setupTabSwitching({
         onTabChange: async (tab) => {
             if (tab === 'versions') {

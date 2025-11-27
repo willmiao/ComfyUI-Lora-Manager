@@ -15,6 +15,18 @@ import {
 import { generateMetadataPanel } from './MetadataPanel.js';
 import { generateImageWrapper, generateVideoWrapper } from './MediaRenderers.js';
 
+export const showcaseListenerMetrics = {
+    wheelListeners: 0,
+    mutationObservers: 0,
+    backToTopHandlers: 0,
+};
+
+export function resetShowcaseListenerMetrics() {
+    showcaseListenerMetrics.wheelListeners = 0;
+    showcaseListenerMetrics.mutationObservers = 0;
+    showcaseListenerMetrics.backToTopHandlers = 0;
+}
+
 /**
  * Load example images asynchronously
  * @param {Array} images - Array of image objects (both regular and custom)
@@ -524,8 +536,8 @@ export function scrollToTop(button) {
  * @param {string} modalId - ID of the modal element
  */
 export function setupShowcaseScroll(modalId) {
-    // Listen for wheel events
-    document.addEventListener('wheel', (event) => {
+    const wheelOptions = { passive: false };
+    const wheelHandler = (event) => {
         const modalContent = document.querySelector(`#${modalId} .modal-content`);
         if (!modalContent) return;
         
@@ -543,7 +555,9 @@ export function setupShowcaseScroll(modalId) {
                 event.preventDefault();
             }
         }
-    }, { passive: false });
+    };
+    document.addEventListener('wheel', wheelHandler, wheelOptions);
+    showcaseListenerMetrics.wheelListeners += 1;
     
     // Use MutationObserver to set up back-to-top button when modal content is added
     const observer = new MutationObserver((mutations) => {
@@ -558,12 +572,28 @@ export function setupShowcaseScroll(modalId) {
     });
     
     observer.observe(document.body, { childList: true, subtree: true });
+    showcaseListenerMetrics.mutationObservers += 1;
     
     // Try to set up the button immediately in case the modal is already open
     const modalContent = document.querySelector(`#${modalId} .modal-content`);
     if (modalContent) {
         setupBackToTopButton(modalContent);
     }
+
+    let cleanedUp = false;
+
+    return () => {
+        if (cleanedUp) {
+            return;
+        }
+        cleanedUp = true;
+        document.removeEventListener('wheel', wheelHandler, wheelOptions);
+        showcaseListenerMetrics.wheelListeners -= 1;
+        observer.disconnect();
+        showcaseListenerMetrics.mutationObservers -= 1;
+        const modalContent = document.querySelector(`#${modalId} .modal-content`);
+        teardownBackToTopButton(modalContent);
+    };
 }
 
 /**
@@ -571,11 +601,9 @@ export function setupShowcaseScroll(modalId) {
  * @param {HTMLElement} modalContent - Modal content element
  */
 function setupBackToTopButton(modalContent) {
-    // Remove any existing scroll listeners to avoid duplicates
-    modalContent.onscroll = null;
-    
-    // Add new scroll listener
-    modalContent.addEventListener('scroll', () => {
+    teardownBackToTopButton(modalContent);
+
+    const handler = () => {
         const backToTopBtn = modalContent.querySelector('.back-to-top');
         if (backToTopBtn) {
             if (modalContent.scrollTop > 300) {
@@ -584,8 +612,23 @@ function setupBackToTopButton(modalContent) {
                 backToTopBtn.classList.remove('visible');
             }
         }
-    });
-    
-    // Trigger a scroll event to check initial position
-    modalContent.dispatchEvent(new Event('scroll'));
+    };
+
+    modalContent._backToTopScrollHandler = handler;
+    modalContent.addEventListener('scroll', handler);
+    showcaseListenerMetrics.backToTopHandlers += 1;
+    handler();
+}
+
+function teardownBackToTopButton(modalContent) {
+    if (!modalContent) {
+        return;
+    }
+
+    const existingHandler = modalContent._backToTopScrollHandler;
+    if (existingHandler) {
+        modalContent.removeEventListener('scroll', existingHandler);
+        delete modalContent._backToTopScrollHandler;
+        showcaseListenerMetrics.backToTopHandlers -= 1;
+    }
 }
