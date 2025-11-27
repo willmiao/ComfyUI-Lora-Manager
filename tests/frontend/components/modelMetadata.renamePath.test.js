@@ -114,26 +114,27 @@ describe('Model metadata interactions keep file path in sync', () => {
     });
 
     document.body.innerHTML = `
-      <div id="modelModal" data-file-path="models/Qwen.safetensors"></div>
-      <div class="model-name-header">
-        <h2 class="model-name-content" data-file-path="models/Qwen.safetensors">Qwen</h2>
-        <button class="edit-model-name-btn"></button>
+      <div id="modelModal" data-file-path="models/Qwen.safetensors">
+        <div class="model-name-header">
+          <h2 class="model-name-content" data-file-path="models/Qwen.safetensors">Qwen</h2>
+          <button class="edit-model-name-btn"></button>
+        </div>
+        <div class="base-model-display">
+          <span class="base-model-content" data-file-path="models/Qwen.safetensors">SDXL</span>
+          <button class="edit-base-model-btn"></button>
+        </div>
+        <div class="file-name-wrapper">
+          <span class="file-name-content" data-file-path="models/Qwen.safetensors">Qwen</span>
+          <button class="edit-file-name-btn"></button>
+        </div>
+        <div class="model-tags-container">
+          <div class="model-tags-compact"></div>
+          <div class="tooltip-content"></div>
+          <button class="edit-tags-btn" data-file-path="models/Qwen.safetensors"></button>
+        </div>
+        <button class="edit-trigger-words-btn" data-file-path="models/Qwen.safetensors"></button>
+        <div data-action="open-file-location" data-filepath="models/Qwen.safetensors"></div>
       </div>
-      <div class="base-model-display">
-        <span class="base-model-content" data-file-path="models/Qwen.safetensors">SDXL</span>
-        <button class="edit-base-model-btn"></button>
-      </div>
-      <div class="file-name-wrapper">
-        <span class="file-name-content" data-file-path="models/Qwen.safetensors">Qwen</span>
-        <button class="edit-file-name-btn"></button>
-      </div>
-      <div class="model-tags-container">
-        <div class="model-tags-compact"></div>
-        <div class="tooltip-content"></div>
-        <button class="edit-tags-btn" data-file-path="models/Qwen.safetensors"></button>
-      </div>
-      <button class="edit-trigger-words-btn" data-file-path="models/Qwen.safetensors"></button>
-      <div data-action="open-file-location" data-filepath="models/Qwen.safetensors"></div>
     `;
 
     const { setupFileNameEditing } = await import(METADATA_MODULE);
