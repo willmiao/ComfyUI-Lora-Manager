@@ -196,9 +196,11 @@ class MetadataRegistry:
                     node_metadata[category] = {}
                 node_metadata[category][node_id] = current_metadata[category][node_id]
         
-        # Save to cache if we have any metadata for this node
+        # Save new metadata or clear stale cache entries when metadata is empty
         if any(node_metadata.values()):
             self.node_cache[cache_key] = node_metadata
+        else:
+            self.node_cache.pop(cache_key, None)
     
     def clear_unused_cache(self):
         """Clean up node_cache entries that are no longer in use"""

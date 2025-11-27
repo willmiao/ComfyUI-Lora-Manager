@@ -124,3 +124,40 @@ def test_metadata_registry_caches_and_rehydrates(populated_registry):
 
     registry.clear_metadata("promptA")
     assert "promptA" not in registry.prompt_metadata
+
+
+def test_lora_manager_cache_updates_when_loras_removed(metadata_registry):
+    import nodes
+
+    class LoraManagerLoader:  # type: ignore[too-many-ancestors]
+        __name__ = "LoraManagerLoader"
+
+    nodes.NODE_CLASS_MAPPINGS["LoraManagerLoader"] = LoraManagerLoader
+
+    prompt_graph = {
+        "lora_node": {"class_type": "LoraManagerLoader", "inputs": {}},
+    }
+    prompt = SimpleNamespace(original_prompt=prompt_graph)
+    cache_key = "lora_node:LoraManagerLoader"
+
+    metadata_registry.start_collection("prompt1")
+    metadata_registry.set_current_prompt(prompt)
+    metadata_registry.record_node_execution(
+        "lora_node",
+        "LoraManagerLoader",
+        {"loras": [[{"name": "foo", "strength": 0.8, "active": True}]]},
+        None,
+    )
+    assert cache_key in metadata_registry.node_cache
+
+    metadata_registry.start_collection("prompt2")
+    metadata_registry.set_current_prompt(prompt)
+    metadata_registry.record_node_execution("lora_node", "LoraManagerLoader", {"loras": [[]]}, None)
+
+    assert cache_key not in metadata_registry.node_cache
+
+    metadata_registry.start_collection("prompt3")
+    metadata_registry.set_current_prompt(prompt)
+    metadata = metadata_registry.get_metadata("prompt3")
+
+    assert "lora_node" not in metadata[LORAS]
