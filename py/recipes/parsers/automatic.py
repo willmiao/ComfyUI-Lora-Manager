@@ -1,6 +1,7 @@
 """Parser for Automatic1111 metadata format."""
 
 import re
+import os
 import json
 import logging
 from typing import Dict, Any
@@ -22,6 +23,7 @@ class AutomaticMetadataParser(RecipeMetadataParser):
     CIVITAI_METADATA_REGEX = r', Civitai metadata:\s*(\{.*?\})'
     EXTRANETS_REGEX = r'<(lora|hypernet):([^:]+):(-?[0-9.]+)>'
     MODEL_HASH_PATTERN = r'Model hash: ([a-zA-Z0-9]+)'
+    MODEL_NAME_PATTERN = r'Model: ([^,]+)'
     VAE_HASH_PATTERN = r'VAE hash: ([a-zA-Z0-9]+)'
     
     def is_metadata_matching(self, user_comment: str) -> bool:
@@ -115,6 +117,12 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                         except json.JSONDecodeError:
                             logger.error("Error parsing hashes JSON")
                     
+                    # Pick up model hash from parsed hashes if available
+                    if "hashes" in metadata and not metadata.get("model_hash"):
+                        model_hash_from_hashes = metadata["hashes"].get("model")
+                        if model_hash_from_hashes:
+                            metadata["model_hash"] = model_hash_from_hashes
+                    
                     # Extract Lora hashes in alternative format
                     lora_hashes_match = re.search(self.LORA_HASHES_REGEX, params_section)
                     if not hashes_match and lora_hashes_match:
@@ -137,6 +145,17 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                             params_section = params_section.replace(lora_hashes_match.group(0), '')
                         except Exception as e:
                             logger.error(f"Error parsing Lora hashes: {e}")
+
+                    # Extract checkpoint model hash/name when provided outside Civitai resources
+                    model_hash_match = re.search(self.MODEL_HASH_PATTERN, params_section)
+                    if model_hash_match:
+                        metadata["model_hash"] = model_hash_match.group(1).strip()
+                        params_section = params_section.replace(model_hash_match.group(0), '')
+
+                    model_name_match = re.search(self.MODEL_NAME_PATTERN, params_section)
+                    if model_name_match:
+                        metadata["model_name"] = model_name_match.group(1).strip()
+                        params_section = params_section.replace(model_name_match.group(0), '')
                     
                     # Extract basic parameters
                     param_pattern = r'([A-Za-z\s]+): ([^,]+)'
@@ -178,9 +197,10 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                     
                     metadata["gen_params"] = gen_params
             
-            # Extract LoRA information 
+            # Extract LoRA and checkpoint information 
             loras = []
             base_model_counts = {}
+            checkpoint = None
             
             # First use Civitai resources if available (more reliable source)
             if metadata.get("civitai_resources"):
@@ -201,6 +221,50 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                             resource["modelId"] = air_modelId
                             resource["modelVersionId"] = air_modelVersionId
                     # --- End added ---
+
+                    if resource.get("type") == "checkpoint" and resource.get("modelVersionId"):
+                        version_id = resource.get("modelVersionId")
+                        version_id_str = str(version_id)
+                        checkpoint_entry = {
+                            'id': version_id,
+                            'modelId': resource.get("modelId", 0),
+                            'name': resource.get("modelName", "Unknown Checkpoint"),
+                            'version': resource.get("modelVersionName", resource.get("versionName", "")),
+                            'type': resource.get("type", "checkpoint"),
+                            'existsLocally': False,
+                            'localPath': None,
+                            'file_name': resource.get("modelName", ""),
+                            'hash': resource.get("hash", "") or "",
+                            'thumbnailUrl': '/loras_static/images/no-preview.png',
+                            'baseModel': '',
+                            'size': 0,
+                            'downloadUrl': '',
+                            'isDeleted': False
+                        }
+
+                        if metadata_provider:
+                            try:
+                                civitai_info = await metadata_provider.get_model_version_info(version_id_str)
+                                checkpoint_entry = await self.populate_checkpoint_from_civitai(
+                                    checkpoint_entry,
+                                    civitai_info
+                                )
+                            except Exception as e:
+                                logger.error(
+                                    "Error fetching Civitai info for checkpoint version %s: %s",
+                                    version_id,
+                                    e,
+                                )
+
+                        # Prefer the first checkpoint found
+                        if checkpoint_entry.get("baseModel"):
+                            base_model_value = checkpoint_entry["baseModel"]
+                            base_model_counts[base_model_value] = base_model_counts.get(base_model_value, 0) + 1
+
+                        if checkpoint is None:
+                            checkpoint = checkpoint_entry
+
+                        continue
 
                     if resource.get("type") in ["lora", "lycoris", "hypernet"] and resource.get("modelVersionId"):
                         # Initialize lora entry
@@ -237,6 +301,52 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                         
                         loras.append(lora_entry)
             
+            # Fallback checkpoint parsing from generic "Model" and "Model hash" fields
+            if checkpoint is None:
+                model_hash = metadata.get("model_hash")
+                if not model_hash and metadata.get("hashes"):
+                    model_hash = metadata["hashes"].get("model")
+
+                model_name = metadata.get("model_name")
+                file_name = ""
+                if model_name:
+                    cleaned_name = re.split(r"[\\\\/]", model_name)[-1]
+                    file_name = os.path.splitext(cleaned_name)[0]
+
+                if model_hash or model_name:
+                    checkpoint_entry = {
+                        'id': 0,
+                        'modelId': 0,
+                        'name': model_name or "Unknown Checkpoint",
+                        'version': '',
+                        'type': 'checkpoint',
+                        'hash': model_hash or "",
+                        'existsLocally': False,
+                        'localPath': None,
+                        'file_name': file_name,
+                        'thumbnailUrl': '/loras_static/images/no-preview.png',
+                        'baseModel': '',
+                        'size': 0,
+                        'downloadUrl': '',
+                        'isDeleted': False
+                    }
+
+                    if metadata_provider and model_hash:
+                        try:
+                            civitai_info = await metadata_provider.get_model_by_hash(model_hash)
+                            checkpoint_entry = await self.populate_checkpoint_from_civitai(
+                                checkpoint_entry,
+                                civitai_info
+                            )
+                        except Exception as e:
+                            logger.error(f"Error fetching Civitai info for checkpoint hash {model_hash}: {e}")
+
+                    if checkpoint_entry.get("baseModel"):
+                        base_model_value = checkpoint_entry["baseModel"]
+                        base_model_counts[base_model_value] = base_model_counts.get(base_model_value, 0) + 1
+
+                    checkpoint = checkpoint_entry
+
             # If no LoRAs from Civitai resources or to supplement, extract from metadata["hashes"]
             if not loras or len(loras) == 0:
                 # Extract lora weights from extranet tags in prompt (for later use)
@@ -300,7 +410,9 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                 
             # Try to get base model from resources or make educated guess
             base_model = None
-            if base_model_counts:
+            if checkpoint and checkpoint.get("baseModel"):
+                base_model = checkpoint.get("baseModel")
+            elif base_model_counts:
                 # Use the most common base model from the loras
                 base_model = max(base_model_counts.items(), key=lambda x: x[1])[0]
             
@@ -317,6 +429,10 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                 'gen_params': filtered_gen_params,
                 'from_automatic_metadata': True
             }
+
+            if checkpoint:
+                result['checkpoint'] = checkpoint
+                result['model'] = checkpoint
             
             return result
             

@@ -83,6 +83,7 @@ export class ImageProcessor {
             }
 
             this.importManager.recipeData = recipeData;
+            this._ensureCheckpointMetadata();
 
             // Check if we have an error message
             if (this.importManager.recipeData.error) {
@@ -134,6 +135,7 @@ export class ImageProcessor {
             }
 
             this.importManager.recipeData = recipeData;
+            this._ensureCheckpointMetadata();
 
             // Check if we have an error message
             if (this.importManager.recipeData.error) {
@@ -188,6 +190,7 @@ export class ImageProcessor {
             }
 
             this.importManager.recipeData = recipeData;
+            this._ensureCheckpointMetadata();
 
             // Check if we have an error message
             if (this.importManager.recipeData.error) {
@@ -213,6 +216,14 @@ export class ImageProcessor {
             document.getElementById('uploadError').textContent = error.message;
         } finally {
             this.importManager.loadingManager.hide();
+        }
+    }
+
+    _ensureCheckpointMetadata() {
+        if (!this.importManager.recipeData) return;
+
+        if (this.importManager.recipeData.model && !this.importManager.recipeData.checkpoint) {
+            this.importManager.recipeData.checkpoint = this.importManager.recipeData.model;
         }
     }
 }

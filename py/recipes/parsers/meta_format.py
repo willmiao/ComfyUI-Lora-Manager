@@ -1,5 +1,6 @@
 """Parser for meta format (Lora_N Model hash) metadata."""
 
+import os
 import re
 import logging
 from typing import Dict, Any
@@ -145,14 +146,53 @@ class MetaFormatParser(RecipeMetadataParser):
                 
                 loras.append(lora_entry)
             
-            # Extract model information
-            model = None
-            if 'model' in metadata:
-                model = metadata['model']
+            # Extract checkpoint information from generic Model/Model hash fields
+            checkpoint = None
+            model_hash = metadata.get("model_hash")
+            model_name = metadata.get("model")
+
+            if model_hash or model_name:
+                cleaned_name = None
+                if model_name:
+                    cleaned_name = re.split(r"[\\\\/]", model_name)[-1]
+                    cleaned_name = os.path.splitext(cleaned_name)[0]
+
+                checkpoint_entry = {
+                    'id': 0,
+                    'modelId': 0,
+                    'name': model_name or "Unknown Checkpoint",
+                    'version': '',
+                    'type': 'checkpoint',
+                    'hash': model_hash or "",
+                    'existsLocally': False,
+                    'localPath': None,
+                    'file_name': cleaned_name or (model_name or ""),
+                    'thumbnailUrl': '/loras_static/images/no-preview.png',
+                    'baseModel': '',
+                    'size': 0,
+                    'downloadUrl': '',
+                    'isDeleted': False
+                }
+
+                if metadata_provider and model_hash:
+                    try:
+                        civitai_info = await metadata_provider.get_model_by_hash(model_hash)
+                        checkpoint_entry = await self.populate_checkpoint_from_civitai(
+                            checkpoint_entry,
+                            civitai_info
+                        )
+                    except Exception as e:
+                        logger.error(f"Error fetching Civitai info for checkpoint hash {model_hash}: {e}")
+
+                if checkpoint_entry.get("baseModel"):
+                    base_model_value = checkpoint_entry["baseModel"]
+                    base_model_counts[base_model_value] = base_model_counts.get(base_model_value, 0) + 1
+
+                checkpoint = checkpoint_entry
             
-            # Set base_model to the most common one from civitai_info
-            base_model = None
-            if base_model_counts:
+            # Set base_model to the most common one from civitai_info or checkpoint
+            base_model = checkpoint["baseModel"] if checkpoint and checkpoint.get("baseModel") else None
+            if not base_model and base_model_counts:
                 base_model = max(base_model_counts.items(), key=lambda x: x[1])[0]
             
             # Extract generation parameters for recipe metadata
@@ -170,7 +210,8 @@ class MetaFormatParser(RecipeMetadataParser):
                 'loras': loras,
                 'gen_params': gen_params,
                 'raw_metadata': metadata,
-                'from_meta_format': True
+                'from_meta_format': True,
+                **({'checkpoint': checkpoint, 'model': checkpoint} if checkpoint else {})
             }
             
         except Exception as e:

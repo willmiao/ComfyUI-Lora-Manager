@@ -94,8 +94,45 @@ class RecipeFormatParser(RecipeMetadataParser):
                                 lora_entry['thumbnailUrl'] = '/loras_static/images/no-preview.png'
                 
                 loras.append(lora_entry)
-
+            
             logger.info(f"Found {len(loras)} loras in recipe metadata")
+
+            # Process checkpoint information if present
+            checkpoint = None
+            checkpoint_data = recipe_metadata.get('checkpoint') or {}
+            if isinstance(checkpoint_data, dict) and checkpoint_data:
+                version_id = checkpoint_data.get('modelVersionId') or checkpoint_data.get('id')
+                checkpoint_entry = {
+                    'id': version_id or 0,
+                    'modelId': checkpoint_data.get('modelId', 0),
+                    'name': checkpoint_data.get('name', 'Unknown Checkpoint'),
+                    'version': checkpoint_data.get('version', ''),
+                    'type': checkpoint_data.get('type', 'checkpoint'),
+                    'hash': checkpoint_data.get('hash', ''),
+                    'existsLocally': False,
+                    'localPath': None,
+                    'file_name': checkpoint_data.get('file_name', ''),
+                    'thumbnailUrl': '/loras_static/images/no-preview.png',
+                    'baseModel': '',
+                    'size': 0,
+                    'downloadUrl': '',
+                    'isDeleted': False
+                }
+
+                if metadata_provider:
+                    try:
+                        civitai_info = None
+                        if version_id:
+                            civitai_info = await metadata_provider.get_model_version_info(str(version_id))
+                        elif checkpoint_entry.get('hash'):
+                            civitai_info = await metadata_provider.get_model_by_hash(checkpoint_entry['hash'])
+
+                        if civitai_info:
+                            checkpoint_entry = await self.populate_checkpoint_from_civitai(checkpoint_entry, civitai_info)
+                    except Exception as e:
+                        logger.error(f"Error fetching Civitai info for checkpoint in recipe metadata: {e}")
+
+                checkpoint = checkpoint_entry
             
             # Filter gen_params to only include recognized keys
             filtered_gen_params = {}
@@ -105,12 +142,13 @@ class RecipeFormatParser(RecipeMetadataParser):
                         filtered_gen_params[key] = value
             
             return {
-                'base_model': recipe_metadata.get('base_model', ''),
+                'base_model': checkpoint['baseModel'] if checkpoint and checkpoint.get('baseModel') else recipe_metadata.get('base_model', ''),
                 'loras': loras,
                 'gen_params': filtered_gen_params,
                 'tags': recipe_metadata.get('tags', []),
                 'title': recipe_metadata.get('title', ''),
-                'from_recipe_metadata': True
+                'from_recipe_metadata': True,
+                **({'checkpoint': checkpoint, 'model': checkpoint} if checkpoint else {})
             }
             
         except Exception as e:
