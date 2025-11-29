@@ -3,7 +3,7 @@
 import re
 import json
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from ...config import config
 from ..base import RecipeMetadataParser
 from ..constants import GEN_PARAM_KEYS
@@ -16,6 +16,28 @@ class RecipeFormatParser(RecipeMetadataParser):
     
     # Regular expression pattern for extracting recipe metadata
     METADATA_MARKER = r'Recipe metadata: (\{.*\})'
+
+    async def _get_lora_from_version_index(self, recipe_scanner, model_version_id: Any) -> Optional[Dict[str, Any]]:
+        """Return a cached LoRA entry by modelVersionId if available."""
+
+        if not recipe_scanner or not getattr(recipe_scanner, "_lora_scanner", None):
+            return None
+
+        try:
+            normalized_id = int(model_version_id)
+        except (TypeError, ValueError):
+            return None
+
+        try:
+            cache = await recipe_scanner._lora_scanner.get_cached_data()
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.debug("Unable to load lora cache for version lookup: %s", exc)
+            return None
+
+        if not cache or not getattr(cache, "version_index", None):
+            return None
+
+        return cache.version_index.get(normalized_id)
     
     def is_metadata_matching(self, user_comment: str) -> bool:
         """Check if the user comment matches the metadata format"""
@@ -53,45 +75,69 @@ class RecipeFormatParser(RecipeMetadataParser):
                     'type': 'lora',
                     'weight': lora.get('strength', 1.0),
                     'file_name': lora.get('file_name', ''),
-                    'hash': lora.get('hash', '')
+                    'hash': lora.get('hash', ''),
+                    'existsLocally': False,
+                    'inLibrary': False,
+                    'localPath': None,
+                    'thumbnailUrl': '/loras_static/images/no-preview.png',
+                    'size': 0
                 }
                 
                 # Check if this LoRA exists locally by SHA256 hash
-                if lora.get('hash') and recipe_scanner:
+                if recipe_scanner:
                     lora_scanner = recipe_scanner._lora_scanner
-                    exists_locally = lora_scanner.has_hash(lora['hash'])
-                    if exists_locally:
-                        lora_cache = await lora_scanner.get_cached_data()
-                        lora_item = next((item for item in lora_cache.raw_data if item['sha256'].lower() == lora['hash'].lower()), None)
-                        if lora_item:
+
+                    if lora.get('hash'):
+                        exists_locally = lora_scanner.has_hash(lora['hash'])
+                        if exists_locally:
+                            lora_cache = await lora_scanner.get_cached_data()
+                            lora_item = next((item for item in lora_cache.raw_data if item['sha256'].lower() == lora['hash'].lower()), None)
+                            if lora_item:
+                                lora_entry['existsLocally'] = True
+                                lora_entry['inLibrary'] = True
+                                lora_entry['localPath'] = lora_item['file_path']
+                                lora_entry['file_name'] = lora_item['file_name']
+                                lora_entry['size'] = lora_item['size']
+                                lora_entry['thumbnailUrl'] = config.get_preview_static_url(lora_item['preview_url'])
+                                
+                        else:
+                            lora_entry['existsLocally'] = False
+                            lora_entry['inLibrary'] = False
+                            lora_entry['localPath'] = None
+
+                    # If we still don't have a local match, try matching by modelVersionId
+                    if not lora_entry['existsLocally'] and lora.get('modelVersionId') is not None:
+                        cached_lora = await self._get_lora_from_version_index(recipe_scanner, lora.get('modelVersionId'))
+                        if cached_lora:
                             lora_entry['existsLocally'] = True
-                            lora_entry['localPath'] = lora_item['file_path']
-                            lora_entry['file_name'] = lora_item['file_name']
-                            lora_entry['size'] = lora_item['size']
-                            lora_entry['thumbnailUrl'] = config.get_preview_static_url(lora_item['preview_url'])
-                            
-                    else:
-                        lora_entry['existsLocally'] = False
-                        lora_entry['localPath'] = None
-                        
-                        # Try to get additional info from Civitai if we have a model version ID
-                        if lora.get('modelVersionId') and metadata_provider:
-                            try:
-                                civitai_info_tuple = await metadata_provider.get_model_version_info(lora['modelVersionId'])
-                                # Populate lora entry with Civitai info
-                                populated_entry = await self.populate_lora_from_civitai(
-                                    lora_entry, 
-                                    civitai_info_tuple, 
-                                    recipe_scanner,
-                                    None,  # No need to track base model counts
-                                    lora['hash']
-                                )
-                                if populated_entry is None:
-                                    continue  # Skip invalid LoRA types
-                                lora_entry = populated_entry
-                            except Exception as e:
-                                logger.error(f"Error fetching Civitai info for LoRA: {e}")
-                                lora_entry['thumbnailUrl'] = '/loras_static/images/no-preview.png'
+                            lora_entry['inLibrary'] = True
+                            lora_entry['localPath'] = cached_lora.get('file_path')
+                            lora_entry['file_name'] = cached_lora.get('file_name') or lora_entry['file_name']
+                            lora_entry['size'] = cached_lora.get('size', lora_entry['size'])
+                            if cached_lora.get('sha256'):
+                                lora_entry['hash'] = cached_lora['sha256']
+                            preview_url = cached_lora.get('preview_url')
+                            if preview_url:
+                                lora_entry['thumbnailUrl'] = config.get_preview_static_url(preview_url)
+
+                    # Try to get additional info from Civitai if we have a model version ID and still missing locally
+                    if not lora_entry['existsLocally'] and lora.get('modelVersionId') and metadata_provider:
+                        try:
+                            civitai_info_tuple = await metadata_provider.get_model_version_info(lora['modelVersionId'])
+                            # Populate lora entry with Civitai info
+                            populated_entry = await self.populate_lora_from_civitai(
+                                lora_entry, 
+                                civitai_info_tuple, 
+                                recipe_scanner,
+                                None,  # No need to track base model counts
+                                lora_entry.get('hash', '')
+                            )
+                            if populated_entry is None:
+                                continue  # Skip invalid LoRA types
+                            lora_entry = populated_entry
+                        except Exception as e:
+                            logger.error(f"Error fetching Civitai info for LoRA: {e}")
+                            lora_entry['thumbnailUrl'] = '/loras_static/images/no-preview.png'
                 
                 loras.append(lora_entry)
             
