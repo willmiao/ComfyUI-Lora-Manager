@@ -140,6 +140,28 @@ class ExifUtils:
             if metadata:
                 # Remove any existing recipe metadata
                 metadata = ExifUtils.remove_recipe_metadata(metadata)
+
+            # Prepare checkpoint data
+            checkpoint_data = recipe_data.get("checkpoint") or {}
+            simplified_checkpoint = None
+            if isinstance(checkpoint_data, dict) and checkpoint_data:
+                simplified_checkpoint = {
+                    "type": checkpoint_data.get("type", "checkpoint"),
+                    "modelId": checkpoint_data.get("modelId", 0),
+                    "modelVersionId": checkpoint_data.get("modelVersionId")
+                    or checkpoint_data.get("id", 0),
+                    "modelName": checkpoint_data.get(
+                        "modelName", checkpoint_data.get("name", "")
+                    ),
+                    "modelVersionName": checkpoint_data.get(
+                        "modelVersionName", checkpoint_data.get("version", "")
+                    ),
+                    "hash": checkpoint_data.get("hash", "").lower()
+                    if checkpoint_data.get("hash")
+                    else "",
+                    "file_name": checkpoint_data.get("file_name", ""),
+                    "baseModel": checkpoint_data.get("baseModel", ""),
+                }
             
             # Prepare simplified loras data
             simplified_loras = []
@@ -160,7 +182,8 @@ class ExifUtils:
                 'base_model': recipe_data.get('base_model', ''),
                 'loras': simplified_loras,
                 'gen_params': recipe_data.get('gen_params', {}),
-                'tags': recipe_data.get('tags', [])
+                'tags': recipe_data.get('tags', []),
+                **({'checkpoint': simplified_checkpoint} if simplified_checkpoint else {})
             }
             
             # Convert to JSON string
