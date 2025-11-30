@@ -20,11 +20,25 @@ _COMMERCIAL_SHIFT = 1
 def _normalize_commercial_values(value: Any) -> Sequence[str]:
     """Return a normalized list of commercial permissions preserving source values."""
 
+    def _split_aggregate(value_str: str) -> list[str]:
+        stripped = value_str.strip()
+        looks_aggregate = "," in stripped or (stripped.startswith("{") and stripped.endswith("}"))
+        if not looks_aggregate:
+            return [value_str]
+
+        trimmed = stripped
+        if trimmed.startswith("{") and trimmed.endswith("}"):
+            trimmed = trimmed[1:-1]
+
+        parts = [part.strip() for part in trimmed.split(",")]
+        result = [part for part in parts if part]
+        return result or [value_str]
+
     if value is None:
         return list(_DEFAULT_ALLOW_COMMERCIAL_USE)
 
     if isinstance(value, str):
-        return [value]
+        return _split_aggregate(value)
 
     if isinstance(value, Iterable):
         result = []
@@ -32,7 +46,7 @@ def _normalize_commercial_values(value: Any) -> Sequence[str]:
             if item is None:
                 continue
             if isinstance(item, str):
-                result.append(item)
+                result.extend(_split_aggregate(item))
                 continue
             result.append(str(item))
         if result:

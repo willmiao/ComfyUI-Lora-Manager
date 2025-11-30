@@ -77,20 +77,63 @@ function indentMarkup(markup, spaces) {
         .join('\n');
 }
 
+function splitAggregateCommercialValue(value) {
+    const trimmed = String(value ?? '').trim();
+    const looksAggregate = trimmed.includes(',') || (trimmed.startsWith('{') && trimmed.endsWith('}'));
+    if (!looksAggregate) {
+        return [value];
+    }
+
+    let inner = trimmed;
+    if (inner.startsWith('{') && inner.endsWith('}')) {
+        inner = inner.slice(1, -1);
+    }
+
+    const parts = inner
+        .split(',')
+        .map(part => part.trim())
+        .filter(Boolean);
+
+    return parts.length ? parts : [value];
+}
+
 function normalizeCommercialValues(value) {
     if (!value && value !== '') {
         return ['Sell'];
     }
+
     if (Array.isArray(value)) {
-        return value.filter(item => item !== null && item !== undefined);
+        const flattened = [];
+        value.forEach(item => {
+            if (item === null || item === undefined) {
+                return;
+            }
+            if (typeof item === 'string') {
+                flattened.push(...splitAggregateCommercialValue(item));
+                return;
+            }
+            flattened.push(String(item));
+        });
+        if (flattened.length > 0) {
+            return flattened;
+        }
+        if (value.length === 0) {
+            return [];
+        }
     }
+
     if (typeof value === 'string') {
-        return [value];
+        return splitAggregateCommercialValue(value);
     }
+
     if (value && typeof value[Symbol.iterator] === 'function') {
         const result = [];
         for (const item of value) {
             if (item === null || item === undefined) {
+                continue;
+            }
+            if (typeof item === 'string') {
+                result.push(...splitAggregateCommercialValue(item));
                 continue;
             }
             result.push(String(item));
@@ -99,6 +142,7 @@ function normalizeCommercialValues(value) {
             return result;
         }
     }
+
     return ['Sell'];
 }
 

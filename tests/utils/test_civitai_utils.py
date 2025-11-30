@@ -46,3 +46,35 @@ def test_build_license_flags_respects_commercial_hierarchy():
     assert build_license_flags({**base, "allowCommercialUse": ["Image"]}) == 2
     # Sell forces all commercial bits regardless of image listing.
     assert build_license_flags({**base, "allowCommercialUse": ["Sell"]}) == 30
+
+
+def test_build_license_flags_parses_aggregate_string():
+    source = {
+        "allowNoCredit": True,
+        "allowCommercialUse": "{Image,RentCivit,Rent}",
+        "allowDerivatives": True,
+        "allowDifferentLicense": False,
+    }
+
+    payload = resolve_license_payload(source)
+    assert set(payload["allowCommercialUse"]) == {"Image", "RentCivit", "Rent"}
+
+    flags = build_license_flags(source)
+    expected_flags = (1 << 0) | (7 << 1) | (1 << 5)
+    assert flags == expected_flags
+
+
+def test_build_license_flags_parses_aggregate_inside_list():
+    source = {
+        "allowNoCredit": True,
+        "allowCommercialUse": ["{Image,RentCivit,Rent}"],
+        "allowDerivatives": True,
+        "allowDifferentLicense": False,
+    }
+
+    payload = resolve_license_payload(source)
+    assert set(payload["allowCommercialUse"]) == {"Image", "RentCivit", "Rent"}
+
+    flags = build_license_flags(source)
+    expected_flags = (1 << 0) | (7 << 1) | (1 << 5)
+    assert flags == expected_flags
