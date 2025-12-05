@@ -35,6 +35,7 @@ body.modal-open {
         0 10px 15px -3px rgba(0, 0, 0, 0.05);
     overflow-y: auto;
     overflow-x: hidden; /* 防止水平滚动条 */
+    scrollbar-gutter: stable both-edges; /* Reserve space to prevent layout shift when scrollbar toggles */
 }
 
 .modal-content-large {
