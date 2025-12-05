@@ -45,8 +45,8 @@ export async function copyToClipboard(text, successMessage = null) {
     }
 }
 
-export function showToast(key, params = {}, type = 'info') {
-    const message = translate(key, params);
+export function showToast(key, params = {}, type = 'info', fallback = null) {
+    const message = translate(key, params, fallback);
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.textContent = message;

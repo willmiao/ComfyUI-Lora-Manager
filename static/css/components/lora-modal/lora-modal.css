@@ -7,6 +7,7 @@
     margin-bottom: var(--space-3);
     padding-bottom: var(--space-2);
     border-bottom: 1px solid var(--lora-border);
+    position: relative;
 }
 
 .modal-header-actions {
@@ -16,6 +17,55 @@
     flex-wrap: wrap;
     width: 100%;
     margin-bottom: var(--space-1);
+}
+
+.modal-header-row {
+    width: 85%;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    position: relative;
+    padding-right: 96px; /* Reserve space for nav buttons to prevent wrapping overlap */
+}
+
+.modal-nav-controls {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    margin-left: auto;
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.modal-nav-btn {
+    display: grid;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.modal-nav-btn:hover:not(:disabled) {
+    background: var(--bg-hover, var(--card-bg));
+    border-color: var(--lora-accent);
+    transform: translateY(-1px);
+}
+
+.modal-nav-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.modal-nav-btn i {
+    font-size: 14px;
 }
 
 .modal-header-actions .license-restrictions {

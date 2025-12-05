@@ -20,6 +20,7 @@ import { parsePresets, renderPresetTags } from './PresetTags.js';
 import { initVersionsTab } from './ModelVersionsTab.js';
 import { loadRecipesForLora } from './RecipeTab.js';
 import { translate } from '../../utils/i18nHelpers.js';
+import { state } from '../../state/index.js';
 
 function getModalFilePath(fallback = '') {
     const modalElement = document.getElementById('modelModal');
@@ -55,6 +56,10 @@ const COMMERCIAL_ICON_CONFIG = [
         fallback: 'No selling models'
     }
 ];
+
+let navigationKeyHandler = null;
+let navigationModelType = null;
+let navigationInProgress = false;
 
 function hasLicenseField(license, field) {
     return Object.prototype.hasOwnProperty.call(license || {}, field);
@@ -241,6 +246,8 @@ function renderLicenseIcons(modelData) {
 export async function showModelModal(model, modelType) {
     const modalId = 'modelModal';
     const modalTitle = model.model_name;
+    cleanupNavigationShortcuts();
+    detachModalHandlers(modalId);
         
     // Fetch complete civitai metadata
     let completeCivitaiData = model.civitai || {};
@@ -355,6 +362,18 @@ export async function showModelModal(model, modelType) {
     const loadingVersionsText = translate('modals.model.loading.versions', {}, 'Loading versions...');
     const civitaiModelId = modelWithFullData.civitai?.modelId || '';
     const civitaiVersionId = modelWithFullData.civitai?.id || '';
+    const navAriaLabel = translate('modals.model.navigation.label', {}, 'Model navigation');
+    const previousTitle = translate('modals.model.navigation.previousWithShortcut', {}, 'Previous model (←)');
+    const nextTitle = translate('modals.model.navigation.nextWithShortcut', {}, 'Next model (→)');
+    const navigationControls = `
+                <div class="modal-nav-controls" role="group" aria-label="${navAriaLabel}">
+                    <button class="modal-nav-btn" data-action="nav-prev" title="${previousTitle}" aria-label="${previousTitle}">
+                        <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                    </button>
+                    <button class="modal-nav-btn" data-action="nav-next" title="${nextTitle}" aria-label="${nextTitle}">
+                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                    </button>
+                </div>`.trim();
 
     const tabPanesContent = modelType === 'loras' ? 
         `<div id="showcase-tab" class="tab-pane active">
@@ -414,11 +433,15 @@ export async function showModelModal(model, modelType) {
         <div class="modal-content">
             <button class="close" onclick="modalManager.closeModal('${modalId}')">&times;</button>
             <header class="modal-header">
-                <div class="model-name-header">
-                    <h2 class="model-name-content">${modalTitle}</h2>
-                    <button class="edit-model-name-btn" title="${translate('modals.model.actions.editModelName', {}, 'Edit model name')}">
-                        <i class="fas fa-pencil-alt"></i>
-                    </button>
+                <div class="modal-header-row">
+                    <div class="model-name-header">
+                        <h2 class="model-name-content">${modalTitle}</h2>
+                        <button class="edit-model-name-btn" title="${translate('modals.model.actions.editModelName', {}, 'Edit model name')}">
+                            <i class="fas fa-pencil-alt"></i>
+                        </button>
+                    </div>
+
+                    ${navigationControls}
                 </div>
 
                 ${headerActionsMarkup}
@@ -511,6 +534,7 @@ export async function showModelModal(model, modelType) {
             showcaseCleanup();
             showcaseCleanup = null;
         }
+        cleanupNavigationShortcuts();
     };
     
     modalManager.showModal(modalId, content, null, onCloseCallback);
@@ -539,7 +563,9 @@ export async function showModelModal(model, modelType) {
     setupModelNameEditing(modelWithFullData.file_path);
     setupBaseModelEditing(modelWithFullData.file_path);
     setupFileNameEditing(modelWithFullData.file_path);
-    setupEventHandlers(modelWithFullData.file_path);
+    setupEventHandlers(modelWithFullData.file_path, modelType);
+    setupNavigationShortcuts(modelType);
+    updateNavigationControls();
     
     // LoRA specific setup
     if (modelType === 'loras' || modelType === 'embeddings') {
@@ -589,11 +615,20 @@ function renderEmbeddingSpecificContent(embedding, escapedWords) {
     return `${renderTriggerWords(escapedWords, embedding.file_path)}`;
 }
 
+function detachModalHandlers(modalId) {
+    const modalElement = document.getElementById(modalId);
+    if (modalElement && modalElement._clickHandler) {
+        modalElement.removeEventListener('click', modalElement._clickHandler);
+        delete modalElement._clickHandler;
+    }
+}
+
 /**
  * Sets up event handlers using event delegation for LoRA modal
  * @param {string} filePath - Path to the model file
+ * @param {string} modelType - Current model type
  */
-function setupEventHandlers(filePath) {
+function setupEventHandlers(filePath, modelType) {
     const modalElement = document.getElementById('modelModal');
     
     // Remove existing event listeners first
@@ -627,6 +662,12 @@ function setupEventHandlers(filePath) {
                 if (filePath) {
                     openFileLocation(filePath);
                 }
+                break;
+            case 'nav-prev':
+                handleDirectionalNavigation('prev', modelType);
+                break;
+            case 'nav-next':
+                handleDirectionalNavigation('next', modelType);
                 break;
         }
     }
@@ -758,6 +799,95 @@ async function saveNotes() {
         showToast('modals.model.notes.saved', {}, 'success');
     } catch (error) {
         showToast('modals.model.notes.saveFailed', {}, 'error');
+    }
+}
+
+function shouldIgnoreNavigationKey(event) {
+    const target = event.target;
+    if (!target) return false;
+    const tagName = target.tagName ? target.tagName.toLowerCase() : '';
+    return target.isContentEditable || ['input', 'textarea', 'select', 'button'].includes(tagName);
+}
+
+function updateNavigationControls() {
+    const modalElement = document.getElementById('modelModal');
+    if (!modalElement) return;
+
+    const prevBtn = modalElement.querySelector('[data-action="nav-prev"]');
+    const nextBtn = modalElement.querySelector('[data-action="nav-next"]');
+    if (!prevBtn || !nextBtn) return;
+
+    const scroller = state.virtualScroller;
+    if (!scroller || typeof scroller.getNavigationState !== 'function') {
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+        return;
+    }
+
+    const { hasPrev, hasNext } = scroller.getNavigationState(modalElement.dataset.filePath || '');
+    prevBtn.disabled = navigationInProgress || !hasPrev;
+    nextBtn.disabled = navigationInProgress || !hasNext;
+}
+
+function cleanupNavigationShortcuts() {
+    if (navigationKeyHandler) {
+        document.removeEventListener('keydown', navigationKeyHandler);
+        navigationKeyHandler = null;
+    }
+    navigationModelType = null;
+    navigationInProgress = false;
+}
+
+function setupNavigationShortcuts(modelType) {
+    const modalElement = document.getElementById('modelModal');
+    if (!modalElement) return;
+
+    navigationModelType = modelType;
+    cleanupNavigationShortcuts();
+
+    navigationKeyHandler = (event) => {
+        if (shouldIgnoreNavigationKey(event)) return;
+
+        if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            handleDirectionalNavigation('prev', navigationModelType);
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            handleDirectionalNavigation('next', navigationModelType);
+        }
+    };
+
+    document.addEventListener('keydown', navigationKeyHandler);
+}
+
+async function handleDirectionalNavigation(direction, modelType) {
+    if (navigationInProgress) return;
+
+    const modalElement = document.getElementById('modelModal');
+    const scroller = state.virtualScroller;
+    const filePath = modalElement?.dataset?.filePath || '';
+
+    if (!modalElement || !filePath || !scroller || typeof scroller.getAdjacentItemByFilePath !== 'function') {
+        return;
+    }
+
+    navigationInProgress = true;
+    updateNavigationControls();
+
+    try {
+        const adjacent = await scroller.getAdjacentItemByFilePath(filePath, direction);
+        if (!adjacent || !adjacent.item) {
+            const toastKey = direction === 'prev' ? 'modals.model.navigation.noPrevious' : 'modals.model.navigation.noNext';
+            const toastFallback = direction === 'prev' ? 'No previous model available' : 'No next model available';
+            showToast(toastKey, {}, 'info', toastFallback);
+            return;
+        }
+
+        navigationModelType = modelType || navigationModelType;
+        await showModelModal(adjacent.item, navigationModelType || modelType);
+    } finally {
+        navigationInProgress = false;
+        updateNavigationControls();
     }
 }
 

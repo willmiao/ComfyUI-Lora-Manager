@@ -1019,4 +1019,73 @@ export class VirtualScroller {
         // Final render to ensure all content is displayed
         this.renderItems();
     }
+
+    /**
+     * Find the index of an item by its file path.
+     * @param {string} filePath
+     * @returns {number} index of the item or -1 when not found
+     */
+    findIndexByFilePath(filePath) {
+        if (!filePath) return -1;
+        return this.items.findIndex(item => item.file_path === filePath);
+    }
+
+    /**
+     * Return navigation state for the given item.
+     * @param {string} filePath
+     * @returns {{index: number, hasPrev: boolean, hasNext: boolean, loadedItems: number, totalItems: number}}
+     */
+    getNavigationState(filePath) {
+        const index = this.findIndexByFilePath(filePath);
+        const hasPrev = index > 0;
+        const hasNext = index !== -1 && (index < this.items.length - 1 || this.hasMore);
+
+        return {
+            index,
+            hasPrev,
+            hasNext,
+            loadedItems: this.items.length,
+            totalItems: this.totalItems
+        };
+    }
+
+    /**
+     * Get the adjacent item relative to the provided file path.
+     * When the target index falls outside the loaded window and more pages
+     * are available, this method will request additional pages until the
+     * target item is available or no more data exists.
+     * @param {string} filePath
+     * @param {'prev' | 'next'} direction
+     * @returns {Promise<{item: Object, index: number} | null>}
+     */
+    async getAdjacentItemByFilePath(filePath, direction = 'next') {
+        const currentIndex = this.findIndexByFilePath(filePath);
+        if (currentIndex === -1) return null;
+
+        const offset = direction === 'prev' ? -1 : 1;
+        let targetIndex = currentIndex + offset;
+
+        if (targetIndex < 0) {
+            return null;
+        }
+
+        // Attempt to load more items if needed to reach the target index
+        let safetyCounter = 0;
+        while (targetIndex >= this.items.length && this.hasMore && safetyCounter < 10) {
+            safetyCounter++;
+            const newItems = await this.loadMoreItems();
+            if (!newItems || newItems.length === 0) {
+                break;
+            }
+        }
+
+        if (targetIndex < 0 || targetIndex >= this.items.length) {
+            return null;
+        }
+
+        return {
+            item: this.items[targetIndex],
+            index: targetIndex
+        };
+    }
 }
