@@ -914,6 +914,13 @@
                 "recipes": "Recetas",
                 "versions": "Versiones"
             },
+            "navigation": {
+                "label": "Navegación de modelos",
+                "previousWithShortcut": "Modelo anterior (←)",
+                "nextWithShortcut": "Siguiente modelo (→)",
+                "noPrevious": "No hay modelo anterior disponible",
+                "noNext": "No hay siguiente modelo disponible"
+            },
             "license": {
                 "noImageSell": "No selling generated content",
                 "noRentCivit": "No Civitai generation",

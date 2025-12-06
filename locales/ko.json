@@ -914,6 +914,13 @@
                 "recipes": "레시피",
                 "versions": "버전"
             },
+            "navigation": {
+                "label": "모델 탐색",
+                "previousWithShortcut": "이전 모델(←)",
+                "nextWithShortcut": "다음 모델(→)",
+                "noPrevious": "이전 모델이 없습니다",
+                "noNext": "다음 모델이 없습니다"
+            },
             "license": {
                 "noImageSell": "No selling generated content",
                 "noRentCivit": "No Civitai generation",

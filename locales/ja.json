@@ -914,6 +914,13 @@
                 "recipes": "レシピ",
                 "versions": "バージョン"
             },
+            "navigation": {
+                "label": "モデルナビゲーション",
+                "previousWithShortcut": "前のモデル（←）",
+                "nextWithShortcut": "次のモデル（→）",
+                "noPrevious": "前のモデルがありません",
+                "noNext": "次のモデルがありません"
+            },
             "license": {
                 "noImageSell": "No selling generated content",
                 "noRentCivit": "No Civitai generation",

@@ -914,6 +914,13 @@
                 "recipes": "מתכונים",
                 "versions": "גרסאות"
             },
+            "navigation": {
+                "label": "ניווט מודלים",
+                "previousWithShortcut": "המודל הקודם (←)",
+                "nextWithShortcut": "המודל הבא (→)",
+                "noPrevious": "אין מודל קודם זמין",
+                "noNext": "אין מודל נוסף זמין"
+            },
             "license": {
                 "noImageSell": "No selling generated content",
                 "noRentCivit": "No Civitai generation",

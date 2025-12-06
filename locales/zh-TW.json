@@ -914,6 +914,13 @@
                 "recipes": "配方",
                 "versions": "版本"
             },
+            "navigation": {
+                "label": "模型導覽",
+                "previousWithShortcut": "上一個模型（←）",
+                "nextWithShortcut": "下一個模型（→）",
+                "noPrevious": "沒有上一個模型",
+                "noNext": "沒有下一個模型"
+            },
             "license": {
                 "noImageSell": "No selling generated content",
                 "noRentCivit": "No Civitai generation",

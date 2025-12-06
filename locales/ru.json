@@ -914,6 +914,13 @@
                 "recipes": "Рецепты",
                 "versions": "Версии"
             },
+            "navigation": {
+                "label": "Навигация по моделям",
+                "previousWithShortcut": "Предыдущая модель (←)",
+                "nextWithShortcut": "Следующая модель (→)",
+                "noPrevious": "Предыдущая модель отсутствует",
+                "noNext": "Следующая модель отсутствует"
+            },
             "license": {
                 "noImageSell": "No selling generated content",
                 "noRentCivit": "No Civitai generation",
