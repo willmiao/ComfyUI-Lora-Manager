@@ -312,6 +312,8 @@ export async function showModelModal(model, modelType) {
         ].join('\n')
         : '';
     const hasUpdateAvailable = Boolean(modelWithFullData.update_available);
+    const updateAvailabilityState = { hasUpdateAvailable };
+    const updateBadgeTooltip = translate('modelCard.badges.updateAvailable', {}, 'Update available');
     
     // Prepare LoRA specific data with complete civitai data
     const escapedWords = (modelType === 'loras' || modelType === 'embeddings') && modelWithFullData.civitai?.trainedWords?.length ? 
@@ -521,6 +523,82 @@ export async function showModelModal(model, modelType) {
         </div>
     `;
     
+    function updateVersionsTabBadge(hasUpdate) {
+        const modalElement = document.getElementById(modalId);
+        if (!modalElement) return;
+
+        const tabButton = modalElement.querySelector('.tab-btn[data-tab="versions"]');
+        if (!tabButton) return;
+
+        tabButton.classList.toggle('tab-btn--has-update', hasUpdate);
+
+        let badge = tabButton.querySelector('.tab-badge--update');
+        if (hasUpdate) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'tab-badge tab-badge--update';
+                badge.textContent = versionsBadgeLabel;
+                badge.title = updateBadgeTooltip;
+                tabButton.appendChild(badge);
+            } else {
+                badge.textContent = versionsBadgeLabel;
+                badge.title = updateBadgeTooltip;
+            }
+        } else if (badge) {
+            badge.remove();
+        }
+    }
+
+    function updateCardUpdateAvailability(hasUpdate) {
+        const filePath = modelWithFullData.file_path;
+        if (!filePath) return;
+
+        let updatedViaScroller = false;
+        if (state.virtualScroller?.updateSingleItem) {
+            updatedViaScroller = state.virtualScroller.updateSingleItem(filePath, {
+                update_available: hasUpdate,
+            });
+        }
+
+        if (updatedViaScroller) {
+            return;
+        }
+
+        const escapedPath = window.CSS && typeof window.CSS.escape === 'function'
+            ? window.CSS.escape(filePath)
+            : filePath.replace(/["\\]/g, '\\$&');
+        const card = document.querySelector(`.model-card[data-filepath="${escapedPath}"]`);
+        if (!card) return;
+
+        card.dataset.update_available = hasUpdate ? 'true' : 'false';
+        card.classList.toggle('has-update', hasUpdate);
+
+        const headerInfo = card.querySelector('.card-header-info');
+        if (!headerInfo) return;
+
+        let badge = headerInfo.querySelector('.model-update-badge');
+        if (hasUpdate) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'model-update-badge';
+                badge.title = updateBadgeTooltip;
+                badge.textContent = versionsBadgeLabel;
+                headerInfo.appendChild(badge);
+            }
+        } else if (badge) {
+            badge.remove();
+        }
+    }
+
+    function handleUpdateStatusChange(hasUpdate) {
+        if (updateAvailabilityState.hasUpdateAvailable === hasUpdate) {
+            return;
+        }
+        updateAvailabilityState.hasUpdateAvailable = hasUpdate;
+        updateVersionsTabBadge(hasUpdate);
+        updateCardUpdateAvailability(hasUpdate);
+    }
+    
     let showcaseCleanup;
 
     const onCloseCallback = function() {
@@ -542,11 +620,14 @@ export async function showModelModal(model, modelType) {
     if (activeModalElement) {
         activeModalElement.dataset.filePath = modelWithFullData.file_path || '';
     }
+    updateVersionsTabBadge(updateAvailabilityState.hasUpdateAvailable);
     const versionsTabController = initVersionsTab({
         modalId,
         modelType,
         modelId: civitaiModelId,
         currentVersionId: civitaiVersionId,
+        currentBaseModel: modelWithFullData.base_model,
+        onUpdateStatusChange: handleUpdateStatusChange,
     });
     setupEditableFields(modelWithFullData.file_path, modelType);
     showcaseCleanup = setupShowcaseScroll(modalId);

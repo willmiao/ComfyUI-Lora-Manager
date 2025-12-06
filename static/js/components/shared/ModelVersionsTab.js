@@ -228,6 +228,64 @@ function getCurrentVersionBaseModel(record, versionId) {
     };
 }
 
+function resolveUpdateAvailability(record, baseModel, currentVersionId) {
+    if (!record) {
+        return false;
+    }
+
+    const strategy = state?.global?.settings?.update_flag_strategy;
+    const sameBaseMode = strategy === DISPLAY_FILTER_MODES.SAME_BASE;
+
+    if (!sameBaseMode) {
+        return Boolean(record?.hasUpdate);
+    }
+
+    const normalizedBase = normalizeBaseModelName(baseModel);
+    if (!normalizedBase || !Array.isArray(record.versions)) {
+        return false;
+    }
+
+    const normalizedCurrentVersionId =
+        typeof currentVersionId === 'number'
+            ? currentVersionId
+            : currentVersionId
+            ? Number(currentVersionId)
+            : null;
+
+    let threshold = null;
+    for (const version of record.versions) {
+        if (!version.isInLibrary) {
+            continue;
+        }
+        const versionBase = normalizeBaseModelName(version.baseModel);
+        if (versionBase !== normalizedBase) {
+            continue;
+        }
+        if (threshold === null || version.versionId > threshold) {
+            threshold = version.versionId;
+        }
+    }
+
+    if (threshold === null) {
+        threshold = normalizedCurrentVersionId;
+    }
+
+    if (threshold === null) {
+        return false;
+    }
+
+    return record.versions.some(version => {
+        if (version.isInLibrary || version.shouldIgnore) {
+            return false;
+        }
+        const versionBase = normalizeBaseModelName(version.baseModel);
+        if (versionBase !== normalizedBase) {
+            return false;
+        }
+        return typeof version.versionId === 'number' && version.versionId > threshold;
+    });
+}
+
 function getAutoplaySetting() {
     try {
         return Boolean(state?.global?.settings?.autoplay_on_hover);
@@ -490,6 +548,8 @@ export function initVersionsTab({
     modelType,
     modelId,
     currentVersionId,
+    currentBaseModel,
+    onUpdateStatusChange,
 }) {
     const pane = document.querySelector(`#${modalId} #versions-tab`);
     const container = pane ? pane.querySelector('.model-versions-tab') : null;
@@ -512,6 +572,10 @@ export function initVersionsTab({
         hasLoaded: false,
         record: null,
     };
+
+    const updateStatusChangeHandler =
+        typeof onUpdateStatusChange === 'function' ? onUpdateStatusChange : null;
+    let lastNotifiedUpdateState = null;
 
     let displayMode = getDefaultDisplayMode();
 
@@ -538,77 +602,77 @@ export function initVersionsTab({
         `;
     }
 
-function render(record) {
-    controller.record = record;
-    controller.hasLoaded = true;
+    function render(record) {
+        controller.record = record;
+        controller.hasLoaded = true;
 
-    if (!record || !Array.isArray(record.versions) || record.versions.length === 0) {
-        renderEmptyState(container);
-        return;
-    }
-
-    const latestLibraryVersionId = getLatestLibraryVersionId(record);
-    const { normalized: currentBaseModelNormalized, raw: currentBaseModelLabel } =
-        getCurrentVersionBaseModel(record, normalizedCurrentVersionId);
-    const isFilteringActive =
-        displayMode === DISPLAY_FILTER_MODES.SAME_BASE &&
-        Boolean(currentBaseModelNormalized);
-
-    const sortedVersions = [...record.versions].sort(
-        (a, b) => Number(b.versionId) - Number(a.versionId)
-    );
-
-    const filteredVersions = sortedVersions.filter(version => {
-        if (!isFilteringActive) {
-            return true;
+        if (!record || !Array.isArray(record.versions) || record.versions.length === 0) {
+            renderEmptyState(container);
+            return;
         }
-        return normalizeBaseModelName(version.baseModel) === currentBaseModelNormalized;
-    });
 
-    const dividerThresholdVersionId = (() => {
-        if (!isFilteringActive) {
-            return latestLibraryVersionId;
-        }
-        const baseLocalVersionIds = record.versions
-            .filter(
-                version =>
-                    version.isInLibrary &&
-                    normalizeBaseModelName(version.baseModel) === currentBaseModelNormalized &&
-                    typeof version.versionId === 'number'
-            )
-            .map(version => version.versionId);
-        if (!baseLocalVersionIds.length) {
-            return null;
-        }
-        return Math.max(...baseLocalVersionIds);
-    })();
+        const latestLibraryVersionId = getLatestLibraryVersionId(record);
+        const { normalized: currentBaseModelNormalized, raw: currentBaseModelLabel } =
+            getCurrentVersionBaseModel(record, normalizedCurrentVersionId);
+        const isFilteringActive =
+            displayMode === DISPLAY_FILTER_MODES.SAME_BASE &&
+            Boolean(currentBaseModelNormalized);
 
-    let dividerInserted = false;
+        const sortedVersions = [...record.versions].sort(
+            (a, b) => Number(b.versionId) - Number(a.versionId)
+        );
 
-    const rowsMarkup = filteredVersions
-        .map(version => {
-            let markup = '';
-            if (
-                !dividerInserted &&
-                typeof dividerThresholdVersionId === 'number' &&
-                !(version.versionId > dividerThresholdVersionId)
-            ) {
-                dividerInserted = true;
-                markup += '<div class="version-divider" role="presentation"></div>';
+        const filteredVersions = sortedVersions.filter(version => {
+            if (!isFilteringActive) {
+                return true;
             }
-            markup += renderRow(version, {
-                latestLibraryVersionId: dividerThresholdVersionId,
-                currentVersionId: normalizedCurrentVersionId,
-                modelId: record?.modelId ?? modelId,
-            });
-            return markup;
-        })
-        .join('');
+            return normalizeBaseModelName(version.baseModel) === currentBaseModelNormalized;
+        });
 
-    const listContent =
-        rowsMarkup || renderFilteredEmptyState(currentBaseModelLabel);
+        const dividerThresholdVersionId = (() => {
+            if (!isFilteringActive) {
+                return latestLibraryVersionId;
+            }
+            const baseLocalVersionIds = record.versions
+                .filter(
+                    version =>
+                        version.isInLibrary &&
+                        normalizeBaseModelName(version.baseModel) === currentBaseModelNormalized &&
+                        typeof version.versionId === 'number'
+                )
+                .map(version => version.versionId);
+            if (!baseLocalVersionIds.length) {
+                return null;
+            }
+            return Math.max(...baseLocalVersionIds);
+        })();
 
-    container.innerHTML = `
+        let dividerInserted = false;
+
+        const rowsMarkup = filteredVersions
+            .map(version => {
+                let markup = '';
+                if (
+                    !dividerInserted &&
+                    typeof dividerThresholdVersionId === 'number' &&
+                    !(version.versionId > dividerThresholdVersionId)
+                ) {
+                    dividerInserted = true;
+                    markup += '<div class="version-divider" role="presentation"></div>';
+                }
+                markup += renderRow(version, {
+                    latestLibraryVersionId: dividerThresholdVersionId,
+                    currentVersionId: normalizedCurrentVersionId,
+                    modelId: record?.modelId ?? modelId,
+                });
+                return markup;
+            })
+            .join('');
+
+        const listContent =
+            rowsMarkup || renderFilteredEmptyState(currentBaseModelLabel);
+
+        container.innerHTML = `
         ${renderToolbar(record, {
             displayMode,
             isFilteringActive,
@@ -618,8 +682,20 @@ function render(record) {
         </div>
     `;
 
-    setupMediaHoverInteractions(container);
-}
+        setupMediaHoverInteractions(container);
+
+        if (updateStatusChangeHandler) {
+            const resolvedFlag = resolveUpdateAvailability(
+                record,
+                currentBaseModel,
+                normalizedCurrentVersionId
+            );
+            if (resolvedFlag !== lastNotifiedUpdateState) {
+                lastNotifiedUpdateState = resolvedFlag;
+                updateStatusChangeHandler(resolvedFlag, record);
+            }
+        }
+    }
 
     async function loadVersions({ forceRefresh = false, eager = false } = {}) {
         if (controller.isLoading) {
