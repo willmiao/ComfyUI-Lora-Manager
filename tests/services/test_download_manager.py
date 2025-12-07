@@ -660,6 +660,69 @@ async def test_execute_download_extracts_zip_multiple_models(monkeypatch, tmp_pa
     assert metadata_calls[1].args[1].sha256 == "hash-two"
 
 
+async def test_execute_download_extracts_zip_pt_embedding(monkeypatch, tmp_path):
+    manager = DownloadManager()
+    save_dir = tmp_path / "downloads"
+    save_dir.mkdir()
+    zip_path = save_dir / "bundle.zip"
+
+    class DummyMetadata:
+        def __init__(self, path: Path):
+            self.file_path = str(path)
+            self.sha256 = "sha256"
+            self.file_name = path.stem
+            self.preview_url = None
+
+        def generate_unique_filename(self, *_args, **_kwargs):
+            return os.path.basename(self.file_path)
+
+        def update_file_info(self, updated_path):
+            self.file_path = str(updated_path)
+            self.file_name = Path(updated_path).stem
+
+        def to_dict(self):
+            return {"file_path": self.file_path}
+
+    metadata = DummyMetadata(zip_path)
+    version_info = {"images": []}
+    download_urls = ["https://example.invalid/model.zip"]
+
+    class DummyDownloader:
+        async def download_file(self, *_args, **_kwargs):
+            with zipfile.ZipFile(str(zip_path), "w") as archive:
+                archive.writestr("inner/embedding.pt", b"embedding")
+                archive.writestr("docs/readme.txt", b"ignore")
+            return True, "ok"
+
+    monkeypatch.setattr(download_manager, "get_downloader", AsyncMock(return_value=DummyDownloader()))
+    dummy_scanner = SimpleNamespace(add_model_to_cache=AsyncMock(return_value=None))
+    monkeypatch.setattr(ServiceRegistry, "get_embedding_scanner", AsyncMock(return_value=dummy_scanner))
+    monkeypatch.setattr(MetadataManager, "save_metadata", AsyncMock(return_value=True))
+    hash_calculator = AsyncMock(return_value="hash-pt")
+    monkeypatch.setattr(download_manager, "calculate_sha256", hash_calculator)
+
+    result = await manager._execute_download(
+        download_urls=download_urls,
+        save_dir=str(save_dir),
+        metadata=metadata,
+        version_info=version_info,
+        relative_path="",
+        progress_callback=None,
+        model_type="embedding",
+        download_id=None,
+    )
+
+    assert result == {"success": True}
+    assert not zip_path.exists()
+    extracted = save_dir / "embedding.pt"
+    assert extracted.exists()
+    assert hash_calculator.await_args.args[0] == str(extracted)
+    saved_call = MetadataManager.save_metadata.await_args
+    assert saved_call.args[0] == str(extracted)
+    assert saved_call.args[1].sha256 == "hash-pt"
+    assert dummy_scanner.add_model_to_cache.await_count == 1
+
+
 def test_distribute_preview_to_entries_moves_and_copies(tmp_path):
     manager = DownloadManager()
     preview_file = tmp_path / "bundle.webp"
