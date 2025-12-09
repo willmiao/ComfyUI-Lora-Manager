@@ -91,10 +91,15 @@ class StubImportUseCase:
 class StubProcessor:
     def __init__(self) -> None:
         self.delete_calls: list[web.Request] = []
+        self.nsfw_calls: list[web.Request] = []
 
     async def delete_custom_image(self, request: web.Request) -> web.Response:
         self.delete_calls.append(request)
         return web.json_response({"deleted": True})
+
+    async def set_example_image_nsfw_level(self, request: web.Request) -> web.Response:
+        self.nsfw_calls.append(request)
+        return web.json_response({"updated": True})
 
 
 class StubCleanupService:

@@ -113,6 +113,9 @@ class ExampleImagesManagementHandler:
     async def delete_example_image(self, request: web.Request) -> web.StreamResponse:
         return await self._processor.delete_custom_image(request)
 
+    async def set_example_image_nsfw_level(self, request: web.Request) -> web.StreamResponse:
+        return await self._processor.set_example_image_nsfw_level(request)
+
     async def cleanup_example_image_folders(self, request: web.Request) -> web.StreamResponse:
         result = await self._cleanup_service.cleanup_example_image_folders()
 
@@ -160,6 +163,7 @@ class ExampleImagesHandlerSet:
             "force_download_example_images": self.download.force_download_example_images,
             "import_example_images": self.management.import_example_images,
             "delete_example_image": self.management.delete_example_image,
+            "set_example_image_nsfw_level": self.management.set_example_image_nsfw_level,
             "cleanup_example_image_folders": self.management.cleanup_example_image_folders,
             "open_example_images_folder": self.files.open_example_images_folder,
             "get_example_image_files": self.files.get_example_image_files,

@@ -11,11 +11,7 @@ export class EmbeddingContextMenu extends BaseContextMenu {
         this.modelType = 'embedding';
         this.resetAndReload = resetAndReload;
         
-        // Initialize NSFW Level Selector events only if not already initialized
-        if (this.nsfwSelector && !this.nsfwSelector.dataset.initialized) {
-            this.initNSFWSelector();
-            this.nsfwSelector.dataset.initialized = 'true';
-        }
+        this.initNSFWSelector();
     }
     
     // Implementation needed by the mixin

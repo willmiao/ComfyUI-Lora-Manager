@@ -11,11 +11,7 @@ export class RecipeContextMenu extends BaseContextMenu {
         this.nsfwSelector = document.getElementById('nsfwLevelSelector');
         this.modelType = 'recipe';
         
-        // Initialize NSFW Level Selector events only if not already initialized
-        if (this.nsfwSelector && !this.nsfwSelector.dataset.initialized) {
-            this.initNSFWSelector();
-            this.nsfwSelector.dataset.initialized = 'true';
-        }
+        this.initNSFWSelector();
     }
 
     // Use the updateRecipeMetadata implementation from recipeApi

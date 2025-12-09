@@ -593,5 +593,114 @@ class ExampleImagesProcessor:
                 'error': str(e)
             }, status=500)
 
+    @staticmethod
+    async def set_example_image_nsfw_level(request: web.Request) -> web.StreamResponse:
+        """
+        Update the NSFW level for a single example image (regular or custom).
+        """
+        try:
+            data = await request.json()
+        except Exception:
+            return web.json_response({'success': False, 'error': 'Invalid JSON body'}, status=400)
+
+        model_hash = data.get('model_hash')
+        raw_level = data.get('nsfw_level')
+        source = (data.get('source') or 'civitai').lower()
+        index = data.get('index')
+        image_id = data.get('id')
+
+        if model_hash is None or raw_level is None:
+            return web.json_response(
+                {'success': False, 'error': 'Missing required parameters: model_hash and nsfw_level'},
+                status=400,
+            )
+
+        try:
+            nsfw_level = int(raw_level)
+        except (TypeError, ValueError):
+            return web.json_response(
+                {'success': False, 'error': 'nsfw_level must be an integer'}, status=400
+            )
+
+        if source == 'custom':
+            if not image_id:
+                return web.json_response(
+                    {'success': False, 'error': 'Custom images require an id field'}, status=400
+                )
+        else:
+            try:
+                index = int(index)
+            except (TypeError, ValueError):
+                return web.json_response(
+                    {'success': False, 'error': 'Regular images require a numeric index'}, status=400
+                )
+
+        try:
+            lora_scanner = await ServiceRegistry.get_lora_scanner()
+            checkpoint_scanner = await ServiceRegistry.get_checkpoint_scanner()
+            embedding_scanner = await ServiceRegistry.get_embedding_scanner()
+
+            model_data = None
+            scanner = None
+
+            for scan_obj in [lora_scanner, checkpoint_scanner, embedding_scanner]:
+                if scan_obj.has_hash(model_hash):
+                    cache = await scan_obj.get_cached_data()
+                    for item in cache.raw_data:
+                        if item.get('sha256') == model_hash:
+                            model_data = item
+                            scanner = scan_obj
+                            break
+                if model_data:
+                    break
+
+            if not model_data:
+                return web.json_response(
+                    {'success': False, 'error': f"Model with hash {model_hash} not found in cache"},
+                    status=404,
+                )
+
+            await MetadataManager.hydrate_model_data(model_data)
+            civitai_data = model_data.setdefault('civitai', {})
+            regular_images = civitai_data.get('images') or []
+            custom_images = civitai_data.get('customImages') or []
+
+            target_image = None
+            if source == 'custom':
+                for image in custom_images:
+                    if image.get('id') == image_id:
+                        target_image = image
+                        break
+            else:
+                if 0 <= index < len(regular_images):
+                    target_image = regular_images[index]
+
+            if target_image is None:
+                return web.json_response(
+                    {'success': False, 'error': 'Target image not found'}, status=404
+                )
+
+            target_image['nsfwLevel'] = nsfw_level
+            civitai_data['images'] = regular_images
+            civitai_data['customImages'] = custom_images
+
+            file_path = model_data.get('file_path')
+            if file_path:
+                model_copy = model_data.copy()
+                model_copy.pop('folder', None)
+                await MetadataManager.save_metadata(file_path, model_copy)
+                await scanner.update_single_model_cache(file_path, file_path, model_data)
+
+            return web.json_response({
+                'success': True,
+                'regular_images': regular_images,
+                'custom_images': custom_images,
+                'model_file_path': model_data.get('file_path', ''),
+                'nsfw_level': nsfw_level
+            })
+        except Exception as exc:
+            logger.error("Failed to update example image NSFW level: %s", exc, exc_info=True)
+            return web.json_response({'success': False, 'error': str(exc)}, status=500)
+
 
     

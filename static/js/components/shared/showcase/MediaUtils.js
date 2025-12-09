@@ -3,9 +3,11 @@
  * Media-specific utility functions for showcase components
  * (Moved from uiHelpers.js to better organize code)
  */
-import { showToast, copyToClipboard } from '../../../utils/uiHelpers.js';
+import { showToast, copyToClipboard, getNSFWLevelName } from '../../../utils/uiHelpers.js';
 import { state } from '../../../state/index.js';
 import { getModelApiClient } from '../../../api/modelApiFactory.js';
+import { NSFW_LEVELS } from '../../../utils/constants.js';
+import { getNsfwLevelSelector } from '../NsfwLevelSelector.js';
 
 /**
  * Try to load local image first, fall back to remote if local fails
@@ -471,6 +473,9 @@ export function initMediaControlHandlers(container) {
     
     // Initialize set preview buttons
     initSetPreviewHandlers(container);
+
+    // Initialize NSFW level buttons
+    initSetNsfwHandlers(container);
     
     // Media control visibility is now handled in initMetadataPanelHandlers
     // Any click handlers or other functionality can still be added here
@@ -589,5 +594,144 @@ export function positionAllMediaControls(container) {
     const mediaWrappers = container.querySelectorAll('.media-wrapper');
     mediaWrappers.forEach(wrapper => {
         positionMediaControlsInMediaRect(wrapper);
+    });
+}
+
+function applyNsfwLevelChange(mediaWrapper, nsfwLevel) {
+    if (!mediaWrapper) return;
+
+    const mediaElement = mediaWrapper.querySelector('img, video');
+    if (mediaElement) {
+        mediaElement.dataset.nsfwLevel = String(nsfwLevel);
+    }
+    mediaWrapper.dataset.nsfwLevel = String(nsfwLevel);
+
+    const shouldBlur = state.settings.blur_mature_content && nsfwLevel > NSFW_LEVELS.PG13;
+    let overlay = mediaWrapper.querySelector('.nsfw-overlay');
+    let toggleBtn = mediaWrapper.querySelector('.toggle-blur-btn');
+
+    if (shouldBlur) {
+        mediaWrapper.classList.add('nsfw-media-wrapper');
+        if (mediaElement) {
+            mediaElement.classList.add('blurred');
+        }
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.className = 'nsfw-overlay';
+            overlay.innerHTML = `
+                <div class="nsfw-warning">
+                    <p>Mature Content</p>
+                    <button class="show-content-btn">Show</button>
+                </div>
+            `;
+            mediaWrapper.appendChild(overlay);
+        } else {
+            overlay.style.display = 'flex';
+        }
+
+        if (!toggleBtn) {
+            toggleBtn = document.createElement('button');
+            toggleBtn.className = 'toggle-blur-btn showcase-toggle-btn';
+            toggleBtn.title = 'Toggle blur';
+            toggleBtn.innerHTML = '<i class="fas fa-eye"></i>';
+            mediaWrapper.insertBefore(toggleBtn, mediaWrapper.firstChild);
+        } else {
+            const icon = toggleBtn.querySelector('i');
+            if (icon) {
+                icon.className = 'fas fa-eye';
+            }
+        }
+    } else {
+        mediaWrapper.classList.remove('nsfw-media-wrapper');
+        if (mediaElement) {
+            mediaElement.classList.remove('blurred');
+        }
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+        if (toggleBtn) {
+            const icon = toggleBtn.querySelector('i');
+            if (icon) {
+                icon.className = 'fas fa-eye-slash';
+            }
+        }
+    }
+
+    // Re-bind blur toggles for any newly added elements
+    initNsfwBlurHandlers(mediaWrapper);
+}
+
+function initSetNsfwHandlers(container) {
+    const nsfwButtons = container.querySelectorAll('.set-nsfw-btn');
+    const selector = getNsfwLevelSelector();
+
+    nsfwButtons.forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            if (!selector) {
+                console.warn('NSFW selector not available');
+                return;
+            }
+
+            const mediaWrapper = btn.closest('.media-wrapper');
+            const currentLevel = parseInt(mediaWrapper?.dataset.nsfwLevel || '0', 10);
+            const modelHash = document.querySelector('.showcase-section')?.dataset.modelHash;
+            const mediaSource = btn.dataset.mediaSource || 'civitai';
+            const mediaIndex = parseInt(btn.dataset.mediaIndex || '-1', 10);
+            const mediaId = btn.dataset.mediaId || '';
+
+            selector.show({
+                currentLevel,
+                onSelect: async (level) => {
+                    if (!modelHash) {
+                        showToast('toast.contextMenu.contentRatingFailed', { message: 'Missing model hash' }, 'error');
+                        return false;
+                    }
+
+                    const originalIcon = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                    try {
+                        const payload = {
+                            model_hash: modelHash,
+                            nsfw_level: level,
+                            source: mediaSource,
+                        };
+
+                        if (mediaSource === 'custom') {
+                            payload.id = mediaId;
+                        } else {
+                            payload.index = mediaIndex;
+                        }
+
+                        const response = await fetch('/api/lm/example-images/set-nsfw-level', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(payload),
+                        });
+
+                        const result = await response.json();
+                        if (!result.success) {
+                            throw new Error(result.error || 'Failed to update NSFW level');
+                        }
+
+                        applyNsfwLevelChange(mediaWrapper, level);
+                        showToast('toast.contextMenu.contentRatingSet', { level: getNSFWLevelName(level) }, 'success');
+                        return true;
+                    } catch (error) {
+                        console.error('Error updating NSFW level:', error);
+                        showToast('toast.contextMenu.contentRatingFailed', { message: error.message }, 'error');
+                        return false;
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerHTML = originalIcon;
+                    }
+                },
+            });
+        });
     });
 }

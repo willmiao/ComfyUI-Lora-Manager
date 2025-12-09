@@ -211,6 +211,13 @@ function renderMediaItem(img, index, exampleFiles) {
             <button class="media-control-btn set-preview-btn" title="Set as preview">
                 <i class="fas fa-image"></i>
             </button>
+            <button class="media-control-btn set-nsfw-btn" 
+                    title="Set content rating"
+                    data-media-index="${index}"
+                    data-media-source="${isCustomImage ? 'custom' : 'civitai'}"
+                    data-media-id="${img.id || ''}">
+                <i class="fas fa-exclamation-triangle"></i>
+            </button>
             <button class="media-control-btn example-delete-btn ${!isCustomImage ? 'disabled' : ''}" 
                     title="${isCustomImage ? 'Delete this example' : 'Only custom images can be deleted'}" 
                     data-short-id="${img.id || ''}" 

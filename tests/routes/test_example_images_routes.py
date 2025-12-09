@@ -74,6 +74,11 @@ class StubExampleImagesProcessor:
         self.calls.append(("delete_custom_image", payload))
         return web.json_response({"operation": "delete_custom_image", "payload": payload})
 
+    async def set_example_image_nsfw_level(self, request: web.Request) -> web.StreamResponse:
+        payload = await request.json()
+        self.calls.append(("set_example_image_nsfw_level", payload))
+        return web.json_response({"operation": "set_example_image_nsfw_level", "payload": payload})
+
 
 class StubExampleImagesFileManager:
     def __init__(self) -> None:
@@ -246,6 +251,19 @@ async def test_delete_route_delegates_to_processor():
         assert harness.processor.calls == [("delete_custom_image", payload)]
 
 
+async def test_set_nsfw_route_delegates_to_processor():
+    payload = {"model_hash": "abc123", "nsfw_level": 4, "index": 0, "source": "civitai"}
+    async with example_images_app() as harness:
+        response = await harness.client.post(
+            "/api/lm/example-images/set-nsfw-level", json=payload
+        )
+        body = await response.json()
+
+        assert response.status == 200
+        assert body == {"operation": "set_example_image_nsfw_level", "payload": payload}
+        assert ("set_example_image_nsfw_level", payload) in harness.processor.calls
+
+
 async def test_file_routes_delegate_to_file_manager():
     open_payload = {"model_hash": "abc123"}
     files_params = {"model_hash": "def456"}
@@ -387,6 +405,10 @@ async def test_management_handler_methods_delegate() -> None:
             self.calls.append(("delete_custom_image", request))
             return "delete"
 
+        async def set_example_image_nsfw_level(self, request) -> str:
+            self.calls.append(("set_example_image_nsfw_level", request))
+            return "nsfw"
+
     recorder = Recorder()
     cleanup_service = StubExampleImagesCleanupService()
     use_case = StubImportUseCase()
@@ -458,6 +480,9 @@ def test_handler_set_route_mapping_includes_all_handlers() -> None:
         async def delete_custom_image(self, request):
             return {}
 
+        async def set_example_image_nsfw_level(self, request):
+            return {}
+
     download = ExampleImagesDownloadHandler(DummyUseCase(), DummyManager())
     cleanup_service = StubExampleImagesCleanupService()
     management = ExampleImagesManagementHandler(DummyUseCase(), DummyProcessor(), cleanup_service)
@@ -479,6 +504,7 @@ def test_handler_set_route_mapping_includes_all_handlers() -> None:
         "force_download_example_images",
         "import_example_images",
         "delete_example_image",
+        "set_example_image_nsfw_level",
         "cleanup_example_image_folders",
         "open_example_images_folder",
         "get_example_image_files",

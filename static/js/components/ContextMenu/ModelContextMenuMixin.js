@@ -5,96 +5,38 @@ import { getModelApiClient, resetAndReload } from '../../api/modelApiFactory.js'
 import { bulkManager } from '../../managers/BulkManager.js';
 import { MODEL_CONFIG } from '../../api/apiConfig.js';
 import { translate } from '../../utils/i18nHelpers.js';
+import { getNsfwLevelSelector } from '../shared/NsfwLevelSelector.js';
 
 // Mixin with shared functionality for LoraContextMenu and CheckpointContextMenu
 export const ModelContextMenuMixin = {
     // NSFW Selector methods
     initNSFWSelector() {
-        // Remove any existing event listeners by cloning and replacing elements
-        // This is a simple way to ensure we don't have duplicate event listeners
-        const closeBtn = this.nsfwSelector.querySelector('.close-nsfw-selector');
-        const newCloseBtn = closeBtn.cloneNode(true);
-        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
-        newCloseBtn.addEventListener('click', () => {
-            this.nsfwSelector.style.display = 'none';
-            this.resetNSFWSelectorState();
-        });
-
-        // Level buttons
-        const levelButtons = this.nsfwSelector.querySelectorAll('.nsfw-level-btn');
-        levelButtons.forEach(btn => {
-            // Remove any existing event listeners by cloning and replacing the button
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
-            
-            newBtn.addEventListener('click', async () => {
-                const level = parseInt(newBtn.dataset.level);
-                const mode = this.nsfwSelector.dataset.mode || 'single';
-
-                if (mode === 'bulk') {
-                    let bulkFilePaths = [];
-                    if (this.nsfwSelector.dataset.bulkFilePaths) {
-                        try {
-                            bulkFilePaths = JSON.parse(this.nsfwSelector.dataset.bulkFilePaths);
-                        } catch (error) {
-                            console.warn('Failed to parse bulk file paths for content rating', error);
-                        }
-                    }
-
-                    const success = await bulkManager.setBulkContentRating(level, bulkFilePaths);
-                    if (success) {
-                        this.nsfwSelector.style.display = 'none';
-                        this.resetNSFWSelectorState();
-                    }
-                    return;
-                }
-
-                const filePath = this.nsfwSelector.dataset.cardPath;
-
-                if (!filePath) return;
-
-                try {
-                    await this.saveModelMetadata(filePath, { preview_nsfw_level: level });
-
-                    showToast('toast.contextMenu.contentRatingSet', { level: getNSFWLevelName(level) }, 'success');
-                    this.nsfwSelector.style.display = 'none';
-                    this.resetNSFWSelectorState();
-                } catch (error) {
-                    showToast('toast.contextMenu.contentRatingFailed', { message: error.message }, 'error');
-                }
-            });
-        });
-
-        // Close when clicking outside - use a named function so we can remove it later
-        const outsideClickListener = (e) => {
-            if (this.nsfwSelector.style.display === 'block' &&
-                !this.nsfwSelector.contains(e.target) &&
-                !e.target.closest('.context-menu-item[data-action="set-nsfw"], .context-menu-item[data-action="set-content-rating"]')) {
-                this.nsfwSelector.style.display = 'none';
-                this.resetNSFWSelectorState();
-            }
-        };
-        
-        // Remove previous listener if it exists
-        if (this._outsideClickListener) {
-            document.removeEventListener('click', this._outsideClickListener);
+        if (this._nsfwSelectorInitialized) {
+            return;
         }
-        
-        // Store and add new listener
-        this._outsideClickListener = outsideClickListener;
-        document.addEventListener('click', this._outsideClickListener);
+
+        const selector = getNsfwLevelSelector();
+        if (!selector) {
+            console.warn('NSFW selector element not found');
+            return;
+        }
+
+        this._nsfwSelectorInitialized = true;
+        this._nsfwSelector = selector;
     },
 
     resetNSFWSelectorState() {
-        if (!this.nsfwSelector) return;
-        delete this.nsfwSelector.dataset.bulkFilePaths;
-        delete this.nsfwSelector.dataset.mode;
-        delete this.nsfwSelector.dataset.cardPath;
+        // maintained for compatibility; no-op with shared selector
     },
 
     showNSFWLevelSelector(x, y, card) {
-        const selector = document.getElementById('nsfwLevelSelector');
-        const currentLevelEl = document.getElementById('currentNSFWLevel');
+        this.initNSFWSelector();
+        const selector = this._nsfwSelector || getNsfwLevelSelector();
+
+        if (!selector) {
+            console.warn('NSFW selector not available');
+            return;
+        }
 
         // Get current NSFW level
         let currentLevel = 0;
@@ -104,44 +46,28 @@ export const ModelContextMenuMixin = {
 
             // Update if we have no recorded level but have a dataset attribute
             if (!currentLevel && card.dataset.nsfwLevel) {
-                currentLevel = parseInt(card.dataset.nsfwLevel) || 0;
+                currentLevel = parseInt(card.dataset.nsfwLevel, 10) || 0;
             }
         } catch (err) {
             console.error('Error parsing metadata:', err);
         }
 
-        currentLevelEl.textContent = getNSFWLevelName(currentLevel);
-
-        // Position the selector
-        if (x && y) {
-            const viewportWidth = document.documentElement.clientWidth;
-            const viewportHeight = document.documentElement.clientHeight;
-            const selectorRect = selector.getBoundingClientRect();
-
-            // Center the selector if no coordinates provided
-            let finalX = (viewportWidth - selectorRect.width) / 2;
-            let finalY = (viewportHeight - selectorRect.height) / 2;
-
-            selector.style.left = `${finalX}px`;
-            selector.style.top = `${finalY}px`;
-        }
-
-        // Highlight current level button
-        selector.querySelectorAll('.nsfw-level-btn').forEach(btn => {
-            if (parseInt(btn.dataset.level) === currentLevel) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
+        const filePath = card.dataset.filepath;
+        selector.show({
+            currentLevel,
+            onSelect: async (level) => {
+                if (!filePath) return false;
+                try {
+                    await this.saveModelMetadata(filePath, { preview_nsfw_level: level });
+                    showToast('toast.contextMenu.contentRatingSet', { level: getNSFWLevelName(level) }, 'success');
+                    return true;
+                } catch (error) {
+                    showToast('toast.contextMenu.contentRatingFailed', { message: error.message }, 'error');
+                    return false;
+                }
+            },
+            onClose: () => this.resetNSFWSelectorState(),
         });
-
-        // Store reference to current card
-        selector.dataset.mode = 'single';
-        selector.dataset.cardPath = card.dataset.filepath;
-        delete selector.dataset.bulkFilePaths;
-
-        // Show selector
-        selector.style.display = 'block';
     },
 
     // Civitai re-linking methods

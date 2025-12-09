@@ -8,6 +8,7 @@ import { BASE_MODEL_CATEGORIES } from '../utils/constants.js';
 import { getPriorityTagSuggestions } from '../utils/priorityTagHelpers.js';
 import { eventManager } from '../utils/EventManager.js';
 import { translate } from '../utils/i18nHelpers.js';
+import { getNsfwLevelSelector } from '../components/shared/NsfwLevelSelector.js';
 
 export class BulkManager {
     constructor() {
@@ -1051,19 +1052,13 @@ export class BulkManager {
             return;
         }
 
-        const selector = document.getElementById('nsfwLevelSelector');
-        const currentLevelEl = document.getElementById('currentNSFWLevel');
-
-        if (!selector || !currentLevelEl) {
+        const selector = getNsfwLevelSelector();
+        if (!selector) {
             console.warn('NSFW level selector not found');
             return;
         }
 
         const filePaths = Array.from(state.selectedModels);
-        selector.dataset.mode = 'bulk';
-        selector.dataset.bulkFilePaths = JSON.stringify(filePaths);
-        delete selector.dataset.cardPath;
-
         const selectedCards = Array.from(document.querySelectorAll('.model-card.selected'));
         const levels = new Set();
 
@@ -1091,29 +1086,17 @@ export class BulkManager {
         let highlightLevel = null;
         if (levels.size === 1) {
             highlightLevel = levels.values().next().value;
-            currentLevelEl.textContent = getNSFWLevelName(highlightLevel);
-        } else {
-            currentLevelEl.textContent = translate('modals.contentRating.multiple', {}, 'Multiple values');
         }
 
-        selector.querySelectorAll('.nsfw-level-btn').forEach((btn) => {
-            const btnLevel = parseInt(btn.dataset.level, 10);
-            if (highlightLevel !== null && btnLevel === highlightLevel) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
+        selector.show({
+            currentLevel: highlightLevel || 0,
+            multipleLabel: levels.size > 1 ? translate('modals.contentRating.multiple', {}, 'Multiple values') : '',
+            onSelect: async (level) => {
+                await this.setBulkContentRating(level, filePaths);
+                // Always allow selector to close after attempting the update
+                return true;
             }
         });
-
-        const viewportWidth = document.documentElement.clientWidth;
-        const viewportHeight = document.documentElement.clientHeight;
-        const selectorRect = selector.getBoundingClientRect();
-        const finalX = Math.max((viewportWidth - selectorRect.width) / 2, 0);
-        const finalY = Math.max((viewportHeight - selectorRect.height) / 2, 0);
-
-        selector.style.left = `${finalX}px`;
-        selector.style.top = `${finalY}px`;
-        selector.style.display = 'block';
     }
 
     async setBulkContentRating(level, filePaths = null) {
@@ -1144,7 +1127,7 @@ export class BulkManager {
                 }
             }
         } finally {
-            state.loadingManager.hideSimpleLoading();
+            state.loadingManager?.hide?.();
         }
 
         if (successCount === totalCount) {
@@ -1250,7 +1233,7 @@ export class BulkManager {
             console.error('Error during bulk base model operation:', error);
             showToast('toast.models.bulkBaseModelUpdateFailed', {}, 'error');
         } finally {
-            state.loadingManager.hideSimpleLoading();
+            state.loadingManager?.hide?.();
         }
     }
     

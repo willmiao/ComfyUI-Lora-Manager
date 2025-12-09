@@ -129,6 +129,12 @@
   border-color: var(--lora-accent);
 }
 
+.media-control-btn.set-nsfw-btn:hover {
+  background: var(--warning-color, #f0ad4e);
+  color: #fff;
+  border-color: var(--warning-color, #f0ad4e);
+}
+
 .media-control-btn.example-delete-btn:hover:not(.disabled) {
   background: var(--lora-error);
   color: white;

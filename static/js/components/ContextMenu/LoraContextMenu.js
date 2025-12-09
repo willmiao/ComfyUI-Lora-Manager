@@ -12,11 +12,7 @@ export class LoraContextMenu extends BaseContextMenu {
         this.modelType = 'lora';
         this.resetAndReload = resetAndReload;
         
-        // Initialize NSFW Level Selector events only if not already initialized
-        if (this.nsfwSelector && !this.nsfwSelector.dataset.initialized) {
-            this.initNSFWSelector();
-            this.nsfwSelector.dataset.initialized = 'true';
-        }
+        this.initNSFWSelector();
     }
 
     // Use the saveModelMetadata implementation from loraApi
