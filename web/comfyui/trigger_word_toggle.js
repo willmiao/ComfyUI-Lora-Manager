@@ -265,15 +265,24 @@ app.registerExtension({
     node.tagWidget.allowStrengthAdjustment = allowStrengthAdjustment;
     
     const existingTags = node.tagWidget.value || [];
-    const existingTagMap = {};
-
-    // Create a map of existing tags and their active states and strengths
-    existingTags.forEach(tag => {
-      existingTagMap[tag.text] = {
+    const existingTagState = existingTags.reduce((acc, tag) => {
+      const key = tag.text;
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push({
         active: tag.active,
-        strength: allowStrengthAdjustment ? tag.strength : null
-      };
-    });
+        strength: allowStrengthAdjustment ? tag.strength : null,
+      });
+      return acc;
+    }, {});
+    const consumeExistingState = (text) => {
+      const states = existingTagState[text];
+      if (states && states.length > 0) {
+        return states.shift();
+      }
+      return null;
+    };
     
     // Get default active state from the widget
     const defaultActive = node.widgets[1] ? node.widgets[1].value : true;
@@ -292,7 +301,7 @@ app.registerExtension({
           .filter(group => group)
           .map(group => {
             // Check if this group already exists with strength info
-            const existing = existingTagMap[group];
+            const existing = consumeExistingState(group);
             return {
               text: group,
               // Use existing values if available, otherwise use defaults
@@ -315,16 +324,16 @@ app.registerExtension({
       tagArray = message
         .split(',')
         .map(word => word.trim())
-        .filter(word => word)
-        .map(word => {
-          // Check if this word already exists with strength info
-          const existing = existingTagMap[word];
-          return {
-            text: word,
-            // Use existing values if available, otherwise use defaults
-            active: existing ? existing.active : defaultActive,
-            strength: existing ? existing.strength : null
-          };
+          .filter(word => word)
+          .map(word => {
+            // Check if this word already exists with strength info
+            const existing = consumeExistingState(word);
+            return {
+              text: word,
+              // Use existing values if available, otherwise use defaults
+              active: existing ? existing.active : defaultActive,
+              strength: existing ? existing.strength : null
+            };
         });
     }
     
