@@ -158,8 +158,6 @@ class LoraManager:
         # Add cleanup
         app.on_shutdown.append(cls._cleanup)
         
-        logger.info(f"LoRA Manager: Set up routes for {len(ModelServiceFactory.get_registered_types())} model types: {', '.join(ModelServiceFactory.get_registered_types())}")
-    
     @classmethod
     async def _initialize_services(cls):
         """Initialize all services using the ServiceRegistry"""

@@ -22,7 +22,6 @@ class ModelServiceFactory:
         """
         cls._services[model_type] = service_class
         cls._routes[model_type] = route_class
-        logger.info(f"Registered model type '{model_type}' with service {service_class.__name__} and routes {route_class.__name__}")
     
     @classmethod
     def get_service_class(cls, model_type: str) -> Type:
@@ -80,13 +79,10 @@ class ModelServiceFactory:
         Args:
             app: The aiohttp application instance
         """
-        logger.info(f"Setting up routes for {len(cls._services)} registered model types")
-        
         for model_type in cls._services.keys():
             try:
                 routes_instance = cls.get_route_instance(model_type)
                 routes_instance.setup_routes(app)
-                logger.info(f"Successfully set up routes for {model_type}")
             except Exception as e:
                 logger.error(f"Failed to setup routes for {model_type}: {e}", exc_info=True)
     
@@ -138,5 +134,3 @@ def register_default_model_types():
     
     # Register Embedding model type
     ModelServiceFactory.register_model_type('embedding', EmbeddingService, EmbeddingRoutes)
-    
-    logger.info("Registered default model types: lora, checkpoint, embedding")
