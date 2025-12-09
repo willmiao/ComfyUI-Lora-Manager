@@ -17,6 +17,7 @@ from .services.settings_manager import get_settings_manager
 from .utils.example_images_migration import ExampleImagesMigration
 from .services.websocket_manager import ws_manager
 from .services.example_images_cleanup_service import ExampleImagesCleanupService
+from .middleware.csp_middleware import relax_csp_for_remote_media
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,23 @@ class LoraManager:
     def add_routes(cls):
         """Initialize and register all routes using the new refactored architecture"""
         app = PromptServer.instance.app
+
+        if relax_csp_for_remote_media not in app.middlewares:
+            # Ensure CSP relaxer executes after ComfyUI's block_external_middleware so it can
+            # see and extend the restrictive header instead of being overwritten by it.
+            block_middleware_index = next(
+                (
+                    idx
+                    for idx, middleware in enumerate(app.middlewares)
+                    if getattr(middleware, "__name__", "") == "block_external_middleware"
+                ),
+                None,
+            )
+
+            if block_middleware_index is None:
+                app.middlewares.append(relax_csp_for_remote_media)
+            else:
+                app.middlewares.insert(block_middleware_index, relax_csp_for_remote_media)
 
         # Increase allowed header sizes so browsers with large localhost cookie
         # jars (multiple UIs on 127.0.0.1) don't trip aiohttp's 8KB default
