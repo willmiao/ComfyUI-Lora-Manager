@@ -26,6 +26,7 @@ function buildController(selectorElement) {
 
     const hide = () => {
         selectorElement.style.display = 'none';
+        selectorElement.dataset.cardPath = '';
         isOpen = false;
         if (typeof onClose === 'function') {
             onClose();
@@ -34,11 +35,12 @@ function buildController(selectorElement) {
         onClose = null;
     };
 
-    const show = ({ currentLevel = 0, onSelect: selectCb, onClose: closeCb, multipleLabel = '' } = {}) => {
+    const show = ({ currentLevel = 0, onSelect: selectCb, onClose: closeCb, multipleLabel = '', cardPath = '' } = {}) => {
         onSelect = selectCb || null;
         onClose = closeCb || null;
         isOpen = true;
         ignoreNextOutside = true; // ignore the click that triggered open
+        selectorElement.dataset.cardPath = cardPath || '';
 
         // Position near center of viewport
         const viewportWidth = document.documentElement.clientWidth;

@@ -55,6 +55,7 @@ export const ModelContextMenuMixin = {
         const filePath = card.dataset.filepath;
         selector.show({
             currentLevel,
+            cardPath: filePath,
             onSelect: async (level) => {
                 if (!filePath) return false;
                 try {
