@@ -47,6 +47,30 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
+      - name: Verify symlink support
+        run: |
+          python - <<'PY'
+          import os
+          import pathlib
+          import tempfile
+
+          root = pathlib.Path(tempfile.mkdtemp(prefix="lm-symlink-check-"))
+          target = root / "target"
+          target.mkdir()
+          link = root / "link"
+          try:
+              link.symlink_to(target, target_is_directory=True)
+          except OSError as exc:
+              raise SystemExit(f"Failed to create directory symlink in CI: {exc}")
+
+          is_link = os.path.islink(link)
+          is_dir = os.path.isdir(link)
+          realpath = os.path.realpath(link)
+          print(f"islink={is_link} isdir={is_dir} realpath={realpath}")
+          if not (is_link and is_dir and realpath == str(target)):
+              raise SystemExit("Directory symlink is not functioning correctly in CI; aborting.")
+          PY
+
       - name: Run pytest with coverage
         env:
           COVERAGE_FILE: coverage/backend/.coverage
