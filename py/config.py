@@ -396,10 +396,13 @@ class Config:
                                     continue
 
                                 normalized_target = self._normalize_path(target_path)
+                                # Always record the mapping even if we already visited
+                                # the real directory via another path. This prevents the
+                                # traversal order from dropping valid link->target pairs.
+                                self.add_path_mapping(entry_path, target_path)
                                 if normalized_target in visited_dirs:
                                     continue
                                 visited_dirs.add(normalized_target)
-                                self.add_path_mapping(entry_path, target_path)
                                 stack.append(target_path)
                                 continue
 
@@ -504,9 +507,9 @@ class Config:
         normalized_link = os.path.normpath(link_path).replace(os.sep, '/')
         # Check if the path is contained in any mapped target path
         for target_path, link_path in self._path_mappings.items():
-            if normalized_link.startswith(target_path):
-                # If the path starts with the target path, replace with actual path
-                mapped_path = normalized_link.replace(target_path, link_path, 1)
+            if normalized_link.startswith(link_path):
+                # If the path starts with the link path, replace with actual path
+                mapped_path = normalized_link.replace(link_path, target_path, 1)
                 return mapped_path
         return link_path
 
