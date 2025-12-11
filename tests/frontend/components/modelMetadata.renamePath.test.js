@@ -55,11 +55,15 @@ vi.mock(MODEL_TAGS_MODULE, () => ({
   setupTagEditMode: vi.fn(),
 }));
 
-vi.mock(UTILS_MODULE, () => ({
-  renderCompactTags: vi.fn(() => ''),
-  setupTagTooltip: vi.fn(),
-  formatFileSize: vi.fn(() => '1 MB'),
-}));
+vi.mock(UTILS_MODULE, async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    renderCompactTags: vi.fn(() => ''),
+    setupTagTooltip: vi.fn(),
+    formatFileSize: vi.fn(() => '1 MB'),
+  };
+});
 
 vi.mock(TRIGGER_WORDS_MODULE, () => ({
   renderTriggerWords: vi.fn(() => ''),
