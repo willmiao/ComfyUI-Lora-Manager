@@ -14,7 +14,7 @@ import {
 } from './ModelMetadata.js';
 import { setupTagEditMode } from './ModelTags.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
-import { renderCompactTags, setupTagTooltip, formatFileSize } from './utils.js';
+import { renderCompactTags, setupTagTooltip, formatFileSize, escapeAttribute, escapeHtml } from './utils.js';
 import { renderTriggerWords, setupTriggerWordsEditMode } from './TriggerWords.js';
 import { parsePresets, renderPresetTags } from './PresetTags.js';
 import { initVersionsTab } from './ModelVersionsTab.js';
@@ -63,12 +63,6 @@ let navigationInProgress = false;
 
 function hasLicenseField(license, field) {
     return Object.prototype.hasOwnProperty.call(license || {}, field);
-}
-
-function escapeAttribute(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/"/g, '&quot;');
 }
 
 function indentMarkup(markup, spaces) {
@@ -266,9 +260,11 @@ export async function showModelModal(model, modelType) {
         ...model,
         civitai: completeCivitaiData
     };
+    const escapedFilePathAttr = escapeAttribute(modelWithFullData.file_path || '');
+    const escapedFolderPath = escapeHtml((modelWithFullData.file_path || '').replace(/[^/]+$/, '') || 'N/A');
     const licenseIcons = renderLicenseIcons(modelWithFullData);
     const viewOnCivitaiAction = modelWithFullData.from_civitai ? `
-<div class="civitai-view" title="${translate('modals.model.actions.viewOnCivitai', {}, 'View on Civitai')}" data-action="view-civitai" data-filepath="${modelWithFullData.file_path}">
+<div class="civitai-view" title="${translate('modals.model.actions.viewOnCivitai', {}, 'View on Civitai')}" data-action="view-civitai" data-filepath="${escapedFilePathAttr}">
     <i class="fas fa-globe"></i> ${translate('modals.model.actions.viewOnCivitaiText', {}, 'View on Civitai')}
 </div>`.trim() : '';
     const creatorInfoAction = modelWithFullData.civitai?.creator ? `
@@ -472,8 +468,8 @@ export async function showModelModal(model, modelType) {
                                 <label>${translate('modals.model.metadata.location', {}, 'Location')}</label>
                                 <span class="file-path" title="${translate('modals.model.actions.openFileLocation', {}, 'Open file location')}"
                                     data-action="open-file-location"
-                                    data-filepath="${modelWithFullData.file_path}">
-                                    ${modelWithFullData.file_path.replace(/[^/]+$/, '') || 'N/A'}
+                                    data-filepath="${escapedFilePathAttr}">
+                                    ${escapedFolderPath}
                                 </span>
                             </div>
                         </div>
@@ -506,7 +502,7 @@ export async function showModelModal(model, modelType) {
                     </div>
                 </div>
 
-                <div class="showcase-section" data-model-hash="${modelWithFullData.sha256 || ''}" data-filepath="${modelWithFullData.file_path}">
+                <div class="showcase-section" data-model-hash="${modelWithFullData.sha256 || ''}" data-filepath="${escapedFilePathAttr}">
                     <div class="showcase-tabs">
                         ${tabsContent}
                     </div>

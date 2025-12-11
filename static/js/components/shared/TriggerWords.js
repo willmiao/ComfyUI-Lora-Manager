@@ -6,6 +6,7 @@
 import { showToast, copyToClipboard } from '../../utils/uiHelpers.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
+import { escapeAttribute } from './utils.js';
 
 /**
  * Fetch trained words for a model
@@ -180,11 +181,12 @@ function createSuggestionDropdown(trainedWords, classTokens, existingWords = [])
  * @returns {string} HTML content
  */
 export function renderTriggerWords(words, filePath) {
+    const safeFilePath = escapeAttribute(filePath || '');
     if (!words.length) return `
         <div class="info-item full-width trigger-words">
             <div class="trigger-words-header">
                 <label>${translate('modals.model.triggerWords.label')}</label>
-                <button class="edit-trigger-words-btn metadata-edit-btn" data-file-path="${filePath}" title="${translate('modals.model.triggerWords.edit')}">
+                <button class="edit-trigger-words-btn metadata-edit-btn" data-file-path="${safeFilePath}" title="${translate('modals.model.triggerWords.edit')}">
                     <i class="fas fa-pencil-alt"></i>
                 </button>
             </div>
@@ -207,7 +209,7 @@ export function renderTriggerWords(words, filePath) {
         <div class="info-item full-width trigger-words">
             <div class="trigger-words-header">
                 <label>${translate('modals.model.triggerWords.label')}</label>
-                <button class="edit-trigger-words-btn metadata-edit-btn" data-file-path="${filePath}" title="${translate('modals.model.triggerWords.edit')}">
+                <button class="edit-trigger-words-btn metadata-edit-btn" data-file-path="${safeFilePath}" title="${translate('modals.model.triggerWords.edit')}">
                     <i class="fas fa-pencil-alt"></i>
                 </button>
             </div>
