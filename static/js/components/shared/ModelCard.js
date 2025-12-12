@@ -430,11 +430,17 @@ export function createModelCard(model, modelType) {
     card.dataset.modified = model.modified;
     card.dataset.file_size = model.file_size;
     card.dataset.from_civitai = model.from_civitai;
+    card.dataset.usage_count = String(model.usage_count);
     card.dataset.notes = model.notes || '';
     card.dataset.base_model = model.base_model || 'Unknown';
     card.dataset.favorite = model.favorite ? 'true' : 'false';
     const hasUpdateAvailable = Boolean(model.update_available);
     card.dataset.update_available = hasUpdateAvailable ? 'true' : 'false';
+
+    // To only show usage_count when sorting by usage. 
+    const pageState = getCurrentPageState();
+    const isUsageSort = pageState?.sortBy?.startsWith('usage');
+    const hasUsageCount = isUsageSort && typeof model.usage_count === 'number';
 
     const civitaiData = model.civitai || {};
     const modelId = civitaiData?.modelId ?? civitaiData?.model_id;
@@ -610,7 +616,10 @@ export function createModelCard(model, modelType) {
             <div class="card-footer">
                 <div class="model-info">
                     <span class="model-name">${getDisplayName(model)}</span>
-                    ${model.civitai?.name ? `<span class="version-name">${model.civitai.name}</span>` : ''}
+                    <div>
+                        ${model.civitai?.name ? `<span class="version-name">${model.civitai.name}</span>` : ''}
+                        ${hasUsageCount ? `<span class="version-name" title="${translate('modelCard.usage.timesUsed', {}, 'Times used')}">${model.usage_count}×</span>` : ''}
+                    </div>
                 </div>
                 <div class="card-actions">
                     <i class="${footerActionIcon}" 

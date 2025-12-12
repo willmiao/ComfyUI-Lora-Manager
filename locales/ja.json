@@ -443,7 +443,10 @@
                 "dateAsc": "古い順",
                 "size": "ファイルサイズ",
                 "sizeDesc": "大きい順",
-                "sizeAsc": "小さい順"
+                "sizeAsc": "小さい順",
+                "usage": "使用回数",
+                "usageDesc": "多い",
+                "usageAsc": "少ない"
             },
             "refresh": {
                 "title": "モデルリストを更新",

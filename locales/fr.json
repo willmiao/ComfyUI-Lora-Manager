@@ -443,7 +443,10 @@
                 "dateAsc": "Plus ancien",
                 "size": "Taille du fichier",
                 "sizeDesc": "Plus grand",
-                "sizeAsc": "Plus petit"
+                "sizeAsc": "Plus petit",
+                "usage": "Nombre d'utilisations",
+                "usageDesc": "Plus",
+                "usageAsc": "Moins"
             },
             "refresh": {
                 "title": "Actualiser la liste des modèles",
