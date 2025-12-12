@@ -311,7 +311,7 @@ app.registerExtension({
           });
       } else {
         // If no ',,' delimiter, treat the entire message as one group
-        const existing = existingTagMap[message.trim()];
+        const existing = consumeExistingState(message.trim());
         tagArray = [{
           text: message.trim(),
           // Use existing values if available, otherwise use defaults
