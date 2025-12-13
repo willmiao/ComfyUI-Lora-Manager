@@ -443,7 +443,10 @@
                 "dateAsc": "最舊",
                 "size": "檔案大小",
                 "sizeDesc": "最大",
-                "sizeAsc": "最小"
+                "sizeAsc": "最小",
+                "usage": "使用次數",
+                "usageDesc": "最多",
+                "usageAsc": "最少"
             },
             "refresh": {
                 "title": "重新整理模型列表",

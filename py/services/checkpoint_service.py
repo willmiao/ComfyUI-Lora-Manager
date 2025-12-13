@@ -35,6 +35,7 @@ class CheckpointService(BaseModelService):
             "modified": checkpoint_data.get("modified", ""),
             "tags": checkpoint_data.get("tags", []),
             "from_civitai": checkpoint_data.get("from_civitai", True),
+            "usage_count": checkpoint_data.get("usage_count", 0),
             "notes": checkpoint_data.get("notes", ""),
             "model_type": checkpoint_data.get("model_type", "checkpoint"),
             "favorite": checkpoint_data.get("favorite", False),

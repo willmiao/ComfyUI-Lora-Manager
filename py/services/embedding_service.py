@@ -35,6 +35,7 @@ class EmbeddingService(BaseModelService):
             "modified": embedding_data.get("modified", ""),
             "tags": embedding_data.get("tags", []),
             "from_civitai": embedding_data.get("from_civitai", True),
+            # "usage_count": embedding_data.get("usage_count", 0), # TODO: Enable when embedding usage tracking is implemented
             "notes": embedding_data.get("notes", ""),
             "model_type": embedding_data.get("model_type", "embedding"),
             "favorite": embedding_data.get("favorite", False),

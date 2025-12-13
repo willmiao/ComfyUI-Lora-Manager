@@ -15,6 +15,12 @@
                         <option value="size:desc">{{ t('loras.controls.sort.sizeDesc') }}</option>
                         <option value="size:asc">{{ t('loras.controls.sort.sizeAsc') }}</option>
                     </optgroup>
+                    {% if page_id != 'embeddings' %}
+                        <optgroup label="{{ t('loras.controls.sort.usage', default='Usage') }}">
+                            <option value="usage:desc">{{ t('loras.controls.sort.usageDesc', default='Times used (high to low)') }}</option>
+                            <option value="usage:asc">{{ t('loras.controls.sort.usageAsc', default='Times used (low to high)') }}</option>
+                        </optgroup>
+                    {% endif %}
                 </select>
             </div>
             <div title="{{ t('loras.controls.refresh.title') }}" class="control-group dropdown-group">
