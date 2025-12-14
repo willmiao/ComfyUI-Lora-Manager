@@ -6,6 +6,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Set
 import logging
 import json
 import urllib.parse
+import time
 
 from .utils.settings_paths import ensure_settings_file, get_settings_dir, load_settings_template
 
@@ -282,21 +283,24 @@ class Config:
     def _load_symlink_cache(self) -> bool:
         cache_path = self._get_symlink_cache_path()
         if not cache_path.exists():
+            logger.info("Symlink cache not found at %s", cache_path)
             return False
 
         try:
             with cache_path.open("r", encoding="utf-8") as handle:
                 payload = json.load(handle)
         except Exception as exc:
-            logger.debug("Failed to load symlink cache %s: %s", cache_path, exc)
+            logger.info("Failed to load symlink cache %s: %s", cache_path, exc)
             return False
 
         if not isinstance(payload, dict):
+            logger.info("Symlink cache payload is not a dict: %s", type(payload))
             return False
 
         cached_fingerprint = payload.get("fingerprint")
         cached_mappings = payload.get("path_mappings")
         if not isinstance(cached_fingerprint, dict) or not isinstance(cached_mappings, Mapping):
+            logger.info("Symlink cache missing fingerprint or path mappings")
             return False
 
         current_fingerprint = self._build_symlink_fingerprint()
@@ -307,12 +311,14 @@ class Config:
             or not isinstance(cached_stats, Mapping)
             or sorted(cached_roots) != sorted(current_fingerprint["roots"])  # type: ignore[index]
         ):
+            logger.info("Symlink cache invalidated: roots changed")
             return False
 
         for root in current_fingerprint["roots"]:  # type: ignore[assignment]
             cached_stat = cached_stats.get(root) if isinstance(cached_stats, Mapping) else None
             current_stat = current_fingerprint["stats"].get(root)  # type: ignore[index]
             if not isinstance(cached_stat, Mapping) or not current_stat:
+                logger.info("Symlink cache invalidated: missing stats for %s", root)
                 return False
 
             cached_mtime = cached_stat.get("mtime_ns")
@@ -321,6 +327,7 @@ class Config:
             current_inode = current_stat.get("inode")
 
             if cached_inode != current_inode:
+                logger.info("Symlink cache invalidated: inode changed for %s", root)
                 return False
 
             if cached_mtime != current_mtime:
@@ -332,6 +339,7 @@ class Config:
                     and cached_mtime == cached_noise
                     and current_mtime == current_noise
                 ):
+                    logger.info("Symlink cache invalidated: mtime changed for %s", root)
                     return False
 
         normalized_mappings: Dict[str, str] = {}
@@ -341,6 +349,7 @@ class Config:
             normalized_mappings[self._normalize_path(target)] = self._normalize_path(link)
 
         self._path_mappings = normalized_mappings
+        logger.info("Symlink cache loaded with %d mappings", len(self._path_mappings))
         return True
 
     def _save_symlink_cache(self) -> None:
@@ -353,22 +362,37 @@ class Config:
         try:
             with cache_path.open("w", encoding="utf-8") as handle:
                 json.dump(payload, handle, ensure_ascii=False, indent=2)
+            logger.info("Symlink cache saved to %s with %d mappings", cache_path, len(self._path_mappings))
         except Exception as exc:
-            logger.debug("Failed to write symlink cache %s: %s", cache_path, exc)
+            logger.info("Failed to write symlink cache %s: %s", cache_path, exc)
 
     def _initialize_symlink_mappings(self) -> None:
+        start = time.perf_counter()
         if not self._load_symlink_cache():
             self._scan_symbolic_links()
             self._save_symlink_cache()
+            logger.info(
+                "Symlink mappings rebuilt and cached in %.2f ms",
+                (time.perf_counter() - start) * 1000,
+            )
         else:
-            logger.info("Loaded symlink mappings from cache")
+            logger.info(
+                "Symlink mappings restored from cache in %.2f ms",
+                (time.perf_counter() - start) * 1000,
+            )
         self._rebuild_preview_roots()
 
     def _scan_symbolic_links(self):
         """Scan all symbolic links in LoRA, Checkpoint, and Embedding root directories"""
+        start = time.perf_counter()
         visited_dirs: Set[str] = set()
         for root in self._symlink_roots():
             self._scan_directory_links(root, visited_dirs)
+        logger.info(
+            "Symlink scan finished in %.2f ms with %d mappings",
+            (time.perf_counter() - start) * 1000,
+            len(self._path_mappings),
+        )
 
     def _scan_directory_links(self, root: str, visited_dirs: Set[str]):
         """Iteratively scan directory symlinks to avoid deep recursion."""
