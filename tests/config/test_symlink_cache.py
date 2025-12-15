@@ -62,6 +62,7 @@ def test_symlink_scan_skips_file_links(monkeypatch: pytest.MonkeyPatch, tmp_path
 
 def test_symlink_cache_reuses_previous_scan(monkeypatch: pytest.MonkeyPatch, tmp_path):
     loras_dir, settings_dir = _setup_paths(monkeypatch, tmp_path)
+    monkeypatch.setattr(config_module.Config, "_schedule_symlink_rescan", lambda self: None)
 
     target_dir = loras_dir / "target"
     target_dir.mkdir()
@@ -85,6 +86,7 @@ def test_symlink_cache_reuses_previous_scan(monkeypatch: pytest.MonkeyPatch, tmp
 
 def test_symlink_cache_survives_noise_mtime(monkeypatch: pytest.MonkeyPatch, tmp_path):
     loras_dir, settings_dir = _setup_paths(monkeypatch, tmp_path)
+    monkeypatch.setattr(config_module.Config, "_schedule_symlink_rescan", lambda self: None)
 
     target_dir = loras_dir / "target"
     target_dir.mkdir()
@@ -109,3 +111,35 @@ def test_symlink_cache_survives_noise_mtime(monkeypatch: pytest.MonkeyPatch, tmp
 
     second_cfg = config_module.Config()
     assert second_cfg.map_path_to_link(str(target_dir)) == _normalize(str(dir_link))
+
+
+def test_background_rescan_refreshes_cache(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    loras_dir, _ = _setup_paths(monkeypatch, tmp_path)
+
+    target_dir = loras_dir / "target"
+    target_dir.mkdir()
+    dir_link = loras_dir / "dir_link"
+    dir_link.symlink_to(target_dir, target_is_directory=True)
+
+    # Build initial cache pointing at the first target
+    first_cfg = config_module.Config()
+    old_real = _normalize(os.path.realpath(target_dir))
+    assert first_cfg.map_path_to_link(str(target_dir)) == _normalize(str(dir_link))
+
+    # Retarget the symlink to a new directory without touching the cache file
+    new_target = loras_dir / "target_v2"
+    new_target.mkdir()
+    dir_link.unlink()
+    dir_link.symlink_to(new_target, target_is_directory=True)
+
+    second_cfg = config_module.Config()
+
+    # Cache may still point at the old real path immediately after load
+    initial_mapping = second_cfg.map_path_to_link(str(new_target))
+    assert initial_mapping in {str(new_target), _normalize(str(dir_link))}
+
+    # Background rescan should refresh the mapping to the new target and update the cache file
+    second_cfg._wait_for_rescan(timeout=2.0)
+    new_real = _normalize(os.path.realpath(new_target))
+    assert second_cfg._path_mappings.get(new_real) == _normalize(str(dir_link))
+    assert second_cfg.map_path_to_link(str(new_target)) == _normalize(str(dir_link))
