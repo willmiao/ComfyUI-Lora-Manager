@@ -4,7 +4,7 @@ try:  # pragma: no cover - import fallback for pytest collection
     from .py.nodes.trigger_word_toggle import TriggerWordToggle
     from .py.nodes.prompt import PromptLoraManager
     from .py.nodes.lora_stacker import LoraStacker
-    from .py.nodes.save_image import SaveImage
+    from .py.nodes.save_image import SaveImageLM
     from .py.nodes.debug_metadata import DebugMetadata
     from .py.nodes.wanvideo_lora_select import WanVideoLoraSelect
     from .py.nodes.wanvideo_lora_select_from_text import WanVideoLoraSelectFromText
@@ -24,7 +24,7 @@ except ImportError:  # pragma: no cover - allows running under pytest without pa
     LoraManagerTextLoader = importlib.import_module("py.nodes.lora_loader").LoraManagerTextLoader
     TriggerWordToggle = importlib.import_module("py.nodes.trigger_word_toggle").TriggerWordToggle
     LoraStacker = importlib.import_module("py.nodes.lora_stacker").LoraStacker
-    SaveImage = importlib.import_module("py.nodes.save_image").SaveImage
+    SaveImageLM = importlib.import_module("py.nodes.save_image").SaveImageLM
     DebugMetadata = importlib.import_module("py.nodes.debug_metadata").DebugMetadata
     WanVideoLoraSelect = importlib.import_module("py.nodes.wanvideo_lora_select").WanVideoLoraSelect
     WanVideoLoraSelectFromText = importlib.import_module("py.nodes.wanvideo_lora_select_from_text").WanVideoLoraSelectFromText
@@ -36,7 +36,7 @@ NODE_CLASS_MAPPINGS = {
     LoraManagerTextLoader.NAME: LoraManagerTextLoader,
     TriggerWordToggle.NAME: TriggerWordToggle,
     LoraStacker.NAME: LoraStacker,
-    SaveImage.NAME: SaveImage,
+    SaveImageLM.NAME: SaveImageLM,
     DebugMetadata.NAME: DebugMetadata,
     WanVideoLoraSelect.NAME: WanVideoLoraSelect,
     WanVideoLoraSelectFromText.NAME: WanVideoLoraSelectFromText

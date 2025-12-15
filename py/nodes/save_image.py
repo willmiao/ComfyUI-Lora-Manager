@@ -9,7 +9,7 @@ from ..metadata_collector import get_metadata
 from PIL import Image, PngImagePlugin
 import piexif
 
-class SaveImage:
+class SaveImageLM:
     NAME = "Save Image (LoraManager)"
     CATEGORY = "Lora Manager/utils"
     DESCRIPTION = "Save images with embedded generation metadata in compatible format"
