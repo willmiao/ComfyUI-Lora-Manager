@@ -64,6 +64,7 @@ class RecipeScanner:
             self._initialization_task: Optional[asyncio.Task] = None
             self._is_initializing = False
             self._mutation_lock = asyncio.Lock()
+            self._post_scan_task: Optional[asyncio.Task] = None
             self._resort_tasks: Set[asyncio.Task] = set()
             if lora_scanner:
                 self._lora_scanner = lora_scanner
@@ -83,6 +84,10 @@ class RecipeScanner:
             if not task.done():
                 task.cancel()
         self._resort_tasks.clear()
+
+        if self._post_scan_task and not self._post_scan_task.done():
+            self._post_scan_task.cancel()
+        self._post_scan_task = None
 
         self._cache = None
         self._initialization_task = None
@@ -105,6 +110,8 @@ class RecipeScanner:
     async def initialize_in_background(self) -> None:
         """Initialize cache in background using thread pool"""
         try:
+            await self._wait_for_lora_scanner()
+
             # Set initial empty cache to avoid None reference errors
             if self._cache is None:
                 self._cache = RecipeCache(
@@ -115,6 +122,7 @@ class RecipeScanner:
             
             # Mark as initializing to prevent concurrent initializations
             self._is_initializing = True
+            self._initialization_task = asyncio.current_task()
             
             try:
                 # Start timer
@@ -126,11 +134,14 @@ class RecipeScanner:
                     None,  # Use default thread pool
                     self._initialize_recipe_cache_sync  # Run synchronous version in thread
                 )
+                if cache is not None:
+                    self._cache = cache
                 
                 # Calculate elapsed time and log it
                 elapsed_time = time.time() - start_time
                 recipe_count = len(cache.raw_data) if cache and hasattr(cache, 'raw_data') else 0
                 logger.info(f"Recipe cache initialized in {elapsed_time:.2f} seconds. Found {recipe_count} recipes")
+                self._schedule_post_scan_enrichment()
             finally:
                 # Mark initialization as complete regardless of outcome
                 self._is_initializing = False
@@ -236,6 +247,88 @@ class RecipeScanner:
         finally:
             # Clean up the event loop
             loop.close()
+
+    async def _wait_for_lora_scanner(self) -> None:
+        """Ensure the LoRA scanner has initialized before recipe enrichment."""
+
+        if not getattr(self, "_lora_scanner", None):
+            return
+
+        lora_scanner = self._lora_scanner
+        cache_ready = getattr(lora_scanner, "_cache", None) is not None
+
+        # If cache is already available, we can proceed
+        if cache_ready:
+            return
+
+        # Await an existing initialization task if present
+        task = getattr(lora_scanner, "_initialization_task", None)
+        if task and hasattr(task, "done") and not task.done():
+            try:
+                await task
+            except Exception:  # pragma: no cover - defensive guard
+                pass
+            if getattr(lora_scanner, "_cache", None) is not None:
+                return
+
+        # Otherwise, request initialization and proceed once it completes
+        try:
+            await lora_scanner.initialize_in_background()
+        except Exception as exc:  # pragma: no cover - defensive guard
+            logger.debug("Recipe Scanner: LoRA init request failed: %s", exc)
+
+    def _schedule_post_scan_enrichment(self) -> None:
+        """Kick off a non-blocking enrichment pass to fill remote metadata."""
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return
+
+        if self._post_scan_task and not self._post_scan_task.done():
+            return
+
+        async def _run_enrichment():
+            try:
+                await self._enrich_cache_metadata()
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:  # pragma: no cover - defensive guard
+                logger.error("Recipe Scanner: error during post-scan enrichment: %s", exc, exc_info=True)
+
+        self._post_scan_task = loop.create_task(_run_enrichment(), name="recipe_cache_enrichment")
+
+    async def _enrich_cache_metadata(self) -> None:
+        """Perform remote metadata enrichment after the initial scan."""
+
+        cache = self._cache
+        if cache is None or not getattr(cache, "raw_data", None):
+            return
+
+        for index, recipe in enumerate(list(cache.raw_data)):
+            try:
+                metadata_updated = await self._update_lora_information(recipe)
+                if metadata_updated:
+                    recipe_id = recipe.get("id")
+                    if recipe_id:
+                        recipe_path = os.path.join(self.recipes_dir, f"{recipe_id}.recipe.json")
+                        if os.path.exists(recipe_path):
+                            try:
+                                self._write_recipe_file(recipe_path, recipe)
+                            except Exception as exc:  # pragma: no cover - best-effort persistence
+                                logger.debug("Recipe Scanner: could not persist recipe %s: %s", recipe_id, exc)
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:  # pragma: no cover - defensive logging
+                logger.error("Recipe Scanner: error enriching recipe %s: %s", recipe.get("id"), exc, exc_info=True)
+
+            if index % 10 == 0:
+                await asyncio.sleep(0)
+
+        try:
+            await cache.resort()
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.debug("Recipe Scanner: error resorting cache after enrichment: %s", exc)
 
     def _schedule_resort(self, *, name_only: bool = False) -> None:
         """Schedule a background resort of the recipe cache."""
@@ -438,7 +531,7 @@ class RecipeScanner:
                 recipe_data['gen_params'] = {}
             
             # Update lora information with local paths and availability
-            await self._update_lora_information(recipe_data)
+            lora_metadata_updated = await self._update_lora_information(recipe_data)
 
             if recipe_data.get('checkpoint'):
                 checkpoint_entry = self._normalize_checkpoint_entry(recipe_data['checkpoint'])
@@ -459,6 +552,12 @@ class RecipeScanner:
                     logger.info(f"Added fingerprint to recipe: {recipe_path}")
                 except Exception as e:
                     logger.error(f"Error writing updated recipe with fingerprint: {e}")
+            elif lora_metadata_updated:
+                # Persist updates such as marking invalid entries as deleted
+                try:
+                    self._write_recipe_file(recipe_path, recipe_data)
+                except Exception as e:
+                    logger.error(f"Error writing updated recipe metadata: {e}")
 
             return recipe_data
         except Exception as e:
@@ -519,7 +618,13 @@ class RecipeScanner:
                                 logger.warning(f"Marked lora with modelVersionId {model_version_id} as deleted")
                                 metadata_updated = True
                         else:
-                            logger.debug(f"Could not get hash for modelVersionId {model_version_id}")
+                            # No hash returned; mark as deleted to avoid repeated lookups
+                            lora['isDeleted'] = True
+                            metadata_updated = True
+                            logger.warning(
+                                "Marked lora with modelVersionId %s as deleted after failed hash lookup",
+                                model_version_id,
+                            )
             
             # If has hash but no file_name, look up in lora library
             if 'hash' in lora and (not lora.get('file_name') or not lora['file_name']):

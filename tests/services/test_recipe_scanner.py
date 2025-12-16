@@ -349,3 +349,99 @@ def test_enrich_formats_absolute_preview_paths(recipe_scanner, tmp_path):
     enriched = scanner._enrich_lora_entry(dict(lora))
 
     assert enriched["preview_url"] == config.get_preview_static_url(str(preview_path))
+
+
+@pytest.mark.asyncio
+async def test_initialize_waits_for_lora_scanner(monkeypatch):
+    ready_flag = asyncio.Event()
+    call_count = 0
+
+    class StubLoraScanner:
+        def __init__(self):
+            self._cache = None
+            self._is_initializing = True
+
+        async def initialize_in_background(self):
+            nonlocal call_count
+            call_count += 1
+            await asyncio.sleep(0)
+            self._cache = SimpleNamespace(raw_data=[])
+            self._is_initializing = False
+            ready_flag.set()
+
+    lora_scanner = StubLoraScanner()
+    scanner = RecipeScanner(lora_scanner=lora_scanner)
+
+    await scanner.initialize_in_background()
+
+    assert ready_flag.is_set()
+    assert call_count == 1
+    assert scanner._cache is not None
+
+
+@pytest.mark.asyncio
+async def test_invalid_model_version_marked_deleted_and_not_retried(monkeypatch, recipe_scanner):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe = {
+        "id": "invalid-version",
+        "file_path": str(recipes_dir / "invalid-version.webp"),
+        "title": "Invalid",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "loras": [{"modelVersionId": 999, "file_name": "", "hash": ""}],
+    }
+    await scanner.add_recipe(dict(recipe))
+
+    call_count = 0
+
+    async def fake_get_hash(model_version_id):
+        nonlocal call_count
+        call_count += 1
+        return None
+
+    monkeypatch.setattr(scanner, "_get_hash_from_civitai", fake_get_hash)
+
+    metadata_updated = await scanner._update_lora_information(recipe)
+
+    assert metadata_updated is True
+    assert recipe["loras"][0]["isDeleted"] is True
+    assert call_count == 1
+
+    # Subsequent calls should skip remote lookup once marked deleted
+    metadata_updated_again = await scanner._update_lora_information(recipe)
+    assert metadata_updated_again is False
+    assert call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_load_recipe_persists_deleted_flag_on_invalid_version(monkeypatch, recipe_scanner, tmp_path):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe_id = "persist-invalid"
+    recipe_path = recipes_dir / f"{recipe_id}.recipe.json"
+    recipe_data = {
+        "id": recipe_id,
+        "file_path": str(recipes_dir / f"{recipe_id}.webp"),
+        "title": "Invalid",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "loras": [{"modelVersionId": 1234, "file_name": "", "hash": ""}],
+    }
+    recipe_path.write_text(json.dumps(recipe_data))
+
+    async def fake_get_hash(model_version_id):
+        return None
+
+    monkeypatch.setattr(scanner, "_get_hash_from_civitai", fake_get_hash)
+
+    loaded = await scanner._load_recipe_file(str(recipe_path))
+
+    assert loaded["loras"][0]["isDeleted"] is True
+
+    persisted = json.loads(recipe_path.read_text())
+    assert persisted["loras"][0]["isDeleted"] is True

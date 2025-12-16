@@ -103,8 +103,7 @@ def test_register_startup_hooks_appends_once():
     ]
 
     assert routes.attach_dependencies in startup_bound_to_routes
-    assert routes.prewarm_cache in startup_bound_to_routes
-    assert len(startup_bound_to_routes) == 2
+    assert len(startup_bound_to_routes) == 1
 
 
 def test_to_route_mapping_uses_handler_set():
@@ -212,4 +211,4 @@ def test_recipe_routes_setup_routes_uses_registrar(monkeypatch: pytest.MonkeyPat
         if isinstance(getattr(cb, "__self__", None), recipe_routes.RecipeRoutes)
     }
     assert {type(cb.__self__) for cb in recipe_callbacks} == {recipe_routes.RecipeRoutes}
-    assert {cb.__name__ for cb in recipe_callbacks} == {"attach_dependencies", "prewarm_cache"}
+    assert {cb.__name__ for cb in recipe_callbacks} == {"attach_dependencies"}
