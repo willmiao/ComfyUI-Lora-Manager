@@ -355,6 +355,7 @@ class Config:
         start = time.perf_counter()
         # Reset mappings before rescanning to avoid stale entries
         self._path_mappings.clear()
+        self._seed_root_symlink_mappings()
         visited_dirs: Set[str] = set()
         for root in self._symlink_roots():
             self._scan_directory_links(root, visited_dirs)
@@ -457,6 +458,22 @@ class Config:
         logger.info(f"Added path mapping: {normalized_target} -> {normalized_link}")
         self._preview_root_paths.update(self._expand_preview_root(normalized_target))
         self._preview_root_paths.update(self._expand_preview_root(normalized_link))
+
+    def _seed_root_symlink_mappings(self) -> None:
+        """Ensure symlinked root folders are recorded before deep scanning."""
+
+        for root in self._symlink_roots():
+            if not root:
+                continue
+            try:
+                if not self._is_link(root):
+                    continue
+                target_path = os.path.realpath(root)
+                if not os.path.isdir(target_path):
+                    continue
+                self.add_path_mapping(root, target_path)
+            except Exception as exc:
+                logger.debug("Skipping root symlink %s: %s", root, exc)
 
     def _expand_preview_root(self, path: str) -> Set[Path]:
         """Return normalized ``Path`` objects representing a preview root."""

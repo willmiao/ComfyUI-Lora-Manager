@@ -1,3 +1,4 @@
+import json
 import os
 
 import pytest
@@ -143,3 +144,40 @@ def test_background_rescan_refreshes_cache(monkeypatch: pytest.MonkeyPatch, tmp_
     new_real = _normalize(os.path.realpath(new_target))
     assert second_cfg._path_mappings.get(new_real) == _normalize(str(dir_link))
     assert second_cfg.map_path_to_link(str(new_target)) == _normalize(str(dir_link))
+
+
+def test_symlink_roots_are_preserved(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    settings_dir = tmp_path / "settings"
+    real_loras = tmp_path / "loras_real"
+    real_loras.mkdir()
+    loras_link = tmp_path / "loras_link"
+    loras_link.symlink_to(real_loras, target_is_directory=True)
+
+    checkpoints_dir = tmp_path / "checkpoints"
+    checkpoints_dir.mkdir()
+    embedding_dir = tmp_path / "embeddings"
+    embedding_dir.mkdir()
+
+    def fake_get_folder_paths(kind: str):
+        mapping = {
+            "loras": [str(loras_link)],
+            "checkpoints": [str(checkpoints_dir)],
+            "unet": [],
+            "embeddings": [str(embedding_dir)],
+        }
+        return mapping.get(kind, [])
+
+    monkeypatch.setattr(config_module.folder_paths, "get_folder_paths", fake_get_folder_paths)
+    monkeypatch.setattr(config_module, "standalone_mode", True)
+    monkeypatch.setattr(config_module, "get_settings_dir", lambda create=True: str(settings_dir))
+    monkeypatch.setattr(config_module.Config, "_schedule_symlink_rescan", lambda self: None)
+
+    cfg = config_module.Config()
+
+    normalized_real = _normalize(os.path.realpath(real_loras))
+    normalized_link = _normalize(str(loras_link))
+    assert cfg._path_mappings[normalized_real] == normalized_link
+
+    cache_path = settings_dir / "cache" / "symlink_map.json"
+    payload = json.loads(cache_path.read_text(encoding="utf-8"))
+    assert payload["path_mappings"][normalized_real] == normalized_link
