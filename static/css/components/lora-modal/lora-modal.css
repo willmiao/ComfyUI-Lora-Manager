@@ -20,7 +20,7 @@
 }
 
 .modal-header-row {
-    width: 85%;
+    width: 84%;
     display: flex;
     align-items: flex-start;
     gap: var(--space-2);
