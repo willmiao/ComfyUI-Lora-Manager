@@ -716,8 +716,6 @@ class BaseModelService(ABC):
                 if normalized_file.startswith(normalized_root):
                     # Remove root and leading separator to get relative path
                     relative_path = normalized_file[len(normalized_root):].lstrip(os.sep)
-                    # Normalize separators so results are stable across platforms
-                    relative_path = relative_path.replace(os.sep, "/")
                     break
             
             if not relative_path:
