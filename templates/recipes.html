@@ -4,9 +4,9 @@
 {% block page_id %}recipes{% endblock %}
 
 {% block page_css %}
-<link rel="stylesheet" href="/loras_static/css/components/card.css">
-<link rel="stylesheet" href="/loras_static/css/components/recipe-modal.css">
-<link rel="stylesheet" href="/loras_static/css/components/import-modal.css">
+<link rel="stylesheet" href="/loras_static/css/components/card.css?v={{ version }}">
+<link rel="stylesheet" href="/loras_static/css/components/recipe-modal.css?v={{ version }}">
+<link rel="stylesheet" href="/loras_static/css/components/import-modal.css?v={{ version }}">
 {% endblock %}
 
 {% block additional_components %}
@@ -84,5 +84,5 @@
 {% endblock %}
 
 {% block main_script %}
-<script type="module" src="/loras_static/js/recipes.js"></script>
+<script type="module" src="/loras_static/js/recipes.js?v={{ version }}"></script>
 {% endblock %}

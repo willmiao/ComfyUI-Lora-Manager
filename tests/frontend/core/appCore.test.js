@@ -234,7 +234,6 @@ describe('AppCore initialization flow', () => {
     await vi.runAllTimersAsync();
 
     expect(onboardingManager.start).toHaveBeenCalledTimes(1);
-    expect(bannerService.isBannerVisible).toHaveBeenCalledWith('version-mismatch');
   });
 
   it('does not reinitialize once initialized', async () => {
@@ -261,14 +260,5 @@ describe('AppCore initialization flow', () => {
     expect(bulkManager.initialize).not.toHaveBeenCalled();
     expect(BulkContextMenu).not.toHaveBeenCalled();
     expect(bulkManager.setBulkContextMenu).not.toHaveBeenCalled();
-  });
-
-  it('suppresses onboarding when version mismatch banner is visible', async () => {
-    bannerService.isBannerVisible.mockReturnValueOnce(true);
-
-    await appCore.initialize();
-    await vi.runAllTimersAsync();
-
-    expect(onboardingManager.start).not.toHaveBeenCalled();
   });
 });

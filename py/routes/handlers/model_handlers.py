@@ -61,6 +61,37 @@ class ModelPageView:
         self._settings = settings_service
         self._server_i18n = server_i18n
         self._logger = logger
+        self._app_version = self._get_app_version()
+
+    def _get_app_version(self) -> str:
+        version = "1.0.0"
+        short_hash = "stable"
+        try:
+            import toml
+            current_file = os.path.abspath(__file__)
+            # Navigate up from py/routes/handlers/model_handlers.py to project root
+            root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_file))))
+            pyproject_path = os.path.join(root_dir, 'pyproject.toml')
+            
+            if os.path.exists(pyproject_path):
+                with open(pyproject_path, 'r', encoding='utf-8') as f:
+                    data = toml.load(f)
+                    version = data.get('project', {}).get('version', '1.0.0').replace('v', '')
+            
+            # Try to get git info for granular cache busting
+            git_dir = os.path.join(root_dir, '.git')
+            if os.path.exists(git_dir):
+                try:
+                    import git
+                    repo = git.Repo(root_dir)
+                    short_hash = repo.head.commit.hexsha[:7]
+                except Exception:
+                    # Fallback if git is not available or not a repo
+                    pass
+        except Exception as e:
+            self._logger.debug(f"Failed to read version info for cache busting: {e}")
+            
+        return f"{version}-{short_hash}"
 
     async def handle(self, request: web.Request) -> web.Response:
         try:
@@ -96,6 +127,7 @@ class ModelPageView:
                 "request": request,
                 "folders": [],
                 "t": self._server_i18n.get_translation,
+                "version": self._app_version,
             }
 
             if not is_initializing:

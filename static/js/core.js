@@ -84,10 +84,7 @@ export class AppCore {
         
         // Start onboarding if needed (after everything is initialized)
         setTimeout(() => {
-            // Do not show onboarding if version-mismatch banner is visible
-            if (!bannerService.isBannerVisible('version-mismatch')) {
-                onboardingManager.start();
-            }
+            onboardingManager.start();
         }, 1000); // Small delay to ensure all elements are rendered
         
         // Return the core instance for chaining
