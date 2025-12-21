@@ -14,11 +14,11 @@ import { eventManager } from '../../utils/EventManager.js';
 // Helper function to get display name based on settings
 function getDisplayName(model) {
     const displayNameSetting = state.global.settings.model_name_display || 'model_name';
-    
+
     if (displayNameSetting === 'file_name') {
         return model.file_name || model.model_name || 'Unknown Model';
     }
-    
+
     return model.model_name || model.file_name || 'Unknown Model';
 }
 
@@ -26,7 +26,7 @@ function getDisplayName(model) {
 export function setupModelCardEventDelegation(modelType) {
     // Remove any existing handler first
     eventManager.removeHandler('click', 'modelCard-delegation');
-    
+
     // Register model card event delegation with event manager
     eventManager.addHandler('click', 'modelCard-delegation', (event) => {
         return handleModelCardEvent_internal(event, modelType);
@@ -42,26 +42,26 @@ function handleModelCardEvent_internal(event, modelType) {
     // Find the closest card element
     const card = event.target.closest('.model-card');
     if (!card) return false; // Continue with other handlers
-    
+
     // Handle specific elements within the card
     if (event.target.closest('.toggle-blur-btn')) {
         event.stopPropagation();
         toggleBlurContent(card);
         return true; // Stop propagation
     }
-    
+
     if (event.target.closest('.show-content-btn')) {
         event.stopPropagation();
         showBlurredContent(card);
         return true; // Stop propagation
     }
-    
+
     if (event.target.closest('.fa-star')) {
         event.stopPropagation();
         toggleFavorite(card);
         return true; // Stop propagation
     }
-    
+
     if (event.target.closest('.fa-globe')) {
         event.stopPropagation();
         if (card.dataset.from_civitai === 'true') {
@@ -69,37 +69,37 @@ function handleModelCardEvent_internal(event, modelType) {
         }
         return true; // Stop propagation
     }
-    
+
     if (event.target.closest('.fa-paper-plane')) {
         event.stopPropagation();
         handleSendToWorkflow(card, event.shiftKey, modelType);
         return true; // Stop propagation
     }
-    
+
     if (event.target.closest('.fa-copy')) {
         event.stopPropagation();
         handleCopyAction(card, modelType);
         return true; // Stop propagation
     }
-    
+
     if (event.target.closest('.fa-trash')) {
         event.stopPropagation();
         showDeleteModal(card.dataset.filepath);
         return true; // Stop propagation
     }
-    
+
     if (event.target.closest('.fa-image')) {
         event.stopPropagation();
         getModelApiClient().replaceModelPreview(card.dataset.filepath);
         return true; // Stop propagation
     }
-    
+
     if (event.target.closest('.fa-folder-open')) {
         event.stopPropagation();
         handleExampleImagesAccess(card, modelType);
         return true; // Stop propagation
     }
-    
+
     // If no specific element was clicked, handle the card click (show modal or toggle selection)
     handleCardClick(card, modelType);
     return false; // Continue with other handlers (e.g., bulk selection)
@@ -110,14 +110,14 @@ function toggleBlurContent(card) {
     const preview = card.querySelector('.card-preview');
     const isBlurred = preview.classList.toggle('blurred');
     const icon = card.querySelector('.toggle-blur-btn i');
-    
+
     // Update the icon based on blur state
     if (isBlurred) {
         icon.className = 'fas fa-eye';
     } else {
         icon.className = 'fas fa-eye-slash';
     }
-    
+
     // Toggle the overlay visibility
     const overlay = card.querySelector('.nsfw-overlay');
     if (overlay) {
@@ -128,13 +128,13 @@ function toggleBlurContent(card) {
 function showBlurredContent(card) {
     const preview = card.querySelector('.card-preview');
     preview.classList.remove('blurred');
-    
+
     // Update the toggle button icon
     const toggleBtn = card.querySelector('.toggle-blur-btn');
     if (toggleBtn) {
         toggleBtn.querySelector('i').className = 'fas fa-eye-slash';
     }
-    
+
     // Hide the overlay
     const overlay = card.querySelector('.nsfw-overlay');
     if (overlay) {
@@ -146,10 +146,10 @@ async function toggleFavorite(card) {
     const starIcon = card.querySelector('.fa-star');
     const isFavorite = starIcon.classList.contains('fas');
     const newFavoriteState = !isFavorite;
-    
+
     try {
-        await getModelApiClient().saveModelMetadata(card.dataset.filepath, { 
-            favorite: newFavoriteState 
+        await getModelApiClient().saveModelMetadata(card.dataset.filepath, {
+            favorite: newFavoriteState
         });
 
         if (newFavoriteState) {
@@ -239,11 +239,11 @@ function handleReplacePreview(filePath, modelType) {
 
 async function handleExampleImagesAccess(card, modelType) {
     const modelHash = card.dataset.sha256;
-    
+
     try {
         const response = await fetch(`/api/lm/has-example-images?model_hash=${modelHash}`);
         const data = await response.json();
-        
+
         if (data.has_images) {
             openExampleImagesFolder(modelHash);
         } else {
@@ -257,7 +257,7 @@ async function handleExampleImagesAccess(card, modelType) {
 
 function handleCardClick(card, modelType) {
     const pageState = getCurrentPageState();
-    
+
     if (state.bulkMode) {
         // Toggle selection using the bulk manager
         bulkManager.toggleCardSelection(card);
@@ -294,7 +294,7 @@ async function showModelModalFromCard(card, modelType) {
             usage_tips: card.dataset.usage_tips,
         })
     };
-    
+
     await showModelModal(modelMeta, modelType);
 }
 
@@ -310,9 +310,9 @@ function showExampleAccessModal(card, modelType) {
     try {
         const metaData = JSON.parse(card.dataset.meta || '{}');
         hasRemoteExamples = metaData.images &&
-                            Array.isArray(metaData.images) &&
-                            metaData.images.length > 0 &&
-                            metaData.images[0].url;
+            Array.isArray(metaData.images) &&
+            metaData.images.length > 0 &&
+            metaData.images[0].url;
     } catch (e) {
         console.error('Error parsing meta data:', e);
     }
@@ -329,10 +329,10 @@ function showExampleAccessModal(card, modelType) {
                     showToast('modelCard.exampleImages.missingHash', {}, 'error');
                     return;
                 }
-                
+
                 // Close the modal
                 modalManager.closeModal('exampleAccessModal');
-                
+
                 try {
                     // Use the appropriate model API client to download examples
                     const apiClient = getModelApiClient(modelType);
@@ -456,7 +456,7 @@ export function createModelCard(model, modelType) {
     if (model.civitai) {
         card.dataset.meta = JSON.stringify(model.civitai || {});
     }
-    
+
     // Store tags if available
     if (model.tags && Array.isArray(model.tags)) {
         card.dataset.tags = JSON.stringify(model.tags);
@@ -469,7 +469,7 @@ export function createModelCard(model, modelType) {
     // Store NSFW level if available
     const nsfwLevel = model.preview_nsfw_level !== undefined ? model.preview_nsfw_level : 0;
     card.dataset.nsfwLevel = nsfwLevel;
-    
+
     // Determine if the preview should be blurred based on NSFW level and user settings
     const shouldBlur = state.settings.blur_mature_content && nsfwLevel > NSFW_LEVELS.PG13;
     if (shouldBlur) {
@@ -500,7 +500,7 @@ export function createModelCard(model, modelType) {
 
     // Check if autoplayOnHover is enabled for video previews
     const autoplayOnHover = state.global?.settings?.autoplay_on_hover || false;
-    const isVideo = previewUrl.endsWith('.mp4');
+    const isVideo = previewUrl.endsWith('.mp4') || previewUrl.endsWith('.webm');
     const videoAttrs = [
         'controls',
         'muted',
@@ -521,10 +521,10 @@ export function createModelCard(model, modelType) {
     }
 
     // Generate action icons based on model type with i18n support
-    const favoriteTitle = isFavorite ? 
+    const favoriteTitle = isFavorite ?
         translate('modelCard.actions.removeFromFavorites', {}, 'Remove from favorites') :
         translate('modelCard.actions.addToFavorites', {}, 'Add to favorites');
-    const globeTitle = model.from_civitai ? 
+    const globeTitle = model.from_civitai ?
         translate('modelCard.actions.viewOnCivitai', {}, 'View on Civitai') :
         translate('modelCard.actions.notAvailableFromCivitai', {}, 'Not available from Civitai');
     let sendTitle;
@@ -576,13 +576,13 @@ export function createModelCard(model, modelType) {
 
     card.innerHTML = `
         <div class="card-preview ${shouldBlur ? 'blurred' : ''}">
-            ${isVideo ? 
-                `<video ${videoAttrs.join(' ')} style="pointer-events: none;"></video>` :
-                `<img src="${versionedPreviewUrl}" alt="${model.model_name}">`
-            }
+            ${isVideo ?
+            `<video ${videoAttrs.join(' ')} style="pointer-events: none;"></video>` :
+            `<img src="${versionedPreviewUrl}" alt="${model.model_name}">`
+        }
             <div class="card-header">
-                ${shouldBlur ? 
-                  `<button class="toggle-blur-btn" title="${toggleBlurTitle}">
+                ${shouldBlur ?
+            `<button class="toggle-blur-btn" title="${toggleBlurTitle}">
                       <i class="fas fa-eye"></i>
                   </button>` : ''}
                 <div class="card-header-info">
@@ -620,7 +620,7 @@ export function createModelCard(model, modelType) {
             </div>
         </div>
     `;
-    
+
     // Add video auto-play on hover functionality if needed
     const videoElement = card.querySelector('video');
     if (videoElement) {
@@ -756,7 +756,7 @@ function cleanupHoverHandlers(videoElement) {
 function requestSafePlay(videoElement) {
     const playPromise = videoElement.play();
     if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(() => {});
+        playPromise.catch(() => { });
     }
 }
 
@@ -878,16 +878,16 @@ export function configureModelCardVideo(videoElement, autoplayOnHover) {
 export function updateCardsForBulkMode(isBulkMode) {
     // Update the state
     state.bulkMode = isBulkMode;
-    
+
     document.body.classList.toggle('bulk-mode', isBulkMode);
-    
+
     // Get all lora cards - this can now be from the DOM or through the virtual scroller
     const loraCards = document.querySelectorAll('.model-card');
-    
+
     loraCards.forEach(card => {
         // Get all action containers for this card
         const actions = card.querySelectorAll('.card-actions');
-        
+
         // Handle display property based on mode
         if (isBulkMode) {
             // Hide actions when entering bulk mode
@@ -902,12 +902,12 @@ export function updateCardsForBulkMode(isBulkMode) {
             });
         }
     });
-    
+
     // If using virtual scroller, we need to rerender after toggling bulk mode
     if (state.virtualScroller && typeof state.virtualScroller.scheduleRender === 'function') {
         state.virtualScroller.scheduleRender();
     }
-    
+
     // Apply selection state to cards if entering bulk mode
     if (isBulkMode) {
         bulkManager.applySelectionState();

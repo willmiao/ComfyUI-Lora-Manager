@@ -23,6 +23,7 @@ from ...services.recipes import (
     RecipeValidationError,
 )
 from ...services.metadata_service import get_default_metadata_provider
+from ...utils.civitai_utils import rewrite_preview_url
 
 Logger = logging.Logger
 EnsureDependenciesCallable = Callable[[], Awaitable[None]]
@@ -455,6 +456,7 @@ class RecipeManagementHandler:
             image_url = params.get("image_url")
             name = params.get("name")
             resources_raw = params.get("resources")
+            
             if not image_url:
                 raise RecipeValidationError("Missing required field: image_url")
             if not name:
@@ -483,7 +485,7 @@ class RecipeManagementHandler:
                     metadata["base_model"] = base_model_from_metadata
 
             tags = self._parse_tags(params.get("tags"))
-            image_bytes = await self._download_image_bytes(image_url)
+            image_bytes, extension = await self._download_remote_media(image_url)
 
             result = await self._persistence_service.save_recipe(
                 recipe_scanner=recipe_scanner,
@@ -492,6 +494,7 @@ class RecipeManagementHandler:
                 name=name,
                 tags=tags,
                 metadata=metadata,
+                extension=extension,
             )
             return web.json_response(result.payload, status=result.status)
         except RecipeValidationError as exc:
@@ -729,7 +732,7 @@ class RecipeManagementHandler:
             "exclude": False,
         }
 
-    async def _download_image_bytes(self, image_url: str) -> bytes:
+    async def _download_remote_media(self, image_url: str) -> tuple[bytes, str]:
         civitai_client = self._civitai_client_getter()
         downloader = await self._downloader_factory()
         temp_path = None
@@ -744,15 +747,31 @@ class RecipeManagementHandler:
                 image_info = await civitai_client.get_image_info(civitai_match.group(1))
                 if not image_info:
                     raise RecipeDownloadError("Failed to fetch image information from Civitai")
-                download_url = image_info.get("url")
-                if not download_url:
+                
+                media_url = image_info.get("url")
+                if not media_url:
                     raise RecipeDownloadError("No image URL found in Civitai response")
+                
+                # Use optimized preview URLs if possible
+                media_type = image_info.get("type")
+                rewritten_url, _ = rewrite_preview_url(media_url, media_type=media_type)
+                if rewritten_url:
+                    download_url = rewritten_url
+                else:
+                    download_url = media_url
 
             success, result = await downloader.download_file(download_url, temp_path, use_auth=False)
             if not success:
                 raise RecipeDownloadError(f"Failed to download image: {result}")
+            
+            # Extract extension from URL
+            url_path = download_url.split('?')[0].split('#')[0]
+            extension = os.path.splitext(url_path)[1].lower()
+            if not extension:
+                extension = ".webp" # Default to webp if unknown
+
             with open(temp_path, "rb") as file_obj:
-                return file_obj.read()
+                return file_obj.read(), extension
         except RecipeDownloadError:
             raise
         except RecipeValidationError:
@@ -765,6 +784,7 @@ class RecipeManagementHandler:
                     os.unlink(temp_path)
                 except FileNotFoundError:
                     pass
+
 
     def _safe_int(self, value: Any) -> int:
         try:

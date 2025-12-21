@@ -1,5 +1,6 @@
 // Recipe Card Component
 import { showToast, copyToClipboard, sendLoraToWorkflow } from '../utils/uiHelpers.js';
+import { configureModelCardVideo } from './shared/ModelCard.js';
 import { modalManager } from '../managers/ModalManager.js';
 import { getCurrentPageState } from '../state/index.js';
 import { state } from '../state/index.js';
@@ -10,11 +11,11 @@ class RecipeCard {
         this.recipe = recipe;
         this.clickHandler = clickHandler;
         this.element = this.createCardElement();
-        
+
         // Store reference to this instance on the DOM element for updates
         this.element._recipeCardInstance = this;
     }
-    
+
     createCardElement() {
         const card = document.createElement('div');
         card.className = 'model-card';
@@ -23,24 +24,40 @@ class RecipeCard {
         card.dataset.nsfwLevel = this.recipe.preview_nsfw_level || 0;
         card.dataset.created = this.recipe.created_date;
         card.dataset.id = this.recipe.id || '';
-        
+
         // Get base model with fallback
         const baseModelLabel = (this.recipe.base_model || '').trim() || 'Unknown';
         const baseModelAbbreviation = getBaseModelAbbreviation(baseModelLabel);
         const baseModelDisplay = baseModelLabel === 'Unknown' ? 'Unknown' : baseModelAbbreviation;
-        
+
         // Ensure loras array exists
         const loras = this.recipe.loras || [];
         const lorasCount = loras.length;
-        
+
         // Check if all LoRAs are available in the library
         const missingLorasCount = loras.filter(lora => !lora.inLibrary && !lora.isDeleted).length;
         const allLorasAvailable = missingLorasCount === 0 && lorasCount > 0;
-        
+
         // Ensure file_url exists, fallback to file_path if needed
-        const imageUrl = this.recipe.file_url || 
-                         (this.recipe.file_path ? `/loras_static/root1/preview/${this.recipe.file_path.split('/').pop()}` : 
-                         '/loras_static/images/no-preview.png');
+        const previewUrl = this.recipe.file_url ||
+            (this.recipe.file_path ? `/loras_static/root1/preview/${this.recipe.file_path.split('/').pop()}` :
+                '/loras_static/images/no-preview.png');
+
+        // Video preview logic
+        const autoplayOnHover = state.settings.autoplay_on_hover || false;
+        const isVideo = previewUrl.endsWith('.mp4') || previewUrl.endsWith('.webm');
+        const videoAttrs = [
+            'controls',
+            'muted',
+            'loop',
+            'playsinline',
+            'preload="none"',
+            `data-src="${previewUrl}"`
+        ];
+
+        if (!autoplayOnHover) {
+            videoAttrs.push('data-autoplay="true"');
+        }
 
         // Check if in duplicates mode
         const pageState = getCurrentPageState();
@@ -49,7 +66,7 @@ class RecipeCard {
         // NSFW blur logic - similar to LoraCard
         const nsfwLevel = this.recipe.preview_nsfw_level !== undefined ? this.recipe.preview_nsfw_level : 0;
         const shouldBlur = state.settings.blur_mature_content && nsfwLevel > NSFW_LEVELS.PG13;
-        
+
         if (shouldBlur) {
             card.classList.add('nsfw-content');
         }
@@ -66,11 +83,14 @@ class RecipeCard {
 
         card.innerHTML = `
             <div class="card-preview ${shouldBlur ? 'blurred' : ''}">
-                <img src="${imageUrl}" alt="${this.recipe.title}">
+                ${isVideo ?
+                `<video ${videoAttrs.join(' ')} style="pointer-events: none;"></video>` :
+                `<img src="${previewUrl}" alt="${this.recipe.title}">`
+            }
                 ${!isDuplicatesMode ? `
                 <div class="card-header">
-                    ${shouldBlur ? 
-                      `<button class="toggle-blur-btn" title="Toggle blur">
+                    ${shouldBlur ?
+                    `<button class="toggle-blur-btn" title="Toggle blur">
                           <i class="fas fa-eye"></i>
                       </button>` : ''}
                     <span class="base-model-label ${shouldBlur ? 'with-toggle' : ''}" title="${baseModelLabel}">${baseModelDisplay}</span>
@@ -102,30 +122,37 @@ class RecipeCard {
                 </div>
             </div>
         `;
-        
+
         this.attachEventListeners(card, isDuplicatesMode, shouldBlur);
+
+        // Add video auto-play on hover functionality if needed
+        const videoElement = card.querySelector('video');
+        if (videoElement) {
+            configureModelCardVideo(videoElement, autoplayOnHover);
+        }
+
         return card;
     }
-    
+
     getLoraStatusTitle(totalCount, missingCount) {
         if (totalCount === 0) return "No LoRAs in this recipe";
         if (missingCount === 0) return "All LoRAs available - Ready to use";
         return `${missingCount} of ${totalCount} LoRAs missing`;
     }
-    
+
     attachEventListeners(card, isDuplicatesMode, shouldBlur) {
         // Add blur toggle functionality if content should be blurred
         if (shouldBlur) {
             const toggleBtn = card.querySelector('.toggle-blur-btn');
             const showBtn = card.querySelector('.show-content-btn');
-            
+
             if (toggleBtn) {
                 toggleBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     this.toggleBlurContent(card);
                 });
             }
-            
+
             if (showBtn) {
                 showBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -139,19 +166,19 @@ class RecipeCard {
             card.addEventListener('click', () => {
                 this.clickHandler(this.recipe);
             });
-            
+
             // Share button click event - prevent propagation to card
             card.querySelector('.fa-share-alt')?.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.shareRecipe();
             });
-            
+
             // Send button click event - prevent propagation to card
             card.querySelector('.fa-paper-plane')?.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.sendRecipeToWorkflow(e.shiftKey);
             });
-            
+
             // Delete button click event - prevent propagation to card
             card.querySelector('.fa-trash')?.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -159,19 +186,19 @@ class RecipeCard {
             });
         }
     }
-    
+
     toggleBlurContent(card) {
         const preview = card.querySelector('.card-preview');
         const isBlurred = preview.classList.toggle('blurred');
         const icon = card.querySelector('.toggle-blur-btn i');
-        
+
         // Update the icon based on blur state
         if (isBlurred) {
             icon.className = 'fas fa-eye';
         } else {
             icon.className = 'fas fa-eye-slash';
         }
-        
+
         // Toggle the overlay visibility
         const overlay = card.querySelector('.nsfw-overlay');
         if (overlay) {
@@ -182,13 +209,13 @@ class RecipeCard {
     showBlurredContent(card) {
         const preview = card.querySelector('.card-preview');
         preview.classList.remove('blurred');
-        
+
         // Update the toggle button icon
         const toggleBtn = card.querySelector('.toggle-blur-btn');
         if (toggleBtn) {
             toggleBtn.querySelector('i').className = 'fas fa-eye-slash';
         }
-        
+
         // Hide the overlay
         const overlay = card.querySelector('.nsfw-overlay');
         if (overlay) {
@@ -223,7 +250,7 @@ class RecipeCard {
             showToast('toast.recipes.sendError', {}, 'error');
         }
     }
-    
+
     showDeleteConfirmation() {
         try {
             // Get recipe ID
@@ -233,15 +260,21 @@ class RecipeCard {
                 showToast('toast.recipes.cannotDelete', {}, 'error');
                 return;
             }
-            
+
             // Create delete modal content
+            const previewUrl = this.recipe.file_url || '/loras_static/images/no-preview.png';
+            const isVideo = previewUrl.endsWith('.mp4') || previewUrl.endsWith('.webm');
+
             const deleteModalContent = `
                 <div class="modal-content delete-modal-content">
                     <h2>Delete Recipe</h2>
                     <p class="delete-message">Are you sure you want to delete this recipe?</p>
                     <div class="delete-model-info">
                         <div class="delete-preview">
-                            <img src="${this.recipe.file_url || '/loras_static/images/no-preview.png'}" alt="${this.recipe.title}">
+                            ${isVideo ?
+                    `<video src="${previewUrl}" controls muted loop playsinline style="max-width: 100%;"></video>` :
+                    `<img src="${previewUrl}" alt="${this.recipe.title}">`
+                }
                         </div>
                         <div class="delete-info">
                             <h3>${this.recipe.title}</h3>
@@ -255,7 +288,7 @@ class RecipeCard {
                     </div>
                 </div>
             `;
-            
+
             // Show the modal with custom content and setup callbacks
             modalManager.showModal('deleteModal', deleteModalContent, () => {
                 // This is the onClose callback
@@ -264,20 +297,20 @@ class RecipeCard {
                 deleteBtn.textContent = 'Delete';
                 deleteBtn.disabled = false;
             });
-            
+
             // Set up the delete and cancel buttons with proper event handlers
             const deleteModal = document.getElementById('deleteModal');
             const cancelBtn = deleteModal.querySelector('.cancel-btn');
             const deleteBtn = deleteModal.querySelector('.delete-btn');
-            
+
             // Store recipe ID in the modal for the delete confirmation handler
             deleteModal.dataset.recipeId = recipeId;
             deleteModal.dataset.filePath = filePath;
-            
+
             // Update button event handlers
             cancelBtn.onclick = () => modalManager.closeModal('deleteModal');
             deleteBtn.onclick = () => this.confirmDeleteRecipe();
-            
+
         } catch (error) {
             console.error('Error showing delete confirmation:', error);
             showToast('toast.recipes.deleteConfirmationError', {}, 'error');
@@ -287,19 +320,19 @@ class RecipeCard {
     confirmDeleteRecipe() {
         const deleteModal = document.getElementById('deleteModal');
         const recipeId = deleteModal.dataset.recipeId;
-        
+
         if (!recipeId) {
             showToast('toast.recipes.cannotDelete', {}, 'error');
             modalManager.closeModal('deleteModal');
             return;
         }
-        
+
         // Show loading state
         const deleteBtn = deleteModal.querySelector('.delete-btn');
         const originalText = deleteBtn.textContent;
         deleteBtn.textContent = 'Deleting...';
         deleteBtn.disabled = true;
-        
+
         // Call API to delete the recipe
         fetch(`/api/lm/recipe/${recipeId}`, {
             method: 'DELETE',
@@ -307,27 +340,27 @@ class RecipeCard {
                 'Content-Type': 'application/json'
             }
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to delete recipe');
-            }
-            return response.json();
-        })
-        .then(data => {
-            showToast('toast.recipes.deletedSuccessfully', {}, 'success');
-            
-            state.virtualScroller.removeItemByFilePath(deleteModal.dataset.filePath);
-            
-            modalManager.closeModal('deleteModal');
-        })
-        .catch(error => {
-            console.error('Error deleting recipe:', error);
-            showToast('toast.recipes.deleteFailed', { message: error.message }, 'error');
-            
-            // Reset button state
-            deleteBtn.textContent = originalText;
-            deleteBtn.disabled = false;
-        });
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to delete recipe');
+                }
+                return response.json();
+            })
+            .then(data => {
+                showToast('toast.recipes.deletedSuccessfully', {}, 'success');
+
+                state.virtualScroller.removeItemByFilePath(deleteModal.dataset.filePath);
+
+                modalManager.closeModal('deleteModal');
+            })
+            .catch(error => {
+                console.error('Error deleting recipe:', error);
+                showToast('toast.recipes.deleteFailed', { message: error.message }, 'error');
+
+                // Reset button state
+                deleteBtn.textContent = originalText;
+                deleteBtn.disabled = false;
+            });
     }
 
     shareRecipe() {
@@ -338,10 +371,10 @@ class RecipeCard {
                 showToast('toast.recipes.cannotShare', {}, 'error');
                 return;
             }
-            
+
             // Show loading toast
             showToast('toast.recipes.preparingForSharing', {}, 'info');
-            
+
             // Call the API to process the image with metadata
             fetch(`/api/lm/recipe/${recipeId}/share`)
                 .then(response => {
@@ -354,17 +387,17 @@ class RecipeCard {
                     if (!data.success) {
                         throw new Error(data.error || 'Unknown error');
                     }
-                    
+
                     // Create a temporary anchor element for download
                     const downloadLink = document.createElement('a');
                     downloadLink.href = data.download_url;
                     downloadLink.download = data.filename;
-                    
+
                     // Append to body, click and remove
                     document.body.appendChild(downloadLink);
                     downloadLink.click();
                     document.body.removeChild(downloadLink);
-                    
+
                     showToast('toast.recipes.downloadStarted', {}, 'success');
                 })
                 .catch(error => {

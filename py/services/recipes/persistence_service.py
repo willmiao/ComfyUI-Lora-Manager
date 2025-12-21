@@ -46,6 +46,7 @@ class RecipePersistenceService:
         name: str | None,
         tags: Iterable[str],
         metadata: Optional[dict[str, Any]],
+        extension: str | None = None,
     ) -> PersistenceResult:
         """Persist a user uploaded recipe."""
 
@@ -64,13 +65,21 @@ class RecipePersistenceService:
         os.makedirs(recipes_dir, exist_ok=True)
 
         recipe_id = str(uuid.uuid4())
-        optimized_image, extension = self._exif_utils.optimize_image(
-            image_data=resolved_image_bytes,
-            target_width=self._card_preview_width,
-            format="webp",
-            quality=85,
-            preserve_metadata=True,
-        )
+        
+        # Handle video formats by bypassing optimization and metadata embedding
+        is_video = extension in [".mp4", ".webm"]
+        if is_video:
+            optimized_image = resolved_image_bytes
+            # extension is already set
+        else:
+            optimized_image, extension = self._exif_utils.optimize_image(
+                image_data=resolved_image_bytes,
+                target_width=self._card_preview_width,
+                format="webp",
+                quality=85,
+                preserve_metadata=True,
+            )
+            
         image_filename = f"{recipe_id}{extension}"
         image_path = os.path.join(recipes_dir, image_filename)
         normalized_image_path = os.path.normpath(image_path)
@@ -126,7 +135,8 @@ class RecipePersistenceService:
         with open(json_path, "w", encoding="utf-8") as file_obj:
             json.dump(recipe_data, file_obj, indent=4, ensure_ascii=False)
 
-        self._exif_utils.append_recipe_metadata(normalized_image_path, recipe_data)
+        if not is_video:
+            self._exif_utils.append_recipe_metadata(normalized_image_path, recipe_data)
 
         matching_recipes = await self._find_matching_recipes(recipe_scanner, fingerprint, exclude_id=recipe_id)
         await recipe_scanner.add_recipe(recipe_data)

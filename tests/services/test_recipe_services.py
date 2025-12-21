@@ -12,7 +12,12 @@ from py.services.recipes.persistence_service import RecipePersistenceService
 
 
 class DummyExifUtils:
+    def __init__(self):
+        self.appended = None
+        self.optimized_calls = 0
+
     def optimize_image(self, image_data, target_width, format, quality, preserve_metadata):
+        self.optimized_calls += 1
         return image_data, ".webp"
 
     def append_recipe_metadata(self, image_path, recipe_data):
@@ -20,6 +25,46 @@ class DummyExifUtils:
 
     def extract_image_metadata(self, path):
         return {}
+
+
+@pytest.mark.asyncio
+async def test_save_recipe_video_bypasses_optimization(tmp_path):
+    exif_utils = DummyExifUtils()
+
+    class DummyScanner:
+        def __init__(self, root):
+            self.recipes_dir = str(root)
+
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+        async def add_recipe(self, recipe_data):
+            return None
+
+    scanner = DummyScanner(tmp_path)
+    service = RecipePersistenceService(
+        exif_utils=exif_utils,
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    metadata = {"base_model": "Flux", "loras": []}
+    video_bytes = b"mp4-content"
+
+    result = await service.save_recipe(
+        recipe_scanner=scanner,
+        image_bytes=video_bytes,
+        image_base64=None,
+        name="Video Recipe",
+        tags=[],
+        metadata=metadata,
+        extension=".mp4",
+    )
+
+    assert result.payload["image_path"].endswith(".mp4")
+    assert Path(result.payload["image_path"]).read_bytes() == video_bytes
+    assert exif_utils.optimized_calls == 0, "Optimization should be bypassed for video"
+    assert exif_utils.appended is None, "Metadata embedding should be bypassed for video"
 
 
 @pytest.mark.asyncio
