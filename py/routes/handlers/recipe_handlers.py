@@ -437,6 +437,7 @@ class RecipeManagementHandler:
                 name=payload["name"],
                 tags=payload["tags"],
                 metadata=payload["metadata"],
+                extension=payload.get("extension"),
             )
             return web.json_response(result.payload, status=result.status)
         except RecipeValidationError as exc:
@@ -625,6 +626,7 @@ class RecipeManagementHandler:
         name: Optional[str] = None
         tags: list[str] = []
         metadata: Optional[Dict[str, Any]] = None
+        extension: Optional[str] = None
 
         while True:
             field = await reader.next()
@@ -655,6 +657,8 @@ class RecipeManagementHandler:
                     metadata = json.loads(metadata_text)
                 except Exception:
                     metadata = {}
+            elif field.name == "extension":
+                extension = await field.text()
 
         return {
             "image_bytes": image_bytes,
@@ -662,6 +666,7 @@ class RecipeManagementHandler:
             "name": name,
             "tags": tags,
             "metadata": metadata,
+            "extension": extension,
         }
 
     def _parse_tags(self, tag_text: Optional[str]) -> list[str]:

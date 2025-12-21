@@ -8,10 +8,10 @@ export class RecipeDataManager {
 
     showRecipeDetailsStep() {
         this.importManager.stepManager.showStep('detailsStep');
-        
+
         // Set default recipe name from prompt or image filename
         const recipeName = document.getElementById('recipeName');
-        
+
         // Check if we have recipe metadata from a shared recipe
         if (this.importManager.recipeData && this.importManager.recipeData.from_recipe_metadata) {
             // Use title from recipe metadata
@@ -19,24 +19,24 @@ export class RecipeDataManager {
                 recipeName.value = this.importManager.recipeData.title;
                 this.importManager.recipeName = this.importManager.recipeData.title;
             }
-            
+
             // Use tags from recipe metadata
             if (this.importManager.recipeData.tags && Array.isArray(this.importManager.recipeData.tags)) {
                 this.importManager.recipeTags = [...this.importManager.recipeData.tags];
                 this.updateTagsDisplay();
             }
-        } else if (this.importManager.recipeData && 
-                  this.importManager.recipeData.gen_params && 
-                  this.importManager.recipeData.gen_params.prompt) {
+        } else if (this.importManager.recipeData &&
+            this.importManager.recipeData.gen_params &&
+            this.importManager.recipeData.gen_params.prompt) {
             // Use the first 10 words from the prompt as the default recipe name
             const promptWords = this.importManager.recipeData.gen_params.prompt.split(' ');
             const truncatedPrompt = promptWords.slice(0, 10).join(' ');
             recipeName.value = truncatedPrompt;
             this.importManager.recipeName = truncatedPrompt;
-            
+
             // Set up click handler to select all text for easy editing
             if (!recipeName.hasSelectAllHandler) {
-                recipeName.addEventListener('click', function() {
+                recipeName.addEventListener('click', function () {
                     this.select();
                 });
                 recipeName.hasSelectAllHandler = true;
@@ -47,15 +47,15 @@ export class RecipeDataManager {
             recipeName.value = fileName;
             this.importManager.recipeName = fileName;
         }
-        
+
         // Always set up click handler for easy editing if not already set
         if (!recipeName.hasSelectAllHandler) {
-            recipeName.addEventListener('click', function() {
+            recipeName.addEventListener('click', function () {
                 this.select();
             });
             recipeName.hasSelectAllHandler = true;
         }
-        
+
         // Display the uploaded image in the preview
         const imagePreview = document.getElementById('recipeImagePreview');
         if (imagePreview) {
@@ -67,13 +67,24 @@ export class RecipeDataManager {
                 };
                 reader.readAsDataURL(this.importManager.recipeImage);
             } else if (this.importManager.recipeData && this.importManager.recipeData.image_base64) {
-                // For URL mode - use the base64 image data returned from the backend
-                imagePreview.innerHTML = `<img src="data:image/jpeg;base64,${this.importManager.recipeData.image_base64}" alt="${translate('recipes.controls.import.recipePreviewAlt', {}, 'Recipe preview')}">`;
+                // For URL mode - use the base64 data returned from the backend
+                if (this.importManager.recipeData.is_video) {
+                    const mimeType = this.importManager.recipeData.extension === '.webm' ? 'video/webm' : 'video/mp4';
+                    imagePreview.innerHTML = `<video src="data:${mimeType};base64,${this.importManager.recipeData.image_base64}" controls autoplay loop muted class="recipe-preview-video"></video>`;
+                } else {
+                    imagePreview.innerHTML = `<img src="data:image/jpeg;base64,${this.importManager.recipeData.image_base64}" alt="${translate('recipes.controls.import.recipePreviewAlt', {}, 'Recipe preview')}">`;
+                }
             } else if (this.importManager.importMode === 'url') {
                 // Fallback for URL mode if no base64 data
                 const urlInput = document.getElementById('imageUrlInput');
                 if (urlInput && urlInput.value) {
-                    imagePreview.innerHTML = `<img src="${urlInput.value}" alt="${translate('recipes.controls.import.recipePreviewAlt', {}, 'Recipe preview')}" crossorigin="anonymous">`;
+                    const url = urlInput.value.toLowerCase();
+                    if (url.endsWith('.mp4') || url.endsWith('.webm')) {
+                        const mimeType = url.endsWith('.webm') ? 'video/webm' : 'video/mp4';
+                        imagePreview.innerHTML = `<video src="${urlInput.value}" controls autoplay loop muted class="recipe-preview-video"></video>`;
+                    } else {
+                        imagePreview.innerHTML = `<img src="${urlInput.value}" alt="${translate('recipes.controls.import.recipePreviewAlt', {}, 'Recipe preview')}" crossorigin="anonymous">`;
+                    }
                 }
             }
         }
@@ -85,7 +96,7 @@ export class RecipeDataManager {
         if (loraCountInfo) {
             loraCountInfo.textContent = translate('recipes.controls.import.loraCountInfo', { existing: existingLoras, total: totalLoras }, `(${existingLoras}/${totalLoras} in library)`);
         }
-        
+
         // Display LoRAs list
         const lorasList = document.getElementById('lorasList');
         if (lorasList) {
@@ -94,7 +105,7 @@ export class RecipeDataManager {
                 const isDeleted = lora.isDeleted;
                 const isEarlyAccess = lora.isEarlyAccess;
                 const localPath = lora.localPath || '';
-                
+
                 // Create status badge based on LoRA status
                 let statusBadge;
                 if (isDeleted) {
@@ -102,7 +113,7 @@ export class RecipeDataManager {
                         <i class="fas fa-exclamation-circle"></i> ${translate('recipes.controls.import.deletedFromCivitai', {}, 'Deleted from Civitai')}
                     </div>`;
                 } else {
-                    statusBadge = existsLocally ? 
+                    statusBadge = existsLocally ?
                         `<div class="local-badge">
                             <i class="fas fa-check"></i> ${translate('recipes.controls.import.inLibrary', {}, 'In Library')}
                             <div class="local-path">${localPath}</div>
@@ -126,7 +137,7 @@ export class RecipeDataManager {
                             console.warn('Failed to format early access date', e);
                         }
                     }
-                    
+
                     earlyAccessBadge = `<div class="early-access-badge">
                         <i class="fas fa-clock"></i> ${translate('recipes.controls.import.earlyAccess', {}, 'Early Access')}
                         <div class="early-access-info">${earlyAccessInfo} ${translate('recipes.controls.import.verifyEarlyAccess', {}, 'Verify that you have purchased early access before downloading.')}</div>
@@ -134,7 +145,7 @@ export class RecipeDataManager {
                 }
 
                 // Format size if available
-                const sizeDisplay = lora.size ? 
+                const sizeDisplay = lora.size ?
                     `<div class="size-badge">${this.importManager.formatFileSize(lora.size)}</div>` : '';
 
                 return `
@@ -161,9 +172,9 @@ export class RecipeDataManager {
                 `;
             }).join('');
         }
-        
+
         // Check for early access loras and show warning if any exist
-        const earlyAccessLoras = this.importManager.recipeData.loras.filter(lora => 
+        const earlyAccessLoras = this.importManager.recipeData.loras.filter(lora =>
             lora.isEarlyAccess && !lora.existsLocally && !lora.isDeleted);
         if (earlyAccessLoras.length > 0) {
             // Show a warning about early access loras
@@ -179,7 +190,7 @@ export class RecipeDataManager {
                     </div>
                 </div>
             `;
-            
+
             // Show the warning message
             const buttonsContainer = document.querySelector('#detailsStep .modal-actions');
             if (buttonsContainer) {
@@ -188,7 +199,7 @@ export class RecipeDataManager {
                 if (existingWarning) {
                     existingWarning.remove();
                 }
-                
+
                 // Add new warning
                 const warningContainer = document.createElement('div');
                 warningContainer.id = 'earlyAccessWarning';
@@ -196,27 +207,27 @@ export class RecipeDataManager {
                 buttonsContainer.parentNode.insertBefore(warningContainer, buttonsContainer);
             }
         }
-        
+
         // Check for duplicate recipes and display warning if found
         this.checkAndDisplayDuplicates();
-        
+
         // Update Next button state based on missing LoRAs and duplicates
         this.updateNextButtonState();
     }
-    
+
     checkAndDisplayDuplicates() {
         // Check if we have duplicate recipes
-        if (this.importManager.recipeData && 
-            this.importManager.recipeData.matching_recipes && 
+        if (this.importManager.recipeData &&
+            this.importManager.recipeData.matching_recipes &&
             this.importManager.recipeData.matching_recipes.length > 0) {
-            
+
             // Store duplicates in the importManager for later use
             this.importManager.duplicateRecipes = this.importManager.recipeData.matching_recipes;
-            
+
             // Create duplicate warning container
-            const duplicateContainer = document.getElementById('duplicateRecipesContainer') || 
+            const duplicateContainer = document.getElementById('duplicateRecipesContainer') ||
                 this.createDuplicateContainer();
-                
+
             // Format date helper function
             const formatDate = (timestamp) => {
                 try {
@@ -226,7 +237,7 @@ export class RecipeDataManager {
                     return 'Unknown date';
                 }
             };
-            
+
             // Generate the HTML for duplicate recipes warning
             duplicateContainer.innerHTML = `
                 <div class="duplicate-warning">
@@ -262,10 +273,10 @@ export class RecipeDataManager {
                     `).join('')}
                 </div>
             `;
-            
+
             // Show the duplicate container
             duplicateContainer.style.display = 'block';
-            
+
             // Add click event for the toggle button
             const toggleButton = document.getElementById('toggleDuplicatesList');
             if (toggleButton) {
@@ -290,49 +301,49 @@ export class RecipeDataManager {
             if (duplicateContainer) {
                 duplicateContainer.style.display = 'none';
             }
-            
+
             // Reset duplicate tracking
             this.importManager.duplicateRecipes = [];
         }
     }
-    
+
     createDuplicateContainer() {
         // Find where to insert the duplicate container
         const lorasListContainer = document.querySelector('.input-group:has(#lorasList)');
-        
+
         if (!lorasListContainer) return null;
-        
+
         // Create container
         const duplicateContainer = document.createElement('div');
         duplicateContainer.id = 'duplicateRecipesContainer';
         duplicateContainer.className = 'duplicate-recipes-container';
-        
+
         // Insert before the LoRA list
         lorasListContainer.parentNode.insertBefore(duplicateContainer, lorasListContainer);
-        
+
         return duplicateContainer;
     }
-    
+
     updateNextButtonState() {
         const nextButton = document.querySelector('#detailsStep .primary-btn');
         const actionsContainer = document.querySelector('#detailsStep .modal-actions');
         if (!nextButton || !actionsContainer) return;
-        
+
         // Always clean up previous warnings and buttons first
         const existingWarning = document.getElementById('deletedLorasWarning');
         if (existingWarning) {
             existingWarning.remove();
         }
-        
+
         // Remove any existing "import anyway" button
         const importAnywayBtn = document.getElementById('importAnywayBtn');
         if (importAnywayBtn) {
             importAnywayBtn.remove();
         }
-        
+
         // Count deleted LoRAs
         const deletedLoras = this.importManager.recipeData.loras.filter(lora => lora.isDeleted).length;
-        
+
         // If we have deleted LoRAs, show a warning
         if (deletedLoras > 0) {
             // Create a new warning container above the buttons
@@ -340,7 +351,7 @@ export class RecipeDataManager {
             const warningContainer = document.createElement('div');
             warningContainer.id = 'deletedLorasWarning';
             warningContainer.className = 'deleted-loras-warning';
-            
+
             // Create warning message
             warningContainer.innerHTML = `
                 <div class="warning-icon"><i class="fas fa-exclamation-triangle"></i></div>
@@ -349,19 +360,19 @@ export class RecipeDataManager {
                     <div class="warning-text">These LoRAs cannot be downloaded. If you continue, they will remain in the recipe but won't be included when used.</div>
                 </div>
             `;
-            
+
             // Insert before the buttons container
             buttonsContainer.parentNode.insertBefore(warningContainer, buttonsContainer);
         }
-        
+
         // Check for duplicates but don't change button actions
         const missingNotDeleted = this.importManager.recipeData.loras.filter(
             lora => !lora.existsLocally && !lora.isDeleted
         ).length;
-        
+
         // Standard button behavior regardless of duplicates
         nextButton.classList.remove('warning-btn');
-        
+
         if (missingNotDeleted > 0) {
             nextButton.textContent = translate('recipes.controls.import.downloadMissingLoras', {}, 'Download Missing LoRAs');
         } else {
@@ -372,30 +383,30 @@ export class RecipeDataManager {
     addTag() {
         const tagInput = document.getElementById('tagInput');
         const tag = tagInput.value.trim();
-        
+
         if (!tag) return;
-        
+
         if (!this.importManager.recipeTags.includes(tag)) {
             this.importManager.recipeTags.push(tag);
             this.updateTagsDisplay();
         }
-        
+
         tagInput.value = '';
     }
-    
+
     removeTag(tag) {
         this.importManager.recipeTags = this.importManager.recipeTags.filter(t => t !== tag);
         this.updateTagsDisplay();
     }
-    
+
     updateTagsDisplay() {
         const tagsContainer = document.getElementById('tagsContainer');
-        
+
         if (this.importManager.recipeTags.length === 0) {
             tagsContainer.innerHTML = `<div class="empty-tags">${translate('recipes.controls.import.noTagsAdded', {}, 'No tags added')}</div>`;
             return;
         }
-        
+
         tagsContainer.innerHTML = this.importManager.recipeTags.map(tag => `
             <div class="recipe-tag">
                 ${tag}
@@ -410,7 +421,7 @@ export class RecipeDataManager {
             showToast('toast.recipes.enterRecipeName', {}, 'error');
             return;
         }
-        
+
         // Automatically mark all deleted LoRAs as excluded
         if (this.importManager.recipeData && this.importManager.recipeData.loras) {
             this.importManager.recipeData.loras.forEach(lora => {
@@ -419,11 +430,11 @@ export class RecipeDataManager {
                 }
             });
         }
-        
+
         // Update missing LoRAs list to exclude deleted LoRAs
-        this.importManager.missingLoras = this.importManager.recipeData.loras.filter(lora => 
+        this.importManager.missingLoras = this.importManager.recipeData.loras.filter(lora =>
             !lora.existsLocally && !lora.isDeleted);
-        
+
         // If we have downloadable missing LoRAs, go to location step
         if (this.importManager.missingLoras.length > 0) {
             // Store only downloadable LoRAs for the download step
