@@ -445,3 +445,64 @@ async def test_load_recipe_persists_deleted_flag_on_invalid_version(monkeypatch,
 
     persisted = json.loads(recipe_path.read_text())
     assert persisted["loras"][0]["isDeleted"] is True
+
+
+@pytest.mark.asyncio
+async def test_update_lora_filename_by_hash_updates_affected_recipes(tmp_path: Path, recipe_scanner):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    # Recipe 1: Contains the LoRA with hash "hash1"
+    recipe1_id = "recipe1"
+    recipe1_path = recipes_dir / f"{recipe1_id}.recipe.json"
+    recipe1_data = {
+        "id": recipe1_id,
+        "file_path": str(tmp_path / "img1.png"),
+        "title": "Recipe 1",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "loras": [
+            {"file_name": "old_name", "hash": "hash1"},
+            {"file_name": "other_lora", "hash": "hash2"}
+        ],
+    }
+    recipe1_path.write_text(json.dumps(recipe1_data))
+    await scanner.add_recipe(dict(recipe1_data))
+
+    # Recipe 2: Does NOT contain the LoRA
+    recipe2_id = "recipe2"
+    recipe2_path = recipes_dir / f"{recipe2_id}.recipe.json"
+    recipe2_data = {
+        "id": recipe2_id,
+        "file_path": str(tmp_path / "img2.png"),
+        "title": "Recipe 2",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "loras": [
+            {"file_name": "other_lora", "hash": "hash2"}
+        ],
+    }
+    recipe2_path.write_text(json.dumps(recipe2_data))
+    await scanner.add_recipe(dict(recipe2_data))
+
+    # Update LoRA name for "hash1" (using different case to test normalization)
+    new_name = "new_name"
+    file_count, cache_count = await scanner.update_lora_filename_by_hash("HASH1", new_name)
+
+    assert file_count == 1
+    assert cache_count == 1
+
+    # Check file on disk
+    persisted1 = json.loads(recipe1_path.read_text())
+    assert persisted1["loras"][0]["file_name"] == new_name
+    assert persisted1["loras"][1]["file_name"] == "other_lora"
+
+    # Verify Recipe 2 unchanged
+    persisted2 = json.loads(recipe2_path.read_text())
+    assert persisted2["loras"][0]["file_name"] == "other_lora"
+
+    # Check cache
+    cache = await scanner.get_cached_data()
+    cached1 = next(r for r in cache.raw_data if r["id"] == recipe1_id)
+    assert cached1["loras"][0]["file_name"] == new_name
