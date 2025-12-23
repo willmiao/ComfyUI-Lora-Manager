@@ -15,6 +15,29 @@ export class GlobalContextMenu extends BaseContextMenu {
 
     showMenu(x, y, origin = null) {
         const contextOrigin = origin || { type: 'global' };
+
+        // Conditional visibility for recipes page
+        const isRecipesPage = state.currentPageType === 'recipes';
+        const modelUpdateItem = this.menu.querySelector('[data-action="check-model-updates"]');
+        const licenseRefreshItem = this.menu.querySelector('[data-action="fetch-missing-licenses"]');
+        const downloadExamplesItem = this.menu.querySelector('[data-action="download-example-images"]');
+        const cleanupExamplesItem = this.menu.querySelector('[data-action="cleanup-example-images-folders"]');
+        const repairRecipesItem = this.menu.querySelector('[data-action="repair-recipes"]');
+
+        if (isRecipesPage) {
+            modelUpdateItem?.classList.add('hidden');
+            licenseRefreshItem?.classList.add('hidden');
+            downloadExamplesItem?.classList.add('hidden');
+            cleanupExamplesItem?.classList.add('hidden');
+            repairRecipesItem?.classList.remove('hidden');
+        } else {
+            modelUpdateItem?.classList.remove('hidden');
+            licenseRefreshItem?.classList.remove('hidden');
+            downloadExamplesItem?.classList.remove('hidden');
+            cleanupExamplesItem?.classList.remove('hidden');
+            repairRecipesItem?.classList.add('hidden');
+        }
+
         super.showMenu(x, y, contextOrigin);
     }
 
@@ -38,6 +61,11 @@ export class GlobalContextMenu extends BaseContextMenu {
             case 'fetch-missing-licenses':
                 this.fetchMissingLicenses(menuItem).catch((error) => {
                     console.error('Failed to refresh missing license metadata:', error);
+                });
+                break;
+            case 'repair-recipes':
+                this.repairRecipes(menuItem).catch((error) => {
+                    console.error('Failed to repair recipes:', error);
                 });
                 break;
             default:
@@ -234,5 +262,79 @@ export class GlobalContextMenu extends BaseContextMenu {
         }
 
         return `${displayName}s`;
+    }
+
+    async repairRecipes(menuItem) {
+        if (this._repairInProgress) {
+            return;
+        }
+
+        this._repairInProgress = true;
+        menuItem?.classList.add('disabled');
+
+        const loadingMessage = translate(
+            'globalContextMenu.repairRecipes.loading',
+            {},
+            'Repairing recipe data...'
+        );
+
+        const progressUI = state.loadingManager?.showEnhancedProgress(loadingMessage);
+
+        try {
+            const response = await fetch('/api/lm/recipes/repair', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Failed to start repair');
+            }
+
+            // Poll for progress (or wait for WebSocket if preferred, but polling is simpler for this implementation)
+            let isComplete = false;
+            while (!isComplete && this._repairInProgress) {
+                const progressResponse = await fetch('/api/lm/recipes/repair-progress');
+                if (progressResponse.ok) {
+                    const progressResult = await progressResponse.json();
+                    if (progressResult.success && progressResult.progress) {
+                        const p = progressResult.progress;
+                        if (p.status === 'processing') {
+                            const percent = (p.current / p.total) * 100;
+                            progressUI?.updateProgress(percent, p.recipe_name, `${loadingMessage} (${p.current}/${p.total})`);
+                        } else if (p.status === 'completed') {
+                            isComplete = true;
+                            progressUI?.complete(translate(
+                                'globalContextMenu.repairRecipes.success',
+                                { count: p.repaired },
+                                `Repaired ${p.repaired} recipes.`
+                            ));
+                            showToast('globalContextMenu.repairRecipes.success', { count: p.repaired }, 'success');
+                            // Refresh recipes page if active
+                            if (window.recipesPage) {
+                                window.recipesPage.refresh();
+                            }
+                        } else if (p.status === 'error') {
+                            throw new Error(p.error || 'Repair failed');
+                        }
+                    } else if (progressResponse.status === 404) {
+                        // Progress might have finished quickly and been cleaned up
+                        isComplete = true;
+                        progressUI?.complete();
+                    }
+                }
+
+                if (!isComplete) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+        } catch (error) {
+            console.error('Recipe repair failed:', error);
+            progressUI?.complete(translate('globalContextMenu.repairRecipes.error', { message: error.message }, 'Repair failed: {message}'));
+            showToast('globalContextMenu.repairRecipes.error', { message: error.message }, 'error');
+        } finally {
+            this._repairInProgress = false;
+            menuItem?.classList.remove('disabled');
+        }
     }
 }

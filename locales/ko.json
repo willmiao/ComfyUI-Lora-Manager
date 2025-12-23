@@ -159,6 +159,12 @@
             "success": "Updated license metadata for {count} {typePlural}",
             "none": "All {typePlural} already have license metadata",
             "error": "Failed to refresh license metadata for {typePlural}: {message}"
+        },
+        "repairRecipes": {
+            "label": "레시피 데이터 복구",
+            "loading": "레시피 데이터 복구 중...",
+            "success": "{count}개의 레시피가 성공적으로 복구되었습니다.",
+            "error": "레시피 복구 실패: {message}"
         }
     },
     "header": {
@@ -520,6 +526,7 @@
             "replacePreview": "미리보기 교체",
             "setContentRating": "콘텐츠 등급 설정",
             "moveToFolder": "폴더로 이동",
+            "repairMetadata": "[TODO: Translate] Repair metadata",
             "excludeModel": "모델 제외",
             "deleteModel": "모델 삭제",
             "shareRecipe": "레시피 공유",
@@ -635,6 +642,13 @@
                 "noMissingLoras": "다운로드할 누락된 LoRA가 없습니다",
                 "getInfoFailed": "누락된 LoRA 정보를 가져오는데 실패했습니다",
                 "prepareError": "LoRA 다운로드 준비 중 오류: {message}"
+            },
+            "repair": {
+                "starting": "[TODO: Translate] Repairing recipe metadata...",
+                "success": "[TODO: Translate] Recipe metadata repaired successfully",
+                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
+                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
+                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
             }
         }
     },

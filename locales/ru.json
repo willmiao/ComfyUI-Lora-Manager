@@ -159,6 +159,12 @@
             "success": "Updated license metadata for {count} {typePlural}",
             "none": "All {typePlural} already have license metadata",
             "error": "Failed to refresh license metadata for {typePlural}: {message}"
+        },
+        "repairRecipes": {
+            "label": "Восстановить данные рецептов",
+            "loading": "Восстановление данных рецептов...",
+            "success": "Успешно восстановлено {count} рецептов.",
+            "error": "Ошибка восстановления рецептов: {message}"
         }
     },
     "header": {
@@ -520,6 +526,7 @@
             "replacePreview": "Заменить превью",
             "setContentRating": "Установить рейтинг контента",
             "moveToFolder": "Переместить в папку",
+            "repairMetadata": "[TODO: Translate] Repair metadata",
             "excludeModel": "Исключить модель",
             "deleteModel": "Удалить модель",
             "shareRecipe": "Поделиться рецептом",
@@ -635,6 +642,13 @@
                 "noMissingLoras": "Нет отсутствующих LoRAs для загрузки",
                 "getInfoFailed": "Не удалось получить информацию для отсутствующих LoRAs",
                 "prepareError": "Ошибка подготовки LoRAs для загрузки: {message}"
+            },
+            "repair": {
+                "starting": "[TODO: Translate] Repairing recipe metadata...",
+                "success": "[TODO: Translate] Recipe metadata repaired successfully",
+                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
+                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
+                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
             }
         }
     },

@@ -102,6 +102,9 @@
     <div class="context-menu-item" data-action="cleanup-example-images-folders">
         <i class="fas fa-trash-restore"></i> <span>{{ t('globalContextMenu.cleanupExampleImages.label') }}</span>
     </div>
+    <div class="context-menu-item" data-action="repair-recipes">
+        <i class="fas fa-tools"></i> <span>{{ t('globalContextMenu.repairRecipes.label') }}</span>
+    </div>
 </div>
 
 <div id="nsfwLevelSelector" class="nsfw-level-selector">
@@ -110,7 +113,8 @@
         <button class="close-nsfw-selector"><i class="fas fa-times"></i></button>
     </div>
     <div class="nsfw-level-content">
-        <div class="current-level"><span>{{ t('modals.contentRating.current') }}:</span> <span id="currentNSFWLevel">{{ t('common.status.unknown') }}</span></div>
+        <div class="current-level"><span>{{ t('modals.contentRating.current') }}:</span> <span id="currentNSFWLevel">{{
+                t('common.status.unknown') }}</span></div>
         <div class="nsfw-level-options">
             <button class="nsfw-level-btn" data-level="1">{{ t('modals.contentRating.levels.pg') }}</button>
             <button class="nsfw-level-btn" data-level="2">{{ t('modals.contentRating.levels.pg13') }}</button>

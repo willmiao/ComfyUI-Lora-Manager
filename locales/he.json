@@ -159,6 +159,12 @@
             "success": "Updated license metadata for {count} {typePlural}",
             "none": "All {typePlural} already have license metadata",
             "error": "Failed to refresh license metadata for {typePlural}: {message}"
+        },
+        "repairRecipes": {
+            "label": "תיקון נתוני מתכונים",
+            "loading": "מתקן נתוני מתכונים...",
+            "success": "תוקנו בהצלחה {count} מתכונים.",
+            "error": "תיקון המתכונים נכשל: {message}"
         }
     },
     "header": {
@@ -520,6 +526,7 @@
             "replacePreview": "החלף תצוגה מקדימה",
             "setContentRating": "הגדר דירוג תוכן",
             "moveToFolder": "העבר לתיקייה",
+            "repairMetadata": "[TODO: Translate] Repair metadata",
             "excludeModel": "החרג מודל",
             "deleteModel": "מחק מודל",
             "shareRecipe": "שתף מתכון",
@@ -635,6 +642,13 @@
                 "noMissingLoras": "אין LoRAs חסרים להורדה",
                 "getInfoFailed": "קבלת מידע עבור LoRAs חסרים נכשלה",
                 "prepareError": "שגיאה בהכנת LoRAs להורדה: {message}"
+            },
+            "repair": {
+                "starting": "[TODO: Translate] Repairing recipe metadata...",
+                "success": "[TODO: Translate] Recipe metadata repaired successfully",
+                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
+                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
+                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
             }
         }
     },

@@ -16,6 +16,8 @@ from .recipes.errors import RecipeNotFoundError
 from ..utils.utils import calculate_recipe_fingerprint, fuzzy_match
 from natsort import natsorted
 import sys
+import re
+from ..recipes.merger import GenParamsMerger
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +55,8 @@ class RecipeScanner:
             cls._instance._checkpoint_scanner = checkpoint_scanner
             cls._instance._civitai_client = None  # Will be lazily initialized
         return cls._instance
+    
+    REPAIR_VERSION = 2
     
     def __init__(
         self,
@@ -108,6 +112,283 @@ class RecipeScanner:
         if self._civitai_client is None:
             self._civitai_client = await ServiceRegistry.get_civitai_client()
         return self._civitai_client
+    
+    async def repair_all_recipes(
+        self, 
+        progress_callback: Optional[Callable[[Dict], Any]] = None
+    ) -> Dict[str, Any]:
+        """Repair all recipes by enrichment with Civitai and embedded metadata.
+        
+        Args:
+            persistence_service: Service for saving updated recipes
+            progress_callback: Optional callback for progress updates
+            
+        Returns:
+            Dict summary of repair results
+        """
+        async with self._mutation_lock:
+            cache = await self.get_cached_data()
+            all_recipes = list(cache.raw_data)
+            total = len(all_recipes)
+            repaired_count = 0
+            skipped_count = 0
+            errors_count = 0
+            
+            civitai_client = await self._get_civitai_client()
+            
+            for i, recipe in enumerate(all_recipes):
+                try:
+                    # Report progress
+                    if progress_callback:
+                        await progress_callback({
+                            "status": "processing",
+                            "current": i + 1,
+                            "total": total,
+                            "recipe_name": recipe.get("name", "Unknown")
+                        })
+                    
+                    if await self._repair_single_recipe(recipe, civitai_client):
+                        repaired_count += 1
+                    else:
+                        skipped_count += 1
+                    
+                except Exception as e:
+                    logger.error(f"Error repairing recipe {recipe.get('file_path')}: {e}")
+                    errors_count += 1
+            
+            # Final progress update
+            if progress_callback:
+                await progress_callback({
+                    "status": "completed",
+                    "repaired": repaired_count,
+                    "skipped": skipped_count,
+                    "errors": errors_count,
+                    "total": total
+                })
+                
+            return {
+                "success": True,
+                "repaired": repaired_count,
+                "skipped": skipped_count,
+                "errors": errors_count,
+                "total": total
+            }
+
+    async def repair_recipe_by_id(self, recipe_id: str) -> Dict[str, Any]:
+        """Repair a single recipe by its ID.
+        
+        Args:
+            recipe_id: ID of the recipe to repair
+            
+        Returns:
+            Dict summary of repair result
+        """
+        async with self._mutation_lock:
+            recipe = await self.get_recipe_by_id(recipe_id)
+            if not recipe:
+                raise RecipeNotFoundError(f"Recipe {recipe_id} not found")
+            
+            civitai_client = await self._get_civitai_client()
+            success = await self._repair_single_recipe(recipe, civitai_client)
+            
+            return {
+                "success": True,
+                "repaired": 1 if success else 0,
+                "skipped": 0 if success else 1,
+                "recipe": recipe
+            }
+
+    async def _repair_single_recipe(self, recipe: Dict[str, Any], civitai_client: Any) -> bool:
+        """Internal helper to repair a single recipe object.
+        
+        Args:
+            recipe: The recipe dictionary to repair (modified in-place)
+            civitai_client: Authenticated Civitai client
+            
+        Returns:
+            bool: True if recipe was repaired or updated, False if skipped
+        """
+        # 1. Skip if already at latest repair version
+        if recipe.get("repair_version", 0) >= self.REPAIR_VERSION:
+            return False
+            
+        # 2. Identification: Is repair needed?
+        has_checkpoint = "checkpoint" in recipe and recipe["checkpoint"] and recipe["checkpoint"].get("name")
+        gen_params = recipe.get("gen_params", {})
+        has_prompt = bool(gen_params.get("prompt"))
+        
+        needs_repair = not has_checkpoint or not has_prompt
+        
+        if not needs_repair:
+            # Even if no repair needed, we mark it with version if it was processed
+            if "repair_version" not in recipe:
+                recipe["repair_version"] = self.REPAIR_VERSION
+                await self._save_recipe_persistently(recipe)
+                return True
+            return False
+        
+        # 3. Data Fetching & Merging
+        source_url = recipe.get("source_url", "")
+        civitai_meta = None
+        model_version_id = None
+        
+        # Check if it's a Civitai image URL
+        image_id_match = re.search(r'civitai\.com/images/(\d+)', source_url)
+        if image_id_match:
+            image_id = image_id_match.group(1)
+            image_info = await civitai_client.get_image_info(image_id)
+            if image_info:
+                if "meta" in image_info:
+                    civitai_meta = image_info["meta"]
+                model_version_id = image_info.get("modelVersionId")
+        
+        # Merge with existing data
+        new_gen_params = GenParamsMerger.merge(
+            civitai_meta=civitai_meta,
+            embedded_metadata=gen_params
+        )
+        
+        updated = False
+        if new_gen_params != gen_params:
+            recipe["gen_params"] = new_gen_params
+            updated = True
+            
+        # 4. Update checkpoint if missing or repairable
+        if not has_checkpoint:
+            metadata_provider = await get_default_metadata_provider()
+            
+            target_version_id = model_version_id or new_gen_params.get("modelVersionId")
+            target_hash = new_gen_params.get("Model hash")
+            
+            civitai_info = None
+            if target_version_id:
+                civitai_info = await metadata_provider.get_model_version_info(str(target_version_id))
+            elif target_hash:
+                civitai_info = await metadata_provider.get_model_by_hash(target_hash)
+                
+            if civitai_info and not (isinstance(civitai_info, tuple) and civitai_info[1] == "Model not found"):
+                recipe["checkpoint"] = await self._populate_checkpoint(civitai_info)
+                updated = True
+            else:
+                # Fallback to name extraction
+                cp_name = new_gen_params.get("Checkpoint") or new_gen_params.get("checkpoint")
+                if cp_name:
+                    recipe["checkpoint"] = {
+                        "name": cp_name,
+                        "file_name": os.path.splitext(cp_name)[0]
+                    }
+                    updated = True
+            
+        # 5. Mark version and save
+        recipe["repair_version"] = self.REPAIR_VERSION
+        await self._save_recipe_persistently(recipe)
+        return True
+
+    async def _save_recipe_persistently(self, recipe: Dict[str, Any]) -> bool:
+        """Helper to save a recipe to both JSON and EXIF metadata."""
+        recipe_id = recipe.get("id")
+        if not recipe_id:
+            return False
+
+        recipe_json_path = await self.get_recipe_json_path(recipe_id)
+        if not recipe_json_path:
+            return False
+
+        try:
+            # 1. Sanitize for storage (remove runtime convenience fields)
+            clean_recipe = self._sanitize_recipe_for_storage(recipe)
+
+            # 2. Update the original dictionary so that we persist the clean version
+            # globally if needed, effectively overwriting it in-place.
+            recipe.clear()
+            recipe.update(clean_recipe)
+
+            # 3. Save JSON
+            with open(recipe_json_path, 'w', encoding='utf-8') as f:
+                json.dump(recipe, f, indent=4, ensure_ascii=False)
+
+            # 4. Update EXIF if image exists
+            image_path = recipe.get('file_path')
+            if image_path and os.path.exists(image_path):
+                from ..utils.exif_utils import ExifUtils
+                ExifUtils.append_recipe_metadata(image_path, recipe)
+            
+            return True
+        except Exception as e:
+            logger.error(f"Error persisting recipe {recipe_id}: {e}")
+            return False
+
+    async def _populate_checkpoint(self, civitai_info_tuple: Any) -> Dict[str, Any]:
+        """Helper to populate checkpoint info using common logic."""
+        civitai_data, error_msg = civitai_info_tuple if isinstance(civitai_info_tuple, tuple) else (civitai_info_tuple, None)
+        
+        checkpoint = {
+            "name": "",
+            "file_name": "",
+            "isDeleted": False,
+            "hash": ""
+        }
+        
+        if not civitai_data or error_msg == "Model not found":
+            checkpoint["isDeleted"] = True
+            return checkpoint
+            
+        try:
+            if "model" in civitai_data and "name" in civitai_data["model"]:
+                checkpoint["name"] = civitai_data["model"]["name"]
+                
+            if "name" in civitai_data:
+                checkpoint["version"] = civitai_data.get("name", "")
+                
+            if "images" in civitai_data and civitai_data["images"]:
+                from ..utils.civitai_utils import rewrite_preview_url
+                image_url = civitai_data["images"][0].get("url")
+                if image_url:
+                    rewritten_url, _ = rewrite_preview_url(image_url, media_type="image")
+                    checkpoint["thumbnailUrl"] = rewritten_url or image_url
+                    
+            checkpoint["baseModel"] = civitai_data.get("baseModel", "")
+            checkpoint["modelId"] = civitai_data.get("modelId", 0)
+            checkpoint["id"] = civitai_data.get("id", 0)
+            
+            if "files" in civitai_data:
+                model_file = next((f for f in civitai_data.get("files", []) if f.get("type") == "Model"), None)
+                if model_file:
+                    sha256 = model_file.get("hashes", {}).get("SHA256")
+                    if sha256:
+                        checkpoint["hash"] = sha256.lower()
+                    f_name = model_file.get("name", "")
+                    if f_name:
+                        checkpoint["file_name"] = os.path.splitext(f_name)[0]
+        except Exception as e:
+            logger.error(f"Error populating checkpoint: {e}")
+                    
+        return checkpoint
+
+    def _sanitize_recipe_for_storage(self, recipe: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a clean copy of the recipe without runtime convenience fields."""
+        import copy
+        clean = copy.deepcopy(recipe)
+        
+        # 1. Clean LORAs
+        if "loras" in clean and isinstance(clean["loras"], list):
+            for lora in clean["loras"]:
+                # Fields to remove (runtime only)
+                for key in ("inLibrary", "preview_url", "localPath"):
+                    lora.pop(key, None)
+                
+                # Normalize weight/strength if mapping is desired (standard in persistence_service)
+                if "weight" in lora and "strength" not in lora:
+                    lora["strength"] = float(lora.pop("weight"))
+                    
+        # 2. Clean Checkpoint
+        if "checkpoint" in clean and isinstance(clean["checkpoint"], dict):
+            cp = clean["checkpoint"]
+            # Fields to remove (runtime only)
+            for key in ("inLibrary", "localPath", "preview_url", "thumbnailUrl", "size", "downloadUrl"):
+                cp.pop(key, None)
+                
+        return clean
     
     async def initialize_in_background(self) -> None:
         """Initialize cache in background using thread pool"""

@@ -159,6 +159,12 @@
             "success": "Updated license metadata for {count} {typePlural}",
             "none": "All {typePlural} already have license metadata",
             "error": "Failed to refresh license metadata for {typePlural}: {message}"
+        },
+        "repairRecipes": {
+            "label": "修复配方数据",
+            "loading": "正在修复配方数据...",
+            "success": "成功修复了 {count} 个配方。",
+            "error": "配方修复失败：{message}"
         }
     },
     "header": {
@@ -520,6 +526,7 @@
             "replacePreview": "替换预览",
             "setContentRating": "设置内容评级",
             "moveToFolder": "移动到文件夹",
+            "repairMetadata": "[TODO: Translate] Repair metadata",
             "excludeModel": "排除模型",
             "deleteModel": "删除模型",
             "shareRecipe": "分享配方",
@@ -635,6 +642,13 @@
                 "noMissingLoras": "没有缺失的 LoRA 可下载",
                 "getInfoFailed": "获取缺失 LoRA 信息失败",
                 "prepareError": "准备下载 LoRA 时出错：{message}"
+            },
+            "repair": {
+                "starting": "[TODO: Translate] Repairing recipe metadata...",
+                "success": "[TODO: Translate] Recipe metadata repaired successfully",
+                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
+                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
+                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
             }
         }
     },

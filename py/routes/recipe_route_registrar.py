@@ -33,7 +33,7 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("GET", "/api/lm/recipes/unified-folder-tree", "get_unified_folder_tree"),
     RouteDefinition("GET", "/api/lm/recipe/{recipe_id}/share", "share_recipe"),
     RouteDefinition("GET", "/api/lm/recipe/{recipe_id}/share/download", "download_shared_recipe"),
-    RouteDefinition("GET", "/api/lm/recipe/{recipe_id}/syntax", "get_recipe_syntax"),
+    RouteDefinition("GET", "/api/lm/recipes/syntax", "get_recipe_syntax"),
     RouteDefinition("PUT", "/api/lm/recipe/{recipe_id}/update", "update_recipe"),
     RouteDefinition("POST", "/api/lm/recipe/move", "move_recipe"),
     RouteDefinition("POST", "/api/lm/recipes/move-bulk", "move_recipes_bulk"),
@@ -43,6 +43,9 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/recipes/save-from-widget", "save_recipe_from_widget"),
     RouteDefinition("GET", "/api/lm/recipes/for-lora", "get_recipes_for_lora"),
     RouteDefinition("GET", "/api/lm/recipes/scan", "scan_recipes"),
+    RouteDefinition("POST", "/api/lm/recipes/repair", "repair_recipes"),
+    RouteDefinition("POST", "/api/lm/recipe/{recipe_id}/repair", "repair_recipe"),
+    RouteDefinition("GET", "/api/lm/recipes/repair-progress", "get_repair_progress"),
 )
 
 

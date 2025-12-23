@@ -154,11 +154,17 @@
             "error": "清理範例圖片資料夾失敗：{message}"
         },
         "fetchMissingLicenses": {
-            "label": "Refresh license metadata",
-            "loading": "Refreshing license metadata for {typePlural}...",
-            "success": "Updated license metadata for {count} {typePlural}",
-            "none": "All {typePlural} already have license metadata",
-            "error": "Failed to refresh license metadata for {typePlural}: {message}"
+            "label": "重新整理授權中繼資料",
+            "loading": "正在重新整理 {typePlural} 的授權中繼資料...",
+            "success": "已更新 {count} 個 {typePlural} 的授權中繼資料",
+            "none": "所有 {typePlural} 已具備授權中繼資料",
+            "error": "重新整理 {typePlural} 授權中繼資料失敗：{message}"
+        },
+        "repairRecipes": {
+            "label": "修復配方資料",
+            "loading": "正在修復配方資料...",
+            "success": "成功修復 {count} 個配方。",
+            "error": "配方修復失敗：{message}"
         }
     },
     "header": {
@@ -520,6 +526,7 @@
             "replacePreview": "更換預覽圖",
             "setContentRating": "設定內容分級",
             "moveToFolder": "移動到資料夾",
+            "repairMetadata": "[TODO: Translate] Repair metadata",
             "excludeModel": "排除模型",
             "deleteModel": "刪除模型",
             "shareRecipe": "分享配方",
@@ -635,6 +642,13 @@
                 "noMissingLoras": "無缺少的 LoRA 可下載",
                 "getInfoFailed": "取得缺少 LoRA 資訊失敗",
                 "prepareError": "準備下載 LoRA 時發生錯誤：{message}"
+            },
+            "repair": {
+                "starting": "[TODO: Translate] Repairing recipe metadata...",
+                "success": "[TODO: Translate] Recipe metadata repaired successfully",
+                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
+                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
+                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
             }
         }
     },

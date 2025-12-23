@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import re
+import asyncio
 import tempfile
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional
@@ -26,6 +27,7 @@ from ...services.metadata_service import get_default_metadata_provider
 from ...utils.civitai_utils import rewrite_preview_url
 from ...utils.exif_utils import ExifUtils
 from ...recipes.merger import GenParamsMerger
+from ...services.websocket_manager import ws_manager as default_ws_manager
 
 Logger = logging.Logger
 EnsureDependenciesCallable = Callable[[], Awaitable[None]]
@@ -74,6 +76,9 @@ class RecipeHandlerSet:
             "get_recipes_for_lora": self.query.get_recipes_for_lora,
             "scan_recipes": self.query.scan_recipes,
             "move_recipe": self.management.move_recipe,
+            "repair_recipes": self.management.repair_recipes,
+            "repair_recipe": self.management.repair_recipe,
+            "get_repair_progress": self.management.get_repair_progress,
         }
 
 
@@ -479,6 +484,7 @@ class RecipeManagementHandler:
         analysis_service: RecipeAnalysisService,
         downloader_factory,
         civitai_client_getter: CivitaiClientGetter,
+        ws_manager=default_ws_manager,
     ) -> None:
         self._ensure_dependencies_ready = ensure_dependencies_ready
         self._recipe_scanner_getter = recipe_scanner_getter
@@ -487,6 +493,7 @@ class RecipeManagementHandler:
         self._analysis_service = analysis_service
         self._downloader_factory = downloader_factory
         self._civitai_client_getter = civitai_client_getter
+        self._ws_manager = ws_manager
 
     async def save_recipe(self, request: web.Request) -> web.Response:
         try:
@@ -513,6 +520,70 @@ class RecipeManagementHandler:
         except Exception as exc:
             self._logger.error("Error saving recipe: %s", exc, exc_info=True)
             return web.json_response({"error": str(exc)}, status=500)
+
+    async def repair_recipes(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                return web.json_response({"success": False, "error": "Recipe scanner unavailable"}, status=503)
+
+            # Check if already running
+            if self._ws_manager.get_recipe_repair_progress():
+                return web.json_response({"success": False, "error": "Recipe repair already in progress"}, status=409)
+
+            async def progress_callback(data):
+                await self._ws_manager.broadcast_recipe_repair_progress(data)
+
+            # Run in background to avoid timeout
+            async def run_repair():
+                try:
+                    await recipe_scanner.repair_all_recipes(
+                        progress_callback=progress_callback
+                    )
+                except Exception as e:
+                    self._logger.error(f"Error in recipe repair task: {e}", exc_info=True)
+                    await self._ws_manager.broadcast_recipe_repair_progress({
+                        "status": "error",
+                        "error": str(e)
+                    })
+                finally:
+                    # Keep the final status for a while so the UI can see it
+                    await asyncio.sleep(5)
+                    self._ws_manager.cleanup_recipe_repair_progress()
+
+            asyncio.create_task(run_repair())
+
+            return web.json_response({"success": True, "message": "Recipe repair started"})
+        except Exception as exc:
+            self._logger.error("Error starting recipe repair: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def repair_recipe(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                return web.json_response({"success": False, "error": "Recipe scanner unavailable"}, status=503)
+
+            recipe_id = request.match_info["recipe_id"]
+            result = await recipe_scanner.repair_recipe_by_id(recipe_id)
+            return web.json_response(result)
+        except RecipeNotFoundError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=404)
+        except Exception as exc:
+            self._logger.error("Error repairing single recipe: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_repair_progress(self, request: web.Request) -> web.Response:
+        try:
+            progress = self._ws_manager.get_recipe_repair_progress()
+            if progress:
+                return web.json_response({"success": True, "progress": progress})
+            return web.json_response({"success": False, "message": "No repair in progress"}, status=404)
+        except Exception as exc:
+            self._logger.error("Error getting repair progress: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def import_remote_recipe(self, request: web.Request) -> web.Response:
         try:
