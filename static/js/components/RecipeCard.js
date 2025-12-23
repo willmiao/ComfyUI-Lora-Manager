@@ -1,9 +1,11 @@
 // Recipe Card Component
 import { showToast, copyToClipboard, sendLoraToWorkflow } from '../utils/uiHelpers.js';
+import { updateRecipeMetadata } from '../api/recipeApi.js';
 import { configureModelCardVideo } from './shared/ModelCard.js';
 import { modalManager } from '../managers/ModalManager.js';
 import { getCurrentPageState } from '../state/index.js';
 import { state } from '../state/index.js';
+import { bulkManager } from '../managers/BulkManager.js';
 import { NSFW_LEVELS, getBaseModelAbbreviation } from '../utils/constants.js';
 
 class RecipeCard {
@@ -43,8 +45,11 @@ class RecipeCard {
             (this.recipe.file_path ? `/loras_static/root1/preview/${this.recipe.file_path.split('/').pop()}` :
                 '/loras_static/images/no-preview.png');
 
+        const isDuplicatesMode = getCurrentPageState().duplicatesMode;
+        const autoplayOnHover = state?.global?.settings?.autoplay_on_hover === true;
+        const isFavorite = this.recipe.favorite === true;
+
         // Video preview logic
-        const autoplayOnHover = state.settings.autoplay_on_hover || false;
         const isVideo = previewUrl.endsWith('.mp4') || previewUrl.endsWith('.webm');
         const videoAttrs = [
             'controls',
@@ -58,10 +63,6 @@ class RecipeCard {
         if (!autoplayOnHover) {
             videoAttrs.push('data-autoplay="true"');
         }
-
-        // Check if in duplicates mode
-        const pageState = getCurrentPageState();
-        const isDuplicatesMode = pageState.duplicatesMode;
 
         // NSFW blur logic - similar to LoraCard
         const nsfwLevel = this.recipe.preview_nsfw_level !== undefined ? this.recipe.preview_nsfw_level : 0;
@@ -95,6 +96,7 @@ class RecipeCard {
                       </button>` : ''}
                     <span class="base-model-label ${shouldBlur ? 'with-toggle' : ''}" title="${baseModelLabel}">${baseModelDisplay}</span>
                     <div class="card-actions">
+                        <i class="${isFavorite ? 'fas fa-star favorite-active' : 'far fa-star'}" title="${isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}"></i>
                         <i class="fas fa-share-alt" title="Share Recipe"></i>
                         <i class="fas fa-paper-plane" title="Send Recipe to Workflow (Click: Append, Shift+Click: Replace)"></i>
                         <i class="fas fa-trash" title="Delete Recipe"></i>
@@ -140,6 +142,67 @@ class RecipeCard {
         return `${missingCount} of ${totalCount} LoRAs missing`;
     }
 
+    async toggleFavorite(card) {
+        // Find the latest star icon in case the card was re-rendered
+        const getStarIcon = (c) => c.querySelector('.fa-star');
+        let starIcon = getStarIcon(card);
+
+        const isFavorite = this.recipe.favorite || false;
+        const newFavoriteState = !isFavorite;
+
+        // Update early to provide instant feedback and avoid race conditions with re-renders
+        this.recipe.favorite = newFavoriteState;
+
+        // Function to update icon state
+        const updateIconUI = (icon, state) => {
+            if (!icon) return;
+            if (state) {
+                icon.classList.remove('far');
+                icon.classList.add('fas', 'favorite-active');
+                icon.title = 'Remove from Favorites';
+            } else {
+                icon.classList.remove('fas', 'favorite-active');
+                icon.classList.add('far');
+                icon.title = 'Add to Favorites';
+            }
+        };
+
+        // Update current icon immediately
+        updateIconUI(starIcon, newFavoriteState);
+
+        try {
+            await updateRecipeMetadata(this.recipe.file_path, {
+                favorite: newFavoriteState
+            });
+
+            // Status already updated, just show toast
+            if (newFavoriteState) {
+                showToast('modelCard.favorites.added', {}, 'success');
+            } else {
+                showToast('modelCard.favorites.removed', {}, 'success');
+            }
+
+            // Re-find star icon after API call as VirtualScroller might have replaced the element
+            // During updateRecipeMetadata, VirtualScroller.updateSingleItem might have re-rendered the card
+            // We need to find the NEW element in the DOM to ensure we don't have a stale reference
+            // Though typically VirtualScroller handles the re-render with the NEW this.recipe.favorite
+            // we will check the DOM just to be sure if this instance's internal card is still what's in DOM
+        } catch (error) {
+            console.error('Failed to update favorite status:', error);
+            // Revert local state on error
+            this.recipe.favorite = isFavorite;
+
+            // Re-find star icon in case of re-render during fault
+            const currentCard = card.ownerDocument.evaluate(
+                `.//*[@data-filepath="${this.recipe.file_path}"]`,
+                card.ownerDocument, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null
+            ).singleNodeValue || card;
+
+            updateIconUI(getStarIcon(currentCard), isFavorite);
+            showToast('modelCard.favorites.updateFailed', {}, 'error');
+        }
+    }
+
     attachEventListeners(card, isDuplicatesMode, shouldBlur) {
         // Add blur toggle functionality if content should be blurred
         if (shouldBlur) {
@@ -164,7 +227,17 @@ class RecipeCard {
         // Recipe card click event - only attach if not in duplicates mode
         if (!isDuplicatesMode) {
             card.addEventListener('click', () => {
+                if (state.bulkMode) {
+                    bulkManager.toggleCardSelection(card);
+                    return;
+                }
                 this.clickHandler(this.recipe);
+            });
+
+            // Favorite button click event - prevent propagation to card
+            card.querySelector('.fa-star')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleFavorite(card);
             });
 
             // Share button click event - prevent propagation to card

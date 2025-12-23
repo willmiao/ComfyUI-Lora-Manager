@@ -9,6 +9,8 @@ const removeSessionItemMock = vi.fn();
 const RecipeContextMenuMock = vi.fn();
 const refreshVirtualScrollMock = vi.fn();
 const refreshRecipesMock = vi.fn();
+const fetchUnifiedFolderTreeMock = vi.fn();
+const fetchModelFoldersMock = vi.fn();
 
 let importManagerInstance;
 let recipeModalInstance;
@@ -35,6 +37,15 @@ vi.mock('../../../static/js/components/RecipeModal.js', () => ({
 
 vi.mock('../../../static/js/state/index.js', () => ({
   getCurrentPageState: getCurrentPageStateMock,
+  state: {
+    currentPageType: 'recipes',
+    global: { settings: {} },
+    virtualScroller: {
+      removeItemByFilePath: vi.fn(),
+      updateSingleItem: vi.fn(),
+      refreshWithData: vi.fn(),
+    },
+  },
 }));
 
 vi.mock('../../../static/js/utils/storageHelpers.js', () => ({
@@ -56,6 +67,14 @@ vi.mock('../../../static/js/utils/infiniteScroll.js', () => ({
 
 vi.mock('../../../static/js/api/recipeApi.js', () => ({
   refreshRecipes: refreshRecipesMock,
+  RecipeSidebarApiClient: vi.fn(() => ({
+    apiConfig: { config: { displayName: 'Recipes', supportsMove: true } },
+    fetchUnifiedFolderTree: fetchUnifiedFolderTreeMock.mockResolvedValue({ success: true, tree: {} }),
+    fetchModelFolders: fetchModelFoldersMock.mockResolvedValue({ success: true, folders: [] }),
+    fetchModelRoots: vi.fn().mockResolvedValue({ roots: ['/recipes'] }),
+    moveBulkModels: vi.fn(),
+    moveSingleModel: vi.fn(),
+  })),
 }));
 
 describe('RecipeManager', () => {
@@ -81,7 +100,7 @@ describe('RecipeManager', () => {
     };
 
     pageState = {
-      sortBy: 'date',
+      sortBy: 'date:desc',
       searchOptions: undefined,
       customFilter: undefined,
       duplicatesMode: false,
@@ -91,7 +110,7 @@ describe('RecipeManager', () => {
     initializeAppMock.mockResolvedValue(undefined);
     initializePageFeaturesMock.mockResolvedValue(undefined);
     refreshVirtualScrollMock.mockReset();
-    refreshVirtualScrollMock.mockImplementation(() => {});
+    refreshVirtualScrollMock.mockImplementation(() => { });
     refreshRecipesMock.mockResolvedValue('refreshed');
 
     getSessionItemMock.mockImplementation((key) => {
@@ -102,7 +121,7 @@ describe('RecipeManager', () => {
       };
       return map[key] ?? null;
     });
-    removeSessionItemMock.mockImplementation(() => {});
+    removeSessionItemMock.mockImplementation(() => { });
 
     renderRecipesPage();
 
@@ -118,8 +137,8 @@ describe('RecipeManager', () => {
     const sortSelectElement = document.createElement('select');
     sortSelectElement.id = 'sortSelect';
     sortSelectElement.innerHTML = `
-      <option value="date">Date</option>
-      <option value="name">Name</option>
+      <option value="date:desc">Newest</option>
+      <option value="name:asc">Name A-Z</option>
     `;
     document.body.appendChild(sortSelectElement);
 
@@ -139,6 +158,8 @@ describe('RecipeManager', () => {
       tags: true,
       loraName: true,
       loraModel: true,
+      prompt: true,
+      recursive: true,
     });
 
     expect(pageState.customFilter).toEqual({
@@ -162,10 +183,10 @@ describe('RecipeManager', () => {
     expect(refreshVirtualScrollMock).toHaveBeenCalledTimes(1);
 
     const sortSelect = document.getElementById('sortSelect');
-    sortSelect.value = 'name';
+    sortSelect.value = 'name:asc';
     sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-    expect(pageState.sortBy).toBe('name');
+    expect(pageState.sortBy).toBe('name:asc');
     expect(refreshVirtualScrollMock).toHaveBeenCalledTimes(2);
     expect(initializePageFeaturesMock).toHaveBeenCalledTimes(1);
   });

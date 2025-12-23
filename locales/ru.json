@@ -188,7 +188,8 @@
                 "creator": "Автор",
                 "title": "Название рецепта",
                 "loraName": "Имя файла LoRA",
-                "loraModel": "Название модели LoRA"
+                "loraModel": "Название модели LoRA",
+                "prompt": "Запрос"
             }
         },
         "filter": {
@@ -588,10 +589,26 @@
                     "selectLoraRoot": "Пожалуйста, выберите корневую папку LoRA"
                 }
             },
+            "sort": {
+                "title": "Сортировка рецептов...",
+                "name": "Имя",
+                "nameAsc": "А - Я",
+                "nameDesc": "Я - А",
+                "date": "Дата",
+                "dateDesc": "Сначала новые",
+                "dateAsc": "Сначала старые",
+                "lorasCount": "Кол-во LoRA",
+                "lorasCountDesc": "Больше всего",
+                "lorasCountAsc": "Меньше всего"
+            },
             "refresh": {
                 "title": "Обновить список рецептов"
             },
-            "filteredByLora": "Фильтр по LoRA"
+            "filteredByLora": "Фильтр по LoRA",
+            "favorites": {
+                "title": "Только избранные",
+                "action": "Избранное"
+            }
         },
         "duplicates": {
             "found": "Найдено {count} групп дубликатов",
@@ -638,7 +655,8 @@
         "recursiveUnavailable": "Рекурсивный поиск доступен только в режиме дерева",
         "collapseAllDisabled": "Недоступно в виде списка",
         "dragDrop": {
-            "unableToResolveRoot": "Не удалось определить путь назначения для перемещения."
+            "unableToResolveRoot": "Не удалось определить путь назначения для перемещения.",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1460,7 +1478,8 @@
             "bulkMoveFailures": "Неудачные перемещения:\n{failures}",
             "bulkMoveSuccess": "Успешно перемещено {successCount} {type}s",
             "exampleImagesDownloadSuccess": "Примеры изображений успешно загружены!",
-            "exampleImagesDownloadFailed": "Не удалось загрузить примеры изображений: {message}"
+            "exampleImagesDownloadFailed": "Не удалось загрузить примеры изображений: {message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

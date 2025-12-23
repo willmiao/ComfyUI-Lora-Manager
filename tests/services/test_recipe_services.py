@@ -404,6 +404,89 @@ async def test_save_recipe_from_widget_allows_empty_lora(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_move_recipe_updates_paths(tmp_path):
+    exif_utils = DummyExifUtils()
+    recipes_dir = tmp_path / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe_id = "move-me"
+    image_path = recipes_dir / f"{recipe_id}.webp"
+    json_path = recipes_dir / f"{recipe_id}.recipe.json"
+
+    image_path.write_bytes(b"img")
+    json_path.write_text(
+        json.dumps(
+            {
+                "id": recipe_id,
+                "file_path": str(image_path),
+                "title": "Recipe",
+                "loras": [],
+                "gen_params": {},
+                "created_date": 0,
+                "modified": 0,
+            }
+        )
+    )
+
+    class MoveScanner:
+        def __init__(self, root: Path):
+            self.recipes_dir = str(root)
+            self.recipe = {
+                "id": recipe_id,
+                "file_path": str(image_path),
+                "title": "Recipe",
+                "loras": [],
+                "gen_params": {},
+                "created_date": 0,
+                "modified": 0,
+                "folder": "",
+            }
+
+        async def get_recipe_by_id(self, target_id: str):
+            return self.recipe if target_id == recipe_id else None
+
+        async def get_recipe_json_path(self, target_id: str):
+            matches = list(Path(self.recipes_dir).rglob(f"{target_id}.recipe.json"))
+            return str(matches[0]) if matches else None
+
+        async def update_recipe_metadata(self, target_id: str, metadata: dict):
+            if target_id != recipe_id:
+                return False
+            self.recipe.update(metadata)
+            target_path = await self.get_recipe_json_path(target_id)
+            if not target_path:
+                return False
+            existing = json.loads(Path(target_path).read_text())
+            existing.update(metadata)
+            Path(target_path).write_text(json.dumps(existing))
+            return True
+
+        async def get_cached_data(self, force_refresh: bool = False):  # noqa: ARG002 - signature parity
+            return SimpleNamespace(raw_data=[self.recipe])
+
+    scanner = MoveScanner(recipes_dir)
+    service = RecipePersistenceService(
+        exif_utils=exif_utils,
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    target_folder = recipes_dir / "nested"
+    result = await service.move_recipe(
+        recipe_scanner=scanner, recipe_id=recipe_id, target_path=str(target_folder)
+    )
+
+    assert result.payload["folder"] == "nested"
+    assert Path(result.payload["json_path"]).parent == target_folder
+    assert Path(result.payload["new_file_path"]).parent == target_folder
+    assert not json_path.exists()
+
+    stored = json.loads(Path(result.payload["json_path"]).read_text())
+    assert stored["folder"] == "nested"
+    assert stored["file_path"] == result.payload["new_file_path"]
+
+
+@pytest.mark.asyncio
 async def test_analyze_remote_video(tmp_path):
     exif_utils = DummyExifUtils()
 

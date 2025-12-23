@@ -188,7 +188,8 @@
                 "creator": "Ersteller",
                 "title": "Rezept-Titel",
                 "loraName": "LoRA-Dateiname",
-                "loraModel": "LoRA-Modellname"
+                "loraModel": "LoRA-Modellname",
+                "prompt": "Prompt"
             }
         },
         "filter": {
@@ -588,10 +589,26 @@
                     "selectLoraRoot": "Bitte wählen Sie ein LoRA-Stammverzeichnis aus"
                 }
             },
+            "sort": {
+                "title": "Rezepte sortieren nach...",
+                "name": "Name",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "Datum",
+                "dateDesc": "Neueste",
+                "dateAsc": "Älteste",
+                "lorasCount": "LoRA-Anzahl",
+                "lorasCountDesc": "Meiste",
+                "lorasCountAsc": "Wenigste"
+            },
             "refresh": {
                 "title": "Rezeptliste aktualisieren"
             },
-            "filteredByLora": "Gefiltert nach LoRA"
+            "filteredByLora": "Gefiltert nach LoRA",
+            "favorites": {
+                "title": "Nur Favoriten anzeigen",
+                "action": "Favoriten"
+            }
         },
         "duplicates": {
             "found": "{count} Duplikat-Gruppen gefunden",
@@ -638,7 +655,8 @@
         "recursiveUnavailable": "Rekursive Suche ist nur in der Baumansicht verfügbar",
         "collapseAllDisabled": "Im Listenmodus nicht verfügbar",
         "dragDrop": {
-            "unableToResolveRoot": "Zielpfad für das Verschieben konnte nicht ermittelt werden."
+            "unableToResolveRoot": "Zielpfad für das Verschieben konnte nicht ermittelt werden.",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1460,7 +1478,8 @@
             "bulkMoveFailures": "Fehlgeschlagene Verschiebungen:\n{failures}",
             "bulkMoveSuccess": "{successCount} {type}s erfolgreich verschoben",
             "exampleImagesDownloadSuccess": "Beispielbilder erfolgreich heruntergeladen!",
-            "exampleImagesDownloadFailed": "Fehler beim Herunterladen der Beispielbilder: {message}"
+            "exampleImagesDownloadFailed": "Fehler beim Herunterladen der Beispielbilder: {message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

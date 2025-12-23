@@ -188,7 +188,8 @@
                 "creator": "作成者",
                 "title": "レシピタイトル",
                 "loraName": "LoRAファイル名",
-                "loraModel": "LoRAモデル名"
+                "loraModel": "LoRAモデル名",
+                "prompt": "プロンプト"
             }
         },
         "filter": {
@@ -588,10 +589,26 @@
                     "selectLoraRoot": "LoRAルートディレクトリを選択してください"
                 }
             },
+            "sort": {
+                "title": "レシピの並び替え...",
+                "name": "名前",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "日付",
+                "dateDesc": "新しい順",
+                "dateAsc": "古い順",
+                "lorasCount": "LoRA数",
+                "lorasCountDesc": "多い順",
+                "lorasCountAsc": "少ない順"
+            },
             "refresh": {
                 "title": "レシピリストを更新"
             },
-            "filteredByLora": "LoRAでフィルタ済み"
+            "filteredByLora": "LoRAでフィルタ済み",
+            "favorites": {
+                "title": "お気に入りのみ表示",
+                "action": "お気に入り"
+            }
         },
         "duplicates": {
             "found": "{count} 個の重複グループが見つかりました",
@@ -638,7 +655,8 @@
         "recursiveUnavailable": "再帰検索はツリービューでのみ利用できます",
         "collapseAllDisabled": "リストビューでは利用できません",
         "dragDrop": {
-            "unableToResolveRoot": "移動先のパスを特定できません。"
+            "unableToResolveRoot": "移動先のパスを特定できません。",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1460,7 +1478,8 @@
             "bulkMoveFailures": "失敗した移動：\n{failures}",
             "bulkMoveSuccess": "{successCount} {type}が正常に移動されました",
             "exampleImagesDownloadSuccess": "例画像が正常にダウンロードされました！",
-            "exampleImagesDownloadFailed": "例画像のダウンロードに失敗しました：{message}"
+            "exampleImagesDownloadFailed": "例画像のダウンロードに失敗しました：{message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

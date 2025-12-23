@@ -34,7 +34,7 @@ class TranslationKeySynchronizer:
         self.locales_dir = locales_dir
         self.verbose = verbose
         self.reference_locale = 'en'
-        self.target_locales = ['zh-CN', 'zh-TW', 'ja', 'ru', 'de', 'fr', 'es', 'ko']
+        self.target_locales = ['zh-CN', 'zh-TW', 'ja', 'ru', 'de', 'fr', 'es', 'ko', 'he']
         
     def log(self, message: str, level: str = 'INFO'):
         """Log a message if verbose mode is enabled."""

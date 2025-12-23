@@ -58,7 +58,7 @@ export const state = {
         loadingManager: null,
         observer: null,
     },
-    
+
     // Page-specific states
     pages: {
         [MODEL_TYPES.LORA]: {
@@ -69,20 +69,20 @@ export const state = {
             activeFolder: getStorageItem(`${MODEL_TYPES.LORA}_activeFolder`),
             activeLetterFilter: null,
             previewVersions: loraPreviewVersions,
-        searchManager: null,
-        searchOptions: {
-            filename: true,
-            modelname: true,
-            tags: false,
-            creator: false,
-            recursive: getStorageItem(`${MODEL_TYPES.LORA}_recursiveSearch`, true),
-        },
-        filters: {
-            baseModel: [],
-            tags: {},
-            license: {},
-            modelTypes: []
-        },
+            searchManager: null,
+            searchOptions: {
+                filename: true,
+                modelname: true,
+                tags: false,
+                creator: false,
+                recursive: getStorageItem(`${MODEL_TYPES.LORA}_recursiveSearch`, true),
+            },
+            filters: {
+                baseModel: [],
+                tags: {},
+                license: {},
+                modelTypes: []
+            },
             bulkMode: false,
             selectedLoras: new Set(),
             loraMetadataCache: new Map(),
@@ -90,33 +90,35 @@ export const state = {
             showUpdateAvailableOnly: false,
             duplicatesMode: false,
         },
-        
+
         recipes: {
             currentPage: 1,
             isLoading: false,
             hasMore: true,
-            sortBy: 'date',
-        searchManager: null,
-        searchOptions: {
-            title: true,
-            tags: true,
-            loraName: true,
-            loraModel: true
-        },
-        filters: {
-            baseModel: [],
-            tags: {},
-            license: {},
-            modelTypes: [],
-            search: ''
-        },
+            sortBy: 'date:desc',
+            activeFolder: getStorageItem('recipes_activeFolder'),
+            searchManager: null,
+            searchOptions: {
+                title: true,
+                tags: true,
+                loraName: true,
+                loraModel: true,
+                recursive: getStorageItem('recipes_recursiveSearch', true),
+            },
+            filters: {
+                baseModel: [],
+                tags: {},
+                license: {},
+                modelTypes: [],
+                search: ''
+            },
             pageSize: 20,
             showFavoritesOnly: false,
             duplicatesMode: false,
             bulkMode: false,
             selectedModels: new Set(),
         },
-        
+
         [MODEL_TYPES.CHECKPOINT]: {
             currentPage: 1,
             isLoading: false,
@@ -124,19 +126,19 @@ export const state = {
             sortBy: 'name',
             activeFolder: getStorageItem(`${MODEL_TYPES.CHECKPOINT}_activeFolder`),
             previewVersions: checkpointPreviewVersions,
-        searchManager: null,
-        searchOptions: {
-            filename: true,
-            modelname: true,
-            creator: false,
-            recursive: getStorageItem(`${MODEL_TYPES.CHECKPOINT}_recursiveSearch`, true),
-        },
-        filters: {
-            baseModel: [],
-            tags: {},
-            license: {},
-            modelTypes: []
-        },
+            searchManager: null,
+            searchOptions: {
+                filename: true,
+                modelname: true,
+                creator: false,
+                recursive: getStorageItem(`${MODEL_TYPES.CHECKPOINT}_recursiveSearch`, true),
+            },
+            filters: {
+                baseModel: [],
+                tags: {},
+                license: {},
+                modelTypes: []
+            },
             modelType: 'checkpoint', // 'checkpoint' or 'diffusion_model'
             bulkMode: false,
             selectedModels: new Set(),
@@ -145,7 +147,7 @@ export const state = {
             showUpdateAvailableOnly: false,
             duplicatesMode: false,
         },
-        
+
         [MODEL_TYPES.EMBEDDING]: {
             currentPage: 1,
             isLoading: false,
@@ -154,20 +156,20 @@ export const state = {
             activeFolder: getStorageItem(`${MODEL_TYPES.EMBEDDING}_activeFolder`),
             activeLetterFilter: null,
             previewVersions: embeddingPreviewVersions,
-        searchManager: null,
-        searchOptions: {
-            filename: true,
-            modelname: true,
-            tags: false,
-            creator: false,
-            recursive: getStorageItem(`${MODEL_TYPES.EMBEDDING}_recursiveSearch`, true),
-        },
-        filters: {
-            baseModel: [],
-            tags: {},
-            license: {},
-            modelTypes: []
-        },
+            searchManager: null,
+            searchOptions: {
+                filename: true,
+                modelname: true,
+                tags: false,
+                creator: false,
+                recursive: getStorageItem(`${MODEL_TYPES.EMBEDDING}_recursiveSearch`, true),
+            },
+            filters: {
+                baseModel: [],
+                tags: {},
+                license: {},
+                modelTypes: []
+            },
             bulkMode: false,
             selectedModels: new Set(),
             metadataCache: new Map(),
@@ -176,45 +178,45 @@ export const state = {
             duplicatesMode: false,
         }
     },
-    
+
     // Current active page - use MODEL_TYPES constants
     currentPageType: MODEL_TYPES.LORA,
-    
+
     // Backward compatibility - proxy properties
     get currentPage() { return this.pages[this.currentPageType].currentPage; },
     set currentPage(value) { this.pages[this.currentPageType].currentPage = value; },
-    
+
     get isLoading() { return this.pages[this.currentPageType].isLoading; },
     set isLoading(value) { this.pages[this.currentPageType].isLoading = value; },
-    
+
     get hasMore() { return this.pages[this.currentPageType].hasMore; },
     set hasMore(value) { this.pages[this.currentPageType].hasMore = value; },
-    
+
     get sortBy() { return this.pages[this.currentPageType].sortBy; },
     set sortBy(value) { this.pages[this.currentPageType].sortBy = value; },
-    
+
     get activeFolder() { return this.pages[this.currentPageType].activeFolder; },
     set activeFolder(value) { this.pages[this.currentPageType].activeFolder = value; },
-    
+
     get loadingManager() { return this.global.loadingManager; },
     set loadingManager(value) { this.global.loadingManager = value; },
-    
+
     get observer() { return this.global.observer; },
     set observer(value) { this.global.observer = value; },
-    
+
     get previewVersions() { return this.pages.loras.previewVersions; },
     set previewVersions(value) { this.pages.loras.previewVersions = value; },
-    
+
     get searchManager() { return this.pages[this.currentPageType].searchManager; },
     set searchManager(value) { this.pages[this.currentPageType].searchManager = value; },
-    
+
     get searchOptions() { return this.pages[this.currentPageType].searchOptions; },
     set searchOptions(value) { this.pages[this.currentPageType].searchOptions = value; },
-    
+
     get filters() { return this.pages[this.currentPageType].filters; },
     set filters(value) { this.pages[this.currentPageType].filters = value; },
-    
-    get bulkMode() { 
+
+    get bulkMode() {
         const currentType = this.currentPageType;
         if (currentType === MODEL_TYPES.LORA) {
             return this.pages.loras.bulkMode;
@@ -222,7 +224,7 @@ export const state = {
             return this.pages[currentType].bulkMode;
         }
     },
-    set bulkMode(value) { 
+    set bulkMode(value) {
         const currentType = this.currentPageType;
         if (currentType === MODEL_TYPES.LORA) {
             this.pages.loras.bulkMode = value;
@@ -230,11 +232,11 @@ export const state = {
             this.pages[currentType].bulkMode = value;
         }
     },
-    
+
     get selectedLoras() { return this.pages.loras.selectedLoras; },
     set selectedLoras(value) { this.pages.loras.selectedLoras = value; },
-    
-    get selectedModels() { 
+
+    get selectedModels() {
         const currentType = this.currentPageType;
         if (currentType === MODEL_TYPES.LORA) {
             return this.pages.loras.selectedLoras;
@@ -242,7 +244,7 @@ export const state = {
             return this.pages[currentType].selectedModels;
         }
     },
-    set selectedModels(value) { 
+    set selectedModels(value) {
         const currentType = this.currentPageType;
         if (currentType === MODEL_TYPES.LORA) {
             this.pages.loras.selectedLoras = value;
@@ -250,10 +252,10 @@ export const state = {
             this.pages[currentType].selectedModels = value;
         }
     },
-    
+
     get loraMetadataCache() { return this.pages.loras.loraMetadataCache; },
     set loraMetadataCache(value) { this.pages.loras.loraMetadataCache = value; },
-    
+
     get settings() { return this.global.settings; },
     set settings(value) { this.global.settings = value; }
 };

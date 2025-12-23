@@ -188,7 +188,8 @@
                 "creator": "創作者",
                 "title": "配方標題",
                 "loraName": "LoRA 檔案名稱",
-                "loraModel": "LoRA 模型名稱"
+                "loraModel": "LoRA 模型名稱",
+                "prompt": "提示詞"
             }
         },
         "filter": {
@@ -588,10 +589,26 @@
                     "selectLoraRoot": "請選擇 LoRA 根目錄"
                 }
             },
+            "sort": {
+                "title": "配方排序...",
+                "name": "名稱",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "時間",
+                "dateDesc": "最新",
+                "dateAsc": "最舊",
+                "lorasCount": "LoRA 數量",
+                "lorasCountDesc": "最多",
+                "lorasCountAsc": "最少"
+            },
             "refresh": {
                 "title": "重新整理配方列表"
             },
-            "filteredByLora": "已依 LoRA 篩選"
+            "filteredByLora": "已依 LoRA 篩選",
+            "favorites": {
+                "title": "僅顯示收藏",
+                "action": "收藏"
+            }
         },
         "duplicates": {
             "found": "發現 {count} 組重複項",
@@ -638,7 +655,8 @@
         "recursiveUnavailable": "遞迴搜尋僅能在樹狀檢視中使用",
         "collapseAllDisabled": "列表檢視下不可用",
         "dragDrop": {
-            "unableToResolveRoot": "無法確定移動的目標路徑。"
+            "unableToResolveRoot": "無法確定移動的目標路徑。",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1460,7 +1478,8 @@
             "bulkMoveFailures": "移動失敗：\n{failures}",
             "bulkMoveSuccess": "已成功移動 {successCount} 個 {type}",
             "exampleImagesDownloadSuccess": "範例圖片下載成功！",
-            "exampleImagesDownloadFailed": "下載範例圖片失敗：{message}"
+            "exampleImagesDownloadFailed": "下載範例圖片失敗：{message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

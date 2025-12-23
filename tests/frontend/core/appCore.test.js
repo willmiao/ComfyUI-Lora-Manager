@@ -252,13 +252,13 @@ describe('AppCore initialization flow', () => {
     expect(onboardingManager.start).not.toHaveBeenCalled();
   });
 
-  it('skips bulk setup when viewing recipes', async () => {
+  it('initializes bulk setup when viewing recipes', async () => {
     state.currentPageType = 'recipes';
 
     await appCore.initialize();
 
-    expect(bulkManager.initialize).not.toHaveBeenCalled();
-    expect(BulkContextMenu).not.toHaveBeenCalled();
-    expect(bulkManager.setBulkContextMenu).not.toHaveBeenCalled();
+    expect(bulkManager.initialize).toHaveBeenCalledTimes(1);
+    expect(BulkContextMenu).toHaveBeenCalledTimes(1);
+    expect(bulkManager.setBulkContextMenu).toHaveBeenCalledTimes(1);
   });
 });
