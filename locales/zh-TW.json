@@ -589,6 +589,18 @@
                     "selectLoraRoot": "請選擇 LoRA 根目錄"
                 }
             },
+            "sort": {
+                "title": "配方排序...",
+                "name": "名稱",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "時間",
+                "dateDesc": "最新",
+                "dateAsc": "最舊",
+                "lorasCount": "LoRA 數量",
+                "lorasCountDesc": "最多",
+                "lorasCountAsc": "最少"
+            },
             "refresh": {
                 "title": "重新整理配方列表"
             },

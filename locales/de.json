@@ -589,6 +589,18 @@
                     "selectLoraRoot": "Bitte wählen Sie ein LoRA-Stammverzeichnis aus"
                 }
             },
+            "sort": {
+                "title": "Rezepte sortieren nach...",
+                "name": "Name",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "Datum",
+                "dateDesc": "Neueste",
+                "dateAsc": "Älteste",
+                "lorasCount": "LoRA-Anzahl",
+                "lorasCountDesc": "Meiste",
+                "lorasCountAsc": "Wenigste"
+            },
             "refresh": {
                 "title": "Rezeptliste aktualisieren"
             },

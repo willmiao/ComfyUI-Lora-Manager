@@ -589,6 +589,18 @@
                     "selectLoraRoot": "אנא בחר ספריית שורש של LoRA"
                 }
             },
+            "sort": {
+                "title": "מיון מתכונים לפי...",
+                "name": "שם",
+                "nameAsc": "א - ת",
+                "nameDesc": "ת - א",
+                "date": "תאריך",
+                "dateDesc": "הכי חדש",
+                "dateAsc": "הכי ישן",
+                "lorasCount": "מספר LoRAs",
+                "lorasCountDesc": "הכי הרבה",
+                "lorasCountAsc": "הכי פחות"
+            },
             "refresh": {
                 "title": "רענן רשימת מתכונים"
             },

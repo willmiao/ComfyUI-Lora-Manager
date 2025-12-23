@@ -601,3 +601,43 @@ async def test_get_paginated_data_filters_by_prompt(recipe_scanner):
         page=1, page_size=10, search="forest", search_options={"prompt": False}
     )
     assert len(result_disabled["items"]) == 0
+
+
+@pytest.mark.asyncio
+async def test_get_paginated_data_sorting(recipe_scanner):
+    scanner, _ = recipe_scanner
+    
+    # Add test recipes
+    # Recipe A: Name "Alpha", Date 10, LoRAs 2
+    await scanner.add_recipe({
+        "id": "A", "title": "Alpha", "created_date": 10.0,
+        "loras": [{}, {}], "file_path": "a.png"
+    })
+    # Recipe B: Name "Beta", Date 20, LoRAs 1
+    await scanner.add_recipe({
+        "id": "B", "title": "Beta", "created_date": 20.0,
+        "loras": [{}], "file_path": "b.png"
+    })
+    # Recipe C: Name "Gamma", Date 5, LoRAs 3
+    await scanner.add_recipe({
+        "id": "C", "title": "Gamma", "created_date": 5.0,
+        "loras": [{}, {}, {}], "file_path": "c.png"
+    })
+    
+    await asyncio.sleep(0)
+    
+    # Test Name DESC: Gamma, Beta, Alpha
+    res = await scanner.get_paginated_data(page=1, page_size=10, sort_by="name:desc")
+    assert [i["id"] for i in res["items"]] == ["C", "B", "A"]
+    
+    # Test LoRA Count DESC: Gamma (3), Alpha (2), Beta (1)
+    res = await scanner.get_paginated_data(page=1, page_size=10, sort_by="loras_count:desc")
+    assert [i["id"] for i in res["items"]] == ["C", "A", "B"]
+    
+    # Test LoRA Count ASC: Beta (1), Alpha (2), Gamma (3)
+    res = await scanner.get_paginated_data(page=1, page_size=10, sort_by="loras_count:asc")
+    assert [i["id"] for i in res["items"]] == ["B", "A", "C"]
+    
+    # Test Date ASC: Gamma (5), Alpha (10), Beta (20)
+    res = await scanner.get_paginated_data(page=1, page_size=10, sort_by="date:asc")
+    assert [i["id"] for i in res["items"]] == ["C", "A", "B"]

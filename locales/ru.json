@@ -589,6 +589,18 @@
                     "selectLoraRoot": "Пожалуйста, выберите корневую папку LoRA"
                 }
             },
+            "sort": {
+                "title": "Сортировка рецептов...",
+                "name": "Имя",
+                "nameAsc": "А - Я",
+                "nameDesc": "Я - А",
+                "date": "Дата",
+                "dateDesc": "Сначала новые",
+                "dateAsc": "Сначала старые",
+                "lorasCount": "Кол-во LoRA",
+                "lorasCountDesc": "Больше всего",
+                "lorasCountAsc": "Меньше всего"
+            },
             "refresh": {
                 "title": "Обновить список рецептов"
             },

@@ -589,6 +589,18 @@
                     "selectLoraRoot": "Por favor selecciona un directorio raíz de LoRA"
                 }
             },
+            "sort": {
+                "title": "Ordenar recetas por...",
+                "name": "Nombre",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "Fecha",
+                "dateDesc": "Más reciente",
+                "dateAsc": "Más antiguo",
+                "lorasCount": "Cant. de LoRAs",
+                "lorasCountDesc": "Más",
+                "lorasCountAsc": "Menos"
+            },
             "refresh": {
                 "title": "Actualizar lista de recetas"
             },

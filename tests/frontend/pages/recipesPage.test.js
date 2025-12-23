@@ -100,7 +100,7 @@ describe('RecipeManager', () => {
     };
 
     pageState = {
-      sortBy: 'date',
+      sortBy: 'date:desc',
       searchOptions: undefined,
       customFilter: undefined,
       duplicatesMode: false,
@@ -137,8 +137,8 @@ describe('RecipeManager', () => {
     const sortSelectElement = document.createElement('select');
     sortSelectElement.id = 'sortSelect';
     sortSelectElement.innerHTML = `
-      <option value="date">Date</option>
-      <option value="name">Name</option>
+      <option value="date:desc">Newest</option>
+      <option value="name:asc">Name A-Z</option>
     `;
     document.body.appendChild(sortSelectElement);
 
@@ -183,10 +183,10 @@ describe('RecipeManager', () => {
     expect(refreshVirtualScrollMock).toHaveBeenCalledTimes(1);
 
     const sortSelect = document.getElementById('sortSelect');
-    sortSelect.value = 'name';
+    sortSelect.value = 'name:asc';
     sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-    expect(pageState.sortBy).toBe('name');
+    expect(pageState.sortBy).toBe('name:asc');
     expect(refreshVirtualScrollMock).toHaveBeenCalledTimes(2);
     expect(initializePageFeaturesMock).toHaveBeenCalledTimes(1);
   });

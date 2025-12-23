@@ -216,6 +216,7 @@ class RecipeManager {
         // Sort select
         const sortSelect = document.getElementById('sortSelect');
         if (sortSelect) {
+            sortSelect.value = this.pageState.sortBy || 'date:desc';
             sortSelect.addEventListener('change', () => {
                 this.pageState.sortBy = sortSelect.value;
                 refreshVirtualScroll();

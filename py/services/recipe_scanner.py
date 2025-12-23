@@ -1024,7 +1024,14 @@ class RecipeScanner:
         cache = await self.get_cached_data()
 
         # Get base dataset
-        filtered_data = cache.sorted_by_date if sort_by == 'date' else cache.sorted_by_name
+        sort_field = sort_by.split(':')[0] if ':' in sort_by else sort_by
+        
+        if sort_field == 'date':
+            filtered_data = list(cache.sorted_by_date)
+        elif sort_field == 'name':
+            filtered_data = list(cache.sorted_by_name)
+        else:
+            filtered_data = list(cache.raw_data)
         
         # Apply SFW filtering if enabled
         from .settings_manager import get_settings_manager
@@ -1165,6 +1172,20 @@ class RecipeScanner:
                             item for item in filtered_data
                             if not any(tag in exclude_tags for tag in (item.get('tags', []) or []))
                         ]
+
+
+        # Apply sorting if not already handled by pre-sorted cache
+        if ':' in sort_by or sort_field == 'loras_count':
+            field, order = (sort_by.split(':') + ['desc'])[:2]
+            reverse = order.lower() == 'desc'
+            
+            if field == 'name':
+                filtered_data = natsorted(filtered_data, key=lambda x: x.get('title', '').lower(), reverse=reverse)
+            elif field == 'date':
+                # Use modified if available, falling back to created_date
+                filtered_data.sort(key=lambda x: (x.get('modified', x.get('created_date', 0)), x.get('file_path', '')), reverse=reverse)
+            elif field == 'loras_count':
+                filtered_data.sort(key=lambda x: len(x.get('loras', [])), reverse=reverse)
 
         # Calculate pagination
         total_items = len(filtered_data)

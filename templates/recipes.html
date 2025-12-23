@@ -46,6 +46,22 @@
 <!-- Recipe controls -->
 <div class="controls">
     <div class="action-buttons">
+        <div class="control-group">
+            <select id="sortSelect" title="{{ t('recipes.controls.sort.title') }}">
+                <optgroup label="{{ t('recipes.controls.sort.name') }}">
+                    <option value="name:asc">{{ t('recipes.controls.sort.nameAsc') }}</option>
+                    <option value="name:desc">{{ t('recipes.controls.sort.nameDesc') }}</option>
+                </optgroup>
+                <optgroup label="{{ t('recipes.controls.sort.date') }}">
+                    <option value="date:desc">{{ t('recipes.controls.sort.dateDesc') }}</option>
+                    <option value="date:asc">{{ t('recipes.controls.sort.dateAsc') }}</option>
+                </optgroup>
+                <optgroup label="{{ t('recipes.controls.sort.lorasCount') }}">
+                    <option value="loras_count:desc">{{ t('recipes.controls.sort.lorasCountDesc') }}</option>
+                    <option value="loras_count:asc">{{ t('recipes.controls.sort.lorasCountAsc') }}</option>
+                </optgroup>
+            </select>
+        </div>
         <div title="{{ t('recipes.controls.refresh.title') }}" class="control-group">
             <button onclick="recipeManager.refreshRecipes()"><i class="fas fa-sync"></i> {{ t('common.actions.refresh')
                 }}</button>

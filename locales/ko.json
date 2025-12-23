@@ -589,6 +589,18 @@
                     "selectLoraRoot": "LoRA 루트 디렉토리를 선택해주세요"
                 }
             },
+            "sort": {
+                "title": "레시피 정렬...",
+                "name": "이름",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "날짜",
+                "dateDesc": "최신순",
+                "dateAsc": "오래된순",
+                "lorasCount": "LoRA 수",
+                "lorasCountDesc": "많은순",
+                "lorasCountAsc": "적은순"
+            },
             "refresh": {
                 "title": "레시피 목록 새로고침"
             },

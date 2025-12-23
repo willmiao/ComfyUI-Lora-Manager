@@ -589,6 +589,18 @@
                     "selectLoraRoot": "LoRAルートディレクトリを選択してください"
                 }
             },
+            "sort": {
+                "title": "レシピの並び替え...",
+                "name": "名前",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "日付",
+                "dateDesc": "新しい順",
+                "dateAsc": "古い順",
+                "lorasCount": "LoRA数",
+                "lorasCountDesc": "多い順",
+                "lorasCountAsc": "少ない順"
+            },
             "refresh": {
                 "title": "レシピリストを更新"
             },
