@@ -24,6 +24,8 @@ from ...services.recipes import (
 )
 from ...services.metadata_service import get_default_metadata_provider
 from ...utils.civitai_utils import rewrite_preview_url
+from ...utils.exif_utils import ExifUtils
+from ...recipes.merger import GenParamsMerger
 
 Logger = logging.Logger
 EnsureDependenciesCallable = Callable[[], Awaitable[None]]
@@ -552,7 +554,41 @@ class RecipeManagementHandler:
                     metadata["base_model"] = base_model_from_metadata
 
             tags = self._parse_tags(params.get("tags"))
-            image_bytes, extension = await self._download_remote_media(image_url)
+            image_bytes, extension, civitai_meta = await self._download_remote_media(image_url)
+
+            # Extract embedded metadata from the downloaded image
+            embedded_metadata = None
+            try:
+                with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as temp_img:
+                    temp_img.write(image_bytes)
+                    temp_img_path = temp_img.name
+                
+                try:
+                    raw_embedded = ExifUtils.extract_image_metadata(temp_img_path)
+                    if raw_embedded:
+                        # Try to parse it using standard parsers if it looks like a recipe
+                        parser = self._analysis_service._recipe_parser_factory.create_parser(raw_embedded)
+                        if parser:
+                            parsed_embedded = await parser.parse_metadata(raw_embedded, recipe_scanner=recipe_scanner)
+                            embedded_metadata = parsed_embedded
+                        else:
+                            # Fallback to raw string if no parser matches (might be simple params)
+                            embedded_metadata = {"gen_params": {"raw_metadata": raw_embedded}}
+                finally:
+                    if os.path.exists(temp_img_path):
+                        os.unlink(temp_img_path)
+            except Exception as exc:
+                self._logger.warning("Failed to extract embedded metadata during import: %s", exc)
+
+            # Merge gen_params from all sources
+            merged_gen_params = GenParamsMerger.merge(
+                request_params=gen_params,
+                civitai_meta=civitai_meta,
+                embedded_metadata=embedded_metadata
+            )
+
+            if merged_gen_params:
+                metadata["gen_params"] = merged_gen_params
 
             result = await self._persistence_service.save_recipe(
                 recipe_scanner=recipe_scanner,
@@ -900,7 +936,7 @@ class RecipeManagementHandler:
                 extension = ".webp" # Default to webp if unknown
 
             with open(temp_path, "rb") as file_obj:
-                return file_obj.read(), extension
+                return file_obj.read(), extension, image_info.get("meta") if civitai_match and image_info else None
         except RecipeDownloadError:
             raise
         except RecipeValidationError:

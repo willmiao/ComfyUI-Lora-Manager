@@ -36,9 +36,6 @@ class ComfyMetadataParser(RecipeMetadataParser):
             # Find all LoraLoader nodes
             lora_nodes = {k: v for k, v in data.items() if isinstance(v, dict) and v.get('class_type') == 'LoraLoader'}
             
-            if not lora_nodes:
-                return {"error": "No LoRA information found in this ComfyUI workflow", "loras": []}
-            
             # Process each LoraLoader node
             for node_id, node in lora_nodes.items():
                 if 'inputs' not in node or 'lora_name' not in node['inputs']:

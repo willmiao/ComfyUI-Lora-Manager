@@ -91,6 +91,7 @@ class StubAnalysisService:
         self.remote_calls: List[Optional[str]] = []
         self.local_calls: List[Optional[str]] = []
         self.result = SimpleNamespace(payload={"loras": []}, status=200)
+        self._recipe_parser_factory = None
         StubAnalysisService.instances.append(self)
 
     async def analyze_uploaded_image(self, *, image_bytes: bytes | None, recipe_scanner) -> SimpleNamespace:  # noqa: D401 - mirrors real signature
@@ -527,3 +528,69 @@ async def test_share_and_download_recipe(monkeypatch, tmp_path: Path) -> None:
         assert body == b"stub"
 
         download_path.unlink(missing_ok=True)
+async def test_import_remote_recipe_merges_metadata(monkeypatch, tmp_path: Path) -> None:
+    # 1. Mock Metadata Provider
+    class Provider:
+        async def get_model_version_info(self, model_version_id):
+            return {"baseModel": "Flux Provider"}, None
+
+    async def fake_get_default_metadata_provider():
+        return Provider()
+
+    monkeypatch.setattr(recipe_handlers, "get_default_metadata_provider", fake_get_default_metadata_provider)
+
+    # 2. Mock ExifUtils to return some embedded metadata
+    class MockExifUtils:
+        @staticmethod
+        def extract_image_metadata(path):
+            return "Recipe metadata: " + json.dumps({
+                "gen_params": {"prompt": "from embedded", "seed": 123}
+            })
+
+    monkeypatch.setattr(recipe_handlers, "ExifUtils", MockExifUtils)
+
+    # 3. Mock Parser Factory for StubAnalysisService
+    class MockParser:
+        async def parse_metadata(self, raw, recipe_scanner=None):
+            return json.loads(raw[len("Recipe metadata: "):])
+
+    class MockFactory:
+        def create_parser(self, raw):
+            if raw.startswith("Recipe metadata: "):
+                return MockParser()
+            return None
+
+    # 4. Setup Harness and run test
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = MockFactory()
+        
+        # Civitai meta via image_info
+        harness.civitai.image_info["1"] = {
+            "id": 1,
+            "url": "https://example.com/images/1.jpg",
+            "meta": {"prompt": "from civitai", "cfg": 7.0}
+        }
+
+        resources = []
+        response = await harness.client.get(
+            "/api/lm/recipes/import-remote",
+            params={
+                "image_url": "https://civitai.com/images/1",
+                "name": "Merged Recipe",
+                "resources": json.dumps(resources),
+                "gen_params": json.dumps({"prompt": "from request", "steps": 25}),
+            },
+        )
+
+        payload = await response.json()
+        assert response.status == 200
+        
+        call = harness.persistence.save_calls[-1]
+        metadata = call["metadata"]
+        gen_params = metadata["gen_params"]
+        
+        # Priority: request (prompt=request, steps=25) > civitai (prompt=civitai, cfg=7.0) > embedded (prompt=embedded, seed=123)
+        assert gen_params["prompt"] == "from request"
+        assert gen_params["steps"] == 25
+        assert gen_params["cfg"] == 7.0
+        assert gen_params["seed"] == 123
