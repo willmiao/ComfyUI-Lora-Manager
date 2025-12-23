@@ -1,15 +1,15 @@
 import { showToast, openCivitai } from '../../utils/uiHelpers.js';
 import { modalManager } from '../../managers/ModalManager.js';
-import { 
+import {
     toggleShowcase,
-    setupShowcaseScroll, 
+    setupShowcaseScroll,
     scrollToTop,
     loadExampleImages
 } from './showcase/ShowcaseView.js';
 import { setupTabSwitching } from './ModelDescription.js';
-import { 
-    setupModelNameEditing, 
-    setupBaseModelEditing, 
+import {
+    setupModelNameEditing,
+    setupBaseModelEditing,
     setupFileNameEditing
 } from './ModelMetadata.js';
 import { setupTagEditMode } from './ModelTags.js';
@@ -242,7 +242,7 @@ export async function showModelModal(model, modelType) {
     const modalTitle = model.model_name;
     cleanupNavigationShortcuts();
     detachModalHandlers(modalId);
-        
+
     // Fetch complete civitai metadata
     let completeCivitaiData = model.civitai || {};
     if (model.file_path) {
@@ -254,7 +254,7 @@ export async function showModelModal(model, modelType) {
             // Continue with existing data if fetch fails
         }
     }
-    
+
     // Update model with complete civitai data
     const modelWithFullData = {
         ...model,
@@ -269,14 +269,14 @@ export async function showModelModal(model, modelType) {
 </div>`.trim() : '';
     const creatorInfoAction = modelWithFullData.civitai?.creator ? `
 <div class="creator-info" data-username="${modelWithFullData.civitai.creator.username}" data-action="view-creator" title="${translate('modals.model.actions.viewCreatorProfile', {}, 'View Creator Profile')}">
-    ${modelWithFullData.civitai.creator.image ? 
-        `<div class="creator-avatar">
+    ${modelWithFullData.civitai.creator.image ?
+            `<div class="creator-avatar">
             <img src="${modelWithFullData.civitai.creator.image}" alt="${modelWithFullData.civitai.creator.username}" onerror="this.onerror=null; this.src='/loras_static/icons/user-placeholder.png';">
-        </div>` : 
-        `<div class="creator-avatar creator-placeholder">
+        </div>` :
+            `<div class="creator-avatar creator-placeholder">
             <i class="fas fa-user"></i>
         </div>`
-    }
+        }
     <span class="creator-username">${modelWithFullData.civitai.creator.username}</span>
 </div>`.trim() : '';
     const creatorActionItems = [];
@@ -310,10 +310,10 @@ export async function showModelModal(model, modelType) {
     const hasUpdateAvailable = Boolean(modelWithFullData.update_available);
     const updateAvailabilityState = { hasUpdateAvailable };
     const updateBadgeTooltip = translate('modelCard.badges.updateAvailable', {}, 'Update available');
-    
+
     // Prepare LoRA specific data with complete civitai data
-    const escapedWords = (modelType === 'loras' || modelType === 'embeddings') && modelWithFullData.civitai?.trainedWords?.length ? 
-        modelWithFullData.civitai.trainedWords.map(word => word.replace(/'/g, '\\\'')) : [];
+    const escapedWords = (modelType === 'loras' || modelType === 'embeddings') && modelWithFullData.civitai?.trainedWords?.length ?
+        modelWithFullData.civitai.trainedWords : [];
 
     // Generate model type specific content
     let typeSpecificContent;
@@ -343,7 +343,7 @@ export async function showModelModal(model, modelType) {
                 ${versionsTabBadge}
             </button>`.trim();
 
-    const tabsContent = modelType === 'loras' ? 
+    const tabsContent = modelType === 'loras' ?
         `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
             <button class="tab-btn" data-tab="description">${descriptionText}</button>
             ${versionsTabButton}
@@ -351,12 +351,12 @@ export async function showModelModal(model, modelType) {
         `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
             <button class="tab-btn" data-tab="description">${descriptionText}</button>
             ${versionsTabButton}`;
-    
+
     const loadingExampleImagesText = translate('modals.model.loading.exampleImages', {}, 'Loading example images...');
     const loadingDescriptionText = translate('modals.model.loading.description', {}, 'Loading model description...');
     const loadingRecipesText = translate('modals.model.loading.recipes', {}, 'Loading recipes...');
     const loadingExamplesText = translate('modals.model.loading.examples', {}, 'Loading examples...');
-    
+
     const loadingVersionsText = translate('modals.model.loading.versions', {}, 'Loading versions...');
     const civitaiModelId = modelWithFullData.civitai?.modelId || '';
     const civitaiVersionId = modelWithFullData.civitai?.id || '';
@@ -373,7 +373,7 @@ export async function showModelModal(model, modelType) {
                     </button>
                 </div>`.trim();
 
-    const tabPanesContent = modelType === 'loras' ? 
+    const tabPanesContent = modelType === 'loras' ?
         `<div id="showcase-tab" class="tab-pane active">
             <div class="example-images-loading">
                 <i class="fas fa-spinner fa-spin"></i> ${loadingExampleImagesText}
@@ -518,7 +518,7 @@ export async function showModelModal(model, modelType) {
             </div>
         </div>
     `;
-    
+
     function updateVersionsTabBadge(hasUpdate) {
         const modalElement = document.getElementById(modalId);
         if (!modalElement) return;
@@ -594,10 +594,10 @@ export async function showModelModal(model, modelType) {
         updateVersionsTabBadge(hasUpdate);
         updateCardUpdateAvailability(hasUpdate);
     }
-    
+
     let showcaseCleanup;
 
-    const onCloseCallback = function() {
+    const onCloseCallback = function () {
         // Clean up all handlers when modal closes for LoRA
         const modalElement = document.getElementById(modalId);
         if (modalElement && modalElement._clickHandler) {
@@ -610,7 +610,7 @@ export async function showModelModal(model, modelType) {
         }
         cleanupNavigationShortcuts();
     };
-    
+
     modalManager.showModal(modalId, content, null, onCloseCallback);
     const activeModalElement = document.getElementById(modalId);
     if (activeModalElement) {
@@ -643,17 +643,17 @@ export async function showModelModal(model, modelType) {
     setupEventHandlers(modelWithFullData.file_path, modelType);
     setupNavigationShortcuts(modelType);
     updateNavigationControls();
-    
+
     // LoRA specific setup
     if (modelType === 'loras' || modelType === 'embeddings') {
         setupTriggerWordsEditMode();
-        
+
         if (modelType == 'loras') {
             // Load recipes for this LoRA
             loadRecipesForLora(modelWithFullData.model_name, modelWithFullData.sha256);
         }
     }
-    
+
     // Load example images asynchronously - merge regular and custom images
     const regularImages = modelWithFullData.civitai?.images || [];
     const customImages = modelWithFullData.civitai?.customImages || [];
@@ -707,17 +707,17 @@ function detachModalHandlers(modalId) {
  */
 function setupEventHandlers(filePath, modelType) {
     const modalElement = document.getElementById('modelModal');
-    
+
     // Remove existing event listeners first
     modalElement.removeEventListener('click', handleModalClick);
-    
+
     // Create and store the handler function
     function handleModalClick(event) {
         const target = event.target.closest('[data-action]');
         if (!target) return;
-        
+
         const action = target.dataset.action;
-        
+
         switch (action) {
             case 'close-modal':
                 modalManager.closeModal('modelModal');
@@ -748,10 +748,10 @@ function setupEventHandlers(filePath, modelType) {
                 break;
         }
     }
-    
+
     // Add the event listener with the named function
     modalElement.addEventListener('click', handleModalClick);
-    
+
     // Store reference to the handler on the element for potential cleanup
     modalElement._clickHandler = handleModalClick;
 }
@@ -763,15 +763,15 @@ function setupEventHandlers(filePath, modelType) {
  */
 function setupEditableFields(filePath, modelType) {
     const editableFields = document.querySelectorAll('.editable-field [contenteditable]');
-    
+
     editableFields.forEach(field => {
-        field.addEventListener('focus', function() {
+        field.addEventListener('focus', function () {
             if (this.textContent === 'Add your notes here...') {
                 this.textContent = '';
             }
         });
 
-        field.addEventListener('blur', function() {
+        field.addEventListener('blur', function () {
             if (this.textContent.trim() === '') {
                 if (this.classList.contains('notes-content')) {
                     this.textContent = 'Add your notes here...';
@@ -783,7 +783,7 @@ function setupEditableFields(filePath, modelType) {
     // Add keydown event listeners for notes
     const notesContent = document.querySelector('.notes-content');
     if (notesContent) {
-        notesContent.addEventListener('keydown', async function(e) {
+        notesContent.addEventListener('keydown', async function (e) {
             if (e.key === 'Enter') {
                 if (e.shiftKey) {
                     // Allow shift+enter for new line
@@ -810,7 +810,7 @@ function setupLoraSpecificFields(filePath) {
 
     if (!presetSelector || !presetValue || !addPresetBtn || !presetTags) return;
 
-    presetSelector.addEventListener('change', function() {
+    presetSelector.addEventListener('change', function () {
         const selected = this.value;
         if (selected) {
             presetValue.style.display = 'inline-block';
@@ -828,10 +828,10 @@ function setupLoraSpecificFields(filePath) {
         }
     });
 
-    addPresetBtn.addEventListener('click', async function() {
+    addPresetBtn.addEventListener('click', async function () {
         const key = presetSelector.value;
         const value = presetValue.value;
-        
+
         if (!key || !value) return;
 
         const currentPath = resolveFilePath();
@@ -839,21 +839,21 @@ function setupLoraSpecificFields(filePath) {
         const loraCard = document.querySelector(`.model-card[data-filepath="${currentPath}"]`) ||
             document.querySelector(`.model-card[data-filepath="${filePath}"]`);
         const currentPresets = parsePresets(loraCard?.dataset.usage_tips);
-        
+
         currentPresets[key] = parseFloat(value);
         const newPresetsJson = JSON.stringify(currentPresets);
 
         await getModelApiClient().saveModelMetadata(currentPath, { usage_tips: newPresetsJson });
 
         presetTags.innerHTML = renderPresetTags(currentPresets);
-        
+
         presetSelector.value = '';
         presetValue.value = '';
         presetValue.style.display = 'none';
     });
 
     // Add keydown event for preset value
-    presetValue.addEventListener('keydown', function(e) {
+    presetValue.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
             e.preventDefault();
             addPresetBtn.click();
