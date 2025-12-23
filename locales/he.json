@@ -188,7 +188,8 @@
                 "creator": "יוצר",
                 "title": "כותרת מתכון",
                 "loraName": "שם קובץ LoRA",
-                "loraModel": "שם מודל LoRA"
+                "loraModel": "שם מודל LoRA",
+                "prompt": "הנחיה"
             }
         },
         "filter": {
@@ -593,8 +594,8 @@
             },
             "filteredByLora": "מסונן לפי LoRA",
             "favorites": {
-                "title": "[TODO: Translate] Show Favorites Only",
-                "action": "[TODO: Translate] Favorites"
+                "title": "הצג מועדפים בלבד",
+                "action": "מועדפים"
             }
         },
         "duplicates": {

@@ -96,6 +96,7 @@ export async function fetchRecipesPage(page = 1, pageSize = 100) {
                     params.append('search_tags', pageState.searchOptions.tags.toString());
                     params.append('search_lora_name', pageState.searchOptions.loraName.toString());
                     params.append('search_lora_model', pageState.searchOptions.loraModel.toString());
+                    params.append('search_prompt', (pageState.searchOptions.prompt || false).toString());
                     params.append('fuzzy', 'true');
                 }
             }

@@ -163,6 +163,7 @@ class RecipeListingHandler:
                 "tags": request.query.get("search_tags", "true").lower() == "true",
                 "lora_name": request.query.get("search_lora_name", "true").lower() == "true",
                 "lora_model": request.query.get("search_lora_model", "true").lower() == "true",
+                "prompt": request.query.get("search_prompt", "true").lower() == "true",
             }
 
             filters: Dict[str, Any] = {}

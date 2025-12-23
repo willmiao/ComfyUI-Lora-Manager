@@ -106,6 +106,7 @@ class RecipeManager {
                 tags: true,        // Recipe tags
                 loraName: true,    // LoRA file name
                 loraModel: true,   // LoRA model name
+                prompt: true,      // Prompt search
                 recursive: true
             };
         }

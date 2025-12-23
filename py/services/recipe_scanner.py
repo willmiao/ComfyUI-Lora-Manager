@@ -1107,6 +1107,14 @@ class RecipeScanner:
                             if fuzzy_match(str(lora.get('modelName', '')), search):
                                 return True
                     
+                    # Search in prompt and negative_prompt if enabled
+                    if search_options.get('prompt', True) and 'gen_params' in item:
+                        gen_params = item['gen_params']
+                        if fuzzy_match(str(gen_params.get('prompt', '')), search):
+                            return True
+                        if fuzzy_match(str(gen_params.get('negative_prompt', '')), search):
+                            return True
+                    
                     # No match found
                     return False
                 

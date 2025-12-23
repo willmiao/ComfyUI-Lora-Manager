@@ -188,7 +188,8 @@
                 "creator": "Автор",
                 "title": "Название рецепта",
                 "loraName": "Имя файла LoRA",
-                "loraModel": "Название модели LoRA"
+                "loraModel": "Название модели LoRA",
+                "prompt": "Запрос"
             }
         },
         "filter": {
@@ -593,8 +594,8 @@
             },
             "filteredByLora": "Фильтр по LoRA",
             "favorites": {
-                "title": "[TODO: Translate] Show Favorites Only",
-                "action": "[TODO: Translate] Favorites"
+                "title": "Только избранные",
+                "action": "Избранное"
             }
         },
         "duplicates": {

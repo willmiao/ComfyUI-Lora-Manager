@@ -188,7 +188,8 @@
                 "creator": "제작자",
                 "title": "레시피 제목",
                 "loraName": "LoRA 파일명",
-                "loraModel": "LoRA 모델명"
+                "loraModel": "LoRA 모델명",
+                "prompt": "프롬프트"
             }
         },
         "filter": {
@@ -593,8 +594,8 @@
             },
             "filteredByLora": "LoRA로 필터링됨",
             "favorites": {
-                "title": "[TODO: Translate] Show Favorites Only",
-                "action": "[TODO: Translate] Favorites"
+                "title": "즐겨찾기만 표시",
+                "action": "즐겨찾기"
             }
         },
         "duplicates": {

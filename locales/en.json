@@ -188,7 +188,8 @@
                 "creator": "Creator",
                 "title": "Recipe Title",
                 "loraName": "LoRA Filename",
-                "loraModel": "LoRA Model Name"
+                "loraModel": "LoRA Model Name",
+                "prompt": "Prompt"
             }
         },
         "filter": {

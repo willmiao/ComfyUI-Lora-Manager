@@ -549,3 +549,55 @@ async def test_get_paginated_data_filters_by_favorite(recipe_scanner):
     result_fav_false = await scanner.get_paginated_data(page=1, page_size=10, filters={"favorite": False})
     assert len(result_fav_false["items"]) == 2
 
+
+@pytest.mark.asyncio
+async def test_get_paginated_data_filters_by_prompt(recipe_scanner):
+    scanner, _ = recipe_scanner
+    
+    # Add a recipe with a specific prompt
+    await scanner.add_recipe({
+        "id": "prompt-recipe",
+        "file_path": "path/prompt.png",
+        "title": "Prompt Recipe",
+        "modified": 1.0,
+        "created_date": 1.0,
+        "loras": [],
+        "gen_params": {
+            "prompt": "a beautiful forest landscape"
+        }
+    })
+    
+    # Add a recipe with a specific negative prompt
+    await scanner.add_recipe({
+        "id": "neg-prompt-recipe",
+        "file_path": "path/neg.png",
+        "title": "Negative Prompt Recipe",
+        "modified": 2.0,
+        "created_date": 2.0,
+        "loras": [],
+        "gen_params": {
+            "negative_prompt": "ugly, blurry mountains"
+        }
+    })
+    
+    await asyncio.sleep(0)
+    
+    # Test search in prompt
+    result_prompt = await scanner.get_paginated_data(
+        page=1, page_size=10, search="forest", search_options={"prompt": True}
+    )
+    assert len(result_prompt["items"]) == 1
+    assert result_prompt["items"][0]["id"] == "prompt-recipe"
+    
+    # Test search in negative prompt
+    result_neg = await scanner.get_paginated_data(
+        page=1, page_size=10, search="mountains", search_options={"prompt": True}
+    )
+    assert len(result_neg["items"]) == 1
+    assert result_neg["items"][0]["id"] == "neg-prompt-recipe"
+    
+    # Test search disabled (should not find by prompt)
+    result_disabled = await scanner.get_paginated_data(
+        page=1, page_size=10, search="forest", search_options={"prompt": False}
+    )
+    assert len(result_disabled["items"]) == 0

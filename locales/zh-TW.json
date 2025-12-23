@@ -188,7 +188,8 @@
                 "creator": "創作者",
                 "title": "配方標題",
                 "loraName": "LoRA 檔案名稱",
-                "loraModel": "LoRA 模型名稱"
+                "loraModel": "LoRA 模型名稱",
+                "prompt": "提示詞"
             }
         },
         "filter": {
@@ -593,8 +594,8 @@
             },
             "filteredByLora": "已依 LoRA 篩選",
             "favorites": {
-                "title": "[TODO: Translate] Show Favorites Only",
-                "action": "[TODO: Translate] Favorites"
+                "title": "僅顯示收藏",
+                "action": "收藏"
             }
         },
         "duplicates": {

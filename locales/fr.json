@@ -188,7 +188,8 @@
                 "creator": "Créateur",
                 "title": "Titre de la recipe",
                 "loraName": "Nom de fichier LoRA",
-                "loraModel": "Nom du modèle LoRA"
+                "loraModel": "Nom du modèle LoRA",
+                "prompt": "Prompt"
             }
         },
         "filter": {
@@ -593,8 +594,8 @@
             },
             "filteredByLora": "Filtré par LoRA",
             "favorites": {
-                "title": "[TODO: Translate] Show Favorites Only",
-                "action": "[TODO: Translate] Favorites"
+                "title": "Afficher uniquement les favoris",
+                "action": "Favoris"
             }
         },
         "duplicates": {

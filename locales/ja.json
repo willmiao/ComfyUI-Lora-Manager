@@ -188,7 +188,8 @@
                 "creator": "作成者",
                 "title": "レシピタイトル",
                 "loraName": "LoRAファイル名",
-                "loraModel": "LoRAモデル名"
+                "loraModel": "LoRAモデル名",
+                "prompt": "プロンプト"
             }
         },
         "filter": {
@@ -593,8 +594,8 @@
             },
             "filteredByLora": "LoRAでフィルタ済み",
             "favorites": {
-                "title": "[TODO: Translate] Show Favorites Only",
-                "action": "[TODO: Translate] Favorites"
+                "title": "お気に入りのみ表示",
+                "action": "お気に入り"
             }
         },
         "duplicates": {

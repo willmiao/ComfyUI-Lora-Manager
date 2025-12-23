@@ -188,7 +188,8 @@
                 "creator": "创作者",
                 "title": "配方标题",
                 "loraName": "LoRA 文件名",
-                "loraModel": "LoRA 模型名称"
+                "loraModel": "LoRA 模型名称",
+                "prompt": "提示词"
             }
         },
         "filter": {
