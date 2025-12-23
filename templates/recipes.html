@@ -54,6 +54,13 @@
             <button onclick="importManager.showImportModal()"><i class="fas fa-file-import"></i> {{
                 t('recipes.controls.import.action') }}</button>
         </div>
+        <div class="control-group" title="{{ t('loras.controls.bulk.title') }}">
+            <button id="bulkOperationsBtn" data-action="bulk" title="{{ t('loras.controls.bulk.title') }}">
+                <i class="fas fa-th-large"></i> <span><span>{{ t('loras.controls.bulk.action') }}</span>
+                    <div class="shortcut-key">B</div>
+                </span>
+            </button>
+        </div>
         <!-- Add duplicate detection button -->
         <div title="{{ t('loras.controls.duplicates.title') }}" class="control-group">
             <button onclick="recipeManager.findDuplicateRecipes()"><i class="fas fa-clone"></i> {{
@@ -63,13 +70,6 @@
             <button id="favoriteFilterBtn" data-action="toggle-favorites" class="favorite-filter"
                 title="{{ t('recipes.controls.favorites.title') }}">
                 <i class="fas fa-star"></i> <span>{{ t('recipes.controls.favorites.action') }}</span>
-            </button>
-        </div>
-        <div class="control-group" title="{{ t('loras.controls.bulk.title') }}">
-            <button id="bulkOperationsBtn" data-action="bulk" title="{{ t('loras.controls.bulk.title') }}">
-                <i class="fas fa-th-large"></i> <span><span>{{ t('loras.controls.bulk.action') }}</span>
-                    <div class="shortcut-key">B</div>
-                </span>
             </button>
         </div>
         <!-- Custom filter indicator button (hidden by default) -->
