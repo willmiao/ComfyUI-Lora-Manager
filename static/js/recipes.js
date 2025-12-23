@@ -42,20 +42,20 @@ class RecipeManager {
 
         // Page controls for shared sidebar behaviors
         this.pageControls = new RecipePageControls();
-        
+
         // Initialize ImportManager
         this.importManager = new ImportManager();
-        
+
         // Initialize RecipeModal
         this.recipeModal = new RecipeModal();
-        
+
         // Initialize DuplicatesManager
         this.duplicatesManager = new DuplicatesManager(this);
-        
+
         // Add state tracking for infinite scroll
         this.pageState.isLoading = false;
         this.pageState.hasMore = true;
-        
+
         // Custom filter state - move to pageState for compatibility with virtual scrolling
         this.pageState.customFilter = {
             active: false,
@@ -64,26 +64,26 @@ class RecipeManager {
             recipeId: null
         };
     }
-    
+
     async initialize() {
         // Initialize event listeners
         this.initEventListeners();
-        
+
         // Set default search options if not already defined
         this._initSearchOptions();
-        
+
         // Initialize context menu
         new RecipeContextMenu();
-        
+
         // Check for custom filter parameters in session storage
         this._checkCustomFilter();
-        
+
         // Expose necessary functions to the page
         this._exposeGlobalFunctions();
 
         // Initialize sidebar navigation
         await this._initSidebar();
-        
+
         // Initialize common page features
         appCore.initializePageFeatures();
     }
@@ -97,7 +97,7 @@ class RecipeManager {
             console.error('Failed to initialize recipe sidebar:', error);
         }
     }
-    
+
     _initSearchOptions() {
         // Ensure recipes search options are properly initialized
         if (!this.pageState.searchOptions) {
@@ -110,21 +110,21 @@ class RecipeManager {
             };
         }
     }
-    
+
     _exposeGlobalFunctions() {
         // Only expose what's needed for the page
         window.recipeManager = this;
         window.importManager = this.importManager;
     }
-    
+
     _checkCustomFilter() {
         // Check for Lora filter
         const filterLoraName = getSessionItem('lora_to_recipe_filterLoraName');
         const filterLoraHash = getSessionItem('lora_to_recipe_filterLoraHash');
-        
+
         // Check for specific recipe ID
         const viewRecipeId = getSessionItem('viewRecipeId');
-        
+
         // Set custom filter if any parameter is present
         if (filterLoraName || filterLoraHash || viewRecipeId) {
             this.pageState.customFilter = {
@@ -133,35 +133,35 @@ class RecipeManager {
                 loraHash: filterLoraHash,
                 recipeId: viewRecipeId
             };
-            
+
             // Show custom filter indicator
             this._showCustomFilterIndicator();
         }
     }
-    
+
     _showCustomFilterIndicator() {
         const indicator = document.getElementById('customFilterIndicator');
         const textElement = document.getElementById('customFilterText');
-        
+
         if (!indicator || !textElement) return;
-        
+
         // Update text based on filter type
         let filterText = '';
-        
+
         if (this.pageState.customFilter.recipeId) {
             filterText = 'Viewing specific recipe';
         } else if (this.pageState.customFilter.loraName) {
             // Format with Lora name
             const loraName = this.pageState.customFilter.loraName;
-            const displayName = loraName.length > 25 ? 
-                loraName.substring(0, 22) + '...' : 
+            const displayName = loraName.length > 25 ?
+                loraName.substring(0, 22) + '...' :
                 loraName;
-                
+
             filterText = `<span>Recipes using: <span class="lora-name">${displayName}</span></span>`;
         } else {
             filterText = 'Filtered recipes';
         }
-        
+
         // Update indicator text and show it
         textElement.innerHTML = filterText;
         // Add title attribute to show the lora name as a tooltip
@@ -169,14 +169,14 @@ class RecipeManager {
             textElement.setAttribute('title', this.pageState.customFilter.loraName);
         }
         indicator.classList.remove('hidden');
-        
+
         // Add pulse animation
         const filterElement = indicator.querySelector('.filter-active');
         if (filterElement) {
             filterElement.classList.add('animate');
             setTimeout(() => filterElement.classList.remove('animate'), 600);
         }
-        
+
         // Add click handler for clear filter button
         const clearFilterBtn = indicator.querySelector('.clear-filter');
         if (clearFilterBtn) {
@@ -186,7 +186,7 @@ class RecipeManager {
             });
         }
     }
-    
+
     _clearCustomFilter() {
         // Reset custom filter
         this.pageState.customFilter = {
@@ -195,22 +195,22 @@ class RecipeManager {
             loraHash: null,
             recipeId: null
         };
-        
+
         // Hide indicator
         const indicator = document.getElementById('customFilterIndicator');
         if (indicator) {
             indicator.classList.add('hidden');
         }
-        
+
         // Clear any session storage items
         removeSessionItem('lora_to_recipe_filterLoraName');
         removeSessionItem('lora_to_recipe_filterLoraHash');
         removeSessionItem('viewRecipeId');
-        
+
         // Reset and refresh the virtual scroller
         refreshVirtualScroll();
     }
-    
+
     initEventListeners() {
         // Sort select
         const sortSelect = document.getElementById('sortSelect');
@@ -225,8 +225,17 @@ class RecipeManager {
         if (bulkButton) {
             bulkButton.addEventListener('click', () => window.bulkManager?.toggleBulkMode());
         }
+
+        const favoriteFilterBtn = document.getElementById('favoriteFilterBtn');
+        if (favoriteFilterBtn) {
+            favoriteFilterBtn.addEventListener('click', () => {
+                this.pageState.showFavoritesOnly = !this.pageState.showFavoritesOnly;
+                favoriteFilterBtn.classList.toggle('active', this.pageState.showFavoritesOnly);
+                refreshVirtualScroll();
+            });
+        }
     }
-    
+
     // This method is kept for compatibility but now uses virtual scrolling
     async loadRecipes(resetPage = true) {
         // Skip loading if in duplicates mode
@@ -234,32 +243,32 @@ class RecipeManager {
         if (pageState.duplicatesMode) {
             return;
         }
-        
+
         if (resetPage) {
             refreshVirtualScroll();
         }
     }
-    
+
     /**
      * Refreshes the recipe list by first rebuilding the cache and then loading recipes
      */
     async refreshRecipes() {
         return refreshRecipes();
     }
-    
+
     showRecipeDetails(recipe) {
         this.recipeModal.showRecipeDetails(recipe);
     }
-    
+
     // Duplicate detection and management methods
     async findDuplicateRecipes() {
         return await this.duplicatesManager.findDuplicates();
     }
-    
+
     selectLatestDuplicates() {
         this.duplicatesManager.selectLatestDuplicates();
     }
-    
+
     deleteSelectedDuplicates() {
         this.duplicatesManager.deleteSelectedDuplicates();
     }
@@ -267,14 +276,14 @@ class RecipeManager {
     confirmDeleteDuplicates() {
         this.duplicatesManager.confirmDeleteDuplicates();
     }
-    
+
     exitDuplicateMode() {
         // Clear the grid first to prevent showing old content temporarily
         const recipeGrid = document.getElementById('recipeGrid');
         if (recipeGrid) {
             recipeGrid.innerHTML = '';
         }
-        
+
         this.duplicatesManager.exitDuplicateMode();
     }
 }
@@ -283,7 +292,7 @@ class RecipeManager {
 document.addEventListener('DOMContentLoaded', async () => {
     // Initialize core application
     await appCore.initialize();
-    
+
     // Initialize recipe manager
     const recipeManager = new RecipeManager();
     await recipeManager.initialize();

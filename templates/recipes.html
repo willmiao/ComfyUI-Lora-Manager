@@ -59,6 +59,12 @@
             <button onclick="recipeManager.findDuplicateRecipes()"><i class="fas fa-clone"></i> {{
                 t('loras.controls.duplicates.action') }}</button>
         </div>
+        <div class="control-group">
+            <button id="favoriteFilterBtn" data-action="toggle-favorites" class="favorite-filter"
+                title="{{ t('recipes.controls.favorites.title') }}">
+                <i class="fas fa-star"></i> <span>{{ t('recipes.controls.favorites.action') }}</span>
+            </button>
+        </div>
         <div class="control-group" title="{{ t('loras.controls.bulk.title') }}">
             <button id="bulkOperationsBtn" data-action="bulk" title="{{ t('loras.controls.bulk.title') }}">
                 <i class="fas fa-th-large"></i> <span><span>{{ t('loras.controls.bulk.action') }}</span>

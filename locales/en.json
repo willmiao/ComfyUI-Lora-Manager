@@ -591,7 +591,11 @@
             "refresh": {
                 "title": "Refresh recipe list"
             },
-            "filteredByLora": "Filtered by LoRA"
+            "filteredByLora": "Filtered by LoRA",
+            "favorites": {
+                "title": "Show Favorites Only",
+                "action": "Favorites"
+            }
         },
         "duplicates": {
             "found": "Found {count} duplicate groups",

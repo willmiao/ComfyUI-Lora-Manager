@@ -502,7 +502,50 @@ async def test_update_lora_filename_by_hash_updates_affected_recipes(tmp_path: P
     persisted2 = json.loads(recipe2_path.read_text())
     assert persisted2["loras"][0]["file_name"] == "other_lora"
 
-    # Check cache
     cache = await scanner.get_cached_data()
     cached1 = next(r for r in cache.raw_data if r["id"] == recipe1_id)
     assert cached1["loras"][0]["file_name"] == new_name
+
+
+@pytest.mark.asyncio
+async def test_get_paginated_data_filters_by_favorite(recipe_scanner):
+    scanner, _ = recipe_scanner
+    
+    # Add a normal recipe
+    await scanner.add_recipe({
+        "id": "regular",
+        "file_path": "path/regular.png",
+        "title": "Regular Recipe",
+        "modified": 1.0,
+        "created_date": 1.0,
+        "loras": [],
+    })
+    
+    # Add a favorite recipe
+    await scanner.add_recipe({
+        "id": "favorite",
+        "file_path": "path/favorite.png",
+        "title": "Favorite Recipe",
+        "modified": 2.0,
+        "created_date": 2.0,
+        "loras": [],
+        "favorite": True
+    })
+    
+    # Wait for cache update (it's async in some places, add_recipe is usually enough but let's be safe)
+    await asyncio.sleep(0)
+    
+    # Test without filter (should return both)
+    result_all = await scanner.get_paginated_data(page=1, page_size=10)
+    assert len(result_all["items"]) == 2
+    
+    # Test with favorite filter
+    result_fav = await scanner.get_paginated_data(page=1, page_size=10, filters={"favorite": True})
+    assert len(result_fav["items"]) == 1
+    assert result_fav["items"][0]["id"] == "favorite"
+    
+    # Test with favorite filter set to False (should return both or at least not filter if it's the default)
+    # Actually our implementation checks if 'favorite' in filters and filters['favorite']
+    result_fav_false = await scanner.get_paginated_data(page=1, page_size=10, filters={"favorite": False})
+    assert len(result_fav_false["items"]) == 2
+

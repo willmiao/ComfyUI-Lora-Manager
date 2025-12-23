@@ -591,7 +591,11 @@
             "refresh": {
                 "title": "레시피 목록 새로고침"
             },
-            "filteredByLora": "LoRA로 필터링됨"
+            "filteredByLora": "LoRA로 필터링됨",
+            "favorites": {
+                "title": "[TODO: Translate] Show Favorites Only",
+                "action": "[TODO: Translate] Favorites"
+            }
         },
         "duplicates": {
             "found": "{count}개의 중복 그룹 발견",

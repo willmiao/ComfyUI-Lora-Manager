@@ -1122,6 +1122,13 @@ class RecipeScanner:
                         if item.get('base_model', '') in filters['base_model']
                     ]
                 
+                # Filter by favorite
+                if 'favorite' in filters and filters['favorite']:
+                    filtered_data = [
+                        item for item in filtered_data
+                        if item.get('favorite') is True
+                    ]
+
                 # Filter by tags
                 if 'tags' in filters and filters['tags']:
                     tag_spec = filters['tags']

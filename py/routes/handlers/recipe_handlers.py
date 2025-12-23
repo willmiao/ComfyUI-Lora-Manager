@@ -170,6 +170,9 @@ class RecipeListingHandler:
             if base_models:
                 filters["base_model"] = base_models.split(",")
 
+            if request.query.get("favorite", "false").lower() == "true":
+                filters["favorite"] = True
+
             tag_filters: Dict[str, str] = {}
             legacy_tags = request.query.get("tags")
             if legacy_tags:

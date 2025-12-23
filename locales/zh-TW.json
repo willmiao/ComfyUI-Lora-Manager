@@ -591,7 +591,11 @@
             "refresh": {
                 "title": "重新整理配方列表"
             },
-            "filteredByLora": "已依 LoRA 篩選"
+            "filteredByLora": "已依 LoRA 篩選",
+            "favorites": {
+                "title": "[TODO: Translate] Show Favorites Only",
+                "action": "[TODO: Translate] Favorites"
+            }
         },
         "duplicates": {
             "found": "發現 {count} 組重複項",

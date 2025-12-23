@@ -591,7 +591,11 @@
             "refresh": {
                 "title": "刷新配方列表"
             },
-            "filteredByLora": "按 LoRA 筛选"
+            "filteredByLora": "按 LoRA 筛选",
+            "favorites": {
+                "title": "仅显示收藏",
+                "action": "收藏"
+            }
         },
         "duplicates": {
             "found": "发现 {count} 个重复组",

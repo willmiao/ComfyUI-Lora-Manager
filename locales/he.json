@@ -228,6 +228,7 @@
             "videoSettings": "הגדרות וידאו",
             "layoutSettings": "הגדרות פריסה",
             "folderSettings": "הגדרות תיקייה",
+            "priorityTags": "תגיות עדיפות",
             "downloadPathTemplates": "תבניות נתיב הורדה",
             "exampleImages": "תמונות דוגמה",
             "updateFlags": "תגי עדכון",
@@ -235,8 +236,7 @@
             "misc": "שונות",
             "metadataArchive": "מסד נתונים של ארכיון מטא-דאטה",
             "storageLocation": "מיקום ההגדרות",
-            "proxySettings": "הגדרות פרוקסי",
-            "priorityTags": "תגיות עדיפות"
+            "proxySettings": "הגדרות פרוקסי"
         },
         "storage": {
             "locationLabel": "מצב נייד",
@@ -309,6 +309,26 @@
             "defaultEmbeddingRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של embedding להורדות, ייבוא והעברות",
             "noDefault": "אין ברירת מחדל"
         },
+        "priorityTags": {
+            "title": "תגיות עדיפות",
+            "description": "התאם את סדר העדיפות של התגיות עבור כל סוג מודל (לדוגמה: character, concept, style(toon|toon_style))",
+            "placeholder": "character, concept, style(toon|toon_style)",
+            "helpLinkLabel": "פתח עזרה בנושא תגיות עדיפות",
+            "modelTypes": {
+                "lora": "LoRA",
+                "checkpoint": "Checkpoint",
+                "embedding": "Embedding"
+            },
+            "saveSuccess": "תגיות העדיפות עודכנו.",
+            "saveError": "עדכון תגיות העדיפות נכשל.",
+            "loadingSuggestions": "טוען הצעות...",
+            "validation": {
+                "missingClosingParen": "לרשומה {index} חסר סוגר סוגריים.",
+                "missingCanonical": "על הרשומה {index} לכלול שם תגית קנונית.",
+                "duplicateCanonical": "התגית הקנונית \"{tag}\" מופיעה יותר מפעם אחת.",
+                "unknown": "תצורת תגיות העדיפות שגויה."
+            }
+        },
         "downloadPathTemplates": {
             "title": "תבניות נתיב הורדה",
             "help": "הגדר מבני תיקיות לסוגי מודלים שונים בעת הורדה מ-Civitai.",
@@ -320,8 +340,8 @@
                 "byFirstTag": "לפי תגית ראשונה",
                 "baseModelFirstTag": "מודל בסיס + תגית ראשונה",
                 "baseModelAuthor": "מודל בסיס + יוצר",
-                "baseModelAuthorFirstTag": "מודל בסיס + יוצר + תגית ראשונה",
                 "authorFirstTag": "יוצר + תגית ראשונה",
+                "baseModelAuthorFirstTag": "מודל בסיס + יוצר + תגית ראשונה",
                 "customTemplate": "תבנית מותאמת אישית"
             },
             "customTemplatePlaceholder": "הזן תבנית מותאמת אישית (למשל, {base_model}/{author}/{first_tag})",
@@ -409,26 +429,6 @@
             "proxyPassword": "סיסמה (אופציונלי)",
             "proxyPasswordPlaceholder": "password",
             "proxyPasswordHelp": "סיסמה לאימות מול הפרוקסי (אם נדרש)"
-        },
-        "priorityTags": {
-            "title": "תגיות עדיפות",
-            "description": "התאם את סדר העדיפות של התגיות עבור כל סוג מודל (לדוגמה: character, concept, style(toon|toon_style))",
-            "placeholder": "character, concept, style(toon|toon_style)",
-            "helpLinkLabel": "פתח עזרה בנושא תגיות עדיפות",
-            "modelTypes": {
-                "lora": "LoRA",
-                "checkpoint": "Checkpoint",
-                "embedding": "Embedding"
-            },
-            "saveSuccess": "תגיות העדיפות עודכנו.",
-            "saveError": "עדכון תגיות העדיפות נכשל.",
-            "loadingSuggestions": "טוען הצעות...",
-            "validation": {
-                "missingClosingParen": "לרשומה {index} חסר סוגר סוגריים.",
-                "missingCanonical": "על הרשומה {index} לכלול שם תגית קנונית.",
-                "duplicateCanonical": "התגית הקנונית \"{tag}\" מופיעה יותר מפעם אחת.",
-                "unknown": "תצורת תגיות העדיפות שגויה."
-            }
         }
     },
     "loras": {
@@ -591,7 +591,11 @@
             "refresh": {
                 "title": "רענן רשימת מתכונים"
             },
-            "filteredByLora": "מסונן לפי LoRA"
+            "filteredByLora": "מסונן לפי LoRA",
+            "favorites": {
+                "title": "[TODO: Translate] Show Favorites Only",
+                "action": "[TODO: Translate] Favorites"
+            }
         },
         "duplicates": {
             "found": "נמצאו {count} קבוצות כפולות",

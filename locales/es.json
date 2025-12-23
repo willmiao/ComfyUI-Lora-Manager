@@ -591,7 +591,11 @@
             "refresh": {
                 "title": "Actualizar lista de recetas"
             },
-            "filteredByLora": "Filtrado por LoRA"
+            "filteredByLora": "Filtrado por LoRA",
+            "favorites": {
+                "title": "[TODO: Translate] Show Favorites Only",
+                "action": "[TODO: Translate] Favorites"
+            }
         },
         "duplicates": {
             "found": "Se encontraron {count} grupos de duplicados",

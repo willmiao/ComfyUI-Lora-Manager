@@ -173,9 +173,9 @@ class RecipePersistenceService:
     async def update_recipe(self, *, recipe_scanner, recipe_id: str, updates: dict[str, Any]) -> PersistenceResult:
         """Update persisted metadata for a recipe."""
 
-        if not any(key in updates for key in ("title", "tags", "source_path", "preview_nsfw_level")):
+        if not any(key in updates for key in ("title", "tags", "source_path", "preview_nsfw_level", "favorite")):
             raise RecipeValidationError(
-                "At least one field to update must be provided (title or tags or source_path or preview_nsfw_level)"
+                "At least one field to update must be provided (title or tags or source_path or preview_nsfw_level or favorite)"
             )
 
         success = await recipe_scanner.update_recipe_metadata(recipe_id, updates)
