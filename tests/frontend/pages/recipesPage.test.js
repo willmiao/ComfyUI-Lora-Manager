@@ -110,7 +110,7 @@ describe('RecipeManager', () => {
     initializeAppMock.mockResolvedValue(undefined);
     initializePageFeaturesMock.mockResolvedValue(undefined);
     refreshVirtualScrollMock.mockReset();
-    refreshVirtualScrollMock.mockImplementation(() => {});
+    refreshVirtualScrollMock.mockImplementation(() => { });
     refreshRecipesMock.mockResolvedValue('refreshed');
 
     getSessionItemMock.mockImplementation((key) => {
@@ -121,7 +121,7 @@ describe('RecipeManager', () => {
       };
       return map[key] ?? null;
     });
-    removeSessionItemMock.mockImplementation(() => {});
+    removeSessionItemMock.mockImplementation(() => { });
 
     renderRecipesPage();
 
@@ -158,6 +158,7 @@ describe('RecipeManager', () => {
       tags: true,
       loraName: true,
       loraModel: true,
+      prompt: true,
       recursive: true,
     });
 
