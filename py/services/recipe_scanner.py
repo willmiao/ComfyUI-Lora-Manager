@@ -1162,15 +1162,25 @@ class RecipeScanner:
                         include_tags = {tag for tag in tag_spec if tag}
 
                     if include_tags:
+                        def matches_include(item_tags):
+                            if not item_tags and "__no_tags__" in include_tags:
+                                return True
+                            return any(tag in include_tags for tag in (item_tags or []))
+
                         filtered_data = [
                             item for item in filtered_data
-                            if any(tag in include_tags for tag in (item.get('tags', []) or []))
+                            if matches_include(item.get('tags'))
                         ]
 
                     if exclude_tags:
+                        def matches_exclude(item_tags):
+                            if not item_tags and "__no_tags__" in exclude_tags:
+                                return True
+                            return any(tag in exclude_tags for tag in (item_tags or []))
+
                         filtered_data = [
                             item for item in filtered_data
-                            if not any(tag in exclude_tags for tag in (item.get('tags', []) or []))
+                            if not matches_exclude(item.get('tags'))
                         ]
 
 

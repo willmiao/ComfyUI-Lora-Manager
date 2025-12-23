@@ -200,6 +200,7 @@
             "license": "许可证",
             "noCreditRequired": "无需署名",
             "allowSellingGeneratedContent": "允许销售",
+            "noTags": "无标签",
             "clearAll": "清除所有筛选"
         },
         "theme": {

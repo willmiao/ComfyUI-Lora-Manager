@@ -242,6 +242,20 @@
     border-color: var(--lora-error-border);
 }
 
+/* Subtle styling for special system tags like "No tags" */
+.filter-tag.special-tag {
+    border-style: dashed;
+    opacity: 0.8;
+    font-style: italic;
+}
+
+/* Ensure solid border and full opacity when active or excluded */
+.filter-tag.special-tag.active,
+.filter-tag.special-tag.exclude {
+    border-style: solid;
+    opacity: 1;
+}
+
 /* Tag filter styles */
 .tag-filter {
     display: flex;

@@ -200,6 +200,7 @@
             "license": "ライセンス",
             "noCreditRequired": "クレジット不要",
             "allowSellingGeneratedContent": "販売許可",
+            "noTags": "タグなし",
             "clearAll": "すべてのフィルタをクリア"
         },
         "theme": {

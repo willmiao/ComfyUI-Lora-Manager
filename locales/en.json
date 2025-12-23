@@ -200,6 +200,7 @@
             "license": "License",
             "noCreditRequired": "No Credit Required",
             "allowSellingGeneratedContent": "Allow Selling",
+            "noTags": "No tags",
             "clearAll": "Clear All Filters"
         },
         "theme": {

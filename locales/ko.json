@@ -200,6 +200,7 @@
             "license": "라이선스",
             "noCreditRequired": "크레딧 표기 없음",
             "allowSellingGeneratedContent": "판매 허용",
+            "noTags": "태그 없음",
             "clearAll": "모든 필터 지우기"
         },
         "theme": {
