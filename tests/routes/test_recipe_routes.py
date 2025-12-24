@@ -394,7 +394,6 @@ async def test_import_remote_recipe(monkeypatch, tmp_path: Path) -> None:
         assert metadata["checkpoint"]["modelVersionId"] == 33
         assert metadata["loras"][0]["weight"] == 0.25
         assert metadata["gen_params"]["prompt"] == "hello world"
-        assert metadata["gen_params"]["checkpoint"]["modelVersionId"] == 33
         assert harness.downloader.urls == ["https://example.com/images/1"]
 
 
