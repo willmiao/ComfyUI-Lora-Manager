@@ -109,13 +109,15 @@ async def test_repair_all_recipes_with_enriched_checkpoint_id(setup_scanner):
     
     saved_recipe = recipe_scanner._save_recipe_persistently.call_args[0][0]
     checkpoint = saved_recipe["checkpoint"]
-    assert checkpoint["name"] == "Full Model Name"
-    assert checkpoint["version"] == "v1.0"
+    assert checkpoint["modelName"] == "Full Model Name"
+    assert checkpoint["modelVersionName"] == "v1.0"
     assert checkpoint["modelId"] == 1234
-    assert checkpoint["id"] == 5678
-    assert checkpoint["hash"] == "abcdef"
-    assert checkpoint["file_name"] == "full_filename"
-    assert "thumbnailUrl" not in checkpoint # Stripped during sanitation
+    assert checkpoint["modelVersionId"] == 5678
+    assert checkpoint["type"] == "checkpoint"
+    assert "name" not in checkpoint
+    assert "version" not in checkpoint
+    assert "hash" not in checkpoint
+    assert "file_name" not in checkpoint
 
 @pytest.mark.asyncio
 async def test_repair_all_recipes_with_enriched_checkpoint_hash(setup_scanner):
@@ -151,10 +153,10 @@ async def test_repair_all_recipes_with_enriched_checkpoint_hash(setup_scanner):
     
     saved_recipe = recipe_scanner._save_recipe_persistently.call_args[0][0]
     checkpoint = saved_recipe["checkpoint"]
-    assert checkpoint["name"] == "Hashed Model"
-    assert checkpoint["version"] == "v2.0"
+    assert checkpoint["modelName"] == "Hashed Model"
+    assert checkpoint["modelVersionName"] == "v2.0"
     assert checkpoint["modelId"] == 888
-    assert checkpoint["hash"] == "hash123"
+    assert checkpoint["type"] == "checkpoint"
 
 @pytest.mark.asyncio
 async def test_repair_all_recipes_fallback_to_basic(setup_scanner):
@@ -180,7 +182,8 @@ async def test_repair_all_recipes_fallback_to_basic(setup_scanner):
     # Verify
     assert results["repaired"] == 1
     saved_recipe = recipe_scanner._save_recipe_persistently.call_args[0][0]
-    assert saved_recipe["checkpoint"]["name"] == "just_a_name.safetensors"
+    assert saved_recipe["checkpoint"]["modelName"] == "just_a_name.safetensors"
+    assert saved_recipe["checkpoint"]["type"] == "checkpoint"
     assert "modelId" not in saved_recipe["checkpoint"]
 
 @pytest.mark.asyncio
@@ -271,4 +274,9 @@ async def test_sanitize_recipe_for_storage(recipe_scanner):
     assert "strength" in clean["loras"][0]
     assert clean["loras"][0]["strength"] == 0.5
     assert "localPath" not in clean["checkpoint"]
+    # Testing based on what enricher would produce if it ran, 
+    # but here we are just testing the sanitizer which handles what is ALREADY there.
+    # However, the sanitizer doesn't rename fields, it just removes runtime ones.
+    # Since we changed the enricher to NOT put 'name' anymore, this test case 
+    # should probably reflect the new fields if it's simulating a real recipe.
     assert clean["checkpoint"]["name"] == "CP"

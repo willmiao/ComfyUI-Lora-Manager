@@ -124,21 +124,10 @@ class RecipeEnricher:
                 recipe, target_version_id, target_hash, model_val, checkpoint_val
             )
             if checkpoint_updated:
-                # Sync to gen_params for consistency with legacy usage
-                if "gen_params" not in recipe:
-                    recipe["gen_params"] = {}
-                recipe["gen_params"]["checkpoint"] = recipe["checkpoint"]
                 updated = True
         else:
-            # Even if we have a checkpoint, ensure it is synced to gen_params if missing there
-            if "checkpoint" in recipe and recipe["checkpoint"]:
-                if "gen_params" not in recipe:
-                    recipe["gen_params"] = {}
-                if "checkpoint" not in recipe["gen_params"]:
-                    recipe["gen_params"]["checkpoint"] = recipe["checkpoint"]
-                    # We don't necessarily mark 'updated=True' just for this sync if the rest is the same,
-                    # but it's safer to ensure it's there.
-                    updated = True
+            # Checkpoint exists, no need to sync to gen_params anymore.
+            pass
         # If base_model is empty or very generic, try to use what we found in checkpoint
         current_base_model = recipe.get("base_model")
         checkpoint_after = recipe.get("checkpoint")
@@ -201,23 +190,28 @@ class RecipeEnricher:
             if existing_cp is None:
                 existing_cp = {}
             checkpoint_data = await RecipeMetadataParser.populate_checkpoint_from_civitai(existing_cp, civitai_info)
-            recipe["checkpoint"] = checkpoint_data
             
-            # Ensure the modelVersionId is stored if we found it
-            if target_version_id and "modelVersionId" not in recipe["checkpoint"]:
-                recipe["checkpoint"]["modelVersionId"] = int(target_version_id)
+            # Format according to requirements: type, modelId, modelVersionId, modelName, modelVersionName
+            formatted_checkpoint = {
+                "type": "checkpoint",
+                "modelId": checkpoint_data.get("modelId"),
+                "modelVersionId": checkpoint_data.get("id") or checkpoint_data.get("modelVersionId"),
+                "modelName": checkpoint_data.get("name"), # In base.py, 'name' is populated from civitai_data['model']['name']
+                "modelVersionName": checkpoint_data.get("version") # In base.py, 'version' is populated from civitai_data['name']
+            }
+            # Remove None values
+            recipe["checkpoint"] = {k: v for k, v in formatted_checkpoint.items() if v is not None}
+            
             return True
         else:
             # Fallback to name extraction if we don't already have one
             existing_cp = recipe.get("checkpoint")
-            if not existing_cp or not existing_cp.get("name"):
+            if not existing_cp or not existing_cp.get("modelName"):
                 cp_name = checkpoint_val
                 if cp_name:
                     recipe["checkpoint"] = {
                         "type": "checkpoint",
-                        "name": cp_name,
-                        "modelName": cp_name,
-                        "file_name": os.path.splitext(cp_name)[0]
+                        "modelName": cp_name
                     }
                     return True
                 

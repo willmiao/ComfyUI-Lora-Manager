@@ -57,7 +57,7 @@ class RecipeScanner:
             cls._instance._civitai_client = None  # Will be lazily initialized
         return cls._instance
     
-    REPAIR_VERSION = 2
+    REPAIR_VERSION = 3
     
     def __init__(
         self,

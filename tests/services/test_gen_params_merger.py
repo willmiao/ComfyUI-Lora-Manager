@@ -45,7 +45,7 @@ def test_merge_none_values():
     assert merged == {}
 
 def test_merge_filters_blacklisted_keys():
-    request_params = {"prompt": "test", "id": "should-be-removed"}
+    request_params = {"prompt": "test", "id": "should-be-removed", "checkpoint": "should-not-be-here"}
     civitai_meta = {"cfg": 7, "url": "remove-me"}
     embedded_metadata = {"seed": 123, "hash": "remove-also"}
     
@@ -57,6 +57,7 @@ def test_merge_filters_blacklisted_keys():
     assert "id" not in merged
     assert "url" not in merged
     assert "hash" not in merged
+    assert "checkpoint" not in merged
 
 def test_merge_filters_meta_and_normalizes_keys():
     civitai_meta = {

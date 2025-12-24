@@ -12,7 +12,7 @@ class GenParamsMerger:
         "baseModel", "resources", "disablePoi", "aspectRatio", "Created Date",
         "experimental", "civitaiResources", "civitai_resources", "Civitai resources",
         "modelVersionId", "modelId", "hashes", "Model", "Model hash", "checkpoint_hash",
-        "checksum", "model_checksum"
+        "checkpoint", "checksum", "model_checksum"
     }
     
     NORMALIZATION_MAPPING = {
