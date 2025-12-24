@@ -338,7 +338,7 @@ async def test_move_recipe_invokes_persistence(monkeypatch, tmp_path: Path) -> N
 
 
 async def test_import_remote_recipe(monkeypatch, tmp_path: Path) -> None:
-    provider_calls: list[int] = []
+    provider_calls: list[str | int] = []
 
     class Provider:
         async def get_model_version_info(self, model_version_id):
@@ -348,7 +348,7 @@ async def test_import_remote_recipe(monkeypatch, tmp_path: Path) -> None:
     async def fake_get_default_metadata_provider():
         return Provider()
 
-    monkeypatch.setattr(recipe_handlers, "get_default_metadata_provider", fake_get_default_metadata_provider)
+    monkeypatch.setattr("py.recipes.enrichment.get_default_metadata_provider", fake_get_default_metadata_provider)
 
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         resources = [
@@ -390,7 +390,7 @@ async def test_import_remote_recipe(monkeypatch, tmp_path: Path) -> None:
         assert call["tags"] == ["foo", "bar"]
         metadata = call["metadata"]
         assert metadata["base_model"] == "Flux Provider"
-        assert provider_calls == [33]
+        assert provider_calls == ["33"]
         assert metadata["checkpoint"]["modelVersionId"] == 33
         assert metadata["loras"][0]["weight"] == 0.25
         assert metadata["gen_params"]["prompt"] == "hello world"
@@ -399,7 +399,7 @@ async def test_import_remote_recipe(monkeypatch, tmp_path: Path) -> None:
 
 
 async def test_import_remote_recipe_falls_back_to_request_base_model(monkeypatch, tmp_path: Path) -> None:
-    provider_calls: list[int] = []
+    provider_calls: list[str | int] = []
 
     class Provider:
         async def get_model_version_info(self, model_version_id):
@@ -409,7 +409,7 @@ async def test_import_remote_recipe_falls_back_to_request_base_model(monkeypatch
     async def fake_get_default_metadata_provider():
         return Provider()
 
-    monkeypatch.setattr(recipe_handlers, "get_default_metadata_provider", fake_get_default_metadata_provider)
+    monkeypatch.setattr("py.recipes.enrichment.get_default_metadata_provider", fake_get_default_metadata_provider)
 
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         resources = [
@@ -438,14 +438,14 @@ async def test_import_remote_recipe_falls_back_to_request_base_model(monkeypatch
 
         metadata = harness.persistence.save_calls[-1]["metadata"]
         assert metadata["base_model"] == "Flux"
-        assert provider_calls == [77]
+        assert provider_calls == ["77"]
 
 
 async def test_import_remote_video_recipe(monkeypatch, tmp_path: Path) -> None:
     async def fake_get_default_metadata_provider():
         return SimpleNamespace(get_model_version_info=lambda id: ({}, None))
 
-    monkeypatch.setattr(recipe_handlers, "get_default_metadata_provider", fake_get_default_metadata_provider)
+    monkeypatch.setattr("py.recipes.enrichment.get_default_metadata_provider", fake_get_default_metadata_provider)
 
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         harness.civitai.image_info["12345"] = {
@@ -537,7 +537,7 @@ async def test_import_remote_recipe_merges_metadata(monkeypatch, tmp_path: Path)
     async def fake_get_default_metadata_provider():
         return Provider()
 
-    monkeypatch.setattr(recipe_handlers, "get_default_metadata_provider", fake_get_default_metadata_provider)
+    monkeypatch.setattr("py.recipes.enrichment.get_default_metadata_provider", fake_get_default_metadata_provider)
 
     # 2. Mock ExifUtils to return some embedded metadata
     class MockExifUtils:

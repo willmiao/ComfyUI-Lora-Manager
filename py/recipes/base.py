@@ -37,7 +37,8 @@ class RecipeMetadataParser(ABC):
         """
         pass
     
-    async def populate_lora_from_civitai(self, lora_entry: Dict[str, Any], civitai_info_tuple: Tuple[Dict[str, Any], Optional[str]], 
+    @staticmethod
+    async def populate_lora_from_civitai(lora_entry: Dict[str, Any], civitai_info_tuple: Tuple[Dict[str, Any], Optional[str]], 
                                          recipe_scanner=None, base_model_counts=None, hash_value=None) -> Optional[Dict[str, Any]]:
         """
         Populate a lora entry with information from Civitai API response
@@ -148,8 +149,9 @@ class RecipeMetadataParser(ABC):
             logger.error(f"Error populating lora from Civitai info: {e}")
             
         return lora_entry
-        
-    async def populate_checkpoint_from_civitai(self, checkpoint: Dict[str, Any], civitai_info: Dict[str, Any]) -> Dict[str, Any]:
+    
+    @staticmethod
+    async def populate_checkpoint_from_civitai(checkpoint: Dict[str, Any], civitai_info: Dict[str, Any]) -> Dict[str, Any]:
         """
         Populate checkpoint information from Civitai API response
         
@@ -187,6 +189,7 @@ class RecipeMetadataParser(ABC):
             checkpoint['downloadUrl'] = civitai_data.get('downloadUrl', '')
 
             checkpoint['modelId'] = civitai_data.get('modelId', checkpoint.get('modelId', 0))
+            checkpoint['id'] = civitai_data.get('id', 0)
 
             if 'files' in civitai_data:
                 model_file = next(

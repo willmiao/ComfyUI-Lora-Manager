@@ -18,6 +18,7 @@ from natsort import natsorted
 import sys
 import re
 from ..recipes.merger import GenParamsMerger
+from ..recipes.enrichment import RecipeEnricher
 
 logger = logging.getLogger(__name__)
 
@@ -184,18 +185,22 @@ class RecipeScanner:
             Dict summary of repair result
         """
         async with self._mutation_lock:
-            recipe = await self.get_recipe_by_id(recipe_id)
+            # Get raw recipe from cache directly to avoid formatted fields
+            cache = await self.get_cached_data()
+            recipe = next((r for r in cache.raw_data if str(r.get('id', '')) == recipe_id), None)
+            
             if not recipe:
                 raise RecipeNotFoundError(f"Recipe {recipe_id} not found")
             
             civitai_client = await self._get_civitai_client()
             success = await self._repair_single_recipe(recipe, civitai_client)
             
+            # If successfully repaired, we should return the formatted version for the UI
             return {
                 "success": True,
                 "repaired": 1 if success else 0,
                 "skipped": 0 if success else 1,
-                "recipe": recipe
+                "recipe": await self.get_recipe_by_id(recipe_id) if success else recipe
             }
 
     async def _repair_single_recipe(self, recipe: Dict[str, Any], civitai_client: Any) -> bool:
@@ -221,68 +226,28 @@ class RecipeScanner:
         
         if not needs_repair:
             # Even if no repair needed, we mark it with version if it was processed
-            if "repair_version" not in recipe:
-                recipe["repair_version"] = self.REPAIR_VERSION
-                await self._save_recipe_persistently(recipe)
-                return True
-            return False
+            # Always update and save because if we are here, the version is old (checked in step 1)
+            recipe["repair_version"] = self.REPAIR_VERSION
+            await self._save_recipe_persistently(recipe)
+            return True
         
-        # 3. Data Fetching & Merging
-        source_url = recipe.get("source_url", "")
-        civitai_meta = None
-        model_version_id = None
-        
-        # Check if it's a Civitai image URL
-        image_id_match = re.search(r'civitai\.com/images/(\d+)', source_url)
-        if image_id_match:
-            image_id = image_id_match.group(1)
-            image_info = await civitai_client.get_image_info(image_id)
-            if image_info:
-                if "meta" in image_info:
-                    civitai_meta = image_info["meta"]
-                model_version_id = image_info.get("modelVersionId")
-        
-        # Merge with existing data
-        new_gen_params = GenParamsMerger.merge(
-            civitai_meta=civitai_meta,
-            embedded_metadata=gen_params
-        )
-        
-        updated = False
-        if new_gen_params != gen_params:
-            recipe["gen_params"] = new_gen_params
-            updated = True
+        # 3. Use Enricher to repair/enrich
+        try:
+            updated = await RecipeEnricher.enrich_recipe(recipe, civitai_client)
+        except Exception as e:
+            logger.error(f"Error enriching recipe {recipe.get('id')}: {e}")
+            updated = False
+
+        # 4. Mark version and save if updated or just marking version
+        # If we updated it, OR if the version is old (which we know it is if we are here), save it.
+        # Actually, if we are here and updated is False, it means we tried to repair but couldn't/didn't need to.
+        # But we still want to mark it as processed so we don't try again until version bump.
+        if updated or recipe.get("repair_version", 0) < self.REPAIR_VERSION:
+            recipe["repair_version"] = self.REPAIR_VERSION
+            await self._save_recipe_persistently(recipe)
+            return True
             
-        # 4. Update checkpoint if missing or repairable
-        if not has_checkpoint:
-            metadata_provider = await get_default_metadata_provider()
-            
-            target_version_id = model_version_id or new_gen_params.get("modelVersionId")
-            target_hash = new_gen_params.get("Model hash")
-            
-            civitai_info = None
-            if target_version_id:
-                civitai_info = await metadata_provider.get_model_version_info(str(target_version_id))
-            elif target_hash:
-                civitai_info = await metadata_provider.get_model_by_hash(target_hash)
-                
-            if civitai_info and not (isinstance(civitai_info, tuple) and civitai_info[1] == "Model not found"):
-                recipe["checkpoint"] = await self._populate_checkpoint(civitai_info)
-                updated = True
-            else:
-                # Fallback to name extraction
-                cp_name = new_gen_params.get("Checkpoint") or new_gen_params.get("checkpoint")
-                if cp_name:
-                    recipe["checkpoint"] = {
-                        "name": cp_name,
-                        "file_name": os.path.splitext(cp_name)[0]
-                    }
-                    updated = True
-            
-        # 5. Mark version and save
-        recipe["repair_version"] = self.REPAIR_VERSION
-        await self._save_recipe_persistently(recipe)
-        return True
+        return False
 
     async def _save_recipe_persistently(self, recipe: Dict[str, Any]) -> bool:
         """Helper to save a recipe to both JSON and EXIF metadata."""
@@ -318,58 +283,16 @@ class RecipeScanner:
             logger.error(f"Error persisting recipe {recipe_id}: {e}")
             return False
 
-    async def _populate_checkpoint(self, civitai_info_tuple: Any) -> Dict[str, Any]:
-        """Helper to populate checkpoint info using common logic."""
-        civitai_data, error_msg = civitai_info_tuple if isinstance(civitai_info_tuple, tuple) else (civitai_info_tuple, None)
-        
-        checkpoint = {
-            "name": "",
-            "file_name": "",
-            "isDeleted": False,
-            "hash": ""
-        }
-        
-        if not civitai_data or error_msg == "Model not found":
-            checkpoint["isDeleted"] = True
-            return checkpoint
-            
-        try:
-            if "model" in civitai_data and "name" in civitai_data["model"]:
-                checkpoint["name"] = civitai_data["model"]["name"]
-                
-            if "name" in civitai_data:
-                checkpoint["version"] = civitai_data.get("name", "")
-                
-            if "images" in civitai_data and civitai_data["images"]:
-                from ..utils.civitai_utils import rewrite_preview_url
-                image_url = civitai_data["images"][0].get("url")
-                if image_url:
-                    rewritten_url, _ = rewrite_preview_url(image_url, media_type="image")
-                    checkpoint["thumbnailUrl"] = rewritten_url or image_url
-                    
-            checkpoint["baseModel"] = civitai_data.get("baseModel", "")
-            checkpoint["modelId"] = civitai_data.get("modelId", 0)
-            checkpoint["id"] = civitai_data.get("id", 0)
-            
-            if "files" in civitai_data:
-                model_file = next((f for f in civitai_data.get("files", []) if f.get("type") == "Model"), None)
-                if model_file:
-                    sha256 = model_file.get("hashes", {}).get("SHA256")
-                    if sha256:
-                        checkpoint["hash"] = sha256.lower()
-                    f_name = model_file.get("name", "")
-                    if f_name:
-                        checkpoint["file_name"] = os.path.splitext(f_name)[0]
-        except Exception as e:
-            logger.error(f"Error populating checkpoint: {e}")
-                    
-        return checkpoint
 
     def _sanitize_recipe_for_storage(self, recipe: Dict[str, Any]) -> Dict[str, Any]:
         """Create a clean copy of the recipe without runtime convenience fields."""
         import copy
         clean = copy.deepcopy(recipe)
         
+        # 0. Clean top-level runtime fields
+        for key in ("file_url", "created_date_formatted", "modified_formatted"):
+            clean.pop(key, None)
+
         # 1. Clean LORAs
         if "loras" in clean and isinstance(clean["loras"], list):
             for lora in clean["loras"]:

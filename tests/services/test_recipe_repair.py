@@ -43,7 +43,7 @@ def setup_scanner(recipe_scanner, mock_civitai_client, mock_metadata_provider, m
     mock_save = AsyncMock(side_effect=real_save)
     monkeypatch.setattr(recipe_scanner, "_save_recipe_persistently", mock_save)
     
-    monkeypatch.setattr("py.services.recipe_scanner.get_default_metadata_provider", AsyncMock(return_value=mock_metadata_provider))
+    monkeypatch.setattr("py.recipes.enrichment.get_default_metadata_provider", AsyncMock(return_value=mock_metadata_provider))
     
     # Mock get_recipe_json_path to avoid file system issues in tests
     recipe_scanner.get_recipe_json_path = AsyncMock(return_value="/tmp/test_recipe.json")
@@ -259,11 +259,7 @@ async def test_repair_all_recipes_strips_runtime_fields(setup_scanner):
 
 @pytest.mark.asyncio
 async def test_sanitize_recipe_for_storage(recipe_scanner):
-    import sys
-    import py.services.recipe_scanner
-    print(f"\nDEBUG_ENV: sys.path: {sys.path}")
-    print(f"DEBUG_ENV: recipe_scanner file: {py.services.recipe_scanner.__file__}")
-    
+
     recipe = {
         "loras": [{"name": "L1", "inLibrary": True, "weight": 0.5}],
         "checkpoint": {"name": "CP", "localPath": "/tmp/cp"}
