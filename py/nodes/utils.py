@@ -103,7 +103,7 @@ def nunchaku_load_lora(model, lora_name, lora_strength):
     
     # Save the transformer temporarily
     model_wrapper.model = None
-    ret_model = copy.deepcopy(model)  # copy everything except the model
+    ret_model = model.clone()
     ret_model_wrapper = ret_model.model.diffusion_model
     
     # Restore the model and set it for the copy
