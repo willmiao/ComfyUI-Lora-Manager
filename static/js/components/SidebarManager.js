@@ -80,10 +80,10 @@ export class SidebarManager {
         this.apiClient = pageControls?.getSidebarApiClient?.()
             || pageControls?.sidebarApiClient
             || getModelApiClient();
-        
+
         // Set initial sidebar state immediately (hidden by default)
         this.setInitialSidebarState();
-        
+
         this.setupEventHandlers();
         this.initializeDragAndDrop();
         this.updateSidebarTitle();
@@ -94,13 +94,13 @@ export class SidebarManager {
             return;
         }
         this.restoreSelectedFolder();
-        
+
         // Apply final state with animation after everything is loaded
         this.applyFinalSidebarState();
-        
+
         // Update container margin based on initial sidebar state
         this.updateContainerMargin();
-        
+
         this.isInitialized = true;
         console.log(`SidebarManager initialized for ${this.pageType} page`);
     }
@@ -113,7 +113,7 @@ export class SidebarManager {
             clearTimeout(this.hoverTimeout);
             this.hoverTimeout = null;
         }
-        
+
         // Clean up event handlers
         this.removeEventHandlers();
 
@@ -143,13 +143,13 @@ export class SidebarManager {
         this.apiClient = null;
         this.isInitialized = false;
         this.recursiveSearchEnabled = true;
-        
+
         // Reset container margin
         const container = document.querySelector('.container');
         if (container) {
             container.style.marginLeft = '';
         }
-        
+
         // Remove resize event listener
         window.removeEventListener('resize', this.updateContainerMargin);
 
@@ -191,10 +191,10 @@ export class SidebarManager {
             hoverArea.removeEventListener('mouseenter', this.handleHoverAreaEnter);
             hoverArea.removeEventListener('mouseleave', this.handleHoverAreaLeave);
         }
-        
+
         // Remove document click handler
         document.removeEventListener('click', this.handleDocumentClick);
-        
+
         // Remove resize event handler
         window.removeEventListener('resize', this.updateContainerMargin);
 
@@ -486,20 +486,20 @@ export class SidebarManager {
         this.apiClient = this.pageControls?.getSidebarApiClient?.()
             || this.pageControls?.sidebarApiClient
             || getModelApiClient();
-        
+
         // Set initial sidebar state immediately (hidden by default)
         this.setInitialSidebarState();
-        
+
         this.setupEventHandlers();
         this.initializeDragAndDrop();
         this.updateSidebarTitle();
         this.restoreSidebarState();
         await this.loadFolderTree();
         this.restoreSelectedFolder();
-        
+
         // Apply final state with animation after everything is loaded
         this.applyFinalSidebarState();
-        
+
         // Update container margin based on initial sidebar state
         this.updateContainerMargin();
     }
@@ -511,11 +511,11 @@ export class SidebarManager {
         const hoverArea = document.getElementById('sidebarHoverArea');
 
         if (!sidebar || !hoverArea) return;
-        
+
         // Get stored pin state
         const isPinned = getStorageItem(`${this.pageType}_sidebarPinned`, true);
         this.isPinned = isPinned;
-        
+
         // Sidebar starts hidden by default (CSS handles this)
         // Just set up the hover area state
         if (window.innerWidth <= 1024) {
@@ -583,12 +583,12 @@ export class SidebarManager {
         // Hover detection for auto-hide
         const sidebar = document.getElementById('folderSidebar');
         const hoverArea = document.getElementById('sidebarHoverArea');
-        
+
         if (sidebar) {
             sidebar.addEventListener('mouseenter', this.handleMouseEnter);
             sidebar.addEventListener('mouseleave', this.handleMouseLeave);
         }
-        
+
         if (hoverArea) {
             hoverArea.addEventListener('mouseenter', this.handleHoverAreaEnter);
             hoverArea.addEventListener('mouseleave', this.handleHoverAreaLeave);
@@ -598,7 +598,7 @@ export class SidebarManager {
         document.addEventListener('click', (e) => {
             if (window.innerWidth <= 1024 && this.isVisible) {
                 const sidebar = document.getElementById('folderSidebar');
-                
+
                 if (sidebar && !sidebar.contains(e.target)) {
                     this.hideSidebar();
                 }
@@ -613,7 +613,7 @@ export class SidebarManager {
 
         // Add document click handler for closing dropdowns
         document.addEventListener('click', this.handleDocumentClick);
-        
+
         // Add dedicated resize listener for container margin updates
         window.addEventListener('resize', this.updateContainerMargin);
 
@@ -660,7 +660,7 @@ export class SidebarManager {
             clearTimeout(this.hoverTimeout);
             this.hoverTimeout = null;
         }
-        
+
         if (!this.isPinned) {
             this.showSidebar();
         }
@@ -710,9 +710,9 @@ export class SidebarManager {
 
         const sidebar = document.getElementById('folderSidebar');
         const hoverArea = document.getElementById('sidebarHoverArea');
-        
+
         if (!sidebar || !hoverArea) return;
-        
+
         if (window.innerWidth <= 1024) {
             // Mobile: always use collapsed state
             sidebar.classList.remove('auto-hide', 'hover-active', 'visible');
@@ -730,7 +730,7 @@ export class SidebarManager {
             sidebar.classList.remove('collapsed', 'visible');
             sidebar.classList.add('auto-hide');
             hoverArea.classList.remove('disabled');
-            
+
             if (this.isHovering) {
                 sidebar.classList.add('hover-active');
                 this.isVisible = true;
@@ -739,7 +739,7 @@ export class SidebarManager {
                 this.isVisible = false;
             }
         }
-        
+
         // Update container margin when sidebar state changes
         this.updateContainerMargin();
     }
@@ -750,16 +750,16 @@ export class SidebarManager {
         const sidebar = document.getElementById('folderSidebar');
 
         if (!container || !sidebar || this.isDisabledBySetting) return;
-        
+
         // Reset margin to default
         container.style.marginLeft = '';
-        
+
         // Only adjust margin if sidebar is visible and pinned
         if ((this.isPinned || this.isHovering) && this.isVisible) {
             const sidebarWidth = sidebar.offsetWidth;
             const viewportWidth = window.innerWidth;
             const containerWidth = container.offsetWidth;
-            
+
             // Check if there's enough space for both sidebar and container
             // We need: sidebar width + container width + some padding < viewport width
             if (sidebarWidth + containerWidth + sidebarWidth > viewportWidth) {
@@ -837,8 +837,8 @@ export class SidebarManager {
         const pinBtn = document.getElementById('sidebarPinToggle');
         if (pinBtn) {
             pinBtn.classList.toggle('active', this.isPinned);
-            pinBtn.title = this.isPinned 
-                ? translate('sidebar.unpinSidebar') 
+            pinBtn.title = this.isPinned
+                ? translate('sidebar.unpinSidebar')
                 : translate('sidebar.pinSidebar');
         }
     }
@@ -883,13 +883,13 @@ export class SidebarManager {
     renderTreeNode(nodeData, basePath) {
         const entries = Object.entries(nodeData);
         if (entries.length === 0) return '';
-        
+
         return entries.map(([folderName, children]) => {
             const currentPath = basePath ? `${basePath}/${folderName}` : folderName;
             const hasChildren = Object.keys(children).length > 0;
             const isExpanded = this.expandedNodes.has(currentPath);
             const isSelected = this.selectedPath === currentPath;
-            
+
             return `
                 <div class="sidebar-tree-node" data-path="${currentPath}">
                     <div class="sidebar-tree-node-content ${isSelected ? 'selected' : ''}" data-path="${currentPath}">
@@ -934,7 +934,7 @@ export class SidebarManager {
         const foldersHtml = this.foldersList.map(folder => {
             const displayName = folder === '' ? '/' : folder;
             const isSelected = this.selectedPath === folder;
-            
+
             return `
                 <div class="sidebar-folder-item ${isSelected ? 'selected' : ''}" data-path="${folder}">
                     <div class="sidebar-node-content" data-path="${folder}">
@@ -956,13 +956,13 @@ export class SidebarManager {
 
         const expandIcon = event.target.closest('.sidebar-tree-expand-icon');
         const nodeContent = event.target.closest('.sidebar-tree-node-content');
-        
+
         if (expandIcon) {
             // Toggle expand/collapse
             const treeNode = expandIcon.closest('.sidebar-tree-node');
             const path = treeNode.dataset.path;
             const children = treeNode.querySelector('.sidebar-tree-children');
-            
+
             if (this.expandedNodes.has(path)) {
                 this.expandedNodes.delete(path);
                 expandIcon.classList.remove('expanded');
@@ -972,7 +972,7 @@ export class SidebarManager {
                 expandIcon.classList.add('expanded');
                 if (children) children.classList.add('expanded');
             }
-            
+
             this.saveExpandedState();
         } else if (nodeContent) {
             // Select folder
@@ -985,7 +985,7 @@ export class SidebarManager {
     handleBreadcrumbClick(event) {
         const breadcrumbItem = event.target.closest('.sidebar-breadcrumb-item');
         const dropdownItem = event.target.closest('.breadcrumb-dropdown-item');
-        
+
         if (dropdownItem) {
             // Handle dropdown item selection
             const path = dropdownItem.dataset.path || '';
@@ -997,17 +997,17 @@ export class SidebarManager {
             const isPlaceholder = breadcrumbItem.classList.contains('placeholder');
             const isActive = breadcrumbItem.classList.contains('active');
             const dropdown = breadcrumbItem.closest('.breadcrumb-dropdown');
-            
+
             if (isPlaceholder || (isActive && path === this.selectedPath)) {
                 // Open dropdown for placeholders or active items
                 // Close any open dropdown first
                 if (this.openDropdown && this.openDropdown !== dropdown) {
                     this.openDropdown.classList.remove('open');
                 }
-                
+
                 // Toggle current dropdown
                 dropdown.classList.toggle('open');
-                
+
                 // Update open dropdown reference
                 this.openDropdown = dropdown.classList.contains('open') ? dropdown : null;
             } else {
@@ -1025,21 +1025,24 @@ export class SidebarManager {
     }
 
     async selectFolder(path) {
+        // Normalize path: null or undefined means root
+        const normalizedPath = (path === null || path === undefined) ? '' : path;
+
         // Update selected path
-        this.selectedPath = path;
-        
+        this.selectedPath = normalizedPath;
+
         // Update UI
         this.updateTreeSelection();
         this.updateBreadcrumbs();
         this.updateSidebarHeader();
-        
+
         // Update page state
-        this.pageControls.pageState.activeFolder = path;
-        setStorageItem(`${this.pageType}_activeFolder`, path);
-        
+        this.pageControls.pageState.activeFolder = normalizedPath;
+        setStorageItem(`${this.pageType}_activeFolder`, normalizedPath);
+
         // Reload models with new filter
         await this.pageControls.resetAndReload();
-        
+
         // Auto-hide sidebar on mobile after selection
         if (window.innerWidth <= 1024) {
             this.hideSidebar();
@@ -1048,7 +1051,7 @@ export class SidebarManager {
 
     handleFolderListClick(event) {
         const folderItem = event.target.closest('.sidebar-folder-item');
-        
+
         if (folderItem) {
             const path = folderItem.dataset.path;
             this.selectFolder(path);
@@ -1150,15 +1153,15 @@ export class SidebarManager {
     updateTreeSelection() {
         const folderTree = document.getElementById('sidebarFolderTree');
         if (!folderTree) return;
-        
+
         if (this.displayMode === 'list') {
             // Remove all selections in list mode
             folderTree.querySelectorAll('.sidebar-folder-item').forEach(item => {
                 item.classList.remove('selected');
             });
-            
+
             // Add selection to current path
-            if (this.selectedPath !== null) {
+            if (this.selectedPath !== null && this.selectedPath !== undefined) {
                 const selectedItem = folderTree.querySelector(`[data-path="${this.selectedPath}"]`);
                 if (selectedItem) {
                     selectedItem.classList.add('selected');
@@ -1168,8 +1171,8 @@ export class SidebarManager {
             folderTree.querySelectorAll('.sidebar-tree-node-content').forEach(node => {
                 node.classList.remove('selected');
             });
-            
-            if (this.selectedPath) {
+
+            if (this.selectedPath !== null && this.selectedPath !== undefined) {
                 const selectedNode = folderTree.querySelector(`[data-path="${this.selectedPath}"] .sidebar-tree-node-content`);
                 if (selectedNode) {
                     selectedNode.classList.add('selected');
@@ -1181,15 +1184,15 @@ export class SidebarManager {
 
     expandPathParents(path) {
         if (!path) return;
-        
+
         const parts = path.split('/');
         let currentPath = '';
-        
+
         for (let i = 0; i < parts.length - 1; i++) {
             currentPath = currentPath ? `${currentPath}/${parts[i]}` : parts[i];
             this.expandedNodes.add(currentPath);
         }
-        
+
         this.renderTree();
     }
 
@@ -1199,7 +1202,7 @@ export class SidebarManager {
             // Root level siblings are top-level folders
             return Object.keys(this.treeData);
         }
-        
+
         // Navigate to the parent folder to get siblings
         let currentNode = this.treeData;
         for (let i = 0; i < level; i++) {
@@ -1208,7 +1211,7 @@ export class SidebarManager {
             }
             currentNode = currentNode[pathParts[i]];
         }
-        
+
         return Object.keys(currentNode);
     }
 
@@ -1217,37 +1220,38 @@ export class SidebarManager {
         if (!path) {
             return Object.keys(this.treeData);
         }
-        
+
         const parts = path.split('/');
         let currentNode = this.treeData;
-        
+
         for (const part of parts) {
             if (!currentNode[part]) {
                 return [];
             }
             currentNode = currentNode[part];
         }
-        
+
         return Object.keys(currentNode);
     }
 
     updateBreadcrumbs() {
         const sidebarBreadcrumbNav = document.getElementById('sidebarBreadcrumbNav');
         if (!sidebarBreadcrumbNav) return;
-        
+
         const parts = this.selectedPath ? this.selectedPath.split('/') : [];
         let currentPath = '';
-        
+
         // Start with root breadcrumb
         const rootSiblings = Object.keys(this.treeData);
+        const isRootSelected = !this.selectedPath;
         const breadcrumbs = [`
             <div class="breadcrumb-dropdown">
-                <span class="sidebar-breadcrumb-item ${this.selectedPath == null ? 'active' : ''}" data-path="">
+                <span class="sidebar-breadcrumb-item ${isRootSelected ? 'active' : ''}" data-path="">
                     <i class="fas fa-home"></i> ${this.apiClient.apiConfig.config.displayName} root
                 </span>
             </div>
         `];
-        
+
         // Add separator and placeholder for next level if we're at root
         if (!this.selectedPath) {
             const nextLevelFolders = rootSiblings;
@@ -1266,21 +1270,21 @@ export class SidebarManager {
                                 <div class="breadcrumb-dropdown-item" data-path="${folder}">
                                     ${folder}
                                 </div>`).join('')
-                            }
+                    }
                         </div>
                     </div>
                 `);
             }
         }
-        
+
         // Add breadcrumb items for each path segment
         parts.forEach((part, index) => {
             currentPath = currentPath ? `${currentPath}/${part}` : part;
             const isLast = index === parts.length - 1;
-            
+
             // Get siblings for this level
             const siblings = this.getSiblingFolders(parts, index);
-            
+
             breadcrumbs.push(`<span class="sidebar-breadcrumb-separator">/</span>`);
             breadcrumbs.push(`
                 <div class="breadcrumb-dropdown">
@@ -1299,12 +1303,12 @@ export class SidebarManager {
                                      data-path="${currentPath.replace(part, folder)}">
                                     ${folder}
                                 </div>`).join('')
-                            }
+                    }
                         </div>
                     ` : ''}
                 </div>
             `);
-            
+
             // Add separator and placeholder for next level if not the last item
             if (isLast) {
                 const childFolders = this.getChildFolders(currentPath);
@@ -1323,22 +1327,22 @@ export class SidebarManager {
                                     <div class="breadcrumb-dropdown-item" data-path="${currentPath}/${folder}">
                                         ${folder}
                                     </div>`).join('')
-                                }
+                        }
                             </div>
                         </div>
                     `);
                 }
             }
         });
-        
+
         sidebarBreadcrumbNav.innerHTML = breadcrumbs.join('');
     }
 
     updateSidebarHeader() {
         const sidebarHeader = document.getElementById('sidebarHeader');
         if (!sidebarHeader) return;
-        
-        if (this.selectedPath == null) {
+
+        if (!this.selectedPath) {
             sidebarHeader.classList.add('root-selected');
         } else {
             sidebarHeader.classList.remove('root-selected');
@@ -1348,11 +1352,11 @@ export class SidebarManager {
     toggleSidebar() {
         const sidebar = document.getElementById('folderSidebar');
         const toggleBtn = document.querySelector('.sidebar-toggle-btn');
-        
+
         if (!sidebar) return;
-        
+
         this.isVisible = !this.isVisible;
-        
+
         if (this.isVisible) {
             sidebar.classList.remove('collapsed');
             sidebar.classList.add('visible');
@@ -1360,28 +1364,28 @@ export class SidebarManager {
             sidebar.classList.remove('visible');
             sidebar.classList.add('collapsed');
         }
-        
+
         if (toggleBtn) {
             toggleBtn.classList.toggle('active', this.isVisible);
         }
-        
+
         this.saveSidebarState();
     }
 
     closeSidebar() {
         const sidebar = document.getElementById('folderSidebar');
         const toggleBtn = document.querySelector('.sidebar-toggle-btn');
-        
+
         if (!sidebar) return;
-        
+
         this.isVisible = false;
         sidebar.classList.remove('visible');
         sidebar.classList.add('collapsed');
-        
+
         if (toggleBtn) {
             toggleBtn.classList.remove('active');
         }
-        
+
         this.saveSidebarState();
     }
 
@@ -1390,12 +1394,12 @@ export class SidebarManager {
         const expandedPaths = getStorageItem(`${this.pageType}_expandedNodes`, []);
         const displayMode = getStorageItem(`${this.pageType}_displayMode`, 'tree'); // 'tree' or 'list', default to 'tree'
         const recursiveSearchEnabled = getStorageItem(`${this.pageType}_recursiveSearch`, true);
-        
+
         this.isPinned = isPinned;
         this.expandedNodes = new Set(expandedPaths);
         this.displayMode = displayMode;
         this.recursiveSearchEnabled = recursiveSearchEnabled;
-        
+
         this.updatePinButton();
         this.updateDisplayModeButton();
         this.updateCollapseAllButton();

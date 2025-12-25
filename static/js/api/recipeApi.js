@@ -51,7 +51,7 @@ export async function fetchRecipesPage(page = 1, pageSize = 100) {
             params.append('favorite', 'true');
         }
 
-        if (pageState.activeFolder) {
+        if (pageState.activeFolder !== null && pageState.activeFolder !== undefined) {
             params.append('folder', pageState.activeFolder);
             params.append('recursive', pageState.searchOptions?.recursive !== false);
         } else if (pageState.searchOptions?.recursive !== undefined) {

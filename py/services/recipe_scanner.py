@@ -1267,13 +1267,13 @@ class RecipeScanner:
         # Skip further filtering if we're only filtering by LoRA hash with bypass enabled
         if not (lora_hash and bypass_filters):
             # Apply folder filter before other criteria
-            normalized_folder = (folder or "").strip("/")
-            if normalized_folder:
+            if folder is not None:
+                normalized_folder = folder.strip("/")
                 def matches_folder(item_folder: str) -> bool:
                     item_path = (item_folder or "").strip("/")
-                    if not item_path:
-                        return False
                     if recursive:
+                        if not normalized_folder:
+                            return True
                         return item_path == normalized_folder or item_path.startswith(f"{normalized_folder}/")
                     return item_path == normalized_folder
 
