@@ -5,6 +5,10 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from ..utils.constants import NSFW_LEVELS
 from ..utils.utils import fuzzy_match as default_fuzzy_match
+import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_CIVITAI_MODEL_TYPE = "LORA"
@@ -115,22 +119,33 @@ class ModelFilterSet:
 
     def apply(self, data: Iterable[Dict[str, Any]], criteria: FilterCriteria) -> List[Dict[str, Any]]:
         """Return items that satisfy the provided criteria."""
+        overall_start = time.perf_counter()
         items = list(data)
+        initial_count = len(items)
 
         if self._settings.get("show_only_sfw", False):
+            t0 = time.perf_counter()
             threshold = self._nsfw_levels.get("R", 0)
             items = [
                 item for item in items
                 if not item.get("preview_nsfw_level") or item.get("preview_nsfw_level") < threshold
             ]
+            sfw_duration = time.perf_counter() - t0
+        else:
+            sfw_duration = 0
 
+        favorites_duration = 0
         if criteria.favorites_only:
+            t0 = time.perf_counter()
             items = [item for item in items if item.get("favorite", False)]
+            favorites_duration = time.perf_counter() - t0
 
+        folder_duration = 0
         folder = criteria.folder
         options = criteria.search_options or {}
         recursive = bool(options.get("recursive", True))
         if folder is not None:
+            t0 = time.perf_counter()
             if recursive:
                 if folder:
                     folder_with_sep = f"{folder}/"
@@ -140,61 +155,82 @@ class ModelFilterSet:
                     ]
             else:
                 items = [item for item in items if item.get("folder") == folder]
+            folder_duration = time.perf_counter() - t0
 
+        base_models_duration = 0
         base_models = criteria.base_models or []
         if base_models:
+            t0 = time.perf_counter()
             base_model_set = set(base_models)
             items = [item for item in items if item.get("base_model") in base_model_set]
+            base_models_duration = time.perf_counter() - t0
 
+        tags_duration = 0
         tag_filters = criteria.tags or {}
-        include_tags = set()
-        exclude_tags = set()
-        if isinstance(tag_filters, dict):
-            for tag, state in tag_filters.items():
-                if not tag:
-                    continue
-                if state == "exclude":
-                    exclude_tags.add(tag)
-                else:
-                    include_tags.add(tag)
-        else:
-            include_tags = {tag for tag in tag_filters if tag}
+        if tag_filters:
+            t0 = time.perf_counter()
+            include_tags = set()
+            exclude_tags = set()
+            if isinstance(tag_filters, dict):
+                for tag, state in tag_filters.items():
+                    if not tag:
+                        continue
+                    if state == "exclude":
+                        exclude_tags.add(tag)
+                    else:
+                        include_tags.add(tag)
+            else:
+                include_tags = {tag for tag in tag_filters if tag}
 
-        if include_tags:
-            def matches_include(item_tags):
-                if not item_tags and "__no_tags__" in include_tags:
-                    return True
-                return any(tag in include_tags for tag in (item_tags or []))
+            if include_tags:
+                def matches_include(item_tags):
+                    if not item_tags and "__no_tags__" in include_tags:
+                        return True
+                    return any(tag in include_tags for tag in (item_tags or []))
 
-            items = [
-                item for item in items
-                if matches_include(item.get("tags"))
-            ]
+                items = [
+                    item for item in items
+                    if matches_include(item.get("tags"))
+                ]
 
-        if exclude_tags:
-            def matches_exclude(item_tags):
-                if not item_tags and "__no_tags__" in exclude_tags:
-                    return True
-                return any(tag in exclude_tags for tag in (item_tags or []))
+            if exclude_tags:
+                def matches_exclude(item_tags):
+                    if not item_tags and "__no_tags__" in exclude_tags:
+                        return True
+                    return any(tag in exclude_tags for tag in (item_tags or []))
 
-            items = [
-                item for item in items
-                if not matches_exclude(item.get("tags"))
-            ]
+                items = [
+                    item for item in items
+                    if not matches_exclude(item.get("tags"))
+                ]
+            tags_duration = time.perf_counter() - t0
 
+        model_types_duration = 0
         model_types = criteria.model_types or []
-        normalized_model_types = {
-            model_type for model_type in (
-                normalize_civitai_model_type(value) for value in model_types
-            )
-            if model_type
-        }
-        if normalized_model_types:
-            items = [
-                item for item in items
-                if normalize_civitai_model_type(resolve_civitai_model_type(item)) in normalized_model_types
-            ]
+        if model_types:
+            t0 = time.perf_counter()
+            normalized_model_types = {
+                model_type for model_type in (
+                    normalize_civitai_model_type(value) for value in model_types
+                )
+                if model_type
+            }
+            if normalized_model_types:
+                items = [
+                    item for item in items
+                    if normalize_civitai_model_type(resolve_civitai_model_type(item)) in normalized_model_types
+                ]
+            model_types_duration = time.perf_counter() - t0
 
+        duration = time.perf_counter() - overall_start
+        if duration > 0.1: # Only log if it's potentially slow
+            logger.info(
+                "ModelFilterSet.apply took %.3fs (sfw: %.3fs, fav: %.3fs, folder: %.3fs, base: %.3fs, tags: %.3fs, types: %.3fs). "
+                "Count: %d -> %d",
+                duration, sfw_duration, favorites_duration, folder_duration, 
+                base_models_duration, tags_duration, model_types_duration,
+                initial_count, len(items)
+            )
         return items
 
 

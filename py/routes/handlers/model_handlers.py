@@ -5,6 +5,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Dict, Iterable, List, Mapping, Optional
 
@@ -160,9 +161,12 @@ class ModelListingHandler:
         self._logger = logger
 
     async def get_models(self, request: web.Request) -> web.Response:
+        start_time = time.perf_counter()
         try:
             params = self._parse_common_params(request)
             result = await self._service.get_paginated_data(**params)
+            
+            format_start = time.perf_counter()
             formatted_result = {
                 "items": [await self._service.format_response(item) for item in result["items"]],
                 "total": result["total"],
@@ -170,6 +174,13 @@ class ModelListingHandler:
                 "page_size": result["page_size"],
                 "total_pages": result["total_pages"],
             }
+            format_duration = time.perf_counter() - format_start
+            
+            duration = time.perf_counter() - start_time
+            self._logger.info(
+                "Request for %s/list took %.3fs (formatting: %.3fs)",
+                self._service.model_type, duration, format_duration
+            )
             return web.json_response(formatted_result)
         except Exception as exc:
             self._logger.error("Error retrieving %ss: %s", self._service.model_type, exc, exc_info=True)

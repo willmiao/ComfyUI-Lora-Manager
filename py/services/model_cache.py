@@ -1,4 +1,8 @@
 import asyncio
+import time
+import logging
+
+logger = logging.getLogger(__name__)
 from typing import Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from operator import itemgetter
@@ -212,40 +216,53 @@ class ModelCache:
 
     def _sort_data(self, data: List[Dict], sort_key: str, order: str) -> List[Dict]:
         """Sort data by sort_key and order"""
+        start_time = time.perf_counter()
         reverse = (order == 'desc')
         if sort_key == 'name':
             # Natural sort by configured display name, case-insensitive
-            return natsorted(
+            result = natsorted(
                 data,
                 key=lambda x: self._get_display_name(x).lower(),
                 reverse=reverse
             )
         elif sort_key == 'date':
             # Sort by modified timestamp
-            return sorted(
+            result = sorted(
                 data,
                 key=itemgetter('modified'),
                 reverse=reverse
             )
         elif sort_key == 'size':
             # Sort by file size
-            return sorted(
+            result = sorted(
                 data,
                 key=itemgetter('size'),
                 reverse=reverse
             )
         else:
             # Fallback: no sort
-            return list(data)
+            result = list(data)
+        
+        duration = time.perf_counter() - start_time
+        if duration > 0.05:
+            logger.info("ModelCache._sort_data(%s, %s) for %d items took %.3fs", sort_key, order, len(data), duration)
+        return result
 
     async def get_sorted_data(self, sort_key: str = 'name', order: str = 'asc') -> List[Dict]:
         """Get sorted data by sort_key and order, using cache if possible"""
         async with self._lock:
             if (sort_key, order) == self._last_sort:
                 return self._last_sorted_data
+            
+            start_time = time.perf_counter()
             sorted_data = self._sort_data(self.raw_data, sort_key, order)
             self._last_sort = (sort_key, order)
             self._last_sorted_data = sorted_data
+            
+            duration = time.perf_counter() - start_time
+            if duration > 0.1:
+                logger.debug("ModelCache.get_sorted_data(%s, %s) took %.3fs", sort_key, order, duration)
+            
             return sorted_data
 
     async def update_name_display_mode(self, display_mode: str) -> None:
