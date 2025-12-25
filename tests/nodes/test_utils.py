@@ -1,4 +1,5 @@
 import logging
+import copy
 
 from py.nodes.utils import nunchaku_load_lora
 
@@ -27,6 +28,9 @@ class _DummyModelWrapper:
 class _DummyModel:
     def __init__(self):
         self.model = _DummyModelWrapper()
+
+    def clone(self):
+        return copy.deepcopy(self)
 
 
 def test_nunchaku_load_lora_skips_missing_lora(monkeypatch, caplog):
