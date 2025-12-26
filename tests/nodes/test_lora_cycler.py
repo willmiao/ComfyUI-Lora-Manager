@@ -1,10 +1,10 @@
-"""Tests for the LoraCycler and LoraRandomizer nodes."""
+"""Tests for the LoraCycler node."""
 
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 import copy
 
-from py.nodes.lora_cycler import LoraCycler, LoraRandomizer, _execution_counters
+from py.nodes.lora_cycler import LoraCycler, _execution_counters
 
 
 # Sample LoRA data for testing
@@ -96,14 +96,6 @@ def test_lora_cycler_node_registration():
     assert LoraCycler.CATEGORY == "Lora Manager/utils"
     assert "LORA_STACK" in LoraCycler.RETURN_TYPES
     assert "trigger_words" in LoraCycler.RETURN_NAMES
-
-
-def test_lora_randomizer_node_registration():
-    """Test that LoraRandomizer has correct node metadata."""
-    assert LoraRandomizer.NAME == "Lora Randomizer (LoraManager)"
-    input_types = LoraRandomizer.INPUT_TYPES()
-    # Random should be the first/default option
-    assert input_types["required"]["selection_mode"][0][0] == "random"
 
 
 def test_lora_cycler_input_types():

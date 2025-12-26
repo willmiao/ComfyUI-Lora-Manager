@@ -10,7 +10,7 @@ Addresses GitHub Issue #316: https://github.com/willmiao/ComfyUI-Lora-Manager/is
 import os
 import random
 import logging
-from typing import List, Dict, Tuple, Optional, Any
+from typing import List, Dict, Optional, Any
 
 from ..utils.utils import get_lora_info
 from ..services.service_registry import ServiceRegistry
@@ -43,7 +43,7 @@ class LoraCycler:
 
     NAME = "Lora Cycler (LoraManager)"
     CATEGORY = "Lora Manager/utils"
-    DESCRIPTION = "Cycle or randomize through LoRAs with proper trigger word output"
+    DESCRIPTION = "Cycle or randomize through LoRAs. Connect LORA_STACK to a Lora Loader and trigger_words to a TriggerWord Toggle."
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -51,55 +51,79 @@ class LoraCycler:
             "required": {
                 "selection_mode": (["fixed", "increment", "decrement", "random"], {
                     "default": "increment",
-                    "tooltip": "How to select the next LoRA: fixed (stay on index), increment (next), decrement (previous), random"
+                    "tooltip": "How to select LoRAs:\n"
+                               "• fixed: Always use the LoRA at 'index'\n"
+                               "• increment: Move to next LoRA each run (wraps around)\n"
+                               "• decrement: Move to previous LoRA each run (wraps around)\n"
+                               "• random: Pick a random LoRA each run"
                 }),
                 "index": ("INT", {
                     "default": 0,
                     "min": 0,
                     "max": 9999,
                     "step": 1,
-                    "tooltip": "Starting index for fixed mode, or manual override for other modes"
+                    "tooltip": "Starting position in the LoRA list (0 = first LoRA).\n"
+                               "Used as the fixed position in 'fixed' mode, or starting point for increment/decrement."
                 }),
                 "seed": ("INT", {
                     "default": 0,
                     "min": 0,
                     "max": 0xffffffffffffffff,
-                    "tooltip": "Seed for random mode. Use 0 for different random each time."
+                    "tooltip": "Seed for random mode:\n"
+                               "• 0 = Different random LoRA each run\n"
+                               "• Any other value = Reproducible random selection"
                 }),
                 "model_strength": ("FLOAT", {
                     "default": 1.0,
                     "min": -10.0,
                     "max": 10.0,
                     "step": 0.01,
-                    "tooltip": "Model strength for the selected LoRA"
+                    "tooltip": "Strength of the LoRA effect on the model (UNet). Range: -10 to 10, typical: 0.5 to 1.0"
                 }),
                 "clip_strength": ("FLOAT", {
                     "default": 1.0,
                     "min": -10.0,
                     "max": 10.0,
                     "step": 0.01,
-                    "tooltip": "CLIP strength for the selected LoRA"
+                    "tooltip": "Strength of the LoRA effect on CLIP (text encoder). Range: -10 to 10, typical: 0.5 to 1.0"
                 }),
             },
             "optional": {
                 "folder_filter": ("STRING", {
                     "default": "",
-                    "tooltip": "Filter LoRAs by folder path (e.g., 'characters' or 'styles/anime'). Leave empty for all LoRAs."
+                    "tooltip": "Filter LoRAs by folder path. Matches any part of the folder name (case-insensitive).\n\n"
+                               "Examples:\n"
+                               "• 'character' matches 'characters/', 'my_characters/', 'character_v2/'\n"
+                               "• 'styles/anime' matches 'styles/anime/', 'my_styles/anime_v2/'\n"
+                               "• Leave empty to include all folders"
                 }),
                 "base_model_filter": ("STRING", {
                     "default": "",
-                    "tooltip": "Filter LoRAs by base model (e.g., 'SDXL 1.0', 'Pony', 'Illustrious'). Leave empty for all."
+                    "tooltip": "Filter by base model type. Matches any part of the name (case-insensitive).\n\n"
+                               "Examples:\n"
+                               "• 'sdxl' matches 'SDXL 1.0', 'SDXL Turbo'\n"
+                               "• 'pony' matches 'Pony', 'Pony Diffusion'\n"
+                               "• 'illustrious' matches 'Illustrious XL'\n"
+                               "• Leave empty to include all base models"
                 }),
                 "tag_filter": ("STRING", {
                     "default": "",
-                    "tooltip": "Filter LoRAs by tag (e.g., 'character', 'style'). Leave empty for all."
+                    "tooltip": "Filter by LoRA tags (from Civitai metadata). Matches any part of tag names (case-insensitive).\n\n"
+                               "Examples:\n"
+                               "• 'character' matches tags containing 'character'\n"
+                               "• 'style' matches 'style', 'art style', 'clothing style'\n"
+                               "• Leave empty to include all tags"
                 }),
                 "name_filter": ("STRING", {
                     "default": "",
-                    "tooltip": "Filter LoRAs by name substring (case-insensitive). Leave empty for all."
+                    "tooltip": "Filter by LoRA filename or model name. Matches any part (case-insensitive).\n\n"
+                               "Examples:\n"
+                               "• 'anime' matches 'anime_style_v2', 'my_anime_lora'\n"
+                               "• 'realistic' matches 'hyper_realistic', 'realistic_skin'\n"
+                               "• Leave empty to include all names"
                 }),
                 "lora_stack": ("LORA_STACK", {
-                    "tooltip": "Optional input stack to select from instead of scanning folders"
+                    "tooltip": "Optional: Connect a LORA_STACK from another node (like Lora Stacker) to select from that specific list instead of scanning your LoRA folders."
                 }),
             },
             "hidden": {
@@ -109,6 +133,13 @@ class LoraCycler:
 
     RETURN_TYPES = ("LORA_STACK", "STRING", "STRING", "INT", "INT")
     RETURN_NAMES = ("LORA_STACK", "trigger_words", "selected_lora", "total_count", "current_index")
+    OUTPUT_TOOLTIPS = (
+        "Connect to 'lora_stack' input of a Lora Loader node",
+        "Connect to a TriggerWord Toggle node to see the selected LoRA's trigger words",
+        "The selected LoRA in <lora:name:strength> format (for display/debugging)",
+        "Total number of LoRAs matching your filters",
+        "Index of the currently selected LoRA (0-based)",
+    )
     FUNCTION = "cycle_loras"
 
     @classmethod
@@ -339,24 +370,3 @@ class LoraCycler:
         logger.info(f"LoraCycler selected: {lora_name} (index {selected_index}/{total_count-1})")
 
         return (output_stack, trigger_words_text, selected_lora_text, total_count, selected_index)
-
-
-class LoraRandomizer(LoraCycler):
-    """
-    Alias for LoraCycler with random mode as default.
-
-    Provides a simpler interface for users who just want random LoRA selection.
-    """
-
-    NAME = "Lora Randomizer (LoraManager)"
-    DESCRIPTION = "Randomly select a LoRA from available options with proper trigger word output"
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        base_inputs = LoraCycler.INPUT_TYPES()
-        # Change default selection mode to random
-        base_inputs["required"]["selection_mode"] = (["random", "fixed", "increment", "decrement"], {
-            "default": "random",
-            "tooltip": "How to select the next LoRA: random, fixed (stay on index), increment (next), decrement (previous)"
-        })
-        return base_inputs
