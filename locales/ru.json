@@ -131,6 +131,9 @@
         "badges": {
             "update": "Обновление",
             "updateAvailable": "Доступно обновление"
+        },
+        "usage": {
+            "timesUsed": "Количество использований"
         }
     },
     "globalContextMenu": {
@@ -451,7 +454,10 @@
                 "dateAsc": "Старейшим",
                 "size": "Размеру файла",
                 "sizeDesc": "Наибольшим",
-                "sizeAsc": "Наименьшим"
+                "sizeAsc": "Наименьшим",
+                "usage": "Число использований",
+                "usageDesc": "Больше",
+                "usageAsc": "Меньше"
             },
             "refresh": {
                 "title": "Обновить список моделей",

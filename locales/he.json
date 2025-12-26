@@ -131,6 +131,9 @@
         "badges": {
             "update": "עדכון",
             "updateAvailable": "עדכון זמין"
+        },
+        "usage": {
+            "timesUsed": "מספר שימושים"
         }
     },
     "globalContextMenu": {
@@ -451,7 +454,10 @@
                 "dateAsc": "הישן ביותר",
                 "size": "גודל קובץ",
                 "sizeDesc": "הגדול ביותר",
-                "sizeAsc": "הקטן ביותר"
+                "sizeAsc": "הקטן ביותר",
+                "usage": "מספר שימושים",
+                "usageDesc": "הכי הרבה",
+                "usageAsc": "הכי פחות"
             },
             "refresh": {
                 "title": "רענן רשימת מודלים",
