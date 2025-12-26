@@ -226,11 +226,6 @@ app.registerExtension({
         // Enable widget serialization
         this.serialize_widgets = true;
 
-        // Add optional lora_stack input
-        this.addInput("lora_stack", "LORA_STACK", {
-          shape: 7, // Optional input shape
-        });
-
         // Store reference for callbacks
         const self = this;
 

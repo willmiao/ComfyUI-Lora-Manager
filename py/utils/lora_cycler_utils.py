@@ -8,7 +8,7 @@ and reduce code duplication.
 
 import logging
 import random
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 

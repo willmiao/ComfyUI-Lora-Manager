@@ -13,11 +13,7 @@ import logging
 from typing import List, Dict, Optional, Any
 
 from ..utils.utils import get_lora_info
-from ..utils.lora_cycler_utils import (
-    get_execution_counters,
-    select_lora_index,
-    format_trigger_words,
-)
+from ..utils.lora_cycler_utils import get_execution_counters
 from ..services.service_registry import ServiceRegistry
 from ..config import config
 from .utils import extract_lora_name
