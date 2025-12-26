@@ -451,7 +451,10 @@
                 "dateAsc": "最旧",
                 "size": "文件大小",
                 "sizeDesc": "最大",
-                "sizeAsc": "最小"
+                "sizeAsc": "最小",
+                "usage": "使用次数",
+                "usageDesc": "最多",
+                "usageAsc": "最少"
             },
             "refresh": {
                 "title": "刷新模型列表",

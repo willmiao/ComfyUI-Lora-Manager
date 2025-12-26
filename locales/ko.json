@@ -451,7 +451,10 @@
                 "dateAsc": "오래된순",
                 "size": "파일 크기",
                 "sizeDesc": "큰 순서",
-                "sizeAsc": "작은 순서"
+                "sizeAsc": "작은 순서",
+                "usage": "사용 횟수",
+                "usageDesc": "많은 순",
+                "usageAsc": "적은 순"
             },
             "refresh": {
                 "title": "모델 목록 새로고침",

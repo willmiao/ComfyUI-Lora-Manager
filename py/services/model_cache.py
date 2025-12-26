@@ -17,7 +17,10 @@ SUPPORTED_SORT_MODES = [
     ('date', 'desc'),
     ('size', 'asc'),
     ('size', 'desc'),
+    ('usage', 'asc'),
+    ('usage', 'desc'),
 ]
+# Is this in use?
 
 DISPLAY_NAME_MODES = {"model_name", "file_name"}
 
@@ -237,6 +240,16 @@ class ModelCache:
             result = sorted(
                 data,
                 key=itemgetter('size'),
+                reverse=reverse
+            )
+        elif sort_key == 'usage':
+            # Sort by usage count, fallback to 0, then name for stability
+            return sorted(
+                data,
+                key=lambda x: (
+                    x.get('usage_count', 0),
+                    self._get_display_name(x).lower()
+                ),
                 reverse=reverse
             )
         else:

@@ -451,7 +451,10 @@
                 "dateAsc": "Más antiguo",
                 "size": "Tamaño de archivo",
                 "sizeDesc": "Mayor",
-                "sizeAsc": "Menor"
+                "sizeAsc": "Menor",
+                "usage": "Número de usos",
+                "usageDesc": "Más",
+                "usageAsc": "Menos"
             },
             "refresh": {
                 "title": "Actualizar lista de modelos",
