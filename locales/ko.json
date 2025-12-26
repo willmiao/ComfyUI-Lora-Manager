@@ -131,6 +131,9 @@
         "badges": {
             "update": "업데이트",
             "updateAvailable": "업데이트 가능"
+        },
+        "usage": {
+            "timesUsed": "사용 횟수"
         }
     },
     "globalContextMenu": {

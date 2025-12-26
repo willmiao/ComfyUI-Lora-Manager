@@ -131,6 +131,9 @@
         "badges": {
             "update": "Update",
             "updateAvailable": "Update verfügbar"
+        },
+        "usage": {
+            "timesUsed": "Verwendungsanzahl"
         }
     },
     "globalContextMenu": {

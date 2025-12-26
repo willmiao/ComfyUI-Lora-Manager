@@ -84,13 +84,11 @@ class BaseModelService(ABC):
         overall_start = time.perf_counter()
 
         sort_params = self.cache_repository.parse_sort(sort_by)
+        t0 = time.perf_counter()
         if sort_params.key == 'usage':
             sorted_data = await self._fetch_with_usage_sort(sort_params)
         else:
             sorted_data = await self.cache_repository.fetch_sorted(sort_params)
-        
-        t0 = time.perf_counter()
-        sorted_data = await self.cache_repository.fetch_sorted(sort_params)
         fetch_duration = time.perf_counter() - t0
         initial_count = len(sorted_data)
 
