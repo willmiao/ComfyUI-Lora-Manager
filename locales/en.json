@@ -131,6 +131,9 @@
         "badges": {
             "update": "Update",
             "updateAvailable": "Update available"
+        },
+        "usage": {
+            "timesUsed": "Times used"
         }
     },
     "globalContextMenu": {
@@ -451,7 +454,10 @@
                 "dateAsc": "Oldest",
                 "size": "File Size",
                 "sizeDesc": "Largest",
-                "sizeAsc": "Smallest"
+                "sizeAsc": "Smallest",
+                "usage": "Use Count",
+                "usageDesc": "Most",
+                "usageAsc": "Least"
             },
             "refresh": {
                 "title": "Refresh model list",

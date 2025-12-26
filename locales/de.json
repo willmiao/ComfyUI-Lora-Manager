@@ -131,6 +131,9 @@
         "badges": {
             "update": "Update",
             "updateAvailable": "Update verfügbar"
+        },
+        "usage": {
+            "timesUsed": "Verwendungsanzahl"
         }
     },
     "globalContextMenu": {
@@ -451,7 +454,10 @@
                 "dateAsc": "Älteste",
                 "size": "Dateigröße",
                 "sizeDesc": "Größte",
-                "sizeAsc": "Kleinste"
+                "sizeAsc": "Kleinste",
+                "usage": "Anzahl Nutzung",
+                "usageDesc": "Meiste",
+                "usageAsc": "Wenigste"
             },
             "refresh": {
                 "title": "Modelliste aktualisieren",

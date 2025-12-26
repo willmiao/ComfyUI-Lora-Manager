@@ -61,7 +61,8 @@
     {% block head_scripts %}{% endblock %}
 </head>
 
-<body data-page="{% block page_id %}base{% endblock %}">
+{% set page_id = self.page_id() %}
+<body data-page="{{ page_id }}">
     <!-- Header is always visible, even during initialization -->
     {% include 'components/header.html' %}
 

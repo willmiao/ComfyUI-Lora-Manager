@@ -35,6 +35,7 @@ class LoraService(BaseModelService):
             "modified": lora_data.get("modified", ""),
             "tags": lora_data.get("tags", []),
             "from_civitai": lora_data.get("from_civitai", True),
+            "usage_count": lora_data.get("usage_count", 0),
             "usage_tips": lora_data.get("usage_tips", ""),
             "notes": lora_data.get("notes", ""),
             "favorite": lora_data.get("favorite", False),
