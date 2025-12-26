@@ -47,6 +47,7 @@ class LoraRoutes(BaseModelRoutes):
 
         # ComfyUI integration
         registrar.add_prefixed_route('POST', '/api/lm/{prefix}/get_trigger_words', prefix, self.get_trigger_words)
+        registrar.add_prefixed_route('POST', '/api/lm/{prefix}/cycler_preview', prefix, self.get_cycler_preview)
     
     def _parse_specific_params(self, request: web.Request) -> Dict:
         """Parse LoRA-specific parameters"""
@@ -257,6 +258,185 @@ class LoraRoutes(BaseModelRoutes):
 
         except Exception as e:
             logger.error(f"Error getting trigger words: {e}")
+            return web.json_response({
+                "success": False,
+                "error": str(e)
+            }, status=500)
+
+    async def get_cycler_preview(self, request: web.Request) -> web.Response:
+        """Get preview of which LoRA would be selected by LoraCycler with current settings.
+
+        This endpoint enables real-time trigger word updates before workflow execution.
+        """
+        try:
+            import os
+            import random
+            from ..nodes.lora_cycler import _execution_counters
+            from ..config import config
+
+            json_data = await request.json()
+
+            # Parse parameters
+            folder_filter = json_data.get("folder_filter", "").strip()
+            base_model_filter = json_data.get("base_model_filter", "").strip()
+            tag_filter = json_data.get("tag_filter", "").strip()
+            name_filter = json_data.get("name_filter", "").strip()
+            selection_mode = json_data.get("selection_mode", "fixed")
+            index = json_data.get("index", 0)
+            seed = json_data.get("seed", 0)
+            unique_id = json_data.get("unique_id", "default")
+            node_ids = json_data.get("node_ids", [])
+            first_trigger_word_only = json_data.get("first_trigger_word_only", False)
+
+            # Get LoRA cache data
+            scanner = await ServiceRegistry.get_lora_scanner()
+            cache = await scanner.get_cached_data()
+            raw_data = cache.raw_data
+
+            # Apply filters
+            filtered_loras = []
+            folder_filter_lower = folder_filter.lower() if folder_filter else ""
+            base_model_filter_lower = base_model_filter.lower() if base_model_filter else ""
+            tag_filter_lower = tag_filter.lower() if tag_filter else ""
+            name_filter_lower = name_filter.lower() if name_filter else ""
+
+            for item in raw_data:
+                # Skip excluded items
+                if item.get('exclude', False):
+                    continue
+
+                # Folder filter
+                if folder_filter_lower:
+                    item_folder = (item.get('folder') or '').lower()
+                    if folder_filter_lower not in item_folder:
+                        continue
+
+                # Base model filter
+                if base_model_filter_lower:
+                    item_base = (item.get('base_model') or '').lower()
+                    if base_model_filter_lower not in item_base:
+                        continue
+
+                # Tag filter
+                if tag_filter_lower:
+                    item_tags = [t.lower() for t in (item.get('tags') or [])]
+                    if not any(tag_filter_lower in tag for tag in item_tags):
+                        continue
+
+                # Name filter
+                if name_filter_lower:
+                    item_name = (item.get('file_name') or '').lower()
+                    model_name = (item.get('model_name') or '').lower()
+                    if name_filter_lower not in item_name and name_filter_lower not in model_name:
+                        continue
+
+                # Get trigger words
+                civitai = item.get('civitai', {})
+                trigger_words = civitai.get('trainedWords', []) if civitai else []
+
+                filtered_loras.append({
+                    'file_name': item.get('file_name', ''),
+                    'model_name': item.get('model_name', ''),
+                    'trigger_words': trigger_words,
+                })
+
+            # Sort for consistent ordering
+            filtered_loras.sort(key=lambda x: x.get('file_name', '').lower())
+
+            total_count = len(filtered_loras)
+
+            if total_count == 0:
+                # Send empty trigger words to connected nodes
+                for entry in node_ids:
+                    node_identifier = entry
+                    graph_identifier = None
+                    if isinstance(entry, dict):
+                        node_identifier = entry.get("node_id")
+                        graph_identifier = entry.get("graph_id")
+
+                    try:
+                        parsed_node_id = int(node_identifier)
+                    except (TypeError, ValueError):
+                        parsed_node_id = node_identifier
+
+                    payload = {"id": parsed_node_id, "message": ""}
+                    if graph_identifier is not None:
+                        payload["graph_id"] = str(graph_identifier)
+
+                    PromptServer.instance.send_sync("trigger_word_update", payload)
+
+                return web.json_response({
+                    "success": True,
+                    "total_count": 0,
+                    "selected_index": -1,
+                    "selected_lora": "",
+                    "trigger_words": ""
+                })
+
+            # Determine selection index based on mode
+            node_key = str(unique_id) if unique_id else "default"
+
+            if selection_mode == "fixed":
+                selected_index = index % total_count
+            elif selection_mode == "random":
+                if seed == 0:
+                    selected_index = random.randint(0, total_count - 1)
+                else:
+                    rng = random.Random(seed)
+                    selected_index = rng.randint(0, total_count - 1)
+            elif selection_mode == "increment":
+                current_counter = _execution_counters.get(node_key, index)
+                selected_index = current_counter % total_count
+            elif selection_mode == "decrement":
+                current_counter = _execution_counters.get(node_key, index)
+                if current_counter <= 0:
+                    current_counter = total_count - 1
+                else:
+                    current_counter -= 1
+                selected_index = current_counter % total_count
+            else:
+                selected_index = 0
+
+            # Get selected LoRA info
+            selected_lora = filtered_loras[selected_index]
+            lora_name = selected_lora.get('file_name', '') or selected_lora.get('model_name', '')
+            trigger_words = selected_lora.get('trigger_words', [])
+
+            # Apply first_trigger_word_only filter if enabled
+            if first_trigger_word_only and trigger_words:
+                trigger_words = [trigger_words[0]]
+
+            trigger_words_text = ",, ".join(trigger_words) if trigger_words else ""
+
+            # Send trigger words to connected nodes
+            for entry in node_ids:
+                node_identifier = entry
+                graph_identifier = None
+                if isinstance(entry, dict):
+                    node_identifier = entry.get("node_id")
+                    graph_identifier = entry.get("graph_id")
+
+                try:
+                    parsed_node_id = int(node_identifier)
+                except (TypeError, ValueError):
+                    parsed_node_id = node_identifier
+
+                payload = {"id": parsed_node_id, "message": trigger_words_text}
+                if graph_identifier is not None:
+                    payload["graph_id"] = str(graph_identifier)
+
+                PromptServer.instance.send_sync("trigger_word_update", payload)
+
+            return web.json_response({
+                "success": True,
+                "total_count": total_count,
+                "selected_index": selected_index,
+                "selected_lora": lora_name,
+                "trigger_words": trigger_words_text
+            })
+
+        except Exception as e:
+            logger.error(f"Error in cycler preview: {e}")
             return web.json_response({
                 "success": False,
                 "error": str(e)

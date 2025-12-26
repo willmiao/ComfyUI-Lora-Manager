@@ -125,6 +125,12 @@ class LoraCycler:
                 "lora_stack": ("LORA_STACK", {
                     "tooltip": "Optional: Connect a LORA_STACK from another node (like Lora Stacker) to select from that specific list instead of scanning your LoRA folders."
                 }),
+                "first_trigger_word_only": ("BOOLEAN", {
+                    "default": False,
+                    "tooltip": "When enabled, only output the first trigger word for the selected LoRA.\n\n"
+                               "Useful for LoRAs with multiple trigger words (e.g., Disney princess LoRA with "
+                               "Elsa, Ariel, Cinderella) where you want to use just one character per run."
+                }),
             },
             "hidden": {
                 "unique_id": "UNIQUE_ID",
@@ -145,7 +151,7 @@ class LoraCycler:
     @classmethod
     def IS_CHANGED(cls, selection_mode, index, seed, model_strength, clip_strength,
                    folder_filter="", base_model_filter="", tag_filter="", name_filter="",
-                   lora_stack=None, unique_id=None):
+                   lora_stack=None, first_trigger_word_only=False, unique_id=None):
         """
         This method controls when ComfyUI re-executes the node.
 
@@ -155,7 +161,7 @@ class LoraCycler:
         if selection_mode == "fixed":
             # Fixed mode: only re-execute if inputs change
             return (index, model_strength, clip_strength, folder_filter,
-                    base_model_filter, tag_filter, name_filter)
+                    base_model_filter, tag_filter, name_filter, first_trigger_word_only)
 
         elif selection_mode == "random":
             if seed == 0:
@@ -294,7 +300,8 @@ class LoraCycler:
                     model_strength: float, clip_strength: float,
                     folder_filter: str = "", base_model_filter: str = "",
                     tag_filter: str = "", name_filter: str = "",
-                    lora_stack: Optional[List] = None, unique_id: str = None):
+                    lora_stack: Optional[List] = None,
+                    first_trigger_word_only: bool = False, unique_id: str = None):
         """
         Main execution method for the LoRA cycler.
 
@@ -354,6 +361,10 @@ class LoraCycler:
         lora_path = selected_lora.get('file_path', '')
         lora_name = selected_lora.get('file_name', '') or selected_lora.get('model_name', '')
         trigger_words = selected_lora.get('trigger_words', [])
+
+        # Apply first_trigger_word_only filter if enabled
+        if first_trigger_word_only and trigger_words:
+            trigger_words = [trigger_words[0]]
 
         # Format trigger words with ',, ' separator for group mode compatibility
         trigger_words_text = ",, ".join(trigger_words) if trigger_words else ""

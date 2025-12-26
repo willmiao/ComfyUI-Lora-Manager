@@ -2,7 +2,7 @@
  * Frontend extension for LoraCycler node
  *
  * This handles trigger word updates for connected TriggerWordToggle nodes
- * when the Cycler node executes and selects a LoRA.
+ * by calling the backend preview API when widget values change.
  */
 
 import { app } from "../../scripts/app.js";
@@ -13,120 +13,182 @@ import {
   chainCallback,
 } from "./utils.js";
 
-// Store the last selected LoRA name for each node instance
-const nodeSelectedLoras = new Map();
+// Store the last preview data for each node instance
+const nodePreviewData = new Map();
 
-// Regex to extract LoRA name from syntax like <lora:name:strength> or <lora:name:strength:clip>
-const LORA_SYNTAX_PATTERN = /<lora:([^:>]+):[^>]+>/;
+// Debounce timer map for each node
+const debounceTimers = new Map();
+
+// Cache for base models list
+let cachedBaseModels = null;
+let baseModelsFetchPromise = null;
 
 /**
- * Update trigger words for connected TriggerWord Toggle nodes
- * @param {Object} node - The LoraCycler node
- * @param {Set} loraNames - Set of active LoRA names
+ * Fetch available base models from the API
+ * @returns {Promise<Array>} - Array of base model names
  */
-function updateConnectedTriggerWords(node, loraNames) {
-  const connectedNodes = getConnectedTriggerToggleNodes(node);
-  if (connectedNodes.length === 0) {
-    return;
+async function fetchBaseModels() {
+  // Return cached data if available
+  if (cachedBaseModels) {
+    return cachedBaseModels;
   }
 
-  const nodeIds = connectedNodes
+  // Reuse existing fetch promise if in progress
+  if (baseModelsFetchPromise) {
+    return baseModelsFetchPromise;
+  }
+
+  baseModelsFetchPromise = (async () => {
+    try {
+      const response = await fetch("/api/lm/loras/base-models");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.base_models) {
+          // Extract model names and sort
+          cachedBaseModels = ["", ...data.base_models.map((m) => m.name || m).sort()];
+          return cachedBaseModels;
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching base models:", err);
+    }
+    return [""];
+  })();
+
+  return baseModelsFetchPromise;
+}
+
+/**
+ * Get connected trigger toggle node references for API call
+ * @param {Object} node - The LoraCycler node
+ * @returns {Array} - Array of node references
+ */
+function getConnectedNodeReferences(node) {
+  const connectedNodes = getConnectedTriggerToggleNodes(node);
+  return connectedNodes
     .map((connectedNode) => getNodeReference(connectedNode))
     .filter((reference) => reference !== null);
+}
 
-  if (nodeIds.length === 0) {
+/**
+ * Gather widget values from the node
+ * @param {Object} node - The LoraCycler node
+ * @returns {Object} - Widget values
+ */
+function getWidgetValues(node) {
+  const values = {
+    selection_mode: "fixed",
+    index: 0,
+    seed: 0,
+    folder_filter: "",
+    base_model_filter: "",
+    tag_filter: "",
+    name_filter: "",
+    first_trigger_word_only: false,
+  };
+
+  if (!node.widgets) return values;
+
+  for (const widget of node.widgets) {
+    if (widget.name === "selection_mode") values.selection_mode = widget.value;
+    else if (widget.name === "index") values.index = widget.value;
+    else if (widget.name === "seed") values.seed = widget.value;
+    else if (widget.name === "folder_filter") values.folder_filter = widget.value || "";
+    else if (widget.name === "base_model_filter") values.base_model_filter = widget.value || "";
+    else if (widget.name === "tag_filter") values.tag_filter = widget.value || "";
+    else if (widget.name === "name_filter") values.name_filter = widget.value || "";
+    else if (widget.name === "first_trigger_word_only") values.first_trigger_word_only = widget.value || false;
+  }
+
+  return values;
+}
+
+/**
+ * Call the backend preview API to get selected LoRA and update trigger words
+ * @param {Object} node - The LoraCycler node
+ */
+async function updatePreview(node) {
+  // Check if node is active (mode 0 for Always, mode 3 for On Trigger)
+  const isNodeActive = node.mode === undefined || node.mode === 0 || node.mode === 3;
+
+  // Get connected trigger toggle nodes
+  const nodeIds = getConnectedNodeReferences(node);
+
+  if (nodeIds.length === 0 && !isNodeActive) {
     return;
   }
+
+  const widgetValues = getWidgetValues(node);
+
+  try {
+    const response = await fetch("/api/lm/loras/cycler_preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        folder_filter: widgetValues.folder_filter,
+        base_model_filter: widgetValues.base_model_filter,
+        tag_filter: widgetValues.tag_filter,
+        name_filter: widgetValues.name_filter,
+        selection_mode: widgetValues.selection_mode,
+        index: widgetValues.index,
+        seed: widgetValues.seed,
+        unique_id: String(node.id),
+        node_ids: nodeIds,
+        first_trigger_word_only: widgetValues.first_trigger_word_only,
+      }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success) {
+        nodePreviewData.set(node.id, {
+          selectedLora: data.selected_lora,
+          triggerWords: data.trigger_words,
+          totalCount: data.total_count,
+          selectedIndex: data.selected_index,
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Error fetching cycler preview:", err);
+  }
+}
+
+/**
+ * Debounced version of updatePreview
+ * @param {Object} node - The LoraCycler node
+ * @param {number} delay - Debounce delay in ms
+ */
+function debouncedUpdatePreview(node, delay = 300) {
+  const existingTimer = debounceTimers.get(node.id);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+  }
+
+  const timer = setTimeout(() => {
+    updatePreview(node);
+    debounceTimers.delete(node.id);
+  }, delay);
+
+  debounceTimers.set(node.id, timer);
+}
+
+/**
+ * Clear trigger words from connected nodes when node is inactive
+ * @param {Object} node - The LoraCycler node
+ */
+function clearTriggerWords(node) {
+  const nodeIds = getConnectedNodeReferences(node);
+  if (nodeIds.length === 0) return;
 
   fetch("/api/lm/loras/get_trigger_words", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      lora_names: Array.from(loraNames),
+      lora_names: [],
       node_ids: nodeIds,
     }),
-  }).catch((err) => console.error("Error fetching trigger words:", err));
-}
-
-/**
- * Extract LoRA name from the selected_lora output format
- * @param {string} selectedLora - String like "<lora:name:1.0>" or "<lora:name:0.8:0.6>"
- * @returns {string|null} - The LoRA name or null if not found
- */
-function extractLoraName(selectedLora) {
-  if (!selectedLora) {
-    return null;
-  }
-  const match = selectedLora.match(LORA_SYNTAX_PATTERN);
-  return match ? match[1] : null;
-}
-
-/**
- * Handle execution result for a Cycler node
- * @param {Object} node - The LoraCycler node
- * @param {Object} output - The execution output
- */
-function handleExecutionOutput(node, output) {
-  // The output array indices match RETURN_TYPES order:
-  // 0: LORA_STACK, 1: trigger_words, 2: selected_lora, 3: total_count, 4: current_index
-  const selectedLoraOutput = output?.selected_lora;
-
-  if (!selectedLoraOutput || !selectedLoraOutput.length) {
-    return;
-  }
-
-  // Get the selected_lora string (it's an array, take first element)
-  const selectedLoraStr = Array.isArray(selectedLoraOutput)
-    ? selectedLoraOutput[0]
-    : selectedLoraOutput;
-
-  const loraName = extractLoraName(selectedLoraStr);
-
-  if (!loraName) {
-    return;
-  }
-
-  // Check if this is different from the last selection
-  const lastSelection = nodeSelectedLoras.get(node.id);
-  if (lastSelection === loraName) {
-    return;
-  }
-
-  nodeSelectedLoras.set(node.id, loraName);
-
-  // Update connected TriggerWord Toggle nodes
-  const loraNames = new Set([loraName]);
-  updateConnectedTriggerWords(node, loraNames);
-}
-
-/**
- * Find a node by its unique ID across all graphs
- * @param {number|string} nodeId - The node ID to find
- * @returns {Object|null} - The node or null
- */
-function findNodeById(nodeId) {
-  const numericId = typeof nodeId === "string" ? parseInt(nodeId, 10) : nodeId;
-
-  // Try the main graph first
-  let node = app.graph?.getNodeById?.(numericId);
-  if (node) {
-    return node;
-  }
-
-  // Search subgraphs if needed
-  if (app.graph?._subgraphs) {
-    for (const subgraph of Object.values(app.graph._subgraphs)) {
-      const graph = subgraph?.graph || subgraph?._graph || subgraph;
-      if (graph?.getNodeById) {
-        node = graph.getNodeById(numericId);
-        if (node) {
-          return node;
-        }
-      }
-    }
-  }
-
-  return null;
+  }).catch((err) => console.error("Error clearing trigger words:", err));
 }
 
 app.registerExtension({
@@ -134,7 +196,7 @@ app.registerExtension({
 
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
     if (nodeType.comfyClass === "Lora Cycler (LoraManager)") {
-      chainCallback(nodeType.prototype, "onNodeCreated", function () {
+      chainCallback(nodeType.prototype, "onNodeCreated", async function () {
         // Enable widget serialization
         this.serialize_widgets = true;
 
@@ -146,6 +208,67 @@ app.registerExtension({
         // Store reference for callbacks
         const self = this;
 
+        // Find the base_model_filter widget and add a combo selector above it
+        const baseModelFilterWidget = this.widgets?.find(
+          (w) => w.name === "base_model_filter"
+        );
+
+        if (baseModelFilterWidget) {
+          // Fetch base models and create a combo widget
+          const baseModels = await fetchBaseModels();
+
+          // Find the index of base_model_filter widget
+          const widgetIndex = this.widgets.indexOf(baseModelFilterWidget);
+
+          // Create a combo widget for base model selection
+          const comboWidget = this.addWidget(
+            "combo",
+            "base_model_select",
+            "",
+            (value) => {
+              // When a base model is selected from dropdown, update the filter widget
+              baseModelFilterWidget.value = value;
+              debouncedUpdatePreview(self);
+            },
+            {
+              values: baseModels,
+              serialize: false, // Don't save this widget - the filter text is what matters
+            }
+          );
+
+          // Move the combo widget to be right before the base_model_filter
+          if (widgetIndex >= 0) {
+            const currentIndex = this.widgets.indexOf(comboWidget);
+            if (currentIndex > widgetIndex) {
+              this.widgets.splice(currentIndex, 1);
+              this.widgets.splice(widgetIndex, 0, comboWidget);
+            }
+          }
+
+          // Sync combo with existing filter value if any
+          if (baseModelFilterWidget.value && baseModels.includes(baseModelFilterWidget.value)) {
+            comboWidget.value = baseModelFilterWidget.value;
+          }
+        }
+
+        // Setup widget callbacks for real-time preview updates
+        if (this.widgets) {
+          for (const widget of this.widgets) {
+            // Skip the combo widget we just added (it already has a callback)
+            if (widget.name === "base_model_select") continue;
+
+            const originalCallback = widget.callback;
+
+            widget.callback = function (value) {
+              if (originalCallback) {
+                originalCallback.call(this, value);
+              }
+              // Trigger preview update when widget value changes
+              debouncedUpdatePreview(self);
+            };
+          }
+        }
+
         // Monitor mode changes to update trigger words when node is bypassed/enabled
         let _mode = this.mode;
         Object.defineProperty(this, "mode", {
@@ -156,24 +279,22 @@ app.registerExtension({
             const oldValue = _mode;
             _mode = value;
 
-            // When node becomes active, update trigger words if we have a selection
+            // When node becomes active, update preview
             const isNodeActive = value === undefined || value === 0 || value === 3;
             if (isNodeActive && oldValue !== value) {
-              const lastSelection = nodeSelectedLoras.get(self.id);
-              if (lastSelection) {
-                updateConnectedTriggerWords(self, new Set([lastSelection]));
-              }
+              updatePreview(self);
             }
             // When node becomes inactive, clear trigger words
             else if (!isNodeActive && oldValue !== value) {
-              updateConnectedTriggerWords(self, new Set());
+              clearTriggerWords(self);
             }
           },
         });
 
-        // Listen for widget changes to provide immediate feedback where possible
-        // For "fixed" mode with a specific index, we could potentially preview
-        // but for random/increment modes, we can't know until execution
+        // Initial preview update after a short delay to let the graph settle
+        setTimeout(() => {
+          updatePreview(this);
+        }, 500);
       });
 
       // Handle connection changes
@@ -184,23 +305,19 @@ app.registerExtension({
         linkInfo
       ) {
         // When a new connection is made to trigger_words output (index 1)
-        // try to update the connected node if we have a previous selection
+        // update the preview to send trigger words to the new connection
         if (type === 2 && index === 1 && connected) {
           // Output connection to trigger_words
-          const lastSelection = nodeSelectedLoras.get(this.id);
-          if (lastSelection) {
-            // Small delay to let the connection stabilize
-            setTimeout(() => {
-              updateConnectedTriggerWords(this, new Set([lastSelection]));
-            }, 100);
-          }
+          setTimeout(() => {
+            updatePreview(this);
+          }, 100);
         }
       });
     }
   },
 
   async setup() {
-    // Listen for execution events to capture node outputs
+    // Listen for execution events to update the counter state for increment/decrement
     api.addEventListener("executed", (event) => {
       const { node: nodeId, output } = event.detail || {};
 
@@ -209,14 +326,36 @@ app.registerExtension({
       }
 
       // Find the node
-      const node = findNodeById(nodeId);
-      if (!node) {
-        return;
+      const numericId = typeof nodeId === "string" ? parseInt(nodeId, 10) : nodeId;
+      let node = app.graph?.getNodeById?.(numericId);
+
+      // Search subgraphs if needed
+      if (!node && app.graph?._subgraphs) {
+        for (const subgraph of Object.values(app.graph._subgraphs)) {
+          const graph = subgraph?.graph || subgraph?._graph || subgraph;
+          if (graph?.getNodeById) {
+            node = graph.getNodeById(numericId);
+            if (node) break;
+          }
+        }
       }
+
+      if (!node) return;
 
       // Check if this is a LoraCycler node
       if (node.comfyClass === "Lora Cycler (LoraManager)") {
-        handleExecutionOutput(node, output);
+        // After execution, refresh the preview for increment/decrement modes
+        // This ensures the preview reflects the new counter state
+        const widgetValues = getWidgetValues(node);
+        if (
+          widgetValues.selection_mode === "increment" ||
+          widgetValues.selection_mode === "decrement"
+        ) {
+          // Small delay to let the backend counter update
+          setTimeout(() => {
+            updatePreview(node);
+          }, 200);
+        }
       }
     });
   },

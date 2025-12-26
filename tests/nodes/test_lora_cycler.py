@@ -417,6 +417,50 @@ def test_cycle_loras_trigger_words_output():
         assert ',, ' in trigger_words
 
 
+def test_cycle_loras_first_trigger_word_only():
+    """Test that first_trigger_word_only option limits trigger words to first one."""
+    node = LoraCycler()
+
+    input_stack = [
+        ('lora_multi_trigger.safetensors', 1.0, 1.0),
+    ]
+
+    with patch('py.nodes.lora_cycler.get_lora_info') as mock_info:
+        mock_info.return_value = ('lora_multi_trigger.safetensors', ['elsa', 'ariel', 'cinderella'])
+
+        # Without first_trigger_word_only - should get all trigger words
+        _, trigger_words_all, _, _, _ = node.cycle_loras(
+            selection_mode="fixed",
+            index=0,
+            seed=0,
+            model_strength=1.0,
+            clip_strength=1.0,
+            lora_stack=input_stack,
+            first_trigger_word_only=False,
+            unique_id="first_trigger_test_1",
+        )
+
+        assert 'elsa' in trigger_words_all
+        assert 'ariel' in trigger_words_all
+        assert 'cinderella' in trigger_words_all
+
+        # With first_trigger_word_only - should only get first trigger word
+        _, trigger_words_first, _, _, _ = node.cycle_loras(
+            selection_mode="fixed",
+            index=0,
+            seed=0,
+            model_strength=1.0,
+            clip_strength=1.0,
+            lora_stack=input_stack,
+            first_trigger_word_only=True,
+            unique_id="first_trigger_test_2",
+        )
+
+        assert trigger_words_first == 'elsa'
+        assert 'ariel' not in trigger_words_first
+        assert 'cinderella' not in trigger_words_first
+
+
 def test_cycle_loras_strength_output():
     """Test that strength values are correctly included in output."""
     node = LoraCycler()
