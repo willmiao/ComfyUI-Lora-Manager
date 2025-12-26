@@ -147,10 +147,36 @@ async function updatePreview(node) {
           totalCount: data.total_count,
           selectedIndex: data.selected_index,
         });
+
+        // Update the display widget to show the selected LoRA
+        updateDisplayWidget(node, data);
       }
     }
   } catch (err) {
     console.error("Error fetching cycler preview:", err);
+  }
+}
+
+/**
+ * Update the display widget to show the currently selected LoRA
+ * @param {Object} node - The LoraCycler node
+ * @param {Object} data - Preview data from API
+ */
+function updateDisplayWidget(node, data) {
+  if (!node.widgets) return;
+
+  const displayWidget = node.widgets.find((w) => w.name === "next_lora_display");
+  if (displayWidget) {
+    if (data.total_count === 0) {
+      displayWidget.value = "(no matching LoRAs)";
+    } else {
+      const loraName = data.selected_lora || "(none)";
+      displayWidget.value = `[${data.selected_index + 1}/${data.total_count}] ${loraName}`;
+    }
+    // Force redraw
+    if (node.graph) {
+      node.setDirtyCanvas(true, true);
+    }
   }
 }
 
@@ -207,6 +233,25 @@ app.registerExtension({
 
         // Store reference for callbacks
         const self = this;
+
+        // Add a display widget to show the currently selected/next LoRA
+        const displayWidget = this.addWidget(
+          "text",
+          "next_lora_display",
+          "(loading...)",
+          () => {}, // Read-only, no callback needed
+          {
+            serialize: false, // Don't save this widget
+          }
+        );
+        // Make it appear read-only by moving to the top
+        if (this.widgets && this.widgets.length > 1) {
+          const idx = this.widgets.indexOf(displayWidget);
+          if (idx > 0) {
+            this.widgets.splice(idx, 1);
+            this.widgets.unshift(displayWidget);
+          }
+        }
 
         // Find the base_model_filter widget and add a combo selector above it
         const baseModelFilterWidget = this.widgets?.find(

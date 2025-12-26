@@ -267,12 +267,15 @@ class LoraRoutes(BaseModelRoutes):
         """Get preview of which LoRA would be selected by LoraCycler with current settings.
 
         This endpoint enables real-time trigger word updates before workflow execution.
+        Uses shared utilities from lora_cycler_utils for consistent behavior with the node.
         """
         try:
-            import os
-            import random
-            from ..nodes.lora_cycler import _execution_counters
-            from ..config import config
+            from ..utils.lora_cycler_utils import (
+                filter_loras,
+                select_lora_index,
+                format_trigger_words,
+                get_execution_counters,
+            )
 
             json_data = await request.json()
 
@@ -293,78 +296,21 @@ class LoraRoutes(BaseModelRoutes):
             cache = await scanner.get_cached_data()
             raw_data = cache.raw_data
 
-            # Apply filters
-            filtered_loras = []
-            folder_filter_lower = folder_filter.lower() if folder_filter else ""
-            base_model_filter_lower = base_model_filter.lower() if base_model_filter else ""
-            tag_filter_lower = tag_filter.lower() if tag_filter else ""
-            name_filter_lower = name_filter.lower() if name_filter else ""
-
-            for item in raw_data:
-                # Skip excluded items
-                if item.get('exclude', False):
-                    continue
-
-                # Folder filter
-                if folder_filter_lower:
-                    item_folder = (item.get('folder') or '').lower()
-                    if folder_filter_lower not in item_folder:
-                        continue
-
-                # Base model filter
-                if base_model_filter_lower:
-                    item_base = (item.get('base_model') or '').lower()
-                    if base_model_filter_lower not in item_base:
-                        continue
-
-                # Tag filter
-                if tag_filter_lower:
-                    item_tags = [t.lower() for t in (item.get('tags') or [])]
-                    if not any(tag_filter_lower in tag for tag in item_tags):
-                        continue
-
-                # Name filter
-                if name_filter_lower:
-                    item_name = (item.get('file_name') or '').lower()
-                    model_name = (item.get('model_name') or '').lower()
-                    if name_filter_lower not in item_name and name_filter_lower not in model_name:
-                        continue
-
-                # Get trigger words
-                civitai = item.get('civitai', {})
-                trigger_words = civitai.get('trainedWords', []) if civitai else []
-
-                filtered_loras.append({
-                    'file_name': item.get('file_name', ''),
-                    'model_name': item.get('model_name', ''),
-                    'trigger_words': trigger_words,
-                })
-
-            # Sort for consistent ordering
-            filtered_loras.sort(key=lambda x: x.get('file_name', '').lower())
+            # Use shared filtering logic
+            filtered_loras = filter_loras(
+                raw_data,
+                folder_filter=folder_filter,
+                base_model_filter=base_model_filter,
+                tag_filter=tag_filter,
+                name_filter=name_filter,
+            )
 
             total_count = len(filtered_loras)
+            node_key = str(unique_id) if unique_id else "default"
 
             if total_count == 0:
                 # Send empty trigger words to connected nodes
-                for entry in node_ids:
-                    node_identifier = entry
-                    graph_identifier = None
-                    if isinstance(entry, dict):
-                        node_identifier = entry.get("node_id")
-                        graph_identifier = entry.get("graph_id")
-
-                    try:
-                        parsed_node_id = int(node_identifier)
-                    except (TypeError, ValueError):
-                        parsed_node_id = node_identifier
-
-                    payload = {"id": parsed_node_id, "message": ""}
-                    if graph_identifier is not None:
-                        payload["graph_id"] = str(graph_identifier)
-
-                    PromptServer.instance.send_sync("trigger_word_update", payload)
-
+                self._send_trigger_word_updates(node_ids, "")
                 return web.json_response({
                     "success": True,
                     "total_count": 0,
@@ -373,59 +319,26 @@ class LoraRoutes(BaseModelRoutes):
                     "trigger_words": ""
                 })
 
-            # Determine selection index based on mode
-            node_key = str(unique_id) if unique_id else "default"
-
-            if selection_mode == "fixed":
-                selected_index = index % total_count
-            elif selection_mode == "random":
-                if seed == 0:
-                    selected_index = random.randint(0, total_count - 1)
-                else:
-                    rng = random.Random(seed)
-                    selected_index = rng.randint(0, total_count - 1)
-            elif selection_mode == "increment":
-                current_counter = _execution_counters.get(node_key, index)
-                selected_index = current_counter % total_count
-            elif selection_mode == "decrement":
-                current_counter = _execution_counters.get(node_key, index)
-                if current_counter <= 0:
-                    current_counter = total_count - 1
-                else:
-                    current_counter -= 1
-                selected_index = current_counter % total_count
-            else:
-                selected_index = 0
+            # Use shared selection logic (preview mode - don't update counter)
+            selected_index = select_lora_index(
+                selection_mode=selection_mode,
+                index=index,
+                seed=seed,
+                total_count=total_count,
+                node_key=node_key,
+                update_counter=False,  # Preview only - don't modify state
+            )
 
             # Get selected LoRA info
             selected_lora = filtered_loras[selected_index]
             lora_name = selected_lora.get('file_name', '') or selected_lora.get('model_name', '')
             trigger_words = selected_lora.get('trigger_words', [])
 
-            # Apply first_trigger_word_only filter if enabled
-            if first_trigger_word_only and trigger_words:
-                trigger_words = [trigger_words[0]]
-
-            trigger_words_text = ",, ".join(trigger_words) if trigger_words else ""
+            # Use shared formatting logic
+            trigger_words_text = format_trigger_words(trigger_words, first_only=first_trigger_word_only)
 
             # Send trigger words to connected nodes
-            for entry in node_ids:
-                node_identifier = entry
-                graph_identifier = None
-                if isinstance(entry, dict):
-                    node_identifier = entry.get("node_id")
-                    graph_identifier = entry.get("graph_id")
-
-                try:
-                    parsed_node_id = int(node_identifier)
-                except (TypeError, ValueError):
-                    parsed_node_id = node_identifier
-
-                payload = {"id": parsed_node_id, "message": trigger_words_text}
-                if graph_identifier is not None:
-                    payload["graph_id"] = str(graph_identifier)
-
-                PromptServer.instance.send_sync("trigger_word_update", payload)
+            self._send_trigger_word_updates(node_ids, trigger_words_text)
 
             return web.json_response({
                 "success": True,
@@ -441,3 +354,23 @@ class LoraRoutes(BaseModelRoutes):
                 "success": False,
                 "error": str(e)
             }, status=500)
+
+    def _send_trigger_word_updates(self, node_ids: list, trigger_words_text: str) -> None:
+        """Send trigger word updates to connected TriggerWord Toggle nodes."""
+        for entry in node_ids:
+            node_identifier = entry
+            graph_identifier = None
+            if isinstance(entry, dict):
+                node_identifier = entry.get("node_id")
+                graph_identifier = entry.get("graph_id")
+
+            try:
+                parsed_node_id = int(node_identifier)
+            except (TypeError, ValueError):
+                parsed_node_id = node_identifier
+
+            payload = {"id": parsed_node_id, "message": trigger_words_text}
+            if graph_identifier is not None:
+                payload["graph_id"] = str(graph_identifier)
+
+            PromptServer.instance.send_sync("trigger_word_update", payload)

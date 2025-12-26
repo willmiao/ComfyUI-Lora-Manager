@@ -13,16 +13,19 @@ import logging
 from typing import List, Dict, Optional, Any
 
 from ..utils.utils import get_lora_info
+from ..utils.lora_cycler_utils import (
+    get_execution_counters,
+    select_lora_index,
+    format_trigger_words,
+)
 from ..services.service_registry import ServiceRegistry
 from ..config import config
 from .utils import extract_lora_name
 
 logger = logging.getLogger(__name__)
 
-
-# Global counter for increment/decrement modes
-# This persists across node executions within the same ComfyUI session
-_execution_counters: Dict[str, int] = {}
+# Use shared execution counters from utility
+_execution_counters = get_execution_counters()
 
 
 class LoraCycler:
