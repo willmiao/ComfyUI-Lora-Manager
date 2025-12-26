@@ -20,6 +20,8 @@ class WebSocketManager:
         self._last_init_progress: Dict[str, Dict] = {}
         # Add auto-organize progress tracking
         self._auto_organize_progress: Optional[Dict] = None
+        # Add recipe repair progress tracking
+        self._recipe_repair_progress: Optional[Dict] = None
         self._auto_organize_lock = asyncio.Lock()
         
     async def handle_connection(self, request: web.Request) -> web.WebSocketResponse:
@@ -189,6 +191,14 @@ class WebSocketManager:
         # Broadcast via WebSocket
         await self.broadcast(data)
     
+    async def broadcast_recipe_repair_progress(self, data: Dict):
+        """Broadcast recipe repair progress to connected clients"""
+        # Store progress data in memory
+        self._recipe_repair_progress = data
+        
+        # Broadcast via WebSocket
+        await self.broadcast(data)
+    
     def get_auto_organize_progress(self) -> Optional[Dict]:
         """Get current auto-organize progress"""
         return self._auto_organize_progress
@@ -196,6 +206,14 @@ class WebSocketManager:
     def cleanup_auto_organize_progress(self):
         """Clear auto-organize progress data"""
         self._auto_organize_progress = None
+    
+    def get_recipe_repair_progress(self) -> Optional[Dict]:
+        """Get current recipe repair progress"""
+        return self._recipe_repair_progress
+    
+    def cleanup_recipe_repair_progress(self):
+        """Clear recipe repair progress data"""
+        self._recipe_repair_progress = None
     
     def is_auto_organize_running(self) -> bool:
         """Check if auto-organize is currently running"""

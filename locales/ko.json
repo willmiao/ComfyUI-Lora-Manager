@@ -159,6 +159,12 @@
             "success": "Updated license metadata for {count} {typePlural}",
             "none": "All {typePlural} already have license metadata",
             "error": "Failed to refresh license metadata for {typePlural}: {message}"
+        },
+        "repairRecipes": {
+            "label": "레시피 데이터 복구",
+            "loading": "레시피 데이터 복구 중...",
+            "success": "{count}개의 레시피가 성공적으로 복구되었습니다.",
+            "error": "레시피 복구 실패: {message}"
         }
     },
     "header": {
@@ -188,7 +194,8 @@
                 "creator": "제작자",
                 "title": "레시피 제목",
                 "loraName": "LoRA 파일명",
-                "loraModel": "LoRA 모델명"
+                "loraModel": "LoRA 모델명",
+                "prompt": "프롬프트"
             }
         },
         "filter": {
@@ -199,6 +206,7 @@
             "license": "라이선스",
             "noCreditRequired": "크레딧 표기 없음",
             "allowSellingGeneratedContent": "판매 허용",
+            "noTags": "태그 없음",
             "clearAll": "모든 필터 지우기"
         },
         "theme": {
@@ -521,6 +529,7 @@
             "replacePreview": "미리보기 교체",
             "setContentRating": "콘텐츠 등급 설정",
             "moveToFolder": "폴더로 이동",
+            "repairMetadata": "[TODO: Translate] Repair metadata",
             "excludeModel": "모델 제외",
             "deleteModel": "모델 삭제",
             "shareRecipe": "레시피 공유",
@@ -591,10 +600,26 @@
                     "selectLoraRoot": "LoRA 루트 디렉토리를 선택해주세요"
                 }
             },
+            "sort": {
+                "title": "레시피 정렬...",
+                "name": "이름",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "날짜",
+                "dateDesc": "최신순",
+                "dateAsc": "오래된순",
+                "lorasCount": "LoRA 수",
+                "lorasCountDesc": "많은순",
+                "lorasCountAsc": "적은순"
+            },
             "refresh": {
                 "title": "레시피 목록 새로고침"
             },
-            "filteredByLora": "LoRA로 필터링됨"
+            "filteredByLora": "LoRA로 필터링됨",
+            "favorites": {
+                "title": "즐겨찾기만 표시",
+                "action": "즐겨찾기"
+            }
         },
         "duplicates": {
             "found": "{count}개의 중복 그룹 발견",
@@ -620,6 +645,13 @@
                 "noMissingLoras": "다운로드할 누락된 LoRA가 없습니다",
                 "getInfoFailed": "누락된 LoRA 정보를 가져오는데 실패했습니다",
                 "prepareError": "LoRA 다운로드 준비 중 오류: {message}"
+            },
+            "repair": {
+                "starting": "[TODO: Translate] Repairing recipe metadata...",
+                "success": "[TODO: Translate] Recipe metadata repaired successfully",
+                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
+                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
+                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
             }
         }
     },
@@ -641,7 +673,8 @@
         "recursiveUnavailable": "재귀 검색은 트리 보기에서만 사용할 수 있습니다",
         "collapseAllDisabled": "목록 보기에서는 사용할 수 없습니다",
         "dragDrop": {
-            "unableToResolveRoot": "이동할 대상 경로를 확인할 수 없습니다."
+            "unableToResolveRoot": "이동할 대상 경로를 확인할 수 없습니다.",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1463,7 +1496,8 @@
             "bulkMoveFailures": "실패한 이동:\n{failures}",
             "bulkMoveSuccess": "{successCount}개 {type}이(가) 성공적으로 이동되었습니다",
             "exampleImagesDownloadSuccess": "예시 이미지가 성공적으로 다운로드되었습니다!",
-            "exampleImagesDownloadFailed": "예시 이미지 다운로드 실패: {message}"
+            "exampleImagesDownloadFailed": "예시 이미지 다운로드 실패: {message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

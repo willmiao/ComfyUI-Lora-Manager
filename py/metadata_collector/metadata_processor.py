@@ -39,8 +39,39 @@ class MetadataProcessor:
                     if node_id in metadata.get(SAMPLING, {}) and metadata[SAMPLING][node_id].get(IS_SAMPLER, False):
                         candidate_samplers[node_id] = metadata[SAMPLING][node_id]
                 
-                # If we found candidate samplers, apply primary sampler logic to these candidates only
-                if candidate_samplers:
+                    # If we found candidate samplers, apply primary sampler logic to these candidates only
+                    
+                    # PRE-PROCESS: Ensure all candidate samplers have their parameters populated
+                    # This is especially important for SamplerCustomAdvanced which needs tracing
+                    prompt = metadata.get("current_prompt")
+                    for node_id in candidate_samplers:
+                        # If a sampler is missing common parameters like steps or denoise, 
+                        # try to populate them using tracing before ranking
+                        sampler_info = candidate_samplers[node_id]
+                        params = sampler_info.get("parameters", {})
+                        
+                        if prompt and (params.get("steps") is None or params.get("denoise") is None):
+                            # Create a temporary params dict to use the handler
+                            temp_params = {
+                                "steps": params.get("steps"),
+                                "denoise": params.get("denoise"),
+                                "sampler": params.get("sampler_name"),
+                                "scheduler": params.get("scheduler")
+                            }
+                            
+                            # Check if it's SamplerCustomAdvanced
+                            if prompt.original_prompt and node_id in prompt.original_prompt:
+                                if prompt.original_prompt[node_id].get("class_type") == "SamplerCustomAdvanced":
+                                    MetadataProcessor.handle_custom_advanced_sampler(metadata, prompt, node_id, temp_params)
+                                    
+                                    # Update the actual parameters with found values
+                                    params["steps"] = temp_params.get("steps")
+                                    params["denoise"] = temp_params.get("denoise")
+                                    if temp_params.get("sampler"):
+                                        params["sampler_name"] = temp_params.get("sampler")
+                                    if temp_params.get("scheduler"):
+                                        params["scheduler"] = temp_params.get("scheduler")
+
                     # Collect potential primary samplers based on different criteria
                     custom_advanced_samplers = []
                     advanced_add_noise_samplers = []
@@ -49,7 +80,6 @@ class MetadataProcessor:
                     high_denoise_id = None
                     
                     # First, check for SamplerCustomAdvanced among candidates
-                    prompt = metadata.get("current_prompt")
                     if prompt and prompt.original_prompt:
                         for node_id in candidate_samplers:
                             node_info = prompt.original_prompt.get(node_id, {})
@@ -77,15 +107,16 @@ class MetadataProcessor:
                     # Combine all potential primary samplers
                     potential_samplers = custom_advanced_samplers + advanced_add_noise_samplers + high_denoise_samplers
                     
-                    # Find the most recent potential primary sampler (closest to downstream node)
-                    for i in range(downstream_index - 1, -1, -1):
+                    # Find the first potential primary sampler (prefer base sampler over refine)
+                    # Use forward search to prioritize the first one in execution order
+                    for i in range(downstream_index):
                         node_id = execution_order[i]
                         if node_id in potential_samplers:
                             return node_id, candidate_samplers[node_id]
                     
-                    # If no potential sampler found from our criteria, return the most recent sampler
+                    # If no potential sampler found from our criteria, return the first sampler
                     if candidate_samplers:
-                        for i in range(downstream_index - 1, -1, -1):
+                        for i in range(downstream_index):
                             node_id = execution_order[i]
                             if node_id in candidate_samplers:
                                 return node_id, candidate_samplers[node_id]
@@ -176,8 +207,11 @@ class MetadataProcessor:
                 found_node_id = input_value[0]  # Connected node_id
                 
                 # If we're looking for a specific node class
-                if target_class and prompt.original_prompt[found_node_id].get("class_type") == target_class:
-                    return found_node_id
+                if target_class:
+                    if found_node_id not in prompt.original_prompt:
+                        return None
+                    if prompt.original_prompt[found_node_id].get("class_type") == target_class:
+                        return found_node_id
                 
                 # If we're not looking for a specific class, update the last valid node
                 if not target_class:
@@ -185,11 +219,19 @@ class MetadataProcessor:
                 
                 # Continue tracing through intermediate nodes
                 current_node_id = found_node_id
-                # For most conditioning nodes, the input we want to follow is named "conditioning"
-                if "conditioning" in prompt.original_prompt[current_node_id].get("inputs", {}):
+                
+                # Check if current source node exists
+                if current_node_id not in prompt.original_prompt:
+                    return found_node_id if not target_class else None
+                    
+                # Determine which input to follow next on the source node
+                source_node_inputs = prompt.original_prompt[current_node_id].get("inputs", {})
+                if input_name in source_node_inputs:
+                    current_input = input_name
+                elif "conditioning" in source_node_inputs:
                     current_input = "conditioning"
                 else:
-                    # If there's no "conditioning" input, return the current node
+                    # If there's no suitable input to follow, return the current node
                     # if we're not looking for a specific target_class
                     return found_node_id if not target_class else None
             else:
@@ -202,12 +244,89 @@ class MetadataProcessor:
         return last_valid_node if not target_class else None
     
     @staticmethod
-    def find_primary_checkpoint(metadata):
-        """Find the primary checkpoint model in the workflow"""
-        if not metadata.get(MODELS):
+    def trace_model_path(metadata, prompt, start_node_id):
+        """
+        Trace the model connection path upstream to find the checkpoint
+        """
+        if not prompt or not prompt.original_prompt:
             return None
             
-        # In most workflows, there's only one checkpoint, so we can just take the first one
+        current_node_id = start_node_id
+        depth = 0
+        max_depth = 50
+        
+        while depth < max_depth:
+            # Check if current node is a registered checkpoint in our metadata
+            # This handles cached nodes correctly because metadata contains info for all nodes in the graph
+            if current_node_id in metadata.get(MODELS, {}):
+                if metadata[MODELS][current_node_id].get("type") == "checkpoint":
+                    return current_node_id
+            
+            if current_node_id not in prompt.original_prompt:
+                return None
+                
+            node = prompt.original_prompt[current_node_id]
+            inputs = node.get("inputs", {})
+            class_type = node.get("class_type", "")
+            
+            # Determine which input to follow next
+            next_input_name = "model"
+            
+            # Special handling for initial node
+            if depth == 0:
+                if class_type == "SamplerCustomAdvanced":
+                    next_input_name = "guider"
+            
+            # If the specific input doesn't exist, try generic 'model' 
+            if next_input_name not in inputs:
+                if "model" in inputs:
+                    next_input_name = "model"
+                elif "basic_pipe" in inputs:
+                    # Handle pipe nodes like FromBasicPipe by following the pipeline
+                    next_input_name = "basic_pipe"
+                else:
+                    # Dead end - no model input to follow
+                    return None
+            
+            # Get connected node
+            input_val = inputs[next_input_name]
+            if isinstance(input_val, list) and len(input_val) > 0:
+                current_node_id = input_val[0]
+            else:
+                return None
+                
+            depth += 1
+            
+        return None
+
+    @staticmethod
+    def find_primary_checkpoint(metadata, downstream_id=None, primary_sampler_id=None):
+        """
+        Find the primary checkpoint model in the workflow
+        
+        Parameters:
+        - metadata: The workflow metadata
+        - downstream_id: Optional ID of a downstream node to help identify the specific primary sampler
+        - primary_sampler_id: Optional ID of the primary sampler if already known
+        """
+        if not metadata.get(MODELS):
+            return None
+        
+        # Method 1: Topology-based tracing (More accurate for complex workflows)
+        # First, find the primary sampler if not provided
+        if not primary_sampler_id:
+            primary_sampler_id, _ = MetadataProcessor.find_primary_sampler(metadata, downstream_id)
+        
+        if primary_sampler_id:
+            prompt = metadata.get("current_prompt")
+            if prompt:
+                # Trace back from the sampler to find the checkpoint
+                checkpoint_id = MetadataProcessor.trace_model_path(metadata, prompt, primary_sampler_id)
+                if checkpoint_id and checkpoint_id in metadata.get(MODELS, {}):
+                    return metadata[MODELS][checkpoint_id].get("name")
+            
+        # Method 2: Fallback to the first available checkpoint (Original behavior)
+        # In most simple workflows, there's only one checkpoint, so we can just take the first one
         for node_id, model_info in metadata.get(MODELS, {}).items():
             if model_info.get("type") == "checkpoint":
                 return model_info.get("name")
@@ -311,7 +430,8 @@ class MetadataProcessor:
         primary_sampler_id, primary_sampler = MetadataProcessor.find_primary_sampler(metadata, id)
         
         # Directly get checkpoint from metadata instead of tracing
-        checkpoint = MetadataProcessor.find_primary_checkpoint(metadata)
+        # Pass primary_sampler_id to avoid redundant calculation
+        checkpoint = MetadataProcessor.find_primary_checkpoint(metadata, id, primary_sampler_id)
         if checkpoint:
             params["checkpoint"] = checkpoint
         
@@ -445,6 +565,7 @@ class MetadataProcessor:
                 scheduler_params = metadata[SAMPLING][scheduler_node_id].get("parameters", {})
                 params["steps"] = scheduler_params.get("steps")
                 params["scheduler"] = scheduler_params.get("scheduler")
+                params["denoise"] = scheduler_params.get("denoise")
         
         # 2. Trace sampler input to find KSamplerSelect (only if sampler input exists)
         if "sampler" in sampler_inputs:

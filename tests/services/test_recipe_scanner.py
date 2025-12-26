@@ -349,3 +349,295 @@ def test_enrich_formats_absolute_preview_paths(recipe_scanner, tmp_path):
     enriched = scanner._enrich_lora_entry(dict(lora))
 
     assert enriched["preview_url"] == config.get_preview_static_url(str(preview_path))
+
+
+@pytest.mark.asyncio
+async def test_initialize_waits_for_lora_scanner(monkeypatch):
+    ready_flag = asyncio.Event()
+    call_count = 0
+
+    class StubLoraScanner:
+        def __init__(self):
+            self._cache = None
+            self._is_initializing = True
+
+        async def initialize_in_background(self):
+            nonlocal call_count
+            call_count += 1
+            await asyncio.sleep(0)
+            self._cache = SimpleNamespace(raw_data=[])
+            self._is_initializing = False
+            ready_flag.set()
+
+    lora_scanner = StubLoraScanner()
+    scanner = RecipeScanner(lora_scanner=lora_scanner)
+
+    await scanner.initialize_in_background()
+
+    assert ready_flag.is_set()
+    assert call_count == 1
+    assert scanner._cache is not None
+
+
+@pytest.mark.asyncio
+async def test_invalid_model_version_marked_deleted_and_not_retried(monkeypatch, recipe_scanner):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe = {
+        "id": "invalid-version",
+        "file_path": str(recipes_dir / "invalid-version.webp"),
+        "title": "Invalid",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "loras": [{"modelVersionId": 999, "file_name": "", "hash": ""}],
+    }
+    await scanner.add_recipe(dict(recipe))
+
+    call_count = 0
+
+    async def fake_get_hash(model_version_id):
+        nonlocal call_count
+        call_count += 1
+        return None
+
+    monkeypatch.setattr(scanner, "_get_hash_from_civitai", fake_get_hash)
+
+    metadata_updated = await scanner._update_lora_information(recipe)
+
+    assert metadata_updated is True
+    assert recipe["loras"][0]["isDeleted"] is True
+    assert call_count == 1
+
+    # Subsequent calls should skip remote lookup once marked deleted
+    metadata_updated_again = await scanner._update_lora_information(recipe)
+    assert metadata_updated_again is False
+    assert call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_load_recipe_persists_deleted_flag_on_invalid_version(monkeypatch, recipe_scanner, tmp_path):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe_id = "persist-invalid"
+    recipe_path = recipes_dir / f"{recipe_id}.recipe.json"
+    recipe_data = {
+        "id": recipe_id,
+        "file_path": str(recipes_dir / f"{recipe_id}.webp"),
+        "title": "Invalid",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "loras": [{"modelVersionId": 1234, "file_name": "", "hash": ""}],
+    }
+    recipe_path.write_text(json.dumps(recipe_data))
+
+    async def fake_get_hash(model_version_id):
+        return None
+
+    monkeypatch.setattr(scanner, "_get_hash_from_civitai", fake_get_hash)
+
+    loaded = await scanner._load_recipe_file(str(recipe_path))
+
+    assert loaded["loras"][0]["isDeleted"] is True
+
+    persisted = json.loads(recipe_path.read_text())
+    assert persisted["loras"][0]["isDeleted"] is True
+
+
+@pytest.mark.asyncio
+async def test_update_lora_filename_by_hash_updates_affected_recipes(tmp_path: Path, recipe_scanner):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    # Recipe 1: Contains the LoRA with hash "hash1"
+    recipe1_id = "recipe1"
+    recipe1_path = recipes_dir / f"{recipe1_id}.recipe.json"
+    recipe1_data = {
+        "id": recipe1_id,
+        "file_path": str(tmp_path / "img1.png"),
+        "title": "Recipe 1",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "loras": [
+            {"file_name": "old_name", "hash": "hash1"},
+            {"file_name": "other_lora", "hash": "hash2"}
+        ],
+    }
+    recipe1_path.write_text(json.dumps(recipe1_data))
+    await scanner.add_recipe(dict(recipe1_data))
+
+    # Recipe 2: Does NOT contain the LoRA
+    recipe2_id = "recipe2"
+    recipe2_path = recipes_dir / f"{recipe2_id}.recipe.json"
+    recipe2_data = {
+        "id": recipe2_id,
+        "file_path": str(tmp_path / "img2.png"),
+        "title": "Recipe 2",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "loras": [
+            {"file_name": "other_lora", "hash": "hash2"}
+        ],
+    }
+    recipe2_path.write_text(json.dumps(recipe2_data))
+    await scanner.add_recipe(dict(recipe2_data))
+
+    # Update LoRA name for "hash1" (using different case to test normalization)
+    new_name = "new_name"
+    file_count, cache_count = await scanner.update_lora_filename_by_hash("HASH1", new_name)
+
+    assert file_count == 1
+    assert cache_count == 1
+
+    # Check file on disk
+    persisted1 = json.loads(recipe1_path.read_text())
+    assert persisted1["loras"][0]["file_name"] == new_name
+    assert persisted1["loras"][1]["file_name"] == "other_lora"
+
+    # Verify Recipe 2 unchanged
+    persisted2 = json.loads(recipe2_path.read_text())
+    assert persisted2["loras"][0]["file_name"] == "other_lora"
+
+    cache = await scanner.get_cached_data()
+    cached1 = next(r for r in cache.raw_data if r["id"] == recipe1_id)
+    assert cached1["loras"][0]["file_name"] == new_name
+
+
+@pytest.mark.asyncio
+async def test_get_paginated_data_filters_by_favorite(recipe_scanner):
+    scanner, _ = recipe_scanner
+    
+    # Add a normal recipe
+    await scanner.add_recipe({
+        "id": "regular",
+        "file_path": "path/regular.png",
+        "title": "Regular Recipe",
+        "modified": 1.0,
+        "created_date": 1.0,
+        "loras": [],
+    })
+    
+    # Add a favorite recipe
+    await scanner.add_recipe({
+        "id": "favorite",
+        "file_path": "path/favorite.png",
+        "title": "Favorite Recipe",
+        "modified": 2.0,
+        "created_date": 2.0,
+        "loras": [],
+        "favorite": True
+    })
+    
+    # Wait for cache update (it's async in some places, add_recipe is usually enough but let's be safe)
+    await asyncio.sleep(0)
+    
+    # Test without filter (should return both)
+    result_all = await scanner.get_paginated_data(page=1, page_size=10)
+    assert len(result_all["items"]) == 2
+    
+    # Test with favorite filter
+    result_fav = await scanner.get_paginated_data(page=1, page_size=10, filters={"favorite": True})
+    assert len(result_fav["items"]) == 1
+    assert result_fav["items"][0]["id"] == "favorite"
+    
+    # Test with favorite filter set to False (should return both or at least not filter if it's the default)
+    # Actually our implementation checks if 'favorite' in filters and filters['favorite']
+    result_fav_false = await scanner.get_paginated_data(page=1, page_size=10, filters={"favorite": False})
+    assert len(result_fav_false["items"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_get_paginated_data_filters_by_prompt(recipe_scanner):
+    scanner, _ = recipe_scanner
+    
+    # Add a recipe with a specific prompt
+    await scanner.add_recipe({
+        "id": "prompt-recipe",
+        "file_path": "path/prompt.png",
+        "title": "Prompt Recipe",
+        "modified": 1.0,
+        "created_date": 1.0,
+        "loras": [],
+        "gen_params": {
+            "prompt": "a beautiful forest landscape"
+        }
+    })
+    
+    # Add a recipe with a specific negative prompt
+    await scanner.add_recipe({
+        "id": "neg-prompt-recipe",
+        "file_path": "path/neg.png",
+        "title": "Negative Prompt Recipe",
+        "modified": 2.0,
+        "created_date": 2.0,
+        "loras": [],
+        "gen_params": {
+            "negative_prompt": "ugly, blurry mountains"
+        }
+    })
+    
+    await asyncio.sleep(0)
+    
+    # Test search in prompt
+    result_prompt = await scanner.get_paginated_data(
+        page=1, page_size=10, search="forest", search_options={"prompt": True}
+    )
+    assert len(result_prompt["items"]) == 1
+    assert result_prompt["items"][0]["id"] == "prompt-recipe"
+    
+    # Test search in negative prompt
+    result_neg = await scanner.get_paginated_data(
+        page=1, page_size=10, search="mountains", search_options={"prompt": True}
+    )
+    assert len(result_neg["items"]) == 1
+    assert result_neg["items"][0]["id"] == "neg-prompt-recipe"
+    
+    # Test search disabled (should not find by prompt)
+    result_disabled = await scanner.get_paginated_data(
+        page=1, page_size=10, search="forest", search_options={"prompt": False}
+    )
+    assert len(result_disabled["items"]) == 0
+
+
+@pytest.mark.asyncio
+async def test_get_paginated_data_sorting(recipe_scanner):
+    scanner, _ = recipe_scanner
+    
+    # Add test recipes
+    # Recipe A: Name "Alpha", Date 10, LoRAs 2
+    await scanner.add_recipe({
+        "id": "A", "title": "Alpha", "created_date": 10.0,
+        "loras": [{}, {}], "file_path": "a.png"
+    })
+    # Recipe B: Name "Beta", Date 20, LoRAs 1
+    await scanner.add_recipe({
+        "id": "B", "title": "Beta", "created_date": 20.0,
+        "loras": [{}], "file_path": "b.png"
+    })
+    # Recipe C: Name "Gamma", Date 5, LoRAs 3
+    await scanner.add_recipe({
+        "id": "C", "title": "Gamma", "created_date": 5.0,
+        "loras": [{}, {}, {}], "file_path": "c.png"
+    })
+    
+    await asyncio.sleep(0)
+    
+    # Test Name DESC: Gamma, Beta, Alpha
+    res = await scanner.get_paginated_data(page=1, page_size=10, sort_by="name:desc")
+    assert [i["id"] for i in res["items"]] == ["C", "B", "A"]
+    
+    # Test LoRA Count DESC: Gamma (3), Alpha (2), Beta (1)
+    res = await scanner.get_paginated_data(page=1, page_size=10, sort_by="loras_count:desc")
+    assert [i["id"] for i in res["items"]] == ["C", "A", "B"]
+    
+    # Test LoRA Count ASC: Beta (1), Alpha (2), Gamma (3)
+    res = await scanner.get_paginated_data(page=1, page_size=10, sort_by="loras_count:asc")
+    assert [i["id"] for i in res["items"]] == ["B", "A", "C"]
+    
+    # Test Date ASC: Gamma (5), Alpha (10), Beta (20)
+    res = await scanner.get_paginated_data(page=1, page_size=10, sort_by="date:asc")
+    assert [i["id"] for i in res["items"]] == ["C", "A", "B"]

@@ -159,6 +159,12 @@
             "success": "Updated license metadata for {count} {typePlural}",
             "none": "All {typePlural} already have license metadata",
             "error": "Failed to refresh license metadata for {typePlural}: {message}"
+        },
+        "repairRecipes": {
+            "label": "Reparar datos de recetas",
+            "loading": "Reparando datos de recetas...",
+            "success": "Se repararon con éxito {count} recetas.",
+            "error": "Error al reparar recetas: {message}"
         }
     },
     "header": {
@@ -188,7 +194,8 @@
                 "creator": "Creador",
                 "title": "Título de la receta",
                 "loraName": "Nombre de archivo LoRA",
-                "loraModel": "Nombre del modelo LoRA"
+                "loraModel": "Nombre del modelo LoRA",
+                "prompt": "Prompt"
             }
         },
         "filter": {
@@ -199,6 +206,7 @@
             "license": "Licencia",
             "noCreditRequired": "Sin crédito requerido",
             "allowSellingGeneratedContent": "Venta permitida",
+            "noTags": "Sin etiquetas",
             "clearAll": "Limpiar todos los filtros"
         },
         "theme": {
@@ -521,6 +529,7 @@
             "replacePreview": "Reemplazar vista previa",
             "setContentRating": "Establecer clasificación de contenido",
             "moveToFolder": "Mover a carpeta",
+            "repairMetadata": "[TODO: Translate] Repair metadata",
             "excludeModel": "Excluir modelo",
             "deleteModel": "Eliminar modelo",
             "shareRecipe": "Compartir receta",
@@ -591,10 +600,26 @@
                     "selectLoraRoot": "Por favor selecciona un directorio raíz de LoRA"
                 }
             },
+            "sort": {
+                "title": "Ordenar recetas por...",
+                "name": "Nombre",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "Fecha",
+                "dateDesc": "Más reciente",
+                "dateAsc": "Más antiguo",
+                "lorasCount": "Cant. de LoRAs",
+                "lorasCountDesc": "Más",
+                "lorasCountAsc": "Menos"
+            },
             "refresh": {
                 "title": "Actualizar lista de recetas"
             },
-            "filteredByLora": "Filtrado por LoRA"
+            "filteredByLora": "Filtrado por LoRA",
+            "favorites": {
+                "title": "Mostrar solo favoritos",
+                "action": "Favoritos"
+            }
         },
         "duplicates": {
             "found": "Se encontraron {count} grupos de duplicados",
@@ -620,6 +645,13 @@
                 "noMissingLoras": "No hay LoRAs faltantes para descargar",
                 "getInfoFailed": "Error al obtener información de LoRAs faltantes",
                 "prepareError": "Error preparando LoRAs para descarga: {message}"
+            },
+            "repair": {
+                "starting": "[TODO: Translate] Repairing recipe metadata...",
+                "success": "[TODO: Translate] Recipe metadata repaired successfully",
+                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
+                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
+                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
             }
         }
     },
@@ -641,7 +673,8 @@
         "recursiveUnavailable": "La búsqueda recursiva solo está disponible en la vista en árbol",
         "collapseAllDisabled": "No disponible en vista de lista",
         "dragDrop": {
-            "unableToResolveRoot": "No se puede determinar la ruta de destino para el movimiento."
+            "unableToResolveRoot": "No se puede determinar la ruta de destino para el movimiento.",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1463,7 +1496,8 @@
             "bulkMoveFailures": "Movimientos fallidos:\n{failures}",
             "bulkMoveSuccess": "Movidos exitosamente {successCount} {type}s",
             "exampleImagesDownloadSuccess": "¡Imágenes de ejemplo descargadas exitosamente!",
-            "exampleImagesDownloadFailed": "Error al descargar imágenes de ejemplo: {message}"
+            "exampleImagesDownloadFailed": "Error al descargar imágenes de ejemplo: {message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

@@ -4,8 +4,8 @@
 <head>
     <title>{% block title %}{{ t('header.appTitle') }}{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/loras_static/css/style.css">
-    <link rel="stylesheet" href="/loras_static/css/onboarding.css">
+    <link rel="stylesheet" href="/loras_static/css/style.css?v={{ version }}">
+    <link rel="stylesheet" href="/loras_static/css/onboarding.css?v={{ version }}">
     <link rel="stylesheet" href="/loras_static/vendor/flag-icons/flag-icons.min.css">
     {% block page_css %}{% endblock %}
     <link rel="stylesheet" href="/loras_static/vendor/font-awesome/css/all.min.css"
@@ -98,7 +98,7 @@
 
     {% if is_initializing %}
         <!-- Load initialization JavaScript -->
-        <script type="module" src="/loras_static/js/components/initialization.js"></script>
+        <script type="module" src="/loras_static/js/components/initialization.js?v={{ version }}"></script>
     {% else %}
         {% block main_script %}{% endblock %}
     {% endif %}

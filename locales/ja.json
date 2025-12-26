@@ -159,6 +159,12 @@
             "success": "Updated license metadata for {count} {typePlural}",
             "none": "All {typePlural} already have license metadata",
             "error": "Failed to refresh license metadata for {typePlural}: {message}"
+        },
+        "repairRecipes": {
+            "label": "レシピデータの修復",
+            "loading": "レシピデータを修復中...",
+            "success": "{count} 件のレシピを正常に修復しました。",
+            "error": "レシピの修復に失敗しました: {message}"
         }
     },
     "header": {
@@ -188,7 +194,8 @@
                 "creator": "作成者",
                 "title": "レシピタイトル",
                 "loraName": "LoRAファイル名",
-                "loraModel": "LoRAモデル名"
+                "loraModel": "LoRAモデル名",
+                "prompt": "プロンプト"
             }
         },
         "filter": {
@@ -199,6 +206,7 @@
             "license": "ライセンス",
             "noCreditRequired": "クレジット不要",
             "allowSellingGeneratedContent": "販売許可",
+            "noTags": "タグなし",
             "clearAll": "すべてのフィルタをクリア"
         },
         "theme": {
@@ -521,6 +529,7 @@
             "replacePreview": "プレビューを置換",
             "setContentRating": "コンテンツレーティングを設定",
             "moveToFolder": "フォルダに移動",
+            "repairMetadata": "[TODO: Translate] Repair metadata",
             "excludeModel": "モデルを除外",
             "deleteModel": "モデルを削除",
             "shareRecipe": "レシピを共有",
@@ -591,10 +600,26 @@
                     "selectLoraRoot": "LoRAルートディレクトリを選択してください"
                 }
             },
+            "sort": {
+                "title": "レシピの並び替え...",
+                "name": "名前",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "日付",
+                "dateDesc": "新しい順",
+                "dateAsc": "古い順",
+                "lorasCount": "LoRA数",
+                "lorasCountDesc": "多い順",
+                "lorasCountAsc": "少ない順"
+            },
             "refresh": {
                 "title": "レシピリストを更新"
             },
-            "filteredByLora": "LoRAでフィルタ済み"
+            "filteredByLora": "LoRAでフィルタ済み",
+            "favorites": {
+                "title": "お気に入りのみ表示",
+                "action": "お気に入り"
+            }
         },
         "duplicates": {
             "found": "{count} 個の重複グループが見つかりました",
@@ -620,6 +645,13 @@
                 "noMissingLoras": "ダウンロードする不足LoRAがありません",
                 "getInfoFailed": "不足LoRAの情報取得に失敗しました",
                 "prepareError": "ダウンロード用LoRAの準備中にエラー：{message}"
+            },
+            "repair": {
+                "starting": "[TODO: Translate] Repairing recipe metadata...",
+                "success": "[TODO: Translate] Recipe metadata repaired successfully",
+                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
+                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
+                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
             }
         }
     },
@@ -641,7 +673,8 @@
         "recursiveUnavailable": "再帰検索はツリービューでのみ利用できます",
         "collapseAllDisabled": "リストビューでは利用できません",
         "dragDrop": {
-            "unableToResolveRoot": "移動先のパスを特定できません。"
+            "unableToResolveRoot": "移動先のパスを特定できません。",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1463,7 +1496,8 @@
             "bulkMoveFailures": "失敗した移動：\n{failures}",
             "bulkMoveSuccess": "{successCount} {type}が正常に移動されました",
             "exampleImagesDownloadSuccess": "例画像が正常にダウンロードされました！",
-            "exampleImagesDownloadFailed": "例画像のダウンロードに失敗しました：{message}"
+            "exampleImagesDownloadFailed": "例画像のダウンロードに失敗しました：{message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

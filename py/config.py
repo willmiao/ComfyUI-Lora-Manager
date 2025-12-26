@@ -1,11 +1,13 @@
 import os
 import platform
+import threading
 from pathlib import Path
 import folder_paths # type: ignore
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Set
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Set, Tuple
 import logging
 import json
 import urllib.parse
+import time
 
 from .utils.settings_paths import ensure_settings_file, get_settings_dir, load_settings_template
 
@@ -80,6 +82,8 @@ class Config:
         self._path_mappings: Dict[str, str] = {}
         # Normalized preview root directories used to validate preview access
         self._preview_root_paths: Set[Path] = set()
+        # Optional background rescan thread
+        self._rescan_thread: Optional[threading.Thread] = None
         self.loras_roots = self._init_lora_paths()
         self.checkpoints_roots = None
         self.unet_roots = None
@@ -282,57 +286,24 @@ class Config:
     def _load_symlink_cache(self) -> bool:
         cache_path = self._get_symlink_cache_path()
         if not cache_path.exists():
+            logger.info("Symlink cache not found at %s", cache_path)
             return False
 
         try:
             with cache_path.open("r", encoding="utf-8") as handle:
                 payload = json.load(handle)
         except Exception as exc:
-            logger.debug("Failed to load symlink cache %s: %s", cache_path, exc)
+            logger.info("Failed to load symlink cache %s: %s", cache_path, exc)
             return False
 
         if not isinstance(payload, dict):
+            logger.info("Symlink cache payload is not a dict: %s", type(payload))
             return False
 
-        cached_fingerprint = payload.get("fingerprint")
         cached_mappings = payload.get("path_mappings")
-        if not isinstance(cached_fingerprint, dict) or not isinstance(cached_mappings, Mapping):
+        if not isinstance(cached_mappings, Mapping):
+            logger.info("Symlink cache missing path mappings")
             return False
-
-        current_fingerprint = self._build_symlink_fingerprint()
-        cached_roots = cached_fingerprint.get("roots")
-        cached_stats = cached_fingerprint.get("stats")
-        if (
-            not isinstance(cached_roots, list)
-            or not isinstance(cached_stats, Mapping)
-            or sorted(cached_roots) != sorted(current_fingerprint["roots"])  # type: ignore[index]
-        ):
-            return False
-
-        for root in current_fingerprint["roots"]:  # type: ignore[assignment]
-            cached_stat = cached_stats.get(root) if isinstance(cached_stats, Mapping) else None
-            current_stat = current_fingerprint["stats"].get(root)  # type: ignore[index]
-            if not isinstance(cached_stat, Mapping) or not current_stat:
-                return False
-
-            cached_mtime = cached_stat.get("mtime_ns")
-            cached_inode = cached_stat.get("inode")
-            current_mtime = current_stat.get("mtime_ns")
-            current_inode = current_stat.get("inode")
-
-            if cached_inode != current_inode:
-                return False
-
-            if cached_mtime != current_mtime:
-                cached_noise = cached_stat.get("noise_mtime_ns")
-                current_noise = current_stat.get("noise_mtime_ns")
-                if not (
-                    cached_noise
-                    and current_noise
-                    and cached_mtime == cached_noise
-                    and current_mtime == current_noise
-                ):
-                    return False
 
         normalized_mappings: Dict[str, str] = {}
         for target, link in cached_mappings.items():
@@ -341,6 +312,7 @@ class Config:
             normalized_mappings[self._normalize_path(target)] = self._normalize_path(link)
 
         self._path_mappings = normalized_mappings
+        logger.info("Symlink cache loaded with %d mappings", len(self._path_mappings))
         return True
 
     def _save_symlink_cache(self) -> None:
@@ -353,22 +325,75 @@ class Config:
         try:
             with cache_path.open("w", encoding="utf-8") as handle:
                 json.dump(payload, handle, ensure_ascii=False, indent=2)
+            logger.info("Symlink cache saved to %s with %d mappings", cache_path, len(self._path_mappings))
         except Exception as exc:
-            logger.debug("Failed to write symlink cache %s: %s", cache_path, exc)
+            logger.info("Failed to write symlink cache %s: %s", cache_path, exc)
 
     def _initialize_symlink_mappings(self) -> None:
-        if not self._load_symlink_cache():
-            self._scan_symbolic_links()
-            self._save_symlink_cache()
-        else:
-            logger.info("Loaded symlink mappings from cache")
+        start = time.perf_counter()
+        cache_loaded = self._load_symlink_cache()
+
+        if cache_loaded:
+            logger.info(
+                "Symlink mappings restored from cache in %.2f ms",
+                (time.perf_counter() - start) * 1000,
+            )
+            self._rebuild_preview_roots()
+            self._schedule_symlink_rescan()
+            return
+
+        self._scan_symbolic_links()
+        self._save_symlink_cache()
         self._rebuild_preview_roots()
+        logger.info(
+            "Symlink mappings rebuilt and cached in %.2f ms",
+            (time.perf_counter() - start) * 1000,
+        )
 
     def _scan_symbolic_links(self):
         """Scan all symbolic links in LoRA, Checkpoint, and Embedding root directories"""
+        start = time.perf_counter()
+        # Reset mappings before rescanning to avoid stale entries
+        self._path_mappings.clear()
+        self._seed_root_symlink_mappings()
         visited_dirs: Set[str] = set()
         for root in self._symlink_roots():
             self._scan_directory_links(root, visited_dirs)
+        logger.info(
+            "Symlink scan finished in %.2f ms with %d mappings",
+            (time.perf_counter() - start) * 1000,
+            len(self._path_mappings),
+        )
+
+    def _schedule_symlink_rescan(self) -> None:
+        """Trigger a best-effort background rescan to refresh stale caches."""
+
+        if self._rescan_thread and self._rescan_thread.is_alive():
+            return
+
+        def worker():
+            try:
+                self._scan_symbolic_links()
+                self._save_symlink_cache()
+                self._rebuild_preview_roots()
+                logger.info("Background symlink rescan completed")
+            except Exception as exc:  # pragma: no cover - defensive logging
+                logger.info("Background symlink rescan failed: %s", exc)
+
+        thread = threading.Thread(
+            target=worker,
+            name="lora-manager-symlink-rescan",
+            daemon=True,
+        )
+        self._rescan_thread = thread
+        thread.start()
+
+    def _wait_for_rescan(self, timeout: Optional[float] = None) -> None:
+        """Block until the background rescan completes (testing convenience)."""
+
+        thread = self._rescan_thread
+        if thread:
+            thread.join(timeout=timeout)
 
     def _scan_directory_links(self, root: str, visited_dirs: Set[str]):
         """Iteratively scan directory symlinks to avoid deep recursion."""
@@ -433,6 +458,22 @@ class Config:
         logger.info(f"Added path mapping: {normalized_target} -> {normalized_link}")
         self._preview_root_paths.update(self._expand_preview_root(normalized_target))
         self._preview_root_paths.update(self._expand_preview_root(normalized_link))
+
+    def _seed_root_symlink_mappings(self) -> None:
+        """Ensure symlinked root folders are recorded before deep scanning."""
+
+        for root in self._symlink_roots():
+            if not root:
+                continue
+            try:
+                if not self._is_link(root):
+                    continue
+                target_path = os.path.realpath(root)
+                if not os.path.isdir(target_path):
+                    continue
+                self.add_path_mapping(root, target_path)
+            except Exception as exc:
+                logger.debug("Skipping root symlink %s: %s", root, exc)
 
     def _expand_preview_root(self, path: str) -> Set[Path]:
         """Return normalized ``Path`` objects representing a preview root."""

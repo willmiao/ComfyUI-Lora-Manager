@@ -234,7 +234,6 @@ describe('AppCore initialization flow', () => {
     await vi.runAllTimersAsync();
 
     expect(onboardingManager.start).toHaveBeenCalledTimes(1);
-    expect(bannerService.isBannerVisible).toHaveBeenCalledWith('version-mismatch');
   });
 
   it('does not reinitialize once initialized', async () => {
@@ -253,22 +252,13 @@ describe('AppCore initialization flow', () => {
     expect(onboardingManager.start).not.toHaveBeenCalled();
   });
 
-  it('skips bulk setup when viewing recipes', async () => {
+  it('initializes bulk setup when viewing recipes', async () => {
     state.currentPageType = 'recipes';
 
     await appCore.initialize();
 
-    expect(bulkManager.initialize).not.toHaveBeenCalled();
-    expect(BulkContextMenu).not.toHaveBeenCalled();
-    expect(bulkManager.setBulkContextMenu).not.toHaveBeenCalled();
-  });
-
-  it('suppresses onboarding when version mismatch banner is visible', async () => {
-    bannerService.isBannerVisible.mockReturnValueOnce(true);
-
-    await appCore.initialize();
-    await vi.runAllTimersAsync();
-
-    expect(onboardingManager.start).not.toHaveBeenCalled();
+    expect(bulkManager.initialize).toHaveBeenCalledTimes(1);
+    expect(BulkContextMenu).toHaveBeenCalledTimes(1);
+    expect(bulkManager.setBulkContextMenu).toHaveBeenCalledTimes(1);
   });
 });

@@ -17,7 +17,7 @@ const AFDIAN_URL = 'https://afdian.com/a/pixelpawsai';
 const BANNER_HISTORY_KEY = 'banner_history';
 const BANNER_HISTORY_VIEWED_AT_KEY = 'banner_history_viewed_at';
 const BANNER_HISTORY_LIMIT = 20;
-const HISTORY_EXCLUDED_IDS = new Set(['version-mismatch']);
+const HISTORY_EXCLUDED_IDS = new Set([]);
 
 /**
  * Banner Service for managing notification banners

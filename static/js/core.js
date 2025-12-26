@@ -60,14 +60,12 @@ export class AppCore {
         initTheme();
         initBackToTop();
         
-        // Initialize the bulk manager and context menu only if not on recipes page
-        if (state.currentPageType !== 'recipes') {
-            bulkManager.initialize();
+        // Initialize the bulk manager and context menu
+        bulkManager.initialize();
 
-            // Initialize bulk context menu
-            const bulkContextMenu = new BulkContextMenu();
-            bulkManager.setBulkContextMenu(bulkContextMenu);
-        }
+        // Initialize bulk context menu
+        const bulkContextMenu = new BulkContextMenu();
+        bulkManager.setBulkContextMenu(bulkContextMenu);
         
         // Initialize the example images manager
         exampleImagesManager.initialize();
@@ -84,10 +82,7 @@ export class AppCore {
         
         // Start onboarding if needed (after everything is initialized)
         setTimeout(() => {
-            // Do not show onboarding if version-mismatch banner is visible
-            if (!bannerService.isBannerVisible('version-mismatch')) {
-                onboardingManager.start();
-            }
+            onboardingManager.start();
         }, 1000); // Small delay to ensure all elements are rendered
         
         // Return the core instance for chaining

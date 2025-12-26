@@ -1,3 +1,4 @@
+import json
 import os
 
 import pytest
@@ -62,6 +63,7 @@ def test_symlink_scan_skips_file_links(monkeypatch: pytest.MonkeyPatch, tmp_path
 
 def test_symlink_cache_reuses_previous_scan(monkeypatch: pytest.MonkeyPatch, tmp_path):
     loras_dir, settings_dir = _setup_paths(monkeypatch, tmp_path)
+    monkeypatch.setattr(config_module.Config, "_schedule_symlink_rescan", lambda self: None)
 
     target_dir = loras_dir / "target"
     target_dir.mkdir()
@@ -85,6 +87,7 @@ def test_symlink_cache_reuses_previous_scan(monkeypatch: pytest.MonkeyPatch, tmp
 
 def test_symlink_cache_survives_noise_mtime(monkeypatch: pytest.MonkeyPatch, tmp_path):
     loras_dir, settings_dir = _setup_paths(monkeypatch, tmp_path)
+    monkeypatch.setattr(config_module.Config, "_schedule_symlink_rescan", lambda self: None)
 
     target_dir = loras_dir / "target"
     target_dir.mkdir()
@@ -109,3 +112,72 @@ def test_symlink_cache_survives_noise_mtime(monkeypatch: pytest.MonkeyPatch, tmp
 
     second_cfg = config_module.Config()
     assert second_cfg.map_path_to_link(str(target_dir)) == _normalize(str(dir_link))
+
+
+def test_background_rescan_refreshes_cache(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    loras_dir, _ = _setup_paths(monkeypatch, tmp_path)
+
+    target_dir = loras_dir / "target"
+    target_dir.mkdir()
+    dir_link = loras_dir / "dir_link"
+    dir_link.symlink_to(target_dir, target_is_directory=True)
+
+    # Build initial cache pointing at the first target
+    first_cfg = config_module.Config()
+    old_real = _normalize(os.path.realpath(target_dir))
+    assert first_cfg.map_path_to_link(str(target_dir)) == _normalize(str(dir_link))
+
+    # Retarget the symlink to a new directory without touching the cache file
+    new_target = loras_dir / "target_v2"
+    new_target.mkdir()
+    dir_link.unlink()
+    dir_link.symlink_to(new_target, target_is_directory=True)
+
+    second_cfg = config_module.Config()
+
+    # Cache may still point at the old real path immediately after load
+    initial_mapping = second_cfg.map_path_to_link(str(new_target))
+    assert initial_mapping in {str(new_target), _normalize(str(dir_link))}
+
+    # Background rescan should refresh the mapping to the new target and update the cache file
+    second_cfg._wait_for_rescan(timeout=2.0)
+    new_real = _normalize(os.path.realpath(new_target))
+    assert second_cfg._path_mappings.get(new_real) == _normalize(str(dir_link))
+    assert second_cfg.map_path_to_link(str(new_target)) == _normalize(str(dir_link))
+
+
+def test_symlink_roots_are_preserved(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    settings_dir = tmp_path / "settings"
+    real_loras = tmp_path / "loras_real"
+    real_loras.mkdir()
+    loras_link = tmp_path / "loras_link"
+    loras_link.symlink_to(real_loras, target_is_directory=True)
+
+    checkpoints_dir = tmp_path / "checkpoints"
+    checkpoints_dir.mkdir()
+    embedding_dir = tmp_path / "embeddings"
+    embedding_dir.mkdir()
+
+    def fake_get_folder_paths(kind: str):
+        mapping = {
+            "loras": [str(loras_link)],
+            "checkpoints": [str(checkpoints_dir)],
+            "unet": [],
+            "embeddings": [str(embedding_dir)],
+        }
+        return mapping.get(kind, [])
+
+    monkeypatch.setattr(config_module.folder_paths, "get_folder_paths", fake_get_folder_paths)
+    monkeypatch.setattr(config_module, "standalone_mode", True)
+    monkeypatch.setattr(config_module, "get_settings_dir", lambda create=True: str(settings_dir))
+    monkeypatch.setattr(config_module.Config, "_schedule_symlink_rescan", lambda self: None)
+
+    cfg = config_module.Config()
+
+    normalized_real = _normalize(os.path.realpath(real_loras))
+    normalized_link = _normalize(str(loras_link))
+    assert cfg._path_mappings[normalized_real] == normalized_link
+
+    cache_path = settings_dir / "cache" / "symlink_map.json"
+    payload = json.loads(cache_path.read_text(encoding="utf-8"))
+    assert payload["path_mappings"][normalized_real] == normalized_link

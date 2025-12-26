@@ -6,7 +6,7 @@
 import { showToast, copyToClipboard } from '../../utils/uiHelpers.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
-import { escapeAttribute } from './utils.js';
+import { escapeAttribute, escapeHtml } from './utils.js';
 
 /**
  * Fetch trained words for a model
@@ -17,7 +17,7 @@ async function fetchTrainedWords(filePath) {
     try {
         const response = await fetch(`/api/lm/trained-words?file_path=${encodeURIComponent(filePath)}`);
         const data = await response.json();
-        
+
         if (data.success) {
             return {
                 trainedWords: data.trained_words || [], // Returns array of [word, frequency] pairs
@@ -43,11 +43,11 @@ async function fetchTrainedWords(filePath) {
 function createSuggestionDropdown(trainedWords, classTokens, existingWords = []) {
     const dropdown = document.createElement('div');
     dropdown.className = 'metadata-suggestions-dropdown';
-    
+
     // Create header
     const header = document.createElement('div');
     header.className = 'metadata-suggestions-header';
-    
+
     // No suggestions case
     if ((!trainedWords || trainedWords.length === 0) && !classTokens) {
         header.innerHTML = `<span>${translate('modals.model.triggerWords.suggestions.noSuggestions')}</span>`;
@@ -55,12 +55,12 @@ function createSuggestionDropdown(trainedWords, classTokens, existingWords = [])
         dropdown.innerHTML += `<div class="no-suggestions">${translate('modals.model.triggerWords.suggestions.noTrainedWords')}</div>`;
         return dropdown;
     }
-    
+
     // Sort trained words by frequency (highest first) if available
     if (trainedWords && trainedWords.length > 0) {
         trainedWords.sort((a, b) => b[1] - a[1]);
     }
-    
+
     // Add class tokens section if available
     if (classTokens) {
         // Add class tokens header
@@ -71,45 +71,47 @@ function createSuggestionDropdown(trainedWords, classTokens, existingWords = [])
             <small>${translate('modals.model.triggerWords.suggestions.classTokenDescription')}</small>
         `;
         dropdown.appendChild(classTokensHeader);
-        
+
         // Add class tokens container
         const classTokensContainer = document.createElement('div');
         classTokensContainer.className = 'class-tokens-container';
-        
+
         // Create a special item for the class token
         const tokenItem = document.createElement('div');
         tokenItem.className = `metadata-suggestion-item class-token-item ${existingWords.includes(classTokens) ? 'already-added' : ''}`;
         tokenItem.title = `${translate('modals.model.triggerWords.suggestions.classToken')}: ${classTokens}`;
+
+        const escapedToken = escapeHtml(classTokens);
         tokenItem.innerHTML = `
-            <span class="metadata-suggestion-text">${classTokens}</span>
+            <span class="metadata-suggestion-text">${escapedToken}</span>
             <div class="metadata-suggestion-meta">
                 <span class="token-badge">${translate('modals.model.triggerWords.suggestions.classToken')}</span>
-                ${existingWords.includes(classTokens) ? 
-                    `<span class="added-indicator"><i class="fas fa-check"></i></span>` : ''}
+                ${existingWords.includes(classTokens) ?
+                `<span class="added-indicator"><i class="fas fa-check"></i></span>` : ''}
             </div>
         `;
-        
+
         // Add click handler if not already added
         if (!existingWords.includes(classTokens)) {
             tokenItem.addEventListener('click', () => {
                 // Automatically add this word
                 addNewTriggerWord(classTokens);
-                
+
                 // Also populate the input field for potential editing
                 const input = document.querySelector('.metadata-input');
                 if (input) input.value = classTokens;
-                
+
                 // Focus on the input
                 if (input) input.focus();
-                
+
                 // Update dropdown without removing it
                 updateTrainedWordsDropdown();
             });
         }
-        
+
         classTokensContainer.appendChild(tokenItem);
         dropdown.appendChild(classTokensContainer);
-        
+
         // Add separator if we also have trained words
         if (trainedWords && trainedWords.length > 0) {
             const separator = document.createElement('div');
@@ -117,7 +119,7 @@ function createSuggestionDropdown(trainedWords, classTokens, existingWords = [])
             dropdown.appendChild(separator);
         }
     }
-    
+
     // Add trained words header if we have any
     if (trainedWords && trainedWords.length > 0) {
         header.innerHTML = `
@@ -125,52 +127,54 @@ function createSuggestionDropdown(trainedWords, classTokens, existingWords = [])
             <small>${translate('modals.model.triggerWords.suggestions.wordsFound', { count: trainedWords.length })}</small>
         `;
         dropdown.appendChild(header);
-        
+
         // Create tag container for trained words
         const container = document.createElement('div');
         container.className = 'metadata-suggestions-container';
-        
+
         // Add each trained word as a tag
         trainedWords.forEach(([word, frequency]) => {
             const isAdded = existingWords.includes(word);
-            
+
             const item = document.createElement('div');
             item.className = `metadata-suggestion-item ${isAdded ? 'already-added' : ''}`;
             item.title = word; // Show full word on hover if truncated
+
+            const escapedWord = escapeHtml(word);
             item.innerHTML = `
-                <span class="metadata-suggestion-text">${word}</span>
+                <span class="metadata-suggestion-text">${escapedWord}</span>
                 <div class="metadata-suggestion-meta">
                     <span class="trained-word-freq">${frequency}</span>
                     ${isAdded ? `<span class="added-indicator"><i class="fas fa-check"></i></span>` : ''}
                 </div>
             `;
-            
+
             if (!isAdded) {
                 item.addEventListener('click', () => {
                     // Automatically add this word
                     addNewTriggerWord(word);
-                    
+
                     // Also populate the input field for potential editing
                     const input = document.querySelector('.metadata-input');
                     if (input) input.value = word;
-                    
+
                     // Focus on the input
                     if (input) input.focus();
-                    
+
                     // Update dropdown without removing it
                     updateTrainedWordsDropdown();
                 });
             }
-            
+
             container.appendChild(item);
         });
-        
+
         dropdown.appendChild(container);
     } else if (!classTokens) {
         // If we have neither class tokens nor trained words
         dropdown.innerHTML += `<div class="no-suggestions">${translate('modals.model.triggerWords.suggestions.noTrainedWords')}</div>`;
     }
-    
+
     return dropdown;
 }
 
@@ -204,7 +208,7 @@ export function renderTriggerWords(words, filePath) {
             </div>
         </div>
     `;
-    
+
     return `
         <div class="info-item full-width trigger-words">
             <div class="trigger-words-header">
@@ -215,9 +219,12 @@ export function renderTriggerWords(words, filePath) {
             </div>
             <div class="trigger-words-content">
                 <div class="trigger-words-tags">
-                    ${words.map(word => `
-                        <div class="trigger-word-tag" data-word="${word}" onclick="copyTriggerWord('${word}')" title="${translate('modals.model.triggerWords.copyWord')}">
-                            <span class="trigger-word-content">${word}</span>
+                    ${words.map(word => {
+        const escapedWord = escapeHtml(word);
+        const escapedAttr = escapeAttribute(word);
+        return `
+                        <div class="trigger-word-tag" data-word="${escapedAttr}" onclick="copyTriggerWord(this.dataset.word)" title="${translate('modals.model.triggerWords.copyWord')}">
+                            <span class="trigger-word-content">${escapedWord}</span>
                             <span class="trigger-word-copy">
                                 <i class="fas fa-copy"></i>
                             </span>
@@ -225,7 +232,7 @@ export function renderTriggerWords(words, filePath) {
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
-                    `).join('')}
+                    `}).join('')}
                 </div>
             </div>
             <div class="metadata-edit-controls" style="display:none;">
@@ -250,68 +257,68 @@ export function setupTriggerWordsEditMode() {
     let isTrainedWordsLoaded = false;
     // Store original trigger words for restoring on cancel
     let originalTriggerWords = [];
-    
+
     const editBtn = document.querySelector('.edit-trigger-words-btn');
     if (!editBtn) return;
-    
-    editBtn.addEventListener('click', async function() {
+
+    editBtn.addEventListener('click', async function () {
         const triggerWordsSection = this.closest('.trigger-words');
         const isEditMode = triggerWordsSection.classList.toggle('edit-mode');
         const filePath = this.dataset.filePath;
-        
+
         // Toggle edit mode UI elements
         const triggerWordTags = triggerWordsSection.querySelectorAll('.trigger-word-tag');
         const editControls = triggerWordsSection.querySelector('.metadata-edit-controls');
         const addForm = triggerWordsSection.querySelector('.metadata-add-form');
         const noTriggerWords = triggerWordsSection.querySelector('.no-trigger-words');
         const tagsContainer = triggerWordsSection.querySelector('.trigger-words-tags');
-        
+
         if (isEditMode) {
             this.innerHTML = '<i class="fas fa-times"></i>'; // Change to cancel icon
             this.title = translate('modals.model.triggerWords.cancel');
-            
+
             // Store original trigger words for potential restoration
             originalTriggerWords = Array.from(triggerWordTags).map(tag => tag.dataset.word);
-            
+
             // Show edit controls and input form
             editControls.style.display = 'flex';
             addForm.style.display = 'flex';
-            
+
             // If we have no trigger words yet, hide the "No trigger word needed" text
             // and show the empty tags container
             if (noTriggerWords) {
                 noTriggerWords.style.display = 'none';
                 if (tagsContainer) tagsContainer.style.display = 'flex';
             }
-            
+
             // Disable click-to-copy and show delete buttons
             triggerWordTags.forEach(tag => {
                 tag.onclick = null;
                 const copyIcon = tag.querySelector('.trigger-word-copy');
                 const deleteBtn = tag.querySelector('.metadata-delete-btn');
-                
+
                 if (copyIcon) copyIcon.style.display = 'none';
                 if (deleteBtn) {
                     deleteBtn.style.display = 'block';
-                    
+
                     // Re-attach event listener to ensure it works every time
                     // First remove any existing listeners to avoid duplication
                     deleteBtn.removeEventListener('click', deleteTriggerWord);
                     deleteBtn.addEventListener('click', deleteTriggerWord);
                 }
             });
-            
+
             // Load trained words and display dropdown when entering edit mode
             // Add loading indicator
             const loadingIndicator = document.createElement('div');
             loadingIndicator.className = 'metadata-loading';
             loadingIndicator.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${translate('modals.model.triggerWords.suggestions.loading')}`;
             addForm.appendChild(loadingIndicator);
-            
+
             // Get currently added trigger words
             const currentTags = triggerWordsSection.querySelectorAll('.trigger-word-tag');
             const existingWords = Array.from(currentTags).map(tag => tag.dataset.word);
-            
+
             // Asynchronously load trained words if not already loaded
             if (!isTrainedWordsLoaded) {
                 const result = await fetchTrainedWords(filePath);
@@ -319,25 +326,25 @@ export function setupTriggerWordsEditMode() {
                 classTokensValue = result.classTokens;
                 isTrainedWordsLoaded = true;
             }
-            
+
             // Remove loading indicator
             loadingIndicator.remove();
-            
+
             // Create and display suggestion dropdown
             const dropdown = createSuggestionDropdown(trainedWordsList, classTokensValue, existingWords);
             addForm.appendChild(dropdown);
-            
+
             // Focus the input
             addForm.querySelector('input').focus();
-            
+
         } else {
             this.innerHTML = '<i class="fas fa-pencil-alt"></i>'; // Change back to edit icon
             this.title = translate('modals.model.triggerWords.edit');
-            
+
             // Hide edit controls and input form
             editControls.style.display = 'none';
             addForm.style.display = 'none';
-            
+
             // Check if we're exiting edit mode due to "Save" or "Cancel"
             if (!this.dataset.skipRestore) {
                 // If canceling, restore original trigger words
@@ -348,7 +355,7 @@ export function setupTriggerWordsEditMode() {
                 // Reset the skip restore flag
                 delete this.dataset.skipRestore;
             }
-            
+
             // If we have no trigger words, show the "No trigger word needed" text
             // and hide the empty tags container
             const currentTags = triggerWordsSection.querySelectorAll('.trigger-word-tag');
@@ -356,19 +363,19 @@ export function setupTriggerWordsEditMode() {
                 noTriggerWords.style.display = '';
                 if (tagsContainer) tagsContainer.style.display = 'none';
             }
-            
+
             // Remove dropdown if present
             const dropdown = triggerWordsSection.querySelector('.metadata-suggestions-dropdown');
             if (dropdown) dropdown.remove();
         }
     });
-    
+
     // Set up input for adding trigger words
     const triggerWordInput = document.querySelector('.metadata-input');
-    
+
     if (triggerWordInput) {
         // Add keydown event to input
-        triggerWordInput.addEventListener('keydown', function(e) {
+        triggerWordInput.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 addNewTriggerWord(this.value);
@@ -376,13 +383,13 @@ export function setupTriggerWordsEditMode() {
             }
         });
     }
-    
+
     // Set up save button
     const saveBtn = document.querySelector('.metadata-save-btn');
     if (saveBtn) {
         saveBtn.addEventListener('click', saveTriggerWords);
     }
-    
+
     // Set up delete buttons
     document.querySelectorAll('.metadata-delete-btn').forEach(btn => {
         // Remove any existing listeners to avoid duplication
@@ -399,7 +406,7 @@ function deleteTriggerWord(e) {
     e.stopPropagation();
     const tag = this.closest('.trigger-word-tag');
     tag.remove();
-    
+
     // Update status of items in the trained words dropdown
     updateTrainedWordsDropdown();
 }
@@ -410,15 +417,15 @@ function deleteTriggerWord(e) {
  */
 function resetTriggerWordsUIState(section) {
     const triggerWordTags = section.querySelectorAll('.trigger-word-tag');
-    
+
     triggerWordTags.forEach(tag => {
         const word = tag.dataset.word;
         const copyIcon = tag.querySelector('.trigger-word-copy');
         const deleteBtn = tag.querySelector('.metadata-delete-btn');
-        
+
         // Restore click-to-copy functionality
-        tag.onclick = () => copyTriggerWord(word);
-        
+        tag.onclick = () => copyTriggerWord(tag.dataset.word);
+
         // Show copy icon, hide delete button
         if (copyIcon) copyIcon.style.display = '';
         if (deleteBtn) deleteBtn.style.display = 'none';
@@ -433,30 +440,32 @@ function resetTriggerWordsUIState(section) {
 function restoreOriginalTriggerWords(section, originalWords) {
     const tagsContainer = section.querySelector('.trigger-words-tags');
     const noTriggerWords = section.querySelector('.no-trigger-words');
-    
+
     if (!tagsContainer) return;
-    
+
     // Clear current tags
     tagsContainer.innerHTML = '';
-    
+
     if (originalWords.length === 0) {
         if (noTriggerWords) noTriggerWords.style.display = '';
         tagsContainer.style.display = 'none';
         return;
     }
-    
+
     // Hide "no trigger words" message
     if (noTriggerWords) noTriggerWords.style.display = 'none';
     tagsContainer.style.display = 'flex';
-    
+
     // Recreate original tags
     originalWords.forEach(word => {
         const tag = document.createElement('div');
         tag.className = 'trigger-word-tag';
         tag.dataset.word = word;
-        tag.onclick = () => copyTriggerWord(word);
+        tag.onclick = () => copyTriggerWord(tag.dataset.word);
+
+        const escapedWord = escapeHtml(word);
         tag.innerHTML = `
-            <span class="trigger-word-content">${word}</span>
+            <span class="trigger-word-content">${escapedWord}</span>
             <span class="trigger-word-copy">
                 <i class="fas fa-copy"></i>
             </span>
@@ -475,10 +484,10 @@ function restoreOriginalTriggerWords(section, originalWords) {
 function addNewTriggerWord(word) {
     word = word.trim();
     if (!word) return;
-    
+
     const triggerWordsSection = document.querySelector('.trigger-words');
     let tagsContainer = document.querySelector('.trigger-words-tags');
-    
+
     // Ensure tags container exists and is visible
     if (tagsContainer) {
         tagsContainer.style.display = 'flex';
@@ -491,41 +500,43 @@ function addNewTriggerWord(word) {
             contentDiv.appendChild(tagsContainer);
         }
     }
-    
+
     if (!tagsContainer) return;
-    
+
     // Hide "no trigger words" message if it exists
     const noTriggerWordsMsg = triggerWordsSection.querySelector('.no-trigger-words');
     if (noTriggerWordsMsg) {
         noTriggerWordsMsg.style.display = 'none';
     }
-    
+
     // Validation: Check length
     if (word.split(/\s+/).length > 100) {
         showToast('toast.triggerWords.tooLong', {}, 'error');
         return;
     }
-    
+
     // Validation: Check total number
     const currentTags = tagsContainer.querySelectorAll('.trigger-word-tag');
     if (currentTags.length >= 30) {
         showToast('toast.triggerWords.tooMany', {}, 'error');
         return;
     }
-    
+
     // Validation: Check for duplicates
     const existingWords = Array.from(currentTags).map(tag => tag.dataset.word);
     if (existingWords.includes(word)) {
         showToast('toast.triggerWords.alreadyExists', {}, 'error');
         return;
     }
-    
+
     // Create new tag
     const newTag = document.createElement('div');
     newTag.className = 'trigger-word-tag';
     newTag.dataset.word = word;
+
+    const escapedWord = escapeHtml(word);
     newTag.innerHTML = `
-        <span class="trigger-word-content">${word}</span>
+        <span class="trigger-word-content">${escapedWord}</span>
         <span class="trigger-word-copy" style="display:none;">
             <i class="fas fa-copy"></i>
         </span>
@@ -533,13 +544,13 @@ function addNewTriggerWord(word) {
             <i class="fas fa-times"></i>
         </button>
     `;
-    
+
     // Add event listener to delete button
     const deleteBtn = newTag.querySelector('.metadata-delete-btn');
     deleteBtn.addEventListener('click', deleteTriggerWord);
-    
+
     tagsContainer.appendChild(newTag);
-    
+
     // Update status of items in the trained words dropdown
     updateTrainedWordsDropdown();
 }
@@ -550,19 +561,19 @@ function addNewTriggerWord(word) {
 function updateTrainedWordsDropdown() {
     const dropdown = document.querySelector('.metadata-suggestions-dropdown');
     if (!dropdown) return;
-    
+
     // Get all current trigger words
     const currentTags = document.querySelectorAll('.trigger-word-tag');
     const existingWords = Array.from(currentTags).map(tag => tag.dataset.word);
-    
+
     // Update status of each item in dropdown
     dropdown.querySelectorAll('.metadata-suggestion-item').forEach(item => {
         const wordText = item.querySelector('.metadata-suggestion-text').textContent;
         const isAdded = existingWords.includes(wordText);
-        
+
         if (isAdded) {
             item.classList.add('already-added');
-            
+
             // Add indicator if it doesn't exist
             let indicator = item.querySelector('.added-indicator');
             if (!indicator) {
@@ -572,27 +583,27 @@ function updateTrainedWordsDropdown() {
                 indicator.innerHTML = '<i class="fas fa-check"></i>';
                 meta.appendChild(indicator);
             }
-            
+
             // Remove click event
             item.onclick = null;
         } else {
             // Re-enable items that are no longer in the list
             item.classList.remove('already-added');
-            
+
             // Remove indicator if it exists
             const indicator = item.querySelector('.added-indicator');
             if (indicator) indicator.remove();
-            
+
             // Restore click event if not already set
             if (!item.onclick) {
                 item.onclick = () => {
                     const word = item.querySelector('.metadata-suggestion-text').textContent;
                     addNewTriggerWord(word);
-                    
+
                     // Also populate the input field
                     const input = document.querySelector('.metadata-input');
                     if (input) input.value = word;
-                    
+
                     // Focus the input
                     if (input) input.focus();
                 };
@@ -610,19 +621,19 @@ async function saveTriggerWords() {
     const triggerWordsSection = editBtn.closest('.trigger-words');
     const triggerWordTags = triggerWordsSection.querySelectorAll('.trigger-word-tag');
     const words = Array.from(triggerWordTags).map(tag => tag.dataset.word);
-    
+
     try {
         // Special format for updating nested civitai.trainedWords
         await getModelApiClient().saveModelMetadata(filePath, {
             civitai: { trainedWords: words }
         });
-        
+
         // Set flag to skip restoring original words when exiting edit mode
         editBtn.dataset.skipRestore = "true";
-        
+
         // Exit edit mode without restoring original trigger words
         editBtn.click();
-        
+
         // If we saved an empty array and there's a no-trigger-words element, show it
         const noTriggerWords = triggerWordsSection.querySelector('.no-trigger-words');
         const tagsContainer = triggerWordsSection.querySelector('.trigger-words-tags');
@@ -630,7 +641,7 @@ async function saveTriggerWords() {
             noTriggerWords.style.display = '';
             if (tagsContainer) tagsContainer.style.display = 'none';
         }
-        
+
         showToast('toast.triggerWords.updateSuccess', {}, 'success');
     } catch (error) {
         console.error('Error saving trigger words:', error);
@@ -642,7 +653,7 @@ async function saveTriggerWords() {
  * Copy a trigger word to clipboard
  * @param {string} word - Word to copy
  */
-window.copyTriggerWord = async function(word) {
+window.copyTriggerWord = async function (word) {
     try {
         await copyToClipboard(word, 'Trigger word copied');
     } catch (err) {

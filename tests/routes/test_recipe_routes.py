@@ -29,6 +29,7 @@ class RecipeRouteHarness:
     persistence: "StubPersistenceService"
     sharing: "StubSharingService"
     downloader: "StubDownloader"
+    civitai: "StubCivitaiClient"
     tmp_dir: Path
 
 
@@ -68,6 +69,10 @@ class StubRecipeScanner:
     async def get_recipe_by_id(self, recipe_id: str) -> Optional[Dict[str, Any]]:
         return self.recipes.get(recipe_id)
 
+    async def get_recipe_json_path(self, recipe_id: str) -> Optional[str]:
+        candidate = Path(self.recipes_dir) / f"{recipe_id}.recipe.json"
+        return str(candidate) if candidate.exists() else None
+
     async def remove_recipe(self, recipe_id: str) -> None:
         self.removed.append(recipe_id)
         self.recipes.pop(recipe_id, None)
@@ -86,6 +91,7 @@ class StubAnalysisService:
         self.remote_calls: List[Optional[str]] = []
         self.local_calls: List[Optional[str]] = []
         self.result = SimpleNamespace(payload={"loras": []}, status=200)
+        self._recipe_parser_factory = None
         StubAnalysisService.instances.append(self)
 
     async def analyze_uploaded_image(self, *, image_bytes: bytes | None, recipe_scanner) -> SimpleNamespace:  # noqa: D401 - mirrors real signature
@@ -118,11 +124,12 @@ class StubPersistenceService:
     def __init__(self, **_: Any) -> None:
         self.save_calls: List[Dict[str, Any]] = []
         self.delete_calls: List[str] = []
+        self.move_calls: List[Dict[str, str]] = []
         self.save_result = SimpleNamespace(payload={"success": True, "recipe_id": "stub-id"}, status=200)
         self.delete_result = SimpleNamespace(payload={"success": True}, status=200)
         StubPersistenceService.instances.append(self)
 
-    async def save_recipe(self, *, recipe_scanner, image_bytes, image_base64, name, tags, metadata) -> SimpleNamespace:  # noqa: D401
+    async def save_recipe(self, *, recipe_scanner, image_bytes, image_base64, name, tags, metadata, extension=None) -> SimpleNamespace:  # noqa: D401
         self.save_calls.append(
             {
                 "recipe_scanner": recipe_scanner,
@@ -131,6 +138,7 @@ class StubPersistenceService:
                 "name": name,
                 "tags": list(tags),
                 "metadata": metadata,
+                "extension": extension,
             }
         )
         return self.save_result
@@ -139,6 +147,12 @@ class StubPersistenceService:
         self.delete_calls.append(recipe_id)
         await recipe_scanner.remove_recipe(recipe_id)
         return self.delete_result
+
+    async def move_recipe(self, *, recipe_scanner, recipe_id: str, target_path: str) -> SimpleNamespace:  # noqa: D401
+        self.move_calls.append({"recipe_id": recipe_id, "target_path": target_path})
+        return SimpleNamespace(
+            payload={"success": True, "recipe_id": recipe_id, "new_file_path": target_path}, status=200
+        )
 
     async def update_recipe(self, *, recipe_scanner, recipe_id: str, updates: Dict[str, Any]) -> SimpleNamespace:  # pragma: no cover - unused by smoke tests
         return SimpleNamespace(payload={"success": True, "recipe_id": recipe_id, "updates": updates}, status=200)
@@ -189,6 +203,16 @@ class StubDownloader:
         return True, destination
 
 
+class StubCivitaiClient:
+    """Stub for Civitai API client."""
+
+    def __init__(self) -> None:
+        self.image_info: Dict[str, Any] = {}
+
+    async def get_image_info(self, image_id: str) -> Optional[Dict[str, Any]]:
+        return self.image_info.get(image_id)
+
+
 @asynccontextmanager
 async def recipe_harness(monkeypatch, tmp_path: Path) -> AsyncIterator[RecipeRouteHarness]:
     """Context manager that yields a fully wired recipe route harness."""
@@ -198,12 +222,13 @@ async def recipe_harness(monkeypatch, tmp_path: Path) -> AsyncIterator[RecipeRou
     StubSharingService.instances.clear()
 
     scanner = StubRecipeScanner(tmp_path)
+    civitai_client = StubCivitaiClient()
 
     async def fake_get_recipe_scanner():
         return scanner
 
     async def fake_get_civitai_client():
-        return object()
+        return civitai_client
 
     downloader = StubDownloader()
 
@@ -232,6 +257,7 @@ async def recipe_harness(monkeypatch, tmp_path: Path) -> AsyncIterator[RecipeRou
         persistence=StubPersistenceService.instances[-1],
         sharing=StubSharingService.instances[-1],
         downloader=downloader,
+        civitai=civitai_client,
         tmp_dir=tmp_path,
     )
 
@@ -296,8 +322,23 @@ async def test_save_and_delete_recipe_round_trip(monkeypatch, tmp_path: Path) ->
         assert harness.persistence.delete_calls == ["saved-id"]
 
 
+async def test_move_recipe_invokes_persistence(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipe/move",
+            json={"recipe_id": "move-me", "target_path": str(tmp_path / "recipes" / "subdir")},
+        )
+
+        payload = await response.json()
+        assert response.status == 200
+        assert payload["recipe_id"] == "move-me"
+        assert harness.persistence.move_calls == [
+            {"recipe_id": "move-me", "target_path": str(tmp_path / "recipes" / "subdir")}
+        ]
+
+
 async def test_import_remote_recipe(monkeypatch, tmp_path: Path) -> None:
-    provider_calls: list[int] = []
+    provider_calls: list[str | int] = []
 
     class Provider:
         async def get_model_version_info(self, model_version_id):
@@ -307,7 +348,7 @@ async def test_import_remote_recipe(monkeypatch, tmp_path: Path) -> None:
     async def fake_get_default_metadata_provider():
         return Provider()
 
-    monkeypatch.setattr(recipe_handlers, "get_default_metadata_provider", fake_get_default_metadata_provider)
+    monkeypatch.setattr("py.recipes.enrichment.get_default_metadata_provider", fake_get_default_metadata_provider)
 
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         resources = [
@@ -349,16 +390,15 @@ async def test_import_remote_recipe(monkeypatch, tmp_path: Path) -> None:
         assert call["tags"] == ["foo", "bar"]
         metadata = call["metadata"]
         assert metadata["base_model"] == "Flux Provider"
-        assert provider_calls == [33]
+        assert provider_calls == ["33"]
         assert metadata["checkpoint"]["modelVersionId"] == 33
         assert metadata["loras"][0]["weight"] == 0.25
         assert metadata["gen_params"]["prompt"] == "hello world"
-        assert metadata["gen_params"]["checkpoint"]["modelVersionId"] == 33
         assert harness.downloader.urls == ["https://example.com/images/1"]
 
 
 async def test_import_remote_recipe_falls_back_to_request_base_model(monkeypatch, tmp_path: Path) -> None:
-    provider_calls: list[int] = []
+    provider_calls: list[str | int] = []
 
     class Provider:
         async def get_model_version_info(self, model_version_id):
@@ -368,7 +408,7 @@ async def test_import_remote_recipe_falls_back_to_request_base_model(monkeypatch
     async def fake_get_default_metadata_provider():
         return Provider()
 
-    monkeypatch.setattr(recipe_handlers, "get_default_metadata_provider", fake_get_default_metadata_provider)
+    monkeypatch.setattr("py.recipes.enrichment.get_default_metadata_provider", fake_get_default_metadata_provider)
 
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         resources = [
@@ -397,7 +437,42 @@ async def test_import_remote_recipe_falls_back_to_request_base_model(monkeypatch
 
         metadata = harness.persistence.save_calls[-1]["metadata"]
         assert metadata["base_model"] == "Flux"
-        assert provider_calls == [77]
+        assert provider_calls == ["77"]
+
+
+async def test_import_remote_video_recipe(monkeypatch, tmp_path: Path) -> None:
+    async def fake_get_default_metadata_provider():
+        return SimpleNamespace(get_model_version_info=lambda id: ({}, None))
+
+    monkeypatch.setattr("py.recipes.enrichment.get_default_metadata_provider", fake_get_default_metadata_provider)
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.civitai.image_info["12345"] = {
+            "id": 12345,
+            "url": "https://image.civitai.com/x/y/original=true/video.mp4",
+            "type": "video"
+        }
+
+        response = await harness.client.get(
+            "/api/lm/recipes/import-remote",
+            params={
+                "image_url": "https://civitai.com/images/12345",
+                "name": "Video Recipe",
+                "resources": json.dumps([]),
+                "base_model": "Flux",
+            },
+        )
+
+        payload = await response.json()
+        assert response.status == 200
+        assert payload["success"] is True
+
+        # Verify downloader was called with rewritten URL
+        assert "transcode=true" in harness.downloader.urls[0]
+        
+        # Verify persistence was called with correct extension
+        call = harness.persistence.save_calls[-1]
+        assert call["extension"] == ".mp4"
 
 
 async def test_analyze_uploaded_image_error_path(monkeypatch, tmp_path: Path) -> None:
@@ -452,3 +527,69 @@ async def test_share_and_download_recipe(monkeypatch, tmp_path: Path) -> None:
         assert body == b"stub"
 
         download_path.unlink(missing_ok=True)
+async def test_import_remote_recipe_merges_metadata(monkeypatch, tmp_path: Path) -> None:
+    # 1. Mock Metadata Provider
+    class Provider:
+        async def get_model_version_info(self, model_version_id):
+            return {"baseModel": "Flux Provider"}, None
+
+    async def fake_get_default_metadata_provider():
+        return Provider()
+
+    monkeypatch.setattr("py.recipes.enrichment.get_default_metadata_provider", fake_get_default_metadata_provider)
+
+    # 2. Mock ExifUtils to return some embedded metadata
+    class MockExifUtils:
+        @staticmethod
+        def extract_image_metadata(path):
+            return "Recipe metadata: " + json.dumps({
+                "gen_params": {"prompt": "from embedded", "seed": 123}
+            })
+
+    monkeypatch.setattr(recipe_handlers, "ExifUtils", MockExifUtils)
+
+    # 3. Mock Parser Factory for StubAnalysisService
+    class MockParser:
+        async def parse_metadata(self, raw, recipe_scanner=None):
+            return json.loads(raw[len("Recipe metadata: "):])
+
+    class MockFactory:
+        def create_parser(self, raw):
+            if raw.startswith("Recipe metadata: "):
+                return MockParser()
+            return None
+
+    # 4. Setup Harness and run test
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = MockFactory()
+        
+        # Civitai meta via image_info
+        harness.civitai.image_info["1"] = {
+            "id": 1,
+            "url": "https://example.com/images/1.jpg",
+            "meta": {"prompt": "from civitai", "cfg": 7.0}
+        }
+
+        resources = []
+        response = await harness.client.get(
+            "/api/lm/recipes/import-remote",
+            params={
+                "image_url": "https://civitai.com/images/1",
+                "name": "Merged Recipe",
+                "resources": json.dumps(resources),
+                "gen_params": json.dumps({"prompt": "from request", "steps": 25}),
+            },
+        )
+
+        payload = await response.json()
+        assert response.status == 200
+        
+        call = harness.persistence.save_calls[-1]
+        metadata = call["metadata"]
+        gen_params = metadata["gen_params"]
+        
+        # Priority: request (prompt=request, steps=25) > civitai (prompt=civitai, cfg=7.0) > embedded (prompt=embedded, seed=123)
+        assert gen_params["prompt"] == "from request"
+        assert gen_params["steps"] == 25
+        assert gen_params["cfg"] == 7.0
+        assert gen_params["seed"] == 123

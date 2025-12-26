@@ -154,11 +154,17 @@
             "error": "清理範例圖片資料夾失敗：{message}"
         },
         "fetchMissingLicenses": {
-            "label": "Refresh license metadata",
-            "loading": "Refreshing license metadata for {typePlural}...",
-            "success": "Updated license metadata for {count} {typePlural}",
-            "none": "All {typePlural} already have license metadata",
-            "error": "Failed to refresh license metadata for {typePlural}: {message}"
+            "label": "重新整理授權中繼資料",
+            "loading": "正在重新整理 {typePlural} 的授權中繼資料...",
+            "success": "已更新 {count} 個 {typePlural} 的授權中繼資料",
+            "none": "所有 {typePlural} 已具備授權中繼資料",
+            "error": "重新整理 {typePlural} 授權中繼資料失敗：{message}"
+        },
+        "repairRecipes": {
+            "label": "修復配方資料",
+            "loading": "正在修復配方資料...",
+            "success": "成功修復 {count} 個配方。",
+            "error": "配方修復失敗：{message}"
         }
     },
     "header": {
@@ -188,7 +194,8 @@
                 "creator": "創作者",
                 "title": "配方標題",
                 "loraName": "LoRA 檔案名稱",
-                "loraModel": "LoRA 模型名稱"
+                "loraModel": "LoRA 模型名稱",
+                "prompt": "提示詞"
             }
         },
         "filter": {
@@ -199,6 +206,7 @@
             "license": "授權",
             "noCreditRequired": "無需署名",
             "allowSellingGeneratedContent": "允許銷售",
+            "noTags": "無標籤",
             "clearAll": "清除所有篩選"
         },
         "theme": {
@@ -521,6 +529,7 @@
             "replacePreview": "更換預覽圖",
             "setContentRating": "設定內容分級",
             "moveToFolder": "移動到資料夾",
+            "repairMetadata": "[TODO: Translate] Repair metadata",
             "excludeModel": "排除模型",
             "deleteModel": "刪除模型",
             "shareRecipe": "分享配方",
@@ -591,10 +600,26 @@
                     "selectLoraRoot": "請選擇 LoRA 根目錄"
                 }
             },
+            "sort": {
+                "title": "配方排序...",
+                "name": "名稱",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "時間",
+                "dateDesc": "最新",
+                "dateAsc": "最舊",
+                "lorasCount": "LoRA 數量",
+                "lorasCountDesc": "最多",
+                "lorasCountAsc": "最少"
+            },
             "refresh": {
                 "title": "重新整理配方列表"
             },
-            "filteredByLora": "已依 LoRA 篩選"
+            "filteredByLora": "已依 LoRA 篩選",
+            "favorites": {
+                "title": "僅顯示收藏",
+                "action": "收藏"
+            }
         },
         "duplicates": {
             "found": "發現 {count} 組重複項",
@@ -620,6 +645,13 @@
                 "noMissingLoras": "無缺少的 LoRA 可下載",
                 "getInfoFailed": "取得缺少 LoRA 資訊失敗",
                 "prepareError": "準備下載 LoRA 時發生錯誤：{message}"
+            },
+            "repair": {
+                "starting": "[TODO: Translate] Repairing recipe metadata...",
+                "success": "[TODO: Translate] Recipe metadata repaired successfully",
+                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
+                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
+                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
             }
         }
     },
@@ -641,7 +673,8 @@
         "recursiveUnavailable": "遞迴搜尋僅能在樹狀檢視中使用",
         "collapseAllDisabled": "列表檢視下不可用",
         "dragDrop": {
-            "unableToResolveRoot": "無法確定移動的目標路徑。"
+            "unableToResolveRoot": "無法確定移動的目標路徑。",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1463,7 +1496,8 @@
             "bulkMoveFailures": "移動失敗：\n{failures}",
             "bulkMoveSuccess": "已成功移動 {successCount} 個 {type}",
             "exampleImagesDownloadSuccess": "範例圖片下載成功！",
-            "exampleImagesDownloadFailed": "下載範例圖片失敗：{message}"
+            "exampleImagesDownloadFailed": "下載範例圖片失敗：{message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

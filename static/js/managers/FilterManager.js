@@ -3,32 +3,33 @@ import { showToast, updatePanelPositions } from '../utils/uiHelpers.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { removeStorageItem, setStorageItem, getStorageItem } from '../utils/storageHelpers.js';
 import { MODEL_TYPE_DISPLAY_NAMES } from '../utils/constants.js';
+import { translate } from '../utils/i18nHelpers.js';
 
 export class FilterManager {
     constructor(options = {}) {
         this.options = {
             ...options
         };
-        
+
         this.currentPage = options.page || document.body.dataset.page || 'loras';
         const pageState = getCurrentPageState();
-        
+
         this.filters = this.initializeFilters(pageState ? pageState.filters : undefined);
-        
+
         this.filterPanel = document.getElementById('filterPanel');
         this.filterButton = document.getElementById('filterButton');
         this.activeFiltersCount = document.getElementById('activeFiltersCount');
         this.tagsLoaded = false;
-        
+
         this.initialize();
-        
+
         // Store this instance in the state
         if (pageState) {
             pageState.filterManager = this;
             pageState.filters = this.cloneFilters();
         }
     }
-    
+
     initialize() {
         // Create base model filter tags if they exist
         if (document.getElementById('baseModelTags')) {
@@ -50,39 +51,39 @@ export class FilterManager {
                 this.toggleFilterPanel();
             });
         }
-        
+
         // Close filter panel when clicking outside
         document.addEventListener('click', (e) => {
-            if (this.filterPanel && !this.filterPanel.contains(e.target) && 
+            if (this.filterPanel && !this.filterPanel.contains(e.target) &&
                 e.target !== this.filterButton &&
                 !this.filterButton.contains(e.target) &&
                 !this.filterPanel.classList.contains('hidden')) {
                 this.closeFilterPanel();
             }
         });
-        
+
         // Initialize active filters from localStorage if available
         this.loadFiltersFromStorage();
     }
-    
+
     async loadTopTags() {
         try {
             // Show loading state
             const tagsContainer = document.getElementById('modelTagsFilter');
             if (!tagsContainer) return;
-            
+
             tagsContainer.innerHTML = '<div class="tags-loading">Loading tags...</div>';
-            
+
             // Determine the API endpoint based on the page type
             const tagsEndpoint = `/api/lm/${this.currentPage}/top-tags?limit=20`;
 
             const response = await fetch(tagsEndpoint);
             if (!response.ok) throw new Error('Failed to fetch tags');
-            
+
             const data = await response.json();
             if (data.success && data.tags) {
                 this.createTagFilterElements(data.tags);
-                
+
                 // After creating tag elements, mark any previously selected ones
                 this.updateTagSelections();
             } else {
@@ -96,57 +97,79 @@ export class FilterManager {
             }
         }
     }
-    
+
     createTagFilterElements(tags) {
         const tagsContainer = document.getElementById('modelTagsFilter');
         if (!tagsContainer) return;
-        
+
         tagsContainer.innerHTML = '';
-        
+
         if (!tags.length) {
             tagsContainer.innerHTML = `<div class="no-tags">No ${this.currentPage === 'recipes' ? 'recipe ' : ''}tags available</div>`;
             return;
         }
-        
+
         tags.forEach(tag => {
             const tagEl = document.createElement('div');
             tagEl.className = 'filter-tag tag-filter';
             const tagName = tag.tag;
             tagEl.dataset.tag = tagName;
             tagEl.innerHTML = `${tagName} <span class="tag-count">${tag.count}</span>`;
-            
+
             // Add click handler to cycle through tri-state filter and automatically apply
             tagEl.addEventListener('click', async () => {
                 const currentState = (this.filters.tags && this.filters.tags[tagName]) || 'none';
                 const newState = this.getNextTriStateState(currentState);
                 this.setTagFilterState(tagName, newState);
                 this.applyTagElementState(tagEl, newState);
-                
+
                 this.updateActiveFiltersCount();
-                
+
                 // Auto-apply filter when tag is clicked
                 await this.applyFilters(false);
             });
-            
+
             this.applyTagElementState(tagEl, (this.filters.tags && this.filters.tags[tagName]) || 'none');
             tagsContainer.appendChild(tagEl);
         });
+
+        // Add "No tags" as a special filter at the end
+        const noTagsEl = document.createElement('div');
+        noTagsEl.className = 'filter-tag tag-filter special-tag';
+        const noTagsLabel = translate('header.filter.noTags', {}, 'No tags');
+        const noTagsKey = '__no_tags__';
+        noTagsEl.dataset.tag = noTagsKey;
+        noTagsEl.innerHTML = noTagsLabel;
+
+        noTagsEl.addEventListener('click', async () => {
+            const currentState = (this.filters.tags && this.filters.tags[noTagsKey]) || 'none';
+            const newState = this.getNextTriStateState(currentState);
+            this.setTagFilterState(noTagsKey, newState);
+            this.applyTagElementState(noTagsEl, newState);
+
+            this.updateActiveFiltersCount();
+
+            await this.applyFilters(false);
+        });
+
+        this.applyTagElementState(noTagsEl, (this.filters.tags && this.filters.tags[noTagsKey]) || 'none');
+        tagsContainer.appendChild(noTagsEl);
     }
-    
+
     initializeLicenseFilters() {
         const licenseTags = document.querySelectorAll('.license-tag');
         licenseTags.forEach(tag => {
             tag.addEventListener('click', async () => {
                 const licenseType = tag.dataset.license;
-                
+
                 // Ensure license object exists
                 if (!this.filters.license) {
                     this.filters.license = {};
                 }
-                
+
                 // Get current state
                 let currentState = this.filters.license[licenseType] || 'none'; // none, include, exclude
-                
+
                 // Cycle through states: none -> include -> exclude -> none
                 let newState;
                 switch (currentState) {
@@ -165,7 +188,7 @@ export class FilterManager {
                         tag.classList.remove('active', 'exclude');
                         break;
                 }
-                
+
                 // Update filter state
                 if (newState === 'none') {
                     delete this.filters.license[licenseType];
@@ -176,27 +199,27 @@ export class FilterManager {
                 } else {
                     this.filters.license[licenseType] = newState;
                 }
-                
+
                 this.updateActiveFiltersCount();
-                
+
                 // Auto-apply filter when tag is clicked
                 await this.applyFilters(false);
             });
         });
-        
+
         // Update selections based on stored filters
         this.updateLicenseSelections();
     }
-    
+
     updateLicenseSelections() {
         const licenseTags = document.querySelectorAll('.license-tag');
         licenseTags.forEach(tag => {
             const licenseType = tag.dataset.license;
             const state = (this.filters.license && this.filters.license[licenseType]) || 'none';
-            
+
             // Reset classes
             tag.classList.remove('active', 'exclude');
-            
+
             // Apply appropriate class based on state
             switch (state) {
                 case 'include':
@@ -211,31 +234,31 @@ export class FilterManager {
             }
         });
     }
-    
+
     createBaseModelTags() {
         const baseModelTagsContainer = document.getElementById('baseModelTags');
         if (!baseModelTagsContainer) return;
-        
+
         // Set the API endpoint based on current page
         const apiEndpoint = `/api/lm/${this.currentPage}/base-models`;
-        
+
         // Fetch base models
         fetch(apiEndpoint)
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.base_models) {
                     baseModelTagsContainer.innerHTML = '';
-                    
+
                     data.base_models.forEach(model => {
                         const tag = document.createElement('div');
                         tag.className = `filter-tag base-model-tag`;
                         tag.dataset.baseModel = model.name;
                         tag.innerHTML = `${model.name} <span class="tag-count">${model.count}</span>`;
-                        
+
                         // Add click handler to toggle selection and automatically apply
                         tag.addEventListener('click', async () => {
                             tag.classList.toggle('active');
-                            
+
                             if (tag.classList.contains('active')) {
                                 if (!this.filters.baseModel.includes(model.name)) {
                                     this.filters.baseModel.push(model.name);
@@ -243,24 +266,24 @@ export class FilterManager {
                             } else {
                                 this.filters.baseModel = this.filters.baseModel.filter(m => m !== model.name);
                             }
-                            
+
                             this.updateActiveFiltersCount();
-                            
+
                             // Auto-apply filter when tag is clicked
                             await this.applyFilters(false);
                         });
-                        
+
                         baseModelTagsContainer.appendChild(tag);
                     });
-                    
+
                     // Update selections based on stored filters
                     this.updateTagSelections();
-            }
-        })
-        .catch(error => {
-            console.error(`Error fetching base models for ${this.currentPage}:`, error);
-            baseModelTagsContainer.innerHTML = '<div class="tags-error">Failed to load base models</div>';
-        });
+                }
+            })
+            .catch(error => {
+                console.error(`Error fetching base models for ${this.currentPage}:`, error);
+                baseModelTagsContainer.innerHTML = '<div class="tags-error">Failed to load base models</div>';
+            });
     }
 
     async createModelTypeTags() {
@@ -336,18 +359,18 @@ export class FilterManager {
             modelTypeContainer.innerHTML = '<div class="tags-error">Failed to load model types</div>';
         }
     }
-    
-    toggleFilterPanel() {       
+
+    toggleFilterPanel() {
         if (this.filterPanel) {
             const isHidden = this.filterPanel.classList.contains('hidden');
-            
+
             if (isHidden) {
                 // Update panel positions before showing
                 updatePanelPositions();
-                
+
                 this.filterPanel.classList.remove('hidden');
                 this.filterButton.classList.add('active');
-                
+
                 // Load tags if they haven't been loaded yet
                 if (!this.tagsLoaded) {
                     this.loadTopTags();
@@ -358,7 +381,7 @@ export class FilterManager {
             }
         }
     }
-    
+
     closeFilterPanel() {
         if (this.filterPanel) {
             this.filterPanel.classList.add('hidden');
@@ -367,7 +390,7 @@ export class FilterManager {
             this.filterButton.classList.remove('active');
         }
     }
-    
+
     updateTagSelections() {
         // Update base model tags
         const baseModelTags = document.querySelectorAll('.base-model-tag');
@@ -379,7 +402,7 @@ export class FilterManager {
                 tag.classList.remove('active');
             }
         });
-        
+
         // Update model tags
         const modelTags = document.querySelectorAll('.tag-filter');
         modelTags.forEach(tag => {
@@ -387,7 +410,7 @@ export class FilterManager {
             const state = (this.filters.tags && this.filters.tags[tagName]) || 'none';
             this.applyTagElementState(tag, state);
         });
-        
+
         // Update license tags if visible on this page
         if (this.shouldShowLicenseFilters()) {
             this.updateLicenseSelections();
@@ -406,13 +429,13 @@ export class FilterManager {
             }
         });
     }
-    
+
     updateActiveFiltersCount() {
         const tagFilterCount = this.filters.tags ? Object.keys(this.filters.tags).length : 0;
         const licenseFilterCount = this.filters.license ? Object.keys(this.filters.license).length : 0;
         const modelTypeFilterCount = this.filters.modelTypes.length;
         const totalActiveFilters = this.filters.baseModel.length + tagFilterCount + licenseFilterCount + modelTypeFilterCount;
-        
+
         if (this.activeFiltersCount) {
             if (totalActiveFilters > 0) {
                 this.activeFiltersCount.textContent = totalActiveFilters;
@@ -422,18 +445,18 @@ export class FilterManager {
             }
         }
     }
-    
+
     async applyFilters(showToastNotification = true) {
         const pageState = getCurrentPageState();
         const storageKey = `${this.currentPage}_filters`;
-        
+
         // Save filters to localStorage
         const filtersSnapshot = this.cloneFilters();
         setStorageItem(storageKey, filtersSnapshot);
-        
+
         // Update state with current filters
         pageState.filters = filtersSnapshot;
-        
+
         // Call the appropriate manager's load method based on page type
         if (this.currentPage === 'recipes' && window.recipeManager) {
             await window.recipeManager.loadRecipes(true);
@@ -441,14 +464,14 @@ export class FilterManager {
             // For models page, reset the page and reload
             await getModelApiClient().loadMoreWithVirtualScroll(true, false);
         }
-        
+
         // Update filter button to show active state
         if (this.hasActiveFilters()) {
             this.filterButton.classList.add('active');
             if (showToastNotification) {
                 const baseModelCount = this.filters.baseModel.length;
                 const tagsCount = this.filters.tags ? Object.keys(this.filters.tags).length : 0;
-                
+
                 let message = '';
                 if (baseModelCount > 0 && tagsCount > 0) {
                     message = `Filtering by ${baseModelCount} base model${baseModelCount > 1 ? 's' : ''} and ${tagsCount} tag${tagsCount > 1 ? 's' : ''}`;
@@ -457,7 +480,7 @@ export class FilterManager {
                 } else if (tagsCount > 0) {
                     message = `Filtering by ${tagsCount} tag${tagsCount > 1 ? 's' : ''}`;
                 }
-                
+
                 showToast('toast.filters.applied', { message }, 'success');
             }
         } else {
@@ -467,7 +490,7 @@ export class FilterManager {
             }
         }
     }
-    
+
     async clearFilters() {
         // Clear all filters
         this.filters = this.initializeFilters({
@@ -477,52 +500,52 @@ export class FilterManager {
             license: {},
             modelTypes: []
         });
-        
+
         // Update state
         const pageState = getCurrentPageState();
         pageState.filters = this.cloneFilters();
-        
+
         // Update UI
         this.updateTagSelections();
         this.updateActiveFiltersCount();
-        
+
         // Remove from local Storage
         const storageKey = `${this.currentPage}_filters`;
         removeStorageItem(storageKey);
-        
+
         // Update UI
         if (this.hasActiveFilters()) {
             this.filterButton.classList.add('active');
         } else {
             this.filterButton.classList.remove('active');
         }
-        
+
         // Reload data using the appropriate method for the current page
         if (this.currentPage === 'recipes' && window.recipeManager) {
             await window.recipeManager.loadRecipes(true);
         } else if (this.currentPage === 'loras' || this.currentPage === 'checkpoints' || this.currentPage === 'embeddings') {
             await getModelApiClient().loadMoreWithVirtualScroll(true, true);
         }
-        
+
         showToast('toast.filters.cleared', {}, 'info');
     }
-    
+
     loadFiltersFromStorage() {
         const storageKey = `${this.currentPage}_filters`;
         const savedFilters = getStorageItem(storageKey);
-        
+
         if (savedFilters) {
             try {
                 // Ensure backward compatibility with older filter format
                 this.filters = this.initializeFilters(savedFilters);
-                
+
                 // Update state with loaded filters
                 const pageState = getCurrentPageState();
                 pageState.filters = this.cloneFilters();
 
                 this.updateTagSelections();
                 this.updateActiveFiltersCount();
-                
+
                 if (this.hasActiveFilters()) {
                     this.filterButton.classList.add('active');
                 }
@@ -531,7 +554,7 @@ export class FilterManager {
             }
         }
     }
-    
+
     hasActiveFilters() {
         const tagCount = this.filters.tags ? Object.keys(this.filters.tags).length : 0;
         const licenseCount = this.filters.license ? Object.keys(this.filters.license).length : 0;

@@ -1,3 +1,4 @@
+import os
 import pytest
 
 from py.services.base_model_service import BaseModelService
@@ -42,8 +43,8 @@ async def test_search_relative_paths_supports_multiple_tokens():
     matching = await service.search_relative_paths("flux detail")
 
     assert matching == [
-        "flux/detail-model.safetensors",
-        "detail/flux-trained.safetensors",
+        f"flux{os.sep}detail-model.safetensors",
+        f"detail{os.sep}flux-trained.safetensors",
     ]
 
 
@@ -60,4 +61,4 @@ async def test_search_relative_paths_excludes_tokens():
 
     matching = await service.search_relative_paths("flux -detail")
 
-    assert matching == ["flux/keep-me.safetensors"]
+    assert matching == [f"flux{os.sep}keep-me.safetensors"]

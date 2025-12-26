@@ -159,6 +159,12 @@
             "success": "Updated license metadata for {count} {typePlural}",
             "none": "All {typePlural} already have license metadata",
             "error": "Failed to refresh license metadata for {typePlural}: {message}"
+        },
+        "repairRecipes": {
+            "label": "修复配方数据",
+            "loading": "正在修复配方数据...",
+            "success": "成功修复了 {count} 个配方。",
+            "error": "配方修复失败：{message}"
         }
     },
     "header": {
@@ -188,7 +194,8 @@
                 "creator": "创作者",
                 "title": "配方标题",
                 "loraName": "LoRA 文件名",
-                "loraModel": "LoRA 模型名称"
+                "loraModel": "LoRA 模型名称",
+                "prompt": "提示词"
             }
         },
         "filter": {
@@ -199,6 +206,7 @@
             "license": "许可证",
             "noCreditRequired": "无需署名",
             "allowSellingGeneratedContent": "允许销售",
+            "noTags": "无标签",
             "clearAll": "清除所有筛选"
         },
         "theme": {
@@ -521,6 +529,7 @@
             "replacePreview": "替换预览",
             "setContentRating": "设置内容评级",
             "moveToFolder": "移动到文件夹",
+            "repairMetadata": "[TODO: Translate] Repair metadata",
             "excludeModel": "排除模型",
             "deleteModel": "删除模型",
             "shareRecipe": "分享配方",
@@ -591,10 +600,26 @@
                     "selectLoraRoot": "请选择 LoRA 根目录"
                 }
             },
+            "sort": {
+                "title": "配方排序...",
+                "name": "名称",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "时间",
+                "dateDesc": "最新",
+                "dateAsc": "最早",
+                "lorasCount": "LoRA 数量",
+                "lorasCountDesc": "最多",
+                "lorasCountAsc": "最少"
+            },
             "refresh": {
                 "title": "刷新配方列表"
             },
-            "filteredByLora": "按 LoRA 筛选"
+            "filteredByLora": "按 LoRA 筛选",
+            "favorites": {
+                "title": "仅显示收藏",
+                "action": "收藏"
+            }
         },
         "duplicates": {
             "found": "发现 {count} 个重复组",
@@ -620,6 +645,13 @@
                 "noMissingLoras": "没有缺失的 LoRA 可下载",
                 "getInfoFailed": "获取缺失 LoRA 信息失败",
                 "prepareError": "准备下载 LoRA 时出错：{message}"
+            },
+            "repair": {
+                "starting": "[TODO: Translate] Repairing recipe metadata...",
+                "success": "[TODO: Translate] Recipe metadata repaired successfully",
+                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
+                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
+                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
             }
         }
     },
@@ -641,7 +673,8 @@
         "recursiveUnavailable": "仅在树形视图中可使用递归搜索",
         "collapseAllDisabled": "列表视图下不可用",
         "dragDrop": {
-            "unableToResolveRoot": "无法确定移动的目标路径。"
+            "unableToResolveRoot": "无法确定移动的目标路径。",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1463,7 +1496,8 @@
             "bulkMoveFailures": "移动失败：\n{failures}",
             "bulkMoveSuccess": "成功移动 {successCount} 个 {type}",
             "exampleImagesDownloadSuccess": "示例图片下载成功！",
-            "exampleImagesDownloadFailed": "示例图片下载失败：{message}"
+            "exampleImagesDownloadFailed": "示例图片下载失败：{message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

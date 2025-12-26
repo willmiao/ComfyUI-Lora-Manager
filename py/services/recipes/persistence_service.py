@@ -5,6 +5,7 @@ import base64
 import json
 import os
 import re
+import shutil
 import time
 import uuid
 from dataclasses import dataclass
@@ -46,6 +47,7 @@ class RecipePersistenceService:
         name: str | None,
         tags: Iterable[str],
         metadata: Optional[dict[str, Any]],
+        extension: str | None = None,
     ) -> PersistenceResult:
         """Persist a user uploaded recipe."""
 
@@ -64,13 +66,21 @@ class RecipePersistenceService:
         os.makedirs(recipes_dir, exist_ok=True)
 
         recipe_id = str(uuid.uuid4())
-        optimized_image, extension = self._exif_utils.optimize_image(
-            image_data=resolved_image_bytes,
-            target_width=self._card_preview_width,
-            format="webp",
-            quality=85,
-            preserve_metadata=True,
-        )
+        
+        # Handle video formats by bypassing optimization and metadata embedding
+        is_video = extension in [".mp4", ".webm"]
+        if is_video:
+            optimized_image = resolved_image_bytes
+            # extension is already set
+        else:
+            optimized_image, extension = self._exif_utils.optimize_image(
+                image_data=resolved_image_bytes,
+                target_width=self._card_preview_width,
+                format="webp",
+                quality=85,
+                preserve_metadata=True,
+            )
+            
         image_filename = f"{recipe_id}{extension}"
         image_path = os.path.join(recipes_dir, image_filename)
         normalized_image_path = os.path.normpath(image_path)
@@ -126,7 +136,8 @@ class RecipePersistenceService:
         with open(json_path, "w", encoding="utf-8") as file_obj:
             json.dump(recipe_data, file_obj, indent=4, ensure_ascii=False)
 
-        self._exif_utils.append_recipe_metadata(normalized_image_path, recipe_data)
+        if not is_video:
+            self._exif_utils.append_recipe_metadata(normalized_image_path, recipe_data)
 
         matching_recipes = await self._find_matching_recipes(recipe_scanner, fingerprint, exclude_id=recipe_id)
         await recipe_scanner.add_recipe(recipe_data)
@@ -144,12 +155,8 @@ class RecipePersistenceService:
     async def delete_recipe(self, *, recipe_scanner, recipe_id: str) -> PersistenceResult:
         """Delete an existing recipe."""
 
-        recipes_dir = recipe_scanner.recipes_dir
-        if not recipes_dir or not os.path.exists(recipes_dir):
-            raise RecipeNotFoundError("Recipes directory not found")
-
-        recipe_json_path = os.path.join(recipes_dir, f"{recipe_id}.recipe.json")
-        if not os.path.exists(recipe_json_path):
+        recipe_json_path = await recipe_scanner.get_recipe_json_path(recipe_id)
+        if not recipe_json_path or not os.path.exists(recipe_json_path):
             raise RecipeNotFoundError("Recipe not found")
 
         with open(recipe_json_path, "r", encoding="utf-8") as file_obj:
@@ -166,9 +173,9 @@ class RecipePersistenceService:
     async def update_recipe(self, *, recipe_scanner, recipe_id: str, updates: dict[str, Any]) -> PersistenceResult:
         """Update persisted metadata for a recipe."""
 
-        if not any(key in updates for key in ("title", "tags", "source_path", "preview_nsfw_level")):
+        if not any(key in updates for key in ("title", "tags", "source_path", "preview_nsfw_level", "favorite")):
             raise RecipeValidationError(
-                "At least one field to update must be provided (title or tags or source_path or preview_nsfw_level)"
+                "At least one field to update must be provided (title or tags or source_path or preview_nsfw_level or favorite)"
             )
 
         success = await recipe_scanner.update_recipe_metadata(recipe_id, updates)
@@ -176,6 +183,163 @@ class RecipePersistenceService:
             raise RecipeNotFoundError("Recipe not found or update failed")
 
         return PersistenceResult({"success": True, "recipe_id": recipe_id, "updates": updates})
+
+    def _normalize_target_path(self, recipe_scanner, target_path: str) -> tuple[str, str]:
+        """Normalize and validate the target path for recipe moves."""
+
+        if not target_path:
+            raise RecipeValidationError("Target path is required")
+
+        recipes_root = recipe_scanner.recipes_dir
+        if not recipes_root:
+            raise RecipeNotFoundError("Recipes directory not found")
+
+        normalized_target = os.path.normpath(target_path)
+        recipes_root = os.path.normpath(recipes_root)
+        if not os.path.isabs(normalized_target):
+            normalized_target = os.path.normpath(os.path.join(recipes_root, normalized_target))
+
+        try:
+            common_root = os.path.commonpath([normalized_target, recipes_root])
+        except ValueError as exc:
+            raise RecipeValidationError("Invalid target path") from exc
+
+        if common_root != recipes_root:
+            raise RecipeValidationError("Target path must be inside the recipes directory")
+
+        return normalized_target, recipes_root
+
+    async def _move_recipe_files(
+        self,
+        *,
+        recipe_scanner,
+        recipe_id: str,
+        normalized_target: str,
+        recipes_root: str,
+    ) -> dict[str, Any]:
+        """Move the recipe's JSON and preview image into the normalized target."""
+
+        recipe_json_path = await recipe_scanner.get_recipe_json_path(recipe_id)
+        if not recipe_json_path or not os.path.exists(recipe_json_path):
+            raise RecipeNotFoundError("Recipe not found")
+
+        recipe_data = await recipe_scanner.get_recipe_by_id(recipe_id)
+        if not recipe_data:
+            raise RecipeNotFoundError("Recipe not found")
+
+        current_json_dir = os.path.dirname(recipe_json_path)
+        normalized_image_path = os.path.normpath(recipe_data.get("file_path") or "") if recipe_data.get("file_path") else None
+
+        os.makedirs(normalized_target, exist_ok=True)
+
+        if os.path.normpath(current_json_dir) == normalized_target:
+            return {
+                "success": True,
+                "message": "Recipe is already in the target folder",
+                "recipe_id": recipe_id,
+                "original_file_path": recipe_data.get("file_path"),
+                "new_file_path": recipe_data.get("file_path"),
+            }
+
+        new_json_path = os.path.normpath(os.path.join(normalized_target, os.path.basename(recipe_json_path)))
+        shutil.move(recipe_json_path, new_json_path)
+
+        new_image_path = normalized_image_path
+        if normalized_image_path:
+            target_image_path = os.path.normpath(os.path.join(normalized_target, os.path.basename(normalized_image_path)))
+            if os.path.exists(normalized_image_path) and normalized_image_path != target_image_path:
+                shutil.move(normalized_image_path, target_image_path)
+            new_image_path = target_image_path
+
+        relative_folder = os.path.relpath(normalized_target, recipes_root)
+        if relative_folder in (".", ""):
+            relative_folder = ""
+        updates = {"file_path": new_image_path or recipe_data.get("file_path"), "folder": relative_folder.replace(os.path.sep, "/")}
+
+        updated = await recipe_scanner.update_recipe_metadata(recipe_id, updates)
+        if not updated:
+            raise RecipeNotFoundError("Recipe not found after move")
+
+        return {
+            "success": True,
+            "recipe_id": recipe_id,
+            "original_file_path": recipe_data.get("file_path"),
+            "new_file_path": updates["file_path"],
+            "json_path": new_json_path,
+            "folder": updates["folder"],
+        }
+
+    async def move_recipe(self, *, recipe_scanner, recipe_id: str, target_path: str) -> PersistenceResult:
+        """Move a recipe's assets into a new folder under the recipes root."""
+
+        normalized_target, recipes_root = self._normalize_target_path(recipe_scanner, target_path)
+        result = await self._move_recipe_files(
+            recipe_scanner=recipe_scanner,
+            recipe_id=recipe_id,
+            normalized_target=normalized_target,
+            recipes_root=recipes_root,
+        )
+        return PersistenceResult(result)
+
+    async def move_recipes_bulk(
+        self,
+        *,
+        recipe_scanner,
+        recipe_ids: Iterable[str],
+        target_path: str,
+    ) -> PersistenceResult:
+        """Move multiple recipes to a new folder."""
+
+        recipe_ids = list(recipe_ids)
+        if not recipe_ids:
+            raise RecipeValidationError("No recipe IDs provided")
+
+        normalized_target, recipes_root = self._normalize_target_path(recipe_scanner, target_path)
+
+        results: list[dict[str, Any]] = []
+        success_count = 0
+        failure_count = 0
+
+        for recipe_id in recipe_ids:
+            try:
+                move_result = await self._move_recipe_files(
+                    recipe_scanner=recipe_scanner,
+                    recipe_id=str(recipe_id),
+                    normalized_target=normalized_target,
+                    recipes_root=recipes_root,
+                )
+                results.append(
+                    {
+                        "recipe_id": recipe_id,
+                        "original_file_path": move_result.get("original_file_path"),
+                        "new_file_path": move_result.get("new_file_path"),
+                        "success": True,
+                        "message": move_result.get("message", ""),
+                        "folder": move_result.get("folder", ""),
+                    }
+                )
+                success_count += 1
+            except Exception as exc:  # pragma: no cover - per-item error handling
+                results.append(
+                    {
+                        "recipe_id": recipe_id,
+                        "original_file_path": None,
+                        "new_file_path": None,
+                        "success": False,
+                        "message": str(exc),
+                    }
+                )
+                failure_count += 1
+
+        return PersistenceResult(
+            {
+                "success": True,
+                "message": f"Moved {success_count} of {len(recipe_ids)} recipes",
+                "results": results,
+                "success_count": success_count,
+                "failure_count": failure_count,
+            }
+        )
 
     async def reconnect_lora(
         self,
@@ -187,8 +351,8 @@ class RecipePersistenceService:
     ) -> PersistenceResult:
         """Reconnect a LoRA entry within an existing recipe."""
 
-        recipe_path = os.path.join(recipe_scanner.recipes_dir, f"{recipe_id}.recipe.json")
-        if not os.path.exists(recipe_path):
+        recipe_path = await recipe_scanner.get_recipe_json_path(recipe_id)
+        if not recipe_path or not os.path.exists(recipe_path):
             raise RecipeNotFoundError("Recipe not found")
 
         target_lora = await recipe_scanner.get_local_lora(target_name)
@@ -233,16 +397,12 @@ class RecipePersistenceService:
         if not recipe_ids:
             raise RecipeValidationError("No recipe IDs provided")
 
-        recipes_dir = recipe_scanner.recipes_dir
-        if not recipes_dir or not os.path.exists(recipes_dir):
-            raise RecipeNotFoundError("Recipes directory not found")
-
         deleted_recipes: list[str] = []
         failed_recipes: list[dict[str, Any]] = []
 
         for recipe_id in recipe_ids:
-            recipe_json_path = os.path.join(recipes_dir, f"{recipe_id}.recipe.json")
-            if not os.path.exists(recipe_json_path):
+            recipe_json_path = await recipe_scanner.get_recipe_json_path(recipe_id)
+            if not recipe_json_path or not os.path.exists(recipe_json_path):
                 failed_recipes.append({"id": recipe_id, "reason": "Recipe not found"})
                 continue
 

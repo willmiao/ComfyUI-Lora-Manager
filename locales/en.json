@@ -32,7 +32,7 @@
             "korean": "한국어",
             "french": "Français",
             "spanish": "Español",
-			"Hebrew": "עברית"
+            "Hebrew": "עברית"
         },
         "fileSize": {
             "zero": "0 Bytes",
@@ -159,6 +159,12 @@
             "success": "Updated license metadata for {count} {typePlural}",
             "none": "All {typePlural} already have license metadata",
             "error": "Failed to refresh license metadata for {typePlural}: {message}"
+        },
+        "repairRecipes": {
+            "label": "Repair recipes data",
+            "loading": "Repairing recipe data...",
+            "success": "Successfully repaired {count} recipes.",
+            "error": "Recipe repair failed: {message}"
         }
     },
     "header": {
@@ -188,7 +194,8 @@
                 "creator": "Creator",
                 "title": "Recipe Title",
                 "loraName": "LoRA Filename",
-                "loraModel": "LoRA Model Name"
+                "loraModel": "LoRA Model Name",
+                "prompt": "Prompt"
             }
         },
         "filter": {
@@ -199,6 +206,7 @@
             "license": "License",
             "noCreditRequired": "No Credit Required",
             "allowSellingGeneratedContent": "Allow Selling",
+            "noTags": "No tags",
             "clearAll": "Clear All Filters"
         },
         "theme": {
@@ -336,7 +344,7 @@
             "templateOptions": {
                 "flatStructure": "Flat Structure",
                 "byBaseModel": "By Base Model",
-                "byAuthor": "By Author", 
+                "byAuthor": "By Author",
                 "byFirstTag": "By First Tag",
                 "baseModelFirstTag": "Base Model + First Tag",
                 "baseModelAuthor": "Base Model + Author",
@@ -347,7 +355,7 @@
             "customTemplatePlaceholder": "Enter custom template (e.g., {base_model}/{author}/{first_tag})",
             "modelTypes": {
                 "lora": "LoRA",
-                "checkpoint": "Checkpoint", 
+                "checkpoint": "Checkpoint",
                 "embedding": "Embedding"
             },
             "baseModelPathMappings": "Base Model Path Mappings",
@@ -420,11 +428,11 @@
             "proxyHost": "Proxy Host",
             "proxyHostPlaceholder": "proxy.example.com",
             "proxyHostHelp": "The hostname or IP address of your proxy server",
-            "proxyPort": "Proxy Port", 
+            "proxyPort": "Proxy Port",
             "proxyPortPlaceholder": "8080",
             "proxyPortHelp": "The port number of your proxy server",
             "proxyUsername": "Username (Optional)",
-            "proxyUsernamePlaceholder": "username", 
+            "proxyUsernamePlaceholder": "username",
             "proxyUsernameHelp": "Username for proxy authentication (if required)",
             "proxyPassword": "Password (Optional)",
             "proxyPasswordPlaceholder": "password",
@@ -521,6 +529,7 @@
             "replacePreview": "Replace Preview",
             "setContentRating": "Set Content Rating",
             "moveToFolder": "Move to Folder",
+            "repairMetadata": "Repair metadata",
             "excludeModel": "Exclude Model",
             "deleteModel": "Delete Model",
             "shareRecipe": "Share Recipe",
@@ -591,10 +600,26 @@
                     "selectLoraRoot": "Please select a LoRA root directory"
                 }
             },
+            "sort": {
+                "title": "Sort recipes by...",
+                "name": "Name",
+                "nameAsc": "A - Z",
+                "nameDesc": "Z - A",
+                "date": "Date",
+                "dateDesc": "Newest",
+                "dateAsc": "Oldest",
+                "lorasCount": "LoRA Count",
+                "lorasCountDesc": "Most",
+                "lorasCountAsc": "Least"
+            },
             "refresh": {
                 "title": "Refresh recipe list"
             },
-            "filteredByLora": "Filtered by LoRA"
+            "filteredByLora": "Filtered by LoRA",
+            "favorites": {
+                "title": "Show Favorites Only",
+                "action": "Favorites"
+            }
         },
         "duplicates": {
             "found": "Found {count} duplicate groups",
@@ -620,6 +645,13 @@
                 "noMissingLoras": "No missing LoRAs to download",
                 "getInfoFailed": "Failed to get information for missing LoRAs",
                 "prepareError": "Error preparing LoRAs for download: {message}"
+            },
+            "repair": {
+                "starting": "Repairing recipe metadata...",
+                "success": "Recipe metadata repaired successfully",
+                "skipped": "Recipe already at latest version, no repair needed",
+                "failed": "Failed to repair recipe: {message}",
+                "missingId": "Cannot repair recipe: Missing recipe ID"
             }
         }
     },
@@ -641,7 +673,8 @@
         "recursiveUnavailable": "Recursive search is available in tree view only",
         "collapseAllDisabled": "Not available in list view",
         "dragDrop": {
-            "unableToResolveRoot": "Unable to determine destination path for move."
+            "unableToResolveRoot": "Unable to determine destination path for move.",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1463,7 +1496,8 @@
             "bulkMoveFailures": "Failed moves:\n{failures}",
             "bulkMoveSuccess": "Successfully moved {successCount} {type}s",
             "exampleImagesDownloadSuccess": "Successfully downloaded example images!",
-            "exampleImagesDownloadFailed": "Failed to download example images: {message}"
+            "exampleImagesDownloadFailed": "Failed to download example images: {message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {

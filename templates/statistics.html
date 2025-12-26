@@ -192,6 +192,6 @@
 
 {% block main_script %}
 {% if not is_initializing %}
-<script type="module" src="/loras_static/js/statistics.js"></script>
+<script type="module" src="/loras_static/js/statistics.js?v={{ version }}"></script>
 {% endif %}
 {% endblock %}

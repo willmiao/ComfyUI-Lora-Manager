@@ -4,9 +4,9 @@
 {% block page_id %}recipes{% endblock %}
 
 {% block page_css %}
-<link rel="stylesheet" href="/loras_static/css/components/card.css">
-<link rel="stylesheet" href="/loras_static/css/components/recipe-modal.css">
-<link rel="stylesheet" href="/loras_static/css/components/import-modal.css">
+<link rel="stylesheet" href="/loras_static/css/components/card.css?v={{ version }}">
+<link rel="stylesheet" href="/loras_static/css/components/recipe-modal.css?v={{ version }}">
+<link rel="stylesheet" href="/loras_static/css/components/import-modal.css?v={{ version }}">
 {% endblock %}
 
 {% block additional_components %}
@@ -15,17 +15,29 @@
 
 <div id="recipeContextMenu" class="context-menu" style="display: none;">
     <!-- <div class="context-menu-item" data-action="details"><i class="fas fa-info-circle"></i> View Details</div> -->
-    <div class="context-menu-item" data-action="share"><i class="fas fa-share-alt"></i> {{ t('loras.contextMenu.shareRecipe') }}</div>
-    <div class="context-menu-item" data-action="copy"><i class="fas fa-copy"></i> {{ t('loras.contextMenu.copyRecipeSyntax') }}</div>
-    <div class="context-menu-item" data-action="sendappend"><i class="fas fa-paper-plane"></i> {{ t('loras.contextMenu.sendToWorkflowAppend') }}</div>
-    <div class="context-menu-item" data-action="sendreplace"><i class="fas fa-exchange-alt"></i> {{ t('loras.contextMenu.sendToWorkflowReplace') }}</div>
-    <div class="context-menu-item" data-action="viewloras"><i class="fas fa-layer-group"></i> {{ t('loras.contextMenu.viewAllLoras') }}</div>
-    <div class="context-menu-item download-missing-item" data-action="download-missing"><i class="fas fa-download"></i> {{ t('loras.contextMenu.downloadMissingLoras') }}</div>
+    <div class="context-menu-item" data-action="share"><i class="fas fa-share-alt"></i> {{
+        t('loras.contextMenu.shareRecipe') }}</div>
+    <div class="context-menu-item" data-action="copy"><i class="fas fa-copy"></i> {{
+        t('loras.contextMenu.copyRecipeSyntax') }}</div>
+    <div class="context-menu-item" data-action="sendappend"><i class="fas fa-paper-plane"></i> {{
+        t('loras.contextMenu.sendToWorkflowAppend') }}</div>
+    <div class="context-menu-item" data-action="sendreplace"><i class="fas fa-exchange-alt"></i> {{
+        t('loras.contextMenu.sendToWorkflowReplace') }}</div>
+    <div class="context-menu-item" data-action="viewloras"><i class="fas fa-layer-group"></i> {{
+        t('loras.contextMenu.viewAllLoras') }}</div>
+    <div class="context-menu-item download-missing-item" data-action="download-missing"><i class="fas fa-download"></i>
+        {{ t('loras.contextMenu.downloadMissingLoras') }}</div>
     <div class="context-menu-item" data-action="set-nsfw">
         <i class="fas fa-exclamation-triangle"></i> {{ t('loras.contextMenu.setContentRating') }}
     </div>
+    <div class="context-menu-item" data-action="repair">
+        <i class="fas fa-tools"></i> {{ t('loras.contextMenu.repairMetadata') }}
+    </div>
     <div class="context-menu-separator"></div>
-    <div class="context-menu-item delete-item" data-action="delete"><i class="fas fa-trash"></i> {{ t('loras.contextMenu.deleteRecipe') }}</div>
+    <div class="context-menu-item" data-action="move"><i class="fas fa-folder-open"></i> {{
+        t('loras.contextMenu.moveToFolder') }}</div>
+    <div class="context-menu-item delete-item" data-action="delete"><i class="fas fa-trash"></i> {{
+        t('loras.contextMenu.deleteRecipe') }}</div>
 </div>
 {% endblock %}
 
@@ -34,55 +46,131 @@
 {% block init_check_url %}/api/recipes?page=1&page_size=1{% endblock %}
 
 {% block content %}
-    <!-- Recipe controls -->
-    <div class="controls">
+<!-- Recipe controls -->
+<div class="controls">
+    <div class="actions">
         <div class="action-buttons">
+            <div class="control-group">
+                <select id="sortSelect" title="{{ t('recipes.controls.sort.title') }}">
+                    <optgroup label="{{ t('recipes.controls.sort.name') }}">
+                        <option value="name:asc">{{ t('recipes.controls.sort.nameAsc') }}</option>
+                        <option value="name:desc">{{ t('recipes.controls.sort.nameDesc') }}</option>
+                    </optgroup>
+                    <optgroup label="{{ t('recipes.controls.sort.date') }}">
+                        <option value="date:desc">{{ t('recipes.controls.sort.dateDesc') }}</option>
+                        <option value="date:asc">{{ t('recipes.controls.sort.dateAsc') }}</option>
+                    </optgroup>
+                    <optgroup label="{{ t('recipes.controls.sort.lorasCount') }}">
+                        <option value="loras_count:desc">{{ t('recipes.controls.sort.lorasCountDesc') }}</option>
+                        <option value="loras_count:asc">{{ t('recipes.controls.sort.lorasCountAsc') }}</option>
+                    </optgroup>
+                </select>
+            </div>
             <div title="{{ t('recipes.controls.refresh.title') }}" class="control-group">
-                <button onclick="recipeManager.refreshRecipes()"><i class="fas fa-sync"></i> {{ t('common.actions.refresh') }}</button>
+                <button onclick="recipeManager.refreshRecipes()"><i class="fas fa-sync"></i> {{
+                    t('common.actions.refresh')
+                    }}</button>
             </div>
             <div title="{{ t('recipes.controls.import.title') }}" class="control-group">
-                <button onclick="importManager.showImportModal()"><i class="fas fa-file-import"></i> {{ t('recipes.controls.import.action') }}</button>
+                <button onclick="importManager.showImportModal()"><i class="fas fa-file-import"></i> {{
+                    t('recipes.controls.import.action') }}</button>
+            </div>
+            <div class="control-group" title="{{ t('loras.controls.bulk.title') }}">
+                <button id="bulkOperationsBtn" data-action="bulk" title="{{ t('loras.controls.bulk.title') }}">
+                    <i class="fas fa-th-large"></i> <span><span>{{ t('loras.controls.bulk.action') }}</span>
+                        <div class="shortcut-key">B</div>
+                    </span>
+                </button>
             </div>
             <!-- Add duplicate detection button -->
             <div title="{{ t('loras.controls.duplicates.title') }}" class="control-group">
-                <button onclick="recipeManager.findDuplicateRecipes()"><i class="fas fa-clone"></i> {{ t('loras.controls.duplicates.action') }}</button>
+                <button onclick="recipeManager.findDuplicateRecipes()"><i class="fas fa-clone"></i> {{
+                    t('loras.controls.duplicates.action') }}</button>
+            </div>
+            <div class="control-group">
+                <button id="favoriteFilterBtn" data-action="toggle-favorites" class="favorite-filter"
+                    title="{{ t('recipes.controls.favorites.title') }}">
+                    <i class="fas fa-star"></i> <span>{{ t('recipes.controls.favorites.action') }}</span>
+                </button>
             </div>
             <!-- Custom filter indicator button (hidden by default) -->
             <div id="customFilterIndicator" class="control-group hidden">
                 <div class="filter-active">
-                    <i class="fas fa-filter"></i> <span id="customFilterText">{{ t('recipes.controls.filteredByLora') }}</span>
+                    <i class="fas fa-filter"></i> <span id="customFilterText">{{ t('recipes.controls.filteredByLora')
+                        }}</span>
                     <i class="fas fa-times-circle clear-filter"></i>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Duplicates banner (hidden by default) -->
-    <div id="duplicatesBanner" class="duplicates-banner" style="display: none;">
-        <div class="banner-content">
-          <i class="fas fa-exclamation-triangle"></i>
-          <span id="duplicatesCount">{{ t('recipes.duplicates.found', count=0) }}</span>
-          <div class="banner-actions">
-            <button class="btn-select-latest" onclick="recipeManager.selectLatestDuplicates()">
-              {{ t('recipes.duplicates.keepLatest') }}
-            </button>
-            <button class="btn-delete-selected disabled" onclick="recipeManager.deleteSelectedDuplicates()">
-              {{ t('recipes.duplicates.deleteSelected') }} (<span id="duplicatesSelectedCount">0</span>)
-            </button>
-            <button class="btn-exit" onclick="recipeManager.exitDuplicateMode()">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
+        <div class="controls-right">
+            <div class="keyboard-nav-hint tooltip">
+                <i class="fas fa-keyboard"></i>
+                <span class="tooltiptext">
+                    <span>{{ t('keyboard.navigation') }}</span>
+                    <table class="keyboard-shortcuts">
+                        <tr>
+                            <td><span class="key">Page Up</span></td>
+                            <td>{{ t('keyboard.shortcuts.pageUp') }}</td>
+                        </tr>
+                        <tr>
+                            <td><span class="key">Page Down</span></td>
+                            <td>{{ t('keyboard.shortcuts.pageDown') }}</td>
+                        </tr>
+                        <tr>
+                            <td><span class="key">Home</span></td>
+                            <td>{{ t('keyboard.shortcuts.home') }}</td>
+                        </tr>
+                        <tr>
+                            <td><span class="key">End</span></td>
+                            <td>{{ t('keyboard.shortcuts.end') }}</td>
+                        </tr>
+                    </table>
+                </span>
+            </div>
         </div>
     </div>
-    
-    <!-- Recipe grid -->
-    <div class="card-grid" id="recipeGrid">
-        <!-- Remove the server-side conditional rendering and placeholder -->
-        <!-- Virtual scrolling will handle the display logic on the client side -->
+
+    <!-- Breadcrumb Navigation -->
+    <div id="breadcrumbContainer" class="sidebar-breadcrumb-container">
+        <nav class="sidebar-breadcrumb-nav" id="sidebarBreadcrumbNav">
+            <!-- Breadcrumbs will be populated by JavaScript -->
+        </nav>
     </div>
+</div>
+
+<!-- Duplicates banner (hidden by default) -->
+<div id="duplicatesBanner" class="duplicates-banner" style="display: none;">
+    <div class="banner-content">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="duplicatesCount">{{ t('recipes.duplicates.found', count=0) }}</span>
+        <div class="banner-actions">
+            <button class="btn-select-latest" onclick="recipeManager.selectLatestDuplicates()">
+                {{ t('recipes.duplicates.keepLatest') }}
+            </button>
+            <button class="btn-delete-selected disabled" onclick="recipeManager.deleteSelectedDuplicates()">
+                {{ t('recipes.duplicates.deleteSelected') }} (<span id="duplicatesSelectedCount">0</span>)
+            </button>
+            <button class="btn-exit" onclick="recipeManager.exitDuplicateMode()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+{% include 'components/folder_sidebar.html' %}
+
+<!-- Recipe grid -->
+<div class="card-grid" id="recipeGrid">
+    <!-- Remove the server-side conditional rendering and placeholder -->
+    <!-- Virtual scrolling will handle the display logic on the client side -->
+</div>
+{% endblock %}
+
+{% block overlay %}
+<div class="bulk-mode-overlay"></div>
 {% endblock %}
 
 {% block main_script %}
-<script type="module" src="/loras_static/js/recipes.js"></script>
+<script type="module" src="/loras_static/js/recipes.js?v={{ version }}"></script>
 {% endblock %}

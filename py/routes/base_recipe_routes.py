@@ -79,25 +79,7 @@ class BaseRecipeRoutes:
             return
 
         app.on_startup.append(self.attach_dependencies)
-        app.on_startup.append(self.prewarm_cache)
         self._startup_hooks_registered = True
-
-    async def prewarm_cache(self, app: web.Application | None = None) -> None:
-        """Pre-load recipe and LoRA caches on startup."""
-
-        try:
-            await self.attach_dependencies(app)
-
-            if self.lora_scanner is not None:
-                await self.lora_scanner.get_cached_data()
-                hash_index = getattr(self.lora_scanner, "_hash_index", None)
-                if hash_index is not None and hasattr(hash_index, "_hash_to_path"):
-                    _ = len(hash_index._hash_to_path)
-
-            if self.recipe_scanner is not None:
-                await self.recipe_scanner.get_cached_data(force_refresh=True)
-        except Exception as exc:
-            logger.error("Error pre-warming recipe cache: %s", exc, exc_info=True)
 
     def to_route_mapping(self) -> Mapping[str, Callable]:
         """Return a mapping of handler name to coroutine for registrar binding."""

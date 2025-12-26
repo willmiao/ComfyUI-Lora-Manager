@@ -4,8 +4,7 @@ import {
     setStorageItem, 
     getStoredVersionInfo, 
     setStoredVersionInfo,
-    isVersionMatch,
-    resetDismissedBanner
+    isVersionMatch
 } from '../utils/storageHelpers.js';
 import { bannerService } from './BannerService.js';
 import { translate } from '../utils/i18nHelpers.js';
@@ -753,93 +752,13 @@ export class UpdateService {
                         stored: getStoredVersionInfo()
                     });
                     
-                    // Reset dismissed status for version mismatch banner
-                    resetDismissedBanner('version-mismatch');
-                    
-                    // Register and show the version mismatch banner
-                    this.registerVersionMismatchBanner();
+                    // Silently update stored version info as cache busting handles the resource updates
+                    setStoredVersionInfo(this.currentVersionInfo);
                 }
             }
         } catch (error) {
             console.error('Failed to check version info:', error);
         }
-    }
-    
-    registerVersionMismatchBanner() {
-        // Get stored and current version for display
-        const storedVersion = getStoredVersionInfo() || translate('common.status.unknown');
-        const currentVersion = this.currentVersionInfo || translate('common.status.unknown');
-        
-        bannerService.registerBanner('version-mismatch', {
-            id: 'version-mismatch',
-            title: translate('banners.versionMismatch.title', {}, 'Application Update Detected'),
-            content: translate('banners.versionMismatch.content', { 
-                storedVersion, 
-                currentVersion 
-            }, `Your browser is running an outdated version of LoRA Manager (${storedVersion}). The server has been updated to version ${currentVersion}. Please refresh to ensure proper functionality.`),
-            actions: [
-                {
-                    text: translate('banners.versionMismatch.refreshNow', {}, 'Refresh Now'),
-                    icon: 'fas fa-sync',
-                    action: 'hardRefresh',
-                    type: 'primary'
-                }
-            ],
-            dismissible: false,
-            priority: 10,
-            countdown: 15,
-            onRegister: (bannerElement) => {
-                // Add countdown element
-                const countdownEl = document.createElement('div');
-                countdownEl.className = 'banner-countdown';
-                countdownEl.innerHTML = `<span>${translate('banners.versionMismatch.refreshingIn', {}, 'Refreshing in')} <strong>15</strong> ${translate('banners.versionMismatch.seconds', {}, 'seconds')}...</span>`;
-                bannerElement.querySelector('.banner-content').appendChild(countdownEl);
-                
-                // Start countdown
-                let seconds = 15;
-                const countdownInterval = setInterval(() => {
-                    seconds--;
-                    const strongEl = countdownEl.querySelector('strong');
-                    if (strongEl) strongEl.textContent = seconds;
-                    
-                    if (seconds <= 0) {
-                        clearInterval(countdownInterval);
-                        this.performHardRefresh();
-                    }
-                }, 1000);
-                
-                // Store interval ID for cleanup
-                bannerElement.dataset.countdownInterval = countdownInterval;
-                
-                // Add action button event handler
-                const actionBtn = bannerElement.querySelector('.banner-action[data-action="hardRefresh"]');
-                if (actionBtn) {
-                    actionBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        clearInterval(countdownInterval);
-                        this.performHardRefresh();
-                    });
-                }
-            },
-            onRemove: (bannerElement) => {
-                // Clear any existing interval
-                const intervalId = bannerElement.dataset.countdownInterval;
-                if (intervalId) {
-                    clearInterval(parseInt(intervalId));
-                }
-            }
-        });
-    }
-    
-    performHardRefresh() {
-        // Update stored version info before refreshing
-        setStoredVersionInfo(this.currentVersionInfo);
-        
-        // Force a hard refresh by adding cache-busting parameter
-        const cacheBuster = new Date().getTime();
-        window.location.href = window.location.pathname + 
-            (window.location.search ? window.location.search + '&' : '?') + 
-            `cache=${cacheBuster}`;
     }
 }
 

@@ -1,8 +1,10 @@
-html, body {
+html,
+body {
     margin: 0;
     padding: 0;
     height: 100%;
-    overflow: hidden; /* Disable default scrolling */
+    overflow: hidden;
+    /* Disable default scrolling */
 }
 
 /* 针对Firefox */
@@ -58,12 +60,12 @@ html, body {
     --badge-update-bg: oklch(72% 0.2 220);
     --badge-update-text: oklch(28% 0.03 220);
     --badge-update-glow: oklch(72% 0.2 220 / 0.28);
-    
+
     /* Spacing Scale */
     --space-1: calc(8px * 1);
     --space-2: calc(8px * 2);
     --space-3: calc(8px * 3);
-    
+
     /* Z-index Scale */
     --z-base: 10;
     --z-header: 100;
@@ -75,8 +77,9 @@ html, body {
     --border-radius-sm: 8px;
     --border-radius-xs: 4px;
 
-    --scrollbar-width: 8px; /* 添加滚动条宽度变量 */
-    
+    --scrollbar-width: 8px;
+    /* 添加滚动条宽度变量 */
+
     /* Shortcut styles */
     --shortcut-bg: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.12);
     --shortcut-border: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.25);
@@ -104,7 +107,8 @@ html[data-theme="light"] {
     --lora-surface: oklch(25% 0.02 256 / 0.98);
     --lora-border: oklch(90% 0.02 256 / 0.15);
     --lora-text: oklch(98% 0.02 256);
-    --lora-warning: oklch(75% 0.25 80); /* Modified to be used with oklch() */
+    --lora-warning: oklch(75% 0.25 80);
+    /* Modified to be used with oklch() */
     --lora-error-bg: color-mix(in oklch, var(--lora-error) 15%, transparent);
     --lora-error-border: color-mix(in oklch, var(--lora-error) 40%, transparent);
     --badge-update-bg: oklch(62% 0.18 220);
@@ -118,5 +122,10 @@ body {
     color: var(--text-color);
     display: flex;
     flex-direction: column;
-    padding-top: 0; /* Remove the padding-top */
+    padding-top: 0;
+    /* Remove the padding-top */
+}
+
+.hidden {
+    display: none !important;
 }

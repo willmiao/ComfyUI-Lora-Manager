@@ -3,6 +3,7 @@ import asyncio
 from typing import Any, Dict, List, Optional, Type, TYPE_CHECKING
 import logging
 import os
+import time
 
 from ..utils.constants import VALID_LORA_TYPES
 from ..utils.models import BaseModelMetadata
@@ -80,13 +81,20 @@ class BaseModelService(ABC):
         **kwargs,
     ) -> Dict:
         """Get paginated and filtered model data"""
+        overall_start = time.perf_counter()
 
         sort_params = self.cache_repository.parse_sort(sort_by)
         if sort_params.key == 'usage':
             sorted_data = await self._fetch_with_usage_sort(sort_params)
         else:
             sorted_data = await self.cache_repository.fetch_sorted(sort_params)
+        
+        t0 = time.perf_counter()
+        sorted_data = await self.cache_repository.fetch_sorted(sort_params)
+        fetch_duration = time.perf_counter() - t0
+        initial_count = len(sorted_data)
 
+        t1 = time.perf_counter()
         if hash_filters:
             filtered_data = await self._apply_hash_filters(sorted_data, hash_filters)
         else:
@@ -116,17 +124,25 @@ class BaseModelService(ABC):
             
             if allow_selling_generated_content is not None:
                 filtered_data = await self._apply_allow_selling_filter(filtered_data, allow_selling_generated_content)
+        filter_duration = time.perf_counter() - t1
+        post_filter_count = len(filtered_data)
 
         annotated_for_filter: Optional[List[Dict]] = None
+        t2 = time.perf_counter()
         if update_available_only:
             annotated_for_filter = await self._annotate_update_flags(filtered_data)
             filtered_data = [
                 item for item in annotated_for_filter
                 if item.get('update_available')
             ]
+        update_filter_duration = time.perf_counter() - t2
+        final_count = len(filtered_data)
 
+        t3 = time.perf_counter()
         paginated = self._paginate(filtered_data, page, page_size)
+        pagination_duration = time.perf_counter() - t3
 
+        t4 = time.perf_counter()
         if update_available_only:
             # Items already include update flags thanks to the pre-filter annotation.
             paginated['items'] = list(paginated['items'])
@@ -134,6 +150,16 @@ class BaseModelService(ABC):
             paginated['items'] = await self._annotate_update_flags(
                 paginated['items'],
             )
+        annotate_duration = time.perf_counter() - t4
+        
+        overall_duration = time.perf_counter() - overall_start
+        logger.info(
+            "%s.get_paginated_data took %.3fs (fetch: %.3fs, filter: %.3fs, update_filter: %.3fs, pagination: %.3fs, annotate: %.3fs). "
+            "Counts: initial=%d, post_filter=%d, final=%d",
+            self.__class__.__name__, overall_duration, fetch_duration, filter_duration, 
+            update_filter_duration, pagination_duration, annotate_duration,
+            initial_count, post_filter_count, final_count
+        )
         return paginated
 
     async def _fetch_with_usage_sort(self, sort_params):

@@ -159,6 +159,12 @@
             "success": "Updated license metadata for {count} {typePlural}",
             "none": "All {typePlural} already have license metadata",
             "error": "Failed to refresh license metadata for {typePlural}: {message}"
+        },
+        "repairRecipes": {
+            "label": "Восстановить данные рецептов",
+            "loading": "Восстановление данных рецептов...",
+            "success": "Успешно восстановлено {count} рецептов.",
+            "error": "Ошибка восстановления рецептов: {message}"
         }
     },
     "header": {
@@ -188,7 +194,8 @@
                 "creator": "Автор",
                 "title": "Название рецепта",
                 "loraName": "Имя файла LoRA",
-                "loraModel": "Название модели LoRA"
+                "loraModel": "Название модели LoRA",
+                "prompt": "Запрос"
             }
         },
         "filter": {
@@ -199,6 +206,7 @@
             "license": "Лицензия",
             "noCreditRequired": "Без указания авторства",
             "allowSellingGeneratedContent": "Продажа разрешена",
+            "noTags": "Без тегов",
             "clearAll": "Очистить все фильтры"
         },
         "theme": {
@@ -521,6 +529,7 @@
             "replacePreview": "Заменить превью",
             "setContentRating": "Установить рейтинг контента",
             "moveToFolder": "Переместить в папку",
+            "repairMetadata": "[TODO: Translate] Repair metadata",
             "excludeModel": "Исключить модель",
             "deleteModel": "Удалить модель",
             "shareRecipe": "Поделиться рецептом",
@@ -591,10 +600,26 @@
                     "selectLoraRoot": "Пожалуйста, выберите корневую папку LoRA"
                 }
             },
+            "sort": {
+                "title": "Сортировка рецептов...",
+                "name": "Имя",
+                "nameAsc": "А - Я",
+                "nameDesc": "Я - А",
+                "date": "Дата",
+                "dateDesc": "Сначала новые",
+                "dateAsc": "Сначала старые",
+                "lorasCount": "Кол-во LoRA",
+                "lorasCountDesc": "Больше всего",
+                "lorasCountAsc": "Меньше всего"
+            },
             "refresh": {
                 "title": "Обновить список рецептов"
             },
-            "filteredByLora": "Фильтр по LoRA"
+            "filteredByLora": "Фильтр по LoRA",
+            "favorites": {
+                "title": "Только избранные",
+                "action": "Избранное"
+            }
         },
         "duplicates": {
             "found": "Найдено {count} групп дубликатов",
@@ -620,6 +645,13 @@
                 "noMissingLoras": "Нет отсутствующих LoRAs для загрузки",
                 "getInfoFailed": "Не удалось получить информацию для отсутствующих LoRAs",
                 "prepareError": "Ошибка подготовки LoRAs для загрузки: {message}"
+            },
+            "repair": {
+                "starting": "[TODO: Translate] Repairing recipe metadata...",
+                "success": "[TODO: Translate] Recipe metadata repaired successfully",
+                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
+                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
+                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
             }
         }
     },
@@ -641,7 +673,8 @@
         "recursiveUnavailable": "Рекурсивный поиск доступен только в режиме дерева",
         "collapseAllDisabled": "Недоступно в виде списка",
         "dragDrop": {
-            "unableToResolveRoot": "Не удалось определить путь назначения для перемещения."
+            "unableToResolveRoot": "Не удалось определить путь назначения для перемещения.",
+            "moveUnsupported": "Move is not supported for this item."
         }
     },
     "statistics": {
@@ -1463,7 +1496,8 @@
             "bulkMoveFailures": "Неудачные перемещения:\n{failures}",
             "bulkMoveSuccess": "Успешно перемещено {successCount} {type}s",
             "exampleImagesDownloadSuccess": "Примеры изображений успешно загружены!",
-            "exampleImagesDownloadFailed": "Не удалось загрузить примеры изображений: {message}"
+            "exampleImagesDownloadFailed": "Не удалось загрузить примеры изображений: {message}",
+            "moveFailed": "Failed to move item: {message}"
         }
     },
     "banners": {
