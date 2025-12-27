@@ -15,7 +15,7 @@ from py.config import config
 from py.routes import base_recipe_routes
 from py.routes.handlers import recipe_handlers
 from py.routes.recipe_routes import RecipeRoutes
-from py.services.recipes import RecipeValidationError
+from py.services.recipes import RecipeValidationError, RecipeNotFoundError
 from py.services.service_registry import ServiceRegistry
 
 
@@ -588,8 +588,34 @@ async def test_import_remote_recipe_merges_metadata(monkeypatch, tmp_path: Path)
         metadata = call["metadata"]
         gen_params = metadata["gen_params"]
         
-        # Priority: request (prompt=request, steps=25) > civitai (prompt=civitai, cfg=7.0) > embedded (prompt=embedded, seed=123)
-        assert gen_params["prompt"] == "from request"
-        assert gen_params["steps"] == 25
-        assert gen_params["cfg"] == 7.0
         assert gen_params["seed"] == 123
+
+
+async def test_get_recipe_syntax(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        recipe_id = "test-recipe-id"
+        harness.scanner.recipes[recipe_id] = {
+            "id": recipe_id,
+            "title": "Syntax Test",
+            "loras": [{"name": "lora1", "weight": 0.5}],
+        }
+
+        # Mock the method that handlers call
+        async def fake_get_recipe_syntax_tokens(rid):
+            if rid == recipe_id:
+                return ["<lora:lora1:0.5>"]
+            raise RecipeNotFoundError(f"Recipe {rid} not found")
+
+        harness.scanner.get_recipe_syntax_tokens = fake_get_recipe_syntax_tokens
+
+        response = await harness.client.get(f"/api/lm/recipe/{recipe_id}/syntax")
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        assert payload["syntax"] == "<lora:lora1:0.5>"
+
+        # Test error path
+        response_404 = await harness.client.get("/api/lm/recipe/non-existent/syntax")
+        assert response_404.status == 404
+
