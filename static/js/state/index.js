@@ -9,6 +9,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     language: 'en',
     show_only_sfw: false,
     enable_metadata_archive_db: false,
+    metadata_archive_db_path: '',
     proxy_enabled: false,
     proxy_type: 'http',
     proxy_host: '',
