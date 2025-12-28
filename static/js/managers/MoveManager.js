@@ -6,6 +6,8 @@ import { getModelApiClient } from '../api/modelApiFactory.js';
 import { RecipeSidebarApiClient } from '../api/recipeApi.js';
 import { FolderTreeManager } from '../components/FolderTreeManager.js';
 import { sidebarManager } from '../components/SidebarManager.js';
+import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
+import { translate } from '../utils/i18nHelpers.js';
 
 class MoveManager {
     constructor() {
@@ -14,9 +16,11 @@ class MoveManager {
         this.folderTreeManager = new FolderTreeManager();
         this.initialized = false;
         this.recipeApiClient = null;
-        
+        this.useDefaultPath = false;
+
         // Bind methods
         this.updateTargetPath = this.updateTargetPath.bind(this);
+        this.handleToggleDefaultPath = this.handleToggleDefaultPath.bind(this);
     }
 
     _getApiClient(modelType = null) {
@@ -31,15 +35,21 @@ class MoveManager {
 
     initializeEventListeners() {
         if (this.initialized) return;
-        
+
         const modelRootSelect = document.getElementById('moveModelRoot');
-        
+
         // Initialize model root directory selector
         modelRootSelect.addEventListener('change', async () => {
             await this.initializeFolderTree();
             this.updateTargetPath();
         });
-        
+
+        // Default path toggle handler
+        const toggleInput = document.getElementById('moveUseDefaultPath');
+        if (toggleInput) {
+            toggleInput.addEventListener('change', this.handleToggleDefaultPath);
+        }
+
         this.initialized = true;
     }
 
@@ -47,11 +57,11 @@ class MoveManager {
         // Reset state
         this.currentFilePath = null;
         this.bulkFilePaths = null;
-        
+
         const apiClient = this._getApiClient(modelType);
         const currentPageType = state.currentPageType;
         const modelConfig = apiClient.apiConfig.config;
-        
+
         // Handle bulk mode
         if (filePath === 'bulk') {
             const selectedPaths = Array.from(state.selectedModels);
@@ -66,11 +76,11 @@ class MoveManager {
             this.currentFilePath = filePath;
             document.getElementById('moveModalTitle').textContent = `Move ${modelConfig.displayName}`;
         }
-        
+
         // Update UI labels based on model type
         document.getElementById('moveRootLabel').textContent = `Select ${modelConfig.displayName} Root:`;
         document.getElementById('moveTargetPathDisplay').querySelector('.path-text').textContent = `Select a ${modelConfig.displayName.toLowerCase()} root directory`;
-        
+
         // Clear folder path input
         const folderPathInput = document.getElementById('moveFolderPath');
         if (folderPathInput) {
@@ -86,13 +96,13 @@ class MoveManager {
             } else {
                 rootsData = await apiClient.fetchModelRoots();
             }
-            
+
             if (!rootsData.roots || rootsData.roots.length === 0) {
                 throw new Error(`No ${modelConfig.displayName.toLowerCase()} roots found`);
             }
 
             // Populate model root selector
-            modelRootSelect.innerHTML = rootsData.roots.map(root => 
+            modelRootSelect.innerHTML = rootsData.roots.map(root =>
                 `<option value="${root}">${root}</option>`
             ).join('');
 
@@ -105,7 +115,7 @@ class MoveManager {
 
             // Initialize event listeners
             this.initializeEventListeners();
-            
+
             // Setup folder tree manager
             this.folderTreeManager.init({
                 onPathChange: (path) => {
@@ -113,9 +123,12 @@ class MoveManager {
                 },
                 elementsPrefix: 'move'
             });
-            
+
             // Initialize folder tree
             await this.initializeFolderTree();
+
+            // Load default path setting
+            this.loadDefaultPathSetting(apiClient.modelType);
 
             this.updateTargetPath();
             modalManager.showModal('moveModal', null, () => {
@@ -124,10 +137,54 @@ class MoveManager {
                     this.folderTreeManager.destroy();
                 }
             });
-            
+
         } catch (error) {
             console.error(`Error fetching ${modelConfig.displayName.toLowerCase()} roots or folders:`, error);
             showToast('toast.models.moveFailed', { message: error.message }, 'error');
+        }
+    }
+
+    loadDefaultPathSetting(modelType) {
+        const storageKey = `use_default_path_${modelType}`;
+        this.useDefaultPath = getStorageItem(storageKey, false);
+
+        const toggleInput = document.getElementById('moveUseDefaultPath');
+        if (toggleInput) {
+            toggleInput.checked = this.useDefaultPath;
+            this.updatePathSelectionUI();
+        }
+    }
+
+    handleToggleDefaultPath(event) {
+        this.useDefaultPath = event.target.checked;
+
+        // Save to localStorage per model type
+        const apiClient = this._getApiClient();
+        const modelType = apiClient.modelType;
+        const storageKey = `use_default_path_${modelType}`;
+        setStorageItem(storageKey, this.useDefaultPath);
+
+        this.updatePathSelectionUI();
+        this.updateTargetPath();
+    }
+
+    updatePathSelectionUI() {
+        const manualSelection = document.getElementById('moveManualPathSelection');
+        if (!manualSelection) return;
+
+        if (this.useDefaultPath) {
+            manualSelection.classList.add('disabled');
+            // Disable all inputs and buttons inside manualSelection
+            manualSelection.querySelectorAll('input, select, button').forEach(el => {
+                el.disabled = true;
+                el.tabIndex = -1;
+            });
+        } else {
+            manualSelection.classList.remove('disabled');
+            manualSelection.querySelectorAll('input, select, button').forEach(el => {
+                el.disabled = false;
+                el.tabIndex = 0;
+            });
         }
     }
 
@@ -136,7 +193,7 @@ class MoveManager {
             const apiClient = this._getApiClient();
             // Fetch unified folder tree
             const treeData = await apiClient.fetchUnifiedFolderTree();
-            
+
             if (treeData.success) {
                 // Load tree data into folder tree manager
                 await this.folderTreeManager.loadTree(treeData.tree);
@@ -155,13 +212,27 @@ class MoveManager {
         const modelRoot = document.getElementById('moveModelRoot').value;
         const apiClient = this._getApiClient();
         const config = apiClient.apiConfig.config;
-        
-        let fullPath = modelRoot || `Select a ${config.displayName.toLowerCase()} root directory`;
-        
+
+        let fullPath = modelRoot || translate('modals.download.selectTypeRoot', { type: config.displayName });
+
         if (modelRoot) {
-            const selectedPath = this.folderTreeManager ? this.folderTreeManager.getSelectedPath() : '';
-            if (selectedPath) {
-                fullPath += '/' + selectedPath;
+            if (this.useDefaultPath) {
+                // Show actual template path
+                try {
+                    const singularType = apiClient.modelType.replace(/s$/, '');
+                    const templates = state.global.settings.download_path_templates;
+                    const template = templates[singularType];
+                    fullPath += `/${template}`;
+                } catch (error) {
+                    console.error('Failed to fetch template:', error);
+                    fullPath += '/' + translate('modals.download.autoOrganizedPath');
+                }
+            } else {
+                // Show manual path selection
+                const selectedPath = this.folderTreeManager ? this.folderTreeManager.getSelectedPath() : '';
+                if (selectedPath) {
+                    fullPath += '/' + selectedPath;
+                }
             }
         }
 
@@ -172,7 +243,7 @@ class MoveManager {
         const selectedRoot = document.getElementById('moveModelRoot').value;
         const apiClient = this._getApiClient();
         const config = apiClient.apiConfig.config;
-        
+
         if (!selectedRoot) {
             showToast('toast.models.pleaseSelectRoot', { type: config.displayName.toLowerCase() }, 'error');
             return;
@@ -180,7 +251,7 @@ class MoveManager {
 
         // Get selected folder path from folder tree manager
         const targetFolder = this.folderTreeManager.getSelectedPath();
-        
+
         let targetPath = selectedRoot;
         if (targetFolder) {
             targetPath = `${targetPath}/${targetFolder}`;
@@ -189,7 +260,7 @@ class MoveManager {
         try {
             if (this.bulkFilePaths) {
                 // Bulk move mode
-                const results = await apiClient.moveBulkModels(this.bulkFilePaths, targetPath);
+                const results = await apiClient.moveBulkModels(this.bulkFilePaths, targetPath, this.useDefaultPath);
 
                 // Update virtual scroller if in active folder view
                 const pageState = getCurrentPageState();
@@ -206,7 +277,7 @@ class MoveManager {
                         if (result.success && result.new_file_path !== result.original_file_path) {
                             const newFileName = result.new_file_path.substring(result.new_file_path.lastIndexOf('/') + 1);
                             const baseFileName = newFileName.substring(0, newFileName.lastIndexOf('.'));
-                            
+
                             state.virtualScroller.updateSingleItem(result.original_file_path, {
                                 file_path: result.new_file_path,
                                 file_name: baseFileName
@@ -216,7 +287,7 @@ class MoveManager {
                 }
             } else {
                 // Single move mode
-                const result = await apiClient.moveSingleModel(this.currentFilePath, targetPath);
+                const result = await apiClient.moveSingleModel(this.currentFilePath, targetPath, this.useDefaultPath);
 
                 const pageState = getCurrentPageState();
                 if (result && result.new_file_path) {
@@ -226,7 +297,7 @@ class MoveManager {
                         // Update both file_path and file_name if they changed
                         const newFileName = result.new_file_path.substring(result.new_file_path.lastIndexOf('/') + 1);
                         const baseFileName = newFileName.substring(0, newFileName.lastIndexOf('.'));
-                        
+
                         state.virtualScroller.updateSingleItem(this.currentFilePath, {
                             file_path: result.new_file_path,
                             file_name: baseFileName
@@ -239,7 +310,7 @@ class MoveManager {
             sidebarManager.refresh();
 
             modalManager.closeModal('moveModal');
-            
+
             // If we were in bulk mode, exit it after successful move
             if (this.bulkFilePaths && state.bulkMode) {
                 bulkManager.toggleBulkMode();

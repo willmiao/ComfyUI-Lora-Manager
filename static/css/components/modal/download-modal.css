@@ -328,11 +328,11 @@
     display: block;
 }
 
-.tree-node.has-children > .tree-node-content .tree-expand-icon {
+.tree-node.has-children>.tree-node-content .tree-expand-icon {
     opacity: 1;
 }
 
-.tree-node:not(.has-children) > .tree-node-content .tree-expand-icon {
+.tree-node:not(.has-children)>.tree-node-content .tree-expand-icon {
     opacity: 0;
     pointer-events: none;
 }
@@ -470,11 +470,11 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.inline-toggle-container .toggle-switch input:checked + .toggle-slider {
+.inline-toggle-container .toggle-switch input:checked+.toggle-slider {
     background-color: var(--lora-accent);
 }
 
-.inline-toggle-container .toggle-switch input:checked + .toggle-slider:before {
+.inline-toggle-container .toggle-switch input:checked+.toggle-slider:before {
     transform: translateX(18px);
 }
 

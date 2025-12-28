@@ -6,50 +6,65 @@
             <span class="close" onclick="modalManager.closeModal('moveModal')">&times;</span>
         </div>
         <div class="location-selection">
-            <!-- Path preview -->
+            <!-- Path preview with inline toggle -->
             <div class="path-preview">
-                <label>{{ t('modals.moveModel.targetLocationPreview') }}</label>
+                <div class="path-preview-header">
+                    <label>{{ t('modals.moveModel.targetLocationPreview') }}:</label>
+                    <div class="inline-toggle-container" title="{{ t('modals.download.useDefaultPathTooltip') }}">
+                        <span class="inline-toggle-label">{{ t('modals.download.useDefaultPath') }}</span>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="moveUseDefaultPath">
+                            <label for="moveUseDefaultPath" class="toggle-slider"></label>
+                        </div>
+                    </div>
+                </div>
                 <div class="path-display" id="moveTargetPathDisplay">
                     <span class="path-text">{{ t('modals.download.selectRootDirectory') }}</span>
                 </div>
             </div>
 
-            <div class="input-group">
-                <label for="moveModelRoot" id="moveRootLabel">{{ t('modals.moveModel.selectModelRoot') }}</label>
-                <select id="moveModelRoot"></select>
-            </div>
-            
-            <!-- Path input with autocomplete -->
-            <div class="input-group">
-                <label for="moveFolderPath">{{ t('modals.moveModel.targetFolderPath') }}</label>
-                <div class="path-input-container">
-                    <input type="text" id="moveFolderPath" placeholder="{{ t('modals.moveModel.pathPlaceholder') }}" autocomplete="off" />
-                    <button type="button" id="moveCreateFolderBtn" class="create-folder-btn" title="{{ t('modals.moveModel.createNewFolder') }}">
-                        <i class="fas fa-plus"></i>
-                    </button>
+            <!-- Manual Location Selection (disabled when using default path) -->
+            <div id="moveManualPathSelection" class="manual-path-selection">
+                <div class="input-group">
+                    <label for="moveModelRoot" id="moveRootLabel">{{ t('modals.moveModel.selectModelRoot') }}</label>
+                    <select id="moveModelRoot"></select>
                 </div>
-                <div class="path-suggestions" id="movePathSuggestions" style="display: none;"></div>
-            </div>
-            
-            <!-- Breadcrumb navigation -->
-            <div class="breadcrumb-nav" id="moveBreadcrumbNav">
-                <span class="breadcrumb-item root" data-path="">
-                    <i class="fas fa-home"></i> {{ t('modals.moveModel.root') }}
-                </span>
-            </div>
-            
-            <!-- Hierarchical folder tree -->
-            <div class="input-group">
-                <label>{{ t('modals.moveModel.browseFolders') }}</label>
-                <div class="folder-tree-container">
-                    <div class="folder-tree" id="moveFolderTree">
-                        <!-- Tree will be loaded dynamically -->
+
+                <!-- Path input with autocomplete -->
+                <div class="input-group">
+                    <label for="moveFolderPath">{{ t('modals.moveModel.targetFolderPath') }}</label>
+                    <div class="path-input-container">
+                        <input type="text" id="moveFolderPath" placeholder="{{ t('modals.moveModel.pathPlaceholder') }}"
+                            autocomplete="off" />
+                        <button type="button" id="moveCreateFolderBtn" class="create-folder-btn"
+                            title="{{ t('modals.moveModel.createNewFolder') }}">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div class="path-suggestions" id="movePathSuggestions" style="display: none;"></div>
+                </div>
+
+                <!-- Breadcrumb navigation -->
+                <div class="breadcrumb-nav" id="moveBreadcrumbNav">
+                    <span class="breadcrumb-item root" data-path="">
+                        <i class="fas fa-home"></i> {{ t('modals.moveModel.root') }}
+                    </span>
+                </div>
+
+                <!-- Hierarchical folder tree -->
+                <div class="input-group">
+                    <label>{{ t('modals.moveModel.browseFolders') }}</label>
+                    <div class="folder-tree-container">
+                        <div class="folder-tree" id="moveFolderTree">
+                            <!-- Tree will be loaded dynamically -->
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="modal-actions">
-            <button class="cancel-btn" onclick="modalManager.closeModal('moveModal')">{{ t('common.actions.cancel') }}</button>
+            <button class="cancel-btn" onclick="modalManager.closeModal('moveModal')">{{ t('common.actions.cancel')
+                }}</button>
             <button class="primary-btn" onclick="moveManager.moveModel()">{{ t('common.actions.move') }}</button>
         </div>
     </div>

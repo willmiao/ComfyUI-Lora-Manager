@@ -1052,9 +1052,10 @@ class ModelMoveHandler:
             data = await request.json()
             file_path = data.get("file_path")
             target_path = data.get("target_path")
+            use_default_paths = data.get("use_default_paths", False)
             if not file_path or not target_path:
                 return web.Response(text="File path and target path are required", status=400)
-            result = await self._move_service.move_model(file_path, target_path)
+            result = await self._move_service.move_model(file_path, target_path, use_default_paths=use_default_paths)
             status = 200 if result.get("success") else 500
             return web.json_response(result, status=status)
         except Exception as exc:
@@ -1066,9 +1067,10 @@ class ModelMoveHandler:
             data = await request.json()
             file_paths = data.get("file_paths", [])
             target_path = data.get("target_path")
+            use_default_paths = data.get("use_default_paths", False)
             if not file_paths or not target_path:
                 return web.Response(text="File paths and target path are required", status=400)
-            result = await self._move_service.move_models_bulk(file_paths, target_path)
+            result = await self._move_service.move_models_bulk(file_paths, target_path, use_default_paths=use_default_paths)
             return web.json_response(result)
         except Exception as exc:
             self._logger.error("Error moving models in bulk: %s", exc, exc_info=True)

@@ -446,25 +446,46 @@ class ModelFileService:
 class ModelMoveService:
     """Service for handling individual model moves"""
     
-    def __init__(self, scanner):
+    def __init__(self, scanner, model_type: str):
         """Initialize the service
         
         Args:
             scanner: Model scanner instance
+            model_type: Type of model (e.g., 'lora', 'checkpoint')
         """
         self.scanner = scanner
+        self.model_type = model_type
     
-    async def move_model(self, file_path: str, target_path: str) -> Dict[str, Any]:
+    async def move_model(self, file_path: str, target_path: str, use_default_paths: bool = False) -> Dict[str, Any]:
         """Move a single model file
         
         Args:
             file_path: Source file path
-            target_path: Target directory path
+            target_path: Target directory path (used as root if use_default_paths is True)
+            use_default_paths: Whether to use default path template for organization
             
         Returns:
             Dictionary with move result
         """
         try:
+            if use_default_paths:
+                # Find the model in cache to get metadata
+                cache = await self.scanner.get_cached_data()
+                model_data = next((m for m in cache.raw_data if m.get('file_path') == file_path), None)
+                
+                if model_data:
+                    from ..utils.utils import calculate_relative_path_for_model
+                    relative_path = calculate_relative_path_for_model(model_data, self.model_type)
+                    if relative_path:
+                        target_path = os.path.join(target_path, relative_path).replace(os.sep, '/')
+                    elif not get_settings_manager().get_download_path_template(self.model_type):
+                        # Flat structure, target_path remains the root
+                        pass
+                    else:
+                        # Could not calculate relative path (e.g. missing metadata)
+                        # Fallback to manual target_path or skip?
+                        pass
+
             source_dir = os.path.dirname(file_path)
             if os.path.normpath(source_dir) == os.path.normpath(target_path):
                 logger.info(f"Source and target directories are the same: {source_dir}")
@@ -498,12 +519,13 @@ class ModelMoveService:
                 'new_file_path': None
             }
     
-    async def move_models_bulk(self, file_paths: List[str], target_path: str) -> Dict[str, Any]:
+    async def move_models_bulk(self, file_paths: List[str], target_path: str, use_default_paths: bool = False) -> Dict[str, Any]:
         """Move multiple model files
         
         Args:
             file_paths: List of source file paths
-            target_path: Target directory path
+            target_path: Target directory path (used as root if use_default_paths is True)
+            use_default_paths: Whether to use default path template for organization
             
         Returns:
             Dictionary with bulk move results
@@ -512,7 +534,7 @@ class ModelMoveService:
             results = []
             
             for file_path in file_paths:
-                result = await self.move_model(file_path, target_path)
+                result = await self.move_model(file_path, target_path, use_default_paths=use_default_paths)
                 results.append({
                     "original_file_path": file_path,
                     "new_file_path": result.get('new_file_path'),

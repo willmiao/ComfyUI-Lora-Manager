@@ -15,17 +15,17 @@ export class DownloadManager {
         this.modelVersionId = null;
         this.modelId = null;
         this.source = null;
-        
+
         this.initialized = false;
         this.selectedFolder = '';
         this.apiClient = null;
         this.useDefaultPath = false;
-        
+
         this.loadingManager = new LoadingManager();
         this.folderTreeManager = new FolderTreeManager();
         this.folderClickHandler = null;
         this.updateTargetPath = this.updateTargetPath.bind(this);
-        
+
         // Bound methods for event handling
         this.handleValidateAndFetchVersions = this.validateAndFetchVersions.bind(this);
         this.handleProceedToLocation = this.proceedToLocation.bind(this);
@@ -38,11 +38,11 @@ export class DownloadManager {
 
     showDownloadModal() {
         console.log('Showing unified download modal...');
-        
+
         // Get API client for current page type
         this.apiClient = getModelApiClient();
         const config = this.apiClient.apiConfig.config;
-        
+
         if (!this.initialized) {
             const modal = document.getElementById('downloadModal');
             if (!modal) {
@@ -52,15 +52,15 @@ export class DownloadManager {
             this.initializeEventHandlers();
             this.initialized = true;
         }
-        
+
         // Update modal title and labels based on model type
         this.updateModalLabels();
-        
+
         modalManager.showModal('downloadModal', null, () => {
             this.cleanupFolderBrowser();
         });
         this.resetSteps();
-        
+
         // Auto-focus on the URL input
         setTimeout(() => {
             const urlInput = document.getElementById('modelUrl');
@@ -78,23 +78,23 @@ export class DownloadManager {
         document.getElementById('backToUrlBtn').addEventListener('click', this.handleBackToUrl);
         document.getElementById('backToVersionsBtn').addEventListener('click', this.handleBackToVersions);
         document.getElementById('closeDownloadModal').addEventListener('click', this.handleCloseModal);
-        
+
         // Default path toggle handler
         document.getElementById('useDefaultPath').addEventListener('change', this.handleToggleDefaultPath);
     }
 
     updateModalLabels() {
         const config = this.apiClient.apiConfig.config;
-        
+
         // Update modal title
         document.getElementById('downloadModalTitle').textContent = translate('modals.download.titleWithType', { type: config.displayName });
-        
+
         // Update URL label
         document.getElementById('modelUrlLabel').textContent = translate('modals.download.civitaiUrl');
-        
+
         // Update root selection label
         document.getElementById('modelRootLabel').textContent = translate('modals.download.selectTypeRoot', { type: config.displayName });
-        
+
         // Update path preview labels
         const pathLabels = document.querySelectorAll('.path-preview label');
         pathLabels.forEach(label => {
@@ -102,7 +102,7 @@ export class DownloadManager {
                 label.textContent = translate('modals.download.locationPreview') + ':';
             }
         });
-        
+
         // Update initial path text
         const pathText = document.querySelector('#targetPathDisplay .path-text');
         if (pathText) {
@@ -115,27 +115,27 @@ export class DownloadManager {
         document.getElementById('urlStep').style.display = 'block';
         document.getElementById('modelUrl').value = '';
         document.getElementById('urlError').textContent = '';
-        
+
         // Clear folder path input
         const folderPathInput = document.getElementById('folderPath');
         if (folderPathInput) {
             folderPathInput.value = '';
         }
-        
+
         this.currentVersion = null;
         this.versions = [];
         this.modelInfo = null;
         this.modelId = null;
         this.modelVersionId = null;
         this.source = null;
-        
+
         this.selectedFolder = '';
-        
+
         // Clear folder tree selection
         if (this.folderTreeManager) {
             this.folderTreeManager.clearSelection();
         }
-        
+
         // Reset default path toggle
         this.loadDefaultPathSetting();
     }
@@ -151,10 +151,10 @@ export class DownloadManager {
     async validateAndFetchVersions() {
         const url = document.getElementById('modelUrl').value.trim();
         const errorElement = document.getElementById('urlError');
-        
+
         try {
             this.loadingManager.showSimpleLoading(translate('modals.download.fetchingVersions'));
-            
+
             this.modelId = this.extractModelId(url);
             if (!this.modelId) {
                 throw new Error(translate('modals.download.errors.invalidUrl'));
@@ -166,7 +166,7 @@ export class DownloadManager {
             if (this.modelVersionId) {
                 this.currentVersion = this.versions.find(v => v.id.toString() === this.modelVersionId);
             }
-            
+
             this.showVersionStep();
         } catch (error) {
             errorElement.textContent = error.message;
@@ -239,20 +239,20 @@ export class DownloadManager {
     showVersionStep() {
         document.getElementById('urlStep').style.display = 'none';
         document.getElementById('versionStep').style.display = 'block';
-        
+
         const versionList = document.getElementById('versionList');
         versionList.innerHTML = this.versions.map(version => {
             const firstImage = version.images?.find(img => !img.url.endsWith('.mp4'));
             const thumbnailUrl = firstImage ? firstImage.url : '/loras_static/images/no-preview.png';
-            
-            const fileSize = version.modelSizeKB ? 
-                (version.modelSizeKB / 1024).toFixed(2) : 
+
+            const fileSize = version.modelSizeKB ?
+                (version.modelSizeKB / 1024).toFixed(2) :
                 (version.files[0]?.sizeKB / 1024).toFixed(2);
-            
+
             const existsLocally = version.existsLocally;
             const localPath = version.localPath;
             const isEarlyAccess = version.availability === 'EarlyAccess';
-            
+
             let earlyAccessBadge = '';
             if (isEarlyAccess) {
                 earlyAccessBadge = `
@@ -261,8 +261,8 @@ export class DownloadManager {
                     </div>
                 `;
             }
-            
-            const localStatus = existsLocally ? 
+
+            const localStatus = existsLocally ?
                 `<div class="local-badge">
                     <i class="fas fa-check"></i> ${translate('modals.download.inLibrary')}
                     <div class="local-path">${localPath || ''}</div>
@@ -293,7 +293,7 @@ export class DownloadManager {
                 </div>
             `;
         }).join('');
-        
+
         // Add click handlers for version selection
         versionList.addEventListener('click', (event) => {
             const versionItem = event.target.closest('.version-item');
@@ -301,12 +301,12 @@ export class DownloadManager {
                 this.selectVersion(versionItem.dataset.versionId);
             }
         });
-        
+
         // Auto-select the version if there's only one
         if (this.versions.length === 1 && !this.currentVersion) {
             this.selectVersion(this.versions[0].id.toString());
         }
-        
+
         this.updateNextButtonState();
     }
 
@@ -317,16 +317,16 @@ export class DownloadManager {
         document.querySelectorAll('.version-item').forEach(item => {
             item.classList.toggle('selected', item.dataset.versionId === versionId);
         });
-        
+
         this.updateNextButtonState();
     }
-    
+
     updateNextButtonState() {
         const nextButton = document.getElementById('nextFromVersion');
         if (!nextButton) return;
-        
+
         const existsLocally = this.currentVersion?.existsLocally;
-        
+
         if (existsLocally) {
             nextButton.disabled = true;
             nextButton.classList.add('disabled');
@@ -343,7 +343,7 @@ export class DownloadManager {
             showToast('toast.loras.pleaseSelectVersion', {}, 'error');
             return;
         }
-        
+
         const existsLocally = this.currentVersion.existsLocally;
         if (existsLocally) {
             showToast('toast.loras.versionExists', {}, 'info');
@@ -352,12 +352,12 @@ export class DownloadManager {
 
         document.getElementById('versionStep').style.display = 'none';
         document.getElementById('locationStep').style.display = 'block';
-        
+
         try {
             // Fetch model roots
             const rootsData = await this.apiClient.fetchModelRoots();
             const modelRoot = document.getElementById('modelRoot');
-            modelRoot.innerHTML = rootsData.roots.map(root => 
+            modelRoot.innerHTML = rootsData.roots.map(root =>
                 `<option value="${root}">${root}</option>`
             ).join('');
 
@@ -380,7 +380,7 @@ export class DownloadManager {
 
             // Initialize folder tree
             await this.initializeFolderTree();
-            
+
             // Setup folder tree manager
             this.folderTreeManager.init({
                 onPathChange: (path) => {
@@ -388,16 +388,16 @@ export class DownloadManager {
                     this.updateTargetPath();
                 }
             });
-            
+
             // Setup model root change handler
             modelRoot.addEventListener('change', async () => {
                 await this.initializeFolderTree();
                 this.updateTargetPath();
             });
-            
+
             // Load default path setting for current model type
             this.loadDefaultPathSetting();
-            
+
             this.updateTargetPath();
         } catch (error) {
             showToast('toast.downloads.loadError', { message: error.message }, 'error');
@@ -408,7 +408,7 @@ export class DownloadManager {
         const modelType = this.apiClient.modelType;
         const storageKey = `use_default_path_${modelType}`;
         this.useDefaultPath = getStorageItem(storageKey, false);
-        
+
         const toggleInput = document.getElementById('useDefaultPath');
         if (toggleInput) {
             toggleInput.checked = this.useDefaultPath;
@@ -418,12 +418,12 @@ export class DownloadManager {
 
     toggleDefaultPath(event) {
         this.useDefaultPath = event.target.checked;
-        
+
         // Save to localStorage per model type
         const modelType = this.apiClient.modelType;
         const storageKey = `use_default_path_${modelType}`;
         setStorageItem(storageKey, this.useDefaultPath);
-        
+
         this.updatePathSelectionUI();
         this.updateTargetPath();
     }
@@ -446,7 +446,7 @@ export class DownloadManager {
 
         const displayName = versionName || `#${versionId}`;
         let ws = null;
-        let updateProgress = () => {};
+        let updateProgress = () => { };
 
         try {
             this.loadingManager.restoreProgressBar();
@@ -549,7 +549,7 @@ export class DownloadManager {
 
     updatePathSelectionUI() {
         const manualSelection = document.getElementById('manualPathSelection');
-        
+
         // Always show manual path selection, but disable/enable based on useDefaultPath
         manualSelection.style.display = 'block';
         if (this.useDefaultPath) {
@@ -566,11 +566,11 @@ export class DownloadManager {
                 el.tabIndex = 0;
             });
         }
-        
+
         // Always update the main path display
         this.updateTargetPath();
     }
-    
+
     backToUrl() {
         document.getElementById('versionStep').style.display = 'none';
         document.getElementById('urlStep').style.display = 'block';
@@ -592,7 +592,7 @@ export class DownloadManager {
     async startDownload() {
         const modelRoot = document.getElementById('modelRoot').value;
         const config = this.apiClient.apiConfig.config;
-        
+
         if (!modelRoot) {
             showToast('toast.models.pleaseSelectRoot', { type: config.displayName }, 'error');
             return;
@@ -601,7 +601,7 @@ export class DownloadManager {
         // Determine target folder and use_default_paths parameter
         let targetFolder = '';
         let useDefaultPaths = false;
-        
+
         if (this.useDefaultPath) {
             useDefaultPaths = true;
             targetFolder = ''; // Not needed when using default paths
@@ -646,7 +646,7 @@ export class DownloadManager {
         try {
             // Fetch unified folder tree
             const treeData = await this.apiClient.fetchUnifiedFolderTree();
-            
+
             if (treeData.success) {
                 // Load tree data into folder tree manager
                 await this.folderTreeManager.loadTree(treeData.tree);
@@ -674,23 +674,23 @@ export class DownloadManager {
                 folderItem.classList.remove('selected');
                 this.selectedFolder = '';
             } else {
-                folderBrowser.querySelectorAll('.folder-item').forEach(f => 
+                folderBrowser.querySelectorAll('.folder-item').forEach(f =>
                     f.classList.remove('selected'));
                 folderItem.classList.add('selected');
                 this.selectedFolder = folderItem.dataset.folder;
             }
-            
+
             this.updateTargetPath();
         };
 
         folderBrowser.addEventListener('click', this.folderClickHandler);
-        
+
         const modelRoot = document.getElementById('modelRoot');
         const newFolder = document.getElementById('newFolder');
-        
+
         modelRoot.addEventListener('change', this.updateTargetPath);
         newFolder.addEventListener('input', this.updateTargetPath);
-        
+
         this.updateTargetPath();
     }
 
@@ -702,21 +702,21 @@ export class DownloadManager {
                 this.folderClickHandler = null;
             }
         }
-        
+
         const modelRoot = document.getElementById('modelRoot');
         const newFolder = document.getElementById('newFolder');
-        
+
         if (modelRoot) modelRoot.removeEventListener('change', this.updateTargetPath);
         if (newFolder) newFolder.removeEventListener('input', this.updateTargetPath);
     }
-    
+
     updateTargetPath() {
         const pathDisplay = document.getElementById('targetPathDisplay');
         const modelRoot = document.getElementById('modelRoot').value;
         const config = this.apiClient.apiConfig.config;
-        
+
         let fullPath = modelRoot || translate('modals.download.selectTypeRoot', { type: config.displayName });
-        
+
         if (modelRoot) {
             if (this.useDefaultPath) {
                 // Show actual template path

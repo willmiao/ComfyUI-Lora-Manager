@@ -2,9 +2,9 @@ import { state, getCurrentPageState } from '../state/index.js';
 import { showToast } from '../utils/uiHelpers.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { getStorageItem, getSessionItem, saveMapToStorage } from '../utils/storageHelpers.js';
-import { 
-    getCompleteApiConfig, 
-    getCurrentModelType, 
+import {
+    getCompleteApiConfig,
+    getCurrentModelType,
     isValidModelType,
     DOWNLOAD_ENDPOINTS,
     WS_ENDPOINTS
@@ -51,7 +51,7 @@ export class BaseModelApiClient {
     async fetchModelsPage(page = 1, pageSize = null) {
         const pageState = this.getPageState();
         const actualPageSize = pageSize || pageState.pageSize || this.apiConfig.config.defaultPageSize;
-        
+
         try {
             const params = this._buildQueryParams({
                 page,
@@ -63,9 +63,9 @@ export class BaseModelApiClient {
             if (!response.ok) {
                 throw new Error(`Failed to fetch ${this.apiConfig.config.displayName}s: ${response.statusText}`);
             }
-            
+
             const data = await response.json();
-            
+
             return {
                 items: data.items,
                 totalItems: data.total,
@@ -74,7 +74,7 @@ export class BaseModelApiClient {
                 hasMore: page < data.total_pages,
                 folders: data.folders
             };
-            
+
         } catch (error) {
             console.error(`Error fetching ${this.apiConfig.config.displayName}s:`, error);
             showToast('toast.api.fetchFailed', { type: this.apiConfig.config.displayName, message: error.message }, 'error');
@@ -84,7 +84,7 @@ export class BaseModelApiClient {
 
     async loadMoreWithVirtualScroll(resetPage = false, updateFolders = false) {
         const pageState = this.getPageState();
-        
+
         try {
             state.loadingManager.showSimpleLoading(`Loading more ${this.apiConfig.config.displayName}s...`);
 
@@ -92,22 +92,22 @@ export class BaseModelApiClient {
             if (resetPage) {
                 pageState.currentPage = 1; // Reset to first page
             }
-            
+
             const result = await this.fetchModelsPage(pageState.currentPage, pageState.pageSize);
-            
+
             state.virtualScroller.refreshWithData(
                 result.items,
                 result.totalItems,
                 result.hasMore
             );
-            
+
             pageState.hasMore = result.hasMore;
             pageState.currentPage = pageState.currentPage + 1;
-            
+
             if (updateFolders) {
                 sidebarManager.refresh();
             }
-            
+
             return result;
         } catch (error) {
             console.error(`Error reloading ${this.apiConfig.config.displayName}s:`, error);
@@ -128,13 +128,13 @@ export class BaseModelApiClient {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ file_path: filePath })
             });
-            
+
             if (!response.ok) {
                 throw new Error(`Failed to delete ${this.apiConfig.config.singularName}: ${response.statusText}`);
             }
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 if (state.virtualScroller) {
                     state.virtualScroller.removeItemByFilePath(filePath);
@@ -162,13 +162,13 @@ export class BaseModelApiClient {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ file_path: filePath })
             });
-            
+
             if (!response.ok) {
                 throw new Error(`Failed to exclude ${this.apiConfig.config.singularName}: ${response.statusText}`);
             }
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 if (state.virtualScroller) {
                     state.virtualScroller.removeItemByFilePath(filePath);
@@ -190,7 +190,7 @@ export class BaseModelApiClient {
     async renameModelFile(filePath, newFileName) {
         try {
             state.loadingManager.showSimpleLoading(`Renaming ${this.apiConfig.config.singularName} file...`);
-            
+
             const response = await fetch(this.apiConfig.endpoints.rename, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -203,12 +203,12 @@ export class BaseModelApiClient {
             const result = await response.json();
 
             if (result.success) {
-                state.virtualScroller.updateSingleItem(filePath, { 
-                    file_name: newFileName, 
+                state.virtualScroller.updateSingleItem(filePath, {
+                    file_name: newFileName,
                     file_path: result.new_file_path,
                     preview_url: result.new_preview_path
                 });
-    
+
                 showToast('toast.api.fileNameUpdated', {}, 'success');
             } else {
                 showToast('toast.api.fileRenameFailed', { error: result.error || 'Unknown error' }, 'error');
@@ -227,21 +227,21 @@ export class BaseModelApiClient {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*,video/mp4';
-        
+
         input.onchange = async () => {
             if (!input.files || !input.files[0]) return;
-            
+
             const file = input.files[0];
             await this.uploadPreview(filePath, file);
         };
-        
+
         input.click();
     }
 
     async uploadPreview(filePath, file, nsfwLevel = 0) {
         try {
             state.loadingManager.showSimpleLoading('Uploading preview...');
-            
+
             const formData = new FormData();
             formData.append('preview_file', file);
             formData.append('model_path', filePath);
@@ -251,18 +251,18 @@ export class BaseModelApiClient {
                 method: 'POST',
                 body: formData
             });
-            
+
             if (!response.ok) {
                 throw new Error('Upload failed');
             }
 
             const data = await response.json();
             const pageState = this.getPageState();
-            
+
             const timestamp = Date.now();
             if (pageState.previewVersions) {
                 pageState.previewVersions.set(filePath, timestamp);
-                
+
                 const storageKey = `${this.modelType}_preview_versions`;
                 saveMapToStorage(storageKey, pageState.previewVersions);
             }
@@ -285,7 +285,7 @@ export class BaseModelApiClient {
     async saveModelMetadata(filePath, data) {
         try {
             state.loadingManager.showSimpleLoading('Saving metadata...');
-            
+
             const response = await fetch(this.apiConfig.endpoints.save, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -339,18 +339,18 @@ export class BaseModelApiClient {
             state.loadingManager.showSimpleLoading(
                 `${fullRebuild ? 'Full rebuild' : 'Refreshing'} ${this.apiConfig.config.displayName}s...`
             );
-            
+
             const url = new URL(this.apiConfig.endpoints.scan, window.location.origin);
             url.searchParams.append('full_rebuild', fullRebuild);
-            
+
             const response = await fetch(url);
-            
+
             if (!response.ok) {
                 throw new Error(`Failed to refresh ${this.apiConfig.config.displayName}s: ${response.status} ${response.statusText}`);
             }
 
             resetAndReload(true);
-            
+
             showToast('toast.api.refreshComplete', { action: fullRebuild ? 'Full rebuild' : 'Refresh' }, 'success');
         } catch (error) {
             console.error('Refresh failed:', error);
@@ -364,7 +364,7 @@ export class BaseModelApiClient {
     async refreshSingleModelMetadata(filePath) {
         try {
             state.loadingManager.showSimpleLoading('Refreshing metadata...');
-            
+
             const response = await fetch(this.apiConfig.endpoints.fetchCivitai, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -376,7 +376,7 @@ export class BaseModelApiClient {
             }
 
             const data = await response.json();
-            
+
             if (data.success) {
                 if (data.metadata && state.virtualScroller) {
                     state.virtualScroller.updateSingleItem(filePath, data.metadata);
@@ -399,21 +399,21 @@ export class BaseModelApiClient {
 
     async fetchCivitaiMetadata() {
         let ws = null;
-        
+
         await state.loadingManager.showWithProgress(async (loading) => {
             try {
                 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
                 ws = new WebSocket(`${wsProtocol}${window.location.host}${WS_ENDPOINTS.fetchProgress}`);
-                
+
                 const operationComplete = new Promise((resolve, reject) => {
                     ws.onmessage = (event) => {
                         const data = JSON.parse(event.data);
-                        
-                        switch(data.status) {
+
+                        switch (data.status) {
                             case 'started':
                                 loading.setStatus('Starting metadata fetch...');
                                 break;
-                                
+
                             case 'processing':
                                 const percent = ((data.processed / data.total) * 100).toFixed(1);
                                 loading.setProgress(percent);
@@ -421,7 +421,7 @@ export class BaseModelApiClient {
                                     `Processing (${data.processed}/${data.total}) ${data.current_name}`
                                 );
                                 break;
-                                
+
                             case 'completed':
                                 loading.setProgress(100);
                                 loading.setStatus(
@@ -429,34 +429,34 @@ export class BaseModelApiClient {
                                 );
                                 resolve();
                                 break;
-                                
+
                             case 'error':
                                 reject(new Error(data.error));
                                 break;
                         }
                     };
-                    
+
                     ws.onerror = (error) => {
                         reject(new Error('WebSocket error: ' + error.message));
                     };
                 });
-                
+
                 // Wait for WebSocket connection to establish
                 await new Promise((resolve, reject) => {
                     ws.onopen = resolve;
                     ws.onerror = reject;
                 });
-                
+
                 const response = await fetch(this.apiConfig.endpoints.fetchAllCivitai, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({})
                 });
-                
+
                 if (!response.ok) {
                     throw new Error('Failed to fetch metadata');
                 }
-                
+
                 // Wait for the operation to complete via WebSocket
                 await operationComplete;
 
@@ -492,15 +492,15 @@ export class BaseModelApiClient {
             for (let i = 0; i < filePaths.length; i++) {
                 const filePath = filePaths[i];
                 const fileName = filePath.split('/').pop();
-                
+
                 try {
                     const overallProgress = Math.floor((i / totalItems) * 100);
                     progressController.updateProgress(
-                        overallProgress, 
-                        fileName, 
+                        overallProgress,
+                        fileName,
                         `Processing ${i + 1}/${totalItems}: ${fileName}`
                     );
-                    
+
                     const response = await fetch(this.apiConfig.endpoints.fetchCivitai, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -512,7 +512,7 @@ export class BaseModelApiClient {
                     }
 
                     const data = await response.json();
-                    
+
                     if (data.success) {
                         if (data.metadata && state.virtualScroller) {
                             state.virtualScroller.updateSingleItem(filePath, data.metadata);
@@ -521,12 +521,12 @@ export class BaseModelApiClient {
                     } else {
                         throw new Error(data.error || 'Failed to refresh metadata');
                     }
-                    
+
                 } catch (error) {
                     console.error(`Error refreshing metadata for ${fileName}:`, error);
                     failedItems.push({ filePath, fileName, error: error.message });
                 }
-                
+
                 processedCount++;
             }
 
@@ -537,7 +537,7 @@ export class BaseModelApiClient {
             } else if (successCount > 0) {
                 completionMessage = translate('toast.api.bulkMetadataCompletePartial', { success: successCount, total: totalItems, type: this.apiConfig.config.displayName }, `Refreshed ${successCount} of ${totalItems} ${this.apiConfig.config.displayName}s`);
                 showToast('toast.api.bulkMetadataCompletePartial', { success: successCount, total: totalItems, type: this.apiConfig.config.displayName }, 'warning');
-                
+
                 // if (failedItems.length > 0) {
                 //     const failureMessage = failedItems.length <= 3 
                 //         ? failedItems.map(item => `${item.fileName}: ${item.error}`).join('\n')
@@ -770,7 +770,7 @@ export class BaseModelApiClient {
 
     _buildQueryParams(baseParams, pageState) {
         const params = new URLSearchParams(baseParams);
-        
+
         if (pageState.activeFolder !== null) {
             params.append('folder', pageState.activeFolder);
         }
@@ -790,7 +790,7 @@ export class BaseModelApiClient {
         if (pageState.filters?.search) {
             params.append('search', pageState.filters.search);
             params.append('fuzzy', 'true');
-            
+
             if (pageState.searchOptions) {
                 params.append('search_filename', pageState.searchOptions.filename.toString());
                 params.append('search_modelname', pageState.searchOptions.modelname.toString());
@@ -804,7 +804,7 @@ export class BaseModelApiClient {
         }
 
         params.append('recursive', pageState.searchOptions.recursive ? 'true' : 'false');
-        
+
         if (pageState.filters) {
             if (pageState.filters.tags && Object.keys(pageState.filters.tags).length > 0) {
                 Object.entries(pageState.filters.tags).forEach(([tag, state]) => {
@@ -815,17 +815,17 @@ export class BaseModelApiClient {
                     }
                 });
             }
-            
+
             if (pageState.filters.baseModel && pageState.filters.baseModel.length > 0) {
                 pageState.filters.baseModel.forEach(model => {
                     params.append('base_model', model);
                 });
             }
-            
+
             // Add license filters
             if (pageState.filters.license) {
                 const licenseFilters = pageState.filters.license;
-                
+
                 if (licenseFilters.noCredit) {
                     // For noCredit filter: 
                     // - 'include' means credit_required=False (no credit required)
@@ -836,7 +836,7 @@ export class BaseModelApiClient {
                         params.append('credit_required', 'true');
                     }
                 }
-                
+
                 if (licenseFilters.allowSelling) {
                     // For allowSelling filter:
                     // - 'include' means allow_selling_generated_content=True
@@ -848,7 +848,7 @@ export class BaseModelApiClient {
                     }
                 }
             }
-            
+
             if (pageState.filters.modelTypes && pageState.filters.modelTypes.length > 0) {
                 pageState.filters.modelTypes.forEach((type) => {
                     params.append('model_type', type);
@@ -895,13 +895,13 @@ export class BaseModelApiClient {
         }
     }
 
-    async moveSingleModel(filePath, targetPath) {
+    async moveSingleModel(filePath, targetPath, useDefaultPaths = false) {
         // Only allow move if supported
         if (!this.apiConfig.config.supportsMove) {
             showToast('toast.api.moveNotSupported', { type: this.apiConfig.config.displayName }, 'warning');
             return null;
         }
-        if (filePath.substring(0, filePath.lastIndexOf('/')) === targetPath) {
+        if (filePath.substring(0, filePath.lastIndexOf('/')) === targetPath && !useDefaultPaths) {
             showToast('toast.api.alreadyInFolder', { type: this.apiConfig.config.displayName }, 'info');
             return null;
         }
@@ -913,7 +913,8 @@ export class BaseModelApiClient {
             },
             body: JSON.stringify({
                 file_path: filePath,
-                target_path: targetPath
+                target_path: targetPath,
+                use_default_paths: useDefaultPaths
             })
         });
 
@@ -941,12 +942,12 @@ export class BaseModelApiClient {
         return null;
     }
 
-    async moveBulkModels(filePaths, targetPath) {
+    async moveBulkModels(filePaths, targetPath, useDefaultPaths = false) {
         if (!this.apiConfig.config.supportsMove) {
             showToast('toast.api.bulkMoveNotSupported', { type: this.apiConfig.config.displayName }, 'warning');
             return [];
         }
-        const movedPaths = filePaths.filter(path => {
+        const movedPaths = useDefaultPaths ? filePaths : filePaths.filter(path => {
             return path.substring(0, path.lastIndexOf('/')) !== targetPath;
         });
 
@@ -962,7 +963,8 @@ export class BaseModelApiClient {
             },
             body: JSON.stringify({
                 file_paths: movedPaths,
-                target_path: targetPath
+                target_path: targetPath,
+                use_default_paths: useDefaultPaths
             })
         });
 
@@ -974,10 +976,10 @@ export class BaseModelApiClient {
 
         if (result.success) {
             if (result.failure_count > 0) {
-                showToast('toast.api.bulkMovePartial', { 
-                    successCount: result.success_count, 
-                    type: this.apiConfig.config.displayName, 
-                    failureCount: result.failure_count 
+                showToast('toast.api.bulkMovePartial', {
+                    successCount: result.success_count,
+                    type: this.apiConfig.config.displayName,
+                    failureCount: result.failure_count
                 }, 'warning');
                 console.log('Move operation results:', result.results);
                 const failedFiles = result.results
@@ -987,18 +989,18 @@ export class BaseModelApiClient {
                         return `${fileName}: ${r.message}`;
                     });
                 if (failedFiles.length > 0) {
-                    const failureMessage = failedFiles.length <= 3 
+                    const failureMessage = failedFiles.length <= 3
                         ? failedFiles.join('\n')
                         : failedFiles.slice(0, 3).join('\n') + `\n(and ${failedFiles.length - 3} more)`;
                     showToast('toast.api.bulkMoveFailures', { failures: failureMessage }, 'warning', 6000);
                 }
             } else {
-                showToast('toast.api.bulkMoveSuccess', { 
-                    successCount: result.success_count, 
-                    type: this.apiConfig.config.displayName 
+                showToast('toast.api.bulkMoveSuccess', {
+                    successCount: result.success_count,
+                    type: this.apiConfig.config.displayName
                 }, 'success');
             }
-            
+
             // Return the results array with original_file_path and new_file_path
             return result.results || [];
         } else {
@@ -1013,7 +1015,7 @@ export class BaseModelApiClient {
 
         try {
             state.loadingManager.showSimpleLoading(`Deleting ${this.apiConfig.config.displayName.toLowerCase()}s...`);
-            
+
             const response = await fetch(this.apiConfig.endpoints.bulkDelete, {
                 method: 'POST',
                 headers: {
@@ -1023,13 +1025,13 @@ export class BaseModelApiClient {
                     file_paths: filePaths
                 })
             });
-            
+
             if (!response.ok) {
                 throw new Error(`Failed to delete ${this.apiConfig.config.displayName.toLowerCase()}s: ${response.statusText}`);
             }
-            
+
             const result = await response.json();
-            
+
             if (result.success) {
                 return {
                     success: true,
@@ -1050,20 +1052,20 @@ export class BaseModelApiClient {
 
     async downloadExampleImages(modelHashes, modelTypes = null) {
         let ws = null;
-        
+
         await state.loadingManager.showWithProgress(async (loading) => {
             try {
                 // Connect to WebSocket for progress updates
                 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
                 ws = new WebSocket(`${wsProtocol}${window.location.host}${WS_ENDPOINTS.fetchProgress}`);
-                
+
                 const operationComplete = new Promise((resolve, reject) => {
                     ws.onmessage = (event) => {
                         const data = JSON.parse(event.data);
-                        
+
                         if (data.type !== 'example_images_progress') return;
-                        
-                        switch(data.status) {
+
+                        switch (data.status) {
                             case 'running':
                                 const percent = ((data.processed / data.total) * 100).toFixed(1);
                                 loading.setProgress(percent);
@@ -1071,7 +1073,7 @@ export class BaseModelApiClient {
                                     `Processing (${data.processed}/${data.total}) ${data.current_model || ''}`
                                 );
                                 break;
-                                
+
                             case 'completed':
                                 loading.setProgress(100);
                                 loading.setStatus(
@@ -1079,33 +1081,33 @@ export class BaseModelApiClient {
                                 );
                                 resolve();
                                 break;
-                                
+
                             case 'error':
                                 reject(new Error(data.error));
                                 break;
                         }
                     };
-                    
+
                     ws.onerror = (error) => {
                         reject(new Error('WebSocket error: ' + error.message));
                     };
                 });
-                
+
                 // Wait for WebSocket connection to establish
                 await new Promise((resolve, reject) => {
                     ws.onopen = resolve;
                     ws.onerror = reject;
                 });
-                
+
                 // Get the output directory from state
                 const outputDir = state.global?.settings?.example_images_path || '';
                 if (!outputDir) {
                     throw new Error('Please set the example images path in the settings first.');
                 }
-                
+
                 // Determine optimize setting
                 const optimize = state.global?.settings?.optimize_example_images ?? true;
-                
+
                 // Make the API request to start the download process
                 const response = await fetch(DOWNLOAD_ENDPOINTS.exampleImages, {
                     method: 'POST',
@@ -1119,18 +1121,18 @@ export class BaseModelApiClient {
                         model_types: modelTypes || [this.apiConfig.config.singularName]
                     })
                 });
-                
+
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
                     throw new Error(errorData.error || 'Failed to download example images');
                 }
-                
+
                 // Wait for the operation to complete via WebSocket
                 await operationComplete;
-                
+
                 showToast('toast.api.exampleImagesDownloadSuccess', {}, 'success');
                 return true;
-                
+
             } catch (error) {
                 console.error('Error downloading example images:', error);
                 showToast('toast.api.exampleImagesDownloadFailed', { message: error.message }, 'error');
@@ -1150,13 +1152,13 @@ export class BaseModelApiClient {
         try {
             const params = new URLSearchParams({ file_path: filePath });
             const response = await fetch(`${this.apiConfig.endpoints.metadata}?${params}`);
-            
+
             if (!response.ok) {
                 throw new Error(`Failed to fetch ${this.apiConfig.config.singularName} metadata: ${response.statusText}`);
             }
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 return data.metadata;
             } else {
@@ -1172,13 +1174,13 @@ export class BaseModelApiClient {
         try {
             const params = new URLSearchParams({ file_path: filePath });
             const response = await fetch(`${this.apiConfig.endpoints.modelDescription}?${params}`);
-            
+
             if (!response.ok) {
                 throw new Error(`Failed to fetch ${this.apiConfig.config.singularName} description: ${response.statusText}`);
             }
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 return data.description;
             } else {
@@ -1197,26 +1199,26 @@ export class BaseModelApiClient {
      */
     async autoOrganizeModels(filePaths = null) {
         let ws = null;
-        
+
         await state.loadingManager.showWithProgress(async (loading) => {
             try {
                 // Connect to WebSocket for progress updates
                 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
                 ws = new WebSocket(`${wsProtocol}${window.location.host}${WS_ENDPOINTS.fetchProgress}`);
-                
+
                 const operationComplete = new Promise((resolve, reject) => {
                     ws.onmessage = (event) => {
                         const data = JSON.parse(event.data);
-                        
+
                         if (data.type !== 'auto_organize_progress') return;
-                        
-                        switch(data.status) {
+
+                        switch (data.status) {
                             case 'started':
                                 loading.setProgress(0);
                                 const operationType = data.operation_type === 'bulk' ? 'selected models' : 'all models';
                                 loading.setStatus(translate('loras.bulkOperations.autoOrganizeProgress.starting', { type: operationType }, `Starting auto-organize for ${operationType}...`));
                                 break;
-                                
+
                             case 'processing':
                                 const percent = data.total > 0 ? ((data.processed / data.total) * 90).toFixed(1) : 0;
                                 loading.setProgress(percent);
@@ -1230,12 +1232,12 @@ export class BaseModelApiClient {
                                     }, `Processing (${data.processed}/${data.total}) - ${data.success} moved, ${data.skipped} skipped, ${data.failures} failed`)
                                 );
                                 break;
-                                
+
                             case 'cleaning':
                                 loading.setProgress(95);
                                 loading.setStatus(translate('loras.bulkOperations.autoOrganizeProgress.cleaning', {}, 'Cleaning up empty directories...'));
                                 break;
-                                
+
                             case 'completed':
                                 loading.setProgress(100);
                                 loading.setStatus(
@@ -1246,25 +1248,25 @@ export class BaseModelApiClient {
                                         total: data.total
                                     }, `Completed: ${data.success} moved, ${data.skipped} skipped, ${data.failures} failed`)
                                 );
-                                
+
                                 setTimeout(() => {
                                     resolve(data);
                                 }, 1500);
                                 break;
-                                
+
                             case 'error':
                                 loading.setStatus(translate('loras.bulkOperations.autoOrganizeProgress.error', { error: data.error }, `Error: ${data.error}`));
                                 reject(new Error(data.error));
                                 break;
                         }
                     };
-                    
+
                     ws.onerror = (error) => {
                         console.error('WebSocket error during auto-organize:', error);
                         reject(new Error('Connection error'));
                     };
                 });
-                
+
                 // Start the auto-organize operation
                 const endpoint = this.apiConfig.endpoints.autoOrganize;
                 const exclusionPatterns = (state.global.settings.auto_organize_exclusions || [])
@@ -1286,29 +1288,29 @@ export class BaseModelApiClient {
                 };
 
                 const response = await fetch(endpoint, requestOptions);
-                
+
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
                     throw new Error(errorData.error || 'Failed to start auto-organize operation');
                 }
-                
+
                 // Wait for the operation to complete via WebSocket
                 const result = await operationComplete;
-                
+
                 // Show appropriate success message based on results
                 if (result.failures === 0) {
-                    showToast('toast.loras.autoOrganizeSuccess', { 
+                    showToast('toast.loras.autoOrganizeSuccess', {
                         count: result.success,
                         type: result.operation_type === 'bulk' ? 'selected models' : 'all models'
                     }, 'success');
                 } else {
-                    showToast('toast.loras.autoOrganizePartialSuccess', { 
+                    showToast('toast.loras.autoOrganizePartialSuccess', {
                         success: result.success,
                         failures: result.failures,
                         total: result.total
                     }, 'warning');
                 }
-                
+
             } catch (error) {
                 console.error('Error during auto-organize:', error);
                 showToast('toast.loras.autoOrganizeFailed', { error: error.message }, 'error');
