@@ -532,7 +532,7 @@
             "replacePreview": "プレビューを置換",
             "setContentRating": "コンテンツレーティングを設定",
             "moveToFolder": "フォルダに移動",
-            "repairMetadata": "[TODO: Translate] Repair metadata",
+            "repairMetadata": "メタデータを修復",
             "excludeModel": "モデルを除外",
             "deleteModel": "モデルを削除",
             "shareRecipe": "レシピを共有",
@@ -650,16 +650,23 @@
                 "prepareError": "ダウンロード用LoRAの準備中にエラー：{message}"
             },
             "repair": {
-                "starting": "[TODO: Translate] Repairing recipe metadata...",
-                "success": "[TODO: Translate] Recipe metadata repaired successfully",
-                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
-                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
-                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
+                "starting": "レシピのメタデータを修復中...",
+                "success": "レシピのメタデータが正常に修復されました",
+                "skipped": "レシピはすでに最新バージョンです。修復は不要です",
+                "failed": "レシピの修復に失敗しました: {message}",
+                "missingId": "レシピを修復できません: レシピIDがありません"
             }
         }
     },
     "checkpoints": {
-        "title": "Checkpointモデル"
+        "title": "Checkpointモデル",
+        "modelTypes": {
+            "checkpoint": "Checkpoint",
+            "diffusion_model": "Diffusion Model"
+        },
+        "contextMenu": {
+            "moveToOtherTypeFolder": "{otherType} フォルダに移動"
+        }
     },
     "embeddings": {
         "title": "Embeddingモデル"

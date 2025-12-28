@@ -3,6 +3,7 @@ import { ModelContextMenuMixin } from './ModelContextMenuMixin.js';
 import { getModelApiClient, resetAndReload } from '../../api/modelApiFactory.js';
 import { showDeleteModal, showExcludeModal } from '../../utils/modalUtils.js';
 import { moveManager } from '../../managers/MoveManager.js';
+import { i18n } from '../../i18n/index.js';
 
 export class CheckpointContextMenu extends BaseContextMenu {
     constructor() {
@@ -10,15 +11,28 @@ export class CheckpointContextMenu extends BaseContextMenu {
         this.nsfwSelector = document.getElementById('nsfwLevelSelector');
         this.modelType = 'checkpoint';
         this.resetAndReload = resetAndReload;
-        
+
         this.initNSFWSelector();
     }
-    
+
     // Implementation needed by the mixin
     async saveModelMetadata(filePath, data) {
         return getModelApiClient().saveModelMetadata(filePath, data);
     }
-    
+
+    showMenu(x, y, card) {
+        super.showMenu(x, y, card);
+
+        // Update the "Move to other root" label based on current model type
+        const moveOtherItem = this.menu.querySelector('[data-action="move-other"]');
+        if (moveOtherItem) {
+            const currentType = card.dataset.model_type || 'checkpoint';
+            const otherType = currentType === 'checkpoint' ? 'diffusion_model' : 'checkpoint';
+            const typeLabel = i18n.t(`checkpoints.modelTypes.${otherType}`);
+            moveOtherItem.innerHTML = `<i class="fas fa-exchange-alt"></i> ${i18n.t('checkpoints.contextMenu.moveToOtherTypeFolder', { otherType: typeLabel })}`;
+        }
+    }
+
     handleMenuAction(action) {
         // First try to handle with common actions
         if (ModelContextMenuMixin.handleCommonMenuActions.call(this, action)) {
@@ -28,7 +42,7 @@ export class CheckpointContextMenu extends BaseContextMenu {
         const apiClient = getModelApiClient();
 
         // Otherwise handle checkpoint-specific actions
-        switch(action) {
+        switch (action) {
             case 'details':
                 // Show checkpoint details
                 this.currentCard.click();
@@ -52,6 +66,13 @@ export class CheckpointContextMenu extends BaseContextMenu {
                 break;
             case 'move':
                 moveManager.showMoveModal(this.currentCard.dataset.filepath, this.currentCard.dataset.model_type);
+                break;
+            case 'move-other':
+                {
+                    const currentType = this.currentCard.dataset.model_type || 'checkpoint';
+                    const otherType = currentType === 'checkpoint' ? 'diffusion_model' : 'checkpoint';
+                    moveManager.showMoveModal(this.currentCard.dataset.filepath, otherType);
+                }
                 break;
             case 'exclude':
                 showExcludeModal(this.currentCard.dataset.filepath);

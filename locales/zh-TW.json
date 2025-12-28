@@ -532,7 +532,7 @@
             "replacePreview": "更換預覽圖",
             "setContentRating": "設定內容分級",
             "moveToFolder": "移動到資料夾",
-            "repairMetadata": "[TODO: Translate] Repair metadata",
+            "repairMetadata": "修復元數據",
             "excludeModel": "排除模型",
             "deleteModel": "刪除模型",
             "shareRecipe": "分享配方",
@@ -650,16 +650,23 @@
                 "prepareError": "準備下載 LoRA 時發生錯誤：{message}"
             },
             "repair": {
-                "starting": "[TODO: Translate] Repairing recipe metadata...",
-                "success": "[TODO: Translate] Recipe metadata repaired successfully",
-                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
-                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
-                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
+                "starting": "正在修復配方元數據...",
+                "success": "配方元數據修復成功",
+                "skipped": "配方已是最新版本，無需修復",
+                "failed": "修復配方失敗：{message}",
+                "missingId": "無法修復配方：缺少配方 ID"
             }
         }
     },
     "checkpoints": {
-        "title": "Checkpoint 模型"
+        "title": "Checkpoint 模型",
+        "modelTypes": {
+            "checkpoint": "Checkpoint",
+            "diffusion_model": "Diffusion Model"
+        },
+        "contextMenu": {
+            "moveToOtherTypeFolder": "移動到 {otherType} 資料夾"
+        }
     },
     "embeddings": {
         "title": "Embedding 模型"

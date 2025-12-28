@@ -532,7 +532,7 @@
             "replacePreview": "Remplacer l'aperçu",
             "setContentRating": "Définir la classification du contenu",
             "moveToFolder": "Déplacer vers un dossier",
-            "repairMetadata": "[TODO: Translate] Repair metadata",
+            "repairMetadata": "Réparer les métadonnées",
             "excludeModel": "Exclure le modèle",
             "deleteModel": "Supprimer le modèle",
             "shareRecipe": "Partager la recipe",
@@ -650,16 +650,23 @@
                 "prepareError": "Erreur lors de la préparation des LoRAs pour le téléchargement : {message}"
             },
             "repair": {
-                "starting": "[TODO: Translate] Repairing recipe metadata...",
-                "success": "[TODO: Translate] Recipe metadata repaired successfully",
-                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
-                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
-                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
+                "starting": "Réparation des métadonnées de la recette...",
+                "success": "Métadonnées de la recette réparées avec succès",
+                "skipped": "Recette déjà à la version la plus récente, aucune réparation nécessaire",
+                "failed": "Échec de la réparation de la recette : {message}",
+                "missingId": "Impossible de réparer la recette : ID de recette manquant"
             }
         }
     },
     "checkpoints": {
-        "title": "Modèles Checkpoint"
+        "title": "Modèles Checkpoint",
+        "modelTypes": {
+            "checkpoint": "Checkpoint",
+            "diffusion_model": "Diffusion Model"
+        },
+        "contextMenu": {
+            "moveToOtherTypeFolder": "Déplacer vers le dossier {otherType}"
+        }
     },
     "embeddings": {
         "title": "Modèles Embedding"

@@ -532,7 +532,7 @@
             "replacePreview": "Заменить превью",
             "setContentRating": "Установить рейтинг контента",
             "moveToFolder": "Переместить в папку",
-            "repairMetadata": "[TODO: Translate] Repair metadata",
+            "repairMetadata": "Восстановить метаданные",
             "excludeModel": "Исключить модель",
             "deleteModel": "Удалить модель",
             "shareRecipe": "Поделиться рецептом",
@@ -650,16 +650,23 @@
                 "prepareError": "Ошибка подготовки LoRAs для загрузки: {message}"
             },
             "repair": {
-                "starting": "[TODO: Translate] Repairing recipe metadata...",
-                "success": "[TODO: Translate] Recipe metadata repaired successfully",
-                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
-                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
-                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
+                "starting": "Восстановление метаданных рецепта...",
+                "success": "Метаданные рецепта успешно восстановлены",
+                "skipped": "Рецепт уже последней версии, восстановление не требуется",
+                "failed": "Не удалось восстановить рецепт: {message}",
+                "missingId": "Не удалось восстановить рецепт: отсутствует ID рецепта"
             }
         }
     },
     "checkpoints": {
-        "title": "Модели Checkpoint"
+        "title": "Модели Checkpoint",
+        "modelTypes": {
+            "checkpoint": "Checkpoint",
+            "diffusion_model": "Diffusion Model"
+        },
+        "contextMenu": {
+            "moveToOtherTypeFolder": "Переместить в папку {otherType}"
+        }
     },
     "embeddings": {
         "title": "Модели Embedding"

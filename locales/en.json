@@ -659,7 +659,14 @@
         }
     },
     "checkpoints": {
-        "title": "Checkpoint Models"
+        "title": "Checkpoint Models",
+        "modelTypes": {
+            "checkpoint": "Checkpoint",
+            "diffusion_model": "Diffusion Model"
+        },
+        "contextMenu": {
+            "moveToOtherTypeFolder": "Move to {otherType} Folder"
+        }
     },
     "embeddings": {
         "title": "Embedding Models"

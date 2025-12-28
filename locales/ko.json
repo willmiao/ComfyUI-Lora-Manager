@@ -532,7 +532,7 @@
             "replacePreview": "미리보기 교체",
             "setContentRating": "콘텐츠 등급 설정",
             "moveToFolder": "폴더로 이동",
-            "repairMetadata": "[TODO: Translate] Repair metadata",
+            "repairMetadata": "메타데이터 복구",
             "excludeModel": "모델 제외",
             "deleteModel": "모델 삭제",
             "shareRecipe": "레시피 공유",
@@ -650,16 +650,23 @@
                 "prepareError": "LoRA 다운로드 준비 중 오류: {message}"
             },
             "repair": {
-                "starting": "[TODO: Translate] Repairing recipe metadata...",
-                "success": "[TODO: Translate] Recipe metadata repaired successfully",
-                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
-                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
-                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
+                "starting": "레시피 메타데이터 복구 중...",
+                "success": "레시피 메타데이터가 성공적으로 복구되었습니다",
+                "skipped": "레시피가 이미 최신 버전입니다. 복구가 필요하지 않습니다",
+                "failed": "레시피 복구 실패: {message}",
+                "missingId": "레시피를 복구할 수 없음: 레시피 ID 누락"
             }
         }
     },
     "checkpoints": {
-        "title": "Checkpoint 모델"
+        "title": "Checkpoint 모델",
+        "modelTypes": {
+            "checkpoint": "Checkpoint",
+            "diffusion_model": "Diffusion Model"
+        },
+        "contextMenu": {
+            "moveToOtherTypeFolder": "{otherType} 폴더로 이동"
+        }
     },
     "embeddings": {
         "title": "Embedding 모델"

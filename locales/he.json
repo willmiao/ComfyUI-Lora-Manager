@@ -532,7 +532,7 @@
             "replacePreview": "החלף תצוגה מקדימה",
             "setContentRating": "הגדר דירוג תוכן",
             "moveToFolder": "העבר לתיקייה",
-            "repairMetadata": "[TODO: Translate] Repair metadata",
+            "repairMetadata": "תיקון מטא-דאטה",
             "excludeModel": "החרג מודל",
             "deleteModel": "מחק מודל",
             "shareRecipe": "שתף מתכון",
@@ -650,16 +650,23 @@
                 "prepareError": "שגיאה בהכנת LoRAs להורדה: {message}"
             },
             "repair": {
-                "starting": "[TODO: Translate] Repairing recipe metadata...",
-                "success": "[TODO: Translate] Recipe metadata repaired successfully",
-                "skipped": "[TODO: Translate] Recipe already at latest version, no repair needed",
-                "failed": "[TODO: Translate] Failed to repair recipe: {message}",
-                "missingId": "[TODO: Translate] Cannot repair recipe: Missing recipe ID"
+                "starting": "מתקן מטא-דאטה של מתכון...",
+                "success": "מטא-דאטה של מתכון תוקן בהצלחה",
+                "skipped": "המתכון כבר בגרסה העדכנית ביותר, אין צורך בתיקון",
+                "failed": "תיקון המתכון נכשל: {message}",
+                "missingId": "לא ניתן לתקן את המתכון: חסר מזהה מתכון"
             }
         }
     },
     "checkpoints": {
-        "title": "מודלי Checkpoint"
+        "title": "מודלי Checkpoint",
+        "modelTypes": {
+            "checkpoint": "Checkpoint",
+            "diffusion_model": "Diffusion Model"
+        },
+        "contextMenu": {
+            "moveToOtherTypeFolder": "העבר לתיקיית {otherType}"
+        }
     },
     "embeddings": {
         "title": "מודלי Embedding"
