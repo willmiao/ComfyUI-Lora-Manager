@@ -1,5 +1,5 @@
 // Recipe Modal Component
-import { showToast, copyToClipboard, sendModelPathToWorkflow } from '../utils/uiHelpers.js';
+import { showToast, copyToClipboard, sendModelPathToWorkflow, openCivitaiByMetadata } from '../utils/uiHelpers.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { state } from '../state/index.js';
 import { setSessionItem, removeSessionItem } from '../utils/storageHelpers.js';
@@ -11,28 +11,28 @@ class RecipeModal {
     constructor() {
         this.init();
     }
-    
+
     init() {
         this.setupCopyButtons();
         // Set up tooltip positioning handlers after DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
             this.setupTooltipPositioning();
         });
-        
+
         // Set up document click handler to close edit fields
         document.addEventListener('click', (event) => {
             // Handle title edit
             const titleEditor = document.getElementById('recipeTitleEditor');
-            if (titleEditor && titleEditor.classList.contains('active') && 
-                !titleEditor.contains(event.target) && 
+            if (titleEditor && titleEditor.classList.contains('active') &&
+                !titleEditor.contains(event.target) &&
                 !event.target.closest('.edit-icon')) {
                 this.saveTitleEdit();
             }
-            
+
             // Handle tags edit
             const tagsEditor = document.getElementById('recipeTagsEditor');
-            if (tagsEditor && tagsEditor.classList.contains('active') && 
-                !tagsEditor.contains(event.target) && 
+            if (tagsEditor && tagsEditor.classList.contains('active') &&
+                !tagsEditor.contains(event.target) &&
                 !event.target.closest('.edit-icon')) {
                 this.saveTagsEdit();
             }
@@ -40,15 +40,15 @@ class RecipeModal {
             // Handle reconnect input
             const reconnectContainers = document.querySelectorAll('.lora-reconnect-container');
             reconnectContainers.forEach(container => {
-                if (container.classList.contains('active') && 
-                    !container.contains(event.target) && 
+                if (container.classList.contains('active') &&
+                    !container.contains(event.target) &&
                     !event.target.closest('.deleted-badge.reconnectable')) {
                     this.hideReconnectInput(container);
                 }
             });
         });
     }
-    
+
     // Add tooltip positioning handler to ensure correct positioning of fixed tooltips
     setupTooltipPositioning() {
         document.addEventListener('mouseover', (event) => {
@@ -56,26 +56,26 @@ class RecipeModal {
             if (event.target.closest('.local-badge')) {
                 const badge = event.target.closest('.local-badge');
                 const tooltip = badge.querySelector('.local-path');
-                
+
                 if (tooltip) {
                     // Get badge position
                     const badgeRect = badge.getBoundingClientRect();
-                    
+
                     // Position the tooltip
                     tooltip.style.top = (badgeRect.bottom + 4) + 'px';
                     tooltip.style.left = (badgeRect.right - tooltip.offsetWidth) + 'px';
                 }
             }
-            
+
             // Add tooltip positioning for missing badge
             if (event.target.closest('.recipe-status.missing')) {
                 const badge = event.target.closest('.recipe-status.missing');
                 const tooltip = badge.querySelector('.missing-tooltip');
-                
+
                 if (tooltip) {
                     // Get badge position
                     const badgeRect = badge.getBoundingClientRect();
-                    
+
                     // Position the tooltip
                     tooltip.style.top = (badgeRect.bottom + 4) + 'px';
                     tooltip.style.left = (badgeRect.left) + 'px';
@@ -83,11 +83,11 @@ class RecipeModal {
             }
         }, true);
     }
-    
+
     showRecipeDetails(recipe) {
         // Store the full recipe for editing
         this.currentRecipe = recipe;
-        
+
         // Set modal title with edit icon
         const modalTitle = document.getElementById('recipeModalTitle');
         if (modalTitle) {
@@ -100,11 +100,11 @@ class RecipeModal {
                     <input type="text" class="title-input" value="${recipe.title || ''}">
                 </div>
             `;
-            
+
             // Add event listener for title editing
             const editIcon = modalTitle.querySelector('.edit-icon');
             editIcon.addEventListener('click', () => this.showTitleEditor());
-            
+
             // Add key event listener for Enter key
             const titleInput = modalTitle.querySelector('.title-input');
             titleInput.addEventListener('keydown', (e) => {
@@ -117,15 +117,15 @@ class RecipeModal {
                 }
             });
         }
-        
+
         // Store the recipe ID for copy syntax API call
         this.recipeId = recipe.id;
         this.filePath = recipe.file_path;
-        
+
         // Set recipe tags if they exist
         const tagsCompactElement = document.getElementById('recipeTagsCompact');
         const tagsTooltipContent = document.getElementById('recipeTagsTooltipContent');
-        
+
         if (tagsCompactElement) {
             // Add tags container with edit functionality
             tagsCompactElement.innerHTML = `
@@ -137,15 +137,15 @@ class RecipeModal {
                     <input type="text" class="tags-input" placeholder="Enter tags separated by commas">
                 </div>
             `;
-            
+
             const tagsDisplay = tagsCompactElement.querySelector('.tags-display');
-            
+
             if (recipe.tags && recipe.tags.length > 0) {
                 // Limit displayed tags to 5, show a "+X more" button if needed
                 const maxVisibleTags = 5;
                 const visibleTags = recipe.tags.slice(0, maxVisibleTags);
                 const remainingTags = recipe.tags.length > maxVisibleTags ? recipe.tags.slice(maxVisibleTags) : [];
-                
+
                 // Add visible tags
                 visibleTags.forEach(tag => {
                     const tagElement = document.createElement('div');
@@ -153,19 +153,19 @@ class RecipeModal {
                     tagElement.textContent = tag;
                     tagsDisplay.appendChild(tagElement);
                 });
-                
+
                 // Add "more" button if needed
                 if (remainingTags.length > 0) {
                     const moreButton = document.createElement('div');
                     moreButton.className = 'recipe-tag-more';
                     moreButton.textContent = `+${remainingTags.length} more`;
                     tagsDisplay.appendChild(moreButton);
-                    
+
                     // Add tooltip functionality
                     moreButton.addEventListener('mouseenter', () => {
                         document.getElementById('recipeTagsTooltip').classList.add('visible');
                     });
-                    
+
                     moreButton.addEventListener('mouseleave', () => {
                         setTimeout(() => {
                             if (!document.getElementById('recipeTagsTooltip').matches(':hover')) {
@@ -173,11 +173,11 @@ class RecipeModal {
                             }
                         }, 300);
                     });
-                    
+
                     document.getElementById('recipeTagsTooltip').addEventListener('mouseleave', () => {
                         document.getElementById('recipeTagsTooltip').classList.remove('visible');
                     });
-                    
+
                     // Add all tags to tooltip
                     if (tagsTooltipContent) {
                         tagsTooltipContent.innerHTML = '';
@@ -192,18 +192,18 @@ class RecipeModal {
             } else {
                 tagsDisplay.innerHTML = '<div class="no-tags">No tags</div>';
             }
-            
+
             // Add event listeners for tags editing
             const editTagsIcon = tagsCompactElement.querySelector('.edit-icon');
             const tagsInput = tagsCompactElement.querySelector('.tags-input');
-            
+
             // Set current tags in the input
             if (recipe.tags && recipe.tags.length > 0) {
                 tagsInput.value = recipe.tags.join(', ');
             }
-            
+
             editTagsIcon.addEventListener('click', () => this.showTagsEditor());
-            
+
             // Add key event listener for Enter key
             tagsInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
@@ -215,22 +215,22 @@ class RecipeModal {
                 }
             });
         }
-        
+
         // Set recipe image
         const modalImage = document.getElementById('recipeModalImage');
         if (modalImage) {
             // Ensure file_url exists, fallback to file_path if needed
-            const imageUrl = recipe.file_url || 
-                            (recipe.file_path ? `/loras_static/root1/preview/${recipe.file_path.split('/').pop()}` : 
-                            '/loras_static/images/no-preview.png');
-            
+            const imageUrl = recipe.file_url ||
+                (recipe.file_path ? `/loras_static/root1/preview/${recipe.file_path.split('/').pop()}` :
+                    '/loras_static/images/no-preview.png');
+
             // Check if the file is a video (mp4)
             const isVideo = imageUrl.toLowerCase().endsWith('.mp4');
-            
+
             // Replace the image element with appropriate media element
             const mediaContainer = modalImage.parentElement;
             mediaContainer.innerHTML = '';
-            
+
             if (isVideo) {
                 const videoElement = document.createElement('video');
                 videoElement.id = 'recipeModalVideo';
@@ -257,19 +257,18 @@ class RecipeModal {
             const hasSourceUrl = recipe.source_path && recipe.source_path.trim().length > 0;
             const sourceUrl = hasSourceUrl ? recipe.source_path : '';
             const isValidUrl = hasSourceUrl && (sourceUrl.startsWith('http://') || sourceUrl.startsWith('https://'));
-            
+
             sourceUrlContainer.innerHTML = `
                 <div class="source-url-content">
                     <span class="source-url-icon"><i class="fas fa-link"></i></span>
-                    <span class="source-url-text" title="${isValidUrl ? 'Click to open source URL' : 'No valid URL'}">${
-                        hasSourceUrl ? sourceUrl : 'No source URL'
-                    }</span>
+                    <span class="source-url-text" title="${isValidUrl ? 'Click to open source URL' : 'No valid URL'}">${hasSourceUrl ? sourceUrl : 'No source URL'
+                }</span>
                 </div>
                 <button class="source-url-edit-btn" title="Edit source URL">
                     <i class="fas fa-pencil-alt"></i>
                 </button>
             `;
-            
+
             // Add source URL editor
             const sourceUrlEditor = document.createElement('div');
             sourceUrlEditor.className = 'source-url-editor';
@@ -280,22 +279,22 @@ class RecipeModal {
                     <button class="source-url-save-btn">Save</button>
                 </div>
             `;
-            
+
             // Append both containers to the media container
             mediaContainer.appendChild(sourceUrlContainer);
             mediaContainer.appendChild(sourceUrlEditor);
-            
+
             // Set up event listeners for source URL functionality
             setTimeout(() => {
                 this.setupSourceUrlHandlers();
             }, 50);
         }
-        
+
         // Set generation parameters
         const promptElement = document.getElementById('recipePrompt');
         const negativePromptElement = document.getElementById('recipeNegativePrompt');
         const otherParamsElement = document.getElementById('recipeOtherParams');
-        
+
         if (recipe.gen_params) {
             // Set prompt
             if (promptElement && recipe.gen_params.prompt) {
@@ -303,22 +302,22 @@ class RecipeModal {
             } else if (promptElement) {
                 promptElement.textContent = 'No prompt information available';
             }
-            
+
             // Set negative prompt
             if (negativePromptElement && recipe.gen_params.negative_prompt) {
                 negativePromptElement.textContent = recipe.gen_params.negative_prompt;
             } else if (negativePromptElement) {
                 negativePromptElement.textContent = 'No negative prompt information available';
             }
-            
+
             // Set other parameters
             if (otherParamsElement) {
                 // Clear previous params
                 otherParamsElement.innerHTML = '';
-                
+
                 // Add all other parameters except prompt and negative_prompt
                 const excludedParams = ['prompt', 'negative_prompt'];
-                
+
                 for (const [key, value] of Object.entries(recipe.gen_params)) {
                     if (!excludedParams.includes(key) && value !== undefined && value !== null) {
                         const paramTag = document.createElement('div');
@@ -330,7 +329,7 @@ class RecipeModal {
                         otherParamsElement.appendChild(paramTag);
                     }
                 }
-                
+
                 // If no other params, show a message
                 if (otherParamsElement.children.length === 0) {
                     otherParamsElement.innerHTML = '<div class="no-params">No additional parameters available</div>';
@@ -345,7 +344,7 @@ class RecipeModal {
 
         const checkpointContainer = document.getElementById('recipeCheckpoint');
         const resourceDivider = document.getElementById('recipeResourceDivider');
-        
+
         if (checkpointContainer) {
             checkpointContainer.innerHTML = '';
             if (recipe.checkpoint && typeof recipe.checkpoint === 'object') {
@@ -354,16 +353,16 @@ class RecipeModal {
                 this.setupCheckpointNavigation(checkpointContainer, recipe.checkpoint);
             }
         }
-        
+
         // Set LoRAs list and count
         const lorasListElement = document.getElementById('recipeLorasList');
         const lorasCountElement = document.getElementById('recipeLorasCount');
-        
+
         // Check all LoRAs status
         let allLorasAvailable = true;
         let missingLorasCount = 0;
         let deletedLorasCount = 0;
-        
+
         if (recipe.loras && recipe.loras.length > 0) {
             recipe.loras.forEach(lora => {
                 if (lora.isDeleted) {
@@ -374,11 +373,11 @@ class RecipeModal {
                 }
             });
         }
-        
+
         // Set LoRAs count and status
         if (lorasCountElement && recipe.loras) {
             const totalCount = recipe.loras.length;
-            
+
             // Create status indicator based on LoRA states
             let statusHTML = '';
             if (totalCount > 0) {
@@ -396,9 +395,9 @@ class RecipeModal {
                     statusHTML = `<div class="recipe-status partial"><i class="fas fa-info-circle"></i> ${deletedLorasCount} deleted</div>`;
                 }
             }
-            
+
             lorasCountElement.innerHTML = `<i class="fas fa-layer-group"></i> ${totalCount} LoRAs ${statusHTML}`;
-            
+
             // Add event listeners for buttons and status indicators
             setTimeout(() => {
                 // Set up click handler for View LoRAs button
@@ -406,7 +405,7 @@ class RecipeModal {
                 if (viewRecipeLorasBtn) {
                     viewRecipeLorasBtn.addEventListener('click', () => this.navigateToLorasPage());
                 }
-                
+
                 // Add click handler for missing LoRAs status
                 const missingStatus = document.querySelector('.recipe-status.missing');
                 if (missingStatus && missingLorasCount > 0) {
@@ -415,13 +414,13 @@ class RecipeModal {
                 }
             }, 100);
         }
-        
+
         if (lorasListElement && recipe.loras && recipe.loras.length > 0) {
             lorasListElement.innerHTML = recipe.loras.map(lora => {
                 const existsLocally = lora.inLibrary;
                 const isDeleted = lora.isDeleted;
                 const localPath = lora.localPath || '';
-                
+
                 // Create status badge based on LoRA state
                 let localStatus;
                 if (existsLocally) {
@@ -493,16 +492,16 @@ class RecipeModal {
                     </div>
                 `;
             }).join('');
-            
+
             // Add event listeners for reconnect functionality
             setTimeout(() => {
                 this.setupReconnectButtons();
                 this.setupLoraItemsClickable();
             }, 100);
-            
+
             // Generate recipe syntax for copy button (this is now a placeholder, actual syntax will be fetched from the API)
             this.recipeLorasSyntax = '';
-            
+
         } else if (lorasListElement) {
             lorasListElement.innerHTML = '<div class="no-loras">No LoRAs associated with this recipe</div>';
             this.recipeLorasSyntax = '';
@@ -513,11 +512,11 @@ class RecipeModal {
             const hasLoraItems = lorasListElement && lorasListElement.querySelector('.recipe-lora-item');
             resourceDivider.style.display = hasCheckpoint && hasLoraItems ? 'block' : 'none';
         }
-        
+
         // Show the modal
         modalManager.showModal('recipeModal');
     }
-    
+
     // Title editing methods
     showTitleEditor() {
         const titleContainer = document.getElementById('recipeModalTitle');
@@ -530,25 +529,25 @@ class RecipeModal {
             input.select();
         }
     }
-    
+
     saveTitleEdit() {
         const titleContainer = document.getElementById('recipeModalTitle');
         if (titleContainer) {
             const editor = titleContainer.querySelector('#recipeTitleEditor');
             const input = editor.querySelector('input');
             const newTitle = input.value.trim();
-            
+
             // Check if title changed
             if (newTitle && newTitle !== this.currentRecipe.title) {
                 // Update title in the UI
                 titleContainer.querySelector('.content-text').textContent = newTitle;
-                
+
                 // Update the recipe on the server
                 updateRecipeMetadata(this.filePath, { title: newTitle })
                     .then(data => {
                         // Show success toast
                         showToast('toast.recipes.nameUpdated', {}, 'success');
-                        
+
                         // Update the current recipe object
                         this.currentRecipe.title = newTitle;
                     })
@@ -558,13 +557,13 @@ class RecipeModal {
                         titleContainer.querySelector('.content-text').textContent = this.currentRecipe.title || '';
                     });
             }
-            
+
             // Hide editor
             editor.classList.remove('active');
             titleContainer.querySelector('.editable-content').classList.remove('hide');
         }
     }
-    
+
     cancelTitleEdit() {
         const titleContainer = document.getElementById('recipeModalTitle');
         if (titleContainer) {
@@ -572,13 +571,13 @@ class RecipeModal {
             const editor = titleContainer.querySelector('#recipeTitleEditor');
             const input = editor.querySelector('input');
             input.value = this.currentRecipe.title || '';
-            
+
             // Hide editor
             editor.classList.remove('active');
             titleContainer.querySelector('.editable-content').classList.remove('hide');
         }
     }
-    
+
     // Tags editing methods
     showTagsEditor() {
         const tagsContainer = document.getElementById('recipeTagsCompact');
@@ -590,14 +589,14 @@ class RecipeModal {
             input.focus();
         }
     }
-    
+
     saveTagsEdit() {
         const tagsContainer = document.getElementById('recipeTagsCompact');
         if (tagsContainer) {
             const editor = tagsContainer.querySelector('#recipeTagsEditor');
             const input = editor.querySelector('input');
             const tagsText = input.value.trim();
-            
+
             // Parse tags
             let newTags = [];
             if (tagsText) {
@@ -605,23 +604,23 @@ class RecipeModal {
                     .map(tag => tag.trim())
                     .filter(tag => tag.length > 0);
             }
-            
+
             // Check if tags changed
             const oldTags = this.currentRecipe.tags || [];
-            const tagsChanged = 
-                newTags.length !== oldTags.length || 
+            const tagsChanged =
+                newTags.length !== oldTags.length ||
                 newTags.some((tag, index) => tag !== oldTags[index]);
-            
+
             if (tagsChanged) {
                 // Update the recipe on the server
                 updateRecipeMetadata(this.filePath, { tags: newTags })
                     .then(data => {
                         // Show success toast
                         showToast('toast.recipes.tagsUpdated', {}, 'success');
-                        
+
                         // Update the current recipe object
                         this.currentRecipe.tags = newTags;
-                        
+
                         // Update tags in the UI
                         this.updateTagsDisplay(tagsContainer, newTags);
                     })
@@ -629,24 +628,24 @@ class RecipeModal {
                         // Error is handled in the API function
                     });
             }
-            
+
             // Hide editor
             editor.classList.remove('active');
             tagsContainer.querySelector('.editable-content').classList.remove('hide');
         }
     }
-    
+
     // Helper method to update tags display
     updateTagsDisplay(tagsContainer, tags) {
         const tagsDisplay = tagsContainer.querySelector('.tags-display');
         tagsDisplay.innerHTML = '';
-        
+
         if (tags.length > 0) {
             // Limit displayed tags to 5, show a "+X more" button if needed
             const maxVisibleTags = 5;
             const visibleTags = tags.slice(0, maxVisibleTags);
             const remainingTags = tags.length > maxVisibleTags ? tags.slice(maxVisibleTags) : [];
-            
+
             // Add visible tags
             visibleTags.forEach(tag => {
                 const tagElement = document.createElement('div');
@@ -654,14 +653,14 @@ class RecipeModal {
                 tagElement.textContent = tag;
                 tagsDisplay.appendChild(tagElement);
             });
-            
+
             // Add "more" button if needed
             if (remainingTags.length > 0) {
                 const moreButton = document.createElement('div');
                 moreButton.className = 'recipe-tag-more';
                 moreButton.textContent = `+${remainingTags.length} more`;
                 tagsDisplay.appendChild(moreButton);
-                
+
                 // Update tooltip content
                 const tooltipContent = document.getElementById('recipeTagsTooltipContent');
                 if (tooltipContent) {
@@ -673,12 +672,12 @@ class RecipeModal {
                         tooltipContent.appendChild(tooltipTag);
                     });
                 }
-                
+
                 // Re-add tooltip functionality
                 moreButton.addEventListener('mouseenter', () => {
                     document.getElementById('recipeTagsTooltip').classList.add('visible');
                 });
-                
+
                 moreButton.addEventListener('mouseleave', () => {
                     setTimeout(() => {
                         if (!document.getElementById('recipeTagsTooltip').matches(':hover')) {
@@ -691,7 +690,7 @@ class RecipeModal {
             tagsDisplay.innerHTML = '<div class="no-tags">No tags</div>';
         }
     }
-    
+
     cancelTagsEdit() {
         const tagsContainer = document.getElementById('recipeTagsCompact');
         if (tagsContainer) {
@@ -699,13 +698,13 @@ class RecipeModal {
             const editor = tagsContainer.querySelector('#recipeTagsEditor');
             const input = editor.querySelector('input');
             input.value = this.currentRecipe.tags ? this.currentRecipe.tags.join(', ') : '';
-            
+
             // Hide editor
             editor.classList.remove('active');
             tagsContainer.querySelector('.editable-content').classList.remove('hide');
         }
     }
-    
+
     // Setup source URL handlers
     setupSourceUrlHandlers() {
         const sourceUrlContainer = document.querySelector('.source-url-container');
@@ -715,21 +714,21 @@ class RecipeModal {
         const sourceUrlCancelBtn = sourceUrlEditor.querySelector('.source-url-cancel-btn');
         const sourceUrlSaveBtn = sourceUrlEditor.querySelector('.source-url-save-btn');
         const sourceUrlInput = sourceUrlEditor.querySelector('.source-url-input');
-        
+
         // Show editor on edit button click
         sourceUrlEditBtn.addEventListener('click', () => {
             sourceUrlContainer.classList.add('hide');
             sourceUrlEditor.classList.add('active');
             sourceUrlInput.focus();
         });
-        
+
         // Cancel editing
         sourceUrlCancelBtn.addEventListener('click', () => {
             sourceUrlEditor.classList.remove('active');
             sourceUrlContainer.classList.remove('hide');
             sourceUrlInput.value = this.currentRecipe.source_path || '';
         });
-        
+
         // Save new source URL
         sourceUrlSaveBtn.addEventListener('click', () => {
             const newSourceUrl = sourceUrlInput.value.trim();
@@ -739,13 +738,13 @@ class RecipeModal {
                     .then(data => {
                         // Show success toast
                         showToast('toast.recipes.sourceUrlUpdated', {}, 'success');
-                        
+
                         // Update source URL in the UI
                         sourceUrlText.textContent = newSourceUrl || 'No source URL';
-                        sourceUrlText.title = newSourceUrl && (newSourceUrl.startsWith('http://') || 
-                                             newSourceUrl.startsWith('https://')) ? 
-                                             'Click to open source URL' : 'No valid URL';
-                        
+                        sourceUrlText.title = newSourceUrl && (newSourceUrl.startsWith('http://') ||
+                            newSourceUrl.startsWith('https://')) ?
+                            'Click to open source URL' : 'No valid URL';
+
                         // Update the current recipe object
                         this.currentRecipe.source_path = newSourceUrl;
                     })
@@ -753,12 +752,12 @@ class RecipeModal {
                         // Error is handled in the API function
                     });
             }
-            
+
             // Hide editor
             sourceUrlEditor.classList.remove('active');
             sourceUrlContainer.classList.remove('hide');
         });
-        
+
         // Open source URL in a new tab if it's valid
         sourceUrlText.addEventListener('click', () => {
             const url = sourceUrlText.textContent.trim();
@@ -767,27 +766,27 @@ class RecipeModal {
             }
         });
     }
-    
+
     // Setup copy buttons for prompts and recipe syntax
     setupCopyButtons() {
         const copyPromptBtn = document.getElementById('copyPromptBtn');
         const copyNegativePromptBtn = document.getElementById('copyNegativePromptBtn');
         const copyRecipeSyntaxBtn = document.getElementById('copyRecipeSyntaxBtn');
-        
+
         if (copyPromptBtn) {
             copyPromptBtn.addEventListener('click', () => {
                 const promptText = document.getElementById('recipePrompt').textContent;
                 this.copyToClipboard(promptText, 'Prompt copied to clipboard');
             });
         }
-        
+
         if (copyNegativePromptBtn) {
             copyNegativePromptBtn.addEventListener('click', () => {
                 const negativePromptText = document.getElementById('recipeNegativePrompt').textContent;
                 this.copyToClipboard(negativePromptText, 'Negative prompt copied to clipboard');
             });
         }
-        
+
         if (copyRecipeSyntaxBtn) {
             copyRecipeSyntaxBtn.addEventListener('click', () => {
                 // Use backend API to get recipe syntax
@@ -795,24 +794,24 @@ class RecipeModal {
             });
         }
     }
-    
+
     // Fetch recipe syntax from backend and copy to clipboard
     async fetchAndCopyRecipeSyntax() {
         if (!this.recipeId) {
             showToast('toast.recipes.noRecipeId', {}, 'error');
             return;
         }
-        
+
         try {
             // Fetch recipe syntax from backend
             const response = await fetch(`/api/lm/recipe/${this.recipeId}/syntax`);
-            
+
             if (!response.ok) {
                 throw new Error(`Failed to get recipe syntax: ${response.statusText}`);
             }
-            
+
             const data = await response.json();
-            
+
             if (data.success && data.syntax) {
                 // Use the centralized copyToClipboard utility function
                 await copyToClipboard(data.syntax, 'Recipe syntax copied to clipboard');
@@ -824,7 +823,7 @@ class RecipeModal {
             showToast('toast.recipes.copyFailed', { message: error.message }, 'error');
         }
     }
-    
+
     // Helper method to copy text to clipboard
     copyToClipboard(text, successMessage) {
         copyToClipboard(text, successMessage);
@@ -836,7 +835,7 @@ class RecipeModal {
         // Get missing LoRAs from the current recipe
         const missingLoras = this.currentRecipe.loras.filter(lora => !lora.inLibrary);
         console.log("missingLoras", missingLoras);
-        
+
         if (missingLoras.length === 0) {
             showToast('toast.recipes.noMissingLoras', {}, 'info');
             return;
@@ -848,7 +847,7 @@ class RecipeModal {
             // Get version info for each missing LoRA by calling the appropriate API endpoint
             const missingLorasWithVersionInfoPromises = missingLoras.map(async lora => {
                 let endpoint;
-                
+
                 // Determine which endpoint to use based on available data
                 if (lora.modelVersionId) {
                     endpoint = `/api/lm/loras/civitai/model/version/${lora.modelVersionId}`;
@@ -858,56 +857,56 @@ class RecipeModal {
                     console.error("Missing both hash and modelVersionId for lora:", lora);
                     return null;
                 }
-                
+
                 const response = await fetch(endpoint);
                 const versionInfo = await response.json();
-                
+
                 // Return original lora data combined with version info
                 return {
                     ...lora,
                     civitaiInfo: versionInfo
                 };
             });
-            
+
             // Wait for all API calls to complete
             const lorasWithVersionInfo = await Promise.all(missingLorasWithVersionInfoPromises);
             console.log("Loras with version info:", lorasWithVersionInfo);
-            
+
             // Filter out null values (failed requests)
             const validLoras = lorasWithVersionInfo.filter(lora => lora !== null);
-            
+
             if (validLoras.length === 0) {
                 showToast('toast.recipes.missingLorasInfoFailed', {}, 'error');
                 return;
             }
-            
+
             // Close the recipe modal first
             modalManager.closeModal('recipeModal');
-            
+
             // Prepare data for import manager using the retrieved information
             const recipeData = {
                 loras: validLoras.map(lora => {
                     const civitaiInfo = lora.civitaiInfo;
-                    const modelFile = civitaiInfo.files ? 
+                    const modelFile = civitaiInfo.files ?
                         civitaiInfo.files.find(file => file.type === 'Model') : null;
-                    
+
                     return {
                         // Basic lora info
                         name: civitaiInfo.model?.name || lora.name,
                         version: civitaiInfo.name || '',
                         strength: lora.strength || 1.0,
-                        
+
                         // Model identifiers
                         hash: modelFile?.hashes?.SHA256?.toLowerCase() || lora.hash,
                         id: civitaiInfo.id || lora.modelVersionId,
-                        
+
                         // Metadata
                         thumbnailUrl: civitaiInfo.images?.[0]?.url || '',
                         baseModel: civitaiInfo.baseModel || '',
                         downloadUrl: civitaiInfo.downloadUrl || '',
                         size: modelFile ? (modelFile.sizeKB * 1024) : 0,
                         file_name: modelFile ? modelFile.name.split('.')[0] : '',
-                        
+
                         // Status flags
                         existsLocally: false,
                         isDeleted: civitaiInfo.error === "Model not found",
@@ -916,9 +915,9 @@ class RecipeModal {
                     };
                 })
             };
-            
+
             console.log("recipeData for import:", recipeData);
-            
+
             // Call ImportManager's download missing LoRAs method
             window.importManager.downloadMissingLoras(recipeData, this.currentRecipe.id);
         } catch (error) {
@@ -937,17 +936,17 @@ class RecipeModal {
             badge.addEventListener('mouseenter', () => {
                 badge.querySelector('.badge-text').innerHTML = 'Reconnect';
             });
-            
+
             badge.addEventListener('mouseleave', () => {
                 badge.querySelector('.badge-text').innerHTML = '<i class="fas fa-trash-alt"></i> Deleted';
             });
-            
+
             badge.addEventListener('click', (e) => {
                 const loraIndex = badge.getAttribute('data-lora-index');
                 this.showReconnectInput(loraIndex);
             });
         });
-        
+
         // Add event listeners to reconnect cancel buttons
         const cancelButtons = document.querySelectorAll('.reconnect-cancel-btn');
         cancelButtons.forEach(button => {
@@ -956,7 +955,7 @@ class RecipeModal {
                 this.hideReconnectInput(container);
             });
         });
-        
+
         // Add event listeners to reconnect confirm buttons
         const confirmButtons = document.querySelectorAll('.reconnect-confirm-btn');
         confirmButtons.forEach(button => {
@@ -967,7 +966,7 @@ class RecipeModal {
                 this.reconnectLora(loraIndex, input.value);
             });
         });
-        
+
         // Add keydown handlers to reconnect inputs
         const reconnectInputs = document.querySelectorAll('.reconnect-input');
         reconnectInputs.forEach(input => {
@@ -983,13 +982,13 @@ class RecipeModal {
             });
         });
     }
-    
+
     showReconnectInput(loraIndex) {
         // Hide any currently active reconnect containers
         document.querySelectorAll('.lora-reconnect-container.active').forEach(active => {
             active.classList.remove('active');
         });
-        
+
         // Show the reconnect container for this lora
         const container = document.querySelector(`.lora-reconnect-container[data-lora-index="${loraIndex}"]`);
         if (container) {
@@ -998,7 +997,7 @@ class RecipeModal {
             input.focus();
         }
     }
-    
+
     hideReconnectInput(container) {
         if (container && container.classList.contains('active')) {
             container.classList.remove('active');
@@ -1006,23 +1005,23 @@ class RecipeModal {
             if (input) input.value = '';
         }
     }
-    
+
     async reconnectLora(loraIndex, inputValue) {
         if (!inputValue || !inputValue.trim()) {
             showToast('toast.recipes.enterLoraName', {}, 'error');
             return;
         }
-        
+
         try {
             // Parse input value to extract file_name
             let loraSyntaxMatch = inputValue.match(/<lora:([^:>]+)(?::[^>]+)?>/);
             let fileName = loraSyntaxMatch ? loraSyntaxMatch[1] : inputValue.trim();
-            
+
             // Remove .safetensors extension if present
             fileName = fileName.replace(/\.safetensors$/, '');
-            
+
             state.loadingManager.showSimpleLoading('Reconnecting LoRA...');
-            
+
             // Call API to reconnect the LoRA
             const response = await fetch('/api/lm/recipe/lora/reconnect', {
                 method: 'POST',
@@ -1035,20 +1034,20 @@ class RecipeModal {
                     target_name: fileName
                 })
             });
-            
+
             const result = await response.json();
-            
+
             if (result.success) {
                 // Hide the reconnect input
                 const container = document.querySelector(`.lora-reconnect-container[data-lora-index="${loraIndex}"]`);
                 this.hideReconnectInput(container);
-                
+
                 // Update the current recipe with the updated lora data
                 this.currentRecipe.loras[loraIndex] = result.updated_lora;
-                
+
                 // Show success message
                 showToast('toast.recipes.reconnectedSuccessfully', {}, 'success');
-                
+
                 // Refresh modal to show updated content
                 setTimeout(() => {
                     this.showRecipeDetails(this.currentRecipe);
@@ -1249,6 +1248,17 @@ class RecipeModal {
     }
 
     navigateToCheckpointPage(checkpoint) {
+        if (!checkpoint.inLibrary) {
+            const modelId = checkpoint.modelId || checkpoint.modelID || checkpoint.model_id;
+            const versionId = checkpoint.id || checkpoint.modelVersionId;
+            const modelName = checkpoint.name || checkpoint.modelName || checkpoint.file_name;
+
+            if (modelId || modelName) {
+                openCivitaiByMetadata(modelId, versionId, modelName);
+                return;
+            }
+        }
+
         const checkpointHash = this._getCheckpointHash(checkpoint);
 
         if (!checkpointHash) {
@@ -1286,16 +1296,28 @@ class RecipeModal {
         debugger;
         // Close the current modal
         modalManager.closeModal('recipeModal');
-        
+
         // Clear any previous filters first
         removeSessionItem('recipe_to_lora_filterLoraHash');
         removeSessionItem('recipe_to_lora_filterLoraHashes');
         removeSessionItem('filterRecipeName');
         removeSessionItem('viewLoraDetail');
-        
+
         if (specificLoraIndex !== null) {
             // If a specific LoRA index is provided, navigate to view just that one LoRA
             const lora = this.currentRecipe.loras[specificLoraIndex];
+
+            if (lora && !lora.inLibrary) {
+                const modelId = lora.modelId || lora.modelID || lora.model_id;
+                const versionId = lora.id || lora.modelVersionId;
+                const modelName = lora.modelName || lora.name || lora.file_name;
+
+                if (modelId || modelName) {
+                    openCivitaiByMetadata(modelId, versionId, modelName);
+                    return;
+                }
+            }
+
             if (lora && lora.hash) {
                 // Set session storage to open the LoRA modal directly
                 setSessionItem('recipe_to_lora_filterLoraHash', lora.hash.toLowerCase());
@@ -1308,14 +1330,14 @@ class RecipeModal {
             const loraHashes = this.currentRecipe.loras
                 .filter(lora => lora.hash)
                 .map(lora => lora.hash.toLowerCase());
-                
+
             if (loraHashes.length > 0) {
                 // Store the LoRA hashes and recipe name in sessionStorage
                 setSessionItem('recipe_to_lora_filterLoraHashes', JSON.stringify(loraHashes));
                 setSessionItem('filterRecipeName', this.currentRecipe.title);
             }
         }
-        
+
         // Navigate to the LoRAs page
         window.location.href = '/loras';
     }
@@ -1326,15 +1348,15 @@ class RecipeModal {
         loraItems.forEach(item => {
             // Get the lora index from the data attribute
             const loraIndex = parseInt(item.dataset.loraIndex);
-            
+
             item.addEventListener('click', (e) => {
                 // If the click is on the reconnect container or badge, don't navigate
-                if (e.target.closest('.lora-reconnect-container') || 
+                if (e.target.closest('.lora-reconnect-container') ||
                     e.target.closest('.deleted-badge') ||
                     e.target.closest('.reconnect-tooltip')) {
                     return;
                 }
-                
+
                 // Navigate to the LoRAs page with the specific LoRA index
                 this.navigateToLorasPage(loraIndex);
             });

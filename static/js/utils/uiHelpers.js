@@ -16,192 +16,196 @@ import { eventManager } from './EventManager.js';
  * @returns {Promise<boolean>} - Promise that resolves to true if copy was successful
  */
 export async function copyToClipboard(text, successMessage = null) {
-    const defaultSuccessMessage = successMessage || translate('uiHelpers.clipboard.copied', {}, 'Copied to clipboard');
-    
-    try {
-        // Modern clipboard API
-        if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(text);
-        } else {
-            // Fallback for older browsers
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'absolute';
-            textarea.style.left = '-99999px';
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-        }
-        
-        if (defaultSuccessMessage) {
-            showToast('uiHelpers.clipboard.copied', {}, 'success');
-        }
-        return true;
-    } catch (err) {
-        console.error('Copy failed:', err);
-        showToast('uiHelpers.clipboard.copyFailed', {}, 'error');
-        return false;
+  const defaultSuccessMessage = successMessage || translate('uiHelpers.clipboard.copied', {}, 'Copied to clipboard');
+
+  try {
+    // Modern clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'absolute';
+      textarea.style.left = '-99999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
     }
+
+    if (defaultSuccessMessage) {
+      showToast('uiHelpers.clipboard.copied', {}, 'success');
+    }
+    return true;
+  } catch (err) {
+    console.error('Copy failed:', err);
+    showToast('uiHelpers.clipboard.copyFailed', {}, 'error');
+    return false;
+  }
 }
 
 export function showToast(key, params = {}, type = 'info', fallback = null) {
-    const message = translate(key, params, fallback);
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-    
-    // Get or create toast container
-    let toastContainer = document.querySelector('.toast-container');
-    if (!toastContainer) {
-        toastContainer = document.createElement('div');
-        toastContainer.className = 'toast-container';
-        document.body.append(toastContainer);
+  const message = translate(key, params, fallback);
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+
+  // Get or create toast container
+  let toastContainer = document.querySelector('.toast-container');
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.className = 'toast-container';
+    document.body.append(toastContainer);
+  }
+
+  toastContainer.append(toast);
+
+  // Calculate vertical position for stacked toasts
+  const existingToasts = Array.from(toastContainer.querySelectorAll('.toast'));
+  const toastIndex = existingToasts.indexOf(toast);
+  const topOffset = 20; // Base offset from top
+  const spacing = 10; // Space between toasts
+
+  // Set position based on existing toasts
+  toast.style.top = `${topOffset + (toastIndex * (toast.offsetHeight || 60 + spacing))}px`;
+
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+
+    // Set timeout based on type
+    let timeout = 2000; // Default (info)
+    if (type === 'warning' || type === 'error') {
+      timeout = 5000;
     }
-    
-    toastContainer.append(toast);
 
-    // Calculate vertical position for stacked toasts
-    const existingToasts = Array.from(toastContainer.querySelectorAll('.toast'));
-    const toastIndex = existingToasts.indexOf(toast);
-    const topOffset = 20; // Base offset from top
-    const spacing = 10; // Space between toasts
-    
-    // Set position based on existing toasts
-    toast.style.top = `${topOffset + (toastIndex * (toast.offsetHeight || 60 + spacing))}px`;
+    setTimeout(() => {
+      toast.classList.remove('show');
+      toast.addEventListener('transitionend', () => {
+        toast.remove();
 
-    requestAnimationFrame(() => {
-        toast.classList.add('show');
-        
-        // Set timeout based on type
-        let timeout = 2000; // Default (info)
-        if (type === 'warning' || type === 'error') {
-            timeout = 5000;
+        // Reposition remaining toasts
+        if (toastContainer) {
+          const remainingToasts = Array.from(toastContainer.querySelectorAll('.toast'));
+          remainingToasts.forEach((t, index) => {
+            t.style.top = `${topOffset + (index * (t.offsetHeight || 60 + spacing))}px`;
+          });
+
+          // Remove container if empty
+          if (remainingToasts.length === 0) {
+            toastContainer.remove();
+          }
         }
-        
-        setTimeout(() => {
-            toast.classList.remove('show');
-            toast.addEventListener('transitionend', () => {
-                toast.remove();
-                
-                // Reposition remaining toasts
-                if (toastContainer) {
-                    const remainingToasts = Array.from(toastContainer.querySelectorAll('.toast'));
-                    remainingToasts.forEach((t, index) => {
-                        t.style.top = `${topOffset + (index * (t.offsetHeight || 60 + spacing))}px`;
-                    });
-                    
-                    // Remove container if empty
-                    if (remainingToasts.length === 0) {
-                        toastContainer.remove();
-                    }
-                }
-            });
-        }, timeout);
-    });
+      });
+    }, timeout);
+  });
 }
 
 export function restoreFolderFilter() {
-    const activeFolder = getStorageItem('activeFolder');
-    const folderTag = activeFolder && document.querySelector(`.tag[data-folder="${activeFolder}"]`);
-    if (folderTag) {
-        folderTag.classList.add('active');
-        filterByFolder(activeFolder);
-    }
+  const activeFolder = getStorageItem('activeFolder');
+  const folderTag = activeFolder && document.querySelector(`.tag[data-folder="${activeFolder}"]`);
+  if (folderTag) {
+    folderTag.classList.add('active');
+    filterByFolder(activeFolder);
+  }
 }
 
 export function initTheme() {
-    const savedTheme = getStorageItem('theme') || 'auto';
-    applyTheme(savedTheme);
-    
-    // Update theme when system preference changes (for 'auto' mode)
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-        const currentTheme = getStorageItem('theme') || 'auto';
-        if (currentTheme === 'auto') {
-            applyTheme('auto');
-        }
-    });
+  const savedTheme = getStorageItem('theme') || 'auto';
+  applyTheme(savedTheme);
+
+  // Update theme when system preference changes (for 'auto' mode)
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    const currentTheme = getStorageItem('theme') || 'auto';
+    if (currentTheme === 'auto') {
+      applyTheme('auto');
+    }
+  });
 }
 
 export function toggleTheme() {
-    const currentTheme = getStorageItem('theme') || 'auto';
-    let newTheme;
-    
-    if (currentTheme === 'light') {
-        newTheme = 'dark';
-    } else {
-        newTheme = 'light';
-    }
-    
-    setStorageItem('theme', newTheme);
-    applyTheme(newTheme);
-    
-    // Force a repaint to ensure theme changes are applied immediately
-    document.body.style.display = 'none';
-    document.body.offsetHeight; // Trigger a reflow
-    document.body.style.display = '';
-    
-    return newTheme;
+  const currentTheme = getStorageItem('theme') || 'auto';
+  let newTheme;
+
+  if (currentTheme === 'light') {
+    newTheme = 'dark';
+  } else {
+    newTheme = 'light';
+  }
+
+  setStorageItem('theme', newTheme);
+  applyTheme(newTheme);
+
+  // Force a repaint to ensure theme changes are applied immediately
+  document.body.style.display = 'none';
+  document.body.offsetHeight; // Trigger a reflow
+  document.body.style.display = '';
+
+  return newTheme;
 }
 
 // Add a new helper function to apply the theme
 function applyTheme(theme) {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const htmlElement = document.documentElement;
-    
-    // Remove any existing theme attributes
-    htmlElement.removeAttribute('data-theme');
-    
-    // Apply the appropriate theme
-    if (theme === 'dark' || (theme === 'auto' && prefersDark)) {
-        htmlElement.setAttribute('data-theme', 'dark');
-        document.body.dataset.theme = 'dark';
-    } else {
-        htmlElement.setAttribute('data-theme', 'light');
-        document.body.dataset.theme = 'light';
-    }
-    
-    // Update the theme-toggle icon state
-    updateThemeToggleIcons(theme);
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const htmlElement = document.documentElement;
+
+  // Remove any existing theme attributes
+  htmlElement.removeAttribute('data-theme');
+
+  // Apply the appropriate theme
+  if (theme === 'dark' || (theme === 'auto' && prefersDark)) {
+    htmlElement.setAttribute('data-theme', 'dark');
+    document.body.dataset.theme = 'dark';
+  } else {
+    htmlElement.setAttribute('data-theme', 'light');
+    document.body.dataset.theme = 'light';
+  }
+
+  // Update the theme-toggle icon state
+  updateThemeToggleIcons(theme);
 }
 
 // New function to update theme toggle icons
 function updateThemeToggleIcons(theme) {
-    const themeToggle = document.querySelector('.theme-toggle');
-    if (!themeToggle) return;
-    
-    // Remove any existing active classes
-    themeToggle.classList.remove('theme-light', 'theme-dark', 'theme-auto');
-    
-    // Add the appropriate class based on current theme
-    themeToggle.classList.add(`theme-${theme}`);
+  const themeToggle = document.querySelector('.theme-toggle');
+  if (!themeToggle) return;
+
+  // Remove any existing active classes
+  themeToggle.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+
+  // Add the appropriate class based on current theme
+  themeToggle.classList.add(`theme-${theme}`);
 }
 
 function filterByFolder(folderPath) {
-    document.querySelectorAll('.model-card').forEach(card => {
-        card.style.display = card.dataset.folder === folderPath ? '' : 'none';
-    });
+  document.querySelectorAll('.model-card').forEach(card => {
+    card.style.display = card.dataset.folder === folderPath ? '' : 'none';
+  });
+}
+
+export function openCivitaiByMetadata(civitaiId, versionId, modelName = null) {
+  if (civitaiId) {
+    let url = `https://civitai.com/models/${civitaiId}`;
+    if (versionId) {
+      url += `?modelVersionId=${versionId}`;
+    }
+    window.open(url, '_blank');
+  } else if (modelName) {
+    // 如果没有ID，尝试使用名称搜索
+    window.open(`https://civitai.com/models?query=${encodeURIComponent(modelName)}`, '_blank');
+  }
 }
 
 export function openCivitai(filePath) {
-    const loraCard = document.querySelector(`.model-card[data-filepath="${filePath}"]`);
-    if (!loraCard) return;
-    
-    const metaData = JSON.parse(loraCard.dataset.meta);
-    const civitaiId = metaData.modelId;
-    const versionId = metaData.id;
-    
-    if (civitaiId) {
-        let url = `https://civitai.com/models/${civitaiId}`;
-        if (versionId) {
-            url += `?modelVersionId=${versionId}`;
-        }
-        window.open(url, '_blank');
-    } else {
-        // 如果没有ID，尝试使用名称搜索
-        const modelName = loraCard.dataset.name;
-        window.open(`https://civitai.com/models?query=${encodeURIComponent(modelName)}`, '_blank');
-    }
+  const loraCard = document.querySelector(`.model-card[data-filepath="${filePath}"]`);
+  if (!loraCard) return;
+
+  const metaData = JSON.parse(loraCard.dataset.meta);
+  const civitaiId = metaData.modelId;
+  const versionId = metaData.id;
+  const modelName = loraCard.dataset.name;
+
+  openCivitaiByMetadata(civitaiId, versionId, modelName);
 }
 
 /**
@@ -209,90 +213,90 @@ export function openCivitai(filePath) {
  * based on the current layout and folder tags container height
  */
 export function updatePanelPositions() {
-    const searchOptionsPanel = document.getElementById('searchOptionsPanel');
-    const filterPanel = document.getElementById('filterPanel');
-    
-    if (!searchOptionsPanel && !filterPanel) return;
-    
-    // Get the header element
-    const header = document.querySelector('.app-header');
-    if (!header) return;
-    
-    // Calculate the position based on the bottom of the header
-    const headerRect = header.getBoundingClientRect();
-    const topPosition = headerRect.bottom + 5; // Add 5px padding
-    
-    // Set the positions
+  const searchOptionsPanel = document.getElementById('searchOptionsPanel');
+  const filterPanel = document.getElementById('filterPanel');
+
+  if (!searchOptionsPanel && !filterPanel) return;
+
+  // Get the header element
+  const header = document.querySelector('.app-header');
+  if (!header) return;
+
+  // Calculate the position based on the bottom of the header
+  const headerRect = header.getBoundingClientRect();
+  const topPosition = headerRect.bottom + 5; // Add 5px padding
+
+  // Set the positions
+  if (searchOptionsPanel) {
+    searchOptionsPanel.style.top = `${topPosition}px`;
+  }
+
+  if (filterPanel) {
+    filterPanel.style.top = `${topPosition}px`;
+  }
+
+  // Adjust panel horizontal position based on the search container
+  const searchContainer = document.querySelector('.header-search');
+  if (searchContainer) {
+    const searchRect = searchContainer.getBoundingClientRect();
+
+    // Position the search options panel aligned with the search container
     if (searchOptionsPanel) {
-      searchOptionsPanel.style.top = `${topPosition}px`;
+      searchOptionsPanel.style.right = `${window.innerWidth - searchRect.right}px`;
     }
-    
+
+    // Position the filter panel aligned with the filter button
     if (filterPanel) {
-      filterPanel.style.top = `${topPosition}px`;
-    }
-    
-    // Adjust panel horizontal position based on the search container
-    const searchContainer = document.querySelector('.header-search');
-    if (searchContainer) {
-      const searchRect = searchContainer.getBoundingClientRect();
-      
-      // Position the search options panel aligned with the search container
-      if (searchOptionsPanel) {
-        searchOptionsPanel.style.right = `${window.innerWidth - searchRect.right}px`;
-      }
-      
-      // Position the filter panel aligned with the filter button
-      if (filterPanel) {
-        const filterButton = document.getElementById('filterButton');
-        if (filterButton) {
-          const filterRect = filterButton.getBoundingClientRect();
-          filterPanel.style.right = `${window.innerWidth - filterRect.right}px`;
-        }
+      const filterButton = document.getElementById('filterButton');
+      if (filterButton) {
+        const filterRect = filterButton.getBoundingClientRect();
+        filterPanel.style.right = `${window.innerWidth - filterRect.right}px`;
       }
     }
+  }
 }
 
 export function initBackToTop() {
-    const button = document.getElementById('backToTopBtn');
-    if (!button) return;
+  const button = document.getElementById('backToTopBtn');
+  if (!button) return;
 
-    // Get the scrollable container
-    const scrollContainer = document.querySelector('.page-content');
-    
-    // Show/hide button based on scroll position
-    const toggleBackToTop = () => {
-        const scrollThreshold = window.innerHeight * 0.3;
-        if (scrollContainer.scrollTop > scrollThreshold) {
-            button.classList.add('visible');
-        } else {
-            button.classList.remove('visible');
-        }
-    };
+  // Get the scrollable container
+  const scrollContainer = document.querySelector('.page-content');
 
-    // Smooth scroll to top
-    button.addEventListener('click', () => {
-        scrollContainer.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
+  // Show/hide button based on scroll position
+  const toggleBackToTop = () => {
+    const scrollThreshold = window.innerHeight * 0.3;
+    if (scrollContainer.scrollTop > scrollThreshold) {
+      button.classList.add('visible');
+    } else {
+      button.classList.remove('visible');
+    }
+  };
+
+  // Smooth scroll to top
+  button.addEventListener('click', () => {
+    scrollContainer.scrollTo({
+      top: 0,
+      behavior: 'smooth'
     });
+  });
 
-    // Listen for scroll events on the scrollable container
-    scrollContainer.addEventListener('scroll', toggleBackToTop);
-    
-    // Initial check
-    toggleBackToTop();
+  // Listen for scroll events on the scrollable container
+  scrollContainer.addEventListener('scroll', toggleBackToTop);
+
+  // Initial check
+  toggleBackToTop();
 }
 
 export function getNSFWLevelName(level) {
-    if (level === 0) return 'Unknown';
-    if (level >= 32) return 'Blocked';
-    if (level >= 16) return 'XXX';
-    if (level >= 8) return 'X';
-    if (level >= 4) return 'R';
-    if (level >= 2) return 'PG13';
-    if (level >= 1) return 'PG';
-    return 'Unknown';
+  if (level === 0) return 'Unknown';
+  if (level >= 32) return 'Blocked';
+  if (level >= 16) return 'XXX';
+  if (level >= 8) return 'X';
+  if (level >= 4) return 'R';
+  if (level >= 2) return 'PG13';
+  if (level >= 1) return 'PG';
+  return 'Unknown';
 }
 
 function parseUsageTipNumber(value) {
@@ -666,25 +670,25 @@ async function sendLoraToNodes(nodeIds, nodesMap, loraSyntax, replaceMode, synta
       },
       body: JSON.stringify(requestBody)
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       // Use different toast messages based on syntax type
       if (syntaxType === 'recipe') {
-        const messageKey = replaceMode ? 
+        const messageKey = replaceMode ?
           'uiHelpers.workflow.recipeReplaced' :
           'uiHelpers.workflow.recipeAdded';
         showToast(messageKey, {}, 'success');
       } else {
-        const messageKey = replaceMode ? 
+        const messageKey = replaceMode ?
           'uiHelpers.workflow.loraReplaced' :
           'uiHelpers.workflow.loraAdded';
         showToast(messageKey, {}, 'success');
       }
       return true;
     } else {
-      const messageKey = syntaxType === 'recipe' ? 
+      const messageKey = syntaxType === 'recipe' ?
         'uiHelpers.workflow.recipeFailedToSend' :
         'uiHelpers.workflow.loraFailedToSend';
       showToast(messageKey, {}, 'error');
@@ -692,7 +696,7 @@ async function sendLoraToNodes(nodeIds, nodesMap, loraSyntax, replaceMode, synta
     }
   } catch (error) {
     console.error('Failed to send to workflow:', error);
-    const messageKey = syntaxType === 'recipe' ? 
+    const messageKey = syntaxType === 'recipe' ?
       'uiHelpers.workflow.recipeFailedToSend' :
       'uiHelpers.workflow.loraFailedToSend';
     showToast(messageKey, {}, 'error');
@@ -773,7 +777,7 @@ let nodeSelectorState = {
 function showNodeSelector(nodes, options = {}) {
   const selector = document.getElementById('nodeSelector');
   if (!selector) return;
-  
+
   // Clean up any existing state
   hideNodeSelector();
 
@@ -787,7 +791,7 @@ function showNodeSelector(nodes, options = {}) {
   nodeSelectorState.currentNodes = safeNodes;
   nodeSelectorState.onSend = onSend;
   nodeSelectorState.enableSendAll = options.enableSendAll !== false;
-  
+
   // Generate node list HTML with icons and proper colors
   const nodeItems = Object.entries(safeNodes).map(([nodeKey, node]) => {
     const iconClass = NODE_TYPE_ICONS[node.type] || 'fas fa-question-circle';
@@ -803,7 +807,7 @@ function showNodeSelector(nodes, options = {}) {
       </div>
     `;
   }).join('');
-  
+
   // Add header with action mode indicator
   const actionType = options.actionType ?? translate('uiHelpers.nodeSelector.lora', {}, 'LoRA');
   const actionMode = options.actionMode ?? translate('uiHelpers.nodeSelector.replace', {}, 'Replace');
@@ -819,7 +823,7 @@ function showNodeSelector(nodes, options = {}) {
       <span>${sendToAllText}</span>
     </div>`
     : '';
-  
+
   selector.innerHTML = `
     <div class="node-selector-header">
       <span class="selector-action-type">${actionMode} ${actionType}</span>
@@ -828,17 +832,17 @@ function showNodeSelector(nodes, options = {}) {
     ${nodeItems}
     ${sendAllMarkup}
   `;
-  
+
   // Position near mouse
   positionNearMouse(selector);
-  
+
   // Show selector
   selector.style.display = 'block';
   nodeSelectorState.isActive = true;
-  
+
   // Update event manager state
   eventManager.setState('nodeSelectorActive', true);
-  
+
   // Setup event listeners with proper cleanup through event manager
   setupNodeSelectorEvents(selector);
 }
@@ -850,7 +854,7 @@ function showNodeSelector(nodes, options = {}) {
 function setupNodeSelectorEvents(selector) {
   // Clean up any existing event listeners
   cleanupNodeSelectorEvents();
-  
+
   // Register click outside handler with event manager
   eventManager.addHandler('click', 'nodeSelector-outside', (e) => {
     if (!selector.contains(e.target)) {
@@ -861,12 +865,12 @@ function setupNodeSelectorEvents(selector) {
     priority: 200, // High priority to handle before other click handlers
     onlyWhenNodeSelectorActive: true
   });
-  
+
   // Register node selection handler with event manager  
   eventManager.addHandler('click', 'nodeSelector-selection', async (e) => {
     const nodeItem = e.target.closest('.node-item');
     if (!nodeItem) return false; // Continue with other handlers
-    
+
     const onSend = nodeSelectorState.onSend;
     if (typeof onSend !== 'function') {
       hideNodeSelector();
@@ -874,11 +878,11 @@ function setupNodeSelectorEvents(selector) {
     }
 
     e.stopPropagation();
-    
+
     const action = nodeItem.dataset.action;
     const nodeId = nodeItem.dataset.nodeId;
     const nodes = nodeSelectorState.currentNodes || {};
-    
+
     try {
       if (action === 'send-all') {
         if (!nodeSelectorState.enableSendAll) {
@@ -908,7 +912,7 @@ function cleanupNodeSelectorEvents() {
   // Remove event handlers from event manager
   eventManager.removeHandler('click', 'nodeSelector-outside');
   eventManager.removeHandler('click', 'nodeSelector-selection');
-  
+
   // Clear legacy references
   nodeSelectorState.clickHandler = null;
   nodeSelectorState.selectorClickHandler = null;
@@ -923,14 +927,14 @@ function hideNodeSelector() {
     selector.style.display = 'none';
     selector.innerHTML = ''; // Clear content to prevent memory leaks
   }
-  
+
   // Clean up event listeners
   cleanupNodeSelectorEvents();
   nodeSelectorState.isActive = false;
   nodeSelectorState.currentNodes = {};
   nodeSelectorState.onSend = null;
   nodeSelectorState.enableSendAll = true;
-  
+
   // Update event manager state
   eventManager.setState('nodeSelectorActive', false);
 }
@@ -943,28 +947,28 @@ function positionNearMouse(element) {
   // Get current mouse position from last mouse event or use default
   const mouseX = window.lastMouseX || window.innerWidth / 2;
   const mouseY = window.lastMouseY || window.innerHeight / 2;
-  
+
   // Show element temporarily to get dimensions
   element.style.visibility = 'hidden';
   element.style.display = 'block';
-  
+
   const rect = element.getBoundingClientRect();
   const viewportWidth = document.documentElement.clientWidth;
   const viewportHeight = document.documentElement.clientHeight;
-  
+
   // Calculate position with offset from mouse
   let x = mouseX + 10;
   let y = mouseY + 10;
-  
+
   // Ensure element doesn't go offscreen
   if (x + rect.width > viewportWidth) {
     x = mouseX - rect.width - 10;
   }
-  
+
   if (y + rect.height > viewportHeight) {
     y = mouseY - rect.height - 10;
   }
-  
+
   // Apply position
   element.style.left = `${x}px`;
   element.style.top = `${y}px`;
@@ -1002,9 +1006,9 @@ export async function openExampleImagesFolder(modelHash) {
         model_hash: modelHash
       })
     });
-    
+
     const result = await response.json();
-    
+
     if (result.success) {
       const message = translate('uiHelpers.exampleImages.openingFolder', {}, 'Opening example images folder');
       showToast('uiHelpers.exampleImages.opened', {}, 'success');
