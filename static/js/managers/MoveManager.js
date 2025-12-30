@@ -17,6 +17,7 @@ class MoveManager {
         this.initialized = false;
         this.recipeApiClient = null;
         this.useDefaultPath = false;
+        this.modelRoots = [];
 
         // Bind methods
         this.updateTargetPath = this.updateTargetPath.bind(this);
@@ -112,6 +113,9 @@ class MoveManager {
             if (defaultRoot && rootsData.roots.includes(defaultRoot)) {
                 modelRootSelect.value = defaultRoot;
             }
+
+            // Store roots for path calculations
+            this.modelRoots = rootsData.roots || [];
 
             // Initialize event listeners
             this.initializeEventListeners();
@@ -239,6 +243,57 @@ class MoveManager {
         pathDisplay.innerHTML = `<span class="path-text">${fullPath}</span>`;
     }
 
+    /**
+     * Get relative folder path from absolute file path
+     * @param {string} absolutePath 
+     * @returns {string} Relative folder path using forward slashes
+     */
+    _getRelativeFolder(absolutePath) {
+        if (!absolutePath) return '';
+        const normalizedPath = absolutePath.replace(/\\/g, '/');
+
+        for (const root of this.modelRoots || []) {
+            const normalizedRoot = root.replace(/\\/g, '/');
+            if (normalizedPath.startsWith(normalizedRoot)) {
+                let relative = normalizedPath.substring(normalizedRoot.length);
+                if (relative.startsWith('/')) relative = relative.substring(1);
+
+                // Get the directory part
+                const lastSlash = relative.lastIndexOf('/');
+                if (lastSlash === -1) return ''; // In the root itself
+                return relative.substring(0, lastSlash);
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Check if a model should be visible based on its relative folder and current page state
+     * @param {string} relativeFolder 
+     * @param {Object} pageState 
+     * @returns {boolean}
+     */
+    _isModelVisible(relativeFolder, pageState) {
+        if (!pageState) return true;
+        // If no folder filter is active, check search recursive option
+        if (pageState.activeFolder === null) return true;
+
+        const activeFolder = pageState.activeFolder || '';
+        const recursive = pageState.searchOptions?.recursive ?? true;
+
+        const normalizedActive = activeFolder.replace(/\\/g, '/').replace(/\/$/, '');
+        const normalizedRelative = relativeFolder.replace(/\\/g, '/').replace(/\/$/, '');
+
+        if (recursive) {
+            // Visible if it's in activeFolder or any subfolder
+            return normalizedRelative === normalizedActive ||
+                normalizedRelative.startsWith(normalizedActive + '/');
+        } else {
+            // Only visible if it's exactly in activeFolder
+            return normalizedRelative === normalizedActive;
+        }
+    }
+
     async moveModel() {
         const selectedRoot = document.getElementById('moveModelRoot').value;
         const apiClient = this._getApiClient();
@@ -262,26 +317,26 @@ class MoveManager {
                 // Bulk move mode
                 const results = await apiClient.moveBulkModels(this.bulkFilePaths, targetPath, this.useDefaultPath);
 
-                // Update virtual scroller if in active folder view
+                // Update virtual scroller visibility/metadata
                 const pageState = getCurrentPageState();
-                if (pageState.activeFolder !== null && state.virtualScroller) {
-                    // Remove items that were successfully moved
+                if (state.virtualScroller) {
                     results.forEach(result => {
                         if (result.success) {
-                            state.virtualScroller.removeItemByFilePath(result.original_file_path);
-                        }
-                    });
-                } else {
-                    // Update the model cards' filepath and filename in the DOM
-                    results.forEach(result => {
-                        if (result.success && result.new_file_path !== result.original_file_path) {
-                            const newFileName = result.new_file_path.substring(result.new_file_path.lastIndexOf('/') + 1);
-                            const baseFileName = newFileName.substring(0, newFileName.lastIndexOf('.'));
+                            const newRelativeFolder = this._getRelativeFolder(result.new_file_path);
+                            const isVisible = this._isModelVisible(newRelativeFolder, pageState);
 
-                            state.virtualScroller.updateSingleItem(result.original_file_path, {
-                                file_path: result.new_file_path,
-                                file_name: baseFileName
-                            });
+                            if (!isVisible) {
+                                state.virtualScroller.removeItemByFilePath(result.original_file_path);
+                            } else if (result.new_file_path !== result.original_file_path) {
+                                const newFileNameWithExt = result.new_file_path.substring(result.new_file_path.lastIndexOf('/') + 1);
+                                const baseFileName = newFileNameWithExt.substring(0, newFileNameWithExt.lastIndexOf('.'));
+
+                                state.virtualScroller.updateSingleItem(result.original_file_path, {
+                                    file_path: result.new_file_path,
+                                    file_name: baseFileName,
+                                    folder: newRelativeFolder
+                                });
+                            }
                         }
                     });
                 }
@@ -290,17 +345,21 @@ class MoveManager {
                 const result = await apiClient.moveSingleModel(this.currentFilePath, targetPath, this.useDefaultPath);
 
                 const pageState = getCurrentPageState();
-                if (result && result.new_file_path) {
-                    if (pageState.activeFolder !== null && state.virtualScroller) {
+                if (result && result.new_file_path && state.virtualScroller) {
+                    const newRelativeFolder = this._getRelativeFolder(result.new_file_path);
+                    const isVisible = this._isModelVisible(newRelativeFolder, pageState);
+
+                    if (!isVisible) {
                         state.virtualScroller.removeItemByFilePath(this.currentFilePath);
-                    } else if (result.new_file_path !== this.currentFilePath) {
-                        // Update both file_path and file_name if they changed
-                        const newFileName = result.new_file_path.substring(result.new_file_path.lastIndexOf('/') + 1);
-                        const baseFileName = newFileName.substring(0, newFileName.lastIndexOf('.'));
+                    } else {
+                        // Update the model card even if it stays visible
+                        const newFileNameWithExt = result.new_file_path.substring(result.new_file_path.lastIndexOf('/') + 1);
+                        const baseFileName = newFileNameWithExt.substring(0, newFileNameWithExt.lastIndexOf('.'));
 
                         state.virtualScroller.updateSingleItem(this.currentFilePath, {
                             file_path: result.new_file_path,
-                            file_name: baseFileName
+                            file_name: baseFileName,
+                            folder: newRelativeFolder
                         });
                     }
                 }
