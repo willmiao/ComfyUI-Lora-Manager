@@ -128,6 +128,7 @@ class Downloader:
         self._session = None
         self._session_created_at = None
         self._proxy_url = None  # Store proxy URL for current session
+        self._session_lock = asyncio.Lock()
         
         # Configuration
         self.chunk_size = 4 * 1024 * 1024  # 4MB chunks for better throughput
@@ -148,7 +149,10 @@ class Downloader:
     async def session(self) -> aiohttp.ClientSession:
         """Get or create the global aiohttp session with optimized settings"""
         if self._session is None or self._should_refresh_session():
-            await self._create_session()
+            async with self._session_lock:
+                # Double check after acquiring lock
+                if self._session is None or self._should_refresh_session():
+                    await self._create_session()
         return self._session
 
     @property
@@ -197,10 +201,18 @@ class Downloader:
         return False
     
     async def _create_session(self):
-        """Create a new aiohttp session with optimized settings"""
+        """Create a new aiohttp session with optimized settings.
+        
+        Note: This is private and caller MUST hold self._session_lock.
+        """
         # Close existing session if any
         if self._session is not None:
-            await self._session.close()
+            try:
+                await self._session.close()
+            except Exception as e: # pragma: no cover
+                logger.warning(f"Error closing previous session: {e}")
+            finally:
+                self._session = None
         
         # Check for app-level proxy settings
         proxy_url = None
@@ -808,7 +820,8 @@ class Downloader:
     
     async def refresh_session(self):
         """Force refresh the HTTP session (useful when proxy settings change)"""
-        await self._create_session()
+        async with self._session_lock:
+            await self._create_session()
         logger.info("HTTP session refreshed due to settings change")
 
     @staticmethod
