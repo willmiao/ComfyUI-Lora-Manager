@@ -883,6 +883,7 @@ class SettingsManager:
 
         if os.path.abspath(previous_path) != os.path.abspath(target_path):
             self._copy_model_cache_directory(previous_dir, target_dir)
+            logger.info("Switching settings file to: %s", target_path)
 
         self._pending_portable_switch = {"other_path": other_path}
         self.settings_file = target_path
@@ -929,7 +930,12 @@ class SettingsManager:
             and os.path.abspath(source_cache_dir) != os.path.abspath(target_cache_dir)
         ):
             try:
-                shutil.copytree(source_cache_dir, target_cache_dir, dirs_exist_ok=True)
+                shutil.copytree(
+                    source_cache_dir,
+                    target_cache_dir,
+                    dirs_exist_ok=True,
+                    ignore=shutil.ignore_patterns("*.sqlite-shm", "*.sqlite-wal"),
+                )
             except Exception as exc:
                 logger.warning(
                     "Failed to copy model_cache directory from %s to %s: %s",

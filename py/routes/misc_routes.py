@@ -107,7 +107,7 @@ class MiscRoutes:
             settings_service=self._settings,
             metadata_provider_updater=self._metadata_provider_updater,
         )
-        filesystem = FileSystemHandler()
+        filesystem = FileSystemHandler(settings_service=self._settings)
         node_registry_handler = NodeRegistryHandler(
             node_registry=self._node_registry,
             prompt_server=self._prompt_server,

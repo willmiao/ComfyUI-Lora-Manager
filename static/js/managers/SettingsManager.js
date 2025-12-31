@@ -17,9 +17,8 @@ export class SettingsManager {
         this.initializationPromise = null;
         this.availableLibraries = {};
         this.activeLibrary = '';
-        this.settingsFilePath = null;
         this.registeredStartupBannerIds = new Set();
-        
+
         // Add initialization to sync with modal state
         this.currentPage = document.body.dataset.page || 'loras';
 
@@ -56,7 +55,6 @@ export class SettingsManager {
             const data = await response.json();
             if (data.success && data.settings) {
                 state.global.settings = this.mergeSettingsWithDefaults(data.settings);
-                this.settingsFilePath = data.settings.settings_file || this.settingsFilePath;
                 this.registerStartupMessages(data.messages);
                 console.log('Settings synced from backend');
             } else {
@@ -177,10 +175,6 @@ export class SettingsManager {
                 return;
             }
 
-            if (!this.settingsFilePath && typeof message.settings_file === 'string') {
-                this.settingsFilePath = message.settings_file;
-            }
-
             const bannerId = `startup-${message.code || index}`;
             if (this.registeredStartupBannerIds.has(bannerId)) {
                 return;
@@ -289,7 +283,7 @@ export class SettingsManager {
 
     initialize() {
         if (this.initialized) return;
-        
+
         // Add event listener to sync state when modal is closed via other means (like Escape key)
         const settingsModal = document.getElementById('settingsModal');
         if (settingsModal) {
@@ -297,7 +291,7 @@ export class SettingsManager {
                 mutations.forEach((mutation) => {
                     if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
                         this.isOpen = settingsModal.style.display === 'block';
-                        
+
                         // When modal is opened, update checkbox state from current settings
                         if (this.isOpen) {
                             this.loadSettingsToUI();
@@ -305,10 +299,10 @@ export class SettingsManager {
                     }
                 });
             });
-            
+
             observer.observe(settingsModal, { attributes: true });
         }
-        
+
         // Add event listeners for all toggle-visibility buttons
         document.querySelectorAll('.toggle-visibility').forEach(button => {
             button.addEventListener('click', () => this.toggleInputVisibility(button));
@@ -316,12 +310,8 @@ export class SettingsManager {
 
         const openSettingsLocationButton = document.querySelector('.settings-open-location-trigger');
         if (openSettingsLocationButton) {
-            if (openSettingsLocationButton.dataset.settingsPath) {
-                this.settingsFilePath = openSettingsLocationButton.dataset.settingsPath;
-            }
             openSettingsLocationButton.addEventListener('click', () => {
-                const filePath = openSettingsLocationButton.dataset.settingsPath;
-                this.openSettingsFileLocation(filePath);
+                this.openSettingsFileLocation();
             });
         }
 
@@ -364,28 +354,15 @@ export class SettingsManager {
         this.initialized = true;
     }
 
-    async openSettingsFileLocation(filePath) {
-        const targetPath = filePath || this.settingsFilePath || document.querySelector('.settings-open-location-trigger')?.dataset.settingsPath;
-
-        if (!targetPath) {
-            showToast('settings.openSettingsFileLocation.failed', {}, 'error');
-            return;
-        }
-
+    async openSettingsFileLocation() {
         try {
-            const response = await fetch('/api/lm/open-file-location', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ file_path: targetPath }),
+            const response = await fetch('/api/lm/settings/open-location', {
+                method: 'POST'
             });
 
             if (!response.ok) {
                 throw new Error(`Request failed with status ${response.status}`);
             }
-
-            this.settingsFilePath = targetPath;
 
             showToast('settings.openSettingsFileLocation.success', {}, 'success');
         } catch (error) {
@@ -497,7 +474,7 @@ export class SettingsManager {
 
         // Load default lora root
         await this.loadLoraRoots();
-        
+
         // Load default checkpoint root
         await this.loadCheckpointRoots();
 
@@ -658,7 +635,7 @@ export class SettingsManager {
         const proxyEnabledCheckbox = document.getElementById('proxyEnabled');
         if (proxyEnabledCheckbox) {
             proxyEnabledCheckbox.checked = state.global.settings.proxy_enabled || false;
-            
+
             // Add event listener for toggling proxy settings group visibility
             proxyEnabledCheckbox.addEventListener('change', () => {
                 const proxySettingsGroup = document.getElementById('proxySettingsGroup');
@@ -666,7 +643,7 @@ export class SettingsManager {
                     proxySettingsGroup.style.display = proxyEnabledCheckbox.checked ? 'block' : 'none';
                 }
             });
-            
+
             // Set initial visibility
             const proxySettingsGroup = document.getElementById('proxySettingsGroup');
             if (proxySettingsGroup) {
@@ -854,23 +831,23 @@ export class SettingsManager {
         try {
             const defaultLoraRootSelect = document.getElementById('defaultLoraRoot');
             if (!defaultLoraRootSelect) return;
-            
+
             // Fetch lora roots
             const response = await fetch('/api/lm/loras/roots');
             if (!response.ok) {
                 throw new Error('Failed to fetch LoRA roots');
             }
-            
+
             const data = await response.json();
             if (!data.roots || data.roots.length === 0) {
                 throw new Error('No LoRA roots found');
             }
-            
+
             // Clear existing options except the first one (No Default)
             const noDefaultOption = defaultLoraRootSelect.querySelector('option[value=""]');
             defaultLoraRootSelect.innerHTML = '';
             defaultLoraRootSelect.appendChild(noDefaultOption);
-            
+
             // Add options for each root
             data.roots.forEach(root => {
                 const option = document.createElement('option');
@@ -878,11 +855,11 @@ export class SettingsManager {
                 option.textContent = root;
                 defaultLoraRootSelect.appendChild(option);
             });
-            
+
             // Set selected value from settings
             const defaultRoot = state.global.settings.default_lora_root || '';
             defaultLoraRootSelect.value = defaultRoot;
-            
+
         } catch (error) {
             console.error('Error loading LoRA roots:', error);
             showToast('toast.settings.loraRootsFailed', { message: error.message }, 'error');
@@ -893,23 +870,23 @@ export class SettingsManager {
         try {
             const defaultCheckpointRootSelect = document.getElementById('defaultCheckpointRoot');
             if (!defaultCheckpointRootSelect) return;
-            
+
             // Fetch checkpoint roots
             const response = await fetch('/api/lm/checkpoints/roots');
             if (!response.ok) {
                 throw new Error('Failed to fetch checkpoint roots');
             }
-            
+
             const data = await response.json();
             if (!data.roots || data.roots.length === 0) {
                 throw new Error('No checkpoint roots found');
             }
-            
+
             // Clear existing options except the first one (No Default)
             const noDefaultOption = defaultCheckpointRootSelect.querySelector('option[value=""]');
             defaultCheckpointRootSelect.innerHTML = '';
             defaultCheckpointRootSelect.appendChild(noDefaultOption);
-            
+
             // Add options for each root
             data.roots.forEach(root => {
                 const option = document.createElement('option');
@@ -917,11 +894,11 @@ export class SettingsManager {
                 option.textContent = root;
                 defaultCheckpointRootSelect.appendChild(option);
             });
-            
+
             // Set selected value from settings
             const defaultRoot = state.global.settings.default_checkpoint_root || '';
             defaultCheckpointRootSelect.value = defaultRoot;
-            
+
         } catch (error) {
             console.error('Error loading checkpoint roots:', error);
             showToast('toast.settings.checkpointRootsFailed', { message: error.message }, 'error');
@@ -972,7 +949,7 @@ export class SettingsManager {
         if (!mappingsContainer) return;
 
         const mappings = state.global.settings.base_model_path_mappings || {};
-        
+
         // Clear existing mappings
         mappingsContainer.innerHTML = '';
 
@@ -993,7 +970,7 @@ export class SettingsManager {
 
         const row = document.createElement('div');
         row.className = 'mapping-row';
-        
+
         const availableModels = MAPPABLE_BASE_MODELS.filter(model => {
             const existingMappings = state.global.settings.base_model_path_mappings || {};
             return !existingMappings.hasOwnProperty(model) || model === baseModel;
@@ -1003,9 +980,9 @@ export class SettingsManager {
             <div class="mapping-controls">
                 <select class="base-model-select">
                     <option value="">${translate('settings.downloadPathTemplates.selectBaseModel', {}, 'Select Base Model')}</option>
-                    ${availableModels.map(model => 
-                        `<option value="${model}" ${model === baseModel ? 'selected' : ''}>${model}</option>`
-                    ).join('')}
+                    ${availableModels.map(model =>
+            `<option value="${model}" ${model === baseModel ? 'selected' : ''}>${model}</option>`
+        ).join('')}
                 </select>
                 <input type="text" class="path-value-input" placeholder="${translate('settings.downloadPathTemplates.customPathPlaceholder', {}, 'Custom path (e.g., flux)')}" value="${pathValue}">
                 <button type="button" class="remove-mapping-btn" title="${translate('settings.downloadPathTemplates.removeMapping', {}, 'Remove mapping')}">
@@ -1021,7 +998,7 @@ export class SettingsManager {
 
         // Save on select change immediately
         baseModelSelect.addEventListener('change', () => this.updateBaseModelMappings());
-        
+
         // Save on input blur or Enter key
         pathValueInput.addEventListener('blur', () => this.updateBaseModelMappings());
         pathValueInput.addEventListener('keydown', (e) => {
@@ -1029,7 +1006,7 @@ export class SettingsManager {
                 e.target.blur();
             }
         });
-        
+
         removeBtn.addEventListener('click', () => {
             row.remove();
             this.updateBaseModelMappings();
@@ -1049,10 +1026,10 @@ export class SettingsManager {
         rows.forEach(row => {
             const baseModelSelect = row.querySelector('.base-model-select');
             const pathValueInput = row.querySelector('.path-value-input');
-            
+
             const baseModel = baseModelSelect.value.trim();
             const pathValue = pathValueInput.value.trim();
-            
+
             if (baseModel && pathValue) {
                 newMappings[baseModel] = pathValue;
                 hasValidMapping = true;
@@ -1094,15 +1071,15 @@ export class SettingsManager {
         rows.forEach(row => {
             const select = row.querySelector('.base-model-select');
             const currentValue = select.value;
-            
+
             // Get available models (not already mapped, except current)
-            const availableModels = MAPPABLE_BASE_MODELS.filter(model => 
+            const availableModels = MAPPABLE_BASE_MODELS.filter(model =>
                 !existingMappings.hasOwnProperty(model) || model === currentValue
             );
 
             // Rebuild options
             select.innerHTML = `<option value="">${translate('settings.downloadPathTemplates.selectBaseModel', {}, 'Select Base Model')}</option>` +
-                availableModels.map(model => 
+                availableModels.map(model =>
                     `<option value="${model}" ${model === currentValue ? 'selected' : ''}>${model}</option>`
                 ).join('');
         });
@@ -1116,7 +1093,7 @@ export class SettingsManager {
             // Show success toast
             const mappingCount = Object.keys(state.global.settings.base_model_path_mappings).length;
             if (mappingCount > 0) {
-                showToast('toast.settings.mappingsUpdated', { 
+                showToast('toast.settings.mappingsUpdated', {
                     count: mappingCount,
                     plural: mappingCount !== 1 ? 's' : ''
                 }, 'success');
@@ -1132,7 +1109,7 @@ export class SettingsManager {
 
     loadDownloadPathTemplates() {
         const templates = state.global.settings.download_path_templates || DEFAULT_PATH_TEMPLATES;
-        
+
         Object.keys(templates).forEach(modelType => {
             this.loadTemplateForModelType(modelType, templates[modelType]);
         });
@@ -1142,12 +1119,12 @@ export class SettingsManager {
         const presetSelect = document.getElementById(`${modelType}TemplatePreset`);
         const customRow = document.getElementById(`${modelType}CustomRow`);
         const customInput = document.getElementById(`${modelType}CustomTemplate`);
-        
+
         if (!presetSelect) return;
 
         // Find matching preset
         const matchingPreset = this.findMatchingPreset(template);
-        
+
         if (matchingPreset !== null) {
             presetSelect.value = matchingPreset;
             if (customRow) customRow.style.display = 'none';
@@ -1160,7 +1137,7 @@ export class SettingsManager {
                 this.validateTemplate(modelType, template);
             }
         }
-        
+
         this.updateTemplatePreview(modelType, template);
     }
 
@@ -1168,14 +1145,14 @@ export class SettingsManager {
         const presetValues = Object.values(DOWNLOAD_PATH_TEMPLATES)
             .map(t => t.value)
             .filter(v => v !== 'custom');
-        
+
         return presetValues.includes(template) ? template : null;
     }
 
     updateTemplatePreset(modelType, value) {
         const customRow = document.getElementById(`${modelType}CustomRow`);
         const customInput = document.getElementById(`${modelType}CustomTemplate`);
-        
+
         if (value === 'custom') {
             if (customRow) customRow.style.display = 'block';
             if (customInput) customInput.focus();
@@ -1183,7 +1160,7 @@ export class SettingsManager {
         } else {
             if (customRow) customRow.style.display = 'none';
         }
-        
+
         // Update template
         this.updateTemplate(modelType, value);
     }
@@ -1195,16 +1172,16 @@ export class SettingsManager {
                 return; // Don't save invalid templates
             }
         }
-        
+
         // Update state
         if (!state.global.settings.download_path_templates) {
             state.global.settings.download_path_templates = { ...DEFAULT_PATH_TEMPLATES };
         }
         state.global.settings.download_path_templates[modelType] = template;
-        
+
         // Update preview
         this.updateTemplatePreview(modelType, template);
-        
+
         // Save settings
         this.saveDownloadPathTemplates();
     }
@@ -1212,17 +1189,17 @@ export class SettingsManager {
     validateTemplate(modelType, template) {
         const validationElement = document.getElementById(`${modelType}Validation`);
         if (!validationElement) return true;
-        
+
         // Reset validation state
         validationElement.innerHTML = '';
         validationElement.className = 'template-validation';
-        
+
         if (!template) {
             validationElement.innerHTML = `<i class="fas fa-check"></i> ${translate('settings.downloadPathTemplates.validation.validFlat', {}, 'Valid (flat structure)')}`;
             validationElement.classList.add('valid');
             return true;
         }
-        
+
         // Check for invalid characters
         const invalidChars = /[<>:"|?*]/;
         if (invalidChars.test(template)) {
@@ -1230,36 +1207,36 @@ export class SettingsManager {
             validationElement.classList.add('invalid');
             return false;
         }
-        
+
         // Check for double slashes
         if (template.includes('//')) {
             validationElement.innerHTML = `<i class="fas fa-times"></i> ${translate('settings.downloadPathTemplates.validation.doubleSlashes', {}, 'Double slashes not allowed')}`;
             validationElement.classList.add('invalid');
             return false;
         }
-        
+
         // Check if it starts or ends with slash
         if (template.startsWith('/') || template.endsWith('/')) {
             validationElement.innerHTML = `<i class="fas fa-times"></i> ${translate('settings.downloadPathTemplates.validation.leadingTrailingSlash', {}, 'Cannot start or end with slash')}`;
             validationElement.classList.add('invalid');
             return false;
         }
-        
+
         // Extract placeholders
         const placeholderRegex = /\{([^}]+)\}/g;
         const matches = template.match(placeholderRegex) || [];
-        
+
         // Check for invalid placeholders
-        const invalidPlaceholders = matches.filter(match => 
+        const invalidPlaceholders = matches.filter(match =>
             !PATH_TEMPLATE_PLACEHOLDERS.includes(match)
         );
-        
+
         if (invalidPlaceholders.length > 0) {
             validationElement.innerHTML = `<i class="fas fa-times"></i> ${translate('settings.downloadPathTemplates.validation.invalidPlaceholder', { placeholder: invalidPlaceholders[0] }, `Invalid placeholder: ${invalidPlaceholders[0]}`)}`;
             validationElement.classList.add('invalid');
             return false;
         }
-        
+
         // Template is valid
         validationElement.innerHTML = `<i class="fas fa-check"></i> ${translate('settings.downloadPathTemplates.validation.validTemplate', {}, 'Valid template')}`;
         validationElement.classList.add('valid');
@@ -1269,7 +1246,7 @@ export class SettingsManager {
     updateTemplatePreview(modelType, template) {
         const previewElement = document.getElementById(`${modelType}Preview`);
         if (!previewElement) return;
-        
+
         if (!template) {
             previewElement.textContent = 'model-name.safetensors';
         } else {
@@ -1308,7 +1285,7 @@ export class SettingsManager {
     async saveToggleSetting(elementId, settingKey) {
         const element = document.getElementById(elementId);
         if (!element) return;
-        
+
         const value = element.checked;
 
         try {
@@ -1325,12 +1302,12 @@ export class SettingsManager {
             if (settingKey === 'enable_metadata_archive_db') {
                 await this.updateMetadataArchiveStatus();
             }
-                
+
             showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
-            
+
             // Apply frontend settings immediately
             this.applyFrontendSettings();
-            
+
             // Trigger auto download setup/teardown when setting changes
             if (settingKey === 'auto_download_example_images' && window.exampleImagesManager) {
                 if (value) {
@@ -1339,11 +1316,11 @@ export class SettingsManager {
                     window.exampleImagesManager.clearAutoDownload();
                 }
             }
-            
+
             if (settingKey === 'show_only_sfw' || settingKey === 'blur_mature_content') {
                 this.reloadContent();
             }
-            
+
             // Recalculate layout when compact mode changes
             if (settingKey === 'compact_mode' && state.virtualScroller) {
                 state.virtualScroller.calculateLayout();
@@ -1356,32 +1333,32 @@ export class SettingsManager {
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
         }
     }
-    
+
     async saveSelectSetting(elementId, settingKey) {
         const element = document.getElementById(elementId);
         if (!element) return;
-        
+
         const value = element.value;
-        
+
         try {
             // Update frontend state with mapped keys
             await this.saveSetting(settingKey, value);
 
             // Apply frontend settings immediately
             this.applyFrontendSettings();
-            
+
             // Recalculate layout when display density changes
             if (settingKey === 'display_density' && state.virtualScroller) {
                 state.virtualScroller.calculateLayout();
-                
+
                 let densityName = "Default";
                 if (value === 'medium') densityName = "Medium";
                 if (value === 'compact') densityName = "Compact";
-                
+
                 showToast('toast.settings.displayDensitySet', { density: densityName }, 'success');
                 return;
             }
-            
+
             showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
 
             if (settingKey === 'model_name_display' || settingKey === 'model_card_footer_action' || settingKey === 'update_flag_strategy') {
@@ -1416,7 +1393,7 @@ export class SettingsManager {
             if (statusContainer && data.success) {
                 const status = data;
                 const sizeText = status.databaseSize > 0 ? ` (${this.formatFileSize(status.databaseSize)})` : '';
-                
+
                 statusContainer.innerHTML = `
                     <div class="archive-status-item">
                         <span class="archive-status-label">${translate('settings.metadataArchive.status')}:</span>
@@ -1436,14 +1413,14 @@ export class SettingsManager {
                 // Update button states
                 const downloadBtn = document.getElementById('downloadMetadataArchiveBtn');
                 const removeBtn = document.getElementById('removeMetadataArchiveBtn');
-                
+
                 if (downloadBtn) {
                     downloadBtn.disabled = status.isAvailable;
-                    downloadBtn.textContent = status.isAvailable ? 
-                        translate('settings.metadataArchive.downloadedButton') : 
+                    downloadBtn.textContent = status.isAvailable ?
+                        translate('settings.metadataArchive.downloadedButton') :
                         translate('settings.metadataArchive.downloadButton');
                 }
-                
+
                 if (removeBtn) {
                     removeBtn.disabled = !status.isAvailable;
                 }
@@ -1464,12 +1441,12 @@ export class SettingsManager {
     async downloadMetadataArchive() {
         try {
             const downloadBtn = document.getElementById('downloadMetadataArchiveBtn');
-            
+
             if (downloadBtn) {
                 downloadBtn.disabled = true;
                 downloadBtn.textContent = translate('settings.metadataArchive.downloadingButton');
             }
-            
+
             // Show loading with enhanced progress
             const progressUpdater = state.loadingManager.showEnhancedProgress(translate('settings.metadataArchive.preparing'));
 
@@ -1477,20 +1454,20 @@ export class SettingsManager {
             const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
             const downloadId = `metadata_archive_${Date.now()}`;
             const ws = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${downloadId}`);
-            
+
             let wsConnected = false;
             let actualDownloadId = downloadId; // Will be updated when WebSocket confirms the ID
-            
+
             // Promise to wait for WebSocket connection and ID confirmation
             const wsReady = new Promise((resolve) => {
                 ws.onopen = () => {
                     wsConnected = true;
                     console.log('Connected to metadata archive download progress WebSocket');
                 };
-                
+
                 ws.onmessage = (event) => {
                     const data = JSON.parse(event.data);
-                    
+
                     // Handle download ID confirmation
                     if (data.type === 'download_id') {
                         actualDownloadId = data.download_id;
@@ -1498,11 +1475,11 @@ export class SettingsManager {
                         resolve(data.download_id);
                         return;
                     }
-                    
+
                     // Handle metadata archive download progress
                     if (data.type === 'metadata_archive_download') {
                         const message = data.message || '';
-                        
+
                         // Update progress bar based on stage
                         let progressPercent = 0;
                         if (data.stage === 'download') {
@@ -1516,21 +1493,21 @@ export class SettingsManager {
                         } else if (data.stage === 'extract') {
                             progressPercent = 95; // Near completion for extraction
                         }
-                        
+
                         // Update loading manager progress
                         progressUpdater.updateProgress(progressPercent, '', `${message}`);
                     }
                 };
-                
+
                 ws.onerror = (error) => {
                     console.error('WebSocket error:', error);
                     resolve(downloadId); // Fallback to original ID
                 };
-                
+
                 // Timeout fallback
                 setTimeout(() => resolve(downloadId), 5000);
             });
-            
+
             ws.onclose = () => {
                 console.log('WebSocket connection closed');
             };
@@ -1555,18 +1532,18 @@ export class SettingsManager {
             if (data.success) {
                 // Complete progress
                 await progressUpdater.complete(translate('settings.metadataArchive.downloadComplete'));
-                
+
                 showToast('settings.metadataArchive.downloadSuccess', 'success');
-                
+
                 // Update settings using universal save method
                 await this.saveSetting('enable_metadata_archive_db', true);
-                
+
                 // Update UI
                 const enableCheckbox = document.getElementById('enableMetadataArchive');
                 if (enableCheckbox) {
                     enableCheckbox.checked = true;
                 }
-                
+
                 await this.updateMetadataArchiveStatus();
             } else {
                 // Hide loading on error
@@ -1575,7 +1552,7 @@ export class SettingsManager {
             }
         } catch (error) {
             console.error('Error downloading metadata archive:', error);
-            
+
             // Hide loading on error
             state.loadingManager.hide();
 
@@ -1615,13 +1592,13 @@ export class SettingsManager {
 
                 // Update settings using universal save method
                 await this.saveSetting('enable_metadata_archive_db', false);
-                
+
                 // Update UI
                 const enableCheckbox = document.getElementById('enableMetadataArchive');
                 if (enableCheckbox) {
                     enableCheckbox.checked = false;
                 }
-                
+
                 await this.updateMetadataArchiveStatus();
             } else {
                 showToast('settings.metadataArchive.removeError' + ': ' + data.error, 'error');
@@ -1695,23 +1672,23 @@ export class SettingsManager {
         if (!element) return;
 
         const value = element.value.trim(); // Trim whitespace
-        
+
         try {
             // Check if value has changed from existing value
             const currentValue = state.global.settings[settingKey] || '';
             if (value === currentValue) {
                 return; // No change, exit early
             }
-            
+
             // For username and password, handle empty values specially
             if ((settingKey === 'proxy_username' || settingKey === 'proxy_password') && value === '') {
                 // Remove from state instead of setting to empty string
                 delete state.global.settings[settingKey];
-                
+
                 // Send delete flag to backend
                 const payload = {};
                 payload[settingKey] = '__DELETE__';
-                
+
                 const response = await fetch('/api/lm/settings', {
                     method: 'POST',
                     headers: {
@@ -1727,9 +1704,9 @@ export class SettingsManager {
                 // Use the universal save method
                 await this.saveSetting(settingKey, value);
             }
-            
+
             showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
-            
+
         } catch (error) {
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
         }
@@ -1756,7 +1733,7 @@ export class SettingsManager {
     toggleInputVisibility(button) {
         const input = button.parentElement.querySelector('input');
         const icon = button.querySelector('i');
-        
+
         if (input.type === 'password') {
             input.type = 'text';
             icon.className = 'fas fa-eye-slash';
@@ -1793,7 +1770,7 @@ export class SettingsManager {
         document.querySelectorAll('.card-preview video').forEach(video => {
             configureModelCardVideo(video, autoplayOnHover);
         });
-        
+
         // Apply display density class to grid
         const grid = document.querySelector('.card-grid');
         if (grid) {

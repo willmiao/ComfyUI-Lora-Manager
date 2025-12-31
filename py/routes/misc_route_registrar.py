@@ -41,6 +41,7 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/remove-metadata-archive", "remove_metadata_archive"),
     RouteDefinition("GET", "/api/lm/metadata-archive-status", "get_metadata_archive_status"),
     RouteDefinition("GET", "/api/lm/model-versions-status", "get_model_versions_status"),
+    RouteDefinition("POST", "/api/lm/settings/open-location", "open_settings_location"),
 )
 
 

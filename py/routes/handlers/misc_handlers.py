@@ -853,6 +853,9 @@ class MetadataArchiveHandler:
 
 
 class FileSystemHandler:
+    def __init__(self, settings_service=None) -> None:
+        self._settings = settings_service or get_settings_manager()
+
     async def open_file_location(self, request: web.Request) -> web.Response:
         try:
             data = await request.json()
@@ -875,6 +878,30 @@ class FileSystemHandler:
             return web.json_response({"success": True, "message": f"Opened folder and selected file: {file_path}"})
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Failed to open file location: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def open_settings_location(self, request: web.Request) -> web.Response:
+        try:
+            settings_file = getattr(self._settings, "settings_file", None)
+            if not settings_file:
+                return web.json_response({"success": False, "error": "Settings file not found"}, status=404)
+
+            settings_file = os.path.abspath(settings_file)
+            if not os.path.isfile(settings_file):
+                return web.json_response({"success": False, "error": "Settings file does not exist"}, status=404)
+
+            if os.name == "nt":
+                subprocess.Popen(["explorer", "/select,", settings_file])
+            elif os.name == "posix":
+                if sys.platform == "darwin":
+                    subprocess.Popen(["open", "-R", settings_file])
+                else:
+                    folder = os.path.dirname(settings_file)
+                    subprocess.Popen(["xdg-open", folder])
+
+            return web.json_response({"success": True, "message": f"Opened settings folder: {settings_file}"})
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Failed to open settings location: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
@@ -1103,6 +1130,7 @@ class MiscHandlerSet:
             "get_metadata_archive_status": self.metadata_archive.get_metadata_archive_status,
             "get_model_versions_status": self.model_library.get_model_versions_status,
             "open_file_location": self.filesystem.open_file_location,
+            "open_settings_location": self.filesystem.open_settings_location,
         }
 
 
