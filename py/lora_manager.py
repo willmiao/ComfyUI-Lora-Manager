@@ -2,6 +2,15 @@ import asyncio
 import sys
 import os
 import logging
+from .utils.logging_config import setup_logging
+
+# Check if we're in standalone mode
+standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1" or os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
+
+# Only setup logging prefix if not in standalone mode
+if not standalone_mode:
+    setup_logging()
+
 from server import PromptServer # type: ignore
 
 from .config import config
@@ -20,9 +29,6 @@ from .services.example_images_cleanup_service import ExampleImagesCleanupService
 from .middleware.csp_middleware import relax_csp_for_remote_media
 
 logger = logging.getLogger(__name__)
-
-# Check if we're in standalone mode
-STANDALONE_MODE = 'nodes' not in sys.modules
 
 HEADER_SIZE_LIMIT = 16384
 
