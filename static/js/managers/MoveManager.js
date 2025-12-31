@@ -327,15 +327,22 @@ class MoveManager {
 
                             if (!isVisible) {
                                 state.virtualScroller.removeItemByFilePath(result.original_file_path);
-                            } else if (result.new_file_path !== result.original_file_path) {
+                            } else {
                                 const newFileNameWithExt = result.new_file_path.substring(result.new_file_path.lastIndexOf('/') + 1);
                                 const baseFileName = newFileNameWithExt.substring(0, newFileNameWithExt.lastIndexOf('.'));
 
-                                state.virtualScroller.updateSingleItem(result.original_file_path, {
+                                const updateData = {
                                     file_path: result.new_file_path,
                                     file_name: baseFileName,
                                     folder: newRelativeFolder
-                                });
+                                };
+
+                                // Only update model_type if it's present in the cache_entry
+                                if (result.cache_entry && result.cache_entry.model_type) {
+                                    updateData.model_type = result.cache_entry.model_type;
+                                }
+
+                                state.virtualScroller.updateSingleItem(result.original_file_path, updateData);
                             }
                         }
                     });
@@ -352,15 +359,21 @@ class MoveManager {
                     if (!isVisible) {
                         state.virtualScroller.removeItemByFilePath(this.currentFilePath);
                     } else {
-                        // Update the model card even if it stays visible
                         const newFileNameWithExt = result.new_file_path.substring(result.new_file_path.lastIndexOf('/') + 1);
                         const baseFileName = newFileNameWithExt.substring(0, newFileNameWithExt.lastIndexOf('.'));
 
-                        state.virtualScroller.updateSingleItem(this.currentFilePath, {
+                        const updateData = {
                             file_path: result.new_file_path,
                             file_name: baseFileName,
                             folder: newRelativeFolder
-                        });
+                        };
+
+                        // Only update model_type if it's present in the cache_entry
+                        if (result.cache_entry && result.cache_entry.model_type) {
+                            updateData.model_type = result.cache_entry.model_type;
+                        }
+
+                        state.virtualScroller.updateSingleItem(this.currentFilePath, updateData);
                     }
                 }
             }

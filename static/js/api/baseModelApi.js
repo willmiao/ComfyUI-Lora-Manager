@@ -936,7 +936,8 @@ export class BaseModelApiClient {
         if (result.success) {
             return {
                 original_file_path: result.original_file_path || filePath,
-                new_file_path: result.new_file_path
+                new_file_path: result.new_file_path,
+                cache_entry: result.cache_entry
             };
         }
         return null;

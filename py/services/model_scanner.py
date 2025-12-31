@@ -1216,9 +1216,12 @@ class ModelScanner:
                 except Exception as e:
                     logger.error(f"Error moving metadata file: {e}")
             
-            await self.update_single_model_cache(source_path, target_file, metadata)
+            update_result = await self.update_single_model_cache(source_path, target_file, metadata, recalculate_type=True)
             
-            return target_file
+            return {
+                "new_path": target_file,
+                "cache_entry": update_result if isinstance(update_result, dict) else None
+            }
             
         except Exception as e:
             logger.error(f"Error moving model: {e}", exc_info=True)
@@ -1250,7 +1253,7 @@ class ModelScanner:
             logger.error(f"Error updating metadata paths: {e}", exc_info=True)
             return None
 
-    async def update_single_model_cache(self, original_path: str, new_path: str, metadata: Dict) -> bool:
+    async def update_single_model_cache(self, original_path: str, new_path: str, metadata: Dict, recalculate_type: bool = False) -> Union[bool, Dict]:
         """Update cache after a model has been moved or modified"""
         cache = await self.get_cached_data()
 
@@ -1287,6 +1290,9 @@ class ModelScanner:
                 file_path_override=normalized_new_path,
             )
 
+            if recalculate_type:
+                cache_entry = self.adjust_cached_entry(cache_entry)
+
             cache.raw_data.append(cache_entry)
             cache.add_to_version_index(cache_entry)
 
@@ -1307,7 +1313,7 @@ class ModelScanner:
         if cache_modified:
             await self._persist_current_cache()
 
-        return True
+        return cache_entry if metadata else True
         
     def has_hash(self, sha256: str) -> bool:
         """Check if a model with given hash exists"""

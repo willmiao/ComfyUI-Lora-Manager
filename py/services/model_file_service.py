@@ -496,12 +496,15 @@ class ModelMoveService:
                     'new_file_path': file_path
                 }
 
-            new_file_path = await self.scanner.move_model(file_path, target_path)
-            if new_file_path:
+            move_result = await self.scanner.move_model(file_path, target_path)
+            if move_result:
+                new_file_path = move_result.get("new_path")
+                cache_entry = move_result.get("cache_entry")
                 return {
                     'success': True, 
                     'original_file_path': file_path,
-                    'new_file_path': new_file_path
+                    'new_file_path': new_file_path,
+                    'cache_entry': cache_entry
                 }
             else:
                 return {
@@ -539,7 +542,8 @@ class ModelMoveService:
                     "original_file_path": file_path,
                     "new_file_path": result.get('new_file_path'),
                     "success": result['success'],
-                    "message": result.get('message', result.get('error', 'Unknown'))
+                    "message": result.get('message', result.get('error', 'Unknown')),
+                    "cache_entry": result.get('cache_entry')
                 })
             
             success_count = sum(1 for r in results if r["success"])
