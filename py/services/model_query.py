@@ -224,7 +224,7 @@ class ModelFilterSet:
 
         duration = time.perf_counter() - overall_start
         if duration > 0.1: # Only log if it's potentially slow
-            logger.info(
+            logger.debug(
                 "ModelFilterSet.apply took %.3fs (sfw: %.3fs, fav: %.3fs, folder: %.3fs, base: %.3fs, tags: %.3fs, types: %.3fs). "
                 "Count: %d -> %d",
                 duration, sfw_duration, favorites_duration, folder_duration, 

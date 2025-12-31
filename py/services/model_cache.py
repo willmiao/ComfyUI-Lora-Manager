@@ -258,7 +258,7 @@ class ModelCache:
         
         duration = time.perf_counter() - start_time
         if duration > 0.05:
-            logger.info("ModelCache._sort_data(%s, %s) for %d items took %.3fs", sort_key, order, len(data), duration)
+            logger.debug("ModelCache._sort_data(%s, %s) for %d items took %.3fs", sort_key, order, len(data), duration)
         return result
 
     async def get_sorted_data(self, sort_key: str = 'name', order: str = 'asc') -> List[Dict]:

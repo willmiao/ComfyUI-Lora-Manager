@@ -151,7 +151,7 @@ class BaseModelService(ABC):
         annotate_duration = time.perf_counter() - t4
         
         overall_duration = time.perf_counter() - overall_start
-        logger.info(
+        logger.debug(
             "%s.get_paginated_data took %.3fs (fetch: %.3fs, filter: %.3fs, update_filter: %.3fs, pagination: %.3fs, annotate: %.3fs). "
             "Counts: initial=%d, post_filter=%d, final=%d",
             self.__class__.__name__, overall_duration, fetch_duration, filter_duration, 

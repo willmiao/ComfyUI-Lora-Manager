@@ -177,7 +177,7 @@ class ModelListingHandler:
             format_duration = time.perf_counter() - format_start
             
             duration = time.perf_counter() - start_time
-            self._logger.info(
+            self._logger.debug(
                 "Request for %s/list took %.3fs (formatting: %.3fs)",
                 self._service.model_type, duration, format_duration
             )
