@@ -14,6 +14,13 @@ from py.services.model_update_service import ModelUpdateRecord, ModelVersionReco
 class DummyScanner:
     def __init__(self, cache):
         self._cache = cache
+        self._cancelled = False
+
+    def is_cancelled(self) -> bool:
+        return self._cancelled
+
+    def reset_cancellation(self) -> None:
+        self._cancelled = False
 
     async def get_cached_data(self):
         return self._cache

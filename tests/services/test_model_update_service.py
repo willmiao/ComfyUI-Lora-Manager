@@ -15,6 +15,13 @@ from py.services.model_update_service import (
 class DummyScanner:
     def __init__(self, raw_data):
         self._cache = SimpleNamespace(raw_data=raw_data, version_index={})
+        self._cancelled = False
+
+    def is_cancelled(self) -> bool:
+        return self._cancelled
+
+    def reset_cancellation(self) -> None:
+        self._cancelled = False
 
     async def get_cached_data(self, *args, **kwargs):
         return self._cache

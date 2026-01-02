@@ -36,11 +36,13 @@ class AutoOrganizeResult:
         self.results_truncated: bool = False
         self.sample_results: List[Dict[str, Any]] = []
         self.is_flat_structure: bool = False
+        self.status: str = 'success'
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert result to dictionary"""
         result = {
-            'success': True,
+            'success': self.status != 'error',
+            'status': self.status,
             'message': f'Auto-organize {self.operation_type} completed: {self.success_count} moved, {self.skipped_count} skipped, {self.failure_count} failed out of {self.total} total',
             'summary': {
                 'total': self.total,
@@ -97,6 +99,8 @@ class ModelFileService:
         """
         result = AutoOrganizeResult()
         source_directories: Set[str] = set()
+        
+        self.scanner.reset_cancellation()
         
         try:
             # Get all models from cache
@@ -186,6 +190,21 @@ class ModelFileService:
                 progress_callback,
                 source_directories  # Pass the set to track source directories
             )
+
+            if self.scanner.is_cancelled():
+                result.status = 'cancelled'
+                if progress_callback:
+                    await progress_callback.on_progress({
+                        'type': 'auto_organize_progress',
+                        'status': 'cancelled',
+                        'total': result.total,
+                        'processed': result.processed,
+                        'success': result.success_count,
+                        'failures': result.failure_count,
+                        'skipped': result.skipped_count,
+                        'operation_type': result.operation_type
+                    })
+                return result
             
             # Send cleanup progress
             if progress_callback:
@@ -246,9 +265,15 @@ class ModelFileService:
         """Process models in batches to avoid overwhelming the system"""
         
         for i in range(0, result.total, AUTO_ORGANIZE_BATCH_SIZE):
+            if self.scanner.is_cancelled():
+                logger.info(f"{self.model_type.capitalize()} File Service: Auto-organize cancelled by user")
+                break
+
             batch = all_models[i:i + AUTO_ORGANIZE_BATCH_SIZE]
             
             for model in batch:
+                if self.scanner.is_cancelled():
+                    break
                 await self._process_single_model(model, model_roots, result, source_directories)
                 result.processed += 1
             
@@ -535,8 +560,12 @@ class ModelMoveService:
         """
         try:
             results = []
+            self.scanner.reset_cancellation()
             
             for file_path in file_paths:
+                if self.scanner.is_cancelled():
+                    logger.info(f"{self.model_type.capitalize()} Move Service: Bulk move cancelled by user")
+                    break
                 result = await self.move_model(file_path, target_path, use_default_paths=use_default_paths)
                 results.append({
                     "original_file_path": file_path,

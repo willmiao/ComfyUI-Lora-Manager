@@ -618,6 +618,8 @@ class ModelQueryHandler:
         try:
             full_rebuild = request.query.get("full_rebuild", "false").lower() == "true"
             await self._service.scan_models(force_refresh=True, rebuild_cache=full_rebuild)
+            if self._service.scanner.is_cancelled():
+                return web.json_response({"status": "cancelled", "message": f"{self._service.model_type.capitalize()} scan cancelled"})
             return web.json_response({"status": "success", "message": f"{self._service.model_type.capitalize()} scan completed"})
         except Exception as exc:
             self._logger.error("Error scanning %ss: %s", self._service.model_type, exc, exc_info=True)
@@ -637,6 +639,14 @@ class ModelQueryHandler:
             return web.json_response({"folders": cache.folders})
         except Exception as exc:
             self._logger.error("Error getting folders: %s", exc)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def cancel_task(self, request: web.Request) -> web.Response:
+        try:
+            self._service.scanner.cancel_task()
+            return web.json_response({"status": "success", "message": "Cancellation requested"})
+        except Exception as exc:
+            self._logger.error("Error cancelling task for %s: %s", self._service.model_type, exc)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_folder_tree(self, request: web.Request) -> web.Response:
@@ -1262,6 +1272,8 @@ class ModelUpdateHandler:
                 force_refresh=force_refresh,
                 target_model_ids=target_model_ids or None,
             )
+            if self._service.scanner.is_cancelled():
+                return web.json_response({"success": False, "status": "cancelled", "message": "Update refresh cancelled"})
         except RateLimitError as exc:
             return web.json_response(
                 {"success": False, "error": str(exc) or "Rate limited"}, status=429
@@ -1678,4 +1690,5 @@ class ModelHandlerSet:
             "set_version_update_ignore": self.updates.set_version_update_ignore,
             "get_model_update_status": self.updates.get_model_update_status,
             "get_model_versions": self.updates.get_model_versions,
+            "cancel_task": self.query.cancel_task,
         }

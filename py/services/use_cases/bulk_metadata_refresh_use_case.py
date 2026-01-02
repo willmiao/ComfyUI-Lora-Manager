@@ -59,6 +59,8 @@ class BulkMetadataRefreshUseCase:
         success = 0
         needs_resort = False
 
+        self._service.scanner.reset_cancellation()
+
         async def emit(status: str, **extra: Any) -> None:
             if progress_callback is None:
                 return
@@ -69,6 +71,10 @@ class BulkMetadataRefreshUseCase:
         await emit("started")
 
         for model in to_process:
+            if self._service.scanner.is_cancelled():
+                self._logger.info("Bulk metadata refresh cancelled by user")
+                await emit("cancelled", processed=processed, success=success)
+                return {"success": False, "message": "Operation cancelled", "processed": processed, "updated": success, "total": total_models}
             try:
                 original_name = model.get("model_name")
                 await MetadataManager.hydrate_model_data(model)

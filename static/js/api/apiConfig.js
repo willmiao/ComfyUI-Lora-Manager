@@ -52,7 +52,7 @@ export function getApiEndpoints(modelType) {
     if (!Object.values(MODEL_TYPES).includes(modelType)) {
         throw new Error(`Invalid model type: ${modelType}`);
     }
-    
+
     return {
         // Base CRUD operations
         list: `/api/lm/${modelType}/list`,
@@ -60,17 +60,18 @@ export function getApiEndpoints(modelType) {
         exclude: `/api/lm/${modelType}/exclude`,
         rename: `/api/lm/${modelType}/rename`,
         save: `/api/lm/${modelType}/save-metadata`,
-        
+        cancelTask: `/api/lm/${modelType}/cancel-task`,
+
         // Bulk operations
         bulkDelete: `/api/lm/${modelType}/bulk-delete`,
-        
+
         // Tag operations
         addTags: `/api/lm/${modelType}/add-tags`,
 
         // Move operations (now common for all model types that support move)
         moveModel: `/api/lm/${modelType}/move_model`,
         moveBulk: `/api/lm/${modelType}/move_models_bulk`,
-        
+
         // CivitAI integration
         fetchCivitai: `/api/lm/${modelType}/fetch-civitai`,
         fetchAllCivitai: `/api/lm/${modelType}/fetch-all-civitai`,
@@ -82,10 +83,10 @@ export function getApiEndpoints(modelType) {
         modelUpdateVersions: `/api/lm/${modelType}/updates/versions`,
         ignoreModelUpdate: `/api/lm/${modelType}/updates/ignore`,
         ignoreVersionUpdate: `/api/lm/${modelType}/updates/ignore-version`,
-        
+
         // Preview management
         replacePreview: `/api/lm/${modelType}/replace-preview`,
-        
+
         // Query operations
         scan: `/api/lm/${modelType}/scan`,
         topTags: `/api/lm/${modelType}/top-tags`,
@@ -99,11 +100,11 @@ export function getApiEndpoints(modelType) {
         verify: `/api/lm/${modelType}/verify-duplicates`,
         metadata: `/api/lm/${modelType}/metadata`,
         modelDescription: `/api/lm/${modelType}/model-description`,
-        
+
         // Auto-organize operations
         autoOrganize: `/api/lm/${modelType}/auto-organize`,
         autoOrganizeProgress: `/api/lm/${modelType}/auto-organize-progress`,
-        
+
         // Model-specific endpoints (will be merged with specific configs)
         specific: {}
     };
@@ -144,7 +145,7 @@ export function getCompleteApiConfig(modelType) {
     const baseEndpoints = getApiEndpoints(modelType);
     const specificEndpoints = MODEL_SPECIFIC_ENDPOINTS[modelType] || {};
     const config = MODEL_CONFIG[modelType];
-    
+
     return {
         modelType,
         config,

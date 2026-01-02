@@ -82,6 +82,19 @@ export class BaseModelApiClient {
         }
     }
 
+    async cancelTask() {
+        try {
+            const endpoint = this.apiConfig.endpoints.cancelTask;
+            const response = await fetch(endpoint, {
+                method: 'POST'
+            });
+            return await response.json();
+        } catch (error) {
+            console.error(`Error cancelling task for ${this.modelType}:`, error);
+            return { success: false, error: error.message };
+        }
+    }
+
     async loadMoreWithVirtualScroll(resetPage = false, updateFolders = false) {
         const pageState = this.getPageState();
 
@@ -336,9 +349,11 @@ export class BaseModelApiClient {
 
     async refreshModels(fullRebuild = false) {
         try {
-            state.loadingManager.showSimpleLoading(
-                `${fullRebuild ? 'Full rebuild' : 'Refreshing'} ${this.apiConfig.config.displayName}s...`
+            state.loadingManager.show(
+                `${fullRebuild ? 'Full rebuild' : 'Refreshing'} ${this.apiConfig.config.displayName}s...`,
+                0
             );
+            state.loadingManager.showCancelButton(() => this.cancelTask());
 
             const url = new URL(this.apiConfig.endpoints.scan, window.location.origin);
             url.searchParams.append('full_rebuild', fullRebuild);
@@ -347,6 +362,12 @@ export class BaseModelApiClient {
 
             if (!response.ok) {
                 throw new Error(`Failed to refresh ${this.apiConfig.config.displayName}s: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            if (data.status === 'cancelled') {
+                showToast('toast.api.operationCancelled', {}, 'info');
+                return;
             }
 
             resetAndReload(true);
@@ -402,6 +423,7 @@ export class BaseModelApiClient {
 
         await state.loadingManager.showWithProgress(async (loading) => {
             try {
+                loading.showCancelButton(() => this.cancelTask());
                 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
                 ws = new WebSocket(`${wsProtocol}${window.location.host}${WS_ENDPOINTS.fetchProgress}`);
 
@@ -427,7 +449,12 @@ export class BaseModelApiClient {
                                 loading.setStatus(
                                     `Completed: Updated ${data.success} of ${data.processed} ${this.apiConfig.config.displayName}s`
                                 );
-                                resolve();
+                                resolve(data);
+                                break;
+
+                            case 'cancelled':
+                                loading.setStatus('Operation cancelled by user');
+                                resolve(data); // Consider it complete but marked as cancelled
                                 break;
 
                             case 'error':
@@ -458,10 +485,14 @@ export class BaseModelApiClient {
                 }
 
                 // Wait for the operation to complete via WebSocket
-                await operationComplete;
+                const finalData = await operationComplete;
 
                 resetAndReload(false);
-                showToast('toast.api.metadataUpdateComplete', {}, 'success');
+                if (finalData && finalData.status === 'cancelled') {
+                    showToast('toast.api.operationCancelledPartial', { success: finalData.success, total: finalData.total }, 'info');
+                } else {
+                    showToast('toast.api.metadataUpdateComplete', {}, 'success');
+                }
             } catch (error) {
                 console.error('Error fetching metadata:', error);
                 showToast('toast.api.metadataFetchFailed', { message: error.message }, 'error');
@@ -487,9 +518,17 @@ export class BaseModelApiClient {
         let failedItems = [];
 
         const progressController = state.loadingManager.showEnhancedProgress('Starting metadata refresh...');
+        let cancelled = false;
+        progressController.showCancelButton(() => {
+            cancelled = true;
+            this.cancelTask();
+        });
 
         try {
             for (let i = 0; i < filePaths.length; i++) {
+                if (cancelled) {
+                    break;
+                }
                 const filePath = filePaths[i];
                 const fileName = filePath.split('/').pop();
 
@@ -531,20 +570,15 @@ export class BaseModelApiClient {
             }
 
             let completionMessage;
-            if (successCount === totalItems) {
+            if (cancelled) {
+                completionMessage = translate('toast.api.operationCancelledPartial', { success: successCount, total: totalItems }, `Operation cancelled. ${successCount} items processed.`);
+                showToast('toast.api.operationCancelledPartial', { success: successCount, total: totalItems }, 'info');
+            } else if (successCount === totalItems) {
                 completionMessage = translate('toast.api.bulkMetadataCompleteAll', { count: successCount, type: this.apiConfig.config.displayName }, `Successfully refreshed all ${successCount} ${this.apiConfig.config.displayName}s`);
                 showToast('toast.api.bulkMetadataCompleteAll', { count: successCount, type: this.apiConfig.config.displayName }, 'success');
             } else if (successCount > 0) {
                 completionMessage = translate('toast.api.bulkMetadataCompletePartial', { success: successCount, total: totalItems, type: this.apiConfig.config.displayName }, `Refreshed ${successCount} of ${totalItems} ${this.apiConfig.config.displayName}s`);
                 showToast('toast.api.bulkMetadataCompletePartial', { success: successCount, total: totalItems, type: this.apiConfig.config.displayName }, 'warning');
-
-                // if (failedItems.length > 0) {
-                //     const failureMessage = failedItems.length <= 3 
-                //         ? failedItems.map(item => `${item.fileName}: ${item.error}`).join('\n')
-                //         : failedItems.slice(0, 3).map(item => `${item.fileName}: ${item.error}`).join('\n') + 
-                //           `\n(and ${failedItems.length - 3} more)`;
-                //     showToast('toast.api.bulkMetadataFailureDetails', { failures: failureMessage }, 'warning', 6000);
-                // }
             } else {
                 completionMessage = translate('toast.api.bulkMetadataCompleteNone', { type: this.apiConfig.config.displayName }, `Failed to refresh metadata for any ${this.apiConfig.config.displayName}s`);
                 showToast('toast.api.bulkMetadataCompleteNone', { type: this.apiConfig.config.displayName }, 'error');
@@ -574,28 +608,42 @@ export class BaseModelApiClient {
             throw new Error('No model IDs provided');
         }
 
-        const response = await fetch(this.apiConfig.endpoints.refreshUpdates, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model_ids: modelIds,
-                force
-            })
-        });
-
-        let payload = {};
         try {
-            payload = await response.json();
+            state.loadingManager.show('Checking for updates...', 0);
+            state.loadingManager.showCancelButton(() => this.cancelTask());
+
+            const response = await fetch(this.apiConfig.endpoints.refreshUpdates, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model_ids: modelIds,
+                    force
+                })
+            });
+
+            let payload = {};
+            try {
+                payload = await response.json();
+            } catch (error) {
+                console.warn('Unable to parse refresh updates response as JSON', error);
+            }
+
+            if (!response.ok || payload?.success !== true) {
+                if (payload?.status === 'cancelled') {
+                    showToast('toast.api.operationCancelled', {}, 'info');
+                    return null;
+                }
+                const message = payload?.error || response.statusText || 'Failed to refresh updates';
+                throw new Error(message);
+            }
+
+            return payload;
         } catch (error) {
-            console.warn('Unable to parse refresh updates response as JSON', error);
+            console.error('Error refreshing updates for models:', error);
+            throw error;
+        } finally {
+            state.loadingManager.hide();
         }
-
-        if (!response.ok || payload?.success !== true) {
-            const message = payload?.error || response.statusText || 'Failed to refresh updates';
-            throw new Error(message);
-        }
-
-        return payload;
     }
 
     async fetchCivitaiVersions(modelId, source = null) {
@@ -1016,6 +1064,7 @@ export class BaseModelApiClient {
 
         try {
             state.loadingManager.showSimpleLoading(`Deleting ${this.apiConfig.config.displayName.toLowerCase()}s...`);
+            state.loadingManager.showCancelButton(() => this.cancelTask());
 
             const response = await fetch(this.apiConfig.endpoints.bulkDelete, {
                 method: 'POST',
@@ -1055,6 +1104,7 @@ export class BaseModelApiClient {
         let ws = null;
 
         await state.loadingManager.showWithProgress(async (loading) => {
+            loading.showCancelButton(() => this.stopExampleImages());
             try {
                 // Connect to WebSocket for progress updates
                 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -1202,6 +1252,7 @@ export class BaseModelApiClient {
         let ws = null;
 
         await state.loadingManager.showWithProgress(async (loading) => {
+            loading.showCancelButton(() => this.cancelTask());
             try {
                 // Connect to WebSocket for progress updates
                 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -1255,6 +1306,11 @@ export class BaseModelApiClient {
                                 }, 1500);
                                 break;
 
+                            case 'cancelled':
+                                loading.setStatus(translate('toast.api.operationCancelled', {}, 'Operation cancelled by user'));
+                                resolve(data);
+                                break;
+
                             case 'error':
                                 loading.setStatus(translate('loras.bulkOperations.autoOrganizeProgress.error', { error: data.error }, `Error: ${data.error}`));
                                 reject(new Error(data.error));
@@ -1299,7 +1355,9 @@ export class BaseModelApiClient {
                 const result = await operationComplete;
 
                 // Show appropriate success message based on results
-                if (result.failures === 0) {
+                if (result.status === 'cancelled') {
+                    showToast('toast.api.operationCancelledPartial', { success: result.success, total: result.total }, 'info');
+                } else if (result.failures === 0) {
                     showToast('toast.loras.autoOrganizeSuccess', {
                         count: result.success,
                         type: result.operation_type === 'bulk' ? 'selected models' : 'all models'
@@ -1325,5 +1383,18 @@ export class BaseModelApiClient {
             initialMessage: translate('loras.bulkOperations.autoOrganizeProgress.initializing', {}, 'Initializing auto-organize...'),
             completionMessage: translate('loras.bulkOperations.autoOrganizeProgress.complete', {}, 'Auto-organize complete')
         });
+    }
+
+    async stopExampleImages() {
+        try {
+            const response = await fetch('/api/lm/stop-example-images', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            return response.ok;
+        } catch (error) {
+            console.error('Error stopping example images:', error);
+            return false;
+        }
     }
 }

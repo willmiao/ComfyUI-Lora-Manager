@@ -466,6 +466,7 @@ class ModelUpdateService:
         target_model_ids: Optional[Sequence[int]] = None,
     ) -> Dict[int, ModelUpdateRecord]:
         """Refresh update information for every model present in the cache."""
+        scanner.reset_cancellation()
 
         normalized_targets = (
             self._normalize_sequence(target_model_ids)
@@ -542,6 +543,9 @@ class ModelUpdateService:
                 force_refresh=force_refresh,
                 prefetched_response=prefetched.get(model_id),
             )
+            if scanner.is_cancelled():
+                logger.info(f"{model_type.capitalize()} Update Service: Refresh cancelled by user")
+                return results
             if record:
                 results[model_id] = record
             if index % progress_interval == 0 or index == total_models:

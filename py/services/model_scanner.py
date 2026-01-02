@@ -84,6 +84,7 @@ class ModelScanner:
         self._excluded_models = []  # List to track excluded models
         self._persistent_cache = get_persistent_cache()
         self._name_display_mode = self._resolve_name_display_mode()
+        self._cancel_requested = False  # Flag for cancellation
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
@@ -678,6 +679,7 @@ class ModelScanner:
 
     async def _reconcile_cache(self) -> None:
         """Fast cache reconciliation - only process differences between cache and filesystem"""
+        self.reset_cancellation()
         self._is_initializing = True # Set flag for reconciliation duration
         try:
             start_time = time.time()
@@ -737,6 +739,9 @@ class ModelScanner:
                     
                     # Yield control periodically
                     await asyncio.sleep(0)
+                    if self.is_cancelled():
+                        logger.info(f"{self.model_type.capitalize()} Scanner: Reconcile scan cancelled")
+                        return
             
             # Process new files in batches
             total_added = 0
@@ -784,6 +789,10 @@ class ModelScanner:
                                 logger.error(f"Could not determine root path for {path}")
                         except Exception as e:
                             logger.error(f"Error adding {path} to cache: {e}")
+                        
+                        if self.is_cancelled():
+                            logger.info(f"{self.model_type.capitalize()} Scanner: Reconcile processing cancelled")
+                            return
             
             # Find missing files (in cache but not in filesystem)
             missing_files = cached_paths - found_paths
@@ -837,6 +846,19 @@ class ModelScanner:
     def is_initializing(self) -> bool:
         """Check if the scanner is currently initializing"""
         return self._is_initializing
+    
+    def cancel_task(self) -> None:
+        """Request cancellation of the current long-running task."""
+        self._cancel_requested = True
+        logger.info(f"{self.model_type.capitalize()} Scanner: Cancellation requested")
+
+    def reset_cancellation(self) -> None:
+        """Reset the cancellation flag."""
+        self._cancel_requested = False
+
+    def is_cancelled(self) -> bool:
+        """Check if cancellation has been requested."""
+        return self._cancel_requested
     
     def get_model_roots(self) -> List[str]:
         """Get model root directories"""
@@ -1030,6 +1052,8 @@ class ModelScanner:
             except Exception as exc:  # pragma: no cover - defensive logging
                 logger.error(f"Error reporting progress for {self.model_type}: {exc}")
 
+        self.reset_cancellation()
+
         async def scan_recursive(current_path: str, root_path: str, visited_paths: Set[str]) -> None:
             nonlocal processed_files
 
@@ -1073,12 +1097,17 @@ class ModelScanner:
 
                             await handle_progress()
                             await asyncio.sleep(0)
+                            if self.is_cancelled():
+                                return
                         elif entry.is_dir(follow_symlinks=True):
                             await scan_recursive(entry.path, root_path, visited_paths)
                     except Exception as entry_error:
                         logger.error(f"Error processing entry {entry.path}: {entry_error}")
             except Exception as scan_error:
                 logger.error(f"Error scanning {current_path}: {scan_error}")
+
+            if self.is_cancelled():
+                return
 
         for model_root in self.get_model_roots():
             if not os.path.exists(model_root):
@@ -1448,6 +1477,10 @@ class ModelScanner:
             deleted_models = []
             
             for file_path in file_paths:
+                if self.is_cancelled():
+                    logger.info(f"{self.model_type.capitalize()} Scanner: Bulk delete cancelled by user")
+                    break
+
                 try:
                     target_dir = os.path.dirname(file_path)
                     base_name = os.path.basename(file_path)
@@ -1488,6 +1521,7 @@ class ModelScanner:
                 
             return {
                 'success': True,
+                'status': 'cancelled' if self.is_cancelled() else 'success',
                 'total_deleted': total_deleted,
                 'total_attempted': len(file_paths),
                 'cache_updated': cache_updated,

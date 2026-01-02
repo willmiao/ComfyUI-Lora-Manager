@@ -2,7 +2,7 @@ import { state } from '../state/index.js';
 import { translate } from './i18nHelpers.js';
 import { showToast } from './uiHelpers.js';
 import { getCompleteApiConfig, getCurrentModelType } from '../api/apiConfig.js';
-import { resetAndReload } from '../api/modelApiFactory.js';
+import { resetAndReload, getModelApiClient } from '../api/modelApiFactory.js';
 import { getStorageItem, setStorageItem } from './storageHelpers.js';
 import { modalManager } from '../managers/ModalManager.js';
 
@@ -18,6 +18,7 @@ const CHECK_UPDATES_CONFIRMATION_KEY = 'ack_check_updates_for_all_models';
 export async function performModelUpdateCheck({ onStart, onComplete } = {}) {
     const modelType = getCurrentModelType();
     const apiConfig = getCompleteApiConfig(modelType);
+    const apiClient = getModelApiClient(modelType);
     const displayName = apiConfig?.config?.displayName ?? 'Model';
 
     if (!apiConfig?.endpoints?.refreshUpdates) {
@@ -41,6 +42,7 @@ export async function performModelUpdateCheck({ onStart, onComplete } = {}) {
     onStart?.({ displayName, loadingMessage });
 
     state.loadingManager?.showSimpleLoading?.(loadingMessage);
+    state.loadingManager?.showCancelButton?.(() => apiClient.cancelTask());
 
     let status = 'success';
     let records = [];
@@ -61,6 +63,10 @@ export async function performModelUpdateCheck({ onStart, onComplete } = {}) {
         }
 
         if (!response.ok || payload.success !== true) {
+            if (payload?.status === 'cancelled') {
+                showToast('toast.api.operationCancelled', {}, 'info');
+                return { status: 'cancelled', displayName, records: [], error: null };
+            }
             const errorMessage = payload?.error || response.statusText || 'Unknown error';
             throw new Error(errorMessage);
         }

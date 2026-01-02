@@ -16,19 +16,19 @@ export class BulkManager {
         this.bulkBtn = document.getElementById('bulkOperationsBtn');
         // Remove bulk panel references since we're using context menu now
         this.bulkContextMenu = null; // Will be set by core initialization
-        
+
         // Marquee selection properties
         this.isMarqueeActive = false;
         this.isDragging = false;
         this.marqueeStart = { x: 0, y: 0 };
         this.marqueeElement = null;
         this.initialSelectedModels = new Set();
-        
+
         // Drag detection properties
         this.dragThreshold = 5; // Pixels to move before considering it a drag
         this.mouseDownTime = 0;
         this.mouseDownPosition = { x: 0, y: 0 };
-        
+
         // Model type specific action configurations
         this.actionConfig = {
             [MODEL_TYPES.LORA]: {
@@ -103,7 +103,7 @@ export class BulkManager {
     initialize() {
         // Register with event manager for coordinated event handling
         this.registerEventHandlers();
-        
+
         // Initialize bulk mode state in event manager
         eventManager.setState('bulkMode', state.bulkMode || false);
     }
@@ -160,7 +160,7 @@ export class BulkManager {
                 const dx = e.clientX - this.mouseDownPosition.x;
                 const dy = e.clientY - this.mouseDownPosition.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-                
+
                 if (distance >= this.dragThreshold) {
                     this.isDragging = true;
                     this.startMarqueeSelection(e, true);
@@ -176,7 +176,7 @@ export class BulkManager {
                 this.endMarqueeSelection(e);
                 return true; // Stop propagation
             }
-            
+
             // Reset drag detection if we had a mousedown but didn't drag
             if (this.mouseDownTime) {
                 this.mouseDownTime = 0;
@@ -258,25 +258,25 @@ export class BulkManager {
             this.toggleBulkMode();
             return true; // Stop propagation
         }
-        
+
         return false; // Continue with other handlers
     }
 
     toggleBulkMode() {
         state.bulkMode = !state.bulkMode;
-        
+
         // Update event manager state
         eventManager.setState('bulkMode', state.bulkMode);
-        
+
         if (this.bulkBtn) {
             this.bulkBtn.classList.toggle('active', state.bulkMode);
         }
-        
+
         updateCardsForBulkMode(state.bulkMode);
-        
+
         if (!state.bulkMode) {
             this.clearSelection();
-            
+
             // Hide context menu when exiting bulk mode
             if (this.bulkContextMenu) {
                 this.bulkContextMenu.hideMenu();
@@ -289,7 +289,7 @@ export class BulkManager {
             card.classList.remove('selected');
         });
         state.selectedModels.clear();
-        
+
         // Update context menu header if visible
         if (this.bulkContextMenu) {
             this.bulkContextMenu.updateSelectedCountHeader();
@@ -298,7 +298,7 @@ export class BulkManager {
 
     toggleCardSelection(card) {
         const filepath = card.dataset.filepath;
-        
+
         if (card.classList.contains('selected')) {
             card.classList.remove('selected');
             state.selectedModels.delete(filepath);
@@ -309,7 +309,7 @@ export class BulkManager {
             // Cache the metadata for this model
             this.updateMetadataCacheFromCard(filepath, card);
         }
-        
+
         // Update context menu header if visible
         if (this.bulkContextMenu) {
             this.bulkContextMenu.updateSelectedCountHeader();
@@ -419,7 +419,7 @@ export class BulkManager {
 
     applySelectionState() {
         if (!state.bulkMode) return;
-        
+
         document.querySelectorAll('.model-card').forEach(card => {
             const filepath = card.dataset.filepath;
             if (state.selectedModels.has(filepath)) {
@@ -437,19 +437,19 @@ export class BulkManager {
             showToast('toast.loras.copyOnlyForLoras', {}, 'warning');
             return;
         }
-        
+
         if (state.selectedModels.size === 0) {
             showToast('toast.loras.noLorasSelected', {}, 'warning');
             return;
         }
-        
+
         const loraSyntaxes = [];
         const missingLoras = [];
         const metadataCache = this.getMetadataCache();
-        
+
         for (const filepath of state.selectedModels) {
             const metadata = metadataCache.get(filepath);
-            
+
             if (metadata) {
                 const usageTips = JSON.parse(metadata.usageTips || '{}');
                 loraSyntaxes.push(buildLoraSyntax(metadata.fileName, usageTips));
@@ -457,38 +457,38 @@ export class BulkManager {
                 missingLoras.push(filepath);
             }
         }
-        
+
         if (missingLoras.length > 0) {
             console.warn('Missing metadata for some selected loras:', missingLoras);
             showToast('toast.loras.missingDataForLoras', { count: missingLoras.length }, 'warning');
         }
-        
+
         if (loraSyntaxes.length === 0) {
             showToast('toast.loras.noValidLorasToCopy', {}, 'error');
             return;
         }
-        
+
         await copyToClipboard(loraSyntaxes.join(', '), `Copied ${loraSyntaxes.length} LoRA syntaxes to clipboard`);
     }
-    
+
     async sendAllModelsToWorkflow(replaceMode = false) {
         if (state.currentPageType !== MODEL_TYPES.LORA) {
             showToast('toast.loras.sendOnlyForLoras', {}, 'warning');
             return;
         }
-        
+
         if (state.selectedModels.size === 0) {
             showToast('toast.loras.noLorasSelected', {}, 'warning');
             return;
         }
-        
+
         const loraSyntaxes = [];
         const missingLoras = [];
         const metadataCache = this.getMetadataCache();
-        
+
         for (const filepath of state.selectedModels) {
             const metadata = metadataCache.get(filepath);
-            
+
             if (metadata) {
                 const usageTips = JSON.parse(metadata.usageTips || '{}');
                 loraSyntaxes.push(buildLoraSyntax(metadata.fileName, usageTips));
@@ -496,56 +496,56 @@ export class BulkManager {
                 missingLoras.push(filepath);
             }
         }
-        
+
         if (missingLoras.length > 0) {
             console.warn('Missing metadata for some selected loras:', missingLoras);
             showToast('toast.loras.missingDataForLoras', { count: missingLoras.length }, 'warning');
         }
-        
+
         if (loraSyntaxes.length === 0) {
             showToast('toast.loras.noValidLorasToSend', {}, 'error');
             return;
         }
-        
+
         await sendLoraToWorkflow(loraSyntaxes.join(', '), replaceMode, 'lora');
     }
-    
+
     showBulkDeleteModal() {
         if (state.selectedModels.size === 0) {
             showToast('toast.models.noModelsSelected', {}, 'warning');
             return;
         }
-        
+
         const countElement = document.getElementById('bulkDeleteCount');
         if (countElement) {
             countElement.textContent = state.selectedModels.size;
         }
-        
+
         modalManager.showModal('bulkDeleteModal');
     }
-    
+
     async confirmBulkDelete() {
         if (state.selectedModels.size === 0) {
             showToast('toast.models.noModelsSelected', {}, 'warning');
             modalManager.closeModal('bulkDeleteModal');
             return;
         }
-        
+
         modalManager.closeModal('bulkDeleteModal');
-        
+
         try {
             const apiClient = this.getActiveApiClient();
             const filePaths = Array.from(state.selectedModels);
-            
+
             const result = await apiClient.bulkDeleteModels(filePaths);
-            
+
             if (result.success) {
                 const currentConfig = this.getCurrentDisplayConfig();
-                showToast('toast.models.deletedSuccessfully', { 
-                    count: result.deleted_count, 
-                    type: currentConfig.displayName.toLowerCase() 
+                showToast('toast.models.deletedSuccessfully', {
+                    count: result.deleted_count,
+                    type: currentConfig.displayName.toLowerCase()
                 }, 'success');
-                
+
                 filePaths.forEach(path => {
                     state.virtualScroller.removeItemByFilePath(path);
                 });
@@ -562,13 +562,13 @@ export class BulkManager {
             showToast('toast.models.deleteFailedGeneral', {}, 'error');
         }
     }
-    
+
     deselectItem(filepath) {
         const card = document.querySelector(`.model-card[data-filepath="${filepath}"]`);
         if (card) {
             card.classList.remove('selected');
         }
-        
+
         state.selectedModels.delete(filepath);
     }
 
@@ -577,10 +577,10 @@ export class BulkManager {
             showToast('toast.bulk.unableToSelectAll', {}, 'error');
             return;
         }
-        
+
         const oldCount = state.selectedModels.size;
         const metadataCache = this.getMetadataCache();
-        
+
         state.virtualScroller.items.forEach(item => {
             if (item && item.file_path) {
                 state.selectedModels.add(item.file_path);
@@ -596,16 +596,16 @@ export class BulkManager {
                 }
             }
         });
-        
+
         this.applySelectionState();
-        
+
         const newlySelected = state.selectedModels.size - oldCount;
         const currentConfig = this.getCurrentDisplayConfig();
-        showToast('toast.models.selectedAdditional', { 
-            count: newlySelected, 
-            type: currentConfig.displayName.toLowerCase() 
+        showToast('toast.models.selectedAdditional', {
+            count: newlySelected,
+            type: currentConfig.displayName.toLowerCase()
         }, 'success');
-        
+
         if (this.isStripVisible) {
             this.updateThumbnailStrip();
         }
@@ -616,13 +616,13 @@ export class BulkManager {
             showToast('toast.models.noModelsSelected', {}, 'warning');
             return;
         }
-        
+
         try {
             const apiClient = getModelApiClient();
             const filePaths = Array.from(state.selectedModels);
-            
+
             const result = await apiClient.refreshBulkModelMetadata(filePaths);
-            
+
             if (result.success) {
                 const metadataCache = this.getMetadataCache();
                 for (const filepath of state.selectedModels) {
@@ -634,12 +634,12 @@ export class BulkManager {
                         }
                     }
                 }
-                
+
                 if (this.isStripVisible) {
                     this.updateThumbnailStrip();
                 }
             }
-            
+
         } catch (error) {
             console.error('Error during bulk metadata refresh:', error);
             showToast('toast.models.refreshMetadataFailed', {}, 'error');
@@ -714,27 +714,27 @@ export class BulkManager {
             showToast('toast.models.noModelsSelected', {}, 'warning');
             return;
         }
-        
+
         const countElement = document.getElementById('bulkAddTagsCount');
         if (countElement) {
             countElement.textContent = state.selectedModels.size;
         }
-        
+
         // Clear any existing tags in the modal
         const tagsContainer = document.getElementById('bulkTagsItems');
         if (tagsContainer) {
             tagsContainer.innerHTML = '';
         }
-        
+
         modalManager.showModal('bulkAddTagsModal', null, null, () => {
             // Cleanup when modal is closed
             this.cleanupBulkAddTagsModal();
         });
-        
+
         // Initialize the bulk tags editing interface
         this.initializeBulkTagsInterface();
     }
-    
+
     initializeBulkTagsInterface() {
         // Setup tag input behavior
         const tagInput = document.querySelector('.bulk-metadata-input');
@@ -749,31 +749,31 @@ export class BulkManager {
                 }
             });
         }
-        
+
         // Create suggestions dropdown
         const tagForm = document.querySelector('#bulkAddTagsModal .metadata-add-form');
         if (tagForm) {
             const suggestionsDropdown = this.createBulkSuggestionsDropdown();
             tagForm.appendChild(suggestionsDropdown);
         }
-        
+
         // Setup save button
         const appendBtn = document.querySelector('.bulk-append-tags-btn');
         const replaceBtn = document.querySelector('.bulk-replace-tags-btn');
-        
+
         if (appendBtn) {
             appendBtn.addEventListener('click', () => {
                 this.saveBulkTags('append');
             });
         }
-        
+
         if (replaceBtn) {
             replaceBtn.addEventListener('click', () => {
                 this.saveBulkTags('replace');
             });
         }
     }
-    
+
     createBulkSuggestionsDropdown() {
         const dropdown = document.createElement('div');
         dropdown.className = 'metadata-suggestions-dropdown';
@@ -841,34 +841,34 @@ export class BulkManager {
             container.appendChild(item);
         });
     }
-    
+
     addBulkTag(tag) {
         tag = tag.trim().toLowerCase();
         if (!tag) return;
-        
+
         const tagsContainer = document.getElementById('bulkTagsItems');
         if (!tagsContainer) return;
-        
+
         // Validation: Check length
         if (tag.length > 30) {
             showToast('modelTags.validation.maxLength', {}, 'error');
             return;
         }
-        
+
         // Validation: Check total number
         const currentTags = tagsContainer.querySelectorAll('.metadata-item');
         if (currentTags.length >= 30) {
             showToast('modelTags.validation.maxCount', {}, 'error');
             return;
         }
-        
+
         // Validation: Check for duplicates
         const existingTags = Array.from(currentTags).map(tagEl => tagEl.dataset.tag);
         if (existingTags.includes(tag)) {
             showToast('modelTags.validation.duplicate', {}, 'error');
             return;
         }
-        
+
         // Create new tag
         const newTag = document.createElement('div');
         newTag.className = 'metadata-item';
@@ -879,7 +879,7 @@ export class BulkManager {
                 <i class="fas fa-times"></i>
             </button>
         `;
-        
+
         // Add delete button event listener
         const deleteBtn = newTag.querySelector('.metadata-delete-btn');
         deleteBtn.addEventListener('click', (e) => {
@@ -888,10 +888,10 @@ export class BulkManager {
             // Update dropdown to show/hide added indicator
             this.updateBulkSuggestionsDropdown();
         });
-        
+
         tagsContainer.appendChild(newTag);
     }
-    
+
     /**
      * Get existing tags in the bulk tags container
      * @returns {Array} Array of existing tag strings
@@ -899,29 +899,29 @@ export class BulkManager {
     getBulkExistingTags() {
         const tagsContainer = document.getElementById('bulkTagsItems');
         if (!tagsContainer) return [];
-        
+
         const currentTags = tagsContainer.querySelectorAll('.metadata-item');
         return Array.from(currentTags).map(tag => tag.dataset.tag);
     }
-    
+
     /**
      * Update status of items in the bulk suggestions dropdown
      */
     updateBulkSuggestionsDropdown() {
         const dropdown = document.querySelector('.metadata-suggestions-dropdown');
         if (!dropdown) return;
-        
+
         // Get all current tags
         const existingTags = this.getBulkExistingTags();
-        
+
         // Update status of each item in dropdown
         dropdown.querySelectorAll('.metadata-suggestion-item').forEach(item => {
             const tagText = item.querySelector('.metadata-suggestion-text').textContent;
             const isAdded = existingTags.includes(tagText);
-            
+
             if (isAdded) {
                 item.classList.add('already-added');
-                
+
                 // Add indicator if it doesn't exist
                 let indicator = item.querySelector('.added-indicator');
                 if (!indicator) {
@@ -930,18 +930,18 @@ export class BulkManager {
                     indicator.innerHTML = '<i class="fas fa-check"></i>';
                     item.appendChild(indicator);
                 }
-                
+
                 // Remove click event
                 item.onclick = null;
                 item.removeEventListener('click', item._clickHandler);
             } else {
                 // Re-enable items that are no longer in the list
                 item.classList.remove('already-added');
-                
+
                 // Remove indicator if it exists
                 const indicator = item.querySelector('.added-indicator');
                 if (indicator) indicator.remove();
-                
+
                 // Restore click event if not already set
                 if (!item._clickHandler) {
                     item._clickHandler = () => {
@@ -959,29 +959,39 @@ export class BulkManager {
             }
         });
     }
-    
+
     async saveBulkTags(mode = 'append') {
         const tagElements = document.querySelectorAll('#bulkTagsItems .metadata-item');
         const tags = Array.from(tagElements).map(tag => tag.dataset.tag);
-        
+
         if (tags.length === 0) {
             showToast('toast.models.noTagsToAdd', {}, 'warning');
             return;
         }
-        
+
         if (state.selectedModels.size === 0) {
             showToast('toast.models.noModelsSelected', {}, 'warning');
             return;
         }
-        
+
         try {
             const apiClient = getModelApiClient();
             const filePaths = Array.from(state.selectedModels);
             let successCount = 0;
             let failCount = 0;
-            
+            let cancelled = false;
+
+            state.loadingManager.showSimpleLoading(translate('toast.models.bulkTagsUpdating', { count: filePaths.length }));
+            state.loadingManager.showCancelButton(() => {
+                cancelled = true;
+            });
+
             // Add or replace tags for each selected model based on mode
             for (const filePath of filePaths) {
+                if (cancelled) {
+                    showToast('toast.api.operationCancelled', {}, 'info');
+                    break;
+                }
                 try {
                     if (mode === 'replace') {
                         await apiClient.saveModelMetadata(filePath, { tags: tags });
@@ -994,50 +1004,50 @@ export class BulkManager {
                     failCount++;
                 }
             }
-            
+
             modalManager.closeModal('bulkAddTagsModal');
-            
+
             if (successCount > 0) {
                 const currentConfig = this.getCurrentDisplayConfig();
                 const toastKey = mode === 'replace' ? 'toast.models.tagsReplacedSuccessfully' : 'toast.models.tagsAddedSuccessfully';
-                showToast(toastKey, { 
-                    count: successCount, 
+                showToast(toastKey, {
+                    count: successCount,
                     tagCount: tags.length,
-                    type: currentConfig.displayName.toLowerCase() 
+                    type: currentConfig.displayName.toLowerCase()
                 }, 'success');
             }
-            
+
             if (failCount > 0) {
                 const toastKey = mode === 'replace' ? 'toast.models.tagsReplaceFailed' : 'toast.models.tagsAddFailed';
                 showToast(toastKey, { count: failCount }, 'warning');
             }
-            
+
         } catch (error) {
             console.error('Error during bulk tag operation:', error);
             const toastKey = mode === 'replace' ? 'toast.models.bulkTagsReplaceFailed' : 'toast.models.bulkTagsAddFailed';
             showToast(toastKey, {}, 'error');
         }
     }
-    
+
     cleanupBulkAddTagsModal() {
         // Clear tags container
         const tagsContainer = document.getElementById('bulkTagsItems');
         if (tagsContainer) {
             tagsContainer.innerHTML = '';
         }
-        
+
         // Clear input
         const input = document.querySelector('.bulk-metadata-input');
         if (input) {
             input.value = '';
         }
-        
+
         // Remove event listeners (they will be re-added when modal opens again)
         const appendBtn = document.querySelector('.bulk-append-tags-btn');
         if (appendBtn) {
             appendBtn.replaceWith(appendBtn.cloneNode(true));
         }
-        
+
         const replaceBtn = document.querySelector('.bulk-replace-tags-btn');
         if (replaceBtn) {
             replaceBtn.replaceWith(replaceBtn.cloneNode(true));
@@ -1140,6 +1150,10 @@ export class BulkManager {
         const levelName = getNSFWLevelName(level);
 
         state.loadingManager.showSimpleLoading(translate('toast.models.bulkContentRatingUpdating', { count: totalCount }));
+        let cancelled = false;
+        state.loadingManager.showCancelButton(() => {
+            cancelled = true;
+        });
 
         let successCount = 0;
         let failureCount = 0;
@@ -1147,6 +1161,10 @@ export class BulkManager {
         try {
             const apiClient = getModelApiClient();
             for (const filePath of targets) {
+                if (cancelled) {
+                    showToast('toast.api.operationCancelled', {}, 'info');
+                    break;
+                }
                 try {
                     await apiClient.saveModelMetadata(filePath, { preview_nsfw_level: level });
                     successCount++;
@@ -1180,10 +1198,10 @@ export class BulkManager {
     initializeBulkBaseModelInterface() {
         const select = document.getElementById('bulkBaseModelSelect');
         if (!select) return;
-        
+
         // Clear existing options
         select.innerHTML = '';
-        
+
         // Add placeholder option
         const placeholderOption = document.createElement('option');
         placeholderOption.value = '';
@@ -1191,23 +1209,23 @@ export class BulkManager {
         placeholderOption.disabled = true;
         placeholderOption.selected = true;
         select.appendChild(placeholderOption);
-        
+
         // Create option groups for better organization
         Object.entries(BASE_MODEL_CATEGORIES).forEach(([category, models]) => {
             const optgroup = document.createElement('optgroup');
             optgroup.label = category;
-            
+
             models.forEach(model => {
                 const option = document.createElement('option');
                 option.value = model;
                 option.textContent = model;
                 optgroup.appendChild(option);
             });
-            
+
             select.appendChild(optgroup);
         });
     }
-    
+
     /**
      * Save bulk base model changes
      */
@@ -1217,25 +1235,33 @@ export class BulkManager {
             showToast('toast.models.baseModelNotSelected', {}, 'warning');
             return;
         }
-        
+
         const newBaseModel = select.value;
         const selectedCount = state.selectedModels.size;
-        
+
         if (selectedCount === 0) {
             showToast('toast.models.noModelsSelected', {}, 'warning');
             return;
         }
-        
+
         modalManager.closeModal('bulkBaseModelModal');
-        
+
         try {
             let successCount = 0;
             let errorCount = 0;
             const errors = [];
-            
+            let cancelled = false;
+
             state.loadingManager.showSimpleLoading(translate('toast.models.bulkBaseModelUpdating'));
-            
+            state.loadingManager.showCancelButton(() => {
+                cancelled = true;
+            });
+
             for (const filepath of state.selectedModels) {
+                if (cancelled) {
+                    showToast('toast.api.operationCancelled', {}, 'info');
+                    break;
+                }
                 try {
                     await getModelApiClient().saveModelMetadata(filepath, { base_model: newBaseModel });
                     successCount++;
@@ -1245,19 +1271,19 @@ export class BulkManager {
                     console.error(`Failed to update base model for ${filepath}:`, error);
                 }
             }
-            
+
             // Show results
             if (errorCount === 0) {
                 showToast('toast.models.bulkBaseModelUpdateSuccess', { count: successCount }, 'success');
             } else if (successCount > 0) {
-                showToast('toast.models.bulkBaseModelUpdatePartial', { 
-                    success: successCount, 
-                    failed: errorCount 
+                showToast('toast.models.bulkBaseModelUpdatePartial', {
+                    success: successCount,
+                    failed: errorCount
                 }, 'warning');
             } else {
                 showToast('toast.models.bulkBaseModelUpdateFailed', {}, 'error');
             }
-            
+
         } catch (error) {
             console.error('Error during bulk base model operation:', error);
             showToast('toast.models.bulkBaseModelUpdateFailed', {}, 'error');
@@ -1265,7 +1291,7 @@ export class BulkManager {
             state.loadingManager?.hide?.();
         }
     }
-    
+
     /**
      * Cleanup bulk base model modal
      */
@@ -1288,13 +1314,13 @@ export class BulkManager {
         try {
             // Get selected file paths
             const filePaths = Array.from(state.selectedModels);
-            
+
             // Get the API client for the current model type
             const apiClient = getModelApiClient();
-            
+
             // Call the auto-organize method with selected file paths
             await apiClient.autoOrganizeModels(filePaths);
-            
+
             resetAndReload(true);
         } catch (error) {
             console.error('Error during bulk auto-organize:', error);
@@ -1310,7 +1336,7 @@ export class BulkManager {
         this.mouseDownTime = Date.now();
         this.mouseDownPosition = { x: e.clientX, y: e.clientY };
         this.isDragging = false;
-        
+
         // Don't start marquee yet - wait to see if user is dragging
         return false;
     }
@@ -1324,23 +1350,23 @@ export class BulkManager {
         // Store initial mouse position
         this.marqueeStart.x = this.mouseDownPosition.x;
         this.marqueeStart.y = this.mouseDownPosition.y;
-        
+
         // Store initial selection state
         this.initialSelectedModels = new Set(state.selectedModels);
-        
+
         // Enter bulk mode if not already active and we're actually dragging
         if (isDragging && !state.bulkMode) {
             this.toggleBulkMode();
         }
-        
+
         // Create marquee element
         this.createMarqueeElement();
-        
+
         this.isMarqueeActive = true;
-        
+
         // Update event manager state
         eventManager.setState('marqueeActive', true);
-        
+
         // Add visual feedback class to body
         document.body.classList.add('marquee-selecting');
     }
@@ -1370,22 +1396,22 @@ export class BulkManager {
      */
     updateMarqueeSelection(e) {
         if (!this.marqueeElement) return;
-        
+
         const currentX = e.clientX;
         const currentY = e.clientY;
-        
+
         // Calculate rectangle bounds
         const left = Math.min(this.marqueeStart.x, currentX);
         const top = Math.min(this.marqueeStart.y, currentY);
         const width = Math.abs(currentX - this.marqueeStart.x);
         const height = Math.abs(currentY - this.marqueeStart.y);
-        
+
         // Update marquee element position and size
         this.marqueeElement.style.left = left + 'px';
         this.marqueeElement.style.top = top + 'px';
         this.marqueeElement.style.width = width + 'px';
         this.marqueeElement.style.height = height + 'px';
-        
+
         // Check which cards intersect with marquee
         this.updateCardSelection(left, top, left + width, top + height);
     }
@@ -1396,18 +1422,18 @@ export class BulkManager {
     updateCardSelection(left, top, right, bottom) {
         const cards = document.querySelectorAll('.model-card');
         const newSelection = new Set(this.initialSelectedModels);
-        
+
         cards.forEach(card => {
             const rect = card.getBoundingClientRect();
-            
+
             // Check if card intersects with marquee rectangle
-            const intersects = !(rect.right < left || 
-                               rect.left > right || 
-                               rect.bottom < top || 
-                               rect.top > bottom);
-            
+            const intersects = !(rect.right < left ||
+                rect.left > right ||
+                rect.bottom < top ||
+                rect.top > bottom);
+
             const filepath = card.dataset.filepath;
-            
+
             if (intersects) {
                 // Add to selection if intersecting
                 newSelection.add(filepath);
@@ -1424,10 +1450,10 @@ export class BulkManager {
                 card.classList.remove('selected');
             }
         });
-        
+
         // Update global selection state
         state.selectedModels = newSelection;
-        
+
         // Update context menu header if visible
         if (this.bulkContextMenu) {
             this.bulkContextMenu.updateSelectedCountHeader();
@@ -1442,29 +1468,29 @@ export class BulkManager {
         this.isMarqueeActive = false;
         this.isDragging = false;
         this.mouseDownTime = 0;
-        
+
         // Update event manager state
         eventManager.setState('marqueeActive', false);
-        
+
         // Remove marquee element
         if (this.marqueeElement) {
             this.marqueeElement.remove();
             this.marqueeElement = null;
         }
-        
+
         // Remove visual feedback class
         document.body.classList.remove('marquee-selecting');
-        
+
         // Get selection count
         const selectionCount = state.selectedModels.size;
-        
+
         // If no models were selected, exit bulk mode
         if (selectionCount === 0) {
             if (state.bulkMode) {
                 this.toggleBulkMode();
             }
         }
-        
+
         // Clear initial selection state
         this.initialSelectedModels.clear();
     }

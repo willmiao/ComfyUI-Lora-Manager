@@ -168,6 +168,17 @@ class MockScanner:
         self.updated_models: List[Dict[str, Any]] = []
         self.preview_updates: List[Dict[str, Any]] = []
         self.bulk_deleted: List[Sequence[str]] = []
+        self._cancelled = False
+        self.model_type = "test-model"
+
+    def is_cancelled(self) -> bool:
+        return self._cancelled
+
+    def cancel_task(self) -> None:
+        self._cancelled = True
+
+    def reset_cancellation(self) -> None:
+        self._cancelled = False
 
     async def get_cached_data(self, force_refresh: bool = False):
         return self._cache
