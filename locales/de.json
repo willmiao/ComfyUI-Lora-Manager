@@ -167,6 +167,7 @@
             "label": "Recipe-Daten reparieren",
             "loading": "Recipe-Daten werden repariert...",
             "success": "{count} Rezepte erfolgreich repariert.",
+            "cancelled": "Reparatur abgebrochen. {count} Rezepte wurden repariert.",
             "error": "Recipe-Reparatur fehlgeschlagen: {message}"
         }
     },

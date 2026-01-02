@@ -167,6 +167,7 @@
             "label": "Réparer les données de recettes",
             "loading": "Réparation des données de recettes...",
             "success": "{count} recettes réparées avec succès.",
+            "cancelled": "Réparation annulée. {count} recettes ont été réparées.",
             "error": "Échec de la réparation des recettes : {message}"
         }
     },

@@ -167,6 +167,7 @@
             "label": "修復配方資料",
             "loading": "正在修復配方資料...",
             "success": "成功修復 {count} 個配方。",
+            "cancelled": "修復已取消。已修復 {count} 個配方。",
             "error": "配方修復失敗：{message}"
         }
     },

@@ -279,6 +279,7 @@ export class GlobalContextMenu extends BaseContextMenu {
         );
 
         const progressUI = state.loadingManager?.showEnhancedProgress(loadingMessage);
+        progressUI?.showCancelButton(() => this.cancelRepair());
 
         try {
             const response = await fetch('/api/lm/recipes/repair', {
@@ -316,6 +317,14 @@ export class GlobalContextMenu extends BaseContextMenu {
                             }
                         } else if (p.status === 'error') {
                             throw new Error(p.error || 'Repair failed');
+                        } else if (p.status === 'cancelled') {
+                            isComplete = true;
+                            progressUI?.complete(translate(
+                                'globalContextMenu.repairRecipes.cancelled',
+                                { count: p.repaired },
+                                `Repair cancelled. ${p.repaired} recipes were repaired.`
+                            ));
+                            showToast('globalContextMenu.repairRecipes.cancelled', { count: p.repaired }, 'info');
                         }
                     } else if (progressResponse.status === 404) {
                         // Progress might have finished quickly and been cleaned up
@@ -335,6 +344,16 @@ export class GlobalContextMenu extends BaseContextMenu {
         } finally {
             this._repairInProgress = false;
             menuItem?.classList.remove('disabled');
+        }
+    }
+
+    async cancelRepair() {
+        try {
+            await fetch('/api/lm/recipes/cancel-repair', {
+                method: 'POST',
+            });
+        } catch (error) {
+            console.error('Failed to cancel recipe repair:', error);
         }
     }
 }

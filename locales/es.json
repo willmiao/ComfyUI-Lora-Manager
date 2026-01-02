@@ -167,6 +167,7 @@
             "label": "Reparar datos de recetas",
             "loading": "Reparando datos de recetas...",
             "success": "Se repararon con éxito {count} recetas.",
+            "cancelled": "Reparación cancelada. {count} recetas fueron reparadas.",
             "error": "Error al reparar recetas: {message}"
         }
     },

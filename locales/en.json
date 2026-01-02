@@ -167,6 +167,7 @@
             "label": "Repair recipes data",
             "loading": "Repairing recipe data...",
             "success": "Successfully repaired {count} recipes.",
+            "cancelled": "Repair cancelled. {count} recipes were repaired.",
             "error": "Recipe repair failed: {message}"
         }
     },

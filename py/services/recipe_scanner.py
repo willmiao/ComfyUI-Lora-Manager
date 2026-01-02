@@ -73,6 +73,7 @@ class RecipeScanner:
             self._mutation_lock = asyncio.Lock()
             self._post_scan_task: Optional[asyncio.Task] = None
             self._resort_tasks: Set[asyncio.Task] = set()
+            self._cancel_requested = False
             if lora_scanner:
                 self._lora_scanner = lora_scanner
             if checkpoint_scanner:
@@ -114,6 +115,19 @@ class RecipeScanner:
             self._civitai_client = await ServiceRegistry.get_civitai_client()
         return self._civitai_client
     
+    def cancel_task(self) -> None:
+        """Request cancellation of the current long-running task."""
+        self._cancel_requested = True
+        logger.info("Recipe Scanner: Cancellation requested")
+
+    def reset_cancellation(self) -> None:
+        """Reset the cancellation flag."""
+        self._cancel_requested = False
+
+    def is_cancelled(self) -> bool:
+        """Check if cancellation has been requested."""
+        return self._cancel_requested
+    
     async def repair_all_recipes(
         self, 
         progress_callback: Optional[Callable[[Dict], Any]] = None
@@ -127,6 +141,8 @@ class RecipeScanner:
         Returns:
             Dict summary of repair results
         """
+        if progress_callback:
+            await progress_callback({"status": "started"})
         async with self._mutation_lock:
             cache = await self.get_cached_data()
             all_recipes = list(cache.raw_data)
@@ -136,8 +152,29 @@ class RecipeScanner:
             errors_count = 0
             
             civitai_client = await self._get_civitai_client()
+            self.reset_cancellation()
             
             for i, recipe in enumerate(all_recipes):
+                if self.is_cancelled():
+                    logger.info("Recipe repair cancelled by user")
+                    if progress_callback:
+                        await progress_callback({
+                            "status": "cancelled",
+                            "current": i,
+                            "total": total,
+                            "repaired": repaired_count,
+                            "skipped": skipped_count,
+                            "errors": errors_count
+                        })
+                    return {
+                        "success": False,
+                        "status": "cancelled",
+                        "repaired": repaired_count,
+                        "skipped": skipped_count,
+                        "errors": errors_count,
+                        "total": total
+                    }
+
                 try:
                     # Report progress
                     if progress_callback:

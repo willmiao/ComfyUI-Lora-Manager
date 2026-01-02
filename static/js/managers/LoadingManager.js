@@ -4,6 +4,10 @@ import { formatFileSize } from '../utils/formatters.js';
 // Loading management
 export class LoadingManager {
     constructor() {
+        if (LoadingManager.instance) {
+            return LoadingManager.instance;
+        }
+
         this.overlay = document.getElementById('loading-overlay');
 
         if (!this.overlay) {
@@ -59,6 +63,8 @@ export class LoadingManager {
         };
 
         this.detailsContainer = null; // Will be created when needed
+
+        LoadingManager.instance = this;
     }
 
     show(message = 'Loading...', progress = 0) {

@@ -78,6 +78,7 @@ class RecipeHandlerSet:
             "scan_recipes": self.query.scan_recipes,
             "move_recipe": self.management.move_recipe,
             "repair_recipes": self.management.repair_recipes,
+            "cancel_repair": self.management.cancel_repair,
             "repair_recipe": self.management.repair_recipe,
             "get_repair_progress": self.management.get_repair_progress,
         }
@@ -530,8 +531,10 @@ class RecipeManagementHandler:
                 return web.json_response({"success": False, "error": "Recipe scanner unavailable"}, status=503)
 
             # Check if already running
-            if self._ws_manager.get_recipe_repair_progress():
+            if self._ws_manager.is_recipe_repair_running():
                 return web.json_response({"success": False, "error": "Recipe repair already in progress"}, status=409)
+
+            recipe_scanner.reset_cancellation()
 
             async def progress_callback(data):
                 await self._ws_manager.broadcast_recipe_repair_progress(data)
@@ -551,6 +554,8 @@ class RecipeManagementHandler:
                 finally:
                     # Keep the final status for a while so the UI can see it
                     await asyncio.sleep(5)
+                    # Don't cleanup if it was cancelled, let the UI see the cancelled state for a bit?
+                    # Actually cleanup_recipe_repair_progress is fine as long as we waited enough.
                     self._ws_manager.cleanup_recipe_repair_progress()
 
             asyncio.create_task(run_repair())
@@ -558,6 +563,19 @@ class RecipeManagementHandler:
             return web.json_response({"success": True, "message": "Recipe repair started"})
         except Exception as exc:
             self._logger.error("Error starting recipe repair: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def cancel_repair(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                return web.json_response({"success": False, "error": "Recipe scanner unavailable"}, status=503)
+
+            recipe_scanner.cancel_task()
+            return web.json_response({"success": True, "message": "Cancellation requested"})
+        except Exception as exc:
+            self._logger.error("Error cancelling recipe repair: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def repair_recipe(self, request: web.Request) -> web.Response:

@@ -212,8 +212,16 @@ class WebSocketManager:
         return self._recipe_repair_progress
     
     def cleanup_recipe_repair_progress(self):
-        """Clear recipe repair progress data"""
-        self._recipe_repair_progress = None
+        """Clear recipe repair progress data if it is in a finished state"""
+        if self._recipe_repair_progress and self._recipe_repair_progress.get('status') in ['completed', 'cancelled', 'error']:
+            self._recipe_repair_progress = None
+    
+    def is_recipe_repair_running(self) -> bool:
+        """Check if recipe repair is currently running"""
+        if not self._recipe_repair_progress:
+            return False
+        status = self._recipe_repair_progress.get('status')
+        return status in ['started', 'processing']
     
     def is_auto_organize_running(self) -> bool:
         """Check if auto-organize is currently running"""
