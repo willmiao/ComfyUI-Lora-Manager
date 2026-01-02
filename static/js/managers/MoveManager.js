@@ -322,6 +322,9 @@ class MoveManager {
                 if (state.virtualScroller) {
                     results.forEach(result => {
                         if (result.success) {
+                            // Deselect moving item
+                            bulkManager.deselectItem(result.original_file_path);
+
                             const newRelativeFolder = this._getRelativeFolder(result.new_file_path);
                             const isVisible = this._isModelVisible(newRelativeFolder, pageState);
 
@@ -353,6 +356,9 @@ class MoveManager {
 
                 const pageState = getCurrentPageState();
                 if (result && result.new_file_path && state.virtualScroller) {
+                    // Deselect moving item
+                    bulkManager.deselectItem(this.currentFilePath);
+
                     const newRelativeFolder = this._getRelativeFolder(result.new_file_path);
                     const isVisible = this._isModelVisible(newRelativeFolder, pageState);
 
@@ -383,10 +389,6 @@ class MoveManager {
 
             modalManager.closeModal('moveModal');
 
-            // If we were in bulk mode, exit it after successful move
-            if (this.bulkFilePaths && state.bulkMode) {
-                bulkManager.toggleBulkMode();
-            }
 
         } catch (error) {
             console.error('Error moving model(s):', error);
