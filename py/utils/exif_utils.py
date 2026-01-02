@@ -22,6 +22,12 @@ class ExifUtils:
             Optional[str]: Extracted metadata or None if not found
         """
         try:
+            # Skip for video files
+            if image_path:
+                ext = os.path.splitext(image_path)[1].lower()
+                if ext in ['.mp4', '.webm']:
+                    return None
+
             # First try to open the image
             with Image.open(image_path) as img:
                 # Method 1: Check for parameters in image info
@@ -80,6 +86,12 @@ class ExifUtils:
             str: Path to the updated image
         """
         try:
+            # Skip for video files
+            if image_path:
+                ext = os.path.splitext(image_path)[1].lower()
+                if ext in ['.mp4', '.webm']:
+                    return image_path
+
             # Load the image and check its format
             with Image.open(image_path) as img:
                 img_format = img.format
@@ -133,6 +145,12 @@ class ExifUtils:
     def append_recipe_metadata(image_path, recipe_data) -> str:
         """Append recipe metadata to an image's EXIF data"""
         try:
+            # Skip for video files
+            if image_path:
+                ext = os.path.splitext(image_path)[1].lower()
+                if ext in ['.mp4', '.webm']:
+                    return image_path
+
             # First, extract existing metadata
             metadata = ExifUtils.extract_image_metadata(image_path)
             
@@ -242,6 +260,16 @@ class ExifUtils:
             Tuple of (optimized_image_data, extension)
         """
         try:
+            # Skip for video files early if it's a file path
+            if isinstance(image_data, str) and os.path.exists(image_data):
+                ext = os.path.splitext(image_data)[1].lower()
+                if ext in ['.mp4', '.webm']:
+                    try:
+                        with open(image_data, 'rb') as f:
+                            return f.read(), ext
+                    except Exception:
+                        return image_data, ext
+
             # First validate the image data is usable
             img = None
             if isinstance(image_data, str) and os.path.exists(image_data):
