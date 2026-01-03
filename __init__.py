@@ -6,7 +6,7 @@ try:  # pragma: no cover - import fallback for pytest collection
     from .py.nodes.lora_stacker import LoraStacker
     from .py.nodes.save_image import SaveImageLM
     from .py.nodes.debug_metadata import DebugMetadata
-    from .py.nodes.wanvideo_lora_select import WanVideoLoraSelect
+    from .py.nodes.wanvideo_lora_select import WanVideoLoraSelectLM
     from .py.nodes.wanvideo_lora_select_from_text import WanVideoLoraSelectFromText
     from .py.metadata_collector import init as init_metadata_collector
 except ImportError:  # pragma: no cover - allows running under pytest without package install
@@ -26,7 +26,7 @@ except ImportError:  # pragma: no cover - allows running under pytest without pa
     LoraStacker = importlib.import_module("py.nodes.lora_stacker").LoraStacker
     SaveImageLM = importlib.import_module("py.nodes.save_image").SaveImageLM
     DebugMetadata = importlib.import_module("py.nodes.debug_metadata").DebugMetadata
-    WanVideoLoraSelect = importlib.import_module("py.nodes.wanvideo_lora_select").WanVideoLoraSelect
+    WanVideoLoraSelectLM = importlib.import_module("py.nodes.wanvideo_lora_select").WanVideoLoraSelectLM
     WanVideoLoraSelectFromText = importlib.import_module("py.nodes.wanvideo_lora_select_from_text").WanVideoLoraSelectFromText
     init_metadata_collector = importlib.import_module("py.metadata_collector").init
 
@@ -38,7 +38,7 @@ NODE_CLASS_MAPPINGS = {
     LoraStacker.NAME: LoraStacker,
     SaveImageLM.NAME: SaveImageLM,
     DebugMetadata.NAME: DebugMetadata,
-    WanVideoLoraSelect.NAME: WanVideoLoraSelect,
+    WanVideoLoraSelectLM.NAME: WanVideoLoraSelectLM,
     WanVideoLoraSelectFromText.NAME: WanVideoLoraSelectFromText
 }
 

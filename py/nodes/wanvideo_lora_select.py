@@ -5,7 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class WanVideoLoraSelect:
+class WanVideoLoraSelectLM:
     NAME = "WanVideo Lora Select (LoraManager)"
     CATEGORY = "Lora Manager/stackers"
 
