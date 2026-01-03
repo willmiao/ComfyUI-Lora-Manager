@@ -2,6 +2,7 @@ from datetime import datetime
 import os
 import json
 import logging
+import time
 from typing import Any, Dict, Optional, Type, Union
 
 from .models import BaseModelMetadata, LoraMetadata
@@ -203,7 +204,11 @@ class MetadataManager:
             preview_url = find_preview_file(base_name, dir_path)
             
             # Calculate file hash
+            start_hash_time = time.perf_counter()
+            logger.debug(f"Calculating SHA256 hash for {real_path}...")
             sha256 = await calculate_sha256(real_path)
+            hash_duration = time.perf_counter() - start_hash_time
+            logger.info(f"SHA256 hash calculated for {real_path} in {hash_duration:.3f}s")
             
             # Create instance based on model type
             if model_class.__name__ == "CheckpointMetadata":
@@ -255,6 +260,7 @@ class MetadataManager:
             # await MetadataManager._enrich_metadata(metadata, real_path)
             
             # Save the created metadata
+            logger.info(f"Creating new .metadata.json for {file_path} (Reason: No existing metadata found)")
             await MetadataManager.save_metadata(file_path, metadata)
             
             return metadata

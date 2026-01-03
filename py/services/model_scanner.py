@@ -949,7 +949,7 @@ class ModelScanner:
                         metadata = self.model_class.from_civitai_info(version_info, file_info, file_path)
                         metadata.preview_url = find_preview_file(file_name, os.path.dirname(file_path))
                         await MetadataManager.save_metadata(file_path, metadata)
-                        logger.debug(f"Created metadata from .civitai.info for {file_path}")
+                        logger.info(f"Created metadata from .civitai.info for {file_path} (Reason: .civitai.info was found but .metadata.json was missing)")
                 except Exception as e:
                     logger.error(f"Error creating metadata from .civitai.info for {file_path}: {e}")
         else:
