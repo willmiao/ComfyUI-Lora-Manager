@@ -654,6 +654,11 @@ class ModelScanner:
         self._is_initializing = True  # Set flag
         try:
             start_time = time.time()
+            
+            # Manually trigger a symlink rescan during a full rebuild.
+            # This ensures that any new symlink mappings are correctly picked up.
+            config.rebuild_symlink_cache()
+
             # Determine the page type based on model type
             # Scan for new data
             scan_result = await self._gather_model_data()

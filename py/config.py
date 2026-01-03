@@ -82,8 +82,8 @@ class Config:
         self._path_mappings: Dict[str, str] = {}
         # Normalized preview root directories used to validate preview access
         self._preview_root_paths: Set[Path] = set()
-        # Optional background rescan thread
-        self._rescan_thread: Optional[threading.Thread] = None
+        # Fingerprint of the symlink layout from the last successful scan
+        self._cached_fingerprint: Optional[Dict[str, object]] = None
         self.loras_roots = self._init_lora_paths()
         self.checkpoints_roots = None
         self.unet_roots = None
@@ -231,32 +231,6 @@ class Config:
         cache_dir.mkdir(parents=True, exist_ok=True)
         return cache_dir / "symlink_map.json"
 
-    def _compute_noise_mtime(self, root: str) -> Optional[int]:
-        """Return the latest mtime of known noisy paths inside ``root``."""
-
-        normalized_root = self._normalize_path(root)
-        noise_paths: List[str] = []
-
-        # The first LoRA root hosts recipes and stats files which routinely
-        # update without changing symlink layout.
-        first_lora_root = self._normalize_path(self.loras_roots[0]) if self.loras_roots else None
-        if first_lora_root and normalized_root == first_lora_root:
-            recipes_dir = os.path.join(root, "recipes")
-            stats_file = os.path.join(root, "lora_manager_stats.json")
-            noise_paths.extend([recipes_dir, stats_file])
-
-        mtimes: List[int] = []
-        for path in noise_paths:
-            try:
-                stat_result = os.stat(path)
-                mtimes.append(getattr(stat_result, "st_mtime_ns", int(stat_result.st_mtime * 1e9)))
-            except OSError:
-                continue
-
-        if not mtimes:
-            return None
-        return max(mtimes)
-
     def _symlink_roots(self) -> List[str]:
         roots: List[str] = []
         roots.extend(self.loras_roots or [])
@@ -267,26 +241,46 @@ class Config:
     def _build_symlink_fingerprint(self) -> Dict[str, object]:
         roots = [self._normalize_path(path) for path in self._symlink_roots() if path]
         unique_roots = sorted(set(roots))
+        # Fingerprint now only contains the root paths to avoid sensitivity to folder content changes.
+        return {"roots": unique_roots}
 
-        stats: Dict[str, Dict[str, int]] = {}
-        for root in unique_roots:
-            try:
-                root_stat = os.stat(root)
-                noise_mtime = self._compute_noise_mtime(root)
-                stats[root] = {
-                    "mtime_ns": getattr(root_stat, "st_mtime_ns", int(root_stat.st_mtime * 1e9)),
-                    "inode": getattr(root_stat, "st_ino", 0),
-                    "noise_mtime_ns": noise_mtime,
-                }
-            except OSError:
-                continue
+    def _initialize_symlink_mappings(self) -> None:
+        start = time.perf_counter()
+        cache_loaded = self._load_persisted_cache_into_mappings()
 
-        return {"roots": unique_roots, "stats": stats}
+        if cache_loaded:
+            logger.info(
+                "Symlink mappings restored from cache in %.2f ms",
+                (time.perf_counter() - start) * 1000,
+            )
+            self._rebuild_preview_roots()
 
-    def _load_symlink_cache(self) -> bool:
+            # Only rescan if target roots have changed. 
+            # This is stable across file additions/deletions.
+            current_fingerprint = self._build_symlink_fingerprint()
+            cached_fingerprint = self._cached_fingerprint
+            
+            if cached_fingerprint and current_fingerprint == cached_fingerprint:
+                return
+
+            logger.info("Symlink root paths changed; rescanning symbolic links")
+
+        self.rebuild_symlink_cache()
+        logger.info(
+            "Symlink mappings rebuilt and cached in %.2f ms",
+            (time.perf_counter() - start) * 1000,
+        )
+
+    def rebuild_symlink_cache(self) -> None:
+        """Force a fresh scan of all symbolic links and update the persistent cache."""
+        self._scan_symbolic_links()
+        self._save_symlink_cache()
+        self._rebuild_preview_roots()
+
+    def _load_persisted_cache_into_mappings(self) -> bool:
+        """Load the symlink cache and store its fingerprint for comparison."""
         cache_path = self._get_symlink_cache_path()
         if not cache_path.exists():
-            logger.info("Symlink cache not found at %s", cache_path)
             return False
 
         try:
@@ -297,13 +291,14 @@ class Config:
             return False
 
         if not isinstance(payload, dict):
-            logger.info("Symlink cache payload is not a dict: %s", type(payload))
             return False
 
         cached_mappings = payload.get("path_mappings")
         if not isinstance(cached_mappings, Mapping):
-            logger.info("Symlink cache missing path mappings")
             return False
+
+        # Store the cached fingerprint for comparison during initialization
+        self._cached_fingerprint = payload.get("fingerprint")
 
         normalized_mappings: Dict[str, str] = {}
         for target, link in cached_mappings.items():
@@ -329,30 +324,10 @@ class Config:
         except Exception as exc:
             logger.info("Failed to write symlink cache %s: %s", cache_path, exc)
 
-    def _initialize_symlink_mappings(self) -> None:
-        start = time.perf_counter()
-        cache_loaded = self._load_symlink_cache()
-
-        if cache_loaded:
-            logger.info(
-                "Symlink mappings restored from cache in %.2f ms",
-                (time.perf_counter() - start) * 1000,
-            )
-            self._rebuild_preview_roots()
-            self._schedule_symlink_rescan()
-            return
-
-        self._scan_symbolic_links()
-        self._save_symlink_cache()
-        self._rebuild_preview_roots()
-        logger.info(
-            "Symlink mappings rebuilt and cached in %.2f ms",
-            (time.perf_counter() - start) * 1000,
-        )
-
     def _scan_symbolic_links(self):
         """Scan all symbolic links in LoRA, Checkpoint, and Embedding root directories"""
         start = time.perf_counter()
+        
         # Reset mappings before rescanning to avoid stale entries
         self._path_mappings.clear()
         self._seed_root_symlink_mappings()
@@ -365,39 +340,11 @@ class Config:
             len(self._path_mappings),
         )
 
-    def _schedule_symlink_rescan(self) -> None:
-        """Trigger a best-effort background rescan to refresh stale caches."""
-
-        if self._rescan_thread and self._rescan_thread.is_alive():
-            return
-
-        def worker():
-            try:
-                self._scan_symbolic_links()
-                self._save_symlink_cache()
-                self._rebuild_preview_roots()
-                logger.debug("Background symlink rescan completed")
-            except Exception as exc:  # pragma: no cover - defensive logging
-                logger.info("Background symlink rescan failed: %s", exc)
-
-        thread = threading.Thread(
-            target=worker,
-            name="lora-manager-symlink-rescan",
-            daemon=True,
-        )
-        self._rescan_thread = thread
-        thread.start()
-
-    def _wait_for_rescan(self, timeout: Optional[float] = None) -> None:
-        """Block until the background rescan completes (testing convenience)."""
-
-        thread = self._rescan_thread
-        if thread:
-            thread.join(timeout=timeout)
-
     def _scan_directory_links(self, root: str, visited_dirs: Set[str]):
         """Iteratively scan directory symlinks to avoid deep recursion."""
         try:
+            # Note: We only use realpath for the initial root if it's not already resolved
+            # to ensure we have a valid entry point.
             root_real = self._normalize_path(os.path.realpath(root))
         except OSError:
             root_real = self._normalize_path(root)
@@ -406,45 +353,57 @@ class Config:
             return
 
         visited_dirs.add(root_real)
-        stack: List[str] = [root]
+        # Stack entries: (display_path, real_resolved_path)
+        stack: List[Tuple[str, str]] = [(root, root_real)]
 
         while stack:
-            current = stack.pop()
+            current_display, current_real = stack.pop()
             try:
-                with os.scandir(current) as it:
+                with os.scandir(current_display) as it:
                     for entry in it:
                         try:
-                            entry_path = entry.path
-                            if self._is_link(entry_path):
-                                target_path = os.path.realpath(entry_path)
+                            # 1. High speed detection using dirent data (is_symlink)
+                            is_link = entry.is_symlink()
+                            
+                            # On Windows, is_symlink handles reparse points
+                            if is_link:
+                                # Only resolve realpath when we actually find a link
+                                target_path = os.path.realpath(entry.path)
                                 if not os.path.isdir(target_path):
                                     continue
 
                                 normalized_target = self._normalize_path(target_path)
-                                # Always record the mapping even if we already visited
-                                # the real directory via another path. This prevents the
-                                # traversal order from dropping valid link->target pairs.
-                                self.add_path_mapping(entry_path, target_path)
+                                self.add_path_mapping(entry.path, target_path)
+                                
                                 if normalized_target in visited_dirs:
                                     continue
+                                    
                                 visited_dirs.add(normalized_target)
-                                stack.append(target_path)
+                                stack.append((target_path, normalized_target))
                                 continue
 
+                            # 2. Process normal directories
                             if not entry.is_dir(follow_symlinks=False):
                                 continue
 
-                            normalized_real = self._normalize_path(os.path.realpath(entry_path))
-                            if normalized_real in visited_dirs:
+                            # For normal directories, we avoid realpath() call by 
+                            # incrementally building the real path relative to current_real.
+                            # This is safe because 'entry' is NOT a symlink.
+                            entry_real = self._normalize_path(os.path.join(current_real, entry.name))
+                            
+                            if entry_real in visited_dirs:
                                 continue
-                            visited_dirs.add(normalized_real)
-                            stack.append(entry_path)
+                            
+                            visited_dirs.add(entry_real)
+                            stack.append((entry.path, entry_real))
                         except Exception as inner_exc:
                             logger.debug(
                                 "Error processing directory entry %s: %s", entry.path, inner_exc
                             )
             except Exception as e:
-                logger.error(f"Error scanning links in {current}: {e}")
+                logger.error(f"Error scanning links in {current_display}: {e}")
+
+
 
     def add_path_mapping(self, link_path: str, target_path: str):
         """Add a symbolic link path mapping
@@ -537,7 +496,11 @@ class Config:
         normalized_path = os.path.normpath(path).replace(os.sep, '/')
         # Check if the path is contained in any mapped target path
         for target_path, link_path in self._path_mappings.items():
-            if normalized_path.startswith(target_path):
+            # Match whole path components to avoid prefix collisions (e.g., /a/b vs /a/bc)
+            if normalized_path == target_path:
+                return link_path
+            
+            if normalized_path.startswith(target_path + '/'):
                 # If the path starts with the target path, replace with link path
                 mapped_path = normalized_path.replace(target_path, link_path, 1)
                 return mapped_path
@@ -547,10 +510,14 @@ class Config:
         """Map a symbolic link path back to the actual path"""
         normalized_link = os.path.normpath(link_path).replace(os.sep, '/')
         # Check if the path is contained in any mapped target path
-        for target_path, link_path in self._path_mappings.items():
-            if normalized_link.startswith(link_path):
+        for target_path, link_path_mapped in self._path_mappings.items():
+            # Match whole path components
+            if normalized_link == link_path_mapped:
+                return target_path
+
+            if normalized_link.startswith(link_path_mapped + '/'):
                 # If the path starts with the link path, replace with actual path
-                mapped_path = normalized_link.replace(link_path, target_path, 1)
+                mapped_path = normalized_link.replace(link_path_mapped, target_path, 1)
                 return mapped_path
         return link_path
 
