@@ -325,7 +325,7 @@ class Config:
         try:
             with cache_path.open("w", encoding="utf-8") as handle:
                 json.dump(payload, handle, ensure_ascii=False, indent=2)
-            logger.info("Symlink cache saved to %s with %d mappings", cache_path, len(self._path_mappings))
+            logger.debug("Symlink cache saved to %s with %d mappings", cache_path, len(self._path_mappings))
         except Exception as exc:
             logger.info("Failed to write symlink cache %s: %s", cache_path, exc)
 
@@ -359,7 +359,7 @@ class Config:
         visited_dirs: Set[str] = set()
         for root in self._symlink_roots():
             self._scan_directory_links(root, visited_dirs)
-        logger.info(
+        logger.debug(
             "Symlink scan finished in %.2f ms with %d mappings",
             (time.perf_counter() - start) * 1000,
             len(self._path_mappings),
@@ -376,7 +376,7 @@ class Config:
                 self._scan_symbolic_links()
                 self._save_symlink_cache()
                 self._rebuild_preview_roots()
-                logger.info("Background symlink rescan completed")
+                logger.debug("Background symlink rescan completed")
             except Exception as exc:  # pragma: no cover - defensive logging
                 logger.info("Background symlink rescan failed: %s", exc)
 
