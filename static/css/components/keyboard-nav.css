@@ -41,7 +41,7 @@
     padding: 8px;
     position: absolute;
     z-index: 9999; /* Ensure tooltip appears above cards */
-    left: 120%; /* Position tooltip to the right of the icon */
+    right: 120%; /* Position tooltip to the left of the icon */
     top: 50%; /* Vertically center */
     transform: translateY(-15%); /* Vertically center */
     opacity: 0;
@@ -56,11 +56,11 @@
     content: "";
     position: absolute;
     top: 50%; /* Vertically center arrow */
-    right: 100%; /* Arrow on the left side */
+    left: 100%; /* Arrow on the right side */
     margin-top: -5px;
     border-width: 5px;
     border-style: solid;
-    border-color: transparent var(--lora-border) transparent transparent; /* Arrow points left */
+    border-color: transparent transparent transparent var(--lora-border); /* Arrow points right */
 }
 
 .tooltip:hover .tooltiptext {
