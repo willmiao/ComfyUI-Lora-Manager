@@ -321,6 +321,7 @@ export class BaseModelApiClient {
 
     async addTags(filePath, data) {
         try {
+            state.loadingManager.showSimpleLoading('Adding tags...');
             const response = await fetch(this.apiConfig.endpoints.addTags, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -344,6 +345,8 @@ export class BaseModelApiClient {
         } catch (error) {
             console.error('Error adding tags:', error);
             throw error;
+        } finally {
+            state.loadingManager.hide();
         }
     }
 

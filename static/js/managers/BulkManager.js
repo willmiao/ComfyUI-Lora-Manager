@@ -1026,6 +1026,9 @@ export class BulkManager {
             console.error('Error during bulk tag operation:', error);
             const toastKey = mode === 'replace' ? 'toast.models.bulkTagsReplaceFailed' : 'toast.models.bulkTagsAddFailed';
             showToast(toastKey, {}, 'error');
+        } finally {
+            state.loadingManager.hide();
+            state.loadingManager.restoreProgressBar();
         }
     }
 
