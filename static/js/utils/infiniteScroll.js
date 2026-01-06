@@ -9,7 +9,7 @@ async function getCardCreator(pageType) {
     if (pageType === 'recipes') {
         // Import the RecipeCard module
         const { RecipeCard } = await import('../components/RecipeCard.js');
-        
+
         // Return a wrapper function that creates a recipe card element
         return (recipe) => {
             const recipeCard = new RecipeCard(recipe, (recipe) => {
@@ -47,10 +47,10 @@ export async function initializeInfiniteScroll(pageType = 'loras') {
 
     // Set the current page type
     state.currentPageType = pageType;
-    
+
     // Get the current page state
     const pageState = getCurrentPageState();
-    
+
     // Skip initializing if in duplicates mode (for recipes page)
     if (pageType === 'recipes' && pageState.duplicatesMode) {
         console.log('Skipping virtual scroll initialization - duplicates mode is active');
@@ -59,7 +59,7 @@ export async function initializeInfiniteScroll(pageType = 'loras') {
 
     // Use virtual scrolling for all page types
     await initializeVirtualScroll(pageType);
-    
+
     // Setup event delegation for model cards based on page type
     setupModelCardEventDelegation(pageType);
 }
@@ -67,7 +67,7 @@ export async function initializeInfiniteScroll(pageType = 'loras') {
 async function initializeVirtualScroll(pageType) {
     // Determine the grid ID based on page type
     let gridId;
-    
+
     switch (pageType) {
         case 'recipes':
             gridId = 'recipeGrid';
@@ -80,30 +80,30 @@ async function initializeVirtualScroll(pageType) {
     }
 
     const grid = document.getElementById(gridId);
-    
+
     if (!grid) {
         console.warn(`Grid with ID "${gridId}" not found for virtual scroll`);
         return;
     }
-    
+
     // Change this line to get the actual scrolling container
     const scrollContainer = document.querySelector('.page-content');
     const gridContainer = scrollContainer.querySelector('.container');
-    
+
     if (!gridContainer) {
         console.warn('Grid container element not found for virtual scroll');
         return;
     }
-    
+
     try {
         // Get the card creator and data fetcher for this page type
         const createCardFn = await getCardCreator(pageType);
         const fetchDataFn = await getDataFetcher(pageType);
-        
+
         if (!createCardFn || !fetchDataFn) {
             throw new Error(`Required components not available for ${pageType} page`);
         }
-        
+
         // Initialize virtual scroller with renamed container elements
         state.virtualScroller = new VirtualScroller({
             gridElement: grid,
@@ -117,20 +117,20 @@ async function initializeVirtualScroll(pageType) {
             containerPaddingBottom: 4,
             enableDataWindowing: false // Explicitly set to false to disable data windowing
         });
-        
+
         // Initialize the virtual scroller
         await state.virtualScroller.initialize();
-        
+
         // Add grid class for CSS styling
         grid.classList.add('virtual-scroll');
-        
+
         // Setup keyboard navigation
         setupKeyboardNavigation();
-        
+
     } catch (error) {
         console.error(`Error initializing virtual scroller for ${pageType}:`, error);
         showToast('toast.general.pageInitFailed', { pageType }, 'error');
-        
+
         // Fallback: show a message in the grid
         grid.innerHTML = `
             <div class="placeholder-message">
@@ -146,17 +146,20 @@ function setupKeyboardNavigation() {
     // Keep track of the last keypress time to prevent multiple rapid triggers
     let lastKeyTime = 0;
     const keyDelay = 300; // ms between allowed keypresses
-    
+
     // Store the event listener reference so we can remove it later if needed
     const keyboardNavHandler = (event) => {
-        // Only handle keyboard events when not in form elements
-        if (event.target.matches('input, textarea, select')) return;
-        
+        // Only handle keyboard events when not in form elements or contenteditable elements
+        if (event.target.matches('input, textarea, select') || event.target.isContentEditable) return;
+
+        // Skip background navigation if a modal is open
+        if (document.body.classList.contains('modal-open')) return;
+
         // Prevent rapid keypresses
         const now = Date.now();
         if (now - lastKeyTime < keyDelay) return;
         lastKeyTime = now;
-        
+
         // Handle navigation keys
         if (event.key === 'PageUp') {
             event.preventDefault();
@@ -180,10 +183,10 @@ function setupKeyboardNavigation() {
             }
         }
     };
-    
+
     // Add the event listener
     document.addEventListener('keydown', keyboardNavHandler);
-    
+
     // Store the handler in state for potential cleanup
     state.keyboardNavHandler = keyboardNavHandler;
 }
