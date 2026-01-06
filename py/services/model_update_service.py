@@ -589,6 +589,8 @@ class ModelUpdateService:
         model_type: str,
         model_id: int,
         version_ids: Sequence[int],
+        *,
+        version_info: Optional[Mapping] = None,
     ) -> ModelUpdateRecord:
         """Persist a new set of in-library version identifiers."""
 
@@ -600,6 +602,7 @@ class ModelUpdateService:
                 normalized_versions,
                 model_type=model_type,
                 model_id=model_id,
+                version_info=version_info,
             )
             self._upsert_record(record)
             return record
@@ -944,6 +947,7 @@ class ModelUpdateService:
         model_type: Optional[str] = None,
         model_id: Optional[int] = None,
         last_checked_at: Optional[float] = None,
+        version_info: Optional[Mapping] = None,
     ) -> ModelUpdateRecord:
         local_set = set(normalized_local)
         versions: List[ModelVersionRecord] = []
@@ -965,19 +969,26 @@ class ModelUpdateService:
 
         seen_ids = {version.version_id for version in versions}
         for missing_id in sorted(local_set - seen_ids):
-            versions.append(
-                ModelVersionRecord(
-                    version_id=missing_id,
-                    name=None,
-                    base_model=None,
-                    released_at=None,
-                    size_bytes=None,
-                    preview_url=None,
-                    is_in_library=True,
-                    should_ignore=ignore_map.get(missing_id, False),
-                    sort_index=len(versions),
+            new_version: Optional[ModelVersionRecord] = None
+            if version_info and _normalize_int(version_info.get("id")) == missing_id:
+                new_version = self._extract_single_version(version_info, index=len(versions))
+
+            if new_version:
+                versions.append(replace(new_version, is_in_library=True))
+            else:
+                versions.append(
+                    ModelVersionRecord(
+                        version_id=missing_id,
+                        name=None,
+                        base_model=None,
+                        released_at=None,
+                        size_bytes=None,
+                        preview_url=None,
+                        is_in_library=True,
+                        should_ignore=ignore_map.get(missing_id, False),
+                        sort_index=len(versions),
+                    )
                 )
-            )
 
         return ModelUpdateRecord(
             model_type=model_type,
@@ -1083,32 +1094,44 @@ class ModelUpdateService:
             return []
         if not isinstance(versions, Iterable):
             return None
+
         extracted: List[ModelVersionRecord] = []
         for index, entry in enumerate(versions):
-            if not isinstance(entry, Mapping):
-                continue
-            version_id = _normalize_int(entry.get("id"))
-            if version_id is None:
-                continue
-            name = _normalize_string(entry.get("name"))
-            base_model = _normalize_string(entry.get("baseModel"))
-            released_at = _normalize_string(entry.get("publishedAt") or entry.get("createdAt"))
-            size_bytes = self._extract_size_bytes(entry.get("files"))
-            preview_url = self._extract_preview_url(entry.get("images"))
-            extracted.append(
-                ModelVersionRecord(
-                    version_id=version_id,
-                    name=name,
-                    base_model=base_model,
-                    released_at=released_at,
-                    size_bytes=size_bytes,
-                    preview_url=preview_url,
-                    is_in_library=False,
-                    should_ignore=False,
-                    sort_index=index,
-                )
-            )
+            version_record = self._extract_single_version(entry, index)
+            if version_record:
+                extracted.append(version_record)
+
         return extracted
+
+    def _extract_single_version(
+        self, entry: Any, index: int = 0
+    ) -> Optional[ModelVersionRecord]:
+        """Convert a raw metadata entry into a structured record."""
+
+        if not isinstance(entry, Mapping):
+            return None
+
+        version_id = _normalize_int(entry.get("id"))
+        if version_id is None:
+            return None
+
+        name = _normalize_string(entry.get("name"))
+        base_model = _normalize_string(entry.get("baseModel"))
+        released_at = _normalize_string(entry.get("publishedAt") or entry.get("createdAt"))
+        size_bytes = self._extract_size_bytes(entry.get("files"))
+        preview_url = self._extract_preview_url(entry.get("images"))
+
+        return ModelVersionRecord(
+            version_id=version_id,
+            name=name,
+            base_model=base_model,
+            released_at=released_at,
+            size_bytes=size_bytes,
+            preview_url=preview_url,
+            is_in_library=False,
+            should_ignore=False,
+            sort_index=index,
+        )
 
     def _extract_size_bytes(self, files) -> Optional[int]:
         if not isinstance(files, Iterable):

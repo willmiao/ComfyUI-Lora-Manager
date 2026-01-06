@@ -487,6 +487,7 @@ class DownloadManager:
                 model_type,
                 resolved_model_id,
                 sorted(version_ids),
+                version_info=version_info,
             )
         except Exception as exc:
             logger.debug(

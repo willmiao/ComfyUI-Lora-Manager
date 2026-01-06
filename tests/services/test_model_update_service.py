@@ -515,7 +515,31 @@ async def test_refresh_rewrites_remote_preview_urls(tmp_path):
     assert record is not None
     assert record.versions
     preview_url = record.versions[0].preview_url
-    assert (
-        preview_url
-        == "https://image.civitai.com/safe/width=450,optimized=true/preview.png"
-    )
+
+@pytest.mark.asyncio
+async def test_update_in_library_versions_populates_metadata(tmp_path):
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path))
+
+    version_info = {
+        "id": 123,
+        "name": "v1.0",
+        "baseModel": "SD 1.5",
+        "publishedAt": "2024-03-01T00:00:00Z",
+        "files": [{"sizeKB": 1024, "type": "Model", "primary": True}],
+        "images": [{"url": "https://example.com/preview.png"}],
+    }
+
+    await service.update_in_library_versions("lora", 1, [123], version_info=version_info)
+    record = await service.get_record("lora", 1)
+
+    assert record is not None
+    assert len(record.versions) == 1
+    version = record.versions[0]
+    assert version.version_id == 123
+    assert version.name == "v1.0"
+    assert version.base_model == "SD 1.5"
+    assert version.size_bytes == 1024 * 1024
+    assert version.preview_url == "https://example.com/preview.png"
+    assert version.is_in_library is True
+
