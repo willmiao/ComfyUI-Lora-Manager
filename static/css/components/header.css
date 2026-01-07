@@ -4,9 +4,11 @@
   position: fixed;
   top: 0;
   z-index: var(--z-header);
-  height: 48px; /* Reduced height */
+  height: 48px;
+  /* Reduced height */
   width: 100%;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Slightly stronger shadow */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  /* Slightly stronger shadow */
 }
 
 .header-container {
@@ -25,6 +27,7 @@
     max-width: 1800px;
   }
 }
+
 @media (min-width: 3000px) {
   .header-container {
     max-width: 2400px;
@@ -43,7 +46,7 @@
   align-items: center;
   text-decoration: none;
   color: var(--text-color);
-  gap: 2px;
+  gap: 8px;
 }
 
 .app-logo {
@@ -153,7 +156,7 @@
   flex-shrink: 0;
 }
 
-.header-controls > div {
+.header-controls>div {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -168,14 +171,15 @@
   position: relative;
 }
 
-.header-controls > div:hover {
+.header-controls>div:hover {
   background: var(--lora-accent);
   color: white;
   transform: translateY(-2px);
 }
 
 .theme-toggle {
-  position: relative; /* Ensure relative positioning for the container */
+  position: relative;
+  /* Ensure relative positioning for the container */
 }
 
 .theme-toggle .light-icon,
@@ -184,7 +188,8 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%); /* Center perfectly */
+  transform: translate(-50%, -50%);
+  /* Center perfectly */
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -246,23 +251,24 @@
 /* Mobile adjustments */
 @media (max-width: 768px) {
   .app-title {
-    display: none; /* Hide text title on mobile */
+    display: none;
+    /* Hide text title on mobile */
   }
-  
+
   .header-controls {
     gap: 4px;
   }
-  
-  .header-controls > div {
+
+  .header-controls>div {
     width: 28px;
     height: 28px;
   }
-  
+
   .header-search {
     max-width: none;
     margin: 0 0.5rem;
   }
-  
+
   .main-nav {
     margin-right: 0.5rem;
   }
@@ -273,11 +279,12 @@
   .header-container {
     padding: 0 8px;
   }
-  
+
   .main-nav {
-    display: none; /* Hide navigation on very small screens */
+    display: none;
+    /* Hide navigation on very small screens */
   }
-  
+
   .header-search {
     flex: 1;
   }
