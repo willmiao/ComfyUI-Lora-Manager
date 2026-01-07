@@ -71,6 +71,7 @@ class _DownloadProgress(dict):
             processed_models=set(),
             refreshed_models=set(),
             failed_models=set(),
+            reprocessed_models=set(),
         )
 
     def snapshot(self) -> dict:
@@ -80,6 +81,7 @@ class _DownloadProgress(dict):
         snapshot['processed_models'] = list(self['processed_models'])
         snapshot['refreshed_models'] = list(self['refreshed_models'])
         snapshot['failed_models'] = list(self['failed_models'])
+        snapshot['reprocessed_models'] = list(self.get('reprocessed_models', set()))
         return snapshot
 
 
@@ -404,6 +406,13 @@ class DownloadManager:
                     self._progress['total'],
                 )
 
+            reprocessed = self._progress.get('reprocessed_models', set())
+            if reprocessed:
+                logger.info(
+                    "Detected %s models with missing or empty example image folders; reprocessing triggered for those models",
+                    len(reprocessed),
+                )
+
             await self._broadcast_progress(status=final_status)
 
         except Exception as e:
@@ -472,7 +481,14 @@ class DownloadManager:
                 if existing_files:
                     logger.debug(f"Skipping already processed model: {model_name}")
                     return False
-                logger.info(f"Model {model_name} marked as processed but folder empty or missing, reprocessing")
+                
+                logger.debug(
+                    "Model %s (%s) marked as processed but folder empty or missing, reprocessing triggered",
+                    model_name,
+                    model_hash,
+                )
+                # Track that we are reprocessing this model for summary logging
+                self._progress['reprocessed_models'].add(model_hash)
                 # Remove from processed models since we need to reprocess
                 self._progress['processed_models'].discard(model_hash)
 
@@ -584,11 +600,13 @@ class DownloadManager:
             return False  # Default return if no conditions met
                 
         except Exception as e:
-            error_msg = f"Error processing model {model.get('model_name')}: {str(e)}"
+            error_msg = f"Error processing model {model.get('model_name')} ({model_hash}): {str(e)}"
             logger.error(error_msg, exc_info=True)
             self._progress['errors'].append(error_msg)
             self._progress['last_error'] = error_msg
-            return False  # Return False on exception
+            # Ensure model is marked as failed so we don't try again in this run
+            self._progress['failed_models'].add(model_hash)
+            return False
     
     def _save_progress(self, output_dir):
         """Save download progress to file."""

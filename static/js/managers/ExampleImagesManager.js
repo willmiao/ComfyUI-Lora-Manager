@@ -17,31 +17,31 @@ export class ExampleImagesManager {
         this.isMigrating = false; // Track migration state separately from downloading
         this.hasShownCompletionToast = false; // Flag to track if completion toast has been shown
         this.isStopping = false;
-        
+
         // Auto download properties
         this.autoDownloadInterval = null;
         this.lastAutoDownloadCheck = 0;
         this.autoDownloadCheckInterval = 10 * 60 * 1000; // 10 minutes in milliseconds
         this.pageInitTime = Date.now(); // Track when page was initialized
-        
+
         // Initialize download path field and check download status
         this.initializePathOptions();
         this.checkDownloadStatus();
     }
-    
+
     // Initialize the manager
     async initialize() {
         // Wait for settings to be initialized before proceeding
         if (window.settingsManager) {
             await window.settingsManager.waitForInitialization();
         }
-        
+
         // Initialize event listeners
         this.initEventListeners();
-        
+
         // Initialize progress panel reference
         this.progressPanel = document.getElementById('exampleImagesProgress');
-        
+
         // Load collapse state from storage
         this.isProgressPanelCollapsed = getStorageItem('progress_panel_collapsed', false);
         if (this.progressPanel && this.isProgressPanelCollapsed) {
@@ -51,7 +51,7 @@ export class ExampleImagesManager {
                 icon.className = 'fas fa-chevron-up';
             }
         }
-        
+
         // Initialize progress panel button handlers
         this.pauseButton = document.getElementById('pauseExampleDownloadBtn');
         this.stopButton = document.getElementById('stopExampleDownloadBtn');
@@ -64,7 +64,7 @@ export class ExampleImagesManager {
         if (this.stopButton) {
             this.stopButton.onclick = () => this.stopDownload();
         }
-        
+
         if (collapseBtn) {
             collapseBtn.onclick = () => this.toggleProgressPanel();
         }
@@ -77,7 +77,7 @@ export class ExampleImagesManager {
         // Make this instance globally accessible
         window.exampleImagesManager = this;
     }
-    
+
     // Initialize event listeners for buttons
     initEventListeners() {
         const downloadBtn = document.getElementById('exampleImagesDownloadBtn');
@@ -85,7 +85,7 @@ export class ExampleImagesManager {
             downloadBtn.onclick = () => this.handleDownloadButton();
         }
     }
-    
+
     async initializePathOptions() {
         try {
             // Get custom path input element
@@ -98,7 +98,7 @@ export class ExampleImagesManager {
                 // Enable download button if path is set
                 this.updateDownloadButtonState(!!savedPath);
             }
-            
+
             // Add event listener to validate path input
             if (pathInput) {
                 // Save path on Enter key or blur
@@ -107,7 +107,7 @@ export class ExampleImagesManager {
                     this.updateDownloadButtonState(hasPath);
                     try {
                         await settingsManager.saveSetting('example_images_path', pathInput.value);
-                            showToast('toast.exampleImages.pathUpdated', {}, 'success');
+                        showToast('toast.exampleImages.pathUpdated', {}, 'success');
                     } catch (error) {
                         console.error('Failed to update example images path:', error);
                         showToast('toast.exampleImages.pathUpdateFailed', { message: error.message }, 'error');
@@ -146,7 +146,7 @@ export class ExampleImagesManager {
             console.error('Failed to initialize path options:', error);
         }
     }
-    
+
     // Method to update download button state
     updateDownloadButtonState(enabled) {
         const downloadBtn = document.getElementById('exampleImagesDownloadBtn');
@@ -160,7 +160,7 @@ export class ExampleImagesManager {
             }
         }
     }
-    
+
     // Method to handle download button click based on current state
     async handleDownloadButton() {
         if (this.isDownloading && this.isPaused) {
@@ -174,29 +174,29 @@ export class ExampleImagesManager {
             showToast('toast.exampleImages.downloadInProgress', {}, 'info');
         }
     }
-    
+
     async checkDownloadStatus() {
         try {
             const response = await fetch('/api/lm/example-images-status');
             const data = await response.json();
-            
+
             if (data.success) {
                 this.isDownloading = data.is_downloading;
                 this.isPaused = data.status.status === 'paused';
-                
+
                 // Update download button text based on status
                 this.updateDownloadButtonText();
-                
+
                 if (this.isDownloading) {
                     // Ensure progress panel exists before updating UI
                     if (!this.progressPanel) {
                         this.progressPanel = document.getElementById('exampleImagesProgress');
                     }
-                    
+
                     if (this.progressPanel) {
                         this.updateUI(data.status);
                         this.showProgressPanel();
-                        
+
                         // Start the progress update interval if downloading
                         if (!this.progressUpdateInterval) {
                             this.startProgressUpdates();
@@ -212,7 +212,7 @@ export class ExampleImagesManager {
             console.error('Failed to check download status:', error);
         }
     }
-    
+
     // Update download button text based on current state
     updateDownloadButtonText() {
         const btnTextElement = document.getElementById('exampleDownloadBtnText');
@@ -228,16 +228,16 @@ export class ExampleImagesManager {
             }
         }
     }
-    
+
     async startDownload() {
         if (this.isDownloading) {
             showToast('toast.exampleImages.downloadInProgress', {}, 'warning');
             return;
         }
-        
+
         try {
             const optimize = state.global.settings.optimize_example_images;
-            
+
             const response = await fetch('/api/lm/download-example-images', {
                 method: 'POST',
                 headers: {
@@ -248,7 +248,7 @@ export class ExampleImagesManager {
                     model_types: ['lora', 'checkpoint', 'embedding'] // Example types, adjust as needed
                 })
             });
-            
+
             const data = await response.json();
 
             if (data.success) {
@@ -276,23 +276,23 @@ export class ExampleImagesManager {
             showToast('toast.exampleImages.downloadStartFailed', {}, 'error');
         }
     }
-    
+
     async pauseDownload() {
         if (!this.isDownloading || this.isPaused || this.isStopping) {
             return;
         }
-        
+
         try {
             const response = await fetch('/api/lm/pause-example-images', {
                 method: 'POST'
             });
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 this.isPaused = true;
                 document.getElementById('downloadStatusText').textContent = 'Paused';
-                
+
                 // Only update the icon element, not the entire innerHTML
                 if (this.pauseButton) {
                     const iconElement = this.pauseButton.querySelector('i');
@@ -301,7 +301,7 @@ export class ExampleImagesManager {
                     }
                     this.pauseButton.onclick = () => this.resumeDownload();
                 }
-                
+
                 this.updateDownloadButtonText();
                 showToast('toast.exampleImages.downloadPaused', {}, 'info');
             } else {
@@ -312,7 +312,7 @@ export class ExampleImagesManager {
             showToast('toast.exampleImages.pauseFailed', {}, 'error');
         }
     }
-    
+
     async resumeDownload() {
         if (!this.isDownloading || !this.isPaused || this.isStopping) {
             return;
@@ -402,24 +402,24 @@ export class ExampleImagesManager {
             this.updateDownloadButtonText();
         }
     }
-    
+
     startProgressUpdates() {
         // Clear any existing interval
         if (this.progressUpdateInterval) {
             clearInterval(this.progressUpdateInterval);
         }
-        
+
         // Set new interval to update progress every 2 seconds
         this.progressUpdateInterval = setInterval(async () => {
             await this.updateProgress();
         }, 2000);
     }
-    
+
     async updateProgress() {
         try {
             const response = await fetch('/api/lm/example-images-status');
             const data = await response.json();
-            
+
             if (data.success) {
                 const currentStatus = data.status.status;
                 this.isDownloading = data.is_downloading;
@@ -473,7 +473,7 @@ export class ExampleImagesManager {
             console.error('Failed to update progress:', error);
         }
     }
-    
+
     updateUI(status) {
         // Ensure progress panel exists
         if (!this.progressPanel) {
@@ -483,40 +483,40 @@ export class ExampleImagesManager {
                 return;
             }
         }
-        
+
         // Update status text
         const statusText = document.getElementById('downloadStatusText');
         if (statusText) {
             statusText.textContent = this.getStatusText(status.status);
         }
-        
+
         // Update progress counts and bar
         const progressCounts = document.getElementById('downloadProgressCounts');
         if (progressCounts) {
             progressCounts.textContent = `${status.completed}/${status.total}`;
         }
-        
+
         const progressBar = document.getElementById('downloadProgressBar');
         if (progressBar) {
             const progressPercent = status.total > 0 ? (status.completed / status.total) * 100 : 0;
             progressBar.style.width = `${progressPercent}%`;
-            
+
             // Update mini progress circle
             this.updateMiniProgress(progressPercent);
         }
-        
+
         // Update current model
         const currentModel = document.getElementById('currentModelName');
         if (currentModel) {
             currentModel.textContent = status.current_model || '-';
         }
-        
+
         // Update time stats
         this.updateTimeStats(status);
-        
+
         // Update errors
         this.updateErrors(status);
-        
+
         // Update pause/resume button
         if (!this.pauseButton) {
             this.pauseButton = document.getElementById('pauseExampleDownloadBtn');
@@ -529,7 +529,7 @@ export class ExampleImagesManager {
         if (this.pauseButton) {
             // Check if the button already has the SVG elements
             let hasProgressElements = !!this.pauseButton.querySelector('.mini-progress-circle');
-            
+
             if (!hasProgressElements) {
                 // If elements don't exist, add them
                 this.pauseButton.innerHTML = `
@@ -571,7 +571,7 @@ export class ExampleImagesManager {
                 this.stopButton.disabled = !canStop;
             }
         }
-        
+
         // Update title text
         const titleElement = document.querySelector('.progress-panel-title');
         if (titleElement) {
@@ -579,13 +579,13 @@ export class ExampleImagesManager {
             if (titleIcon) {
                 titleIcon.className = this.isMigrating ? 'fas fa-file-import' : 'fas fa-images';
             }
-            
-            titleElement.innerHTML = 
+
+            titleElement.innerHTML =
                 `<i class="${this.isMigrating ? 'fas fa-file-import' : 'fas fa-images'}"></i> ` +
                 `${this.isMigrating ? 'Example Images Migration' : 'Example Images Download'}`;
         }
     }
-    
+
     // Update the mini progress circle in the pause button
     updateMiniProgress(percent) {
         // Ensure we have the pause button reference
@@ -596,35 +596,35 @@ export class ExampleImagesManager {
                 return;
             }
         }
-        
+
         // Query elements within the context of the pause button
         const miniProgressCircle = this.pauseButton.querySelector('.mini-progress-circle');
         const percentText = this.pauseButton.querySelector('.progress-percent');
-        
+
         if (miniProgressCircle && percentText) {
             // Circle circumference = 2πr = 2 * π * 10 = 62.8
             const circumference = 62.8;
             const offset = circumference - (percent / 100) * circumference;
-            
+
             miniProgressCircle.style.strokeDashoffset = offset;
             percentText.textContent = `${Math.round(percent)}%`;
-            
+
             // Only show percent text when panel is collapsed
             percentText.style.display = this.isProgressPanelCollapsed ? 'block' : 'none';
         } else {
-            console.warn('Mini progress elements not found within pause button', 
-                         this.pauseButton,
-                         'mini-progress-circle:', !!miniProgressCircle, 
-                         'progress-percent:', !!percentText);
+            console.warn('Mini progress elements not found within pause button',
+                this.pauseButton,
+                'mini-progress-circle:', !!miniProgressCircle,
+                'progress-percent:', !!percentText);
         }
     }
-    
+
     updateTimeStats(status) {
         const elapsedTime = document.getElementById('elapsedTime');
         const remainingTime = document.getElementById('remainingTime');
-        
+
         if (!elapsedTime || !remainingTime) return;
-        
+
         // Calculate elapsed time
         let elapsed;
         if (status.start_time) {
@@ -634,9 +634,9 @@ export class ExampleImagesManager {
         } else {
             elapsed = 0;
         }
-        
+
         elapsedTime.textContent = this.formatTime(elapsed);
-        
+
         // Calculate remaining time
         if (status.total > 0 && status.completed > 0 && status.status === 'running') {
             const rate = status.completed / elapsed; // models per second
@@ -646,41 +646,41 @@ export class ExampleImagesManager {
             remainingTime.textContent = '--:--:--';
         }
     }
-    
+
     updateErrors(status) {
         const errorContainer = document.getElementById('downloadErrorContainer');
         const errorList = document.getElementById('downloadErrors');
-        
+
         if (!errorContainer || !errorList) return;
-        
+
         if (status.errors && status.errors.length > 0) {
             // Show only the last 3 errors
             const recentErrors = status.errors.slice(-3);
-            errorList.innerHTML = recentErrors.map(error => 
+            errorList.innerHTML = recentErrors.map(error =>
                 `<div class="error-item">${error}</div>`
             ).join('');
-            
+
             errorContainer.classList.remove('hidden');
         } else {
             errorContainer.classList.add('hidden');
         }
     }
-    
+
     formatTime(seconds) {
         const hours = Math.floor(seconds / 3600);
         const minutes = Math.floor((seconds % 3600) / 60);
         const secs = seconds % 60;
-        
+
         return [
             hours.toString().padStart(2, '0'),
             minutes.toString().padStart(2, '0'),
             secs.toString().padStart(2, '0')
         ].join(':');
     }
-    
+
     getStatusText(status) {
         const prefix = this.isMigrating ? 'Migrating' : 'Downloading';
-        
+
         switch (status) {
             case 'running': return this.isMigrating ? 'Migrating' : 'Downloading';
             case 'paused': return 'Paused';
@@ -691,7 +691,7 @@ export class ExampleImagesManager {
             default: return 'Initializing';
         }
     }
-    
+
     showProgressPanel() {
         // Ensure progress panel exists
         if (!this.progressPanel) {
@@ -703,7 +703,7 @@ export class ExampleImagesManager {
         }
         this.progressPanel.classList.add('visible');
     }
-    
+
     hideProgressPanel() {
         if (!this.progressPanel) {
             this.progressPanel = document.getElementById('exampleImagesProgress');
@@ -711,19 +711,19 @@ export class ExampleImagesManager {
         }
         this.progressPanel.classList.remove('visible');
     }
-    
+
     toggleProgressPanel() {
         if (!this.progressPanel) {
             this.progressPanel = document.getElementById('exampleImagesProgress');
             if (!this.progressPanel) return;
         }
-        
+
         this.isProgressPanelCollapsed = !this.isProgressPanelCollapsed;
         this.progressPanel.classList.toggle('collapsed');
-        
+
         // Save collapsed state to storage
         setStorageItem('progress_panel_collapsed', this.isProgressPanelCollapsed);
-        
+
         // Update icon
         const icon = document.querySelector('#collapseProgressBtn i');
         if (icon) {
@@ -733,7 +733,7 @@ export class ExampleImagesManager {
                 icon.className = 'fas fa-chevron-down';
             }
         }
-        
+
         // Force update mini progress if panel is collapsed
         if (this.isProgressPanelCollapsed) {
             const progressBar = document.getElementById('downloadProgressBar');
@@ -753,11 +753,12 @@ export class ExampleImagesManager {
         // Clear any existing interval
         this.clearAutoDownload();
 
-        // Wait at least 30 seconds after page initialization before first check
+        // Wait at least 30 seconds after page initialization before first check, plus random jitter
         const timeSinceInit = Date.now() - this.pageInitTime;
-        const initialDelay = Math.max(60000 - timeSinceInit, 5000); // At least 5 seconds, up to 60 seconds
+        const jitter = Math.floor(Math.random() * 30000); // 0-30 seconds jitter to prevent thundering herd
+        const initialDelay = Math.max(60000 - timeSinceInit, 5000) + jitter;
 
-        console.log(`Setting up auto download with initial delay of ${initialDelay}ms`);
+        console.log(`Setting up auto download with initial delay of ${initialDelay}ms (including ${jitter}ms jitter)`);
 
         setTimeout(() => {
             // Do initial check
@@ -800,7 +801,7 @@ export class ExampleImagesManager {
 
     async performAutoDownloadCheck() {
         const now = Date.now();
-        
+
         // Prevent too frequent checks (minimum 2 minutes between checks)
         if (now - this.lastAutoDownloadCheck < 2 * 60 * 1000) {
             console.log('Skipping auto download check - too soon since last check');
@@ -816,9 +817,9 @@ export class ExampleImagesManager {
 
         try {
             console.log('Performing auto download check...');
-            
+
             const optimize = state.global.settings.optimize_example_images;
-            
+
             const response = await fetch('/api/lm/download-example-images', {
                 method: 'POST',
                 headers: {
@@ -830,11 +831,16 @@ export class ExampleImagesManager {
                     auto_mode: true // Flag to indicate this is an automatic download
                 })
             });
-            
+
             const data = await response.json();
-            
+
             if (!data.success) {
                 console.warn('Auto download check failed:', data.error);
+                // If already in progress, push back the next check to avoid hammering the API
+                if (data.error && data.error.includes('already in progress')) {
+                    console.log('Download already in progress, backing off next check');
+                    this.lastAutoDownloadCheck = now + (5 * 60 * 1000); // Back off for 5 extra minutes
+                }
             }
         } catch (error) {
             console.error('Auto download check error:', error);
