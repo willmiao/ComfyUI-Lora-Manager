@@ -918,11 +918,13 @@
                 "addPresetParameter": "프리셋 매개변수 추가...",
                 "strengthMin": "최소 강도",
                 "strengthMax": "최대 강도",
+                "strengthRange": "강도 범위",
                 "strength": "강도",
                 "clipStrength": "클립 강도",
                 "clipSkip": "클립 스킵",
                 "valuePlaceholder": "값",
-                "add": "추가"
+                "add": "추가",
+                "invalidRange": "잘못된 범위 형식입니다. x.x-y.y를 사용하세요"
             },
             "triggerWords": {
                 "label": "트리거 단어",

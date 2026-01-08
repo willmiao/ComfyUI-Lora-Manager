@@ -918,11 +918,13 @@
                 "addPresetParameter": "הוסף פרמטר קבוע מראש...",
                 "strengthMin": "חוזק מינימלי",
                 "strengthMax": "חוזק מקסימלי",
+                "strengthRange": "טווח עוצמה",
                 "strength": "חוזק",
                 "clipStrength": "עוצמת CLIP",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "ערך",
-                "add": "הוסף"
+                "add": "הוסף",
+                "invalidRange": "פורמט טווח לא תקין. השתמש ב-x.x-y.y"
             },
             "triggerWords": {
                 "label": "מילות טריגר",

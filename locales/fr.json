@@ -918,11 +918,13 @@
                 "addPresetParameter": "Ajouter un paramètre prédéfini...",
                 "strengthMin": "Force Min",
                 "strengthMax": "Force Max",
+                "strengthRange": "Gamme de force",
                 "strength": "Force",
                 "clipStrength": "Force Clip",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Valeur",
-                "add": "Ajouter"
+                "add": "Ajouter",
+                "invalidRange": "Format de plage invalide. Utilisez x.x-y.y"
             },
             "triggerWords": {
                 "label": "Mots-clés",

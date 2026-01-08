@@ -918,11 +918,13 @@
                 "addPresetParameter": "Добавить предустановленный параметр...",
                 "strengthMin": "Мин. сила",
                 "strengthMax": "Макс. сила",
+                "strengthRange": "Диапазон силы",
                 "strength": "Сила",
                 "clipStrength": "Сила клипа",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Значение",
-                "add": "Добавить"
+                "add": "Добавить",
+                "invalidRange": "Неверный формат диапазона. Используйте x.x-y.y"
             },
             "triggerWords": {
                 "label": "Триггерные слова",

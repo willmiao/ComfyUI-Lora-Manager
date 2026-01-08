@@ -918,11 +918,13 @@
                 "addPresetParameter": "新增預設參數...",
                 "strengthMin": "最小強度",
                 "strengthMax": "最大強度",
+                "strengthRange": "強度範圍",
                 "strength": "強度",
                 "clipStrength": "Clip 強度",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "數值",
-                "add": "新增"
+                "add": "新增",
+                "invalidRange": "無效的範圍格式。請使用 x.x-y.y"
             },
             "triggerWords": {
                 "label": "觸發詞",

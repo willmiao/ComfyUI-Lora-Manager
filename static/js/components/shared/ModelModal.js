@@ -672,6 +672,7 @@ function renderLoraSpecificContent(lora, escapedWords) {
                         <option value="">${translate('modals.model.usageTips.addPresetParameter', {}, 'Add preset parameter...')}</option>
                         <option value="strength_min">${translate('modals.model.usageTips.strengthMin', {}, 'Strength Min')}</option>
                         <option value="strength_max">${translate('modals.model.usageTips.strengthMax', {}, 'Strength Max')}</option>
+                        <option value="strength_range">${translate('modals.model.usageTips.strengthRange', {}, 'Strength Range')}</option>
                         <option value="strength">${translate('modals.model.usageTips.strength', {}, 'Strength')}</option>
                         <option value="clip_strength">${translate('modals.model.usageTips.clipStrength', {}, 'Clip Strength')}</option>
                         <option value="clip_skip">${translate('modals.model.usageTips.clipSkip', {}, 'Clip Skip')}</option>
@@ -814,12 +815,21 @@ function setupLoraSpecificFields(filePath) {
         const selected = this.value;
         if (selected) {
             presetValue.style.display = 'inline-block';
-            presetValue.min = selected.includes('strength') ? -10 : 0;
-            presetValue.max = selected.includes('strength') ? 10 : 10;
-            presetValue.step = 0.5;
-            if (selected === 'clip_skip') {
+            if (selected === 'strength_range') {
+                presetValue.type = 'text';
+                presetValue.placeholder = 'e.g. 0.8-1.2';
+                presetValue.removeAttribute('min');
+                presetValue.removeAttribute('max');
+                presetValue.removeAttribute('step');
+            } else {
                 presetValue.type = 'number';
-                presetValue.step = 1;
+                presetValue.placeholder = translate('modals.model.usageTips.valuePlaceholder', {}, 'Value');
+                presetValue.min = selected.includes('strength') ? -10 : 0;
+                presetValue.max = selected.includes('strength') ? 10 : 10;
+                presetValue.step = 0.5;
+                if (selected === 'clip_skip') {
+                    presetValue.step = 1;
+                }
             }
             // Add auto-focus
             setTimeout(() => presetValue.focus(), 0);
@@ -840,7 +850,18 @@ function setupLoraSpecificFields(filePath) {
             document.querySelector(`.model-card[data-filepath="${filePath}"]`);
         const currentPresets = parsePresets(loraCard?.dataset.usage_tips);
 
-        currentPresets[key] = parseFloat(value);
+        if (key === 'strength_range') {
+            const rangeMatch = value.match(/^(-?\d*\.?\d+)\s*[-~]\s*(-?\d*\.?\d+)$/);
+            if (rangeMatch) {
+                currentPresets['strength_min'] = parseFloat(rangeMatch[1]);
+                currentPresets['strength_max'] = parseFloat(rangeMatch[2]);
+            } else {
+                showToast('modals.model.usageTips.invalidRange', {}, 'error', 'Invalid range format. Use x.x-y.y');
+                return;
+            }
+        } else {
+            currentPresets[key] = parseFloat(value);
+        }
         const newPresetsJson = JSON.stringify(currentPresets);
 
         await getModelApiClient().saveModelMetadata(currentPath, { usage_tips: newPresetsJson });

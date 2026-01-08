@@ -918,11 +918,13 @@
                 "addPresetParameter": "Añadir parámetro preestablecido...",
                 "strengthMin": "Fuerza mínima",
                 "strengthMax": "Fuerza máxima",
+                "strengthRange": "Rango de fuerza",
                 "strength": "Fuerza",
                 "clipStrength": "Fuerza de Clip",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Valor",
-                "add": "Añadir"
+                "add": "Añadir",
+                "invalidRange": "Formato de rango inválido. Use x.x-y.y"
             },
             "triggerWords": {
                 "label": "Palabras clave",

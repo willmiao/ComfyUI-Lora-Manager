@@ -918,11 +918,13 @@
                 "addPresetParameter": "Add preset parameter...",
                 "strengthMin": "Strength Min",
                 "strengthMax": "Strength Max",
+                "strengthRange": "Strength Range",
                 "strength": "Strength",
                 "clipStrength": "Clip Strength",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Value",
-                "add": "Add"
+                "add": "Add",
+                "invalidRange": "Invalid range format. Use x.x-y.y"
             },
             "triggerWords": {
                 "label": "Trigger Words",

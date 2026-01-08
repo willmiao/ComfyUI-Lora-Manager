@@ -918,11 +918,13 @@
                 "addPresetParameter": "Voreingestellten Parameter hinzufügen...",
                 "strengthMin": "Stärke Min",
                 "strengthMax": "Stärke Max",
+                "strengthRange": "Stärkenbereich",
                 "strength": "Stärke",
                 "clipStrength": "Clip-Stärke",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Wert",
-                "add": "Hinzufügen"
+                "add": "Hinzufügen",
+                "invalidRange": "Ungültiges Bereichsformat. Verwenden Sie x.x-y.y"
             },
             "triggerWords": {
                 "label": "Trigger Words",
