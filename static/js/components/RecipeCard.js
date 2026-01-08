@@ -40,10 +40,16 @@ class RecipeCard {
         const missingLorasCount = loras.filter(lora => !lora.inLibrary && !lora.isDeleted).length;
         const allLorasAvailable = missingLorasCount === 0 && lorasCount > 0;
 
-        // Ensure file_url exists, fallback to file_path if needed
-        const previewUrl = this.recipe.file_url ||
-            (this.recipe.file_path ? `/loras_static/root1/preview/${this.recipe.file_path.split('/').pop()}` :
-                '/loras_static/images/no-preview.png');
+        // Ensure file_url exists, fallback to API URL if needed
+        let previewUrl = this.recipe.file_url;
+        if (!previewUrl) {
+            if (this.recipe.file_path) {
+                const encodedPath = encodeURIComponent(this.recipe.file_path.replace(/\\/g, '/'));
+                previewUrl = `/api/lm/previews?path=${encodedPath}`;
+            } else {
+                previewUrl = '/loras_static/images/no-preview.png';
+            }
+        }
 
         const isDuplicatesMode = getCurrentPageState().duplicatesMode;
         const autoplayOnHover = state?.global?.settings?.autoplay_on_hover === true;

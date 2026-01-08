@@ -437,14 +437,25 @@ class RecipeScanner:
                             logger.warning(f"Missing required fields in {recipe_path}")
                             continue
                         
-                        # Ensure the image file exists
+                        # Ensure the image file exists and prioritize local siblings
                         image_path = recipe_data.get('file_path')
-                        if not os.path.exists(image_path):
+                        if image_path:
                             recipe_dir = os.path.dirname(recipe_path)
                             image_filename = os.path.basename(image_path)
-                            alternative_path = os.path.join(recipe_dir, image_filename)
-                            if os.path.exists(alternative_path):
-                                recipe_data['file_path'] = alternative_path
+                            local_sibling_path = os.path.normpath(os.path.join(recipe_dir, image_filename))
+                            
+                            # If local sibling exists and stored path is different, prefer local
+                            if os.path.exists(local_sibling_path) and os.path.normpath(image_path) != local_sibling_path:
+                                recipe_data['file_path'] = local_sibling_path
+                                # Persist the repair
+                                try:
+                                    with open(recipe_path, 'w', encoding='utf-8') as f:
+                                        json.dump(recipe_data, f, indent=4, ensure_ascii=False)
+                                    logger.info(f"Updated recipe image path to local sibling: {local_sibling_path}")
+                                except Exception as e:
+                                    logger.warning(f"Failed to persist repair for {recipe_path}: {e}")
+                            elif not os.path.exists(image_path):
+                                logger.warning(f"Recipe image not found and no local sibling: {image_path}")
                         
                         # Ensure loras array exists
                         if 'loras' not in recipe_data:
@@ -823,31 +834,22 @@ class RecipeScanner:
                     logger.warning(f"Missing required field '{field}' in {recipe_path}")
                     return None
             
-            # Ensure the image file exists
+            # Ensure the image file exists and prioritize local siblings
             image_path = recipe_data.get('file_path')
-            normalized_image_path = os.path.normpath(image_path) if image_path else image_path
             path_updated = False
-            if image_path and normalized_image_path != image_path:
-                recipe_data['file_path'] = normalized_image_path
-                image_path = normalized_image_path
-                path_updated = True
-
-            if image_path and not os.path.exists(image_path):
-                logger.warning(f"Recipe image not found: {image_path}")
-                # Try to find the image in the same directory as the recipe
+            if image_path:
                 recipe_dir = os.path.dirname(recipe_path)
                 image_filename = os.path.basename(image_path)
-                alternative_path = os.path.join(recipe_dir, image_filename)
-                if os.path.exists(alternative_path):
-                    normalized_alternative = os.path.normpath(alternative_path)
-                    recipe_data['file_path'] = normalized_alternative
-                    image_path = normalized_alternative
+                local_sibling_path = os.path.normpath(os.path.join(recipe_dir, image_filename))
+                
+                # If local sibling exists and stored path is different, prefer local
+                if os.path.exists(local_sibling_path) and os.path.normpath(image_path) != local_sibling_path:
+                    recipe_data['file_path'] = local_sibling_path
+                    image_path = local_sibling_path
                     path_updated = True
-                    logger.info(
-                        "Updated recipe image path to %s after relocating asset", normalized_alternative
-                    )
-                else:
-                    logger.warning(f"Could not find alternative image path for {image_path}")
+                    logger.info("Updated recipe image path to local sibling: %s", local_sibling_path)
+                elif not os.path.exists(image_path):
+                    logger.warning(f"Recipe image not found and no local sibling: {image_path}")
 
             if path_updated:
                 self._write_recipe_file(recipe_path, recipe_data)
@@ -1446,8 +1448,17 @@ class RecipeScanner:
         # Get paginated items
         paginated_items = filtered_data[start_idx:end_idx]
 
-        # Add inLibrary information for each lora
+        # Add inLibrary information and URLs for each recipe
         for item in paginated_items:
+            # Format file path to URL
+            if 'file_path' in item:
+                item['file_url'] = self._format_file_url(item['file_path'])
+            
+            # Format dates for display
+            for date_field in ['created_date', 'modified']:
+                if date_field in item:
+                    item[f"{date_field}_formatted"] = self._format_timestamp(item[date_field])
+
             if 'loras' in item:
                 item['loras'] = [self._enrich_lora_entry(dict(lora)) for lora in item['loras']]
             if item.get('checkpoint'):
