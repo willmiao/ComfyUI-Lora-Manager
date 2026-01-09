@@ -422,7 +422,15 @@
             "preparing": "準備下載中...",
             "connecting": "正在連接下載伺服器...",
             "completed": "已完成",
-            "downloadComplete": "下載成功完成"
+            "downloadComplete": "下載成功完成",
+            "customPath": "自訂資料庫路徑",
+            "customPathPlaceholder": "留空以使用預設位置",
+            "customPathHelp": "指定中繼資料封存資料庫檔案的自訂位置。如果資料庫已存在且您變更此路徑，它將自動移動到新位置。",
+            "path": "資料庫路徑",
+            "pathUpdated": "資料庫路徑更新成功",
+            "pathUpdatedAndMoved": "資料庫路徑已更新，資料庫已移動",
+            "pathUpdateError": "更新資料庫路徑失敗",
+            "movingDatabase": "正在移動資料庫..."
         },
         "proxySettings": {
             "enableProxy": "啟用應用程式代理",

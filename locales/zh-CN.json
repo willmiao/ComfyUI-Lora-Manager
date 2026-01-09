@@ -422,7 +422,15 @@
             "preparing": "正在准备下载...",
             "connecting": "正在连接下载服务器...",
             "completed": "已完成",
-            "downloadComplete": "下载成功完成"
+            "downloadComplete": "下载成功完成",
+            "customPath": "自定义数据库路径",
+            "customPathPlaceholder": "留空以使用默认位置",
+            "customPathHelp": "指定元数据归档数据库文件的自定义位置。如果数据库已存在且您更改此路径，它将自动移动到新位置。",
+            "path": "数据库路径",
+            "pathUpdated": "数据库路径更新成功",
+            "pathUpdatedAndMoved": "数据库路径已更新，数据库已移动",
+            "pathUpdateError": "更新数据库路径失败",
+            "movingDatabase": "正在移动数据库..."
         },
         "proxySettings": {
             "enableProxy": "启用应用级代理",

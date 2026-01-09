@@ -32,9 +32,8 @@ async def initialize_metadata_providers():
     # Initialize archive database provider if enabled
     if enable_archive_db:
         try:
-            # Initialize archive manager
-            base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-            archive_manager = MetadataArchiveManager(base_path)
+            # Initialize archive manager with custom path if set
+            archive_manager = await get_metadata_archive_manager()
             
             db_path = archive_manager.get_database_path()
             if db_path and os.path.exists(db_path):
@@ -106,8 +105,11 @@ async def update_metadata_providers():
 
 async def get_metadata_archive_manager():
     """Get metadata archive manager instance"""
+    from .settings_manager import get_settings_manager
+    settings_manager = get_settings_manager()
     base_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    return MetadataArchiveManager(base_path)
+    custom_db_path = settings_manager.get("metadata_archive_db_path", "")
+    return MetadataArchiveManager(base_path, custom_db_path=custom_db_path if custom_db_path else None)
 
 def _wrap_provider_with_rate_limit(provider_name: str | None, provider: ModelMetadataProvider) -> ModelMetadataProvider:
     if isinstance(provider, (FallbackMetadataProvider, RateLimitRetryingProvider)):

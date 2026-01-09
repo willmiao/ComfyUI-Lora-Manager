@@ -36,6 +36,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "language": "en",
     "show_only_sfw": False,
     "enable_metadata_archive_db": False,
+    "metadata_archive_db_path": "",
     "proxy_enabled": False,
     "proxy_host": "",
     "proxy_port": "",

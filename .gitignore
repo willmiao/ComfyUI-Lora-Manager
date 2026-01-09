@@ -10,3 +10,4 @@ node_modules/
 coverage/
 .coverage
 model_cache/
+venv/

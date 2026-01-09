@@ -422,7 +422,15 @@
             "preparing": "Download wird vorbereitet...",
             "connecting": "Verbindung zum Download-Server wird hergestellt...",
             "completed": "Abgeschlossen",
-            "downloadComplete": "Download erfolgreich abgeschlossen"
+            "downloadComplete": "Download erfolgreich abgeschlossen",
+            "customPath": "Benutzerdefinierter Datenbankpfad",
+            "customPathPlaceholder": "Leer lassen, um den Standardspeicherort zu verwenden",
+            "customPathHelp": "Geben Sie einen benutzerdefinierten Speicherort für die Metadaten-Archiv-Datenbankdatei an. Wenn eine Datenbank bereits existiert und Sie diesen Pfad ändern, wird sie automatisch an den neuen Speicherort verschoben.",
+            "path": "Datenbankpfad",
+            "pathUpdated": "Datenbankpfad erfolgreich aktualisiert",
+            "pathUpdatedAndMoved": "Datenbankpfad aktualisiert und Datenbank erfolgreich verschoben",
+            "pathUpdateError": "Fehler beim Aktualisieren des Datenbankpfads",
+            "movingDatabase": "Datenbank wird verschoben..."
         },
         "proxySettings": {
             "enableProxy": "App-Proxy aktivieren",

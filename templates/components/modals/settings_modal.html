@@ -603,6 +603,29 @@
                         <!-- Status will be populated by JavaScript -->
                     </div>
                 </div>
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="metadataArchiveDbPath">{{ t('settings.metadataArchive.customPath') }}:</label>
+                        </div>
+                        <div class="setting-control">
+                            <div class="text-input-wrapper">
+                                <input
+                                    type="text"
+                                    id="metadataArchiveDbPath"
+                                    placeholder="{{ t('settings.metadataArchive.customPathPlaceholder') }}"
+                                    value="{{ settings.get('metadata_archive_db_path', '') }}"
+                                    onblur="settingsManager.saveMetadataArchivePath()"
+                                    onkeydown="if(event.key === 'Enter') { this.blur(); }"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.metadataArchive.customPathHelp') }}
+                    </div>
+                </div>
+
                 
                 <div class="setting-item">
                     <div class="setting-row">

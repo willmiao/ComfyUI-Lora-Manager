@@ -422,7 +422,15 @@
             "preparing": "Preparing download...",
             "connecting": "Connecting to download server...",
             "completed": "Completed",
-            "downloadComplete": "Download completed successfully"
+            "downloadComplete": "Download completed successfully",
+            "customPath": "Custom Database Path",
+            "customPathPlaceholder": "Leave empty to use default location",
+            "customPathHelp": "Specify a custom location for the metadata archive database file. If a database already exists and you change this path, it will be automatically moved to the new location.",
+            "path": "Database Path",
+            "pathUpdated": "Database path updated successfully",
+            "pathUpdatedAndMoved": "Database path updated and database moved successfully",
+            "pathUpdateError": "Failed to update database path",
+            "movingDatabase": "Moving Database..."
         },
         "proxySettings": {
             "enableProxy": "Enable App-level Proxy",
