@@ -47,6 +47,7 @@ class LoraRoutes(BaseModelRoutes):
 
         # ComfyUI integration
         registrar.add_prefixed_route('POST', '/api/lm/{prefix}/get_trigger_words', prefix, self.get_trigger_words)
+        registrar.add_prefixed_route('POST', '/api/lm/{prefix}/cycler_preview', prefix, self.get_cycler_preview)
     
     def _parse_specific_params(self, request: web.Request) -> Dict:
         """Parse LoRA-specific parameters"""
@@ -261,3 +262,115 @@ class LoraRoutes(BaseModelRoutes):
                 "success": False,
                 "error": str(e)
             }, status=500)
+
+    async def get_cycler_preview(self, request: web.Request) -> web.Response:
+        """Get preview of which LoRA would be selected by LoraCycler with current settings.
+
+        This endpoint enables real-time trigger word updates before workflow execution.
+        Uses shared utilities from lora_cycler_utils for consistent behavior with the node.
+        """
+        try:
+            from ..utils.lora_cycler_utils import (
+                filter_loras,
+                select_lora_index,
+                format_trigger_words,
+                get_execution_counters,
+            )
+
+            json_data = await request.json()
+
+            # Parse parameters
+            folder_filter = json_data.get("folder_filter", "").strip()
+            base_model_filter = json_data.get("base_model_filter", "").strip()
+            tag_filter = json_data.get("tag_filter", "").strip()
+            name_filter = json_data.get("name_filter", "").strip()
+            selection_mode = json_data.get("selection_mode", "fixed")
+            index = json_data.get("index", 0)
+            seed = json_data.get("seed", 0)
+            unique_id = json_data.get("unique_id", "default")
+            node_ids = json_data.get("node_ids", [])
+            first_trigger_word_only = json_data.get("first_trigger_word_only", False)
+
+            # Get LoRA cache data
+            scanner = await ServiceRegistry.get_lora_scanner()
+            cache = await scanner.get_cached_data()
+            raw_data = cache.raw_data
+
+            # Use shared filtering logic
+            filtered_loras = filter_loras(
+                raw_data,
+                folder_filter=folder_filter,
+                base_model_filter=base_model_filter,
+                tag_filter=tag_filter,
+                name_filter=name_filter,
+            )
+
+            total_count = len(filtered_loras)
+            node_key = str(unique_id) if unique_id else "default"
+
+            if total_count == 0:
+                # Send empty trigger words to connected nodes
+                self._send_trigger_word_updates(node_ids, "")
+                return web.json_response({
+                    "success": True,
+                    "total_count": 0,
+                    "selected_index": -1,
+                    "selected_lora": "",
+                    "trigger_words": ""
+                })
+
+            # Use shared selection logic (preview mode - don't update counter)
+            selected_index = select_lora_index(
+                selection_mode=selection_mode,
+                index=index,
+                seed=seed,
+                total_count=total_count,
+                node_key=node_key,
+                update_counter=False,  # Preview only - don't modify state
+            )
+
+            # Get selected LoRA info
+            selected_lora = filtered_loras[selected_index]
+            lora_name = selected_lora.get('file_name', '') or selected_lora.get('model_name', '')
+            trigger_words = selected_lora.get('trigger_words', [])
+
+            # Use shared formatting logic
+            trigger_words_text = format_trigger_words(trigger_words, first_only=first_trigger_word_only)
+
+            # Send trigger words to connected nodes
+            self._send_trigger_word_updates(node_ids, trigger_words_text)
+
+            return web.json_response({
+                "success": True,
+                "total_count": total_count,
+                "selected_index": selected_index,
+                "selected_lora": lora_name,
+                "trigger_words": trigger_words_text
+            })
+
+        except Exception as e:
+            logger.error(f"Error in cycler preview: {e}")
+            return web.json_response({
+                "success": False,
+                "error": str(e)
+            }, status=500)
+
+    def _send_trigger_word_updates(self, node_ids: list, trigger_words_text: str) -> None:
+        """Send trigger word updates to connected TriggerWord Toggle nodes."""
+        for entry in node_ids:
+            node_identifier = entry
+            graph_identifier = None
+            if isinstance(entry, dict):
+                node_identifier = entry.get("node_id")
+                graph_identifier = entry.get("graph_id")
+
+            try:
+                parsed_node_id = int(node_identifier)
+            except (TypeError, ValueError):
+                parsed_node_id = node_identifier
+
+            payload = {"id": parsed_node_id, "message": trigger_words_text}
+            if graph_identifier is not None:
+                payload["graph_id"] = str(graph_identifier)
+
+            PromptServer.instance.send_sync("trigger_word_update", payload)
