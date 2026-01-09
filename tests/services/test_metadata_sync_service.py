@@ -481,3 +481,56 @@ async def test_relink_metadata_raises_when_version_missing():
             model_id=9,
             model_version_id=None,
         )
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_does_not_overwrite_api_metadata_with_archive(tmp_path):
+    helpers = build_service()
+
+    # Existing high-quality metadata
+    existing_civitai = {
+        "source": "api", # will be normalized to civitai_api in some paths, but let's use what is_civitai_api_metadata expects
+        "files": [{"id": 1}],
+        "images": [{"url": "img1"}],
+        "name": "High Quality",
+        "trainedWords": ["keyword1"]
+    }
+
+    # Incoming lower-quality metadata from CivArchive (simulating fallback)
+    civarchive_payload = {
+        "source": "civarchive",
+        "model": {"name": "Low Quality", "description": "low quality", "tags": []},
+        "images": [], # Missing images
+        "baseModel": "sdxl",
+        "trainedWords": ["keyword2"]
+    }
+    helpers.default_provider.get_model_by_hash.return_value = (civarchive_payload, None)
+
+    model_path = tmp_path / "model.safetensors"
+    model_data = {
+        "model_name": "High Quality",
+        "metadata_source": "civitai_api",
+        "civitai": existing_civitai,
+        "file_path": str(model_path),
+    }
+    update_cache = AsyncMock(return_value=True)
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="abc",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert ok and error is None
+    # Ensure the civitai block still contains the high-quality data
+    assert model_data["civitai"]["name"] == "High Quality"
+    assert "keyword1" in model_data["civitai"]["trainedWords"]
+    # Source might be updated in model_data root, but the block should be protected if logic works
+    assert model_data["metadata_source"] == "civarchive" 
+    
+    # Check that trained words were merged if any (though in this case we might skip the whole update)
+    # Actually, according to the new logic, the update is SKIPPED entirely for the civitai block
+    assert model_data["civitai"]["trainedWords"] == ["keyword1"]
+    
+    helpers.metadata_manager.save_metadata.assert_awaited()
+    update_cache.assert_awaited()

@@ -76,7 +76,7 @@ class MetadataSyncService:
         files = meta.get("files")
         images = meta.get("images")
         source = meta.get("source")
-        return bool(files) and bool(images) and source != "archive_db"
+        return bool(files) and bool(images) and source not in ("archive_db", "civarchive")
 
     async def update_model_metadata(
         self,
@@ -90,11 +90,11 @@ class MetadataSyncService:
         existing_civitai = local_metadata.get("civitai") or {}
 
         if (
-            civitai_metadata.get("source") == "archive_db"
+            not self.is_civitai_api_metadata(civitai_metadata)
             and self.is_civitai_api_metadata(existing_civitai)
         ):
             logger.info(
-                "Skip civitai update for %s (%s)",
+                "Skip civitai update for %s (%s) - existing metadata is higher quality",
                 local_metadata.get("model_name", ""),
                 existing_civitai.get("name", ""),
             )
