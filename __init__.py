@@ -8,6 +8,7 @@ try:  # pragma: no cover - import fallback for pytest collection
     from .py.nodes.debug_metadata import DebugMetadata
     from .py.nodes.wanvideo_lora_select import WanVideoLoraSelectLM
     from .py.nodes.wanvideo_lora_select_from_text import WanVideoLoraSelectFromText
+    from .py.nodes.demo_vue_widget_node import LoraManagerDemoNode
     from .py.metadata_collector import init as init_metadata_collector
 except ImportError:  # pragma: no cover - allows running under pytest without package install
     import importlib
@@ -28,6 +29,7 @@ except ImportError:  # pragma: no cover - allows running under pytest without pa
     DebugMetadata = importlib.import_module("py.nodes.debug_metadata").DebugMetadata
     WanVideoLoraSelectLM = importlib.import_module("py.nodes.wanvideo_lora_select").WanVideoLoraSelectLM
     WanVideoLoraSelectFromText = importlib.import_module("py.nodes.wanvideo_lora_select_from_text").WanVideoLoraSelectFromText
+    LoraManagerDemoNode = importlib.import_module("py.nodes.demo_vue_widget_node").LoraManagerDemoNode
     init_metadata_collector = importlib.import_module("py.metadata_collector").init
 
 NODE_CLASS_MAPPINGS = {
@@ -39,10 +41,25 @@ NODE_CLASS_MAPPINGS = {
     SaveImageLM.NAME: SaveImageLM,
     DebugMetadata.NAME: DebugMetadata,
     WanVideoLoraSelectLM.NAME: WanVideoLoraSelectLM,
-    WanVideoLoraSelectFromText.NAME: WanVideoLoraSelectFromText
+    WanVideoLoraSelectFromText.NAME: WanVideoLoraSelectFromText,
+    "LoraManagerDemoNode": LoraManagerDemoNode
 }
 
 WEB_DIRECTORY = "./web/comfyui"
+
+# Check and build Vue widgets if needed (development mode)
+try:
+    from .py.vue_widget_builder import check_and_build_vue_widgets
+    # Auto-build in development, warn only if fails
+    check_and_build_vue_widgets(auto_build=True, warn_only=True)
+except ImportError:
+    # Fallback for pytest
+    import importlib
+    check_and_build_vue_widgets = importlib.import_module("py.vue_widget_builder").check_and_build_vue_widgets
+    check_and_build_vue_widgets(auto_build=True, warn_only=True)
+except Exception as e:
+    import logging
+    logging.warning(f"[LoRA Manager] Vue widget build check skipped: {e}")
 
 # Initialize metadata collector
 init_metadata_collector()

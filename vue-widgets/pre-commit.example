@@ -1,0 +1,37 @@
+#!/bin/sh
+#
+# Example pre-commit hook to ensure Vue widgets are built before committing
+#
+# To use this hook:
+# 1. Copy this file to .git/hooks/pre-commit
+# 2. Make it executable: chmod +x .git/hooks/pre-commit
+#
+# Or use a tool like Husky for automatic hook management:
+#   npm install --save-dev husky
+#   npx husky install
+#   npx husky add .git/hooks/pre-commit "cd vue-widgets && npm run build"
+
+echo "Running pre-commit hook: Building Vue widgets..."
+
+# Navigate to vue-widgets directory and build
+cd "$(git rev-parse --show-toplevel)/vue-widgets" || exit 1
+
+# Check if node_modules exists
+if [ ! -d "node_modules" ]; then
+    echo "node_modules not found, running npm install..."
+    npm install || exit 1
+fi
+
+# Build Vue widgets
+npm run build || {
+    echo "❌ Vue widget build failed! Commit aborted."
+    echo "Please fix the build errors before committing."
+    exit 1
+}
+
+# Add built files to the commit
+cd ..
+git add web/comfyui/vue-widgets/
+
+echo "✓ Vue widgets built and staged successfully"
+exit 0

@@ -10,3 +10,8 @@ node_modules/
 coverage/
 .coverage
 model_cache/
+
+# Vue widgets development cache (but keep build output)
+vue-widgets/node_modules/
+vue-widgets/.vite/
+vue-widgets/dist/

@@ -1,0 +1,28 @@
+{
+  "name": "comfyui-lora-manager-vue-widgets",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Vue-based custom widgets for ComfyUI LoRA Manager",
+  "dependencies": {
+    "vue": "^3.5.13",
+    "vue-i18n": "^9.14.0",
+    "primevue": "^4.2.5"
+  },
+  "devDependencies": {
+    "@comfyorg/comfyui-frontend-types": "^1.35.4",
+    "@types/node": "^22.10.1",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "typescript": "^5.7.2",
+    "vite": "^6.3.5",
+    "vue-tsc": "^2.1.10"
+  },
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build",
+    "build:production": "vite build --mode production",
+    "typecheck": "vue-tsc --noEmit",
+    "clean": "rm -rf ../web/comfyui/vue-widgets",
+    "rebuild": "npm run clean && npm run build",
+    "prepare": "npm run build"
+  }
+}
