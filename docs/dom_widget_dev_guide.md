@@ -1,23 +1,21 @@
-# ComfyUI Custom DOMWidget 开发说明文档 (Vanilla JavaScript)
+# DOMWidget Development Guide
 
-本文档旨在说明如何使用 Vanilla JavaScript (纯 JS) 在 ComfyUI 前端中实现自定义 `DOMWidget`。`DOMWidget` 允许你将标准的 HTML 元素（如 `div`, `video`, `canvas`, `input` 等）嵌入到 ComfyUI 的节点中，并享受前端自动布局和缩放管理。
+This document provides a comprehensive guide for developing custom DOMWidgets in ComfyUI using Vanilla JavaScript. DOMWidgets allow you to embed standard HTML elements (div, video, canvas, input, etc.) into ComfyUI nodes while benefitting from the frontend's automatic layout and zoom management.
 
----
+## 1. Core Concepts
 
-## 1. 核心概念
+In ComfyUI, a `DOMWidget` extends the default LiteGraph Canvas rendering logic. It maintains an HTML layer on top of the Canvas, making complex interactions and media displays significantly easier to implement than pure Canvas drawing.
 
-在 ComfyUI 中，`DOMWidget` 是对 LiteGraph 默认 Canvas 渲染逻辑的扩展。它在 Canvas 之上维护一个 HTML 层，使得复杂的交互和媒体显示变得非常容易。
-
-### 核心 API
-*   `app.registerExtension`: 注册扩展的入口。
-*   `getCustomWidgets`: 定义新部件类型的钩子。
-*   `node.addDOMWidget(name, type, element, options)`: 将 HTML 元素添加到节点的关键方法。
+### Key APIs
+*   **`app.registerExtension`**: The entry point for registering extensions.
+*   **`getCustomWidgets`**: A hook for defining new widget types associated with specific input types.
+*   **`node.addDOMWidget`**: The core method to add HTML elements to a node.
 
 ---
 
-## 2. 基础结构
+## 2. Basic Structure
 
-一个标准的自定义 `DOMWidget` 扩展通常遵循以下结构：
+A standard custom DOMWidget extension typically follows this structure:
 
 ```javascript
 import { app } from "../../scripts/app.js";
@@ -26,19 +24,20 @@ app.registerExtension({
     name: "My.Custom.Extension",
     async getCustomWidgets() {
         return {
-            // 定义一个名为 "MY_WIDGET_TYPE" 的新部件类型
+            // Define a new widget type named "MY_WIDGET_TYPE"
             MY_WIDGET_TYPE(node, inputName, inputData, app) {
-                // 1. 创建 HTML 元素
+                // 1. Create the HTML element
                 const container = document.createElement("div");
                 container.innerHTML = "Hello <b>DOMWidget</b>!";
                 
-                // 2. 样式设置 (可选)
+                // 2. Setup styles (Optional but recommended)
                 container.style.color = "white";
+                container.style.backgroundColor = "#222";
                 container.style.padding = "5px";
 
-                // 3. 调用 addDOMWidget 并返回结果
+                // 3. Add the DOMWidget and return the result
                 const widget = node.addDOMWidget(inputName, "MY_WIDGET_TYPE", container, {
-                    // 配置选项
+                    // Configuration options
                     getValue() {
                         return container.innerText;
                     },
@@ -47,7 +46,7 @@ app.registerExtension({
                     }
                 });
 
-                // 4. 固定返回格式
+                // 4. Return in the standard format
                 return { widget };
             }
         };
@@ -57,74 +56,209 @@ app.registerExtension({
 
 ---
 
-## 3. `addDOMWidget` 详细参数
+## 3. The `addDOMWidget` API
 
 ```javascript
 node.addDOMWidget(name, type, element, options)
 ```
 
-### 参数说明:
-1.  **`name`**: 部件的内部名称（通常匹配输入名称）。
-2.  **`type`**: 部件的类型标识符。
-3.  **`element`**: 实际的 HTML 元素。
-4.  **`options`**: (Object) 包含生命周期和行为的配置项。
+### Parameters
+1.  **`name`**: The internal name of the widget (usually matches the input name).
+2.  **`type`**: The type identifier for the widget.
+3.  **`element`**: The actual HTMLElement to embed.
+4.  **`options`**: (Object) Configuration for lifecycle, sizing, and persistence.
 
-### `options` 常用字段:
-| 字段 | 类型 | 说明 |
+### Common `options` Fields
+| Field | Type | Description |
 | :--- | :--- | :--- |
-| `getValue` | `Function` | 定义部件序列化时的值来源。 |
-| `setValue` | `Function` | 定义如何从工作流数据中恢复部件状态。 |
-| `getMinHeight` | `Function` | 返回部件的最小像素高度。 |
-| `getHeight` | `Function` | 返回部件的期望高度（可返回百分比字符串，如 `"50%"`）。 |
-| `hideOnZoom`| `Boolean` | 当 Canvas 缩小到一定程度时是否隐藏 DOM 元素（提高性能，默认 `true`）。 |
-| `onDraw` | `Function` | 每一帧绘制时触发，可用于在 Canvas 上做额外标注。 |
-| `afterResize` | `Function` | 节点缩放后的回调。 |
+| `getValue` | `Function` | Defines how to retrieve the widget's value for serialization. |
+| `setValue` | `Function` | Defines how to restore the widget's state from workflow data. |
+| `getMinHeight` | `Function` | Returns the minimum height in pixels. |
+| `getHeight` | `Function` | Returns the preferred height (supports numbers or percentage strings like `"50%"`). |
+| `onResize` | `Function` | Callback triggered when the widget is resized. |
+| `hideOnZoom`| `Boolean` | Whether to hide the DOM element when zoomed out to improve performance (default: `true`). |
+| `selectOn` | `string[]` | Events on the element that should trigger node selection (default: `['focus', 'click']`). |
 
 ---
 
-## 4. 样式与布局管理
+## 4. Size Control
 
-ComfyUI 前端使用 CSS 变量来协调 Canvas 节点与 DOM 部件的尺寸。你可以在元素的 `style` 或 CSS 中设置这些变量：
+Custom DOMWidgets must actively inform the parent Node of their size requirements to ensure the Node layout is calculated correctly and connection wires remain aligned.
+
+### 4.1 Core Mechanism
+
+Whether in Canvas Mode or Vue Mode, the underlying logic model (`LGraphNode`) calls the widget's `computeLayoutSize` method to determine dimensions. This logic is used to calculate the Node's total size and the position of input/output slots.
+
+### 4.2 Controlling Height
+
+It is recommended to use the `options` parameter to define height behavior.
+
+**Method 1: Using `options` (Recommended)**
 
 ```javascript
-container.style.setProperty('--comfy-widget-min-height', '100px');
-container.style.setProperty('--comfy-widget-max-height', '500px');
+const widget = node.addDOMWidget("MyWidget", "custom", element, {
+    // Specify minimum height in pixels
+    getMinHeight: () => 150,
+    
+    // Or specify preferred height (pixels or percentage string)
+    // getHeight: () => "50%", 
+});
 ```
 
-由于 `DOMWidget` 被放置在绝对定位的容器中，建议容器元素的样式设为：
+**Method 2: Using CSS Variables**
+
+You can also set specific CSS variables on the root element:
+
+```javascript
+element.style.setProperty("--comfy-widget-min-height", "150px");
+// or --comfy-widget-height
+```
+
+### 4.3 Controlling Width
+
+By default, a DOMWidget's width automatically stretches to fit the Node's width (which is determined by the Title or other Input Slots).
+
+If you must **force the Node to be wider** to accommodate your widget, you need to override the widget instance's `computeLayoutSize` method:
+
+```javascript
+const widget = node.addDOMWidget("WideWidget", "custom", element);
+
+// Override the default layout calculation
+widget.computeLayoutSize = (targetNode) => {
+    return {
+        minHeight: 150, // Must return height
+        minWidth: 300   // Force the Node to be at least 300px wide
+    };
+};
+```
+
+### 4.4 Dynamic Resizing
+
+If your widget's content changes dynamically (e.g., expanding sections, loading images), you must manually trigger a node resize:
+
+```javascript
+// Execute after internal size changes:
+node.setSize(node.computeSize());
+node.setDirtyCanvas(true, true); // Force redraw
+```
+
+---
+
+## 5. State Persistence (Serialization)
+
+### 5.1 Default Behavior
+
+DOMWidgets have **serialization enabled** by default (`serialize` property is `true`).
+*   **Saving**: ComfyUI attempts to read the widget's value to save into the Workflow file.
+*   **Loading**: ComfyUI reads the value from the Workflow file and assigns it to the widget.
+
+### 5.2 Custom Serialization
+
+To make persistence work effectively (saving internal DOM state and restoring it), you must implement `getValue` and `setValue` in the `options`:
+
+*   **`getValue`**: Returns the state to be saved (Number, String, or Object).
+*   **`setValue`**: Receives the restored value and updates the DOM element.
+
+**Example:**
+
+```javascript
+const inputEl = document.createElement("input");
+const widget = node.addDOMWidget("MyInput", "custom", inputEl, {
+    // 1. Called during Save
+    getValue: () => {
+        return inputEl.value;
+    },
+    // 2. Called during Load or Copy/Paste
+    setValue: (value) => {
+        inputEl.value = value || "";
+    }
+});
+
+// Optional: Listen for changes to update widget.value immediately
+inputEl.addEventListener("change", () => {
+    widget.value = inputEl.value; // Triggers callbacks
+});
+```
+
+### 5.3 The Restoration Mechanism (`configure`)
+
+*   **`configure(data)`**: When a Workflow is loaded, `LGraphNode` calls its `configure(data)` method.
+*   **`setValue` Chain**: During `configure`, the Node iterates over the saved `widgets_values` array and assigns each value (`widget.value = savedValue`). For DOMWidgets, this assignment triggers the `setValue` callback defined in your options.
+
+Therefore, `options.setValue` is the critical hook for restoring widget state.
+
+### 5.4 Disabling Serialization
+
+If your widget is purely for display (e.g., a real-time monitor or generated chart) and doesn't need to save state, disable serialization to reduce workflow file size.
+
+**Note**: You cannot set this via `options`. You must modify the widget instance directly.
+
+```javascript
+const widget = node.addDOMWidget("DisplayOnly", "custom", element);
+widget.serialize = false; // Explicitly disable
+```
+
+---
+
+## 6. Lifecycle & Events
+
+### 6.1 `onResize`
+
+When the Node size changes (e.g., user drags the corner), the widget can receive a notification via `options`:
+
+```javascript
+const widget = node.addDOMWidget("ResizingWidget", "custom", element, {
+    onResize: (w) => {
+        // 'w' is the widget instance
+        // Adjust internal DOM layout here if necessary
+        console.log("Widget resized");
+    }
+});
+```
+
+### 6.2 Construction & Mounting
+
+*   **Construction**: Occurs immediately when `addDOMWidget` is called.
+*   **Mounting**:
+    *   **Canvas Mode**: Appended to `.dom-widget-container` via `DomWidget.vue`.
+    *   **Vue Mode**: Appended inside the Node component via `WidgetDOM.vue`.
+    *   **Caution**: When `addDOMWidget` returns, the element may not be in the `document.body` yet. If you need to access layout properties like `getBoundingClientRect`, use `setTimeout` or wait for the first `onResize`.
+
+### 6.3 Cleanup
+
+If you create external references (like `setInterval` or global event listeners), ensure you clean them up using `node.onRemoved`:
+
+```javascript
+node.onRemoved = function() {
+    clearInterval(myInterval);
+    // Call original onRemoved if it existed
+};
+```
+
+---
+
+## 7. Styling & Best Practices
+
+### 7.1 Styling
+Since DOMWidgets are placed in absolute positioned containers or managed by Vue, ensure your container handles sizing gracefully:
+
 ```javascript
 container.style.width = "100%";
 container.style.boxSizing = "border-box";
 ```
 
----
+### 7.2 Path References
+When importing `app`, adjust the path based on your extension's folder depth. Typically:
+`import { app } from "../../scripts/app.js";`
 
-## 5. 生命周期与交互
-
-如果你需要访问其他部件或在特定时刻触发逻辑，可以结合 `nodeCreated` 钩子：
-
-```javascript
-app.registerExtension({
-    name: "My.Lifecycle.Extension",
-    nodeCreated(node) {
-        if (node.comfyClass === "MyCustomNode") {
-            // 查找刚才创建好的 DOMWidget
-            const myWidget = node.widgets.find(w => w.name === "my_input");
-            
-            // 可以在这里绑定事件
-            myWidget.element.addEventListener("click", () => {
-                console.log("Widget clicked!", myWidget.value);
-            });
-        }
-    }
-});
-```
+### 7.3 Security
+If setting `innerHTML` dynamically, ensure the content is sanitized or trusted to prevent XSS attacks.
 
 ---
 
-## 6. 完整实战示例: 简易文本预览器
+## 8. Complete Example: Text Counter
 
-这个示例实现了一个动态显示文本字数统计的预览器部件。
+This example implements a simple widget that displays the character count of another text widget in the same node.
 
 ```javascript
 import { app } from "../../scripts/app.js";
@@ -135,23 +269,29 @@ app.registerExtension({
         return {
             TEXT_COUNTER(node, inputName) {
                 const el = document.createElement("div");
-                el.style.background = "#222";
-                el.style.border = "1px solid #444";
-                el.style.padding = "8px";
-                el.style.borderRadius = "4px";
-                el.style.fontSize = "12px";
+                Object.assign(el.style, {
+                    background: "#222",
+                    border: "1px solid #444",
+                    padding: "8px",
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                    color: "#eee"
+                });
                 
                 const label = document.createElement("span");
                 label.innerText = "Characters: 0";
                 el.appendChild(label);
 
                 const widget = node.addDOMWidget(inputName, "TEXT_COUNTER", el, {
-                    getValue() { return node.widgets[0]?.value || ""; },
-                    setValue(v) { /* 逻辑通常由上游触发 */ },
+                    getValue() { return ""; }, // Nothing to save
+                    setValue(v) { },           // Nothing to restore
                     getMinHeight() { return 40; }
                 });
+                
+                // Disable serialization for this display-only widget
+                widget.serialize = false;
 
-                // 设置一个自定义更新逻辑
+                // Custom method to update UI
                 widget.updateCount = (text) => {
                     label.innerText = `Characters: ${text.length}`;
                 };
@@ -161,12 +301,13 @@ app.registerExtension({
         };
     },
     nodeCreated(node) {
+        // Logic to link widgets after the node is initialized
         if (node.comfyClass === "MyTextNode") {
             const counterWidget = node.widgets.find(w => w.type === "TEXT_COUNTER");
             const textWidget = node.widgets.find(w => w.name === "text");
             
             if (counterWidget && textWidget) {
-                // 监听文本部件的回调
+                // Hook into the text widget's callback
                 const oldCallback = textWidget.callback;
                 textWidget.callback = function(v) {
                     if (oldCallback) oldCallback.apply(this, arguments);
@@ -177,12 +318,3 @@ app.registerExtension({
     }
 });
 ```
-
----
-
-## 7. 注意事项
-
-1.  **路径引用**: 引用 `app` 时请根据你的插件目录深度调整路径，通常是 `../../scripts/app.js`。
-2.  **清理**: 如果你创建了外部引用（如 `setInterval` 或全局监听），请确在 `node.onRemoved` 中进行清理。
-3.  **安全性**: 如果动态设置 `innerHTML`，请确保内容来源可靠，防止 XSS 攻击。
-4.  **性能**: 对于高频更新的 DOM 元素，注意不要触发过多的重排（Reflow）。

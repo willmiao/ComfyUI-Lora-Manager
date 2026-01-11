@@ -1,57 +1,11 @@
 import { createApp, type App as VueApp } from 'vue'
 import PrimeVue from 'primevue/config'
-import DemoWidget from '@/components/DemoWidget.vue'
 import LoraPoolWidget from '@/components/LoraPoolWidget.vue'
 
 // @ts-ignore - ComfyUI external module
 import { app } from '../../../scripts/app.js'
 
 const vueApps = new Map<number, VueApp>()
-
-// @ts-ignore
-function createVueWidget(node) {
-  const container = document.createElement('div')
-  container.id = `lora-manager-demo-widget-${node.id}`
-  container.style.width = '100%'
-  container.style.height = '100%'
-  container.style.display = 'flex'
-  container.style.flexDirection = 'column'
-  container.style.overflow = 'hidden'
-
-  const widget = node.addDOMWidget(
-    'lora_demo_widget',
-    'lora-manager-demo',
-    container,
-    {
-      getMinHeight: () => 320,
-      hideOnZoom: false,
-      serialize: true
-    }
-  )
-
-  const vueApp = createApp(DemoWidget, {
-    widget,
-    node
-  })
-
-  vueApp.use(PrimeVue, {
-    unstyled: true,
-    ripple: false
-  })
-
-  vueApp.mount(container)
-  vueApps.set(node.id, vueApp)
-
-  widget.onRemove = () => {
-    const vueApp = vueApps.get(node.id)
-    if (vueApp) {
-      vueApp.unmount()
-      vueApps.delete(node.id)
-    }
-  }
-
-  return { widget }
-}
 
 // @ts-ignore
 function createLoraPoolWidget(node) {
@@ -68,8 +22,7 @@ function createLoraPoolWidget(node) {
     'LORA_POOL_CONFIG',
     container,
     {
-      getMinHeight: () => 680,
-      hideOnZoom: false,
+      // getMinHeight: () => 680,
       serialize: true
     }
   )
@@ -95,6 +48,11 @@ function createLoraPoolWidget(node) {
     }
   }
 
+  widget.computeLayoutSize = () => ({
+    minHeight: 600,
+    minWidth: 500
+  })
+
   return { widget }
 }
 
@@ -103,10 +61,6 @@ app.registerExtension({
 
   getCustomWidgets() {
     return {
-      // @ts-ignore
-      LORA_DEMO_WIDGET(node) {
-        return createVueWidget(node)
-      },
       // @ts-ignore
       LORA_POOL_CONFIG(node) {
         return createLoraPoolWidget(node)

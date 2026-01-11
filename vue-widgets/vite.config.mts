@@ -17,7 +17,7 @@ export default defineConfig({
         lib: {
             entry: resolve(__dirname, './src/main.ts'),
             formats: ['es'],
-            fileName: 'demo-widget'
+            fileName: 'lora-manager-widgets'
         },
         rollupOptions: {
             external: [
@@ -25,7 +25,7 @@ export default defineConfig({
             ],
             output: {
                 dir: '../web/comfyui/vue-widgets',
-                entryFileNames: 'demo-widget.js',
+                entryFileNames: 'lora-manager-widgets.js',
                 chunkFileNames: 'assets/[name]-[hash].js',
                 assetFileNames: 'assets/[name]-[hash][extname]'
             }

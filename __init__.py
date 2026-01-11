@@ -8,7 +8,6 @@ try:  # pragma: no cover - import fallback for pytest collection
     from .py.nodes.debug_metadata import DebugMetadata
     from .py.nodes.wanvideo_lora_select import WanVideoLoraSelectLM
     from .py.nodes.wanvideo_lora_select_from_text import WanVideoLoraSelectFromText
-    from .py.nodes.demo_vue_widget_node import LoraManagerDemoNode
     from .py.nodes.lora_pool import LoraPoolNode
     from .py.metadata_collector import init as init_metadata_collector
 except ImportError:  # pragma: no cover - allows running under pytest without package install
@@ -30,7 +29,6 @@ except ImportError:  # pragma: no cover - allows running under pytest without pa
     DebugMetadata = importlib.import_module("py.nodes.debug_metadata").DebugMetadata
     WanVideoLoraSelectLM = importlib.import_module("py.nodes.wanvideo_lora_select").WanVideoLoraSelectLM
     WanVideoLoraSelectFromText = importlib.import_module("py.nodes.wanvideo_lora_select_from_text").WanVideoLoraSelectFromText
-    LoraManagerDemoNode = importlib.import_module("py.nodes.demo_vue_widget_node").LoraManagerDemoNode
     LoraPoolNode = importlib.import_module("py.nodes.lora_pool").LoraPoolNode
     init_metadata_collector = importlib.import_module("py.metadata_collector").init
 
@@ -44,7 +42,6 @@ NODE_CLASS_MAPPINGS = {
     DebugMetadata.NAME: DebugMetadata,
     WanVideoLoraSelectLM.NAME: WanVideoLoraSelectLM,
     WanVideoLoraSelectFromText.NAME: WanVideoLoraSelectFromText,
-    "LoraManagerDemoNode": LoraManagerDemoNode,
     LoraPoolNode.NAME: LoraPoolNode
 }
 

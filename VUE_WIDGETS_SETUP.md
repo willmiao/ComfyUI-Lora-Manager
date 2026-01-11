@@ -20,7 +20,7 @@ ComfyUI-Lora-Manager/
 │
 ├── web/comfyui/             # ComfyUI web directory
 │   ├── vue-widgets/         # Compiled Vue widgets (gitignored)
-│   │   ├── demo-widget.js   # Built JavaScript
+│   │   ├── lora-manager-widgets.js   # Built JavaScript
 │   │   └── assets/          # CSS and other assets
 │   └── *.js                 # Existing vanilla JS widgets
 │
@@ -148,7 +148,7 @@ For the full component library, see [PrimeVue Documentation](https://primevue.or
 - Check that Node.js version is 18+ (`node --version`)
 
 ### Widget doesn't appear in ComfyUI
-- Verify the build completed successfully (`web/comfyui/vue-widgets/demo-widget.js` exists)
+- Verify the build completed successfully (`web/comfyui/vue-widgets/lora-manager-widgets.js` exists)
 - Check that the Python node is registered in `__init__.py`
 - Restart ComfyUI completely (not just refresh browser)
 - Check browser console for JavaScript errors
