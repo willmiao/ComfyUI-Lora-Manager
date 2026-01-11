@@ -106,10 +106,10 @@ defineEmits<{
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.4);
+  background: rgba(66, 153, 225, 0.15);
+  border: 1px solid rgba(66, 153, 225, 0.4);
   border-radius: 4px;
-  color: #3b82f6;
+  color: #4299e1;
 }
 
 .summary-view__badge-icon {

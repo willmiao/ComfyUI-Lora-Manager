@@ -82,9 +82,9 @@ const variantClass = computed(() => {
 
 /* Variants */
 .filter-chip--include {
-  background: rgba(34, 197, 94, 0.15);
-  border-color: rgba(34, 197, 94, 0.4);
-  color: #22c55e;
+  background: rgba(66, 153, 225, 0.15);
+  border-color: rgba(66, 153, 225, 0.4);
+  color: #4299e1;
 }
 
 .filter-chip--exclude {

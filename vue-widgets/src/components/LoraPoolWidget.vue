@@ -102,7 +102,7 @@ onMounted(async () => {
 <style scoped>
 .lora-pool-widget {
   padding: 12px;
-  background: var(--comfy-menu-bg, #1a1a1a);
+  background: rgba(40, 44, 52, 0.6);
   border-radius: 4px;
   height: 100%;
   display: flex;

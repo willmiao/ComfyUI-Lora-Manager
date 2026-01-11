@@ -144,12 +144,12 @@ const toggleTag = (tag: string) => {
   border-color: var(--fg-color, #fff);
 }
 
-/* Include variant - green when selected */
+/* Include variant - blue when selected */
 .tags-modal--include .tag-chip--selected,
 .tag-chip--selected {
-  background: rgba(34, 197, 94, 0.2);
-  border-color: rgba(34, 197, 94, 0.6);
-  color: #22c55e;
+  background: rgba(66, 153, 225, 0.2);
+  border-color: rgba(66, 153, 225, 0.6);
+  color: #4299e1;
 }
 
 /* Exclude variant - red when selected */

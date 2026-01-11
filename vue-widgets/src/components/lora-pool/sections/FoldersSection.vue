@@ -160,7 +160,7 @@ const removeExclude = (path: string) => {
 }
 
 .section__column-title--include {
-  color: #22c55e;
+  color: #4299e1;
 }
 
 .section__column-title--exclude {
@@ -214,9 +214,9 @@ const removeExclude = (path: string) => {
 }
 
 .section__add-btn--include:hover {
-  background: rgba(34, 197, 94, 0.2);
-  border-color: #22c55e;
-  color: #22c55e;
+  background: rgba(66, 153, 225, 0.2);
+  border-color: #4299e1;
+  color: #4299e1;
 }
 
 .section__add-btn--exclude:hover {

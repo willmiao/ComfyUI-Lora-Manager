@@ -107,7 +107,7 @@ defineEmits<{
 }
 
 .section__column-title--include {
-  color: #22c55e;
+  color: #4299e1;
 }
 
 .section__column-title--exclude {
@@ -119,10 +119,15 @@ defineEmits<{
 }
 
 .section__empty {
-  padding: 6px 0;
-  font-size: 11px;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--comfy-input-bg, #333);
+  border-radius: 4px;
+  font-size: 12px;
   color: var(--fg-color, #fff);
-  opacity: 0.4;
+  opacity: 0.5;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .section__chips {

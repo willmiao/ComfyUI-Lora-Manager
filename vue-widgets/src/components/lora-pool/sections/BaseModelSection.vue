@@ -77,6 +77,7 @@ const getCount = (name: string) => {
   color: var(--fg-color, #fff);
   opacity: 0.5;
   text-align: center;
+  box-sizing: border-box;
 }
 
 .section__chips {

@@ -104,8 +104,8 @@ defineEmits<{
 }
 
 .toggle-switch--active .toggle-switch__track {
-  background: rgba(34, 197, 94, 0.3);
-  border-color: rgba(34, 197, 94, 0.6);
+  background: rgba(66, 153, 225, 0.3);
+  border-color: rgba(66, 153, 225, 0.6);
 }
 
 .toggle-switch__thumb {
@@ -122,7 +122,7 @@ defineEmits<{
 
 .toggle-switch--active .toggle-switch__thumb {
   transform: translateX(16px);
-  background: #22c55e;
+  background: #4299e1;
   opacity: 1;
 }
 
