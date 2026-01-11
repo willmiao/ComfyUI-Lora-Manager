@@ -58,7 +58,11 @@ export function useLoraPoolState(widget: ComponentWidget) {
     }
 
     // Update widget value
-    widget.value = config
+    if (widget.updateConfig) {
+      widget.updateConfig(config)
+    } else {
+      widget.value = config
+    }
     return config
   }
 
@@ -95,13 +99,23 @@ export function useLoraPoolState(widget: ComponentWidget) {
     if (!config?.filters) return
 
     const { filters, preview } = config
-    selectedBaseModels.value = filters.baseModels || []
-    includeTags.value = filters.tags?.include || []
-    excludeTags.value = filters.tags?.exclude || []
-    includeFolders.value = filters.folders?.include || []
-    excludeFolders.value = filters.folders?.exclude || []
-    noCreditRequired.value = filters.license?.noCreditRequired ?? false
-    allowSelling.value = filters.license?.allowSelling ?? false
+
+    // Helper to update ref only if value changed
+    const updateIfChanged = <T>(refValue: { value: T }, newValue: T) => {
+      if (JSON.stringify(refValue.value) !== JSON.stringify(newValue)) {
+        refValue.value = newValue
+      }
+    }
+
+    updateIfChanged(selectedBaseModels, filters.baseModels || [])
+    updateIfChanged(includeTags, filters.tags?.include || [])
+    updateIfChanged(excludeTags, filters.tags?.exclude || [])
+    updateIfChanged(includeFolders, filters.folders?.include || [])
+    updateIfChanged(excludeFolders, filters.folders?.exclude || [])
+    updateIfChanged(noCreditRequired, filters.license?.noCreditRequired ?? false)
+    updateIfChanged(allowSelling, filters.license?.allowSelling ?? false)
+    
+    // matchCount doesn't trigger watchers, so direct assignment is fine
     matchCount.value = preview?.matchCount || 0
   }
 

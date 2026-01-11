@@ -76,13 +76,17 @@ const openModal = (modal: ModalType) => {
 
 // Lifecycle
 onMounted(async () => {
-  console.log('[LoraPoolWidget] Mounted, node ID:', props.node.id)
-
   // Setup serialization
   props.widget.serializeValue = async () => {
     const config = state.buildConfig()
     console.log('[LoraPoolWidget] Serializing config:', config)
     return config
+  }
+
+  // Handle external value updates (e.g., loading workflow, paste)
+  props.widget.onSetValue = (v) => {
+    state.restoreFromConfig(v)
+    state.refreshPreview()
   }
 
   // Restore from saved value

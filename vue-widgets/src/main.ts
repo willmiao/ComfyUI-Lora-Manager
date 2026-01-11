@@ -1,6 +1,7 @@
 import { createApp, type App as VueApp } from 'vue'
 import PrimeVue from 'primevue/config'
 import LoraPoolWidget from '@/components/LoraPoolWidget.vue'
+import type { LoraPoolConfig, LegacyLoraPoolConfig } from './composables/types'
 
 // @ts-ignore - ComfyUI external module
 import { app } from '../../../scripts/app.js'
@@ -17,15 +18,29 @@ function createLoraPoolWidget(node) {
   container.style.flexDirection = 'column'
   container.style.overflow = 'hidden'
 
+  let internalValue: LoraPoolConfig | LegacyLoraPoolConfig | undefined
+
   const widget = node.addDOMWidget(
     'pool_config',
     'LORA_POOL_CONFIG',
     container,
     {
-      // getMinHeight: () => 680,
+      getValue() {
+        return internalValue
+      },
+      setValue(v: LoraPoolConfig | LegacyLoraPoolConfig) {
+        internalValue = v
+        if (typeof widget.onSetValue === 'function') {
+          widget.onSetValue(v)
+        }
+      },
       serialize: true
     }
   )
+
+  widget.updateConfig = (v: LoraPoolConfig) => {
+    internalValue = v
+  }
 
   const vueApp = createApp(LoraPoolWidget, {
     widget,

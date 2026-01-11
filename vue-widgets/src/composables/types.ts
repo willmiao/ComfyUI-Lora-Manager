@@ -39,7 +39,9 @@ export interface FolderTreeNode {
 
 export interface ComponentWidget {
   serializeValue?: () => Promise<LoraPoolConfig>
-  value?: LoraPoolConfig
+  value?: LoraPoolConfig | LegacyLoraPoolConfig
+  onSetValue?: (v: LoraPoolConfig | LegacyLoraPoolConfig) => void
+  updateConfig?: (v: LoraPoolConfig) => void
 }
 
 // Legacy config for migration (v1)
