@@ -127,5 +127,7 @@ defineEmits<{
   overflow-y: auto;
   padding-right: 4px;
   margin-right: -4px;
+  /* Allow flex item to shrink below content size */
+  min-height: 0;
 }
 </style>

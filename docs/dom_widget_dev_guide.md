@@ -93,6 +93,8 @@ Whether in Canvas Mode or Vue Mode, the underlying logic model (`LGraphNode`) ca
 
 It is recommended to use the `options` parameter to define height behavior.
 
+**Performance Note:** providing `getMinHeight` and `getHeight` via `options` allows the system to skip expensive DOM measurements (`getComputedStyle`) during rendering loop. This significantly improves performance and prevents FPS drops during node resizing.
+
 **Method 1: Using `options` (Recommended)**
 
 ```javascript
@@ -134,13 +136,31 @@ widget.computeLayoutSize = (targetNode) => {
 
 ### 4.4 Dynamic Resizing
 
-If your widget's content changes dynamically (e.g., expanding sections, loading images), you must manually trigger a node resize:
+If your widget's content changes dynamically (e.g., expanding sections, loading images, or CSS changes), the DOM element will resize, but the Canvas-rendered Node background and Slots will not automatically follow. You must manually trigger a synchronization.
+
+**The Update Sequence:**
+Whenever the **actual rendering height** of your DOM element changes, execute the following "three-step combo":
 
 ```javascript
-// Execute after internal size changes:
-node.setSize(node.computeSize());
-node.setDirtyCanvas(true, true); // Force redraw
+// 1. Calculate the new optimal size for the node based on current widget requirements
+const newSize = node.computeSize();
+
+// 2. Apply the new size to the node model (updates bounding box and slot positions)
+node.setSize(newSize);
+
+// 3. Mark the canvas as dirty to trigger a redraw in the next animation frame
+node.setDirtyCanvas(true, true);
 ```
+
+**Common Scenarios:**
+
+| Scenario | Actual Height Change? | Update Required? |
+| :--- | :--- | :--- |
+| **Expand/Collapse content** | **Yes** | ✅ **Yes**. Prevents widget from overflowing node boundaries. |
+| **Image/Video finished loading** | **Yes** | ✅ **Yes**. Initial height might be 0 until the media loads. |
+| **Changing `minHeight`** | **Maybe** | ❓ **Only if** the change causes the element's actual height to shift. |
+| **Changing font size/styles** | **Yes** | ✅ **Yes**. Text reflow often changes the total height. |
+| **User dragging node corner** | **Yes** | ❌ **No**. LiteGraph handles this internally. |
 
 ---
 

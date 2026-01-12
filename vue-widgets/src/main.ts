@@ -34,7 +34,12 @@ function createLoraPoolWidget(node) {
           widget.onSetValue(v)
         }
       },
-      serialize: true
+      serialize: true,
+      // Per dev guide: providing getMinHeight via options allows the system to
+      // skip expensive DOM measurements during rendering loop, improving performance
+      getMinHeight() {
+        return 700
+      }
     }
   )
 
@@ -55,6 +60,13 @@ function createLoraPoolWidget(node) {
   vueApp.mount(container)
   vueApps.set(node.id, vueApp)
 
+  widget.computeLayoutSize = () => {
+    const minWidth = 500
+    const minHeight = 700
+
+    return { minHeight, minWidth }
+  }
+
   widget.onRemove = () => {
     const vueApp = vueApps.get(node.id)
     if (vueApp) {
@@ -62,11 +74,6 @@ function createLoraPoolWidget(node) {
       vueApps.delete(node.id)
     }
   }
-
-  widget.computeLayoutSize = () => ({
-    minHeight: 600,
-    minWidth: 500
-  })
 
   return { widget }
 }
