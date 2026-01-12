@@ -97,27 +97,27 @@ app.registerExtension({
             if (isUpdating) return;
             isUpdating = true;
 
-          try {
-            // Update this stacker's direct trigger toggles with its own active loras
-            // Only if the stacker node itself is active (mode 0 for Always, mode 3 for On Trigger)
-            const isNodeActive = this.mode === undefined || this.mode === 0 || this.mode === 3;
-            const activeLoraNames = new Set();
-            if (isNodeActive) {
-              value.forEach((lora) => {
-                if (lora.active) {
-                  activeLoraNames.add(lora.name);
-                }
-              });
+            try {
+              // Update this stacker's direct trigger toggles with its own active loras
+              // Only if the stacker node itself is active (mode 0 for Always, mode 3 for On Trigger)
+              const isNodeActive = this.mode === undefined || this.mode === 0 || this.mode === 3;
+              const activeLoraNames = new Set();
+              if (isNodeActive) {
+                value.forEach((lora) => {
+                  if (lora.active) {
+                    activeLoraNames.add(lora.name);
+                  }
+                });
+              }
+              updateConnectedTriggerWords(this, activeLoraNames);
+
+              // Find all Lora Loader nodes in the chain that might need updates
+              updateDownstreamLoaders(this);
+            } finally {
+              isUpdating = false;
             }
-            updateConnectedTriggerWords(this, activeLoraNames);
 
-            // Find all Lora Loader nodes in the chain that might need updates
-            updateDownstreamLoaders(this);
-          } finally {
-            isUpdating = false;
-          }
-
-          scheduleInputSync(value);
+            scheduleInputSync(value);
         });
 
         this.lorasWidget = result.widget;

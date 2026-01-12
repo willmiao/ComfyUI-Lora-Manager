@@ -21,7 +21,8 @@ export default defineConfig({
         },
         rollupOptions: {
             external: [
-                '../../../scripts/app.js'
+                '../../../scripts/app.js',
+                '../loras_widget.js'
             ],
             output: {
                 dir: '../web/comfyui/vue-widgets',

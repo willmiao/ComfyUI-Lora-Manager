@@ -178,7 +178,188 @@ class LoraService(BaseModelService):
     def find_duplicate_hashes(self) -> Dict:
         """Find LoRAs with duplicate SHA256 hashes"""
         return self.scanner._hash_index.get_duplicate_hashes()
-    
+
     def find_duplicate_filenames(self) -> Dict:
         """Find LoRAs with conflicting filenames"""
         return self.scanner._hash_index.get_duplicate_filenames()
+
+    async def get_random_loras(
+        self,
+        count: int,
+        model_strength_min: float = 0.0,
+        model_strength_max: float = 1.0,
+        use_same_clip_strength: bool = True,
+        clip_strength_min: float = 0.0,
+        clip_strength_max: float = 1.0,
+        locked_loras: Optional[List[Dict]] = None,
+        pool_config: Optional[Dict] = None
+    ) -> List[Dict]:
+        """
+        Get random LoRAs with specified strength ranges.
+
+        Args:
+            count: Number of LoRAs to select
+            model_strength_min: Minimum model strength
+            model_strength_max: Maximum model strength
+            use_same_clip_strength: Whether to use same strength for clip
+            clip_strength_min: Minimum clip strength
+            clip_strength_max: Maximum clip strength
+            locked_loras: List of locked LoRA dicts to preserve
+            pool_config: Optional pool config for filtering
+
+        Returns:
+            List of LoRA dicts with randomized strengths
+        """
+        import random
+
+        if locked_loras is None:
+            locked_loras = []
+
+        # Get available loras from cache
+        cache = await self.scanner.get_cached_data(force_refresh=False)
+        available_loras = cache.raw_data if cache else []
+
+        # Apply pool filters if provided
+        if pool_config:
+            available_loras = await self._apply_pool_filters(
+                available_loras, pool_config
+            )
+
+        # Calculate slots needed (total - locked)
+        locked_count = len(locked_loras)
+        slots_needed = count - locked_count
+
+        if slots_needed < 0:
+            slots_needed = 0
+            # Too many locked, trim to target
+            locked_loras = locked_loras[:count]
+
+        # Filter out locked LoRAs from available pool
+        locked_names = {lora['name'] for lora in locked_loras}
+        available_pool = [
+            l for l in available_loras
+            if l['model_name'] not in locked_names
+        ]
+
+        # Ensure we don't try to select more than available
+        if slots_needed > len(available_pool):
+            slots_needed = len(available_pool)
+
+        # Random sample
+        selected = []
+        if slots_needed > 0:
+            selected = random.sample(available_pool, slots_needed)
+
+        # Generate random strengths for selected LoRAs
+        result_loras = []
+        for lora in selected:
+            model_str = round(
+                random.uniform(model_strength_min, model_strength_max), 2
+            )
+
+            if use_same_clip_strength:
+                clip_str = model_str
+            else:
+                clip_str = round(
+                    random.uniform(clip_strength_min, clip_strength_max), 2
+                )
+
+            result_loras.append({
+                'name': lora['model_name'],
+                'strength': model_str,
+                'clipStrength': clip_str,
+                'active': True,
+                'expanded': abs(model_str - clip_str) > 0.001,
+                'locked': False
+            })
+
+        # Merge with locked LoRAs
+        result_loras.extend(locked_loras)
+
+        return result_loras
+
+    async def _apply_pool_filters(self, available_loras: List[Dict], pool_config: Dict) -> List[Dict]:
+        """
+        Apply pool_config filters to available LoRAs.
+
+        Args:
+            available_loras: List of all LoRA dicts
+            pool_config: Dict with filter settings from LoRA Pool node
+
+        Returns:
+            Filtered list of LoRA dicts
+        """
+        from .model_query import FilterCriteria
+
+        # Extract filter parameters from pool_config
+        selected_base_models = pool_config.get('selected_base_models', [])
+        include_tags = pool_config.get('include_tags', [])
+        exclude_tags = pool_config.get('exclude_tags', [])
+        include_folders = pool_config.get('include_folders', [])
+        exclude_folders = pool_config.get('exclude_folders', [])
+        no_credit_required = pool_config.get('no_credit_required', False)
+        allow_selling = pool_config.get('allow_selling', False)
+
+        # Build tag filters dict
+        tag_filters = {}
+        for tag in include_tags:
+            tag_filters[tag] = 'include'
+        for tag in exclude_tags:
+            tag_filters[tag] = 'exclude'
+
+        # Build folder filter
+        if include_folders or exclude_folders:
+            filtered = []
+            for lora in available_loras:
+                folder = lora.get('folder', '')
+
+                # Check exclude folders first
+                excluded = False
+                for exclude_folder in exclude_folders:
+                    if folder.startswith(exclude_folder):
+                        excluded = True
+                        break
+
+                if excluded:
+                    continue
+
+                # Check include folders
+                if include_folders:
+                    included = False
+                    for include_folder in include_folders:
+                        if folder.startswith(include_folder):
+                            included = True
+                            break
+                    if not included:
+                        continue
+
+                filtered.append(lora)
+
+            available_loras = filtered
+
+        # Apply base model filter
+        if selected_base_models:
+            available_loras = [
+                lora for lora in available_loras
+                if lora.get('base_model') in selected_base_models
+            ]
+
+        # Apply tag filters
+        if tag_filters:
+            criteria = FilterCriteria(tags=tag_filters)
+            available_loras = self.filter_set.apply(available_loras, criteria)
+
+        # Apply license filters
+        if no_credit_required:
+            available_loras = [
+                lora for lora in available_loras
+                if not lora.get('civitai', {}).get('allowNoCredit', True)
+            ]
+
+        if allow_selling:
+            available_loras = [
+                lora for lora in available_loras
+                if lora.get('civitai', {}).get('allowCommercialUse', ['None'])[0] != 'None'
+            ]
+
+        return available_loras

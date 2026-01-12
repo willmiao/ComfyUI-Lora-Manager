@@ -45,6 +45,9 @@ class LoraRoutes(BaseModelRoutes):
         registrar.add_prefixed_route('GET', '/api/lm/{prefix}/get-trigger-words', prefix, self.get_lora_trigger_words)
         registrar.add_prefixed_route('GET', '/api/lm/{prefix}/usage-tips-by-path', prefix, self.get_lora_usage_tips_by_path)
 
+        # Randomizer routes
+        registrar.add_prefixed_route('POST', '/api/lm/{prefix}/random-sample', prefix, self.get_random_loras)
+
         # ComfyUI integration
         registrar.add_prefixed_route('POST', '/api/lm/{prefix}/get_trigger_words', prefix, self.get_trigger_words)
     
@@ -215,6 +218,74 @@ class LoraRoutes(BaseModelRoutes):
                 'error': str(e)
             }, status=500)
     
+    async def get_random_loras(self, request: web.Request) -> web.Response:
+        """Get random LoRAs based on filters and strength ranges"""
+        try:
+            json_data = await request.json()
+
+            # Parse parameters
+            count = json_data.get('count', 5)
+            count_min = json_data.get('count_min')
+            count_max = json_data.get('count_max')
+            model_strength_min = float(json_data.get('model_strength_min', 0.0))
+            model_strength_max = float(json_data.get('model_strength_max', 1.0))
+            use_same_clip_strength = json_data.get('use_same_clip_strength', True)
+            clip_strength_min = float(json_data.get('clip_strength_min', 0.0))
+            clip_strength_max = float(json_data.get('clip_strength_max', 1.0))
+            locked_loras = json_data.get('locked_loras', [])
+            pool_config = json_data.get('pool_config')
+
+            # Determine target count
+            if count_min is not None and count_max is not None:
+                import random
+                target_count = random.randint(count_min, count_max)
+            else:
+                target_count = count
+
+            # Validate parameters
+            if target_count < 1 or target_count > 100:
+                return web.json_response({
+                    'success': False,
+                    'error': 'Count must be between 1 and 100'
+                }, status=400)
+
+            if model_strength_min < 0 or model_strength_max > 10:
+                return web.json_response({
+                    'success': False,
+                    'error': 'Model strength must be between 0 and 10'
+                }, status=400)
+
+            # Get random LoRAs from service
+            result_loras = await self.service.get_random_loras(
+                count=target_count,
+                model_strength_min=model_strength_min,
+                model_strength_max=model_strength_max,
+                use_same_clip_strength=use_same_clip_strength,
+                clip_strength_min=clip_strength_min,
+                clip_strength_max=clip_strength_max,
+                locked_loras=locked_loras,
+                pool_config=pool_config
+            )
+
+            return web.json_response({
+                'success': True,
+                'loras': result_loras,
+                'count': len(result_loras)
+            })
+
+        except ValueError as e:
+            logger.error(f"Invalid parameter for random LoRAs: {e}")
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=400)
+        except Exception as e:
+            logger.error(f"Error getting random LoRAs: {e}", exc_info=True)
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
     async def get_trigger_words(self, request: web.Request) -> web.Response:
         """Get trigger words for specified LoRA models"""
         try:

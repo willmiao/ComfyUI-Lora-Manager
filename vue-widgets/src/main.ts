@@ -1,12 +1,16 @@
 import { createApp, type App as VueApp } from 'vue'
 import PrimeVue from 'primevue/config'
 import LoraPoolWidget from '@/components/LoraPoolWidget.vue'
-import type { LoraPoolConfig, LegacyLoraPoolConfig } from './composables/types'
+import LoraRandomizerWidget from '@/components/LoraRandomizerWidget.vue'
+import type { LoraPoolConfig, LegacyLoraPoolConfig, RandomizerConfig } from './composables/types'
 
 // @ts-ignore - ComfyUI external module
 import { app } from '../../../scripts/app.js'
 
 const vueApps = new Map<number, VueApp>()
+
+// Cache for dynamically loaded addLorasWidget module
+let addLorasWidgetCache: any = null
 
 // @ts-ignore
 function createLoraPoolWidget(node) {
@@ -78,14 +82,109 @@ function createLoraPoolWidget(node) {
   return { widget }
 }
 
+// @ts-ignore
+function createLoraRandomizerWidget(node) {
+  const container = document.createElement('div')
+  container.id = `lora-randomizer-widget-${node.id}`
+  container.style.width = '100%'
+  container.style.height = '100%'
+  container.style.display = 'flex'
+  container.style.flexDirection = 'column'
+  container.style.overflow = 'hidden'
+
+  let internalValue: RandomizerConfig | undefined
+
+  const widget = node.addDOMWidget(
+    'randomizer_config',
+    'RANDOMIZER_CONFIG',
+    container,
+    {
+      getValue() {
+        return internalValue
+      },
+      setValue(v: RandomizerConfig) {
+        internalValue = v
+        if (typeof widget.onSetValue === 'function') {
+          widget.onSetValue(v)
+        }
+      },
+      serialize: true,
+      getMinHeight() {
+        return 500
+      }
+    }
+  )
+
+  widget.updateConfig = (v: RandomizerConfig) => {
+    internalValue = v
+  }
+
+  // Handle roll event from Vue component
+  widget.onRoll = (randomLoras: any[]) => {
+    console.log('[createLoraRandomizerWidget] Roll event received:', randomLoras)
+
+    // Find the loras widget on this node and update it
+    const lorasWidget = node.widgets.find((w: any) => w.name === 'loras')
+    if (lorasWidget) {
+      lorasWidget.value = randomLoras
+      console.log('[createLoraRandomizerWidget] Updated loras widget with rolled LoRAs')
+    } else {
+      console.warn('[createLoraRandomizerWidget] loras widget not found on node')
+    }
+  }
+
+  const vueApp = createApp(LoraRandomizerWidget, {
+    widget,
+    node
+  })
+
+  vueApp.use(PrimeVue, {
+    unstyled: true,
+    ripple: false
+  })
+
+  vueApp.mount(container)
+  vueApps.set(node.id + 10000, vueApp) // Offset to avoid collision with pool widget
+
+  widget.computeLayoutSize = () => {
+    const minWidth = 500
+    const minHeight = 500
+    const maxHeight = 500
+
+    return { minHeight, minWidth, maxHeight }
+  }
+
+  widget.onRemove = () => {
+    const vueApp = vueApps.get(node.id + 10000)
+    if (vueApp) {
+      vueApp.unmount()
+      vueApps.delete(node.id + 10000)
+    }
+  }
+
+  return { widget }
+}
+
 app.registerExtension({
   name: 'LoraManager.VueWidgets',
 
-  getCustomWidgets() {
+    getCustomWidgets() {
     return {
       // @ts-ignore
       LORA_POOL_CONFIG(node) {
         return createLoraPoolWidget(node)
+      },
+      // @ts-ignore
+      RANDOMIZER_CONFIG(node) {
+        return createLoraRandomizerWidget(node)
+      },
+      // @ts-ignore
+      async LORAS(node: any) {
+        if (!addLorasWidgetCache) {
+          const module = await import(/* @vite-ignore */ '../loras_widget.js')
+          addLorasWidgetCache = module.addLorasWidget
+        }
+        return addLorasWidgetCache(node, 'loras', {}, null)
       }
     }
   }

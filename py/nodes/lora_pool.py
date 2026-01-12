@@ -31,28 +31,28 @@ class LoraPoolNode:
             "hidden": {
                 # Hidden input to pass through unique node ID for frontend
                 "unique_id": "UNIQUE_ID",
-            }
+            },
         }
 
-    RETURN_TYPES = ("LORA_POOL_CONFIG",)
-    RETURN_NAMES = ("pool_config",)
+    RETURN_TYPES = ("POOL_CONFIG",)
+    RETURN_NAMES = ("POOL_CONFIG",)
 
     FUNCTION = "process"
     OUTPUT_NODE = False
 
     def process(self, pool_config, unique_id=None):
         """
-        Pass through the pool configuration.
+        Pass through the pool configuration filters.
 
         The config is generated entirely by the frontend widget.
-        This function validates and passes through the configuration.
+        This function validates and returns only the filters field.
 
         Args:
             pool_config: Dict containing filter criteria from widget
             unique_id: Node's unique ID (hidden)
 
         Returns:
-            Tuple containing the validated pool_config
+            Tuple containing the filters dict from pool_config
         """
         # Validate required structure
         if not isinstance(pool_config, dict):
@@ -63,10 +63,13 @@ class LoraPoolNode:
         if "version" not in pool_config:
             pool_config["version"] = 1
 
-        # Log for debugging
-        logger.debug(f"[LoraPoolNode] Processing config: {pool_config}")
+        # Extract filters field
+        filters = pool_config.get("filters", self._default_config()["filters"])
 
-        return (pool_config,)
+        # Log for debugging
+        logger.debug(f"[LoraPoolNode] Processing filters: {filters}")
+
+        return (filters,)
 
     @staticmethod
     def _default_config():
@@ -76,23 +79,16 @@ class LoraPoolNode:
             "filters": {
                 "baseModels": [],
                 "tags": {"include": [], "exclude": []},
-                "folder": {"path": None, "recursive": True},
+                "folders": {"include": [], "exclude": []},
                 "favoritesOnly": False,
-                "license": {
-                    "noCreditRequired": None,
-                    "allowSellingGeneratedContent": None
-                }
+                "license": {"noCreditRequired": False, "allowSelling": False},
             },
-            "preview": {"matchCount": 0, "lastUpdated": 0}
+            "preview": {"matchCount": 0, "lastUpdated": 0},
         }
 
 
 # Node class mappings for ComfyUI
-NODE_CLASS_MAPPINGS = {
-    "LoraPoolNode": LoraPoolNode
-}
+NODE_CLASS_MAPPINGS = {"LoraPoolNode": LoraPoolNode}
 
 # Display name mappings
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "LoraPoolNode": "LoRA Pool (Filter)"
-}
+NODE_DISPLAY_NAME_MAPPINGS = {"LoraPoolNode": "LoRA Pool (Filter)"}

@@ -37,13 +37,6 @@ export interface FolderTreeNode {
   children?: FolderTreeNode[]
 }
 
-export interface ComponentWidget {
-  serializeValue?: () => Promise<LoraPoolConfig>
-  value?: LoraPoolConfig | LegacyLoraPoolConfig
-  onSetValue?: (v: LoraPoolConfig | LegacyLoraPoolConfig) => void
-  updateConfig?: (v: LoraPoolConfig) => void
-}
-
 // Legacy config for migration (v1)
 export interface LegacyLoraPoolConfig {
   version: 1
@@ -58,4 +51,34 @@ export interface LegacyLoraPoolConfig {
     }
   }
   preview: { matchCount: number; lastUpdated: number }
+}
+
+// Randomizer config
+export interface RandomizerConfig {
+  count_mode: 'fixed' | 'range'
+  count_fixed: number
+  count_min: number
+  count_max: number
+  model_strength_min: number
+  model_strength_max: number
+  use_same_clip_strength: boolean
+  clip_strength_min: number
+  clip_strength_max: number
+  roll_mode: 'frontend' | 'backend'
+}
+
+export interface LoraEntry {
+  name: string
+  strength: number
+  clipStrength: number
+  active: boolean
+  expanded: boolean
+  locked: boolean
+}
+
+export interface ComponentWidget {
+  serializeValue?: () => Promise<LoraPoolConfig | RandomizerConfig>
+  value?: LoraPoolConfig | LegacyLoraPoolConfig | RandomizerConfig
+  onSetValue?: (v: LoraPoolConfig | LegacyLoraPoolConfig | RandomizerConfig) => void
+  updateConfig?: (v: LoraPoolConfig | RandomizerConfig) => void
 }

@@ -9,8 +9,12 @@ try:  # pragma: no cover - import fallback for pytest collection
     from .py.nodes.wanvideo_lora_select import WanVideoLoraSelectLM
     from .py.nodes.wanvideo_lora_select_from_text import WanVideoLoraSelectFromText
     from .py.nodes.lora_pool import LoraPoolNode
+    from .py.nodes.lora_demo import LoraDemoNode
+    from .py.nodes.lora_randomizer import LoraRandomizerNode
     from .py.metadata_collector import init as init_metadata_collector
-except ImportError:  # pragma: no cover - allows running under pytest without package install
+except (
+    ImportError
+):  # pragma: no cover - allows running under pytest without package install
     import importlib
     import pathlib
     import sys
@@ -21,15 +25,27 @@ except ImportError:  # pragma: no cover - allows running under pytest without pa
 
     PromptLoraManager = importlib.import_module("py.nodes.prompt").PromptLoraManager
     LoraManager = importlib.import_module("py.lora_manager").LoraManager
-    LoraManagerLoader = importlib.import_module("py.nodes.lora_loader").LoraManagerLoader
-    LoraManagerTextLoader = importlib.import_module("py.nodes.lora_loader").LoraManagerTextLoader
-    TriggerWordToggle = importlib.import_module("py.nodes.trigger_word_toggle").TriggerWordToggle
+    LoraManagerLoader = importlib.import_module(
+        "py.nodes.lora_loader"
+    ).LoraManagerLoader
+    LoraManagerTextLoader = importlib.import_module(
+        "py.nodes.lora_loader"
+    ).LoraManagerTextLoader
+    TriggerWordToggle = importlib.import_module(
+        "py.nodes.trigger_word_toggle"
+    ).TriggerWordToggle
     LoraStacker = importlib.import_module("py.nodes.lora_stacker").LoraStacker
     SaveImageLM = importlib.import_module("py.nodes.save_image").SaveImageLM
     DebugMetadata = importlib.import_module("py.nodes.debug_metadata").DebugMetadata
-    WanVideoLoraSelectLM = importlib.import_module("py.nodes.wanvideo_lora_select").WanVideoLoraSelectLM
-    WanVideoLoraSelectFromText = importlib.import_module("py.nodes.wanvideo_lora_select_from_text").WanVideoLoraSelectFromText
+    WanVideoLoraSelectLM = importlib.import_module(
+        "py.nodes.wanvideo_lora_select"
+    ).WanVideoLoraSelectLM
+    WanVideoLoraSelectFromText = importlib.import_module(
+        "py.nodes.wanvideo_lora_select_from_text"
+    ).WanVideoLoraSelectFromText
     LoraPoolNode = importlib.import_module("py.nodes.lora_pool").LoraPoolNode
+    LoraDemoNode = importlib.import_module("py.nodes.lora_demo").LoraDemoNode
+    LoraRandomizerNode = importlib.import_module("py.nodes.lora_randomizer").LoraRandomizerNode
     init_metadata_collector = importlib.import_module("py.metadata_collector").init
 
 NODE_CLASS_MAPPINGS = {
@@ -42,7 +58,9 @@ NODE_CLASS_MAPPINGS = {
     DebugMetadata.NAME: DebugMetadata,
     WanVideoLoraSelectLM.NAME: WanVideoLoraSelectLM,
     WanVideoLoraSelectFromText.NAME: WanVideoLoraSelectFromText,
-    LoraPoolNode.NAME: LoraPoolNode
+    LoraPoolNode.NAME: LoraPoolNode,
+    LoraDemoNode.NAME: LoraDemoNode,
+    LoraRandomizerNode.NAME: LoraRandomizerNode,
 }
 
 WEB_DIRECTORY = "./web/comfyui"
@@ -50,15 +68,20 @@ WEB_DIRECTORY = "./web/comfyui"
 # Check and build Vue widgets if needed (development mode)
 try:
     from .py.vue_widget_builder import check_and_build_vue_widgets
+
     # Auto-build in development, warn only if fails
     check_and_build_vue_widgets(auto_build=True, warn_only=True)
 except ImportError:
     # Fallback for pytest
     import importlib
-    check_and_build_vue_widgets = importlib.import_module("py.vue_widget_builder").check_and_build_vue_widgets
+
+    check_and_build_vue_widgets = importlib.import_module(
+        "py.vue_widget_builder"
+    ).check_and_build_vue_widgets
     check_and_build_vue_widgets(auto_build=True, warn_only=True)
 except Exception as e:
     import logging
+
     logging.warning(f"[LoRA Manager] Vue widget build check skipped: {e}")
 
 # Initialize metadata collector
@@ -66,4 +89,4 @@ init_metadata_collector()
 
 # Register routes on import
 LoraManager.add_routes()
-__all__ = ['NODE_CLASS_MAPPINGS', 'WEB_DIRECTORY']
+__all__ = ["NODE_CLASS_MAPPINGS", "WEB_DIRECTORY"]
