@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 
-export type ModalType = 'baseModels' | 'includeTags' | 'excludeTags' | null
+export type ModalType = 'baseModels' | 'includeTags' | 'excludeTags' | 'includeFolders' | 'excludeFolders' | null
 
 export function useModalState() {
   const activeModal = ref<ModalType>(null)

@@ -3,7 +3,7 @@
   try {
     if (typeof document != "undefined") {
       var elementStyle = document.createElement("style");
-      elementStyle.appendChild(document.createTextNode(".filter-chip[data-v-7e36267d] {\n  display: inline-flex;\n  align-items: center;\n  gap: 2px;\n  padding: 3px 8px;\n  border-radius: 4px;\n  font-size: 11px;\n  font-weight: 500;\n  background: var(--comfy-input-bg);\n  border: 1px solid var(--border-color);\n  color: var(--fg-color);\n  white-space: nowrap;\n}\n.filter-chip__text[data-v-7e36267d] {\n  max-width: 120px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.filter-chip__count[data-v-7e36267d] {\n  opacity: 0.6;\n  font-size: 10px;\n}\n.filter-chip__remove[data-v-7e36267d] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 14px;\n  height: 14px;\n  margin-left: 2px;\n  padding: 0;\n  background: transparent;\n  border: none;\n  color: inherit;\n  font-size: 14px;\n  line-height: 1;\n  cursor: pointer;\n  opacity: 0.6;\n  transition: opacity 0.15s;\n}\n.filter-chip__remove[data-v-7e36267d]:hover {\n  opacity: 1;\n}\n\n/* Variants */\n.filter-chip--include[data-v-7e36267d] {\n  background: rgba(66, 153, 225, 0.15);\n  border-color: rgba(66, 153, 225, 0.4);\n  color: #4299e1;\n}\n.filter-chip--exclude[data-v-7e36267d] {\n  background: rgba(239, 68, 68, 0.15);\n  border-color: rgba(239, 68, 68, 0.4);\n  color: #ef4444;\n}\n.filter-chip--neutral[data-v-7e36267d] {\n  background: rgba(100, 100, 100, 0.3);\n  border-color: rgba(150, 150, 150, 0.4);\n  color: var(--fg-color);\n}\n.filter-chip--path[data-v-7e36267d] {\n  background: rgba(30, 30, 30, 0.8);\n  border-color: rgba(255, 255, 255, 0.15);\n  color: var(--fg-color);\n  font-family: monospace;\n  font-size: 10px;\n}\n\n.edit-button[data-v-8da8aa4b] {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 2px 6px;\n  background: transparent;\n  border: none;\n  color: var(--fg-color);\n  font-size: 11px;\n  cursor: pointer;\n  opacity: 0.6;\n  transition: opacity 0.15s;\n  border-radius: 3px;\n}\n.edit-button[data-v-8da8aa4b]:hover {\n  opacity: 1;\n  background: rgba(255, 255, 255, 0.05);\n}\n.edit-button__icon[data-v-8da8aa4b] {\n  width: 10px;\n  height: 10px;\n}\n.edit-button__text[data-v-8da8aa4b] {\n  font-weight: 400;\n}\n\n.section[data-v-12f059e2] {\n  margin-bottom: 16px;\n}\n.section__header[data-v-12f059e2] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  margin-bottom: 8px;\n}\n.section__title[data-v-12f059e2] {\n  font-size: 10px;\n  font-weight: 600;\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n}\n.section__content[data-v-12f059e2] {\n  min-height: 32px;\n  display: flex;\n  align-items: center;\n}\n.section__placeholder[data-v-12f059e2] {\n  width: 100%;\n  padding: 8px 12px;\n  background: var(--comfy-input-bg, #333);\n  border-radius: 4px;\n  font-size: 12px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  text-align: center;\n  box-sizing: border-box;\n}\n.section__chips[data-v-12f059e2] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n}\n\n.section[data-v-b869b780] {\n  margin-bottom: 16px;\n}\n.section__header[data-v-b869b780] {\n  margin-bottom: 8px;\n}\n.section__title[data-v-b869b780] {\n  font-size: 10px;\n  font-weight: 600;\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n}\n.section__columns[data-v-b869b780] {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 12px;\n}\n.section__column[data-v-b869b780] {\n  min-width: 0;\n}\n.section__column-header[data-v-b869b780] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  margin-bottom: 6px;\n}\n.section__column-title[data-v-b869b780] {\n  font-size: 9px;\n  font-weight: 500;\n  text-transform: uppercase;\n  letter-spacing: 0.03em;\n}\n.section__column-title--include[data-v-b869b780] {\n  color: #4299e1;\n}\n.section__column-title--exclude[data-v-b869b780] {\n  color: #ef4444;\n}\n.section__column-content[data-v-b869b780] {\n  min-height: 28px;\n}\n.section__empty[data-v-b869b780] {\n  width: 100%;\n  padding: 8px 12px;\n  background: var(--comfy-input-bg, #333);\n  border-radius: 4px;\n  font-size: 12px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  text-align: center;\n  box-sizing: border-box;\n}\n.section__chips[data-v-b869b780] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n}\n\n.section[data-v-9495b57f] {\n  margin-bottom: 16px;\n}\n.section__header[data-v-9495b57f] {\n  margin-bottom: 8px;\n}\n.section__title[data-v-9495b57f] {\n  font-size: 10px;\n  font-weight: 600;\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n}\n.section__columns[data-v-9495b57f] {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 12px;\n}\n.section__column[data-v-9495b57f] {\n  min-width: 0;\n}\n.section__column-header[data-v-9495b57f] {\n  margin-bottom: 6px;\n}\n.section__column-title[data-v-9495b57f] {\n  font-size: 9px;\n  font-weight: 500;\n  text-transform: uppercase;\n  letter-spacing: 0.03em;\n}\n.section__column-title--include[data-v-9495b57f] {\n  color: #4299e1;\n}\n.section__column-title--exclude[data-v-9495b57f] {\n  color: #ef4444;\n}\n.section__input-row[data-v-9495b57f] {\n  display: flex;\n  gap: 4px;\n}\n.section__input[data-v-9495b57f] {\n  flex: 1;\n  min-width: 0;\n  padding: 6px 8px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 4px;\n  color: var(--fg-color, #fff);\n  font-size: 11px;\n  outline: none;\n}\n.section__input[data-v-9495b57f]:focus {\n  border-color: var(--fg-color, #fff);\n}\n.section__input[data-v-9495b57f]::placeholder {\n  color: var(--fg-color, #fff);\n  opacity: 0.4;\n}\n.section__add-btn[data-v-9495b57f] {\n  width: 28px;\n  height: 28px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 4px;\n  color: var(--fg-color, #fff);\n  font-size: 16px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: all 0.15s;\n}\n.section__add-btn[data-v-9495b57f]:hover {\n  border-color: var(--fg-color, #fff);\n}\n.section__add-btn--include[data-v-9495b57f]:hover {\n  background: rgba(66, 153, 225, 0.2);\n  border-color: #4299e1;\n  color: #4299e1;\n}\n.section__add-btn--exclude[data-v-9495b57f]:hover {\n  background: rgba(239, 68, 68, 0.2);\n  border-color: #ef4444;\n  color: #ef4444;\n}\n.section__paths[data-v-9495b57f] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n  margin-top: 6px;\n}\n\n.section[data-v-8b49983c] {\n  margin-bottom: 16px;\n}\n.section__header[data-v-8b49983c] {\n  margin-bottom: 8px;\n}\n.section__title[data-v-8b49983c] {\n  font-size: 10px;\n  font-weight: 600;\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n}\n.section__toggles[data-v-8b49983c] {\n  display: flex;\n  gap: 16px;\n}\n.toggle-item[data-v-8b49983c] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  cursor: pointer;\n}\n.toggle-item__label[data-v-8b49983c] {\n  font-size: 12px;\n  color: var(--fg-color, #fff);\n}\n.toggle-switch[data-v-8b49983c] {\n  position: relative;\n  width: 36px;\n  height: 20px;\n  padding: 0;\n  background: transparent;\n  border: none;\n  cursor: pointer;\n}\n.toggle-switch__track[data-v-8b49983c] {\n  position: absolute;\n  inset: 0;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 10px;\n  transition: all 0.2s;\n}\n.toggle-switch--active .toggle-switch__track[data-v-8b49983c] {\n  background: rgba(66, 153, 225, 0.3);\n  border-color: rgba(66, 153, 225, 0.6);\n}\n.toggle-switch__thumb[data-v-8b49983c] {\n  position: absolute;\n  top: 2px;\n  left: 2px;\n  width: 14px;\n  height: 14px;\n  background: var(--fg-color, #fff);\n  border-radius: 50%;\n  transition: all 0.2s;\n  opacity: 0.6;\n}\n.toggle-switch--active .toggle-switch__thumb[data-v-8b49983c] {\n  transform: translateX(16px);\n  background: #4299e1;\n  opacity: 1;\n}\n.toggle-switch:hover .toggle-switch__thumb[data-v-8b49983c] {\n  opacity: 1;\n}\n\n.preview[data-v-767d024c] {\n  padding-top: 12px;\n  border-top: 1px solid var(--border-color, #444);\n}\n.preview__header[data-v-767d024c] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  margin-bottom: 10px;\n}\n.preview__title[data-v-767d024c] {\n  font-size: 12px;\n  font-weight: 500;\n  color: var(--fg-color, #fff);\n}\n.preview__refresh[data-v-767d024c] {\n  width: 24px;\n  height: 24px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: transparent;\n  border: none;\n  color: var(--fg-color, #fff);\n  cursor: pointer;\n  opacity: 0.6;\n  border-radius: 4px;\n  transition: all 0.15s;\n}\n.preview__refresh[data-v-767d024c]:hover {\n  opacity: 1;\n  background: var(--comfy-input-bg, #333);\n}\n.preview__refresh[data-v-767d024c]:disabled {\n  cursor: not-allowed;\n}\n.preview__refresh-icon[data-v-767d024c] {\n  width: 14px;\n  height: 14px;\n}\n.preview__refresh--loading .preview__refresh-icon[data-v-767d024c] {\n  animation: spin-767d024c 1s linear infinite;\n}\n@keyframes spin-767d024c {\nfrom { transform: rotate(0deg);\n}\nto { transform: rotate(360deg);\n}\n}\n.preview__list[data-v-767d024c] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.preview__item[data-v-767d024c] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 4px 6px;\n  background: var(--comfy-input-bg, #333);\n  border-radius: 4px;\n}\n.preview__thumb[data-v-767d024c] {\n  width: 28px;\n  height: 28px;\n  object-fit: cover;\n  border-radius: 3px;\n  flex-shrink: 0;\n  background: rgba(0, 0, 0, 0.2);\n}\n.preview__thumb--placeholder[data-v-767d024c] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  color: var(--fg-color, #fff);\n  opacity: 0.2;\n}\n.preview__thumb--placeholder svg[data-v-767d024c] {\n  width: 14px;\n  height: 14px;\n}\n.preview__name[data-v-767d024c] {\n  flex: 1;\n  font-size: 11px;\n  color: var(--fg-color, #fff);\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.preview__more[data-v-767d024c] {\n  font-size: 11px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  text-align: center;\n  padding: 6px;\n}\n.preview__empty[data-v-767d024c],\n.preview__loading[data-v-767d024c] {\n  font-size: 11px;\n  color: var(--fg-color, #fff);\n  opacity: 0.4;\n  text-align: center;\n  padding: 16px;\n}\n\n.summary-view[data-v-49cb24c6] {\n  display: flex;\n  flex-direction: column;\n  height: 100%;\n}\n.summary-view__header[data-v-49cb24c6] {\n  display: flex;\n  justify-content: flex-end;\n  margin-bottom: 12px;\n}\n.summary-view__badge[data-v-49cb24c6] {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 4px 10px;\n  background: rgba(66, 153, 225, 0.15);\n  border: 1px solid rgba(66, 153, 225, 0.4);\n  border-radius: 4px;\n  color: #4299e1;\n}\n.summary-view__badge-icon[data-v-49cb24c6] {\n  width: 12px;\n  height: 12px;\n}\n.summary-view__count[data-v-49cb24c6] {\n  font-size: 12px;\n  font-weight: 600;\n}\n.summary-view__filters[data-v-49cb24c6] {\n  flex: 1;\n  overflow-y: auto;\n  padding-right: 4px;\n  margin-right: -4px;\n  /* Allow flex item to shrink below content size */\n  min-height: 0;\n}\n\n.lora-pool-modal-backdrop[data-v-fce76ca8] {\n  position: fixed;\n  inset: 0;\n  z-index: 10000;\n  background: rgba(0, 0, 0, 0.6);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  backdrop-filter: blur(2px);\n}\n.lora-pool-modal[data-v-fce76ca8] {\n  background: var(--comfy-menu-bg, #1a1a1a);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 8px;\n  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);\n  max-width: 400px;\n  width: 90%;\n  max-height: 70vh;\n  display: flex;\n  flex-direction: column;\n}\n.lora-pool-modal__header[data-v-fce76ca8] {\n  display: flex;\n  align-items: flex-start;\n  justify-content: space-between;\n  padding: 16px;\n  border-bottom: 1px solid var(--border-color, #444);\n}\n.lora-pool-modal__title-container[data-v-fce76ca8] {\n  flex: 1;\n}\n.lora-pool-modal__title[data-v-fce76ca8] {\n  font-size: 16px;\n  font-weight: 600;\n  color: var(--fg-color, #fff);\n  margin: 0;\n}\n.lora-pool-modal__subtitle[data-v-fce76ca8] {\n  font-size: 12px;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n  margin: 4px 0 0 0;\n}\n.lora-pool-modal__close[data-v-fce76ca8] {\n  width: 28px;\n  height: 28px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: transparent;\n  border: none;\n  color: var(--fg-color, #fff);\n  font-size: 22px;\n  cursor: pointer;\n  opacity: 0.7;\n  border-radius: 4px;\n  line-height: 1;\n  padding: 0;\n  margin: -4px -4px 0 0;\n}\n.lora-pool-modal__close[data-v-fce76ca8]:hover {\n  opacity: 1;\n  background: var(--comfy-input-bg, #333);\n}\n.lora-pool-modal__search[data-v-fce76ca8] {\n  padding: 12px 16px;\n  border-bottom: 1px solid var(--border-color, #444);\n}\n.lora-pool-modal__body[data-v-fce76ca8] {\n  flex: 1;\n  overflow-y: auto;\n  padding: 12px 16px 16px;\n}\n\n/* Transitions */\n.modal-enter-active[data-v-fce76ca8],\n.modal-leave-active[data-v-fce76ca8] {\n  transition: opacity 0.2s ease;\n}\n.modal-enter-from[data-v-fce76ca8],\n.modal-leave-to[data-v-fce76ca8] {\n  opacity: 0;\n}\n.modal-enter-active .lora-pool-modal[data-v-fce76ca8],\n.modal-leave-active .lora-pool-modal[data-v-fce76ca8] {\n  transition: transform 0.2s ease;\n}\n.modal-enter-from .lora-pool-modal[data-v-fce76ca8],\n.modal-leave-to .lora-pool-modal[data-v-fce76ca8] {\n  transform: scale(0.95);\n}\n\n.search-container[data-v-7d08882c] {\n  position: relative;\n}\n.search-icon[data-v-7d08882c] {\n  position: absolute;\n  left: 10px;\n  top: 50%;\n  transform: translateY(-50%);\n  width: 14px;\n  height: 14px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n}\n.search-input[data-v-7d08882c] {\n  width: 100%;\n  padding: 8px 12px 8px 32px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 6px;\n  color: var(--fg-color, #fff);\n  font-size: 13px;\n  outline: none;\n}\n.search-input[data-v-7d08882c]:focus {\n  border-color: var(--fg-color, #fff);\n}\n.search-input[data-v-7d08882c]::placeholder {\n  color: var(--fg-color, #fff);\n  opacity: 0.4;\n}\n.model-list[data-v-7d08882c] {\n  display: flex;\n  flex-direction: column;\n  gap: 2px;\n}\n.model-item[data-v-7d08882c] {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  padding: 10px 8px;\n  border-radius: 4px;\n  cursor: pointer;\n  transition: background 0.15s;\n}\n.model-item[data-v-7d08882c]:hover {\n  background: var(--comfy-input-bg, #333);\n}\n.model-checkbox[data-v-7d08882c] {\n  position: absolute;\n  opacity: 0;\n  pointer-events: none;\n}\n.model-checkbox-visual[data-v-7d08882c] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 18px;\n  height: 18px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #555);\n  border-radius: 4px;\n  flex-shrink: 0;\n  transition: all 0.15s;\n}\n.model-item:hover .model-checkbox-visual[data-v-7d08882c] {\n  border-color: var(--fg-color, #fff);\n}\n.model-checkbox:checked + .model-checkbox-visual[data-v-7d08882c] {\n  background: var(--fg-color, #fff);\n  border-color: var(--fg-color, #fff);\n}\n.check-icon[data-v-7d08882c] {\n  width: 12px;\n  height: 12px;\n  color: var(--comfy-menu-bg, #1a1a1a);\n}\n.model-name[data-v-7d08882c] {\n  flex: 1;\n  font-size: 13px;\n  color: var(--fg-color, #fff);\n}\n.model-count[data-v-7d08882c] {\n  font-size: 12px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n}\n.no-results[data-v-7d08882c] {\n  padding: 20px;\n  text-align: center;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  font-size: 13px;\n}\n\n.search-container[data-v-4b3cfd31] {\n  position: relative;\n}\n.search-icon[data-v-4b3cfd31] {\n  position: absolute;\n  left: 10px;\n  top: 50%;\n  transform: translateY(-50%);\n  width: 14px;\n  height: 14px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n}\n.search-input[data-v-4b3cfd31] {\n  width: 100%;\n  padding: 8px 12px 8px 32px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 6px;\n  color: var(--fg-color, #fff);\n  font-size: 13px;\n  outline: none;\n}\n.search-input[data-v-4b3cfd31]:focus {\n  border-color: var(--fg-color, #fff);\n}\n.search-input[data-v-4b3cfd31]::placeholder {\n  color: var(--fg-color, #fff);\n  opacity: 0.4;\n}\n.tags-container[data-v-4b3cfd31] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n.tag-chip[data-v-4b3cfd31] {\n  padding: 6px 12px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #555);\n  border-radius: 16px;\n  color: var(--fg-color, #fff);\n  font-size: 12px;\n  cursor: pointer;\n  transition: all 0.15s;\n}\n.tag-chip[data-v-4b3cfd31]:hover {\n  border-color: var(--fg-color, #fff);\n}\n\n/* Include variant - blue when selected */\n.tags-modal--include .tag-chip--selected[data-v-4b3cfd31],\n.tag-chip--selected[data-v-4b3cfd31] {\n  background: rgba(66, 153, 225, 0.2);\n  border-color: rgba(66, 153, 225, 0.6);\n  color: #4299e1;\n}\n\n/* Exclude variant - red when selected */\n.tags-modal--exclude .tag-chip--selected[data-v-4b3cfd31] {\n  background: rgba(239, 68, 68, 0.2);\n  border-color: rgba(239, 68, 68, 0.6);\n  color: #ef4444;\n}\n.no-results[data-v-4b3cfd31] {\n  width: 100%;\n  padding: 20px;\n  text-align: center;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  font-size: 13px;\n}\n\n.lora-pool-widget[data-v-5240a9af] {\n  padding: 12px;\n  background: rgba(40, 44, 52, 0.6);\n  border-radius: 4px;\n  height: 100%;\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n  box-sizing: border-box;\n}"));
+      elementStyle.appendChild(document.createTextNode(".filter-chip[data-v-7e36267d] {\n  display: inline-flex;\n  align-items: center;\n  gap: 2px;\n  padding: 3px 8px;\n  border-radius: 4px;\n  font-size: 11px;\n  font-weight: 500;\n  background: var(--comfy-input-bg);\n  border: 1px solid var(--border-color);\n  color: var(--fg-color);\n  white-space: nowrap;\n}\n.filter-chip__text[data-v-7e36267d] {\n  max-width: 120px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.filter-chip__count[data-v-7e36267d] {\n  opacity: 0.6;\n  font-size: 10px;\n}\n.filter-chip__remove[data-v-7e36267d] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 14px;\n  height: 14px;\n  margin-left: 2px;\n  padding: 0;\n  background: transparent;\n  border: none;\n  color: inherit;\n  font-size: 14px;\n  line-height: 1;\n  cursor: pointer;\n  opacity: 0.6;\n  transition: opacity 0.15s;\n}\n.filter-chip__remove[data-v-7e36267d]:hover {\n  opacity: 1;\n}\n\n/* Variants */\n.filter-chip--include[data-v-7e36267d] {\n  background: rgba(66, 153, 225, 0.15);\n  border-color: rgba(66, 153, 225, 0.4);\n  color: #4299e1;\n}\n.filter-chip--exclude[data-v-7e36267d] {\n  background: rgba(239, 68, 68, 0.15);\n  border-color: rgba(239, 68, 68, 0.4);\n  color: #ef4444;\n}\n.filter-chip--neutral[data-v-7e36267d] {\n  background: rgba(100, 100, 100, 0.3);\n  border-color: rgba(150, 150, 150, 0.4);\n  color: var(--fg-color);\n}\n.filter-chip--path[data-v-7e36267d] {\n  background: rgba(30, 30, 30, 0.8);\n  border-color: rgba(255, 255, 255, 0.15);\n  color: var(--fg-color);\n  font-family: monospace;\n  font-size: 10px;\n}\n\n.edit-button[data-v-8da8aa4b] {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 2px 6px;\n  background: transparent;\n  border: none;\n  color: var(--fg-color);\n  font-size: 11px;\n  cursor: pointer;\n  opacity: 0.6;\n  transition: opacity 0.15s;\n  border-radius: 3px;\n}\n.edit-button[data-v-8da8aa4b]:hover {\n  opacity: 1;\n  background: rgba(255, 255, 255, 0.05);\n}\n.edit-button__icon[data-v-8da8aa4b] {\n  width: 10px;\n  height: 10px;\n}\n.edit-button__text[data-v-8da8aa4b] {\n  font-weight: 400;\n}\n\n.section[data-v-12f059e2] {\n  margin-bottom: 16px;\n}\n.section__header[data-v-12f059e2] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  margin-bottom: 8px;\n}\n.section__title[data-v-12f059e2] {\n  font-size: 10px;\n  font-weight: 600;\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n}\n.section__content[data-v-12f059e2] {\n  min-height: 32px;\n  display: flex;\n  align-items: center;\n}\n.section__placeholder[data-v-12f059e2] {\n  width: 100%;\n  padding: 8px 12px;\n  background: var(--comfy-input-bg, #333);\n  border-radius: 4px;\n  font-size: 12px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  text-align: center;\n  box-sizing: border-box;\n}\n.section__chips[data-v-12f059e2] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n}\n\n.section[data-v-b869b780] {\n  margin-bottom: 16px;\n}\n.section__header[data-v-b869b780] {\n  margin-bottom: 8px;\n}\n.section__title[data-v-b869b780] {\n  font-size: 10px;\n  font-weight: 600;\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n}\n.section__columns[data-v-b869b780] {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 12px;\n}\n.section__column[data-v-b869b780] {\n  min-width: 0;\n}\n.section__column-header[data-v-b869b780] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  margin-bottom: 6px;\n}\n.section__column-title[data-v-b869b780] {\n  font-size: 9px;\n  font-weight: 500;\n  text-transform: uppercase;\n  letter-spacing: 0.03em;\n}\n.section__column-title--include[data-v-b869b780] {\n  color: #4299e1;\n}\n.section__column-title--exclude[data-v-b869b780] {\n  color: #ef4444;\n}\n.section__column-content[data-v-b869b780] {\n  min-height: 28px;\n}\n.section__empty[data-v-b869b780] {\n  width: 100%;\n  padding: 8px 12px;\n  background: var(--comfy-input-bg, #333);\n  border-radius: 4px;\n  font-size: 12px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  text-align: center;\n  box-sizing: border-box;\n}\n.section__chips[data-v-b869b780] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n}\n\n.section[data-v-af9caf84] {\n  margin-bottom: 16px;\n}\n.section__header[data-v-af9caf84] {\n  margin-bottom: 8px;\n}\n.section__title[data-v-af9caf84] {\n  font-size: 10px;\n  font-weight: 600;\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n}\n.section__columns[data-v-af9caf84] {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 12px;\n}\n.section__column[data-v-af9caf84] {\n  min-width: 0;\n}\n.section__column-header[data-v-af9caf84] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  margin-bottom: 6px;\n}\n.section__column-title[data-v-af9caf84] {\n  font-size: 9px;\n  font-weight: 500;\n  text-transform: uppercase;\n  letter-spacing: 0.03em;\n}\n.section__column-title--include[data-v-af9caf84] {\n  color: #4299e1;\n}\n.section__column-title--exclude[data-v-af9caf84] {\n  color: #ef4444;\n}\n.section__edit-btn[data-v-af9caf84] {\n  width: 20px;\n  height: 20px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: transparent;\n  border: none;\n  color: var(--fg-color, #fff);\n  cursor: pointer;\n  opacity: 0.5;\n  border-radius: 3px;\n  padding: 0;\n  transition: all 0.15s;\n}\n.section__edit-btn svg[data-v-af9caf84] {\n  width: 12px;\n  height: 12px;\n}\n.section__edit-btn[data-v-af9caf84]:hover {\n  opacity: 1;\n  background: var(--comfy-input-bg, #333);\n}\n.section__edit-btn--include[data-v-af9caf84]:hover {\n  color: #4299e1;\n}\n.section__edit-btn--exclude[data-v-af9caf84]:hover {\n  color: #ef4444;\n}\n.section__content[data-v-af9caf84] {\n  min-height: 22px;\n}\n.section__paths[data-v-af9caf84] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n  min-height: 22px;\n}\n.section__empty[data-v-af9caf84] {\n  font-size: 10px;\n  color: var(--fg-color, #fff);\n  opacity: 0.3;\n  font-style: italic;\n  min-height: 22px;\n  display: flex;\n  align-items: center;\n}\n\n.section[data-v-8b49983c] {\n  margin-bottom: 16px;\n}\n.section__header[data-v-8b49983c] {\n  margin-bottom: 8px;\n}\n.section__title[data-v-8b49983c] {\n  font-size: 10px;\n  font-weight: 600;\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n}\n.section__toggles[data-v-8b49983c] {\n  display: flex;\n  gap: 16px;\n}\n.toggle-item[data-v-8b49983c] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  cursor: pointer;\n}\n.toggle-item__label[data-v-8b49983c] {\n  font-size: 12px;\n  color: var(--fg-color, #fff);\n}\n.toggle-switch[data-v-8b49983c] {\n  position: relative;\n  width: 36px;\n  height: 20px;\n  padding: 0;\n  background: transparent;\n  border: none;\n  cursor: pointer;\n}\n.toggle-switch__track[data-v-8b49983c] {\n  position: absolute;\n  inset: 0;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 10px;\n  transition: all 0.2s;\n}\n.toggle-switch--active .toggle-switch__track[data-v-8b49983c] {\n  background: rgba(66, 153, 225, 0.3);\n  border-color: rgba(66, 153, 225, 0.6);\n}\n.toggle-switch__thumb[data-v-8b49983c] {\n  position: absolute;\n  top: 2px;\n  left: 2px;\n  width: 14px;\n  height: 14px;\n  background: var(--fg-color, #fff);\n  border-radius: 50%;\n  transition: all 0.2s;\n  opacity: 0.6;\n}\n.toggle-switch--active .toggle-switch__thumb[data-v-8b49983c] {\n  transform: translateX(16px);\n  background: #4299e1;\n  opacity: 1;\n}\n.toggle-switch:hover .toggle-switch__thumb[data-v-8b49983c] {\n  opacity: 1;\n}\n\n.preview[data-v-6a4b50a1] {\n  padding-top: 12px;\n  border-top: 1px solid var(--border-color, #444);\n  position: relative;\n}\n.preview__header[data-v-6a4b50a1] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  cursor: default;\n}\n.preview__title[data-v-6a4b50a1] {\n  font-size: 12px;\n  font-weight: 500;\n  color: var(--fg-color, #fff);\n}\n.preview__refresh[data-v-6a4b50a1] {\n  width: 24px;\n  height: 24px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: transparent;\n  border: none;\n  color: var(--fg-color, #fff);\n  cursor: pointer;\n  opacity: 0.6;\n  border-radius: 4px;\n  transition: all 0.15s;\n}\n.preview__refresh[data-v-6a4b50a1]:hover {\n  opacity: 1;\n  background: var(--comfy-input-bg, #333);\n}\n.preview__refresh[data-v-6a4b50a1]:disabled {\n  cursor: not-allowed;\n}\n.preview__refresh-icon[data-v-6a4b50a1] {\n  width: 14px;\n  height: 14px;\n}\n.preview__refresh--loading .preview__refresh-icon[data-v-6a4b50a1] {\n  animation: spin-6a4b50a1 1s linear infinite;\n}\n@keyframes spin-6a4b50a1 {\nfrom { transform: rotate(0deg);\n}\nto { transform: rotate(360deg);\n}\n}\n\n/* Tooltip styles */\n.preview__tooltip[data-v-6a4b50a1] {\n  position: absolute;\n  bottom: 100%;\n  left: 0;\n  right: 0;\n  margin-bottom: 8px;\n  z-index: 100;\n}\n.preview__tooltip-content[data-v-6a4b50a1] {\n  background: var(--comfy-menu-bg, #1a1a1a);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 6px;\n  padding: 8px;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.preview__item[data-v-6a4b50a1] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 4px 6px;\n  background: var(--comfy-input-bg, #333);\n  border-radius: 4px;\n}\n.preview__thumb[data-v-6a4b50a1] {\n  width: 28px;\n  height: 28px;\n  object-fit: cover;\n  border-radius: 3px;\n  flex-shrink: 0;\n  background: rgba(0, 0, 0, 0.2);\n}\n.preview__thumb--placeholder[data-v-6a4b50a1] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  color: var(--fg-color, #fff);\n  opacity: 0.2;\n}\n.preview__thumb--placeholder svg[data-v-6a4b50a1] {\n  width: 14px;\n  height: 14px;\n}\n.preview__name[data-v-6a4b50a1] {\n  flex: 1;\n  font-size: 11px;\n  color: var(--fg-color, #fff);\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.preview__more[data-v-6a4b50a1] {\n  font-size: 11px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  text-align: center;\n  padding: 4px;\n}\n.preview__empty[data-v-6a4b50a1] {\n  font-size: 11px;\n  color: var(--fg-color, #fff);\n  opacity: 0.4;\n  text-align: center;\n  padding: 8px 0 0 0;\n}\n\n/* Tooltip transitions */\n.tooltip-enter-active[data-v-6a4b50a1],\n.tooltip-leave-active[data-v-6a4b50a1] {\n  transition: opacity 0.15s ease, transform 0.15s ease;\n}\n.tooltip-enter-from[data-v-6a4b50a1],\n.tooltip-leave-to[data-v-6a4b50a1] {\n  opacity: 0;\n  transform: translateY(4px);\n}\n\n.summary-view[data-v-328e7526] {\n  display: flex;\n  flex-direction: column;\n  height: 100%;\n}\n.summary-view__filters[data-v-328e7526] {\n  flex: 1;\n  overflow-y: auto;\n  padding-right: 4px;\n  margin-right: -4px;\n  /* Allow flex item to shrink below content size */\n  min-height: 0;\n}\n\n.lora-pool-modal-backdrop[data-v-fce76ca8] {\n  position: fixed;\n  inset: 0;\n  z-index: 10000;\n  background: rgba(0, 0, 0, 0.6);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  backdrop-filter: blur(2px);\n}\n.lora-pool-modal[data-v-fce76ca8] {\n  background: var(--comfy-menu-bg, #1a1a1a);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 8px;\n  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);\n  max-width: 400px;\n  width: 90%;\n  max-height: 70vh;\n  display: flex;\n  flex-direction: column;\n}\n.lora-pool-modal__header[data-v-fce76ca8] {\n  display: flex;\n  align-items: flex-start;\n  justify-content: space-between;\n  padding: 16px;\n  border-bottom: 1px solid var(--border-color, #444);\n}\n.lora-pool-modal__title-container[data-v-fce76ca8] {\n  flex: 1;\n}\n.lora-pool-modal__title[data-v-fce76ca8] {\n  font-size: 16px;\n  font-weight: 600;\n  color: var(--fg-color, #fff);\n  margin: 0;\n}\n.lora-pool-modal__subtitle[data-v-fce76ca8] {\n  font-size: 12px;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n  margin: 4px 0 0 0;\n}\n.lora-pool-modal__close[data-v-fce76ca8] {\n  width: 28px;\n  height: 28px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: transparent;\n  border: none;\n  color: var(--fg-color, #fff);\n  font-size: 22px;\n  cursor: pointer;\n  opacity: 0.7;\n  border-radius: 4px;\n  line-height: 1;\n  padding: 0;\n  margin: -4px -4px 0 0;\n}\n.lora-pool-modal__close[data-v-fce76ca8]:hover {\n  opacity: 1;\n  background: var(--comfy-input-bg, #333);\n}\n.lora-pool-modal__search[data-v-fce76ca8] {\n  padding: 12px 16px;\n  border-bottom: 1px solid var(--border-color, #444);\n}\n.lora-pool-modal__body[data-v-fce76ca8] {\n  flex: 1;\n  overflow-y: auto;\n  padding: 12px 16px 16px;\n}\n\n/* Transitions */\n.modal-enter-active[data-v-fce76ca8],\n.modal-leave-active[data-v-fce76ca8] {\n  transition: opacity 0.2s ease;\n}\n.modal-enter-from[data-v-fce76ca8],\n.modal-leave-to[data-v-fce76ca8] {\n  opacity: 0;\n}\n.modal-enter-active .lora-pool-modal[data-v-fce76ca8],\n.modal-leave-active .lora-pool-modal[data-v-fce76ca8] {\n  transition: transform 0.2s ease;\n}\n.modal-enter-from .lora-pool-modal[data-v-fce76ca8],\n.modal-leave-to .lora-pool-modal[data-v-fce76ca8] {\n  transform: scale(0.95);\n}\n\n.search-container[data-v-7d08882c] {\n  position: relative;\n}\n.search-icon[data-v-7d08882c] {\n  position: absolute;\n  left: 10px;\n  top: 50%;\n  transform: translateY(-50%);\n  width: 14px;\n  height: 14px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n}\n.search-input[data-v-7d08882c] {\n  width: 100%;\n  padding: 8px 12px 8px 32px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 6px;\n  color: var(--fg-color, #fff);\n  font-size: 13px;\n  outline: none;\n}\n.search-input[data-v-7d08882c]:focus {\n  border-color: var(--fg-color, #fff);\n}\n.search-input[data-v-7d08882c]::placeholder {\n  color: var(--fg-color, #fff);\n  opacity: 0.4;\n}\n.model-list[data-v-7d08882c] {\n  display: flex;\n  flex-direction: column;\n  gap: 2px;\n}\n.model-item[data-v-7d08882c] {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  padding: 10px 8px;\n  border-radius: 4px;\n  cursor: pointer;\n  transition: background 0.15s;\n}\n.model-item[data-v-7d08882c]:hover {\n  background: var(--comfy-input-bg, #333);\n}\n.model-checkbox[data-v-7d08882c] {\n  position: absolute;\n  opacity: 0;\n  pointer-events: none;\n}\n.model-checkbox-visual[data-v-7d08882c] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 18px;\n  height: 18px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #555);\n  border-radius: 4px;\n  flex-shrink: 0;\n  transition: all 0.15s;\n}\n.model-item:hover .model-checkbox-visual[data-v-7d08882c] {\n  border-color: var(--fg-color, #fff);\n}\n.model-checkbox:checked + .model-checkbox-visual[data-v-7d08882c] {\n  background: var(--fg-color, #fff);\n  border-color: var(--fg-color, #fff);\n}\n.check-icon[data-v-7d08882c] {\n  width: 12px;\n  height: 12px;\n  color: var(--comfy-menu-bg, #1a1a1a);\n}\n.model-name[data-v-7d08882c] {\n  flex: 1;\n  font-size: 13px;\n  color: var(--fg-color, #fff);\n}\n.model-count[data-v-7d08882c] {\n  font-size: 12px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n}\n.no-results[data-v-7d08882c] {\n  padding: 20px;\n  text-align: center;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  font-size: 13px;\n}\n\n.search-container[data-v-4b3cfd31] {\n  position: relative;\n}\n.search-icon[data-v-4b3cfd31] {\n  position: absolute;\n  left: 10px;\n  top: 50%;\n  transform: translateY(-50%);\n  width: 14px;\n  height: 14px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n}\n.search-input[data-v-4b3cfd31] {\n  width: 100%;\n  padding: 8px 12px 8px 32px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 6px;\n  color: var(--fg-color, #fff);\n  font-size: 13px;\n  outline: none;\n}\n.search-input[data-v-4b3cfd31]:focus {\n  border-color: var(--fg-color, #fff);\n}\n.search-input[data-v-4b3cfd31]::placeholder {\n  color: var(--fg-color, #fff);\n  opacity: 0.4;\n}\n.tags-container[data-v-4b3cfd31] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n.tag-chip[data-v-4b3cfd31] {\n  padding: 6px 12px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #555);\n  border-radius: 16px;\n  color: var(--fg-color, #fff);\n  font-size: 12px;\n  cursor: pointer;\n  transition: all 0.15s;\n}\n.tag-chip[data-v-4b3cfd31]:hover {\n  border-color: var(--fg-color, #fff);\n}\n\n/* Include variant - blue when selected */\n.tags-modal--include .tag-chip--selected[data-v-4b3cfd31],\n.tag-chip--selected[data-v-4b3cfd31] {\n  background: rgba(66, 153, 225, 0.2);\n  border-color: rgba(66, 153, 225, 0.6);\n  color: #4299e1;\n}\n\n/* Exclude variant - red when selected */\n.tags-modal--exclude .tag-chip--selected[data-v-4b3cfd31] {\n  background: rgba(239, 68, 68, 0.2);\n  border-color: rgba(239, 68, 68, 0.6);\n  color: #ef4444;\n}\n.no-results[data-v-4b3cfd31] {\n  width: 100%;\n  padding: 20px;\n  text-align: center;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  font-size: 13px;\n}\n\n.tree-node__item[data-v-90187dd4] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 6px 8px;\n  border-radius: 4px;\n  cursor: pointer;\n  transition: background 0.15s;\n}\n.tree-node__item[data-v-90187dd4]:hover {\n  background: var(--comfy-input-bg, #333);\n}\n.tree-node__toggle[data-v-90187dd4] {\n  width: 16px;\n  height: 16px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: transparent;\n  border: none;\n  color: var(--fg-color, #fff);\n  cursor: pointer;\n  opacity: 0.5;\n  padding: 0;\n  flex-shrink: 0;\n}\n.tree-node__toggle[data-v-90187dd4]:hover {\n  opacity: 1;\n}\n.tree-node__toggle-icon[data-v-90187dd4] {\n  width: 10px;\n  height: 10px;\n  transition: transform 0.15s;\n}\n.tree-node__toggle-icon--expanded[data-v-90187dd4] {\n  transform: rotate(90deg);\n}\n.tree-node__toggle-spacer[data-v-90187dd4] {\n  width: 16px;\n  flex-shrink: 0;\n}\n.tree-node__checkbox-label[data-v-90187dd4] {\n  display: flex;\n  align-items: center;\n  cursor: pointer;\n}\n.tree-node__checkbox[data-v-90187dd4] {\n  position: absolute;\n  opacity: 0;\n  pointer-events: none;\n}\n.tree-node__checkbox-visual[data-v-90187dd4] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 16px;\n  height: 16px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #555);\n  border-radius: 3px;\n  flex-shrink: 0;\n  transition: all 0.15s;\n}\n.tree-node__item:hover .tree-node__checkbox-visual[data-v-90187dd4] {\n  border-color: var(--fg-color, #fff);\n}\n.tree-node__checkbox:checked + .tree-node__checkbox-visual--include[data-v-90187dd4] {\n  background: #4299e1;\n  border-color: #4299e1;\n}\n.tree-node__checkbox:checked + .tree-node__checkbox-visual--exclude[data-v-90187dd4] {\n  background: #ef4444;\n  border-color: #ef4444;\n}\n.tree-node__check-icon[data-v-90187dd4] {\n  width: 10px;\n  height: 10px;\n  color: #fff;\n}\n.tree-node__folder-icon[data-v-90187dd4] {\n  width: 14px;\n  height: 14px;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n  flex-shrink: 0;\n}\n.tree-node__label[data-v-90187dd4] {\n  flex: 1;\n  font-size: 13px;\n  color: var(--fg-color, #fff);\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.tree-node__children[data-v-90187dd4] {\n  /* Children already indented via padding */\n}\n\n.search-container[data-v-046dcbf4] {\n  position: relative;\n}\n.search-icon[data-v-046dcbf4] {\n  position: absolute;\n  left: 10px;\n  top: 50%;\n  transform: translateY(-50%);\n  width: 14px;\n  height: 14px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n}\n.search-input[data-v-046dcbf4] {\n  width: 100%;\n  padding: 8px 12px 8px 32px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 6px;\n  color: var(--fg-color, #fff);\n  font-size: 13px;\n  outline: none;\n}\n.search-input[data-v-046dcbf4]:focus {\n  border-color: var(--fg-color, #fff);\n}\n.search-input[data-v-046dcbf4]::placeholder {\n  color: var(--fg-color, #fff);\n  opacity: 0.4;\n}\n.folder-tree[data-v-046dcbf4] {\n  display: flex;\n  flex-direction: column;\n}\n.no-results[data-v-046dcbf4] {\n  padding: 20px;\n  text-align: center;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  font-size: 13px;\n}\n\n.lora-pool-widget[data-v-ae5c87ce] {\n  padding: 12px;\n  background: rgba(40, 44, 52, 0.6);\n  border-radius: 4px;\n  height: 100%;\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n  box-sizing: border-box;\n}"));
       document.head.appendChild(elementStyle);
     }
   } catch (e) {
@@ -3123,7 +3123,39 @@ const onRenderTracked = createHook("rtc");
 function onErrorCaptured(hook, target = currentInstance) {
   injectHook("ec", hook, target);
 }
+const COMPONENTS = "components";
+function resolveComponent(name, maybeSelfReference) {
+  return resolveAsset(COMPONENTS, name, true, maybeSelfReference) || name;
+}
 const NULL_DYNAMIC_COMPONENT = /* @__PURE__ */ Symbol.for("v-ndc");
+function resolveAsset(type, name, warnMissing = true, maybeSelfReference = false) {
+  const instance = currentRenderingInstance || currentInstance;
+  if (instance) {
+    const Component = instance.type;
+    {
+      const selfName = getComponentName(
+        Component,
+        false
+      );
+      if (selfName && (selfName === name || selfName === camelize(name) || selfName === capitalize(camelize(name)))) {
+        return Component;
+      }
+    }
+    const res = (
+      // local registration
+      // check instance[type] first which is resolved for options API
+      resolve(instance[type] || Component[type], name) || // global registration
+      resolve(instance.appContext[type], name)
+    );
+    if (!res && maybeSelfReference) {
+      return Component;
+    }
+    return res;
+  }
+}
+function resolve(registry, name) {
+  return registry && (registry[name] || registry[camelize(name)] || registry[capitalize(camelize(name))]);
+}
 function renderList(source, renderItem, cache, index) {
   let ret;
   const cached = cache;
@@ -6674,13 +6706,13 @@ function resolveTransitionProps(rawProps) {
   const makeEnterHook = (isAppear) => {
     return (el, done) => {
       const hook = isAppear ? onAppear : onEnter;
-      const resolve = () => finishEnter(el, isAppear, done);
-      callHook(hook, [el, resolve]);
+      const resolve2 = () => finishEnter(el, isAppear, done);
+      callHook(hook, [el, resolve2]);
       nextFrame(() => {
         removeTransitionClass(el, isAppear ? appearFromClass : enterFromClass);
         addTransitionClass(el, isAppear ? appearToClass : enterToClass);
         if (!hasExplicitCallback(hook)) {
-          whenTransitionEnds(el, type, enterDuration, resolve);
+          whenTransitionEnds(el, type, enterDuration, resolve2);
         }
       });
     };
@@ -6700,7 +6732,7 @@ function resolveTransitionProps(rawProps) {
     onAppear: makeEnterHook(true),
     onLeave(el, done) {
       el._isLeaving = true;
-      const resolve = () => finishLeave(el, done);
+      const resolve2 = () => finishLeave(el, done);
       addTransitionClass(el, leaveFromClass);
       if (!el._enterCancelled) {
         forceReflow(el);
@@ -6716,10 +6748,10 @@ function resolveTransitionProps(rawProps) {
         removeTransitionClass(el, leaveFromClass);
         addTransitionClass(el, leaveToClass);
         if (!hasExplicitCallback(onLeave)) {
-          whenTransitionEnds(el, type, leaveDuration, resolve);
+          whenTransitionEnds(el, type, leaveDuration, resolve2);
         }
       });
-      callHook(onLeave, [el, resolve]);
+      callHook(onLeave, [el, resolve2]);
     },
     onEnterCancelled(el) {
       finishEnter(el, false, void 0, true);
@@ -6769,11 +6801,11 @@ function nextFrame(cb) {
   });
 }
 let endId = 0;
-function whenTransitionEnds(el, expectedType, explicitTimeout, resolve) {
+function whenTransitionEnds(el, expectedType, explicitTimeout, resolve2) {
   const id = el._endId = ++endId;
   const resolveIfNotStale = () => {
     if (id === el._endId) {
-      resolve();
+      resolve2();
     }
   };
   if (explicitTimeout != null) {
@@ -6781,7 +6813,7 @@ function whenTransitionEnds(el, expectedType, explicitTimeout, resolve) {
   }
   const { type, timeout, propCount } = getTransitionInfo(el, expectedType);
   if (!type) {
-    return resolve();
+    return resolve2();
   }
   const endEvent = type + "end";
   let ended = 0;
@@ -8370,12 +8402,12 @@ var PrimeVue = {
     setup(app2, configOptions);
   }
 };
-const _hoisted_1$a = { class: "filter-chip__text" };
-const _hoisted_2$9 = {
+const _hoisted_1$c = { class: "filter-chip__text" };
+const _hoisted_2$b = {
   key: 0,
   class: "filter-chip__count"
 };
-const _sfc_main$b = /* @__PURE__ */ defineComponent({
+const _sfc_main$d = /* @__PURE__ */ defineComponent({
   __name: "FilterChip",
   props: {
     label: {},
@@ -8393,8 +8425,8 @@ const _sfc_main$b = /* @__PURE__ */ defineComponent({
       return openBlock(), createElementBlock("span", {
         class: normalizeClass(["filter-chip", variantClass.value])
       }, [
-        createBaseVNode("span", _hoisted_1$a, toDisplayString(__props.label), 1),
-        __props.count !== void 0 ? (openBlock(), createElementBlock("span", _hoisted_2$9, "(" + toDisplayString(__props.count) + ")", 1)) : createCommentVNode("", true),
+        createBaseVNode("span", _hoisted_1$c, toDisplayString(__props.label), 1),
+        __props.count !== void 0 ? (openBlock(), createElementBlock("span", _hoisted_2$b, "(" + toDisplayString(__props.count) + ")", 1)) : createCommentVNode("", true),
         __props.removable ? (openBlock(), createElementBlock("button", {
           key: 1,
           class: "filter-chip__remove",
@@ -8412,8 +8444,8 @@ const _export_sfc = (sfc, props) => {
   }
   return target;
 };
-const FilterChip = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["__scopeId", "data-v-7e36267d"]]);
-const _sfc_main$a = /* @__PURE__ */ defineComponent({
+const FilterChip = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-7e36267d"]]);
+const _sfc_main$c = /* @__PURE__ */ defineComponent({
   __name: "EditButton",
   emits: ["click"],
   setup(__props) {
@@ -8435,10 +8467,10 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const EditButton = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-8da8aa4b"]]);
-const _hoisted_1$9 = { class: "section" };
-const _hoisted_2$8 = { class: "section__header" };
-const _hoisted_3$8 = { class: "section__content" };
+const EditButton = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-8da8aa4b"]]);
+const _hoisted_1$b = { class: "section" };
+const _hoisted_2$a = { class: "section__header" };
+const _hoisted_3$9 = { class: "section__content" };
 const _hoisted_4$8 = {
   key: 0,
   class: "section__placeholder"
@@ -8447,7 +8479,7 @@ const _hoisted_5$7 = {
   key: 1,
   class: "section__chips"
 };
-const _sfc_main$9 = /* @__PURE__ */ defineComponent({
+const _sfc_main$b = /* @__PURE__ */ defineComponent({
   __name: "BaseModelSection",
   props: {
     selected: {},
@@ -8461,14 +8493,14 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
       return model == null ? void 0 : model.count;
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$9, [
-        createBaseVNode("div", _hoisted_2$8, [
+      return openBlock(), createElementBlock("div", _hoisted_1$b, [
+        createBaseVNode("div", _hoisted_2$a, [
           _cache[1] || (_cache[1] = createBaseVNode("span", { class: "section__title" }, "BASE MODEL", -1)),
           createVNode(EditButton, {
             onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("edit"))
           })
         ]),
-        createBaseVNode("div", _hoisted_3$8, [
+        createBaseVNode("div", _hoisted_3$9, [
           __props.selected.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$8, " All models ")) : (openBlock(), createElementBlock("div", _hoisted_5$7, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(__props.selected, (name) => {
               return openBlock(), createBlock(FilterChip, {
@@ -8484,32 +8516,32 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const BaseModelSection = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-12f059e2"]]);
-const _hoisted_1$8 = { class: "section" };
-const _hoisted_2$7 = { class: "section__columns" };
-const _hoisted_3$7 = { class: "section__column" };
+const BaseModelSection = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["__scopeId", "data-v-12f059e2"]]);
+const _hoisted_1$a = { class: "section" };
+const _hoisted_2$9 = { class: "section__columns" };
+const _hoisted_3$8 = { class: "section__column" };
 const _hoisted_4$7 = { class: "section__column-header" };
 const _hoisted_5$6 = { class: "section__column-content" };
-const _hoisted_6$5 = {
+const _hoisted_6$6 = {
   key: 0,
   class: "section__empty"
 };
-const _hoisted_7$3 = {
+const _hoisted_7$4 = {
   key: 1,
   class: "section__chips"
 };
 const _hoisted_8$3 = { class: "section__column" };
-const _hoisted_9$1 = { class: "section__column-header" };
-const _hoisted_10$1 = { class: "section__column-content" };
+const _hoisted_9$2 = { class: "section__column-header" };
+const _hoisted_10$2 = { class: "section__column-content" };
 const _hoisted_11$1 = {
   key: 0,
   class: "section__empty"
 };
-const _hoisted_12 = {
+const _hoisted_12$1 = {
   key: 1,
   class: "section__chips"
 };
-const _sfc_main$8 = /* @__PURE__ */ defineComponent({
+const _sfc_main$a = /* @__PURE__ */ defineComponent({
   __name: "TagsSection",
   props: {
     includeTags: {},
@@ -8518,12 +8550,12 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
   emits: ["edit-include", "edit-exclude"],
   setup(__props) {
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$8, [
+      return openBlock(), createElementBlock("div", _hoisted_1$a, [
         _cache[4] || (_cache[4] = createBaseVNode("div", { class: "section__header" }, [
           createBaseVNode("span", { class: "section__title" }, "TAGS")
         ], -1)),
-        createBaseVNode("div", _hoisted_2$7, [
-          createBaseVNode("div", _hoisted_3$7, [
+        createBaseVNode("div", _hoisted_2$9, [
+          createBaseVNode("div", _hoisted_3$8, [
             createBaseVNode("div", _hoisted_4$7, [
               _cache[2] || (_cache[2] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
               createVNode(EditButton, {
@@ -8531,7 +8563,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
               })
             ]),
             createBaseVNode("div", _hoisted_5$6, [
-              __props.includeTags.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_6$5, " None ")) : (openBlock(), createElementBlock("div", _hoisted_7$3, [
+              __props.includeTags.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_6$6, " None ")) : (openBlock(), createElementBlock("div", _hoisted_7$4, [
                 (openBlock(true), createElementBlock(Fragment, null, renderList(__props.includeTags, (tag) => {
                   return openBlock(), createBlock(FilterChip, {
                     key: tag,
@@ -8543,14 +8575,14 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
             ])
           ]),
           createBaseVNode("div", _hoisted_8$3, [
-            createBaseVNode("div", _hoisted_9$1, [
+            createBaseVNode("div", _hoisted_9$2, [
               _cache[3] || (_cache[3] = createBaseVNode("span", { class: "section__column-title section__column-title--exclude" }, "EXCLUDE", -1)),
               createVNode(EditButton, {
                 onClick: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("edit-exclude"))
               })
             ]),
-            createBaseVNode("div", _hoisted_10$1, [
-              __props.excludeTags.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_11$1, " None ")) : (openBlock(), createElementBlock("div", _hoisted_12, [
+            createBaseVNode("div", _hoisted_10$2, [
+              __props.excludeTags.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_11$1, " None ")) : (openBlock(), createElementBlock("div", _hoisted_12$1, [
                 (openBlock(true), createElementBlock(Fragment, null, renderList(__props.excludeTags, (tag) => {
                   return openBlock(), createBlock(FilterChip, {
                     key: tag,
@@ -8566,140 +8598,130 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const TagsSection = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-b869b780"]]);
-const _hoisted_1$7 = { class: "section" };
-const _hoisted_2$6 = { class: "section__columns" };
-const _hoisted_3$6 = { class: "section__column" };
-const _hoisted_4$6 = { class: "section__input-row" };
-const _hoisted_5$5 = {
+const TagsSection = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-b869b780"]]);
+const _hoisted_1$9 = { class: "section" };
+const _hoisted_2$8 = { class: "section__columns" };
+const _hoisted_3$7 = { class: "section__column" };
+const _hoisted_4$6 = { class: "section__column-header" };
+const _hoisted_5$5 = { class: "section__content" };
+const _hoisted_6$5 = {
   key: 0,
   class: "section__paths"
 };
-const _hoisted_6$4 = { class: "section__column" };
-const _hoisted_7$2 = { class: "section__input-row" };
-const _hoisted_8$2 = {
+const _hoisted_7$3 = {
+  key: 1,
+  class: "section__empty"
+};
+const _hoisted_8$2 = { class: "section__column" };
+const _hoisted_9$1 = { class: "section__column-header" };
+const _hoisted_10$1 = { class: "section__content" };
+const _hoisted_11 = {
   key: 0,
   class: "section__paths"
 };
-const _sfc_main$7 = /* @__PURE__ */ defineComponent({
+const _hoisted_12 = {
+  key: 1,
+  class: "section__empty"
+};
+const _sfc_main$9 = /* @__PURE__ */ defineComponent({
   __name: "FoldersSection",
   props: {
     includeFolders: {},
     excludeFolders: {}
   },
-  emits: ["update:includeFolders", "update:excludeFolders"],
+  emits: ["update:includeFolders", "update:excludeFolders", "edit-include", "edit-exclude"],
   setup(__props, { emit: __emit }) {
     const props = __props;
     const emit2 = __emit;
-    const includeInput = ref("");
-    const excludeInput = ref("");
     const truncatePath = (path) => {
       if (path.length <= 20) return path;
       return "..." + path.slice(-17);
     };
-    const addInclude = () => {
-      const path = includeInput.value.trim();
-      if (path && !props.includeFolders.includes(path)) {
-        emit2("update:includeFolders", [...props.includeFolders, path]);
-        includeInput.value = "";
-      }
-    };
     const removeInclude = (path) => {
       emit2("update:includeFolders", props.includeFolders.filter((p2) => p2 !== path));
-    };
-    const addExclude = () => {
-      const path = excludeInput.value.trim();
-      if (path && !props.excludeFolders.includes(path)) {
-        emit2("update:excludeFolders", [...props.excludeFolders, path]);
-        excludeInput.value = "";
-      }
     };
     const removeExclude = (path) => {
       emit2("update:excludeFolders", props.excludeFolders.filter((p2) => p2 !== path));
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$7, [
-        _cache[4] || (_cache[4] = createBaseVNode("div", { class: "section__header" }, [
+      return openBlock(), createElementBlock("div", _hoisted_1$9, [
+        _cache[6] || (_cache[6] = createBaseVNode("div", { class: "section__header" }, [
           createBaseVNode("span", { class: "section__title" }, "FOLDERS")
         ], -1)),
-        createBaseVNode("div", _hoisted_2$6, [
-          createBaseVNode("div", _hoisted_3$6, [
-            _cache[2] || (_cache[2] = createBaseVNode("div", { class: "section__column-header" }, [
-              createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE")
-            ], -1)),
+        createBaseVNode("div", _hoisted_2$8, [
+          createBaseVNode("div", _hoisted_3$7, [
             createBaseVNode("div", _hoisted_4$6, [
-              withDirectives(createBaseVNode("input", {
-                "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => includeInput.value = $event),
-                type: "text",
-                class: "section__input",
-                placeholder: "Path...",
-                onKeydown: withKeys(addInclude, ["enter"])
-              }, null, 544), [
-                [vModelText, includeInput.value]
-              ]),
+              _cache[3] || (_cache[3] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
               createBaseVNode("button", {
                 type: "button",
-                class: "section__add-btn section__add-btn--include",
-                onClick: addInclude
-              }, " + ")
+                class: "section__edit-btn section__edit-btn--include",
+                onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("edit-include"))
+              }, [..._cache[2] || (_cache[2] = [
+                createBaseVNode("svg", {
+                  viewBox: "0 0 16 16",
+                  fill: "currentColor"
+                }, [
+                  createBaseVNode("path", { d: "M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z" })
+                ], -1)
+              ])])
             ]),
-            __props.includeFolders.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_5$5, [
-              (openBlock(true), createElementBlock(Fragment, null, renderList(__props.includeFolders, (path) => {
-                return openBlock(), createBlock(FilterChip, {
-                  key: path,
-                  label: truncatePath(path),
-                  variant: "path",
-                  removable: "",
-                  onRemove: ($event) => removeInclude(path)
-                }, null, 8, ["label", "onRemove"]);
-              }), 128))
-            ])) : createCommentVNode("", true)
+            createBaseVNode("div", _hoisted_5$5, [
+              __props.includeFolders.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_6$5, [
+                (openBlock(true), createElementBlock(Fragment, null, renderList(__props.includeFolders, (path) => {
+                  return openBlock(), createBlock(FilterChip, {
+                    key: path,
+                    label: truncatePath(path),
+                    variant: "path",
+                    removable: "",
+                    onRemove: ($event) => removeInclude(path)
+                  }, null, 8, ["label", "onRemove"]);
+                }), 128))
+              ])) : (openBlock(), createElementBlock("div", _hoisted_7$3, " No folders selected "))
+            ])
           ]),
-          createBaseVNode("div", _hoisted_6$4, [
-            _cache[3] || (_cache[3] = createBaseVNode("div", { class: "section__column-header" }, [
-              createBaseVNode("span", { class: "section__column-title section__column-title--exclude" }, "EXCLUDE")
-            ], -1)),
-            createBaseVNode("div", _hoisted_7$2, [
-              withDirectives(createBaseVNode("input", {
-                "onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => excludeInput.value = $event),
-                type: "text",
-                class: "section__input",
-                placeholder: "Path...",
-                onKeydown: withKeys(addExclude, ["enter"])
-              }, null, 544), [
-                [vModelText, excludeInput.value]
-              ]),
+          createBaseVNode("div", _hoisted_8$2, [
+            createBaseVNode("div", _hoisted_9$1, [
+              _cache[5] || (_cache[5] = createBaseVNode("span", { class: "section__column-title section__column-title--exclude" }, "EXCLUDE", -1)),
               createBaseVNode("button", {
                 type: "button",
-                class: "section__add-btn section__add-btn--exclude",
-                onClick: addExclude
-              }, " + ")
+                class: "section__edit-btn section__edit-btn--exclude",
+                onClick: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("edit-exclude"))
+              }, [..._cache[4] || (_cache[4] = [
+                createBaseVNode("svg", {
+                  viewBox: "0 0 16 16",
+                  fill: "currentColor"
+                }, [
+                  createBaseVNode("path", { d: "M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z" })
+                ], -1)
+              ])])
             ]),
-            __props.excludeFolders.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_8$2, [
-              (openBlock(true), createElementBlock(Fragment, null, renderList(__props.excludeFolders, (path) => {
-                return openBlock(), createBlock(FilterChip, {
-                  key: path,
-                  label: truncatePath(path),
-                  variant: "path",
-                  removable: "",
-                  onRemove: ($event) => removeExclude(path)
-                }, null, 8, ["label", "onRemove"]);
-              }), 128))
-            ])) : createCommentVNode("", true)
+            createBaseVNode("div", _hoisted_10$1, [
+              __props.excludeFolders.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_11, [
+                (openBlock(true), createElementBlock(Fragment, null, renderList(__props.excludeFolders, (path) => {
+                  return openBlock(), createBlock(FilterChip, {
+                    key: path,
+                    label: truncatePath(path),
+                    variant: "path",
+                    removable: "",
+                    onRemove: ($event) => removeExclude(path)
+                  }, null, 8, ["label", "onRemove"]);
+                }), 128))
+              ])) : (openBlock(), createElementBlock("div", _hoisted_12, " No folders selected "))
+            ])
           ])
         ])
       ]);
     };
   }
 });
-const FoldersSection = /* @__PURE__ */ _export_sfc(_sfc_main$7, [["__scopeId", "data-v-9495b57f"]]);
-const _hoisted_1$6 = { class: "section" };
-const _hoisted_2$5 = { class: "section__toggles" };
-const _hoisted_3$5 = { class: "toggle-item" };
+const FoldersSection = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-af9caf84"]]);
+const _hoisted_1$8 = { class: "section" };
+const _hoisted_2$7 = { class: "section__toggles" };
+const _hoisted_3$6 = { class: "toggle-item" };
 const _hoisted_4$5 = ["aria-checked"];
 const _hoisted_5$4 = { class: "toggle-item" };
-const _hoisted_6$3 = ["aria-checked"];
-const _sfc_main$6 = /* @__PURE__ */ defineComponent({
+const _hoisted_6$4 = ["aria-checked"];
+const _sfc_main$8 = /* @__PURE__ */ defineComponent({
   __name: "LicenseSection",
   props: {
     noCreditRequired: { type: Boolean },
@@ -8708,12 +8730,12 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
   emits: ["update:noCreditRequired", "update:allowSelling"],
   setup(__props) {
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$6, [
+      return openBlock(), createElementBlock("div", _hoisted_1$8, [
         _cache[6] || (_cache[6] = createBaseVNode("div", { class: "section__header" }, [
           createBaseVNode("span", { class: "section__title" }, "LICENSE")
         ], -1)),
-        createBaseVNode("div", _hoisted_2$5, [
-          createBaseVNode("label", _hoisted_3$5, [
+        createBaseVNode("div", _hoisted_2$7, [
+          createBaseVNode("label", _hoisted_3$6, [
             _cache[3] || (_cache[3] = createBaseVNode("span", { class: "toggle-item__label" }, "No Credit", -1)),
             createBaseVNode("button", {
               type: "button",
@@ -8737,24 +8759,24 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
             }, [..._cache[4] || (_cache[4] = [
               createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
               createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
-            ])], 10, _hoisted_6$3)
+            ])], 10, _hoisted_6$4)
           ])
         ])
       ]);
     };
   }
 });
-const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["__scopeId", "data-v-8b49983c"]]);
-const _hoisted_1$5 = { class: "preview" };
-const _hoisted_2$4 = { class: "preview__header" };
-const _hoisted_3$4 = { class: "preview__title" };
-const _hoisted_4$4 = ["disabled"];
-const _hoisted_5$3 = {
+const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-8b49983c"]]);
+const _hoisted_1$7 = { class: "preview" };
+const _hoisted_2$6 = { class: "preview__title" };
+const _hoisted_3$5 = ["disabled"];
+const _hoisted_4$4 = {
   key: 0,
-  class: "preview__list"
+  class: "preview__tooltip"
 };
-const _hoisted_6$2 = ["src"];
-const _hoisted_7$1 = {
+const _hoisted_5$3 = { class: "preview__tooltip-content" };
+const _hoisted_6$3 = ["src"];
+const _hoisted_7$2 = {
   key: 1,
   class: "preview__thumb preview__thumb--placeholder"
 };
@@ -8764,14 +8786,10 @@ const _hoisted_9 = {
   class: "preview__more"
 };
 const _hoisted_10 = {
-  key: 1,
+  key: 0,
   class: "preview__empty"
 };
-const _hoisted_11 = {
-  key: 2,
-  class: "preview__loading"
-};
-const _sfc_main$5 = /* @__PURE__ */ defineComponent({
+const _sfc_main$7 = /* @__PURE__ */ defineComponent({
   __name: "LoraPoolPreview",
   props: {
     items: {},
@@ -8780,20 +8798,25 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
   },
   emits: ["refresh"],
   setup(__props) {
+    const showTooltip = ref(false);
     const onImageError = (event) => {
       const img = event.target;
       img.style.display = "none";
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$5, [
-        createBaseVNode("div", _hoisted_2$4, [
-          createBaseVNode("span", _hoisted_3$4, "Matching LoRAs: " + toDisplayString(__props.matchCount), 1),
+      return openBlock(), createElementBlock("div", _hoisted_1$7, [
+        createBaseVNode("div", {
+          class: "preview__header",
+          onMouseenter: _cache[1] || (_cache[1] = ($event) => showTooltip.value = true),
+          onMouseleave: _cache[2] || (_cache[2] = ($event) => showTooltip.value = false)
+        }, [
+          createBaseVNode("span", _hoisted_2$6, "Matching LoRAs: " + toDisplayString(__props.matchCount.toLocaleString()), 1),
           createBaseVNode("button", {
             type: "button",
             class: normalizeClass(["preview__refresh", { "preview__refresh--loading": __props.isLoading }]),
-            onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("refresh")),
+            onClick: _cache[0] || (_cache[0] = withModifiers(($event) => _ctx.$emit("refresh"), ["stop"])),
             disabled: __props.isLoading
-          }, [..._cache[1] || (_cache[1] = [
+          }, [..._cache[3] || (_cache[3] = [
             createBaseVNode("svg", {
               class: "preview__refresh-icon",
               viewBox: "0 0 16 16",
@@ -8805,44 +8828,49 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
                 d: "M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"
               })
             ], -1)
-          ])], 10, _hoisted_4$4)
-        ]),
-        __props.items.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_5$3, [
-          (openBlock(true), createElementBlock(Fragment, null, renderList(__props.items.slice(0, 5), (item) => {
-            return openBlock(), createElementBlock("div", {
-              key: item.file_path,
-              class: "preview__item"
-            }, [
-              item.preview_url ? (openBlock(), createElementBlock("img", {
-                key: 0,
-                src: item.preview_url,
-                class: "preview__thumb",
-                onError: onImageError
-              }, null, 40, _hoisted_6$2)) : (openBlock(), createElementBlock("div", _hoisted_7$1, [..._cache[2] || (_cache[2] = [
-                createBaseVNode("svg", {
-                  viewBox: "0 0 16 16",
-                  fill: "currentColor"
-                }, [
-                  createBaseVNode("path", { d: "M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" }),
-                  createBaseVNode("path", { d: "M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" })
-                ], -1)
-              ])])),
-              createBaseVNode("span", _hoisted_8$1, toDisplayString(item.model_name || item.file_name), 1)
-            ]);
-          }), 128)),
-          __props.matchCount > 5 ? (openBlock(), createElementBlock("div", _hoisted_9, " +" + toDisplayString(__props.matchCount - 5) + " more ", 1)) : createCommentVNode("", true)
-        ])) : !__props.isLoading ? (openBlock(), createElementBlock("div", _hoisted_10, " No matching LoRAs ")) : (openBlock(), createElementBlock("div", _hoisted_11, " Loading... "))
+          ])], 10, _hoisted_3$5)
+        ], 32),
+        createVNode(Transition, { name: "tooltip" }, {
+          default: withCtx(() => [
+            showTooltip.value && __props.items.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_4$4, [
+              createBaseVNode("div", _hoisted_5$3, [
+                (openBlock(true), createElementBlock(Fragment, null, renderList(__props.items.slice(0, 5), (item) => {
+                  return openBlock(), createElementBlock("div", {
+                    key: item.file_path,
+                    class: "preview__item"
+                  }, [
+                    item.preview_url ? (openBlock(), createElementBlock("img", {
+                      key: 0,
+                      src: item.preview_url,
+                      class: "preview__thumb",
+                      onError: onImageError
+                    }, null, 40, _hoisted_6$3)) : (openBlock(), createElementBlock("div", _hoisted_7$2, [..._cache[4] || (_cache[4] = [
+                      createBaseVNode("svg", {
+                        viewBox: "0 0 16 16",
+                        fill: "currentColor"
+                      }, [
+                        createBaseVNode("path", { d: "M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" }),
+                        createBaseVNode("path", { d: "M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" })
+                      ], -1)
+                    ])])),
+                    createBaseVNode("span", _hoisted_8$1, toDisplayString(item.model_name || item.file_name), 1)
+                  ]);
+                }), 128)),
+                __props.matchCount > 5 ? (openBlock(), createElementBlock("div", _hoisted_9, " +" + toDisplayString((__props.matchCount - 5).toLocaleString()) + " more ", 1)) : createCommentVNode("", true)
+              ])
+            ])) : createCommentVNode("", true)
+          ]),
+          _: 1
+        }),
+        __props.items.length === 0 && !__props.isLoading ? (openBlock(), createElementBlock("div", _hoisted_10, " No matching LoRAs ")) : createCommentVNode("", true)
       ]);
     };
   }
 });
-const LoraPoolPreview = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-767d024c"]]);
-const _hoisted_1$4 = { class: "summary-view" };
-const _hoisted_2$3 = { class: "summary-view__header" };
-const _hoisted_3$3 = { class: "summary-view__badge" };
-const _hoisted_4$3 = { class: "summary-view__count" };
-const _hoisted_5$2 = { class: "summary-view__filters" };
-const _sfc_main$4 = /* @__PURE__ */ defineComponent({
+const LoraPoolPreview = /* @__PURE__ */ _export_sfc(_sfc_main$7, [["__scopeId", "data-v-6a4b50a1"]]);
+const _hoisted_1$6 = { class: "summary-view" };
+const _hoisted_2$5 = { class: "summary-view__filters" };
+const _sfc_main$6 = /* @__PURE__ */ defineComponent({
   __name: "LoraPoolSummaryView",
   props: {
     selectedBaseModels: {},
@@ -8860,20 +8888,8 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
   emits: ["open-modal", "update:includeFolders", "update:excludeFolders", "update:noCreditRequired", "update:allowSelling", "refresh"],
   setup(__props) {
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$4, [
-        createBaseVNode("div", _hoisted_2$3, [
-          createBaseVNode("div", _hoisted_3$3, [
-            _cache[8] || (_cache[8] = createBaseVNode("svg", {
-              class: "summary-view__badge-icon",
-              viewBox: "0 0 16 16",
-              fill: "currentColor"
-            }, [
-              createBaseVNode("path", { d: "M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5v-2z" })
-            ], -1)),
-            createBaseVNode("span", _hoisted_4$3, toDisplayString(__props.matchCount.toLocaleString()), 1)
-          ])
-        ]),
-        createBaseVNode("div", _hoisted_5$2, [
+      return openBlock(), createElementBlock("div", _hoisted_1$6, [
+        createBaseVNode("div", _hoisted_2$5, [
           createVNode(BaseModelSection, {
             selected: __props.selectedBaseModels,
             models: __props.availableBaseModels,
@@ -8889,39 +8905,41 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
             "include-folders": __props.includeFolders,
             "exclude-folders": __props.excludeFolders,
             "onUpdate:includeFolders": _cache[3] || (_cache[3] = ($event) => _ctx.$emit("update:includeFolders", $event)),
-            "onUpdate:excludeFolders": _cache[4] || (_cache[4] = ($event) => _ctx.$emit("update:excludeFolders", $event))
+            "onUpdate:excludeFolders": _cache[4] || (_cache[4] = ($event) => _ctx.$emit("update:excludeFolders", $event)),
+            onEditInclude: _cache[5] || (_cache[5] = ($event) => _ctx.$emit("open-modal", "includeFolders")),
+            onEditExclude: _cache[6] || (_cache[6] = ($event) => _ctx.$emit("open-modal", "excludeFolders"))
           }, null, 8, ["include-folders", "exclude-folders"]),
           createVNode(LicenseSection, {
             "no-credit-required": __props.noCreditRequired,
             "allow-selling": __props.allowSelling,
-            "onUpdate:noCreditRequired": _cache[5] || (_cache[5] = ($event) => _ctx.$emit("update:noCreditRequired", $event)),
-            "onUpdate:allowSelling": _cache[6] || (_cache[6] = ($event) => _ctx.$emit("update:allowSelling", $event))
+            "onUpdate:noCreditRequired": _cache[7] || (_cache[7] = ($event) => _ctx.$emit("update:noCreditRequired", $event)),
+            "onUpdate:allowSelling": _cache[8] || (_cache[8] = ($event) => _ctx.$emit("update:allowSelling", $event))
           }, null, 8, ["no-credit-required", "allow-selling"])
         ]),
         createVNode(LoraPoolPreview, {
           items: __props.previewItems,
           "match-count": __props.matchCount,
           "is-loading": __props.isLoading,
-          onRefresh: _cache[7] || (_cache[7] = ($event) => _ctx.$emit("refresh"))
+          onRefresh: _cache[9] || (_cache[9] = ($event) => _ctx.$emit("refresh"))
         }, null, 8, ["items", "match-count", "is-loading"])
       ]);
     };
   }
 });
-const LoraPoolSummaryView = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-49cb24c6"]]);
-const _hoisted_1$3 = { class: "lora-pool-modal__header" };
-const _hoisted_2$2 = { class: "lora-pool-modal__title-container" };
-const _hoisted_3$2 = { class: "lora-pool-modal__title" };
-const _hoisted_4$2 = {
+const LoraPoolSummaryView = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["__scopeId", "data-v-328e7526"]]);
+const _hoisted_1$5 = { class: "lora-pool-modal__header" };
+const _hoisted_2$4 = { class: "lora-pool-modal__title-container" };
+const _hoisted_3$4 = { class: "lora-pool-modal__title" };
+const _hoisted_4$3 = {
   key: 0,
   class: "lora-pool-modal__subtitle"
 };
-const _hoisted_5$1 = {
+const _hoisted_5$2 = {
   key: 0,
   class: "lora-pool-modal__search"
 };
-const _hoisted_6$1 = { class: "lora-pool-modal__body" };
-const _sfc_main$3 = /* @__PURE__ */ defineComponent({
+const _hoisted_6$2 = { class: "lora-pool-modal__body" };
+const _sfc_main$5 = /* @__PURE__ */ defineComponent({
   __name: "ModalWrapper",
   props: {
     visible: { type: Boolean },
@@ -8969,10 +8987,10 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
                 role: "dialog",
                 "aria-modal": "true"
               }, [
-                createBaseVNode("div", _hoisted_1$3, [
-                  createBaseVNode("div", _hoisted_2$2, [
-                    createBaseVNode("h3", _hoisted_3$2, toDisplayString(__props.title), 1),
-                    __props.subtitle ? (openBlock(), createElementBlock("p", _hoisted_4$2, toDisplayString(__props.subtitle), 1)) : createCommentVNode("", true)
+                createBaseVNode("div", _hoisted_1$5, [
+                  createBaseVNode("div", _hoisted_2$4, [
+                    createBaseVNode("h3", _hoisted_3$4, toDisplayString(__props.title), 1),
+                    __props.subtitle ? (openBlock(), createElementBlock("p", _hoisted_4$3, toDisplayString(__props.subtitle), 1)) : createCommentVNode("", true)
                   ]),
                   createBaseVNode("button", {
                     class: "lora-pool-modal__close",
@@ -8981,10 +8999,10 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
                     "aria-label": "Close"
                   }, " × ")
                 ]),
-                _ctx.$slots.search ? (openBlock(), createElementBlock("div", _hoisted_5$1, [
+                _ctx.$slots.search ? (openBlock(), createElementBlock("div", _hoisted_5$2, [
                   renderSlot(_ctx.$slots, "search", {}, void 0, true)
                 ])) : createCommentVNode("", true),
-                createBaseVNode("div", _hoisted_6$1, [
+                createBaseVNode("div", _hoisted_6$2, [
                   renderSlot(_ctx.$slots, "default", {}, void 0, true)
                 ])
               ], 2)
@@ -8996,24 +9014,24 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const ModalWrapper = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-fce76ca8"]]);
-const _hoisted_1$2 = { class: "search-container" };
-const _hoisted_2$1 = { class: "model-list" };
-const _hoisted_3$1 = ["checked", "onChange"];
-const _hoisted_4$1 = { class: "model-checkbox-visual" };
-const _hoisted_5 = {
+const ModalWrapper = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-fce76ca8"]]);
+const _hoisted_1$4 = { class: "search-container" };
+const _hoisted_2$3 = { class: "model-list" };
+const _hoisted_3$3 = ["checked", "onChange"];
+const _hoisted_4$2 = { class: "model-checkbox-visual" };
+const _hoisted_5$1 = {
   key: 0,
   class: "check-icon",
   viewBox: "0 0 16 16",
   fill: "currentColor"
 };
-const _hoisted_6 = { class: "model-name" };
-const _hoisted_7 = { class: "model-count" };
+const _hoisted_6$1 = { class: "model-name" };
+const _hoisted_7$1 = { class: "model-count" };
 const _hoisted_8 = {
   key: 0,
   class: "no-results"
 };
-const _sfc_main$2 = /* @__PURE__ */ defineComponent({
+const _sfc_main$4 = /* @__PURE__ */ defineComponent({
   __name: "BaseModelModal",
   props: {
     visible: { type: Boolean },
@@ -9049,7 +9067,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
         onClose: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("close"))
       }, {
         search: withCtx(() => [
-          createBaseVNode("div", _hoisted_1$2, [
+          createBaseVNode("div", _hoisted_1$4, [
             _cache[2] || (_cache[2] = createBaseVNode("svg", {
               class: "search-icon",
               viewBox: "0 0 16 16",
@@ -9069,7 +9087,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           ])
         ]),
         default: withCtx(() => [
-          createBaseVNode("div", _hoisted_2$1, [
+          createBaseVNode("div", _hoisted_2$3, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(filteredModels.value, (model) => {
               return openBlock(), createElementBlock("label", {
                 key: model.name,
@@ -9080,14 +9098,14 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                   checked: isSelected(model.name),
                   onChange: ($event) => toggleModel(model.name),
                   class: "model-checkbox"
-                }, null, 40, _hoisted_3$1),
-                createBaseVNode("span", _hoisted_4$1, [
-                  isSelected(model.name) ? (openBlock(), createElementBlock("svg", _hoisted_5, [..._cache[3] || (_cache[3] = [
+                }, null, 40, _hoisted_3$3),
+                createBaseVNode("span", _hoisted_4$2, [
+                  isSelected(model.name) ? (openBlock(), createElementBlock("svg", _hoisted_5$1, [..._cache[3] || (_cache[3] = [
                     createBaseVNode("path", { d: "M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" }, null, -1)
                   ])])) : createCommentVNode("", true)
                 ]),
-                createBaseVNode("span", _hoisted_6, toDisplayString(model.name), 1),
-                createBaseVNode("span", _hoisted_7, "(" + toDisplayString(model.count) + ")", 1)
+                createBaseVNode("span", _hoisted_6$1, toDisplayString(model.name), 1),
+                createBaseVNode("span", _hoisted_7$1, "(" + toDisplayString(model.count) + ")", 1)
               ]);
             }), 128)),
             filteredModels.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_8, " No models found ")) : createCommentVNode("", true)
@@ -9098,15 +9116,15 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-7d08882c"]]);
-const _hoisted_1$1 = { class: "search-container" };
-const _hoisted_2 = { class: "tags-container" };
-const _hoisted_3 = ["onClick"];
-const _hoisted_4 = {
+const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-7d08882c"]]);
+const _hoisted_1$3 = { class: "search-container" };
+const _hoisted_2$2 = { class: "tags-container" };
+const _hoisted_3$2 = ["onClick"];
+const _hoisted_4$1 = {
   key: 0,
   class: "no-results"
 };
-const _sfc_main$1 = /* @__PURE__ */ defineComponent({
+const _sfc_main$3 = /* @__PURE__ */ defineComponent({
   __name: "TagsModal",
   props: {
     visible: { type: Boolean },
@@ -9148,7 +9166,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
         onClose: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("close"))
       }, {
         search: withCtx(() => [
-          createBaseVNode("div", _hoisted_1$1, [
+          createBaseVNode("div", _hoisted_1$3, [
             _cache[2] || (_cache[2] = createBaseVNode("svg", {
               class: "search-icon",
               viewBox: "0 0 16 16",
@@ -9167,16 +9185,16 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
           ])
         ]),
         default: withCtx(() => [
-          createBaseVNode("div", _hoisted_2, [
+          createBaseVNode("div", _hoisted_2$2, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(filteredTags.value, (tag) => {
               return openBlock(), createElementBlock("button", {
                 key: tag.tag,
                 type: "button",
                 class: normalizeClass(["tag-chip", { "tag-chip--selected": isSelected(tag.tag) }]),
                 onClick: ($event) => toggleTag(tag.tag)
-              }, toDisplayString(tag.tag), 11, _hoisted_3);
+              }, toDisplayString(tag.tag), 11, _hoisted_3$2);
             }), 128)),
-            filteredTags.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4, " No tags found ")) : createCommentVNode("", true)
+            filteredTags.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$1, " No tags found ")) : createCommentVNode("", true)
           ])
         ]),
         _: 1
@@ -9184,7 +9202,227 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const TagsModal = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-4b3cfd31"]]);
+const TagsModal = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-4b3cfd31"]]);
+const _hoisted_1$2 = { class: "tree-node" };
+const _hoisted_2$1 = {
+  key: 1,
+  class: "tree-node__toggle-spacer"
+};
+const _hoisted_3$1 = { class: "tree-node__checkbox-label" };
+const _hoisted_4 = ["checked"];
+const _hoisted_5 = {
+  key: 0,
+  class: "tree-node__check-icon",
+  viewBox: "0 0 16 16",
+  fill: "currentColor"
+};
+const _hoisted_6 = { class: "tree-node__label" };
+const _hoisted_7 = {
+  key: 0,
+  class: "tree-node__children"
+};
+const _sfc_main$2 = /* @__PURE__ */ defineComponent({
+  __name: "FolderTreeNode",
+  props: {
+    node: {},
+    selected: {},
+    expanded: {},
+    variant: {},
+    depth: {}
+  },
+  emits: ["toggle-expand", "toggle-select"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emit2 = __emit;
+    const hasChildren = computed(() => props.node.children && props.node.children.length > 0);
+    const isExpanded = computed(() => props.expanded.has(props.node.key));
+    const isSelected = computed(() => props.selected.includes(props.node.key));
+    const handleRowClick = (e) => {
+      const target = e.target;
+      if (target.closest(".tree-node__checkbox-label")) {
+        return;
+      }
+      emit2("toggle-select", props.node.key);
+    };
+    return (_ctx, _cache) => {
+      const _component_FolderTreeNode = resolveComponent("FolderTreeNode", true);
+      return openBlock(), createElementBlock("div", _hoisted_1$2, [
+        createBaseVNode("div", {
+          class: normalizeClass(["tree-node__item", [
+            `tree-node__item--${__props.variant}`,
+            { "tree-node__item--selected": isSelected.value }
+          ]]),
+          style: normalizeStyle({ paddingLeft: `${__props.depth * 16 + 8}px` }),
+          onClick: handleRowClick
+        }, [
+          hasChildren.value ? (openBlock(), createElementBlock("button", {
+            key: 0,
+            type: "button",
+            class: "tree-node__toggle",
+            onClick: _cache[0] || (_cache[0] = withModifiers(($event) => _ctx.$emit("toggle-expand", __props.node.key), ["stop"]))
+          }, [
+            (openBlock(), createElementBlock("svg", {
+              class: normalizeClass(["tree-node__toggle-icon", { "tree-node__toggle-icon--expanded": isExpanded.value }]),
+              viewBox: "0 0 16 16",
+              fill: "currentColor"
+            }, [..._cache[4] || (_cache[4] = [
+              createBaseVNode("path", { d: "M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" }, null, -1)
+            ])], 2))
+          ])) : (openBlock(), createElementBlock("span", _hoisted_2$1)),
+          createBaseVNode("label", _hoisted_3$1, [
+            createBaseVNode("input", {
+              type: "checkbox",
+              class: "tree-node__checkbox",
+              checked: isSelected.value,
+              onChange: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("toggle-select", __props.node.key))
+            }, null, 40, _hoisted_4),
+            createBaseVNode("span", {
+              class: normalizeClass(["tree-node__checkbox-visual", `tree-node__checkbox-visual--${__props.variant}`])
+            }, [
+              isSelected.value ? (openBlock(), createElementBlock("svg", _hoisted_5, [..._cache[5] || (_cache[5] = [
+                createBaseVNode("path", { d: "M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" }, null, -1)
+              ])])) : createCommentVNode("", true)
+            ], 2)
+          ]),
+          _cache[6] || (_cache[6] = createBaseVNode("svg", {
+            class: "tree-node__folder-icon",
+            viewBox: "0 0 16 16",
+            fill: "currentColor"
+          }, [
+            createBaseVNode("path", { d: "M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3H14a2 2 0 0 1 2 2v1.5a.5.5 0 0 1-1 0V5a1 1 0 0 0-1-1H9.828a3 3 0 0 1-2.12-.879l-.83-.828A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981l.006.139C1.72 3.042 1.95 3 2.19 3h5.396l.707.707a1 1 0 0 0 .707.293H14.5a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0V5H9a2 2 0 0 1-1.414-.586l-.828-.828A1 1 0 0 0 6.172 3H2.19a1.5 1.5 0 0 0-1.69.87z" }),
+            createBaseVNode("path", { d: "M1.5 4.5h13a.5.5 0 0 1 .5.5v8a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a.5.5 0 0 1 .5-.5z" })
+          ], -1)),
+          createBaseVNode("span", _hoisted_6, toDisplayString(__props.node.label), 1)
+        ], 6),
+        hasChildren.value && isExpanded.value ? (openBlock(), createElementBlock("div", _hoisted_7, [
+          (openBlock(true), createElementBlock(Fragment, null, renderList(__props.node.children, (child) => {
+            return openBlock(), createBlock(_component_FolderTreeNode, {
+              key: child.key,
+              node: child,
+              selected: __props.selected,
+              expanded: __props.expanded,
+              variant: __props.variant,
+              depth: __props.depth + 1,
+              onToggleExpand: _cache[2] || (_cache[2] = ($event) => _ctx.$emit("toggle-expand", $event)),
+              onToggleSelect: _cache[3] || (_cache[3] = ($event) => _ctx.$emit("toggle-select", $event))
+            }, null, 8, ["node", "selected", "expanded", "variant", "depth"]);
+          }), 128))
+        ])) : createCommentVNode("", true)
+      ]);
+    };
+  }
+});
+const FolderTreeNode = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-90187dd4"]]);
+const _hoisted_1$1 = { class: "search-container" };
+const _hoisted_2 = { class: "folder-tree" };
+const _hoisted_3 = {
+  key: 1,
+  class: "no-results"
+};
+const _sfc_main$1 = /* @__PURE__ */ defineComponent({
+  __name: "FoldersModal",
+  props: {
+    visible: { type: Boolean },
+    folders: {},
+    selected: {},
+    variant: {}
+  },
+  emits: ["close", "update:selected"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emit2 = __emit;
+    const searchQuery = ref("");
+    const expandedKeys = ref(/* @__PURE__ */ new Set());
+    const filteredFolders = computed(() => {
+      if (!searchQuery.value) {
+        return props.folders;
+      }
+      const query = searchQuery.value.toLowerCase();
+      return filterTree(props.folders, query);
+    });
+    const filterTree = (nodes, query) => {
+      const result = [];
+      for (const node of nodes) {
+        const matches = node.key.toLowerCase().includes(query) || node.label.toLowerCase().includes(query);
+        const filteredChildren = node.children ? filterTree(node.children, query) : [];
+        if (matches || filteredChildren.length > 0) {
+          result.push({
+            ...node,
+            children: filteredChildren.length > 0 ? filteredChildren : node.children
+          });
+          if (searchQuery.value && filteredChildren.length > 0) {
+            expandedKeys.value.add(node.key);
+          }
+        }
+      }
+      return result;
+    };
+    const toggleExpand = (key) => {
+      if (expandedKeys.value.has(key)) {
+        expandedKeys.value.delete(key);
+      } else {
+        expandedKeys.value.add(key);
+      }
+      expandedKeys.value = new Set(expandedKeys.value);
+    };
+    const toggleSelect = (key) => {
+      const newSelected = props.selected.includes(key) ? props.selected.filter((k2) => k2 !== key) : [...props.selected, key];
+      emit2("update:selected", newSelected);
+    };
+    watch(() => props.visible, (isVisible) => {
+      if (isVisible) {
+        searchQuery.value = "";
+        expandedKeys.value = /* @__PURE__ */ new Set();
+      }
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createBlock(ModalWrapper, {
+        visible: __props.visible,
+        title: __props.variant === "include" ? "Include Folders" : "Exclude Folders",
+        subtitle: __props.variant === "include" ? "Select folders to include in the filter" : "Select folders to exclude from the filter",
+        onClose: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("close"))
+      }, {
+        search: withCtx(() => [
+          createBaseVNode("div", _hoisted_1$1, [
+            _cache[2] || (_cache[2] = createBaseVNode("svg", {
+              class: "search-icon",
+              viewBox: "0 0 16 16",
+              fill: "currentColor"
+            }, [
+              createBaseVNode("path", { d: "M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" })
+            ], -1)),
+            withDirectives(createBaseVNode("input", {
+              "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => searchQuery.value = $event),
+              type: "text",
+              class: "search-input",
+              placeholder: "Search folders..."
+            }, null, 512), [
+              [vModelText, searchQuery.value]
+            ])
+          ])
+        ]),
+        default: withCtx(() => [
+          createBaseVNode("div", _hoisted_2, [
+            filteredFolders.value.length > 0 ? (openBlock(true), createElementBlock(Fragment, { key: 0 }, renderList(filteredFolders.value, (node) => {
+              return openBlock(), createBlock(FolderTreeNode, {
+                key: node.key,
+                node,
+                selected: __props.selected,
+                expanded: expandedKeys.value,
+                variant: __props.variant,
+                depth: 0,
+                onToggleExpand: toggleExpand,
+                onToggleSelect: toggleSelect
+              }, null, 8, ["node", "selected", "expanded", "variant"]);
+            }), 128)) : (openBlock(), createElementBlock("div", _hoisted_3, " No folders found "))
+          ])
+        ]),
+        _: 1
+      }, 8, ["visible", "title", "subtitle"]);
+    };
+  }
+});
+const FoldersModal = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-046dcbf4"]]);
 function useLoraPoolApi() {
   const isLoading = ref(false);
   const fetchBaseModels = async (limit = 50) => {
@@ -9517,12 +9755,28 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           variant: "exclude",
           onClose: unref(modalState).closeModal,
           "onUpdate:selected": _cache[6] || (_cache[6] = ($event) => unref(state).excludeTags.value = $event)
-        }, null, 8, ["visible", "tags", "selected", "onClose"])
+        }, null, 8, ["visible", "tags", "selected", "onClose"]),
+        createVNode(FoldersModal, {
+          visible: unref(modalState).isModalOpen("includeFolders"),
+          folders: unref(state).folderTree.value,
+          selected: unref(state).includeFolders.value,
+          variant: "include",
+          onClose: unref(modalState).closeModal,
+          "onUpdate:selected": _cache[7] || (_cache[7] = ($event) => unref(state).includeFolders.value = $event)
+        }, null, 8, ["visible", "folders", "selected", "onClose"]),
+        createVNode(FoldersModal, {
+          visible: unref(modalState).isModalOpen("excludeFolders"),
+          folders: unref(state).folderTree.value,
+          selected: unref(state).excludeFolders.value,
+          variant: "exclude",
+          onClose: unref(modalState).closeModal,
+          "onUpdate:selected": _cache[8] || (_cache[8] = ($event) => unref(state).excludeFolders.value = $event)
+        }, null, 8, ["visible", "folders", "selected", "onClose"])
       ]);
     };
   }
 });
-const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-5240a9af"]]);
+const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-ae5c87ce"]]);
 const vueApps = /* @__PURE__ */ new Map();
 function createLoraPoolWidget(node) {
   const container = document.createElement("div");
@@ -9551,7 +9805,7 @@ function createLoraPoolWidget(node) {
       // Per dev guide: providing getMinHeight via options allows the system to
       // skip expensive DOM measurements during rendering loop, improving performance
       getMinHeight() {
-        return 700;
+        return 400;
       }
     }
   );
@@ -9570,7 +9824,7 @@ function createLoraPoolWidget(node) {
   vueApps.set(node.id, vueApp);
   widget.computeLayoutSize = () => {
     const minWidth = 500;
-    const minHeight = 700;
+    const minHeight = 400;
     return { minHeight, minWidth };
   };
   widget.onRemove = () => {

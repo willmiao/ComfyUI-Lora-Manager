@@ -47,6 +47,24 @@
       @close="modalState.closeModal"
       @update:selected="state.excludeTags.value = $event"
     />
+
+    <FoldersModal
+      :visible="modalState.isModalOpen('includeFolders')"
+      :folders="state.folderTree.value"
+      :selected="state.includeFolders.value"
+      variant="include"
+      @close="modalState.closeModal"
+      @update:selected="state.includeFolders.value = $event"
+    />
+
+    <FoldersModal
+      :visible="modalState.isModalOpen('excludeFolders')"
+      :folders="state.folderTree.value"
+      :selected="state.excludeFolders.value"
+      variant="exclude"
+      @close="modalState.closeModal"
+      @update:selected="state.excludeFolders.value = $event"
+    />
   </div>
 </template>
 
@@ -55,6 +73,7 @@ import { onMounted } from 'vue'
 import LoraPoolSummaryView from './lora-pool/LoraPoolSummaryView.vue'
 import BaseModelModal from './lora-pool/modals/BaseModelModal.vue'
 import TagsModal from './lora-pool/modals/TagsModal.vue'
+import FoldersModal from './lora-pool/modals/FoldersModal.vue'
 import { useLoraPoolState } from '../composables/useLoraPoolState'
 import { useModalState, type ModalType } from '../composables/useModalState'
 import type { ComponentWidget, LoraPoolConfig, LegacyLoraPoolConfig } from '../composables/types'

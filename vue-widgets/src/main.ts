@@ -38,7 +38,7 @@ function createLoraPoolWidget(node) {
       // Per dev guide: providing getMinHeight via options allows the system to
       // skip expensive DOM measurements during rendering loop, improving performance
       getMinHeight() {
-        return 700
+        return 400
       }
     }
   )
@@ -62,7 +62,7 @@ function createLoraPoolWidget(node) {
 
   widget.computeLayoutSize = () => {
     const minWidth = 500
-    const minHeight = 700
+    const minHeight = 400
 
     return { minHeight, minWidth }
   }

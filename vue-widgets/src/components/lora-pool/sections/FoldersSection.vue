@@ -8,32 +8,30 @@
       <div class="section__column">
         <div class="section__column-header">
           <span class="section__column-title section__column-title--include">INCLUDE</span>
-        </div>
-        <div class="section__input-row">
-          <input
-            v-model="includeInput"
-            type="text"
-            class="section__input"
-            placeholder="Path..."
-            @keydown.enter="addInclude"
-          />
           <button
             type="button"
-            class="section__add-btn section__add-btn--include"
-            @click="addInclude"
+            class="section__edit-btn section__edit-btn--include"
+            @click="$emit('edit-include')"
           >
-            +
+            <svg viewBox="0 0 16 16" fill="currentColor">
+              <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/>
+            </svg>
           </button>
         </div>
-        <div v-if="includeFolders.length > 0" class="section__paths">
-          <FilterChip
-            v-for="path in includeFolders"
-            :key="path"
-            :label="truncatePath(path)"
-            variant="path"
-            removable
-            @remove="removeInclude(path)"
-          />
+        <div class="section__content">
+          <div v-if="includeFolders.length > 0" class="section__paths">
+            <FilterChip
+              v-for="path in includeFolders"
+              :key="path"
+              :label="truncatePath(path)"
+              variant="path"
+              removable
+              @remove="removeInclude(path)"
+            />
+          </div>
+          <div v-else class="section__empty">
+            No folders selected
+          </div>
         </div>
       </div>
 
@@ -41,32 +39,30 @@
       <div class="section__column">
         <div class="section__column-header">
           <span class="section__column-title section__column-title--exclude">EXCLUDE</span>
-        </div>
-        <div class="section__input-row">
-          <input
-            v-model="excludeInput"
-            type="text"
-            class="section__input"
-            placeholder="Path..."
-            @keydown.enter="addExclude"
-          />
           <button
             type="button"
-            class="section__add-btn section__add-btn--exclude"
-            @click="addExclude"
+            class="section__edit-btn section__edit-btn--exclude"
+            @click="$emit('edit-exclude')"
           >
-            +
+            <svg viewBox="0 0 16 16" fill="currentColor">
+              <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z"/>
+            </svg>
           </button>
         </div>
-        <div v-if="excludeFolders.length > 0" class="section__paths">
-          <FilterChip
-            v-for="path in excludeFolders"
-            :key="path"
-            :label="truncatePath(path)"
-            variant="path"
-            removable
-            @remove="removeExclude(path)"
-          />
+        <div class="section__content">
+          <div v-if="excludeFolders.length > 0" class="section__paths">
+            <FilterChip
+              v-for="path in excludeFolders"
+              :key="path"
+              :label="truncatePath(path)"
+              variant="path"
+              removable
+              @remove="removeExclude(path)"
+            />
+          </div>
+          <div v-else class="section__empty">
+            No folders selected
+          </div>
         </div>
       </div>
     </div>
@@ -74,7 +70,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import FilterChip from '../shared/FilterChip.vue'
 
 const props = defineProps<{
@@ -85,34 +80,17 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:includeFolders': [value: string[]]
   'update:excludeFolders': [value: string[]]
+  'edit-include': []
+  'edit-exclude': []
 }>()
-
-const includeInput = ref('')
-const excludeInput = ref('')
 
 const truncatePath = (path: string) => {
   if (path.length <= 20) return path
   return '...' + path.slice(-17)
 }
 
-const addInclude = () => {
-  const path = includeInput.value.trim()
-  if (path && !props.includeFolders.includes(path)) {
-    emit('update:includeFolders', [...props.includeFolders, path])
-    includeInput.value = ''
-  }
-}
-
 const removeInclude = (path: string) => {
   emit('update:includeFolders', props.includeFolders.filter(p => p !== path))
-}
-
-const addExclude = () => {
-  const path = excludeInput.value.trim()
-  if (path && !props.excludeFolders.includes(path)) {
-    emit('update:excludeFolders', [...props.excludeFolders, path])
-    excludeInput.value = ''
-  }
 }
 
 const removeExclude = (path: string) => {
@@ -149,6 +127,9 @@ const removeExclude = (path: string) => {
 }
 
 .section__column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 6px;
 }
 
@@ -167,68 +148,58 @@ const removeExclude = (path: string) => {
   color: #ef4444;
 }
 
-.section__input-row {
-  display: flex;
-  gap: 4px;
-}
-
-.section__input {
-  flex: 1;
-  min-width: 0;
-  padding: 6px 8px;
-  background: var(--comfy-input-bg, #333);
-  border: 1px solid var(--border-color, #444);
-  border-radius: 4px;
-  color: var(--fg-color, #fff);
-  font-size: 11px;
-  outline: none;
-}
-
-.section__input:focus {
-  border-color: var(--fg-color, #fff);
-}
-
-.section__input::placeholder {
-  color: var(--fg-color, #fff);
-  opacity: 0.4;
-}
-
-.section__add-btn {
-  width: 28px;
-  height: 28px;
+.section__edit-btn {
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--comfy-input-bg, #333);
-  border: 1px solid var(--border-color, #444);
-  border-radius: 4px;
+  background: transparent;
+  border: none;
   color: var(--fg-color, #fff);
-  font-size: 16px;
-  font-weight: 500;
   cursor: pointer;
+  opacity: 0.5;
+  border-radius: 3px;
+  padding: 0;
   transition: all 0.15s;
 }
 
-.section__add-btn:hover {
-  border-color: var(--fg-color, #fff);
+.section__edit-btn svg {
+  width: 12px;
+  height: 12px;
 }
 
-.section__add-btn--include:hover {
-  background: rgba(66, 153, 225, 0.2);
-  border-color: #4299e1;
+.section__edit-btn:hover {
+  opacity: 1;
+  background: var(--comfy-input-bg, #333);
+}
+
+.section__edit-btn--include:hover {
   color: #4299e1;
 }
 
-.section__add-btn--exclude:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: #ef4444;
+.section__edit-btn--exclude:hover {
   color: #ef4444;
+}
+
+.section__content {
+  min-height: 22px;
 }
 
 .section__paths {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-top: 6px;
+  min-height: 22px;
+}
+
+.section__empty {
+  font-size: 10px;
+  color: var(--fg-color, #fff);
+  opacity: 0.3;
+  font-style: italic;
+  min-height: 22px;
+  display: flex;
+  align-items: center;
 }
 </style>
