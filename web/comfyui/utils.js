@@ -233,7 +233,7 @@ export function getConnectedInputStackers(node) {
         }
 
         const sourceNode = node.graph?.getNodeById?.(link.origin_id);
-        if (sourceNode && sourceNode.comfyClass === "Lora Stacker (LoraManager)") {
+        if (sourceNode && (sourceNode.comfyClass === "Lora Stacker (LoraManager)" || sourceNode.comfyClass === "Lora Randomizer (LoraManager)")) {
             connectedStackers.push(sourceNode);
         }
     }
@@ -274,9 +274,13 @@ export function getConnectedTriggerToggleNodes(node) {
 export function getActiveLorasFromNode(node) {
     const activeLoraNames = new Set();
     
-    // For lorasWidget style entries (array of objects)
-    if (node.lorasWidget && node.lorasWidget.value) {
-        node.lorasWidget.value.forEach(lora => {
+    let lorasWidget = node.lorasWidget;
+    if (!lorasWidget && node.widgets) {
+        lorasWidget = node.widgets.find(w => w.name === 'loras');
+    }
+    
+    if (lorasWidget && lorasWidget.value) {
+        lorasWidget.value.forEach(lora => {
             if (lora.active) {
                 activeLoraNames.add(lora.name);
             }
@@ -323,6 +327,8 @@ export function updateConnectedTriggerWords(node, loraNames) {
         const nodeIds = connectedNodes
             .map((connectedNode) => getNodeReference(connectedNode))
             .filter((reference) => reference !== null);
+
+        console.log('node ids: ', nodeIds, loraNames);
 
         if (nodeIds.length === 0) {
             return;
@@ -466,4 +472,79 @@ export function forwardMiddleMouseToCanvas(container) {
             app.canvas.processMouseUp(event);
         }
     });
+}
+
+// Get connected Lora Pool node from pool_config input
+export function getConnectedPoolConfigNode(node) {
+    if (!node?.inputs) {
+        return null;
+    }
+
+    for (const input of node.inputs) {
+        if (input.name !== "pool_config" || !input.link) {
+            continue;
+        }
+
+        const link = getLinkFromGraph(node.graph, input.link);
+        if (!link) {
+            continue;
+        }
+
+        const sourceNode = node.graph?.getNodeById?.(link.origin_id);
+        if (sourceNode && sourceNode.comfyClass === "Lora Pool (LoraManager)") {
+            return sourceNode;
+        }
+    }
+
+    return null;
+}
+
+// Get pool config widget value from connected Lora Pool node
+export function getPoolConfigFromConnectedNode(node) {
+    const poolNode = getConnectedPoolConfigNode(node);
+    if (!poolNode) {
+        return null;
+    }
+
+    const poolWidget = poolNode.widgets?.find(w => w.name === "pool_config");
+    return poolWidget?.value || null;
+}
+
+// Helper function to find and update downstream Lora Loader nodes
+export function updateDownstreamLoaders(startNode, visited = new Set()) {
+  const nodeKey = getNodeKey(startNode);
+  if (!nodeKey || visited.has(nodeKey)) return;
+  visited.add(nodeKey);
+
+  // Check each output link
+  if (startNode.outputs) {
+    for (const output of startNode.outputs) {
+      if (output.links) {
+        for (const linkId of output.links) {
+          const link = getLinkFromGraph(startNode.graph, linkId);
+          if (link) {
+            const targetNode = startNode.graph?.getNodeById?.(link.target_id);
+
+            // If target is a Lora Loader, collect all active loras in the chain and update
+            if (
+              targetNode &&
+              targetNode.comfyClass === "Lora Loader (LoraManager)"
+            ) {
+              const allActiveLoraNames =
+                collectActiveLorasFromChain(targetNode);
+              updateConnectedTriggerWords(targetNode, allActiveLoraNames);
+            }
+            // If target is another Lora Stacker or Lora Randomizer, recursively check its outputs
+            else if (
+              targetNode &&
+              (targetNode.comfyClass === "Lora Stacker (LoraManager)" ||
+               targetNode.comfyClass === "Lora Randomizer (LoraManager)")
+            ) {
+              updateDownstreamLoaders(targetNode, visited);
+            }
+          }
+        }
+      }
+    }
+  }
 }

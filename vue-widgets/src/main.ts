@@ -6,6 +6,8 @@ import type { LoraPoolConfig, LegacyLoraPoolConfig, RandomizerConfig } from './c
 
 // @ts-ignore - ComfyUI external module
 import { app } from '../../../scripts/app.js'
+// @ts-ignore
+import { getPoolConfigFromConnectedNode, getActiveLorasFromNode, updateConnectedTriggerWords, updateDownstreamLoaders } from '../../web/comfyui/utils.js'
 
 const vueApps = new Map<number, VueApp>()
 
@@ -119,6 +121,9 @@ function createLoraRandomizerWidget(node) {
     internalValue = v
   }
 
+  // Add method to get pool config from connected node
+  node.getPoolConfig = () => getPoolConfigFromConnectedNode(node)
+
   // Handle roll event from Vue component
   widget.onRoll = (randomLoras: any[]) => {
     console.log('[createLoraRandomizerWidget] Roll event received:', randomLoras)
@@ -181,10 +186,21 @@ app.registerExtension({
       // @ts-ignore
       async LORAS(node: any) {
         if (!addLorasWidgetCache) {
+          // @ts-ignore
           const module = await import(/* @vite-ignore */ '../loras_widget.js')
           addLorasWidgetCache = module.addLorasWidget
         }
-        return addLorasWidgetCache(node, 'loras', {}, null)
+        // Check if this is a randomizer node to enable lock buttons
+        const isRandomizerNode = node.comfyClass === 'Lora Randomizer (LoraManager)'
+
+        console.log(node)
+
+        // For randomizer nodes, add a callback to update connected trigger words
+        const callback = isRandomizerNode ? (value: any) => {
+          updateDownstreamLoaders(node)
+        } : null
+
+        return addLorasWidgetCache(node, 'loras', { isRandomizerNode }, callback)
       }
     }
   }

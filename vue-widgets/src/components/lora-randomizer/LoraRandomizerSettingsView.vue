@@ -154,8 +154,10 @@
           :disabled="rollMode !== 'frontend' || isRolling"
           @click="$emit('roll')"
         >
-          <span v-if="!isRolling">🎲 Roll</span>
-          <span v-else>Rolling...</span>
+          <span class="roll-button__content">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><path d="M8 8h.01"></path><path d="M16 16h.01"></path><path d="M16 8h.01"></path><path d="M8 16h.01"></path></svg>
+            Roll
+          </span>
         </button>
       </div>
       <div class="roll-mode-selector">
@@ -329,7 +331,7 @@ defineEmits<{
 }
 
 .roll-button {
-  padding: 6px 16px;
+  padding: 8px 16px;
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   border: none;
   border-radius: 4px;
@@ -339,6 +341,9 @@ defineEmits<{
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .roll-button:hover:not(:disabled) {
@@ -355,5 +360,11 @@ defineEmits<{
   opacity: 0.5;
   cursor: not-allowed;
   background: linear-gradient(135deg, #52525b 0%, #3f3f46 100%);
+}
+
+.roll-button__content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 </style>

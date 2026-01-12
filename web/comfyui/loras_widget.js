@@ -1,4 +1,4 @@
-import { createToggle, createArrowButton, createDragHandle, updateEntrySelection, createExpandButton, updateExpandButtonState } from "./loras_widget_components.js";
+import { createToggle, createArrowButton, createDragHandle, updateEntrySelection, createExpandButton, updateExpandButtonState, createLockButton, updateLockButtonState } from "./loras_widget_components.js";
 import { 
   parseLoraValue, 
   formatLoraValue, 
@@ -26,6 +26,9 @@ export function addLorasWidget(node, name, opts, callback) {
 
   // Set initial height using CSS variables approach
   const defaultHeight = 200;
+
+  // Check if this is a randomizer node (lock button instead of drag handle)
+  const isRandomizerNode = opts?.isRandomizerNode === true;
 
   // Initialize default value
   const defaultValue = opts?.defaultVal || [];
@@ -255,32 +258,52 @@ export function addLorasWidget(node, name, opts, callback) {
       const loraEl = document.createElement("div");
       loraEl.className = "lm-lora-entry";
 
-      // Store lora name and active state in dataset for selection
+      // Store lora name, active state, and locked state in dataset
       loraEl.dataset.loraName = name;
       loraEl.dataset.active = active ? "true" : "false";
+      loraEl.dataset.locked = (loraData.locked || false) ? "true" : "false";
 
       // Add click handler for selection
       loraEl.addEventListener('click', (e) => {
         // Skip if clicking on interactive elements
-        if (e.target.closest('.lm-lora-toggle') || 
-            e.target.closest('input') || 
+        if (e.target.closest('.lm-lora-toggle') ||
+            e.target.closest('input') ||
             e.target.closest('.lm-lora-arrow') ||
             e.target.closest('.lm-lora-drag-handle') ||
+            e.target.closest('.lm-lora-lock-button') ||
             e.target.closest('.lm-lora-expand-button')) {
           return;
         }
-        
+
         e.preventDefault();
         e.stopPropagation();
         selectLora(name);
         container.focus(); // Focus container for keyboard events
       });
 
-      // Create drag handle for reordering
-      const dragHandle = createDragHandle();
-      
-      // Initialize reorder drag functionality
-      initReorderDrag(dragHandle, name, widget, renderLoras);
+      // Conditionally create drag handle OR lock button
+      let dragHandleOrLockButton;
+
+      if (isRandomizerNode) {
+        // For randomizer node, show lock button instead of drag handle
+        const isLocked = loraData.locked || false;
+        dragHandleOrLockButton = createLockButton(isLocked, (newLocked) => {
+          // Update this lora's locked state
+          const lorasData = parseLoraValue(widget.value);
+          const loraIndex = lorasData.findIndex(l => l.name === name);
+
+          if (loraIndex >= 0) {
+            lorasData[loraIndex].locked = newLocked;
+            const newValue = formatLoraValue(lorasData);
+            updateWidgetValue(newValue);
+          }
+        });
+      } else {
+        // For other nodes, show drag handle
+        dragHandleOrLockButton = createDragHandle();
+        // Initialize reorder drag functionality
+        initReorderDrag(dragHandleOrLockButton, name, widget, renderLoras);
+      }
 
       // Create toggle for this lora
       const toggle = createToggle(active, (newActive) => {
@@ -481,8 +504,8 @@ export function addLorasWidget(node, name, opts, callback) {
       // Assemble entry
       const leftSection = document.createElement("div");
       leftSection.className = "lm-lora-entry-left";
-      
-      leftSection.appendChild(dragHandle); // Add drag handle first
+
+      leftSection.appendChild(dragHandleOrLockButton); // Add drag handle or lock button first
       leftSection.appendChild(toggle);
       leftSection.appendChild(expandButton); // Add expand button
       leftSection.appendChild(nameEl);
@@ -685,16 +708,17 @@ export function addLorasWidget(node, name, opts, callback) {
       }, []);
       
       // Apply existing clip strength values and transfer them to the new value
-      const updatedValue = uniqueValue.map(lora => {       
+      const updatedValue = uniqueValue.map(lora => {
         // For new loras, default clip strength to model strength and expanded to false
         // unless clipStrength is already different from strength
         const clipStrength = lora.clipStrength || lora.strength;
         return {
           ...lora,
           clipStrength: clipStrength,
-          expanded: lora.hasOwnProperty('expanded') ? 
-                    lora.expanded : 
-                    Number(clipStrength) !== Number(lora.strength)
+          expanded: lora.hasOwnProperty('expanded') ?
+                    lora.expanded :
+                    Number(clipStrength) !== Number(lora.strength),
+          locked: lora.hasOwnProperty('locked') ? lora.locked : false  // Initialize locked to false if not present
         };
       });
 

@@ -3,6 +3,7 @@ import {
   getActiveLorasFromNode,
   collectActiveLorasFromChain,
   updateConnectedTriggerWords,
+  updateDownstreamLoaders,
   chainCallback,
   mergeLoras,
   setupInputWidgetWithAutocomplete,
@@ -169,41 +170,3 @@ app.registerExtension({
     }
   },
 });
-
-// Helper function to find and update downstream Lora Loader nodes
-function updateDownstreamLoaders(startNode, visited = new Set()) {
-  const nodeKey = getNodeKey(startNode);
-  if (!nodeKey || visited.has(nodeKey)) return;
-  visited.add(nodeKey);
-
-  // Check each output link
-  if (startNode.outputs) {
-    for (const output of startNode.outputs) {
-      if (output.links) {
-        for (const linkId of output.links) {
-          const link = getLinkFromGraph(startNode.graph, linkId);
-          if (link) {
-            const targetNode = startNode.graph?.getNodeById?.(link.target_id);
-
-            // If target is a Lora Loader, collect all active loras in the chain and update
-            if (
-              targetNode &&
-              targetNode.comfyClass === "Lora Loader (LoraManager)"
-            ) {
-              const allActiveLoraNames =
-                collectActiveLorasFromChain(targetNode);
-              updateConnectedTriggerWords(targetNode, allActiveLoraNames);
-            }
-            // If target is another Lora Stacker, recursively check its outputs
-            else if (
-              targetNode &&
-              targetNode.comfyClass === "Lora Stacker (LoraManager)"
-            ) {
-              updateDownstreamLoaders(targetNode, visited);
-            }
-          }
-        }
-      }
-    }
-  }
-}

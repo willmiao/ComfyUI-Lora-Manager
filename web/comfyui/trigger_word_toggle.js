@@ -239,6 +239,7 @@ app.registerExtension({
 
     // Handle trigger word updates from Python
     handleTriggerWordUpdate(id, graphId, message) {
+        console.log('trigger word update: ', id, graphId, message);
         const node = getNodeFromGraph(graphId, id);
         if (!node || node.comfyClass !== "TriggerWord Toggle (LoraManager)") {
             console.warn("Node not found or not a TriggerWordToggle:", id);

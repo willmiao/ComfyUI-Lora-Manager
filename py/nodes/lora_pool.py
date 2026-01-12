@@ -20,7 +20,7 @@ class LoraPoolNode:
     """
 
     NAME = "Lora Pool (LoraManager)"
-    CATEGORY = "Lora Manager/pools"
+    CATEGORY = "Lora Manager/randomizer"
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -85,10 +85,3 @@ class LoraPoolNode:
             },
             "preview": {"matchCount": 0, "lastUpdated": 0},
         }
-
-
-# Node class mappings for ComfyUI
-NODE_CLASS_MAPPINGS = {"LoraPoolNode": LoraPoolNode}
-
-# Display name mappings
-NODE_DISPLAY_NAME_MAPPINGS = {"LoraPoolNode": "LoRA Pool (Filter)"}

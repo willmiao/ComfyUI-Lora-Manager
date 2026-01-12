@@ -34,7 +34,7 @@ class LoraRandomizerNode:
         }
 
     RETURN_TYPES = ("LORA_STACK",)
-    RETURN_NAMES = ("lora_stack",)
+    RETURN_NAMES = ("LORA_STACK",)
 
     FUNCTION = "randomize"
     OUTPUT_NODE = False
@@ -53,9 +53,6 @@ class LoraRandomizerNode:
         """
         from ..services.service_registry import ServiceRegistry
 
-        # Get lora scanner to access available loras
-        scanner = await ServiceRegistry.get_lora_scanner()
-
         # Parse randomizer settings
         count_mode = randomizer_config.get("count_mode", "range")
         count_fixed = randomizer_config.get("count_fixed", 5)
@@ -68,6 +65,93 @@ class LoraRandomizerNode:
         clip_strength_max = randomizer_config.get("clip_strength_max", 1.0)
         roll_mode = randomizer_config.get("roll_mode", "frontend")
 
+        # Get lora scanner to access available loras
+        scanner = await ServiceRegistry.get_lora_scanner()
+
+        # Backend roll mode: execute with input loras, return new random to UI
+        if roll_mode == "backend":
+            execution_stack = self._build_execution_stack_from_input(loras)
+            ui_loras = await self._generate_random_loras_for_ui(
+                scanner, randomizer_config, loras, pool_config
+            )
+            logger.info(
+                f"[LoraRandomizerNode] Backend roll: executing with input, returning new random to UI"
+            )
+            return {"result": (execution_stack,), "ui": {"loras": ui_loras}}
+
+        # Frontend roll mode: use current behavior (random selection for both)
+        ui_loras = await self._generate_random_loras_for_ui(
+            scanner, randomizer_config, loras, pool_config
+        )
+        execution_stack = self._build_execution_stack_from_input(ui_loras)
+        logger.info(
+            f"[LoraRandomizerNode] Frontend roll: executing with random selection"
+        )
+        return {"result": (execution_stack,), "ui": {"loras": ui_loras}}
+
+    def _build_execution_stack_from_input(self, loras):
+        """
+        Build LORA_STACK tuple from input loras list for execution.
+
+        Args:
+            loras: List of LoRA dicts with name, strength, clipStrength, active
+
+        Returns:
+            List of tuples (lora_path, model_strength, clip_strength)
+        """
+        lora_stack = []
+        for lora in loras:
+            if not lora.get("active", False):
+                continue
+
+            # Get file path
+            lora_path, trigger_words = get_lora_info(lora["name"])
+            if not lora_path:
+                logger.warning(
+                    f"[LoraRandomizerNode] Could not find path for LoRA: {lora['name']}"
+                )
+                continue
+
+            # Normalize path separators
+            lora_path = lora_path.replace("/", os.sep)
+
+            # Extract strengths
+            model_strength = lora.get("strength", 1.0)
+            clip_strength = lora.get("clipStrength", model_strength)
+
+            lora_stack.append((lora_path, model_strength, clip_strength))
+
+        logger.info(
+            f"[LoraRandomizerNode] Built execution stack with {len(lora_stack)} LoRAs"
+        )
+        return lora_stack
+
+    async def _generate_random_loras_for_ui(
+        self, scanner, randomizer_config, input_loras, pool_config=None
+    ):
+        """
+        Generate new random loras for UI display.
+
+        Args:
+            scanner: LoraScanner instance
+            randomizer_config: Dict with randomizer settings
+            input_loras: Current input loras (for extracting locked loras)
+            pool_config: Optional pool filters
+
+        Returns:
+            List of LoRA dicts for UI display
+        """
+        # Parse randomizer settings
+        count_mode = randomizer_config.get("count_mode", "range")
+        count_fixed = randomizer_config.get("count_fixed", 5)
+        count_min = randomizer_config.get("count_min", 3)
+        count_max = randomizer_config.get("count_max", 7)
+        model_strength_min = randomizer_config.get("model_strength_min", 0.0)
+        model_strength_max = randomizer_config.get("model_strength_max", 1.0)
+        use_same_clip_strength = randomizer_config.get("use_same_clip_strength", True)
+        clip_strength_min = randomizer_config.get("clip_strength_min", 0.0)
+        clip_strength_max = randomizer_config.get("clip_strength_max", 1.0)
+
         # Determine target count
         if count_mode == "fixed":
             target_count = count_fixed
@@ -75,11 +159,11 @@ class LoraRandomizerNode:
             target_count = random.randint(count_min, count_max)
 
         logger.info(
-            f"[LoraRandomizerNode] Target count: {target_count}, Roll mode: {roll_mode}"
+            f"[LoraRandomizerNode] Generating random LoRAs, target count: {target_count}"
         )
 
         # Extract locked LoRAs from input
-        locked_loras = [lora for lora in loras if lora.get("locked", False)]
+        locked_loras = [lora for lora in input_loras if lora.get("locked", False)]
         locked_count = len(locked_loras)
 
         logger.info(f"[LoraRandomizerNode] Locked LoRAs: {locked_count}")
@@ -106,8 +190,6 @@ class LoraRandomizerNode:
         )
 
         # Calculate how many new LoRAs to select
-        # In frontend mode, if loras already has data, preserve unlocked ones if roll_mode requires
-        # For simplicity in backend mode, we regenerate all unlocked slots
         slots_needed = target_count - locked_count
 
         if slots_needed < 0:
@@ -161,33 +243,10 @@ class LoraRandomizerNode:
         # Merge with locked LoRAs
         result_loras.extend(locked_loras)
 
-        logger.info(f"[LoraRandomizerNode] Final LoRA count: {len(result_loras)}")
-
-        # Build LORA_STACK output
-        lora_stack = []
-        for lora in result_loras:
-            if not lora.get("active", False):
-                continue
-
-            # Get file path
-            lora_path, trigger_words = get_lora_info(lora["name"])
-            if not lora_path:
-                logger.warning(
-                    f"[LoraRandomizerNode] Could not find path for LoRA: {lora['name']}"
-                )
-                continue
-
-            # Normalize path separators
-            lora_path = lora_path.replace("/", os.sep)
-
-            # Extract strengths
-            model_strength = lora.get("strength", 1.0)
-            clip_strength = lora.get("clipStrength", model_strength)
-
-            lora_stack.append((lora_path, model_strength, clip_strength))
-
-        # Return format: result for workflow + ui for frontend display
-        return {"result": (lora_stack,), "ui": {"loras": result_loras}}
+        logger.info(
+            f"[LoraRandomizerNode] Final random LoRA count: {len(result_loras)}"
+        )
+        return result_loras
 
     async def _apply_pool_filters(self, available_loras, pool_config, scanner):
         """
@@ -288,10 +347,3 @@ class LoraRandomizerNode:
             ]
 
         return available_loras
-
-
-# Node class mappings for ComfyUI
-NODE_CLASS_MAPPINGS = {"LoraRandomizerNode": LoraRandomizerNode}
-
-# Display name mappings
-NODE_DISPLAY_NAME_MAPPINGS = {"LoraRandomizerNode": "LoRA Randomizer"}

@@ -32,12 +32,12 @@
 import { onMounted } from 'vue'
 import LoraRandomizerSettingsView from './lora-randomizer/LoraRandomizerSettingsView.vue'
 import { useLoraRandomizerState } from '../composables/useLoraRandomizerState'
-import type { ComponentWidget, RandomizerConfig } from '../composables/types'
+import type { ComponentWidget, RandomizerConfig, LoraEntry } from '../composables/types'
 
 // Props
 const props = defineProps<{
   widget: ComponentWidget
-  node: { id: number }
+  node: { id: number; inputs?: any[]; widgets?: any[]; graph?: any }
 }>()
 
 // State management
@@ -48,13 +48,15 @@ const handleRoll = async () => {
   try {
     console.log('[LoraRandomizerWidget] Roll button clicked')
 
-    // Get pool config from connected input (if any)
-    // This would need to be passed from the node's pool_config input
-    const poolConfig = null // TODO: Get from node input if connected
+    // Get pool config from connected pool_config input
+    const poolConfig = (props.node as any).getPoolConfig?.() || null
 
     // Get locked loras from the loras widget
-    // This would need to be retrieved from the loras widget on the node
-    const lockedLoras: any[] = [] // TODO: Get from loras widget
+    const lorasWidget = props.node.widgets?.find((w: any) => w.name === "loras")
+    const lockedLoras: LoraEntry[] = (lorasWidget?.value || []).filter((lora: LoraEntry) => lora.locked === true)
+
+    console.log('[LoraRandomizerWidget] Pool config:', poolConfig)
+    console.log('[LoraRandomizerWidget] Locked loras:', lockedLoras)
 
     // Call API to get random loras
     const randomLoras = await state.rollLoras(poolConfig, lockedLoras)
