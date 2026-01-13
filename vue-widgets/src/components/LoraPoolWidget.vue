@@ -104,7 +104,7 @@ onMounted(async () => {
 
   // Handle external value updates (e.g., loading workflow, paste)
   props.widget.onSetValue = (v) => {
-    state.restoreFromConfig(v)
+    state.restoreFromConfig(v as LoraPoolConfig | LegacyLoraPoolConfig)
     state.refreshPreview()
   }
 

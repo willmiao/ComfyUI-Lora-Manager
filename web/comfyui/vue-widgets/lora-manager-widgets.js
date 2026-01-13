@@ -3,7 +3,1358 @@
   try {
     if (typeof document != "undefined") {
       var elementStyle = document.createElement("style");
-      elementStyle.appendChild(document.createTextNode(".filter-chip[data-v-7e36267d] {\n  display: inline-flex;\n  align-items: center;\n  gap: 2px;\n  padding: 3px 8px;\n  border-radius: 4px;\n  font-size: 11px;\n  font-weight: 500;\n  background: var(--comfy-input-bg);\n  border: 1px solid var(--border-color);\n  color: var(--fg-color);\n  white-space: nowrap;\n}\n.filter-chip__text[data-v-7e36267d] {\n  max-width: 120px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.filter-chip__count[data-v-7e36267d] {\n  opacity: 0.6;\n  font-size: 10px;\n}\n.filter-chip__remove[data-v-7e36267d] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 14px;\n  height: 14px;\n  margin-left: 2px;\n  padding: 0;\n  background: transparent;\n  border: none;\n  color: inherit;\n  font-size: 14px;\n  line-height: 1;\n  cursor: pointer;\n  opacity: 0.6;\n  transition: opacity 0.15s;\n}\n.filter-chip__remove[data-v-7e36267d]:hover {\n  opacity: 1;\n}\n\n/* Variants */\n.filter-chip--include[data-v-7e36267d] {\n  background: rgba(66, 153, 225, 0.15);\n  border-color: rgba(66, 153, 225, 0.4);\n  color: #4299e1;\n}\n.filter-chip--exclude[data-v-7e36267d] {\n  background: rgba(239, 68, 68, 0.15);\n  border-color: rgba(239, 68, 68, 0.4);\n  color: #ef4444;\n}\n.filter-chip--neutral[data-v-7e36267d] {\n  background: rgba(100, 100, 100, 0.3);\n  border-color: rgba(150, 150, 150, 0.4);\n  color: var(--fg-color);\n}\n.filter-chip--path[data-v-7e36267d] {\n  background: rgba(30, 30, 30, 0.8);\n  border-color: rgba(255, 255, 255, 0.15);\n  color: var(--fg-color);\n  font-family: monospace;\n  font-size: 10px;\n}\n\n.edit-button[data-v-8da8aa4b] {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 2px 6px;\n  background: transparent;\n  border: none;\n  color: var(--fg-color);\n  font-size: 11px;\n  cursor: pointer;\n  opacity: 0.6;\n  transition: opacity 0.15s;\n  border-radius: 3px;\n}\n.edit-button[data-v-8da8aa4b]:hover {\n  opacity: 1;\n  background: rgba(255, 255, 255, 0.05);\n}\n.edit-button__icon[data-v-8da8aa4b] {\n  width: 10px;\n  height: 10px;\n}\n.edit-button__text[data-v-8da8aa4b] {\n  font-weight: 400;\n}\n\n.section[data-v-12f059e2] {\n  margin-bottom: 16px;\n}\n.section__header[data-v-12f059e2] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  margin-bottom: 8px;\n}\n.section__title[data-v-12f059e2] {\n  font-size: 10px;\n  font-weight: 600;\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n}\n.section__content[data-v-12f059e2] {\n  min-height: 32px;\n  display: flex;\n  align-items: center;\n}\n.section__placeholder[data-v-12f059e2] {\n  width: 100%;\n  padding: 8px 12px;\n  background: var(--comfy-input-bg, #333);\n  border-radius: 4px;\n  font-size: 12px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  text-align: center;\n  box-sizing: border-box;\n}\n.section__chips[data-v-12f059e2] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n}\n\n.section[data-v-b869b780] {\n  margin-bottom: 16px;\n}\n.section__header[data-v-b869b780] {\n  margin-bottom: 8px;\n}\n.section__title[data-v-b869b780] {\n  font-size: 10px;\n  font-weight: 600;\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n}\n.section__columns[data-v-b869b780] {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 12px;\n}\n.section__column[data-v-b869b780] {\n  min-width: 0;\n}\n.section__column-header[data-v-b869b780] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  margin-bottom: 6px;\n}\n.section__column-title[data-v-b869b780] {\n  font-size: 9px;\n  font-weight: 500;\n  text-transform: uppercase;\n  letter-spacing: 0.03em;\n}\n.section__column-title--include[data-v-b869b780] {\n  color: #4299e1;\n}\n.section__column-title--exclude[data-v-b869b780] {\n  color: #ef4444;\n}\n.section__column-content[data-v-b869b780] {\n  min-height: 28px;\n}\n.section__empty[data-v-b869b780] {\n  width: 100%;\n  padding: 8px 12px;\n  background: var(--comfy-input-bg, #333);\n  border-radius: 4px;\n  font-size: 12px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  text-align: center;\n  box-sizing: border-box;\n}\n.section__chips[data-v-b869b780] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n}\n\n.section[data-v-af9caf84] {\n  margin-bottom: 16px;\n}\n.section__header[data-v-af9caf84] {\n  margin-bottom: 8px;\n}\n.section__title[data-v-af9caf84] {\n  font-size: 10px;\n  font-weight: 600;\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n}\n.section__columns[data-v-af9caf84] {\n  display: grid;\n  grid-template-columns: 1fr 1fr;\n  gap: 12px;\n}\n.section__column[data-v-af9caf84] {\n  min-width: 0;\n}\n.section__column-header[data-v-af9caf84] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  margin-bottom: 6px;\n}\n.section__column-title[data-v-af9caf84] {\n  font-size: 9px;\n  font-weight: 500;\n  text-transform: uppercase;\n  letter-spacing: 0.03em;\n}\n.section__column-title--include[data-v-af9caf84] {\n  color: #4299e1;\n}\n.section__column-title--exclude[data-v-af9caf84] {\n  color: #ef4444;\n}\n.section__edit-btn[data-v-af9caf84] {\n  width: 20px;\n  height: 20px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: transparent;\n  border: none;\n  color: var(--fg-color, #fff);\n  cursor: pointer;\n  opacity: 0.5;\n  border-radius: 3px;\n  padding: 0;\n  transition: all 0.15s;\n}\n.section__edit-btn svg[data-v-af9caf84] {\n  width: 12px;\n  height: 12px;\n}\n.section__edit-btn[data-v-af9caf84]:hover {\n  opacity: 1;\n  background: var(--comfy-input-bg, #333);\n}\n.section__edit-btn--include[data-v-af9caf84]:hover {\n  color: #4299e1;\n}\n.section__edit-btn--exclude[data-v-af9caf84]:hover {\n  color: #ef4444;\n}\n.section__content[data-v-af9caf84] {\n  min-height: 22px;\n}\n.section__paths[data-v-af9caf84] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n  min-height: 22px;\n}\n.section__empty[data-v-af9caf84] {\n  font-size: 10px;\n  color: var(--fg-color, #fff);\n  opacity: 0.3;\n  font-style: italic;\n  min-height: 22px;\n  display: flex;\n  align-items: center;\n}\n\n.section[data-v-8b49983c] {\n  margin-bottom: 16px;\n}\n.section__header[data-v-8b49983c] {\n  margin-bottom: 8px;\n}\n.section__title[data-v-8b49983c] {\n  font-size: 10px;\n  font-weight: 600;\n  text-transform: uppercase;\n  letter-spacing: 0.05em;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n}\n.section__toggles[data-v-8b49983c] {\n  display: flex;\n  gap: 16px;\n}\n.toggle-item[data-v-8b49983c] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  cursor: pointer;\n}\n.toggle-item__label[data-v-8b49983c] {\n  font-size: 12px;\n  color: var(--fg-color, #fff);\n}\n.toggle-switch[data-v-8b49983c] {\n  position: relative;\n  width: 36px;\n  height: 20px;\n  padding: 0;\n  background: transparent;\n  border: none;\n  cursor: pointer;\n}\n.toggle-switch__track[data-v-8b49983c] {\n  position: absolute;\n  inset: 0;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 10px;\n  transition: all 0.2s;\n}\n.toggle-switch--active .toggle-switch__track[data-v-8b49983c] {\n  background: rgba(66, 153, 225, 0.3);\n  border-color: rgba(66, 153, 225, 0.6);\n}\n.toggle-switch__thumb[data-v-8b49983c] {\n  position: absolute;\n  top: 2px;\n  left: 2px;\n  width: 14px;\n  height: 14px;\n  background: var(--fg-color, #fff);\n  border-radius: 50%;\n  transition: all 0.2s;\n  opacity: 0.6;\n}\n.toggle-switch--active .toggle-switch__thumb[data-v-8b49983c] {\n  transform: translateX(16px);\n  background: #4299e1;\n  opacity: 1;\n}\n.toggle-switch:hover .toggle-switch__thumb[data-v-8b49983c] {\n  opacity: 1;\n}\n\n.preview[data-v-6a4b50a1] {\n  padding-top: 12px;\n  border-top: 1px solid var(--border-color, #444);\n  position: relative;\n}\n.preview__header[data-v-6a4b50a1] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  cursor: default;\n}\n.preview__title[data-v-6a4b50a1] {\n  font-size: 12px;\n  font-weight: 500;\n  color: var(--fg-color, #fff);\n}\n.preview__refresh[data-v-6a4b50a1] {\n  width: 24px;\n  height: 24px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: transparent;\n  border: none;\n  color: var(--fg-color, #fff);\n  cursor: pointer;\n  opacity: 0.6;\n  border-radius: 4px;\n  transition: all 0.15s;\n}\n.preview__refresh[data-v-6a4b50a1]:hover {\n  opacity: 1;\n  background: var(--comfy-input-bg, #333);\n}\n.preview__refresh[data-v-6a4b50a1]:disabled {\n  cursor: not-allowed;\n}\n.preview__refresh-icon[data-v-6a4b50a1] {\n  width: 14px;\n  height: 14px;\n}\n.preview__refresh--loading .preview__refresh-icon[data-v-6a4b50a1] {\n  animation: spin-6a4b50a1 1s linear infinite;\n}\n@keyframes spin-6a4b50a1 {\nfrom { transform: rotate(0deg);\n}\nto { transform: rotate(360deg);\n}\n}\n\n/* Tooltip styles */\n.preview__tooltip[data-v-6a4b50a1] {\n  position: absolute;\n  bottom: 100%;\n  left: 0;\n  right: 0;\n  margin-bottom: 8px;\n  z-index: 100;\n}\n.preview__tooltip-content[data-v-6a4b50a1] {\n  background: var(--comfy-menu-bg, #1a1a1a);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 6px;\n  padding: 8px;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.preview__item[data-v-6a4b50a1] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 4px 6px;\n  background: var(--comfy-input-bg, #333);\n  border-radius: 4px;\n}\n.preview__thumb[data-v-6a4b50a1] {\n  width: 28px;\n  height: 28px;\n  object-fit: cover;\n  border-radius: 3px;\n  flex-shrink: 0;\n  background: rgba(0, 0, 0, 0.2);\n}\n.preview__thumb--placeholder[data-v-6a4b50a1] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  color: var(--fg-color, #fff);\n  opacity: 0.2;\n}\n.preview__thumb--placeholder svg[data-v-6a4b50a1] {\n  width: 14px;\n  height: 14px;\n}\n.preview__name[data-v-6a4b50a1] {\n  flex: 1;\n  font-size: 11px;\n  color: var(--fg-color, #fff);\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.preview__more[data-v-6a4b50a1] {\n  font-size: 11px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  text-align: center;\n  padding: 4px;\n}\n.preview__empty[data-v-6a4b50a1] {\n  font-size: 11px;\n  color: var(--fg-color, #fff);\n  opacity: 0.4;\n  text-align: center;\n  padding: 8px 0 0 0;\n}\n\n/* Tooltip transitions */\n.tooltip-enter-active[data-v-6a4b50a1],\n.tooltip-leave-active[data-v-6a4b50a1] {\n  transition: opacity 0.15s ease, transform 0.15s ease;\n}\n.tooltip-enter-from[data-v-6a4b50a1],\n.tooltip-leave-to[data-v-6a4b50a1] {\n  opacity: 0;\n  transform: translateY(4px);\n}\n\n.summary-view[data-v-328e7526] {\n  display: flex;\n  flex-direction: column;\n  height: 100%;\n}\n.summary-view__filters[data-v-328e7526] {\n  flex: 1;\n  overflow-y: auto;\n  padding-right: 4px;\n  margin-right: -4px;\n  /* Allow flex item to shrink below content size */\n  min-height: 0;\n}\n\n.lora-pool-modal-backdrop[data-v-fce76ca8] {\n  position: fixed;\n  inset: 0;\n  z-index: 10000;\n  background: rgba(0, 0, 0, 0.6);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  backdrop-filter: blur(2px);\n}\n.lora-pool-modal[data-v-fce76ca8] {\n  background: var(--comfy-menu-bg, #1a1a1a);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 8px;\n  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);\n  max-width: 400px;\n  width: 90%;\n  max-height: 70vh;\n  display: flex;\n  flex-direction: column;\n}\n.lora-pool-modal__header[data-v-fce76ca8] {\n  display: flex;\n  align-items: flex-start;\n  justify-content: space-between;\n  padding: 16px;\n  border-bottom: 1px solid var(--border-color, #444);\n}\n.lora-pool-modal__title-container[data-v-fce76ca8] {\n  flex: 1;\n}\n.lora-pool-modal__title[data-v-fce76ca8] {\n  font-size: 16px;\n  font-weight: 600;\n  color: var(--fg-color, #fff);\n  margin: 0;\n}\n.lora-pool-modal__subtitle[data-v-fce76ca8] {\n  font-size: 12px;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n  margin: 4px 0 0 0;\n}\n.lora-pool-modal__close[data-v-fce76ca8] {\n  width: 28px;\n  height: 28px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: transparent;\n  border: none;\n  color: var(--fg-color, #fff);\n  font-size: 22px;\n  cursor: pointer;\n  opacity: 0.7;\n  border-radius: 4px;\n  line-height: 1;\n  padding: 0;\n  margin: -4px -4px 0 0;\n}\n.lora-pool-modal__close[data-v-fce76ca8]:hover {\n  opacity: 1;\n  background: var(--comfy-input-bg, #333);\n}\n.lora-pool-modal__search[data-v-fce76ca8] {\n  padding: 12px 16px;\n  border-bottom: 1px solid var(--border-color, #444);\n}\n.lora-pool-modal__body[data-v-fce76ca8] {\n  flex: 1;\n  overflow-y: auto;\n  padding: 12px 16px 16px;\n}\n\n/* Transitions */\n.modal-enter-active[data-v-fce76ca8],\n.modal-leave-active[data-v-fce76ca8] {\n  transition: opacity 0.2s ease;\n}\n.modal-enter-from[data-v-fce76ca8],\n.modal-leave-to[data-v-fce76ca8] {\n  opacity: 0;\n}\n.modal-enter-active .lora-pool-modal[data-v-fce76ca8],\n.modal-leave-active .lora-pool-modal[data-v-fce76ca8] {\n  transition: transform 0.2s ease;\n}\n.modal-enter-from .lora-pool-modal[data-v-fce76ca8],\n.modal-leave-to .lora-pool-modal[data-v-fce76ca8] {\n  transform: scale(0.95);\n}\n\n.search-container[data-v-7d08882c] {\n  position: relative;\n}\n.search-icon[data-v-7d08882c] {\n  position: absolute;\n  left: 10px;\n  top: 50%;\n  transform: translateY(-50%);\n  width: 14px;\n  height: 14px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n}\n.search-input[data-v-7d08882c] {\n  width: 100%;\n  padding: 8px 12px 8px 32px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 6px;\n  color: var(--fg-color, #fff);\n  font-size: 13px;\n  outline: none;\n}\n.search-input[data-v-7d08882c]:focus {\n  border-color: var(--fg-color, #fff);\n}\n.search-input[data-v-7d08882c]::placeholder {\n  color: var(--fg-color, #fff);\n  opacity: 0.4;\n}\n.model-list[data-v-7d08882c] {\n  display: flex;\n  flex-direction: column;\n  gap: 2px;\n}\n.model-item[data-v-7d08882c] {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  padding: 10px 8px;\n  border-radius: 4px;\n  cursor: pointer;\n  transition: background 0.15s;\n}\n.model-item[data-v-7d08882c]:hover {\n  background: var(--comfy-input-bg, #333);\n}\n.model-checkbox[data-v-7d08882c] {\n  position: absolute;\n  opacity: 0;\n  pointer-events: none;\n}\n.model-checkbox-visual[data-v-7d08882c] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 18px;\n  height: 18px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #555);\n  border-radius: 4px;\n  flex-shrink: 0;\n  transition: all 0.15s;\n}\n.model-item:hover .model-checkbox-visual[data-v-7d08882c] {\n  border-color: var(--fg-color, #fff);\n}\n.model-checkbox:checked + .model-checkbox-visual[data-v-7d08882c] {\n  background: var(--fg-color, #fff);\n  border-color: var(--fg-color, #fff);\n}\n.check-icon[data-v-7d08882c] {\n  width: 12px;\n  height: 12px;\n  color: var(--comfy-menu-bg, #1a1a1a);\n}\n.model-name[data-v-7d08882c] {\n  flex: 1;\n  font-size: 13px;\n  color: var(--fg-color, #fff);\n}\n.model-count[data-v-7d08882c] {\n  font-size: 12px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n}\n.no-results[data-v-7d08882c] {\n  padding: 20px;\n  text-align: center;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  font-size: 13px;\n}\n\n.search-container[data-v-4b3cfd31] {\n  position: relative;\n}\n.search-icon[data-v-4b3cfd31] {\n  position: absolute;\n  left: 10px;\n  top: 50%;\n  transform: translateY(-50%);\n  width: 14px;\n  height: 14px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n}\n.search-input[data-v-4b3cfd31] {\n  width: 100%;\n  padding: 8px 12px 8px 32px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 6px;\n  color: var(--fg-color, #fff);\n  font-size: 13px;\n  outline: none;\n}\n.search-input[data-v-4b3cfd31]:focus {\n  border-color: var(--fg-color, #fff);\n}\n.search-input[data-v-4b3cfd31]::placeholder {\n  color: var(--fg-color, #fff);\n  opacity: 0.4;\n}\n.tags-container[data-v-4b3cfd31] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n.tag-chip[data-v-4b3cfd31] {\n  padding: 6px 12px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #555);\n  border-radius: 16px;\n  color: var(--fg-color, #fff);\n  font-size: 12px;\n  cursor: pointer;\n  transition: all 0.15s;\n}\n.tag-chip[data-v-4b3cfd31]:hover {\n  border-color: var(--fg-color, #fff);\n}\n\n/* Include variant - blue when selected */\n.tags-modal--include .tag-chip--selected[data-v-4b3cfd31],\n.tag-chip--selected[data-v-4b3cfd31] {\n  background: rgba(66, 153, 225, 0.2);\n  border-color: rgba(66, 153, 225, 0.6);\n  color: #4299e1;\n}\n\n/* Exclude variant - red when selected */\n.tags-modal--exclude .tag-chip--selected[data-v-4b3cfd31] {\n  background: rgba(239, 68, 68, 0.2);\n  border-color: rgba(239, 68, 68, 0.6);\n  color: #ef4444;\n}\n.no-results[data-v-4b3cfd31] {\n  width: 100%;\n  padding: 20px;\n  text-align: center;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  font-size: 13px;\n}\n\n.tree-node__item[data-v-90187dd4] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 6px 8px;\n  border-radius: 4px;\n  cursor: pointer;\n  transition: background 0.15s;\n}\n.tree-node__item[data-v-90187dd4]:hover {\n  background: var(--comfy-input-bg, #333);\n}\n.tree-node__toggle[data-v-90187dd4] {\n  width: 16px;\n  height: 16px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  background: transparent;\n  border: none;\n  color: var(--fg-color, #fff);\n  cursor: pointer;\n  opacity: 0.5;\n  padding: 0;\n  flex-shrink: 0;\n}\n.tree-node__toggle[data-v-90187dd4]:hover {\n  opacity: 1;\n}\n.tree-node__toggle-icon[data-v-90187dd4] {\n  width: 10px;\n  height: 10px;\n  transition: transform 0.15s;\n}\n.tree-node__toggle-icon--expanded[data-v-90187dd4] {\n  transform: rotate(90deg);\n}\n.tree-node__toggle-spacer[data-v-90187dd4] {\n  width: 16px;\n  flex-shrink: 0;\n}\n.tree-node__checkbox-label[data-v-90187dd4] {\n  display: flex;\n  align-items: center;\n  cursor: pointer;\n}\n.tree-node__checkbox[data-v-90187dd4] {\n  position: absolute;\n  opacity: 0;\n  pointer-events: none;\n}\n.tree-node__checkbox-visual[data-v-90187dd4] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  width: 16px;\n  height: 16px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #555);\n  border-radius: 3px;\n  flex-shrink: 0;\n  transition: all 0.15s;\n}\n.tree-node__item:hover .tree-node__checkbox-visual[data-v-90187dd4] {\n  border-color: var(--fg-color, #fff);\n}\n.tree-node__checkbox:checked + .tree-node__checkbox-visual--include[data-v-90187dd4] {\n  background: #4299e1;\n  border-color: #4299e1;\n}\n.tree-node__checkbox:checked + .tree-node__checkbox-visual--exclude[data-v-90187dd4] {\n  background: #ef4444;\n  border-color: #ef4444;\n}\n.tree-node__check-icon[data-v-90187dd4] {\n  width: 10px;\n  height: 10px;\n  color: #fff;\n}\n.tree-node__folder-icon[data-v-90187dd4] {\n  width: 14px;\n  height: 14px;\n  color: var(--fg-color, #fff);\n  opacity: 0.6;\n  flex-shrink: 0;\n}\n.tree-node__label[data-v-90187dd4] {\n  flex: 1;\n  font-size: 13px;\n  color: var(--fg-color, #fff);\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.tree-node__children[data-v-90187dd4] {\n  /* Children already indented via padding */\n}\n\n.search-container[data-v-046dcbf4] {\n  position: relative;\n}\n.search-icon[data-v-046dcbf4] {\n  position: absolute;\n  left: 10px;\n  top: 50%;\n  transform: translateY(-50%);\n  width: 14px;\n  height: 14px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n}\n.search-input[data-v-046dcbf4] {\n  width: 100%;\n  padding: 8px 12px 8px 32px;\n  background: var(--comfy-input-bg, #333);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 6px;\n  color: var(--fg-color, #fff);\n  font-size: 13px;\n  outline: none;\n}\n.search-input[data-v-046dcbf4]:focus {\n  border-color: var(--fg-color, #fff);\n}\n.search-input[data-v-046dcbf4]::placeholder {\n  color: var(--fg-color, #fff);\n  opacity: 0.4;\n}\n.folder-tree[data-v-046dcbf4] {\n  display: flex;\n  flex-direction: column;\n}\n.no-results[data-v-046dcbf4] {\n  padding: 20px;\n  text-align: center;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  font-size: 13px;\n}\n\n.lora-pool-widget[data-v-ae5c87ce] {\n  padding: 12px;\n  background: rgba(40, 44, 52, 0.6);\n  border-radius: 4px;\n  height: 100%;\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n  box-sizing: border-box;\n}\n\n.last-used-preview[data-v-63e176e4] {\n  position: absolute;\n  bottom: 100%;\n  right: 0;\n  margin-bottom: 8px;\n  z-index: 100;\n  width: 280px;\n}\n.last-used-preview__content[data-v-63e176e4] {\n  background: var(--comfy-menu-bg, #1a1a1a);\n  border: 1px solid var(--border-color, #444);\n  border-radius: 6px;\n  padding: 8px;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.last-used-preview__item[data-v-63e176e4] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 4px 6px;\n  background: var(--comfy-input-bg, #333);\n  border-radius: 4px;\n}\n.last-used-preview__thumb[data-v-63e176e4] {\n  width: 28px;\n  height: 28px;\n  object-fit: cover;\n  border-radius: 3px;\n  flex-shrink: 0;\n  background: rgba(0, 0, 0, 0.2);\n}\n.last-used-preview__thumb--placeholder[data-v-63e176e4] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  color: var(--fg-color, #fff);\n  opacity: 0.2;\n}\n.last-used-preview__thumb--placeholder svg[data-v-63e176e4] {\n  width: 14px;\n  height: 14px;\n}\n.last-used-preview__info[data-v-63e176e4] {\n  flex: 1;\n  display: flex;\n  flex-direction: column;\n  gap: 1px;\n  min-width: 0;\n}\n.last-used-preview__name[data-v-63e176e4] {\n  font-size: 11px;\n  color: var(--fg-color, #fff);\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.last-used-preview__strength[data-v-63e176e4] {\n  font-size: 10px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n}\n.last-used-preview__more[data-v-63e176e4] {\n  font-size: 11px;\n  color: var(--fg-color, #fff);\n  opacity: 0.5;\n  text-align: center;\n  padding: 4px;\n}\n\n.randomizer-settings[data-v-d1195ce6] {\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n  color: #e4e4e7;\n}\n.settings-header[data-v-d1195ce6] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  margin-bottom: 8px;\n}\n.settings-title[data-v-d1195ce6] {\n  font-size: 11px;\n  font-weight: 600;\n  letter-spacing: 0.05em;\n  color: #a1a1aa;\n  margin: 0;\n  text-transform: uppercase;\n}\n.setting-section[data-v-d1195ce6] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n}\n.setting-label[data-v-d1195ce6] {\n  font-size: 12px;\n  font-weight: 500;\n  color: #d4d4d8;\n}\n.count-mode-selector[data-v-d1195ce6],\n.roll-mode-selector[data-v-d1195ce6] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 6px 8px;\n  background: rgba(30, 30, 36, 0.5);\n  border-radius: 4px;\n}\n.radio-label[data-v-d1195ce6] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  font-size: 13px;\n  color: #e4e4e7;\n  cursor: pointer;\n  flex: 1;\n}\n.radio-label input[type='radio'][data-v-d1195ce6] {\n  cursor: pointer;\n}\n.radio-label input[type='radio'][data-v-d1195ce6]:disabled {\n  cursor: not-allowed;\n}\n.number-input[data-v-d1195ce6] {\n  width: 60px;\n  padding: 4px 8px;\n  background: rgba(20, 20, 24, 0.6);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  border-radius: 3px;\n  color: #e4e4e7;\n  font-size: 13px;\n}\n.number-input[data-v-d1195ce6]:disabled {\n  opacity: 0.5;\n  cursor: not-allowed;\n}\n.strength-inputs[data-v-d1195ce6] {\n  display: flex;\n  gap: 12px;\n  padding: 6px 8px;\n  background: rgba(30, 30, 36, 0.5);\n  border-radius: 4px;\n}\n.strength-inputs.disabled[data-v-d1195ce6] {\n  opacity: 0.5;\n}\n.strength-input-group[data-v-d1195ce6] {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  flex: 1;\n}\n.strength-input-group label[data-v-d1195ce6] {\n  font-size: 12px;\n  color: #d4d4d8;\n}\n.checkbox-group[data-v-d1195ce6] {\n  padding: 6px 8px;\n  background: rgba(30, 30, 36, 0.5);\n  border-radius: 4px;\n}\n.checkbox-label[data-v-d1195ce6] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  font-size: 13px;\n  color: #e4e4e7;\n  cursor: pointer;\n}\n.checkbox-label input[type='checkbox'][data-v-d1195ce6] {\n  cursor: pointer;\n}\n\n/* Roll buttons with tooltip container */\n.roll-buttons-with-tooltip[data-v-d1195ce6] {\n  position: relative;\n}\n\n/* Roll buttons container */\n.roll-buttons[data-v-d1195ce6] {\n  display: grid;\n  grid-template-columns: 1fr 1fr 1fr;\n  gap: 8px;\n}\n.roll-button[data-v-d1195ce6] {\n  padding: 8px 10px;\n  background: rgba(30, 30, 36, 0.6);\n  border: 1px solid rgba(255, 255, 255, 0.1);\n  border-radius: 4px;\n  display: flex;\n  flex-direction: row;\n  align-items: center;\n  justify-content: center;\n  gap: 6px;\n  color: #e4e4e7;\n  font-size: 11px;\n  font-weight: 500;\n  cursor: pointer;\n  transition: all 0.2s;\n  white-space: nowrap;\n}\n.roll-button[data-v-d1195ce6]:hover:not(:disabled) {\n  background: rgba(66, 153, 225, 0.2);\n  border-color: rgba(66, 153, 225, 0.4);\n  color: #bfdbfe;\n}\n.roll-button.selected[data-v-d1195ce6] {\n  background: rgba(66, 153, 225, 0.3);\n  border-color: rgba(66, 153, 225, 0.6);\n  color: #e4e4e7;\n  box-shadow: 0 0 0 1px rgba(66, 153, 225, 0.3);\n}\n.roll-button[data-v-d1195ce6]:disabled {\n  opacity: 0.4;\n  cursor: not-allowed;\n}\n.roll-button__icon[data-v-d1195ce6] {\n  width: 20px;\n  height: 20px;\n  flex-shrink: 0;\n}\n.roll-button__text[data-v-d1195ce6] {\n  font-size: 11px;\n  text-align: center;\n  line-height: 1.2;\n}\n\n/* Tooltip transitions */\n.tooltip-enter-active[data-v-d1195ce6],\n.tooltip-leave-active[data-v-d1195ce6] {\n  transition: opacity 0.15s ease, transform 0.15s ease;\n}\n.tooltip-enter-from[data-v-d1195ce6],\n.tooltip-leave-to[data-v-d1195ce6] {\n  opacity: 0;\n  transform: translateY(4px);\n}\n\n.lora-randomizer-widget[data-v-55cc8591] {\n  padding: 12px;\n  background: rgba(40, 44, 52, 0.6);\n  border-radius: 4px;\n  height: 100%;\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n  box-sizing: border-box;\n}"));
+      elementStyle.appendChild(document.createTextNode(`.filter-chip[data-v-7e36267d] {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--comfy-input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--fg-color);
+  white-space: nowrap;
+}
+.filter-chip__text[data-v-7e36267d] {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.filter-chip__count[data-v-7e36267d] {
+  opacity: 0.6;
+  font-size: 10px;
+}
+.filter-chip__remove[data-v-7e36267d] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+.filter-chip__remove[data-v-7e36267d]:hover {
+  opacity: 1;
+}
+
+/* Variants */
+.filter-chip--include[data-v-7e36267d] {
+  background: rgba(66, 153, 225, 0.15);
+  border-color: rgba(66, 153, 225, 0.4);
+  color: #4299e1;
+}
+.filter-chip--exclude[data-v-7e36267d] {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+.filter-chip--neutral[data-v-7e36267d] {
+  background: rgba(100, 100, 100, 0.3);
+  border-color: rgba(150, 150, 150, 0.4);
+  color: var(--fg-color);
+}
+.filter-chip--path[data-v-7e36267d] {
+  background: rgba(30, 30, 30, 0.8);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--fg-color);
+  font-family: monospace;
+  font-size: 10px;
+}
+
+.edit-button[data-v-8da8aa4b] {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: transparent;
+  border: none;
+  color: var(--fg-color);
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+  border-radius: 3px;
+}
+.edit-button[data-v-8da8aa4b]:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.05);
+}
+.edit-button__icon[data-v-8da8aa4b] {
+  width: 10px;
+  height: 10px;
+}
+.edit-button__text[data-v-8da8aa4b] {
+  font-weight: 400;
+}
+
+.section[data-v-12f059e2] {
+  margin-bottom: 16px;
+}
+.section__header[data-v-12f059e2] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.section__title[data-v-12f059e2] {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-color, #fff);
+  opacity: 0.6;
+}
+.section__content[data-v-12f059e2] {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+.section__placeholder[data-v-12f059e2] {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--comfy-input-bg, #333);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
+  text-align: center;
+  box-sizing: border-box;
+}
+.section__chips[data-v-12f059e2] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.section[data-v-b869b780] {
+  margin-bottom: 16px;
+}
+.section__header[data-v-b869b780] {
+  margin-bottom: 8px;
+}
+.section__title[data-v-b869b780] {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-color, #fff);
+  opacity: 0.6;
+}
+.section__columns[data-v-b869b780] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.section__column[data-v-b869b780] {
+  min-width: 0;
+}
+.section__column-header[data-v-b869b780] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.section__column-title[data-v-b869b780] {
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.section__column-title--include[data-v-b869b780] {
+  color: #4299e1;
+}
+.section__column-title--exclude[data-v-b869b780] {
+  color: #ef4444;
+}
+.section__column-content[data-v-b869b780] {
+  min-height: 28px;
+}
+.section__empty[data-v-b869b780] {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--comfy-input-bg, #333);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
+  text-align: center;
+  box-sizing: border-box;
+}
+.section__chips[data-v-b869b780] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.section[data-v-af9caf84] {
+  margin-bottom: 16px;
+}
+.section__header[data-v-af9caf84] {
+  margin-bottom: 8px;
+}
+.section__title[data-v-af9caf84] {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-color, #fff);
+  opacity: 0.6;
+}
+.section__columns[data-v-af9caf84] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.section__column[data-v-af9caf84] {
+  min-width: 0;
+}
+.section__column-header[data-v-af9caf84] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.section__column-title[data-v-af9caf84] {
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.section__column-title--include[data-v-af9caf84] {
+  color: #4299e1;
+}
+.section__column-title--exclude[data-v-af9caf84] {
+  color: #ef4444;
+}
+.section__edit-btn[data-v-af9caf84] {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--fg-color, #fff);
+  cursor: pointer;
+  opacity: 0.5;
+  border-radius: 3px;
+  padding: 0;
+  transition: all 0.15s;
+}
+.section__edit-btn svg[data-v-af9caf84] {
+  width: 12px;
+  height: 12px;
+}
+.section__edit-btn[data-v-af9caf84]:hover {
+  opacity: 1;
+  background: var(--comfy-input-bg, #333);
+}
+.section__edit-btn--include[data-v-af9caf84]:hover {
+  color: #4299e1;
+}
+.section__edit-btn--exclude[data-v-af9caf84]:hover {
+  color: #ef4444;
+}
+.section__content[data-v-af9caf84] {
+  min-height: 22px;
+}
+.section__paths[data-v-af9caf84] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 22px;
+}
+.section__empty[data-v-af9caf84] {
+  font-size: 10px;
+  color: var(--fg-color, #fff);
+  opacity: 0.3;
+  font-style: italic;
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+}
+
+.section[data-v-8b49983c] {
+  margin-bottom: 16px;
+}
+.section__header[data-v-8b49983c] {
+  margin-bottom: 8px;
+}
+.section__title[data-v-8b49983c] {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-color, #fff);
+  opacity: 0.6;
+}
+.section__toggles[data-v-8b49983c] {
+  display: flex;
+  gap: 16px;
+}
+.toggle-item[data-v-8b49983c] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.toggle-item__label[data-v-8b49983c] {
+  font-size: 12px;
+  color: var(--fg-color, #fff);
+}
+.toggle-switch[data-v-8b49983c] {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.toggle-switch__track[data-v-8b49983c] {
+  position: absolute;
+  inset: 0;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+.toggle-switch--active .toggle-switch__track[data-v-8b49983c] {
+  background: rgba(66, 153, 225, 0.3);
+  border-color: rgba(66, 153, 225, 0.6);
+}
+.toggle-switch__thumb[data-v-8b49983c] {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--fg-color, #fff);
+  border-radius: 50%;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+.toggle-switch--active .toggle-switch__thumb[data-v-8b49983c] {
+  transform: translateX(16px);
+  background: #4299e1;
+  opacity: 1;
+}
+.toggle-switch:hover .toggle-switch__thumb[data-v-8b49983c] {
+  opacity: 1;
+}
+
+.preview[data-v-6a4b50a1] {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color, #444);
+  position: relative;
+}
+.preview__header[data-v-6a4b50a1] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: default;
+}
+.preview__title[data-v-6a4b50a1] {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-color, #fff);
+}
+.preview__refresh[data-v-6a4b50a1] {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--fg-color, #fff);
+  cursor: pointer;
+  opacity: 0.6;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+.preview__refresh[data-v-6a4b50a1]:hover {
+  opacity: 1;
+  background: var(--comfy-input-bg, #333);
+}
+.preview__refresh[data-v-6a4b50a1]:disabled {
+  cursor: not-allowed;
+}
+.preview__refresh-icon[data-v-6a4b50a1] {
+  width: 14px;
+  height: 14px;
+}
+.preview__refresh--loading .preview__refresh-icon[data-v-6a4b50a1] {
+  animation: spin-6a4b50a1 1s linear infinite;
+}
+@keyframes spin-6a4b50a1 {
+from { transform: rotate(0deg);
+}
+to { transform: rotate(360deg);
+}
+}
+
+/* Tooltip styles */
+.preview__tooltip[data-v-6a4b50a1] {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 8px;
+  z-index: 100;
+}
+.preview__tooltip-content[data-v-6a4b50a1] {
+  background: var(--comfy-menu-bg, #1a1a1a);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 6px;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.preview__item[data-v-6a4b50a1] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  background: var(--comfy-input-bg, #333);
+  border-radius: 4px;
+}
+.preview__thumb[data-v-6a4b50a1] {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 3px;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.2);
+}
+.preview__thumb--placeholder[data-v-6a4b50a1] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-color, #fff);
+  opacity: 0.2;
+}
+.preview__thumb--placeholder svg[data-v-6a4b50a1] {
+  width: 14px;
+  height: 14px;
+}
+.preview__name[data-v-6a4b50a1] {
+  flex: 1;
+  font-size: 11px;
+  color: var(--fg-color, #fff);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.preview__more[data-v-6a4b50a1] {
+  font-size: 11px;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
+  text-align: center;
+  padding: 4px;
+}
+.preview__empty[data-v-6a4b50a1] {
+  font-size: 11px;
+  color: var(--fg-color, #fff);
+  opacity: 0.4;
+  text-align: center;
+  padding: 8px 0 0 0;
+}
+
+/* Tooltip transitions */
+.tooltip-enter-active[data-v-6a4b50a1],
+.tooltip-leave-active[data-v-6a4b50a1] {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.tooltip-enter-from[data-v-6a4b50a1],
+.tooltip-leave-to[data-v-6a4b50a1] {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.summary-view[data-v-328e7526] {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.summary-view__filters[data-v-328e7526] {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-right: -4px;
+  /* Allow flex item to shrink below content size */
+  min-height: 0;
+}
+
+.lora-pool-modal-backdrop[data-v-fce76ca8] {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+.lora-pool-modal[data-v-fce76ca8] {
+  background: var(--comfy-menu-bg, #1a1a1a);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  max-width: 400px;
+  width: 90%;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+}
+.lora-pool-modal__header[data-v-fce76ca8] {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color, #444);
+}
+.lora-pool-modal__title-container[data-v-fce76ca8] {
+  flex: 1;
+}
+.lora-pool-modal__title[data-v-fce76ca8] {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg-color, #fff);
+  margin: 0;
+}
+.lora-pool-modal__subtitle[data-v-fce76ca8] {
+  font-size: 12px;
+  color: var(--fg-color, #fff);
+  opacity: 0.6;
+  margin: 4px 0 0 0;
+}
+.lora-pool-modal__close[data-v-fce76ca8] {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--fg-color, #fff);
+  font-size: 22px;
+  cursor: pointer;
+  opacity: 0.7;
+  border-radius: 4px;
+  line-height: 1;
+  padding: 0;
+  margin: -4px -4px 0 0;
+}
+.lora-pool-modal__close[data-v-fce76ca8]:hover {
+  opacity: 1;
+  background: var(--comfy-input-bg, #333);
+}
+.lora-pool-modal__search[data-v-fce76ca8] {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color, #444);
+}
+.lora-pool-modal__body[data-v-fce76ca8] {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px 16px;
+}
+
+/* Transitions */
+.modal-enter-active[data-v-fce76ca8],
+.modal-leave-active[data-v-fce76ca8] {
+  transition: opacity 0.2s ease;
+}
+.modal-enter-from[data-v-fce76ca8],
+.modal-leave-to[data-v-fce76ca8] {
+  opacity: 0;
+}
+.modal-enter-active .lora-pool-modal[data-v-fce76ca8],
+.modal-leave-active .lora-pool-modal[data-v-fce76ca8] {
+  transition: transform 0.2s ease;
+}
+.modal-enter-from .lora-pool-modal[data-v-fce76ca8],
+.modal-leave-to .lora-pool-modal[data-v-fce76ca8] {
+  transform: scale(0.95);
+}
+
+.search-container[data-v-7d08882c] {
+  position: relative;
+}
+.search-icon[data-v-7d08882c] {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
+}
+.search-input[data-v-7d08882c] {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 6px;
+  color: var(--fg-color, #fff);
+  font-size: 13px;
+  outline: none;
+}
+.search-input[data-v-7d08882c]:focus {
+  border-color: var(--fg-color, #fff);
+}
+.search-input[data-v-7d08882c]::placeholder {
+  color: var(--fg-color, #fff);
+  opacity: 0.4;
+}
+.model-list[data-v-7d08882c] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.model-item[data-v-7d08882c] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.model-item[data-v-7d08882c]:hover {
+  background: var(--comfy-input-bg, #333);
+}
+.model-checkbox[data-v-7d08882c] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.model-checkbox-visual[data-v-7d08882c] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #555);
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.model-item:hover .model-checkbox-visual[data-v-7d08882c] {
+  border-color: var(--fg-color, #fff);
+}
+.model-checkbox:checked + .model-checkbox-visual[data-v-7d08882c] {
+  background: var(--fg-color, #fff);
+  border-color: var(--fg-color, #fff);
+}
+.check-icon[data-v-7d08882c] {
+  width: 12px;
+  height: 12px;
+  color: var(--comfy-menu-bg, #1a1a1a);
+}
+.model-name[data-v-7d08882c] {
+  flex: 1;
+  font-size: 13px;
+  color: var(--fg-color, #fff);
+}
+.model-count[data-v-7d08882c] {
+  font-size: 12px;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
+}
+.no-results[data-v-7d08882c] {
+  padding: 20px;
+  text-align: center;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
+  font-size: 13px;
+}
+
+.search-container[data-v-4b3cfd31] {
+  position: relative;
+}
+.search-icon[data-v-4b3cfd31] {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
+}
+.search-input[data-v-4b3cfd31] {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 6px;
+  color: var(--fg-color, #fff);
+  font-size: 13px;
+  outline: none;
+}
+.search-input[data-v-4b3cfd31]:focus {
+  border-color: var(--fg-color, #fff);
+}
+.search-input[data-v-4b3cfd31]::placeholder {
+  color: var(--fg-color, #fff);
+  opacity: 0.4;
+}
+.tags-container[data-v-4b3cfd31] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tag-chip[data-v-4b3cfd31] {
+  padding: 6px 12px;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #555);
+  border-radius: 16px;
+  color: var(--fg-color, #fff);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tag-chip[data-v-4b3cfd31]:hover {
+  border-color: var(--fg-color, #fff);
+}
+
+/* Include variant - blue when selected */
+.tags-modal--include .tag-chip--selected[data-v-4b3cfd31],
+.tag-chip--selected[data-v-4b3cfd31] {
+  background: rgba(66, 153, 225, 0.2);
+  border-color: rgba(66, 153, 225, 0.6);
+  color: #4299e1;
+}
+
+/* Exclude variant - red when selected */
+.tags-modal--exclude .tag-chip--selected[data-v-4b3cfd31] {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #ef4444;
+}
+.no-results[data-v-4b3cfd31] {
+  width: 100%;
+  padding: 20px;
+  text-align: center;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
+  font-size: 13px;
+}
+
+.tree-node__item[data-v-90187dd4] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.tree-node__item[data-v-90187dd4]:hover {
+  background: var(--comfy-input-bg, #333);
+}
+.tree-node__toggle[data-v-90187dd4] {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--fg-color, #fff);
+  cursor: pointer;
+  opacity: 0.5;
+  padding: 0;
+  flex-shrink: 0;
+}
+.tree-node__toggle[data-v-90187dd4]:hover {
+  opacity: 1;
+}
+.tree-node__toggle-icon[data-v-90187dd4] {
+  width: 10px;
+  height: 10px;
+  transition: transform 0.15s;
+}
+.tree-node__toggle-icon--expanded[data-v-90187dd4] {
+  transform: rotate(90deg);
+}
+.tree-node__toggle-spacer[data-v-90187dd4] {
+  width: 16px;
+  flex-shrink: 0;
+}
+.tree-node__checkbox-label[data-v-90187dd4] {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.tree-node__checkbox[data-v-90187dd4] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.tree-node__checkbox-visual[data-v-90187dd4] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #555);
+  border-radius: 3px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.tree-node__item:hover .tree-node__checkbox-visual[data-v-90187dd4] {
+  border-color: var(--fg-color, #fff);
+}
+.tree-node__checkbox:checked + .tree-node__checkbox-visual--include[data-v-90187dd4] {
+  background: #4299e1;
+  border-color: #4299e1;
+}
+.tree-node__checkbox:checked + .tree-node__checkbox-visual--exclude[data-v-90187dd4] {
+  background: #ef4444;
+  border-color: #ef4444;
+}
+.tree-node__check-icon[data-v-90187dd4] {
+  width: 10px;
+  height: 10px;
+  color: #fff;
+}
+.tree-node__folder-icon[data-v-90187dd4] {
+  width: 14px;
+  height: 14px;
+  color: var(--fg-color, #fff);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+.tree-node__label[data-v-90187dd4] {
+  flex: 1;
+  font-size: 13px;
+  color: var(--fg-color, #fff);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tree-node__children[data-v-90187dd4] {
+  /* Children already indented via padding */
+}
+
+.search-container[data-v-046dcbf4] {
+  position: relative;
+}
+.search-icon[data-v-046dcbf4] {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
+}
+.search-input[data-v-046dcbf4] {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 6px;
+  color: var(--fg-color, #fff);
+  font-size: 13px;
+  outline: none;
+}
+.search-input[data-v-046dcbf4]:focus {
+  border-color: var(--fg-color, #fff);
+}
+.search-input[data-v-046dcbf4]::placeholder {
+  color: var(--fg-color, #fff);
+  opacity: 0.4;
+}
+.folder-tree[data-v-046dcbf4] {
+  display: flex;
+  flex-direction: column;
+}
+.no-results[data-v-046dcbf4] {
+  padding: 20px;
+  text-align: center;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
+  font-size: 13px;
+}
+
+.lora-pool-widget[data-v-7d3f681d] {
+  padding: 12px;
+  background: rgba(40, 44, 52, 0.6);
+  border-radius: 4px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.last-used-preview[data-v-63e176e4] {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 8px;
+  z-index: 100;
+  width: 280px;
+}
+.last-used-preview__content[data-v-63e176e4] {
+  background: var(--comfy-menu-bg, #1a1a1a);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 6px;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.last-used-preview__item[data-v-63e176e4] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  background: var(--comfy-input-bg, #333);
+  border-radius: 4px;
+}
+.last-used-preview__thumb[data-v-63e176e4] {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 3px;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.2);
+}
+.last-used-preview__thumb--placeholder[data-v-63e176e4] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-color, #fff);
+  opacity: 0.2;
+}
+.last-used-preview__thumb--placeholder svg[data-v-63e176e4] {
+  width: 14px;
+  height: 14px;
+}
+.last-used-preview__info[data-v-63e176e4] {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.last-used-preview__name[data-v-63e176e4] {
+  font-size: 11px;
+  color: var(--fg-color, #fff);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.last-used-preview__strength[data-v-63e176e4] {
+  font-size: 10px;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
+}
+.last-used-preview__more[data-v-63e176e4] {
+  font-size: 11px;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
+  text-align: center;
+  padding: 4px;
+}
+
+.single-slider[data-v-4c53509e] {
+  position: relative;
+  width: 100%;
+  height: 32px;
+  user-select: none;
+}
+.single-slider.disabled[data-v-4c53509e] {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.slider-track[data-v-4c53509e] {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--comfy-input-bg, #333);
+  border-radius: 2px;
+}
+.slider-track__bg[data-v-4c53509e] {
+  position: absolute;
+  inset: 0;
+  background: rgba(66, 153, 225, 0.15);
+  border-radius: 2px;
+}
+.slider-track__active[data-v-4c53509e] {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(66, 153, 225, 0.6);
+  border-radius: 2px;
+  transition: width 0.05s linear;
+}
+.slider-track__default[data-v-4c53509e] {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(66, 153, 225, 0.1);
+  border-radius: 2px;
+}
+.slider-handle[data-v-4c53509e] {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  cursor: grab;
+  z-index: 2;
+}
+.slider-handle[data-v-4c53509e]:active {
+  cursor: grabbing;
+}
+.slider-handle__thumb[data-v-4c53509e] {
+  width: 12px;
+  height: 12px;
+  background: var(--fg-color, #fff);
+  border-radius: 50%;
+  position: absolute;
+  top: 10px;
+  left: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease;
+}
+.slider-handle:hover .slider-handle__thumb[data-v-4c53509e] {
+  transform: scale(1.1);
+}
+.slider-handle:active .slider-handle__thumb[data-v-4c53509e] {
+  transform: scale(1.15);
+}
+.slider-handle__value[data-v-4c53509e] {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-family: 'SF Mono', 'Roboto Mono', monospace;
+  color: var(--fg-color, #fff);
+  opacity: 0.8;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.dual-range-slider[data-v-5c79be81] {
+  position: relative;
+  width: 100%;
+  height: 32px;
+  user-select: none;
+}
+.dual-range-slider.disabled[data-v-5c79be81] {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.slider-track[data-v-5c79be81] {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--comfy-input-bg, #333);
+  border-radius: 2px;
+}
+.slider-track__bg[data-v-5c79be81] {
+  position: absolute;
+  inset: 0;
+  background: rgba(66, 153, 225, 0.15);
+  border-radius: 2px;
+}
+.slider-track__active[data-v-5c79be81] {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(66, 153, 225, 0.6);
+  border-radius: 2px;
+  transition: left 0.05s linear, width 0.05s linear;
+}
+.slider-track__default[data-v-5c79be81] {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(66, 153, 225, 0.1);
+  border-radius: 2px;
+}
+.slider-handle[data-v-5c79be81] {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  cursor: grab;
+  z-index: 2;
+}
+.slider-handle[data-v-5c79be81]:active {
+  cursor: grabbing;
+}
+.slider-handle__thumb[data-v-5c79be81] {
+  width: 12px;
+  height: 12px;
+  background: var(--fg-color, #fff);
+  border-radius: 50%;
+  position: absolute;
+  top: 10px;
+  left: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease;
+}
+.slider-handle:hover .slider-handle__thumb[data-v-5c79be81] {
+  transform: scale(1.1);
+}
+.slider-handle:active .slider-handle__thumb[data-v-5c79be81] {
+  transform: scale(1.15);
+}
+.slider-handle__value[data-v-5c79be81] {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-family: 'SF Mono', 'Roboto Mono', monospace;
+  color: var(--fg-color, #fff);
+  opacity: 0.8;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.slider-handle--min .slider-handle__value[data-v-5c79be81] {
+  text-align: center;
+}
+.slider-handle--max .slider-handle__value[data-v-5c79be81] {
+  text-align: center;
+}
+
+.randomizer-settings[data-v-3c382ac5] {
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #e4e4e7;
+}
+.settings-header[data-v-3c382ac5] {
+  margin-bottom: 8px;
+}
+.settings-title[data-v-3c382ac5] {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--fg-color, #fff);
+  opacity: 0.6;
+  margin: 0;
+  text-transform: uppercase;
+}
+.setting-section[data-v-3c382ac5] {
+  margin-bottom: 16px;
+}
+.setting-label[data-v-3c382ac5] {
+  font-size: 12px;
+  font-weight: 500;
+  color: #d4d4d8;
+  display: block;
+  margin-bottom: 8px;
+}
+.section-header-with-toggle[data-v-3c382ac5] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.section-header-with-toggle .setting-label[data-v-3c382ac5] {
+  margin-bottom: 0;
+}
+
+/* Count Mode Tabs */
+.count-mode-tabs[data-v-3c382ac5] {
+  display: flex;
+  background: rgba(26, 32, 44, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.count-mode-tab[data-v-3c382ac5] {
+  flex: 1;
+  position: relative;
+  padding: 8px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.count-mode-tab input[type="radio"][data-v-3c382ac5] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.count-mode-tab-label[data-v-3c382ac5] {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(226, 232, 240, 0.7);
+  transition: all 0.2s ease;
+}
+.count-mode-tab:hover .count-mode-tab-label[data-v-3c382ac5] {
+  color: rgba(226, 232, 240, 0.9);
+}
+.count-mode-tab.active .count-mode-tab-label[data-v-3c382ac5] {
+  color: rgba(191, 219, 254, 1);
+  font-weight: 600;
+}
+.count-mode-tab.active[data-v-3c382ac5] {
+  background: rgba(66, 153, 225, 0.2);
+}
+.count-mode-tab.active[data-v-3c382ac5]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(66, 153, 225, 0.9);
+}
+.slider-container[data-v-3c382ac5] {
+  background: rgba(26, 32, 44, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.2);
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+/* Toggle Switch (same style as LicenseSection) */
+.toggle-switch[data-v-3c382ac5] {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.toggle-switch__track[data-v-3c382ac5] {
+  position: absolute;
+  inset: 0;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+.toggle-switch--active .toggle-switch__track[data-v-3c382ac5] {
+  background: rgba(66, 153, 225, 0.3);
+  border-color: rgba(66, 153, 225, 0.6);
+}
+.toggle-switch__thumb[data-v-3c382ac5] {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--fg-color, #fff);
+  border-radius: 50%;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+.toggle-switch--active .toggle-switch__thumb[data-v-3c382ac5] {
+  transform: translateX(16px);
+  background: #4299e1;
+  opacity: 1;
+}
+.toggle-switch:hover .toggle-switch__thumb[data-v-3c382ac5] {
+  opacity: 1;
+}
+
+/* Roll buttons with tooltip container */
+.roll-buttons-with-tooltip[data-v-3c382ac5] {
+  position: relative;
+}
+
+/* Roll buttons container */
+.roll-buttons[data-v-3c382ac5] {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.roll-button[data-v-3c382ac5] {
+  padding: 8px 10px;
+  background: rgba(30, 30, 36, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #e4e4e7;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.roll-button[data-v-3c382ac5]:hover:not(:disabled) {
+  background: rgba(66, 153, 225, 0.2);
+  border-color: rgba(66, 153, 225, 0.4);
+  color: #bfdbfe;
+}
+.roll-button.selected[data-v-3c382ac5] {
+  background: rgba(66, 153, 225, 0.3);
+  border-color: rgba(66, 153, 225, 0.6);
+  color: #e4e4e7;
+  box-shadow: 0 0 0 1px rgba(66, 153, 225, 0.3);
+}
+.roll-button[data-v-3c382ac5]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.roll-button__icon[data-v-3c382ac5] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.roll-button__text[data-v-3c382ac5] {
+  font-size: 11px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Tooltip transitions */
+.tooltip-enter-active[data-v-3c382ac5],
+.tooltip-leave-active[data-v-3c382ac5] {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.tooltip-enter-from[data-v-3c382ac5],
+.tooltip-leave-to[data-v-3c382ac5] {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.lora-randomizer-widget[data-v-55cc8591] {
+  padding: 12px;
+  background: rgba(40, 44, 52, 0.6);
+  border-radius: 4px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}`));
       document.head.appendChild(elementStyle);
     }
   } catch (e) {
@@ -8407,12 +9758,12 @@ var PrimeVue = {
     setup(app2, configOptions);
   }
 };
-const _hoisted_1$f = { class: "filter-chip__text" };
-const _hoisted_2$d = {
+const _hoisted_1$h = { class: "filter-chip__text" };
+const _hoisted_2$e = {
   key: 0,
   class: "filter-chip__count"
 };
-const _sfc_main$g = /* @__PURE__ */ defineComponent({
+const _sfc_main$i = /* @__PURE__ */ defineComponent({
   __name: "FilterChip",
   props: {
     label: {},
@@ -8430,8 +9781,8 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
       return openBlock(), createElementBlock("span", {
         class: normalizeClass(["filter-chip", variantClass.value])
       }, [
-        createBaseVNode("span", _hoisted_1$f, toDisplayString(__props.label), 1),
-        __props.count !== void 0 ? (openBlock(), createElementBlock("span", _hoisted_2$d, "(" + toDisplayString(__props.count) + ")", 1)) : createCommentVNode("", true),
+        createBaseVNode("span", _hoisted_1$h, toDisplayString(__props.label), 1),
+        __props.count !== void 0 ? (openBlock(), createElementBlock("span", _hoisted_2$e, "(" + toDisplayString(__props.count) + ")", 1)) : createCommentVNode("", true),
         __props.removable ? (openBlock(), createElementBlock("button", {
           key: 1,
           class: "filter-chip__remove",
@@ -8449,8 +9800,8 @@ const _export_sfc = (sfc, props) => {
   }
   return target;
 };
-const FilterChip = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-7e36267d"]]);
-const _sfc_main$f = /* @__PURE__ */ defineComponent({
+const FilterChip = /* @__PURE__ */ _export_sfc(_sfc_main$i, [["__scopeId", "data-v-7e36267d"]]);
+const _sfc_main$h = /* @__PURE__ */ defineComponent({
   __name: "EditButton",
   emits: ["click"],
   setup(__props) {
@@ -8472,9 +9823,9 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const EditButton = /* @__PURE__ */ _export_sfc(_sfc_main$f, [["__scopeId", "data-v-8da8aa4b"]]);
-const _hoisted_1$e = { class: "section" };
-const _hoisted_2$c = { class: "section__header" };
+const EditButton = /* @__PURE__ */ _export_sfc(_sfc_main$h, [["__scopeId", "data-v-8da8aa4b"]]);
+const _hoisted_1$g = { class: "section" };
+const _hoisted_2$d = { class: "section__header" };
 const _hoisted_3$b = { class: "section__content" };
 const _hoisted_4$a = {
   key: 0,
@@ -8484,7 +9835,7 @@ const _hoisted_5$9 = {
   key: 1,
   class: "section__chips"
 };
-const _sfc_main$e = /* @__PURE__ */ defineComponent({
+const _sfc_main$g = /* @__PURE__ */ defineComponent({
   __name: "BaseModelSection",
   props: {
     selected: {},
@@ -8498,8 +9849,8 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
       return model == null ? void 0 : model.count;
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$e, [
-        createBaseVNode("div", _hoisted_2$c, [
+      return openBlock(), createElementBlock("div", _hoisted_1$g, [
+        createBaseVNode("div", _hoisted_2$d, [
           _cache[1] || (_cache[1] = createBaseVNode("span", { class: "section__title" }, "BASE MODEL", -1)),
           createVNode(EditButton, {
             onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("edit"))
@@ -8521,9 +9872,9 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const BaseModelSection = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-12f059e2"]]);
-const _hoisted_1$d = { class: "section" };
-const _hoisted_2$b = { class: "section__columns" };
+const BaseModelSection = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-12f059e2"]]);
+const _hoisted_1$f = { class: "section" };
+const _hoisted_2$c = { class: "section__columns" };
 const _hoisted_3$a = { class: "section__column" };
 const _hoisted_4$9 = { class: "section__column-header" };
 const _hoisted_5$8 = { class: "section__column-content" };
@@ -8546,7 +9897,7 @@ const _hoisted_12$2 = {
   key: 1,
   class: "section__chips"
 };
-const _sfc_main$d = /* @__PURE__ */ defineComponent({
+const _sfc_main$f = /* @__PURE__ */ defineComponent({
   __name: "TagsSection",
   props: {
     includeTags: {},
@@ -8555,11 +9906,11 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
   emits: ["edit-include", "edit-exclude"],
   setup(__props) {
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$d, [
+      return openBlock(), createElementBlock("div", _hoisted_1$f, [
         _cache[4] || (_cache[4] = createBaseVNode("div", { class: "section__header" }, [
           createBaseVNode("span", { class: "section__title" }, "TAGS")
         ], -1)),
-        createBaseVNode("div", _hoisted_2$b, [
+        createBaseVNode("div", _hoisted_2$c, [
           createBaseVNode("div", _hoisted_3$a, [
             createBaseVNode("div", _hoisted_4$9, [
               _cache[2] || (_cache[2] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
@@ -8603,9 +9954,9 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const TagsSection = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-b869b780"]]);
-const _hoisted_1$c = { class: "section" };
-const _hoisted_2$a = { class: "section__columns" };
+const TagsSection = /* @__PURE__ */ _export_sfc(_sfc_main$f, [["__scopeId", "data-v-b869b780"]]);
+const _hoisted_1$e = { class: "section" };
+const _hoisted_2$b = { class: "section__columns" };
 const _hoisted_3$9 = { class: "section__column" };
 const _hoisted_4$8 = { class: "section__column-header" };
 const _hoisted_5$7 = { class: "section__content" };
@@ -8628,7 +9979,7 @@ const _hoisted_12$1 = {
   key: 1,
   class: "section__empty"
 };
-const _sfc_main$c = /* @__PURE__ */ defineComponent({
+const _sfc_main$e = /* @__PURE__ */ defineComponent({
   __name: "FoldersSection",
   props: {
     includeFolders: {},
@@ -8649,11 +10000,11 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
       emit2("update:excludeFolders", props.excludeFolders.filter((p2) => p2 !== path));
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$c, [
+      return openBlock(), createElementBlock("div", _hoisted_1$e, [
         _cache[6] || (_cache[6] = createBaseVNode("div", { class: "section__header" }, [
           createBaseVNode("span", { class: "section__title" }, "FOLDERS")
         ], -1)),
-        createBaseVNode("div", _hoisted_2$a, [
+        createBaseVNode("div", _hoisted_2$b, [
           createBaseVNode("div", _hoisted_3$9, [
             createBaseVNode("div", _hoisted_4$8, [
               _cache[3] || (_cache[3] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
@@ -8719,14 +10070,14 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const FoldersSection = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-af9caf84"]]);
-const _hoisted_1$b = { class: "section" };
-const _hoisted_2$9 = { class: "section__toggles" };
+const FoldersSection = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-af9caf84"]]);
+const _hoisted_1$d = { class: "section" };
+const _hoisted_2$a = { class: "section__toggles" };
 const _hoisted_3$8 = { class: "toggle-item" };
 const _hoisted_4$7 = ["aria-checked"];
 const _hoisted_5$6 = { class: "toggle-item" };
 const _hoisted_6$6 = ["aria-checked"];
-const _sfc_main$b = /* @__PURE__ */ defineComponent({
+const _sfc_main$d = /* @__PURE__ */ defineComponent({
   __name: "LicenseSection",
   props: {
     noCreditRequired: { type: Boolean },
@@ -8735,11 +10086,11 @@ const _sfc_main$b = /* @__PURE__ */ defineComponent({
   emits: ["update:noCreditRequired", "update:allowSelling"],
   setup(__props) {
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$b, [
+      return openBlock(), createElementBlock("div", _hoisted_1$d, [
         _cache[6] || (_cache[6] = createBaseVNode("div", { class: "section__header" }, [
           createBaseVNode("span", { class: "section__title" }, "LICENSE")
         ], -1)),
-        createBaseVNode("div", _hoisted_2$9, [
+        createBaseVNode("div", _hoisted_2$a, [
           createBaseVNode("label", _hoisted_3$8, [
             _cache[3] || (_cache[3] = createBaseVNode("span", { class: "toggle-item__label" }, "No Credit", -1)),
             createBaseVNode("button", {
@@ -8771,9 +10122,9 @@ const _sfc_main$b = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["__scopeId", "data-v-8b49983c"]]);
-const _hoisted_1$a = { class: "preview" };
-const _hoisted_2$8 = { class: "preview__title" };
+const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-8b49983c"]]);
+const _hoisted_1$c = { class: "preview" };
+const _hoisted_2$9 = { class: "preview__title" };
 const _hoisted_3$7 = ["disabled"];
 const _hoisted_4$6 = {
   key: 0,
@@ -8794,7 +10145,7 @@ const _hoisted_10$1 = {
   key: 0,
   class: "preview__empty"
 };
-const _sfc_main$a = /* @__PURE__ */ defineComponent({
+const _sfc_main$c = /* @__PURE__ */ defineComponent({
   __name: "LoraPoolPreview",
   props: {
     items: {},
@@ -8809,13 +10160,13 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
       img.style.display = "none";
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$a, [
+      return openBlock(), createElementBlock("div", _hoisted_1$c, [
         createBaseVNode("div", {
           class: "preview__header",
           onMouseenter: _cache[1] || (_cache[1] = ($event) => showTooltip.value = true),
           onMouseleave: _cache[2] || (_cache[2] = ($event) => showTooltip.value = false)
         }, [
-          createBaseVNode("span", _hoisted_2$8, "Matching LoRAs: " + toDisplayString(__props.matchCount.toLocaleString()), 1),
+          createBaseVNode("span", _hoisted_2$9, "Matching LoRAs: " + toDisplayString(__props.matchCount.toLocaleString()), 1),
           createBaseVNode("button", {
             type: "button",
             class: normalizeClass(["preview__refresh", { "preview__refresh--loading": __props.isLoading }]),
@@ -8872,10 +10223,10 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraPoolPreview = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-6a4b50a1"]]);
-const _hoisted_1$9 = { class: "summary-view" };
-const _hoisted_2$7 = { class: "summary-view__filters" };
-const _sfc_main$9 = /* @__PURE__ */ defineComponent({
+const LoraPoolPreview = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-6a4b50a1"]]);
+const _hoisted_1$b = { class: "summary-view" };
+const _hoisted_2$8 = { class: "summary-view__filters" };
+const _sfc_main$b = /* @__PURE__ */ defineComponent({
   __name: "LoraPoolSummaryView",
   props: {
     selectedBaseModels: {},
@@ -8893,8 +10244,8 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
   emits: ["open-modal", "update:includeFolders", "update:excludeFolders", "update:noCreditRequired", "update:allowSelling", "refresh"],
   setup(__props) {
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$9, [
-        createBaseVNode("div", _hoisted_2$7, [
+      return openBlock(), createElementBlock("div", _hoisted_1$b, [
+        createBaseVNode("div", _hoisted_2$8, [
           createVNode(BaseModelSection, {
             selected: __props.selectedBaseModels,
             models: __props.availableBaseModels,
@@ -8931,9 +10282,9 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraPoolSummaryView = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-328e7526"]]);
-const _hoisted_1$8 = { class: "lora-pool-modal__header" };
-const _hoisted_2$6 = { class: "lora-pool-modal__title-container" };
+const LoraPoolSummaryView = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["__scopeId", "data-v-328e7526"]]);
+const _hoisted_1$a = { class: "lora-pool-modal__header" };
+const _hoisted_2$7 = { class: "lora-pool-modal__title-container" };
 const _hoisted_3$6 = { class: "lora-pool-modal__title" };
 const _hoisted_4$5 = {
   key: 0,
@@ -8944,7 +10295,7 @@ const _hoisted_5$4 = {
   class: "lora-pool-modal__search"
 };
 const _hoisted_6$4 = { class: "lora-pool-modal__body" };
-const _sfc_main$8 = /* @__PURE__ */ defineComponent({
+const _sfc_main$a = /* @__PURE__ */ defineComponent({
   __name: "ModalWrapper",
   props: {
     visible: { type: Boolean },
@@ -8992,8 +10343,8 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
                 role: "dialog",
                 "aria-modal": "true"
               }, [
-                createBaseVNode("div", _hoisted_1$8, [
-                  createBaseVNode("div", _hoisted_2$6, [
+                createBaseVNode("div", _hoisted_1$a, [
+                  createBaseVNode("div", _hoisted_2$7, [
                     createBaseVNode("h3", _hoisted_3$6, toDisplayString(__props.title), 1),
                     __props.subtitle ? (openBlock(), createElementBlock("p", _hoisted_4$5, toDisplayString(__props.subtitle), 1)) : createCommentVNode("", true)
                   ]),
@@ -9019,9 +10370,9 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const ModalWrapper = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-fce76ca8"]]);
-const _hoisted_1$7 = { class: "search-container" };
-const _hoisted_2$5 = { class: "model-list" };
+const ModalWrapper = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-fce76ca8"]]);
+const _hoisted_1$9 = { class: "search-container" };
+const _hoisted_2$6 = { class: "model-list" };
 const _hoisted_3$5 = ["checked", "onChange"];
 const _hoisted_4$4 = { class: "model-checkbox-visual" };
 const _hoisted_5$3 = {
@@ -9036,7 +10387,7 @@ const _hoisted_8$2 = {
   key: 0,
   class: "no-results"
 };
-const _sfc_main$7 = /* @__PURE__ */ defineComponent({
+const _sfc_main$9 = /* @__PURE__ */ defineComponent({
   __name: "BaseModelModal",
   props: {
     visible: { type: Boolean },
@@ -9072,7 +10423,7 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
         onClose: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("close"))
       }, {
         search: withCtx(() => [
-          createBaseVNode("div", _hoisted_1$7, [
+          createBaseVNode("div", _hoisted_1$9, [
             _cache[2] || (_cache[2] = createBaseVNode("svg", {
               class: "search-icon",
               viewBox: "0 0 16 16",
@@ -9092,7 +10443,7 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
           ])
         ]),
         default: withCtx(() => [
-          createBaseVNode("div", _hoisted_2$5, [
+          createBaseVNode("div", _hoisted_2$6, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(filteredModels.value, (model) => {
               return openBlock(), createElementBlock("label", {
                 key: model.name,
@@ -9121,15 +10472,15 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$7, [["__scopeId", "data-v-7d08882c"]]);
-const _hoisted_1$6 = { class: "search-container" };
-const _hoisted_2$4 = { class: "tags-container" };
+const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-7d08882c"]]);
+const _hoisted_1$8 = { class: "search-container" };
+const _hoisted_2$5 = { class: "tags-container" };
 const _hoisted_3$4 = ["onClick"];
 const _hoisted_4$3 = {
   key: 0,
   class: "no-results"
 };
-const _sfc_main$6 = /* @__PURE__ */ defineComponent({
+const _sfc_main$8 = /* @__PURE__ */ defineComponent({
   __name: "TagsModal",
   props: {
     visible: { type: Boolean },
@@ -9171,7 +10522,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
         onClose: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("close"))
       }, {
         search: withCtx(() => [
-          createBaseVNode("div", _hoisted_1$6, [
+          createBaseVNode("div", _hoisted_1$8, [
             _cache[2] || (_cache[2] = createBaseVNode("svg", {
               class: "search-icon",
               viewBox: "0 0 16 16",
@@ -9190,7 +10541,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
           ])
         ]),
         default: withCtx(() => [
-          createBaseVNode("div", _hoisted_2$4, [
+          createBaseVNode("div", _hoisted_2$5, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(filteredTags.value, (tag) => {
               return openBlock(), createElementBlock("button", {
                 key: tag.tag,
@@ -9207,9 +10558,9 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const TagsModal = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["__scopeId", "data-v-4b3cfd31"]]);
-const _hoisted_1$5 = { class: "tree-node" };
-const _hoisted_2$3 = {
+const TagsModal = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-4b3cfd31"]]);
+const _hoisted_1$7 = { class: "tree-node" };
+const _hoisted_2$4 = {
   key: 1,
   class: "tree-node__toggle-spacer"
 };
@@ -9226,7 +10577,7 @@ const _hoisted_7$2 = {
   key: 0,
   class: "tree-node__children"
 };
-const _sfc_main$5 = /* @__PURE__ */ defineComponent({
+const _sfc_main$7 = /* @__PURE__ */ defineComponent({
   __name: "FolderTreeNode",
   props: {
     node: {},
@@ -9251,7 +10602,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
     };
     return (_ctx, _cache) => {
       const _component_FolderTreeNode = resolveComponent("FolderTreeNode", true);
-      return openBlock(), createElementBlock("div", _hoisted_1$5, [
+      return openBlock(), createElementBlock("div", _hoisted_1$7, [
         createBaseVNode("div", {
           class: normalizeClass(["tree-node__item", [
             `tree-node__item--${__props.variant}`,
@@ -9273,7 +10624,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
             }, [..._cache[4] || (_cache[4] = [
               createBaseVNode("path", { d: "M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" }, null, -1)
             ])], 2))
-          ])) : (openBlock(), createElementBlock("span", _hoisted_2$3)),
+          ])) : (openBlock(), createElementBlock("span", _hoisted_2$4)),
           createBaseVNode("label", _hoisted_3$3, [
             createBaseVNode("input", {
               type: "checkbox",
@@ -9317,14 +10668,14 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const FolderTreeNode = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-90187dd4"]]);
-const _hoisted_1$4 = { class: "search-container" };
-const _hoisted_2$2 = { class: "folder-tree" };
+const FolderTreeNode = /* @__PURE__ */ _export_sfc(_sfc_main$7, [["__scopeId", "data-v-90187dd4"]]);
+const _hoisted_1$6 = { class: "search-container" };
+const _hoisted_2$3 = { class: "folder-tree" };
 const _hoisted_3$2 = {
   key: 1,
   class: "no-results"
 };
-const _sfc_main$4 = /* @__PURE__ */ defineComponent({
+const _sfc_main$6 = /* @__PURE__ */ defineComponent({
   __name: "FoldersModal",
   props: {
     visible: { type: Boolean },
@@ -9388,7 +10739,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
         onClose: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("close"))
       }, {
         search: withCtx(() => [
-          createBaseVNode("div", _hoisted_1$4, [
+          createBaseVNode("div", _hoisted_1$6, [
             _cache[2] || (_cache[2] = createBaseVNode("svg", {
               class: "search-icon",
               viewBox: "0 0 16 16",
@@ -9407,7 +10758,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
           ])
         ]),
         default: withCtx(() => [
-          createBaseVNode("div", _hoisted_2$2, [
+          createBaseVNode("div", _hoisted_2$3, [
             filteredFolders.value.length > 0 ? (openBlock(true), createElementBlock(Fragment, { key: 0 }, renderList(filteredFolders.value, (node) => {
               return openBlock(), createBlock(FolderTreeNode, {
                 key: node.key,
@@ -9427,7 +10778,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const FoldersModal = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-046dcbf4"]]);
+const FoldersModal = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["__scopeId", "data-v-046dcbf4"]]);
 function useLoraPoolApi() {
   const isLoading = ref(false);
   const fetchBaseModels = async (limit = 50) => {
@@ -9686,8 +11037,8 @@ function useModalState() {
     isModalOpen
   };
 }
-const _hoisted_1$3 = { class: "lora-pool-widget" };
-const _sfc_main$3 = /* @__PURE__ */ defineComponent({
+const _hoisted_1$5 = { class: "lora-pool-widget" };
+const _sfc_main$5 = /* @__PURE__ */ defineComponent({
   __name: "LoraPoolWidget",
   props: {
     widget: {},
@@ -9718,7 +11069,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
       await state.refreshPreview();
     });
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$3, [
+      return openBlock(), createElementBlock("div", _hoisted_1$5, [
         createVNode(LoraPoolSummaryView, {
           "selected-base-models": unref(state).selectedBaseModels.value,
           "available-base-models": unref(state).availableBaseModels.value,
@@ -9781,9 +11132,9 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-ae5c87ce"]]);
-const _hoisted_1$2 = { class: "last-used-preview" };
-const _hoisted_2$1 = { class: "last-used-preview__content" };
+const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-7d3f681d"]]);
+const _hoisted_1$4 = { class: "last-used-preview" };
+const _hoisted_2$2 = { class: "last-used-preview__content" };
 const _hoisted_3$1 = ["src", "onError"];
 const _hoisted_4$1 = {
   key: 1,
@@ -9796,7 +11147,7 @@ const _hoisted_8$1 = {
   key: 0,
   class: "last-used-preview__more"
 };
-const _sfc_main$2 = /* @__PURE__ */ defineComponent({
+const _sfc_main$4 = /* @__PURE__ */ defineComponent({
   __name: "LastUsedPreview",
   props: {
     loras: {}
@@ -9824,8 +11175,8 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       previewUrls.value[loraName] = "";
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$2, [
-        createBaseVNode("div", _hoisted_2$1, [
+      return openBlock(), createElementBlock("div", _hoisted_1$4, [
+        createBaseVNode("div", _hoisted_2$2, [
           (openBlock(true), createElementBlock(Fragment, null, renderList(displayLoras.value, (lora) => {
             return openBlock(), createElementBlock("div", {
               key: lora.name,
@@ -9857,38 +11208,319 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LastUsedPreview = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-63e176e4"]]);
+const LastUsedPreview = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-63e176e4"]]);
+const _hoisted_1$3 = { class: "slider-handle__value" };
+const _sfc_main$3 = /* @__PURE__ */ defineComponent({
+  __name: "SingleSlider",
+  props: {
+    min: {},
+    max: {},
+    value: {},
+    step: {},
+    defaultRange: {},
+    disabled: { type: Boolean, default: false }
+  },
+  emits: ["update:value"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emit2 = __emit;
+    const trackEl = ref(null);
+    const dragging = ref(false);
+    const percent = computed(() => {
+      const range = props.max - props.min;
+      return (props.value - props.min) / range * 100;
+    });
+    const defaultMinPercent = computed(() => {
+      if (!props.defaultRange) return 0;
+      const range = props.max - props.min;
+      return (props.defaultRange.min - props.min) / range * 100;
+    });
+    const defaultMaxPercent = computed(() => {
+      if (!props.defaultRange) return 100;
+      const range = props.max - props.min;
+      return (props.defaultRange.max - props.min) / range * 100;
+    });
+    const formatValue = (val) => {
+      if (Number.isInteger(val)) return val.toString();
+      return val.toFixed(stepToDecimals(props.step));
+    };
+    const stepToDecimals = (step) => {
+      const str = step.toString();
+      const decimalIndex = str.indexOf(".");
+      return decimalIndex === -1 ? 0 : str.length - decimalIndex - 1;
+    };
+    const snapToStep = (value) => {
+      const steps = Math.round((value - props.min) / props.step);
+      return Math.max(props.min, Math.min(props.max, props.min + steps * props.step));
+    };
+    const startDrag = (event) => {
+      if (props.disabled) return;
+      event.preventDefault();
+      dragging.value = true;
+      document.addEventListener("mousemove", onDrag);
+      document.addEventListener("mouseup", stopDrag);
+      document.addEventListener("touchmove", onDrag, { passive: false });
+      document.addEventListener("touchend", stopDrag);
+      onDrag(event);
+    };
+    const onDrag = (event) => {
+      if (!trackEl.value || !dragging.value) return;
+      event.preventDefault();
+      const clientX = "touches" in event ? event.touches[0].clientX : event.clientX;
+      const rect = trackEl.value.getBoundingClientRect();
+      const percent2 = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const rawValue = props.min + percent2 * (props.max - props.min);
+      const value = snapToStep(rawValue);
+      emit2("update:value", value);
+    };
+    const onWheel = (event) => {
+      var _a;
+      if (props.disabled) return;
+      const rect = (_a = trackEl.value) == null ? void 0 : _a.getBoundingClientRect();
+      if (!rect) return;
+      const rootRect = event.currentTarget.getBoundingClientRect();
+      if (event.clientX < rootRect.left || event.clientX > rootRect.right || event.clientY < rootRect.top || event.clientY > rootRect.bottom) return;
+      event.preventDefault();
+      const delta = event.deltaY > 0 ? -1 : 1;
+      const newValue = snapToStep(props.value + delta * props.step);
+      emit2("update:value", newValue);
+    };
+    const stopDrag = () => {
+      dragging.value = false;
+      document.removeEventListener("mousemove", onDrag);
+      document.removeEventListener("mouseup", stopDrag);
+      document.removeEventListener("touchmove", onDrag);
+      document.removeEventListener("touchend", stopDrag);
+    };
+    onUnmounted(() => {
+      stopDrag();
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createElementBlock("div", {
+        class: normalizeClass(["single-slider", { disabled: __props.disabled }]),
+        onWheel
+      }, [
+        createBaseVNode("div", {
+          class: "slider-track",
+          ref_key: "trackEl",
+          ref: trackEl
+        }, [
+          _cache[2] || (_cache[2] = createBaseVNode("div", { class: "slider-track__bg" }, null, -1)),
+          createBaseVNode("div", {
+            class: "slider-track__active",
+            style: normalizeStyle({ width: percent.value + "%" })
+          }, null, 4),
+          __props.defaultRange ? (openBlock(), createElementBlock("div", {
+            key: 0,
+            class: "slider-track__default",
+            style: normalizeStyle({
+              left: defaultMinPercent.value + "%",
+              width: defaultMaxPercent.value - defaultMinPercent.value + "%"
+            })
+          }, null, 4)) : createCommentVNode("", true)
+        ], 512),
+        createBaseVNode("div", {
+          class: "slider-handle",
+          style: normalizeStyle({ left: percent.value + "%" }),
+          onMousedown: _cache[0] || (_cache[0] = ($event) => startDrag($event)),
+          onTouchstart: _cache[1] || (_cache[1] = ($event) => startDrag($event))
+        }, [
+          _cache[3] || (_cache[3] = createBaseVNode("div", { class: "slider-handle__thumb" }, null, -1)),
+          createBaseVNode("div", _hoisted_1$3, toDisplayString(formatValue(__props.value)), 1)
+        ], 36)
+      ], 34);
+    };
+  }
+});
+const SingleSlider = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-4c53509e"]]);
+const _hoisted_1$2 = { class: "slider-handle__value" };
+const _hoisted_2$1 = { class: "slider-handle__value" };
+const _sfc_main$2 = /* @__PURE__ */ defineComponent({
+  __name: "DualRangeSlider",
+  props: {
+    min: {},
+    max: {},
+    valueMin: {},
+    valueMax: {},
+    step: {},
+    defaultRange: {},
+    disabled: { type: Boolean, default: false }
+  },
+  emits: ["update:valueMin", "update:valueMax"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emit2 = __emit;
+    const trackEl = ref(null);
+    const dragging = ref(null);
+    const minPercent = computed(() => {
+      const range = props.max - props.min;
+      return (props.valueMin - props.min) / range * 100;
+    });
+    const maxPercent = computed(() => {
+      const range = props.max - props.min;
+      return (props.valueMax - props.min) / range * 100;
+    });
+    const defaultMinPercent = computed(() => {
+      if (!props.defaultRange) return 0;
+      const range = props.max - props.min;
+      return (props.defaultRange.min - props.min) / range * 100;
+    });
+    const defaultMaxPercent = computed(() => {
+      if (!props.defaultRange) return 100;
+      const range = props.max - props.min;
+      return (props.defaultRange.max - props.min) / range * 100;
+    });
+    const formatValue = (val) => {
+      if (Number.isInteger(val)) return val.toString();
+      return val.toFixed(stepToDecimals(props.step));
+    };
+    const stepToDecimals = (step) => {
+      const str = step.toString();
+      const decimalIndex = str.indexOf(".");
+      return decimalIndex === -1 ? 0 : str.length - decimalIndex - 1;
+    };
+    const snapToStep = (value) => {
+      const steps = Math.round((value - props.min) / props.step);
+      return Math.max(props.min, Math.min(props.max, props.min + steps * props.step));
+    };
+    const startDrag = (handle, event) => {
+      if (props.disabled) return;
+      event.preventDefault();
+      dragging.value = handle;
+      document.addEventListener("mousemove", onDrag);
+      document.addEventListener("mouseup", stopDrag);
+      document.addEventListener("touchmove", onDrag, { passive: false });
+      document.addEventListener("touchend", stopDrag);
+    };
+    const onDrag = (event) => {
+      if (!trackEl.value || !dragging.value) return;
+      event.preventDefault();
+      const clientX = "touches" in event ? event.touches[0].clientX : event.clientX;
+      const rect = trackEl.value.getBoundingClientRect();
+      const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const rawValue = props.min + percent * (props.max - props.min);
+      const value = snapToStep(rawValue);
+      if (dragging.value === "min") {
+        const maxAllowed = props.valueMax - props.step;
+        const newValue = Math.min(value, maxAllowed);
+        emit2("update:valueMin", newValue);
+      } else {
+        const minAllowed = props.valueMin + props.step;
+        const newValue = Math.max(value, minAllowed);
+        emit2("update:valueMax", newValue);
+      }
+    };
+    const onWheel = (event) => {
+      var _a;
+      if (props.disabled) return;
+      const rect = (_a = trackEl.value) == null ? void 0 : _a.getBoundingClientRect();
+      if (!rect) return;
+      const rootRect = event.currentTarget.getBoundingClientRect();
+      if (event.clientX < rootRect.left || event.clientX > rootRect.right || event.clientY < rootRect.top || event.clientY > rootRect.bottom) return;
+      event.preventDefault();
+      const delta = event.deltaY > 0 ? -1 : 1;
+      const relativeX = event.clientX - rect.left;
+      const rangeWidth = rect.width;
+      const minPixel = minPercent.value / 100 * rangeWidth;
+      const maxPixel = maxPercent.value / 100 * rangeWidth;
+      if (relativeX < minPixel) {
+        const newValue = snapToStep(props.valueMin + delta * props.step);
+        const maxAllowed = props.valueMax - props.step;
+        emit2("update:valueMin", Math.min(newValue, maxAllowed));
+      } else if (relativeX > maxPixel) {
+        const newValue = snapToStep(props.valueMax + delta * props.step);
+        const minAllowed = props.valueMin + props.step;
+        emit2("update:valueMax", Math.max(newValue, minAllowed));
+      } else {
+        const newMin = snapToStep(props.valueMin - delta * props.step);
+        const newMax = snapToStep(props.valueMax + delta * props.step);
+        if (newMin < props.valueMin) {
+          emit2("update:valueMin", Math.max(newMin, props.min));
+          emit2("update:valueMax", Math.min(newMax, props.max));
+        } else {
+          if (newMin < newMax - props.step) {
+            emit2("update:valueMin", newMin);
+            emit2("update:valueMax", newMax);
+          }
+        }
+      }
+    };
+    const stopDrag = () => {
+      dragging.value = null;
+      document.removeEventListener("mousemove", onDrag);
+      document.removeEventListener("mouseup", stopDrag);
+      document.removeEventListener("touchmove", onDrag);
+      document.removeEventListener("touchend", stopDrag);
+    };
+    onUnmounted(() => {
+      stopDrag();
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createElementBlock("div", {
+        class: normalizeClass(["dual-range-slider", { disabled: __props.disabled }]),
+        onWheel
+      }, [
+        createBaseVNode("div", {
+          class: "slider-track",
+          ref_key: "trackEl",
+          ref: trackEl
+        }, [
+          _cache[4] || (_cache[4] = createBaseVNode("div", { class: "slider-track__bg" }, null, -1)),
+          createBaseVNode("div", {
+            class: "slider-track__active",
+            style: normalizeStyle({ left: minPercent.value + "%", width: maxPercent.value - minPercent.value + "%" })
+          }, null, 4),
+          __props.defaultRange ? (openBlock(), createElementBlock("div", {
+            key: 0,
+            class: "slider-track__default",
+            style: normalizeStyle({
+              left: defaultMinPercent.value + "%",
+              width: defaultMaxPercent.value - defaultMinPercent.value + "%"
+            })
+          }, null, 4)) : createCommentVNode("", true)
+        ], 512),
+        createBaseVNode("div", {
+          class: "slider-handle slider-handle--min",
+          style: normalizeStyle({ left: minPercent.value + "%" }),
+          onMousedown: _cache[0] || (_cache[0] = ($event) => startDrag("min", $event)),
+          onTouchstart: _cache[1] || (_cache[1] = ($event) => startDrag("min", $event))
+        }, [
+          _cache[5] || (_cache[5] = createBaseVNode("div", { class: "slider-handle__thumb" }, null, -1)),
+          createBaseVNode("div", _hoisted_1$2, toDisplayString(formatValue(__props.valueMin)), 1)
+        ], 36),
+        createBaseVNode("div", {
+          class: "slider-handle slider-handle--max",
+          style: normalizeStyle({ left: maxPercent.value + "%" }),
+          onMousedown: _cache[2] || (_cache[2] = ($event) => startDrag("max", $event)),
+          onTouchstart: _cache[3] || (_cache[3] = ($event) => startDrag("max", $event))
+        }, [
+          _cache[6] || (_cache[6] = createBaseVNode("div", { class: "slider-handle__thumb" }, null, -1)),
+          createBaseVNode("div", _hoisted_2$1, toDisplayString(formatValue(__props.valueMax)), 1)
+        ], 36)
+      ], 34);
+    };
+  }
+});
+const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-5c79be81"]]);
 const _hoisted_1$1 = { class: "randomizer-settings" };
 const _hoisted_2 = { class: "setting-section" };
-const _hoisted_3 = { class: "count-mode-selector" };
-const _hoisted_4 = { class: "radio-label" };
+const _hoisted_3 = { class: "count-mode-tabs" };
+const _hoisted_4 = ["checked"];
 const _hoisted_5 = ["checked"];
-const _hoisted_6 = ["value", "disabled"];
-const _hoisted_7 = { class: "count-mode-selector" };
-const _hoisted_8 = { class: "radio-label" };
-const _hoisted_9 = ["checked"];
-const _hoisted_10 = ["value", "disabled"];
-const _hoisted_11 = ["value", "disabled"];
-const _hoisted_12 = { class: "setting-section" };
-const _hoisted_13 = { class: "strength-inputs" };
-const _hoisted_14 = { class: "strength-input-group" };
-const _hoisted_15 = ["value"];
-const _hoisted_16 = { class: "strength-input-group" };
-const _hoisted_17 = ["value"];
-const _hoisted_18 = { class: "setting-section" };
-const _hoisted_19 = { class: "checkbox-group" };
-const _hoisted_20 = { class: "checkbox-label" };
-const _hoisted_21 = ["checked"];
-const _hoisted_22 = { class: "strength-input-group" };
-const _hoisted_23 = ["value", "disabled"];
-const _hoisted_24 = { class: "strength-input-group" };
-const _hoisted_25 = ["value", "disabled"];
-const _hoisted_26 = { class: "setting-section" };
-const _hoisted_27 = { class: "roll-buttons-with-tooltip" };
-const _hoisted_28 = { class: "roll-buttons" };
-const _hoisted_29 = ["disabled"];
-const _hoisted_30 = ["disabled"];
-const _hoisted_31 = ["disabled"];
+const _hoisted_6 = { class: "slider-container" };
+const _hoisted_7 = { class: "setting-section" };
+const _hoisted_8 = { class: "slider-container" };
+const _hoisted_9 = { class: "setting-section" };
+const _hoisted_10 = { class: "section-header-with-toggle" };
+const _hoisted_11 = { class: "setting-label" };
+const _hoisted_12 = ["aria-checked"];
+const _hoisted_13 = { class: "slider-container" };
+const _hoisted_14 = { class: "setting-section" };
+const _hoisted_15 = { class: "roll-buttons-with-tooltip" };
+const _hoisted_16 = { class: "roll-buttons" };
+const _hoisted_17 = ["disabled"];
+const _hoisted_18 = ["disabled"];
+const _hoisted_19 = ["disabled"];
 const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   __name: "LoraRandomizerSettingsView",
   props: {
@@ -9922,161 +11554,128 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", _hoisted_1$1, [
-        _cache[30] || (_cache[30] = createBaseVNode("div", { class: "settings-header" }, [
+        _cache[24] || (_cache[24] = createBaseVNode("div", { class: "settings-header" }, [
           createBaseVNode("h3", { class: "settings-title" }, "RANDOMIZER SETTINGS")
         ], -1)),
         createBaseVNode("div", _hoisted_2, [
-          _cache[18] || (_cache[18] = createBaseVNode("label", { class: "setting-label" }, "LoRA Count", -1)),
+          _cache[17] || (_cache[17] = createBaseVNode("label", { class: "setting-label" }, "LoRA Count", -1)),
           createBaseVNode("div", _hoisted_3, [
-            createBaseVNode("label", _hoisted_4, [
+            createBaseVNode("label", {
+              class: normalizeClass(["count-mode-tab", { active: __props.countMode === "fixed" }])
+            }, [
               createBaseVNode("input", {
                 type: "radio",
                 name: "count-mode",
                 value: "fixed",
                 checked: __props.countMode === "fixed",
                 onChange: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("update:countMode", "fixed"))
-              }, null, 40, _hoisted_5),
-              _cache[15] || (_cache[15] = createBaseVNode("span", null, "Fixed:", -1)),
-              createBaseVNode("input", {
-                type: "number",
-                class: "number-input",
-                value: __props.countFixed,
-                disabled: __props.countMode !== "fixed",
-                min: "1",
-                max: "100",
-                onInput: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("update:countFixed", parseInt($event.target.value)))
-              }, null, 40, _hoisted_6)
-            ])
-          ]),
-          createBaseVNode("div", _hoisted_7, [
-            createBaseVNode("label", _hoisted_8, [
+              }, null, 40, _hoisted_4),
+              _cache[15] || (_cache[15] = createBaseVNode("span", { class: "count-mode-tab-label" }, "Fixed", -1))
+            ], 2),
+            createBaseVNode("label", {
+              class: normalizeClass(["count-mode-tab", { active: __props.countMode === "range" }])
+            }, [
               createBaseVNode("input", {
                 type: "radio",
                 name: "count-mode",
                 value: "range",
                 checked: __props.countMode === "range",
-                onChange: _cache[2] || (_cache[2] = ($event) => _ctx.$emit("update:countMode", "range"))
-              }, null, 40, _hoisted_9),
-              _cache[16] || (_cache[16] = createBaseVNode("span", null, "Range:", -1)),
-              createBaseVNode("input", {
-                type: "number",
-                class: "number-input",
-                value: __props.countMin,
-                disabled: __props.countMode !== "range",
-                min: "1",
-                max: "100",
-                onInput: _cache[3] || (_cache[3] = ($event) => _ctx.$emit("update:countMin", parseInt($event.target.value)))
-              }, null, 40, _hoisted_10),
-              _cache[17] || (_cache[17] = createBaseVNode("span", null, "to", -1)),
-              createBaseVNode("input", {
-                type: "number",
-                class: "number-input",
-                value: __props.countMax,
-                disabled: __props.countMode !== "range",
-                min: "1",
-                max: "100",
-                onInput: _cache[4] || (_cache[4] = ($event) => _ctx.$emit("update:countMax", parseInt($event.target.value)))
-              }, null, 40, _hoisted_11)
-            ])
-          ])
-        ]),
-        createBaseVNode("div", _hoisted_12, [
-          _cache[21] || (_cache[21] = createBaseVNode("label", { class: "setting-label" }, "Model Strength Range", -1)),
-          createBaseVNode("div", _hoisted_13, [
-            createBaseVNode("div", _hoisted_14, [
-              _cache[19] || (_cache[19] = createBaseVNode("label", null, "Min:", -1)),
-              createBaseVNode("input", {
-                type: "number",
-                class: "number-input",
-                value: __props.modelStrengthMin,
-                min: "0",
-                max: "10",
-                step: "0.1",
-                onInput: _cache[5] || (_cache[5] = ($event) => _ctx.$emit("update:modelStrengthMin", parseFloat($event.target.value)))
-              }, null, 40, _hoisted_15)
-            ]),
-            createBaseVNode("div", _hoisted_16, [
-              _cache[20] || (_cache[20] = createBaseVNode("label", null, "Max:", -1)),
-              createBaseVNode("input", {
-                type: "number",
-                class: "number-input",
-                value: __props.modelStrengthMax,
-                min: "0",
-                max: "10",
-                step: "0.1",
-                onInput: _cache[6] || (_cache[6] = ($event) => _ctx.$emit("update:modelStrengthMax", parseFloat($event.target.value)))
-              }, null, 40, _hoisted_17)
-            ])
-          ])
-        ]),
-        createBaseVNode("div", _hoisted_18, [
-          _cache[25] || (_cache[25] = createBaseVNode("label", { class: "setting-label" }, "Clip Strength Range", -1)),
-          createBaseVNode("div", _hoisted_19, [
-            createBaseVNode("label", _hoisted_20, [
-              createBaseVNode("input", {
-                type: "checkbox",
-                checked: __props.useSameClipStrength,
-                onChange: _cache[7] || (_cache[7] = ($event) => _ctx.$emit("update:useSameClipStrength", $event.target.checked))
-              }, null, 40, _hoisted_21),
-              _cache[22] || (_cache[22] = createBaseVNode("span", null, "Same as model", -1))
-            ])
+                onChange: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("update:countMode", "range"))
+              }, null, 40, _hoisted_5),
+              _cache[16] || (_cache[16] = createBaseVNode("span", { class: "count-mode-tab-label" }, "Range", -1))
+            ], 2)
           ]),
-          createBaseVNode("div", {
-            class: normalizeClass(["strength-inputs", { disabled: __props.isClipStrengthDisabled }])
-          }, [
-            createBaseVNode("div", _hoisted_22, [
-              _cache[23] || (_cache[23] = createBaseVNode("label", null, "Min:", -1)),
-              createBaseVNode("input", {
-                type: "number",
-                class: "number-input",
-                value: __props.clipStrengthMin,
-                disabled: __props.isClipStrengthDisabled,
-                min: "0",
-                max: "10",
-                step: "0.1",
-                onInput: _cache[8] || (_cache[8] = ($event) => _ctx.$emit("update:clipStrengthMin", parseFloat($event.target.value)))
-              }, null, 40, _hoisted_23)
-            ]),
-            createBaseVNode("div", _hoisted_24, [
-              _cache[24] || (_cache[24] = createBaseVNode("label", null, "Max:", -1)),
-              createBaseVNode("input", {
-                type: "number",
-                class: "number-input",
-                value: __props.clipStrengthMax,
-                disabled: __props.isClipStrengthDisabled,
-                min: "0",
-                max: "10",
-                step: "0.1",
-                onInput: _cache[9] || (_cache[9] = ($event) => _ctx.$emit("update:clipStrengthMax", parseFloat($event.target.value)))
-              }, null, 40, _hoisted_25)
-            ])
-          ], 2)
+          createBaseVNode("div", _hoisted_6, [
+            __props.countMode === "fixed" ? (openBlock(), createBlock(SingleSlider, {
+              key: 0,
+              min: 1,
+              max: 10,
+              value: __props.countFixed,
+              step: 1,
+              "default-range": { min: 1, max: 5 },
+              "onUpdate:value": _cache[2] || (_cache[2] = ($event) => _ctx.$emit("update:countFixed", $event))
+            }, null, 8, ["value"])) : (openBlock(), createBlock(DualRangeSlider, {
+              key: 1,
+              min: 1,
+              max: 10,
+              "value-min": __props.countMin,
+              "value-max": __props.countMax,
+              step: 1,
+              "default-range": { min: 1, max: 5 },
+              "onUpdate:valueMin": _cache[3] || (_cache[3] = ($event) => _ctx.$emit("update:countMin", $event)),
+              "onUpdate:valueMax": _cache[4] || (_cache[4] = ($event) => _ctx.$emit("update:countMax", $event))
+            }, null, 8, ["value-min", "value-max"]))
+          ])
         ]),
-        createBaseVNode("div", _hoisted_26, [
-          _cache[29] || (_cache[29] = createBaseVNode("label", { class: "setting-label" }, "Roll Mode", -1)),
-          createBaseVNode("div", _hoisted_27, [
-            createBaseVNode("div", _hoisted_28, [
+        createBaseVNode("div", _hoisted_7, [
+          _cache[18] || (_cache[18] = createBaseVNode("label", { class: "setting-label" }, "Model Strength Range", -1)),
+          createBaseVNode("div", _hoisted_8, [
+            createVNode(DualRangeSlider, {
+              min: -10,
+              max: 10,
+              "value-min": __props.modelStrengthMin,
+              "value-max": __props.modelStrengthMax,
+              step: 0.1,
+              "default-range": { min: -2, max: 3 },
+              "onUpdate:valueMin": _cache[5] || (_cache[5] = ($event) => _ctx.$emit("update:modelStrengthMin", $event)),
+              "onUpdate:valueMax": _cache[6] || (_cache[6] = ($event) => _ctx.$emit("update:modelStrengthMax", $event))
+            }, null, 8, ["value-min", "value-max"])
+          ])
+        ]),
+        createBaseVNode("div", _hoisted_9, [
+          createBaseVNode("div", _hoisted_10, [
+            createBaseVNode("label", _hoisted_11, " Clip Strength Range - " + toDisplayString(__props.useSameClipStrength ? "Use Model Strength" : "Custom Range"), 1),
+            createBaseVNode("button", {
+              type: "button",
+              class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.useSameClipStrength }]),
+              onClick: _cache[7] || (_cache[7] = ($event) => _ctx.$emit("update:useSameClipStrength", !__props.useSameClipStrength)),
+              role: "switch",
+              "aria-checked": __props.useSameClipStrength,
+              title: "Lock clip strength to model strength"
+            }, [..._cache[19] || (_cache[19] = [
+              createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
+              createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
+            ])], 10, _hoisted_12)
+          ]),
+          createBaseVNode("div", _hoisted_13, [
+            createVNode(DualRangeSlider, {
+              min: -10,
+              max: 10,
+              "value-min": __props.clipStrengthMin,
+              "value-max": __props.clipStrengthMax,
+              step: 0.1,
+              "default-range": { min: -1, max: 2 },
+              disabled: __props.isClipStrengthDisabled,
+              "onUpdate:valueMin": _cache[8] || (_cache[8] = ($event) => _ctx.$emit("update:clipStrengthMin", $event)),
+              "onUpdate:valueMax": _cache[9] || (_cache[9] = ($event) => _ctx.$emit("update:clipStrengthMax", $event))
+            }, null, 8, ["value-min", "value-max", "disabled"])
+          ])
+        ]),
+        createBaseVNode("div", _hoisted_14, [
+          _cache[23] || (_cache[23] = createBaseVNode("label", { class: "setting-label" }, "Roll Mode", -1)),
+          createBaseVNode("div", _hoisted_15, [
+            createBaseVNode("div", _hoisted_16, [
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "fixed" }]),
                 disabled: __props.isRolling,
                 onClick: _cache[10] || (_cache[10] = ($event) => _ctx.$emit("generate-fixed"))
-              }, [..._cache[26] || (_cache[26] = [
-                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-d1195ce6><rect x="2" y="2" width="20" height="20" rx="5" data-v-d1195ce6></rect><circle cx="12" cy="12" r="3" data-v-d1195ce6></circle><circle cx="6" cy="8" r="1.5" data-v-d1195ce6></circle><circle cx="18" cy="16" r="1.5" data-v-d1195ce6></circle></svg><span class="roll-button__text" data-v-d1195ce6>Generate Fixed</span>', 2)
-              ])], 10, _hoisted_29),
+              }, [..._cache[20] || (_cache[20] = [
+                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-3c382ac5><rect x="2" y="2" width="20" height="20" rx="5" data-v-3c382ac5></rect><circle cx="12" cy="12" r="3" data-v-3c382ac5></circle><circle cx="6" cy="8" r="1.5" data-v-3c382ac5></circle><circle cx="18" cy="16" r="1.5" data-v-3c382ac5></circle></svg><span class="roll-button__text" data-v-3c382ac5>Generate Fixed</span>', 2)
+              ])], 10, _hoisted_17),
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "always" }]),
                 disabled: __props.isRolling,
                 onClick: _cache[11] || (_cache[11] = ($event) => _ctx.$emit("always-randomize"))
-              }, [..._cache[27] || (_cache[27] = [
-                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-d1195ce6><path d="M21 12a9 9 0 1 1-6.219-8.56" data-v-d1195ce6></path><path d="M21 3v5h-5" data-v-d1195ce6></path><circle cx="12" cy="12" r="3" data-v-d1195ce6></circle><circle cx="6" cy="8" r="1.5" data-v-d1195ce6></circle><circle cx="18" cy="16" r="1.5" data-v-d1195ce6></circle></svg><span class="roll-button__text" data-v-d1195ce6>Always Randomize</span>', 2)
-              ])], 10, _hoisted_30),
+              }, [..._cache[21] || (_cache[21] = [
+                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-3c382ac5><path d="M21 12a9 9 0 1 1-6.219-8.56" data-v-3c382ac5></path><path d="M21 3v5h-5" data-v-3c382ac5></path><circle cx="12" cy="12" r="3" data-v-3c382ac5></circle><circle cx="6" cy="8" r="1.5" data-v-3c382ac5></circle><circle cx="18" cy="16" r="1.5" data-v-3c382ac5></circle></svg><span class="roll-button__text" data-v-3c382ac5>Always Randomize</span>', 2)
+              ])], 10, _hoisted_18),
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "fixed" && __props.canReuseLast && areLorasEqual(__props.currentLoras, __props.lastUsed) }]),
                 disabled: !__props.canReuseLast,
                 onMouseenter: _cache[12] || (_cache[12] = ($event) => showTooltip.value = true),
                 onMouseleave: _cache[13] || (_cache[13] = ($event) => showTooltip.value = false),
                 onClick: _cache[14] || (_cache[14] = ($event) => _ctx.$emit("reuse-last"))
-              }, [..._cache[28] || (_cache[28] = [
+              }, [..._cache[22] || (_cache[22] = [
                 createBaseVNode("svg", {
                   class: "roll-button__icon",
                   viewBox: "0 0 24 24",
@@ -10090,7 +11689,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                   createBaseVNode("path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" })
                 ], -1),
                 createBaseVNode("span", { class: "roll-button__text" }, "Reuse Last", -1)
-              ])], 42, _hoisted_31)
+              ])], 42, _hoisted_19)
             ]),
             createVNode(Transition, { name: "tooltip" }, {
               default: withCtx(() => [
@@ -10107,7 +11706,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraRandomizerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-d1195ce6"]]);
+const LoraRandomizerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-3c382ac5"]]);
 function useLoraRandomizerState(widget) {
   const countMode = ref("range");
   const countFixed = ref(3);
@@ -10596,8 +12195,8 @@ function updateDownstreamLoaders(startNode, visited = /* @__PURE__ */ new Set())
 const LORA_POOL_WIDGET_MIN_WIDTH = 500;
 const LORA_POOL_WIDGET_MIN_HEIGHT = 400;
 const LORA_RANDOMIZER_WIDGET_MIN_WIDTH = 500;
-const LORA_RANDOMIZER_WIDGET_MIN_HEIGHT = 462;
-const LORA_RANDOMIZER_WIDGET_MAX_HEIGHT = 462;
+const LORA_RANDOMIZER_WIDGET_MIN_HEIGHT = 430;
+const LORA_RANDOMIZER_WIDGET_MAX_HEIGHT = LORA_RANDOMIZER_WIDGET_MIN_HEIGHT;
 function forwardMiddleMouseToCanvas(container) {
   if (!container) return;
   container.addEventListener("pointerdown", (event) => {
@@ -10774,7 +12373,7 @@ app$1.registerExtension({
           addLorasWidgetCache = module.addLorasWidget;
         }
         const isRandomizerNode = node.comfyClass === "Lora Randomizer (LoraManager)";
-        const callback = isRandomizerNode ? (value) => {
+        const callback = isRandomizerNode ? () => {
           updateDownstreamLoaders(node);
         } : null;
         return addLorasWidgetCache(node, "loras", { isRandomizerNode }, callback);

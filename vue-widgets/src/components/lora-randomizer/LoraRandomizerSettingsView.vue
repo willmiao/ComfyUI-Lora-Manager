@@ -7,8 +7,8 @@
     <!-- LoRA Count -->
     <div class="setting-section">
       <label class="setting-label">LoRA Count</label>
-      <div class="count-mode-selector">
-        <label class="radio-label">
+      <div class="count-mode-tabs">
+        <label class="count-mode-tab" :class="{ active: countMode === 'fixed' }">
           <input
             type="radio"
             name="count-mode"
@@ -16,20 +16,9 @@
             :checked="countMode === 'fixed'"
             @change="$emit('update:countMode', 'fixed')"
           />
-          <span>Fixed:</span>
-          <input
-            type="number"
-            class="number-input"
-            :value="countFixed"
-            :disabled="countMode !== 'fixed'"
-            min="1"
-            max="100"
-            @input="$emit('update:countFixed', parseInt(($event.target as HTMLInputElement).value))"
-          />
+          <span class="count-mode-tab-label">Fixed</span>
         </label>
-      </div>
-      <div class="count-mode-selector">
-        <label class="radio-label">
+        <label class="count-mode-tab" :class="{ active: countMode === 'range' }">
           <input
             type="radio"
             name="count-mode"
@@ -37,101 +26,82 @@
             :checked="countMode === 'range'"
             @change="$emit('update:countMode', 'range')"
           />
-          <span>Range:</span>
-          <input
-            type="number"
-            class="number-input"
-            :value="countMin"
-            :disabled="countMode !== 'range'"
-            min="1"
-            max="100"
-            @input="$emit('update:countMin', parseInt(($event.target as HTMLInputElement).value))"
-          />
-          <span>to</span>
-          <input
-            type="number"
-            class="number-input"
-            :value="countMax"
-            :disabled="countMode !== 'range'"
-            min="1"
-            max="100"
-            @input="$emit('update:countMax', parseInt(($event.target as HTMLInputElement).value))"
-          />
+          <span class="count-mode-tab-label">Range</span>
         </label>
+      </div>
+
+      <div class="slider-container">
+        <SingleSlider
+          v-if="countMode === 'fixed'"
+          :min="1"
+          :max="10"
+          :value="countFixed"
+          :step="1"
+          :default-range="{ min: 1, max: 5 }"
+          @update:value="$emit('update:countFixed', $event)"
+        />
+        <DualRangeSlider
+          v-else
+          :min="1"
+          :max="10"
+          :value-min="countMin"
+          :value-max="countMax"
+          :step="1"
+          :default-range="{ min: 1, max: 5 }"
+          @update:value-min="$emit('update:countMin', $event)"
+          @update:value-max="$emit('update:countMax', $event)"
+        />
       </div>
     </div>
 
     <!-- Model Strength Range -->
     <div class="setting-section">
       <label class="setting-label">Model Strength Range</label>
-      <div class="strength-inputs">
-        <div class="strength-input-group">
-          <label>Min:</label>
-          <input
-            type="number"
-            class="number-input"
-            :value="modelStrengthMin"
-            min="0"
-            max="10"
-            step="0.1"
-            @input="$emit('update:modelStrengthMin', parseFloat(($event.target as HTMLInputElement).value))"
-          />
-        </div>
-        <div class="strength-input-group">
-          <label>Max:</label>
-          <input
-            type="number"
-            class="number-input"
-            :value="modelStrengthMax"
-            min="0"
-            max="10"
-            step="0.1"
-            @input="$emit('update:modelStrengthMax', parseFloat(($event.target as HTMLInputElement).value))"
-          />
-        </div>
+      <div class="slider-container">
+        <DualRangeSlider
+          :min="-10"
+          :max="10"
+          :value-min="modelStrengthMin"
+          :value-max="modelStrengthMax"
+          :step="0.1"
+          :default-range="{ min: -2, max: 3 }"
+          @update:value-min="$emit('update:modelStrengthMin', $event)"
+          @update:value-max="$emit('update:modelStrengthMax', $event)"
+        />
       </div>
     </div>
 
     <!-- Clip Strength Range -->
     <div class="setting-section">
-      <label class="setting-label">Clip Strength Range</label>
-      <div class="checkbox-group">
-        <label class="checkbox-label">
-          <input
-            type="checkbox"
-            :checked="useSameClipStrength"
-            @change="$emit('update:useSameClipStrength', ($event.target as HTMLInputElement).checked)"
-          />
-          <span>Same as model</span>
+      <div class="section-header-with-toggle">
+        <label class="setting-label">
+          Clip Strength Range - {{ useSameClipStrength ? 'Use Model Strength' : 'Custom Range' }}
         </label>
+        <button
+          type="button"
+          class="toggle-switch"
+          :class="{ 'toggle-switch--active': useSameClipStrength }"
+          @click="$emit('update:useSameClipStrength', !useSameClipStrength)"
+          role="switch"
+          :aria-checked="useSameClipStrength"
+          title="Lock clip strength to model strength"
+        >
+          <span class="toggle-switch__track"></span>
+          <span class="toggle-switch__thumb"></span>
+        </button>
       </div>
-      <div class="strength-inputs" :class="{ disabled: isClipStrengthDisabled }">
-        <div class="strength-input-group">
-          <label>Min:</label>
-          <input
-            type="number"
-            class="number-input"
-            :value="clipStrengthMin"
-            :disabled="isClipStrengthDisabled"
-            min="0"
-            max="10"
-            step="0.1"
-            @input="$emit('update:clipStrengthMin', parseFloat(($event.target as HTMLInputElement).value))"
-          />
-        </div>
-        <div class="strength-input-group">
-          <label>Max:</label>
-          <input
-            type="number"
-            class="number-input"
-            :value="clipStrengthMax"
-            :disabled="isClipStrengthDisabled"
-            min="0"
-            max="10"
-            step="0.1"
-            @input="$emit('update:clipStrengthMax', parseFloat(($event.target as HTMLInputElement).value))"
-          />
-        </div>
+      <div class="slider-container">
+        <DualRangeSlider
+          :min="-10"
+          :max="10"
+          :value-min="clipStrengthMin"
+          :value-max="clipStrengthMax"
+          :step="0.1"
+          :default-range="{ min: -1, max: 2 }"
+          :disabled="isClipStrengthDisabled"
+          @update:value-min="$emit('update:clipStrengthMin', $event)"
+          @update:value-max="$emit('update:clipStrengthMax', $event)"
+        />
       </div>
     </div>
 
@@ -200,6 +170,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import LastUsedPreview from './LastUsedPreview.vue'
+import SingleSlider from '../shared/SingleSlider.vue'
+import DualRangeSlider from '../shared/DualRangeSlider.vue'
 import type { LoraEntry } from '../../composables/types'
 
 defineProps<{
@@ -255,123 +227,155 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
 .randomizer-settings {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #e4e4e7;
 }
 
 .settings-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   margin-bottom: 8px;
 }
 
 .settings-title {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
-  color: #a1a1aa;
+  color: var(--fg-color, #fff);
+  opacity: 0.6;
   margin: 0;
   text-transform: uppercase;
 }
 
 .setting-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .setting-label {
   font-size: 12px;
   font-weight: 500;
   color: #d4d4d8;
+  display: block;
+  margin-bottom: 8px;
 }
 
-.count-mode-selector,
-.roll-mode-selector {
+.section-header-with-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  background: rgba(30, 30, 36, 0.5);
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.section-header-with-toggle .setting-label {
+  margin-bottom: 0;
+}
+
+/* Count Mode Tabs */
+.count-mode-tabs {
+  display: flex;
+  background: rgba(26, 32, 44, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
 }
 
-.radio-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #e4e4e7;
-  cursor: pointer;
+.count-mode-tab {
   flex: 1;
-}
-
-.radio-label input[type='radio'] {
+  position: relative;
+  padding: 8px 12px;
+  text-align: center;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.radio-label input[type='radio']:disabled {
-  cursor: not-allowed;
+.count-mode-tab input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
 }
 
-.number-input {
-  width: 60px;
-  padding: 4px 8px;
-  background: rgba(20, 20, 24, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-  color: #e4e4e7;
-  font-size: 13px;
-}
-
-.number-input:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.strength-inputs {
-  display: flex;
-  gap: 12px;
-  padding: 6px 8px;
-  background: rgba(30, 30, 36, 0.5);
-  border-radius: 4px;
-}
-
-.strength-inputs.disabled {
-  opacity: 0.5;
-}
-
-.strength-input-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-}
-
-.strength-input-group label {
+.count-mode-tab-label {
   font-size: 12px;
-  color: #d4d4d8;
+  font-weight: 500;
+  color: rgba(226, 232, 240, 0.7);
+  transition: all 0.2s ease;
 }
 
-.checkbox-group {
-  padding: 6px 8px;
-  background: rgba(30, 30, 36, 0.5);
+.count-mode-tab:hover .count-mode-tab-label {
+  color: rgba(226, 232, 240, 0.9);
+}
+
+.count-mode-tab.active .count-mode-tab-label {
+  color: rgba(191, 219, 254, 1);
+  font-weight: 600;
+}
+
+.count-mode-tab.active {
+  background: rgba(66, 153, 225, 0.2);
+}
+
+.count-mode-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(66, 153, 225, 0.9);
+}
+
+.slider-container {
+  background: rgba(26, 32, 44, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 4px;
+  padding: 4px 8px;
 }
 
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #e4e4e7;
+/* Toggle Switch (same style as LicenseSection) */
+.toggle-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
   cursor: pointer;
 }
 
-.checkbox-label input[type='checkbox'] {
-  cursor: pointer;
+.toggle-switch__track {
+  position: absolute;
+  inset: 0;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.toggle-switch--active .toggle-switch__track {
+  background: rgba(66, 153, 225, 0.3);
+  border-color: rgba(66, 153, 225, 0.6);
+}
+
+.toggle-switch__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--fg-color, #fff);
+  border-radius: 50%;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+
+.toggle-switch--active .toggle-switch__thumb {
+  transform: translateX(16px);
+  background: #4299e1;
+  opacity: 1;
+}
+
+.toggle-switch:hover .toggle-switch__thumb {
+  opacity: 1;
 }
 
 /* Roll buttons with tooltip container */

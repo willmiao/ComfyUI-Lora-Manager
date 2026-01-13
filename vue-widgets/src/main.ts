@@ -7,8 +7,8 @@ import type { LoraPoolConfig, LegacyLoraPoolConfig, RandomizerConfig } from './c
 const LORA_POOL_WIDGET_MIN_WIDTH = 500
 const LORA_POOL_WIDGET_MIN_HEIGHT = 400
 const LORA_RANDOMIZER_WIDGET_MIN_WIDTH = 500
-const LORA_RANDOMIZER_WIDGET_MIN_HEIGHT = 462
-const LORA_RANDOMIZER_WIDGET_MAX_HEIGHT = 462
+const LORA_RANDOMIZER_WIDGET_MIN_HEIGHT = 430
+const LORA_RANDOMIZER_WIDGET_MAX_HEIGHT = LORA_RANDOMIZER_WIDGET_MIN_HEIGHT
 
 // @ts-ignore - ComfyUI external module
 import { app } from '../../../scripts/app.js'
@@ -231,7 +231,7 @@ app.registerExtension({
         const isRandomizerNode = node.comfyClass === 'Lora Randomizer (LoraManager)'
 
         // For randomizer nodes, add a callback to update connected trigger words
-        const callback = isRandomizerNode ? (value: any) => {
+        const callback = isRandomizerNode ? () => {
           updateDownstreamLoaders(node)
         } : null
 
