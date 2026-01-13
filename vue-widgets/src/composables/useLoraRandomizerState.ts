@@ -1,19 +1,22 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { ComponentWidget, RandomizerConfig, LoraEntry } from './types'
 
 export function useLoraRandomizerState(widget: ComponentWidget) {
   // State refs
   const countMode = ref<'fixed' | 'range'>('range')
-  const countFixed = ref(5)
-  const countMin = ref(3)
-  const countMax = ref(7)
+  const countFixed = ref(3)
+  const countMin = ref(2)
+  const countMax = ref(5)
   const modelStrengthMin = ref(0.0)
   const modelStrengthMax = ref(1.0)
   const useSameClipStrength = ref(true)
   const clipStrengthMin = ref(0.0)
   const clipStrengthMax = ref(1.0)
-  const rollMode = ref<'frontend' | 'backend'>('frontend')
+  const rollMode = ref<'fixed' | 'always'>('fixed')
   const isRolling = ref(false)
+
+  // Track last used combination (for backend roll mode)
+  const lastUsed = ref<LoraEntry[] | null>(null)
 
   // Build config object from current state
   const buildConfig = (): RandomizerConfig => ({
@@ -27,20 +30,32 @@ export function useLoraRandomizerState(widget: ComponentWidget) {
     clip_strength_min: clipStrengthMin.value,
     clip_strength_max: clipStrengthMax.value,
     roll_mode: rollMode.value,
+    last_used: lastUsed.value,
   })
 
   // Restore state from config object
   const restoreFromConfig = (config: RandomizerConfig) => {
     countMode.value = config.count_mode || 'range'
-    countFixed.value = config.count_fixed || 5
-    countMin.value = config.count_min || 3
-    countMax.value = config.count_max || 7
+    countFixed.value = config.count_fixed || 3
+    countMin.value = config.count_min || 2
+    countMax.value = config.count_max || 5
     modelStrengthMin.value = config.model_strength_min ?? 0.0
     modelStrengthMax.value = config.model_strength_max ?? 1.0
     useSameClipStrength.value = config.use_same_clip_strength ?? true
     clipStrengthMin.value = config.clip_strength_min ?? 0.0
     clipStrengthMax.value = config.clip_strength_max ?? 1.0
-    rollMode.value = config.roll_mode || 'frontend'
+    // Migrate old roll_mode values to new ones
+    const rawRollMode = (config as any).roll_mode as string
+    if (rawRollMode === 'frontend') {
+      rollMode.value = 'fixed'
+    } else if (rawRollMode === 'backend') {
+      rollMode.value = 'always'
+    } else if (rawRollMode === 'fixed' || rawRollMode === 'always') {
+      rollMode.value = rawRollMode as 'fixed' | 'always'
+    } else {
+      rollMode.value = 'fixed'
+    }
+    lastUsed.value = config.last_used || null
   }
 
   // Roll loras - call API to get random selection
@@ -114,8 +129,37 @@ export function useLoraRandomizerState(widget: ComponentWidget) {
     }
   }
 
+  // Restore last used and return it
+  const useLastUsed = () => {
+    if (lastUsed.value && lastUsed.value.length > 0) {
+      return lastUsed.value
+    }
+    return null
+  }
+
   // Computed properties
   const isClipStrengthDisabled = computed(() => useSameClipStrength.value)
+
+  // Watch all state changes and update widget value
+  watch([
+    countMode,
+    countFixed,
+    countMin,
+    countMax,
+    modelStrengthMin,
+    modelStrengthMax,
+    useSameClipStrength,
+    clipStrengthMin,
+    clipStrengthMax,
+    rollMode,
+  ], () => {
+    const config = buildConfig()
+    if (widget.updateConfig) {
+      widget.updateConfig(config)
+    } else {
+      widget.value = config
+    }
+  }, { deep: true })
 
   return {
     // State refs
@@ -130,6 +174,7 @@ export function useLoraRandomizerState(widget: ComponentWidget) {
     clipStrengthMax,
     rollMode,
     isRolling,
+    lastUsed,
 
     // Computed
     isClipStrengthDisabled,
@@ -138,5 +183,6 @@ export function useLoraRandomizerState(widget: ComponentWidget) {
     buildConfig,
     restoreFromConfig,
     rollLoras,
+    useLastUsed,
   }
 }

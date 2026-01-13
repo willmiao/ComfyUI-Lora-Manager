@@ -384,19 +384,21 @@ class LoraService(BaseModelService):
             available_loras = self.filter_set.apply(available_loras, criteria)
 
         # Apply license filters
+        # Note: no_credit_required=True means filter out models where credit is NOT required
+        # (i.e., keep only models where credit IS required)
         if no_credit_required:
             available_loras = [
                 lora
                 for lora in available_loras
-                if not lora.get("civitai", {}).get("allowNoCredit", True)
+                if not (lora.get("license_flags", 127) & (1 << 0))
             ]
 
+        # allow_selling=True means keep only models where selling generated content is allowed
         if allow_selling:
             available_loras = [
                 lora
                 for lora in available_loras
-                if lora.get("civitai", {}).get("allowCommercialUse", ["None"])[0]
-                != "None"
+                if bool(lora.get("license_flags", 127) & (1 << 1))
             ]
 
         return available_loras

@@ -2,8 +2,8 @@
 Lora Randomizer Node - Randomly selects LoRAs from a pool with configurable settings.
 
 This node accepts optional pool_config input to filter available LoRAs, and outputs
-a LORA_STACK with randomly selected LoRAs. Supports both frontend roll (fixed selection)
-and backend roll (randomizes each execution).
+a LORA_STACK with randomly selected LoRAs. Returns UI updates with new random LoRAs
+and tracks the last used combination for reuse.
 """
 
 import logging
@@ -44,7 +44,7 @@ class LoraRandomizerNode:
         Randomize LoRAs based on configuration and pool filters.
 
         Args:
-            randomizer_config: Dict with randomizer settings (count, strength ranges, roll mode)
+            randomizer_config: Dict with randomizer settings (count, strength ranges, roll_mode)
             loras: List of LoRA dicts from LORAS widget (includes locked state)
             pool_config: Optional config from LoRA Pool node for filtering
 
@@ -53,41 +53,23 @@ class LoraRandomizerNode:
         """
         from ..services.service_registry import ServiceRegistry
 
-        # Parse randomizer settings
-        count_mode = randomizer_config.get("count_mode", "range")
-        count_fixed = randomizer_config.get("count_fixed", 5)
-        count_min = randomizer_config.get("count_min", 3)
-        count_max = randomizer_config.get("count_max", 7)
-        model_strength_min = randomizer_config.get("model_strength_min", 0.0)
-        model_strength_max = randomizer_config.get("model_strength_max", 1.0)
-        use_same_clip_strength = randomizer_config.get("use_same_clip_strength", True)
-        clip_strength_min = randomizer_config.get("clip_strength_min", 0.0)
-        clip_strength_max = randomizer_config.get("clip_strength_max", 1.0)
-        roll_mode = randomizer_config.get("roll_mode", "frontend")
+        roll_mode = randomizer_config.get("roll_mode", "always")
+        logger.debug(f"[LoraRandomizerNode] roll_mode: {roll_mode}")
 
-        # Get lora scanner to access available loras
-        scanner = await ServiceRegistry.get_lora_scanner()
-
-        # Backend roll mode: execute with input loras, return new random to UI
-        if roll_mode == "backend":
-            execution_stack = self._build_execution_stack_from_input(loras)
+        if roll_mode == "fixed":
+            ui_loras = loras
+        else:
+            scanner = await ServiceRegistry.get_lora_scanner()
             ui_loras = await self._generate_random_loras_for_ui(
                 scanner, randomizer_config, loras, pool_config
             )
-            logger.info(
-                f"[LoraRandomizerNode] Backend roll: executing with input, returning new random to UI"
-            )
-            return {"result": (execution_stack,), "ui": {"loras": ui_loras}}
 
-        # Frontend roll mode: use current behavior (random selection for both)
-        ui_loras = await self._generate_random_loras_for_ui(
-            scanner, randomizer_config, loras, pool_config
-        )
-        execution_stack = self._build_execution_stack_from_input(ui_loras)
-        logger.info(
-            f"[LoraRandomizerNode] Frontend roll: executing with random selection"
-        )
-        return {"result": (execution_stack,), "ui": {"loras": ui_loras}}
+        execution_stack = self._build_execution_stack_from_input(loras)
+
+        return {
+            "result": (execution_stack,),
+            "ui": {"loras": ui_loras, "last_used": loras},
+        }
 
     def _build_execution_stack_from_input(self, loras):
         """
@@ -121,9 +103,6 @@ class LoraRandomizerNode:
 
             lora_stack.append((lora_path, model_strength, clip_strength))
 
-        logger.info(
-            f"[LoraRandomizerNode] Built execution stack with {len(lora_stack)} LoRAs"
-        )
         return lora_stack
 
     async def _generate_random_loras_for_ui(
@@ -158,15 +137,9 @@ class LoraRandomizerNode:
         else:
             target_count = random.randint(count_min, count_max)
 
-        logger.info(
-            f"[LoraRandomizerNode] Generating random LoRAs, target count: {target_count}"
-        )
-
         # Extract locked LoRAs from input
         locked_loras = [lora for lora in input_loras if lora.get("locked", False)]
         locked_count = len(locked_loras)
-
-        logger.info(f"[LoraRandomizerNode] Locked LoRAs: {locked_count}")
 
         # Get available loras from cache
         try:
@@ -184,10 +157,6 @@ class LoraRandomizerNode:
             available_loras = await self._apply_pool_filters(
                 available_loras, pool_config, scanner
             )
-
-        logger.info(
-            f"[LoraRandomizerNode] Available LoRAs after filtering: {len(available_loras)}"
-        )
 
         # Calculate how many new LoRAs to select
         slots_needed = target_count - locked_count
@@ -207,10 +176,6 @@ class LoraRandomizerNode:
         # Ensure we don't try to select more than available
         if slots_needed > len(available_pool):
             slots_needed = len(available_pool)
-
-        logger.info(
-            f"[LoraRandomizerNode] Selecting {slots_needed} new LoRAs from {len(available_pool)} available"
-        )
 
         # Random sample
         selected = []
@@ -243,9 +208,6 @@ class LoraRandomizerNode:
         # Merge with locked LoRAs
         result_loras.extend(locked_loras)
 
-        logger.info(
-            f"[LoraRandomizerNode] Final random LoRA count: {len(result_loras)}"
-        )
         return result_loras
 
     async def _apply_pool_filters(self, available_loras, pool_config, scanner):
@@ -331,19 +293,21 @@ class LoraRandomizerNode:
             available_loras = lora_service.filter_set.apply(available_loras, criteria)
 
         # Apply license filters
+        # Note: no_credit_required=True means filter out models where credit is NOT required
+        # (i.e., keep only models where credit IS required)
         if no_credit_required:
             available_loras = [
                 lora
                 for lora in available_loras
-                if not lora.get("civitai", {}).get("allowNoCredit", True)
+                if not (lora.get("license_flags", 127) & (1 << 0))
             ]
 
+        # allow_selling=True means keep only models where selling generated content is allowed
         if allow_selling:
             available_loras = [
                 lora
                 for lora in available_loras
-                if lora.get("civitai", {}).get("allowCommercialUse", ["None"])[0]
-                != "None"
+                if bool(lora.get("license_flags", 127) & (1 << 1))
             ]
 
         return available_loras

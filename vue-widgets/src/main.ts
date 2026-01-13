@@ -4,6 +4,12 @@ import LoraPoolWidget from '@/components/LoraPoolWidget.vue'
 import LoraRandomizerWidget from '@/components/LoraRandomizerWidget.vue'
 import type { LoraPoolConfig, LegacyLoraPoolConfig, RandomizerConfig } from './composables/types'
 
+const LORA_POOL_WIDGET_MIN_WIDTH = 500
+const LORA_POOL_WIDGET_MIN_HEIGHT = 400
+const LORA_RANDOMIZER_WIDGET_MIN_WIDTH = 500
+const LORA_RANDOMIZER_WIDGET_MIN_HEIGHT = 462
+const LORA_RANDOMIZER_WIDGET_MAX_HEIGHT = 462
+
 // @ts-ignore - ComfyUI external module
 import { app } from '../../../scripts/app.js'
 // @ts-ignore
@@ -44,7 +50,7 @@ function createLoraPoolWidget(node) {
       // Per dev guide: providing getMinHeight via options allows the system to
       // skip expensive DOM measurements during rendering loop, improving performance
       getMinHeight() {
-        return 400
+        return LORA_POOL_WIDGET_MIN_HEIGHT
       }
     }
   )
@@ -67,8 +73,8 @@ function createLoraPoolWidget(node) {
   vueApps.set(node.id, vueApp)
 
   widget.computeLayoutSize = () => {
-    const minWidth = 500
-    const minHeight = 400
+    const minWidth = LORA_POOL_WIDGET_MIN_WIDTH
+    const minHeight = LORA_POOL_WIDGET_MIN_HEIGHT
 
     return { minHeight, minWidth }
   }
@@ -106,13 +112,14 @@ function createLoraRandomizerWidget(node) {
       },
       setValue(v: RandomizerConfig) {
         internalValue = v
+        console.log('randomizer widget value update: ', internalValue)
         if (typeof widget.onSetValue === 'function') {
           widget.onSetValue(v)
         }
       },
       serialize: true,
       getMinHeight() {
-        return 500
+        return LORA_RANDOMIZER_WIDGET_MIN_HEIGHT
       }
     }
   )
@@ -126,15 +133,10 @@ function createLoraRandomizerWidget(node) {
 
   // Handle roll event from Vue component
   widget.onRoll = (randomLoras: any[]) => {
-    console.log('[createLoraRandomizerWidget] Roll event received:', randomLoras)
-
     // Find the loras widget on this node and update it
     const lorasWidget = node.widgets.find((w: any) => w.name === 'loras')
     if (lorasWidget) {
       lorasWidget.value = randomLoras
-      console.log('[createLoraRandomizerWidget] Updated loras widget with rolled LoRAs')
-    } else {
-      console.warn('[createLoraRandomizerWidget] loras widget not found on node')
     }
   }
 
@@ -152,9 +154,9 @@ function createLoraRandomizerWidget(node) {
   vueApps.set(node.id + 10000, vueApp) // Offset to avoid collision with pool widget
 
   widget.computeLayoutSize = () => {
-    const minWidth = 500
-    const minHeight = 500
-    const maxHeight = 500
+    const minWidth = LORA_RANDOMIZER_WIDGET_MIN_WIDTH
+    const minHeight = LORA_RANDOMIZER_WIDGET_MIN_HEIGHT
+    const maxHeight = LORA_RANDOMIZER_WIDGET_MAX_HEIGHT
 
     return { minHeight, minWidth, maxHeight }
   }
@@ -192,8 +194,6 @@ app.registerExtension({
         }
         // Check if this is a randomizer node to enable lock buttons
         const isRandomizerNode = node.comfyClass === 'Lora Randomizer (LoraManager)'
-
-        console.log(node)
 
         // For randomizer nodes, add a callback to update connected trigger words
         const callback = isRandomizerNode ? (value: any) => {

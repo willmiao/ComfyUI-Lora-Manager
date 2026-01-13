@@ -699,6 +699,7 @@ export function addLorasWidget(node, name, opts, callback) {
       return widgetValue;
     },
     setValue: function(v) {
+      console.log('loras widget value update: ', v);
       // Remove duplicates by keeping the last occurrence of each lora name
       const uniqueValue = (v || []).reduce((acc, lora) => {
         // Remove any existing lora with the same name

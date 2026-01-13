@@ -274,6 +274,34 @@ When importing `app`, adjust the path based on your extension's folder depth. Ty
 ### 7.3 Security
 If setting `innerHTML` dynamically, ensure the content is sanitized or trusted to prevent XSS attacks.
 
+### 7.4 UI Constraints for ComfyUI Custom Node Widgets
+
+When developing DOMWidgets as internal UI widgets for ComfyUI custom nodes, keep the following constraints in mind:
+
+#### 7.4.1 Minimize Vertical Space
+
+ComfyUI nodes are often displayed in a compact graph view with many nodes visible simultaneously. Avoid excessive vertical spacing that could clutter the workspace.
+
+- Keep layouts compact and efficient
+- Use appropriate padding and margins (4-8px typically)
+- Stack related controls vertically but avoid unnecessary spacing
+
+#### 7.4.2 Avoid Dynamic Height Changes
+
+Dynamic height changes (expand/collapse sections, showing/hiding content) can cause node layout recalculations and affect connection wire positioning.
+
+- Prefer static layouts over expandable/collapsible sections
+- Use tooltips or overlays for additional information instead
+- If dynamic height is unavoidable, manually trigger layout updates (see Section 4.4)
+
+#### 7.4.3 Keep UI Simple and Intuitive
+
+As internal widgets for ComfyUI custom nodes, the UI should be accessible to users without technical implementation details.
+
+- Use clear, user-friendly terminology (avoid "frontend/backend roll" in favor of "fixed/always randomize")
+- Focus on user intent rather than implementation details
+- Avoid complex interactions that may confuse users
+
 ---
 
 ## 8. Complete Example: Text Counter

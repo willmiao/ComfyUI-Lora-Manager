@@ -135,48 +135,73 @@
       </div>
     </div>
 
-    <!-- Roll Mode -->
+    <!-- Roll Mode - New 3-button design -->
     <div class="setting-section">
       <label class="setting-label">Roll Mode</label>
-      <div class="roll-mode-selector">
-        <label class="radio-label">
-          <input
-            type="radio"
-            name="roll-mode"
-            value="frontend"
-            :checked="rollMode === 'frontend'"
-            @change="$emit('update:rollMode', 'frontend')"
+      <div class="roll-buttons-with-tooltip">
+        <div class="roll-buttons">
+          <button
+            class="roll-button"
+            :class="{ selected: rollMode === 'fixed' }"
+            :disabled="isRolling"
+            @click="$emit('generate-fixed')"
+          >
+            <svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="2" width="20" height="20" rx="5"/>
+              <circle cx="12" cy="12" r="3"/>
+              <circle cx="6" cy="8" r="1.5"/>
+              <circle cx="18" cy="16" r="1.5"/>
+            </svg>
+            <span class="roll-button__text">Generate Fixed</span>
+          </button>
+          <button
+            class="roll-button"
+            :class="{ selected: rollMode === 'always' }"
+            :disabled="isRolling"
+            @click="$emit('always-randomize')"
+          >
+            <svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+              <path d="M21 3v5h-5"/>
+              <circle cx="12" cy="12" r="3"/>
+              <circle cx="6" cy="8" r="1.5"/>
+              <circle cx="18" cy="16" r="1.5"/>
+            </svg>
+            <span class="roll-button__text">Always Randomize</span>
+          </button>
+          <button
+            class="roll-button"
+            :class="{ selected: rollMode === 'fixed' && canReuseLast && areLorasEqual(currentLoras, lastUsed) }"
+            :disabled="!canReuseLast"
+            @mouseenter="showTooltip = true"
+            @mouseleave="showTooltip = false"
+            @click="$emit('reuse-last')"
+          >
+            <svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 14 4 9l5-5"/>
+              <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/>
+            </svg>
+            <span class="roll-button__text">Reuse Last</span>
+          </button>
+        </div>
+
+        <!-- Last Used Preview Tooltip -->
+        <Transition name="tooltip">
+          <LastUsedPreview
+            v-if="showTooltip && lastUsed && lastUsed.length > 0"
+            :loras="lastUsed"
           />
-          <span>Frontend Roll (fixed until re-rolled)</span>
-        </label>
-        <button
-          class="roll-button"
-          :disabled="rollMode !== 'frontend' || isRolling"
-          @click="$emit('roll')"
-        >
-          <span class="roll-button__content">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><path d="M8 8h.01"></path><path d="M16 16h.01"></path><path d="M16 8h.01"></path><path d="M8 16h.01"></path></svg>
-            Roll
-          </span>
-        </button>
-      </div>
-      <div class="roll-mode-selector">
-        <label class="radio-label">
-          <input
-            type="radio"
-            name="roll-mode"
-            value="backend"
-            :checked="rollMode === 'backend'"
-            @change="$emit('update:rollMode', 'backend')"
-          />
-          <span>Backend Roll (randomizes each execution)</span>
-        </label>
+        </Transition>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+import LastUsedPreview from './LastUsedPreview.vue'
+import type { LoraEntry } from '../../composables/types'
+
 defineProps<{
   countMode: 'fixed' | 'range'
   countFixed: number
@@ -187,9 +212,12 @@ defineProps<{
   useSameClipStrength: boolean
   clipStrengthMin: number
   clipStrengthMax: number
-  rollMode: 'frontend' | 'backend'
+  rollMode: 'fixed' | 'always'
   isRolling: boolean
   isClipStrengthDisabled: boolean
+  lastUsed: LoraEntry[] | null
+  currentLoras: LoraEntry[]
+  canReuseLast: boolean
 }>()
 
 defineEmits<{
@@ -202,9 +230,25 @@ defineEmits<{
   'update:useSameClipStrength': [value: boolean]
   'update:clipStrengthMin': [value: number]
   'update:clipStrengthMax': [value: number]
-  'update:rollMode': [value: 'frontend' | 'backend']
-  roll: []
+  'update:rollMode': [value: 'fixed' | 'always']
+  'generate-fixed': []
+  'always-randomize': []
+  'reuse-last': []
 }>()
+
+const showTooltip = ref(false)
+
+const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean => {
+  if (!a || !b) return false
+  if (a.length !== b.length) return false
+  const sortedA = [...a].sort((x, y) => x.name.localeCompare(y.name))
+  const sortedB = [...b].sort((x, y) => x.name.localeCompare(y.name))
+  return sortedA.every((lora, i) =>
+    lora.name === sortedB[i].name &&
+    lora.strength === sortedB[i].strength &&
+    lora.clipStrength === sortedB[i].clipStrength
+  )
+}
 </script>
 
 <style scoped>
@@ -330,41 +374,75 @@ defineEmits<{
   cursor: pointer;
 }
 
+/* Roll buttons with tooltip container */
+.roll-buttons-with-tooltip {
+  position: relative;
+}
+
+/* Roll buttons container */
+.roll-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
 .roll-button {
-  padding: 8px 16px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border: none;
+  padding: 8px 10px;
+  background: rgba(30, 30, 36, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 4px;
-  color: white;
-  font-size: 13px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #e4e4e7;
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .roll-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  background: rgba(66, 153, 225, 0.2);
+  border-color: rgba(66, 153, 225, 0.4);
+  color: #bfdbfe;
 }
 
-.roll-button:active:not(:disabled) {
-  transform: translateY(0);
+.roll-button.selected {
+  background: rgba(66, 153, 225, 0.3);
+  border-color: rgba(66, 153, 225, 0.6);
+  color: #e4e4e7;
+  box-shadow: 0 0 0 1px rgba(66, 153, 225, 0.3);
 }
 
 .roll-button:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
-  background: linear-gradient(135deg, #52525b 0%, #3f3f46 100%);
 }
 
-.roll-button__content {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.roll-button__icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.roll-button__text {
+  font-size: 11px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Tooltip transitions */
+.tooltip-enter-active,
+.tooltip-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.tooltip-enter-from,
+.tooltip-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
 }
 </style>

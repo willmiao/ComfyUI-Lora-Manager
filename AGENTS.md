@@ -161,3 +161,32 @@ npm run test:coverage
 - Symlink handling requires normalized paths
 - API endpoints follow `/loras/*`, `/checkpoints/*`, `/embeddings/*` patterns
 - Run `python scripts/sync_translation_keys.py` after UI string updates
+
+## Frontend UI Architecture
+
+This project has two distinct UI systems:
+
+### 1. Standalone Lora Manager Web UI
+- Location: `./static/` and `./templates/`
+- Purpose: Full-featured web application for managing LoRA models
+- Tech stack: Vanilla JS + CSS, served by the standalone server
+- Development: Uses npm for frontend testing (`npm test`, `npm run test:watch`, etc.)
+
+### 2. ComfyUI Custom Node Widgets
+- Location: `./web/comfyui/`
+- Purpose: Widgets and UI logic that ComfyUI loads as custom node extensions
+- Tech stack: Vanilla JS + Vue.js widgets (in `./vue-widgets/` and built to `./web/comfyui/vue-widgets/`)
+- Widget styling: Primary styles in `./web/comfyui/lm_styles.css` (NOT `./static/css/`)
+- Development: No npm build step for these widgets (Vue widgets use build system)
+
+### Widget Development Guidelines
+- Use `app.registerExtension()` to register ComfyUI extensions (ComfyUI integration layer)
+- Use `node.addDOMWidget()` for custom DOM widgets
+- Widget styles should follow the patterns in `./web/comfyui/lm_styles.css`
+  - Selected state: `rgba(66, 153, 225, 0.3)` background, `rgba(66, 153, 225, 0.6)` border
+  - Hover state: `rgba(66, 153, 225, 0.2)` background
+  - Color palette matches the Lora Manager accent color (blue #4299e1)
+  - Use oklch() for color values when possible (defined in `./static/css/base.css`)
+- Vue widget components are in `./vue-widgets/src/components/` and built to `./web/comfyui/vue-widgets/`
+- When modifying widget styles, check `./web/comfyui/lm_styles.css` for consistency with other ComfyUI widgets
+

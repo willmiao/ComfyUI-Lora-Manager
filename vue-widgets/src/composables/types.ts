@@ -64,7 +64,8 @@ export interface RandomizerConfig {
   use_same_clip_strength: boolean
   clip_strength_min: number
   clip_strength_max: number
-  roll_mode: 'frontend' | 'backend'
+  roll_mode: 'fixed' | 'always'
+  last_used?: LoraEntry[] | null
 }
 
 export interface LoraEntry {

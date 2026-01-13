@@ -13,6 +13,9 @@
       :roll-mode="state.rollMode.value"
       :is-rolling="state.isRolling.value"
       :is-clip-strength-disabled="state.isClipStrengthDisabled.value"
+      :last-used="state.lastUsed.value"
+      :current-loras="currentLoras"
+      :can-reuse-last="canReuseLast"
       @update:count-mode="state.countMode.value = $event"
       @update:count-fixed="state.countFixed.value = $event"
       @update:count-min="state.countMin.value = $event"
@@ -23,13 +26,15 @@
       @update:clip-strength-min="state.clipStrengthMin.value = $event"
       @update:clip-strength-max="state.clipStrengthMax.value = $event"
       @update:roll-mode="state.rollMode.value = $event"
-      @roll="handleRoll"
+      @generate-fixed="handleGenerateFixed"
+      @always-randomize="handleAlwaysRandomize"
+      @reuse-last="handleReuseLast"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed, ref, watch } from 'vue'
 import LoraRandomizerSettingsView from './lora-randomizer/LoraRandomizerSettingsView.vue'
 import { useLoraRandomizerState } from '../composables/useLoraRandomizerState'
 import type { ComponentWidget, RandomizerConfig, LoraEntry } from '../composables/types'
@@ -43,11 +48,31 @@ const props = defineProps<{
 // State management
 const state = useLoraRandomizerState(props.widget)
 
-// Handle roll button click
-const handleRoll = async () => {
-  try {
-    console.log('[LoraRandomizerWidget] Roll button clicked')
+// Track current loras from the loras widget
+const currentLoras = ref<LoraEntry[]>([])
 
+// Computed property to check if we can reuse last
+const canReuseLast = computed(() => {
+  const lastUsed = state.lastUsed.value
+  if (!lastUsed || lastUsed.length === 0) return false
+  return !areLorasEqual(currentLoras.value, lastUsed)
+})
+
+// Helper function to compare two lora lists
+const areLorasEqual = (a: LoraEntry[], b: LoraEntry[]): boolean => {
+  if (a.length !== b.length) return false
+  const sortedA = [...a].sort((x, y) => x.name.localeCompare(y.name))
+  const sortedB = [...b].sort((x, y) => x.name.localeCompare(y.name))
+  return sortedA.every((lora, i) =>
+    lora.name === sortedB[i].name &&
+    lora.strength === sortedB[i].strength &&
+    lora.clipStrength === sortedB[i].clipStrength
+  )
+}
+
+// Handle "Generate Fixed" button click
+const handleGenerateFixed = async () => {
+  try {
     // Get pool config from connected pool_config input
     const poolConfig = (props.node as any).getPoolConfig?.() || null
 
@@ -55,45 +80,115 @@ const handleRoll = async () => {
     const lorasWidget = props.node.widgets?.find((w: any) => w.name === "loras")
     const lockedLoras: LoraEntry[] = (lorasWidget?.value || []).filter((lora: LoraEntry) => lora.locked === true)
 
-    console.log('[LoraRandomizerWidget] Pool config:', poolConfig)
-    console.log('[LoraRandomizerWidget] Locked loras:', lockedLoras)
+    // Call API to get random loras
+    const randomLoras = await state.rollLoras(poolConfig, lockedLoras)
+
+    // Update the loras widget with the new selection
+    if (lorasWidget) {
+      lorasWidget.value = randomLoras
+      currentLoras.value = randomLoras
+    }
+
+    // Set roll mode to fixed
+    state.rollMode.value = 'fixed'
+  } catch (error) {
+    console.error('[LoraRandomizerWidget] Error generating fixed LoRAs:', error)
+    alert('Failed to generate LoRAs: ' + (error as Error).message)
+  }
+}
+
+// Handle "Always Randomize" button click
+const handleAlwaysRandomize = async () => {
+  try {
+    // Get pool config from connected pool_config input
+    const poolConfig = (props.node as any).getPoolConfig?.() || null
+
+    // Get locked loras from the loras widget
+    const lorasWidget = props.node.widgets?.find((w: any) => w.name === "loras")
+    const lockedLoras: LoraEntry[] = (lorasWidget?.value || []).filter((lora: LoraEntry) => lora.locked === true)
 
     // Call API to get random loras
     const randomLoras = await state.rollLoras(poolConfig, lockedLoras)
 
-    console.log('[LoraRandomizerWidget] Got random LoRAs:', randomLoras)
-
     // Update the loras widget with the new selection
-    // This will be handled by emitting an event or directly updating the loras widget
-    // For now, we'll emit a custom event that the parent widget handler can catch
-    if (typeof (props.widget as any).onRoll === 'function') {
-      (props.widget as any).onRoll(randomLoras)
+    if (lorasWidget) {
+      lorasWidget.value = randomLoras
+      currentLoras.value = randomLoras
     }
+
+    // Set roll mode to always
+    state.rollMode.value = 'always'
   } catch (error) {
-    console.error('[LoraRandomizerWidget] Error rolling LoRAs:', error)
-    alert('Failed to roll LoRAs: ' + (error as Error).message)
+    console.error('[LoraRandomizerWidget] Error generating random LoRAs:', error)
+    alert('Failed to generate LoRAs: ' + (error as Error).message)
   }
 }
+
+// Handle "Reuse Last" button click
+const handleReuseLast = () => {
+  const lastUsedLoras = state.useLastUsed()
+  if (lastUsedLoras) {
+    // Update the loras widget with the last used combination
+    const lorasWidget = props.node.widgets?.find((w: any) => w.name === 'loras')
+    if (lorasWidget) {
+      lorasWidget.value = lastUsedLoras
+      currentLoras.value = lastUsedLoras
+    }
+
+    // Switch to fixed mode
+    state.rollMode.value = 'fixed'
+  }
+}
+
+// Watch for changes to the loras widget to track current loras
+watch(() => props.node.widgets?.find((w: any) => w.name === 'loras')?.value, (newVal) => {
+  if (newVal && Array.isArray(newVal)) {
+    currentLoras.value = newVal
+  }
+}, { immediate: true, deep: true })
 
 // Lifecycle
 onMounted(async () => {
   // Setup serialization
   props.widget.serializeValue = async () => {
     const config = state.buildConfig()
-    console.log('[LoraRandomizerWidget] Serializing config:', config)
     return config
   }
 
   // Handle external value updates (e.g., loading workflow, paste)
   props.widget.onSetValue = (v) => {
-    console.log('[LoraRandomizerWidget] Restoring from config:', v)
     state.restoreFromConfig(v as RandomizerConfig)
   }
 
   // Restore from saved value
   if (props.widget.value) {
-    console.log('[LoraRandomizerWidget] Restoring from saved value:', props.widget.value)
     state.restoreFromConfig(props.widget.value as RandomizerConfig)
+  }
+
+  // Override onExecuted to handle backend UI updates
+  const originalOnExecuted = (props.node as any).onExecuted?.bind(props.node)
+
+  ;(props.node as any).onExecuted = function(output: any) {
+    console.log("[LoraRandomizerWidget] Node executed with output:", output)
+
+    // Update last_used from backend
+    if (output?.last_used !== undefined) {
+      state.lastUsed.value = output.last_used
+      console.log(`[LoraRandomizerWidget] Updated last_used: ${output.last_used ? output.last_used.length : 0} LoRAs`)
+    }
+
+    // Update loras widget if backend provided new loras
+    const lorasWidget = props.node.widgets?.find((w: any) => w.name === 'loras')
+    if (lorasWidget && output?.loras && Array.isArray(output.loras)) {
+      console.log("[LoraRandomizerWidget] Received loras data from backend:", output.loras)
+      lorasWidget.value = output.loras
+      currentLoras.value = output.loras
+    }
+
+    // Call original onExecuted if it exists
+    if (originalOnExecuted) {
+      return originalOnExecuted(output)
+    }
   }
 })
 </script>

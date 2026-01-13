@@ -328,8 +328,6 @@ export function updateConnectedTriggerWords(node, loraNames) {
             .map((connectedNode) => getNodeReference(connectedNode))
             .filter((reference) => reference !== null);
 
-        console.log('node ids: ', nodeIds, loraNames);
-
         if (nodeIds.length === 0) {
             return;
         }
