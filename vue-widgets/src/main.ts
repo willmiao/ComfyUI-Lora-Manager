@@ -15,6 +15,37 @@ import { app } from '../../../scripts/app.js'
 // @ts-ignore
 import { getPoolConfigFromConnectedNode, getActiveLorasFromNode, updateConnectedTriggerWords, updateDownstreamLoaders } from '../../web/comfyui/utils.js'
 
+function forwardMiddleMouseToCanvas(container: HTMLElement) {
+  if (!container) return
+
+  container.addEventListener('pointerdown', (event) => {
+    if (event.button === 1) {
+      const canvas = app.canvas
+      if (canvas && typeof canvas.processMouseDown === 'function') {
+        canvas.processMouseDown(event)
+      }
+    }
+  })
+
+  container.addEventListener('pointermove', (event) => {
+    if ((event.buttons & 4) === 4) {
+      const canvas = app.canvas
+      if (canvas && typeof canvas.processMouseMove === 'function') {
+        canvas.processMouseMove(event)
+      }
+    }
+  })
+
+  container.addEventListener('pointerup', (event) => {
+    if (event.button === 1) {
+      const canvas = app.canvas
+      if (canvas && typeof canvas.processMouseUp === 'function') {
+        canvas.processMouseUp(event)
+      }
+    }
+  })
+}
+
 const vueApps = new Map<number, VueApp>()
 
 // Cache for dynamically loaded addLorasWidget module
@@ -29,6 +60,8 @@ function createLoraPoolWidget(node) {
   container.style.display = 'flex'
   container.style.flexDirection = 'column'
   container.style.overflow = 'hidden'
+
+  forwardMiddleMouseToCanvas(container)
 
   let internalValue: LoraPoolConfig | LegacyLoraPoolConfig | undefined
 
@@ -99,6 +132,8 @@ function createLoraRandomizerWidget(node) {
   container.style.display = 'flex'
   container.style.flexDirection = 'column'
   container.style.overflow = 'hidden'
+
+  forwardMiddleMouseToCanvas(container)
 
   let internalValue: RandomizerConfig | undefined
 

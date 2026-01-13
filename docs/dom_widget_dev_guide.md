@@ -302,6 +302,34 @@ As internal widgets for ComfyUI custom nodes, the UI should be accessible to use
 - Focus on user intent rather than implementation details
 - Avoid complex interactions that may confuse users
 
+#### 7.4.4 Forward Middle Mouse Events to Canvas
+
+By default, when a DOM widget receives pointer events (e.g., mouse clicks, drags), these events are captured by the widget and not forwarded to the ComfyUI canvas. This prevents users from panning the workflow using the middle mouse button when the cursor is over a DOM widget.
+
+To enable workflow panning over your widget, you should forward middle mouse events (button 1) to the canvas using the `forwardMiddleMouseToCanvas` utility function:
+
+```javascript
+import { forwardMiddleMouseToCanvas } from "./utils.js";
+
+// In your widget creation function
+const container = document.createElement("div");
+container.style.width = "100%";
+container.style.height = "100%";
+// ... other styles ...
+
+// Forward middle mouse events to canvas for panning
+forwardMiddleMouseToCanvas(container);
+
+const widget = node.addDOMWidget(name, type, container, { ... });
+```
+
+The `forwardMiddleMouseToCanvas` function:
+- Forwards `pointerdown` events with button 1 (middle mouse button) to `app.canvas.processMouseDown`
+- Forwards `pointermove` events while middle mouse button is pressed to `app.canvas.processMouseMove`
+- Forwards `pointerup` events with button 1 to `app.canvas.processMouseUp`
+
+This allows users to pan the workflow canvas even when their mouse cursor is hovering over your DOM widget.
+
 ---
 
 ## 8. Complete Example: Text Counter

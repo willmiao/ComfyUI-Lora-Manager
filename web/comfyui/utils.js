@@ -504,6 +504,11 @@ export function getPoolConfigFromConnectedNode(node) {
         return null;
     }
 
+    const isNodeActive = poolNode.mode === undefined || poolNode.mode === 0 || poolNode.mode === 3;
+    if (!isNodeActive) {
+        return null;
+    }
+
     const poolWidget = poolNode.widgets?.find(w => w.name === "pool_config");
     return poolWidget?.value || null;
 }
