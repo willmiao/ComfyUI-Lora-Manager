@@ -1,7 +1,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Protocol, Callable
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Protocol,
+    Callable,
+)
 
 from ..utils.constants import NSFW_LEVELS
 from ..utils.utils import fuzzy_match as default_fuzzy_match
@@ -51,8 +62,7 @@ def resolve_civitai_model_type(entry: Mapping[str, Any]) -> str:
 class SettingsProvider(Protocol):
     """Protocol describing the SettingsManager contract used by query helpers."""
 
-    def get(self, key: str, default: Any = None) -> Any:
-        ...
+    def get(self, key: str, default: Any = None) -> Any: ...
 
 
 @dataclass(frozen=True)
@@ -68,6 +78,7 @@ class FilterCriteria:
     """Container for model list filtering options."""
 
     folder: Optional[str] = None
+    folder_exclude: Optional[Sequence[str]] = None
     base_models: Optional[Sequence[str]] = None
     tags: Optional[Dict[str, str]] = None
     favorites_only: bool = False
@@ -113,11 +124,15 @@ class ModelCacheRepository:
 class ModelFilterSet:
     """Applies common filtering rules to the model collection."""
 
-    def __init__(self, settings: SettingsProvider, nsfw_levels: Optional[Dict[str, int]] = None) -> None:
+    def __init__(
+        self, settings: SettingsProvider, nsfw_levels: Optional[Dict[str, int]] = None
+    ) -> None:
         self._settings = settings
         self._nsfw_levels = nsfw_levels or NSFW_LEVELS
 
-    def apply(self, data: Iterable[Dict[str, Any]], criteria: FilterCriteria) -> List[Dict[str, Any]]:
+    def apply(
+        self, data: Iterable[Dict[str, Any]], criteria: FilterCriteria
+    ) -> List[Dict[str, Any]]:
         """Return items that satisfy the provided criteria."""
         overall_start = time.perf_counter()
         items = list(data)
@@ -127,8 +142,10 @@ class ModelFilterSet:
             t0 = time.perf_counter()
             threshold = self._nsfw_levels.get("R", 0)
             items = [
-                item for item in items
-                if not item.get("preview_nsfw_level") or item.get("preview_nsfw_level") < threshold
+                item
+                for item in items
+                if not item.get("preview_nsfw_level")
+                or item.get("preview_nsfw_level") < threshold
             ]
             sfw_duration = time.perf_counter() - t0
         else:
@@ -142,20 +159,44 @@ class ModelFilterSet:
 
         folder_duration = 0
         folder = criteria.folder
+        folder_exclude = criteria.folder_exclude or []
         options = criteria.search_options or {}
         recursive = bool(options.get("recursive", True))
+
+        # Apply folder exclude filters first
+        if folder_exclude:
+            t0 = time.perf_counter()
+            for exclude_folder in folder_exclude:
+                if exclude_folder:
+                    # Check exact match OR prefix match (for subfolders)
+                    # Normalize exclude_folder for prefix matching
+                    if not exclude_folder.endswith("/"):
+                        exclude_prefix = f"{exclude_folder}/"
+                    else:
+                        exclude_prefix = exclude_folder
+                    items = [
+                        item
+                        for item in items
+                        if item.get("folder") != exclude_folder
+                        and not item.get("folder", "").startswith(exclude_prefix)
+                    ]
+            folder_duration = time.perf_counter() - t0
+
+        # Apply folder include filters
         if folder is not None:
             t0 = time.perf_counter()
             if recursive:
                 if folder:
                     folder_with_sep = f"{folder}/"
                     items = [
-                        item for item in items
-                        if item.get("folder") == folder or item.get("folder", "").startswith(folder_with_sep)
+                        item
+                        for item in items
+                        if item.get("folder") == folder
+                        or item.get("folder", "").startswith(folder_with_sep)
                     ]
             else:
                 items = [item for item in items if item.get("folder") == folder]
-            folder_duration = time.perf_counter() - t0
+            folder_duration = time.perf_counter() - t0 + folder_duration
 
         base_models_duration = 0
         base_models = criteria.base_models or []
@@ -183,25 +224,23 @@ class ModelFilterSet:
                 include_tags = {tag for tag in tag_filters if tag}
 
             if include_tags:
+
                 def matches_include(item_tags):
                     if not item_tags and "__no_tags__" in include_tags:
                         return True
                     return any(tag in include_tags for tag in (item_tags or []))
 
-                items = [
-                    item for item in items
-                    if matches_include(item.get("tags"))
-                ]
+                items = [item for item in items if matches_include(item.get("tags"))]
 
             if exclude_tags:
+
                 def matches_exclude(item_tags):
                     if not item_tags and "__no_tags__" in exclude_tags:
                         return True
                     return any(tag in exclude_tags for tag in (item_tags or []))
 
                 items = [
-                    item for item in items
-                    if not matches_exclude(item.get("tags"))
+                    item for item in items if not matches_exclude(item.get("tags"))
                 ]
             tags_duration = time.perf_counter() - t0
 
@@ -210,26 +249,35 @@ class ModelFilterSet:
         if model_types:
             t0 = time.perf_counter()
             normalized_model_types = {
-                model_type for model_type in (
+                model_type
+                for model_type in (
                     normalize_civitai_model_type(value) for value in model_types
                 )
                 if model_type
             }
             if normalized_model_types:
                 items = [
-                    item for item in items
-                    if normalize_civitai_model_type(resolve_civitai_model_type(item)) in normalized_model_types
+                    item
+                    for item in items
+                    if normalize_civitai_model_type(resolve_civitai_model_type(item))
+                    in normalized_model_types
                 ]
             model_types_duration = time.perf_counter() - t0
 
         duration = time.perf_counter() - overall_start
-        if duration > 0.1: # Only log if it's potentially slow
+        if duration > 0.1:  # Only log if it's potentially slow
             logger.debug(
                 "ModelFilterSet.apply took %.3fs (sfw: %.3fs, fav: %.3fs, folder: %.3fs, base: %.3fs, tags: %.3fs, types: %.3fs). "
                 "Count: %d -> %d",
-                duration, sfw_duration, favorites_duration, folder_duration, 
-                base_models_duration, tags_duration, model_types_duration,
-                initial_count, len(items)
+                duration,
+                sfw_duration,
+                favorites_duration,
+                folder_duration,
+                base_models_duration,
+                tags_duration,
+                model_types_duration,
+                initial_count,
+                len(items),
             )
         return items
 
@@ -245,7 +293,9 @@ class SearchStrategy:
         "creator": False,
     }
 
-    def __init__(self, fuzzy_matcher: Optional[Callable[[str, str], bool]] = None) -> None:
+    def __init__(
+        self, fuzzy_matcher: Optional[Callable[[str, str], bool]] = None
+    ) -> None:
         self._fuzzy_match = fuzzy_matcher or default_fuzzy_match
 
     def normalize_options(self, options: Optional[Dict[str, Any]]) -> Dict[str, Any]:
@@ -284,7 +334,9 @@ class SearchStrategy:
 
             if options.get("tags", False):
                 tags = item.get("tags", []) or []
-                if any(self._matches(tag, search_term, search_lower, fuzzy) for tag in tags):
+                if any(
+                    self._matches(tag, search_term, search_lower, fuzzy) for tag in tags
+                ):
                     results.append(item)
                     continue
 
@@ -295,13 +347,17 @@ class SearchStrategy:
                     creator = civitai.get("creator")
                     if isinstance(creator, dict):
                         creator_username = creator.get("username", "")
-                if creator_username and self._matches(creator_username, search_term, search_lower, fuzzy):
+                if creator_username and self._matches(
+                    creator_username, search_term, search_lower, fuzzy
+                ):
                     results.append(item)
                     continue
 
         return results
 
-    def _matches(self, candidate: str, search_term: str, search_lower: str, fuzzy: bool) -> bool:
+    def _matches(
+        self, candidate: str, search_term: str, search_lower: str, fuzzy: bool
+    ) -> bool:
         if not isinstance(candidate, str):
             candidate = "" if candidate is None else str(candidate)
 

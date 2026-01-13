@@ -1,4 +1,5 @@
 """Handlers for base model routes."""
+
 from __future__ import annotations
 
 import asyncio
@@ -69,21 +70,27 @@ class ModelPageView:
         short_hash = "stable"
         try:
             import toml
+
             current_file = os.path.abspath(__file__)
             # Navigate up from py/routes/handlers/model_handlers.py to project root
-            root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_file))))
-            pyproject_path = os.path.join(root_dir, 'pyproject.toml')
-            
+            root_dir = os.path.dirname(
+                os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
+            )
+            pyproject_path = os.path.join(root_dir, "pyproject.toml")
+
             if os.path.exists(pyproject_path):
-                with open(pyproject_path, 'r', encoding='utf-8') as f:
+                with open(pyproject_path, "r", encoding="utf-8") as f:
                     data = toml.load(f)
-                    version = data.get('project', {}).get('version', '1.0.0').replace('v', '')
-            
+                    version = (
+                        data.get("project", {}).get("version", "1.0.0").replace("v", "")
+                    )
+
             # Try to get git info for granular cache busting
-            git_dir = os.path.join(root_dir, '.git')
+            git_dir = os.path.join(root_dir, ".git")
             if os.path.exists(git_dir):
                 try:
                     import git
+
                     repo = git.Repo(root_dir)
                     short_hash = repo.head.commit.hexsha[:7]
                 except Exception:
@@ -91,7 +98,7 @@ class ModelPageView:
                     pass
         except Exception as e:
             self._logger.debug(f"Failed to read version info for cache busting: {e}")
-            
+
         return f"{version}-{short_hash}"
 
     async def handle(self, request: web.Request) -> web.Response:
@@ -119,7 +126,9 @@ class ModelPageView:
             self._server_i18n.set_locale(user_language)
 
             if not hasattr(self._template_env, "_i18n_filter_added"):
-                self._template_env.filters["t"] = self._server_i18n.create_template_filter()
+                self._template_env.filters["t"] = (
+                    self._server_i18n.create_template_filter()
+                )
                 self._template_env._i18n_filter_added = True  # type: ignore[attr-defined]
 
             template_context = {
@@ -133,13 +142,17 @@ class ModelPageView:
 
             if not is_initializing:
                 try:
-                    cache = await self._service.scanner.get_cached_data(force_refresh=False)
+                    cache = await self._service.scanner.get_cached_data(
+                        force_refresh=False
+                    )
                     template_context["folders"] = getattr(cache, "folders", [])
                 except Exception as cache_error:  # pragma: no cover - logging path
                     self._logger.error("Error loading cache data: %s", cache_error)
                     template_context["is_initializing"] = True
 
-            rendered = self._template_env.get_template(self._template_name).render(**template_context)
+            rendered = self._template_env.get_template(self._template_name).render(
+                **template_context
+            )
             return web.Response(text=rendered, content_type="text/html")
         except Exception as exc:  # pragma: no cover - logging path
             self._logger.error("Error handling models page: %s", exc, exc_info=True)
@@ -165,25 +178,32 @@ class ModelListingHandler:
         try:
             params = self._parse_common_params(request)
             result = await self._service.get_paginated_data(**params)
-            
+
             format_start = time.perf_counter()
             formatted_result = {
-                "items": [await self._service.format_response(item) for item in result["items"]],
+                "items": [
+                    await self._service.format_response(item)
+                    for item in result["items"]
+                ],
                 "total": result["total"],
                 "page": result["page"],
                 "page_size": result["page_size"],
                 "total_pages": result["total_pages"],
             }
             format_duration = time.perf_counter() - format_start
-            
+
             duration = time.perf_counter() - start_time
             self._logger.debug(
                 "Request for %s/list took %.3fs (formatting: %.3fs)",
-                self._service.model_type, duration, format_duration
+                self._service.model_type,
+                duration,
+                format_duration,
             )
             return web.json_response(formatted_result)
         except Exception as exc:
-            self._logger.error("Error retrieving %ss: %s", self._service.model_type, exc, exc_info=True)
+            self._logger.error(
+                "Error retrieving %ss: %s", self._service.model_type, exc, exc_info=True
+            )
             return web.json_response({"error": str(exc)}, status=500)
 
     def _parse_common_params(self, request: web.Request) -> Dict:
@@ -195,6 +215,7 @@ class ModelListingHandler:
         fuzzy_search = request.query.get("fuzzy_search", "false").lower() == "true"
 
         base_models = request.query.getall("base_model", [])
+        folder_exclude = list(request.query.getall("folder_exclude", []))
         model_types = list(request.query.getall("model_type", []))
         model_types.extend(request.query.getall("civitai_model_type", []))
         # Support legacy ?tag=foo plus new ?tag_include/foo & ?tag_exclude parameters
@@ -202,7 +223,9 @@ class ModelListingHandler:
         if not legacy_tags:
             legacy_csv = request.query.get("tags")
             if legacy_csv:
-                legacy_tags = [tag.strip() for tag in legacy_csv.split(",") if tag.strip()]
+                legacy_tags = [
+                    tag.strip() for tag in legacy_csv.split(",") if tag.strip()
+                ]
 
         include_tags = request.query.getall("tag_include", [])
         exclude_tags = request.query.getall("tag_exclude", [])
@@ -223,7 +246,8 @@ class ModelListingHandler:
 
         search_options = {
             "filename": request.query.get("search_filename", "true").lower() == "true",
-            "modelname": request.query.get("search_modelname", "true").lower() == "true",
+            "modelname": request.query.get("search_modelname", "true").lower()
+            == "true",
             "tags": request.query.get("search_tags", "false").lower() == "true",
             "creator": request.query.get("search_creator", "false").lower() == "true",
             "recursive": request.query.get("recursive", "true").lower() == "true",
@@ -240,18 +264,24 @@ class ModelListingHandler:
             except (json.JSONDecodeError, TypeError):
                 pass
 
-        update_available_only = request.query.get("update_available_only", "false").lower() == "true"
-        
+        update_available_only = (
+            request.query.get("update_available_only", "false").lower() == "true"
+        )
+
         # New license-based query filters
         credit_required = request.query.get("credit_required")
         if credit_required is not None:
             credit_required = credit_required.lower() not in ("false", "0", "")
         else:
             credit_required = None  # None means no filter applied
-        
-        allow_selling_generated_content = request.query.get("allow_selling_generated_content")
+
+        allow_selling_generated_content = request.query.get(
+            "allow_selling_generated_content"
+        )
         if allow_selling_generated_content is not None:
-            allow_selling_generated_content = allow_selling_generated_content.lower() not in ("false", "0", "")
+            allow_selling_generated_content = (
+                allow_selling_generated_content.lower() not in ("false", "0", "")
+            )
         else:
             allow_selling_generated_content = None  # None means no filter applied
 
@@ -260,6 +290,7 @@ class ModelListingHandler:
             "page_size": page_size,
             "sort_by": sort_by,
             "folder": folder,
+            "folder_exclude": folder_exclude,
             "search": search,
             "fuzzy_search": fuzzy_search,
             "base_models": base_models,
@@ -330,14 +361,23 @@ class ModelManagementHandler:
             data = await request.json()
             file_path = data.get("file_path")
             if not file_path:
-                return web.json_response({"success": False, "error": "File path is required"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "File path is required"}, status=400
+                )
 
             cache = await self._service.scanner.get_cached_data()
-            model_data = next((item for item in cache.raw_data if item["file_path"] == file_path), None)
+            model_data = next(
+                (item for item in cache.raw_data if item["file_path"] == file_path),
+                None,
+            )
             if not model_data:
-                return web.json_response({"success": False, "error": "Model not found in cache"}, status=404)
+                return web.json_response(
+                    {"success": False, "error": "Model not found in cache"}, status=404
+                )
             if not model_data.get("sha256"):
-                return web.json_response({"success": False, "error": "No SHA256 hash found"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "No SHA256 hash found"}, status=400
+                )
 
             await MetadataManager.hydrate_model_data(model_data)
 
@@ -365,12 +405,17 @@ class ModelManagementHandler:
 
             if not file_path or model_id is None:
                 return web.json_response(
-                    {"success": False, "error": "Both file_path and model_id are required"},
+                    {
+                        "success": False,
+                        "error": "Both file_path and model_id are required",
+                    },
                     status=400,
                 )
 
             metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
-            local_metadata = await self._metadata_sync.load_local_metadata(metadata_path)
+            local_metadata = await self._metadata_sync.load_local_metadata(
+                metadata_path
+            )
 
             updated_metadata = await self._metadata_sync.relink_metadata(
                 file_path=file_path,
@@ -383,12 +428,15 @@ class ModelManagementHandler:
                 file_path, file_path, updated_metadata
             )
 
-            message = (
-                f"Model successfully re-linked to Civitai model {model_id}"
-                + (f" version {model_version_id}" if model_version_id else "")
+            message = f"Model successfully re-linked to Civitai model {model_id}" + (
+                f" version {model_version_id}" if model_version_id else ""
             )
             return web.json_response(
-                {"success": True, "message": message, "hash": updated_metadata.get("sha256", "")}
+                {
+                    "success": True,
+                    "message": message,
+                    "hash": updated_metadata.get("sha256", ""),
+                }
             )
         except Exception as exc:
             self._logger.error("Error re-linking to CivitAI: %s", exc, exc_info=True)
@@ -439,7 +487,9 @@ class ModelManagementHandler:
             return web.json_response(
                 {
                     "success": True,
-                    "preview_url": config.get_preview_static_url(result["preview_path"]),
+                    "preview_url": config.get_preview_static_url(
+                        result["preview_path"]
+                    ),
                     "preview_nsfw_level": result["preview_nsfw_level"],
                 }
             )
@@ -557,7 +607,10 @@ class ModelManagementHandler:
 
             if not file_paths:
                 return web.json_response(
-                    {"success": False, "error": "No file paths provided for verification"},
+                    {
+                        "success": False,
+                        "error": "No file paths provided for verification",
+                    },
                     status=400,
                 )
 
@@ -570,7 +623,9 @@ class ModelManagementHandler:
 
             return web.json_response({"success": True, **results})
         except Exception as exc:
-            self._logger.error("Error verifying duplicate models: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error verifying duplicate models: %s", exc, exc_info=True
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
@@ -590,7 +645,9 @@ class ModelQueryHandler:
             return web.json_response({"success": True, "tags": top_tags})
         except Exception as exc:
             self._logger.error("Error getting top tags: %s", exc, exc_info=True)
-            return web.json_response({"success": False, "error": "Internal server error"}, status=500)
+            return web.json_response(
+                {"success": False, "error": "Internal server error"}, status=500
+            )
 
     async def get_base_models(self, request: web.Request) -> web.Response:
         try:
@@ -617,12 +674,26 @@ class ModelQueryHandler:
     async def scan_models(self, request: web.Request) -> web.Response:
         try:
             full_rebuild = request.query.get("full_rebuild", "false").lower() == "true"
-            await self._service.scan_models(force_refresh=True, rebuild_cache=full_rebuild)
+            await self._service.scan_models(
+                force_refresh=True, rebuild_cache=full_rebuild
+            )
             if self._service.scanner.is_cancelled():
-                return web.json_response({"status": "cancelled", "message": f"{self._service.model_type.capitalize()} scan cancelled"})
-            return web.json_response({"status": "success", "message": f"{self._service.model_type.capitalize()} scan completed"})
+                return web.json_response(
+                    {
+                        "status": "cancelled",
+                        "message": f"{self._service.model_type.capitalize()} scan cancelled",
+                    }
+                )
+            return web.json_response(
+                {
+                    "status": "success",
+                    "message": f"{self._service.model_type.capitalize()} scan completed",
+                }
+            )
         except Exception as exc:
-            self._logger.error("Error scanning %ss: %s", self._service.model_type, exc, exc_info=True)
+            self._logger.error(
+                "Error scanning %ss: %s", self._service.model_type, exc, exc_info=True
+            )
             return web.json_response({"error": str(exc)}, status=500)
 
     async def get_model_roots(self, request: web.Request) -> web.Response:
@@ -630,7 +701,12 @@ class ModelQueryHandler:
             roots = self._service.get_model_roots()
             return web.json_response({"success": True, "roots": roots})
         except Exception as exc:
-            self._logger.error("Error getting %s roots: %s", self._service.model_type, exc, exc_info=True)
+            self._logger.error(
+                "Error getting %s roots: %s",
+                self._service.model_type,
+                exc,
+                exc_info=True,
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_folders(self, request: web.Request) -> web.Response:
@@ -644,16 +720,23 @@ class ModelQueryHandler:
     async def cancel_task(self, request: web.Request) -> web.Response:
         try:
             self._service.scanner.cancel_task()
-            return web.json_response({"status": "success", "message": "Cancellation requested"})
+            return web.json_response(
+                {"status": "success", "message": "Cancellation requested"}
+            )
         except Exception as exc:
-            self._logger.error("Error cancelling task for %s: %s", self._service.model_type, exc)
+            self._logger.error(
+                "Error cancelling task for %s: %s", self._service.model_type, exc
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_folder_tree(self, request: web.Request) -> web.Response:
         try:
             model_root = request.query.get("model_root")
             if not model_root:
-                return web.json_response({"success": False, "error": "model_root parameter is required"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "model_root parameter is required"},
+                    status=400,
+                )
             folder_tree = await self._service.get_folder_tree(model_root)
             return web.json_response({"success": True, "tree": folder_tree})
         except Exception as exc:
@@ -676,19 +759,35 @@ class ModelQueryHandler:
             for sha256, paths in duplicates.items():
                 group = {"hash": sha256, "models": []}
                 for path in paths:
-                    model = next((m for m in cache.raw_data if m["file_path"] == path), None)
+                    model = next(
+                        (m for m in cache.raw_data if m["file_path"] == path), None
+                    )
                     if model:
-                        group["models"].append(await self._service.format_response(model))
+                        group["models"].append(
+                            await self._service.format_response(model)
+                        )
                 primary_path = self._service.get_path_by_hash(sha256)
                 if primary_path and primary_path not in paths:
-                    primary_model = next((m for m in cache.raw_data if m["file_path"] == primary_path), None)
+                    primary_model = next(
+                        (m for m in cache.raw_data if m["file_path"] == primary_path),
+                        None,
+                    )
                     if primary_model:
-                        group["models"].insert(0, await self._service.format_response(primary_model))
+                        group["models"].insert(
+                            0, await self._service.format_response(primary_model)
+                        )
                 if len(group["models"]) > 1:
                     result.append(group)
-            return web.json_response({"success": True, "duplicates": result, "count": len(result)})
+            return web.json_response(
+                {"success": True, "duplicates": result, "count": len(result)}
+            )
         except Exception as exc:
-            self._logger.error("Error finding duplicate %ss: %s", self._service.model_type, exc, exc_info=True)
+            self._logger.error(
+                "Error finding duplicate %ss: %s",
+                self._service.model_type,
+                exc,
+                exc_info=True,
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def find_filename_conflicts(self, request: web.Request) -> web.Response:
@@ -699,67 +798,130 @@ class ModelQueryHandler:
             for filename, paths in duplicates.items():
                 group = {"filename": filename, "models": []}
                 for path in paths:
-                    model = next((m for m in cache.raw_data if m["file_path"] == path), None)
+                    model = next(
+                        (m for m in cache.raw_data if m["file_path"] == path), None
+                    )
                     if model:
-                        group["models"].append(await self._service.format_response(model))
+                        group["models"].append(
+                            await self._service.format_response(model)
+                        )
                 hash_val = self._service.scanner.get_hash_by_filename(filename)
                 if hash_val:
                     main_path = self._service.get_path_by_hash(hash_val)
                     if main_path and main_path not in paths:
-                        main_model = next((m for m in cache.raw_data if m["file_path"] == main_path), None)
+                        main_model = next(
+                            (m for m in cache.raw_data if m["file_path"] == main_path),
+                            None,
+                        )
                         if main_model:
-                            group["models"].insert(0, await self._service.format_response(main_model))
+                            group["models"].insert(
+                                0, await self._service.format_response(main_model)
+                            )
                 if group["models"]:
                     result.append(group)
-            return web.json_response({"success": True, "conflicts": result, "count": len(result)})
+            return web.json_response(
+                {"success": True, "conflicts": result, "count": len(result)}
+            )
         except Exception as exc:
-            self._logger.error("Error finding filename conflicts for %ss: %s", self._service.model_type, exc, exc_info=True)
+            self._logger.error(
+                "Error finding filename conflicts for %ss: %s",
+                self._service.model_type,
+                exc,
+                exc_info=True,
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_model_notes(self, request: web.Request) -> web.Response:
         try:
             model_name = request.query.get("name")
             if not model_name:
-                return web.Response(text=f"{self._service.model_type.capitalize()} file name is required", status=400)
+                return web.Response(
+                    text=f"{self._service.model_type.capitalize()} file name is required",
+                    status=400,
+                )
             notes = await self._service.get_model_notes(model_name)
             if notes is not None:
                 return web.json_response({"success": True, "notes": notes})
-            return web.json_response({"success": False, "error": f"{self._service.model_type.capitalize()} not found in cache"}, status=404)
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": f"{self._service.model_type.capitalize()} not found in cache",
+                },
+                status=404,
+            )
         except Exception as exc:
-            self._logger.error("Error getting %s notes: %s", self._service.model_type, exc, exc_info=True)
+            self._logger.error(
+                "Error getting %s notes: %s",
+                self._service.model_type,
+                exc,
+                exc_info=True,
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_model_preview_url(self, request: web.Request) -> web.Response:
         try:
             model_name = request.query.get("name")
             if not model_name:
-                return web.Response(text=f"{self._service.model_type.capitalize()} file name is required", status=400)
-            include_license_flags = (request.query.get("license_flags", "").strip().lower() in {"1", "true", "yes", "on"})
+                return web.Response(
+                    text=f"{self._service.model_type.capitalize()} file name is required",
+                    status=400,
+                )
+            include_license_flags = request.query.get(
+                "license_flags", ""
+            ).strip().lower() in {"1", "true", "yes", "on"}
             preview_url = await self._service.get_model_preview_url(model_name)
             if preview_url:
-                response_payload: dict[str, object] = {"success": True, "preview_url": preview_url}
+                response_payload: dict[str, object] = {
+                    "success": True,
+                    "preview_url": preview_url,
+                }
                 if include_license_flags:
                     model_data = await self._service.get_model_info_by_name(model_name)
                     license_flags = (model_data or {}).get("license_flags")
                     if license_flags is not None:
                         response_payload["license_flags"] = int(license_flags)
                 return web.json_response(response_payload)
-            return web.json_response({"success": False, "error": f"No preview URL found for the specified {self._service.model_type}"}, status=404)
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": f"No preview URL found for the specified {self._service.model_type}",
+                },
+                status=404,
+            )
         except Exception as exc:
-            self._logger.error("Error getting %s preview URL: %s", self._service.model_type, exc, exc_info=True)
+            self._logger.error(
+                "Error getting %s preview URL: %s",
+                self._service.model_type,
+                exc,
+                exc_info=True,
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_model_civitai_url(self, request: web.Request) -> web.Response:
         try:
             model_name = request.query.get("name")
             if not model_name:
-                return web.Response(text=f"{self._service.model_type.capitalize()} file name is required", status=400)
+                return web.Response(
+                    text=f"{self._service.model_type.capitalize()} file name is required",
+                    status=400,
+                )
             result = await self._service.get_model_civitai_url(model_name)
             if result["civitai_url"]:
                 return web.json_response({"success": True, **result})
-            return web.json_response({"success": False, "error": f"No Civitai data found for the specified {self._service.model_type}"}, status=404)
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": f"No Civitai data found for the specified {self._service.model_type}",
+                },
+                status=404,
+            )
         except Exception as exc:
-            self._logger.error("Error getting %s Civitai URL: %s", self._service.model_type, exc, exc_info=True)
+            self._logger.error(
+                "Error getting %s Civitai URL: %s",
+                self._service.model_type,
+                exc,
+                exc_info=True,
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_model_metadata(self, request: web.Request) -> web.Response:
@@ -770,9 +932,20 @@ class ModelQueryHandler:
             metadata = await self._service.get_model_metadata(file_path)
             if metadata is not None:
                 return web.json_response({"success": True, "metadata": metadata})
-            return web.json_response({"success": False, "error": f"{self._service.model_type.capitalize()} not found or no CivitAI metadata available"}, status=404)
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": f"{self._service.model_type.capitalize()} not found or no CivitAI metadata available",
+                },
+                status=404,
+            )
         except Exception as exc:
-            self._logger.error("Error getting %s metadata: %s", self._service.model_type, exc, exc_info=True)
+            self._logger.error(
+                "Error getting %s metadata: %s",
+                self._service.model_type,
+                exc,
+                exc_info=True,
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_model_description(self, request: web.Request) -> web.Response:
@@ -783,9 +956,20 @@ class ModelQueryHandler:
             description = await self._service.get_model_description(file_path)
             if description is not None:
                 return web.json_response({"success": True, "description": description})
-            return web.json_response({"success": False, "error": f"{self._service.model_type.capitalize()} not found or no description available"}, status=404)
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": f"{self._service.model_type.capitalize()} not found or no description available",
+                },
+                status=404,
+            )
         except Exception as exc:
-            self._logger.error("Error getting %s description: %s", self._service.model_type, exc, exc_info=True)
+            self._logger.error(
+                "Error getting %s description: %s",
+                self._service.model_type,
+                exc,
+                exc_info=True,
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_relative_paths(self, request: web.Request) -> web.Response:
@@ -793,9 +977,13 @@ class ModelQueryHandler:
             search = request.query.get("search", "").strip()
             limit = min(int(request.query.get("limit", "15")), 50)
             matching_paths = await self._service.search_relative_paths(search, limit)
-            return web.json_response({"success": True, "relative_paths": matching_paths})
+            return web.json_response(
+                {"success": True, "relative_paths": matching_paths}
+            )
         except Exception as exc:
-            self._logger.error("Error getting relative paths for autocomplete: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error getting relative paths for autocomplete: %s", exc, exc_info=True
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
@@ -829,18 +1017,27 @@ class ModelDownloadHandler:
             return web.json_response({"success": False, "error": str(exc)}, status=401)
         except Exception as exc:
             error_message = str(exc)
-            self._logger.error("Error downloading model: %s", error_message, exc_info=True)
-            return web.json_response({"success": False, "error": error_message}, status=500)
+            self._logger.error(
+                "Error downloading model: %s", error_message, exc_info=True
+            )
+            return web.json_response(
+                {"success": False, "error": error_message}, status=500
+            )
 
     async def download_model_get(self, request: web.Request) -> web.Response:
         try:
             model_id = request.query.get("model_id")
             if not model_id:
-                return web.Response(status=400, text="Missing required parameter: Please provide 'model_id'")
+                return web.Response(
+                    status=400,
+                    text="Missing required parameter: Please provide 'model_id'",
+                )
 
             model_version_id = request.query.get("model_version_id")
             download_id = request.query.get("download_id")
-            use_default_paths = request.query.get("use_default_paths", "false").lower() == "true"
+            use_default_paths = (
+                request.query.get("use_default_paths", "false").lower() == "true"
+            )
             source = request.query.get("source")
 
             data = {"model_id": model_id, "use_default_paths": use_default_paths}
@@ -866,25 +1063,33 @@ class ModelDownloadHandler:
             self._logger.warning("Early access error: %s", exc)
             return web.json_response({"success": False, "error": str(exc)}, status=401)
         except Exception as exc:
-            self._logger.error("Error downloading model via GET: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error downloading model via GET: %s", exc, exc_info=True
+            )
             return web.Response(status=500, text=str(exc))
 
     async def cancel_download_get(self, request: web.Request) -> web.Response:
         try:
             download_id = request.query.get("download_id")
             if not download_id:
-                return web.json_response({"success": False, "error": "Download ID is required"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Download ID is required"}, status=400
+                )
             result = await self._download_coordinator.cancel_download(download_id)
             return web.json_response(result)
         except Exception as exc:
-            self._logger.error("Error cancelling download via GET: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error cancelling download via GET: %s", exc, exc_info=True
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def pause_download_get(self, request: web.Request) -> web.Response:
         try:
             download_id = request.query.get("download_id")
             if not download_id:
-                return web.json_response({"success": False, "error": "Download ID is required"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Download ID is required"}, status=400
+                )
             result = await self._download_coordinator.pause_download(download_id)
             status = 200 if result.get("success") else 400
             return web.json_response(result, status=status)
@@ -896,22 +1101,30 @@ class ModelDownloadHandler:
         try:
             download_id = request.query.get("download_id")
             if not download_id:
-                return web.json_response({"success": False, "error": "Download ID is required"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Download ID is required"}, status=400
+                )
             result = await self._download_coordinator.resume_download(download_id)
             status = 200 if result.get("success") else 400
             return web.json_response(result, status=status)
         except Exception as exc:
-            self._logger.error("Error resuming download via GET: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error resuming download via GET: %s", exc, exc_info=True
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_download_progress(self, request: web.Request) -> web.Response:
         try:
             download_id = request.match_info.get("download_id")
             if not download_id:
-                return web.json_response({"success": False, "error": "Download ID is required"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Download ID is required"}, status=400
+                )
             progress_data = self._ws_manager.get_download_progress(download_id)
             if progress_data is None:
-                return web.json_response({"success": False, "error": "Download ID not found"}, status=404)
+                return web.json_response(
+                    {"success": False, "error": "Download ID not found"}, status=404
+                )
             response_payload = {
                 "success": True,
                 "progress": progress_data.get("progress", 0),
@@ -930,7 +1143,9 @@ class ModelDownloadHandler:
 
             return web.json_response(response_payload)
         except Exception as exc:
-            self._logger.error("Error getting download progress: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error getting download progress: %s", exc, exc_info=True
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
@@ -947,7 +1162,9 @@ class ModelCivitaiHandler:
         metadata_provider_factory: Callable[[], Awaitable],
         validate_model_type: Callable[[str], bool],
         expected_model_types: Callable[[], str],
-        find_model_file: Callable[[Iterable[Mapping[str, object]]], Optional[Mapping[str, object]]],
+        find_model_file: Callable[
+            [Iterable[Mapping[str, object]]], Optional[Mapping[str, object]]
+        ],
         metadata_sync: MetadataSyncService,
         metadata_refresh_use_case: BulkMetadataRefreshUseCase,
         metadata_progress_callback: MetadataRefreshProgressReporter,
@@ -971,7 +1188,9 @@ class ModelCivitaiHandler:
             )
             return web.json_response(result)
         except Exception as exc:
-            self._logger.error("Error in fetch_all_civitai for %ss: %s", self._service.model_type, exc)
+            self._logger.error(
+                "Error in fetch_all_civitai for %ss: %s", self._service.model_type, exc
+            )
             return web.Response(text=str(exc), status=500)
 
     async def get_civitai_versions(self, request: web.Request) -> web.Response:
@@ -989,7 +1208,9 @@ class ModelCivitaiHandler:
             model_type = response.get("type", "")
             if not self._validate_model_type(model_type):
                 return web.json_response(
-                    {"error": f"Model type mismatch. Expected {self._expected_model_types()}, got {model_type}"},
+                    {
+                        "error": f"Model type mismatch. Expected {self._expected_model_types()}, got {model_type}"
+                    },
                     status=400,
                 )
 
@@ -1005,7 +1226,11 @@ class ModelCivitaiHandler:
                     except (TypeError, ValueError):
                         version_id = None
 
-                cache_entry = version_index.get(version_id) if (version_id is not None and version_index) else None
+                cache_entry = (
+                    version_index.get(version_id)
+                    if (version_id is not None and version_index)
+                    else None
+                )
                 version["existsLocally"] = cache_entry is not None
                 if cache_entry and isinstance(cache_entry, Mapping):
                     local_path = cache_entry.get("file_path")
@@ -1014,23 +1239,41 @@ class ModelCivitaiHandler:
                 else:
                     version.pop("localPath", None)
 
-                model_file = self._find_model_file(version.get("files", [])) if isinstance(version.get("files"), Iterable) else None
+                model_file = (
+                    self._find_model_file(version.get("files", []))
+                    if isinstance(version.get("files"), Iterable)
+                    else None
+                )
                 if model_file and isinstance(model_file, Mapping):
                     version["modelSizeKB"] = model_file.get("sizeKB")
             return web.json_response(versions)
         except Exception as exc:
-            self._logger.error("Error fetching %s model versions: %s", self._service.model_type, exc)
+            self._logger.error(
+                "Error fetching %s model versions: %s", self._service.model_type, exc
+            )
             return web.Response(status=500, text=str(exc))
 
     async def get_civitai_model_by_version(self, request: web.Request) -> web.Response:
         try:
             model_version_id = request.match_info.get("modelVersionId")
             metadata_provider = await self._metadata_provider_factory()
-            model, error_msg = await metadata_provider.get_model_version_info(model_version_id)
+            model, error_msg = await metadata_provider.get_model_version_info(
+                model_version_id
+            )
             if not model:
-                self._logger.warning("Failed to fetch model version %s: %s", model_version_id, error_msg)
-                status_code = 404 if error_msg and "not found" in error_msg.lower() else 500
-                return web.json_response({"success": False, "error": error_msg or "Failed to fetch model information"}, status=status_code)
+                self._logger.warning(
+                    "Failed to fetch model version %s: %s", model_version_id, error_msg
+                )
+                status_code = (
+                    404 if error_msg and "not found" in error_msg.lower() else 500
+                )
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": error_msg or "Failed to fetch model information",
+                    },
+                    status=status_code,
+                )
             return web.json_response(model)
         except Exception as exc:
             self._logger.error("Error fetching model details: %s", exc)
@@ -1053,7 +1296,9 @@ class ModelCivitaiHandler:
 class ModelMoveHandler:
     """Move model files between folders."""
 
-    def __init__(self, *, move_service: ModelMoveService, logger: logging.Logger) -> None:
+    def __init__(
+        self, *, move_service: ModelMoveService, logger: logging.Logger
+    ) -> None:
         self._move_service = move_service
         self._logger = logger
 
@@ -1064,8 +1309,12 @@ class ModelMoveHandler:
             target_path = data.get("target_path")
             use_default_paths = data.get("use_default_paths", False)
             if not file_path or not target_path:
-                return web.Response(text="File path and target path are required", status=400)
-            result = await self._move_service.move_model(file_path, target_path, use_default_paths=use_default_paths)
+                return web.Response(
+                    text="File path and target path are required", status=400
+                )
+            result = await self._move_service.move_model(
+                file_path, target_path, use_default_paths=use_default_paths
+            )
             status = 200 if result.get("success") else 500
             return web.json_response(result, status=status)
         except Exception as exc:
@@ -1079,8 +1328,12 @@ class ModelMoveHandler:
             target_path = data.get("target_path")
             use_default_paths = data.get("use_default_paths", False)
             if not file_paths or not target_path:
-                return web.Response(text="File paths and target path are required", status=400)
-            result = await self._move_service.move_models_bulk(file_paths, target_path, use_default_paths=use_default_paths)
+                return web.Response(
+                    text="File paths and target path are required", status=400
+                )
+            result = await self._move_service.move_models_bulk(
+                file_paths, target_path, use_default_paths=use_default_paths
+            )
             return web.json_response(result)
         except Exception as exc:
             self._logger.error("Error moving models in bulk: %s", exc, exc_info=True)
@@ -1113,8 +1366,10 @@ class ModelAutoOrganizeHandler:
                     data = await request.json()
                     file_paths = data.get("file_paths")
                     if "exclusion_patterns" in data:
-                        exclusion_patterns = settings_manager.normalize_auto_organize_exclusions(
-                            data.get("exclusion_patterns")
+                        exclusion_patterns = (
+                            settings_manager.normalize_auto_organize_exclusions(
+                                data.get("exclusion_patterns")
+                            )
                         )
                 except Exception:  # pragma: no cover - permissive path
                     pass
@@ -1127,14 +1382,21 @@ class ModelAutoOrganizeHandler:
             return web.json_response(result.to_dict())
         except AutoOrganizeInProgressError:
             return web.json_response(
-                {"success": False, "error": "Auto-organize is already running. Please wait for it to complete."},
+                {
+                    "success": False,
+                    "error": "Auto-organize is already running. Please wait for it to complete.",
+                },
                 status=409,
             )
         except Exception as exc:
             self._logger.error("Error in auto_organize_models: %s", exc, exc_info=True)
             try:
                 await self._progress_callback.on_progress(
-                    {"type": "auto_organize_progress", "status": "error", "error": str(exc)}
+                    {
+                        "type": "auto_organize_progress",
+                        "status": "error",
+                        "error": str(exc),
+                    }
                 )
             except Exception:  # pragma: no cover - defensive reporting
                 pass
@@ -1144,10 +1406,18 @@ class ModelAutoOrganizeHandler:
         try:
             progress_data = self._ws_manager.get_auto_organize_progress()
             if progress_data is None:
-                return web.json_response({"success": False, "error": "No auto-organize operation in progress"}, status=404)
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": "No auto-organize operation in progress",
+                    },
+                    status=404,
+                )
             return web.json_response({"success": True, "progress": progress_data})
         except Exception as exc:
-            self._logger.error("Error getting auto-organize progress: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error getting auto-organize progress: %s", exc, exc_info=True
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
@@ -1167,7 +1437,9 @@ class ModelUpdateHandler:
         self._metadata_provider_selector = metadata_provider_selector
         self._logger = logger
 
-    async def fetch_missing_civitai_license_data(self, request: web.Request) -> web.Response:
+    async def fetch_missing_civitai_license_data(
+        self, request: web.Request
+    ) -> web.Response:
         payload = await self._read_json(request)
         target_model_ids = self._extract_target_model_ids(payload)
 
@@ -1181,7 +1453,9 @@ class ModelUpdateHandler:
         try:
             cache = await self._service.scanner.get_cached_data()
         except Exception as exc:
-            self._logger.error("Failed to load cache for license refresh: %s", exc, exc_info=True)
+            self._logger.error(
+                "Failed to load cache for license refresh: %s", exc, exc_info=True
+            )
             cache = None
 
         target_set = set(target_model_ids) if target_model_ids is not None else None
@@ -1240,9 +1514,9 @@ class ModelUpdateHandler:
 
     async def refresh_model_updates(self, request: web.Request) -> web.Response:
         payload = await self._read_json(request)
-        force_refresh = self._parse_bool(request.query.get("force")) or self._parse_bool(
-            payload.get("force")
-        )
+        force_refresh = self._parse_bool(
+            request.query.get("force")
+        ) or self._parse_bool(payload.get("force"))
 
         raw_model_ids = payload.get("modelIds")
         if raw_model_ids is None:
@@ -1261,7 +1535,8 @@ class ModelUpdateHandler:
         provider = await self._get_civitai_provider()
         if provider is None:
             return web.json_response(
-                {"success": False, "error": "Civitai provider not available"}, status=503
+                {"success": False, "error": "Civitai provider not available"},
+                status=503,
             )
 
         try:
@@ -1273,13 +1548,21 @@ class ModelUpdateHandler:
                 target_model_ids=target_model_ids or None,
             )
             if self._service.scanner.is_cancelled():
-                return web.json_response({"success": False, "status": "cancelled", "message": "Update refresh cancelled"})
+                return web.json_response(
+                    {
+                        "success": False,
+                        "status": "cancelled",
+                        "message": "Update refresh cancelled",
+                    }
+                )
         except RateLimitError as exc:
             return web.json_response(
                 {"success": False, "error": str(exc) or "Rate limited"}, status=429
             )
         except Exception as exc:  # pragma: no cover - defensive logging
-            self._logger.error("Failed to refresh model updates: %s", exc, exc_info=True)
+            self._logger.error(
+                "Failed to refresh model updates: %s", exc, exc_info=True
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
         serialized_records = []
@@ -1299,13 +1582,17 @@ class ModelUpdateHandler:
         payload = await self._read_json(request)
         model_id = self._normalize_model_id(payload.get("modelId"))
         if model_id is None:
-            return web.json_response({"success": False, "error": "modelId is required"}, status=400)
+            return web.json_response(
+                {"success": False, "error": "modelId is required"}, status=400
+            )
 
         should_ignore = self._parse_bool(payload.get("shouldIgnore"))
         record = await self._update_service.set_should_ignore(
             self._service.model_type, model_id, should_ignore
         )
-        return web.json_response({"success": True, "record": self._serialize_record(record)})
+        return web.json_response(
+            {"success": True, "record": self._serialize_record(record)}
+        )
 
     async def set_version_update_ignore(self, request: web.Request) -> web.Response:
         payload = await self._read_json(request)
@@ -1326,19 +1613,26 @@ class ModelUpdateHandler:
         )
         overrides = await self._build_version_context(record)
         return web.json_response(
-            {"success": True, "record": self._serialize_record(record, version_context=overrides)}
+            {
+                "success": True,
+                "record": self._serialize_record(record, version_context=overrides),
+            }
         )
 
     async def get_model_update_status(self, request: web.Request) -> web.Response:
         model_id = self._normalize_model_id(request.match_info.get("model_id"))
         if model_id is None:
-            return web.json_response({"success": False, "error": "model_id must be an integer"}, status=400)
+            return web.json_response(
+                {"success": False, "error": "model_id must be an integer"}, status=400
+            )
 
         refresh = self._parse_bool(request.query.get("refresh"))
         force = self._parse_bool(request.query.get("force"))
 
         try:
-            record = await self._get_or_refresh_record(model_id, refresh=refresh, force=force)
+            record = await self._get_or_refresh_record(
+                model_id, refresh=refresh, force=force
+            )
         except RateLimitError as exc:
             return web.json_response(
                 {"success": False, "error": str(exc) or "Rate limited"}, status=429
@@ -1349,7 +1643,9 @@ class ModelUpdateHandler:
                 {"success": False, "error": "Model not tracked"}, status=404
             )
 
-        return web.json_response({"success": True, "record": self._serialize_record(record)})
+        return web.json_response(
+            {"success": True, "record": self._serialize_record(record)}
+        )
 
     async def get_model_versions(self, request: web.Request) -> web.Response:
         model_id = self._normalize_model_id(request.match_info.get("model_id"))
@@ -1362,7 +1658,9 @@ class ModelUpdateHandler:
         force = self._parse_bool(request.query.get("force"))
 
         try:
-            record = await self._get_or_refresh_record(model_id, refresh=refresh, force=force)
+            record = await self._get_or_refresh_record(
+                model_id, refresh=refresh, force=force
+            )
         except RateLimitError as exc:
             return web.json_response(
                 {"success": False, "error": str(exc) or "Rate limited"}, status=429
@@ -1375,13 +1673,18 @@ class ModelUpdateHandler:
 
         overrides = await self._build_version_context(record)
         return web.json_response(
-            {"success": True, "record": self._serialize_record(record, version_context=overrides)}
+            {
+                "success": True,
+                "record": self._serialize_record(record, version_context=overrides),
+            }
         )
 
     async def _get_or_refresh_record(
         self, model_id: int, *, refresh: bool, force: bool
     ) -> Optional[object]:
-        record = await self._update_service.get_record(self._service.model_type, model_id)
+        record = await self._update_service.get_record(
+            self._service.model_type, model_id
+        )
         if record and not refresh and not force:
             return record
 
@@ -1401,7 +1704,9 @@ class ModelUpdateHandler:
         try:
             return await self._metadata_provider_selector("civitai_api")
         except Exception as exc:  # pragma: no cover - defensive log
-            self._logger.error("Failed to acquire civitai provider: %s", exc, exc_info=True)
+            self._logger.error(
+                "Failed to acquire civitai provider: %s", exc, exc_info=True
+            )
             return None
 
     async def _collect_models_missing_license(
@@ -1421,7 +1726,11 @@ class ModelUpdateHandler:
             if not isinstance(item, Mapping):
                 continue
             file_path = item.get("file_path")
-            if not isinstance(file_path, str) or not file_path or file_path in seen_paths:
+            if (
+                not isinstance(file_path, str)
+                or not file_path
+                or file_path in seen_paths
+            ):
                 continue
             seen_paths.add(file_path)
 
@@ -1436,7 +1745,9 @@ class ModelUpdateHandler:
                 continue
 
             try:
-                metadata_obj, should_skip = await MetadataManager.load_metadata(file_path)
+                metadata_obj, should_skip = await MetadataManager.load_metadata(
+                    file_path
+                )
             except Exception as exc:
                 self._logger.debug("Failed to load metadata for %s: %s", file_path, exc)
                 continue
@@ -1580,10 +1891,14 @@ class ModelUpdateHandler:
         }
 
     @staticmethod
-    def _serialize_version(version, context: Optional[Dict[str, Optional[str]]]) -> Dict:
+    def _serialize_version(
+        version, context: Optional[Dict[str, Optional[str]]]
+    ) -> Dict:
         context = context or {}
         preview_override = context.get("preview_override")
-        preview_url = preview_override if preview_override is not None else version.preview_url
+        preview_url = (
+            preview_override if preview_override is not None else version.preview_url
+        )
         return {
             "versionId": version.version_id,
             "name": version.name,
@@ -1597,12 +1912,16 @@ class ModelUpdateHandler:
             "fileName": context.get("file_name"),
         }
 
-    async def _build_version_context(self, record) -> Dict[int, Dict[str, Optional[str]]]:
+    async def _build_version_context(
+        self, record
+    ) -> Dict[int, Dict[str, Optional[str]]]:
         context: Dict[int, Dict[str, Optional[str]]] = {}
         try:
             cache = await self._service.scanner.get_cached_data()
         except Exception as exc:  # pragma: no cover - defensive logging
-            self._logger.debug("Failed to load cache while building preview overrides: %s", exc)
+            self._logger.debug(
+                "Failed to load cache while building preview overrides: %s", exc
+            )
             return context
 
         version_index = getattr(cache, "version_index", None)
@@ -1621,7 +1940,9 @@ class ModelUpdateHandler:
                     "preview_override": None,
                 }
                 if isinstance(preview, str) and preview:
-                    context_entry["preview_override"] = config.get_preview_static_url(preview)
+                    context_entry["preview_override"] = config.get_preview_static_url(
+                        preview
+                    )
                 context[version.version_id] = context_entry
         return context
 
@@ -1640,7 +1961,9 @@ class ModelHandlerSet:
     auto_organize: ModelAutoOrganizeHandler
     updates: ModelUpdateHandler
 
-    def to_route_mapping(self) -> Dict[str, Callable[[web.Request], Awaitable[web.Response]]]:
+    def to_route_mapping(
+        self,
+    ) -> Dict[str, Callable[[web.Request], Awaitable[web.Response]]]:
         return {
             "handle_models_page": self.page_view.handle,
             "get_models": self.listing.get_models,

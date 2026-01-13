@@ -10870,7 +10870,7 @@ function useLoraPoolApi() {
     });
   };
   const fetchLoras = async (params) => {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     isLoading.value = true;
     try {
       const urlParams = new URLSearchParams();
@@ -10883,6 +10883,7 @@ function useLoraPoolApi() {
         urlParams.set("folder", params.foldersInclude[0]);
         urlParams.set("recursive", "true");
       }
+      (_d = params.foldersExclude) == null ? void 0 : _d.forEach((folder) => urlParams.append("folder_exclude", folder));
       if (params.noCreditRequired !== void 0) {
         urlParams.set("credit_required", String(!params.noCreditRequired));
       }

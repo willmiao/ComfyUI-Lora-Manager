@@ -77,11 +77,12 @@ export function useLoraPoolApi() {
       params.tagsInclude?.forEach(tag => urlParams.append('tag_include', tag))
       params.tagsExclude?.forEach(tag => urlParams.append('tag_exclude', tag))
 
-      // For now, use first include folder (backend currently supports single folder)
+      // Folder filters
       if (params.foldersInclude && params.foldersInclude.length > 0) {
         urlParams.set('folder', params.foldersInclude[0])
         urlParams.set('recursive', 'true')
       }
+      params.foldersExclude?.forEach(folder => urlParams.append('folder_exclude', folder))
 
       if (params.noCreditRequired !== undefined) {
         urlParams.set('credit_required', String(!params.noCreditRequired))
