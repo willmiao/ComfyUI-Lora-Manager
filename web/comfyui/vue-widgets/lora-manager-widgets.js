@@ -1364,7 +1364,7 @@ to { transform: rotate(360deg);
   transform: translateY(4px);
 }
 
-.lora-randomizer-widget[data-v-55cc8591] {
+.lora-randomizer-widget[data-v-bb056060] {
   padding: 12px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 4px;
@@ -11987,6 +11987,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     const props = __props;
     const state = useLoraRandomizerState(props.widget);
     const currentLoras = ref([]);
+    const isMounted = ref(false);
     const canReuseLast = computed(() => {
       const lastUsed = state.lastUsed.value;
       if (!lastUsed || lastUsed.length === 0) return false;
@@ -12050,12 +12051,22 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       var _a, _b;
       return (_b = (_a = props.node.widgets) == null ? void 0 : _a.find((w2) => w2.name === "loras")) == null ? void 0 : _b.value;
     }, (newVal) => {
-      if (newVal && Array.isArray(newVal)) {
-        currentLoras.value = newVal;
+      if (isMounted.value) {
+        if (newVal && Array.isArray(newVal)) {
+          currentLoras.value = newVal;
+        }
       }
     }, { immediate: true, deep: true });
     onMounted(async () => {
-      var _a;
+      var _a, _b;
+      const lorasWidget = (_a = props.node.widgets) == null ? void 0 : _a.find((w2) => w2.name === "loras");
+      if (lorasWidget) {
+        const currentWidgetValue = lorasWidget.value;
+        if (currentWidgetValue && Array.isArray(currentWidgetValue) && currentWidgetValue.length > 0) {
+          currentLoras.value = currentWidgetValue;
+        }
+      }
+      isMounted.value = true;
       props.widget.serializeValue = async () => {
         const config = state.buildConfig();
         return config;
@@ -12066,7 +12077,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       if (props.widget.value) {
         state.restoreFromConfig(props.widget.value);
       }
-      const originalOnExecuted = (_a = props.node.onExecuted) == null ? void 0 : _a.bind(props.node);
+      const originalOnExecuted = (_b = props.node.onExecuted) == null ? void 0 : _b.bind(props.node);
       props.node.onExecuted = function(output) {
         var _a2;
         console.log("[LoraRandomizerWidget] Node executed with output:", output);
@@ -12074,10 +12085,10 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           state.lastUsed.value = output.last_used;
           console.log(`[LoraRandomizerWidget] Updated last_used: ${output.last_used ? output.last_used.length : 0} LoRAs`);
         }
-        const lorasWidget = (_a2 = props.node.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "loras");
-        if (lorasWidget && (output == null ? void 0 : output.loras) && Array.isArray(output.loras)) {
+        const lorasWidget2 = (_a2 = props.node.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "loras");
+        if (lorasWidget2 && (output == null ? void 0 : output.loras) && Array.isArray(output.loras)) {
           console.log("[LoraRandomizerWidget] Received loras data from backend:", output.loras);
-          lorasWidget.value = output.loras;
+          lorasWidget2.value = output.loras;
           currentLoras.value = output.loras;
         }
         if (originalOnExecuted) {
@@ -12121,7 +12132,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-55cc8591"]]);
+const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-bb056060"]]);
 const app = {};
 const ROOT_GRAPH_ID = "root";
 function isMapLike(collection) {

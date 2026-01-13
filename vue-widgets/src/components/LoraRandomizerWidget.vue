@@ -51,6 +51,9 @@ const state = useLoraRandomizerState(props.widget)
 // Track current loras from the loras widget
 const currentLoras = ref<LoraEntry[]>([])
 
+// Track if component is mounted to avoid early watch triggers
+const isMounted = ref(false)
+
 // Computed property to check if we can reuse last
 const canReuseLast = computed(() => {
   const lastUsed = state.lastUsed.value
@@ -142,13 +145,29 @@ const handleReuseLast = () => {
 
 // Watch for changes to the loras widget to track current loras
 watch(() => props.node.widgets?.find((w: any) => w.name === 'loras')?.value, (newVal) => {
-  if (newVal && Array.isArray(newVal)) {
-    currentLoras.value = newVal
+  // Only update after component is mounted
+  if (isMounted.value) {
+    if (newVal && Array.isArray(newVal)) {
+      currentLoras.value = newVal
+    }
   }
 }, { immediate: true, deep: true })
 
 // Lifecycle
 onMounted(async () => {
+  // IMPORTANT: Save the current loras widget value BEFORE setting isMounted to true
+  // This prevents the watch from overwriting an empty value
+  const lorasWidget = props.node.widgets?.find((w: any) => w.name === 'loras')
+  if (lorasWidget) {
+    const currentWidgetValue = lorasWidget.value
+    if (currentWidgetValue && Array.isArray(currentWidgetValue) && currentWidgetValue.length > 0) {
+      currentLoras.value = currentWidgetValue
+    }
+  }
+
+  // Mark component as mounted so watch can now respond to changes
+  isMounted.value = true
+
   // Setup serialization
   props.widget.serializeValue = async () => {
     const config = state.buildConfig()
