@@ -368,7 +368,7 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
 
 .toggle-switch__thumb {
   position: absolute;
-  top: 2px;
+  top: 3px;
   left: 2px;
   width: 14px;
   height: 14px;

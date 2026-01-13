@@ -140,8 +140,33 @@ const toggleTag = (tag: string) => {
   transition: all 0.15s;
 }
 
-.tag-chip:hover {
-  border-color: var(--fg-color, #fff);
+/* Default hover (gray for neutral) */
+.tag-chip:hover:not(.tag-chip--selected) {
+  border-color: rgba(226, 232, 240, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Include variant hover - blue tint */
+.tags-modal--include .tag-chip:hover:not(.tag-chip--selected) {
+  border-color: rgba(66, 153, 225, 0.4);
+  background: rgba(66, 153, 225, 0.08);
+}
+
+/* Exclude variant hover - red tint */
+.tags-modal--exclude .tag-chip:hover:not(.tag-chip--selected) {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* Selected chips hover - slightly deepen the color */
+.tags-modal--include .tag-chip--selected:hover {
+  background: rgba(66, 153, 225, 0.25);
+  border-color: rgba(66, 153, 225, 0.7);
+}
+
+.tags-modal--exclude .tag-chip--selected:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.7);
 }
 
 /* Include variant - blue when selected */

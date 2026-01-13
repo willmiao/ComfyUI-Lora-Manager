@@ -283,13 +283,13 @@
   align-items: center;
 }
 
-.section[data-v-66148794] {
+.section[data-v-dea4adf6] {
   margin-bottom: 16px;
 }
-.section__header[data-v-66148794] {
+.section__header[data-v-dea4adf6] {
   margin-bottom: 8px;
 }
-.section__title[data-v-66148794] {
+.section__title[data-v-dea4adf6] {
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
@@ -297,21 +297,21 @@
   color: var(--fg-color, #fff);
   opacity: 0.6;
 }
-.section__toggles[data-v-66148794] {
+.section__toggles[data-v-dea4adf6] {
   display: flex;
   gap: 16px;
 }
-.toggle-item[data-v-66148794] {
+.toggle-item[data-v-dea4adf6] {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
 }
-.toggle-item__label[data-v-66148794] {
+.toggle-item__label[data-v-dea4adf6] {
   font-size: 12px;
   color: var(--fg-color, #fff);
 }
-.toggle-switch[data-v-66148794] {
+.toggle-switch[data-v-dea4adf6] {
   position: relative;
   width: 36px;
   height: 20px;
@@ -320,7 +320,7 @@
   border: none;
   cursor: pointer;
 }
-.toggle-switch__track[data-v-66148794] {
+.toggle-switch__track[data-v-dea4adf6] {
   position: absolute;
   inset: 0;
   background: var(--comfy-input-bg, #333);
@@ -328,13 +328,13 @@
   border-radius: 10px;
   transition: all 0.2s;
 }
-.toggle-switch--active .toggle-switch__track[data-v-66148794] {
+.toggle-switch--active .toggle-switch__track[data-v-dea4adf6] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.toggle-switch__thumb[data-v-66148794] {
+.toggle-switch__thumb[data-v-dea4adf6] {
   position: absolute;
-  top: 2px;
+  top: 3px;
   left: 2px;
   width: 14px;
   height: 14px;
@@ -343,12 +343,12 @@
   transition: all 0.2s;
   opacity: 0.6;
 }
-.toggle-switch--active .toggle-switch__thumb[data-v-66148794] {
+.toggle-switch--active .toggle-switch__thumb[data-v-dea4adf6] {
   transform: translateX(16px);
   background: #4299e1;
   opacity: 1;
 }
-.toggle-switch:hover .toggle-switch__thumb[data-v-66148794] {
+.toggle-switch:hover .toggle-switch__thumb[data-v-dea4adf6] {
   opacity: 1;
 }
 
@@ -683,10 +683,10 @@ to { transform: rotate(360deg);
   font-size: 13px;
 }
 
-.search-container[data-v-4b3cfd31] {
+.search-container[data-v-8857206b] {
   position: relative;
 }
-.search-icon[data-v-4b3cfd31] {
+.search-icon[data-v-8857206b] {
   position: absolute;
   left: 10px;
   top: 50%;
@@ -696,7 +696,7 @@ to { transform: rotate(360deg);
   color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.search-input[data-v-4b3cfd31] {
+.search-input[data-v-8857206b] {
   width: 100%;
   padding: 8px 12px 8px 32px;
   background: var(--comfy-input-bg, #333);
@@ -706,19 +706,19 @@ to { transform: rotate(360deg);
   font-size: 13px;
   outline: none;
 }
-.search-input[data-v-4b3cfd31]:focus {
+.search-input[data-v-8857206b]:focus {
   border-color: var(--fg-color, #fff);
 }
-.search-input[data-v-4b3cfd31]::placeholder {
+.search-input[data-v-8857206b]::placeholder {
   color: var(--fg-color, #fff);
   opacity: 0.4;
 }
-.tags-container[data-v-4b3cfd31] {
+.tags-container[data-v-8857206b] {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
-.tag-chip[data-v-4b3cfd31] {
+.tag-chip[data-v-8857206b] {
   padding: 6px 12px;
   background: var(--comfy-input-bg, #333);
   border: 1px solid var(--border-color, #555);
@@ -728,25 +728,50 @@ to { transform: rotate(360deg);
   cursor: pointer;
   transition: all 0.15s;
 }
-.tag-chip[data-v-4b3cfd31]:hover {
-  border-color: var(--fg-color, #fff);
+
+/* Default hover (gray for neutral) */
+.tag-chip[data-v-8857206b]:hover:not(.tag-chip--selected) {
+  border-color: rgba(226, 232, 240, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Include variant hover - blue tint */
+.tags-modal--include .tag-chip[data-v-8857206b]:hover:not(.tag-chip--selected) {
+  border-color: rgba(66, 153, 225, 0.4);
+  background: rgba(66, 153, 225, 0.08);
+}
+
+/* Exclude variant hover - red tint */
+.tags-modal--exclude .tag-chip[data-v-8857206b]:hover:not(.tag-chip--selected) {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* Selected chips hover - slightly deepen the color */
+.tags-modal--include .tag-chip--selected[data-v-8857206b]:hover {
+  background: rgba(66, 153, 225, 0.25);
+  border-color: rgba(66, 153, 225, 0.7);
+}
+.tags-modal--exclude .tag-chip--selected[data-v-8857206b]:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.7);
 }
 
 /* Include variant - blue when selected */
-.tags-modal--include .tag-chip--selected[data-v-4b3cfd31],
-.tag-chip--selected[data-v-4b3cfd31] {
+.tags-modal--include .tag-chip--selected[data-v-8857206b],
+.tag-chip--selected[data-v-8857206b] {
   background: rgba(66, 153, 225, 0.2);
   border-color: rgba(66, 153, 225, 0.6);
   color: #4299e1;
 }
 
 /* Exclude variant - red when selected */
-.tags-modal--exclude .tag-chip--selected[data-v-4b3cfd31] {
+.tags-modal--exclude .tag-chip--selected[data-v-8857206b] {
   background: rgba(239, 68, 68, 0.2);
   border-color: rgba(239, 68, 68, 0.6);
   color: #ef4444;
 }
-.no-results[data-v-4b3cfd31] {
+.no-results[data-v-8857206b] {
   width: 100%;
   padding: 20px;
   text-align: center;
@@ -1164,16 +1189,16 @@ to { transform: rotate(360deg);
   text-align: center;
 }
 
-.randomizer-settings[data-v-d7191de5] {
+.randomizer-settings[data-v-420a82ee] {
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #e4e4e7;
 }
-.settings-header[data-v-d7191de5] {
+.settings-header[data-v-420a82ee] {
   margin-bottom: 8px;
 }
-.settings-title[data-v-d7191de5] {
+.settings-title[data-v-420a82ee] {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -1182,28 +1207,28 @@ to { transform: rotate(360deg);
   margin: 0;
   text-transform: uppercase;
 }
-.setting-section[data-v-d7191de5] {
+.setting-section[data-v-420a82ee] {
   margin-bottom: 16px;
 }
-.setting-label[data-v-d7191de5] {
+.setting-label[data-v-420a82ee] {
   font-size: 12px;
   font-weight: 500;
   color: #d4d4d8;
   display: block;
   margin-bottom: 8px;
 }
-.section-header-with-toggle[data-v-d7191de5] {
+.section-header-with-toggle[data-v-420a82ee] {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
 }
-.section-header-with-toggle .setting-label[data-v-d7191de5] {
+.section-header-with-toggle .setting-label[data-v-420a82ee] {
   margin-bottom: 0;
 }
 
 /* Count Mode Tabs */
-.count-mode-tabs[data-v-d7191de5] {
+.count-mode-tabs[data-v-420a82ee] {
   display: flex;
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
@@ -1211,7 +1236,7 @@ to { transform: rotate(360deg);
   overflow: hidden;
   margin-bottom: 8px;
 }
-.count-mode-tab[data-v-d7191de5] {
+.count-mode-tab[data-v-420a82ee] {
   flex: 1;
   position: relative;
   padding: 8px 12px;
@@ -1219,29 +1244,29 @@ to { transform: rotate(360deg);
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.count-mode-tab input[type="radio"][data-v-d7191de5] {
+.count-mode-tab input[type="radio"][data-v-420a82ee] {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
 }
-.count-mode-tab-label[data-v-d7191de5] {
+.count-mode-tab-label[data-v-420a82ee] {
   font-size: 12px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.7);
   transition: all 0.2s ease;
 }
-.count-mode-tab:hover .count-mode-tab-label[data-v-d7191de5] {
+.count-mode-tab:hover .count-mode-tab-label[data-v-420a82ee] {
   color: rgba(226, 232, 240, 0.9);
 }
-.count-mode-tab.active .count-mode-tab-label[data-v-d7191de5] {
+.count-mode-tab.active .count-mode-tab-label[data-v-420a82ee] {
   color: rgba(191, 219, 254, 1);
   font-weight: 600;
 }
-.count-mode-tab.active[data-v-d7191de5] {
+.count-mode-tab.active[data-v-420a82ee] {
   background: rgba(66, 153, 225, 0.2);
 }
-.count-mode-tab.active[data-v-d7191de5]::after {
+.count-mode-tab.active[data-v-420a82ee]::after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -1250,7 +1275,7 @@ to { transform: rotate(360deg);
   height: 2px;
   background: rgba(66, 153, 225, 0.9);
 }
-.slider-container[data-v-d7191de5] {
+.slider-container[data-v-420a82ee] {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 4px;
@@ -1258,7 +1283,7 @@ to { transform: rotate(360deg);
 }
 
 /* Toggle Switch (same style as LicenseSection) */
-.toggle-switch[data-v-d7191de5] {
+.toggle-switch[data-v-420a82ee] {
   position: relative;
   width: 36px;
   height: 20px;
@@ -1267,7 +1292,7 @@ to { transform: rotate(360deg);
   border: none;
   cursor: pointer;
 }
-.toggle-switch__track[data-v-d7191de5] {
+.toggle-switch__track[data-v-420a82ee] {
   position: absolute;
   inset: 0;
   background: var(--comfy-input-bg, #333);
@@ -1275,13 +1300,13 @@ to { transform: rotate(360deg);
   border-radius: 10px;
   transition: all 0.2s;
 }
-.toggle-switch--active .toggle-switch__track[data-v-d7191de5] {
+.toggle-switch--active .toggle-switch__track[data-v-420a82ee] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.toggle-switch__thumb[data-v-d7191de5] {
+.toggle-switch__thumb[data-v-420a82ee] {
   position: absolute;
-  top: 2px;
+  top: 3px;
   left: 2px;
   width: 14px;
   height: 14px;
@@ -1290,27 +1315,27 @@ to { transform: rotate(360deg);
   transition: all 0.2s;
   opacity: 0.6;
 }
-.toggle-switch--active .toggle-switch__thumb[data-v-d7191de5] {
+.toggle-switch--active .toggle-switch__thumb[data-v-420a82ee] {
   transform: translateX(16px);
   background: #4299e1;
   opacity: 1;
 }
-.toggle-switch:hover .toggle-switch__thumb[data-v-d7191de5] {
+.toggle-switch:hover .toggle-switch__thumb[data-v-420a82ee] {
   opacity: 1;
 }
 
 /* Roll buttons with tooltip container */
-.roll-buttons-with-tooltip[data-v-d7191de5] {
+.roll-buttons-with-tooltip[data-v-420a82ee] {
   position: relative;
 }
 
 /* Roll buttons container */
-.roll-buttons[data-v-d7191de5] {
+.roll-buttons[data-v-420a82ee] {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
 }
-.roll-button[data-v-d7191de5] {
+.roll-button[data-v-420a82ee] {
   padding: 8px 10px;
   background: rgba(30, 30, 36, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1327,39 +1352,39 @@ to { transform: rotate(360deg);
   transition: all 0.2s;
   white-space: nowrap;
 }
-.roll-button[data-v-d7191de5]:hover:not(:disabled) {
+.roll-button[data-v-420a82ee]:hover:not(:disabled) {
   background: rgba(66, 153, 225, 0.2);
   border-color: rgba(66, 153, 225, 0.4);
   color: #bfdbfe;
 }
-.roll-button.selected[data-v-d7191de5] {
+.roll-button.selected[data-v-420a82ee] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
   color: #e4e4e7;
   box-shadow: 0 0 0 1px rgba(66, 153, 225, 0.3);
 }
-.roll-button[data-v-d7191de5]:disabled {
+.roll-button[data-v-420a82ee]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.roll-button__icon[data-v-d7191de5] {
+.roll-button__icon[data-v-420a82ee] {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
 }
-.roll-button__text[data-v-d7191de5] {
+.roll-button__text[data-v-420a82ee] {
   font-size: 11px;
   text-align: center;
   line-height: 1.2;
 }
 
 /* Tooltip transitions */
-.tooltip-enter-active[data-v-d7191de5],
-.tooltip-leave-active[data-v-d7191de5] {
+.tooltip-enter-active[data-v-420a82ee],
+.tooltip-leave-active[data-v-420a82ee] {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
-.tooltip-enter-from[data-v-d7191de5],
-.tooltip-leave-to[data-v-d7191de5] {
+.tooltip-enter-from[data-v-420a82ee],
+.tooltip-leave-to[data-v-420a82ee] {
   opacity: 0;
   transform: translateY(4px);
 }
@@ -10141,7 +10166,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-66148794"]]);
+const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-dea4adf6"]]);
 const _hoisted_1$c = { class: "preview" };
 const _hoisted_2$9 = { class: "preview__title" };
 const _hoisted_3$7 = ["disabled"];
@@ -10577,7 +10602,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const TagsModal = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-4b3cfd31"]]);
+const TagsModal = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-8857206b"]]);
 const _hoisted_1$7 = { class: "tree-node" };
 const _hoisted_2$4 = {
   key: 1,
@@ -11788,14 +11813,14 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                 disabled: __props.isRolling,
                 onClick: _cache[10] || (_cache[10] = ($event) => _ctx.$emit("generate-fixed"))
               }, [..._cache[20] || (_cache[20] = [
-                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-d7191de5><rect x="2" y="2" width="20" height="20" rx="5" data-v-d7191de5></rect><circle cx="12" cy="12" r="3" data-v-d7191de5></circle><circle cx="6" cy="8" r="1.5" data-v-d7191de5></circle><circle cx="18" cy="16" r="1.5" data-v-d7191de5></circle></svg><span class="roll-button__text" data-v-d7191de5>Generate Fixed</span>', 2)
+                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-420a82ee><rect x="2" y="2" width="20" height="20" rx="5" data-v-420a82ee></rect><circle cx="12" cy="12" r="3" data-v-420a82ee></circle><circle cx="6" cy="8" r="1.5" data-v-420a82ee></circle><circle cx="18" cy="16" r="1.5" data-v-420a82ee></circle></svg><span class="roll-button__text" data-v-420a82ee>Generate Fixed</span>', 2)
               ])], 10, _hoisted_17),
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "always" }]),
                 disabled: __props.isRolling,
                 onClick: _cache[11] || (_cache[11] = ($event) => _ctx.$emit("always-randomize"))
               }, [..._cache[21] || (_cache[21] = [
-                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-d7191de5><path d="M21 12a9 9 0 1 1-6.219-8.56" data-v-d7191de5></path><path d="M21 3v5h-5" data-v-d7191de5></path><circle cx="12" cy="12" r="3" data-v-d7191de5></circle><circle cx="6" cy="8" r="1.5" data-v-d7191de5></circle><circle cx="18" cy="16" r="1.5" data-v-d7191de5></circle></svg><span class="roll-button__text" data-v-d7191de5>Always Randomize</span>', 2)
+                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-420a82ee><path d="M21 12a9 9 0 1 1-6.219-8.56" data-v-420a82ee></path><path d="M21 3v5h-5" data-v-420a82ee></path><circle cx="12" cy="12" r="3" data-v-420a82ee></circle><circle cx="6" cy="8" r="1.5" data-v-420a82ee></circle><circle cx="18" cy="16" r="1.5" data-v-420a82ee></circle></svg><span class="roll-button__text" data-v-420a82ee>Always Randomize</span>', 2)
               ])], 10, _hoisted_18),
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "fixed" && __props.canReuseLast && areLorasEqual(__props.currentLoras, __props.lastUsed) }]),
@@ -11834,7 +11859,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraRandomizerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-d7191de5"]]);
+const LoraRandomizerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-420a82ee"]]);
 function useLoraRandomizerState(widget) {
   const countMode = ref("range");
   const countFixed = ref(3);
