@@ -283,13 +283,13 @@
   align-items: center;
 }
 
-.section[data-v-8b49983c] {
+.section[data-v-66148794] {
   margin-bottom: 16px;
 }
-.section__header[data-v-8b49983c] {
+.section__header[data-v-66148794] {
   margin-bottom: 8px;
 }
-.section__title[data-v-8b49983c] {
+.section__title[data-v-66148794] {
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
@@ -297,21 +297,21 @@
   color: var(--fg-color, #fff);
   opacity: 0.6;
 }
-.section__toggles[data-v-8b49983c] {
+.section__toggles[data-v-66148794] {
   display: flex;
   gap: 16px;
 }
-.toggle-item[data-v-8b49983c] {
+.toggle-item[data-v-66148794] {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
 }
-.toggle-item__label[data-v-8b49983c] {
+.toggle-item__label[data-v-66148794] {
   font-size: 12px;
   color: var(--fg-color, #fff);
 }
-.toggle-switch[data-v-8b49983c] {
+.toggle-switch[data-v-66148794] {
   position: relative;
   width: 36px;
   height: 20px;
@@ -320,7 +320,7 @@
   border: none;
   cursor: pointer;
 }
-.toggle-switch__track[data-v-8b49983c] {
+.toggle-switch__track[data-v-66148794] {
   position: absolute;
   inset: 0;
   background: var(--comfy-input-bg, #333);
@@ -328,11 +328,11 @@
   border-radius: 10px;
   transition: all 0.2s;
 }
-.toggle-switch--active .toggle-switch__track[data-v-8b49983c] {
+.toggle-switch--active .toggle-switch__track[data-v-66148794] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.toggle-switch__thumb[data-v-8b49983c] {
+.toggle-switch__thumb[data-v-66148794] {
   position: absolute;
   top: 2px;
   left: 2px;
@@ -343,12 +343,12 @@
   transition: all 0.2s;
   opacity: 0.6;
 }
-.toggle-switch--active .toggle-switch__thumb[data-v-8b49983c] {
+.toggle-switch--active .toggle-switch__thumb[data-v-66148794] {
   transform: translateX(16px);
   background: #4299e1;
   opacity: 1;
 }
-.toggle-switch:hover .toggle-switch__thumb[data-v-8b49983c] {
+.toggle-switch:hover .toggle-switch__thumb[data-v-66148794] {
   opacity: 1;
 }
 
@@ -10092,7 +10092,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
         ], -1)),
         createBaseVNode("div", _hoisted_2$a, [
           createBaseVNode("label", _hoisted_3$8, [
-            _cache[3] || (_cache[3] = createBaseVNode("span", { class: "toggle-item__label" }, "No Credit", -1)),
+            _cache[3] || (_cache[3] = createBaseVNode("span", { class: "toggle-item__label" }, "No Credit Required", -1)),
             createBaseVNode("button", {
               type: "button",
               class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.noCreditRequired }]),
@@ -10122,7 +10122,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-8b49983c"]]);
+const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-66148794"]]);
 const _hoisted_1$c = { class: "preview" };
 const _hoisted_2$9 = { class: "preview__title" };
 const _hoisted_3$7 = ["disabled"];
@@ -11756,7 +11756,6 @@ function useLoraRandomizerState(widget) {
     lastUsed.value = config.last_used || null;
   };
   const rollLoras = async (poolConfig, lockedLoras) => {
-    var _a, _b, _c, _d, _e2, _f, _g, _h, _i, _j, _k, _l, _m;
     try {
       isRolling.value = true;
       const config = buildConfig();
@@ -11775,15 +11774,7 @@ function useLoraRandomizerState(widget) {
         requestBody.count_max = config.count_max;
       }
       if (poolConfig) {
-        requestBody.pool_config = {
-          selected_base_models: ((_a = poolConfig.filters) == null ? void 0 : _a.baseModels) || [],
-          include_tags: ((_c = (_b = poolConfig.filters) == null ? void 0 : _b.tags) == null ? void 0 : _c.include) || [],
-          exclude_tags: ((_e2 = (_d = poolConfig.filters) == null ? void 0 : _d.tags) == null ? void 0 : _e2.exclude) || [],
-          include_folders: ((_g = (_f = poolConfig.filters) == null ? void 0 : _f.folders) == null ? void 0 : _g.include) || [],
-          exclude_folders: ((_i = (_h = poolConfig.filters) == null ? void 0 : _h.folders) == null ? void 0 : _i.exclude) || [],
-          no_credit_required: ((_k = (_j = poolConfig.filters) == null ? void 0 : _j.license) == null ? void 0 : _k.noCreditRequired) || false,
-          allow_selling: ((_m = (_l = poolConfig.filters) == null ? void 0 : _l.license) == null ? void 0 : _m.allowSelling) || false
-        };
+        requestBody.pool_config = poolConfig.filters || {};
       }
       const response = await fetch("/api/lm/loras/random-sample", {
         method: "POST",

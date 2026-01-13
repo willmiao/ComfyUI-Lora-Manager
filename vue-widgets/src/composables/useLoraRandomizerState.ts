@@ -88,16 +88,7 @@ export function useLoraRandomizerState(widget: ComponentWidget) {
 
       // Add pool config if provided
       if (poolConfig) {
-        // Convert pool config to backend format
-        requestBody.pool_config = {
-          selected_base_models: poolConfig.filters?.baseModels || [],
-          include_tags: poolConfig.filters?.tags?.include || [],
-          exclude_tags: poolConfig.filters?.tags?.exclude || [],
-          include_folders: poolConfig.filters?.folders?.include || [],
-          exclude_folders: poolConfig.filters?.folders?.exclude || [],
-          no_credit_required: poolConfig.filters?.license?.noCreditRequired || false,
-          allow_selling: poolConfig.filters?.license?.allowSelling || false,
-        }
+        requestBody.pool_config = poolConfig.filters || {}
       }
 
       // Call API endpoint

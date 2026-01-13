@@ -734,10 +734,6 @@ export function addLorasWidget(node, name, opts, callback) {
   
   widget.callback = callback;
 
-  widget.serializeValue = () => {
-    return widgetValue;
-  }
-
   widget.onRemove = () => {
     container.remove(); 
     previewTooltip.cleanup();
