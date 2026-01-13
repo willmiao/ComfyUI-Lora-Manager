@@ -1059,17 +1059,17 @@ to { transform: rotate(360deg);
   pointer-events: none;
 }
 
-.dual-range-slider[data-v-5c79be81] {
+.dual-range-slider[data-v-58c2ac1d] {
   position: relative;
   width: 100%;
   height: 32px;
   user-select: none;
 }
-.dual-range-slider.disabled[data-v-5c79be81] {
+.dual-range-slider.disabled[data-v-58c2ac1d] {
   opacity: 0.4;
   pointer-events: none;
 }
-.slider-track[data-v-5c79be81] {
+.slider-track[data-v-58c2ac1d] {
   position: absolute;
   top: 14px;
   left: 0;
@@ -1078,13 +1078,13 @@ to { transform: rotate(360deg);
   background: var(--comfy-input-bg, #333);
   border-radius: 2px;
 }
-.slider-track__bg[data-v-5c79be81] {
+.slider-track__bg[data-v-58c2ac1d] {
   position: absolute;
   inset: 0;
   background: rgba(66, 153, 225, 0.15);
   border-radius: 2px;
 }
-.slider-track__active[data-v-5c79be81] {
+.slider-track__active[data-v-58c2ac1d] {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -1092,24 +1092,43 @@ to { transform: rotate(360deg);
   border-radius: 2px;
   transition: left 0.05s linear, width 0.05s linear;
 }
-.slider-track__default[data-v-5c79be81] {
+.slider-track__default[data-v-58c2ac1d] {
   position: absolute;
   top: 0;
   bottom: 0;
   background: rgba(66, 153, 225, 0.1);
   border-radius: 2px;
 }
-.slider-handle[data-v-5c79be81] {
+.slider-track__segment[data-v-58c2ac1d] {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(66, 153, 225, 0.08);
+  border-radius: 2px;
+}
+.slider-track__segment--expanded[data-v-58c2ac1d] {
+  background: rgba(66, 153, 225, 0.15);
+}
+.slider-track__segment[data-v-58c2ac1d]:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  right: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.slider-handle[data-v-58c2ac1d] {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
   cursor: grab;
   z-index: 2;
 }
-.slider-handle[data-v-5c79be81]:active {
+.slider-handle[data-v-58c2ac1d]:active {
   cursor: grabbing;
 }
-.slider-handle__thumb[data-v-5c79be81] {
+.slider-handle__thumb[data-v-58c2ac1d] {
   width: 12px;
   height: 12px;
   background: var(--fg-color, #fff);
@@ -1120,13 +1139,13 @@ to { transform: rotate(360deg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.15s ease;
 }
-.slider-handle:hover .slider-handle__thumb[data-v-5c79be81] {
+.slider-handle:hover .slider-handle__thumb[data-v-58c2ac1d] {
   transform: scale(1.1);
 }
-.slider-handle:active .slider-handle__thumb[data-v-5c79be81] {
+.slider-handle:active .slider-handle__thumb[data-v-58c2ac1d] {
   transform: scale(1.15);
 }
-.slider-handle__value[data-v-5c79be81] {
+.slider-handle__value[data-v-58c2ac1d] {
   position: absolute;
   top: 0;
   left: 50%;
@@ -1138,23 +1157,23 @@ to { transform: rotate(360deg);
   white-space: nowrap;
   pointer-events: none;
 }
-.slider-handle--min .slider-handle__value[data-v-5c79be81] {
+.slider-handle--min .slider-handle__value[data-v-58c2ac1d] {
   text-align: center;
 }
-.slider-handle--max .slider-handle__value[data-v-5c79be81] {
+.slider-handle--max .slider-handle__value[data-v-58c2ac1d] {
   text-align: center;
 }
 
-.randomizer-settings[data-v-3c382ac5] {
+.randomizer-settings[data-v-d7191de5] {
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #e4e4e7;
 }
-.settings-header[data-v-3c382ac5] {
+.settings-header[data-v-d7191de5] {
   margin-bottom: 8px;
 }
-.settings-title[data-v-3c382ac5] {
+.settings-title[data-v-d7191de5] {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -1163,28 +1182,28 @@ to { transform: rotate(360deg);
   margin: 0;
   text-transform: uppercase;
 }
-.setting-section[data-v-3c382ac5] {
+.setting-section[data-v-d7191de5] {
   margin-bottom: 16px;
 }
-.setting-label[data-v-3c382ac5] {
+.setting-label[data-v-d7191de5] {
   font-size: 12px;
   font-weight: 500;
   color: #d4d4d8;
   display: block;
   margin-bottom: 8px;
 }
-.section-header-with-toggle[data-v-3c382ac5] {
+.section-header-with-toggle[data-v-d7191de5] {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
 }
-.section-header-with-toggle .setting-label[data-v-3c382ac5] {
+.section-header-with-toggle .setting-label[data-v-d7191de5] {
   margin-bottom: 0;
 }
 
 /* Count Mode Tabs */
-.count-mode-tabs[data-v-3c382ac5] {
+.count-mode-tabs[data-v-d7191de5] {
   display: flex;
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
@@ -1192,7 +1211,7 @@ to { transform: rotate(360deg);
   overflow: hidden;
   margin-bottom: 8px;
 }
-.count-mode-tab[data-v-3c382ac5] {
+.count-mode-tab[data-v-d7191de5] {
   flex: 1;
   position: relative;
   padding: 8px 12px;
@@ -1200,29 +1219,29 @@ to { transform: rotate(360deg);
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.count-mode-tab input[type="radio"][data-v-3c382ac5] {
+.count-mode-tab input[type="radio"][data-v-d7191de5] {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
 }
-.count-mode-tab-label[data-v-3c382ac5] {
+.count-mode-tab-label[data-v-d7191de5] {
   font-size: 12px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.7);
   transition: all 0.2s ease;
 }
-.count-mode-tab:hover .count-mode-tab-label[data-v-3c382ac5] {
+.count-mode-tab:hover .count-mode-tab-label[data-v-d7191de5] {
   color: rgba(226, 232, 240, 0.9);
 }
-.count-mode-tab.active .count-mode-tab-label[data-v-3c382ac5] {
+.count-mode-tab.active .count-mode-tab-label[data-v-d7191de5] {
   color: rgba(191, 219, 254, 1);
   font-weight: 600;
 }
-.count-mode-tab.active[data-v-3c382ac5] {
+.count-mode-tab.active[data-v-d7191de5] {
   background: rgba(66, 153, 225, 0.2);
 }
-.count-mode-tab.active[data-v-3c382ac5]::after {
+.count-mode-tab.active[data-v-d7191de5]::after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -1231,7 +1250,7 @@ to { transform: rotate(360deg);
   height: 2px;
   background: rgba(66, 153, 225, 0.9);
 }
-.slider-container[data-v-3c382ac5] {
+.slider-container[data-v-d7191de5] {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 4px;
@@ -1239,7 +1258,7 @@ to { transform: rotate(360deg);
 }
 
 /* Toggle Switch (same style as LicenseSection) */
-.toggle-switch[data-v-3c382ac5] {
+.toggle-switch[data-v-d7191de5] {
   position: relative;
   width: 36px;
   height: 20px;
@@ -1248,7 +1267,7 @@ to { transform: rotate(360deg);
   border: none;
   cursor: pointer;
 }
-.toggle-switch__track[data-v-3c382ac5] {
+.toggle-switch__track[data-v-d7191de5] {
   position: absolute;
   inset: 0;
   background: var(--comfy-input-bg, #333);
@@ -1256,11 +1275,11 @@ to { transform: rotate(360deg);
   border-radius: 10px;
   transition: all 0.2s;
 }
-.toggle-switch--active .toggle-switch__track[data-v-3c382ac5] {
+.toggle-switch--active .toggle-switch__track[data-v-d7191de5] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.toggle-switch__thumb[data-v-3c382ac5] {
+.toggle-switch__thumb[data-v-d7191de5] {
   position: absolute;
   top: 2px;
   left: 2px;
@@ -1271,27 +1290,27 @@ to { transform: rotate(360deg);
   transition: all 0.2s;
   opacity: 0.6;
 }
-.toggle-switch--active .toggle-switch__thumb[data-v-3c382ac5] {
+.toggle-switch--active .toggle-switch__thumb[data-v-d7191de5] {
   transform: translateX(16px);
   background: #4299e1;
   opacity: 1;
 }
-.toggle-switch:hover .toggle-switch__thumb[data-v-3c382ac5] {
+.toggle-switch:hover .toggle-switch__thumb[data-v-d7191de5] {
   opacity: 1;
 }
 
 /* Roll buttons with tooltip container */
-.roll-buttons-with-tooltip[data-v-3c382ac5] {
+.roll-buttons-with-tooltip[data-v-d7191de5] {
   position: relative;
 }
 
 /* Roll buttons container */
-.roll-buttons[data-v-3c382ac5] {
+.roll-buttons[data-v-d7191de5] {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
 }
-.roll-button[data-v-3c382ac5] {
+.roll-button[data-v-d7191de5] {
   padding: 8px 10px;
   background: rgba(30, 30, 36, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1308,39 +1327,39 @@ to { transform: rotate(360deg);
   transition: all 0.2s;
   white-space: nowrap;
 }
-.roll-button[data-v-3c382ac5]:hover:not(:disabled) {
+.roll-button[data-v-d7191de5]:hover:not(:disabled) {
   background: rgba(66, 153, 225, 0.2);
   border-color: rgba(66, 153, 225, 0.4);
   color: #bfdbfe;
 }
-.roll-button.selected[data-v-3c382ac5] {
+.roll-button.selected[data-v-d7191de5] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
   color: #e4e4e7;
   box-shadow: 0 0 0 1px rgba(66, 153, 225, 0.3);
 }
-.roll-button[data-v-3c382ac5]:disabled {
+.roll-button[data-v-d7191de5]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.roll-button__icon[data-v-3c382ac5] {
+.roll-button__icon[data-v-d7191de5] {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
 }
-.roll-button__text[data-v-3c382ac5] {
+.roll-button__text[data-v-d7191de5] {
   font-size: 11px;
   text-align: center;
   line-height: 1.2;
 }
 
 /* Tooltip transitions */
-.tooltip-enter-active[data-v-3c382ac5],
-.tooltip-leave-active[data-v-3c382ac5] {
+.tooltip-enter-active[data-v-d7191de5],
+.tooltip-leave-active[data-v-d7191de5] {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
-.tooltip-enter-from[data-v-3c382ac5],
-.tooltip-leave-to[data-v-3c382ac5] {
+.tooltip-enter-from[data-v-d7191de5],
+.tooltip-leave-to[data-v-d7191de5] {
   opacity: 0;
   transform: translateY(4px);
 }
@@ -11344,7 +11363,9 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     valueMax: {},
     step: {},
     defaultRange: {},
-    disabled: { type: Boolean, default: false }
+    disabled: { type: Boolean, default: false },
+    scaleMode: { default: "linear" },
+    segments: { default: () => [] }
   },
   emits: ["update:valueMin", "update:valueMax"],
   setup(__props, { emit: __emit }) {
@@ -11352,11 +11373,23 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     const emit2 = __emit;
     const trackEl = ref(null);
     const dragging = ref(null);
+    const effectiveSegments = computed(() => {
+      if (props.scaleMode === "segmented" && props.segments.length > 0) {
+        return props.segments;
+      }
+      return [];
+    });
     const minPercent = computed(() => {
+      if (props.scaleMode === "segmented" && effectiveSegments.value.length > 0) {
+        return valueToPercent(props.valueMin);
+      }
       const range = props.max - props.min;
       return (props.valueMin - props.min) / range * 100;
     });
     const maxPercent = computed(() => {
+      if (props.scaleMode === "segmented" && effectiveSegments.value.length > 0) {
+        return valueToPercent(props.valueMax);
+      }
       const range = props.max - props.min;
       return (props.valueMax - props.min) / range * 100;
     });
@@ -11367,9 +11400,61 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     });
     const defaultMaxPercent = computed(() => {
       if (!props.defaultRange) return 100;
+      if (props.scaleMode === "segmented" && effectiveSegments.value.length > 0) {
+        return valueToPercent(props.defaultRange.max);
+      }
       const range = props.max - props.min;
       return (props.defaultRange.max - props.min) / range * 100;
     });
+    const valueToPercent = (value) => {
+      const segments = effectiveSegments.value;
+      if (segments.length === 0) {
+        const range = props.max - props.min;
+        return (value - props.min) / range * 100;
+      }
+      let accumulatedPercent = 0;
+      for (const seg of segments) {
+        if (value >= seg.max) {
+          accumulatedPercent += seg.widthPercent;
+        } else if (value >= seg.min) {
+          const segRange = seg.max - seg.min;
+          const valueInSeg = value - seg.min;
+          accumulatedPercent += valueInSeg / segRange * seg.widthPercent;
+          return accumulatedPercent;
+        } else {
+          break;
+        }
+      }
+      return accumulatedPercent;
+    };
+    const percentToValue = (percent) => {
+      const segments = effectiveSegments.value;
+      if (segments.length === 0) {
+        const range = props.max - props.min;
+        return props.min + percent / 100 * range;
+      }
+      let accumulatedPercent = 0;
+      for (const seg of segments) {
+        const segEndPercent = accumulatedPercent + seg.widthPercent;
+        if (percent <= segEndPercent) {
+          const segRange = seg.max - seg.min;
+          const percentInSeg = (percent - accumulatedPercent) / seg.widthPercent;
+          return seg.min + percentInSeg * segRange;
+        }
+        accumulatedPercent = segEndPercent;
+      }
+      return props.max;
+    };
+    const getSegmentStyle = (seg, index) => {
+      let leftPercent = 0;
+      for (let i2 = 0; i2 < index; i2++) {
+        leftPercent += effectiveSegments.value[i2].widthPercent;
+      }
+      return {
+        left: leftPercent + "%",
+        width: seg.widthPercent + "%"
+      };
+    };
     const formatValue = (val) => {
       if (Number.isInteger(val)) return val.toString();
       return val.toFixed(stepToDecimals(props.step));
@@ -11379,9 +11464,10 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       const decimalIndex = str.indexOf(".");
       return decimalIndex === -1 ? 0 : str.length - decimalIndex - 1;
     };
-    const snapToStep = (value) => {
-      const steps = Math.round((value - props.min) / props.step);
-      return Math.max(props.min, Math.min(props.max, props.min + steps * props.step));
+    const snapToStep = (value, segmentMultiplier) => {
+      const effectiveStep = segmentMultiplier ? props.step * segmentMultiplier : props.step;
+      const steps = Math.round((value - props.min) / effectiveStep);
+      return Math.max(props.min, Math.min(props.max, props.min + steps * effectiveStep));
     };
     const startDrag = (handle, event) => {
       if (props.disabled) return;
@@ -11397,18 +11483,32 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       event.preventDefault();
       const clientX = "touches" in event ? event.touches[0].clientX : event.clientX;
       const rect = trackEl.value.getBoundingClientRect();
-      const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-      const rawValue = props.min + percent * (props.max - props.min);
-      const value = snapToStep(rawValue);
+      const percent = Math.max(0, Math.min(100, (clientX - rect.left) / rect.width * 100));
+      const rawValue = percentToValue(percent);
+      const multiplier = getSegmentStepMultiplier(rawValue);
+      const value = snapToStep(rawValue, multiplier);
       if (dragging.value === "min") {
-        const maxAllowed = props.valueMax - props.step;
+        const maxMultiplier = getSegmentStepMultiplier(props.valueMax);
+        const maxAllowed = props.valueMax - props.step * maxMultiplier;
         const newValue = Math.min(value, maxAllowed);
         emit2("update:valueMin", newValue);
       } else {
-        const minAllowed = props.valueMin + props.step;
+        const minMultiplier = getSegmentStepMultiplier(props.valueMin);
+        const minAllowed = props.valueMin + props.step * minMultiplier;
         const newValue = Math.max(value, minAllowed);
         emit2("update:valueMax", newValue);
       }
+    };
+    const getSegmentStepMultiplier = (value) => {
+      if (props.scaleMode !== "segmented" || effectiveSegments.value.length === 0) {
+        return 1;
+      }
+      for (const seg of effectiveSegments.value) {
+        if (value >= seg.min && value < seg.max) {
+          return seg.wheelStepMultiplier || 1;
+        }
+      }
+      return 1;
     };
     const onWheel = (event) => {
       var _a;
@@ -11424,21 +11524,30 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       const minPixel = minPercent.value / 100 * rangeWidth;
       const maxPixel = maxPercent.value / 100 * rangeWidth;
       if (relativeX < minPixel) {
-        const newValue = snapToStep(props.valueMin + delta * props.step);
-        const maxAllowed = props.valueMax - props.step;
+        const multiplier = getSegmentStepMultiplier(props.valueMin);
+        const effectiveStep = props.step * multiplier;
+        const newValue = snapToStep(props.valueMin + delta * effectiveStep, multiplier);
+        const maxMultiplier = getSegmentStepMultiplier(props.valueMax);
+        const maxAllowed = props.valueMax - props.step * maxMultiplier;
         emit2("update:valueMin", Math.min(newValue, maxAllowed));
       } else if (relativeX > maxPixel) {
-        const newValue = snapToStep(props.valueMax + delta * props.step);
-        const minAllowed = props.valueMin + props.step;
+        const multiplier = getSegmentStepMultiplier(props.valueMax);
+        const effectiveStep = props.step * multiplier;
+        const newValue = snapToStep(props.valueMax + delta * effectiveStep, multiplier);
+        const minMultiplier = getSegmentStepMultiplier(props.valueMin);
+        const minAllowed = props.valueMin + props.step * minMultiplier;
         emit2("update:valueMax", Math.max(newValue, minAllowed));
       } else {
-        const newMin = snapToStep(props.valueMin - delta * props.step);
-        const newMax = snapToStep(props.valueMax + delta * props.step);
+        const minMultiplier = getSegmentStepMultiplier(props.valueMin);
+        const maxMultiplier = getSegmentStepMultiplier(props.valueMax);
+        const newMin = snapToStep(props.valueMin - delta * props.step * minMultiplier, minMultiplier);
+        const newMax = snapToStep(props.valueMax + delta * props.step * maxMultiplier, maxMultiplier);
         if (newMin < props.valueMin) {
           emit2("update:valueMin", Math.max(newMin, props.min));
           emit2("update:valueMax", Math.min(newMax, props.max));
         } else {
-          if (newMin < newMax - props.step) {
+          props.valueMin + props.step * minMultiplier;
+          if (newMin < newMax - props.step * minMultiplier) {
             emit2("update:valueMin", newMin);
             emit2("update:valueMax", newMax);
           }
@@ -11457,7 +11566,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     });
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", {
-        class: normalizeClass(["dual-range-slider", { disabled: __props.disabled }]),
+        class: normalizeClass(["dual-range-slider", { disabled: __props.disabled, "has-segments": __props.scaleMode === "segmented" && effectiveSegments.value.length > 0 }]),
         onWheel
       }, [
         createBaseVNode("div", {
@@ -11466,12 +11575,22 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           ref: trackEl
         }, [
           _cache[4] || (_cache[4] = createBaseVNode("div", { class: "slider-track__bg" }, null, -1)),
+          __props.scaleMode === "segmented" && effectiveSegments.value.length > 0 ? (openBlock(true), createElementBlock(Fragment, { key: 0 }, renderList(effectiveSegments.value, (seg, index) => {
+            return openBlock(), createElementBlock("div", {
+              key: "segment-" + index,
+              class: normalizeClass(["slider-track__segment", {
+                "slider-track__segment--common": seg.wheelStepMultiplier && seg.wheelStepMultiplier < 1,
+                "slider-track__segment--expanded": seg.wheelStepMultiplier && seg.wheelStepMultiplier < 1
+              }]),
+              style: normalizeStyle(getSegmentStyle(seg, index))
+            }, null, 6);
+          }), 128)) : createCommentVNode("", true),
           createBaseVNode("div", {
             class: "slider-track__active",
             style: normalizeStyle({ left: minPercent.value + "%", width: maxPercent.value - minPercent.value + "%" })
           }, null, 4),
           __props.defaultRange ? (openBlock(), createElementBlock("div", {
-            key: 0,
+            key: 1,
             class: "slider-track__default",
             style: normalizeStyle({
               left: defaultMinPercent.value + "%",
@@ -11501,7 +11620,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-5c79be81"]]);
+const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-58c2ac1d"]]);
 const _hoisted_1$1 = { class: "randomizer-settings" };
 const _hoisted_2 = { class: "setting-section" };
 const _hoisted_3 = { class: "count-mode-tabs" };
@@ -11542,6 +11661,11 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   },
   emits: ["update:countMode", "update:countFixed", "update:countMin", "update:countMax", "update:modelStrengthMin", "update:modelStrengthMax", "update:useSameClipStrength", "update:clipStrengthMin", "update:clipStrengthMax", "update:rollMode", "generate-fixed", "always-randomize", "reuse-last"],
   setup(__props) {
+    const strengthSegments = [
+      { min: -10, max: -2, widthPercent: 20 },
+      { min: -2, max: 2, widthPercent: 60, wheelStepMultiplier: 0.5 },
+      { min: 2, max: 10, widthPercent: 20 }
+    ];
     const showTooltip = ref(false);
     const areLorasEqual = (a2, b2) => {
       if (!a2 || !b2) return false;
@@ -11617,6 +11741,8 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
               "value-max": __props.modelStrengthMax,
               step: 0.1,
               "default-range": { min: -2, max: 3 },
+              "scale-mode": "segmented",
+              segments: strengthSegments,
               "onUpdate:valueMin": _cache[5] || (_cache[5] = ($event) => _ctx.$emit("update:modelStrengthMin", $event)),
               "onUpdate:valueMax": _cache[6] || (_cache[6] = ($event) => _ctx.$emit("update:modelStrengthMax", $event))
             }, null, 8, ["value-min", "value-max"])
@@ -11645,6 +11771,8 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
               "value-max": __props.clipStrengthMax,
               step: 0.1,
               "default-range": { min: -1, max: 2 },
+              "scale-mode": "segmented",
+              segments: strengthSegments,
               disabled: __props.isClipStrengthDisabled,
               "onUpdate:valueMin": _cache[8] || (_cache[8] = ($event) => _ctx.$emit("update:clipStrengthMin", $event)),
               "onUpdate:valueMax": _cache[9] || (_cache[9] = ($event) => _ctx.$emit("update:clipStrengthMax", $event))
@@ -11660,14 +11788,14 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                 disabled: __props.isRolling,
                 onClick: _cache[10] || (_cache[10] = ($event) => _ctx.$emit("generate-fixed"))
               }, [..._cache[20] || (_cache[20] = [
-                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-3c382ac5><rect x="2" y="2" width="20" height="20" rx="5" data-v-3c382ac5></rect><circle cx="12" cy="12" r="3" data-v-3c382ac5></circle><circle cx="6" cy="8" r="1.5" data-v-3c382ac5></circle><circle cx="18" cy="16" r="1.5" data-v-3c382ac5></circle></svg><span class="roll-button__text" data-v-3c382ac5>Generate Fixed</span>', 2)
+                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-d7191de5><rect x="2" y="2" width="20" height="20" rx="5" data-v-d7191de5></rect><circle cx="12" cy="12" r="3" data-v-d7191de5></circle><circle cx="6" cy="8" r="1.5" data-v-d7191de5></circle><circle cx="18" cy="16" r="1.5" data-v-d7191de5></circle></svg><span class="roll-button__text" data-v-d7191de5>Generate Fixed</span>', 2)
               ])], 10, _hoisted_17),
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "always" }]),
                 disabled: __props.isRolling,
                 onClick: _cache[11] || (_cache[11] = ($event) => _ctx.$emit("always-randomize"))
               }, [..._cache[21] || (_cache[21] = [
-                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-3c382ac5><path d="M21 12a9 9 0 1 1-6.219-8.56" data-v-3c382ac5></path><path d="M21 3v5h-5" data-v-3c382ac5></path><circle cx="12" cy="12" r="3" data-v-3c382ac5></circle><circle cx="6" cy="8" r="1.5" data-v-3c382ac5></circle><circle cx="18" cy="16" r="1.5" data-v-3c382ac5></circle></svg><span class="roll-button__text" data-v-3c382ac5>Always Randomize</span>', 2)
+                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-d7191de5><path d="M21 12a9 9 0 1 1-6.219-8.56" data-v-d7191de5></path><path d="M21 3v5h-5" data-v-d7191de5></path><circle cx="12" cy="12" r="3" data-v-d7191de5></circle><circle cx="6" cy="8" r="1.5" data-v-d7191de5></circle><circle cx="18" cy="16" r="1.5" data-v-d7191de5></circle></svg><span class="roll-button__text" data-v-d7191de5>Always Randomize</span>', 2)
               ])], 10, _hoisted_18),
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "fixed" && __props.canReuseLast && areLorasEqual(__props.currentLoras, __props.lastUsed) }]),
@@ -11706,7 +11834,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraRandomizerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-3c382ac5"]]);
+const LoraRandomizerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-d7191de5"]]);
 function useLoraRandomizerState(widget) {
   const countMode = ref("range");
   const countFixed = ref(3);

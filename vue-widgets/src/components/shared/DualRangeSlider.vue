@@ -1,8 +1,23 @@
 <template>
-  <div class="dual-range-slider" :class="{ disabled }" @wheel="onWheel">
+  <div class="dual-range-slider" :class="{ disabled, 'has-segments': scaleMode === 'segmented' && effectiveSegments.length > 0 }" @wheel="onWheel">
     <div class="slider-track" ref="trackEl">
       <!-- Background track -->
       <div class="slider-track__bg"></div>
+      
+      <!-- Segment backgrounds for segmented scale mode -->
+      <template v-if="scaleMode === 'segmented' && effectiveSegments.length > 0">
+        <div
+          v-for="(seg, index) in effectiveSegments"
+          :key="'segment-' + index"
+          class="slider-track__segment"
+          :class="{
+            'slider-track__segment--common': seg.wheelStepMultiplier && seg.wheelStepMultiplier < 1,
+            'slider-track__segment--expanded': seg.wheelStepMultiplier && seg.wheelStepMultiplier < 1
+          }"
+          :style="getSegmentStyle(seg, index)"
+        ></div>
+      </template>
+      
       <!-- Active track (colored range between handles) -->
       <div
         class="slider-track__active"
@@ -45,6 +60,15 @@
 <script setup lang="ts">
 import { ref, computed, onUnmounted } from 'vue'
 
+type ScaleMode = 'linear' | 'segmented'
+
+interface Segment {
+  min: number
+  max: number
+  widthPercent: number
+  wheelStepMultiplier?: number
+}
+
 const props = withDefaults(defineProps<{
   min: number
   max: number
@@ -53,8 +77,12 @@ const props = withDefaults(defineProps<{
   step: number
   defaultRange?: { min: number; max: number }
   disabled?: boolean
+  scaleMode?: ScaleMode
+  segments?: Segment[]
 }>(), {
-  disabled: false
+  disabled: false,
+  scaleMode: 'linear',
+  segments: () => []
 })
 
 const emit = defineEmits<{
@@ -65,12 +93,25 @@ const emit = defineEmits<{
 const trackEl = ref<HTMLElement | null>(null)
 const dragging = ref<'min' | 'max' | null>(null)
 
+const effectiveSegments = computed<Segment[]>(() => {
+  if (props.scaleMode === 'segmented' && props.segments.length > 0) {
+    return props.segments
+  }
+  return []
+})
+
 const minPercent = computed(() => {
+  if (props.scaleMode === 'segmented' && effectiveSegments.value.length > 0) {
+    return valueToPercent(props.valueMin)
+  }
   const range = props.max - props.min
   return ((props.valueMin - props.min) / range) * 100
 })
 
 const maxPercent = computed(() => {
+  if (props.scaleMode === 'segmented' && effectiveSegments.value.length > 0) {
+    return valueToPercent(props.valueMax)
+  }
   const range = props.max - props.min
   return ((props.valueMax - props.min) / range) * 100
 })
@@ -83,9 +124,66 @@ const defaultMinPercent = computed(() => {
 
 const defaultMaxPercent = computed(() => {
   if (!props.defaultRange) return 100
+  if (props.scaleMode === 'segmented' && effectiveSegments.value.length > 0) {
+    return valueToPercent(props.defaultRange.max)
+  }
   const range = props.max - props.min
   return ((props.defaultRange.max - props.min) / range) * 100
 })
+
+const valueToPercent = (value: number): number => {
+  const segments = effectiveSegments.value
+  if (segments.length === 0) {
+    const range = props.max - props.min
+    return ((value - props.min) / range) * 100
+  }
+
+  let accumulatedPercent = 0
+  for (const seg of segments) {
+    if (value >= seg.max) {
+      accumulatedPercent += seg.widthPercent
+    } else if (value >= seg.min) {
+      const segRange = seg.max - seg.min
+      const valueInSeg = value - seg.min
+      accumulatedPercent += (valueInSeg / segRange) * seg.widthPercent
+      return accumulatedPercent
+    } else {
+      break
+    }
+  }
+  return accumulatedPercent
+}
+
+const percentToValue = (percent: number): number => {
+  const segments = effectiveSegments.value
+  if (segments.length === 0) {
+    const range = props.max - props.min
+    return props.min + (percent / 100) * range
+  }
+
+  let accumulatedPercent = 0
+  for (const seg of segments) {
+    const segEndPercent = accumulatedPercent + seg.widthPercent
+    if (percent <= segEndPercent) {
+      const segRange = seg.max - seg.min
+      const percentInSeg = (percent - accumulatedPercent) / seg.widthPercent
+      return seg.min + percentInSeg * segRange
+    }
+    accumulatedPercent = segEndPercent
+  }
+  return props.max
+}
+
+const getSegmentStyle = (seg: Segment, index: number) => {
+  let leftPercent = 0
+  for (let i = 0; i < index; i++) {
+    leftPercent += effectiveSegments.value[i].widthPercent
+  }
+  return {
+    left: leftPercent + '%',
+    width: seg.widthPercent + '%'
+  }
+}
 
 const formatValue = (val: number): string => {
   if (Number.isInteger(val)) return val.toString()
@@ -98,9 +196,10 @@ const stepToDecimals = (step: number): number => {
   return decimalIndex === -1 ? 0 : str.length - decimalIndex - 1
 }
 
-const snapToStep = (value: number): number => {
-  const steps = Math.round((value - props.min) / props.step)
-  return Math.max(props.min, Math.min(props.max, props.min + steps * props.step))
+const snapToStep = (value: number, segmentMultiplier?: number): number => {
+  const effectiveStep = segmentMultiplier ? props.step * segmentMultiplier : props.step
+  const steps = Math.round((value - props.min) / effectiveStep)
+  return Math.max(props.min, Math.min(props.max, props.min + steps * effectiveStep))
 }
 
 const startDrag = (handle: 'min' | 'max', event: MouseEvent | TouchEvent) => {
@@ -122,19 +221,36 @@ const onDrag = (event: MouseEvent | TouchEvent) => {
 
   const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX
   const rect = trackEl.value.getBoundingClientRect()
-  const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
-  const rawValue = props.min + percent * (props.max - props.min)
-  const value = snapToStep(rawValue)
+  const percent = Math.max(0, Math.min(100, (clientX - rect.left) / rect.width * 100))
+
+  const rawValue = percentToValue(percent)
+  const multiplier = getSegmentStepMultiplier(rawValue)
+  const value = snapToStep(rawValue, multiplier)
 
   if (dragging.value === 'min') {
-    const maxAllowed = props.valueMax - props.step
+    const maxMultiplier = getSegmentStepMultiplier(props.valueMax)
+    const maxAllowed = props.valueMax - (props.step * maxMultiplier)
     const newValue = Math.min(value, maxAllowed)
     emit('update:valueMin', newValue)
   } else {
-    const minAllowed = props.valueMin + props.step
+    const minMultiplier = getSegmentStepMultiplier(props.valueMin)
+    const minAllowed = props.valueMin + (props.step * minMultiplier)
     const newValue = Math.max(value, minAllowed)
     emit('update:valueMax', newValue)
   }
+}
+
+const getSegmentStepMultiplier = (value: number): number => {
+  if (props.scaleMode !== 'segmented' || effectiveSegments.value.length === 0) {
+    return 1
+  }
+  
+  for (const seg of effectiveSegments.value) {
+    if (value >= seg.min && value < seg.max) {
+      return seg.wheelStepMultiplier || 1
+    }
+  }
+  return 1
 }
 
 const onWheel = (event: WheelEvent) => {
@@ -157,22 +273,31 @@ const onWheel = (event: WheelEvent) => {
   const maxPixel = (maxPercent.value / 100) * rangeWidth
 
   if (relativeX < minPixel) {
-    const newValue = snapToStep(props.valueMin + delta * props.step)
-    const maxAllowed = props.valueMax - props.step
+    const multiplier = getSegmentStepMultiplier(props.valueMin)
+    const effectiveStep = props.step * multiplier
+    const newValue = snapToStep(props.valueMin + delta * effectiveStep, multiplier)
+    const maxMultiplier = getSegmentStepMultiplier(props.valueMax)
+    const maxAllowed = props.valueMax - (props.step * maxMultiplier)
     emit('update:valueMin', Math.min(newValue, maxAllowed))
   } else if (relativeX > maxPixel) {
-    const newValue = snapToStep(props.valueMax + delta * props.step)
-    const minAllowed = props.valueMin + props.step
+    const multiplier = getSegmentStepMultiplier(props.valueMax)
+    const effectiveStep = props.step * multiplier
+    const newValue = snapToStep(props.valueMax + delta * effectiveStep, multiplier)
+    const minMultiplier = getSegmentStepMultiplier(props.valueMin)
+    const minAllowed = props.valueMin + (props.step * minMultiplier)
     emit('update:valueMax', Math.max(newValue, minAllowed))
   } else {
-    const newMin = snapToStep(props.valueMin - delta * props.step)
-    const newMax = snapToStep(props.valueMax + delta * props.step)
+    const minMultiplier = getSegmentStepMultiplier(props.valueMin)
+    const maxMultiplier = getSegmentStepMultiplier(props.valueMax)
+    const newMin = snapToStep(props.valueMin - delta * props.step * minMultiplier, minMultiplier)
+    const newMax = snapToStep(props.valueMax + delta * props.step * maxMultiplier, maxMultiplier)
 
     if (newMin < props.valueMin) {
       emit('update:valueMin', Math.max(newMin, props.min))
       emit('update:valueMax', Math.min(newMax, props.max))
     } else {
-      if (newMin < newMax - props.step) {
+      const minAllowed = props.valueMin + (props.step * minMultiplier)
+      if (newMin < newMax - (props.step * minMultiplier)) {
         emit('update:valueMin', newMin)
         emit('update:valueMax', newMax)
       }
@@ -238,6 +363,28 @@ onUnmounted(() => {
   bottom: 0;
   background: rgba(66, 153, 225, 0.1);
   border-radius: 2px;
+}
+
+.slider-track__segment {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(66, 153, 225, 0.08);
+  border-radius: 2px;
+}
+
+.slider-track__segment--expanded {
+  background: rgba(66, 153, 225, 0.15);
+}
+
+.slider-track__segment:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  right: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .slider-handle {

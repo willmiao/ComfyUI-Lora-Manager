@@ -65,6 +65,8 @@
           :value-max="modelStrengthMax"
           :step="0.1"
           :default-range="{ min: -2, max: 3 }"
+          :scale-mode="'segmented'"
+          :segments="strengthSegments"
           @update:value-min="$emit('update:modelStrengthMin', $event)"
           @update:value-max="$emit('update:modelStrengthMax', $event)"
         />
@@ -98,6 +100,8 @@
           :value-max="clipStrengthMax"
           :step="0.1"
           :default-range="{ min: -1, max: 2 }"
+          :scale-mode="'segmented'"
+          :segments="strengthSegments"
           :disabled="isClipStrengthDisabled"
           @update:value-min="$emit('update:clipStrengthMin', $event)"
           @update:value-max="$emit('update:clipStrengthMax', $event)"
@@ -173,6 +177,12 @@ import LastUsedPreview from './LastUsedPreview.vue'
 import SingleSlider from '../shared/SingleSlider.vue'
 import DualRangeSlider from '../shared/DualRangeSlider.vue'
 import type { LoraEntry } from '../../composables/types'
+
+const strengthSegments = [
+  { min: -10, max: -2, widthPercent: 20 },
+  { min: -2, max: 2, widthPercent: 60, wheelStepMultiplier: 0.5 },
+  { min: 2, max: 10, widthPercent: 20 }
+]
 
 defineProps<{
   countMode: 'fixed' | 'range'
