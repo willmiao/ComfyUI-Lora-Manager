@@ -9,7 +9,6 @@ try:  # pragma: no cover - import fallback for pytest collection
     from .py.nodes.wanvideo_lora_select import WanVideoLoraSelectLM
     from .py.nodes.wanvideo_lora_select_from_text import WanVideoLoraSelectFromText
     from .py.nodes.lora_pool import LoraPoolNode
-    from .py.nodes.lora_demo import LoraDemoNode
     from .py.nodes.lora_randomizer import LoraRandomizerNode
     from .py.metadata_collector import init as init_metadata_collector
 except (
@@ -44,8 +43,9 @@ except (
         "py.nodes.wanvideo_lora_select_from_text"
     ).WanVideoLoraSelectFromText
     LoraPoolNode = importlib.import_module("py.nodes.lora_pool").LoraPoolNode
-    LoraDemoNode = importlib.import_module("py.nodes.lora_demo").LoraDemoNode
-    LoraRandomizerNode = importlib.import_module("py.nodes.lora_randomizer").LoraRandomizerNode
+    LoraRandomizerNode = importlib.import_module(
+        "py.nodes.lora_randomizer"
+    ).LoraRandomizerNode
     init_metadata_collector = importlib.import_module("py.metadata_collector").init
 
 NODE_CLASS_MAPPINGS = {
@@ -59,7 +59,6 @@ NODE_CLASS_MAPPINGS = {
     WanVideoLoraSelectLM.NAME: WanVideoLoraSelectLM,
     WanVideoLoraSelectFromText.NAME: WanVideoLoraSelectFromText,
     LoraPoolNode.NAME: LoraPoolNode,
-    LoraDemoNode.NAME: LoraDemoNode,
     LoraRandomizerNode.NAME: LoraRandomizerNode,
 }
 
