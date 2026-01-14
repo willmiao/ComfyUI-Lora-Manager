@@ -332,7 +332,115 @@ This allows users to pan the workflow canvas even when their mouse cursor is hov
 
 ---
 
-## 8. Complete Example: Text Counter
+## 8. Event Handling in Vue DOM Render Mode
+
+ComfyUI frontend supports two rendering modes for nodes:
+- **Legacy Canvas Mode**: Traditional rendering where widgets are rendered on top of the canvas using absolute positioning
+- **Vue DOM Render Mode**: New rendering mode where nodes and widgets are rendered as Vue components
+
+In Vue DOM render mode, event handling works differently. The frontend uses `useCanvasInteractions` composable to manage event forwarding to the canvas. This can cause custom event handlers in your widgets (e.g., mouse wheel for sliders, custom drag operations) to be intercepted by the canvas.
+
+### 8.1 Wheel Event Handling
+
+By default in Vue DOM render mode, wheel events on widgets may be forwarded to the canvas for workflow zoom, overriding your custom wheel handlers (e.g., adjusting slider values with mouse wheel).
+
+To fix this, use the `data-capture-wheel="true"` attribute on elements that should capture wheel events:
+
+```vue
+<!-- Vue component template -->
+<div class="my-slider" data-capture-wheel="true" @wheel="onWheel">
+  <!-- Slider content -->
+</div>
+
+<script setup lang="ts">
+const onWheel = (event: WheelEvent) => {
+  event.preventDefault()
+  // Custom wheel handling logic here
+}
+</script>
+```
+
+**How it works:**
+- ComfyUI's `useCanvasInteractions.ts` checks `target?.closest('[data-capture-wheel="true"]')` before forwarding wheel events
+- If an element (or its ancestor) has this attribute, wheel events are not forwarded to canvas
+- Your custom `@wheel` handler will work as expected
+
+**Granular control:**
+- Apply `data-capture-wheel="true"` to specific interactive elements (e.g., sliders, scrollable areas)
+- Widget container without this attribute will allow workflow zoom when wheel is used elsewhere
+- This allows users to both: adjust widget values with wheel, and zoom workflow with wheel in widget's non-interactive areas
+
+**Example from DualRangeSlider.vue:**
+```vue
+<template>
+  <div
+    class="dual-range-slider"
+    :class="{ disabled, 'is-dragging': dragging !== null }"
+    data-capture-wheel="true"
+    @wheel="onWheel"
+  >
+    <!-- Slider tracks and handles -->
+  </div>
+</template>
+```
+
+### 8.2 Pointer Event Handling
+
+In Vue DOM render mode, pointer events (click, drag, etc.) may also be captured by the canvas system. For custom drag operations:
+
+1. **Use event modifiers to stop propagation:**
+   ```vue
+   <div
+     @pointerdown.stop="startDrag"
+     @pointermove.stop="onDrag"
+     @pointerup.stop="stopDrag"
+   >
+   ```
+
+2. **Use pointer capture for reliable drag tracking:**
+   ```javascript
+   const startDrag = (event: PointerEvent) => {
+     const target = event.currentTarget as HTMLElement
+     target.setPointerCapture(event.pointerId)
+     // ... drag initialization
+   }
+
+   const stopDrag = (event: PointerEvent) => {
+     const target = event.currentTarget as HTMLElement
+     target.releasePointerCapture(event.pointerId)
+     // ... drag cleanup
+   }
+   ```
+
+3. **Use `touch-action: none` CSS for touch devices:**
+   ```css
+   .my-draggable {
+     touch-action: none;
+   }
+   ```
+
+### 8.3 Compatibility Checklist
+
+Ensure your widget works in both rendering modes:
+
+| Feature | Canvas Mode | Vue DOM Mode | Solution |
+|---------|-------------|--------------|----------|
+| Mouse wheel on sliders | Works by default | Needs `data-capture-wheel` | Add `data-capture-wheel="true"` to slider elements |
+| Custom drag operations | Works with `stopPropagation()` | Needs `stopPropagation()` | Use `.stop` modifier and pointer capture |
+| Middle mouse panning | Manual forwarding required | Manual forwarding required | Use `forwardMiddleMouseToCanvas()` |
+| Workflow zoom on widget edges | Works by default | Works by default | No action needed (works by default) |
+
+### 8.4 Testing Recommendations
+
+Test your widget in both rendering modes:
+1. Toggle between Canvas Mode and Vue DOM Mode in ComfyUI settings
+2. Verify custom interactions (wheel, drag, etc.) work in both modes
+3. Verify canvas interactions (zoom, pan) still work when cursor is over non-interactive widget areas
+4. Test with touch devices if applicable
+
+---
+
+## 9. Complete Example: Text Counter
 
 This example implements a simple widget that displays the character count of another text widget in the same node.
 

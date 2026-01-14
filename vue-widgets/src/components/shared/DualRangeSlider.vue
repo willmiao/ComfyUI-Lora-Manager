@@ -1,9 +1,9 @@
 <template>
-  <div class="dual-range-slider" :class="{ disabled, 'is-dragging': dragging !== null, 'has-segments': scaleMode === 'segmented' && effectiveSegments.length > 0 }" @wheel="onWheel">
+  <div class="dual-range-slider" :class="{ disabled, 'is-dragging': dragging !== null, 'has-segments': scaleMode === 'segmented' && effectiveSegments.length > 0 }" data-capture-wheel="true" @wheel="onWheel">
     <div class="slider-track" ref="trackEl">
       <!-- Background track -->
       <div class="slider-track__bg"></div>
-      
+
       <!-- Segment backgrounds for segmented scale mode -->
       <template v-if="scaleMode === 'segmented' && effectiveSegments.length > 0">
         <div
@@ -17,7 +17,7 @@
           :style="getSegmentStyle(seg, index)"
         ></div>
       </template>
-      
+
       <!-- Active track (colored range between handles) -->
       <div
         class="slider-track__active"
@@ -38,8 +38,10 @@
     <div
       class="slider-handle slider-handle--min"
       :style="{ left: minPercent + '%' }"
-      @mousedown="startDrag('min', $event)"
-      @touchstart="startDrag('min', $event)"
+      @pointerdown.stop="startDrag('min', $event)"
+      @pointermove.stop="onDrag"
+      @pointerup.stop="stopDrag"
+      @pointercancel.stop="stopDrag"
     >
       <div class="slider-handle__thumb"></div>
       <div class="slider-handle__value">{{ formatValue(valueMin) }}</div>
@@ -48,8 +50,10 @@
     <div
       class="slider-handle slider-handle--max"
       :style="{ left: maxPercent + '%' }"
-      @mousedown="startDrag('max', $event)"
-      @touchstart="startDrag('max', $event)"
+      @pointerdown.stop="startDrag('max', $event)"
+      @pointermove.stop="onDrag"
+      @pointerup.stop="stopDrag"
+      @pointercancel.stop="stopDrag"
     >
       <div class="slider-handle__thumb"></div>
       <div class="slider-handle__value">{{ formatValue(valueMax) }}</div>
@@ -58,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
 
 type ScaleMode = 'linear' | 'segmented'
 
@@ -92,6 +96,7 @@ const emit = defineEmits<{
 
 const trackEl = ref<HTMLElement | null>(null)
 const dragging = ref<'min' | 'max' | null>(null)
+const activePointerId = ref<number | null>(null)
 
 const effectiveSegments = computed<Segment[]>(() => {
   if (props.scaleMode === 'segmented' && props.segments.length > 0) {
@@ -202,26 +207,34 @@ const snapToStep = (value: number, segmentMultiplier?: number): number => {
   return Math.max(props.min, Math.min(props.max, props.min + steps * effectiveStep))
 }
 
-const startDrag = (handle: 'min' | 'max', event: MouseEvent | TouchEvent) => {
+const startDrag = (handle: 'min' | 'max', event: PointerEvent) => {
   if (props.disabled) return
 
   event.preventDefault()
-  dragging.value = handle
+  event.stopPropagation()
 
-  document.addEventListener('mousemove', onDrag)
-  document.addEventListener('mouseup', stopDrag)
-  document.addEventListener('touchmove', onDrag, { passive: false })
-  document.addEventListener('touchend', stopDrag)
+  dragging.value = handle
+  activePointerId.value = event.pointerId
+
+  // Capture pointer to receive all subsequent events regardless of stopPropagation
+  const target = event.currentTarget as HTMLElement
+  target.setPointerCapture(event.pointerId)
+
+  // Process initial position
+  updateValue(event)
 }
 
-const onDrag = (event: MouseEvent | TouchEvent) => {
+const onDrag = (event: PointerEvent) => {
+  if (!dragging.value) return
+  event.stopPropagation()
+  updateValue(event)
+}
+
+const updateValue = (event: PointerEvent) => {
   if (!trackEl.value || !dragging.value) return
 
-  event.preventDefault()
-
-  const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX
   const rect = trackEl.value.getBoundingClientRect()
-  const percent = Math.max(0, Math.min(100, (clientX - rect.left) / rect.width * 100))
+  const percent = Math.max(0, Math.min(100, (event.clientX - rect.left) / rect.width * 100))
 
   const rawValue = percentToValue(percent)
   const multiplier = getSegmentStepMultiplier(rawValue)
@@ -305,17 +318,21 @@ const onWheel = (event: WheelEvent) => {
   }
 }
 
-const stopDrag = () => {
-  dragging.value = null
-  document.removeEventListener('mousemove', onDrag)
-  document.removeEventListener('mouseup', stopDrag)
-  document.removeEventListener('touchmove', onDrag)
-  document.removeEventListener('touchend', stopDrag)
-}
+const stopDrag = (event?: PointerEvent) => {
+  if (!dragging.value) return
 
-onUnmounted(() => {
-  stopDrag()
-})
+  if (event) {
+    event.stopPropagation()
+    // Release pointer capture
+    const target = event.currentTarget as HTMLElement
+    if (activePointerId.value !== null) {
+      target.releasePointerCapture(activePointerId.value)
+    }
+  }
+
+  dragging.value = null
+  activePointerId.value = null
+}
 </script>
 
 <style scoped>
@@ -324,6 +341,8 @@ onUnmounted(() => {
   width: 100%;
   height: 32px;
   user-select: none;
+  cursor: default !important;
+  touch-action: none;
 }
 
 .dual-range-slider.disabled {
@@ -332,7 +351,7 @@ onUnmounted(() => {
 }
 
 .dual-range-slider.is-dragging {
-  cursor: grabbing;
+  cursor: ew-resize !important;
 }
 
 .slider-track {
@@ -343,6 +362,7 @@ onUnmounted(() => {
   height: 4px;
   background: var(--comfy-input-bg, #333);
   border-radius: 2px;
+  cursor: default !important;
 }
 
 .slider-track__bg {
@@ -395,12 +415,9 @@ onUnmounted(() => {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
-  cursor: grab;
+  cursor: ew-resize !important;
   z-index: 2;
-}
-
-.slider-handle:active {
-  cursor: grabbing;
+  touch-action: none;
 }
 
 .slider-handle__thumb {

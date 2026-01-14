@@ -1,5 +1,5 @@
 <template>
-  <div class="single-slider" :class="{ disabled, 'is-dragging': dragging }" @wheel="onWheel">
+  <div class="single-slider" :class="{ disabled, 'is-dragging': dragging }" data-capture-wheel="true" @wheel="onWheel">
     <div class="slider-track" ref="trackEl">
       <div class="slider-track__bg"></div>
       <div
@@ -19,8 +19,10 @@
     <div
       class="slider-handle"
       :style="{ left: percent + '%' }"
-      @mousedown="startDrag($event)"
-      @touchstart="startDrag($event)"
+      @pointerdown.stop="startDrag"
+      @pointermove.stop="onDrag"
+      @pointerup.stop="stopDrag"
+      @pointercancel.stop="stopDrag"
     >
       <div class="slider-handle__thumb"></div>
       <div class="slider-handle__value">{{ formatValue(value) }}</div>
@@ -29,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
 
 const props = withDefaults(defineProps<{
   min: number
@@ -48,6 +50,7 @@ const emit = defineEmits<{
 
 const trackEl = ref<HTMLElement | null>(null)
 const dragging = ref(false)
+const activePointerId = ref<number | null>(null)
 
 const percent = computed(() => {
   const range = props.max - props.min
@@ -82,28 +85,34 @@ const snapToStep = (value: number): number => {
   return Math.max(props.min, Math.min(props.max, props.min + steps * props.step))
 }
 
-const startDrag = (event: MouseEvent | TouchEvent) => {
+const startDrag = (event: PointerEvent) => {
   if (props.disabled) return
 
   event.preventDefault()
+  event.stopPropagation()
+
   dragging.value = true
+  activePointerId.value = event.pointerId
 
-  document.addEventListener('mousemove', onDrag)
-  document.addEventListener('mouseup', stopDrag)
-  document.addEventListener('touchmove', onDrag, { passive: false })
-  document.addEventListener('touchend', stopDrag)
+  // Capture pointer to receive all subsequent events regardless of stopPropagation
+  const target = event.currentTarget as HTMLElement
+  target.setPointerCapture(event.pointerId)
 
-  onDrag(event)
+  // Process initial position
+  updateValue(event)
 }
 
-const onDrag = (event: MouseEvent | TouchEvent) => {
+const onDrag = (event: PointerEvent) => {
+  if (!dragging.value) return
+  event.stopPropagation()
+  updateValue(event)
+}
+
+const updateValue = (event: PointerEvent) => {
   if (!trackEl.value || !dragging.value) return
 
-  event.preventDefault()
-
-  const clientX = 'touches' in event ? event.touches[0].clientX : event.clientX
   const rect = trackEl.value.getBoundingClientRect()
-  const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+  const percent = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width))
   const rawValue = props.min + percent * (props.max - props.min)
   const value = snapToStep(rawValue)
 
@@ -127,17 +136,21 @@ const onWheel = (event: WheelEvent) => {
   emit('update:value', newValue)
 }
 
-const stopDrag = () => {
-  dragging.value = false
-  document.removeEventListener('mousemove', onDrag)
-  document.removeEventListener('mouseup', stopDrag)
-  document.removeEventListener('touchmove', onDrag)
-  document.removeEventListener('touchend', stopDrag)
-}
+const stopDrag = (event?: PointerEvent) => {
+  if (!dragging.value) return
 
-onUnmounted(() => {
-  stopDrag()
-})
+  if (event) {
+    event.stopPropagation()
+    // Release pointer capture
+    const target = event.currentTarget as HTMLElement
+    if (activePointerId.value !== null) {
+      target.releasePointerCapture(activePointerId.value)
+    }
+  }
+
+  dragging.value = false
+  activePointerId.value = null
+}
 </script>
 
 <style scoped>
@@ -146,6 +159,8 @@ onUnmounted(() => {
   width: 100%;
   height: 32px;
   user-select: none;
+  cursor: default !important;
+  touch-action: none;
 }
 
 .single-slider.disabled {
@@ -154,7 +169,7 @@ onUnmounted(() => {
 }
 
 .single-slider.is-dragging {
-  cursor: grabbing;
+  cursor: ew-resize !important;
 }
 
 .slider-track {
@@ -165,6 +180,7 @@ onUnmounted(() => {
   height: 4px;
   background: var(--comfy-input-bg, #333);
   border-radius: 2px;
+  cursor: default !important;
 }
 
 .slider-track__bg {
@@ -196,12 +212,9 @@ onUnmounted(() => {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
-  cursor: grab;
+  cursor: ew-resize !important;
   z-index: 2;
-}
-
-.slider-handle:active {
-  cursor: grabbing;
+  touch-action: none;
 }
 
 .slider-handle__thumb {
