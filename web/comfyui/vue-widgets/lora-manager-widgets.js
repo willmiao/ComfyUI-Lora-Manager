@@ -589,10 +589,10 @@ to { transform: rotate(360deg);
   transform: scale(0.95);
 }
 
-.search-container[data-v-7d08882c] {
+.search-container[data-v-519e1488] {
   position: relative;
 }
-.search-icon[data-v-7d08882c] {
+.search-icon[data-v-519e1488] {
   position: absolute;
   left: 10px;
   top: 50%;
@@ -602,7 +602,7 @@ to { transform: rotate(360deg);
   color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.search-input[data-v-7d08882c] {
+.search-input[data-v-519e1488] {
   width: 100%;
   padding: 8px 12px 8px 32px;
   background: var(--comfy-input-bg, #333);
@@ -612,19 +612,19 @@ to { transform: rotate(360deg);
   font-size: 13px;
   outline: none;
 }
-.search-input[data-v-7d08882c]:focus {
+.search-input[data-v-519e1488]:focus {
   border-color: var(--fg-color, #fff);
 }
-.search-input[data-v-7d08882c]::placeholder {
+.search-input[data-v-519e1488]::placeholder {
   color: var(--fg-color, #fff);
   opacity: 0.4;
 }
-.model-list[data-v-7d08882c] {
+.model-list[data-v-519e1488] {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.model-item[data-v-7d08882c] {
+.model-item[data-v-519e1488] {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -633,15 +633,15 @@ to { transform: rotate(360deg);
   cursor: pointer;
   transition: background 0.15s;
 }
-.model-item[data-v-7d08882c]:hover {
+.model-item[data-v-519e1488]:hover {
   background: var(--comfy-input-bg, #333);
 }
-.model-checkbox[data-v-7d08882c] {
+.model-checkbox[data-v-519e1488] {
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
-.model-checkbox-visual[data-v-7d08882c] {
+.model-checkbox-visual[data-v-519e1488] {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -653,29 +653,29 @@ to { transform: rotate(360deg);
   flex-shrink: 0;
   transition: all 0.15s;
 }
-.model-item:hover .model-checkbox-visual[data-v-7d08882c] {
+.model-item:hover .model-checkbox-visual[data-v-519e1488] {
   border-color: var(--fg-color, #fff);
 }
-.model-checkbox:checked + .model-checkbox-visual[data-v-7d08882c] {
+.model-checkbox:checked + .model-checkbox-visual[data-v-519e1488] {
   background: var(--fg-color, #fff);
   border-color: var(--fg-color, #fff);
 }
-.check-icon[data-v-7d08882c] {
+.check-icon[data-v-519e1488] {
   width: 12px;
   height: 12px;
   color: var(--comfy-menu-bg, #1a1a1a);
 }
-.model-name[data-v-7d08882c] {
+.model-name[data-v-519e1488] {
   flex: 1;
   font-size: 13px;
   color: var(--fg-color, #fff);
 }
-.model-count[data-v-7d08882c] {
+.model-count[data-v-519e1488] {
   font-size: 12px;
   color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.no-results[data-v-7d08882c] {
+.no-results[data-v-519e1488] {
   padding: 20px;
   text-align: center;
   color: var(--fg-color, #fff);
@@ -683,10 +683,10 @@ to { transform: rotate(360deg);
   font-size: 13px;
 }
 
-.search-container[data-v-8857206b] {
+.search-container[data-v-22ab2729] {
   position: relative;
 }
-.search-icon[data-v-8857206b] {
+.search-icon[data-v-22ab2729] {
   position: absolute;
   left: 10px;
   top: 50%;
@@ -696,7 +696,7 @@ to { transform: rotate(360deg);
   color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.search-input[data-v-8857206b] {
+.search-input[data-v-22ab2729] {
   width: 100%;
   padding: 8px 12px 8px 32px;
   background: var(--comfy-input-bg, #333);
@@ -706,19 +706,19 @@ to { transform: rotate(360deg);
   font-size: 13px;
   outline: none;
 }
-.search-input[data-v-8857206b]:focus {
+.search-input[data-v-22ab2729]:focus {
   border-color: var(--fg-color, #fff);
 }
-.search-input[data-v-8857206b]::placeholder {
+.search-input[data-v-22ab2729]::placeholder {
   color: var(--fg-color, #fff);
   opacity: 0.4;
 }
-.tags-container[data-v-8857206b] {
+.tags-container[data-v-22ab2729] {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
-.tag-chip[data-v-8857206b] {
+.tag-chip[data-v-22ab2729] {
   padding: 6px 12px;
   background: var(--comfy-input-bg, #333);
   border: 1px solid var(--border-color, #555);
@@ -730,48 +730,48 @@ to { transform: rotate(360deg);
 }
 
 /* Default hover (gray for neutral) */
-.tag-chip[data-v-8857206b]:hover:not(.tag-chip--selected) {
+.tag-chip[data-v-22ab2729]:hover:not(.tag-chip--selected) {
   border-color: rgba(226, 232, 240, 0.5);
   background: rgba(255, 255, 255, 0.05);
 }
 
 /* Include variant hover - blue tint */
-.tags-modal--include .tag-chip[data-v-8857206b]:hover:not(.tag-chip--selected) {
+.tags-modal--include .tag-chip[data-v-22ab2729]:hover:not(.tag-chip--selected) {
   border-color: rgba(66, 153, 225, 0.4);
   background: rgba(66, 153, 225, 0.08);
 }
 
 /* Exclude variant hover - red tint */
-.tags-modal--exclude .tag-chip[data-v-8857206b]:hover:not(.tag-chip--selected) {
+.tags-modal--exclude .tag-chip[data-v-22ab2729]:hover:not(.tag-chip--selected) {
   border-color: rgba(239, 68, 68, 0.4);
   background: rgba(239, 68, 68, 0.08);
 }
 
 /* Selected chips hover - slightly deepen the color */
-.tags-modal--include .tag-chip--selected[data-v-8857206b]:hover {
+.tags-modal--include .tag-chip--selected[data-v-22ab2729]:hover {
   background: rgba(66, 153, 225, 0.25);
   border-color: rgba(66, 153, 225, 0.7);
 }
-.tags-modal--exclude .tag-chip--selected[data-v-8857206b]:hover {
+.tags-modal--exclude .tag-chip--selected[data-v-22ab2729]:hover {
   background: rgba(239, 68, 68, 0.25);
   border-color: rgba(239, 68, 68, 0.7);
 }
 
 /* Include variant - blue when selected */
-.tags-modal--include .tag-chip--selected[data-v-8857206b],
-.tag-chip--selected[data-v-8857206b] {
+.tags-modal--include .tag-chip--selected[data-v-22ab2729],
+.tag-chip--selected[data-v-22ab2729] {
   background: rgba(66, 153, 225, 0.2);
   border-color: rgba(66, 153, 225, 0.6);
   color: #4299e1;
 }
 
 /* Exclude variant - red when selected */
-.tags-modal--exclude .tag-chip--selected[data-v-8857206b] {
+.tags-modal--exclude .tag-chip--selected[data-v-22ab2729] {
   background: rgba(239, 68, 68, 0.2);
   border-color: rgba(239, 68, 68, 0.6);
   color: #ef4444;
 }
-.no-results[data-v-8857206b] {
+.no-results[data-v-22ab2729] {
   width: 100%;
   padding: 20px;
   text-align: center;
@@ -10453,6 +10453,7 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
     const props = __props;
     const emit2 = __emit;
     const searchQuery = ref("");
+    const searchInputRef = ref(null);
     const filteredModels = computed(() => {
       if (!searchQuery.value) {
         return props.models;
@@ -10469,6 +10470,14 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
     };
     const onSearch = () => {
     };
+    watch(() => props.visible, (isVisible) => {
+      if (isVisible) {
+        nextTick(() => {
+          var _a;
+          (_a = searchInputRef.value) == null ? void 0 : _a.focus();
+        });
+      }
+    });
     return (_ctx, _cache) => {
       return openBlock(), createBlock(ModalWrapper, {
         visible: __props.visible,
@@ -10486,6 +10495,8 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
               createBaseVNode("path", { d: "M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" })
             ], -1)),
             withDirectives(createBaseVNode("input", {
+              ref_key: "searchInputRef",
+              ref: searchInputRef,
               "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => searchQuery.value = $event),
               type: "text",
               class: "search-input",
@@ -10526,7 +10537,7 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-7d08882c"]]);
+const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-519e1488"]]);
 const _hoisted_1$8 = { class: "search-container" };
 const _hoisted_2$5 = { class: "tags-container" };
 const _hoisted_3$4 = ["onClick"];
@@ -10553,6 +10564,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
       () => props.variant === "include" ? "Select tags that items must have" : "Select tags that items must NOT have"
     );
     const searchQuery = ref("");
+    const searchInputRef = ref(null);
     const filteredTags = computed(() => {
       if (!searchQuery.value) {
         return props.tags;
@@ -10567,6 +10579,14 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
       const newSelected = isSelected(tag) ? props.selected.filter((t) => t !== tag) : [...props.selected, tag];
       emit2("update:selected", newSelected);
     };
+    watch(() => props.visible, (isVisible) => {
+      if (isVisible) {
+        nextTick(() => {
+          var _a;
+          (_a = searchInputRef.value) == null ? void 0 : _a.focus();
+        });
+      }
+    });
     return (_ctx, _cache) => {
       return openBlock(), createBlock(ModalWrapper, {
         visible: __props.visible,
@@ -10585,6 +10605,8 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
               createBaseVNode("path", { d: "M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" })
             ], -1)),
             withDirectives(createBaseVNode("input", {
+              ref_key: "searchInputRef",
+              ref: searchInputRef,
               "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => searchQuery.value = $event),
               type: "text",
               class: "search-input",
@@ -10612,7 +10634,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const TagsModal = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-8857206b"]]);
+const TagsModal = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-22ab2729"]]);
 const _hoisted_1$7 = { class: "tree-node" };
 const _hoisted_2$4 = {
   key: 1,

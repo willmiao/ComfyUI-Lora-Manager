@@ -11,6 +11,7 @@
           <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
         </svg>
         <input
+          ref="searchInputRef"
           v-model="searchQuery"
           type="text"
           class="search-input"
@@ -48,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import ModalWrapper from './ModalWrapper.vue'
 import type { BaseModelOption } from '../../../composables/types'
 
@@ -64,6 +65,7 @@ const emit = defineEmits<{
 }>()
 
 const searchQuery = ref('')
+const searchInputRef = ref<HTMLInputElement | null>(null)
 
 const filteredModels = computed(() => {
   if (!searchQuery.value) {
@@ -87,6 +89,14 @@ const toggleModel = (name: string) => {
 const onSearch = () => {
   // Debounce handled by v-model reactivity
 }
+
+watch(() => props.visible, (isVisible) => {
+  if (isVisible) {
+    nextTick(() => {
+      searchInputRef.value?.focus()
+    })
+  }
+})
 </script>
 
 <style scoped>
