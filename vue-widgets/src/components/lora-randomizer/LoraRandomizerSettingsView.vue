@@ -77,7 +77,7 @@
     <div class="setting-section">
       <div class="section-header-with-toggle">
         <label class="setting-label">
-          Respect Recommended Strength
+          Preset Strength Scale
         </label>
         <button
           type="button"
@@ -86,7 +86,7 @@
           @click="$emit('update:useRecommendedStrength', !useRecommendedStrength)"
           role="switch"
           :aria-checked="useRecommendedStrength"
-          title="Use recommended strength values from usage tips"
+          title="Use scaled preset strength when enabled"
         >
           <span class="toggle-switch__track"></span>
           <span class="toggle-switch__thumb"></span>
@@ -111,22 +111,22 @@
     <div class="setting-section">
       <div class="section-header-with-toggle">
         <label class="setting-label">
-          Clip Strength Range - {{ useSameClipStrength ? 'Use Model Strength' : 'Custom Range' }}
+          Clip Strength Range - {{ useCustomClipRange ? 'Custom Range' : 'Use Model Strength' }}
         </label>
         <button
           type="button"
           class="toggle-switch"
-          :class="{ 'toggle-switch--active': useSameClipStrength }"
-          @click="$emit('update:useSameClipStrength', !useSameClipStrength)"
+          :class="{ 'toggle-switch--active': useCustomClipRange }"
+          @click="$emit('update:useCustomClipRange', !useCustomClipRange)"
           role="switch"
-          :aria-checked="useSameClipStrength"
-          title="Lock clip strength to model strength"
+          :aria-checked="useCustomClipRange"
+          title="Use custom clip strength range when enabled, otherwise use model strength"
         >
           <span class="toggle-switch__track"></span>
           <span class="toggle-switch__thumb"></span>
         </button>
       </div>
-      <div class="slider-container">
+      <div class="slider-container" :class="{ 'slider-container--disabled': isClipStrengthDisabled }">
         <DualRangeSlider
           :min="-10"
           :max="10"
@@ -225,7 +225,7 @@ defineProps<{
   countMax: number
   modelStrengthMin: number
   modelStrengthMax: number
-  useSameClipStrength: boolean
+  useCustomClipRange: boolean
   clipStrengthMin: number
   clipStrengthMax: number
   rollMode: 'fixed' | 'always'
@@ -246,7 +246,7 @@ defineEmits<{
   'update:countMax': [value: number]
   'update:modelStrengthMin': [value: number]
   'update:modelStrengthMax': [value: number]
-  'update:useSameClipStrength': [value: boolean]
+  'update:useCustomClipRange': [value: boolean]
   'update:clipStrengthMin': [value: number]
   'update:clipStrengthMax': [value: number]
   'update:rollMode': [value: 'fixed' | 'always']

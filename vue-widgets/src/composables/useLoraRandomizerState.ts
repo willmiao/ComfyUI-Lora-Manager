@@ -9,7 +9,7 @@ export function useLoraRandomizerState(widget: ComponentWidget) {
   const countMax = ref(5)
   const modelStrengthMin = ref(0.0)
   const modelStrengthMax = ref(1.0)
-  const useSameClipStrength = ref(true)
+  const useCustomClipRange = ref(false)
   const clipStrengthMin = ref(0.0)
   const clipStrengthMax = ref(1.0)
   const rollMode = ref<'fixed' | 'always'>('fixed')
@@ -29,7 +29,7 @@ export function useLoraRandomizerState(widget: ComponentWidget) {
     count_max: countMax.value,
     model_strength_min: modelStrengthMin.value,
     model_strength_max: modelStrengthMax.value,
-    use_same_clip_strength: useSameClipStrength.value,
+    use_same_clip_strength: !useCustomClipRange.value,
     clip_strength_min: clipStrengthMin.value,
     clip_strength_max: clipStrengthMax.value,
     roll_mode: rollMode.value,
@@ -47,7 +47,7 @@ export function useLoraRandomizerState(widget: ComponentWidget) {
     countMax.value = config.count_max || 5
     modelStrengthMin.value = config.model_strength_min ?? 0.0
     modelStrengthMax.value = config.model_strength_max ?? 1.0
-    useSameClipStrength.value = config.use_same_clip_strength ?? true
+    useCustomClipRange.value = !(config.use_same_clip_strength ?? true)
     clipStrengthMin.value = config.clip_strength_min ?? 0.0
     clipStrengthMax.value = config.clip_strength_max ?? 1.0
     // Migrate old roll_mode values to new ones
@@ -81,7 +81,7 @@ export function useLoraRandomizerState(widget: ComponentWidget) {
       const requestBody: any = {
         model_strength_min: config.model_strength_min,
         model_strength_max: config.model_strength_max,
-        use_same_clip_strength: config.use_same_clip_strength,
+        use_same_clip_strength: !useCustomClipRange.value,
         clip_strength_min: config.clip_strength_min,
         clip_strength_max: config.clip_strength_max,
         locked_loras: lockedLoras,
@@ -141,7 +141,7 @@ export function useLoraRandomizerState(widget: ComponentWidget) {
   }
 
   // Computed properties
-  const isClipStrengthDisabled = computed(() => useSameClipStrength.value)
+  const isClipStrengthDisabled = computed(() => !useCustomClipRange.value)
   const isRecommendedStrengthEnabled = computed(() => useRecommendedStrength.value)
 
   // Watch all state changes and update widget value
@@ -152,7 +152,7 @@ export function useLoraRandomizerState(widget: ComponentWidget) {
     countMax,
     modelStrengthMin,
     modelStrengthMax,
-    useSameClipStrength,
+    useCustomClipRange,
     clipStrengthMin,
     clipStrengthMax,
     rollMode,
@@ -176,7 +176,7 @@ export function useLoraRandomizerState(widget: ComponentWidget) {
     countMax,
     modelStrengthMin,
     modelStrengthMax,
-    useSameClipStrength,
+    useCustomClipRange,
     clipStrengthMin,
     clipStrengthMax,
     rollMode,
