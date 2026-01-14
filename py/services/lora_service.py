@@ -228,6 +228,9 @@ class LoraService(BaseModelService):
         count_mode: str = "fixed",
         count_min: int = 3,
         count_max: int = 7,
+        use_recommended_strength: bool = False,
+        recommended_strength_scale_min: float = 0.5,
+        recommended_strength_scale_max: float = 1.0,
     ) -> List[Dict]:
         """
         Get random LoRAs with specified strength ranges.
@@ -244,11 +247,37 @@ class LoraService(BaseModelService):
             count_mode: How to determine count ('fixed' or 'range')
             count_min: Minimum count for range mode
             count_max: Maximum count for range mode
+            use_recommended_strength: Whether to use recommended strength from usage_tips
+            recommended_strength_scale_min: Minimum scale factor for recommended strength
+            recommended_strength_scale_max: Maximum scale factor for recommended strength
 
         Returns:
             List of LoRA dicts with randomized strengths
         """
         import random
+        import json
+
+        def get_recommended_strength(lora_data: Dict) -> Optional[float]:
+            """Parse usage_tips JSON and extract recommended strength"""
+            try:
+                usage_tips = lora_data.get("usage_tips", "")
+                if not usage_tips:
+                    return None
+                tips_data = json.loads(usage_tips)
+                return tips_data.get("strength")
+            except (json.JSONDecodeError, TypeError, AttributeError):
+                return None
+
+        def get_recommended_clip_strength(lora_data: Dict) -> Optional[float]:
+            """Parse usage_tips JSON and extract recommended clip strength"""
+            try:
+                usage_tips = lora_data.get("usage_tips", "")
+                if not usage_tips:
+                    return None
+                tips_data = json.loads(usage_tips)
+                return tips_data.get("clipStrength")
+            except (json.JSONDecodeError, TypeError, AttributeError):
+                return None
 
         if locked_loras is None:
             locked_loras = []
@@ -296,10 +325,35 @@ class LoraService(BaseModelService):
         # Generate random strengths for selected LoRAs
         result_loras = []
         for lora in selected:
-            model_str = round(random.uniform(model_strength_min, model_strength_max), 2)
+            if use_recommended_strength:
+                recommended_strength = get_recommended_strength(lora)
+                if recommended_strength is not None:
+                    scale = random.uniform(
+                        recommended_strength_scale_min, recommended_strength_scale_max
+                    )
+                    model_str = round(recommended_strength * scale, 2)
+                else:
+                    model_str = round(
+                        random.uniform(model_strength_min, model_strength_max), 2
+                    )
+            else:
+                model_str = round(
+                    random.uniform(model_strength_min, model_strength_max), 2
+                )
 
             if use_same_clip_strength:
                 clip_str = model_str
+            elif use_recommended_strength:
+                recommended_clip_strength = get_recommended_clip_strength(lora)
+                if recommended_clip_strength is not None:
+                    scale = random.uniform(
+                        recommended_strength_scale_min, recommended_strength_scale_max
+                    )
+                    clip_str = round(recommended_clip_strength * scale, 2)
+                else:
+                    clip_str = round(
+                        random.uniform(clip_strength_min, clip_strength_max), 2
+                    )
             else:
                 clip_str = round(
                     random.uniform(clip_strength_min, clip_strength_max), 2

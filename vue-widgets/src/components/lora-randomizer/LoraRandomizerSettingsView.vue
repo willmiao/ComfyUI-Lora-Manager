@@ -73,6 +73,40 @@
       </div>
     </div>
 
+    <!-- Recommended Strength -->
+    <div class="setting-section">
+      <div class="section-header-with-toggle">
+        <label class="setting-label">
+          Respect Recommended Strength
+        </label>
+        <button
+          type="button"
+          class="toggle-switch"
+          :class="{ 'toggle-switch--active': useRecommendedStrength }"
+          @click="$emit('update:useRecommendedStrength', !useRecommendedStrength)"
+          role="switch"
+          :aria-checked="useRecommendedStrength"
+          title="Use recommended strength values from usage tips"
+        >
+          <span class="toggle-switch__track"></span>
+          <span class="toggle-switch__thumb"></span>
+        </button>
+      </div>
+      <div class="slider-container" :class="{ 'slider-container--disabled': !useRecommendedStrength }">
+        <DualRangeSlider
+          :min="0"
+          :max="2"
+          :value-min="recommendedStrengthScaleMin"
+          :value-max="recommendedStrengthScaleMax"
+          :step="0.1"
+          :default-range="{ min: 0.5, max: 1.0 }"
+          :disabled="!useRecommendedStrength"
+          @update:value-min="$emit('update:recommendedStrengthScaleMin', $event)"
+          @update:value-max="$emit('update:recommendedStrengthScaleMax', $event)"
+        />
+      </div>
+    </div>
+
     <!-- Clip Strength Range -->
     <div class="setting-section">
       <div class="section-header-with-toggle">
@@ -200,6 +234,9 @@ defineProps<{
   lastUsed: LoraEntry[] | null
   currentLoras: LoraEntry[]
   canReuseLast: boolean
+  useRecommendedStrength: boolean
+  recommendedStrengthScaleMin: number
+  recommendedStrengthScaleMax: number
 }>()
 
 defineEmits<{
@@ -213,6 +250,9 @@ defineEmits<{
   'update:clipStrengthMin': [value: number]
   'update:clipStrengthMax': [value: number]
   'update:rollMode': [value: 'fixed' | 'always']
+  'update:useRecommendedStrength': [value: boolean]
+  'update:recommendedStrengthScaleMin': [value: number]
+  'update:recommendedStrengthScaleMax': [value: number]
   'generate-fixed': []
   'always-randomize': []
   'reuse-last': []
@@ -339,6 +379,11 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 4px;
   padding: 4px 8px;
+}
+
+.slider-container--disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 /* Toggle Switch (same style as LicenseSection) */

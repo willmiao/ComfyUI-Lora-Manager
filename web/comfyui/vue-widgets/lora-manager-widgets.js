@@ -1195,16 +1195,16 @@ to { transform: rotate(360deg);
   text-align: center;
 }
 
-.randomizer-settings[data-v-420a82ee] {
+.randomizer-settings[data-v-90189966] {
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #e4e4e7;
 }
-.settings-header[data-v-420a82ee] {
+.settings-header[data-v-90189966] {
   margin-bottom: 8px;
 }
-.settings-title[data-v-420a82ee] {
+.settings-title[data-v-90189966] {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -1213,28 +1213,28 @@ to { transform: rotate(360deg);
   margin: 0;
   text-transform: uppercase;
 }
-.setting-section[data-v-420a82ee] {
+.setting-section[data-v-90189966] {
   margin-bottom: 16px;
 }
-.setting-label[data-v-420a82ee] {
+.setting-label[data-v-90189966] {
   font-size: 12px;
   font-weight: 500;
   color: #d4d4d8;
   display: block;
   margin-bottom: 8px;
 }
-.section-header-with-toggle[data-v-420a82ee] {
+.section-header-with-toggle[data-v-90189966] {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
 }
-.section-header-with-toggle .setting-label[data-v-420a82ee] {
+.section-header-with-toggle .setting-label[data-v-90189966] {
   margin-bottom: 0;
 }
 
 /* Count Mode Tabs */
-.count-mode-tabs[data-v-420a82ee] {
+.count-mode-tabs[data-v-90189966] {
   display: flex;
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
@@ -1242,7 +1242,7 @@ to { transform: rotate(360deg);
   overflow: hidden;
   margin-bottom: 8px;
 }
-.count-mode-tab[data-v-420a82ee] {
+.count-mode-tab[data-v-90189966] {
   flex: 1;
   position: relative;
   padding: 8px 12px;
@@ -1250,29 +1250,29 @@ to { transform: rotate(360deg);
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.count-mode-tab input[type="radio"][data-v-420a82ee] {
+.count-mode-tab input[type="radio"][data-v-90189966] {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
 }
-.count-mode-tab-label[data-v-420a82ee] {
+.count-mode-tab-label[data-v-90189966] {
   font-size: 12px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.7);
   transition: all 0.2s ease;
 }
-.count-mode-tab:hover .count-mode-tab-label[data-v-420a82ee] {
+.count-mode-tab:hover .count-mode-tab-label[data-v-90189966] {
   color: rgba(226, 232, 240, 0.9);
 }
-.count-mode-tab.active .count-mode-tab-label[data-v-420a82ee] {
+.count-mode-tab.active .count-mode-tab-label[data-v-90189966] {
   color: rgba(191, 219, 254, 1);
   font-weight: 600;
 }
-.count-mode-tab.active[data-v-420a82ee] {
+.count-mode-tab.active[data-v-90189966] {
   background: rgba(66, 153, 225, 0.2);
 }
-.count-mode-tab.active[data-v-420a82ee]::after {
+.count-mode-tab.active[data-v-90189966]::after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -1281,15 +1281,19 @@ to { transform: rotate(360deg);
   height: 2px;
   background: rgba(66, 153, 225, 0.9);
 }
-.slider-container[data-v-420a82ee] {
+.slider-container[data-v-90189966] {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 4px;
   padding: 4px 8px;
 }
+.slider-container--disabled[data-v-90189966] {
+  opacity: 0.5;
+  pointer-events: none;
+}
 
 /* Toggle Switch (same style as LicenseSection) */
-.toggle-switch[data-v-420a82ee] {
+.toggle-switch[data-v-90189966] {
   position: relative;
   width: 36px;
   height: 20px;
@@ -1298,7 +1302,7 @@ to { transform: rotate(360deg);
   border: none;
   cursor: pointer;
 }
-.toggle-switch__track[data-v-420a82ee] {
+.toggle-switch__track[data-v-90189966] {
   position: absolute;
   inset: 0;
   background: var(--comfy-input-bg, #333);
@@ -1306,11 +1310,11 @@ to { transform: rotate(360deg);
   border-radius: 10px;
   transition: all 0.2s;
 }
-.toggle-switch--active .toggle-switch__track[data-v-420a82ee] {
+.toggle-switch--active .toggle-switch__track[data-v-90189966] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.toggle-switch__thumb[data-v-420a82ee] {
+.toggle-switch__thumb[data-v-90189966] {
   position: absolute;
   top: 3px;
   left: 2px;
@@ -1321,27 +1325,27 @@ to { transform: rotate(360deg);
   transition: all 0.2s;
   opacity: 0.6;
 }
-.toggle-switch--active .toggle-switch__thumb[data-v-420a82ee] {
+.toggle-switch--active .toggle-switch__thumb[data-v-90189966] {
   transform: translateX(16px);
   background: #4299e1;
   opacity: 1;
 }
-.toggle-switch:hover .toggle-switch__thumb[data-v-420a82ee] {
+.toggle-switch:hover .toggle-switch__thumb[data-v-90189966] {
   opacity: 1;
 }
 
 /* Roll buttons with tooltip container */
-.roll-buttons-with-tooltip[data-v-420a82ee] {
+.roll-buttons-with-tooltip[data-v-90189966] {
   position: relative;
 }
 
 /* Roll buttons container */
-.roll-buttons[data-v-420a82ee] {
+.roll-buttons[data-v-90189966] {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
 }
-.roll-button[data-v-420a82ee] {
+.roll-button[data-v-90189966] {
   padding: 8px 10px;
   background: rgba(30, 30, 36, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1358,44 +1362,44 @@ to { transform: rotate(360deg);
   transition: all 0.2s;
   white-space: nowrap;
 }
-.roll-button[data-v-420a82ee]:hover:not(:disabled) {
+.roll-button[data-v-90189966]:hover:not(:disabled) {
   background: rgba(66, 153, 225, 0.2);
   border-color: rgba(66, 153, 225, 0.4);
   color: #bfdbfe;
 }
-.roll-button.selected[data-v-420a82ee] {
+.roll-button.selected[data-v-90189966] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
   color: #e4e4e7;
   box-shadow: 0 0 0 1px rgba(66, 153, 225, 0.3);
 }
-.roll-button[data-v-420a82ee]:disabled {
+.roll-button[data-v-90189966]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.roll-button__icon[data-v-420a82ee] {
+.roll-button__icon[data-v-90189966] {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
 }
-.roll-button__text[data-v-420a82ee] {
+.roll-button__text[data-v-90189966] {
   font-size: 11px;
   text-align: center;
   line-height: 1.2;
 }
 
 /* Tooltip transitions */
-.tooltip-enter-active[data-v-420a82ee],
-.tooltip-leave-active[data-v-420a82ee] {
+.tooltip-enter-active[data-v-90189966],
+.tooltip-leave-active[data-v-90189966] {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
-.tooltip-enter-from[data-v-420a82ee],
-.tooltip-leave-to[data-v-420a82ee] {
+.tooltip-enter-from[data-v-90189966],
+.tooltip-leave-to[data-v-90189966] {
   opacity: 0;
   transform: translateY(4px);
 }
 
-.lora-randomizer-widget[data-v-bb056060] {
+.lora-randomizer-widget[data-v-69f71f06] {
   padding: 12px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 4px;
@@ -11663,15 +11667,18 @@ const _hoisted_7 = { class: "setting-section" };
 const _hoisted_8 = { class: "slider-container" };
 const _hoisted_9 = { class: "setting-section" };
 const _hoisted_10 = { class: "section-header-with-toggle" };
-const _hoisted_11 = { class: "setting-label" };
-const _hoisted_12 = ["aria-checked"];
-const _hoisted_13 = { class: "slider-container" };
-const _hoisted_14 = { class: "setting-section" };
-const _hoisted_15 = { class: "roll-buttons-with-tooltip" };
-const _hoisted_16 = { class: "roll-buttons" };
-const _hoisted_17 = ["disabled"];
-const _hoisted_18 = ["disabled"];
-const _hoisted_19 = ["disabled"];
+const _hoisted_11 = ["aria-checked"];
+const _hoisted_12 = { class: "setting-section" };
+const _hoisted_13 = { class: "section-header-with-toggle" };
+const _hoisted_14 = { class: "setting-label" };
+const _hoisted_15 = ["aria-checked"];
+const _hoisted_16 = { class: "slider-container" };
+const _hoisted_17 = { class: "setting-section" };
+const _hoisted_18 = { class: "roll-buttons-with-tooltip" };
+const _hoisted_19 = { class: "roll-buttons" };
+const _hoisted_20 = ["disabled"];
+const _hoisted_21 = ["disabled"];
+const _hoisted_22 = ["disabled"];
 const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   __name: "LoraRandomizerSettingsView",
   props: {
@@ -11689,9 +11696,12 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     isClipStrengthDisabled: { type: Boolean },
     lastUsed: {},
     currentLoras: {},
-    canReuseLast: { type: Boolean }
+    canReuseLast: { type: Boolean },
+    useRecommendedStrength: { type: Boolean },
+    recommendedStrengthScaleMin: {},
+    recommendedStrengthScaleMax: {}
   },
-  emits: ["update:countMode", "update:countFixed", "update:countMin", "update:countMax", "update:modelStrengthMin", "update:modelStrengthMax", "update:useSameClipStrength", "update:clipStrengthMin", "update:clipStrengthMax", "update:rollMode", "generate-fixed", "always-randomize", "reuse-last"],
+  emits: ["update:countMode", "update:countFixed", "update:countMin", "update:countMax", "update:modelStrengthMin", "update:modelStrengthMax", "update:useSameClipStrength", "update:clipStrengthMin", "update:clipStrengthMax", "update:rollMode", "update:useRecommendedStrength", "update:recommendedStrengthScaleMin", "update:recommendedStrengthScaleMax", "generate-fixed", "always-randomize", "reuse-last"],
   setup(__props) {
     const strengthSegments = [
       { min: -10, max: -2, widthPercent: 20 },
@@ -11710,11 +11720,11 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", _hoisted_1$1, [
-        _cache[24] || (_cache[24] = createBaseVNode("div", { class: "settings-header" }, [
+        _cache[29] || (_cache[29] = createBaseVNode("div", { class: "settings-header" }, [
           createBaseVNode("h3", { class: "settings-title" }, "RANDOMIZER SETTINGS")
         ], -1)),
         createBaseVNode("div", _hoisted_2, [
-          _cache[17] || (_cache[17] = createBaseVNode("label", { class: "setting-label" }, "LoRA Count", -1)),
+          _cache[20] || (_cache[20] = createBaseVNode("label", { class: "setting-label" }, "LoRA Count", -1)),
           createBaseVNode("div", _hoisted_3, [
             createBaseVNode("label", {
               class: normalizeClass(["count-mode-tab", { active: __props.countMode === "fixed" }])
@@ -11726,7 +11736,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                 checked: __props.countMode === "fixed",
                 onChange: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("update:countMode", "fixed"))
               }, null, 40, _hoisted_4),
-              _cache[15] || (_cache[15] = createBaseVNode("span", { class: "count-mode-tab-label" }, "Fixed", -1))
+              _cache[18] || (_cache[18] = createBaseVNode("span", { class: "count-mode-tab-label" }, "Fixed", -1))
             ], 2),
             createBaseVNode("label", {
               class: normalizeClass(["count-mode-tab", { active: __props.countMode === "range" }])
@@ -11738,7 +11748,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                 checked: __props.countMode === "range",
                 onChange: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("update:countMode", "range"))
               }, null, 40, _hoisted_5),
-              _cache[16] || (_cache[16] = createBaseVNode("span", { class: "count-mode-tab-label" }, "Range", -1))
+              _cache[19] || (_cache[19] = createBaseVNode("span", { class: "count-mode-tab-label" }, "Range", -1))
             ], 2)
           ]),
           createBaseVNode("div", _hoisted_6, [
@@ -11764,7 +11774,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
           ])
         ]),
         createBaseVNode("div", _hoisted_7, [
-          _cache[18] || (_cache[18] = createBaseVNode("label", { class: "setting-label" }, "Model Strength Range", -1)),
+          _cache[21] || (_cache[21] = createBaseVNode("label", { class: "setting-label" }, "Model Strength Range", -1)),
           createBaseVNode("div", _hoisted_8, [
             createVNode(DualRangeSlider, {
               min: -10,
@@ -11782,20 +11792,51 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
         ]),
         createBaseVNode("div", _hoisted_9, [
           createBaseVNode("div", _hoisted_10, [
-            createBaseVNode("label", _hoisted_11, " Clip Strength Range - " + toDisplayString(__props.useSameClipStrength ? "Use Model Strength" : "Custom Range"), 1),
+            _cache[23] || (_cache[23] = createBaseVNode("label", { class: "setting-label" }, " Respect Recommended Strength ", -1)),
+            createBaseVNode("button", {
+              type: "button",
+              class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.useRecommendedStrength }]),
+              onClick: _cache[7] || (_cache[7] = ($event) => _ctx.$emit("update:useRecommendedStrength", !__props.useRecommendedStrength)),
+              role: "switch",
+              "aria-checked": __props.useRecommendedStrength,
+              title: "Use recommended strength values from usage tips"
+            }, [..._cache[22] || (_cache[22] = [
+              createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
+              createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
+            ])], 10, _hoisted_11)
+          ]),
+          createBaseVNode("div", {
+            class: normalizeClass(["slider-container", { "slider-container--disabled": !__props.useRecommendedStrength }])
+          }, [
+            createVNode(DualRangeSlider, {
+              min: 0,
+              max: 2,
+              "value-min": __props.recommendedStrengthScaleMin,
+              "value-max": __props.recommendedStrengthScaleMax,
+              step: 0.1,
+              "default-range": { min: 0.5, max: 1 },
+              disabled: !__props.useRecommendedStrength,
+              "onUpdate:valueMin": _cache[8] || (_cache[8] = ($event) => _ctx.$emit("update:recommendedStrengthScaleMin", $event)),
+              "onUpdate:valueMax": _cache[9] || (_cache[9] = ($event) => _ctx.$emit("update:recommendedStrengthScaleMax", $event))
+            }, null, 8, ["value-min", "value-max", "disabled"])
+          ], 2)
+        ]),
+        createBaseVNode("div", _hoisted_12, [
+          createBaseVNode("div", _hoisted_13, [
+            createBaseVNode("label", _hoisted_14, " Clip Strength Range - " + toDisplayString(__props.useSameClipStrength ? "Use Model Strength" : "Custom Range"), 1),
             createBaseVNode("button", {
               type: "button",
               class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.useSameClipStrength }]),
-              onClick: _cache[7] || (_cache[7] = ($event) => _ctx.$emit("update:useSameClipStrength", !__props.useSameClipStrength)),
+              onClick: _cache[10] || (_cache[10] = ($event) => _ctx.$emit("update:useSameClipStrength", !__props.useSameClipStrength)),
               role: "switch",
               "aria-checked": __props.useSameClipStrength,
               title: "Lock clip strength to model strength"
-            }, [..._cache[19] || (_cache[19] = [
+            }, [..._cache[24] || (_cache[24] = [
               createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
               createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
-            ])], 10, _hoisted_12)
+            ])], 10, _hoisted_15)
           ]),
-          createBaseVNode("div", _hoisted_13, [
+          createBaseVNode("div", _hoisted_16, [
             createVNode(DualRangeSlider, {
               min: -10,
               max: 10,
@@ -11806,36 +11847,36 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
               "scale-mode": "segmented",
               segments: strengthSegments,
               disabled: __props.isClipStrengthDisabled,
-              "onUpdate:valueMin": _cache[8] || (_cache[8] = ($event) => _ctx.$emit("update:clipStrengthMin", $event)),
-              "onUpdate:valueMax": _cache[9] || (_cache[9] = ($event) => _ctx.$emit("update:clipStrengthMax", $event))
+              "onUpdate:valueMin": _cache[11] || (_cache[11] = ($event) => _ctx.$emit("update:clipStrengthMin", $event)),
+              "onUpdate:valueMax": _cache[12] || (_cache[12] = ($event) => _ctx.$emit("update:clipStrengthMax", $event))
             }, null, 8, ["value-min", "value-max", "disabled"])
           ])
         ]),
-        createBaseVNode("div", _hoisted_14, [
-          _cache[23] || (_cache[23] = createBaseVNode("label", { class: "setting-label" }, "Roll Mode", -1)),
-          createBaseVNode("div", _hoisted_15, [
-            createBaseVNode("div", _hoisted_16, [
+        createBaseVNode("div", _hoisted_17, [
+          _cache[28] || (_cache[28] = createBaseVNode("label", { class: "setting-label" }, "Roll Mode", -1)),
+          createBaseVNode("div", _hoisted_18, [
+            createBaseVNode("div", _hoisted_19, [
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "fixed" }]),
                 disabled: __props.isRolling,
-                onClick: _cache[10] || (_cache[10] = ($event) => _ctx.$emit("generate-fixed"))
-              }, [..._cache[20] || (_cache[20] = [
-                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-420a82ee><rect x="2" y="2" width="20" height="20" rx="5" data-v-420a82ee></rect><circle cx="12" cy="12" r="3" data-v-420a82ee></circle><circle cx="6" cy="8" r="1.5" data-v-420a82ee></circle><circle cx="18" cy="16" r="1.5" data-v-420a82ee></circle></svg><span class="roll-button__text" data-v-420a82ee>Generate Fixed</span>', 2)
-              ])], 10, _hoisted_17),
+                onClick: _cache[13] || (_cache[13] = ($event) => _ctx.$emit("generate-fixed"))
+              }, [..._cache[25] || (_cache[25] = [
+                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-90189966><rect x="2" y="2" width="20" height="20" rx="5" data-v-90189966></rect><circle cx="12" cy="12" r="3" data-v-90189966></circle><circle cx="6" cy="8" r="1.5" data-v-90189966></circle><circle cx="18" cy="16" r="1.5" data-v-90189966></circle></svg><span class="roll-button__text" data-v-90189966>Generate Fixed</span>', 2)
+              ])], 10, _hoisted_20),
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "always" }]),
                 disabled: __props.isRolling,
-                onClick: _cache[11] || (_cache[11] = ($event) => _ctx.$emit("always-randomize"))
-              }, [..._cache[21] || (_cache[21] = [
-                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-420a82ee><path d="M21 12a9 9 0 1 1-6.219-8.56" data-v-420a82ee></path><path d="M21 3v5h-5" data-v-420a82ee></path><circle cx="12" cy="12" r="3" data-v-420a82ee></circle><circle cx="6" cy="8" r="1.5" data-v-420a82ee></circle><circle cx="18" cy="16" r="1.5" data-v-420a82ee></circle></svg><span class="roll-button__text" data-v-420a82ee>Always Randomize</span>', 2)
-              ])], 10, _hoisted_18),
+                onClick: _cache[14] || (_cache[14] = ($event) => _ctx.$emit("always-randomize"))
+              }, [..._cache[26] || (_cache[26] = [
+                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-90189966><path d="M21 12a9 9 0 1 1-6.219-8.56" data-v-90189966></path><path d="M21 3v5h-5" data-v-90189966></path><circle cx="12" cy="12" r="3" data-v-90189966></circle><circle cx="6" cy="8" r="1.5" data-v-90189966></circle><circle cx="18" cy="16" r="1.5" data-v-90189966></circle></svg><span class="roll-button__text" data-v-90189966>Always Randomize</span>', 2)
+              ])], 10, _hoisted_21),
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "fixed" && __props.canReuseLast && areLorasEqual(__props.currentLoras, __props.lastUsed) }]),
                 disabled: !__props.canReuseLast,
-                onMouseenter: _cache[12] || (_cache[12] = ($event) => showTooltip.value = true),
-                onMouseleave: _cache[13] || (_cache[13] = ($event) => showTooltip.value = false),
-                onClick: _cache[14] || (_cache[14] = ($event) => _ctx.$emit("reuse-last"))
-              }, [..._cache[22] || (_cache[22] = [
+                onMouseenter: _cache[15] || (_cache[15] = ($event) => showTooltip.value = true),
+                onMouseleave: _cache[16] || (_cache[16] = ($event) => showTooltip.value = false),
+                onClick: _cache[17] || (_cache[17] = ($event) => _ctx.$emit("reuse-last"))
+              }, [..._cache[27] || (_cache[27] = [
                 createBaseVNode("svg", {
                   class: "roll-button__icon",
                   viewBox: "0 0 24 24",
@@ -11849,7 +11890,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                   createBaseVNode("path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" })
                 ], -1),
                 createBaseVNode("span", { class: "roll-button__text" }, "Reuse Last", -1)
-              ])], 42, _hoisted_19)
+              ])], 42, _hoisted_22)
             ]),
             createVNode(Transition, { name: "tooltip" }, {
               default: withCtx(() => [
@@ -11866,7 +11907,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraRandomizerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-420a82ee"]]);
+const LoraRandomizerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-90189966"]]);
 function useLoraRandomizerState(widget) {
   const countMode = ref("range");
   const countFixed = ref(3);
@@ -11879,6 +11920,9 @@ function useLoraRandomizerState(widget) {
   const clipStrengthMax = ref(1);
   const rollMode = ref("fixed");
   const isRolling = ref(false);
+  const useRecommendedStrength = ref(false);
+  const recommendedStrengthScaleMin = ref(0.5);
+  const recommendedStrengthScaleMax = ref(1);
   const lastUsed = ref(null);
   const buildConfig = () => ({
     count_mode: countMode.value,
@@ -11891,7 +11935,10 @@ function useLoraRandomizerState(widget) {
     clip_strength_min: clipStrengthMin.value,
     clip_strength_max: clipStrengthMax.value,
     roll_mode: rollMode.value,
-    last_used: lastUsed.value
+    last_used: lastUsed.value,
+    use_recommended_strength: useRecommendedStrength.value,
+    recommended_strength_scale_min: recommendedStrengthScaleMin.value,
+    recommended_strength_scale_max: recommendedStrengthScaleMax.value
   });
   const restoreFromConfig = (config) => {
     countMode.value = config.count_mode || "range";
@@ -11914,6 +11961,9 @@ function useLoraRandomizerState(widget) {
       rollMode.value = "fixed";
     }
     lastUsed.value = config.last_used || null;
+    useRecommendedStrength.value = config.use_recommended_strength ?? false;
+    recommendedStrengthScaleMin.value = config.recommended_strength_scale_min ?? 0.5;
+    recommendedStrengthScaleMax.value = config.recommended_strength_scale_max ?? 1;
   };
   const rollLoras = async (poolConfig, lockedLoras) => {
     try {
@@ -11925,7 +11975,10 @@ function useLoraRandomizerState(widget) {
         use_same_clip_strength: config.use_same_clip_strength,
         clip_strength_min: config.clip_strength_min,
         clip_strength_max: config.clip_strength_max,
-        locked_loras: lockedLoras
+        locked_loras: lockedLoras,
+        use_recommended_strength: config.use_recommended_strength,
+        recommended_strength_scale_min: config.recommended_strength_scale_min,
+        recommended_strength_scale_max: config.recommended_strength_scale_max
       };
       if (config.count_mode === "fixed") {
         requestBody.count = config.count_fixed;
@@ -11966,6 +12019,7 @@ function useLoraRandomizerState(widget) {
     return null;
   };
   const isClipStrengthDisabled = computed(() => useSameClipStrength.value);
+  const isRecommendedStrengthEnabled = computed(() => useRecommendedStrength.value);
   watch([
     countMode,
     countFixed,
@@ -11976,7 +12030,10 @@ function useLoraRandomizerState(widget) {
     useSameClipStrength,
     clipStrengthMin,
     clipStrengthMax,
-    rollMode
+    rollMode,
+    useRecommendedStrength,
+    recommendedStrengthScaleMin,
+    recommendedStrengthScaleMax
   ], () => {
     const config = buildConfig();
     if (widget.updateConfig) {
@@ -11999,8 +12056,12 @@ function useLoraRandomizerState(widget) {
     rollMode,
     isRolling,
     lastUsed,
+    useRecommendedStrength,
+    recommendedStrengthScaleMin,
+    recommendedStrengthScaleMax,
     // Computed
     isClipStrengthDisabled,
+    isRecommendedStrengthEnabled,
     // Methods
     buildConfig,
     restoreFromConfig,
@@ -12146,6 +12207,9 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           "last-used": unref(state).lastUsed.value,
           "current-loras": currentLoras.value,
           "can-reuse-last": canReuseLast.value,
+          "use-recommended-strength": unref(state).useRecommendedStrength.value,
+          "recommended-strength-scale-min": unref(state).recommendedStrengthScaleMin.value,
+          "recommended-strength-scale-max": unref(state).recommendedStrengthScaleMax.value,
           "onUpdate:countMode": _cache[0] || (_cache[0] = ($event) => unref(state).countMode.value = $event),
           "onUpdate:countFixed": _cache[1] || (_cache[1] = ($event) => unref(state).countFixed.value = $event),
           "onUpdate:countMin": _cache[2] || (_cache[2] = ($event) => unref(state).countMin.value = $event),
@@ -12156,15 +12220,18 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           "onUpdate:clipStrengthMin": _cache[7] || (_cache[7] = ($event) => unref(state).clipStrengthMin.value = $event),
           "onUpdate:clipStrengthMax": _cache[8] || (_cache[8] = ($event) => unref(state).clipStrengthMax.value = $event),
           "onUpdate:rollMode": _cache[9] || (_cache[9] = ($event) => unref(state).rollMode.value = $event),
+          "onUpdate:useRecommendedStrength": _cache[10] || (_cache[10] = ($event) => unref(state).useRecommendedStrength.value = $event),
+          "onUpdate:recommendedStrengthScaleMin": _cache[11] || (_cache[11] = ($event) => unref(state).recommendedStrengthScaleMin.value = $event),
+          "onUpdate:recommendedStrengthScaleMax": _cache[12] || (_cache[12] = ($event) => unref(state).recommendedStrengthScaleMax.value = $event),
           onGenerateFixed: handleGenerateFixed,
           onAlwaysRandomize: handleAlwaysRandomize,
           onReuseLast: handleReuseLast
-        }, null, 8, ["count-mode", "count-fixed", "count-min", "count-max", "model-strength-min", "model-strength-max", "use-same-clip-strength", "clip-strength-min", "clip-strength-max", "roll-mode", "is-rolling", "is-clip-strength-disabled", "last-used", "current-loras", "can-reuse-last"])
+        }, null, 8, ["count-mode", "count-fixed", "count-min", "count-max", "model-strength-min", "model-strength-max", "use-same-clip-strength", "clip-strength-min", "clip-strength-max", "roll-mode", "is-rolling", "is-clip-strength-disabled", "last-used", "current-loras", "can-reuse-last", "use-recommended-strength", "recommended-strength-scale-min", "recommended-strength-scale-max"])
       ]);
     };
   }
 });
-const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-bb056060"]]);
+const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-69f71f06"]]);
 const app = {};
 const ROOT_GRAPH_ID = "root";
 function isMapLike(collection) {
@@ -12357,7 +12424,7 @@ function updateDownstreamLoaders(startNode, visited = /* @__PURE__ */ new Set())
 const LORA_POOL_WIDGET_MIN_WIDTH = 500;
 const LORA_POOL_WIDGET_MIN_HEIGHT = 400;
 const LORA_RANDOMIZER_WIDGET_MIN_WIDTH = 500;
-const LORA_RANDOMIZER_WIDGET_MIN_HEIGHT = 430;
+const LORA_RANDOMIZER_WIDGET_MIN_HEIGHT = 510;
 const LORA_RANDOMIZER_WIDGET_MAX_HEIGHT = LORA_RANDOMIZER_WIDGET_MIN_HEIGHT;
 function forwardMiddleMouseToCanvas(container) {
   if (!container) return;

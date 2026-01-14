@@ -225,6 +225,13 @@ class LoraRoutes(BaseModelRoutes):
             clip_strength_max = float(json_data.get("clip_strength_max", 1.0))
             locked_loras = json_data.get("locked_loras", [])
             pool_config = json_data.get("pool_config")
+            use_recommended_strength = json_data.get("use_recommended_strength", False)
+            recommended_strength_scale_min = float(
+                json_data.get("recommended_strength_scale_min", 0.5)
+            )
+            recommended_strength_scale_max = float(
+                json_data.get("recommended_strength_scale_max", 1.0)
+            )
 
             # Determine target count
             if count_min is not None and count_max is not None:
@@ -260,6 +267,9 @@ class LoraRoutes(BaseModelRoutes):
                 clip_strength_max=clip_strength_max,
                 locked_loras=locked_loras,
                 pool_config=pool_config,
+                use_recommended_strength=use_recommended_strength,
+                recommended_strength_scale_min=recommended_strength_scale_min,
+                recommended_strength_scale_max=recommended_strength_scale_max,
             )
 
             return web.json_response(

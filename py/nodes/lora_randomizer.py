@@ -152,6 +152,15 @@ class LoraRandomizerNode:
         use_same_clip_strength = randomizer_config.get("use_same_clip_strength", True)
         clip_strength_min = randomizer_config.get("clip_strength_min", 0.0)
         clip_strength_max = randomizer_config.get("clip_strength_max", 1.0)
+        use_recommended_strength = randomizer_config.get(
+            "use_recommended_strength", False
+        )
+        recommended_strength_scale_min = randomizer_config.get(
+            "recommended_strength_scale_min", 0.5
+        )
+        recommended_strength_scale_max = randomizer_config.get(
+            "recommended_strength_scale_max", 1.0
+        )
 
         # Extract locked LoRAs from input
         locked_loras = [lora for lora in input_loras if lora.get("locked", False)]
@@ -170,6 +179,9 @@ class LoraRandomizerNode:
             count_mode=count_mode,
             count_min=count_min,
             count_max=count_max,
+            use_recommended_strength=use_recommended_strength,
+            recommended_strength_scale_min=recommended_strength_scale_min,
+            recommended_strength_scale_max=recommended_strength_scale_max,
         )
 
         return result_loras

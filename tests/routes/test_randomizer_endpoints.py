@@ -21,8 +21,10 @@ class StubLoraService:
 
     def __init__(self):
         self.random_loras = []
+        self.last_get_random_loras_kwargs = {}
 
     async def get_random_loras(self, **kwargs):
+        self.last_get_random_loras_kwargs = kwargs
         return self.random_loras
 
 
@@ -201,3 +203,56 @@ async def test_get_random_loras_error(routes, monkeypatch):
     assert response.status == 500
     assert payload["success"] is False
     assert "error" in payload
+
+
+async def test_get_random_loras_with_recommended_strength_enabled(routes):
+    """Test random LoRAs with recommended strength feature enabled"""
+    request = DummyRequest(
+        json_data={
+            "count": 5,
+            "model_strength_min": 0.5,
+            "model_strength_max": 1.0,
+            "use_same_clip_strength": True,
+            "use_recommended_strength": True,
+            "recommended_strength_scale_min": 0.6,
+            "recommended_strength_scale_max": 0.8,
+            "locked_loras": [],
+        }
+    )
+
+    response = await routes.get_random_loras(request)
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["success"] is True
+
+    # Verify parameters were passed to service
+    kwargs = routes.service.last_get_random_loras_kwargs
+    assert kwargs["use_recommended_strength"] is True
+    assert kwargs["recommended_strength_scale_min"] == 0.6
+    assert kwargs["recommended_strength_scale_max"] == 0.8
+
+
+async def test_get_random_loras_with_recommended_strength_disabled(routes):
+    """Test random LoRAs with recommended strength feature disabled (default)"""
+    request = DummyRequest(
+        json_data={
+            "count": 5,
+            "model_strength_min": 0.5,
+            "model_strength_max": 1.0,
+            "use_same_clip_strength": True,
+            "locked_loras": [],
+        }
+    )
+
+    response = await routes.get_random_loras(request)
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["success"] is True
+
+    # Verify default parameters were passed to service
+    kwargs = routes.service.last_get_random_loras_kwargs
+    assert kwargs["use_recommended_strength"] is False
+    assert kwargs["recommended_strength_scale_min"] == 0.5
+    assert kwargs["recommended_strength_scale_max"] == 1.0

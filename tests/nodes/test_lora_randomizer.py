@@ -51,6 +51,9 @@ def randomizer_config_fixed():
         "clip_strength_min": 0.5,
         "clip_strength_max": 1.0,
         "roll_mode": "fixed",
+        "use_recommended_strength": False,
+        "recommended_strength_scale_min": 0.5,
+        "recommended_strength_scale_max": 1.0,
     }
 
 
@@ -68,6 +71,9 @@ def randomizer_config_always():
         "clip_strength_min": 0.5,
         "clip_strength_max": 1.0,
         "roll_mode": "always",
+        "use_recommended_strength": False,
+        "recommended_strength_scale_min": 0.5,
+        "recommended_strength_scale_max": 1.0,
     }
 
 
@@ -319,3 +325,81 @@ async def test_execution_stack_always_from_input_loras_not_ui_loras(
     assert execution_stack[0][2] == 0.8
     assert execution_stack[1][1] == 0.6
     assert execution_stack[1][2] == 0.6
+
+
+@pytest.fixture
+def randomizer_config_with_recommended_strength():
+    """Randomizer config with recommended strength enabled"""
+    return {
+        "count_mode": "fixed",
+        "count_fixed": 3,
+        "count_min": 2,
+        "count_max": 5,
+        "model_strength_min": 0.5,
+        "model_strength_max": 1.0,
+        "use_same_clip_strength": True,
+        "clip_strength_min": 0.5,
+        "clip_strength_max": 1.0,
+        "roll_mode": "always",
+        "use_recommended_strength": True,
+        "recommended_strength_scale_min": 0.6,
+        "recommended_strength_scale_max": 0.8,
+    }
+
+
+@pytest.mark.asyncio
+async def test_recommended_strength_config_passed_to_service(
+    randomizer_node,
+    sample_loras,
+    randomizer_config_with_recommended_strength,
+    mock_scanner,
+    monkeypatch,
+):
+    """Test that recommended strength config is passed to service when enabled"""
+    from py.services.lora_service import LoraService
+    from unittest.mock import AsyncMock, patch
+
+    # Mock LoraService.get_random_loras to verify parameters
+    mock_get_random_loras = AsyncMock(
+        return_value=[
+            {
+                "name": "new_lora.safetensors",
+                "strength": 0.7,
+                "clipStrength": 0.7,
+                "active": True,
+                "expanded": False,
+                "locked": False,
+            }
+        ]
+    )
+
+    with patch.object(LoraService, "__init__", return_value=None):
+        with patch.object(LoraService, "get_random_loras", mock_get_random_loras):
+            monkeypatch.setattr(
+                service_registry.ServiceRegistry,
+                "get_lora_scanner",
+                AsyncMock(return_value=mock_scanner),
+            )
+
+            mock_scanner._cache.raw_data = [
+                {
+                    "file_name": "new_lora.safetensors",
+                    "file_path": "/path/to/new_lora.safetensors",
+                    "folder": "",
+                }
+            ]
+
+            result = await randomizer_node.randomize(
+                randomizer_config_with_recommended_strength,
+                sample_loras,
+                pool_config=None,
+            )
+
+            # Verify service was called
+            assert mock_get_random_loras.called
+
+            # Verify recommended strength parameters were passed
+            call_kwargs = mock_get_random_loras.call_args[1]
+            assert call_kwargs["use_recommended_strength"] is True
+            assert call_kwargs["recommended_strength_scale_min"] == 0.6
+            assert call_kwargs["recommended_strength_scale_max"] == 0.8

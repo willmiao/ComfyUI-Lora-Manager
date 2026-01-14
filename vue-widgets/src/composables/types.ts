@@ -66,6 +66,9 @@ export interface RandomizerConfig {
   clip_strength_max: number
   roll_mode: 'fixed' | 'always'
   last_used?: LoraEntry[] | null
+  use_recommended_strength: boolean
+  recommended_strength_scale_min: number
+  recommended_strength_scale_max: number
 }
 
 export interface LoraEntry {
