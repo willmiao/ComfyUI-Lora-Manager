@@ -18,6 +18,16 @@
           class="search-input"
           placeholder="Search tags..."
         />
+        <button
+          v-if="searchQuery"
+          type="button"
+          class="clear-button"
+          @click="clearSearch"
+        >
+          <svg viewBox="0 0 16 16" fill="currentColor">
+            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+          </svg>
+        </button>
       </div>
     </template>
 
@@ -88,6 +98,11 @@ const toggleTag = (tag: string) => {
   emit('update:selected', newSelected)
 }
 
+const clearSearch = () => {
+  searchQuery.value = ''
+  searchInputRef.value?.focus()
+}
+
 watch(() => props.visible, (isVisible) => {
   if (isVisible) {
     nextTick(() => {
@@ -131,6 +146,34 @@ watch(() => props.visible, (isVisible) => {
 .search-input::placeholder {
   color: var(--fg-color, #fff);
   opacity: 0.4;
+}
+
+.clear-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.clear-button:hover {
+  opacity: 0.8;
+}
+
+.clear-button svg {
+  width: 12px;
+  height: 12px;
+  color: var(--fg-color, #fff);
 }
 
 .tags-container {

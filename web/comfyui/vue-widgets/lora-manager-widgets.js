@@ -589,10 +589,10 @@ to { transform: rotate(360deg);
   transform: scale(0.95);
 }
 
-.search-container[data-v-519e1488] {
+.search-container[data-v-e02ca44a] {
   position: relative;
 }
-.search-icon[data-v-519e1488] {
+.search-icon[data-v-e02ca44a] {
   position: absolute;
   left: 10px;
   top: 50%;
@@ -602,7 +602,7 @@ to { transform: rotate(360deg);
   color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.search-input[data-v-519e1488] {
+.search-input[data-v-e02ca44a] {
   width: 100%;
   padding: 8px 12px 8px 32px;
   background: var(--comfy-input-bg, #333);
@@ -612,19 +612,44 @@ to { transform: rotate(360deg);
   font-size: 13px;
   outline: none;
 }
-.search-input[data-v-519e1488]:focus {
+.search-input[data-v-e02ca44a]:focus {
   border-color: var(--fg-color, #fff);
 }
-.search-input[data-v-519e1488]::placeholder {
+.search-input[data-v-e02ca44a]::placeholder {
   color: var(--fg-color, #fff);
   opacity: 0.4;
 }
-.model-list[data-v-519e1488] {
+.clear-button[data-v-e02ca44a] {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+.clear-button[data-v-e02ca44a]:hover {
+  opacity: 0.8;
+}
+.clear-button svg[data-v-e02ca44a] {
+  width: 12px;
+  height: 12px;
+  color: var(--fg-color, #fff);
+}
+.model-list[data-v-e02ca44a] {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.model-item[data-v-519e1488] {
+.model-item[data-v-e02ca44a] {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -633,15 +658,15 @@ to { transform: rotate(360deg);
   cursor: pointer;
   transition: background 0.15s;
 }
-.model-item[data-v-519e1488]:hover {
+.model-item[data-v-e02ca44a]:hover {
   background: var(--comfy-input-bg, #333);
 }
-.model-checkbox[data-v-519e1488] {
+.model-checkbox[data-v-e02ca44a] {
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
-.model-checkbox-visual[data-v-519e1488] {
+.model-checkbox-visual[data-v-e02ca44a] {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -653,29 +678,29 @@ to { transform: rotate(360deg);
   flex-shrink: 0;
   transition: all 0.15s;
 }
-.model-item:hover .model-checkbox-visual[data-v-519e1488] {
+.model-item:hover .model-checkbox-visual[data-v-e02ca44a] {
   border-color: var(--fg-color, #fff);
 }
-.model-checkbox:checked + .model-checkbox-visual[data-v-519e1488] {
+.model-checkbox:checked + .model-checkbox-visual[data-v-e02ca44a] {
   background: var(--fg-color, #fff);
   border-color: var(--fg-color, #fff);
 }
-.check-icon[data-v-519e1488] {
+.check-icon[data-v-e02ca44a] {
   width: 12px;
   height: 12px;
   color: var(--comfy-menu-bg, #1a1a1a);
 }
-.model-name[data-v-519e1488] {
+.model-name[data-v-e02ca44a] {
   flex: 1;
   font-size: 13px;
   color: var(--fg-color, #fff);
 }
-.model-count[data-v-519e1488] {
+.model-count[data-v-e02ca44a] {
   font-size: 12px;
   color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.no-results[data-v-519e1488] {
+.no-results[data-v-e02ca44a] {
   padding: 20px;
   text-align: center;
   color: var(--fg-color, #fff);
@@ -683,10 +708,10 @@ to { transform: rotate(360deg);
   font-size: 13px;
 }
 
-.search-container[data-v-22ab2729] {
+.search-container[data-v-110d6f7d] {
   position: relative;
 }
-.search-icon[data-v-22ab2729] {
+.search-icon[data-v-110d6f7d] {
   position: absolute;
   left: 10px;
   top: 50%;
@@ -696,7 +721,7 @@ to { transform: rotate(360deg);
   color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.search-input[data-v-22ab2729] {
+.search-input[data-v-110d6f7d] {
   width: 100%;
   padding: 8px 12px 8px 32px;
   background: var(--comfy-input-bg, #333);
@@ -706,19 +731,44 @@ to { transform: rotate(360deg);
   font-size: 13px;
   outline: none;
 }
-.search-input[data-v-22ab2729]:focus {
+.search-input[data-v-110d6f7d]:focus {
   border-color: var(--fg-color, #fff);
 }
-.search-input[data-v-22ab2729]::placeholder {
+.search-input[data-v-110d6f7d]::placeholder {
   color: var(--fg-color, #fff);
   opacity: 0.4;
 }
-.tags-container[data-v-22ab2729] {
+.clear-button[data-v-110d6f7d] {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+.clear-button[data-v-110d6f7d]:hover {
+  opacity: 0.8;
+}
+.clear-button svg[data-v-110d6f7d] {
+  width: 12px;
+  height: 12px;
+  color: var(--fg-color, #fff);
+}
+.tags-container[data-v-110d6f7d] {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
-.tag-chip[data-v-22ab2729] {
+.tag-chip[data-v-110d6f7d] {
   padding: 6px 12px;
   background: var(--comfy-input-bg, #333);
   border: 1px solid var(--border-color, #555);
@@ -730,48 +780,48 @@ to { transform: rotate(360deg);
 }
 
 /* Default hover (gray for neutral) */
-.tag-chip[data-v-22ab2729]:hover:not(.tag-chip--selected) {
+.tag-chip[data-v-110d6f7d]:hover:not(.tag-chip--selected) {
   border-color: rgba(226, 232, 240, 0.5);
   background: rgba(255, 255, 255, 0.05);
 }
 
 /* Include variant hover - blue tint */
-.tags-modal--include .tag-chip[data-v-22ab2729]:hover:not(.tag-chip--selected) {
+.tags-modal--include .tag-chip[data-v-110d6f7d]:hover:not(.tag-chip--selected) {
   border-color: rgba(66, 153, 225, 0.4);
   background: rgba(66, 153, 225, 0.08);
 }
 
 /* Exclude variant hover - red tint */
-.tags-modal--exclude .tag-chip[data-v-22ab2729]:hover:not(.tag-chip--selected) {
+.tags-modal--exclude .tag-chip[data-v-110d6f7d]:hover:not(.tag-chip--selected) {
   border-color: rgba(239, 68, 68, 0.4);
   background: rgba(239, 68, 68, 0.08);
 }
 
 /* Selected chips hover - slightly deepen the color */
-.tags-modal--include .tag-chip--selected[data-v-22ab2729]:hover {
+.tags-modal--include .tag-chip--selected[data-v-110d6f7d]:hover {
   background: rgba(66, 153, 225, 0.25);
   border-color: rgba(66, 153, 225, 0.7);
 }
-.tags-modal--exclude .tag-chip--selected[data-v-22ab2729]:hover {
+.tags-modal--exclude .tag-chip--selected[data-v-110d6f7d]:hover {
   background: rgba(239, 68, 68, 0.25);
   border-color: rgba(239, 68, 68, 0.7);
 }
 
 /* Include variant - blue when selected */
-.tags-modal--include .tag-chip--selected[data-v-22ab2729],
-.tag-chip--selected[data-v-22ab2729] {
+.tags-modal--include .tag-chip--selected[data-v-110d6f7d],
+.tag-chip--selected[data-v-110d6f7d] {
   background: rgba(66, 153, 225, 0.2);
   border-color: rgba(66, 153, 225, 0.6);
   color: #4299e1;
 }
 
 /* Exclude variant - red when selected */
-.tags-modal--exclude .tag-chip--selected[data-v-22ab2729] {
+.tags-modal--exclude .tag-chip--selected[data-v-110d6f7d] {
   background: rgba(239, 68, 68, 0.2);
   border-color: rgba(239, 68, 68, 0.6);
   color: #ef4444;
 }
-.no-results[data-v-22ab2729] {
+.no-results[data-v-110d6f7d] {
   width: 100%;
   padding: 20px;
   text-align: center;
@@ -1003,20 +1053,20 @@ to { transform: rotate(360deg);
   padding: 4px;
 }
 
-.single-slider[data-v-d7e7f883] {
+.single-slider[data-v-83955484] {
   position: relative;
   width: 100%;
   height: 32px;
   user-select: none;
 }
-.single-slider.disabled[data-v-d7e7f883] {
+.single-slider.disabled[data-v-83955484] {
   opacity: 0.4;
   pointer-events: none;
 }
-.single-slider.is-dragging[data-v-d7e7f883] {
+.single-slider.is-dragging[data-v-83955484] {
   cursor: grabbing;
 }
-.slider-track[data-v-d7e7f883] {
+.slider-track[data-v-83955484] {
   position: absolute;
   top: 14px;
   left: 0;
@@ -1025,13 +1075,13 @@ to { transform: rotate(360deg);
   background: var(--comfy-input-bg, #333);
   border-radius: 2px;
 }
-.slider-track__bg[data-v-d7e7f883] {
+.slider-track__bg[data-v-83955484] {
   position: absolute;
   inset: 0;
   background: rgba(66, 153, 225, 0.15);
   border-radius: 2px;
 }
-.slider-track__active[data-v-d7e7f883] {
+.slider-track__active[data-v-83955484] {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -1040,24 +1090,24 @@ to { transform: rotate(360deg);
   border-radius: 2px;
   transition: width 0.05s linear;
 }
-.slider-track__default[data-v-d7e7f883] {
+.slider-track__default[data-v-83955484] {
   position: absolute;
   top: 0;
   bottom: 0;
   background: rgba(66, 153, 225, 0.1);
   border-radius: 2px;
 }
-.slider-handle[data-v-d7e7f883] {
+.slider-handle[data-v-83955484] {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
   cursor: grab;
   z-index: 2;
 }
-.slider-handle[data-v-d7e7f883]:active {
+.slider-handle[data-v-83955484]:active {
   cursor: grabbing;
 }
-.slider-handle__thumb[data-v-d7e7f883] {
+.slider-handle__thumb[data-v-83955484] {
   width: 12px;
   height: 12px;
   background: var(--fg-color, #fff);
@@ -1068,13 +1118,13 @@ to { transform: rotate(360deg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.15s ease;
 }
-.slider-handle:hover .slider-handle__thumb[data-v-d7e7f883] {
+.slider-handle:hover .slider-handle__thumb[data-v-83955484] {
   transform: scale(1.1);
 }
-.slider-handle:active .slider-handle__thumb[data-v-d7e7f883] {
+.slider-handle:active .slider-handle__thumb[data-v-83955484] {
   transform: scale(1.15);
 }
-.slider-handle__value[data-v-d7e7f883] {
+.slider-handle__value[data-v-83955484] {
   position: absolute;
   top: 0;
   left: 50%;
@@ -10470,6 +10520,11 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
     };
     const onSearch = () => {
     };
+    const clearSearch = () => {
+      var _a;
+      searchQuery.value = "";
+      (_a = searchInputRef.value) == null ? void 0 : _a.focus();
+    };
     watch(() => props.visible, (isVisible) => {
       if (isVisible) {
         nextTick(() => {
@@ -10487,7 +10542,7 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
       }, {
         search: withCtx(() => [
           createBaseVNode("div", _hoisted_1$9, [
-            _cache[2] || (_cache[2] = createBaseVNode("svg", {
+            _cache[3] || (_cache[3] = createBaseVNode("svg", {
               class: "search-icon",
               viewBox: "0 0 16 16",
               fill: "currentColor"
@@ -10504,7 +10559,20 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
               onInput: onSearch
             }, null, 544), [
               [vModelText, searchQuery.value]
-            ])
+            ]),
+            searchQuery.value ? (openBlock(), createElementBlock("button", {
+              key: 0,
+              type: "button",
+              class: "clear-button",
+              onClick: clearSearch
+            }, [..._cache[2] || (_cache[2] = [
+              createBaseVNode("svg", {
+                viewBox: "0 0 16 16",
+                fill: "currentColor"
+              }, [
+                createBaseVNode("path", { d: "M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" })
+              ], -1)
+            ])])) : createCommentVNode("", true)
           ])
         ]),
         default: withCtx(() => [
@@ -10521,7 +10589,7 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
                   class: "model-checkbox"
                 }, null, 40, _hoisted_3$5),
                 createBaseVNode("span", _hoisted_4$4, [
-                  isSelected(model.name) ? (openBlock(), createElementBlock("svg", _hoisted_5$3, [..._cache[3] || (_cache[3] = [
+                  isSelected(model.name) ? (openBlock(), createElementBlock("svg", _hoisted_5$3, [..._cache[4] || (_cache[4] = [
                     createBaseVNode("path", { d: "M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" }, null, -1)
                   ])])) : createCommentVNode("", true)
                 ]),
@@ -10537,7 +10605,7 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-519e1488"]]);
+const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-e02ca44a"]]);
 const _hoisted_1$8 = { class: "search-container" };
 const _hoisted_2$5 = { class: "tags-container" };
 const _hoisted_3$4 = ["onClick"];
@@ -10579,6 +10647,11 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
       const newSelected = isSelected(tag) ? props.selected.filter((t) => t !== tag) : [...props.selected, tag];
       emit2("update:selected", newSelected);
     };
+    const clearSearch = () => {
+      var _a;
+      searchQuery.value = "";
+      (_a = searchInputRef.value) == null ? void 0 : _a.focus();
+    };
     watch(() => props.visible, (isVisible) => {
       if (isVisible) {
         nextTick(() => {
@@ -10597,7 +10670,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
       }, {
         search: withCtx(() => [
           createBaseVNode("div", _hoisted_1$8, [
-            _cache[2] || (_cache[2] = createBaseVNode("svg", {
+            _cache[3] || (_cache[3] = createBaseVNode("svg", {
               class: "search-icon",
               viewBox: "0 0 16 16",
               fill: "currentColor"
@@ -10613,7 +10686,20 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
               placeholder: "Search tags..."
             }, null, 512), [
               [vModelText, searchQuery.value]
-            ])
+            ]),
+            searchQuery.value ? (openBlock(), createElementBlock("button", {
+              key: 0,
+              type: "button",
+              class: "clear-button",
+              onClick: clearSearch
+            }, [..._cache[2] || (_cache[2] = [
+              createBaseVNode("svg", {
+                viewBox: "0 0 16 16",
+                fill: "currentColor"
+              }, [
+                createBaseVNode("path", { d: "M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" })
+              ], -1)
+            ])])) : createCommentVNode("", true)
           ])
         ]),
         default: withCtx(() => [
@@ -10634,7 +10720,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const TagsModal = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-22ab2729"]]);
+const TagsModal = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-110d6f7d"]]);
 const _hoisted_1$7 = { class: "tree-node" };
 const _hoisted_2$4 = {
   key: 1,
@@ -11301,6 +11387,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
   setup(__props, { emit: __emit }) {
     const props = __props;
     const emit2 = __emit;
+    ref(null);
     const trackEl = ref(null);
     const dragging = ref(false);
     const percent = computed(() => {
@@ -11375,7 +11462,8 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", {
         class: normalizeClass(["single-slider", { disabled: __props.disabled, "is-dragging": dragging.value }]),
-        onWheel
+        onWheel,
+        "data-capture-wheel": "true"
       }, [
         createBaseVNode("div", {
           class: "slider-track",
@@ -11409,7 +11497,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const SingleSlider = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-d7e7f883"]]);
+const SingleSlider = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-83955484"]]);
 const _hoisted_1$2 = { class: "slider-handle__value" };
 const _hoisted_2$1 = { class: "slider-handle__value" };
 const _sfc_main$2 = /* @__PURE__ */ defineComponent({
