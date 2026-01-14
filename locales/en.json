@@ -231,9 +231,11 @@
         "civitaiApiKeyHelp": "Used for authentication when downloading models from Civitai",
         "openSettingsFileLocation": {
             "label": "Open settings folder",
-            "tooltip": "Open the folder containing settings.json",
+            "tooltip": "Open folder containing settings.json",
             "success": "Opened settings.json folder",
-            "failed": "Failed to open settings.json folder"
+            "failed": "Failed to open settings.json folder",
+            "copied": "Settings path copied to clipboard: {{path}}",
+            "clipboardFallback": "Settings path: {{path}}"
         },
         "sections": {
             "contentFiltering": "Content Filtering",
@@ -895,7 +897,9 @@
             },
             "openFileLocation": {
                 "success": "File location opened successfully",
-                "failed": "Failed to open file location"
+                "failed": "Failed to open file location",
+                "copied": "Path copied to clipboard: {{path}}",
+                "clipboardFallback": "Path: {{path}}"
             },
             "metadata": {
                 "version": "Version",

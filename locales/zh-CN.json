@@ -233,7 +233,9 @@
             "label": "打开设置文件夹",
             "tooltip": "打开包含 settings.json 的文件夹",
             "success": "已打开 settings.json 文件夹",
-            "failed": "无法打开 settings.json 文件夹"
+            "failed": "无法打开 settings.json 文件夹",
+            "copied": "设置路径已复制到剪贴板：{{path}}",
+            "clipboardFallback": "设置路径：{{path}}"
         },
         "sections": {
             "contentFiltering": "内容过滤",
@@ -895,7 +897,9 @@
             },
             "openFileLocation": {
                 "success": "文件位置已成功打开",
-                "failed": "打开文件位置失败"
+                "failed": "打开文件位置失败",
+                "copied": "路径已复制到剪贴板：{{path}}",
+                "clipboardFallback": "路径：{{path}}"
             },
             "metadata": {
                 "version": "版本",

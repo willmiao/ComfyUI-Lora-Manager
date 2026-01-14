@@ -233,7 +233,9 @@
             "label": "פתח תיקיית הגדרות",
             "tooltip": "פתח את התיקייה שמכילה את ‎settings.json",
             "success": "תיקיית settings.json נפתחה",
-            "failed": "לא ניתן לפתוח את תיקיית settings.json"
+            "failed": "לא ניתן לפתוח את תיקיית settings.json",
+            "copied": "נתיב ההגדרות הועתק ללוח העריכה: {{path}}",
+            "clipboardFallback": "נתיב ההגדרות: {{path}}"
         },
         "sections": {
             "contentFiltering": "סינון תוכן",
@@ -895,7 +897,9 @@
             },
             "openFileLocation": {
                 "success": "מיקום הקובץ נפתח בהצלחה",
-                "failed": "פתיחת מיקום הקובץ נכשלה"
+                "failed": "פתיחת מיקום הקובץ נכשלה",
+                "copied": "הנתיב הועתק ללוח העריכה: {{path}}",
+                "clipboardFallback": "נתיב: {{path}}"
             },
             "metadata": {
                 "version": "גרסה",

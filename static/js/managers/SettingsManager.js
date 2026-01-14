@@ -364,7 +364,19 @@ export class SettingsManager {
                 throw new Error(`Request failed with status ${response.status}`);
             }
 
-            showToast('settings.openSettingsFileLocation.success', {}, 'success');
+            const data = await response.json();
+
+            if (data.mode === 'clipboard' && data.path) {
+                try {
+                    await navigator.clipboard.writeText(data.path);
+                    showToast('settings.openSettingsFileLocation.copied', { path: data.path }, 'success');
+                } catch (clipboardErr) {
+                    console.warn('Clipboard API not available:', clipboardErr);
+                    showToast('settings.openSettingsFileLocation.clipboardFallback', { path: data.path }, 'info');
+                }
+            } else {
+                showToast('settings.openSettingsFileLocation.success', {}, 'success');
+            }
         } catch (error) {
             console.error('Failed to open settings file location:', error);
             showToast('settings.openSettingsFileLocation.failed', {}, 'error');

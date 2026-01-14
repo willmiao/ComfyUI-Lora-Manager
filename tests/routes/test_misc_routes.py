@@ -1,5 +1,8 @@
 import json
+import os
+import subprocess
 from types import SimpleNamespace
+from unittest.mock import patch, MagicMock
 
 import pytest
 from aiohttp import web
@@ -11,6 +14,9 @@ from py.routes.handlers.misc_handlers import (
     NodeRegistryHandler,
     ServiceRegistryAdapter,
     SettingsHandler,
+    _is_wsl,
+    _wsl_to_windows_path,
+    _is_docker,
 )
 from py.routes.misc_route_registrar import MISC_ROUTE_DEFINITIONS, MiscRouteRegistrar
 from py.routes.misc_routes import MiscRoutes
@@ -114,11 +120,15 @@ def test_misc_route_registrar_registers_all_routes():
     async def dummy_handler(_request):
         return web.Response()
 
-    handler_mapping = {definition.handler_name: dummy_handler for definition in MISC_ROUTE_DEFINITIONS}
+    handler_mapping = {
+        definition.handler_name: dummy_handler for definition in MISC_ROUTE_DEFINITIONS
+    }
     registrar.register_routes(handler_mapping)
 
     registered = {(method, path) for method, path, _ in app.router.calls}
-    expected = {(definition.method, definition.path) for definition in MISC_ROUTE_DEFINITIONS}
+    expected = {
+        (definition.method, definition.path) for definition in MISC_ROUTE_DEFINITIONS
+    }
 
     assert registered == expected
 
@@ -236,7 +246,10 @@ async def test_register_nodes_includes_capabilities():
                     "graph_id": "root",
                     "type": "CheckpointLoaderSimple",
                     "title": "Checkpoint Loader",
-                    "capabilities": {"supports_lora": False, "widget_names": ["ckpt_name", "", 42]},
+                    "capabilities": {
+                        "supports_lora": False,
+                        "widget_names": ["ckpt_name", "", 42],
+                    },
                 }
             ]
         }
@@ -249,7 +262,10 @@ async def test_register_nodes_includes_capabilities():
 
     registry = await node_registry.get_registry()
     stored_node = next(iter(registry["nodes"].values()))
-    assert stored_node["capabilities"] == {"supports_lora": False, "widget_names": ["ckpt_name"]}
+    assert stored_node["capabilities"] == {
+        "supports_lora": False,
+        "widget_names": ["ckpt_name"],
+    }
     assert stored_node["widget_names"] == ["ckpt_name"]
 
 
@@ -286,7 +302,12 @@ async def test_update_node_widget_sends_payload():
     assert send_calls == [
         (
             "lm_widget_update",
-            {"id": 12, "widget_name": "ckpt_name", "value": "models/checkpoints/model.ckpt", "graph_id": "root"},
+            {
+                "id": 12,
+                "widget_name": "ckpt_name",
+                "value": "models/checkpoints/model.ckpt",
+                "graph_id": "root",
+            },
         )
     ]
 
@@ -428,7 +449,9 @@ async def test_misc_routes_bind_produces_expected_handlers():
 
     controller = MiscRoutes(
         settings_service=DummySettings(),
-        usage_stats_factory=lambda: SimpleNamespace(process_execution=noop_async, get_stats=noop_async),
+        usage_stats_factory=lambda: SimpleNamespace(
+            process_execution=noop_async, get_stats=noop_async
+        ),
         prompt_server=FakePromptServer,
         service_registry_adapter=service_registry_adapter,
         metadata_provider_factory=fake_metadata_provider_factory,
@@ -545,7 +568,9 @@ async def test_get_civitai_user_models_marks_library_versions():
         metadata_provider_factory=provider_factory,
     )
 
-    response = await handler.get_civitai_user_models(FakeRequest(query={"username": "pixel"}))
+    response = await handler.get_civitai_user_models(
+        FakeRequest(query={"username": "pixel"})
+    )
     payload = json.loads(response.text)
 
     assert payload["success"] is True
@@ -657,12 +682,19 @@ async def test_get_civitai_user_models_rewrites_civitai_previews():
         metadata_provider_factory=provider_factory,
     )
 
-    response = await handler.get_civitai_user_models(FakeRequest(query={"username": "pixel"}))
+    response = await handler.get_civitai_user_models(
+        FakeRequest(query={"username": "pixel"})
+    )
     payload = json.loads(response.text)
 
     assert payload["success"] is True
-    previews_by_version = {item["versionId"]: item["thumbnailUrl"] for item in payload["versions"]}
-    assert previews_by_version[100] == "https://image.civitai.com/container/example/width=450,optimized=true/sample.jpeg"
+    previews_by_version = {
+        item["versionId"]: item["thumbnailUrl"] for item in payload["versions"]
+    }
+    assert (
+        previews_by_version[100]
+        == "https://image.civitai.com/container/example/width=450,optimized=true/sample.jpeg"
+    )
     assert (
         previews_by_version[101]
         == "https://image.civitai.com/container/example/transcode=true,width=450,optimized=true/sample.mp4"
@@ -706,7 +738,9 @@ def test_ensure_handler_mapping_caches_result():
 
     controller = MiscRoutes(
         settings_service=DummySettings(),
-        usage_stats_factory=lambda: SimpleNamespace(process_execution=noop_async, get_stats=noop_async),
+        usage_stats_factory=lambda: SimpleNamespace(
+            process_execution=noop_async, get_stats=noop_async
+        ),
         prompt_server=FakePromptServer,
         service_registry_adapter=ServiceRegistryAdapter(
             get_lora_scanner=fake_scanner_factory,
@@ -723,15 +757,17 @@ def test_ensure_handler_mapping_caches_result():
     first_mapping = controller._ensure_handler_mapping()
     second_mapping = controller._ensure_handler_mapping()
 
-    assert first_mapping is second_mapping, "Expected cached handler mapping to be reused"
+    assert first_mapping is second_mapping, (
+        "Expected cached handler mapping to be reused"
+    )
     assert len(call_records) == 1, "Handler set factory should only be invoked once"
 
 
 @pytest.mark.asyncio
 async def test_check_model_exists_returns_local_versions():
     versions = [
-        {'versionId': 11, 'name': 'v1', 'fileName': 'model-one'},
-        {'versionId': 12, 'name': 'v2', 'fileName': 'model-two'},
+        {"versionId": 11, "name": "v1", "fileName": "model-one"},
+        {"versionId": 12, "name": "v2", "fileName": "model-two"},
     ]
 
     lora_scanner = RecordingVersionScanner(versions)
@@ -756,12 +792,12 @@ async def test_check_model_exists_returns_local_versions():
         metadata_provider_factory=fake_metadata_provider_factory,
     )
 
-    response = await handler.check_model_exists(FakeRequest(query={'modelId': '5'}))
+    response = await handler.check_model_exists(FakeRequest(query={"modelId": "5"}))
     payload = json.loads(response.text)
 
-    assert payload['success'] is True
-    assert payload['modelType'] == 'lora'
-    assert payload['versions'] == versions
+    assert payload["success"] is True
+    assert payload["modelType"] == "lora"
+    assert payload["versions"] == versions
     assert lora_scanner.version_calls == [5]
 
 
@@ -814,3 +850,119 @@ def test_create_handler_set_uses_provided_dependencies():
     assert node_registry_handler._node_registry is fake_node_registry
     assert node_registry_handler._prompt_server is CustomPromptServer
     assert node_registry_handler._standalone_mode is True
+
+
+def test_is_wsl_returns_true_in_wsl_environment():
+    version_content = "Linux version 6.6.87.2-microsoft-standard-WSL2"
+    with patch("py.routes.handlers.misc_handlers.open") as mock_open:
+        mock_file = MagicMock()
+        mock_file.read.return_value = version_content
+        mock_open.return_value.__enter__ = MagicMock(return_value=mock_file)
+        mock_open.return_value.__exit__ = MagicMock(return_value=False)
+        result = _is_wsl()
+        assert result is True
+
+
+def test_is_wsl_returns_false_in_non_wsl_environment():
+    version_content = "Linux version 6.6.0-25-generic #26-Ubuntu SMP PREEMPT_DYNAMIC"
+    with patch("py.routes.handlers.misc_handlers.open") as mock_open:
+        mock_file = MagicMock()
+        mock_file.read.return_value = version_content
+        mock_open.return_value.__enter__ = MagicMock(return_value=mock_file)
+        mock_open.return_value.__exit__ = MagicMock(return_value=False)
+        result = _is_wsl()
+        assert result is False
+
+
+def test_is_wsl_returns_false_on_read_error():
+    with patch("py.routes.handlers.misc_handlers.open", side_effect=OSError()):
+        result = _is_wsl()
+        assert result is False
+
+
+def test_is_wsl_returns_false_on_read_error():
+    with patch("builtins.open", side_effect=OSError()):
+        result = _is_wsl()
+        assert result is False
+
+
+def test_wsl_to_windows_path_converts_successfully():
+    with patch("subprocess.run") as mock_run:
+        mock_result = MagicMock()
+        mock_result.stdout = "C:\\Users\\test\\file.txt\n"
+        mock_run.return_value = mock_result
+
+        result = _wsl_to_windows_path("/mnt/c/test")
+        assert result == "C:\\Users\\test\\file.txt"
+        mock_run.assert_called_once()
+
+
+def test_wsl_to_windows_path_returns_none_on_error():
+    with patch("subprocess.run", side_effect=FileNotFoundError()):
+        result = _wsl_to_windows_path("/mnt/c/test")
+        assert result is None
+
+
+def test_wsl_to_windows_path_returns_none_on_subprocess_error():
+    with patch(
+        "subprocess.run", side_effect=subprocess.CalledProcessError(1, "wslpath")
+    ):
+        result = _wsl_to_windows_path("/mnt/c/test")
+        assert result is None
+
+
+def test_is_docker_returns_true_when_dockerenv_exists():
+    with patch("os.path.exists", return_value=True):
+        result = _is_docker()
+        assert result is True
+
+
+def test_is_docker_checks_cgroup_when_dockerenv_missing():
+    cgroup_content = "1:name=systemd:/docker/abc123\n"
+    with patch("os.path.exists", return_value=False):
+        with patch("py.routes.handlers.misc_handlers.open") as mock_open:
+            mock_file = MagicMock()
+            mock_file.read.return_value = cgroup_content
+            mock_open.return_value.__enter__ = MagicMock(return_value=mock_file)
+            mock_open.return_value.__exit__ = MagicMock(return_value=False)
+            result = _is_docker()
+            assert result is True
+
+
+def test_is_docker_detects_kubernetes():
+    cgroup_content = "12:pids:/kubepods/besteffort/pod123/abc123\n"
+    with patch("os.path.exists", return_value=False):
+        with patch("py.routes.handlers.misc_handlers.open") as mock_open:
+            mock_file = MagicMock()
+            mock_file.read.return_value = cgroup_content
+            mock_open.return_value.__enter__ = MagicMock(return_value=mock_file)
+            mock_open.return_value.__exit__ = MagicMock(return_value=False)
+            result = _is_docker()
+            assert result is True
+
+
+def test_is_docker_returns_false_when_no_docker_detected():
+    cgroup_content = "1:name=systemd:/user.slice/user-1000.slice\n"
+    with patch("os.path.exists", return_value=False):
+        with patch("py.routes.handlers.misc_handlers.open") as mock_open:
+            mock_file = MagicMock()
+            mock_file.read.return_value = cgroup_content
+            mock_open.return_value.__enter__ = MagicMock(return_value=mock_file)
+            mock_open.return_value.__exit__ = MagicMock(return_value=False)
+            result = _is_docker()
+            assert result is False
+
+
+def test_is_docker_returns_false_on_cgroup_read_error():
+    with patch("os.path.exists", return_value=False):
+        with patch("py.routes.handlers.misc_handlers.open", side_effect=OSError()):
+            result = _is_docker()
+            assert result is False
+
+
+def test_wsl_to_windows_path_returns_none_on_subprocess_error(tmp_path):
+    with patch(
+        "subprocess.run", side_effect=subprocess.CalledProcessError(1, "wslpath")
+    ):
+        result = _wsl_to_windows_path("/mnt/c/test")
+        assert result is None

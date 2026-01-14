@@ -1001,7 +1001,20 @@ async function openFileLocation(filePath) {
             body: JSON.stringify({ 'file_path': filePath })
         });
         if (!resp.ok) throw new Error('Failed to open file location');
-        showToast('modals.model.openFileLocation.success', {}, 'success');
+
+        const data = await resp.json();
+
+        if (data.mode === 'clipboard' && data.path) {
+            try {
+                await navigator.clipboard.writeText(data.path);
+                showToast('modals.model.openFileLocation.copied', { path: data.path }, 'success');
+            } catch (clipboardErr) {
+                console.warn('Clipboard API not available:', clipboardErr);
+                showToast('modals.model.openFileLocation.clipboardFallback', { path: data.path }, 'info');
+            }
+        } else {
+            showToast('modals.model.openFileLocation.success', {}, 'success');
+        }
     } catch (err) {
         showToast('modals.model.openFileLocation.failed', {}, 'error');
     }

@@ -233,7 +233,9 @@
             "label": "設定フォルダーを開く",
             "tooltip": "settings.json を含むフォルダーを開きます",
             "success": "settings.json フォルダーを開きました",
-            "failed": "settings.json フォルダーを開けませんでした"
+            "failed": "settings.json フォルダーを開けませんでした",
+            "copied": "設定パスをクリップボードにコピーしました: {{path}}",
+            "clipboardFallback": "設定パス: {{path}}"
         },
         "sections": {
             "contentFiltering": "コンテンツフィルタリング",
@@ -895,7 +897,9 @@
             },
             "openFileLocation": {
                 "success": "ファイルの場所を正常に開きました",
-                "failed": "ファイルの場所を開くのに失敗しました"
+                "failed": "ファイルの場所を開くのに失敗しました",
+                "copied": "パスをクリップボードにコピーしました: {{path}}",
+                "clipboardFallback": "パス: {{path}}"
             },
             "metadata": {
                 "version": "バージョン",

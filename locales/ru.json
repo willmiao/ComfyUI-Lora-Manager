@@ -233,7 +233,9 @@
             "label": "Открыть папку настроек",
             "tooltip": "Открыть папку, содержащую settings.json",
             "success": "Папка settings.json открыта",
-            "failed": "Не удалось открыть папку settings.json"
+            "failed": "Не удалось открыть папку settings.json",
+            "copied": "Путь настроек скопирован в буфер обмена: {{path}}",
+            "clipboardFallback": "Путь настроек: {{path}}"
         },
         "sections": {
             "contentFiltering": "Фильтрация контента",
@@ -895,7 +897,9 @@
             },
             "openFileLocation": {
                 "success": "Расположение файла успешно открыто",
-                "failed": "Не удалось открыть расположение файла"
+                "failed": "Не удалось открыть расположение файла",
+                "copied": "Путь скопирован в буфер обмена: {{path}}",
+                "clipboardFallback": "Путь: {{path}}"
             },
             "metadata": {
                 "version": "Версия",

@@ -233,7 +233,9 @@
             "label": "Ouvrir le dossier des paramètres",
             "tooltip": "Ouvrir le dossier contenant settings.json",
             "success": "Dossier settings.json ouvert",
-            "failed": "Impossible d'ouvrir le dossier settings.json"
+            "failed": "Impossible d'ouvrir le dossier settings.json",
+            "copied": "Chemin des paramètres copié dans le presse-papiers: {{path}}",
+            "clipboardFallback": "Chemin des paramètres: {{path}}"
         },
         "sections": {
             "contentFiltering": "Filtrage du contenu",
@@ -895,7 +897,9 @@
             },
             "openFileLocation": {
                 "success": "Emplacement du fichier ouvert avec succès",
-                "failed": "Échec de l'ouverture de l'emplacement du fichier"
+                "failed": "Échec de l'ouverture de l'emplacement du fichier",
+                "copied": "Chemin copié dans le presse-papiers: {{path}}",
+                "clipboardFallback": "Chemin: {{path}}"
             },
             "metadata": {
                 "version": "Version",

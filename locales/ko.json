@@ -233,7 +233,9 @@
             "label": "설정 폴더 열기",
             "tooltip": "settings.json이 있는 폴더를 엽니다",
             "success": "settings.json 폴더를 열었습니다",
-            "failed": "settings.json 폴더를 열지 못했습니다"
+            "failed": "settings.json 폴더를 열지 못했습니다",
+            "copied": "설정 경로가 클립보드에 복사되었습니다: {{path}}",
+            "clipboardFallback": "설정 경로: {{path}}"
         },
         "sections": {
             "contentFiltering": "콘텐츠 필터링",
@@ -895,7 +897,9 @@
             },
             "openFileLocation": {
                 "success": "파일 위치가 성공적으로 열렸습니다",
-                "failed": "파일 위치 열기에 실패했습니다"
+                "failed": "파일 위치 열기에 실패했습니다",
+                "copied": "경로가 클립보드에 복사되었습니다: {{path}}",
+                "clipboardFallback": "경로: {{path}}"
             },
             "metadata": {
                 "version": "버전",

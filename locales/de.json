@@ -233,7 +233,9 @@
             "label": "Einstellungsordner öffnen",
             "tooltip": "Den Ordner mit der settings.json öffnen",
             "success": "Einstellungsordner geöffnet",
-            "failed": "Einstellungsordner konnte nicht geöffnet werden"
+            "failed": "Einstellungsordner konnte nicht geöffnet werden",
+            "copied": "Einstellungspfad in die Zwischenablage kopiert: {{path}}",
+            "clipboardFallback": "Einstellungspfad: {{path}}"
         },
         "sections": {
             "contentFiltering": "Inhaltsfilterung",
@@ -895,7 +897,9 @@
             },
             "openFileLocation": {
                 "success": "Dateispeicherort erfolgreich geöffnet",
-                "failed": "Fehler beim Öffnen des Dateispeicherorts"
+                "failed": "Fehler beim Öffnen des Dateispeicherorts",
+                "copied": "Pfad in die Zwischenablage kopiert: {{path}}",
+                "clipboardFallback": "Pfad: {{path}}"
             },
             "metadata": {
                 "version": "Version",

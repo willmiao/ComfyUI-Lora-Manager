@@ -233,7 +233,9 @@
             "label": "Abrir carpeta de ajustes",
             "tooltip": "Abrir la carpeta que contiene settings.json",
             "success": "Carpeta de settings.json abierta",
-            "failed": "No se pudo abrir la carpeta de settings.json"
+            "failed": "No se pudo abrir la carpeta de settings.json",
+            "copied": "Ruta de configuración copiada al portapapeles: {{path}}",
+            "clipboardFallback": "Ruta de configuración: {{path}}"
         },
         "sections": {
             "contentFiltering": "Filtrado de contenido",
@@ -895,7 +897,9 @@
             },
             "openFileLocation": {
                 "success": "Ubicación del archivo abierta exitosamente",
-                "failed": "Error al abrir la ubicación del archivo"
+                "failed": "Error al abrir la ubicación del archivo",
+                "copied": "Ruta copiada al portapapeles: {{path}}",
+                "clipboardFallback": "Ruta: {{path}}"
             },
             "metadata": {
                 "version": "Versión",

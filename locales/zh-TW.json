@@ -233,7 +233,9 @@
             "label": "開啟設定資料夾",
             "tooltip": "開啟包含 settings.json 的資料夾",
             "success": "已開啟 settings.json 資料夾",
-            "failed": "無法開啟 settings.json 資料夾"
+            "failed": "無法開啟 settings.json 資料夾",
+            "copied": "設定路徑已複製到剪貼簿：{{path}}",
+            "clipboardFallback": "設定路徑：{{path}}"
         },
         "sections": {
             "contentFiltering": "內容過濾",
@@ -895,7 +897,9 @@
             },
             "openFileLocation": {
                 "success": "檔案位置已成功開啟",
-                "failed": "開啟檔案位置失敗"
+                "failed": "開啟檔案位置失敗",
+                "copied": "路徑已複製到剪貼簿：{{path}}",
+                "clipboardFallback": "路徑：{{path}}"
             },
             "metadata": {
                 "version": "版本",

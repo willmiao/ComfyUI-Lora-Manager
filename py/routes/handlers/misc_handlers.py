@@ -43,12 +43,55 @@ from ...utils.usage_stats import UsageStats
 logger = logging.getLogger(__name__)
 
 
+def _is_wsl() -> bool:
+    """Check if running in WSL environment."""
+    try:
+        with open("/proc/version", "r") as f:
+            version_info = f.read().lower()
+            return "microsoft" in version_info or "wsl" in version_info
+    except (OSError, IOError):
+        return False
+
+
+def _is_docker() -> bool:
+    """Check if running in Docker container."""
+    dockerenv_exists = os.path.exists("/.dockerenv")
+    if dockerenv_exists:
+        return True
+
+    try:
+        with open("/proc/1/cgroup", "r") as f:
+            cgroup_content = f.read()
+            return (
+                "docker" in cgroup_content.lower()
+                or "kubepods" in cgroup_content.lower()
+            )
+    except (OSError, IOError):
+        return False
+
+
+def _wsl_to_windows_path(wsl_path: str) -> str | None:
+    """Convert WSL path to Windows path using wslpath."""
+    try:
+        result = subprocess.run(
+            ["wslpath", "-w", wsl_path],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return None
+
+
 class PromptServerProtocol(Protocol):
     """Subset of PromptServer used by the handlers."""
 
     instance: "PromptServerProtocol"
 
-    def send_sync(self, event: str, payload: dict) -> None:  # pragma: no cover - protocol
+    def send_sync(
+        self, event: str, payload: dict
+    ) -> None:  # pragma: no cover - protocol
         ...
 
 
@@ -63,7 +106,9 @@ class UsageStatsFactory(Protocol):
 
 
 class MetadataProviderProtocol(Protocol):
-    async def get_model_versions(self, model_id: int) -> dict | None:  # pragma: no cover - protocol
+    async def get_model_versions(
+        self, model_id: int
+    ) -> dict | None:  # pragma: no cover - protocol
         ...
 
 
@@ -109,7 +154,11 @@ class NodeRegistry:
                 raw_widget_names: list | None = node.get("widget_names")
                 if not isinstance(raw_widget_names, list):
                     capability_widget_names = capabilities.get("widget_names")
-                    raw_widget_names = capability_widget_names if isinstance(capability_widget_names, list) else None
+                    raw_widget_names = (
+                        capability_widget_names
+                        if isinstance(capability_widget_names, list)
+                        else None
+                    )
 
                 widget_names: list[str] = []
                 if isinstance(raw_widget_names, list):
@@ -205,14 +254,25 @@ class SettingsHandler:
         "auto_organize_exclusions",
     )
 
-    _PROXY_KEYS = {"proxy_enabled", "proxy_host", "proxy_port", "proxy_username", "proxy_password", "proxy_type"}
+    _PROXY_KEYS = {
+        "proxy_enabled",
+        "proxy_host",
+        "proxy_port",
+        "proxy_username",
+        "proxy_password",
+        "proxy_type",
+    }
 
     def __init__(
         self,
         *,
         settings_service=None,
-        metadata_provider_updater: Callable[[], Awaitable[None]] = update_metadata_providers,
-        downloader_factory: Callable[[], Awaitable[DownloaderProtocol]] = get_downloader,
+        metadata_provider_updater: Callable[
+            [], Awaitable[None]
+        ] = update_metadata_providers,
+        downloader_factory: Callable[
+            [], Awaitable[DownloaderProtocol]
+        ] = get_downloader,
     ) -> None:
         self._settings = settings_service or get_settings_manager()
         self._metadata_provider_updater = metadata_provider_updater
@@ -248,11 +308,13 @@ class SettingsHandler:
                 response_data["settings_file"] = settings_file
             messages_getter = getattr(self._settings, "get_startup_messages", None)
             messages = list(messages_getter()) if callable(messages_getter) else []
-            return web.json_response({
-                "success": True,
-                "settings": response_data,
-                "messages": messages,
-            })
+            return web.json_response(
+                {
+                    "success": True,
+                    "settings": response_data,
+                    "messages": messages,
+                }
+            )
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Error getting settings: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
@@ -271,8 +333,12 @@ class SettingsHandler:
         try:
             data = await request.json()
         except Exception as exc:  # pragma: no cover - defensive logging
-            logger.error("Error parsing activate library request: %s", exc, exc_info=True)
-            return web.json_response({"success": False, "error": "Invalid JSON payload"}, status=400)
+            logger.error(
+                "Error parsing activate library request: %s", exc, exc_info=True
+            )
+            return web.json_response(
+                {"success": False, "error": "Invalid JSON payload"}, status=400
+            )
 
         library_name = data.get("library") or data.get("library_name")
         if not isinstance(library_name, str) or not library_name.strip():
@@ -297,7 +363,9 @@ class SettingsHandler:
             logger.debug("Attempted to activate unknown library '%s'", library_name)
             return web.json_response({"success": False, "error": str(exc)}, status=404)
         except Exception as exc:  # pragma: no cover - defensive logging
-            logger.error("Error activating library '%s': %s", library_name, exc, exc_info=True)
+            logger.error(
+                "Error activating library '%s': %s", library_name, exc, exc_info=True
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def update_settings(self, request: web.Request) -> web.Response:
@@ -312,9 +380,14 @@ class SettingsHandler:
                 if key == "example_images_path" and value:
                     validation_error = self._validate_example_images_path(value)
                     if validation_error:
-                        return web.json_response({"success": False, "error": validation_error})
+                        return web.json_response(
+                            {"success": False, "error": validation_error}
+                        )
 
-                if value == "__DELETE__" and key in ("proxy_username", "proxy_password"):
+                if value == "__DELETE__" and key in (
+                    "proxy_username",
+                    "proxy_password",
+                ):
                     self._settings.delete(key)
                 else:
                     self._settings.set(key, value)
@@ -356,7 +429,9 @@ class UsageStatsHandler:
             data = await request.json()
             prompt_id = data.get("prompt_id")
             if not prompt_id:
-                return web.json_response({"success": False, "error": "Missing prompt_id"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Missing prompt_id"}, status=400
+                )
             usage_stats = self._usage_stats_factory()
             await usage_stats.process_execution(prompt_id)
             return web.json_response({"success": True})
@@ -387,18 +462,24 @@ class LoraCodeHandler:
             mode = data.get("mode", "append")
 
             if not lora_code:
-                return web.json_response({"success": False, "error": "Missing lora_code parameter"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Missing lora_code parameter"},
+                    status=400,
+                )
 
             results = []
             if node_ids is None:
                 try:
                     self._prompt_server.instance.send_sync(
-                        "lora_code_update", {"id": -1, "lora_code": lora_code, "mode": mode}
+                        "lora_code_update",
+                        {"id": -1, "lora_code": lora_code, "mode": mode},
                     )
                     results.append({"node_id": "broadcast", "success": True})
                 except Exception as exc:  # pragma: no cover - defensive logging
                     logger.error("Error broadcasting lora code: %s", exc)
-                    results.append({"node_id": "broadcast", "success": False, "error": str(exc)})
+                    results.append(
+                        {"node_id": "broadcast", "success": False, "error": str(exc)}
+                    )
             else:
                 for entry in node_ids:
                     node_identifier = entry
@@ -471,11 +552,19 @@ class TrainedWordsHandler:
         try:
             file_path = request.query.get("file_path")
             if not file_path:
-                return web.json_response({"success": False, "error": "Missing file_path parameter"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Missing file_path parameter"},
+                    status=400,
+                )
             if not os.path.exists(file_path):
-                return web.json_response({"success": False, "error": "File not found"}, status=404)
+                return web.json_response(
+                    {"success": False, "error": "File not found"}, status=404
+                )
             if not file_path.endswith(".safetensors"):
-                return web.json_response({"success": False, "error": "File must be a safetensors file"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "File must be a safetensors file"},
+                    status=400,
+                )
 
             trained_words, class_tokens = await extract_trained_words(file_path)
             return web.json_response(
@@ -495,10 +584,15 @@ class ModelExampleFilesHandler:
         try:
             model_path = request.query.get("model_path")
             if not model_path:
-                return web.json_response({"success": False, "error": "Missing model_path parameter"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Missing model_path parameter"},
+                    status=400,
+                )
             model_dir = os.path.dirname(model_path)
             if not os.path.exists(model_dir):
-                return web.json_response({"success": False, "error": "Model directory not found"}, status=404)
+                return web.json_response(
+                    {"success": False, "error": "Model directory not found"}, status=404
+                )
 
             base_name = os.path.splitext(os.path.basename(model_path))[0]
             files = []
@@ -510,7 +604,10 @@ class ModelExampleFilesHandler:
                 if not os.path.isfile(file_full_path):
                     continue
                 file_ext = os.path.splitext(file)[1].lower()
-                if file_ext not in SUPPORTED_MEDIA_EXTENSIONS["images"] and file_ext not in SUPPORTED_MEDIA_EXTENSIONS["videos"]:
+                if (
+                    file_ext not in SUPPORTED_MEDIA_EXTENSIONS["images"]
+                    and file_ext not in SUPPORTED_MEDIA_EXTENSIONS["videos"]
+                ):
                     continue
                 try:
                     index = int(file[len(pattern) :].split(".")[0])
@@ -545,7 +642,13 @@ class ServiceRegistryAdapter:
 
 
 class ModelLibraryHandler:
-    def __init__(self, service_registry: ServiceRegistryAdapter, metadata_provider_factory: Callable[[], Awaitable[MetadataProviderProtocol | None]]) -> None:
+    def __init__(
+        self,
+        service_registry: ServiceRegistryAdapter,
+        metadata_provider_factory: Callable[
+            [], Awaitable[MetadataProviderProtocol | None]
+        ],
+    ) -> None:
         self._service_registry = service_registry
         self._metadata_provider_factory = metadata_provider_factory
 
@@ -554,11 +657,17 @@ class ModelLibraryHandler:
             model_id_str = request.query.get("modelId")
             model_version_id_str = request.query.get("modelVersionId")
             if not model_id_str:
-                return web.json_response({"success": False, "error": "Missing required parameter: modelId"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Missing required parameter: modelId"},
+                    status=400,
+                )
             try:
                 model_id = int(model_id_str)
             except ValueError:
-                return web.json_response({"success": False, "error": "Parameter modelId must be an integer"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Parameter modelId must be an integer"},
+                    status=400,
+                )
 
             lora_scanner = await self._service_registry.get_lora_scanner()
             checkpoint_scanner = await self._service_registry.get_checkpoint_scanner()
@@ -568,29 +677,55 @@ class ModelLibraryHandler:
                 try:
                     model_version_id = int(model_version_id_str)
                 except ValueError:
-                    return web.json_response({"success": False, "error": "Parameter modelVersionId must be an integer"}, status=400)
+                    return web.json_response(
+                        {
+                            "success": False,
+                            "error": "Parameter modelVersionId must be an integer",
+                        },
+                        status=400,
+                    )
 
                 exists = False
                 model_type = None
                 if await lora_scanner.check_model_version_exists(model_version_id):
                     exists = True
                     model_type = "lora"
-                elif checkpoint_scanner and await checkpoint_scanner.check_model_version_exists(model_version_id):
+                elif (
+                    checkpoint_scanner
+                    and await checkpoint_scanner.check_model_version_exists(
+                        model_version_id
+                    )
+                ):
                     exists = True
                     model_type = "checkpoint"
-                elif embedding_scanner and await embedding_scanner.check_model_version_exists(model_version_id):
+                elif (
+                    embedding_scanner
+                    and await embedding_scanner.check_model_version_exists(
+                        model_version_id
+                    )
+                ):
                     exists = True
                     model_type = "embedding"
 
-                return web.json_response({"success": True, "exists": exists, "modelType": model_type if exists else None})
+                return web.json_response(
+                    {
+                        "success": True,
+                        "exists": exists,
+                        "modelType": model_type if exists else None,
+                    }
+                )
 
             lora_versions = await lora_scanner.get_model_versions_by_id(model_id)
             checkpoint_versions = []
             embedding_versions = []
             if not lora_versions and checkpoint_scanner:
-                checkpoint_versions = await checkpoint_scanner.get_model_versions_by_id(model_id)
+                checkpoint_versions = await checkpoint_scanner.get_model_versions_by_id(
+                    model_id
+                )
             if not lora_versions and not checkpoint_versions and embedding_scanner:
-                embedding_versions = await embedding_scanner.get_model_versions_by_id(model_id)
+                embedding_versions = await embedding_scanner.get_model_versions_by_id(
+                    model_id
+                )
 
             model_type = None
             versions = []
@@ -604,7 +739,9 @@ class ModelLibraryHandler:
                 model_type = "embedding"
                 versions = embedding_versions
 
-            return web.json_response({"success": True, "modelType": model_type, "versions": versions})
+            return web.json_response(
+                {"success": True, "modelType": model_type, "versions": versions}
+            )
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Failed to check model existence: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
@@ -613,22 +750,35 @@ class ModelLibraryHandler:
         try:
             model_id_str = request.query.get("modelId")
             if not model_id_str:
-                return web.json_response({"success": False, "error": "Missing required parameter: modelId"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Missing required parameter: modelId"},
+                    status=400,
+                )
             try:
                 model_id = int(model_id_str)
             except ValueError:
-                return web.json_response({"success": False, "error": "Parameter modelId must be an integer"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Parameter modelId must be an integer"},
+                    status=400,
+                )
 
             metadata_provider = await self._metadata_provider_factory()
             if not metadata_provider:
-                return web.json_response({"success": False, "error": "Metadata provider not available"}, status=503)
+                return web.json_response(
+                    {"success": False, "error": "Metadata provider not available"},
+                    status=503,
+                )
 
             try:
                 response = await metadata_provider.get_model_versions(model_id)
             except ResourceNotFoundError:
-                return web.json_response({"success": False, "error": "Model not found"}, status=404)
+                return web.json_response(
+                    {"success": False, "error": "Model not found"}, status=404
+                )
             if not response or not response.get("modelVersions"):
-                return web.json_response({"success": False, "error": "Model not found"}, status=404)
+                return web.json_response(
+                    {"success": False, "error": "Model not found"}, status=404
+                )
 
             versions = response.get("modelVersions", [])
             model_name = response.get("name", "")
@@ -646,10 +796,22 @@ class ModelLibraryHandler:
                 scanner = await self._service_registry.get_embedding_scanner()
                 normalized_type = "embedding"
             else:
-                return web.json_response({"success": False, "error": f'Model type "{model_type}" is not supported'}, status=400)
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": f'Model type "{model_type}" is not supported',
+                    },
+                    status=400,
+                )
 
             if not scanner:
-                return web.json_response({"success": False, "error": f'Scanner for type "{normalized_type}" is not available'}, status=503)
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": f'Scanner for type "{normalized_type}" is not available',
+                    },
+                    status=503,
+                )
 
             local_versions = await scanner.get_model_versions_by_id(model_id)
             local_version_ids = {version["versionId"] for version in local_versions}
@@ -661,7 +823,9 @@ class ModelLibraryHandler:
                     {
                         "id": version_id,
                         "name": version.get("name", ""),
-                        "thumbnailUrl": version.get("images")[0]["url"] if version.get("images") else None,
+                        "thumbnailUrl": version.get("images")[0]["url"]
+                        if version.get("images")
+                        else None,
                         "inLibrary": version_id in local_version_ids,
                     }
                 )
@@ -683,19 +847,34 @@ class ModelLibraryHandler:
         try:
             username = request.query.get("username")
             if not username:
-                return web.json_response({"success": False, "error": "Missing required parameter: username"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Missing required parameter: username"},
+                    status=400,
+                )
 
             metadata_provider = await self._metadata_provider_factory()
             if not metadata_provider:
-                return web.json_response({"success": False, "error": "Metadata provider not available"}, status=503)
+                return web.json_response(
+                    {"success": False, "error": "Metadata provider not available"},
+                    status=503,
+                )
 
             try:
                 models = await metadata_provider.get_user_models(username)
             except NotImplementedError:
-                return web.json_response({"success": False, "error": "Metadata provider does not support user model queries"}, status=501)
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": "Metadata provider does not support user model queries",
+                    },
+                    status=501,
+                )
 
             if models is None:
-                return web.json_response({"success": False, "error": "Failed to fetch user models"}, status=502)
+                return web.json_response(
+                    {"success": False, "error": "Failed to fetch user models"},
+                    status=502,
+                )
 
             if not isinstance(models, list):
                 models = []
@@ -704,7 +883,9 @@ class ModelLibraryHandler:
             checkpoint_scanner = await self._service_registry.get_checkpoint_scanner()
             embedding_scanner = await self._service_registry.get_embedding_scanner()
 
-            normalized_allowed_types = {model_type.lower() for model_type in CIVITAI_USER_MODEL_TYPES}
+            normalized_allowed_types = {
+                model_type.lower() for model_type in CIVITAI_USER_MODEL_TYPES
+            }
             lora_type_aliases = {model_type.lower() for model_type in VALID_LORA_TYPES}
 
             type_scanner_map: Dict[str, object | None] = {
@@ -724,7 +905,13 @@ class ModelLibraryHandler:
 
                 scanner = type_scanner_map.get(model_type)
                 if scanner is None:
-                    return web.json_response({"success": False, "error": f'Scanner for type "{model_type}" is not available'}, status=503)
+                    return web.json_response(
+                        {
+                            "success": False,
+                            "error": f'Scanner for type "{model_type}" is not available',
+                        },
+                        status=503,
+                    )
 
                 tags_value = model.get("tags")
                 tags = tags_value if isinstance(tags_value, list) else []
@@ -759,7 +946,9 @@ class ModelLibraryHandler:
                             rewritten_url, _ = rewrite_preview_url(raw_url, media_type)
                             thumbnail_url = rewritten_url
 
-                    in_library = await scanner.check_model_version_exists(version_id_int)
+                    in_library = await scanner.check_model_version_exists(
+                        version_id_int
+                    )
 
                     versions.append(
                         {
@@ -775,7 +964,9 @@ class ModelLibraryHandler:
                         }
                     )
 
-            return web.json_response({"success": True, "username": username, "versions": versions})
+            return web.json_response(
+                {"success": True, "username": username, "versions": versions}
+            )
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Failed to get Civitai user models: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
@@ -785,9 +976,13 @@ class MetadataArchiveHandler:
     def __init__(
         self,
         *,
-        metadata_archive_manager_factory: Callable[[], Awaitable[MetadataArchiveManagerProtocol]] = get_metadata_archive_manager,
+        metadata_archive_manager_factory: Callable[
+            [], Awaitable[MetadataArchiveManagerProtocol]
+        ] = get_metadata_archive_manager,
         settings_service=None,
-        metadata_provider_updater: Callable[[], Awaitable[None]] = update_metadata_providers,
+        metadata_provider_updater: Callable[
+            [], Awaitable[None]
+        ] = update_metadata_providers,
     ) -> None:
         self._metadata_archive_manager_factory = metadata_archive_manager_factory
         self._settings = settings_service or get_settings_manager()
@@ -799,18 +994,37 @@ class MetadataArchiveHandler:
             download_id = request.query.get("download_id")
 
             def progress_callback(stage: str, message: str) -> None:
-                data = {"stage": stage, "message": message, "type": "metadata_archive_download"}
+                data = {
+                    "stage": stage,
+                    "message": message,
+                    "type": "metadata_archive_download",
+                }
                 if download_id:
-                    asyncio.create_task(ws_manager.broadcast_download_progress(download_id, data))
+                    asyncio.create_task(
+                        ws_manager.broadcast_download_progress(download_id, data)
+                    )
                 else:
                     asyncio.create_task(ws_manager.broadcast(data))
 
-            success = await archive_manager.download_and_extract_database(progress_callback)
+            success = await archive_manager.download_and_extract_database(
+                progress_callback
+            )
             if success:
                 self._settings.set("enable_metadata_archive_db", True)
                 await self._metadata_provider_updater()
-                return web.json_response({"success": True, "message": "Metadata archive database downloaded and extracted successfully"})
-            return web.json_response({"success": False, "error": "Failed to download and extract metadata archive database"}, status=500)
+                return web.json_response(
+                    {
+                        "success": True,
+                        "message": "Metadata archive database downloaded and extracted successfully",
+                    }
+                )
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "Failed to download and extract metadata archive database",
+                },
+                status=500,
+            )
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Error downloading metadata archive: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
@@ -822,8 +1036,19 @@ class MetadataArchiveHandler:
             if success:
                 self._settings.set("enable_metadata_archive_db", False)
                 await self._metadata_provider_updater()
-                return web.json_response({"success": True, "message": "Metadata archive database removed successfully"})
-            return web.json_response({"success": False, "error": "Failed to remove metadata archive database"}, status=500)
+                return web.json_response(
+                    {
+                        "success": True,
+                        "message": "Metadata archive database removed successfully",
+                    }
+                )
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "Failed to remove metadata archive database",
+                },
+                status=500,
+            )
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Error removing metadata archive: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
@@ -844,11 +1069,15 @@ class MetadataArchiveHandler:
                     "isAvailable": is_available,
                     "isEnabled": is_enabled,
                     "databaseSize": db_size,
-                    "databasePath": archive_manager.get_database_path() if is_available else None,
+                    "databasePath": archive_manager.get_database_path()
+                    if is_available
+                    else None,
                 }
             )
         except Exception as exc:  # pragma: no cover - defensive logging
-            logger.error("Error getting metadata archive status: %s", exc, exc_info=True)
+            logger.error(
+                "Error getting metadata archive status: %s", exc, exc_info=True
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
@@ -861,21 +1090,55 @@ class FileSystemHandler:
             data = await request.json()
             file_path = data.get("file_path")
             if not file_path:
-                return web.json_response({"success": False, "error": "Missing file_path parameter"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Missing file_path parameter"},
+                    status=400,
+                )
             file_path = os.path.abspath(file_path)
             if not os.path.isfile(file_path):
-                return web.json_response({"success": False, "error": "File does not exist"}, status=404)
+                return web.json_response(
+                    {"success": False, "error": "File does not exist"}, status=404
+                )
 
             if os.name == "nt":
                 subprocess.Popen(["explorer", "/select,", file_path])
             elif os.name == "posix":
-                if sys.platform == "darwin":
+                if _is_docker():
+                    return web.json_response(
+                        {
+                            "success": True,
+                            "message": "Running in Docker: Path available for copying",
+                            "path": file_path,
+                            "mode": "clipboard",
+                        }
+                    )
+                elif _is_wsl():
+                    windows_path = _wsl_to_windows_path(file_path)
+                    if windows_path:
+                        subprocess.Popen(["explorer.exe", "/select,", windows_path])
+                    else:
+                        logger.error(
+                            "Failed to convert WSL path to Windows path: %s", file_path
+                        )
+                        return web.json_response(
+                            {
+                                "success": False,
+                                "error": "Failed to open file location: path conversion error",
+                            },
+                            status=500,
+                        )
+                elif sys.platform == "darwin":
                     subprocess.Popen(["open", "-R", file_path])
                 else:
                     folder = os.path.dirname(file_path)
                     subprocess.Popen(["xdg-open", folder])
 
-            return web.json_response({"success": True, "message": f"Opened folder and selected file: {file_path}"})
+            return web.json_response(
+                {
+                    "success": True,
+                    "message": f"Opened folder and selected file: {file_path}",
+                }
+            )
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Failed to open file location: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
@@ -884,22 +1147,54 @@ class FileSystemHandler:
         try:
             settings_file = getattr(self._settings, "settings_file", None)
             if not settings_file:
-                return web.json_response({"success": False, "error": "Settings file not found"}, status=404)
+                return web.json_response(
+                    {"success": False, "error": "Settings file not found"}, status=404
+                )
 
             settings_file = os.path.abspath(settings_file)
             if not os.path.isfile(settings_file):
-                return web.json_response({"success": False, "error": "Settings file does not exist"}, status=404)
+                return web.json_response(
+                    {"success": False, "error": "Settings file does not exist"},
+                    status=404,
+                )
 
             if os.name == "nt":
                 subprocess.Popen(["explorer", "/select,", settings_file])
             elif os.name == "posix":
-                if sys.platform == "darwin":
+                if _is_docker():
+                    return web.json_response(
+                        {
+                            "success": True,
+                            "message": "Running in Docker: Path available for copying",
+                            "path": settings_file,
+                            "mode": "clipboard",
+                        }
+                    )
+                elif _is_wsl():
+                    windows_path = _wsl_to_windows_path(settings_file)
+                    if windows_path:
+                        subprocess.Popen(["explorer.exe", "/select,", windows_path])
+                    else:
+                        logger.error(
+                            "Failed to convert WSL path to Windows path: %s",
+                            settings_file,
+                        )
+                        return web.json_response(
+                            {
+                                "success": False,
+                                "error": "Failed to open settings location: path conversion error",
+                            },
+                            status=500,
+                        )
+                elif sys.platform == "darwin":
                     subprocess.Popen(["open", "-R", settings_file])
                 else:
                     folder = os.path.dirname(settings_file)
                     subprocess.Popen(["xdg-open", folder])
 
-            return web.json_response({"success": True, "message": f"Opened settings folder: {settings_file}"})
+            return web.json_response(
+                {"success": True, "message": f"Opened settings folder: {settings_file}"}
+            )
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Failed to open settings location: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
@@ -922,21 +1217,44 @@ class NodeRegistryHandler:
             data = await request.json()
             nodes = data.get("nodes", [])
             if not isinstance(nodes, list):
-                return web.json_response({"success": False, "error": "nodes must be a list"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "nodes must be a list"}, status=400
+                )
             for index, node in enumerate(nodes):
                 if not isinstance(node, dict):
-                    return web.json_response({"success": False, "error": f"Node {index} must be an object"}, status=400)
+                    return web.json_response(
+                        {"success": False, "error": f"Node {index} must be an object"},
+                        status=400,
+                    )
                 node_id = node.get("node_id")
                 if node_id is None:
-                    return web.json_response({"success": False, "error": f"Node {index} missing node_id parameter"}, status=400)
+                    return web.json_response(
+                        {
+                            "success": False,
+                            "error": f"Node {index} missing node_id parameter",
+                        },
+                        status=400,
+                    )
                 graph_id = node.get("graph_id")
                 if graph_id is None:
-                    return web.json_response({"success": False, "error": f"Node {index} missing graph_id parameter"}, status=400)
+                    return web.json_response(
+                        {
+                            "success": False,
+                            "error": f"Node {index} missing graph_id parameter",
+                        },
+                        status=400,
+                    )
                 graph_name = node.get("graph_name")
                 try:
                     node["node_id"] = int(node_id)
                 except (TypeError, ValueError):
-                    return web.json_response({"success": False, "error": f"Node {index} node_id must be an integer"}, status=400)
+                    return web.json_response(
+                        {
+                            "success": False,
+                            "error": f"Node {index} node_id must be an integer",
+                        },
+                        status=400,
+                    )
                 node["graph_id"] = str(graph_id)
                 if graph_name is None:
                     node["graph_name"] = None
@@ -946,7 +1264,12 @@ class NodeRegistryHandler:
                     node["graph_name"] = str(graph_name)
 
             await self._node_registry.register_nodes(nodes)
-            return web.json_response({"success": True, "message": f"{len(nodes)} nodes registered successfully"})
+            return web.json_response(
+                {
+                    "success": True,
+                    "message": f"{len(nodes)} nodes registered successfully",
+                }
+            )
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Failed to register nodes: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
@@ -994,7 +1317,10 @@ class NodeRegistryHandler:
             return web.json_response({"success": True, "data": registry_info})
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Failed to get registry: %s", exc, exc_info=True)
-            return web.json_response({"success": False, "error": "Internal Error", "message": str(exc)}, status=500)
+            return web.json_response(
+                {"success": False, "error": "Internal Error", "message": str(exc)},
+                status=500,
+            )
 
     async def update_node_widget(self, request: web.Request) -> web.Response:
         try:
@@ -1004,10 +1330,15 @@ class NodeRegistryHandler:
             node_ids = data.get("node_ids")
 
             if not isinstance(widget_name, str) or not widget_name:
-                return web.json_response({"success": False, "error": "Missing widget_name parameter"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Missing widget_name parameter"},
+                    status=400,
+                )
 
             if not isinstance(value, str) or not value:
-                return web.json_response({"success": False, "error": "Missing value parameter"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Missing value parameter"}, status=400
+                )
 
             if not isinstance(node_ids, list) or not node_ids:
                 return web.json_response(
@@ -1107,7 +1438,9 @@ class MiscHandlerSet:
         self.metadata_archive = metadata_archive
         self.filesystem = filesystem
 
-    def to_route_mapping(self) -> Mapping[str, Callable[[web.Request], Awaitable[web.StreamResponse]]]:
+    def to_route_mapping(
+        self,
+    ) -> Mapping[str, Callable[[web.Request], Awaitable[web.StreamResponse]]]:
         return {
             "health_check": self.health.health_check,
             "get_settings": self.settings.get_settings,
