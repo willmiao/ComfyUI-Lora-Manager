@@ -1053,20 +1053,22 @@ to { transform: rotate(360deg);
   padding: 4px;
 }
 
-.single-slider[data-v-83955484] {
+.single-slider[data-v-60a7bbd7] {
   position: relative;
   width: 100%;
   height: 32px;
   user-select: none;
+  cursor: default !important;
+  touch-action: none;
 }
-.single-slider.disabled[data-v-83955484] {
+.single-slider.disabled[data-v-60a7bbd7] {
   opacity: 0.4;
   pointer-events: none;
 }
-.single-slider.is-dragging[data-v-83955484] {
-  cursor: grabbing;
+.single-slider.is-dragging[data-v-60a7bbd7] {
+  cursor: ew-resize !important;
 }
-.slider-track[data-v-83955484] {
+.slider-track[data-v-60a7bbd7] {
   position: absolute;
   top: 14px;
   left: 0;
@@ -1074,14 +1076,15 @@ to { transform: rotate(360deg);
   height: 4px;
   background: var(--comfy-input-bg, #333);
   border-radius: 2px;
+  cursor: default !important;
 }
-.slider-track__bg[data-v-83955484] {
+.slider-track__bg[data-v-60a7bbd7] {
   position: absolute;
   inset: 0;
   background: rgba(66, 153, 225, 0.15);
   border-radius: 2px;
 }
-.slider-track__active[data-v-83955484] {
+.slider-track__active[data-v-60a7bbd7] {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -1090,24 +1093,22 @@ to { transform: rotate(360deg);
   border-radius: 2px;
   transition: width 0.05s linear;
 }
-.slider-track__default[data-v-83955484] {
+.slider-track__default[data-v-60a7bbd7] {
   position: absolute;
   top: 0;
   bottom: 0;
   background: rgba(66, 153, 225, 0.1);
   border-radius: 2px;
 }
-.slider-handle[data-v-83955484] {
+.slider-handle[data-v-60a7bbd7] {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
-  cursor: grab;
+  cursor: ew-resize !important;
   z-index: 2;
+  touch-action: none;
 }
-.slider-handle[data-v-83955484]:active {
-  cursor: grabbing;
-}
-.slider-handle__thumb[data-v-83955484] {
+.slider-handle__thumb[data-v-60a7bbd7] {
   width: 12px;
   height: 12px;
   background: var(--fg-color, #fff);
@@ -1118,13 +1119,13 @@ to { transform: rotate(360deg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.15s ease;
 }
-.slider-handle:hover .slider-handle__thumb[data-v-83955484] {
+.slider-handle:hover .slider-handle__thumb[data-v-60a7bbd7] {
   transform: scale(1.1);
 }
-.slider-handle:active .slider-handle__thumb[data-v-83955484] {
+.slider-handle:active .slider-handle__thumb[data-v-60a7bbd7] {
   transform: scale(1.15);
 }
-.slider-handle__value[data-v-83955484] {
+.slider-handle__value[data-v-60a7bbd7] {
   position: absolute;
   top: 0;
   left: 50%;
@@ -1137,20 +1138,22 @@ to { transform: rotate(360deg);
   pointer-events: none;
 }
 
-.dual-range-slider[data-v-bebf6676] {
+.dual-range-slider[data-v-77b34316] {
   position: relative;
   width: 100%;
   height: 32px;
   user-select: none;
+  cursor: default !important;
+  touch-action: none;
 }
-.dual-range-slider.disabled[data-v-bebf6676] {
+.dual-range-slider.disabled[data-v-77b34316] {
   opacity: 0.4;
   pointer-events: none;
 }
-.dual-range-slider.is-dragging[data-v-bebf6676] {
-  cursor: grabbing;
+.dual-range-slider.is-dragging[data-v-77b34316] {
+  cursor: ew-resize !important;
 }
-.slider-track[data-v-bebf6676] {
+.slider-track[data-v-77b34316] {
   position: absolute;
   top: 14px;
   left: 0;
@@ -1158,14 +1161,15 @@ to { transform: rotate(360deg);
   height: 4px;
   background: var(--comfy-input-bg, #333);
   border-radius: 2px;
+  cursor: default !important;
 }
-.slider-track__bg[data-v-bebf6676] {
+.slider-track__bg[data-v-77b34316] {
   position: absolute;
   inset: 0;
   background: rgba(66, 153, 225, 0.15);
   border-radius: 2px;
 }
-.slider-track__active[data-v-bebf6676] {
+.slider-track__active[data-v-77b34316] {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -1173,24 +1177,24 @@ to { transform: rotate(360deg);
   border-radius: 2px;
   transition: left 0.05s linear, width 0.05s linear;
 }
-.slider-track__default[data-v-bebf6676] {
+.slider-track__default[data-v-77b34316] {
   position: absolute;
   top: 0;
   bottom: 0;
   background: rgba(66, 153, 225, 0.1);
   border-radius: 2px;
 }
-.slider-track__segment[data-v-bebf6676] {
+.slider-track__segment[data-v-77b34316] {
   position: absolute;
   top: 0;
   bottom: 0;
   background: rgba(66, 153, 225, 0.08);
   border-radius: 2px;
 }
-.slider-track__segment--expanded[data-v-bebf6676] {
+.slider-track__segment--expanded[data-v-77b34316] {
   background: rgba(66, 153, 225, 0.15);
 }
-.slider-track__segment[data-v-bebf6676]:not(:last-child)::after {
+.slider-track__segment[data-v-77b34316]:not(:last-child)::after {
   content: '';
   position: absolute;
   top: -1px;
@@ -1199,17 +1203,15 @@ to { transform: rotate(360deg);
   width: 1px;
   background: rgba(255, 255, 255, 0.1);
 }
-.slider-handle[data-v-bebf6676] {
+.slider-handle[data-v-77b34316] {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
-  cursor: grab;
+  cursor: ew-resize !important;
   z-index: 2;
+  touch-action: none;
 }
-.slider-handle[data-v-bebf6676]:active {
-  cursor: grabbing;
-}
-.slider-handle__thumb[data-v-bebf6676] {
+.slider-handle__thumb[data-v-77b34316] {
   width: 12px;
   height: 12px;
   background: var(--fg-color, #fff);
@@ -1220,13 +1222,13 @@ to { transform: rotate(360deg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.15s ease;
 }
-.slider-handle:hover .slider-handle__thumb[data-v-bebf6676] {
+.slider-handle:hover .slider-handle__thumb[data-v-77b34316] {
   transform: scale(1.1);
 }
-.slider-handle:active .slider-handle__thumb[data-v-bebf6676] {
+.slider-handle:active .slider-handle__thumb[data-v-77b34316] {
   transform: scale(1.15);
 }
-.slider-handle__value[data-v-bebf6676] {
+.slider-handle__value[data-v-77b34316] {
   position: absolute;
   top: 0;
   left: 50%;
@@ -1238,10 +1240,10 @@ to { transform: rotate(360deg);
   white-space: nowrap;
   pointer-events: none;
 }
-.slider-handle--min .slider-handle__value[data-v-bebf6676] {
+.slider-handle--min .slider-handle__value[data-v-77b34316] {
   text-align: center;
 }
-.slider-handle--max .slider-handle__value[data-v-bebf6676] {
+.slider-handle--max .slider-handle__value[data-v-77b34316] {
   text-align: center;
 }
 
@@ -11387,9 +11389,9 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
   setup(__props, { emit: __emit }) {
     const props = __props;
     const emit2 = __emit;
-    ref(null);
     const trackEl = ref(null);
     const dragging = ref(false);
+    const activePointerId = ref(null);
     const percent = computed(() => {
       const range = props.max - props.min;
       return (props.value - props.min) / range * 100;
@@ -11420,19 +11422,22 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     const startDrag = (event) => {
       if (props.disabled) return;
       event.preventDefault();
+      event.stopPropagation();
       dragging.value = true;
-      document.addEventListener("mousemove", onDrag);
-      document.addEventListener("mouseup", stopDrag);
-      document.addEventListener("touchmove", onDrag, { passive: false });
-      document.addEventListener("touchend", stopDrag);
-      onDrag(event);
+      activePointerId.value = event.pointerId;
+      const target = event.currentTarget;
+      target.setPointerCapture(event.pointerId);
+      updateValue(event);
     };
     const onDrag = (event) => {
+      if (!dragging.value) return;
+      event.stopPropagation();
+      updateValue(event);
+    };
+    const updateValue = (event) => {
       if (!trackEl.value || !dragging.value) return;
-      event.preventDefault();
-      const clientX = "touches" in event ? event.touches[0].clientX : event.clientX;
       const rect = trackEl.value.getBoundingClientRect();
-      const percent2 = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const percent2 = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
       const rawValue = props.min + percent2 * (props.max - props.min);
       const value = snapToStep(rawValue);
       emit2("update:value", value);
@@ -11449,28 +11454,30 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
       const newValue = snapToStep(props.value + delta * props.step);
       emit2("update:value", newValue);
     };
-    const stopDrag = () => {
+    const stopDrag = (event) => {
+      if (!dragging.value) return;
+      if (event) {
+        event.stopPropagation();
+        const target = event.currentTarget;
+        if (activePointerId.value !== null) {
+          target.releasePointerCapture(activePointerId.value);
+        }
+      }
       dragging.value = false;
-      document.removeEventListener("mousemove", onDrag);
-      document.removeEventListener("mouseup", stopDrag);
-      document.removeEventListener("touchmove", onDrag);
-      document.removeEventListener("touchend", stopDrag);
+      activePointerId.value = null;
     };
-    onUnmounted(() => {
-      stopDrag();
-    });
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", {
         class: normalizeClass(["single-slider", { disabled: __props.disabled, "is-dragging": dragging.value }]),
-        onWheel,
-        "data-capture-wheel": "true"
+        "data-capture-wheel": "true",
+        onWheel
       }, [
         createBaseVNode("div", {
           class: "slider-track",
           ref_key: "trackEl",
           ref: trackEl
         }, [
-          _cache[2] || (_cache[2] = createBaseVNode("div", { class: "slider-track__bg" }, null, -1)),
+          _cache[0] || (_cache[0] = createBaseVNode("div", { class: "slider-track__bg" }, null, -1)),
           createBaseVNode("div", {
             class: "slider-track__active",
             style: normalizeStyle({ width: percent.value + "%" })
@@ -11487,17 +11494,19 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
         createBaseVNode("div", {
           class: "slider-handle",
           style: normalizeStyle({ left: percent.value + "%" }),
-          onMousedown: _cache[0] || (_cache[0] = ($event) => startDrag($event)),
-          onTouchstart: _cache[1] || (_cache[1] = ($event) => startDrag($event))
+          onPointerdown: withModifiers(startDrag, ["stop"]),
+          onPointermove: withModifiers(onDrag, ["stop"]),
+          onPointerup: withModifiers(stopDrag, ["stop"]),
+          onPointercancel: withModifiers(stopDrag, ["stop"])
         }, [
-          _cache[3] || (_cache[3] = createBaseVNode("div", { class: "slider-handle__thumb" }, null, -1)),
+          _cache[1] || (_cache[1] = createBaseVNode("div", { class: "slider-handle__thumb" }, null, -1)),
           createBaseVNode("div", _hoisted_1$3, toDisplayString(formatValue(__props.value)), 1)
         ], 36)
       ], 34);
     };
   }
 });
-const SingleSlider = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-83955484"]]);
+const SingleSlider = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-60a7bbd7"]]);
 const _hoisted_1$2 = { class: "slider-handle__value" };
 const _hoisted_2$1 = { class: "slider-handle__value" };
 const _sfc_main$2 = /* @__PURE__ */ defineComponent({
@@ -11519,6 +11528,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     const emit2 = __emit;
     const trackEl = ref(null);
     const dragging = ref(null);
+    const activePointerId = ref(null);
     const effectiveSegments = computed(() => {
       if (props.scaleMode === "segmented" && props.segments.length > 0) {
         return props.segments;
@@ -11618,18 +11628,22 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     const startDrag = (handle, event) => {
       if (props.disabled) return;
       event.preventDefault();
+      event.stopPropagation();
       dragging.value = handle;
-      document.addEventListener("mousemove", onDrag);
-      document.addEventListener("mouseup", stopDrag);
-      document.addEventListener("touchmove", onDrag, { passive: false });
-      document.addEventListener("touchend", stopDrag);
+      activePointerId.value = event.pointerId;
+      const target = event.currentTarget;
+      target.setPointerCapture(event.pointerId);
+      updateValue(event);
     };
     const onDrag = (event) => {
+      if (!dragging.value) return;
+      event.stopPropagation();
+      updateValue(event);
+    };
+    const updateValue = (event) => {
       if (!trackEl.value || !dragging.value) return;
-      event.preventDefault();
-      const clientX = "touches" in event ? event.touches[0].clientX : event.clientX;
       const rect = trackEl.value.getBoundingClientRect();
-      const percent = Math.max(0, Math.min(100, (clientX - rect.left) / rect.width * 100));
+      const percent = Math.max(0, Math.min(100, (event.clientX - rect.left) / rect.width * 100));
       const rawValue = percentToValue(percent);
       const multiplier = getSegmentStepMultiplier(rawValue);
       const value = snapToStep(rawValue, multiplier);
@@ -11700,19 +11714,22 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
         }
       }
     };
-    const stopDrag = () => {
+    const stopDrag = (event) => {
+      if (!dragging.value) return;
+      if (event) {
+        event.stopPropagation();
+        const target = event.currentTarget;
+        if (activePointerId.value !== null) {
+          target.releasePointerCapture(activePointerId.value);
+        }
+      }
       dragging.value = null;
-      document.removeEventListener("mousemove", onDrag);
-      document.removeEventListener("mouseup", stopDrag);
-      document.removeEventListener("touchmove", onDrag);
-      document.removeEventListener("touchend", stopDrag);
+      activePointerId.value = null;
     };
-    onUnmounted(() => {
-      stopDrag();
-    });
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", {
         class: normalizeClass(["dual-range-slider", { disabled: __props.disabled, "is-dragging": dragging.value !== null, "has-segments": __props.scaleMode === "segmented" && effectiveSegments.value.length > 0 }]),
+        "data-capture-wheel": "true",
         onWheel
       }, [
         createBaseVNode("div", {
@@ -11720,7 +11737,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           ref_key: "trackEl",
           ref: trackEl
         }, [
-          _cache[4] || (_cache[4] = createBaseVNode("div", { class: "slider-track__bg" }, null, -1)),
+          _cache[2] || (_cache[2] = createBaseVNode("div", { class: "slider-track__bg" }, null, -1)),
           __props.scaleMode === "segmented" && effectiveSegments.value.length > 0 ? (openBlock(true), createElementBlock(Fragment, { key: 0 }, renderList(effectiveSegments.value, (seg, index) => {
             return openBlock(), createElementBlock("div", {
               key: "segment-" + index,
@@ -11747,26 +11764,30 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
         createBaseVNode("div", {
           class: "slider-handle slider-handle--min",
           style: normalizeStyle({ left: minPercent.value + "%" }),
-          onMousedown: _cache[0] || (_cache[0] = ($event) => startDrag("min", $event)),
-          onTouchstart: _cache[1] || (_cache[1] = ($event) => startDrag("min", $event))
+          onPointerdown: _cache[0] || (_cache[0] = withModifiers(($event) => startDrag("min", $event), ["stop"])),
+          onPointermove: withModifiers(onDrag, ["stop"]),
+          onPointerup: withModifiers(stopDrag, ["stop"]),
+          onPointercancel: withModifiers(stopDrag, ["stop"])
         }, [
-          _cache[5] || (_cache[5] = createBaseVNode("div", { class: "slider-handle__thumb" }, null, -1)),
+          _cache[3] || (_cache[3] = createBaseVNode("div", { class: "slider-handle__thumb" }, null, -1)),
           createBaseVNode("div", _hoisted_1$2, toDisplayString(formatValue(__props.valueMin)), 1)
         ], 36),
         createBaseVNode("div", {
           class: "slider-handle slider-handle--max",
           style: normalizeStyle({ left: maxPercent.value + "%" }),
-          onMousedown: _cache[2] || (_cache[2] = ($event) => startDrag("max", $event)),
-          onTouchstart: _cache[3] || (_cache[3] = ($event) => startDrag("max", $event))
+          onPointerdown: _cache[1] || (_cache[1] = withModifiers(($event) => startDrag("max", $event), ["stop"])),
+          onPointermove: withModifiers(onDrag, ["stop"]),
+          onPointerup: withModifiers(stopDrag, ["stop"]),
+          onPointercancel: withModifiers(stopDrag, ["stop"])
         }, [
-          _cache[6] || (_cache[6] = createBaseVNode("div", { class: "slider-handle__thumb" }, null, -1)),
+          _cache[4] || (_cache[4] = createBaseVNode("div", { class: "slider-handle__thumb" }, null, -1)),
           createBaseVNode("div", _hoisted_2$1, toDisplayString(formatValue(__props.valueMax)), 1)
         ], 36)
       ], 34);
     };
   }
 });
-const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-bebf6676"]]);
+const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-77b34316"]]);
 const _hoisted_1$1 = { class: "randomizer-settings" };
 const _hoisted_2 = { class: "setting-section" };
 const _hoisted_3 = { class: "count-mode-tabs" };
