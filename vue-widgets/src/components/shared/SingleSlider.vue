@@ -1,5 +1,5 @@
 <template>
-  <div class="single-slider" :class="{ disabled }" @wheel="onWheel">
+  <div class="single-slider" :class="{ disabled, 'is-dragging': dragging }" @wheel="onWheel">
     <div class="slider-track" ref="trackEl">
       <div class="slider-track__bg"></div>
       <div
@@ -151,6 +151,10 @@ onUnmounted(() => {
 .single-slider.disabled {
   opacity: 0.4;
   pointer-events: none;
+}
+
+.single-slider.is-dragging {
+  cursor: grabbing;
 }
 
 .slider-track {

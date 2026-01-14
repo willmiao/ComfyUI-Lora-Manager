@@ -1,5 +1,5 @@
 <template>
-  <div class="dual-range-slider" :class="{ disabled, 'has-segments': scaleMode === 'segmented' && effectiveSegments.length > 0 }" @wheel="onWheel">
+  <div class="dual-range-slider" :class="{ disabled, 'is-dragging': dragging !== null, 'has-segments': scaleMode === 'segmented' && effectiveSegments.length > 0 }" @wheel="onWheel">
     <div class="slider-track" ref="trackEl">
       <!-- Background track -->
       <div class="slider-track__bg"></div>
@@ -329,6 +329,10 @@ onUnmounted(() => {
 .dual-range-slider.disabled {
   opacity: 0.4;
   pointer-events: none;
+}
+
+.dual-range-slider.is-dragging {
+  cursor: grabbing;
 }
 
 .slider-track {

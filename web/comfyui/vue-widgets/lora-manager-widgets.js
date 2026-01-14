@@ -1003,17 +1003,20 @@ to { transform: rotate(360deg);
   padding: 4px;
 }
 
-.single-slider[data-v-4c53509e] {
+.single-slider[data-v-d7e7f883] {
   position: relative;
   width: 100%;
   height: 32px;
   user-select: none;
 }
-.single-slider.disabled[data-v-4c53509e] {
+.single-slider.disabled[data-v-d7e7f883] {
   opacity: 0.4;
   pointer-events: none;
 }
-.slider-track[data-v-4c53509e] {
+.single-slider.is-dragging[data-v-d7e7f883] {
+  cursor: grabbing;
+}
+.slider-track[data-v-d7e7f883] {
   position: absolute;
   top: 14px;
   left: 0;
@@ -1022,13 +1025,13 @@ to { transform: rotate(360deg);
   background: var(--comfy-input-bg, #333);
   border-radius: 2px;
 }
-.slider-track__bg[data-v-4c53509e] {
+.slider-track__bg[data-v-d7e7f883] {
   position: absolute;
   inset: 0;
   background: rgba(66, 153, 225, 0.15);
   border-radius: 2px;
 }
-.slider-track__active[data-v-4c53509e] {
+.slider-track__active[data-v-d7e7f883] {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -1037,24 +1040,24 @@ to { transform: rotate(360deg);
   border-radius: 2px;
   transition: width 0.05s linear;
 }
-.slider-track__default[data-v-4c53509e] {
+.slider-track__default[data-v-d7e7f883] {
   position: absolute;
   top: 0;
   bottom: 0;
   background: rgba(66, 153, 225, 0.1);
   border-radius: 2px;
 }
-.slider-handle[data-v-4c53509e] {
+.slider-handle[data-v-d7e7f883] {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
   cursor: grab;
   z-index: 2;
 }
-.slider-handle[data-v-4c53509e]:active {
+.slider-handle[data-v-d7e7f883]:active {
   cursor: grabbing;
 }
-.slider-handle__thumb[data-v-4c53509e] {
+.slider-handle__thumb[data-v-d7e7f883] {
   width: 12px;
   height: 12px;
   background: var(--fg-color, #fff);
@@ -1065,13 +1068,13 @@ to { transform: rotate(360deg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.15s ease;
 }
-.slider-handle:hover .slider-handle__thumb[data-v-4c53509e] {
+.slider-handle:hover .slider-handle__thumb[data-v-d7e7f883] {
   transform: scale(1.1);
 }
-.slider-handle:active .slider-handle__thumb[data-v-4c53509e] {
+.slider-handle:active .slider-handle__thumb[data-v-d7e7f883] {
   transform: scale(1.15);
 }
-.slider-handle__value[data-v-4c53509e] {
+.slider-handle__value[data-v-d7e7f883] {
   position: absolute;
   top: 0;
   left: 50%;
@@ -1084,17 +1087,20 @@ to { transform: rotate(360deg);
   pointer-events: none;
 }
 
-.dual-range-slider[data-v-58c2ac1d] {
+.dual-range-slider[data-v-bebf6676] {
   position: relative;
   width: 100%;
   height: 32px;
   user-select: none;
 }
-.dual-range-slider.disabled[data-v-58c2ac1d] {
+.dual-range-slider.disabled[data-v-bebf6676] {
   opacity: 0.4;
   pointer-events: none;
 }
-.slider-track[data-v-58c2ac1d] {
+.dual-range-slider.is-dragging[data-v-bebf6676] {
+  cursor: grabbing;
+}
+.slider-track[data-v-bebf6676] {
   position: absolute;
   top: 14px;
   left: 0;
@@ -1103,13 +1109,13 @@ to { transform: rotate(360deg);
   background: var(--comfy-input-bg, #333);
   border-radius: 2px;
 }
-.slider-track__bg[data-v-58c2ac1d] {
+.slider-track__bg[data-v-bebf6676] {
   position: absolute;
   inset: 0;
   background: rgba(66, 153, 225, 0.15);
   border-radius: 2px;
 }
-.slider-track__active[data-v-58c2ac1d] {
+.slider-track__active[data-v-bebf6676] {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -1117,24 +1123,24 @@ to { transform: rotate(360deg);
   border-radius: 2px;
   transition: left 0.05s linear, width 0.05s linear;
 }
-.slider-track__default[data-v-58c2ac1d] {
+.slider-track__default[data-v-bebf6676] {
   position: absolute;
   top: 0;
   bottom: 0;
   background: rgba(66, 153, 225, 0.1);
   border-radius: 2px;
 }
-.slider-track__segment[data-v-58c2ac1d] {
+.slider-track__segment[data-v-bebf6676] {
   position: absolute;
   top: 0;
   bottom: 0;
   background: rgba(66, 153, 225, 0.08);
   border-radius: 2px;
 }
-.slider-track__segment--expanded[data-v-58c2ac1d] {
+.slider-track__segment--expanded[data-v-bebf6676] {
   background: rgba(66, 153, 225, 0.15);
 }
-.slider-track__segment[data-v-58c2ac1d]:not(:last-child)::after {
+.slider-track__segment[data-v-bebf6676]:not(:last-child)::after {
   content: '';
   position: absolute;
   top: -1px;
@@ -1143,17 +1149,17 @@ to { transform: rotate(360deg);
   width: 1px;
   background: rgba(255, 255, 255, 0.1);
 }
-.slider-handle[data-v-58c2ac1d] {
+.slider-handle[data-v-bebf6676] {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
   cursor: grab;
   z-index: 2;
 }
-.slider-handle[data-v-58c2ac1d]:active {
+.slider-handle[data-v-bebf6676]:active {
   cursor: grabbing;
 }
-.slider-handle__thumb[data-v-58c2ac1d] {
+.slider-handle__thumb[data-v-bebf6676] {
   width: 12px;
   height: 12px;
   background: var(--fg-color, #fff);
@@ -1164,13 +1170,13 @@ to { transform: rotate(360deg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.15s ease;
 }
-.slider-handle:hover .slider-handle__thumb[data-v-58c2ac1d] {
+.slider-handle:hover .slider-handle__thumb[data-v-bebf6676] {
   transform: scale(1.1);
 }
-.slider-handle:active .slider-handle__thumb[data-v-58c2ac1d] {
+.slider-handle:active .slider-handle__thumb[data-v-bebf6676] {
   transform: scale(1.15);
 }
-.slider-handle__value[data-v-58c2ac1d] {
+.slider-handle__value[data-v-bebf6676] {
   position: absolute;
   top: 0;
   left: 50%;
@@ -1182,10 +1188,10 @@ to { transform: rotate(360deg);
   white-space: nowrap;
   pointer-events: none;
 }
-.slider-handle--min .slider-handle__value[data-v-58c2ac1d] {
+.slider-handle--min .slider-handle__value[data-v-bebf6676] {
   text-align: center;
 }
-.slider-handle--max .slider-handle__value[data-v-58c2ac1d] {
+.slider-handle--max .slider-handle__value[data-v-bebf6676] {
   text-align: center;
 }
 
@@ -11342,7 +11348,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     });
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", {
-        class: normalizeClass(["single-slider", { disabled: __props.disabled }]),
+        class: normalizeClass(["single-slider", { disabled: __props.disabled, "is-dragging": dragging.value }]),
         onWheel
       }, [
         createBaseVNode("div", {
@@ -11377,7 +11383,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const SingleSlider = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-4c53509e"]]);
+const SingleSlider = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-d7e7f883"]]);
 const _hoisted_1$2 = { class: "slider-handle__value" };
 const _hoisted_2$1 = { class: "slider-handle__value" };
 const _sfc_main$2 = /* @__PURE__ */ defineComponent({
@@ -11592,7 +11598,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     });
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", {
-        class: normalizeClass(["dual-range-slider", { disabled: __props.disabled, "has-segments": __props.scaleMode === "segmented" && effectiveSegments.value.length > 0 }]),
+        class: normalizeClass(["dual-range-slider", { disabled: __props.disabled, "is-dragging": dragging.value !== null, "has-segments": __props.scaleMode === "segmented" && effectiveSegments.value.length > 0 }]),
         onWheel
       }, [
         createBaseVNode("div", {
@@ -11646,7 +11652,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-58c2ac1d"]]);
+const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-bebf6676"]]);
 const _hoisted_1$1 = { class: "randomizer-settings" };
 const _hoisted_2 = { class: "setting-section" };
 const _hoisted_3 = { class: "count-mode-tabs" };
