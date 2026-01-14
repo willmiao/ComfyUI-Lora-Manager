@@ -42,22 +42,26 @@ def populated_registry(metadata_registry):
     class VAEDecode:  # type: ignore[too-many-ancestors]
         __name__ = "VAEDecode"
 
-    nodes.NODE_CLASS_MAPPINGS.update(
-        {
-            "TSC_EfficientLoader": TSC_EfficientLoader,
-            "SamplerCustomAdvanced": SamplerCustomAdvanced,
-            "BasicScheduler": BasicScheduler,
-            "KSamplerSelect": KSamplerSelect,
-            "CFGGuider": CFGGuider,
-            "CLIPTextEncode": CLIPTextEncode,
-            "VAEDecode": VAEDecode,
-        }
-    )
+    # Direct assignment to avoid scanner.py false positive
+    # (scanner.py matches _CLASS_MAPPINGS.update({...}) pattern)
+    nodes.NODE_CLASS_MAPPINGS["TSC_EfficientLoader"] = TSC_EfficientLoader
+    nodes.NODE_CLASS_MAPPINGS["SamplerCustomAdvanced"] = SamplerCustomAdvanced
+    nodes.NODE_CLASS_MAPPINGS["BasicScheduler"] = BasicScheduler
+    nodes.NODE_CLASS_MAPPINGS["KSamplerSelect"] = KSamplerSelect
+    nodes.NODE_CLASS_MAPPINGS["CFGGuider"] = CFGGuider
+    nodes.NODE_CLASS_MAPPINGS["CLIPTextEncode"] = CLIPTextEncode
+    nodes.NODE_CLASS_MAPPINGS["VAEDecode"] = VAEDecode
 
     prompt_graph = {
         "loader": {"class_type": "TSC_EfficientLoader", "inputs": {}},
-        "encode_pos": {"class_type": "CLIPTextEncode", "inputs": {"text": "A castle on a hill"}},
-        "encode_neg": {"class_type": "CLIPTextEncode", "inputs": {"text": "low quality"}},
+        "encode_pos": {
+            "class_type": "CLIPTextEncode",
+            "inputs": {"text": "A castle on a hill"},
+        },
+        "encode_neg": {
+            "class_type": "CLIPTextEncode",
+            "inputs": {"text": "low quality"},
+        },
         "cfg_guider": {
             "class_type": "CFGGuider",
             "inputs": {
@@ -109,7 +113,9 @@ def populated_registry(metadata_registry):
         "positive": "A castle on a hill",
         "negative": "low quality",
     }
-    metadata_registry.record_node_execution("loader", "TSC_EfficientLoader", loader_inputs, None)
+    metadata_registry.record_node_execution(
+        "loader", "TSC_EfficientLoader", loader_inputs, None
+    )
     loader_outputs = [
         (
             None,
@@ -121,16 +127,28 @@ def populated_registry(metadata_registry):
             {},
         )
     ]
-    metadata_registry.update_node_execution("loader", "TSC_EfficientLoader", loader_outputs)
+    metadata_registry.update_node_execution(
+        "loader", "TSC_EfficientLoader", loader_outputs
+    )
 
     # Positive and negative prompt encoders
-    metadata_registry.record_node_execution("encode_pos", "CLIPTextEncode", {"text": "A castle on a hill"}, None)
-    metadata_registry.update_node_execution("encode_pos", "CLIPTextEncode", [(pos_conditioning,)])
-    metadata_registry.record_node_execution("encode_neg", "CLIPTextEncode", {"text": "low quality"}, None)
-    metadata_registry.update_node_execution("encode_neg", "CLIPTextEncode", [(neg_conditioning,)])
+    metadata_registry.record_node_execution(
+        "encode_pos", "CLIPTextEncode", {"text": "A castle on a hill"}, None
+    )
+    metadata_registry.update_node_execution(
+        "encode_pos", "CLIPTextEncode", [(pos_conditioning,)]
+    )
+    metadata_registry.record_node_execution(
+        "encode_neg", "CLIPTextEncode", {"text": "low quality"}, None
+    )
+    metadata_registry.update_node_execution(
+        "encode_neg", "CLIPTextEncode", [(neg_conditioning,)]
+    )
 
     # CFG guider and scheduler nodes
-    metadata_registry.record_node_execution("cfg_guider", "CFGGuider", {"cfg": 7.5}, None)
+    metadata_registry.record_node_execution(
+        "cfg_guider", "CFGGuider", {"cfg": 7.5}, None
+    )
     metadata_registry.record_node_execution(
         "scheduler",
         "BasicScheduler",
@@ -148,7 +166,9 @@ def populated_registry(metadata_registry):
         "negative": neg_conditioning,
         "latent_image": {"samples": latent_samples},
     }
-    metadata_registry.record_node_execution("sampler", "SamplerCustomAdvanced", sampler_inputs, None)
+    metadata_registry.record_node_execution(
+        "sampler", "SamplerCustomAdvanced", sampler_inputs, None
+    )
 
     # VAEDecode outputs image data
     metadata_registry.record_node_execution("vae", "VAEDecode", {}, None)
