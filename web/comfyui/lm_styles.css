@@ -107,6 +107,7 @@
   margin-bottom: 5px;
   position: relative;
   cursor: ew-resize;
+  touch-action: none;
 }
 
 .lm-toggle-container {
@@ -155,6 +156,8 @@
   margin-bottom: 4px;
   border: 1px solid transparent;
   background-color: rgba(45, 55, 72, 0.7);
+  touch-action: none;
+  cursor: pointer !important;
 }
 
 .lm-lora-entry[data-active="false"] {
@@ -486,6 +489,8 @@ body.lm-lora-reordering * {
   align-items: center;
   transition: all 0.2s ease;
   margin-top: -2px;
+  touch-action: none;
+  cursor: pointer !important;
 }
 
 .lm-lora-clip-entry[data-active="false"] {
