@@ -11000,7 +11000,7 @@ function useLoraPoolApi() {
       (_b = params.tagsInclude) == null ? void 0 : _b.forEach((tag) => urlParams.append("tag_include", tag));
       (_c = params.tagsExclude) == null ? void 0 : _c.forEach((tag) => urlParams.append("tag_exclude", tag));
       if (params.foldersInclude && params.foldersInclude.length > 0) {
-        urlParams.set("folder", params.foldersInclude[0]);
+        params.foldersInclude.forEach((folder) => urlParams.append("folder_include", folder));
         urlParams.set("recursive", "true");
       }
       (_d = params.foldersExclude) == null ? void 0 : _d.forEach((folder) => urlParams.append("folder_exclude", folder));
