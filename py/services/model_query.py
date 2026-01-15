@@ -78,6 +78,7 @@ class FilterCriteria:
     """Container for model list filtering options."""
 
     folder: Optional[str] = None
+    folder_include: Optional[Sequence[str]] = None
     folder_exclude: Optional[Sequence[str]] = None
     base_models: Optional[Sequence[str]] = None
     tags: Optional[Dict[str, str]] = None
@@ -159,6 +160,7 @@ class ModelFilterSet:
 
         folder_duration = 0
         folder = criteria.folder
+        folder_include = criteria.folder_include or []
         folder_exclude = criteria.folder_exclude or []
         options = criteria.search_options or {}
         recursive = bool(options.get("recursive", True))
@@ -193,6 +195,66 @@ class ModelFilterSet:
                         for item in items
                         if item.get("folder") == folder
                         or item.get("folder", "").startswith(folder_with_sep)
+                    ]
+            else:
+                items = [item for item in items if item.get("folder") == folder]
+            folder_duration = time.perf_counter() - t0 + folder_duration
+
+        # Apply folder include filters
+        if folder_include:
+            t0 = time.perf_counter()
+            matched_items = []
+            for include_folder in folder_include:
+                if include_folder:
+                    if recursive:
+                        # Normalize folder for prefix matching (similar to exclude logic)
+                        if not include_folder.endswith("/"):
+                            folder_prefix = f"{include_folder}/"
+                        else:
+                            folder_prefix = include_folder
+                        folder_items = [
+                            item
+                            for item in items
+                            if item.get("folder") == include_folder
+                            or item.get("folder", "").startswith(folder_prefix)
+                        ]
+                    else:
+                        folder_items = [
+                            item
+                            for item in items
+                            if item.get("folder") == include_folder
+                        ]
+                    matched_items.extend(folder_items)
+            # Remove duplicates while preserving order
+            seen = set()
+            items = []
+            for item in matched_items:
+                # Use sha256 or id as unique identifier if available, otherwise use tuple representation
+                item_id = item.get("sha256") or item.get("id")
+                if item_id is not None:
+                    identifier = item_id
+                else:
+                    # For items without explicit id, use a tuple of key values
+                    identifier = tuple(sorted((k, str(v)) for k, v in item.items()))
+                if identifier not in seen:
+                    seen.add(identifier)
+                    items.append(item)
+            folder_duration = time.perf_counter() - t0 + folder_duration
+        # Apply folder include filters (legacy single folder)
+        elif folder is not None:
+            t0 = time.perf_counter()
+            if recursive:
+                if folder:
+                    # Normalize folder for prefix matching
+                    if not folder.endswith("/"):
+                        folder_prefix = f"{folder}/"
+                    else:
+                        folder_prefix = folder
+                    items = [
+                        item
+                        for item in items
+                        if item.get("folder") == folder
+                        or item.get("folder", "").startswith(folder_prefix)
                     ]
             else:
                 items = [item for item in items if item.get("folder") == folder]

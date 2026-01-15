@@ -79,7 +79,7 @@ export function useLoraPoolApi() {
 
       // Folder filters
       if (params.foldersInclude && params.foldersInclude.length > 0) {
-        urlParams.set('folder', params.foldersInclude[0])
+        params.foldersInclude.forEach(folder => urlParams.append('folder_include', folder))
         urlParams.set('recursive', 'true')
       }
       params.foldersExclude?.forEach(folder => urlParams.append('folder_exclude', folder))

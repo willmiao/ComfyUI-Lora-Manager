@@ -211,6 +211,7 @@ class ModelListingHandler:
         page_size = min(int(request.query.get("page_size", "20")), 100)
         sort_by = request.query.get("sort_by", "name")
         folder = request.query.get("folder")
+        folder_include = list(request.query.getall("folder_include", []))
         search = request.query.get("search")
         fuzzy_search = request.query.get("fuzzy_search", "false").lower() == "true"
 
@@ -290,6 +291,7 @@ class ModelListingHandler:
             "page_size": page_size,
             "sort_by": sort_by,
             "folder": folder,
+            "folder_include": folder_include,
             "folder_exclude": folder_exclude,
             "search": search,
             "fuzzy_search": fuzzy_search,

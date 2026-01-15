@@ -68,6 +68,7 @@ class BaseModelService(ABC):
         page_size: int,
         sort_by: str = "name",
         folder: str = None,
+        folder_include: list = None,
         folder_exclude: list = None,
         search: str = None,
         fuzzy_search: bool = False,
@@ -101,6 +102,7 @@ class BaseModelService(ABC):
             filtered_data = await self._apply_common_filters(
                 sorted_data,
                 folder=folder,
+                folder_include=folder_include,
                 folder_exclude=folder_exclude,
                 base_models=base_models,
                 model_types=model_types,
@@ -232,6 +234,7 @@ class BaseModelService(ABC):
         self,
         data: List[Dict],
         folder: str = None,
+        folder_include: list = None,
         folder_exclude: list = None,
         base_models: list = None,
         model_types: list = None,
@@ -243,6 +246,7 @@ class BaseModelService(ABC):
         normalized_options = self.search_strategy.normalize_options(search_options)
         criteria = FilterCriteria(
             folder=folder,
+            folder_include=folder_include,
             folder_exclude=folder_exclude,
             base_models=base_models,
             model_types=model_types,

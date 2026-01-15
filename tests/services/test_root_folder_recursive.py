@@ -102,6 +102,87 @@ def test_model_filter_set_folder_exclude_with_include():
     assert result[0]["model_name"] == "item1"
 
 
+def test_model_filter_set_folder_include_single():
+    filter_set = ModelFilterSet(MockSettings())
+    items = [
+        {"model_name": "item1", "folder": "characters/"},
+        {"model_name": "item2", "folder": "styles/"},
+        {"model_name": "item3", "folder": "characters/anime/"},
+        {"model_name": "item4", "folder": "concepts/"},
+    ]
+    criteria = FilterCriteria(
+        folder_include=["characters/"], search_options={"recursive": True}
+    )
+
+    result = filter_set.apply(items, criteria)
+
+    assert len(result) == 2
+    model_names = {i["model_name"] for i in result}
+    assert model_names == {"item1", "item3"}
+
+
+def test_model_filter_set_folder_include_multiple():
+    filter_set = ModelFilterSet(MockSettings())
+    items = [
+        {"model_name": "item1", "folder": "characters/"},
+        {"model_name": "item2", "folder": "styles/"},
+        {"model_name": "item3", "folder": "characters/anime/"},
+        {"model_name": "item4", "folder": "styles/painting/"},
+        {"model_name": "item5", "folder": "concepts/"},
+    ]
+    criteria = FilterCriteria(
+        folder_include=["characters/", "styles/"], search_options={"recursive": True}
+    )
+
+    result = filter_set.apply(items, criteria)
+
+    assert len(result) == 4
+    model_names = {i["model_name"] for i in result}
+    assert model_names == {"item1", "item2", "item3", "item4"}
+
+
+def test_model_filter_set_folder_include_with_exclude():
+    filter_set = ModelFilterSet(MockSettings())
+    items = [
+        {"model_name": "item1", "folder": "characters/"},
+        {"model_name": "item2", "folder": "styles/"},
+        {"model_name": "item3", "folder": "characters/anime/"},
+        {"model_name": "item4", "folder": "styles/painting/"},
+        {"model_name": "item5", "folder": "concepts/"},
+    ]
+    criteria = FilterCriteria(
+        folder_include=["characters/", "styles/"],
+        folder_exclude=["characters/anime/"],
+        search_options={"recursive": True},
+    )
+
+    result = filter_set.apply(items, criteria)
+
+    assert len(result) == 3
+    model_names = {i["model_name"] for i in result}
+    assert model_names == {"item1", "item2", "item4"}
+
+
+def test_model_filter_set_folder_include_non_recursive():
+    filter_set = ModelFilterSet(MockSettings())
+    items = [
+        {"model_name": "item1", "folder": "characters/"},
+        {"model_name": "item2", "folder": "styles/"},
+        {"model_name": "item3", "folder": "characters/anime/"},
+        {"model_name": "item4", "folder": "styles/painting/"},
+        {"model_name": "item5", "folder": "concepts/"},
+    ]
+    criteria = FilterCriteria(
+        folder_include=["characters/", "styles/"], search_options={"recursive": False}
+    )
+
+    result = filter_set.apply(items, criteria)
+
+    assert len(result) == 2
+    model_names = {i["model_name"] for i in result}
+    assert model_names == {"item1", "item2"}
+
+
 # --- Recipe Filtering Tests ---
 
 
