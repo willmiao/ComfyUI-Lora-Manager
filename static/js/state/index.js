@@ -103,6 +103,7 @@ export const state = {
                 tags: true,
                 loraName: true,
                 loraModel: true,
+                prompt: true,
                 recursive: getStorageItem('recipes_recursiveSearch', true),
             },
             filters: {

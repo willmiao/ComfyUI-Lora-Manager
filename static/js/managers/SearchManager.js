@@ -289,6 +289,7 @@ export class SearchManager {
             pageState.searchOptions.tags = options.tags || false;
             pageState.searchOptions.loraName = options.loraName || false;
             pageState.searchOptions.loraModel = options.loraModel || false;
+            pageState.searchOptions.prompt = options.prompt || false;
         } else if (this.currentPage === 'loras' || this.currentPage === 'checkpoints' || this.currentPage === 'embeddings') {
             // Update only the relevant fields in searchOptions instead of replacing the whole object
             pageState.searchOptions.filename = options.filename || false;
