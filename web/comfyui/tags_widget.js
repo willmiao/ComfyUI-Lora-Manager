@@ -84,6 +84,7 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
       const { text, active, highlighted, strength } = tagData;
       const tagEl = document.createElement("div");
       tagEl.className = "comfy-tag";
+      tagEl.dataset.captureWheel = "true";
 
       const textSpan = document.createElement("span");
       textSpan.className = "comfy-tag-text";
