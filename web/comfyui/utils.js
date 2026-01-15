@@ -388,6 +388,58 @@ export function mergeLoras(lorasText, lorasArr) {
 }
 
 /**
+ * Find the actual input element for a widget
+ * @param {Object} node - The node instance
+ * @param {Object} widget - The widget to find input element for
+ * @returns {Promise<HTMLElement|null>} The input element or null
+ */
+async function findWidgetInputElement(node, widget) {
+    if (widget.inputEl && document.body.contains(widget.inputEl)) {
+        return widget.inputEl;
+    }
+
+    const nodeId = node.id;
+    const widgetName = widget.name;
+    const maxAttempts = 20;
+    const searchInterval = 50;
+
+    const searchForInput = (attempt = 0) => {
+        return new Promise((resolve) => {
+            const doSearch = () => {
+                let inputElement = null;
+
+                const allWidgetContainers = document.querySelectorAll('.lg-node-widget');
+
+                for (const container of allWidgetContainers) {
+                    const hasInput = !!container.querySelector('input, textarea');
+                    const textContent = container.textContent.toLowerCase();
+                    const containsWidgetName = textContent.includes(widgetName.toLowerCase());
+                    const containsNodeTitle = textContent.includes(node.title?.toLowerCase() || '');
+
+                    if (hasInput && (containsWidgetName || (widgetName === 'text' && container.querySelector('textarea')))) {
+                        inputElement = container.querySelector('input, textarea');
+                        break;
+                    }
+                }
+
+                if (inputElement) {
+                    console.log(`[Lora Manager] Found input element for widget "${widgetName}" on node ${nodeId}`);
+                    resolve(inputElement);
+                } else if (attempt < maxAttempts) {
+                    setTimeout(() => searchForInput(attempt + 1).then(resolve), searchInterval);
+                } else {
+                    console.warn(`[Lora Manager] Could not find input element for widget "${widgetName}" on node ${nodeId} after ${maxAttempts} attempts`);
+                    resolve(null);
+                }
+            };
+            doSearch();
+        });
+    };
+
+    return searchForInput();
+}
+
+/**
  * Initialize autocomplete for an input widget and setup cleanup
  * @param {Object} node - The node instance
  * @param {Object} inputWidget - The input widget to add autocomplete to
@@ -398,6 +450,7 @@ export function mergeLoras(lorasText, lorasArr) {
  */
 export function setupInputWidgetWithAutocomplete(node, inputWidget, originalCallback, modelType = 'loras', autocompleteOptions = {}) {
     let autocomplete = null;
+    let isInitializing = false;
     const defaultOptions = {
         maxItems: 20,
         minChars: 1,
@@ -405,22 +458,45 @@ export function setupInputWidgetWithAutocomplete(node, inputWidget, originalCall
     };
     const mergedOptions = { ...defaultOptions, ...autocompleteOptions };
     
-    // Enhanced callback that initializes autocomplete and calls original callback
+    const initializeAutocomplete = async () => {
+        if (autocomplete || isInitializing) return;
+        isInitializing = true;
+
+        try {
+            let inputElement = null;
+
+            if (inputWidget.inputEl && document.body.contains(inputWidget.inputEl)) {
+                inputElement = inputWidget.inputEl;
+                console.log(`[Lora Manager] Using widget.inputEl for widget "${inputWidget.name}"`);
+            } else {
+                console.log(`[Lora Manager] Searching DOM for input element for widget "${inputWidget.name}"`);
+                inputElement = await findWidgetInputElement(node, inputWidget);
+            }
+
+            if (inputElement) {
+                autocomplete = new AutoComplete(inputElement, modelType, mergedOptions);
+                node.autocomplete = autocomplete;
+                console.log(`[Lora Manager] Autocomplete initialized for widget "${inputWidget.name}" on node ${node.id}`);
+            } else {
+                console.warn(`[Lora Manager] Could not find input element for widget "${inputWidget.name}" on node ${node.id}`);
+            }
+        } catch (error) {
+            console.error('[Lora Manager] Error initializing autocomplete:', error);
+        } finally {
+            isInitializing = false;
+        }
+    };
+    
     const enhancedCallback = (value) => {
-        // Initialize autocomplete on first callback if not already done
-        if (!autocomplete && inputWidget.inputEl) {
-            autocomplete = new AutoComplete(inputWidget.inputEl, modelType, mergedOptions);
-            // Store reference for cleanup
-            node.autocomplete = autocomplete;
+        if (!autocomplete && !isInitializing) {
+            initializeAutocomplete();
         }
         
-        // Call the original callback
         if (typeof originalCallback === "function") {
             originalCallback.call(node, value);
         }
     };
     
-    // Setup cleanup on node removal
     setupAutocompleteCleanup(node);
     
     return enhancedCallback;
