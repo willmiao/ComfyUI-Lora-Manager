@@ -1,12 +1,8 @@
 import { app } from "../../scripts/app.js";
-import { ComfyButtonGroup } from "../../scripts/ui/components/buttonGroup.js";
-import { ComfyButton } from "../../scripts/ui/components/button.js";
 
-const BUTTON_GROUP_CLASS = "lora-manager-top-menu-group";
 const BUTTON_TOOLTIP = "Launch LoRA Manager (Shift+Click opens in new window)";
 const LORA_MANAGER_PATH = "/loras";
 const NEW_WINDOW_FEATURES = "width=1200,height=800,resizable=yes,scrollbars=yes,status=yes";
-const MAX_ATTACH_ATTEMPTS = 120;
 
 const openLoraManager = (event) => {
     const url = `${window.location.origin}${LORA_MANAGER_PATH}`;
@@ -17,51 +13,6 @@ const openLoraManager = (event) => {
     }
 
     window.open(url, "_blank");
-};
-
-const createTopMenuButton = () => {
-    const button = new ComfyButton({
-        icon: "loramanager",
-        tooltip: BUTTON_TOOLTIP,
-        app,
-        enabled: true,
-        classList: "comfyui-button comfyui-menu-mobile-collapse primary",
-    });
-
-    button.element.setAttribute("aria-label", BUTTON_TOOLTIP);
-    button.element.title = BUTTON_TOOLTIP;
-
-    if (button.iconElement) {
-        button.iconElement.innerHTML = getLoraManagerIcon();
-        button.iconElement.style.width = "1.2rem";
-        button.iconElement.style.height = "1.2rem";
-    }
-
-    button.element.addEventListener("click", openLoraManager);
-    return button;
-};
-
-const attachTopMenuButton = (attempt = 0) => {
-    if (document.querySelector(`.${BUTTON_GROUP_CLASS}`)) {
-        return;
-    }
-
-    const settingsGroup = app.menu?.settingsGroup;
-    if (!settingsGroup?.element?.parentElement) {
-        if (attempt >= MAX_ATTACH_ATTEMPTS) {
-            console.warn("LoRA Manager: unable to locate the ComfyUI settings button group.");
-            return;
-        }
-
-        requestAnimationFrame(() => attachTopMenuButton(attempt + 1));
-        return;
-    }
-
-    const loraManagerButton = createTopMenuButton();
-    const buttonGroup = new ComfyButtonGroup(loraManagerButton);
-    buttonGroup.element.classList.add(BUTTON_GROUP_CLASS);
-
-    settingsGroup.element.before(buttonGroup.element);
 };
 
 const fetchVersionInfo = async () => {
@@ -91,12 +42,56 @@ const createAboutBadge = (version) => {
 
 app.registerExtension({
     name: "LoraManager.TopMenu",
+    actionBarButtons: [
+        {
+            icon: "icon-[mdi--alpha-l-box] size-4",
+            tooltip: BUTTON_TOOLTIP,
+            onClick: openLoraManager
+        }
+    ],
     aboutPageBadges: [createAboutBadge()],
     async setup() {
-        attachTopMenuButton();
-
         const version = await fetchVersionInfo();
         this.aboutPageBadges = [createAboutBadge(version)];
+
+        const injectStyles = () => {
+            const styleId = 'lm-top-menu-button-styles';
+            if (document.getElementById(styleId)) return;
+
+            const style = document.createElement('style');
+            style.id = styleId;
+            style.textContent = `
+                button[aria-label="Launch LoRA Manager (Shift+Click opens in new window)"].lm-top-menu-button {
+                    transition: all 0.2s ease;
+                    border: 1px solid transparent;
+                }
+                button[aria-label="Launch LoRA Manager (Shift+Click opens in new window)"].lm-top-menu-button:hover {
+                    background-color: var(--primary-hover-bg) !important;
+                }
+            `;
+            document.head.appendChild(style);
+        };
+        injectStyles();
+
+        const replaceButtonIcon = () => {
+            const buttons = document.querySelectorAll('button[aria-label="Launch LoRA Manager (Shift+Click opens in new window)"]');
+            buttons.forEach(button => {
+                button.classList.add('lm-top-menu-button');
+                button.innerHTML = getLoraManagerIcon();
+                button.style.borderRadius = '4px';
+                button.style.padding = '6px';
+                button.style.backgroundColor = 'var(--primary-bg)';
+                const svg = button.querySelector('svg');
+                if (svg) {
+                    svg.style.width = '20px';
+                    svg.style.height = '20px';
+                }
+            });
+            if (buttons.length === 0) {
+                requestAnimationFrame(replaceButtonIcon);
+            }
+        };
+        requestAnimationFrame(replaceButtonIcon);
     },
 });
 
