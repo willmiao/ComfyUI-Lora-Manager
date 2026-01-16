@@ -2,6 +2,7 @@ import { createApp, type App as VueApp } from 'vue'
 import PrimeVue from 'primevue/config'
 import LoraPoolWidget from '@/components/LoraPoolWidget.vue'
 import LoraRandomizerWidget from '@/components/LoraRandomizerWidget.vue'
+import JsonDisplayWidget from '@/components/JsonDisplayWidget.vue'
 import type { LoraPoolConfig, LegacyLoraPoolConfig, RandomizerConfig } from './composables/types'
 
 const LORA_POOL_WIDGET_MIN_WIDTH = 500
@@ -9,6 +10,8 @@ const LORA_POOL_WIDGET_MIN_HEIGHT = 400
 const LORA_RANDOMIZER_WIDGET_MIN_WIDTH = 500
 const LORA_RANDOMIZER_WIDGET_MIN_HEIGHT = 510
 const LORA_RANDOMIZER_WIDGET_MAX_HEIGHT = LORA_RANDOMIZER_WIDGET_MIN_HEIGHT
+const JSON_DISPLAY_WIDGET_MIN_WIDTH = 300
+const JSON_DISPLAY_WIDGET_MIN_HEIGHT = 200
 
 // @ts-ignore - ComfyUI external module
 import { app } from '../../../scripts/app.js'
@@ -207,6 +210,72 @@ function createLoraRandomizerWidget(node) {
   return { widget }
 }
 
+// @ts-ignore
+function createJsonDisplayWidget(node) {
+  const container = document.createElement('div')
+  container.id = `json-display-widget-${node.id}`
+  container.style.width = '100%'
+  container.style.height = '100%'
+  container.style.display = 'flex'
+  container.style.flexDirection = 'column'
+  container.style.overflow = 'hidden'
+
+  forwardMiddleMouseToCanvas(container)
+
+  let internalValue: Record<string, unknown> | undefined
+
+  const widget = node.addDOMWidget(
+    'metadata',
+    'JSON_DISPLAY',
+    container,
+    {
+      getValue() {
+        return internalValue
+      },
+      setValue(v: Record<string, unknown>) {
+        internalValue = v
+        if (typeof widget.onSetValue === 'function') {
+          widget.onSetValue(v)
+        }
+      },
+      serialize: false, // Display-only widget - don't save metadata in workflows
+      getMinHeight() {
+        return JSON_DISPLAY_WIDGET_MIN_HEIGHT
+      }
+    }
+  )
+
+  const vueApp = createApp(JsonDisplayWidget, {
+    widget,
+    node
+  })
+
+  vueApp.use(PrimeVue, {
+    unstyled: true,
+    ripple: false
+  })
+
+  vueApp.mount(container)
+  vueApps.set(node.id + 20000, vueApp) // Offset to avoid collision with other widgets
+
+  widget.computeLayoutSize = () => {
+    const minWidth = JSON_DISPLAY_WIDGET_MIN_WIDTH
+    const minHeight = JSON_DISPLAY_WIDGET_MIN_HEIGHT
+
+    return { minHeight, minWidth }
+  }
+
+  widget.onRemove = () => {
+    const vueApp = vueApps.get(node.id + 20000)
+    if (vueApp) {
+      vueApp.unmount()
+      vueApps.delete(node.id + 20000)
+    }
+  }
+
+  return { widget }
+}
+
 app.registerExtension({
   name: 'LoraManager.VueWidgets',
 
@@ -236,6 +305,21 @@ app.registerExtension({
         } : null
 
         return addLorasWidgetCache(node, 'loras', { isRandomizerNode }, callback)
+      }
+    }
+  },
+
+  // Add display-only widget to Debug Metadata node
+  // @ts-ignore
+  async beforeRegisterNodeDef(nodeType, nodeData) {
+    if (nodeData.name === 'Debug Metadata (LoraManager)') {
+      const onNodeCreated = nodeType.prototype.onNodeCreated
+
+      nodeType.prototype.onNodeCreated = function () {
+        onNodeCreated?.apply(this, [])
+
+        // Add the JSON display widget
+        createJsonDisplayWidget(this)
       }
     }
   }
