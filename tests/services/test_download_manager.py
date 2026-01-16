@@ -87,9 +87,19 @@ def scanners(monkeypatch):
     checkpoint_scanner = DummyScanner()
     embedding_scanner = DummyScanner()
 
-    monkeypatch.setattr(ServiceRegistry, "get_lora_scanner", AsyncMock(return_value=lora_scanner))
-    monkeypatch.setattr(ServiceRegistry, "get_checkpoint_scanner", AsyncMock(return_value=checkpoint_scanner))
-    monkeypatch.setattr(ServiceRegistry, "get_embedding_scanner", AsyncMock(return_value=embedding_scanner))
+    monkeypatch.setattr(
+        ServiceRegistry, "get_lora_scanner", AsyncMock(return_value=lora_scanner)
+    )
+    monkeypatch.setattr(
+        ServiceRegistry,
+        "get_checkpoint_scanner",
+        AsyncMock(return_value=checkpoint_scanner),
+    )
+    monkeypatch.setattr(
+        ServiceRegistry,
+        "get_embedding_scanner",
+        AsyncMock(return_value=embedding_scanner),
+    )
 
     return SimpleNamespace(
         lora=lora_scanner,
@@ -148,7 +158,9 @@ async def test_download_requires_identifier():
     }
 
 
-async def test_successful_download_uses_defaults(monkeypatch, scanners, metadata_provider, tmp_path):
+async def test_successful_download_uses_defaults(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
     manager = DownloadManager()
 
     captured = {}
@@ -178,7 +190,9 @@ async def test_successful_download_uses_defaults(monkeypatch, scanners, metadata
         )
         return {"success": True}
 
-    monkeypatch.setattr(DownloadManager, "_execute_download", fake_execute_download, raising=False)
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
 
     result = await manager.download_from_civitai(
         model_version_id=99,
@@ -194,15 +208,19 @@ async def test_successful_download_uses_defaults(monkeypatch, scanners, metadata
     assert manager._active_downloads[result["download_id"]]["status"] == "completed"
 
     assert captured["relative_path"] == "MappedModel/fantasy"
-    expected_dir = Path(get_settings_manager().get("default_lora_root")) / "MappedModel" / "fantasy"
+    expected_dir = (
+        Path(get_settings_manager().get("default_lora_root"))
+        / "MappedModel"
+        / "fantasy"
+    )
     assert captured["save_dir"] == expected_dir
     assert captured["model_type"] == "lora"
-    assert captured["download_urls"] == [
-        "https://example.invalid/file.safetensors"
-    ]
+    assert captured["download_urls"] == ["https://example.invalid/file.safetensors"]
 
 
-async def test_download_uses_active_mirrors(monkeypatch, scanners, metadata_provider, tmp_path):
+async def test_download_uses_active_mirrors(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
     manager = DownloadManager()
 
     metadata_with_mirrors = {
@@ -216,8 +234,14 @@ async def test_download_uses_active_mirrors(monkeypatch, scanners, metadata_prov
                 "primary": True,
                 "downloadUrl": "https://example.invalid/file.safetensors",
                 "mirrors": [
-                    {"url": "https://mirror.example/file.safetensors", "deletedAt": None},
-                    {"url": "https://mirror.example/old.safetensors", "deletedAt": "2024-01-01"},
+                    {
+                        "url": "https://mirror.example/file.safetensors",
+                        "deletedAt": None,
+                    },
+                    {
+                        "url": "https://mirror.example/old.safetensors",
+                        "deletedAt": "2024-01-01",
+                    },
                 ],
                 "name": "file.safetensors",
             }
@@ -243,7 +267,9 @@ async def test_download_uses_active_mirrors(monkeypatch, scanners, metadata_prov
         captured["download_urls"] = download_urls
         return {"success": True}
 
-    monkeypatch.setattr(DownloadManager, "_execute_download", fake_execute_download, raising=False)
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
 
     result = await manager.download_from_civitai(
         model_version_id=99,
@@ -257,7 +283,9 @@ async def test_download_uses_active_mirrors(monkeypatch, scanners, metadata_prov
     assert captured["download_urls"] == ["https://mirror.example/file.safetensors"]
 
 
-async def test_download_aborts_when_version_exists(monkeypatch, scanners, metadata_provider):
+async def test_download_aborts_when_version_exists(
+    monkeypatch, scanners, metadata_provider
+):
     scanners.lora.exists = True
 
     manager = DownloadManager()
@@ -280,7 +308,9 @@ async def test_download_handles_metadata_errors(monkeypatch, scanners):
     monkeypatch.setattr(
         download_manager,
         "get_default_metadata_provider",
-        AsyncMock(return_value=SimpleNamespace(get_model_version=AsyncMock(return_value=None))),
+        AsyncMock(
+            return_value=SimpleNamespace(get_model_version=AsyncMock(return_value=None))
+        ),
     )
 
     manager = DownloadManager()
@@ -331,7 +361,9 @@ def test_embedding_relative_path_replaces_spaces():
 def test_relative_path_supports_model_and_version_placeholders():
     manager = DownloadManager()
     settings_manager = get_settings_manager()
-    settings_manager.settings["download_path_templates"]["lora"] = "{model_name}/{version_name}"
+    settings_manager.settings["download_path_templates"]["lora"] = (
+        "{model_name}/{version_name}"
+    )
 
     version_info = {
         "baseModel": "BaseModel",
@@ -347,7 +379,9 @@ def test_relative_path_supports_model_and_version_placeholders():
 def test_relative_path_sanitizes_model_and_version_placeholders():
     manager = DownloadManager()
     settings_manager = get_settings_manager()
-    settings_manager.settings["download_path_templates"]["lora"] = "{model_name}/{version_name}"
+    settings_manager.settings["download_path_templates"]["lora"] = (
+        "{model_name}/{version_name}"
+    )
 
     version_info = {
         "baseModel": "BaseModel",
@@ -403,7 +437,9 @@ async def test_execute_download_retries_urls(monkeypatch, tmp_path):
             return True, "second success"
 
     dummy_downloader = DummyDownloader()
-    monkeypatch.setattr(download_manager, "get_downloader", AsyncMock(return_value=dummy_downloader))
+    monkeypatch.setattr(
+        download_manager, "get_downloader", AsyncMock(return_value=dummy_downloader)
+    )
 
     class DummyScanner:
         def __init__(self):
@@ -413,9 +449,17 @@ async def test_execute_download_retries_urls(monkeypatch, tmp_path):
             self.calls.append((metadata_dict, relative_path))
 
     dummy_scanner = DummyScanner()
-    monkeypatch.setattr(DownloadManager, "_get_lora_scanner", AsyncMock(return_value=dummy_scanner))
-    monkeypatch.setattr(DownloadManager, "_get_checkpoint_scanner", AsyncMock(return_value=dummy_scanner))
-    monkeypatch.setattr(ServiceRegistry, "get_embedding_scanner", AsyncMock(return_value=dummy_scanner))
+    monkeypatch.setattr(
+        DownloadManager, "_get_lora_scanner", AsyncMock(return_value=dummy_scanner)
+    )
+    monkeypatch.setattr(
+        DownloadManager,
+        "_get_checkpoint_scanner",
+        AsyncMock(return_value=dummy_scanner),
+    )
+    monkeypatch.setattr(
+        ServiceRegistry, "get_embedding_scanner", AsyncMock(return_value=dummy_scanner)
+    )
 
     monkeypatch.setattr(MetadataManager, "save_metadata", AsyncMock(return_value=True))
 
@@ -470,7 +514,9 @@ async def test_execute_download_adjusts_checkpoint_model_type(monkeypatch, tmp_p
     download_urls = ["https://example.invalid/model.safetensors"]
 
     class DummyDownloader:
-        async def download_file(self, _url, path, progress_callback=None, use_auth=None):
+        async def download_file(
+            self, _url, path, progress_callback=None, use_auth=None
+        ):
             Path(path).write_text("content")
             return True, "ok"
 
@@ -488,7 +534,9 @@ async def test_execute_download_adjusts_checkpoint_model_type(monkeypatch, tmp_p
         def _find_root_for_file(self, file_path: str):
             return self.root if file_path.startswith(self.root) else None
 
-        def adjust_metadata(self, metadata_obj, _file_path: str, root_path: Optional[str]):
+        def adjust_metadata(
+            self, metadata_obj, _file_path: str, root_path: Optional[str]
+        ):
             if root_path:
                 metadata_obj.model_type = "diffusion_model"
             return metadata_obj
@@ -503,7 +551,11 @@ async def test_execute_download_adjusts_checkpoint_model_type(monkeypatch, tmp_p
             return True
 
     dummy_scanner = DummyCheckpointScanner(root_dir)
-    monkeypatch.setattr(DownloadManager, "_get_checkpoint_scanner", AsyncMock(return_value=dummy_scanner))
+    monkeypatch.setattr(
+        DownloadManager,
+        "_get_checkpoint_scanner",
+        AsyncMock(return_value=dummy_scanner),
+    )
     monkeypatch.setattr(MetadataManager, "save_metadata", AsyncMock(return_value=True))
 
     result = await manager._execute_download(
@@ -560,9 +612,13 @@ async def test_execute_download_extracts_zip_single_model(monkeypatch, tmp_path)
                 archive.writestr("docs/readme.txt", b"ignore")
             return True, "ok"
 
-    monkeypatch.setattr(download_manager, "get_downloader", AsyncMock(return_value=DummyDownloader()))
+    monkeypatch.setattr(
+        download_manager, "get_downloader", AsyncMock(return_value=DummyDownloader())
+    )
     dummy_scanner = SimpleNamespace(add_model_to_cache=AsyncMock(return_value=None))
-    monkeypatch.setattr(DownloadManager, "_get_lora_scanner", AsyncMock(return_value=dummy_scanner))
+    monkeypatch.setattr(
+        DownloadManager, "_get_lora_scanner", AsyncMock(return_value=dummy_scanner)
+    )
     monkeypatch.setattr(MetadataManager, "save_metadata", AsyncMock(return_value=True))
     hash_calculator = AsyncMock(return_value="hash-single")
     monkeypatch.setattr(download_manager, "calculate_sha256", hash_calculator)
@@ -624,9 +680,13 @@ async def test_execute_download_extracts_zip_multiple_models(monkeypatch, tmp_pa
                 archive.writestr("readme.md", b"ignore")
             return True, "ok"
 
-    monkeypatch.setattr(download_manager, "get_downloader", AsyncMock(return_value=DummyDownloader()))
+    monkeypatch.setattr(
+        download_manager, "get_downloader", AsyncMock(return_value=DummyDownloader())
+    )
     dummy_scanner = SimpleNamespace(add_model_to_cache=AsyncMock(return_value=None))
-    monkeypatch.setattr(DownloadManager, "_get_lora_scanner", AsyncMock(return_value=dummy_scanner))
+    monkeypatch.setattr(
+        DownloadManager, "_get_lora_scanner", AsyncMock(return_value=dummy_scanner)
+    )
     monkeypatch.setattr(MetadataManager, "save_metadata", AsyncMock(return_value=True))
     hash_calculator = AsyncMock(side_effect=["hash-one", "hash-two"])
     monkeypatch.setattr(download_manager, "calculate_sha256", hash_calculator)
@@ -694,9 +754,13 @@ async def test_execute_download_extracts_zip_pt_embedding(monkeypatch, tmp_path)
                 archive.writestr("docs/readme.txt", b"ignore")
             return True, "ok"
 
-    monkeypatch.setattr(download_manager, "get_downloader", AsyncMock(return_value=DummyDownloader()))
+    monkeypatch.setattr(
+        download_manager, "get_downloader", AsyncMock(return_value=DummyDownloader())
+    )
     dummy_scanner = SimpleNamespace(add_model_to_cache=AsyncMock(return_value=None))
-    monkeypatch.setattr(ServiceRegistry, "get_embedding_scanner", AsyncMock(return_value=dummy_scanner))
+    monkeypatch.setattr(
+        ServiceRegistry, "get_embedding_scanner", AsyncMock(return_value=dummy_scanner)
+    )
     monkeypatch.setattr(MetadataManager, "save_metadata", AsyncMock(return_value=True))
     hash_calculator = AsyncMock(return_value="hash-pt")
     monkeypatch.setattr(download_manager, "calculate_sha256", hash_calculator)
@@ -815,7 +879,7 @@ async def test_resume_download_requests_reconnect_for_stalled_stream():
     download_id = "dl"
     pause_control = DownloadStreamControl(stall_timeout=40)
     pause_control.pause()
-    pause_control.last_progress_timestamp = (datetime.now().timestamp() - 120)
+    pause_control.last_progress_timestamp = datetime.now().timestamp() - 120
     manager._pause_events[download_id] = pause_control
     manager._active_downloads[download_id] = {
         "status": "paused",
@@ -899,7 +963,9 @@ async def test_execute_download_uses_rewritten_civitai_preview(monkeypatch, tmp_
             return False, b"", {}
 
     dummy_downloader = DummyDownloader()
-    monkeypatch.setattr(download_manager, "get_downloader", AsyncMock(return_value=dummy_downloader))
+    monkeypatch.setattr(
+        download_manager, "get_downloader", AsyncMock(return_value=dummy_downloader)
+    )
 
     optimize_called = {"value": False}
 
@@ -907,11 +973,15 @@ async def test_execute_download_uses_rewritten_civitai_preview(monkeypatch, tmp_
         optimize_called["value"] = True
         return b"", {}
 
-    monkeypatch.setattr(download_manager.ExifUtils, "optimize_image", staticmethod(fake_optimize_image))
+    monkeypatch.setattr(
+        download_manager.ExifUtils, "optimize_image", staticmethod(fake_optimize_image)
+    )
     monkeypatch.setattr(MetadataManager, "save_metadata", AsyncMock(return_value=True))
 
     dummy_scanner = SimpleNamespace(add_model_to_cache=AsyncMock(return_value=None))
-    monkeypatch.setattr(DownloadManager, "_get_lora_scanner", AsyncMock(return_value=dummy_scanner))
+    monkeypatch.setattr(
+        DownloadManager, "_get_lora_scanner", AsyncMock(return_value=dummy_scanner)
+    )
 
     result = await manager._execute_download(
         download_urls=download_urls,
@@ -925,7 +995,9 @@ async def test_execute_download_uses_rewritten_civitai_preview(monkeypatch, tmp_
     )
 
     assert result == {"success": True}
-    preview_urls = [url for url, _ in dummy_downloader.file_calls if url.endswith(".jpeg")]
+    preview_urls = [
+        url for url, _ in dummy_downloader.file_calls if url.endswith(".jpeg")
+    ]
     assert any("width=450,optimized=true" in url for url in preview_urls)
     assert dummy_downloader.memory_calls == 0
     assert optimize_called["value"] is False
@@ -1021,12 +1093,20 @@ async def test_execute_download_respects_blur_setting(monkeypatch, tmp_path):
         lambda: StubSettingsManager(True),
     )
 
-    monkeypatch.setattr(download_manager, "get_downloader", AsyncMock(return_value=dummy_downloader))
-    monkeypatch.setattr(download_manager.ExifUtils, "optimize_image", staticmethod(lambda **_kwargs: (b"", {})))
+    monkeypatch.setattr(
+        download_manager, "get_downloader", AsyncMock(return_value=dummy_downloader)
+    )
+    monkeypatch.setattr(
+        download_manager.ExifUtils,
+        "optimize_image",
+        staticmethod(lambda **_kwargs: (b"", {})),
+    )
     monkeypatch.setattr(MetadataManager, "save_metadata", AsyncMock(return_value=True))
 
     dummy_scanner = SimpleNamespace(add_model_to_cache=AsyncMock(return_value=None))
-    monkeypatch.setattr(DownloadManager, "_get_lora_scanner", AsyncMock(return_value=dummy_scanner))
+    monkeypatch.setattr(
+        DownloadManager, "_get_lora_scanner", AsyncMock(return_value=dummy_scanner)
+    )
 
     result = await manager._execute_download(
         download_urls=download_urls,
@@ -1040,10 +1120,283 @@ async def test_execute_download_respects_blur_setting(monkeypatch, tmp_path):
     )
 
     assert result == {"success": True}
-    preview_urls = [url for url, _ in dummy_downloader.file_calls if url.endswith(".jpeg")]
+    preview_urls = [
+        url for url, _ in dummy_downloader.file_calls if url.endswith(".jpeg")
+    ]
     assert preview_urls
     assert all("nsfw.jpeg" not in url for url in preview_urls)
     assert any("safe.jpeg" in url for url in preview_urls)
     assert metadata.preview_nsfw_level == 1
     stored_preview = manager._active_downloads["dl"].get("preview_path")
     assert stored_preview and stored_preview.endswith(".jpeg")
+
+
+async def test_civarchive_source_uses_civarchive_provider(
+    monkeypatch, scanners, tmp_path
+):
+    manager = DownloadManager()
+
+    captured_providers = []
+
+    class CivArchiveProvider:
+        async def get_model_version(self, model_id, model_version_id):
+            captured_providers.append("civarchive")
+            return {
+                "id": 119514,
+                "model": {"type": "LoRA", "tags": ["celebrity"]},
+                "baseModel": "SD 1.5",
+                "creator": {"username": "dogu_cat"},
+                "source": "civarchive",
+                "files": [
+                    {
+                        "type": "Model",
+                        "primary": True,
+                        "mirrors": [
+                            {
+                                "url": "https://huggingface.co/file.safetensors",
+                                "deletedAt": None,
+                            },
+                            {
+                                "url": "https://civitai.com/api/download/models/119514",
+                                "deletedAt": "2025-05-23T00:00:00.000Z",
+                            },
+                        ],
+                        "name": "file.safetensors",
+                    }
+                ],
+            }
+
+    class DefaultProvider:
+        async def get_model_version(self, model_id, model_version_id):
+            captured_providers.append("default")
+            return {
+                "id": 119514,
+                "model": {"type": "LoRA", "tags": ["celebrity"]},
+                "baseModel": "SD 1.5",
+                "creator": {"username": "dogu_cat"},
+                "files": [
+                    {
+                        "type": "Model",
+                        "primary": True,
+                        "downloadUrl": "https://civitai.com/api/download/models/119514",
+                        "name": "file.safetensors",
+                    }
+                ],
+            }
+
+    async def get_metadata_provider(provider_name):
+        if provider_name == "civarchive_api":
+            return CivArchiveProvider()
+        return None
+
+    async def get_default_metadata_provider():
+        return DefaultProvider()
+
+    monkeypatch.setattr(
+        download_manager, "get_metadata_provider", get_metadata_provider
+    )
+    monkeypatch.setattr(
+        download_manager, "get_default_metadata_provider", get_default_metadata_provider
+    )
+
+    captured = {}
+
+    async def fake_execute_download(
+        self,
+        *,
+        download_urls,
+        save_dir,
+        metadata,
+        version_info,
+        relative_path,
+        progress_callback,
+        model_type,
+        download_id,
+    ):
+        captured["download_urls"] = download_urls
+        captured["version_info"] = version_info
+        return {"success": True}
+
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
+
+    result = await manager.download_from_civitai(
+        model_id=110828,
+        model_version_id=119514,
+        save_dir=str(tmp_path),
+        use_default_paths=True,
+        progress_callback=None,
+        source="civarchive",
+    )
+
+    assert result["success"] is True
+    assert captured_providers == ["civarchive"]
+    assert captured["version_info"]["source"] == "civarchive"
+
+
+async def test_civarchive_source_prioritizes_non_civitai_urls(
+    monkeypatch, scanners, tmp_path
+):
+    manager = DownloadManager()
+
+    class CivArchiveProvider:
+        async def get_model_version(self, model_id, model_version_id):
+            return {
+                "id": 119514,
+                "model": {"type": "LoRA", "tags": ["celebrity"]},
+                "baseModel": "SD 1.5",
+                "creator": {"username": "dogu_cat"},
+                "source": "civarchive",
+                "files": [
+                    {
+                        "type": "Model",
+                        "primary": True,
+                        "mirrors": [
+                            {
+                                "url": "https://huggingface.co/file.safetensors",
+                                "deletedAt": None,
+                                "source": "huggingface",
+                            },
+                            {
+                                "url": "https://civitai.com/api/download/models/119514",
+                                "deletedAt": None,
+                                "source": "civitai",
+                            },
+                            {
+                                "url": "https://another-mirror.org/file.safetensors",
+                                "deletedAt": None,
+                                "source": "other",
+                            },
+                        ],
+                        "name": "file.safetensors",
+                    }
+                ],
+            }
+
+    async def get_metadata_provider(provider_name):
+        if provider_name == "civarchive_api":
+            return CivArchiveProvider()
+        return None
+
+    monkeypatch.setattr(
+        download_manager, "get_metadata_provider", get_metadata_provider
+    )
+
+    captured = {}
+
+    async def fake_execute_download(
+        self,
+        *,
+        download_urls,
+        save_dir,
+        metadata,
+        version_info,
+        relative_path,
+        progress_callback,
+        model_type,
+        download_id,
+    ):
+        captured["download_urls"] = download_urls
+        return {"success": True}
+
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
+
+    result = await manager.download_from_civitai(
+        model_id=110828,
+        model_version_id=119514,
+        save_dir=str(tmp_path),
+        use_default_paths=True,
+        progress_callback=None,
+        source="civarchive",
+    )
+
+    assert result["success"] is True
+    assert captured["download_urls"] == [
+        "https://huggingface.co/file.safetensors",
+        "https://another-mirror.org/file.safetensors",
+        "https://civitai.com/api/download/models/119514",
+    ]
+    assert captured["download_urls"][0] == "https://huggingface.co/file.safetensors"
+    assert captured["download_urls"][1] == "https://another-mirror.org/file.safetensors"
+
+
+async def test_civarchive_source_fallback_to_default_provider(
+    monkeypatch, scanners, tmp_path
+):
+    manager = DownloadManager()
+
+    class CivArchiveProvider:
+        async def get_model_version(self, model_id, model_version_id):
+            return None
+
+    class DefaultProvider:
+        async def get_model_version(self, model_id, model_version_id):
+            return {
+                "id": 119514,
+                "model": {"type": "LoRA", "tags": ["celebrity"]},
+                "baseModel": "SD 1.5",
+                "creator": {"username": "dogu_cat"},
+                "files": [
+                    {
+                        "type": "Model",
+                        "primary": True,
+                        "downloadUrl": "https://civitai.com/api/download/models/119514",
+                        "name": "file.safetensors",
+                    }
+                ],
+            }
+
+    captured_providers = []
+
+    async def get_metadata_provider(provider_name):
+        if provider_name == "civarchive_api":
+            captured_providers.append("civarchive_api")
+            return CivArchiveProvider()
+        return None
+
+    async def get_default_metadata_provider():
+        captured_providers.append("default")
+        return DefaultProvider()
+
+    monkeypatch.setattr(
+        download_manager, "get_metadata_provider", get_metadata_provider
+    )
+    monkeypatch.setattr(
+        download_manager, "get_default_metadata_provider", get_default_metadata_provider
+    )
+
+    captured = {}
+
+    async def fake_execute_download(
+        self,
+        *,
+        download_urls,
+        save_dir,
+        metadata,
+        version_info,
+        relative_path,
+        progress_callback,
+        model_type,
+        download_id,
+    ):
+        captured["download_urls"] = download_urls
+        return {"success": True}
+
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
+
+    result = await manager.download_from_civitai(
+        model_id=110828,
+        model_version_id=119514,
+        save_dir=str(tmp_path),
+        use_default_paths=True,
+        progress_callback=None,
+        source="civarchive",
+    )
+
+    assert result["success"] is True
+    assert captured_providers == ["civarchive_api", "default"]
