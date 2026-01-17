@@ -3,1463 +3,1493 @@
   try {
     if (typeof document != "undefined") {
       var elementStyle = document.createElement("style");
-      elementStyle.appendChild(document.createTextNode(`.filter-chip[data-v-ff0e49d3] {\r
-  display: inline-flex;\r
-  align-items: center;\r
-  gap: 2px;\r
-  padding: 3px 8px;\r
-  border-radius: 4px;\r
-  font-size: 11px;\r
-  font-weight: 500;\r
-  background: var(--comfy-input-bg);\r
-  border: 1px solid var(--border-color);\r
-  color: var(--fg-color);\r
+      elementStyle.appendChild(document.createTextNode(`.filter-chip[data-v-7e36267d] {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--comfy-input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--fg-color);
   white-space: nowrap;
 }
-.filter-chip__text[data-v-ff0e49d3] {\r
-  max-width: 120px;\r
-  overflow: hidden;\r
+.filter-chip__text[data-v-7e36267d] {
+  max-width: 120px;
+  overflow: hidden;
   text-overflow: ellipsis;
 }
-.filter-chip__count[data-v-ff0e49d3] {\r
-  opacity: 0.6;\r
+.filter-chip__count[data-v-7e36267d] {
+  opacity: 0.6;
   font-size: 10px;
 }
-.filter-chip__remove[data-v-ff0e49d3] {\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: center;\r
-  width: 14px;\r
-  height: 14px;\r
-  margin-left: 2px;\r
-  padding: 0;\r
-  background: transparent;\r
-  border: none;\r
-  color: inherit;\r
-  font-size: 14px;\r
-  line-height: 1;\r
-  cursor: pointer;\r
-  opacity: 0.6;\r
+.filter-chip__remove[data-v-7e36267d] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.6;
   transition: opacity 0.15s;
 }
-.filter-chip__remove[data-v-ff0e49d3]:hover {\r
+.filter-chip__remove[data-v-7e36267d]:hover {
   opacity: 1;
-}\r
-\r
+}
+
 /* Variants */
-.filter-chip--include[data-v-ff0e49d3] {\r
-  background: rgba(66, 153, 225, 0.15);\r
-  border-color: rgba(66, 153, 225, 0.4);\r
+.filter-chip--include[data-v-7e36267d] {
+  background: rgba(66, 153, 225, 0.15);
+  border-color: rgba(66, 153, 225, 0.4);
   color: #4299e1;
 }
-.filter-chip--exclude[data-v-ff0e49d3] {\r
-  background: rgba(239, 68, 68, 0.15);\r
-  border-color: rgba(239, 68, 68, 0.4);\r
+.filter-chip--exclude[data-v-7e36267d] {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
   color: #ef4444;
 }
-.filter-chip--neutral[data-v-ff0e49d3] {\r
-  background: rgba(100, 100, 100, 0.3);\r
-  border-color: rgba(150, 150, 150, 0.4);\r
+.filter-chip--neutral[data-v-7e36267d] {
+  background: rgba(100, 100, 100, 0.3);
+  border-color: rgba(150, 150, 150, 0.4);
   color: var(--fg-color);
 }
-.filter-chip--path[data-v-ff0e49d3] {\r
-  background: rgba(30, 30, 30, 0.8);\r
-  border-color: rgba(255, 255, 255, 0.15);\r
-  color: var(--fg-color);\r
-  font-family: monospace;\r
+.filter-chip--path[data-v-7e36267d] {
+  background: rgba(30, 30, 30, 0.8);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--fg-color);
+  font-family: monospace;
   font-size: 10px;
-}\r
+}
 
-.edit-button[data-v-8518ff86] {\r
-  display: inline-flex;\r
-  align-items: center;\r
-  gap: 4px;\r
-  padding: 2px 6px;\r
-  background: transparent;\r
-  border: none;\r
-  color: var(--fg-color);\r
-  font-size: 11px;\r
-  cursor: pointer;\r
-  opacity: 0.6;\r
-  transition: opacity 0.15s;\r
+.edit-button[data-v-8da8aa4b] {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: transparent;
+  border: none;
+  color: var(--fg-color);
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s;
   border-radius: 3px;
 }
-.edit-button[data-v-8518ff86]:hover {\r
-  opacity: 1;\r
+.edit-button[data-v-8da8aa4b]:hover {
+  opacity: 1;
   background: rgba(255, 255, 255, 0.05);
 }
-.edit-button__icon[data-v-8518ff86] {\r
-  width: 10px;\r
+.edit-button__icon[data-v-8da8aa4b] {
+  width: 10px;
   height: 10px;
 }
-.edit-button__text[data-v-8518ff86] {\r
+.edit-button__text[data-v-8da8aa4b] {
   font-weight: 400;
-}\r
+}
 
-.section[data-v-9c43228a] {\r
+.section[data-v-12f059e2] {
   margin-bottom: 16px;
 }
-.section__header[data-v-9c43228a] {\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: space-between;\r
+.section__header[data-v-12f059e2] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 8px;
 }
-.section__title[data-v-9c43228a] {\r
-  font-size: 10px;\r
-  font-weight: 600;\r
-  text-transform: uppercase;\r
-  letter-spacing: 0.05em;\r
-  color: var(--fg-color, #fff);\r
+.section__title[data-v-12f059e2] {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-color, #fff);
   opacity: 0.6;
 }
-.section__content[data-v-9c43228a] {\r
-  min-height: 32px;\r
-  display: flex;\r
+.section__content[data-v-12f059e2] {
+  min-height: 32px;
+  display: flex;
   align-items: center;
 }
-.section__placeholder[data-v-9c43228a] {\r
-  width: 100%;\r
-  padding: 8px 12px;\r
-  background: var(--comfy-input-bg, #333);\r
-  border-radius: 4px;\r
-  font-size: 12px;\r
-  color: var(--fg-color, #fff);\r
-  opacity: 0.5;\r
-  text-align: center;\r
+.section__placeholder[data-v-12f059e2] {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--comfy-input-bg, #333);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
+  text-align: center;
   box-sizing: border-box;
 }
-.section__chips[data-v-9c43228a] {\r
-  display: flex;\r
-  flex-wrap: wrap;\r
+.section__chips[data-v-12f059e2] {
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-}\r
+}
 
-.section[data-v-f9b6b8b3] {\r
+.section[data-v-b869b780] {
   margin-bottom: 16px;
 }
-.section__header[data-v-f9b6b8b3] {\r
+.section__header[data-v-b869b780] {
   margin-bottom: 8px;
 }
-.section__title[data-v-f9b6b8b3] {\r
-  font-size: 10px;\r
-  font-weight: 600;\r
-  text-transform: uppercase;\r
-  letter-spacing: 0.05em;\r
-  color: var(--fg-color, #fff);\r
+.section__title[data-v-b869b780] {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-color, #fff);
   opacity: 0.6;
 }
-.section__columns[data-v-f9b6b8b3] {\r
-  display: grid;\r
-  grid-template-columns: 1fr 1fr;\r
+.section__columns[data-v-b869b780] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
-.section__column[data-v-f9b6b8b3] {\r
+.section__column[data-v-b869b780] {
   min-width: 0;
 }
-.section__column-header[data-v-f9b6b8b3] {\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: space-between;\r
+.section__column-header[data-v-b869b780] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 6px;
 }
-.section__column-title[data-v-f9b6b8b3] {\r
-  font-size: 9px;\r
-  font-weight: 500;\r
-  text-transform: uppercase;\r
+.section__column-title[data-v-b869b780] {
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-.section__column-title--include[data-v-f9b6b8b3] {\r
+.section__column-title--include[data-v-b869b780] {
   color: #4299e1;
 }
-.section__column-title--exclude[data-v-f9b6b8b3] {\r
+.section__column-title--exclude[data-v-b869b780] {
   color: #ef4444;
 }
-.section__column-content[data-v-f9b6b8b3] {\r
+.section__column-content[data-v-b869b780] {
   min-height: 28px;
 }
-.section__empty[data-v-f9b6b8b3] {\r
-  width: 100%;\r
-  padding: 8px 12px;\r
-  background: var(--comfy-input-bg, #333);\r
-  border-radius: 4px;\r
-  font-size: 12px;\r
-  color: var(--fg-color, #fff);\r
-  opacity: 0.5;\r
-  text-align: center;\r
+.section__empty[data-v-b869b780] {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--comfy-input-bg, #333);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
+  text-align: center;
   box-sizing: border-box;
 }
-.section__chips[data-v-f9b6b8b3] {\r
-  display: flex;\r
-  flex-wrap: wrap;\r
+.section__chips[data-v-b869b780] {
+  display: flex;
+  flex-wrap: wrap;
   gap: 4px;
-}\r
+}
 
-.section[data-v-4816c605] {\r
+.section[data-v-af9caf84] {
   margin-bottom: 16px;
 }
-.section__header[data-v-4816c605] {\r
+.section__header[data-v-af9caf84] {
   margin-bottom: 8px;
 }
-.section__title[data-v-4816c605] {\r
-  font-size: 10px;\r
-  font-weight: 600;\r
-  text-transform: uppercase;\r
-  letter-spacing: 0.05em;\r
-  color: var(--fg-color, #fff);\r
+.section__title[data-v-af9caf84] {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-color, #fff);
   opacity: 0.6;
 }
-.section__columns[data-v-4816c605] {\r
-  display: grid;\r
-  grid-template-columns: 1fr 1fr;\r
+.section__columns[data-v-af9caf84] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
-.section__column[data-v-4816c605] {\r
+.section__column[data-v-af9caf84] {
   min-width: 0;
 }
-.section__column-header[data-v-4816c605] {\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: space-between;\r
+.section__column-header[data-v-af9caf84] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 6px;
 }
-.section__column-title[data-v-4816c605] {\r
-  font-size: 9px;\r
-  font-weight: 500;\r
-  text-transform: uppercase;\r
+.section__column-title[data-v-af9caf84] {
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-.section__column-title--include[data-v-4816c605] {\r
+.section__column-title--include[data-v-af9caf84] {
   color: #4299e1;
 }
-.section__column-title--exclude[data-v-4816c605] {\r
+.section__column-title--exclude[data-v-af9caf84] {
   color: #ef4444;
 }
-.section__edit-btn[data-v-4816c605] {\r
-  width: 20px;\r
-  height: 20px;\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: center;\r
-  background: transparent;\r
-  border: none;\r
-  color: var(--fg-color, #fff);\r
-  cursor: pointer;\r
-  opacity: 0.5;\r
-  border-radius: 3px;\r
-  padding: 0;\r
+.section__edit-btn[data-v-af9caf84] {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--fg-color, #fff);
+  cursor: pointer;
+  opacity: 0.5;
+  border-radius: 3px;
+  padding: 0;
   transition: all 0.15s;
 }
-.section__edit-btn svg[data-v-4816c605] {\r
-  width: 12px;\r
+.section__edit-btn svg[data-v-af9caf84] {
+  width: 12px;
   height: 12px;
 }
-.section__edit-btn[data-v-4816c605]:hover {\r
-  opacity: 1;\r
+.section__edit-btn[data-v-af9caf84]:hover {
+  opacity: 1;
   background: var(--comfy-input-bg, #333);
 }
-.section__edit-btn--include[data-v-4816c605]:hover {\r
+.section__edit-btn--include[data-v-af9caf84]:hover {
   color: #4299e1;
 }
-.section__edit-btn--exclude[data-v-4816c605]:hover {\r
+.section__edit-btn--exclude[data-v-af9caf84]:hover {
   color: #ef4444;
 }
-.section__content[data-v-4816c605] {\r
+.section__content[data-v-af9caf84] {
   min-height: 22px;
 }
-.section__paths[data-v-4816c605] {\r
-  display: flex;\r
-  flex-wrap: wrap;\r
-  gap: 4px;\r
+.section__paths[data-v-af9caf84] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
   min-height: 22px;
 }
-.section__empty[data-v-4816c605] {\r
-  font-size: 10px;\r
-  color: var(--fg-color, #fff);\r
-  opacity: 0.3;\r
-  font-style: italic;\r
-  min-height: 22px;\r
-  display: flex;\r
+.section__empty[data-v-af9caf84] {
+  font-size: 10px;
+  color: var(--fg-color, #fff);
+  opacity: 0.3;
+  font-style: italic;
+  min-height: 22px;
+  display: flex;
   align-items: center;
-}\r
+}
 
-.section[data-v-18499cc1] {\r
+.section[data-v-dea4adf6] {
   margin-bottom: 16px;
 }
-.section__header[data-v-18499cc1] {\r
+.section__header[data-v-dea4adf6] {
   margin-bottom: 8px;
 }
-.section__title[data-v-18499cc1] {\r
-  font-size: 10px;\r
-  font-weight: 600;\r
-  text-transform: uppercase;\r
-  letter-spacing: 0.05em;\r
-  color: var(--fg-color, #fff);\r
+.section__title[data-v-dea4adf6] {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-color, #fff);
   opacity: 0.6;
 }
-.section__toggles[data-v-18499cc1] {\r
-  display: flex;\r
+.section__toggles[data-v-dea4adf6] {
+  display: flex;
   gap: 16px;
 }
-.toggle-item[data-v-18499cc1] {\r
-  display: flex;\r
-  align-items: center;\r
-  gap: 8px;\r
+.toggle-item[data-v-dea4adf6] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
 }
-.toggle-item__label[data-v-18499cc1] {\r
-  font-size: 12px;\r
+.toggle-item__label[data-v-dea4adf6] {
+  font-size: 12px;
   color: var(--fg-color, #fff);
 }
-.toggle-switch[data-v-18499cc1] {\r
-  position: relative;\r
-  width: 36px;\r
-  height: 20px;\r
-  padding: 0;\r
-  background: transparent;\r
-  border: none;\r
+.toggle-switch[data-v-dea4adf6] {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
   cursor: pointer;
 }
-.toggle-switch__track[data-v-18499cc1] {\r
-  position: absolute;\r
-  inset: 0;\r
-  background: var(--comfy-input-bg, #333);\r
-  border: 1px solid var(--border-color, #444);\r
-  border-radius: 10px;\r
+.toggle-switch__track[data-v-dea4adf6] {
+  position: absolute;
+  inset: 0;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 10px;
   transition: all 0.2s;
 }
-.toggle-switch--active .toggle-switch__track[data-v-18499cc1] {\r
-  background: rgba(66, 153, 225, 0.3);\r
+.toggle-switch--active .toggle-switch__track[data-v-dea4adf6] {
+  background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.toggle-switch__thumb[data-v-18499cc1] {\r
-  position: absolute;\r
-  top: 3px;\r
-  left: 2px;\r
-  width: 14px;\r
-  height: 14px;\r
-  background: var(--fg-color, #fff);\r
-  border-radius: 50%;\r
-  transition: all 0.2s;\r
+.toggle-switch__thumb[data-v-dea4adf6] {
+  position: absolute;
+  top: 3px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--fg-color, #fff);
+  border-radius: 50%;
+  transition: all 0.2s;
   opacity: 0.6;
 }
-.toggle-switch--active .toggle-switch__thumb[data-v-18499cc1] {\r
-  transform: translateX(16px);\r
-  background: #4299e1;\r
+.toggle-switch--active .toggle-switch__thumb[data-v-dea4adf6] {
+  transform: translateX(16px);
+  background: #4299e1;
   opacity: 1;
 }
-.toggle-switch:hover .toggle-switch__thumb[data-v-18499cc1] {\r
+.toggle-switch:hover .toggle-switch__thumb[data-v-dea4adf6] {
   opacity: 1;
-}\r
+}
 
-.preview[data-v-81e85cf2] {\r
-  padding-top: 12px;\r
-  border-top: 1px solid var(--border-color, #444);\r
+.preview[data-v-6a4b50a1] {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color, #444);
   position: relative;
 }
-.preview__header[data-v-81e85cf2] {\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: space-between;\r
+.preview__header[data-v-6a4b50a1] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   cursor: default;
 }
-.preview__title[data-v-81e85cf2] {\r
-  font-size: 12px;\r
-  font-weight: 500;\r
+.preview__title[data-v-6a4b50a1] {
+  font-size: 12px;
+  font-weight: 500;
   color: var(--fg-color, #fff);
 }
-.preview__refresh[data-v-81e85cf2] {\r
-  width: 24px;\r
-  height: 24px;\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: center;\r
-  background: transparent;\r
-  border: none;\r
-  color: var(--fg-color, #fff);\r
-  cursor: pointer;\r
-  opacity: 0.6;\r
-  border-radius: 4px;\r
+.preview__refresh[data-v-6a4b50a1] {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--fg-color, #fff);
+  cursor: pointer;
+  opacity: 0.6;
+  border-radius: 4px;
   transition: all 0.15s;
 }
-.preview__refresh[data-v-81e85cf2]:hover {\r
-  opacity: 1;\r
+.preview__refresh[data-v-6a4b50a1]:hover {
+  opacity: 1;
   background: var(--comfy-input-bg, #333);
 }
-.preview__refresh[data-v-81e85cf2]:disabled {\r
+.preview__refresh[data-v-6a4b50a1]:disabled {
   cursor: not-allowed;
 }
-.preview__refresh-icon[data-v-81e85cf2] {\r
-  width: 14px;\r
+.preview__refresh-icon[data-v-6a4b50a1] {
+  width: 14px;
   height: 14px;
 }
-.preview__refresh--loading .preview__refresh-icon[data-v-81e85cf2] {\r
-  animation: spin-81e85cf2 1s linear infinite;
+.preview__refresh--loading .preview__refresh-icon[data-v-6a4b50a1] {
+  animation: spin-6a4b50a1 1s linear infinite;
 }
-@keyframes spin-81e85cf2 {
+@keyframes spin-6a4b50a1 {
 from { transform: rotate(0deg);
 }
 to { transform: rotate(360deg);
 }
-}\r
-\r
+}
+
 /* Tooltip styles */
-.preview__tooltip[data-v-81e85cf2] {\r
-  position: absolute;\r
-  bottom: 100%;\r
-  left: 0;\r
-  right: 0;\r
-  margin-bottom: 8px;\r
+.preview__tooltip[data-v-6a4b50a1] {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 8px;
   z-index: 100;
 }
-.preview__tooltip-content[data-v-81e85cf2] {\r
-  background: var(--comfy-menu-bg, #1a1a1a);\r
-  border: 1px solid var(--border-color, #444);\r
-  border-radius: 6px;\r
-  padding: 8px;\r
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\r
-  display: flex;\r
-  flex-direction: column;\r
+.preview__tooltip-content[data-v-6a4b50a1] {
+  background: var(--comfy-menu-bg, #1a1a1a);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 6px;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
   gap: 4px;
 }
-.preview__item[data-v-81e85cf2] {\r
-  display: flex;\r
-  align-items: center;\r
-  gap: 8px;\r
-  padding: 4px 6px;\r
-  background: var(--comfy-input-bg, #333);\r
+.preview__item[data-v-6a4b50a1] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  background: var(--comfy-input-bg, #333);
   border-radius: 4px;
 }
-.preview__thumb[data-v-81e85cf2] {\r
-  width: 28px;\r
-  height: 28px;\r
-  object-fit: cover;\r
-  border-radius: 3px;\r
-  flex-shrink: 0;\r
+.preview__thumb[data-v-6a4b50a1] {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 3px;
+  flex-shrink: 0;
   background: rgba(0, 0, 0, 0.2);
 }
-.preview__thumb--placeholder[data-v-81e85cf2] {\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: center;\r
-  color: var(--fg-color, #fff);\r
+.preview__thumb--placeholder[data-v-6a4b50a1] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-color, #fff);
   opacity: 0.2;
 }
-.preview__thumb--placeholder svg[data-v-81e85cf2] {\r
-  width: 14px;\r
+.preview__thumb--placeholder svg[data-v-6a4b50a1] {
+  width: 14px;
   height: 14px;
 }
-.preview__name[data-v-81e85cf2] {\r
-  flex: 1;\r
-  font-size: 11px;\r
-  color: var(--fg-color, #fff);\r
-  overflow: hidden;\r
-  text-overflow: ellipsis;\r
+.preview__name[data-v-6a4b50a1] {
+  flex: 1;
+  font-size: 11px;
+  color: var(--fg-color, #fff);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.preview__more[data-v-81e85cf2] {\r
-  font-size: 11px;\r
-  color: var(--fg-color, #fff);\r
-  opacity: 0.5;\r
-  text-align: center;\r
+.preview__more[data-v-6a4b50a1] {
+  font-size: 11px;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
+  text-align: center;
   padding: 4px;
 }
-.preview__empty[data-v-81e85cf2] {\r
-  font-size: 11px;\r
-  color: var(--fg-color, #fff);\r
-  opacity: 0.4;\r
-  text-align: center;\r
+.preview__empty[data-v-6a4b50a1] {
+  font-size: 11px;
+  color: var(--fg-color, #fff);
+  opacity: 0.4;
+  text-align: center;
   padding: 8px 0 0 0;
-}\r
-\r
+}
+
 /* Tooltip transitions */
-.tooltip-enter-active[data-v-81e85cf2],\r
-.tooltip-leave-active[data-v-81e85cf2] {\r
+.tooltip-enter-active[data-v-6a4b50a1],
+.tooltip-leave-active[data-v-6a4b50a1] {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
-.tooltip-enter-from[data-v-81e85cf2],\r
-.tooltip-leave-to[data-v-81e85cf2] {\r
-  opacity: 0;\r
+.tooltip-enter-from[data-v-6a4b50a1],
+.tooltip-leave-to[data-v-6a4b50a1] {
+  opacity: 0;
   transform: translateY(4px);
-}\r
+}
 
-.summary-view[data-v-f392c3db] {\r
-  display: flex;\r
-  flex-direction: column;\r
+.summary-view[data-v-328e7526] {
+  display: flex;
+  flex-direction: column;
   height: 100%;
 }
-.summary-view__filters[data-v-f392c3db] {\r
-  flex: 1;\r
-  overflow-y: auto;\r
-  padding-right: 4px;\r
-  margin-right: -4px;\r
-  /* Allow flex item to shrink below content size */\r
+.summary-view__filters[data-v-328e7526] {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-right: -4px;
+  /* Allow flex item to shrink below content size */
   min-height: 0;
-}\r
+}
 
-.lora-pool-modal-backdrop[data-v-d5f993a0] {\r
-  position: fixed;\r
-  inset: 0;\r
-  z-index: 10000;\r
-  background: rgba(0, 0, 0, 0.6);\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: center;\r
+.lora-pool-modal-backdrop[data-v-fce76ca8] {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   backdrop-filter: blur(2px);
 }
-.lora-pool-modal[data-v-d5f993a0] {\r
-  background: var(--comfy-menu-bg, #1a1a1a);\r
-  border: 1px solid var(--border-color, #444);\r
-  border-radius: 8px;\r
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);\r
-  max-width: 400px;\r
-  width: 90%;\r
-  max-height: 70vh;\r
-  display: flex;\r
+.lora-pool-modal[data-v-fce76ca8] {
+  background: var(--comfy-menu-bg, #1a1a1a);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  max-width: 400px;
+  width: 90%;
+  max-height: 70vh;
+  display: flex;
   flex-direction: column;
 }
-.lora-pool-modal__header[data-v-d5f993a0] {\r
-  display: flex;\r
-  align-items: flex-start;\r
-  justify-content: space-between;\r
-  padding: 16px;\r
+.lora-pool-modal__header[data-v-fce76ca8] {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px;
   border-bottom: 1px solid var(--border-color, #444);
 }
-.lora-pool-modal__title-container[data-v-d5f993a0] {\r
+.lora-pool-modal__title-container[data-v-fce76ca8] {
   flex: 1;
 }
-.lora-pool-modal__title[data-v-d5f993a0] {\r
-  font-size: 16px;\r
-  font-weight: 600;\r
-  color: var(--fg-color, #fff);\r
+.lora-pool-modal__title[data-v-fce76ca8] {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg-color, #fff);
   margin: 0;
 }
-.lora-pool-modal__subtitle[data-v-d5f993a0] {\r
-  font-size: 12px;\r
-  color: var(--fg-color, #fff);\r
-  opacity: 0.6;\r
+.lora-pool-modal__subtitle[data-v-fce76ca8] {
+  font-size: 12px;
+  color: var(--fg-color, #fff);
+  opacity: 0.6;
   margin: 4px 0 0 0;
 }
-.lora-pool-modal__close[data-v-d5f993a0] {\r
-  width: 28px;\r
-  height: 28px;\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: center;\r
-  background: transparent;\r
-  border: none;\r
-  color: var(--fg-color, #fff);\r
-  font-size: 22px;\r
-  cursor: pointer;\r
-  opacity: 0.7;\r
-  border-radius: 4px;\r
-  line-height: 1;\r
-  padding: 0;\r
+.lora-pool-modal__close[data-v-fce76ca8] {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--fg-color, #fff);
+  font-size: 22px;
+  cursor: pointer;
+  opacity: 0.7;
+  border-radius: 4px;
+  line-height: 1;
+  padding: 0;
   margin: -4px -4px 0 0;
 }
-.lora-pool-modal__close[data-v-d5f993a0]:hover {\r
-  opacity: 1;\r
+.lora-pool-modal__close[data-v-fce76ca8]:hover {
+  opacity: 1;
   background: var(--comfy-input-bg, #333);
 }
-.lora-pool-modal__search[data-v-d5f993a0] {\r
-  padding: 12px 16px;\r
+.lora-pool-modal__search[data-v-fce76ca8] {
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border-color, #444);
 }
-.lora-pool-modal__body[data-v-d5f993a0] {\r
-  flex: 1;\r
-  overflow-y: auto;\r
+.lora-pool-modal__body[data-v-fce76ca8] {
+  flex: 1;
+  overflow-y: auto;
   padding: 12px 16px 16px;
-}\r
-\r
+}
+
 /* Transitions */
-.modal-enter-active[data-v-d5f993a0],\r
-.modal-leave-active[data-v-d5f993a0] {\r
+.modal-enter-active[data-v-fce76ca8],
+.modal-leave-active[data-v-fce76ca8] {
   transition: opacity 0.2s ease;
 }
-.modal-enter-from[data-v-d5f993a0],\r
-.modal-leave-to[data-v-d5f993a0] {\r
+.modal-enter-from[data-v-fce76ca8],
+.modal-leave-to[data-v-fce76ca8] {
   opacity: 0;
 }
-.modal-enter-active .lora-pool-modal[data-v-d5f993a0],\r
-.modal-leave-active .lora-pool-modal[data-v-d5f993a0] {\r
+.modal-enter-active .lora-pool-modal[data-v-fce76ca8],
+.modal-leave-active .lora-pool-modal[data-v-fce76ca8] {
   transition: transform 0.2s ease;
 }
-.modal-enter-from .lora-pool-modal[data-v-d5f993a0],\r
-.modal-leave-to .lora-pool-modal[data-v-d5f993a0] {\r
+.modal-enter-from .lora-pool-modal[data-v-fce76ca8],
+.modal-leave-to .lora-pool-modal[data-v-fce76ca8] {
   transform: scale(0.95);
-}\r
+}
 
-.search-container[data-v-7ea2ad22] {\r
+.search-container[data-v-e02ca44a] {
   position: relative;
 }
-.search-icon[data-v-7ea2ad22] {\r
-  position: absolute;\r
-  left: 10px;\r
-  top: 50%;\r
-  transform: translateY(-50%);\r
-  width: 14px;\r
-  height: 14px;\r
-  color: var(--fg-color, #fff);\r
+.search-icon[data-v-e02ca44a] {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.search-input[data-v-7ea2ad22] {\r
-  width: 100%;\r
-  padding: 8px 12px 8px 32px;\r
-  background: var(--comfy-input-bg, #333);\r
-  border: 1px solid var(--border-color, #444);\r
-  border-radius: 6px;\r
-  color: var(--fg-color, #fff);\r
-  font-size: 13px;\r
+.search-input[data-v-e02ca44a] {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 6px;
+  color: var(--fg-color, #fff);
+  font-size: 13px;
   outline: none;
 }
-.search-input[data-v-7ea2ad22]:focus {\r
+.search-input[data-v-e02ca44a]:focus {
   border-color: var(--fg-color, #fff);
 }
-.search-input[data-v-7ea2ad22]::placeholder {\r
-  color: var(--fg-color, #fff);\r
+.search-input[data-v-e02ca44a]::placeholder {
+  color: var(--fg-color, #fff);
   opacity: 0.4;
 }
-.clear-button[data-v-7ea2ad22] {\r
-  position: absolute;\r
-  right: 8px;\r
-  top: 50%;\r
-  transform: translateY(-50%);\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: center;\r
-  width: 20px;\r
-  height: 20px;\r
-  background: transparent;\r
-  border: none;\r
-  cursor: pointer;\r
-  padding: 0;\r
-  opacity: 0.5;\r
+.clear-button[data-v-e02ca44a] {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.5;
   transition: opacity 0.15s;
 }
-.clear-button[data-v-7ea2ad22]:hover {\r
+.clear-button[data-v-e02ca44a]:hover {
   opacity: 0.8;
 }
-.clear-button svg[data-v-7ea2ad22] {\r
-  width: 12px;\r
-  height: 12px;\r
+.clear-button svg[data-v-e02ca44a] {
+  width: 12px;
+  height: 12px;
   color: var(--fg-color, #fff);
 }
-.model-list[data-v-7ea2ad22] {\r
-  display: flex;\r
-  flex-direction: column;\r
+.model-list[data-v-e02ca44a] {
+  display: flex;
+  flex-direction: column;
   gap: 2px;
 }
-.model-item[data-v-7ea2ad22] {\r
-  display: flex;\r
-  align-items: center;\r
-  gap: 10px;\r
-  padding: 10px 8px;\r
-  border-radius: 4px;\r
-  cursor: pointer;\r
+.model-item[data-v-e02ca44a] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+  border-radius: 4px;
+  cursor: pointer;
   transition: background 0.15s;
 }
-.model-item[data-v-7ea2ad22]:hover {\r
+.model-item[data-v-e02ca44a]:hover {
   background: var(--comfy-input-bg, #333);
 }
-.model-checkbox[data-v-7ea2ad22] {\r
-  position: absolute;\r
-  opacity: 0;\r
+.model-checkbox[data-v-e02ca44a] {
+  position: absolute;
+  opacity: 0;
   pointer-events: none;
 }
-.model-checkbox-visual[data-v-7ea2ad22] {\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: center;\r
-  width: 18px;\r
-  height: 18px;\r
-  background: var(--comfy-input-bg, #333);\r
-  border: 1px solid var(--border-color, #555);\r
-  border-radius: 4px;\r
-  flex-shrink: 0;\r
+.model-checkbox-visual[data-v-e02ca44a] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #555);
+  border-radius: 4px;
+  flex-shrink: 0;
   transition: all 0.15s;
 }
-.model-item:hover .model-checkbox-visual[data-v-7ea2ad22] {\r
+.model-item:hover .model-checkbox-visual[data-v-e02ca44a] {
   border-color: var(--fg-color, #fff);
 }
-.model-checkbox:checked + .model-checkbox-visual[data-v-7ea2ad22] {\r
-  background: var(--fg-color, #fff);\r
+.model-checkbox:checked + .model-checkbox-visual[data-v-e02ca44a] {
+  background: var(--fg-color, #fff);
   border-color: var(--fg-color, #fff);
 }
-.check-icon[data-v-7ea2ad22] {\r
-  width: 12px;\r
-  height: 12px;\r
+.check-icon[data-v-e02ca44a] {
+  width: 12px;
+  height: 12px;
   color: var(--comfy-menu-bg, #1a1a1a);
 }
-.model-name[data-v-7ea2ad22] {\r
-  flex: 1;\r
-  font-size: 13px;\r
+.model-name[data-v-e02ca44a] {
+  flex: 1;
+  font-size: 13px;
   color: var(--fg-color, #fff);
 }
-.model-count[data-v-7ea2ad22] {\r
-  font-size: 12px;\r
-  color: var(--fg-color, #fff);\r
+.model-count[data-v-e02ca44a] {
+  font-size: 12px;
+  color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.no-results[data-v-7ea2ad22] {\r
-  padding: 20px;\r
-  text-align: center;\r
-  color: var(--fg-color, #fff);\r
-  opacity: 0.5;\r
+.no-results[data-v-e02ca44a] {
+  padding: 20px;
+  text-align: center;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
   font-size: 13px;
-}\r
+}
 
-.search-container[data-v-2bc9f500] {\r
+.search-container[data-v-110d6f7d] {
   position: relative;
 }
-.search-icon[data-v-2bc9f500] {\r
-  position: absolute;\r
-  left: 10px;\r
-  top: 50%;\r
-  transform: translateY(-50%);\r
-  width: 14px;\r
-  height: 14px;\r
-  color: var(--fg-color, #fff);\r
+.search-icon[data-v-110d6f7d] {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.search-input[data-v-2bc9f500] {\r
-  width: 100%;\r
-  padding: 8px 12px 8px 32px;\r
-  background: var(--comfy-input-bg, #333);\r
-  border: 1px solid var(--border-color, #444);\r
-  border-radius: 6px;\r
-  color: var(--fg-color, #fff);\r
-  font-size: 13px;\r
+.search-input[data-v-110d6f7d] {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 6px;
+  color: var(--fg-color, #fff);
+  font-size: 13px;
   outline: none;
 }
-.search-input[data-v-2bc9f500]:focus {\r
+.search-input[data-v-110d6f7d]:focus {
   border-color: var(--fg-color, #fff);
 }
-.search-input[data-v-2bc9f500]::placeholder {\r
-  color: var(--fg-color, #fff);\r
+.search-input[data-v-110d6f7d]::placeholder {
+  color: var(--fg-color, #fff);
   opacity: 0.4;
 }
-.clear-button[data-v-2bc9f500] {\r
-  position: absolute;\r
-  right: 8px;\r
-  top: 50%;\r
-  transform: translateY(-50%);\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: center;\r
-  width: 20px;\r
-  height: 20px;\r
-  background: transparent;\r
-  border: none;\r
-  cursor: pointer;\r
-  padding: 0;\r
-  opacity: 0.5;\r
+.clear-button[data-v-110d6f7d] {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.5;
   transition: opacity 0.15s;
 }
-.clear-button[data-v-2bc9f500]:hover {\r
+.clear-button[data-v-110d6f7d]:hover {
   opacity: 0.8;
 }
-.clear-button svg[data-v-2bc9f500] {\r
-  width: 12px;\r
-  height: 12px;\r
+.clear-button svg[data-v-110d6f7d] {
+  width: 12px;
+  height: 12px;
   color: var(--fg-color, #fff);
 }
-.tags-container[data-v-2bc9f500] {\r
-  display: flex;\r
-  flex-wrap: wrap;\r
+.tags-container[data-v-110d6f7d] {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
-.tag-chip[data-v-2bc9f500] {\r
-  padding: 6px 12px;\r
-  background: var(--comfy-input-bg, #333);\r
-  border: 1px solid var(--border-color, #555);\r
-  border-radius: 16px;\r
-  color: var(--fg-color, #fff);\r
-  font-size: 12px;\r
-  cursor: pointer;\r
+.tag-chip[data-v-110d6f7d] {
+  padding: 6px 12px;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #555);
+  border-radius: 16px;
+  color: var(--fg-color, #fff);
+  font-size: 12px;
+  cursor: pointer;
   transition: all 0.15s;
-}\r
-\r
+}
+
 /* Default hover (gray for neutral) */
-.tag-chip[data-v-2bc9f500]:hover:not(.tag-chip--selected) {\r
-  border-color: rgba(226, 232, 240, 0.5);\r
+.tag-chip[data-v-110d6f7d]:hover:not(.tag-chip--selected) {
+  border-color: rgba(226, 232, 240, 0.5);
   background: rgba(255, 255, 255, 0.05);
-}\r
-\r
+}
+
 /* Include variant hover - blue tint */
-.tags-modal--include .tag-chip[data-v-2bc9f500]:hover:not(.tag-chip--selected) {\r
-  border-color: rgba(66, 153, 225, 0.4);\r
+.tags-modal--include .tag-chip[data-v-110d6f7d]:hover:not(.tag-chip--selected) {
+  border-color: rgba(66, 153, 225, 0.4);
   background: rgba(66, 153, 225, 0.08);
-}\r
-\r
+}
+
 /* Exclude variant hover - red tint */
-.tags-modal--exclude .tag-chip[data-v-2bc9f500]:hover:not(.tag-chip--selected) {\r
-  border-color: rgba(239, 68, 68, 0.4);\r
+.tags-modal--exclude .tag-chip[data-v-110d6f7d]:hover:not(.tag-chip--selected) {
+  border-color: rgba(239, 68, 68, 0.4);
   background: rgba(239, 68, 68, 0.08);
-}\r
-\r
+}
+
 /* Selected chips hover - slightly deepen the color */
-.tags-modal--include .tag-chip--selected[data-v-2bc9f500]:hover {\r
-  background: rgba(66, 153, 225, 0.25);\r
+.tags-modal--include .tag-chip--selected[data-v-110d6f7d]:hover {
+  background: rgba(66, 153, 225, 0.25);
   border-color: rgba(66, 153, 225, 0.7);
 }
-.tags-modal--exclude .tag-chip--selected[data-v-2bc9f500]:hover {\r
-  background: rgba(239, 68, 68, 0.25);\r
+.tags-modal--exclude .tag-chip--selected[data-v-110d6f7d]:hover {
+  background: rgba(239, 68, 68, 0.25);
   border-color: rgba(239, 68, 68, 0.7);
-}\r
-\r
+}
+
 /* Include variant - blue when selected */
-.tags-modal--include .tag-chip--selected[data-v-2bc9f500],\r
-.tag-chip--selected[data-v-2bc9f500] {\r
-  background: rgba(66, 153, 225, 0.2);\r
-  border-color: rgba(66, 153, 225, 0.6);\r
+.tags-modal--include .tag-chip--selected[data-v-110d6f7d],
+.tag-chip--selected[data-v-110d6f7d] {
+  background: rgba(66, 153, 225, 0.2);
+  border-color: rgba(66, 153, 225, 0.6);
   color: #4299e1;
-}\r
-\r
+}
+
 /* Exclude variant - red when selected */
-.tags-modal--exclude .tag-chip--selected[data-v-2bc9f500] {\r
-  background: rgba(239, 68, 68, 0.2);\r
-  border-color: rgba(239, 68, 68, 0.6);\r
+.tags-modal--exclude .tag-chip--selected[data-v-110d6f7d] {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.6);
   color: #ef4444;
 }
-.no-results[data-v-2bc9f500] {\r
-  width: 100%;\r
-  padding: 20px;\r
-  text-align: center;\r
-  color: var(--fg-color, #fff);\r
-  opacity: 0.5;\r
+.no-results[data-v-110d6f7d] {
+  width: 100%;
+  padding: 20px;
+  text-align: center;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
   font-size: 13px;
-}\r
+}
 
-.tree-node__item[data-v-9acbd3d1] {\r
-  display: flex;\r
-  align-items: center;\r
-  gap: 8px;\r
-  padding: 6px 8px;\r
-  border-radius: 4px;\r
-  cursor: pointer;\r
+.tree-node__item[data-v-90187dd4] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
   transition: background 0.15s;
 }
-.tree-node__item[data-v-9acbd3d1]:hover {\r
+.tree-node__item[data-v-90187dd4]:hover {
   background: var(--comfy-input-bg, #333);
 }
-.tree-node__toggle[data-v-9acbd3d1] {\r
-  width: 16px;\r
-  height: 16px;\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: center;\r
-  background: transparent;\r
-  border: none;\r
-  color: var(--fg-color, #fff);\r
-  cursor: pointer;\r
-  opacity: 0.5;\r
-  padding: 0;\r
+.tree-node__toggle[data-v-90187dd4] {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--fg-color, #fff);
+  cursor: pointer;
+  opacity: 0.5;
+  padding: 0;
   flex-shrink: 0;
 }
-.tree-node__toggle[data-v-9acbd3d1]:hover {\r
+.tree-node__toggle[data-v-90187dd4]:hover {
   opacity: 1;
 }
-.tree-node__toggle-icon[data-v-9acbd3d1] {\r
-  width: 10px;\r
-  height: 10px;\r
+.tree-node__toggle-icon[data-v-90187dd4] {
+  width: 10px;
+  height: 10px;
   transition: transform 0.15s;
 }
-.tree-node__toggle-icon--expanded[data-v-9acbd3d1] {\r
+.tree-node__toggle-icon--expanded[data-v-90187dd4] {
   transform: rotate(90deg);
 }
-.tree-node__toggle-spacer[data-v-9acbd3d1] {\r
-  width: 16px;\r
+.tree-node__toggle-spacer[data-v-90187dd4] {
+  width: 16px;
   flex-shrink: 0;
 }
-.tree-node__checkbox-label[data-v-9acbd3d1] {\r
-  display: flex;\r
-  align-items: center;\r
+.tree-node__checkbox-label[data-v-90187dd4] {
+  display: flex;
+  align-items: center;
   cursor: pointer;
 }
-.tree-node__checkbox[data-v-9acbd3d1] {\r
-  position: absolute;\r
-  opacity: 0;\r
+.tree-node__checkbox[data-v-90187dd4] {
+  position: absolute;
+  opacity: 0;
   pointer-events: none;
 }
-.tree-node__checkbox-visual[data-v-9acbd3d1] {\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: center;\r
-  width: 16px;\r
-  height: 16px;\r
-  background: var(--comfy-input-bg, #333);\r
-  border: 1px solid var(--border-color, #555);\r
-  border-radius: 3px;\r
-  flex-shrink: 0;\r
+.tree-node__checkbox-visual[data-v-90187dd4] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #555);
+  border-radius: 3px;
+  flex-shrink: 0;
   transition: all 0.15s;
 }
-.tree-node__item:hover .tree-node__checkbox-visual[data-v-9acbd3d1] {\r
+.tree-node__item:hover .tree-node__checkbox-visual[data-v-90187dd4] {
   border-color: var(--fg-color, #fff);
 }
-.tree-node__checkbox:checked + .tree-node__checkbox-visual--include[data-v-9acbd3d1] {\r
-  background: #4299e1;\r
+.tree-node__checkbox:checked + .tree-node__checkbox-visual--include[data-v-90187dd4] {
+  background: #4299e1;
   border-color: #4299e1;
 }
-.tree-node__checkbox:checked + .tree-node__checkbox-visual--exclude[data-v-9acbd3d1] {\r
-  background: #ef4444;\r
+.tree-node__checkbox:checked + .tree-node__checkbox-visual--exclude[data-v-90187dd4] {
+  background: #ef4444;
   border-color: #ef4444;
 }
-.tree-node__check-icon[data-v-9acbd3d1] {\r
-  width: 10px;\r
-  height: 10px;\r
+.tree-node__check-icon[data-v-90187dd4] {
+  width: 10px;
+  height: 10px;
   color: #fff;
 }
-.tree-node__folder-icon[data-v-9acbd3d1] {\r
-  width: 14px;\r
-  height: 14px;\r
-  color: var(--fg-color, #fff);\r
-  opacity: 0.6;\r
+.tree-node__folder-icon[data-v-90187dd4] {
+  width: 14px;
+  height: 14px;
+  color: var(--fg-color, #fff);
+  opacity: 0.6;
   flex-shrink: 0;
 }
-.tree-node__label[data-v-9acbd3d1] {\r
-  flex: 1;\r
-  font-size: 13px;\r
-  color: var(--fg-color, #fff);\r
-  overflow: hidden;\r
-  text-overflow: ellipsis;\r
+.tree-node__label[data-v-90187dd4] {
+  flex: 1;
+  font-size: 13px;
+  color: var(--fg-color, #fff);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.tree-node__children[data-v-9acbd3d1] {\r
+.tree-node__children[data-v-90187dd4] {
   /* Children already indented via padding */
-}\r
+}
 
-.search-container[data-v-7f3e4c37] {\r
+.search-container[data-v-046dcbf4] {
   position: relative;
 }
-.search-icon[data-v-7f3e4c37] {\r
-  position: absolute;\r
-  left: 10px;\r
-  top: 50%;\r
-  transform: translateY(-50%);\r
-  width: 14px;\r
-  height: 14px;\r
-  color: var(--fg-color, #fff);\r
+.search-icon[data-v-046dcbf4] {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.search-input[data-v-7f3e4c37] {\r
-  width: 100%;\r
-  padding: 8px 12px 8px 32px;\r
-  background: var(--comfy-input-bg, #333);\r
-  border: 1px solid var(--border-color, #444);\r
-  border-radius: 6px;\r
-  color: var(--fg-color, #fff);\r
-  font-size: 13px;\r
+.search-input[data-v-046dcbf4] {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 6px;
+  color: var(--fg-color, #fff);
+  font-size: 13px;
   outline: none;
 }
-.search-input[data-v-7f3e4c37]:focus {\r
+.search-input[data-v-046dcbf4]:focus {
   border-color: var(--fg-color, #fff);
 }
-.search-input[data-v-7f3e4c37]::placeholder {\r
-  color: var(--fg-color, #fff);\r
+.search-input[data-v-046dcbf4]::placeholder {
+  color: var(--fg-color, #fff);
   opacity: 0.4;
 }
-.folder-tree[data-v-7f3e4c37] {\r
-  display: flex;\r
+.folder-tree[data-v-046dcbf4] {
+  display: flex;
   flex-direction: column;
 }
-.no-results[data-v-7f3e4c37] {\r
-  padding: 20px;\r
-  text-align: center;\r
-  color: var(--fg-color, #fff);\r
-  opacity: 0.5;\r
+.no-results[data-v-046dcbf4] {
+  padding: 20px;
+  text-align: center;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
   font-size: 13px;
-}\r
+}
 
-.lora-pool-widget[data-v-7b465264] {\r
-  padding: 12px;\r
-  background: rgba(40, 44, 52, 0.6);\r
-  border-radius: 4px;\r
-  height: 100%;\r
-  display: flex;\r
-  flex-direction: column;\r
-  overflow: hidden;\r
+.lora-pool-widget[data-v-7d3f681d] {
+  padding: 12px;
+  background: rgba(40, 44, 52, 0.6);
+  border-radius: 4px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   box-sizing: border-box;
-}\r
+}
 
-.last-used-preview[data-v-7f02e2b6] {\r
-  position: absolute;\r
-  bottom: 100%;\r
-  right: 0;\r
-  margin-bottom: 8px;\r
-  z-index: 100;\r
+.last-used-preview[data-v-63e176e4] {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 8px;
+  z-index: 100;
   width: 280px;
 }
-.last-used-preview__content[data-v-7f02e2b6] {\r
-  background: var(--comfy-menu-bg, #1a1a1a);\r
-  border: 1px solid var(--border-color, #444);\r
-  border-radius: 6px;\r
-  padding: 8px;\r
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\r
-  display: flex;\r
-  flex-direction: column;\r
+.last-used-preview__content[data-v-63e176e4] {
+  background: var(--comfy-menu-bg, #1a1a1a);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 6px;
+  padding: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
   gap: 4px;
 }
-.last-used-preview__item[data-v-7f02e2b6] {\r
-  display: flex;\r
-  align-items: center;\r
-  gap: 8px;\r
-  padding: 4px 6px;\r
-  background: var(--comfy-input-bg, #333);\r
+.last-used-preview__item[data-v-63e176e4] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  background: var(--comfy-input-bg, #333);
   border-radius: 4px;
 }
-.last-used-preview__thumb[data-v-7f02e2b6] {\r
-  width: 28px;\r
-  height: 28px;\r
-  object-fit: cover;\r
-  border-radius: 3px;\r
-  flex-shrink: 0;\r
+.last-used-preview__thumb[data-v-63e176e4] {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 3px;
+  flex-shrink: 0;
   background: rgba(0, 0, 0, 0.2);
 }
-.last-used-preview__thumb--placeholder[data-v-7f02e2b6] {\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: center;\r
-  color: var(--fg-color, #fff);\r
+.last-used-preview__thumb--placeholder[data-v-63e176e4] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-color, #fff);
   opacity: 0.2;
 }
-.last-used-preview__thumb--placeholder svg[data-v-7f02e2b6] {\r
-  width: 14px;\r
+.last-used-preview__thumb--placeholder svg[data-v-63e176e4] {
+  width: 14px;
   height: 14px;
 }
-.last-used-preview__info[data-v-7f02e2b6] {\r
-  flex: 1;\r
-  display: flex;\r
-  flex-direction: column;\r
-  gap: 1px;\r
+.last-used-preview__info[data-v-63e176e4] {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
   min-width: 0;
 }
-.last-used-preview__name[data-v-7f02e2b6] {\r
-  font-size: 11px;\r
-  color: var(--fg-color, #fff);\r
-  overflow: hidden;\r
-  text-overflow: ellipsis;\r
+.last-used-preview__name[data-v-63e176e4] {
+  font-size: 11px;
+  color: var(--fg-color, #fff);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.last-used-preview__strength[data-v-7f02e2b6] {\r
-  font-size: 10px;\r
-  color: var(--fg-color, #fff);\r
+.last-used-preview__strength[data-v-63e176e4] {
+  font-size: 10px;
+  color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.last-used-preview__more[data-v-7f02e2b6] {\r
-  font-size: 11px;\r
-  color: var(--fg-color, #fff);\r
-  opacity: 0.5;\r
-  text-align: center;\r
+.last-used-preview__more[data-v-63e176e4] {
+  font-size: 11px;
+  color: var(--fg-color, #fff);
+  opacity: 0.5;
+  text-align: center;
   padding: 4px;
-}\r
+}
 
-.single-slider[data-v-f9d63748] {\r
-  position: relative;\r
-  width: 100%;\r
-  height: 32px;\r
-  user-select: none;\r
-  cursor: default !important;\r
+.single-slider[data-v-60a7bbd7] {
+  position: relative;
+  width: 100%;
+  height: 32px;
+  user-select: none;
+  cursor: default !important;
   touch-action: none;
 }
-.single-slider.disabled[data-v-f9d63748] {\r
-  opacity: 0.4;\r
+.single-slider.disabled[data-v-60a7bbd7] {
+  opacity: 0.4;
   pointer-events: none;
 }
-.single-slider.is-dragging[data-v-f9d63748] {\r
+.single-slider.is-dragging[data-v-60a7bbd7] {
   cursor: ew-resize !important;
 }
-.slider-track[data-v-f9d63748] {\r
-  position: absolute;\r
-  top: 14px;\r
-  left: 0;\r
-  right: 0;\r
-  height: 4px;\r
-  background: var(--comfy-input-bg, #333);\r
-  border-radius: 2px;\r
+.slider-track[data-v-60a7bbd7] {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--comfy-input-bg, #333);
+  border-radius: 2px;
   cursor: default !important;
 }
-.slider-track__bg[data-v-f9d63748] {\r
-  position: absolute;\r
-  inset: 0;\r
-  background: rgba(66, 153, 225, 0.15);\r
+.slider-track__bg[data-v-60a7bbd7] {
+  position: absolute;
+  inset: 0;
+  background: rgba(66, 153, 225, 0.15);
   border-radius: 2px;
 }
-.slider-track__active[data-v-f9d63748] {\r
-  position: absolute;\r
-  top: 0;\r
-  bottom: 0;\r
-  left: 0;\r
-  background: rgba(66, 153, 225, 0.6);\r
-  border-radius: 2px;\r
+.slider-track__active[data-v-60a7bbd7] {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(66, 153, 225, 0.6);
+  border-radius: 2px;
   transition: width 0.05s linear;
 }
-.slider-track__default[data-v-f9d63748] {\r
-  position: absolute;\r
-  top: 0;\r
-  bottom: 0;\r
-  background: rgba(66, 153, 225, 0.1);\r
+.slider-track__default[data-v-60a7bbd7] {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(66, 153, 225, 0.1);
   border-radius: 2px;
 }
-.slider-handle[data-v-f9d63748] {\r
-  position: absolute;\r
-  top: 0;\r
-  transform: translateX(-50%);\r
-  cursor: ew-resize !important;\r
-  z-index: 2;\r
+.slider-handle[data-v-60a7bbd7] {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  cursor: ew-resize !important;
+  z-index: 2;
   touch-action: none;
 }
-.slider-handle__thumb[data-v-f9d63748] {\r
-  width: 12px;\r
-  height: 12px;\r
-  background: var(--fg-color, #fff);\r
-  border-radius: 50%;\r
-  position: absolute;\r
-  top: 10px;\r
-  left: 0;\r
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);\r
+.slider-handle__thumb[data-v-60a7bbd7] {
+  width: 12px;
+  height: 12px;
+  background: var(--fg-color, #fff);
+  border-radius: 50%;
+  position: absolute;
+  top: 10px;
+  left: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.15s ease;
 }
-.slider-handle:hover .slider-handle__thumb[data-v-f9d63748] {\r
+.slider-handle:hover .slider-handle__thumb[data-v-60a7bbd7] {
   transform: scale(1.1);
 }
-.slider-handle:active .slider-handle__thumb[data-v-f9d63748] {\r
+.slider-handle:active .slider-handle__thumb[data-v-60a7bbd7] {
   transform: scale(1.15);
 }
-.slider-handle__value[data-v-f9d63748] {\r
-  position: absolute;\r
-  top: 0;\r
-  left: 50%;\r
-  transform: translateX(-50%);\r
-  font-size: 10px;\r
-  font-family: 'SF Mono', 'Roboto Mono', monospace;\r
-  color: var(--fg-color, #fff);\r
-  opacity: 0.8;\r
-  white-space: nowrap;\r
+.slider-handle__value[data-v-60a7bbd7] {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-family: 'SF Mono', 'Roboto Mono', monospace;
+  color: var(--fg-color, #fff);
+  opacity: 0.8;
+  white-space: nowrap;
   pointer-events: none;
-}\r
+}
 
-.dual-range-slider[data-v-37d75ec5] {\r
-  position: relative;\r
-  width: 100%;\r
-  height: 32px;\r
-  user-select: none;\r
-  cursor: default !important;\r
+.dual-range-slider[data-v-77b34316] {
+  position: relative;
+  width: 100%;
+  height: 32px;
+  user-select: none;
+  cursor: default !important;
   touch-action: none;
 }
-.dual-range-slider.disabled[data-v-37d75ec5] {\r
-  opacity: 0.4;\r
+.dual-range-slider.disabled[data-v-77b34316] {
+  opacity: 0.4;
   pointer-events: none;
 }
-.dual-range-slider.is-dragging[data-v-37d75ec5] {\r
+.dual-range-slider.is-dragging[data-v-77b34316] {
   cursor: ew-resize !important;
 }
-.slider-track[data-v-37d75ec5] {\r
-  position: absolute;\r
-  top: 14px;\r
-  left: 0;\r
-  right: 0;\r
-  height: 4px;\r
-  background: var(--comfy-input-bg, #333);\r
-  border-radius: 2px;\r
+.slider-track[data-v-77b34316] {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--comfy-input-bg, #333);
+  border-radius: 2px;
   cursor: default !important;
 }
-.slider-track__bg[data-v-37d75ec5] {\r
-  position: absolute;\r
-  inset: 0;\r
-  background: rgba(66, 153, 225, 0.15);\r
+.slider-track__bg[data-v-77b34316] {
+  position: absolute;
+  inset: 0;
+  background: rgba(66, 153, 225, 0.15);
   border-radius: 2px;
 }
-.slider-track__active[data-v-37d75ec5] {\r
-  position: absolute;\r
-  top: 0;\r
-  bottom: 0;\r
-  background: rgba(66, 153, 225, 0.6);\r
-  border-radius: 2px;\r
+.slider-track__active[data-v-77b34316] {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(66, 153, 225, 0.6);
+  border-radius: 2px;
   transition: left 0.05s linear, width 0.05s linear;
 }
-.slider-track__default[data-v-37d75ec5] {\r
-  position: absolute;\r
-  top: 0;\r
-  bottom: 0;\r
-  background: rgba(66, 153, 225, 0.1);\r
+.slider-track__default[data-v-77b34316] {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(66, 153, 225, 0.1);
   border-radius: 2px;
 }
-.slider-track__segment[data-v-37d75ec5] {\r
-  position: absolute;\r
-  top: 0;\r
-  bottom: 0;\r
-  background: rgba(66, 153, 225, 0.08);\r
+.slider-track__segment[data-v-77b34316] {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(66, 153, 225, 0.08);
   border-radius: 2px;
 }
-.slider-track__segment--expanded[data-v-37d75ec5] {\r
+.slider-track__segment--expanded[data-v-77b34316] {
   background: rgba(66, 153, 225, 0.15);
 }
-.slider-track__segment[data-v-37d75ec5]:not(:last-child)::after {\r
-  content: '';\r
-  position: absolute;\r
-  top: -1px;\r
-  bottom: -1px;\r
-  right: 0;\r
-  width: 1px;\r
+.slider-track__segment[data-v-77b34316]:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  right: 0;
+  width: 1px;
   background: rgba(255, 255, 255, 0.1);
 }
-.slider-handle[data-v-37d75ec5] {\r
-  position: absolute;\r
-  top: 0;\r
-  transform: translateX(-50%);\r
-  cursor: ew-resize !important;\r
-  z-index: 2;\r
+.slider-handle[data-v-77b34316] {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  cursor: ew-resize !important;
+  z-index: 2;
   touch-action: none;
 }
-.slider-handle__thumb[data-v-37d75ec5] {\r
-  width: 12px;\r
-  height: 12px;\r
-  background: var(--fg-color, #fff);\r
-  border-radius: 50%;\r
-  position: absolute;\r
-  top: 10px;\r
-  left: 0;\r
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);\r
+.slider-handle__thumb[data-v-77b34316] {
+  width: 12px;
+  height: 12px;
+  background: var(--fg-color, #fff);
+  border-radius: 50%;
+  position: absolute;
+  top: 10px;
+  left: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.15s ease;
 }
-.slider-handle:hover .slider-handle__thumb[data-v-37d75ec5] {\r
+.slider-handle:hover .slider-handle__thumb[data-v-77b34316] {
   transform: scale(1.1);
 }
-.slider-handle:active .slider-handle__thumb[data-v-37d75ec5] {\r
+.slider-handle:active .slider-handle__thumb[data-v-77b34316] {
   transform: scale(1.15);
 }
-.slider-handle__value[data-v-37d75ec5] {\r
-  position: absolute;\r
-  top: 0;\r
-  left: 50%;\r
-  transform: translateX(-50%);\r
-  font-size: 10px;\r
-  font-family: 'SF Mono', 'Roboto Mono', monospace;\r
-  color: var(--fg-color, #fff);\r
-  opacity: 0.8;\r
-  white-space: nowrap;\r
+.slider-handle__value[data-v-77b34316] {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-family: 'SF Mono', 'Roboto Mono', monospace;
+  color: var(--fg-color, #fff);
+  opacity: 0.8;
+  white-space: nowrap;
   pointer-events: none;
 }
-.slider-handle--min .slider-handle__value[data-v-37d75ec5] {\r
+.slider-handle--min .slider-handle__value[data-v-77b34316] {
   text-align: center;
 }
-.slider-handle--max .slider-handle__value[data-v-37d75ec5] {\r
+.slider-handle--max .slider-handle__value[data-v-77b34316] {
   text-align: center;
-}\r
+}
 
-.randomizer-settings[data-v-a7fefe60] {\r
-  display: flex;\r
-  flex-direction: column;\r
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\r
+.randomizer-settings[data-v-370936aa] {
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #e4e4e7;
 }
-.settings-header[data-v-a7fefe60] {\r
+.settings-header[data-v-370936aa] {
   margin-bottom: 8px;
 }
-.settings-title[data-v-a7fefe60] {\r
-  font-size: 10px;\r
-  font-weight: 600;\r
-  letter-spacing: 0.05em;\r
-  color: var(--fg-color, #fff);\r
-  opacity: 0.6;\r
-  margin: 0;\r
+.settings-title[data-v-370936aa] {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--fg-color, #fff);
+  opacity: 0.6;
+  margin: 0;
   text-transform: uppercase;
 }
-.setting-section[data-v-a7fefe60] {\r
+.setting-section[data-v-370936aa] {
   margin-bottom: 16px;
 }
-.setting-label[data-v-a7fefe60] {\r
-  font-size: 12px;\r
-  font-weight: 500;\r
-  color: #d4d4d8;\r
-  display: block;\r
+.setting-label[data-v-370936aa] {
+  font-size: 12px;
+  font-weight: 500;
+  color: #d4d4d8;
+  display: block;
   margin-bottom: 8px;
 }
-.section-header-with-toggle[data-v-a7fefe60] {\r
-  display: flex;\r
-  align-items: center;\r
-  justify-content: space-between;\r
+.section-header-with-toggle[data-v-370936aa] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 8px;
 }
-.section-header-with-toggle .setting-label[data-v-a7fefe60] {\r
+.section-header-with-toggle .setting-label[data-v-370936aa] {
   margin-bottom: 0;
-}\r
-\r
+}
+
 /* Count Mode Tabs */
-.count-mode-tabs[data-v-a7fefe60] {\r
-  display: flex;\r
-  background: rgba(26, 32, 44, 0.9);\r
-  border: 1px solid rgba(226, 232, 240, 0.2);\r
-  border-radius: 4px;\r
-  overflow: hidden;\r
+.count-mode-tabs[data-v-370936aa] {
+  display: flex;
+  background: rgba(26, 32, 44, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
   margin-bottom: 8px;
 }
-.count-mode-tab[data-v-a7fefe60] {\r
-  flex: 1;\r
-  position: relative;\r
-  padding: 8px 12px;\r
-  text-align: center;\r
-  cursor: pointer;\r
+.count-mode-tab[data-v-370936aa] {
+  flex: 1;
+  position: relative;
+  padding: 8px 12px;
+  text-align: center;
+  cursor: pointer;
   transition: all 0.2s ease;
 }
-.count-mode-tab input[type="radio"][data-v-a7fefe60] {\r
-  position: absolute;\r
-  opacity: 0;\r
-  width: 0;\r
+.count-mode-tab input[type="radio"][data-v-370936aa] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
   height: 0;
 }
-.count-mode-tab-label[data-v-a7fefe60] {\r
-  font-size: 12px;\r
-  font-weight: 500;\r
-  color: rgba(226, 232, 240, 0.7);\r
+.count-mode-tab-label[data-v-370936aa] {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(226, 232, 240, 0.7);
   transition: all 0.2s ease;
 }
-.count-mode-tab:hover .count-mode-tab-label[data-v-a7fefe60] {\r
+.count-mode-tab:hover .count-mode-tab-label[data-v-370936aa] {
   color: rgba(226, 232, 240, 0.9);
 }
-.count-mode-tab.active .count-mode-tab-label[data-v-a7fefe60] {\r
-  color: rgba(191, 219, 254, 1);\r
+.count-mode-tab.active .count-mode-tab-label[data-v-370936aa] {
+  color: rgba(191, 219, 254, 1);
   font-weight: 600;
 }
-.count-mode-tab.active[data-v-a7fefe60] {\r
+.count-mode-tab.active[data-v-370936aa] {
   background: rgba(66, 153, 225, 0.2);
 }
-.count-mode-tab.active[data-v-a7fefe60]::after {\r
-  content: '';\r
-  position: absolute;\r
-  bottom: 0;\r
-  left: 0;\r
-  right: 0;\r
-  height: 2px;\r
+.count-mode-tab.active[data-v-370936aa]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
   background: rgba(66, 153, 225, 0.9);
 }
-.slider-container[data-v-a7fefe60] {\r
-  background: rgba(26, 32, 44, 0.9);\r
-  border: 1px solid rgba(226, 232, 240, 0.2);\r
-  border-radius: 4px;\r
+.slider-container[data-v-370936aa] {
+  background: rgba(26, 32, 44, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.2);
+  border-radius: 4px;
   padding: 4px 8px;
 }
-.slider-container--disabled[data-v-a7fefe60] {\r
-  opacity: 0.5;\r
+.slider-container--disabled[data-v-370936aa] {
+  opacity: 0.5;
   pointer-events: none;
-}\r
-\r
+}
+
 /* Toggle Switch (same style as LicenseSection) */
-.toggle-switch[data-v-a7fefe60] {\r
-  position: relative;\r
-  width: 36px;\r
-  height: 20px;\r
-  padding: 0;\r
-  background: transparent;\r
-  border: none;\r
+.toggle-switch[data-v-370936aa] {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
   cursor: pointer;
 }
-.toggle-switch__track[data-v-a7fefe60] {\r
-  position: absolute;\r
-  inset: 0;\r
-  background: var(--comfy-input-bg, #333);\r
-  border: 1px solid var(--border-color, #444);\r
-  border-radius: 10px;\r
+.toggle-switch__track[data-v-370936aa] {
+  position: absolute;
+  inset: 0;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 10px;
   transition: all 0.2s;
 }
-.toggle-switch--active .toggle-switch__track[data-v-a7fefe60] {\r
-  background: rgba(66, 153, 225, 0.3);\r
+.toggle-switch--active .toggle-switch__track[data-v-370936aa] {
+  background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.toggle-switch__thumb[data-v-a7fefe60] {\r
-  position: absolute;\r
-  top: 3px;\r
-  left: 2px;\r
-  width: 14px;\r
-  height: 14px;\r
-  background: var(--fg-color, #fff);\r
-  border-radius: 50%;\r
-  transition: all 0.2s;\r
+.toggle-switch__thumb[data-v-370936aa] {
+  position: absolute;
+  top: 3px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--fg-color, #fff);
+  border-radius: 50%;
+  transition: all 0.2s;
   opacity: 0.6;
 }
-.toggle-switch--active .toggle-switch__thumb[data-v-a7fefe60] {\r
-  transform: translateX(16px);\r
-  background: #4299e1;\r
+.toggle-switch--active .toggle-switch__thumb[data-v-370936aa] {
+  transform: translateX(16px);
+  background: #4299e1;
   opacity: 1;
 }
-.toggle-switch:hover .toggle-switch__thumb[data-v-a7fefe60] {\r
+.toggle-switch:hover .toggle-switch__thumb[data-v-370936aa] {
   opacity: 1;
-}\r
-\r
+}
+
 /* Roll buttons with tooltip container */
-.roll-buttons-with-tooltip[data-v-a7fefe60] {\r
+.roll-buttons-with-tooltip[data-v-370936aa] {
   position: relative;
-}\r
-\r
+}
+
 /* Roll buttons container */
-.roll-buttons[data-v-a7fefe60] {\r
-  display: grid;\r
-  grid-template-columns: 1fr 1fr 1fr;\r
+.roll-buttons[data-v-370936aa] {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
 }
-.roll-button[data-v-a7fefe60] {\r
-  padding: 8px 10px;\r
-  background: rgba(30, 30, 36, 0.6);\r
-  border: 1px solid rgba(255, 255, 255, 0.1);\r
-  border-radius: 4px;\r
-  display: flex;\r
-  flex-direction: row;\r
-  align-items: center;\r
-  justify-content: center;\r
-  gap: 6px;\r
-  color: #e4e4e7;\r
-  font-size: 11px;\r
-  font-weight: 500;\r
-  cursor: pointer;\r
-  transition: all 0.2s;\r
+.roll-button[data-v-370936aa] {
+  padding: 8px 10px;
+  background: rgba(30, 30, 36, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #e4e4e7;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
   white-space: nowrap;
 }
-.roll-button[data-v-a7fefe60]:hover:not(:disabled) {\r
-  background: rgba(66, 153, 225, 0.2);\r
-  border-color: rgba(66, 153, 225, 0.4);\r
+.roll-button[data-v-370936aa]:hover:not(:disabled) {
+  background: rgba(66, 153, 225, 0.2);
+  border-color: rgba(66, 153, 225, 0.4);
   color: #bfdbfe;
 }
-.roll-button.selected[data-v-a7fefe60] {\r
-  background: rgba(66, 153, 225, 0.3);\r
-  border-color: rgba(66, 153, 225, 0.6);\r
-  color: #e4e4e7;\r
+.roll-button.selected[data-v-370936aa] {
+  background: rgba(66, 153, 225, 0.3);
+  border-color: rgba(66, 153, 225, 0.6);
+  color: #e4e4e7;
   box-shadow: 0 0 0 1px rgba(66, 153, 225, 0.3);
 }
-.roll-button[data-v-a7fefe60]:disabled {\r
-  opacity: 0.4;\r
+.roll-button[data-v-370936aa]:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
 }
-.roll-button__icon[data-v-a7fefe60] {\r
-  width: 20px;\r
-  height: 20px;\r
+.roll-button__icon[data-v-370936aa] {
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
 }
-.roll-button__text[data-v-a7fefe60] {\r
-  font-size: 11px;\r
-  text-align: center;\r
+.roll-button__text[data-v-370936aa] {
+  font-size: 11px;
+  text-align: center;
   line-height: 1.2;
-}\r
-\r
+}
+
 /* Tooltip transitions */
-.tooltip-enter-active[data-v-a7fefe60],\r
-.tooltip-leave-active[data-v-a7fefe60] {\r
+.tooltip-enter-active[data-v-370936aa],
+.tooltip-leave-active[data-v-370936aa] {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
-.tooltip-enter-from[data-v-a7fefe60],\r
-.tooltip-leave-to[data-v-a7fefe60] {\r
-  opacity: 0;\r
+.tooltip-enter-from[data-v-370936aa],
+.tooltip-leave-to[data-v-370936aa] {
+  opacity: 0;
   transform: translateY(4px);
-}\r
+}
 
-.lora-randomizer-widget[data-v-f3f641a6] {\r
-  padding: 12px;\r
-  background: rgba(40, 44, 52, 0.6);\r
-  border-radius: 4px;\r
-  height: 100%;\r
-  display: flex;\r
-  flex-direction: column;\r
-  overflow: hidden;\r
+.lora-randomizer-widget[data-v-6f60504d] {
+  padding: 12px;
+  background: rgba(40, 44, 52, 0.6);
+  border-radius: 4px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   box-sizing: border-box;
+}
+
+.json-display-widget[data-v-0f202476] {
+  padding: 8px;
+  background: rgba(40, 44, 52, 0.6);
+  border-radius: 6px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.json-content[data-v-0f202476] {
+  flex: 1;
+  overflow: auto;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  color: rgba(226, 232, 240, 0.9);
+}
+.json-content pre[data-v-0f202476] {
+  margin: 0;
+  padding: 0;
+}
+.placeholder[data-v-0f202476] {
+  font-style: italic;
+  color: rgba(226, 232, 240, 0.6);
+  text-align: center;
+  padding: 20px 0;
 }`));
       document.head.appendChild(elementStyle);
     }
@@ -9864,12 +9894,12 @@ var PrimeVue = {
     setup(app2, configOptions);
   }
 };
-const _hoisted_1$h = { class: "filter-chip__text" };
-const _hoisted_2$e = {
+const _hoisted_1$i = { class: "filter-chip__text" };
+const _hoisted_2$f = {
   key: 0,
   class: "filter-chip__count"
 };
-const _sfc_main$i = /* @__PURE__ */ defineComponent({
+const _sfc_main$j = /* @__PURE__ */ defineComponent({
   __name: "FilterChip",
   props: {
     label: {},
@@ -9887,8 +9917,8 @@ const _sfc_main$i = /* @__PURE__ */ defineComponent({
       return openBlock(), createElementBlock("span", {
         class: normalizeClass(["filter-chip", variantClass.value])
       }, [
-        createBaseVNode("span", _hoisted_1$h, toDisplayString(__props.label), 1),
-        __props.count !== void 0 ? (openBlock(), createElementBlock("span", _hoisted_2$e, "(" + toDisplayString(__props.count) + ")", 1)) : createCommentVNode("", true),
+        createBaseVNode("span", _hoisted_1$i, toDisplayString(__props.label), 1),
+        __props.count !== void 0 ? (openBlock(), createElementBlock("span", _hoisted_2$f, "(" + toDisplayString(__props.count) + ")", 1)) : createCommentVNode("", true),
         __props.removable ? (openBlock(), createElementBlock("button", {
           key: 1,
           class: "filter-chip__remove",
@@ -9906,8 +9936,8 @@ const _export_sfc = (sfc, props) => {
   }
   return target;
 };
-const FilterChip = /* @__PURE__ */ _export_sfc(_sfc_main$i, [["__scopeId", "data-v-ff0e49d3"]]);
-const _sfc_main$h = /* @__PURE__ */ defineComponent({
+const FilterChip = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["__scopeId", "data-v-7e36267d"]]);
+const _sfc_main$i = /* @__PURE__ */ defineComponent({
   __name: "EditButton",
   emits: ["click"],
   setup(__props) {
@@ -9929,11 +9959,11 @@ const _sfc_main$h = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const EditButton = /* @__PURE__ */ _export_sfc(_sfc_main$h, [["__scopeId", "data-v-8518ff86"]]);
-const _hoisted_1$g = { class: "section" };
-const _hoisted_2$d = { class: "section__header" };
-const _hoisted_3$b = { class: "section__content" };
-const _hoisted_4$a = {
+const EditButton = /* @__PURE__ */ _export_sfc(_sfc_main$i, [["__scopeId", "data-v-8da8aa4b"]]);
+const _hoisted_1$h = { class: "section" };
+const _hoisted_2$e = { class: "section__header" };
+const _hoisted_3$c = { class: "section__content" };
+const _hoisted_4$b = {
   key: 0,
   class: "section__placeholder"
 };
@@ -9941,7 +9971,7 @@ const _hoisted_5$9 = {
   key: 1,
   class: "section__chips"
 };
-const _sfc_main$g = /* @__PURE__ */ defineComponent({
+const _sfc_main$h = /* @__PURE__ */ defineComponent({
   __name: "BaseModelSection",
   props: {
     selected: {},
@@ -9955,15 +9985,15 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
       return model == null ? void 0 : model.count;
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$g, [
-        createBaseVNode("div", _hoisted_2$d, [
+      return openBlock(), createElementBlock("div", _hoisted_1$h, [
+        createBaseVNode("div", _hoisted_2$e, [
           _cache[1] || (_cache[1] = createBaseVNode("span", { class: "section__title" }, "BASE MODEL", -1)),
           createVNode(EditButton, {
             onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("edit"))
           })
         ]),
-        createBaseVNode("div", _hoisted_3$b, [
-          __props.selected.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$a, " All models ")) : (openBlock(), createElementBlock("div", _hoisted_5$9, [
+        createBaseVNode("div", _hoisted_3$c, [
+          __props.selected.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$b, " All models ")) : (openBlock(), createElementBlock("div", _hoisted_5$9, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(__props.selected, (name) => {
               return openBlock(), createBlock(FilterChip, {
                 key: name,
@@ -9978,11 +10008,11 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const BaseModelSection = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-9c43228a"]]);
-const _hoisted_1$f = { class: "section" };
-const _hoisted_2$c = { class: "section__columns" };
-const _hoisted_3$a = { class: "section__column" };
-const _hoisted_4$9 = { class: "section__column-header" };
+const BaseModelSection = /* @__PURE__ */ _export_sfc(_sfc_main$h, [["__scopeId", "data-v-12f059e2"]]);
+const _hoisted_1$g = { class: "section" };
+const _hoisted_2$d = { class: "section__columns" };
+const _hoisted_3$b = { class: "section__column" };
+const _hoisted_4$a = { class: "section__column-header" };
 const _hoisted_5$8 = { class: "section__column-content" };
 const _hoisted_6$8 = {
   key: 0,
@@ -10003,7 +10033,7 @@ const _hoisted_12$2 = {
   key: 1,
   class: "section__chips"
 };
-const _sfc_main$f = /* @__PURE__ */ defineComponent({
+const _sfc_main$g = /* @__PURE__ */ defineComponent({
   __name: "TagsSection",
   props: {
     includeTags: {},
@@ -10012,13 +10042,13 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
   emits: ["edit-include", "edit-exclude"],
   setup(__props) {
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$f, [
+      return openBlock(), createElementBlock("div", _hoisted_1$g, [
         _cache[4] || (_cache[4] = createBaseVNode("div", { class: "section__header" }, [
           createBaseVNode("span", { class: "section__title" }, "TAGS")
         ], -1)),
-        createBaseVNode("div", _hoisted_2$c, [
-          createBaseVNode("div", _hoisted_3$a, [
-            createBaseVNode("div", _hoisted_4$9, [
+        createBaseVNode("div", _hoisted_2$d, [
+          createBaseVNode("div", _hoisted_3$b, [
+            createBaseVNode("div", _hoisted_4$a, [
               _cache[2] || (_cache[2] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
               createVNode(EditButton, {
                 onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("edit-include"))
@@ -10060,11 +10090,11 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const TagsSection = /* @__PURE__ */ _export_sfc(_sfc_main$f, [["__scopeId", "data-v-f9b6b8b3"]]);
-const _hoisted_1$e = { class: "section" };
-const _hoisted_2$b = { class: "section__columns" };
-const _hoisted_3$9 = { class: "section__column" };
-const _hoisted_4$8 = { class: "section__column-header" };
+const TagsSection = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-b869b780"]]);
+const _hoisted_1$f = { class: "section" };
+const _hoisted_2$c = { class: "section__columns" };
+const _hoisted_3$a = { class: "section__column" };
+const _hoisted_4$9 = { class: "section__column-header" };
 const _hoisted_5$7 = { class: "section__content" };
 const _hoisted_6$7 = {
   key: 0,
@@ -10085,7 +10115,7 @@ const _hoisted_12$1 = {
   key: 1,
   class: "section__empty"
 };
-const _sfc_main$e = /* @__PURE__ */ defineComponent({
+const _sfc_main$f = /* @__PURE__ */ defineComponent({
   __name: "FoldersSection",
   props: {
     includeFolders: {},
@@ -10106,13 +10136,13 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
       emit2("update:excludeFolders", props.excludeFolders.filter((p2) => p2 !== path));
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$e, [
+      return openBlock(), createElementBlock("div", _hoisted_1$f, [
         _cache[6] || (_cache[6] = createBaseVNode("div", { class: "section__header" }, [
           createBaseVNode("span", { class: "section__title" }, "FOLDERS")
         ], -1)),
-        createBaseVNode("div", _hoisted_2$b, [
-          createBaseVNode("div", _hoisted_3$9, [
-            createBaseVNode("div", _hoisted_4$8, [
+        createBaseVNode("div", _hoisted_2$c, [
+          createBaseVNode("div", _hoisted_3$a, [
+            createBaseVNode("div", _hoisted_4$9, [
               _cache[3] || (_cache[3] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
               createBaseVNode("button", {
                 type: "button",
@@ -10176,14 +10206,14 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const FoldersSection = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-4816c605"]]);
-const _hoisted_1$d = { class: "section" };
-const _hoisted_2$a = { class: "section__toggles" };
-const _hoisted_3$8 = { class: "toggle-item" };
-const _hoisted_4$7 = ["aria-checked"];
+const FoldersSection = /* @__PURE__ */ _export_sfc(_sfc_main$f, [["__scopeId", "data-v-af9caf84"]]);
+const _hoisted_1$e = { class: "section" };
+const _hoisted_2$b = { class: "section__toggles" };
+const _hoisted_3$9 = { class: "toggle-item" };
+const _hoisted_4$8 = ["aria-checked"];
 const _hoisted_5$6 = { class: "toggle-item" };
 const _hoisted_6$6 = ["aria-checked"];
-const _sfc_main$d = /* @__PURE__ */ defineComponent({
+const _sfc_main$e = /* @__PURE__ */ defineComponent({
   __name: "LicenseSection",
   props: {
     noCreditRequired: { type: Boolean },
@@ -10192,12 +10222,12 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
   emits: ["update:noCreditRequired", "update:allowSelling"],
   setup(__props) {
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$d, [
+      return openBlock(), createElementBlock("div", _hoisted_1$e, [
         _cache[6] || (_cache[6] = createBaseVNode("div", { class: "section__header" }, [
           createBaseVNode("span", { class: "section__title" }, "LICENSE")
         ], -1)),
-        createBaseVNode("div", _hoisted_2$a, [
-          createBaseVNode("label", _hoisted_3$8, [
+        createBaseVNode("div", _hoisted_2$b, [
+          createBaseVNode("label", _hoisted_3$9, [
             _cache[3] || (_cache[3] = createBaseVNode("span", { class: "toggle-item__label" }, "No Credit Required", -1)),
             createBaseVNode("button", {
               type: "button",
@@ -10208,7 +10238,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
             }, [..._cache[2] || (_cache[2] = [
               createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
               createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
-            ])], 10, _hoisted_4$7)
+            ])], 10, _hoisted_4$8)
           ]),
           createBaseVNode("label", _hoisted_5$6, [
             _cache[5] || (_cache[5] = createBaseVNode("span", { class: "toggle-item__label" }, "Allow Selling", -1)),
@@ -10228,11 +10258,11 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-18499cc1"]]);
-const _hoisted_1$c = { class: "preview" };
-const _hoisted_2$9 = { class: "preview__title" };
-const _hoisted_3$7 = ["disabled"];
-const _hoisted_4$6 = {
+const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-dea4adf6"]]);
+const _hoisted_1$d = { class: "preview" };
+const _hoisted_2$a = { class: "preview__title" };
+const _hoisted_3$8 = ["disabled"];
+const _hoisted_4$7 = {
   key: 0,
   class: "preview__tooltip"
 };
@@ -10251,7 +10281,7 @@ const _hoisted_10$1 = {
   key: 0,
   class: "preview__empty"
 };
-const _sfc_main$c = /* @__PURE__ */ defineComponent({
+const _sfc_main$d = /* @__PURE__ */ defineComponent({
   __name: "LoraPoolPreview",
   props: {
     items: {},
@@ -10266,13 +10296,13 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
       img.style.display = "none";
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$c, [
+      return openBlock(), createElementBlock("div", _hoisted_1$d, [
         createBaseVNode("div", {
           class: "preview__header",
           onMouseenter: _cache[1] || (_cache[1] = ($event) => showTooltip.value = true),
           onMouseleave: _cache[2] || (_cache[2] = ($event) => showTooltip.value = false)
         }, [
-          createBaseVNode("span", _hoisted_2$9, "Matching LoRAs: " + toDisplayString(__props.matchCount.toLocaleString()), 1),
+          createBaseVNode("span", _hoisted_2$a, "Matching LoRAs: " + toDisplayString(__props.matchCount.toLocaleString()), 1),
           createBaseVNode("button", {
             type: "button",
             class: normalizeClass(["preview__refresh", { "preview__refresh--loading": __props.isLoading }]),
@@ -10290,11 +10320,11 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
                 d: "M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"
               })
             ], -1)
-          ])], 10, _hoisted_3$7)
+          ])], 10, _hoisted_3$8)
         ], 32),
         createVNode(Transition, { name: "tooltip" }, {
           default: withCtx(() => [
-            showTooltip.value && __props.items.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_4$6, [
+            showTooltip.value && __props.items.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_4$7, [
               createBaseVNode("div", _hoisted_5$5, [
                 (openBlock(true), createElementBlock(Fragment, null, renderList(__props.items.slice(0, 5), (item) => {
                   return openBlock(), createElementBlock("div", {
@@ -10329,10 +10359,10 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraPoolPreview = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-81e85cf2"]]);
-const _hoisted_1$b = { class: "summary-view" };
-const _hoisted_2$8 = { class: "summary-view__filters" };
-const _sfc_main$b = /* @__PURE__ */ defineComponent({
+const LoraPoolPreview = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-6a4b50a1"]]);
+const _hoisted_1$c = { class: "summary-view" };
+const _hoisted_2$9 = { class: "summary-view__filters" };
+const _sfc_main$c = /* @__PURE__ */ defineComponent({
   __name: "LoraPoolSummaryView",
   props: {
     selectedBaseModels: {},
@@ -10350,8 +10380,8 @@ const _sfc_main$b = /* @__PURE__ */ defineComponent({
   emits: ["open-modal", "update:includeFolders", "update:excludeFolders", "update:noCreditRequired", "update:allowSelling", "refresh"],
   setup(__props) {
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$b, [
-        createBaseVNode("div", _hoisted_2$8, [
+      return openBlock(), createElementBlock("div", _hoisted_1$c, [
+        createBaseVNode("div", _hoisted_2$9, [
           createVNode(BaseModelSection, {
             selected: __props.selectedBaseModels,
             models: __props.availableBaseModels,
@@ -10388,11 +10418,11 @@ const _sfc_main$b = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraPoolSummaryView = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["__scopeId", "data-v-f392c3db"]]);
-const _hoisted_1$a = { class: "lora-pool-modal__header" };
-const _hoisted_2$7 = { class: "lora-pool-modal__title-container" };
-const _hoisted_3$6 = { class: "lora-pool-modal__title" };
-const _hoisted_4$5 = {
+const LoraPoolSummaryView = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-328e7526"]]);
+const _hoisted_1$b = { class: "lora-pool-modal__header" };
+const _hoisted_2$8 = { class: "lora-pool-modal__title-container" };
+const _hoisted_3$7 = { class: "lora-pool-modal__title" };
+const _hoisted_4$6 = {
   key: 0,
   class: "lora-pool-modal__subtitle"
 };
@@ -10401,7 +10431,7 @@ const _hoisted_5$4 = {
   class: "lora-pool-modal__search"
 };
 const _hoisted_6$4 = { class: "lora-pool-modal__body" };
-const _sfc_main$a = /* @__PURE__ */ defineComponent({
+const _sfc_main$b = /* @__PURE__ */ defineComponent({
   __name: "ModalWrapper",
   props: {
     visible: { type: Boolean },
@@ -10449,10 +10479,10 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
                 role: "dialog",
                 "aria-modal": "true"
               }, [
-                createBaseVNode("div", _hoisted_1$a, [
-                  createBaseVNode("div", _hoisted_2$7, [
-                    createBaseVNode("h3", _hoisted_3$6, toDisplayString(__props.title), 1),
-                    __props.subtitle ? (openBlock(), createElementBlock("p", _hoisted_4$5, toDisplayString(__props.subtitle), 1)) : createCommentVNode("", true)
+                createBaseVNode("div", _hoisted_1$b, [
+                  createBaseVNode("div", _hoisted_2$8, [
+                    createBaseVNode("h3", _hoisted_3$7, toDisplayString(__props.title), 1),
+                    __props.subtitle ? (openBlock(), createElementBlock("p", _hoisted_4$6, toDisplayString(__props.subtitle), 1)) : createCommentVNode("", true)
                   ]),
                   createBaseVNode("button", {
                     class: "lora-pool-modal__close",
@@ -10476,11 +10506,11 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const ModalWrapper = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-d5f993a0"]]);
-const _hoisted_1$9 = { class: "search-container" };
-const _hoisted_2$6 = { class: "model-list" };
-const _hoisted_3$5 = ["checked", "onChange"];
-const _hoisted_4$4 = { class: "model-checkbox-visual" };
+const ModalWrapper = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["__scopeId", "data-v-fce76ca8"]]);
+const _hoisted_1$a = { class: "search-container" };
+const _hoisted_2$7 = { class: "model-list" };
+const _hoisted_3$6 = ["checked", "onChange"];
+const _hoisted_4$5 = { class: "model-checkbox-visual" };
 const _hoisted_5$3 = {
   key: 0,
   class: "check-icon",
@@ -10493,7 +10523,7 @@ const _hoisted_8$2 = {
   key: 0,
   class: "no-results"
 };
-const _sfc_main$9 = /* @__PURE__ */ defineComponent({
+const _sfc_main$a = /* @__PURE__ */ defineComponent({
   __name: "BaseModelModal",
   props: {
     visible: { type: Boolean },
@@ -10543,7 +10573,7 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
         onClose: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("close"))
       }, {
         search: withCtx(() => [
-          createBaseVNode("div", _hoisted_1$9, [
+          createBaseVNode("div", _hoisted_1$a, [
             _cache[3] || (_cache[3] = createBaseVNode("svg", {
               class: "search-icon",
               viewBox: "0 0 16 16",
@@ -10578,7 +10608,7 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
           ])
         ]),
         default: withCtx(() => [
-          createBaseVNode("div", _hoisted_2$6, [
+          createBaseVNode("div", _hoisted_2$7, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(filteredModels.value, (model) => {
               return openBlock(), createElementBlock("label", {
                 key: model.name,
@@ -10589,8 +10619,8 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
                   checked: isSelected(model.name),
                   onChange: ($event) => toggleModel(model.name),
                   class: "model-checkbox"
-                }, null, 40, _hoisted_3$5),
-                createBaseVNode("span", _hoisted_4$4, [
+                }, null, 40, _hoisted_3$6),
+                createBaseVNode("span", _hoisted_4$5, [
                   isSelected(model.name) ? (openBlock(), createElementBlock("svg", _hoisted_5$3, [..._cache[4] || (_cache[4] = [
                     createBaseVNode("path", { d: "M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" }, null, -1)
                   ])])) : createCommentVNode("", true)
@@ -10607,15 +10637,15 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-7ea2ad22"]]);
-const _hoisted_1$8 = { class: "search-container" };
-const _hoisted_2$5 = { class: "tags-container" };
-const _hoisted_3$4 = ["onClick"];
-const _hoisted_4$3 = {
+const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-e02ca44a"]]);
+const _hoisted_1$9 = { class: "search-container" };
+const _hoisted_2$6 = { class: "tags-container" };
+const _hoisted_3$5 = ["onClick"];
+const _hoisted_4$4 = {
   key: 0,
   class: "no-results"
 };
-const _sfc_main$8 = /* @__PURE__ */ defineComponent({
+const _sfc_main$9 = /* @__PURE__ */ defineComponent({
   __name: "TagsModal",
   props: {
     visible: { type: Boolean },
@@ -10671,7 +10701,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
         onClose: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("close"))
       }, {
         search: withCtx(() => [
-          createBaseVNode("div", _hoisted_1$8, [
+          createBaseVNode("div", _hoisted_1$9, [
             _cache[3] || (_cache[3] = createBaseVNode("svg", {
               class: "search-icon",
               viewBox: "0 0 16 16",
@@ -10705,16 +10735,16 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
           ])
         ]),
         default: withCtx(() => [
-          createBaseVNode("div", _hoisted_2$5, [
+          createBaseVNode("div", _hoisted_2$6, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(filteredTags.value, (tag) => {
               return openBlock(), createElementBlock("button", {
                 key: tag.tag,
                 type: "button",
                 class: normalizeClass(["tag-chip", { "tag-chip--selected": isSelected(tag.tag) }]),
                 onClick: ($event) => toggleTag(tag.tag)
-              }, toDisplayString(tag.tag), 11, _hoisted_3$4);
+              }, toDisplayString(tag.tag), 11, _hoisted_3$5);
             }), 128)),
-            filteredTags.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$3, " No tags found ")) : createCommentVNode("", true)
+            filteredTags.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$4, " No tags found ")) : createCommentVNode("", true)
           ])
         ]),
         _: 1
@@ -10722,14 +10752,14 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const TagsModal = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-2bc9f500"]]);
-const _hoisted_1$7 = { class: "tree-node" };
-const _hoisted_2$4 = {
+const TagsModal = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-110d6f7d"]]);
+const _hoisted_1$8 = { class: "tree-node" };
+const _hoisted_2$5 = {
   key: 1,
   class: "tree-node__toggle-spacer"
 };
-const _hoisted_3$3 = { class: "tree-node__checkbox-label" };
-const _hoisted_4$2 = ["checked"];
+const _hoisted_3$4 = { class: "tree-node__checkbox-label" };
+const _hoisted_4$3 = ["checked"];
 const _hoisted_5$2 = {
   key: 0,
   class: "tree-node__check-icon",
@@ -10741,7 +10771,7 @@ const _hoisted_7$2 = {
   key: 0,
   class: "tree-node__children"
 };
-const _sfc_main$7 = /* @__PURE__ */ defineComponent({
+const _sfc_main$8 = /* @__PURE__ */ defineComponent({
   __name: "FolderTreeNode",
   props: {
     node: {},
@@ -10766,7 +10796,7 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
     };
     return (_ctx, _cache) => {
       const _component_FolderTreeNode = resolveComponent("FolderTreeNode", true);
-      return openBlock(), createElementBlock("div", _hoisted_1$7, [
+      return openBlock(), createElementBlock("div", _hoisted_1$8, [
         createBaseVNode("div", {
           class: normalizeClass(["tree-node__item", [
             `tree-node__item--${__props.variant}`,
@@ -10788,14 +10818,14 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
             }, [..._cache[4] || (_cache[4] = [
               createBaseVNode("path", { d: "M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" }, null, -1)
             ])], 2))
-          ])) : (openBlock(), createElementBlock("span", _hoisted_2$4)),
-          createBaseVNode("label", _hoisted_3$3, [
+          ])) : (openBlock(), createElementBlock("span", _hoisted_2$5)),
+          createBaseVNode("label", _hoisted_3$4, [
             createBaseVNode("input", {
               type: "checkbox",
               class: "tree-node__checkbox",
               checked: isSelected.value,
               onChange: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("toggle-select", __props.node.key))
-            }, null, 40, _hoisted_4$2),
+            }, null, 40, _hoisted_4$3),
             createBaseVNode("span", {
               class: normalizeClass(["tree-node__checkbox-visual", `tree-node__checkbox-visual--${__props.variant}`])
             }, [
@@ -10832,14 +10862,14 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const FolderTreeNode = /* @__PURE__ */ _export_sfc(_sfc_main$7, [["__scopeId", "data-v-9acbd3d1"]]);
-const _hoisted_1$6 = { class: "search-container" };
-const _hoisted_2$3 = { class: "folder-tree" };
-const _hoisted_3$2 = {
+const FolderTreeNode = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-90187dd4"]]);
+const _hoisted_1$7 = { class: "search-container" };
+const _hoisted_2$4 = { class: "folder-tree" };
+const _hoisted_3$3 = {
   key: 1,
   class: "no-results"
 };
-const _sfc_main$6 = /* @__PURE__ */ defineComponent({
+const _sfc_main$7 = /* @__PURE__ */ defineComponent({
   __name: "FoldersModal",
   props: {
     visible: { type: Boolean },
@@ -10903,7 +10933,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
         onClose: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("close"))
       }, {
         search: withCtx(() => [
-          createBaseVNode("div", _hoisted_1$6, [
+          createBaseVNode("div", _hoisted_1$7, [
             _cache[2] || (_cache[2] = createBaseVNode("svg", {
               class: "search-icon",
               viewBox: "0 0 16 16",
@@ -10922,7 +10952,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
           ])
         ]),
         default: withCtx(() => [
-          createBaseVNode("div", _hoisted_2$3, [
+          createBaseVNode("div", _hoisted_2$4, [
             filteredFolders.value.length > 0 ? (openBlock(true), createElementBlock(Fragment, { key: 0 }, renderList(filteredFolders.value, (node) => {
               return openBlock(), createBlock(FolderTreeNode, {
                 key: node.key,
@@ -10934,7 +10964,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
                 onToggleExpand: toggleExpand,
                 onToggleSelect: toggleSelect
               }, null, 8, ["node", "selected", "expanded", "variant"]);
-            }), 128)) : (openBlock(), createElementBlock("div", _hoisted_3$2, " No folders found "))
+            }), 128)) : (openBlock(), createElementBlock("div", _hoisted_3$3, " No folders found "))
           ])
         ]),
         _: 1
@@ -10942,7 +10972,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const FoldersModal = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["__scopeId", "data-v-7f3e4c37"]]);
+const FoldersModal = /* @__PURE__ */ _export_sfc(_sfc_main$7, [["__scopeId", "data-v-046dcbf4"]]);
 function useLoraPoolApi() {
   const isLoading = ref(false);
   const fetchBaseModels = async (limit = 50) => {
@@ -11202,8 +11232,8 @@ function useModalState() {
     isModalOpen
   };
 }
-const _hoisted_1$5 = { class: "lora-pool-widget" };
-const _sfc_main$5 = /* @__PURE__ */ defineComponent({
+const _hoisted_1$6 = { class: "lora-pool-widget" };
+const _sfc_main$6 = /* @__PURE__ */ defineComponent({
   __name: "LoraPoolWidget",
   props: {
     widget: {},
@@ -11234,7 +11264,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
       await state.refreshPreview();
     });
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$5, [
+      return openBlock(), createElementBlock("div", _hoisted_1$6, [
         createVNode(LoraPoolSummaryView, {
           "selected-base-models": unref(state).selectedBaseModels.value,
           "available-base-models": unref(state).availableBaseModels.value,
@@ -11297,11 +11327,11 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-7b465264"]]);
-const _hoisted_1$4 = { class: "last-used-preview" };
-const _hoisted_2$2 = { class: "last-used-preview__content" };
-const _hoisted_3$1 = ["src", "onError"];
-const _hoisted_4$1 = {
+const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["__scopeId", "data-v-7d3f681d"]]);
+const _hoisted_1$5 = { class: "last-used-preview" };
+const _hoisted_2$3 = { class: "last-used-preview__content" };
+const _hoisted_3$2 = ["src", "onError"];
+const _hoisted_4$2 = {
   key: 1,
   class: "last-used-preview__thumb last-used-preview__thumb--placeholder"
 };
@@ -11312,7 +11342,7 @@ const _hoisted_8$1 = {
   key: 0,
   class: "last-used-preview__more"
 };
-const _sfc_main$4 = /* @__PURE__ */ defineComponent({
+const _sfc_main$5 = /* @__PURE__ */ defineComponent({
   __name: "LastUsedPreview",
   props: {
     loras: {}
@@ -11340,8 +11370,8 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
       previewUrls.value[loraName] = "";
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$4, [
-        createBaseVNode("div", _hoisted_2$2, [
+      return openBlock(), createElementBlock("div", _hoisted_1$5, [
+        createBaseVNode("div", _hoisted_2$3, [
           (openBlock(true), createElementBlock(Fragment, null, renderList(displayLoras.value, (lora) => {
             return openBlock(), createElementBlock("div", {
               key: lora.name,
@@ -11352,7 +11382,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                 src: previewUrls.value[lora.name],
                 class: "last-used-preview__thumb",
                 onError: ($event) => onImageError(lora.name)
-              }, null, 40, _hoisted_3$1)) : (openBlock(), createElementBlock("div", _hoisted_4$1, [..._cache[0] || (_cache[0] = [
+              }, null, 40, _hoisted_3$2)) : (openBlock(), createElementBlock("div", _hoisted_4$2, [..._cache[0] || (_cache[0] = [
                 createBaseVNode("svg", {
                   viewBox: "0 0 16 16",
                   fill: "currentColor"
@@ -11373,9 +11403,9 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LastUsedPreview = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-7f02e2b6"]]);
-const _hoisted_1$3 = { class: "slider-handle__value" };
-const _sfc_main$3 = /* @__PURE__ */ defineComponent({
+const LastUsedPreview = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-63e176e4"]]);
+const _hoisted_1$4 = { class: "slider-handle__value" };
+const _sfc_main$4 = /* @__PURE__ */ defineComponent({
   __name: "SingleSlider",
   props: {
     min: {},
@@ -11500,16 +11530,16 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
           onPointercancel: withModifiers(stopDrag, ["stop"])
         }, [
           _cache[1] || (_cache[1] = createBaseVNode("div", { class: "slider-handle__thumb" }, null, -1)),
-          createBaseVNode("div", _hoisted_1$3, toDisplayString(formatValue(__props.value)), 1)
+          createBaseVNode("div", _hoisted_1$4, toDisplayString(formatValue(__props.value)), 1)
         ], 36)
       ], 34);
     };
   }
 });
-const SingleSlider = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-f9d63748"]]);
-const _hoisted_1$2 = { class: "slider-handle__value" };
-const _hoisted_2$1 = { class: "slider-handle__value" };
-const _sfc_main$2 = /* @__PURE__ */ defineComponent({
+const SingleSlider = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-60a7bbd7"]]);
+const _hoisted_1$3 = { class: "slider-handle__value" };
+const _hoisted_2$2 = { class: "slider-handle__value" };
+const _sfc_main$3 = /* @__PURE__ */ defineComponent({
   __name: "DualRangeSlider",
   props: {
     min: {},
@@ -11770,7 +11800,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           onPointercancel: withModifiers(stopDrag, ["stop"])
         }, [
           _cache[3] || (_cache[3] = createBaseVNode("div", { class: "slider-handle__thumb" }, null, -1)),
-          createBaseVNode("div", _hoisted_1$2, toDisplayString(formatValue(__props.valueMin)), 1)
+          createBaseVNode("div", _hoisted_1$3, toDisplayString(formatValue(__props.valueMin)), 1)
         ], 36),
         createBaseVNode("div", {
           class: "slider-handle slider-handle--max",
@@ -11781,17 +11811,17 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           onPointercancel: withModifiers(stopDrag, ["stop"])
         }, [
           _cache[4] || (_cache[4] = createBaseVNode("div", { class: "slider-handle__thumb" }, null, -1)),
-          createBaseVNode("div", _hoisted_2$1, toDisplayString(formatValue(__props.valueMax)), 1)
+          createBaseVNode("div", _hoisted_2$2, toDisplayString(formatValue(__props.valueMax)), 1)
         ], 36)
       ], 34);
     };
   }
 });
-const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-37d75ec5"]]);
-const _hoisted_1$1 = { class: "randomizer-settings" };
-const _hoisted_2 = { class: "setting-section" };
-const _hoisted_3 = { class: "count-mode-tabs" };
-const _hoisted_4 = ["checked"];
+const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-77b34316"]]);
+const _hoisted_1$2 = { class: "randomizer-settings" };
+const _hoisted_2$1 = { class: "setting-section" };
+const _hoisted_3$1 = { class: "count-mode-tabs" };
+const _hoisted_4$1 = ["checked"];
 const _hoisted_5 = ["checked"];
 const _hoisted_6 = { class: "slider-container" };
 const _hoisted_7 = { class: "setting-section" };
@@ -11809,7 +11839,7 @@ const _hoisted_18 = { class: "roll-buttons" };
 const _hoisted_19 = ["disabled"];
 const _hoisted_20 = ["disabled"];
 const _hoisted_21 = ["disabled"];
-const _sfc_main$1 = /* @__PURE__ */ defineComponent({
+const _sfc_main$2 = /* @__PURE__ */ defineComponent({
   __name: "LoraRandomizerSettingsView",
   props: {
     countMode: {},
@@ -11849,13 +11879,13 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
       );
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$1, [
+      return openBlock(), createElementBlock("div", _hoisted_1$2, [
         _cache[29] || (_cache[29] = createBaseVNode("div", { class: "settings-header" }, [
           createBaseVNode("h3", { class: "settings-title" }, "RANDOMIZER SETTINGS")
         ], -1)),
-        createBaseVNode("div", _hoisted_2, [
+        createBaseVNode("div", _hoisted_2$1, [
           _cache[20] || (_cache[20] = createBaseVNode("label", { class: "setting-label" }, "LoRA Count", -1)),
-          createBaseVNode("div", _hoisted_3, [
+          createBaseVNode("div", _hoisted_3$1, [
             createBaseVNode("label", {
               class: normalizeClass(["count-mode-tab", { active: __props.countMode === "fixed" }])
             }, [
@@ -11865,7 +11895,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                 value: "fixed",
                 checked: __props.countMode === "fixed",
                 onChange: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("update:countMode", "fixed"))
-              }, null, 40, _hoisted_4),
+              }, null, 40, _hoisted_4$1),
               _cache[18] || (_cache[18] = createBaseVNode("span", { class: "count-mode-tab-label" }, "Fixed", -1))
             ], 2),
             createBaseVNode("label", {
@@ -11993,14 +12023,14 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
                 disabled: __props.isRolling,
                 onClick: _cache[13] || (_cache[13] = ($event) => _ctx.$emit("generate-fixed"))
               }, [..._cache[25] || (_cache[25] = [
-                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-a7fefe60><rect x="2" y="2" width="20" height="20" rx="5" data-v-a7fefe60></rect><circle cx="12" cy="12" r="3" data-v-a7fefe60></circle><circle cx="6" cy="8" r="1.5" data-v-a7fefe60></circle><circle cx="18" cy="16" r="1.5" data-v-a7fefe60></circle></svg><span class="roll-button__text" data-v-a7fefe60>Generate Fixed</span>', 2)
+                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-370936aa><rect x="2" y="2" width="20" height="20" rx="5" data-v-370936aa></rect><circle cx="12" cy="12" r="3" data-v-370936aa></circle><circle cx="6" cy="8" r="1.5" data-v-370936aa></circle><circle cx="18" cy="16" r="1.5" data-v-370936aa></circle></svg><span class="roll-button__text" data-v-370936aa>Generate Fixed</span>', 2)
               ])], 10, _hoisted_19),
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "always" }]),
                 disabled: __props.isRolling,
                 onClick: _cache[14] || (_cache[14] = ($event) => _ctx.$emit("always-randomize"))
               }, [..._cache[26] || (_cache[26] = [
-                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-a7fefe60><path d="M21 12a9 9 0 1 1-6.219-8.56" data-v-a7fefe60></path><path d="M21 3v5h-5" data-v-a7fefe60></path><circle cx="12" cy="12" r="3" data-v-a7fefe60></circle><circle cx="6" cy="8" r="1.5" data-v-a7fefe60></circle><circle cx="18" cy="16" r="1.5" data-v-a7fefe60></circle></svg><span class="roll-button__text" data-v-a7fefe60>Always Randomize</span>', 2)
+                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-370936aa><path d="M21 12a9 9 0 1 1-6.219-8.56" data-v-370936aa></path><path d="M21 3v5h-5" data-v-370936aa></path><circle cx="12" cy="12" r="3" data-v-370936aa></circle><circle cx="6" cy="8" r="1.5" data-v-370936aa></circle><circle cx="18" cy="16" r="1.5" data-v-370936aa></circle></svg><span class="roll-button__text" data-v-370936aa>Always Randomize</span>', 2)
               ])], 10, _hoisted_20),
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "fixed" && __props.canReuseLast && areLorasEqual(__props.currentLoras, __props.lastUsed) }]),
@@ -12039,7 +12069,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraRandomizerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-a7fefe60"]]);
+const LoraRandomizerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-370936aa"]]);
 function useLoraRandomizerState(widget) {
   const countMode = ref("range");
   const countFixed = ref(3);
@@ -12201,8 +12231,8 @@ function useLoraRandomizerState(widget) {
     useLastUsed
   };
 }
-const _hoisted_1 = { class: "lora-randomizer-widget" };
-const _sfc_main = /* @__PURE__ */ defineComponent({
+const _hoisted_1$1 = { class: "lora-randomizer-widget" };
+const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   __name: "LoraRandomizerWidget",
   props: {
     widget: {},
@@ -12322,7 +12352,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       };
     });
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1, [
+      return openBlock(), createElementBlock("div", _hoisted_1$1, [
         createVNode(LoraRandomizerSettingsView, {
           "count-mode": unref(state).countMode.value,
           "count-fixed": unref(state).countFixed.value,
@@ -12363,7 +12393,114 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-f3f641a6"]]);
+const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-6f60504d"]]);
+const _hoisted_1 = { class: "json-display-widget" };
+const _hoisted_2 = {
+  class: "json-content",
+  ref: "contentRef"
+};
+const _hoisted_3 = ["innerHTML"];
+const _hoisted_4 = {
+  key: 1,
+  class: "placeholder"
+};
+const _sfc_main = /* @__PURE__ */ defineComponent({
+  __name: "JsonDisplayWidget",
+  props: {
+    widget: {},
+    node: {}
+  },
+  setup(__props) {
+    const props = __props;
+    const metadata = ref(null);
+    const hasMetadata = computed(
+      () => metadata.value !== null && Object.keys(metadata.value).length > 0
+    );
+    const highlightedJson = computed(() => {
+      if (!metadata.value) return "";
+      const jsonStr = JSON.stringify(metadata.value, null, 2);
+      return syntaxHighlight(jsonStr);
+    });
+    const colors = {
+      key: "#6ad6f5",
+      // Light blue for keys
+      string: "#98c379",
+      // Soft green for strings
+      number: "#e5c07b",
+      // Amber for numbers
+      boolean: "#c678dd",
+      // Purple for booleans
+      null: "#7f848e"
+      // Gray for null
+    };
+    function syntaxHighlight(json) {
+      json = json.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return json.replace(
+        /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+        (match) => {
+          let color = colors.number;
+          if (/^"/.test(match)) {
+            if (/:$/.test(match)) {
+              color = colors.key;
+              match = match.replace(/:$/, "");
+              return `<span style="color:${color};">${match}</span>:`;
+            } else {
+              color = colors.string;
+            }
+          } else if (/true|false/.test(match)) {
+            color = colors.boolean;
+          } else if (/null/.test(match)) {
+            color = colors.null;
+          }
+          return `<span style="color:${color};">${match}</span>`;
+        }
+      );
+    }
+    onMounted(() => {
+      var _a;
+      props.widget.serializeValue = async () => null;
+      props.widget.onSetValue = (v2) => {
+        if (v2 && typeof v2 === "object") {
+          metadata.value = v2;
+        }
+      };
+      if (props.widget.value && typeof props.widget.value === "object") {
+        metadata.value = props.widget.value;
+      }
+      const originalOnExecuted = (_a = props.node.onExecuted) == null ? void 0 : _a.bind(props.node);
+      props.node.onExecuted = function(output) {
+        if ((output == null ? void 0 : output.metadata) !== void 0) {
+          let metadataValue = output.metadata;
+          if (Array.isArray(metadataValue)) {
+            metadataValue = metadataValue[0];
+          }
+          if (typeof metadataValue === "string") {
+            try {
+              metadataValue = JSON.parse(metadataValue);
+            } catch (e) {
+              console.error("[JsonDisplayWidget] Failed to parse JSON:", e);
+            }
+          }
+          metadata.value = metadataValue;
+        }
+        if (originalOnExecuted) {
+          return originalOnExecuted(output);
+        }
+      };
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createElementBlock("div", _hoisted_1, [
+        createBaseVNode("div", _hoisted_2, [
+          hasMetadata.value ? (openBlock(), createElementBlock("pre", {
+            key: 0,
+            innerHTML: highlightedJson.value
+          }, null, 8, _hoisted_3)) : (openBlock(), createElementBlock("div", _hoisted_4, "No metadata available"))
+        ], 512)
+      ]);
+    };
+  }
+});
+const JsonDisplayWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-0f202476"]]);
 const app = {};
 const ROOT_GRAPH_ID = "root";
 function isMapLike(collection) {
@@ -12558,6 +12695,8 @@ const LORA_POOL_WIDGET_MIN_HEIGHT = 400;
 const LORA_RANDOMIZER_WIDGET_MIN_WIDTH = 500;
 const LORA_RANDOMIZER_WIDGET_MIN_HEIGHT = 510;
 const LORA_RANDOMIZER_WIDGET_MAX_HEIGHT = LORA_RANDOMIZER_WIDGET_MIN_HEIGHT;
+const JSON_DISPLAY_WIDGET_MIN_WIDTH = 300;
+const JSON_DISPLAY_WIDGET_MIN_HEIGHT = 200;
 function forwardMiddleMouseToCanvas(container) {
   if (!container) return;
   container.addEventListener("pointerdown", (event) => {
@@ -12712,6 +12851,61 @@ function createLoraRandomizerWidget(node) {
   };
   return { widget };
 }
+function createJsonDisplayWidget(node) {
+  const container = document.createElement("div");
+  container.id = `json-display-widget-${node.id}`;
+  container.style.width = "100%";
+  container.style.height = "100%";
+  container.style.display = "flex";
+  container.style.flexDirection = "column";
+  container.style.overflow = "hidden";
+  forwardMiddleMouseToCanvas(container);
+  let internalValue;
+  const widget = node.addDOMWidget(
+    "metadata",
+    "JSON_DISPLAY",
+    container,
+    {
+      getValue() {
+        return internalValue;
+      },
+      setValue(v2) {
+        internalValue = v2;
+        if (typeof widget.onSetValue === "function") {
+          widget.onSetValue(v2);
+        }
+      },
+      serialize: false,
+      // Display-only widget - don't save metadata in workflows
+      getMinHeight() {
+        return JSON_DISPLAY_WIDGET_MIN_HEIGHT;
+      }
+    }
+  );
+  const vueApp = createApp(JsonDisplayWidget, {
+    widget,
+    node
+  });
+  vueApp.use(PrimeVue, {
+    unstyled: true,
+    ripple: false
+  });
+  vueApp.mount(container);
+  vueApps.set(node.id + 2e4, vueApp);
+  widget.computeLayoutSize = () => {
+    const minWidth = JSON_DISPLAY_WIDGET_MIN_WIDTH;
+    const minHeight = JSON_DISPLAY_WIDGET_MIN_HEIGHT;
+    return { minHeight, minWidth };
+  };
+  widget.onRemove = () => {
+    const vueApp2 = vueApps.get(node.id + 2e4);
+    if (vueApp2) {
+      vueApp2.unmount();
+      vueApps.delete(node.id + 2e4);
+    }
+  };
+  return { widget };
+}
 app$1.registerExtension({
   name: "LoraManager.VueWidgets",
   getCustomWidgets() {
@@ -12740,6 +12934,17 @@ app$1.registerExtension({
         return addLorasWidgetCache(node, "loras", { isRandomizerNode }, callback);
       }
     };
+  },
+  // Add display-only widget to Debug Metadata node
+  // @ts-ignore
+  async beforeRegisterNodeDef(nodeType, nodeData) {
+    if (nodeData.name === "Debug Metadata (LoraManager)") {
+      const onNodeCreated = nodeType.prototype.onNodeCreated;
+      nodeType.prototype.onNodeCreated = function() {
+        onNodeCreated == null ? void 0 : onNodeCreated.apply(this, []);
+        createJsonDisplayWidget(this);
+      };
+    }
   }
 });
 //# sourceMappingURL=lora-manager-widgets.js.map

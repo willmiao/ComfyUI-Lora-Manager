@@ -56,6 +56,46 @@ app.registerExtension({
 
 ---
 
+## ComfyUI Dual Rendering Modes
+
+ComfyUI frontend supports two rendering modes:
+
+| Mode | Description | DOM Structure |
+| :--- | :--- | :--- |
+| **Canvas Mode** | Traditional rendering where widgets are rendered on top of canvas using absolute positioning | Uses `.dom-widget` class on containers |
+| **Vue DOM Mode** | New rendering mode where nodes and widgets are rendered as Vue components | Uses `.lg-node-widget` class on containers with dynamic IDs (e.g., `v-1-0`) |
+
+### Mode Switching
+
+The frontend switches between modes via `LiteGraph.vueNodesMode` boolean:
+- `LiteGraph.vueNodesMode = true` → Vue DOM Mode
+- `LiteGraph.vueNodesMode = false` → Canvas Mode
+
+**Key Behavior**: Mode switching triggers DOM re-rendering WITHOUT page reload. Widget elements are destroyed and recreated, so any event listeners or references to old DOM elements become invalid.
+
+### Testing Mode Switches via Chrome DevTools MCP
+
+```javascript
+// Trigger render mode change
+LiteGraph.vueNodesMode = !LiteGraph.vueNodesMode;
+
+// Force canvas redraw (optional but helps trigger re-render)
+if (app.canvas) {
+    app.canvas.draw(true, true);
+}
+```
+
+### Development Notes
+
+When implementing widgets that attach event listeners or maintain external references:
+1. **Use `node.onRemoved`** to clean up when node is deleted
+2. **Detect DOM changes** by checking if widget input element is still in document: `document.body.contains(inputElement)`
+3. **Poll for mode changes** by watching `LiteGraph.vueNodesMode` and re-initializing when it changes
+4. **Use `loadedGraphNode` hook** for initial setup (guarantees DOM is fully rendered)
+
+
+---
+
 ## 3. The `addDOMWidget` API
 
 ```javascript

@@ -293,6 +293,57 @@ class AutoComplete {
             }
         };
         document.addEventListener('click', this.onDocumentClick);
+
+        // Mark this element as having autocomplete events bound
+        this.inputElement._autocompleteEventsBound = true;
+    }
+
+    /**
+     * Check if the autocomplete is valid (input element is in DOM and events are bound)
+     */
+    isValid() {
+        return this.inputElement &&
+               document.body.contains(this.inputElement) &&
+               this.inputElement._autocompleteEventsBound === true;
+    }
+
+    /**
+     * Check if events need to be rebound (element exists but events not bound)
+     */
+    needsRebind() {
+        return this.inputElement &&
+               document.body.contains(this.inputElement) &&
+               this.inputElement._autocompleteEventsBound !== true;
+    }
+
+    /**
+     * Rebind events to the input element (useful after Vue moves the element)
+     */
+    rebindEvents() {
+        // Remove old listeners if they exist
+        if (this.onInput) {
+            this.inputElement.removeEventListener('input', this.onInput);
+        }
+        if (this.onKeyDown) {
+            this.inputElement.removeEventListener('keydown', this.onKeyDown);
+        }
+        if (this.onBlur) {
+            this.inputElement.removeEventListener('blur', this.onBlur);
+        }
+
+        // Rebind all events
+        this.bindEvents();
+
+        console.log('[Lora Manager] Autocomplete events rebound');
+    }
+
+    /**
+     * Refresh the TextAreaCaretHelper (useful after element properties change)
+     */
+    refreshHelper() {
+        if (this.inputElement && document.body.contains(this.inputElement)) {
+            this.helper = new TextAreaCaretHelper(this.inputElement, () => app.canvas.ds.scale);
+        }
     }
     
     handleInput(value = '') {
@@ -638,7 +689,26 @@ class AutoComplete {
         }
         return `${trimmed}, `;
     }
-    
+
+    /**
+     * Check if the autocomplete instance is still valid
+     * (input element exists and is in the DOM)
+     * @returns {boolean}
+     */
+    isValid() {
+        return this.inputElement && document.body.contains(this.inputElement);
+    }
+
+    /**
+     * Refresh the TextAreaCaretHelper to update cached measurements
+     * Useful after element is moved in DOM (e.g., Vue mode switch)
+     */
+    refreshCaretHelper() {
+        if (this.inputElement && document.body.contains(this.inputElement)) {
+            this.helper = new TextAreaCaretHelper(this.inputElement, () => app.canvas.ds.scale);
+        }
+    }
+
     destroy() {
         if (this.debounceTimer) {
             clearTimeout(this.debounceTimer);

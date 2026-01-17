@@ -241,6 +241,27 @@ app.registerExtension({
       // Merge the loras data
       const mergedLoras = mergeLoras(node.widgets[0].value, existingLoras);
       node.lorasWidget.value = mergedLoras;
+
+      // Initialize autocomplete after DOM is fully rendered
+      const inputWidget = node.inputWidget || node.widgets[0];
+      if (inputWidget && !node.autocomplete) {
+        const { setupInputWidgetWithAutocomplete } = await import("./utils.js");
+        const modelType = "loras";
+        const autocompleteOptions = {
+          maxItems: 20,
+          minChars: 1,
+          debounceDelay: 200,
+        };
+        // Fix: Assign the enhanced callback to replace the original
+        inputWidget.callback = setupInputWidgetWithAutocomplete(node, inputWidget, inputWidget.callback, modelType, autocompleteOptions);
+
+        // Eager initialization: trigger callback after short delay to ensure DOM is ready
+        setTimeout(() => {
+          if (!node.autocomplete && inputWidget.callback) {
+            inputWidget.callback(inputWidget.value);
+          }
+        }, 100);
+      }
     }
   },
 });

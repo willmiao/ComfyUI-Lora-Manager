@@ -26,4 +26,19 @@ app.registerExtension({
       });
     }
   },
+  async loadedGraphNode(node) {
+    if (node.comfyClass == "Prompt (LoraManager)") {
+      const textWidget = node.widgets?.[0];
+      if (textWidget && !node.autocomplete) {
+        const { setupInputWidgetWithAutocomplete } = await import("./utils.js");
+        const modelType = "embeddings";
+        const autocompleteOptions = {
+          maxItems: 20,
+          minChars: 1,
+          debounceDelay: 200,
+        };
+        textWidget.callback = setupInputWidgetWithAutocomplete(node, textWidget, textWidget.callback, modelType, autocompleteOptions);
+      }
+    }
+  },
 });

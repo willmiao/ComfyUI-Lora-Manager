@@ -146,12 +146,6 @@ app.registerExtension({
             isUpdating = false;
           }
         };
-           
-        inputWidget.callback = setupInputWidgetWithAutocomplete(
-          this,
-          inputWidget,
-          originalCallback
-        );
       });
     }
   },
@@ -167,6 +161,18 @@ app.registerExtension({
       // Merge the loras data
       const mergedLoras = mergeLoras(node.widgets[0].value, existingLoras);
       node.lorasWidget.value = mergedLoras;
+
+      const inputWidget = node.inputWidget || node.widgets[0];
+      if (inputWidget && !node.autocomplete) {
+        const { setupInputWidgetWithAutocomplete } = await import("./utils.js");
+        const modelType = "loras";
+        const autocompleteOptions = {
+          maxItems: 20,
+          minChars: 1,
+          debounceDelay: 200,
+        };
+        inputWidget.callback = setupInputWidgetWithAutocomplete(node, inputWidget, inputWidget.callback, modelType, autocompleteOptions);
+      }
     }
   },
 });

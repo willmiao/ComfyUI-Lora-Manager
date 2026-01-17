@@ -408,22 +408,55 @@ async function findWidgetInputElement(node, widget) {
             const doSearch = () => {
                 let inputElement = null;
 
-                const allWidgetContainers = document.querySelectorAll('.lg-node-widget');
+                // PRIORITY 1: Use data-node-id attribute (most reliable)
+                // Always try this first, regardless of mode - Vue elements may still exist after mode switch
+                const nodeContainer = document.querySelector(`[data-node-id="${nodeId}"]`);
+                if (nodeContainer) {
+                    // For text widgets, specifically look for textarea (not checkbox/toggle inputs)
+                    if (widgetName === 'text') {
+                        const textarea = nodeContainer.querySelector('textarea');
+                        if (textarea) {
+                            inputElement = textarea;
+                            console.log(`[Lora Manager] Found textarea for widget "${widgetName}" on node ${nodeId} via data-node-id`);
+                        }
+                    } else {
+                        // For other widgets, find input within widget containers
+                        const widgetContainers = nodeContainer.querySelectorAll('.lg-node-widget');
+                        for (const container of widgetContainers) {
+                            const input = container.querySelector('input:not([type="checkbox"]), textarea');
+                            if (input) {
+                                inputElement = input;
+                                console.log(`[Lora Manager] Found input element for widget "${widgetName}" on node ${nodeId} via data-node-id`);
+                                break;
+                            }
+                        }
+                    }
+                }
 
-                for (const container of allWidgetContainers) {
-                    const hasInput = !!container.querySelector('input, textarea');
-                    const textContent = container.textContent.toLowerCase();
-                    const containsWidgetName = textContent.includes(widgetName.toLowerCase());
-                    const containsNodeTitle = textContent.includes(node.title?.toLowerCase() || '');
+                // PRIORITY 2: Fallback - heuristic search using widget containers
+                if (!inputElement) {
+                    const allWidgetContainers = document.querySelectorAll('.lg-node-widget, .dom-widget');
 
-                    if (hasInput && (containsWidgetName || (widgetName === 'text' && container.querySelector('textarea')))) {
-                        inputElement = container.querySelector('input, textarea');
-                        break;
+                    for (const container of allWidgetContainers) {
+                        const hasInput = !!container.querySelector('input, textarea');
+                        if (!hasInput) continue;
+
+                        const textContent = container.textContent.toLowerCase();
+                        const containsWidgetName = textContent.includes(widgetName.toLowerCase());
+                        const containsNodeTitle = textContent.includes(node.title?.toLowerCase() || '');
+
+                        // For text widgets, check if it's a textarea
+                        const isTextareaWidget = widgetName === 'text' && container.querySelector('textarea');
+
+                        if (containsWidgetName || containsNodeTitle || isTextareaWidget) {
+                            inputElement = container.querySelector('input, textarea');
+                            console.log(`[Lora Manager] Found input element for widget "${widgetName}" on node ${nodeId} via heuristic`);
+                            break;
+                        }
                     }
                 }
 
                 if (inputElement) {
-                    console.log(`[Lora Manager] Found input element for widget "${widgetName}" on node ${nodeId}`);
                     resolve(inputElement);
                 } else if (attempt < maxAttempts) {
                     setTimeout(() => searchForInput(attempt + 1).then(resolve), searchInterval);
@@ -449,32 +482,59 @@ async function findWidgetInputElement(node, widget) {
  * @returns {Function} Enhanced callback function with autocomplete
  */
 export function setupInputWidgetWithAutocomplete(node, inputWidget, originalCallback, modelType = 'loras', autocompleteOptions = {}) {
-    let autocomplete = null;
-    let isInitializing = false;
     const defaultOptions = {
         maxItems: 20,
         minChars: 1,
         debounceDelay: 200,
     };
     const mergedOptions = { ...defaultOptions, ...autocompleteOptions };
-    
+
+    setupAutocompleteCleanup(node);
+
+    // Track rendering mode changes per node
+    let lastVueNodesMode = typeof LiteGraph !== 'undefined' ? LiteGraph.vueNodesMode : false;
+
     const initializeAutocomplete = async () => {
-        if (autocomplete || isInitializing) return;
-        isInitializing = true;
+        if (node.autocomplete) {
+            console.log(`[Lora Manager] Autocomplete already initialized for widget "${inputWidget.name}" on node ${node.id}`);
+            return;
+        }
 
         try {
             let inputElement = null;
 
-            if (inputWidget.inputEl && document.body.contains(inputWidget.inputEl)) {
+            // PRIORITY 1: Always prefer widget.inputEl if it exists (even if not yet in DOM)
+            // This is the authoritative element created by ComfyUI
+            if (inputWidget.inputEl) {
                 inputElement = inputWidget.inputEl;
-                console.log(`[Lora Manager] Using widget.inputEl for widget "${inputWidget.name}"`);
-            } else {
-                console.log(`[Lora Manager] Searching DOM for input element for widget "${inputWidget.name}"`);
+                // If not yet in DOM, wait for it to be added
+                if (!document.body.contains(inputElement)) {
+                    console.log(`[Lora Manager] widget.inputEl exists but not in DOM yet, waiting for node ${node.id}`);
+                    const maxWait = 1000; // 1 second max
+                    const checkInterval = 50;
+                    let waited = 0;
+                    while (!document.body.contains(inputElement) && waited < maxWait) {
+                        await new Promise(r => setTimeout(r, checkInterval));
+                        waited += checkInterval;
+                    }
+                    if (!document.body.contains(inputElement)) {
+                        console.warn(`[Lora Manager] widget.inputEl still not in DOM after ${maxWait}ms for node ${node.id}`);
+                        inputElement = null; // Fall through to DOM search
+                    }
+                }
+                if (inputElement) {
+                    console.log(`[Lora Manager] Using widget.inputEl for widget "${inputWidget.name}" on node ${node.id}`);
+                }
+            }
+
+            // PRIORITY 2: DOM search only if widget.inputEl doesn't exist
+            if (!inputElement) {
+                console.log(`[Lora Manager] Searching DOM for input element for widget "${inputWidget.name}" on node ${node.id}`);
                 inputElement = await findWidgetInputElement(node, inputWidget);
             }
 
             if (inputElement) {
-                autocomplete = new AutoComplete(inputElement, modelType, mergedOptions);
+                const autocomplete = new AutoComplete(inputElement, modelType, mergedOptions);
                 node.autocomplete = autocomplete;
                 console.log(`[Lora Manager] Autocomplete initialized for widget "${inputWidget.name}" on node ${node.id}`);
             } else {
@@ -482,23 +542,65 @@ export function setupInputWidgetWithAutocomplete(node, inputWidget, originalCall
             }
         } catch (error) {
             console.error('[Lora Manager] Error initializing autocomplete:', error);
-        } finally {
-            isInitializing = false;
         }
     };
-    
+
+    const checkAndInvalidateAutocomplete = () => {
+        // Check for rendering mode change
+        const currentMode = typeof LiteGraph !== 'undefined' ? LiteGraph.vueNodesMode : false;
+        if (currentMode !== lastVueNodesMode) {
+            lastVueNodesMode = currentMode;
+            if (node.autocomplete) {
+                console.log(`[Lora Manager] Rendering mode changed, reinitializing autocomplete for node ${node.id}`);
+                node.autocomplete.destroy();
+                node.autocomplete = null;
+            }
+            return true;
+        }
+
+        // Check if existing autocomplete's input element is still valid
+        if (node.autocomplete) {
+            const currentInputEl = node.autocomplete.inputElement;
+            if (!currentInputEl || !document.body.contains(currentInputEl)) {
+                console.log(`[Lora Manager] Autocomplete element detached, reinitializing for node ${node.id}`);
+                node.autocomplete.destroy();
+                node.autocomplete = null;
+                return true;
+            }
+
+            // Check if autocomplete is bound to wrong element (different from widget.inputEl)
+            // Only do this check if widget.inputEl is actually in the DOM - it may be stale
+            if (inputWidget.inputEl && document.body.contains(inputWidget.inputEl) && currentInputEl !== inputWidget.inputEl) {
+                console.log(`[Lora Manager] Autocomplete bound to wrong element, rebinding for node ${node.id}`);
+                node.autocomplete.destroy();
+                node.autocomplete = null;
+                return true;
+            }
+
+            // Check if events need rebinding (element exists but events not bound)
+            // This can happen when Vue moves the element in the DOM
+            if (node.autocomplete.needsRebind()) {
+                console.log(`[Lora Manager] Autocomplete events need rebinding for node ${node.id}`);
+                node.autocomplete.rebindEvents();
+            }
+        }
+
+        return false;
+    };
+
     const enhancedCallback = (value) => {
-        if (!autocomplete && !isInitializing) {
+        // Check validity and invalidate if needed
+        checkAndInvalidateAutocomplete();
+
+        if (!node.autocomplete) {
             initializeAutocomplete();
         }
-        
+
         if (typeof originalCallback === "function") {
             originalCallback.call(node, value);
         }
     };
-    
-    setupAutocompleteCleanup(node);
-    
+
     return enhancedCallback;
 }
 
