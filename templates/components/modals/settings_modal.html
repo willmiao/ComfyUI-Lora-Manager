@@ -304,6 +304,23 @@
                 <div class="setting-item">
                     <div class="setting-row">
                         <div class="setting-info">
+                            <label for="defaultUnetRoot">{{ t('settings.folderSettings.defaultUnetRoot') }}</label>
+                        </div>
+                        <div class="setting-control select-control">
+                            <select id="defaultUnetRoot" onchange="settingsManager.saveSelectSetting('defaultUnetRoot', 'default_unet_root')">
+                                <option value="">{{ t('settings.folderSettings.noDefault') }}</option>
+                                <!-- Options will be loaded dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.folderSettings.defaultUnetRootHelp') }}
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
                             <label for="defaultEmbeddingRoot">{{ t('settings.folderSettings.defaultEmbeddingRoot') }}</label>
                         </div>
                         <div class="setting-control select-control">

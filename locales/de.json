@@ -319,6 +319,8 @@
             "defaultLoraRootHelp": "Legen Sie den Standard-LoRA-Stammordner für Downloads, Importe und Verschiebungen fest",
             "defaultCheckpointRoot": "Standard-Checkpoint-Stammordner",
             "defaultCheckpointRootHelp": "Legen Sie den Standard-Checkpoint-Stammordner für Downloads, Importe und Verschiebungen fest",
+            "defaultUnetRoot": "Standard-Diffusion-Modell-Stammordner",
+            "defaultUnetRootHelp": "Legen Sie den Standard-Diffusion-Modell-(UNET)-Stammordner für Downloads, Importe und Verschiebungen fest",
             "defaultEmbeddingRoot": "Standard-Embedding-Stammordner",
             "defaultEmbeddingRootHelp": "Legen Sie den Standard-Embedding-Stammordner für Downloads, Importe und Verschiebungen fest",
             "noDefault": "Kein Standard"
@@ -1391,6 +1393,7 @@
         "settings": {
             "loraRootsFailed": "Fehler beim Laden der LoRA-Stammverzeichnisse: {message}",
             "checkpointRootsFailed": "Fehler beim Laden der Checkpoint-Stammverzeichnisse: {message}",
+            "unetRootsFailed": "Fehler beim Laden der Diffusion-Modell-Stammverzeichnisse: {message}",
             "embeddingRootsFailed": "Fehler beim Laden der Embedding-Stammverzeichnisse: {message}",
             "mappingsUpdated": "Basis-Modell-Pfad-Zuordnungen aktualisiert ({count} Zuordnung{plural})",
             "mappingsCleared": "Basis-Modell-Pfad-Zuordnungen gelöscht",

@@ -316,11 +316,13 @@
             "loadingLibraries": "Loading libraries...",
             "noLibraries": "No libraries configured",
             "defaultLoraRoot": "Default LoRA Root",
-            "defaultLoraRootHelp": "Set the default LoRA root directory for downloads, imports and moves",
+            "defaultLoraRootHelp": "Set default LoRA root directory for downloads, imports and moves",
             "defaultCheckpointRoot": "Default Checkpoint Root",
-            "defaultCheckpointRootHelp": "Set the default checkpoint root directory for downloads, imports and moves",
+            "defaultCheckpointRootHelp": "Set default checkpoint root directory for downloads, imports and moves",
+            "defaultUnetRoot": "Default Diffusion Model Root",
+            "defaultUnetRootHelp": "Set default diffusion model (UNET) root directory for downloads, imports and moves",
             "defaultEmbeddingRoot": "Default Embedding Root",
-            "defaultEmbeddingRootHelp": "Set the default embedding root directory for downloads, imports and moves",
+            "defaultEmbeddingRootHelp": "Set default embedding root directory for downloads, imports and moves",
             "noDefault": "No Default"
         },
         "priorityTags": {
@@ -1391,6 +1393,7 @@
         "settings": {
             "loraRootsFailed": "Failed to load LoRA roots: {message}",
             "checkpointRootsFailed": "Failed to load checkpoint roots: {message}",
+            "unetRootsFailed": "Failed to load diffusion model roots: {message}",
             "embeddingRootsFailed": "Failed to load embedding roots: {message}",
             "mappingsUpdated": "Base model path mappings updated ({count} mapping{plural})",
             "mappingsCleared": "Base model path mappings cleared",

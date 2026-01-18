@@ -319,6 +319,8 @@
             "defaultLoraRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 LoRA 루트 디렉토리를 설정합니다",
             "defaultCheckpointRoot": "기본 Checkpoint 루트",
             "defaultCheckpointRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 Checkpoint 루트 디렉토리를 설정합니다",
+            "defaultUnetRoot": "기본 Diffusion Model 루트",
+            "defaultUnetRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 Diffusion Model (UNET) 루트 디렉토리를 설정합니다",
             "defaultEmbeddingRoot": "기본 Embedding 루트",
             "defaultEmbeddingRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 Embedding 루트 디렉토리를 설정합니다",
             "noDefault": "기본값 없음"
@@ -1391,6 +1393,7 @@
         "settings": {
             "loraRootsFailed": "LoRA 루트 로딩 실패: {message}",
             "checkpointRootsFailed": "Checkpoint 루트 로딩 실패: {message}",
+            "unetRootsFailed": "Diffusion Model 루트 로딩 실패: {message}",
             "embeddingRootsFailed": "Embedding 루트 로딩 실패: {message}",
             "mappingsUpdated": "베이스 모델 경로 매핑이 업데이트되었습니다 ({count}개 매핑)",
             "mappingsCleared": "베이스 모델 경로 매핑이 지워졌습니다",

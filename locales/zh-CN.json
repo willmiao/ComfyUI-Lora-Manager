@@ -319,6 +319,8 @@
             "defaultLoraRootHelp": "设置下载、导入和移动时的默认 LoRA 根目录",
             "defaultCheckpointRoot": "默认 Checkpoint 根目录",
             "defaultCheckpointRootHelp": "设置下载、导入和移动时的默认 Checkpoint 根目录",
+            "defaultUnetRoot": "默认 Diffusion Model 根目录",
+            "defaultUnetRootHelp": "设置下载、导入和移动时的默认 Diffusion Model (UNET) 根目录",
             "defaultEmbeddingRoot": "默认 Embedding 根目录",
             "defaultEmbeddingRootHelp": "设置下载、导入和移动时的默认 Embedding 根目录",
             "noDefault": "无默认"
@@ -1391,6 +1393,7 @@
         "settings": {
             "loraRootsFailed": "加载 LoRA 根目录失败：{message}",
             "checkpointRootsFailed": "加载 Checkpoint 根目录失败：{message}",
+            "unetRootsFailed": "加载 Diffusion Model 根目录失败：{message}",
             "embeddingRootsFailed": "加载 Embedding 根目录失败：{message}",
             "mappingsUpdated": "基础模型路径映射已更新（{count} 条映射{plural}）",
             "mappingsCleared": "基础模型路径映射已清除",

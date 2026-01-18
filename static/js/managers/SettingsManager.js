@@ -493,6 +493,9 @@ export class SettingsManager {
         // Load default embedding root
         await this.loadEmbeddingRoots();
 
+        // Load default unet root
+        await this.loadUnetRoots();
+
         // Load language setting
         const languageSelect = document.getElementById('languageSelect');
         if (languageSelect) {
@@ -883,8 +886,8 @@ export class SettingsManager {
             const defaultCheckpointRootSelect = document.getElementById('defaultCheckpointRoot');
             if (!defaultCheckpointRootSelect) return;
 
-            // Fetch checkpoint roots
-            const response = await fetch('/api/lm/checkpoints/roots');
+            // Fetch checkpoint roots (checkpoint paths only, not unet)
+            const response = await fetch('/api/lm/checkpoints/checkpoints_roots');
             if (!response.ok) {
                 throw new Error('Failed to fetch checkpoint roots');
             }
@@ -894,7 +897,7 @@ export class SettingsManager {
                 throw new Error('No checkpoint roots found');
             }
 
-            // Clear existing options except the first one (No Default)
+            // Clear existing options except first one (No Default)
             const noDefaultOption = defaultCheckpointRootSelect.querySelector('option[value=""]');
             defaultCheckpointRootSelect.innerHTML = '';
             defaultCheckpointRootSelect.appendChild(noDefaultOption);
@@ -917,6 +920,45 @@ export class SettingsManager {
         }
     }
 
+    async loadUnetRoots() {
+        try {
+            const defaultUnetRootSelect = document.getElementById('defaultUnetRoot');
+            if (!defaultUnetRootSelect) return;
+
+            // Fetch unet roots (diffusion model paths only)
+            const response = await fetch('/api/lm/checkpoints/unet_roots');
+            if (!response.ok) {
+                throw new Error('Failed to fetch diffusion model roots');
+            }
+
+            const data = await response.json();
+            if (!data.roots || data.roots.length === 0) {
+                throw new Error('No diffusion model roots found');
+            }
+
+            // Clear existing options except first one (No Default)
+            const noDefaultOption = defaultUnetRootSelect.querySelector('option[value=""]');
+            defaultUnetRootSelect.innerHTML = '';
+            defaultUnetRootSelect.appendChild(noDefaultOption);
+
+            // Add options for each root
+            data.roots.forEach(root => {
+                const option = document.createElement('option');
+                option.value = root;
+                option.textContent = root;
+                defaultUnetRootSelect.appendChild(option);
+            });
+
+            // Set selected value from settings
+            const defaultRoot = state.global.settings.default_unet_root || '';
+            defaultUnetRootSelect.value = defaultRoot;
+
+        } catch (error) {
+            console.error('Error loading diffusion model roots:', error);
+            showToast('toast.settings.unetRootsFailed', { message: error.message }, 'error');
+        }
+    }
+
     async loadEmbeddingRoots() {
         try {
             const defaultEmbeddingRootSelect = document.getElementById('defaultEmbeddingRoot');
@@ -933,7 +975,7 @@ export class SettingsManager {
                 throw new Error('No embedding roots found');
             }
 
-            // Clear existing options except the first one (No Default)
+            // Clear existing options except first one (No Default)
             const noDefaultOption = defaultEmbeddingRootSelect.querySelector('option[value=""]');
             defaultEmbeddingRootSelect.innerHTML = '';
             defaultEmbeddingRootSelect.appendChild(noDefaultOption);

@@ -319,6 +319,8 @@
             "defaultLoraRootHelp": "Définir le répertoire racine LoRA par défaut pour les téléchargements, imports et déplacements",
             "defaultCheckpointRoot": "Racine Checkpoint par défaut",
             "defaultCheckpointRootHelp": "Définir le répertoire racine checkpoint par défaut pour les téléchargements, imports et déplacements",
+            "defaultUnetRoot": "Racine Diffusion Model par défaut",
+            "defaultUnetRootHelp": "Définir le répertoire racine Diffusion Model (UNET) par défaut pour les téléchargements, imports et déplacements",
             "defaultEmbeddingRoot": "Racine Embedding par défaut",
             "defaultEmbeddingRootHelp": "Définir le répertoire racine embedding par défaut pour les téléchargements, imports et déplacements",
             "noDefault": "Aucun par défaut"
@@ -1391,6 +1393,7 @@
         "settings": {
             "loraRootsFailed": "Échec du chargement des racines LoRA : {message}",
             "checkpointRootsFailed": "Échec du chargement des racines checkpoint : {message}",
+            "unetRootsFailed": "Échec du chargement des racines Diffusion Model : {message}",
             "embeddingRootsFailed": "Échec du chargement des racines embedding : {message}",
             "mappingsUpdated": "Mappages de chemin de modèle de base mis à jour ({count} mappage{plural})",
             "mappingsCleared": "Mappages de chemin de modèle de base effacés",

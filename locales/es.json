@@ -319,6 +319,8 @@
             "defaultLoraRootHelp": "Establecer el directorio raíz predeterminado de LoRA para descargas, importaciones y movimientos",
             "defaultCheckpointRoot": "Raíz predeterminada de checkpoint",
             "defaultCheckpointRootHelp": "Establecer el directorio raíz predeterminado de checkpoint para descargas, importaciones y movimientos",
+            "defaultUnetRoot": "Raíz predeterminada de Diffusion Model",
+            "defaultUnetRootHelp": "Establecer el directorio raíz predeterminado de Diffusion Model (UNET) para descargas, importaciones y movimientos",
             "defaultEmbeddingRoot": "Raíz predeterminada de embedding",
             "defaultEmbeddingRootHelp": "Establecer el directorio raíz predeterminado de embedding para descargas, importaciones y movimientos",
             "noDefault": "Sin predeterminado"
@@ -1391,6 +1393,7 @@
         "settings": {
             "loraRootsFailed": "Error al cargar raíces de LoRA: {message}",
             "checkpointRootsFailed": "Error al cargar raíces de checkpoint: {message}",
+            "unetRootsFailed": "Error al cargar raíces de Diffusion Model: {message}",
             "embeddingRootsFailed": "Error al cargar raíces de embedding: {message}",
             "mappingsUpdated": "Mapeos de rutas de modelo base actualizados ({count} mapeo{plural})",
             "mappingsCleared": "Mapeos de rutas de modelo base limpiados",

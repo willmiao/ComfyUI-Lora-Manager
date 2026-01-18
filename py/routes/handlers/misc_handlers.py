@@ -224,6 +224,7 @@ class SettingsHandler:
         "civitai_api_key",
         "default_lora_root",
         "default_checkpoint_root",
+        "default_unet_root",
         "default_embedding_root",
         "base_model_path_mappings",
         "download_path_templates",

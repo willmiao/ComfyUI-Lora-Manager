@@ -319,6 +319,8 @@
             "defaultLoraRootHelp": "Установить корневую папку LoRA по умолчанию для загрузок, импорта и перемещений",
             "defaultCheckpointRoot": "Корневая папка Checkpoint по умолчанию",
             "defaultCheckpointRootHelp": "Установить корневую папку checkpoint по умолчанию для загрузок, импорта и перемещений",
+            "defaultUnetRoot": "Корневая папка Diffusion Model по умолчанию",
+            "defaultUnetRootHelp": "Установить корневую папку Diffusion Model (UNET) по умолчанию для загрузок, импорта и перемещений",
             "defaultEmbeddingRoot": "Корневая папка Embedding по умолчанию",
             "defaultEmbeddingRootHelp": "Установить корневую папку embedding по умолчанию для загрузок, импорта и перемещений",
             "noDefault": "Не задано"
@@ -1391,6 +1393,7 @@
         "settings": {
             "loraRootsFailed": "Не удалось загрузить корни LoRA: {message}",
             "checkpointRootsFailed": "Не удалось загрузить корни checkpoint: {message}",
+            "unetRootsFailed": "Не удалось загрузить корни Diffusion Model: {message}",
             "embeddingRootsFailed": "Не удалось загрузить корни embedding: {message}",
             "mappingsUpdated": "Сопоставления путей базовых моделей обновлены ({count} сопоставлени{plural})",
             "mappingsCleared": "Сопоставления путей базовых моделей очищены",

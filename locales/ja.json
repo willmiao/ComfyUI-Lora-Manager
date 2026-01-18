@@ -319,6 +319,8 @@
             "defaultLoraRootHelp": "ダウンロード、インポート、移動用のデフォルトLoRAルートディレクトリを設定",
             "defaultCheckpointRoot": "デフォルトCheckpointルート",
             "defaultCheckpointRootHelp": "ダウンロード、インポート、移動用のデフォルトcheckpointルートディレクトリを設定",
+            "defaultUnetRoot": "デフォルトDiffusion Modelルート",
+            "defaultUnetRootHelp": "ダウンロード、インポート、移動用のデフォルトDiffusion Model (UNET)ルートディレクトリを設定",
             "defaultEmbeddingRoot": "デフォルトEmbeddingルート",
             "defaultEmbeddingRootHelp": "ダウンロード、インポート、移動用のデフォルトembeddingルートディレクトリを設定",
             "noDefault": "デフォルトなし"
@@ -1391,6 +1393,7 @@
         "settings": {
             "loraRootsFailed": "LoRAルートの読み込みに失敗しました：{message}",
             "checkpointRootsFailed": "checkpointルートの読み込みに失敗しました：{message}",
+            "unetRootsFailed": "Diffusion Modelルートの読み込みに失敗しました：{message}",
             "embeddingRootsFailed": "embeddingルートの読み込みに失敗しました：{message}",
             "mappingsUpdated": "ベースモデルパスマッピングが更新されました（{count} マッピング{plural}）",
             "mappingsCleared": "ベースモデルパスマッピングがクリアされました",

@@ -312,13 +312,15 @@
         },
         "folderSettings": {
             "activeLibrary": "ספרייה פעילה",
-            "activeLibraryHelp": "החלפה בין הספריות המוגדרות תעדכן את תיקיות ברירת המחדל. שינוי הבחירה ירענן את הדף.",
+            "activeLibraryHelp": "החלפה בין הספריות המוגדרות לעדכן את תיקיות ברירת המחדל. שינוי הבחירה ירענן את הדף.",
             "loadingLibraries": "טוען ספריות...",
             "noLibraries": "לא הוגדרו ספריות",
             "defaultLoraRoot": "תיקיית שורש ברירת מחדל של LoRA",
             "defaultLoraRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של LoRA להורדות, ייבוא והעברות",
             "defaultCheckpointRoot": "תיקיית שורש ברירת מחדל של Checkpoint",
             "defaultCheckpointRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של checkpoint להורדות, ייבוא והעברות",
+            "defaultUnetRoot": "תיקיית שורש ברירת מחדל של Diffusion Model",
+            "defaultUnetRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של Diffusion Model (UNET) להורדות, ייבוא והעברות",
             "defaultEmbeddingRoot": "תיקיית שורש ברירת מחדל של Embedding",
             "defaultEmbeddingRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של embedding להורדות, ייבוא והעברות",
             "noDefault": "אין ברירת מחדל"
@@ -1391,6 +1393,7 @@
         "settings": {
             "loraRootsFailed": "טעינת שורשי LoRA נכשלה: {message}",
             "checkpointRootsFailed": "טעינת שורשי checkpoint נכשלה: {message}",
+            "unetRootsFailed": "טעינת שורשי Diffusion Model נכשלה: {message}",
             "embeddingRootsFailed": "טעינת שורשי embedding נכשלה: {message}",
             "mappingsUpdated": "מיפויי נתיבי מודל בסיס עודכנו ({count} מיפוי{plural})",
             "mappingsCleared": "מיפויי נתיבי מודל בסיס נוקו",
