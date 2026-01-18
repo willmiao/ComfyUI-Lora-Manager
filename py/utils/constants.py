@@ -75,3 +75,9 @@ DEFAULT_PRIORITY_TAG_CONFIG = {
     'checkpoint': ', '.join(CIVITAI_MODEL_TAGS),
     'embedding': ', '.join(CIVITAI_MODEL_TAGS),
 }
+
+# baseModel values from CivitAI that should be treated as diffusion models (unet)
+# These model types are incorrectly labeled as "checkpoint" by CivitAI but are actually diffusion models
+DIFFUSION_MODEL_BASE_MODELS = frozenset([
+    "ZImageTurbo",
+])

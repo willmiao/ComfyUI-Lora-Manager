@@ -10,7 +10,7 @@ import uuid
 from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlparse
 from ..utils.models import LoraMetadata, CheckpointMetadata, EmbeddingMetadata
-from ..utils.constants import CARD_PREVIEW_WIDTH, VALID_LORA_TYPES
+from ..utils.constants import CARD_PREVIEW_WIDTH, DIFFUSION_MODEL_BASE_MODELS, VALID_LORA_TYPES
 from ..utils.civitai_utils import rewrite_preview_url
 from ..utils.preview_selection import select_preview_media
 from ..utils.utils import sanitize_folder_name
@@ -343,6 +343,14 @@ class DownloadManager:
                     "error": f'Model type "{model_type_from_info}" is not supported for download',
                 }
 
+            # Check if this checkpoint should be treated as a diffusion model based on baseModel
+            is_diffusion_model = False
+            if model_type == "checkpoint":
+                base_model_value = version_info.get('baseModel', '')
+                if base_model_value in DIFFUSION_MODEL_BASE_MODELS:
+                    is_diffusion_model = True
+                    logger.info(f"baseModel '{base_model_value}' is a known diffusion model, routing to unet folder")
+
             # Case 2: model_version_id was None, check after getting version_info
             if model_version_id is None:
                 version_id = version_info.get("id")
@@ -377,11 +385,16 @@ class DownloadManager:
                 settings_manager = get_settings_manager()
                 # Set save_dir based on model type
                 if model_type == "checkpoint":
-                    default_path = settings_manager.get("default_checkpoint_root")
+                    if is_diffusion_model:
+                        default_path = settings_manager.get("default_unet_root")
+                        error_msg = "Default unet root path not set in settings"
+                    else:
+                        default_path = settings_manager.get("default_checkpoint_root")
+                        error_msg = "Default checkpoint root path not set in settings"
                     if not default_path:
                         return {
                             "success": False,
-                            "error": "Default checkpoint root path not set in settings",
+                            "error": error_msg,
                         }
                     save_dir = default_path
                 elif model_type == "lora":

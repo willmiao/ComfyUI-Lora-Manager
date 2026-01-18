@@ -44,6 +44,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "proxy_type": "http",
     "default_lora_root": "",
     "default_checkpoint_root": "",
+    "default_unet_root": "",
     "default_embedding_root": "",
     "base_model_path_mappings": {},
     "download_path_templates": {},
@@ -215,6 +216,7 @@ class SettingsManager:
                 folder_paths=merged.get("folder_paths", {}),
                 default_lora_root=merged.get("default_lora_root"),
                 default_checkpoint_root=merged.get("default_checkpoint_root"),
+                default_unet_root=merged.get("default_unet_root"),
                 default_embedding_root=merged.get("default_embedding_root"),
             )
         }
@@ -300,6 +302,7 @@ class SettingsManager:
                 folder_paths=normalized_top_level_paths,
                 default_lora_root=self.settings.get("default_lora_root", ""),
                 default_checkpoint_root=self.settings.get("default_checkpoint_root", ""),
+                default_unet_root=self.settings.get("default_unet_root", ""),
                 default_embedding_root=self.settings.get("default_embedding_root", ""),
             )
             libraries = {library_name: library_payload}
@@ -342,6 +345,7 @@ class SettingsManager:
                 folder_paths=candidate_folder_paths,
                 default_lora_root=data.get("default_lora_root"),
                 default_checkpoint_root=data.get("default_checkpoint_root"),
+                default_unet_root=data.get("default_unet_root"),
                 default_embedding_root=data.get("default_embedding_root"),
                 metadata=data.get("metadata"),
                 base=data,
@@ -380,6 +384,7 @@ class SettingsManager:
         self.settings["folder_paths"] = folder_paths
         self.settings["default_lora_root"] = active_library.get("default_lora_root", "")
         self.settings["default_checkpoint_root"] = active_library.get("default_checkpoint_root", "")
+        self.settings["default_unet_root"] = active_library.get("default_unet_root", "")
         self.settings["default_embedding_root"] = active_library.get("default_embedding_root", "")
 
         if save:
@@ -394,6 +399,7 @@ class SettingsManager:
         folder_paths: Optional[Mapping[str, Iterable[str]]] = None,
         default_lora_root: Optional[str] = None,
         default_checkpoint_root: Optional[str] = None,
+        default_unet_root: Optional[str] = None,
         default_embedding_root: Optional[str] = None,
         metadata: Optional[Mapping[str, Any]] = None,
         base: Optional[Mapping[str, Any]] = None,
@@ -415,6 +421,11 @@ class SettingsManager:
             payload["default_checkpoint_root"] = default_checkpoint_root
         else:
             payload.setdefault("default_checkpoint_root", "")
+
+        if default_unet_root is not None:
+            payload["default_unet_root"] = default_unet_root
+        else:
+            payload.setdefault("default_unet_root", "")
 
         if default_embedding_root is not None:
             payload["default_embedding_root"] = default_embedding_root
@@ -517,6 +528,7 @@ class SettingsManager:
         folder_paths: Optional[Mapping[str, Iterable[str]]] = None,
         default_lora_root: Optional[str] = None,
         default_checkpoint_root: Optional[str] = None,
+        default_unet_root: Optional[str] = None,
         default_embedding_root: Optional[str] = None,
     ) -> bool:
         libraries = self.settings.get("libraries", {})
@@ -539,6 +551,10 @@ class SettingsManager:
 
         if default_checkpoint_root is not None and library.get("default_checkpoint_root") != default_checkpoint_root:
             library["default_checkpoint_root"] = default_checkpoint_root
+            changed = True
+
+        if default_unet_root is not None and library.get("default_unet_root") != default_unet_root:
+            library["default_unet_root"] = default_unet_root
             changed = True
 
         if default_embedding_root is not None and library.get("default_embedding_root") != default_embedding_root:
@@ -596,7 +612,11 @@ class SettingsManager:
             logger.info("Migration completed")
 
     def _auto_set_default_roots(self):
-        """Auto set default root paths when only one folder is present and the current default is unset or not among the options."""
+        """Auto set default root paths when the current default is unset or not among the options.
+
+        For single-path cases, always use that path.
+        For multi-path cases, only set if current default is empty or invalid.
+        """
         folder_paths = self.settings.get('folder_paths', {})
         updated = False
         # loras
@@ -613,6 +633,14 @@ class SettingsManager:
             if current_checkpoint_root not in checkpoints:
                 self.settings['default_checkpoint_root'] = checkpoints[0]
                 updated = True
+        # unet (diffusion models) - auto-set if empty or invalid
+        unet_paths = folder_paths.get('unet', [])
+        if isinstance(unet_paths, list) and len(unet_paths) >= 1:
+            current_unet_root = self.settings.get('default_unet_root')
+            # Set to first path if current is empty or not in the valid paths
+            if not current_unet_root or current_unet_root not in unet_paths:
+                self.settings['default_unet_root'] = unet_paths[0]
+                updated = True
         # embeddings
         embeddings = folder_paths.get('embeddings', [])
         if isinstance(embeddings, list) and len(embeddings) == 1:
@@ -624,6 +652,7 @@ class SettingsManager:
             self._update_active_library_entry(
                 default_lora_root=self.settings.get('default_lora_root'),
                 default_checkpoint_root=self.settings.get('default_checkpoint_root'),
+                default_unet_root=self.settings.get('default_unet_root'),
                 default_embedding_root=self.settings.get('default_embedding_root'),
             )
             if self._bootstrap_reason == "missing":
@@ -851,6 +880,8 @@ class SettingsManager:
             self._update_active_library_entry(default_lora_root=str(value))
         elif key == 'default_checkpoint_root':
             self._update_active_library_entry(default_checkpoint_root=str(value))
+        elif key == 'default_unet_root':
+            self._update_active_library_entry(default_unet_root=str(value))
         elif key == 'default_embedding_root':
             self._update_active_library_entry(default_embedding_root=str(value))
         elif key == 'model_name_display':
@@ -1131,6 +1162,7 @@ class SettingsManager:
         folder_paths: Optional[Mapping[str, Iterable[str]]] = None,
         default_lora_root: Optional[str] = None,
         default_checkpoint_root: Optional[str] = None,
+        default_unet_root: Optional[str] = None,
         default_embedding_root: Optional[str] = None,
         metadata: Optional[Mapping[str, Any]] = None,
         activate: bool = False,
@@ -1154,6 +1186,11 @@ class SettingsManager:
                 default_checkpoint_root
                 if default_checkpoint_root is not None
                 else existing.get("default_checkpoint_root")
+            ),
+            default_unet_root=(
+                default_unet_root
+                if default_unet_root is not None
+                else existing.get("default_unet_root")
             ),
             default_embedding_root=(
                 default_embedding_root
@@ -1184,6 +1221,7 @@ class SettingsManager:
         folder_paths: Mapping[str, Iterable[str]],
         default_lora_root: str = "",
         default_checkpoint_root: str = "",
+        default_unet_root: str = "",
         default_embedding_root: str = "",
         metadata: Optional[Mapping[str, Any]] = None,
         activate: bool = False,
@@ -1199,6 +1237,7 @@ class SettingsManager:
             folder_paths=folder_paths,
             default_lora_root=default_lora_root,
             default_checkpoint_root=default_checkpoint_root,
+            default_unet_root=default_unet_root,
             default_embedding_root=default_embedding_root,
             metadata=metadata,
             activate=activate,
@@ -1256,6 +1295,7 @@ class SettingsManager:
         *,
         default_lora_root: Optional[str] = None,
         default_checkpoint_root: Optional[str] = None,
+        default_unet_root: Optional[str] = None,
         default_embedding_root: Optional[str] = None,
     ) -> None:
         """Update folder paths for the active library."""
@@ -1266,6 +1306,7 @@ class SettingsManager:
             folder_paths=folder_paths,
             default_lora_root=default_lora_root,
             default_checkpoint_root=default_checkpoint_root,
+            default_unet_root=default_unet_root,
             default_embedding_root=default_embedding_root,
             activate=True,
         )
