@@ -5,9 +5,10 @@ import json
 import logging
 import os
 import time
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 from ..config import config
 from .recipe_cache import RecipeCache
+from .recipe_fts_index import RecipeFTSIndex
 from .service_registry import ServiceRegistry
 from .lora_scanner import LoraScanner
 from .metadata_service import get_default_metadata_provider
@@ -74,6 +75,9 @@ class RecipeScanner:
             self._post_scan_task: Optional[asyncio.Task] = None
             self._resort_tasks: Set[asyncio.Task] = set()
             self._cancel_requested = False
+            # FTS index for fast search
+            self._fts_index: Optional[RecipeFTSIndex] = None
+            self._fts_index_task: Optional[asyncio.Task] = None
             if lora_scanner:
                 self._lora_scanner = lora_scanner
             if checkpoint_scanner:
@@ -96,6 +100,14 @@ class RecipeScanner:
         if self._post_scan_task and not self._post_scan_task.done():
             self._post_scan_task.cancel()
         self._post_scan_task = None
+
+        # Cancel FTS index task and clear index
+        if self._fts_index_task and not self._fts_index_task.done():
+            self._fts_index_task.cancel()
+        self._fts_index_task = None
+        if self._fts_index:
+            self._fts_index.clear()
+        self._fts_index = None
 
         self._cache = None
         self._initialization_task = None
@@ -387,6 +399,8 @@ class RecipeScanner:
                 recipe_count = len(cache.raw_data) if cache and hasattr(cache, 'raw_data') else 0
                 logger.info(f"Recipe cache initialized in {elapsed_time:.2f} seconds. Found {recipe_count} recipes")
                 self._schedule_post_scan_enrichment()
+                # Schedule FTS index build in background (non-blocking)
+                self._schedule_fts_index_build()
             finally:
                 # Mark initialization as complete regardless of outcome
                 self._is_initializing = False
@@ -554,6 +568,93 @@ class RecipeScanner:
                 logger.error("Recipe Scanner: error during post-scan enrichment: %s", exc, exc_info=True)
 
         self._post_scan_task = loop.create_task(_run_enrichment(), name="recipe_cache_enrichment")
+
+    def _schedule_fts_index_build(self) -> None:
+        """Build FTS index in background without blocking."""
+
+        if self._fts_index_task and not self._fts_index_task.done():
+            return  # Already running
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return
+
+        async def _build_fts():
+            if self._cache is None:
+                return
+
+            try:
+                self._fts_index = RecipeFTSIndex()
+
+                # Run in thread pool (SQLite is blocking)
+                await loop.run_in_executor(
+                    None,
+                    self._fts_index.build_index,
+                    self._cache.raw_data
+                )
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                logger.error("Recipe Scanner: error building FTS index: %s", exc, exc_info=True)
+
+        self._fts_index_task = loop.create_task(_build_fts(), name="recipe_fts_index_build")
+
+    def _search_with_fts(self, search: str, search_options: Dict) -> Optional[Set[str]]:
+        """Search recipes using FTS index if available.
+
+        Args:
+            search: The search query string.
+            search_options: Dictionary of search options (title, tags, lora_name, lora_model, prompt).
+
+        Returns:
+            Set of matching recipe IDs if FTS is available and search succeeded,
+            None if FTS is not ready (caller should fall back to fuzzy search).
+        """
+        if not self._fts_index or not self._fts_index.is_ready():
+            return None
+
+        # Build the set of fields to search based on search_options
+        fields: Set[str] = set()
+        if search_options.get('title', True):
+            fields.add('title')
+        if search_options.get('tags', True):
+            fields.add('tags')
+        if search_options.get('lora_name', True):
+            fields.add('lora_name')
+        if search_options.get('lora_model', True):
+            fields.add('lora_model')
+        if search_options.get('prompt', False):  # prompt search is opt-in by default
+            fields.add('prompt')
+
+        # If no fields enabled, search all fields
+        if not fields:
+            fields = None
+
+        try:
+            return self._fts_index.search(search, fields)
+        except Exception as exc:
+            logger.debug("FTS search failed, falling back to fuzzy search: %s", exc)
+            return None
+
+    def _update_fts_index_for_recipe(self, recipe: Dict[str, Any], operation: str = 'add') -> None:
+        """Update FTS index for a single recipe (add, update, or remove).
+
+        Args:
+            recipe: The recipe dictionary.
+            operation: One of 'add', 'update', or 'remove'.
+        """
+        if not self._fts_index or not self._fts_index.is_ready():
+            return
+
+        try:
+            if operation == 'remove':
+                recipe_id = str(recipe.get('id', '')) if isinstance(recipe, dict) else str(recipe)
+                self._fts_index.remove_recipe(recipe_id)
+            elif operation in ('add', 'update'):
+                self._fts_index.update_recipe(recipe)
+        except Exception as exc:
+            logger.debug("Failed to update FTS index for recipe: %s", exc)
 
     async def _enrich_cache_metadata(self) -> None:
         """Perform remote metadata enrichment after the initial scan."""
@@ -766,6 +867,9 @@ class RecipeScanner:
         self._update_folder_metadata(cache)
         self._schedule_resort()
 
+        # Update FTS index
+        self._update_fts_index_for_recipe(recipe_data, 'add')
+
     async def remove_recipe(self, recipe_id: str) -> bool:
         """Remove a recipe from the cache by ID."""
 
@@ -779,6 +883,9 @@ class RecipeScanner:
 
         self._update_folder_metadata(cache)
         self._schedule_resort()
+
+        # Update FTS index
+        self._update_fts_index_for_recipe(recipe_id, 'remove')
         return True
 
     async def bulk_remove(self, recipe_ids: Iterable[str]) -> int:
@@ -788,6 +895,9 @@ class RecipeScanner:
         removed = await cache.bulk_remove(recipe_ids, resort=False)
         if removed:
             self._schedule_resort()
+            # Update FTS index for each removed recipe
+            for recipe_id in (str(r.get('id', '')) for r in removed):
+                self._update_fts_index_for_recipe(recipe_id, 'remove')
         return len(removed)
 
     async def scan_all_recipes(self) -> List[Dict]:
@@ -1331,45 +1441,55 @@ class RecipeScanner:
                         'lora_name': True,
                         'lora_model': True
                     }
-                
-                # Build the search predicate based on search options
-                def matches_search(item):
-                    # Search in title if enabled
-                    if search_options.get('title', True):
-                        if fuzzy_match(str(item.get('title', '')), search):
-                            return True
-                    
-                    # Search in tags if enabled
-                    if search_options.get('tags', True) and 'tags' in item:
-                        for tag in item['tags']:
-                            if fuzzy_match(tag, search):
+
+                # Try FTS search first if available (much faster)
+                fts_matching_ids = self._search_with_fts(search, search_options)
+                if fts_matching_ids is not None:
+                    # FTS search succeeded, filter by matching IDs
+                    filtered_data = [
+                        item for item in filtered_data
+                        if str(item.get('id', '')) in fts_matching_ids
+                    ]
+                else:
+                    # Fallback to fuzzy_match (slower but always available)
+                    # Build the search predicate based on search options
+                    def matches_search(item):
+                        # Search in title if enabled
+                        if search_options.get('title', True):
+                            if fuzzy_match(str(item.get('title', '')), search):
                                 return True
-                    
-                    # Search in lora file names if enabled
-                    if search_options.get('lora_name', True) and 'loras' in item:
-                        for lora in item['loras']:
-                            if fuzzy_match(str(lora.get('file_name', '')), search):
+
+                        # Search in tags if enabled
+                        if search_options.get('tags', True) and 'tags' in item:
+                            for tag in item['tags']:
+                                if fuzzy_match(tag, search):
+                                    return True
+
+                        # Search in lora file names if enabled
+                        if search_options.get('lora_name', True) and 'loras' in item:
+                            for lora in item['loras']:
+                                if fuzzy_match(str(lora.get('file_name', '')), search):
+                                    return True
+
+                        # Search in lora model names if enabled
+                        if search_options.get('lora_model', True) and 'loras' in item:
+                            for lora in item['loras']:
+                                if fuzzy_match(str(lora.get('modelName', '')), search):
+                                    return True
+
+                        # Search in prompt and negative_prompt if enabled
+                        if search_options.get('prompt', True) and 'gen_params' in item:
+                            gen_params = item['gen_params']
+                            if fuzzy_match(str(gen_params.get('prompt', '')), search):
                                 return True
-                    
-                    # Search in lora model names if enabled
-                    if search_options.get('lora_model', True) and 'loras' in item:
-                        for lora in item['loras']:
-                            if fuzzy_match(str(lora.get('modelName', '')), search):
+                            if fuzzy_match(str(gen_params.get('negative_prompt', '')), search):
                                 return True
-                    
-                    # Search in prompt and negative_prompt if enabled
-                    if search_options.get('prompt', True) and 'gen_params' in item:
-                        gen_params = item['gen_params']
-                        if fuzzy_match(str(gen_params.get('prompt', '')), search):
-                            return True
-                        if fuzzy_match(str(gen_params.get('negative_prompt', '')), search):
-                            return True
-                    
-                    # No match found
-                    return False
-                
-                # Filter the data using the search predicate
-                filtered_data = [item for item in filtered_data if matches_search(item)]
+
+                        # No match found
+                        return False
+
+                    # Filter the data using the search predicate
+                    filtered_data = [item for item in filtered_data if matches_search(item)]
             
             # Apply additional filters
             if filters:
@@ -1601,6 +1721,9 @@ class RecipeScanner:
                 await self._cache.update_recipe_metadata(recipe_id, metadata, resort=False)
                 self._schedule_resort()
 
+            # Update FTS index
+            self._update_fts_index_for_recipe(recipe_data, 'update')
+
             # If the recipe has an image, update its EXIF metadata
             from ..utils.exif_utils import ExifUtils
             image_path = recipe_data.get('file_path')
@@ -1668,6 +1791,9 @@ class RecipeScanner:
         if not replaced:
             await cache.add_recipe(recipe_data, resort=False)
         self._schedule_resort()
+
+        # Update FTS index
+        self._update_fts_index_for_recipe(recipe_data, 'update')
 
         updated_lora = dict(lora_entry)
         if target_lora is not None:
