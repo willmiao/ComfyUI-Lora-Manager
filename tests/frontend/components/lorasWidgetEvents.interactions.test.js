@@ -78,7 +78,7 @@ describe('LoRA widget drag interactions', () => {
     expect(widget.callback).toHaveBeenCalledWith(widget.value);
   });
 
-  it('initiates drag gestures, updates strength, and clears cursor state on mouseup', async () => {
+  it('initiates drag gestures, updates strength, and clears cursor state on pointerup', async () => {
     const module = await import(EVENTS_MODULE);
     const renderSpy = vi.fn();
     const previewSpy = { hide: vi.fn() };
@@ -99,18 +99,22 @@ describe('LoRA widget drag interactions', () => {
       onDragEnd,
     });
 
-    dragEl.dispatchEvent(new MouseEvent('mousedown', { clientX: 50, bubbles: true }));
+    dragEl.dispatchEvent(new PointerEvent('pointerdown', { clientX: 50, bubbles: true, pointerId: 1 }));
+    expect(document.body.classList.contains('lm-lora-strength-dragging')).toBe(false);
+    expect(onDragStart).not.toHaveBeenCalled();
+
+    dragEl.dispatchEvent(new PointerEvent('pointermove', { clientX: 70, bubbles: true, pointerId: 1 }));
     expect(document.body.classList.contains('lm-lora-strength-dragging')).toBe(true);
     expect(onDragStart).toHaveBeenCalledTimes(1);
-
-    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 70, bubbles: true }));
-    expect(renderSpy).toHaveBeenCalledWith(widget.value, widget);
     expect(previewSpy.hide).toHaveBeenCalled();
     expect(widget.value[0].strength).not.toBe(0.5);
+    expect(widget.callback).not.toHaveBeenCalled();
+    expect(renderSpy).not.toHaveBeenCalled();
 
-    document.dispatchEvent(new MouseEvent('mouseup'));
+    dragEl.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }));
     expect(document.body.classList.contains('lm-lora-strength-dragging')).toBe(false);
     expect(onDragEnd).toHaveBeenCalledTimes(1);
+    expect(renderSpy).toHaveBeenCalledWith(widget.value, widget);
   });
 
   it('deletes the selected LoRA when backspace is pressed outside of strength inputs', async () => {
