@@ -117,9 +117,9 @@ class LoraRandomizerNode:
             # Normalize path separators
             lora_path = lora_path.replace("/", os.sep)
 
-            # Extract strengths
-            model_strength = lora.get("strength", 1.0)
-            clip_strength = lora.get("clipStrength", model_strength)
+            # Extract strengths (convert to float to prevent string subtraction errors)
+            model_strength = float(lora.get("strength", 1.0))
+            clip_strength = float(lora.get("clipStrength", model_strength))
 
             lora_stack.append((lora_path, model_strength, clip_strength))
 
@@ -142,24 +142,24 @@ class LoraRandomizerNode:
         """
         from ..services.lora_service import LoraService
 
-        # Parse randomizer settings
+        # Parse randomizer settings (convert numeric values to float to prevent type errors)
         count_mode = randomizer_config.get("count_mode", "range")
-        count_fixed = randomizer_config.get("count_fixed", 5)
-        count_min = randomizer_config.get("count_min", 3)
-        count_max = randomizer_config.get("count_max", 7)
-        model_strength_min = randomizer_config.get("model_strength_min", 0.0)
-        model_strength_max = randomizer_config.get("model_strength_max", 1.0)
+        count_fixed = int(randomizer_config.get("count_fixed", 5))
+        count_min = int(randomizer_config.get("count_min", 3))
+        count_max = int(randomizer_config.get("count_max", 7))
+        model_strength_min = float(randomizer_config.get("model_strength_min", 0.0))
+        model_strength_max = float(randomizer_config.get("model_strength_max", 1.0))
         use_same_clip_strength = randomizer_config.get("use_same_clip_strength", True)
-        clip_strength_min = randomizer_config.get("clip_strength_min", 0.0)
-        clip_strength_max = randomizer_config.get("clip_strength_max", 1.0)
+        clip_strength_min = float(randomizer_config.get("clip_strength_min", 0.0))
+        clip_strength_max = float(randomizer_config.get("clip_strength_max", 1.0))
         use_recommended_strength = randomizer_config.get(
             "use_recommended_strength", False
         )
-        recommended_strength_scale_min = randomizer_config.get(
-            "recommended_strength_scale_min", 0.5
+        recommended_strength_scale_min = float(
+            randomizer_config.get("recommended_strength_scale_min", 0.5)
         )
-        recommended_strength_scale_max = randomizer_config.get(
-            "recommended_strength_scale_max", 1.0
+        recommended_strength_scale_max = float(
+            randomizer_config.get("recommended_strength_scale_max", 1.0)
         )
 
         # Extract locked LoRAs from input
