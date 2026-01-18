@@ -29,12 +29,14 @@ def restore_settings() -> None:
         manager.settings.update(original)
 
 
-async def test_start_download_requires_configured_path(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_start_download_requires_configured_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     manager = download_module.DownloadManager(ws_manager=RecordingWebSocketManager())
 
     # Ensure example_images_path is not configured
     settings_manager = get_settings_manager()
-    settings_manager.settings.pop('example_images_path', None)
+    settings_manager.settings.pop("example_images_path", None)
 
     with pytest.raises(download_module.DownloadConfigurationError) as exc_info:
         await manager.start_download({})
@@ -46,7 +48,9 @@ async def test_start_download_requires_configured_path(monkeypatch: pytest.Monke
     assert "skipping auto download" in result["message"]
 
 
-async def test_start_download_bootstraps_progress_and_task(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+async def test_start_download_bootstraps_progress_and_task(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
     settings_manager = get_settings_manager()
     settings_manager.settings["example_images_path"] = str(tmp_path)
     settings_manager.settings["libraries"] = {"default": {}}
@@ -58,7 +62,9 @@ async def test_start_download_bootstraps_progress_and_task(monkeypatch: pytest.M
     started = asyncio.Event()
     release = asyncio.Event()
 
-    async def fake_download(self, output_dir, optimize, model_types, delay, library_name):
+    async def fake_download(
+        self, output_dir, optimize, model_types, delay, library_name, force=False
+    ):
         started.set()
         await release.wait()
         async with self._state_lock:
@@ -129,7 +135,9 @@ async def test_pause_and_resume_flow(monkeypatch: pytest.MonkeyPatch, tmp_path) 
     await asyncio.wait_for(task, timeout=1)
 
 
-async def test_stop_download_transitions_to_stopped(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+async def test_stop_download_transitions_to_stopped(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
     settings_manager = get_settings_manager()
     settings_manager.settings["example_images_path"] = str(tmp_path)
     settings_manager.settings["libraries"] = {"default": {}}
@@ -145,13 +153,13 @@ async def test_stop_download_transitions_to_stopped(monkeypatch: pytest.MonkeyPa
         started.set()
         await release.wait()
         async with self._state_lock:
-            if self._stop_requested and self._progress['status'] == 'stopping':
-                self._progress['status'] = 'stopped'
+            if self._stop_requested and self._progress["status"] == "stopping":
+                self._progress["status"] = "stopped"
             else:
-                self._progress['status'] = 'completed'
-            self._progress['end_time'] = time.time()
+                self._progress["status"] = "completed"
+            self._progress["end_time"] = time.time()
             self._stop_requested = False
-        await self._broadcast_progress(status=self._progress['status'])
+        await self._broadcast_progress(status=self._progress["status"])
         async with self._state_lock:
             self._is_downloading = False
             self._download_task = None
@@ -182,7 +190,9 @@ async def test_stop_download_transitions_to_stopped(monkeypatch: pytest.MonkeyPa
     assert "stopped" in statuses
 
 
-async def test_pause_or_resume_without_running_download(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_pause_or_resume_without_running_download(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     manager = download_module.DownloadManager(ws_manager=RecordingWebSocketManager())
 
     with pytest.raises(download_module.DownloadNotRunningError):

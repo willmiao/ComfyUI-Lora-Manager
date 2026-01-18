@@ -75,13 +75,6 @@ export class GlobalContextMenu extends BaseContextMenu {
     }
 
     async downloadExampleImages(menuItem) {
-        const exampleImagesManager = window.exampleImagesManager;
-
-        if (!exampleImagesManager) {
-            showToast('globalContextMenu.downloadExampleImages.unavailable', {}, 'error');
-            return;
-        }
-
         const downloadPath = state?.global?.settings?.example_images_path;
         if (!downloadPath) {
             showToast('globalContextMenu.downloadExampleImages.missingPath', {}, 'warning');
@@ -91,7 +84,48 @@ export class GlobalContextMenu extends BaseContextMenu {
         menuItem?.classList.add('disabled');
 
         try {
-            await exampleImagesManager.handleDownloadButton();
+            const optimize = state.global.settings.optimize_example_images;
+
+            const response = await fetch('/api/lm/download-example-images', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    force: true,
+                    optimize,
+                    model_types: ['lora', 'checkpoint', 'embedding']
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showToast('toast.exampleImages.downloadStarted', {}, 'success');
+
+                const exampleImagesManager = window.exampleImagesManager;
+                if (exampleImagesManager) {
+                    exampleImagesManager.isDownloading = true;
+                    exampleImagesManager.isPaused = false;
+                    exampleImagesManager.isStopping = false;
+                    exampleImagesManager.hasShownCompletionToast = false;
+                    exampleImagesManager.startTime = new Date();
+                    exampleImagesManager.updateUI(data.status);
+                    exampleImagesManager.showProgressPanel();
+                    exampleImagesManager.startProgressUpdates();
+                    exampleImagesManager.updateDownloadButtonText();
+
+                    const stopButton = document.getElementById('stopExampleDownloadBtn');
+                    if (stopButton) {
+                        stopButton.disabled = false;
+                    }
+                }
+            } else {
+                showToast('toast.exampleImages.downloadStartFailed', { error: data.error }, 'error');
+            }
+        } catch (error) {
+            console.error('Failed to trigger example images download:', error);
+            showToast('toast.exampleImages.downloadStartFailed', {}, 'error');
         } finally {
             menuItem?.classList.remove('disabled');
         }
