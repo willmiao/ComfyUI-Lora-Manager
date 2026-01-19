@@ -34,6 +34,17 @@ Enhance your Civitai browsing experience with our companion browser extension! S
 
 ## Release Notes
 
+### v0.9.12
+* **LoRA Randomizer System** - Introduced a comprehensive LoRA randomization system featuring LoRA Pool and LoRA Randomizer nodes for flexible and dynamic generation workflows.
+* **LoRA Randomizer Template** - Refer to the new "LoRA Randomizer" template workflow for detailed examples of flexible randomization modes, lock & reuse options, and other features.
+* **Recipe Folders** - Introduced a folder system for the Recipes page, allowing users to freely organize recipes just like they do with models.
+* **Recipe Bulk Operations** - Added bulk mode support for batch moving, deleting, and setting base models for selected recipes with intuitive controls like click-and-drag selection, drag-to-folder, and Ctrl+A (Select All).
+* **Prompt Search & Sorting** - Search recipes by prompt content and sort by Recipe Name, Imported Date, or LoRA Count for better browsing.
+* **Recipe Favorites** - Mark specific recipes as favorites for quick access.
+* **Video Recipe Support** - Enabled support for video recipes (import via LM extension or URL; video file import not supported).
+* **Performance Improvements** - Fixed performance issues for dramatically improved startup and loading speed. After first scan, subsequent loads are instant regardless of collection size.
+* **ComfyUI Nodes 2.0 Support** - Basic support for ComfyUI Nodes 2.0.
+
 ### v0.9.10
 * **Smarter Update Matching** - Users can now choose to check and group updates by matching base model only or with no base-model constraint; version lists also support toggling between same-base versions or all versions.
 * **Flexible Tag Filtering** - The filter panel now supports tag exclusion: click a tag to include, click again to exclude, and click a third time to clear, enabling stronger and more flexible tag filters.
