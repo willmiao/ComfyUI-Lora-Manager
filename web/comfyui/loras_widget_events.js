@@ -126,6 +126,7 @@ export function initDrag(
         e.target.closest('input') ||
         e.target.closest('.lm-lora-arrow') ||
         e.target.closest('.lm-lora-drag-handle') ||
+        e.target.closest('.lm-lora-lock-button') ||
         e.target.closest('.lm-lora-expand-button')) {
       return;
     }
