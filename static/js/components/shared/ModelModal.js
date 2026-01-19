@@ -940,8 +940,8 @@ function setupNavigationShortcuts(modelType) {
     const modalElement = document.getElementById('modelModal');
     if (!modalElement) return;
 
-    navigationModelType = modelType;
     cleanupNavigationShortcuts();
+    navigationModelType = modelType;
 
     navigationKeyHandler = (event) => {
         if (shouldIgnoreNavigationKey(event)) return;
