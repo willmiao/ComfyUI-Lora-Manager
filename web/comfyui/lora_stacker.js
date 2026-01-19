@@ -146,6 +146,13 @@ app.registerExtension({
             isUpdating = false;
           }
         };
+
+        // Setup input widget with autocomplete
+        inputWidget.callback = setupInputWidgetWithAutocomplete(
+          this,
+          inputWidget,
+          originalCallback
+        );
       });
     }
   },
