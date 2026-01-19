@@ -338,22 +338,23 @@ describe('Interaction-level regression coverage', () => {
     const menu = new GlobalContextMenu();
 
     stateStub.global.settings.example_images_path = '/tmp/examples';
+    stateStub.global.settings.optimize_example_images = false;
     window.exampleImagesManager = {
-      handleDownloadButton: vi.fn().mockResolvedValue(undefined),
+      isDownloading: false,
+      isPaused: false,
+      isStopping: false,
+      hasShownCompletionToast: false,
+      updateUI: vi.fn(),
+      showProgressPanel: vi.fn(),
+      startProgressUpdates: vi.fn(),
+      updateDownloadButtonText: vi.fn(),
     };
 
-    menu.showMenu(100, 200);
-    const downloadItem = document.querySelector('[data-action="download-example-images"]');
-    downloadItem.dispatchEvent(new Event('click', { bubbles: true }));
-    expect(downloadItem.classList.contains('disabled')).toBe(true);
-
-    expect(window.exampleImagesManager.handleDownloadButton).toHaveBeenCalledTimes(1);
-    await window.exampleImagesManager.handleDownloadButton.mock.results[0].value;
-    await flushAsyncTasks();
-    expect(downloadItem.classList.contains('disabled')).toBe(false);
-    expect(document.getElementById('globalContextMenu').style.display).toBe('none');
-
     global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      })
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ success: true, moved_total: 2 }),
@@ -367,15 +368,35 @@ describe('Interaction-level regression coverage', () => {
         json: async () => ({ success: true, updated: [{ modelId: 42 }] }),
       });
 
+    menu.showMenu(100, 200);
+    const downloadItem = document.querySelector('[data-action="download-example-images"]');
+    downloadItem.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(downloadItem.classList.contains('disabled')).toBe(true);
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/lm/download-example-images', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ force: true, optimize: false, model_types: ['lora', 'checkpoint', 'embedding'] })
+    });
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+    const responsePromise = global.fetch.mock.results[0].value;
+    const response = await responsePromise;
+    await response.json();
+    await flushAsyncTasks();
+    expect(downloadItem.classList.contains('disabled')).toBe(false);
+    expect(window.exampleImagesManager.isDownloading).toBe(true);
+    expect(document.getElementById('globalContextMenu').style.display).toBe('none');
+
     menu.showMenu(240, 320);
     const cleanupItem = document.querySelector('[data-action="cleanup-example-images-folders"]');
     cleanupItem.dispatchEvent(new Event('click', { bubbles: true }));
     expect(cleanupItem.classList.contains('disabled')).toBe(true);
 
     expect(global.fetch).toHaveBeenCalledWith('/api/lm/cleanup-example-image-folders', { method: 'POST' });
-    expect(global.fetch).toHaveBeenCalledTimes(1);
-    const responsePromise = global.fetch.mock.results[0].value;
-    const response = await responsePromise;
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    const cleanupResponsePromise = global.fetch.mock.results[1].value;
+    const cleanupResponse = await cleanupResponsePromise;
     await response.json();
     await flushAsyncTasks();
     expect(cleanupItem.classList.contains('disabled')).toBe(false);
@@ -390,7 +411,7 @@ describe('Interaction-level regression coverage', () => {
 
     await flushAsyncTasks();
 
-    expect(global.fetch).toHaveBeenNthCalledWith(2, '/api/lm/loras/updates/refresh', {
+    expect(global.fetch).toHaveBeenNthCalledWith(3, '/api/lm/loras/updates/refresh', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ force: false }),
@@ -415,11 +436,11 @@ describe('Interaction-level regression coverage', () => {
     fetchMissingItem.dispatchEvent(new Event('click', { bubbles: true }));
     expect(fetchMissingItem.classList.contains('disabled')).toBe(true);
 
-    const fetchMissingResponse = await global.fetch.mock.results[2].value;
+    const fetchMissingResponse = await global.fetch.mock.results[3].value;
     await fetchMissingResponse.json();
     await flushAsyncTasks();
 
-    expect(global.fetch).toHaveBeenNthCalledWith(3, '/api/lm/loras/updates/fetch-missing-license', {
+    expect(global.fetch).toHaveBeenNthCalledWith(4, '/api/lm/loras/updates/fetch-missing-license', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),

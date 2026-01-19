@@ -1,6 +1,22 @@
 import { afterEach, beforeEach } from 'vitest';
 import { resetDom } from './utils/domFixtures.js';
 
+// Polyfill fetch for jsdom environment
+if (typeof window !== 'undefined' && !window.fetch) {
+  window.fetch = async function(url, options) {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+      text: async () => '',
+      blob: async () => new Blob(),
+      arrayBuffer: async () => new ArrayBuffer(8),
+      headers: new Headers(),
+      clone: () => this
+    };
+  };
+}
+
 // Polyfill PointerEvent for jsdom environment
 if (typeof window !== 'undefined' && !window.PointerEvent) {
   class PointerEvent extends MouseEvent {
