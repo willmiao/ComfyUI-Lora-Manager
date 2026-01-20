@@ -1451,7 +1451,7 @@ to { transform: rotate(360deg);
   transform: translateY(4px);
 }
 
-.lora-randomizer-widget[data-v-3a525a5c] {
+.lora-randomizer-widget[data-v-45df1002] {
   padding: 6px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 6px;
@@ -12086,6 +12086,8 @@ function useLoraRandomizerState(widget) {
   const recommendedStrengthScaleMin = ref(0.5);
   const recommendedStrengthScaleMax = ref(1);
   const lastUsed = ref(null);
+  const executionSeed = ref(null);
+  const nextSeed = ref(null);
   const buildConfig = () => ({
     count_mode: countMode.value,
     count_fixed: countFixed.value,
@@ -12100,8 +12102,19 @@ function useLoraRandomizerState(widget) {
     last_used: lastUsed.value,
     use_recommended_strength: useRecommendedStrength.value,
     recommended_strength_scale_min: recommendedStrengthScaleMin.value,
-    recommended_strength_scale_max: recommendedStrengthScaleMax.value
+    recommended_strength_scale_max: recommendedStrengthScaleMax.value,
+    execution_seed: executionSeed.value,
+    next_seed: nextSeed.value
   });
+  const generateNewSeed = () => {
+    executionSeed.value = nextSeed.value;
+    nextSeed.value = Math.floor(Math.random() * 2147483647);
+  };
+  const initializeNextSeed = () => {
+    if (nextSeed.value === null) {
+      nextSeed.value = Math.floor(Math.random() * 2147483647);
+    }
+  };
   const restoreFromConfig = (config) => {
     countMode.value = config.count_mode || "range";
     countFixed.value = config.count_fixed || 3;
@@ -12221,6 +12234,8 @@ function useLoraRandomizerState(widget) {
     useRecommendedStrength,
     recommendedStrengthScaleMin,
     recommendedStrengthScaleMax,
+    executionSeed,
+    nextSeed,
     // Computed
     isClipStrengthDisabled,
     isRecommendedStrengthEnabled,
@@ -12228,7 +12243,9 @@ function useLoraRandomizerState(widget) {
     buildConfig,
     restoreFromConfig,
     rollLoras,
-    useLastUsed
+    useLastUsed,
+    generateNewSeed,
+    initializeNextSeed
   };
 }
 const _hoisted_1$1 = { class: "lora-randomizer-widget" };
@@ -12241,6 +12258,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   setup(__props) {
     const props = __props;
     const state = useLoraRandomizerState(props.widget);
+    const HAS_EXECUTED = Symbol("HAS_EXECUTED");
     const currentLoras = ref([]);
     const isMounted = ref(false);
     const canReuseLast = computed(() => {
@@ -12332,6 +12350,22 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
       if (props.widget.value) {
         state.restoreFromConfig(props.widget.value);
       }
+      props.widget.beforeQueued = () => {
+        if (state.rollMode.value === "always") {
+          if (props.widget[HAS_EXECUTED]) {
+            state.generateNewSeed();
+          } else {
+            state.initializeNextSeed();
+            props.widget[HAS_EXECUTED] = true;
+          }
+          const config = state.buildConfig();
+          if (props.widget.updateConfig) {
+            props.widget.updateConfig(config);
+          } else {
+            props.widget.value = config;
+          }
+        }
+      };
       const originalOnExecuted = (_b = props.node.onExecuted) == null ? void 0 : _b.bind(props.node);
       props.node.onExecuted = function(output) {
         var _a2;
@@ -12393,7 +12427,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-3a525a5c"]]);
+const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-45df1002"]]);
 const _hoisted_1 = { class: "json-display-widget" };
 const _hoisted_2 = {
   class: "json-content",

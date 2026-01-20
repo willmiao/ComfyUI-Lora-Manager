@@ -74,21 +74,38 @@ class LoraRandomizerNode:
         roll_mode = randomizer_config.get("roll_mode", "always")
         logger.debug(f"[LoraRandomizerNode] roll_mode: {roll_mode}")
 
+        # Dual seed mechanism for batch queue synchronization
+        # execution_seed: seed for generating execution_stack (= previous next_seed)
+        # next_seed: seed for generating ui_loras (= what will be displayed after execution)
+        execution_seed = randomizer_config.get("execution_seed", None)
+        next_seed = randomizer_config.get("next_seed", None)
+
         if roll_mode == "fixed":
             ui_loras = loras
+            execution_loras = loras
         else:
             scanner = await ServiceRegistry.get_lora_scanner()
+
+            # Generate execution_loras from execution_seed (if available)
+            if execution_seed is not None:
+                # Use execution_seed to regenerate the same loras that were shown to user
+                execution_loras = await self._generate_random_loras_for_ui(
+                    scanner, randomizer_config, loras, pool_config, seed=execution_seed
+                )
+            else:
+                # First execution: use loras input (what user sees in the widget)
+                execution_loras = loras
+
+            # Generate ui_loras from next_seed (for display after execution)
             ui_loras = await self._generate_random_loras_for_ui(
-                scanner, randomizer_config, loras, pool_config
+                scanner, randomizer_config, loras, pool_config, seed=next_seed
             )
 
-        print("pool config", pool_config)
-
-        execution_stack = self._build_execution_stack_from_input(loras)
+        execution_stack = self._build_execution_stack_from_input(execution_loras)
 
         return {
             "result": (execution_stack,),
-            "ui": {"loras": ui_loras, "last_used": loras},
+            "ui": {"loras": ui_loras, "last_used": execution_loras},
         }
 
     def _build_execution_stack_from_input(self, loras):
@@ -126,7 +143,7 @@ class LoraRandomizerNode:
         return lora_stack
 
     async def _generate_random_loras_for_ui(
-        self, scanner, randomizer_config, input_loras, pool_config=None
+        self, scanner, randomizer_config, input_loras, pool_config=None, seed=None
     ):
         """
         Generate new random loras for UI display.
@@ -136,6 +153,7 @@ class LoraRandomizerNode:
             randomizer_config: Dict with randomizer settings
             input_loras: Current input loras (for extracting locked loras)
             pool_config: Optional pool filters
+            seed: Optional seed for deterministic randomization
 
         Returns:
             List of LoRA dicts for UI display
@@ -182,6 +200,7 @@ class LoraRandomizerNode:
             use_recommended_strength=use_recommended_strength,
             recommended_strength_scale_min=recommended_strength_scale_min,
             recommended_strength_scale_max=recommended_strength_scale_max,
+            seed=seed,
         )
 
         return result_loras

@@ -54,6 +54,9 @@ const props = defineProps<{
 // State management
 const state = useLoraRandomizerState(props.widget)
 
+// Symbol to track if the widget has been executed at least once
+const HAS_EXECUTED = Symbol('HAS_EXECUTED')
+
 // Track current loras from the loras widget
 const currentLoras = ref<LoraEntry[]>([])
 
@@ -188,6 +191,31 @@ onMounted(async () => {
   // Restore from saved value
   if (props.widget.value) {
     state.restoreFromConfig(props.widget.value as RandomizerConfig)
+  }
+
+  // Add beforeQueued hook to handle seed shifting for batch queue synchronization
+  // This ensures each execution uses the loras that were displayed before that execution
+  ;(props.widget as any).beforeQueued = () => {
+    // Only process when roll_mode is 'always' (randomize on each execution)
+    if (state.rollMode.value === 'always') {
+      if ((props.widget as any)[HAS_EXECUTED]) {
+        // After first execution: shift seeds (previous next_seed becomes execution_seed)
+        state.generateNewSeed()
+      } else {
+        // First execution: just initialize next_seed (execution_seed stays null)
+        // This means first execution uses loras from widget input
+        state.initializeNextSeed()
+        ;(props.widget as any)[HAS_EXECUTED] = true
+      }
+
+      // Update the widget value so the seeds are included in the serialized config
+      const config = state.buildConfig()
+      if ((props.widget as any).updateConfig) {
+        ;(props.widget as any).updateConfig(config)
+      } else {
+        props.widget.value = config
+      }
+    }
   }
 
   // Override onExecuted to handle backend UI updates

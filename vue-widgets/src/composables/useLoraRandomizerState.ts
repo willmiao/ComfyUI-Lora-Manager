@@ -21,6 +21,12 @@ export function useLoraRandomizerState(widget: ComponentWidget) {
   // Track last used combination (for backend roll mode)
   const lastUsed = ref<LoraEntry[] | null>(null)
 
+  // Dual seed mechanism for batch queue synchronization
+  // execution_seed: seed for generating execution_stack (= previous next_seed)
+  // next_seed: seed for generating ui_loras (= what will be displayed after execution)
+  const executionSeed = ref<number | null>(null)
+  const nextSeed = ref<number | null>(null)
+
   // Build config object from current state
   const buildConfig = (): RandomizerConfig => ({
     count_mode: countMode.value,
@@ -37,7 +43,23 @@ export function useLoraRandomizerState(widget: ComponentWidget) {
     use_recommended_strength: useRecommendedStrength.value,
     recommended_strength_scale_min: recommendedStrengthScaleMin.value,
     recommended_strength_scale_max: recommendedStrengthScaleMax.value,
+    execution_seed: executionSeed.value,
+    next_seed: nextSeed.value,
   })
+
+  // Shift seeds for batch queue synchronization
+  // Previous next_seed becomes current execution_seed, and generate a new next_seed
+  const generateNewSeed = () => {
+    executionSeed.value = nextSeed.value  // Previous next becomes current execution
+    nextSeed.value = Math.floor(Math.random() * 2147483647)
+  }
+
+  // Initialize next_seed for first execution (execution_seed stays null)
+  const initializeNextSeed = () => {
+    if (nextSeed.value === null) {
+      nextSeed.value = Math.floor(Math.random() * 2147483647)
+    }
+  }
 
   // Restore state from config object
   const restoreFromConfig = (config: RandomizerConfig) => {
@@ -185,6 +207,8 @@ export function useLoraRandomizerState(widget: ComponentWidget) {
     useRecommendedStrength,
     recommendedStrengthScaleMin,
     recommendedStrengthScaleMax,
+    executionSeed,
+    nextSeed,
 
     // Computed
     isClipStrengthDisabled,
@@ -195,5 +219,7 @@ export function useLoraRandomizerState(widget: ComponentWidget) {
     restoreFromConfig,
     rollLoras,
     useLastUsed,
+    generateNewSeed,
+    initializeNextSeed,
   }
 }

@@ -69,6 +69,8 @@ export interface RandomizerConfig {
   use_recommended_strength: boolean
   recommended_strength_scale_min: number
   recommended_strength_scale_max: number
+  execution_seed?: number | null  // Seed for execution_stack (previous next_seed)
+  next_seed?: number | null       // Seed for ui_loras (current)
 }
 
 export interface LoraEntry {

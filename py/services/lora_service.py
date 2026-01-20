@@ -231,6 +231,7 @@ class LoraService(BaseModelService):
         use_recommended_strength: bool = False,
         recommended_strength_scale_min: float = 0.5,
         recommended_strength_scale_max: float = 1.0,
+        seed: Optional[int] = None,
     ) -> List[Dict]:
         """
         Get random LoRAs with specified strength ranges.
@@ -250,12 +251,17 @@ class LoraService(BaseModelService):
             use_recommended_strength: Whether to use recommended strength from usage_tips
             recommended_strength_scale_min: Minimum scale factor for recommended strength
             recommended_strength_scale_max: Maximum scale factor for recommended strength
+            seed: Optional random seed for reproducible/unique randomization per execution
 
         Returns:
             List of LoRA dicts with randomized strengths
         """
         import random
         import json
+
+        # Use a local Random instance to avoid affecting global random state
+        # This ensures each execution with a different seed produces different results
+        rng = random.Random(seed)
 
         def get_recommended_strength(lora_data: Dict) -> Optional[float]:
             """Parse usage_tips JSON and extract recommended strength"""
@@ -286,7 +292,7 @@ class LoraService(BaseModelService):
         if count_mode == "fixed":
             target_count = count
         else:
-            target_count = random.randint(count_min, count_max)
+            target_count = rng.randint(count_min, count_max)
 
         # Get available loras from cache
         cache = await self.scanner.get_cached_data(force_refresh=False)
@@ -320,7 +326,7 @@ class LoraService(BaseModelService):
         # Random sample
         selected = []
         if slots_needed > 0:
-            selected = random.sample(available_pool, slots_needed)
+            selected = rng.sample(available_pool, slots_needed)
 
         # Generate random strengths for selected LoRAs
         result_loras = []
@@ -328,17 +334,17 @@ class LoraService(BaseModelService):
             if use_recommended_strength:
                 recommended_strength = get_recommended_strength(lora)
                 if recommended_strength is not None:
-                    scale = random.uniform(
+                    scale = rng.uniform(
                         recommended_strength_scale_min, recommended_strength_scale_max
                     )
                     model_str = round(recommended_strength * scale, 2)
                 else:
                     model_str = round(
-                        random.uniform(model_strength_min, model_strength_max), 2
+                        rng.uniform(model_strength_min, model_strength_max), 2
                     )
             else:
                 model_str = round(
-                    random.uniform(model_strength_min, model_strength_max), 2
+                    rng.uniform(model_strength_min, model_strength_max), 2
                 )
 
             if use_same_clip_strength:
@@ -346,17 +352,17 @@ class LoraService(BaseModelService):
             elif use_recommended_strength:
                 recommended_clip_strength = get_recommended_clip_strength(lora)
                 if recommended_clip_strength is not None:
-                    scale = random.uniform(
+                    scale = rng.uniform(
                         recommended_strength_scale_min, recommended_strength_scale_max
                     )
                     clip_str = round(recommended_clip_strength * scale, 2)
                 else:
                     clip_str = round(
-                        random.uniform(clip_strength_min, clip_strength_max), 2
+                        rng.uniform(clip_strength_min, clip_strength_max), 2
                     )
             else:
                 clip_str = round(
-                    random.uniform(clip_strength_min, clip_strength_max), 2
+                    rng.uniform(clip_strength_min, clip_strength_max), 2
                 )
 
             result_loras.append(
