@@ -296,13 +296,13 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
 }
 
 .setting-section {
-  margin-bottom: 16px;
+  margin-bottom: 6px;
 }
 
 .setting-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  color: #d4d4d8;
+  color: rgba(226, 232, 240, 0.8);
   display: block;
   margin-bottom: 8px;
 }
@@ -315,7 +315,7 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
 }
 
 .section-header-with-toggle .setting-label {
-  margin-bottom: 0;
+  margin-bottom: 4px;
 }
 
 /* Count Mode Tabs */
@@ -323,7 +323,7 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
   display: flex;
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
-  border-radius: 4px;
+  border-radius: 6px;
   overflow: hidden;
   margin-bottom: 8px;
 }
@@ -345,7 +345,7 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
 }
 
 .count-mode-tab-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.7);
   transition: all 0.2s ease;
@@ -377,8 +377,8 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
 .slider-container {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
-  border-radius: 4px;
-  padding: 4px 8px;
+  border-radius: 6px;
+  padding: 6px;
 }
 
 .slider-container--disabled {
@@ -442,21 +442,21 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
 .roll-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
+  gap: 6px;
 }
 
 .roll-button {
-  padding: 8px 10px;
+  padding: 6px 8px;
   background: rgba(30, 30, 36, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  border-radius: 6px;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 6px;
   color: #e4e4e7;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -488,7 +488,7 @@ const areLorasEqual = (a: LoraEntry[] | null, b: LoraEntry[] | null): boolean =>
 }
 
 .roll-button__text {
-  font-size: 11px;
+  font-size: 12px;
   text-align: center;
   line-height: 1.2;
 }

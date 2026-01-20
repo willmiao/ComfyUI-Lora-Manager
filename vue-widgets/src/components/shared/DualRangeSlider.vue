@@ -339,7 +339,7 @@ const stopDrag = (event?: PointerEvent) => {
 .dual-range-slider {
   position: relative;
   width: 100%;
-  height: 32px;
+  height: 24px;
   user-select: none;
   cursor: default !important;
   touch-action: none;
@@ -356,12 +356,12 @@ const stopDrag = (event?: PointerEvent) => {
 
 .slider-track {
   position: absolute;
-  top: 14px;
+  top: 12px;
   left: 0;
   right: 0;
   height: 4px;
   background: var(--comfy-input-bg, #333);
-  border-radius: 2px;
+  border-radius: 4px;
   cursor: default !important;
 }
 
@@ -421,12 +421,12 @@ const stopDrag = (event?: PointerEvent) => {
 }
 
 .slider-handle__thumb {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   background: var(--fg-color, #fff);
   border-radius: 50%;
   position: absolute;
-  top: 10px;
+  top: 7px;
   left: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.15s ease;
@@ -445,7 +445,7 @@ const stopDrag = (event?: PointerEvent) => {
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 10px;
+  font-size: 12px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
   color: var(--fg-color, #fff);
   opacity: 0.8;

@@ -85,7 +85,7 @@ const onImageError = (loraName: string) => {
   background: var(--comfy-menu-bg, #1a1a1a);
   border: 1px solid var(--border-color, #444);
   border-radius: 6px;
-  padding: 8px;
+  padding: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
@@ -96,9 +96,9 @@ const onImageError = (loraName: string) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 6px;
+  padding: 6px;
   background: var(--comfy-input-bg, #333);
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 .last-used-preview__thumb {

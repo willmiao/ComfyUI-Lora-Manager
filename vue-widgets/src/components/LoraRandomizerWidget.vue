@@ -220,9 +220,9 @@ onMounted(async () => {
 
 <style scoped>
 .lora-randomizer-widget {
-  padding: 12px;
+  padding: 6px;
   background: rgba(40, 44, 52, 0.6);
-  border-radius: 4px;
+  border-radius: 6px;
   height: 100%;
   display: flex;
   flex-direction: column;
