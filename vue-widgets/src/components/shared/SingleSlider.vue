@@ -239,7 +239,7 @@ const stopDrag = (event?: PointerEvent) => {
 
 .slider-handle__value {
   position: absolute;
-  top: 0;
+  top: -6px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 12px;
@@ -248,5 +248,6 @@ const stopDrag = (event?: PointerEvent) => {
   opacity: 0.8;
   white-space: nowrap;
   pointer-events: none;
+  line-height: 14px;
 }
 </style>
