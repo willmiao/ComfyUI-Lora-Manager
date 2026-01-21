@@ -665,12 +665,15 @@ class Config:
         except Exception:
             return False
 
+        # Use os.path.normcase for case-insensitive comparison on Windows.
+        # On Windows, Path.relative_to() is case-sensitive for drive letters,
+        # causing paths like 'a:/folder' to not match 'A:/folder'.
+        candidate_str = os.path.normcase(str(candidate))
         for root in self._preview_root_paths:
-            try:
-                candidate.relative_to(root)
+            root_str = os.path.normcase(str(root))
+            # Check if candidate is equal to or under the root directory
+            if candidate_str == root_str or candidate_str.startswith(root_str + os.sep):
                 return True
-            except ValueError:
-                continue
 
         return False
 
