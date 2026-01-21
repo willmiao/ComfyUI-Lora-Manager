@@ -7,25 +7,30 @@ from py.utils.settings_paths import ensure_settings_file
 # Set environment variable to indicate standalone mode
 os.environ["LORA_MANAGER_STANDALONE"] = "1"
 
+
 # Create mock modules for py/nodes directory - add this before any other imports
 def mock_nodes_directory():
     """Create mock modules for all Python files in the py/nodes directory"""
-    nodes_dir = os.path.join(os.path.dirname(__file__), 'py', 'nodes')
+    nodes_dir = os.path.join(os.path.dirname(__file__), "py", "nodes")
     if os.path.exists(nodes_dir):
         # Create a mock module for the nodes package itself
-        sys.modules['py.nodes'] = type('MockNodesModule', (), {})
-        
+        sys.modules["py.nodes"] = type("MockNodesModule", (), {})
+
         # Create mock modules for all Python files in the nodes directory
         for file in os.listdir(nodes_dir):
-            if file.endswith('.py') and file != '__init__.py':
+            if file.endswith(".py") and file != "__init__.py":
                 module_name = file[:-3]  # Remove .py extension
-                full_module_name = f'py.nodes.{module_name}'
+                full_module_name = f"py.nodes.{module_name}"
                 # Create empty module object
-                sys.modules[full_module_name] = type(f'Mock{module_name.capitalize()}Module', (), {})
+                sys.modules[full_module_name] = type(
+                    f"Mock{module_name.capitalize()}Module", (), {}
+                )
                 print(f"Created mock module for: {full_module_name}")
+
 
 # Run the mocking function before any other imports
 mock_nodes_directory()
+
 
 # Create mock folder_paths module BEFORE any other imports
 class MockFolderPaths:
@@ -35,17 +40,17 @@ class MockFolderPaths:
         settings_path = ensure_settings_file()
         try:
             if os.path.exists(settings_path):
-                with open(settings_path, 'r', encoding='utf-8') as f:
+                with open(settings_path, "r", encoding="utf-8") as f:
                     settings = json.load(f)
-                
+
                 # For diffusion_models, combine unet and diffusers paths
                 if folder_name == "diffusion_models":
                     paths = []
-                    if 'folder_paths' in settings:
-                        if 'unet' in settings['folder_paths']:
-                            paths.extend(settings['folder_paths']['unet'])
-                        if 'diffusers' in settings['folder_paths']:
-                            paths.extend(settings['folder_paths']['diffusers'])
+                    if "folder_paths" in settings:
+                        if "unet" in settings["folder_paths"]:
+                            paths.extend(settings["folder_paths"]["unet"])
+                        if "diffusers" in settings["folder_paths"]:
+                            paths.extend(settings["folder_paths"]["diffusers"])
                     # Filter out paths that don't exist
                     valid_paths = [p for p in paths if os.path.exists(p)]
                     if valid_paths:
@@ -53,8 +58,11 @@ class MockFolderPaths:
                     else:
                         print(f"Warning: No valid paths found for {folder_name}")
                 # For other folder names, return their paths directly
-                elif 'folder_paths' in settings and folder_name in settings['folder_paths']:
-                    paths = settings['folder_paths'][folder_name]
+                elif (
+                    "folder_paths" in settings
+                    and folder_name in settings["folder_paths"]
+                ):
+                    paths = settings["folder_paths"][folder_name]
                     valid_paths = [p for p in paths if os.path.exists(p)]
                     if valid_paths:
                         return valid_paths
@@ -62,39 +70,42 @@ class MockFolderPaths:
                         print(f"Warning: No valid paths found for {folder_name}")
         except Exception as e:
             print(f"Error loading folder paths from settings: {e}")
-        
+
         # Fallback to empty list if no paths found
         return []
-    
+
     @staticmethod
     def get_temp_directory():
-        return os.path.join(os.path.dirname(__file__), 'temp')
-    
+        return os.path.join(os.path.dirname(__file__), "temp")
+
     @staticmethod
     def set_temp_directory(path):
         os.makedirs(path, exist_ok=True)
         return path
 
+
 # Create mock server module with PromptServer
 class MockPromptServer:
     def __init__(self):
         self.app = None
-        
+
     def send_sync(self, *args, **kwargs):
         pass
+
 
 # Create mock metadata_collector module
 class MockMetadataCollector:
     def init(self):
         pass
-    
+
     def get_metadata(self, prompt_id=None):
         return {}
 
+
 # Initialize basic mocks before any imports
-sys.modules['folder_paths'] = MockFolderPaths()
-sys.modules['server'] = type('server', (), {'PromptServer': MockPromptServer()})
-sys.modules['py.metadata_collector'] = MockMetadataCollector()
+sys.modules["folder_paths"] = MockFolderPaths()
+sys.modules["server"] = type("server", (), {"PromptServer": MockPromptServer()})
+sys.modules["py.metadata_collector"] = MockMetadataCollector()
 
 # Now we can safely import modules that depend on folder_paths and server
 import argparse
@@ -106,12 +117,14 @@ from aiohttp import web
 HEADER_SIZE_LIMIT = 16384
 
 # Setup logging
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger("lora-manager-standalone")
 
 # Configure aiohttp access logger to be less verbose
-logging.getLogger('aiohttp.access').setLevel(logging.WARNING)
+logging.getLogger("aiohttp.access").setLevel(logging.WARNING)
+
 
 # Add specific suppression for connection reset errors
 class ConnectionResetFilter(logging.Filter):
@@ -125,6 +138,7 @@ class ConnectionResetFilter(logging.Filter):
             return False
         return True
 
+
 # Apply the filter to asyncio logger
 asyncio_logger = logging.getLogger("asyncio")
 asyncio_logger.addFilter(ConnectionResetFilter())
@@ -132,9 +146,10 @@ asyncio_logger.addFilter(ConnectionResetFilter())
 # Now we can import the global config from our local modules
 from py.config import config
 
+
 class StandaloneServer:
     """Server implementation for standalone mode"""
-    
+
     def __init__(self):
         self.app = web.Application(
             logger=logger,
@@ -145,45 +160,49 @@ class StandaloneServer:
             },
         )
         self.instance = self  # Make it compatible with PromptServer.instance pattern
-        
+
         # Ensure the app's access logger is configured to reduce verbosity
         self.app._subapps = []  # Ensure this exists to avoid AttributeError
-    
+
     async def setup(self):
         """Set up the standalone server"""
         # Create placeholders for compatibility with ComfyUI's implementation
         self.last_prompt_id = None
         self.last_node_id = None
         self.client_id = None
-        
+
         # Set up routes
         self.setup_routes()
-        
+
         # Add startup and shutdown handlers
         self.app.on_startup.append(self.on_startup)
         self.app.on_shutdown.append(self.on_shutdown)
-    
+
     def setup_routes(self):
         """Set up basic routes"""
         # Add a simple status endpoint
-        self.app.router.add_get('/', self.handle_status)
-        
+        self.app.router.add_get("/", self.handle_status)
+
         # Add static route for example images if the path exists in settings
         settings_path = ensure_settings_file(logger)
         if os.path.exists(settings_path):
-            with open(settings_path, 'r', encoding='utf-8') as f:
+            with open(settings_path, "r", encoding="utf-8") as f:
                 settings = json.load(f)
-            example_images_path = settings.get('example_images_path')
+            example_images_path = settings.get("example_images_path")
             logger.info(f"Example images path: {example_images_path}")
             if example_images_path and os.path.exists(example_images_path):
-                self.app.router.add_static('/example_images_static', example_images_path)
-                logger.info(f"Added static route for example images: /example_images_static -> {example_images_path}")
-    
+                self.app.router.add_static(
+                    "/example_images_static", example_images_path
+                )
+                logger.info(
+                    f"Added static route for example images: /example_images_static -> {example_images_path}"
+                )
+
     async def handle_status(self, request):
         """Handle status request by redirecting to loras page"""
         # Redirect to loras page instead of showing status
-        raise web.HTTPFound('/loras')
-        
+        raise web.HTTPFound("/loras")
+
         # Original JSON response (commented out)
         # return web.json_response({
         #     "status": "running",
@@ -191,21 +210,21 @@ class StandaloneServer:
         #     "loras_roots": config.loras_roots,
         #     "checkpoints_roots": config.checkpoints_roots
         # })
-    
+
     async def on_startup(self, app):
         """Startup handler"""
         logger.info("LoRA Manager standalone server starting...")
-    
+
     async def on_shutdown(self, app):
         """Shutdown handler"""
         logger.info("LoRA Manager standalone server shutting down...")
-    
+
     def send_sync(self, event_type, data, sid=None):
         """Stub for compatibility with PromptServer"""
         # In standalone mode, we don't have the same websocket system
         pass
-    
-    async def start(self, host='127.0.0.1', port=8188):
+
+    async def start(self, host="127.0.0.1", port=8188):
         """Start the server"""
         runner = web.AppRunner(self.app)
         await runner.setup()
@@ -214,18 +233,20 @@ class StandaloneServer:
 
         # Log the server address with a clickable localhost URL regardless of the actual binding
         logger.info(f"Server started at http://127.0.0.1:{port}")
-        
+
         # Keep the server running
         while True:
             await asyncio.sleep(3600)  # Sleep for a long time
-    
+
     async def publish_loop(self):
         """Stub for compatibility with PromptServer"""
         # This method exists in ComfyUI's server but we don't need it
         pass
 
+
 # After all mocks are in place, import LoraManager
 from py.lora_manager import LoraManager
+
 
 def validate_settings():
     """Initialize settings and log any startup warnings."""
@@ -267,28 +288,33 @@ def validate_settings():
 
     return True
 
+
 class StandaloneLoraManager(LoraManager):
     """Extended LoraManager for standalone mode"""
-    
+
     @classmethod
     def add_routes(cls, server_instance):
         """Initialize and register all routes for standalone mode"""
         app = server_instance.app
-        
+
         # Store app in a global-like location for compatibility
-        sys.modules['server'].PromptServer.instance = server_instance
-        
+        sys.modules["server"].PromptServer.instance = server_instance
 
         # Add static route for locales JSON files
         if os.path.exists(config.i18n_path):
-            app.router.add_static('/locales', config.i18n_path)
-            logger.info(f"Added static route for locales: /locales -> {config.i18n_path}")
-            
+            app.router.add_static("/locales", config.i18n_path)
+            logger.info(
+                f"Added static route for locales: /locales -> {config.i18n_path}"
+            )
+
         # Add static route for plugin assets
-        app.router.add_static('/loras_static', config.static_path)
-        
+        app.router.add_static("/loras_static", config.static_path)
+
         # Setup feature routes
-        from py.services.model_service_factory import ModelServiceFactory, register_default_model_types
+        from py.services.model_service_factory import (
+            ModelServiceFactory,
+            register_default_model_types,
+        )
         from py.routes.recipe_routes import RecipeRoutes
         from py.routes.update_routes import UpdateRoutes
         from py.routes.misc_routes import MiscRoutes
@@ -296,7 +322,6 @@ class StandaloneLoraManager(LoraManager):
         from py.routes.preview_routes import PreviewRoutes
         from py.routes.stats_routes import StatsRoutes
         from py.services.websocket_manager import ws_manager
-        
 
         register_default_model_types()
 
@@ -304,7 +329,7 @@ class StandaloneLoraManager(LoraManager):
         ModelServiceFactory.setup_all_routes(app)
 
         stats_routes = StatsRoutes()
-        
+
         # Initialize routes
         stats_routes.setup_routes(app)
         RecipeRoutes.setup_routes(app)
@@ -314,54 +339,77 @@ class StandaloneLoraManager(LoraManager):
         PreviewRoutes.setup_routes(app)
 
         # Setup WebSocket routes that are shared across all model types
-        app.router.add_get('/ws/fetch-progress', ws_manager.handle_connection)
-        app.router.add_get('/ws/download-progress', ws_manager.handle_download_connection)
-        app.router.add_get('/ws/init-progress', ws_manager.handle_init_connection)
-        
+        app.router.add_get("/ws/fetch-progress", ws_manager.handle_connection)
+        app.router.add_get(
+            "/ws/download-progress", ws_manager.handle_download_connection
+        )
+        app.router.add_get("/ws/init-progress", ws_manager.handle_init_connection)
+
         # Schedule service initialization
         app.on_startup.append(lambda app: cls._initialize_services())
-        
+
         # Add cleanup
         app.on_shutdown.append(cls._cleanup)
+
 
 def parse_args():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(description="LoRA Manager Standalone Server")
-    parser.add_argument("--host", type=str, default="0.0.0.0", 
-                        help="Host address to bind the server to (default: 0.0.0.0)")
-    parser.add_argument("--port", type=int, default=8188,
-                        help="Port to bind the server to (default: 8188, access via http://localhost:8188/loras)")
-    # parser.add_argument("--loras", type=str, nargs="+", 
+    parser.add_argument(
+        "--host",
+        type=str,
+        default="0.0.0.0",
+        help="Host address to bind the server to (default: 0.0.0.0)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8188,
+        help="Port to bind the server to (default: 8188, access via http://localhost:8188/loras)",
+    )
+    # parser.add_argument("--loras", type=str, nargs="+",
     #                     help="Additional paths to LoRA model directories (optional if settings.json has paths)")
     # parser.add_argument("--checkpoints", type=str, nargs="+",
     #                     help="Additional paths to checkpoint model directories (optional if settings.json has paths)")
-    parser.add_argument("--log-level", type=str, default="INFO",
-                        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-                        help="Logging level")
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Logging level",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable verbose logging (equivalent to --log-level DEBUG)",
+    )
     return parser.parse_args()
+
 
 async def main():
     """Main entry point for standalone mode"""
     args = parse_args()
-    
-    # Set log level
-    logging.getLogger().setLevel(getattr(logging, args.log_level))
-    
+
+    # Set log level (verbose flag overrides to DEBUG)
+    log_level = "DEBUG" if args.verbose else args.log_level
+    logging.getLogger().setLevel(getattr(logging, log_level))
+
     # Validate settings before proceeding
     if not validate_settings():
         logger.error("Cannot start server due to configuration issues.")
         logger.error("Please fix the settings.json file and try again.")
         return
-    
+
     # Create the server instance
     server = StandaloneServer()
-    
+
     # Initialize routes via the standalone lora manager
     StandaloneLoraManager.add_routes(server)
-    
+
     # Set up and start the server
     await server.setup()
     await server.start(host=args.host, port=args.port)
+
 
 if __name__ == "__main__":
     try:
