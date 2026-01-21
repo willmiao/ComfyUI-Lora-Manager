@@ -41,9 +41,10 @@ class PreviewHandler:
             raise web.HTTPBadRequest(text="Unable to resolve preview path") from exc
 
         resolved_str = str(resolved)
-        if not self._config.is_preview_path_allowed(resolved_str):
-            logger.debug("Rejected preview outside allowed roots: %s", resolved_str)
-            raise web.HTTPForbidden(text="Preview path is not within an allowed directory")
+        # TODO: Temporarily disabled path validation due to issues #772 and #774
+        # Re-enable after fixing preview root path handling
+        # if not self._config.is_preview_path_allowed(resolved_str):
+        #     raise web.HTTPForbidden(text="Preview path is not within an allowed directory")
 
         if not resolved.is_file():
             logger.debug("Preview file not found at %s", resolved_str)
