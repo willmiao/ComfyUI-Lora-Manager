@@ -504,7 +504,7 @@ class Config:
                 # If the path starts with the target path, replace with link path
                 mapped_path = normalized_path.replace(target_path, link_path, 1)
                 return mapped_path
-        return path
+        return normalized_path
     
     def map_link_to_path(self, link_path: str) -> str:
         """Map a symbolic link path back to the actual path"""
@@ -519,7 +519,7 @@ class Config:
                 # If the path starts with the link path, replace with actual path
                 mapped_path = normalized_link.replace(link_path_mapped, target_path, 1)
                 return mapped_path
-        return link_path
+        return normalized_link
 
     def _dedupe_existing_paths(self, raw_paths: Iterable[str]) -> Dict[str, str]:
         dedup: Dict[str, str] = {}
