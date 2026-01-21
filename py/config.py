@@ -490,6 +490,14 @@ class Config:
             preview_roots.update(self._expand_preview_root(link))
 
         self._preview_root_paths = {path for path in preview_roots if path.is_absolute()}
+        logger.debug(
+            "Preview roots rebuilt: %d paths from %d lora roots, %d checkpoint roots, %d embedding roots, %d symlink mappings",
+            len(self._preview_root_paths),
+            len(self.loras_roots or []),
+            len(self.base_models_roots or []),
+            len(self.embeddings_roots or []),
+            len(self._path_mappings),
+        )
 
     def map_path_to_link(self, path: str) -> str:
         """Map a target path back to its symbolic link path"""
@@ -674,6 +682,20 @@ class Config:
             # Check if candidate is equal to or under the root directory
             if candidate_str == root_str or candidate_str.startswith(root_str + os.sep):
                 return True
+
+        if self._preview_root_paths:
+            logger.debug(
+                "Preview path rejected: %s (candidate=%s, num_roots=%d, first_root=%s)",
+                preview_path,
+                candidate_str,
+                len(self._preview_root_paths),
+                os.path.normcase(str(next(iter(self._preview_root_paths)))),
+            )
+        else:
+            logger.debug(
+                "Preview path rejected (no roots configured): %s",
+                preview_path,
+            )
 
         return False
 
