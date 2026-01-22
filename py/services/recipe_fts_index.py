@@ -509,21 +509,20 @@ class RecipeFTSIndex:
         if not fields:
             return term_expr
 
-        # Build field-restricted query with OR between fields
+        # Build field-restricted query where ALL words must match within at least one field
         field_clauses = []
         for field in fields:
             if field in self.FIELD_MAP:
                 cols = self.FIELD_MAP[field]
                 for col in cols:
-                    # FTS5 column filter syntax: column:term
-                    # Need to handle multiple terms properly
-                    for term in prefix_terms:
-                        field_clauses.append(f'{col}:{term}')
+                    # Create clause where ALL terms must match in this column (implicit AND)
+                    col_terms = [f'{col}:{term}' for term in prefix_terms]
+                    field_clauses.append('(' + ' '.join(col_terms) + ')')
 
         if not field_clauses:
             return term_expr
 
-        # Combine field clauses with OR
+        # Any field matching all terms is acceptable (OR between field clauses)
         return ' OR '.join(field_clauses)
 
     def _escape_fts_query(self, text: str) -> str:

@@ -632,7 +632,12 @@ class RecipeScanner:
             fields = None
 
         try:
-            return self._fts_index.search(search, fields)
+            result = self._fts_index.search(search, fields)
+            # Return None if empty to trigger fuzzy fallback
+            # Empty FTS results may indicate query syntax issues or need for fuzzy matching
+            if not result:
+                return None
+            return result
         except Exception as exc:
             logger.debug("FTS search failed, falling back to fuzzy search: %s", exc)
             return None

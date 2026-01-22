@@ -274,6 +274,81 @@ class TestRecipeFTSIndexFieldRestriction:
         results = fts_index.search('sunset', fields={'title', 'tags'})
         assert 'recipe-1' in results
 
+    def test_search_multiple_words_field_restricted(self, fts_index):
+        """Test that multi-word searches require ALL words to match within at least one field.
+
+        This is a regression test for the bug where field-restricted multi-word searches
+        incorrectly used OR between all word+field combinations, returning recipes that
+        only matched some of the search words.
+        """
+        # Create recipes that test multi-word matching:
+        # - recipe-1: both "cute" and "cat" in title
+        # - recipe-2: only "cute" in title
+        # - recipe-3: both words split across title and tags (should NOT match when searching title only)
+        # - recipe-4: both "cute" and "cat" in tags
+        # - recipe-5: only "cat" in title
+        test_recipes = [
+            {
+                'id': 'recipe-1',
+                'title': 'cute cat photo',
+                'tags': ['animal'],
+                'loras': [],
+                'gen_params': {},
+            },
+            {
+                'id': 'recipe-2',
+                'title': 'cute dog picture',
+                'tags': ['pet'],
+                'loras': [],
+                'gen_params': {},
+            },
+            {
+                'id': 'recipe-3',
+                'title': 'cute',
+                'tags': ['cat', 'animal'],  # "cute" in title, "cat" in tags
+                'loras': [],
+                'gen_params': {},
+            },
+            {
+                'id': 'recipe-4',
+                'title': 'kitten image',
+                'tags': ['cute', 'cat'],  # both words in tags
+                'loras': [],
+                'gen_params': {},
+            },
+            {
+                'id': 'recipe-5',
+                'title': 'cat only',
+                'tags': [],
+                'loras': [],
+                'gen_params': {},
+            },
+        ]
+        fts_index.build_index(test_recipes)
+
+        # Search "cute cat" in title only - should only match recipe-1 (both words in title)
+        results = fts_index.search('cute cat', fields={'title'})
+        assert results == {'recipe-1'}, f"Expected only recipe-1, got {results}"
+
+        # Search "cute cat" in tags only - should only match recipe-4 (both words in tags)
+        results = fts_index.search('cute cat', fields={'tags'})
+        assert results == {'recipe-4'}, f"Expected only recipe-4, got {results}"
+
+        # Search "cute cat" in both title and tags - should match recipe-1 and recipe-4
+        # (each has both words in one of the specified fields)
+        results = fts_index.search('cute cat', fields={'title', 'tags'})
+        assert results == {'recipe-1', 'recipe-4'}, f"Expected recipe-1 and recipe-4, got {results}"
+
+        # Search without field restriction - should match recipes where words appear in any indexed field
+        results = fts_index.search('cute cat')
+        # recipe-1, recipe-2 (cute), recipe-3 (cute in title, cat in tags), recipe-4, recipe-5 (cat)
+        # Actually, without field restriction, FTS searches all fields as one bag of content
+        # So any recipe with both "cute" and "cat" anywhere should match
+        assert 'recipe-1' in results  # both in title
+        assert 'recipe-4' in results  # both in tags
+        # recipe-3: "cute" in title, "cat" in tags - both words present
+        assert 'recipe-3' in results
+
 
 class TestRecipeFTSIndexIncrementalOperations:
     """Tests for incremental add/remove/update operations."""
