@@ -54,7 +54,7 @@ class LoraCyclerNode:
         current_index = cycler_config.get("current_index", 1)  # 1-based
         model_strength = float(cycler_config.get("model_strength", 1.0))
         clip_strength = float(cycler_config.get("clip_strength", 1.0))
-        sort_by = cycler_config.get("sort_by", "filename")
+        sort_by = "filename"
 
         # Get scanner and service
         scanner = await ServiceRegistry.get_lora_scanner()
@@ -106,12 +106,7 @@ class LoraCyclerNode:
 
         # Get next LoRA for UI display (what will be used next generation)
         next_lora = lora_list[next_index - 1]
-
-        # Determine display name based on sort_by setting
-        if sort_by == "filename":
-            next_display_name = next_lora["file_name"]
-        else:
-            next_display_name = next_lora.get("model_name", next_lora["file_name"])
+        next_display_name = next_lora["file_name"]
 
         return {
             "result": (lora_stack,),
@@ -125,6 +120,5 @@ class LoraCyclerNode:
                 "current_lora_filename": [current_lora["file_name"]],
                 "next_lora_name": [next_display_name],
                 "next_lora_filename": [next_lora["file_name"]],
-                "sort_by": [sort_by],
             },
         }

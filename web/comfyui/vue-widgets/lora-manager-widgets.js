@@ -1464,16 +1464,16 @@ to { transform: rotate(360deg);
   box-sizing: border-box;
 }
 
-.cycler-settings[data-v-0fe9bd62] {
+.cycler-settings[data-v-af73e0cf] {
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #e4e4e7;
 }
-.settings-header[data-v-0fe9bd62] {
+.settings-header[data-v-af73e0cf] {
   margin-bottom: 8px;
 }
-.settings-title[data-v-0fe9bd62] {
+.settings-title[data-v-af73e0cf] {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -1482,10 +1482,10 @@ to { transform: rotate(360deg);
   margin: 0;
   text-transform: uppercase;
 }
-.setting-section[data-v-0fe9bd62] {
+.setting-section[data-v-af73e0cf] {
   margin-bottom: 8px;
 }
-.setting-label[data-v-0fe9bd62] {
+.setting-label[data-v-af73e0cf] {
   font-size: 13px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.8);
@@ -1494,10 +1494,10 @@ to { transform: rotate(360deg);
 }
 
 /* Progress Display */
-.progress-section[data-v-0fe9bd62] {
+.progress-section[data-v-af73e0cf] {
   margin-bottom: 12px;
 }
-.progress-display[data-v-0fe9bd62] {
+.progress-display[data-v-af73e0cf] {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
@@ -1506,21 +1506,21 @@ to { transform: rotate(360deg);
   justify-content: space-between;
   align-items: center;
 }
-.progress-info[data-v-0fe9bd62] {
+.progress-info[data-v-af73e0cf] {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
   flex: 1;
 }
-.progress-label[data-v-0fe9bd62] {
+.progress-label[data-v-af73e0cf] {
   font-size: 10px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.5);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-.progress-name[data-v-0fe9bd62] {
+.progress-name[data-v-af73e0cf] {
   font-size: 13px;
   font-weight: 500;
   color: rgba(191, 219, 254, 1);
@@ -1528,31 +1528,31 @@ to { transform: rotate(360deg);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.progress-counter[data-v-0fe9bd62] {
+.progress-counter[data-v-af73e0cf] {
   display: flex;
   align-items: center;
   gap: 4px;
   padding-left: 12px;
   flex-shrink: 0;
 }
-.progress-index[data-v-0fe9bd62] {
+.progress-index[data-v-af73e0cf] {
   font-size: 18px;
   font-weight: 600;
   color: rgba(66, 153, 225, 1);
   font-family: 'SF Mono', 'Roboto Mono', monospace;
 }
-.progress-separator[data-v-0fe9bd62] {
+.progress-separator[data-v-af73e0cf] {
   font-size: 14px;
   color: rgba(226, 232, 240, 0.4);
   margin: 0 2px;
 }
-.progress-total[data-v-0fe9bd62] {
+.progress-total[data-v-af73e0cf] {
   font-size: 14px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.6);
   font-family: 'SF Mono', 'Roboto Mono', monospace;
 }
-.refresh-button[data-v-0fe9bd62] {
+.refresh-button[data-v-af73e0cf] {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1567,23 +1567,23 @@ to { transform: rotate(360deg);
   cursor: pointer;
   transition: all 0.2s;
 }
-.refresh-button[data-v-0fe9bd62]:hover:not(:disabled) {
+.refresh-button[data-v-af73e0cf]:hover:not(:disabled) {
   background: rgba(66, 153, 225, 0.2);
   border-color: rgba(66, 153, 225, 0.4);
   color: rgba(191, 219, 254, 1);
 }
-.refresh-button[data-v-0fe9bd62]:disabled {
+.refresh-button[data-v-af73e0cf]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.refresh-icon[data-v-0fe9bd62] {
+.refresh-icon[data-v-af73e0cf] {
   width: 14px;
   height: 14px;
 }
-.refresh-icon.spinning[data-v-0fe9bd62] {
-  animation: spin-0fe9bd62 1s linear infinite;
+.refresh-icon.spinning[data-v-af73e0cf] {
+  animation: spin-af73e0cf 1s linear infinite;
 }
-@keyframes spin-0fe9bd62 {
+@keyframes spin-af73e0cf {
 from {
     transform: rotate(0deg);
 }
@@ -1593,12 +1593,12 @@ to {
 }
 
 /* Index Input */
-.index-input-container[data-v-0fe9bd62] {
+.index-input-container[data-v-af73e0cf] {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.index-input[data-v-0fe9bd62] {
+.index-input[data-v-af73e0cf] {
   width: 80px;
   padding: 6px 10px;
   background: rgba(26, 32, 44, 0.9);
@@ -1608,42 +1608,42 @@ to {
   font-size: 13px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
 }
-.index-input[data-v-0fe9bd62]:focus {
+.index-input[data-v-af73e0cf]:focus {
   outline: none;
   border-color: rgba(66, 153, 225, 0.6);
 }
-.index-input[data-v-0fe9bd62]:disabled {
+.index-input[data-v-af73e0cf]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.index-hint[data-v-0fe9bd62] {
+.index-hint[data-v-af73e0cf] {
   font-size: 11px;
   color: rgba(226, 232, 240, 0.4);
 }
 
 /* Slider Container */
-.slider-container[data-v-0fe9bd62] {
+.slider-container[data-v-af73e0cf] {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
   padding: 6px;
 }
-.slider-container--disabled[data-v-0fe9bd62] {
+.slider-container--disabled[data-v-af73e0cf] {
   opacity: 0.5;
   pointer-events: none;
 }
-.section-header-with-toggle[data-v-0fe9bd62] {
+.section-header-with-toggle[data-v-af73e0cf] {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
 }
-.section-header-with-toggle .setting-label[data-v-0fe9bd62] {
+.section-header-with-toggle .setting-label[data-v-af73e0cf] {
   margin-bottom: 4px;
 }
 
 /* Toggle Switch */
-.toggle-switch[data-v-0fe9bd62] {
+.toggle-switch[data-v-af73e0cf] {
   position: relative;
   width: 36px;
   height: 20px;
@@ -1652,7 +1652,7 @@ to {
   border: none;
   cursor: pointer;
 }
-.toggle-switch__track[data-v-0fe9bd62] {
+.toggle-switch__track[data-v-af73e0cf] {
   position: absolute;
   inset: 0;
   background: var(--comfy-input-bg, #333);
@@ -1660,11 +1660,11 @@ to {
   border-radius: 10px;
   transition: all 0.2s;
 }
-.toggle-switch--active .toggle-switch__track[data-v-0fe9bd62] {
+.toggle-switch--active .toggle-switch__track[data-v-af73e0cf] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.toggle-switch__thumb[data-v-0fe9bd62] {
+.toggle-switch__thumb[data-v-af73e0cf] {
   position: absolute;
   top: 3px;
   left: 2px;
@@ -1675,64 +1675,16 @@ to {
   transition: all 0.2s;
   opacity: 0.6;
 }
-.toggle-switch--active .toggle-switch__thumb[data-v-0fe9bd62] {
+.toggle-switch--active .toggle-switch__thumb[data-v-af73e0cf] {
   transform: translateX(16px);
   background: #4299e1;
   opacity: 1;
 }
-.toggle-switch:hover .toggle-switch__thumb[data-v-0fe9bd62] {
+.toggle-switch:hover .toggle-switch__thumb[data-v-af73e0cf] {
   opacity: 1;
 }
 
-/* Sort Tabs */
-.sort-tabs[data-v-0fe9bd62] {
-  display: flex;
-  background: rgba(26, 32, 44, 0.9);
-  border: 1px solid rgba(226, 232, 240, 0.2);
-  border-radius: 6px;
-  overflow: hidden;
-}
-.sort-tab[data-v-0fe9bd62] {
-  flex: 1;
-  position: relative;
-  padding: 8px 12px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.sort-tab input[type="radio"][data-v-0fe9bd62] {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-.sort-tab-label[data-v-0fe9bd62] {
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(226, 232, 240, 0.7);
-  transition: all 0.2s ease;
-}
-.sort-tab:hover .sort-tab-label[data-v-0fe9bd62] {
-  color: rgba(226, 232, 240, 0.9);
-}
-.sort-tab.active .sort-tab-label[data-v-0fe9bd62] {
-  color: rgba(191, 219, 254, 1);
-  font-weight: 600;
-}
-.sort-tab.active[data-v-0fe9bd62] {
-  background: rgba(66, 153, 225, 0.2);
-}
-.sort-tab.active[data-v-0fe9bd62]::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: rgba(66, 153, 225, 0.9);
-}
-
-.lora-cycler-widget[data-v-85956227] {
+.lora-cycler-widget[data-v-0f9d3d70] {
   padding: 6px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 6px;
@@ -12119,8 +12071,8 @@ const _hoisted_16$1 = { class: "setting-section" };
 const _hoisted_17$1 = { class: "roll-buttons-with-tooltip" };
 const _hoisted_18$1 = { class: "roll-buttons" };
 const _hoisted_19$1 = ["disabled"];
-const _hoisted_20$1 = ["disabled"];
-const _hoisted_21$1 = ["disabled"];
+const _hoisted_20 = ["disabled"];
+const _hoisted_21 = ["disabled"];
 const _sfc_main$4 = /* @__PURE__ */ defineComponent({
   __name: "LoraRandomizerSettingsView",
   props: {
@@ -12317,7 +12269,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                 onClick: _cache[14] || (_cache[14] = ($event) => _ctx.$emit("always-randomize"))
               }, [..._cache[26] || (_cache[26] = [
                 createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-f7a531b6><path d="M21 12a9 9 0 1 1-6.219-8.56" data-v-f7a531b6></path><path d="M21 3v5h-5" data-v-f7a531b6></path><circle cx="12" cy="12" r="3" data-v-f7a531b6></circle><circle cx="6" cy="8" r="1.5" data-v-f7a531b6></circle><circle cx="18" cy="16" r="1.5" data-v-f7a531b6></circle></svg><span class="roll-button__text" data-v-f7a531b6>Always Randomize</span>', 2)
-              ])], 10, _hoisted_20$1),
+              ])], 10, _hoisted_20),
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "fixed" && __props.canReuseLast && areLorasEqual(__props.currentLoras, __props.lastUsed) }]),
                 disabled: !__props.canReuseLast,
@@ -12338,7 +12290,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                   createBaseVNode("path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" })
                 ], -1),
                 createBaseVNode("span", { class: "roll-button__text" }, "Reuse Last", -1)
-              ])], 42, _hoisted_21$1)
+              ])], 42, _hoisted_21)
             ]),
             createVNode(Transition, { name: "tooltip" }, {
               default: withCtx(() => [
@@ -12733,10 +12685,6 @@ const _hoisted_16 = { class: "setting-section" };
 const _hoisted_17 = { class: "section-header-with-toggle" };
 const _hoisted_18 = { class: "setting-label" };
 const _hoisted_19 = ["aria-checked"];
-const _hoisted_20 = { class: "setting-section" };
-const _hoisted_21 = { class: "sort-tabs" };
-const _hoisted_22 = ["checked"];
-const _hoisted_23 = ["checked"];
 const _sfc_main$2 = /* @__PURE__ */ defineComponent({
   __name: "LoraCyclerSettingsView",
   props: {
@@ -12748,10 +12696,9 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     clipStrength: {},
     useCustomClipRange: { type: Boolean },
     isClipStrengthDisabled: { type: Boolean },
-    sortBy: {},
     isLoading: { type: Boolean }
   },
-  emits: ["update:currentIndex", "update:modelStrength", "update:clipStrength", "update:useCustomClipRange", "update:sortBy", "refresh"],
+  emits: ["update:currentIndex", "update:modelStrength", "update:clipStrength", "update:useCustomClipRange", "refresh"],
   setup(__props, { emit: __emit }) {
     const props = __props;
     const emit2 = __emit;
@@ -12774,13 +12721,13 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     };
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", _hoisted_1$2, [
-        _cache[15] || (_cache[15] = createBaseVNode("div", { class: "settings-header" }, [
+        _cache[10] || (_cache[10] = createBaseVNode("div", { class: "settings-header" }, [
           createBaseVNode("h3", { class: "settings-title" }, "CYCLER SETTINGS")
         ], -1)),
         createBaseVNode("div", _hoisted_2$1, [
           createBaseVNode("div", _hoisted_3$1, [
             createBaseVNode("div", _hoisted_4$1, [
-              _cache[6] || (_cache[6] = createBaseVNode("span", { class: "progress-label" }, "Next LoRA:", -1)),
+              _cache[4] || (_cache[4] = createBaseVNode("span", { class: "progress-label" }, "Next LoRA:", -1)),
               createBaseVNode("span", {
                 class: "progress-name",
                 title: __props.currentLoraFilename
@@ -12788,7 +12735,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
             ]),
             createBaseVNode("div", _hoisted_6, [
               createBaseVNode("span", _hoisted_7, toDisplayString(__props.currentIndex), 1),
-              _cache[8] || (_cache[8] = createBaseVNode("span", { class: "progress-separator" }, "/", -1)),
+              _cache[6] || (_cache[6] = createBaseVNode("span", { class: "progress-separator" }, "/", -1)),
               createBaseVNode("span", _hoisted_8, toDisplayString(__props.totalCount), 1),
               createBaseVNode("button", {
                 class: "refresh-button",
@@ -12804,7 +12751,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                   "stroke-width": "2",
                   "stroke-linecap": "round",
                   "stroke-linejoin": "round"
-                }, [..._cache[7] || (_cache[7] = [
+                }, [..._cache[5] || (_cache[5] = [
                   createBaseVNode("path", { d: "M21 12a9 9 0 1 1-6.219-8.56" }, null, -1),
                   createBaseVNode("path", { d: "M21 3v5h-5" }, null, -1)
                 ])], 2))
@@ -12813,7 +12760,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           ])
         ]),
         createBaseVNode("div", _hoisted_10, [
-          _cache[9] || (_cache[9] = createBaseVNode("label", { class: "setting-label" }, "Starting Index", -1)),
+          _cache[7] || (_cache[7] = createBaseVNode("label", { class: "setting-label" }, "Starting Index", -1)),
           createBaseVNode("div", _hoisted_11, [
             createBaseVNode("input", {
               type: "number",
@@ -12829,7 +12776,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           ])
         ]),
         createBaseVNode("div", _hoisted_14, [
-          _cache[10] || (_cache[10] = createBaseVNode("label", { class: "setting-label" }, "Model Strength", -1)),
+          _cache[8] || (_cache[8] = createBaseVNode("label", { class: "setting-label" }, "Model Strength", -1)),
           createBaseVNode("div", _hoisted_15, [
             createVNode(SingleSlider, {
               min: -10,
@@ -12851,7 +12798,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
               role: "switch",
               "aria-checked": __props.useCustomClipRange,
               title: "Use custom clip strength when enabled, otherwise use model strength"
-            }, [..._cache[11] || (_cache[11] = [
+            }, [..._cache[9] || (_cache[9] = [
               createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
               createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
             ])], 10, _hoisted_19)
@@ -12869,41 +12816,12 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
               "onUpdate:value": _cache[3] || (_cache[3] = ($event) => _ctx.$emit("update:clipStrength", $event))
             }, null, 8, ["value", "disabled"])
           ], 2)
-        ]),
-        createBaseVNode("div", _hoisted_20, [
-          _cache[14] || (_cache[14] = createBaseVNode("label", { class: "setting-label" }, "Sort By", -1)),
-          createBaseVNode("div", _hoisted_21, [
-            createBaseVNode("label", {
-              class: normalizeClass(["sort-tab", { active: __props.sortBy === "filename" }])
-            }, [
-              createBaseVNode("input", {
-                type: "radio",
-                name: "sort-by",
-                value: "filename",
-                checked: __props.sortBy === "filename",
-                onChange: _cache[4] || (_cache[4] = ($event) => _ctx.$emit("update:sortBy", "filename"))
-              }, null, 40, _hoisted_22),
-              _cache[12] || (_cache[12] = createBaseVNode("span", { class: "sort-tab-label" }, "Filename", -1))
-            ], 2),
-            createBaseVNode("label", {
-              class: normalizeClass(["sort-tab", { active: __props.sortBy === "model_name" }])
-            }, [
-              createBaseVNode("input", {
-                type: "radio",
-                name: "sort-by",
-                value: "model_name",
-                checked: __props.sortBy === "model_name",
-                onChange: _cache[5] || (_cache[5] = ($event) => _ctx.$emit("update:sortBy", "model_name"))
-              }, null, 40, _hoisted_23),
-              _cache[13] || (_cache[13] = createBaseVNode("span", { class: "sort-tab-label" }, "Model Name", -1))
-            ], 2)
-          ])
         ])
       ]);
     };
   }
 });
-const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-0fe9bd62"]]);
+const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-af73e0cf"]]);
 function useLoraCyclerState(widget) {
   const currentIndex = ref(1);
   const totalCount = ref(0);
@@ -13086,21 +13004,12 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
         if (loraList.length > 0 && newIndex > 0 && newIndex <= loraList.length) {
           const currentLora = loraList[newIndex - 1];
           if (currentLora) {
-            state.currentLoraName.value = state.sortBy.value === "filename" ? currentLora.file_name : currentLora.model_name || currentLora.file_name;
+            state.currentLoraName.value = currentLora.file_name;
             state.currentLoraFilename.value = currentLora.file_name;
           }
         }
       } catch (error) {
         console.error("[LoraCyclerWidget] Error updating index:", error);
-      }
-    };
-    const handleSortByChange = async (newSortBy) => {
-      state.sortBy.value = newSortBy;
-      try {
-        const poolConfig = getPoolConfig();
-        await state.refreshList(poolConfig);
-      } catch (error) {
-        console.error("[LoraCyclerWidget] Error changing sort:", error);
       }
     };
     const handleUseCustomClipRangeChange = (newValue) => {
@@ -13177,10 +13086,6 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
           const val = Array.isArray(output.next_lora_filename) ? output.next_lora_filename[0] : output.next_lora_filename;
           state.currentLoraFilename.value = val;
         }
-        if ((output == null ? void 0 : output.sort_by) !== void 0) {
-          const val = Array.isArray(output.sort_by) ? output.sort_by[0] : output.sort_by;
-          state.sortBy.value = val;
-        }
         if (originalOnExecuted) {
           return originalOnExecuted(output);
         }
@@ -13201,20 +13106,18 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
           "clip-strength": unref(state).clipStrength.value,
           "use-custom-clip-range": unref(state).useCustomClipRange.value,
           "is-clip-strength-disabled": unref(state).isClipStrengthDisabled.value,
-          "sort-by": unref(state).sortBy.value,
           "is-loading": unref(state).isLoading.value,
           "onUpdate:currentIndex": handleIndexUpdate,
           "onUpdate:modelStrength": _cache[0] || (_cache[0] = ($event) => unref(state).modelStrength.value = $event),
           "onUpdate:clipStrength": _cache[1] || (_cache[1] = ($event) => unref(state).clipStrength.value = $event),
           "onUpdate:useCustomClipRange": handleUseCustomClipRangeChange,
-          "onUpdate:sortBy": handleSortByChange,
           onRefresh: handleRefresh
-        }, null, 8, ["current-index", "total-count", "current-lora-name", "current-lora-filename", "model-strength", "clip-strength", "use-custom-clip-range", "is-clip-strength-disabled", "sort-by", "is-loading"])
+        }, null, 8, ["current-index", "total-count", "current-lora-name", "current-lora-filename", "model-strength", "clip-strength", "use-custom-clip-range", "is-clip-strength-disabled", "is-loading"])
       ]);
     };
   }
 });
-const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-85956227"]]);
+const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-0f9d3d70"]]);
 const _hoisted_1 = { class: "json-display-widget" };
 const _hoisted_2 = {
   class: "json-content",
@@ -13517,7 +13420,7 @@ const LORA_RANDOMIZER_WIDGET_MIN_WIDTH = 500;
 const LORA_RANDOMIZER_WIDGET_MIN_HEIGHT = 448;
 const LORA_RANDOMIZER_WIDGET_MAX_HEIGHT = LORA_RANDOMIZER_WIDGET_MIN_HEIGHT;
 const LORA_CYCLER_WIDGET_MIN_WIDTH = 380;
-const LORA_CYCLER_WIDGET_MIN_HEIGHT = 410;
+const LORA_CYCLER_WIDGET_MIN_HEIGHT = 316;
 const LORA_CYCLER_WIDGET_MAX_HEIGHT = LORA_CYCLER_WIDGET_MIN_HEIGHT;
 const JSON_DISPLAY_WIDGET_MIN_WIDTH = 300;
 const JSON_DISPLAY_WIDGET_MIN_HEIGHT = 200;

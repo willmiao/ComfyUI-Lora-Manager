@@ -103,33 +103,6 @@
         />
       </div>
     </div>
-
-    <!-- Sort By -->
-    <div class="setting-section">
-      <label class="setting-label">Sort By</label>
-      <div class="sort-tabs">
-        <label class="sort-tab" :class="{ active: sortBy === 'filename' }">
-          <input
-            type="radio"
-            name="sort-by"
-            value="filename"
-            :checked="sortBy === 'filename'"
-            @change="$emit('update:sortBy', 'filename')"
-          />
-          <span class="sort-tab-label">Filename</span>
-        </label>
-        <label class="sort-tab" :class="{ active: sortBy === 'model_name' }">
-          <input
-            type="radio"
-            name="sort-by"
-            value="model_name"
-            :checked="sortBy === 'model_name'"
-            @change="$emit('update:sortBy', 'model_name')"
-          />
-          <span class="sort-tab-label">Model Name</span>
-        </label>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -146,7 +119,6 @@ const props = defineProps<{
   clipStrength: number
   useCustomClipRange: boolean
   isClipStrengthDisabled: boolean
-  sortBy: 'filename' | 'model_name'
   isLoading: boolean
 }>()
 
@@ -155,7 +127,6 @@ const emit = defineEmits<{
   'update:modelStrength': [value: number]
   'update:clipStrength': [value: number]
   'update:useCustomClipRange': [value: boolean]
-  'update:sortBy': [value: 'filename' | 'model_name']
   'refresh': []
 }>()
 
@@ -431,60 +402,5 @@ const onIndexBlur = (event: Event) => {
 
 .toggle-switch:hover .toggle-switch__thumb {
   opacity: 1;
-}
-
-/* Sort Tabs */
-.sort-tabs {
-  display: flex;
-  background: rgba(26, 32, 44, 0.9);
-  border: 1px solid rgba(226, 232, 240, 0.2);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.sort-tab {
-  flex: 1;
-  position: relative;
-  padding: 8px 12px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.sort-tab input[type="radio"] {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.sort-tab-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(226, 232, 240, 0.7);
-  transition: all 0.2s ease;
-}
-
-.sort-tab:hover .sort-tab-label {
-  color: rgba(226, 232, 240, 0.9);
-}
-
-.sort-tab.active .sort-tab-label {
-  color: rgba(191, 219, 254, 1);
-  font-weight: 600;
-}
-
-.sort-tab.active {
-  background: rgba(66, 153, 225, 0.2);
-}
-
-.sort-tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: rgba(66, 153, 225, 0.9);
 }
 </style>

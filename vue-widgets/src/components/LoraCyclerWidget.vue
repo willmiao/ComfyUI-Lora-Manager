@@ -9,13 +9,11 @@
       :clip-strength="state.clipStrength.value"
       :use-custom-clip-range="state.useCustomClipRange.value"
       :is-clip-strength-disabled="state.isClipStrengthDisabled.value"
-      :sort-by="state.sortBy.value"
       :is-loading="state.isLoading.value"
       @update:current-index="handleIndexUpdate"
       @update:model-strength="state.modelStrength.value = $event"
       @update:clip-strength="state.clipStrength.value = $event"
       @update:use-custom-clip-range="handleUseCustomClipRangeChange"
-      @update:sort-by="handleSortByChange"
       @refresh="handleRefresh"
     />
   </div>
@@ -63,27 +61,12 @@ const handleIndexUpdate = async (newIndex: number) => {
     if (loraList.length > 0 && newIndex > 0 && newIndex <= loraList.length) {
       const currentLora = loraList[newIndex - 1]
       if (currentLora) {
-        state.currentLoraName.value = state.sortBy.value === 'filename'
-          ? currentLora.file_name
-          : (currentLora.model_name || currentLora.file_name)
+        state.currentLoraName.value = currentLora.file_name
         state.currentLoraFilename.value = currentLora.file_name
       }
     }
   } catch (error) {
     console.error('[LoraCyclerWidget] Error updating index:', error)
-  }
-}
-
-// Handle sort by change
-const handleSortByChange = async (newSortBy: 'filename' | 'model_name') => {
-  state.sortBy.value = newSortBy
-
-  // Refresh list with new sort order
-  try {
-    const poolConfig = getPoolConfig()
-    await state.refreshList(poolConfig)
-  } catch (error) {
-    console.error('[LoraCyclerWidget] Error changing sort:', error)
   }
 }
 
@@ -183,10 +166,6 @@ onMounted(async () => {
     if (output?.next_lora_filename !== undefined) {
       const val = Array.isArray(output.next_lora_filename) ? output.next_lora_filename[0] : output.next_lora_filename
       state.currentLoraFilename.value = val
-    }
-    if (output?.sort_by !== undefined) {
-      const val = Array.isArray(output.sort_by) ? output.sort_by[0] : output.sort_by
-      state.sortBy.value = val
     }
 
     // Call original onExecuted if it exists
