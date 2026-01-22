@@ -13277,14 +13277,14 @@ function setupModeChangeHandler(node, onModeChange) {
     }
   });
 }
-function createModeChangeCallback(node, updateDownstreamLoaders2, nodeSpecificCallback) {
+function createModeChangeCallback(node, updateDownstreamLoaders, nodeSpecificCallback) {
   return (newMode, _oldMode) => {
     const isNodeCurrentlyActive = isNodeActive(newMode);
     const activeLoraNames = isNodeCurrentlyActive ? getActiveLorasFromNodeByType(node) : /* @__PURE__ */ new Set();
     if (nodeSpecificCallback) {
       nodeSpecificCallback(activeLoraNames);
     }
-    updateDownstreamLoaders2(node);
+    updateDownstreamLoaders(node);
   };
 }
 const app = {};
@@ -13468,7 +13468,7 @@ function getPoolConfigFromConnectedNode(node) {
   const poolWidget = (_a = poolNode.widgets) == null ? void 0 : _a.find((w2) => w2.name === "pool_config");
   return (poolWidget == null ? void 0 : poolWidget.value) || null;
 }
-function updateDownstreamLoaders(startNode, visited = /* @__PURE__ */ new Set()) {
+function updateDownstreamLoaders$1(startNode, visited = /* @__PURE__ */ new Set()) {
   var _a, _b;
   const nodeKey = getNodeKey(startNode);
   if (!nodeKey || visited.has(nodeKey)) return;
@@ -13484,7 +13484,7 @@ function updateDownstreamLoaders(startNode, visited = /* @__PURE__ */ new Set())
               const allActiveLoraNames = collectActiveLorasFromChain(targetNode);
               updateConnectedTriggerWords(targetNode, allActiveLoraNames);
             } else if (targetNode && isLoraProviderNode(targetNode.comfyClass)) {
-              updateDownstreamLoaders(targetNode, visited);
+              updateDownstreamLoaders$1(targetNode, visited);
             }
           }
         }
@@ -13498,7 +13498,7 @@ const LORA_RANDOMIZER_WIDGET_MIN_WIDTH = 500;
 const LORA_RANDOMIZER_WIDGET_MIN_HEIGHT = 448;
 const LORA_RANDOMIZER_WIDGET_MAX_HEIGHT = LORA_RANDOMIZER_WIDGET_MIN_HEIGHT;
 const LORA_CYCLER_WIDGET_MIN_WIDTH = 380;
-const LORA_CYCLER_WIDGET_MIN_HEIGHT = 316;
+const LORA_CYCLER_WIDGET_MIN_HEIGHT = 314;
 const LORA_CYCLER_WIDGET_MAX_HEIGHT = LORA_CYCLER_WIDGET_MIN_HEIGHT;
 const JSON_DISPLAY_WIDGET_MIN_WIDTH = 300;
 const JSON_DISPLAY_WIDGET_MIN_HEIGHT = 200;
@@ -13681,7 +13681,7 @@ function createLoraCyclerWidget(node) {
           widget.onSetValue(v2);
         }
         if (oldFilename !== (v2 == null ? void 0 : v2.current_lora_filename)) {
-          updateDownstreamLoaders(node);
+          updateDownstreamLoaders$1(node);
         }
       },
       serialize: true,
@@ -13694,7 +13694,7 @@ function createLoraCyclerWidget(node) {
     const oldFilename = internalValue == null ? void 0 : internalValue.current_lora_filename;
     internalValue = v2;
     if (oldFilename !== (v2 == null ? void 0 : v2.current_lora_filename)) {
-      updateDownstreamLoaders(node);
+      updateDownstreamLoaders$1(node);
     }
   };
   node.getPoolConfig = () => getPoolConfigFromConnectedNode(node);
@@ -13805,7 +13805,7 @@ app$1.registerExtension({
         }
         const isRandomizerNode = node.comfyClass === "Lora Randomizer (LoraManager)";
         const callback = isRandomizerNode ? () => {
-          updateDownstreamLoaders(node);
+          updateDownstreamLoaders$1(node);
         } : null;
         return addLorasWidgetCache(node, "loras", { isRandomizerNode }, callback);
       }
@@ -13821,7 +13821,7 @@ app$1.registerExtension({
       nodeType.prototype.onNodeCreated = function() {
         originalOnNodeCreated == null ? void 0 : originalOnNodeCreated.apply(this, arguments);
         const nodeSpecificCallback = comfyClass === "Lora Stacker (LoraManager)" ? (activeLoraNames) => updateConnectedTriggerWords(this, activeLoraNames) : void 0;
-        const onModeChange = createModeChangeCallback(this, updateDownstreamLoaders, nodeSpecificCallback);
+        const onModeChange = createModeChangeCallback(this, updateDownstreamLoaders$1, nodeSpecificCallback);
         setupModeChangeHandler(this, onModeChange);
       };
     }
