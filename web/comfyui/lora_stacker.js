@@ -31,34 +31,6 @@ app.registerExtension({
         let isUpdating = false;
         let isSyncingInput = false;
 
-        // Mechanism 3: Property descriptor to listen for mode changes
-        const self = this;
-        let _mode = this.mode;
-        Object.defineProperty(this, 'mode', {
-          get() {
-            return _mode;
-          },
-          set(value) {
-            const oldValue = _mode;
-            _mode = value;
-            
-            // Trigger mode change handler
-            if (self.onModeChange) {
-              self.onModeChange(value, oldValue);
-            }
-          }
-        });
-
-        // Define the mode change handler
-        this.onModeChange = function(newMode, oldMode) {
-          // Update connected trigger word toggle nodes and downstream loader trigger word toggle nodes
-          // when mode changes, similar to when loras change
-          const isNodeActive = newMode === 0 || newMode === 3; // Active when mode is Always (0) or On Trigger (3)
-          const activeLoraNames = isNodeActive ? getActiveLorasFromNode(self) : new Set();
-          updateConnectedTriggerWords(self, activeLoraNames);
-          updateDownstreamLoaders(self);
-        };
-
         const inputWidget = this.widgets[0];
         inputWidget.options.getMaxHeight = () => 100;
         this.inputWidget = inputWidget;

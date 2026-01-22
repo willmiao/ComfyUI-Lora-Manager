@@ -4,6 +4,16 @@ import { AutoComplete } from "./autocomplete.js";
 
 const ROOT_GRAPH_ID = "root";
 
+export const LORA_PROVIDER_NODE_TYPES = [
+  "Lora Stacker (LoraManager)",
+  "Lora Randomizer (LoraManager)",
+  "Lora Cycler (LoraManager)",
+];
+
+export function isLoraProviderNode(comfyClass) {
+  return LORA_PROVIDER_NODE_TYPES.includes(comfyClass);
+}
+
 function isMapLike(collection) {
     return collection && typeof collection.entries === "function" && typeof collection.values === "function";
 }
@@ -233,7 +243,7 @@ export function getConnectedInputStackers(node) {
         }
 
         const sourceNode = node.graph?.getNodeById?.(link.origin_id);
-        if (sourceNode && (sourceNode.comfyClass === "Lora Stacker (LoraManager)" || sourceNode.comfyClass === "Lora Randomizer (LoraManager)")) {
+        if (sourceNode && isLoraProviderNode(sourceNode.comfyClass)) {
             connectedStackers.push(sourceNode);
         }
     }
@@ -273,12 +283,22 @@ export function getConnectedTriggerToggleNodes(node) {
 // Extract active lora names from a node's widgets
 export function getActiveLorasFromNode(node) {
     const activeLoraNames = new Set();
-    
+
+    // Handle Lora Cycler (single LoRA from cycler_config widget)
+    if (node.comfyClass === "Lora Cycler (LoraManager)") {
+        const cyclerWidget = node.widgets?.find(w => w.name === 'cycler_config');
+        if (cyclerWidget?.value?.current_lora_filename) {
+            activeLoraNames.add(cyclerWidget.value.current_lora_filename);
+        }
+        return activeLoraNames;
+    }
+
+    // Handle Lora Stacker and Lora Randomizer (lorasWidget)
     let lorasWidget = node.lorasWidget;
     if (!lorasWidget && node.widgets) {
         lorasWidget = node.widgets.find(w => w.name === 'loras');
     }
-    
+
     if (lorasWidget && lorasWidget.value) {
         lorasWidget.value.forEach(lora => {
             if (lora.active) {
@@ -286,7 +306,7 @@ export function getActiveLorasFromNode(node) {
             }
         });
     }
-    
+
     return activeLoraNames;
 }
 
@@ -715,12 +735,8 @@ export function updateDownstreamLoaders(startNode, visited = new Set()) {
                 collectActiveLorasFromChain(targetNode);
               updateConnectedTriggerWords(targetNode, allActiveLoraNames);
             }
-            // If target is another Lora Stacker or Lora Randomizer, recursively check its outputs
-            else if (
-              targetNode &&
-              (targetNode.comfyClass === "Lora Stacker (LoraManager)" ||
-               targetNode.comfyClass === "Lora Randomizer (LoraManager)")
-            ) {
+            // If target is another LoRA provider node, recursively check its outputs
+            else if (targetNode && isLoraProviderNode(targetNode.comfyClass)) {
               updateDownstreamLoaders(targetNode, visited);
             }
           }

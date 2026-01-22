@@ -13225,8 +13225,78 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
   }
 });
 const JsonDisplayWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-0f202476"]]);
+const LORA_PROVIDER_NODE_TYPES$1 = [
+  "Lora Stacker (LoraManager)",
+  "Lora Randomizer (LoraManager)",
+  "Lora Cycler (LoraManager)"
+];
+function getActiveLorasFromNodeByType(node) {
+  const comfyClass = node == null ? void 0 : node.comfyClass;
+  if (comfyClass === "Lora Cycler (LoraManager)") {
+    return extractFromCyclerConfig(node);
+  }
+  return extractFromLorasWidget(node);
+}
+function extractFromLorasWidget(node) {
+  var _a;
+  const activeLoraNames = /* @__PURE__ */ new Set();
+  const lorasWidget = node.lorasWidget || ((_a = node.widgets) == null ? void 0 : _a.find((w2) => w2.name === "loras"));
+  if (lorasWidget == null ? void 0 : lorasWidget.value) {
+    lorasWidget.value.forEach((lora) => {
+      if (lora.active) {
+        activeLoraNames.add(lora.name);
+      }
+    });
+  }
+  return activeLoraNames;
+}
+function extractFromCyclerConfig(node) {
+  var _a, _b;
+  const activeLoraNames = /* @__PURE__ */ new Set();
+  const cyclerWidget = (_a = node.widgets) == null ? void 0 : _a.find((w2) => w2.name === "cycler_config");
+  if ((_b = cyclerWidget == null ? void 0 : cyclerWidget.value) == null ? void 0 : _b.current_lora_filename) {
+    activeLoraNames.add(cyclerWidget.value.current_lora_filename);
+  }
+  return activeLoraNames;
+}
+function isNodeActive(mode) {
+  return mode === void 0 || mode === 0 || mode === 3;
+}
+function setupModeChangeHandler(node, onModeChange) {
+  let _mode = node.mode;
+  Object.defineProperty(node, "mode", {
+    get() {
+      return _mode;
+    },
+    set(value) {
+      const oldValue = _mode;
+      _mode = value;
+      if (oldValue !== value) {
+        onModeChange(value, oldValue);
+      }
+    }
+  });
+}
+function createModeChangeCallback(node, updateDownstreamLoaders2, nodeSpecificCallback) {
+  return (newMode, _oldMode) => {
+    const isNodeCurrentlyActive = isNodeActive(newMode);
+    const activeLoraNames = isNodeCurrentlyActive ? getActiveLorasFromNodeByType(node) : /* @__PURE__ */ new Set();
+    if (nodeSpecificCallback) {
+      nodeSpecificCallback(activeLoraNames);
+    }
+    updateDownstreamLoaders2(node);
+  };
+}
 const app = {};
 const ROOT_GRAPH_ID = "root";
+const LORA_PROVIDER_NODE_TYPES = [
+  "Lora Stacker (LoraManager)",
+  "Lora Randomizer (LoraManager)",
+  "Lora Cycler (LoraManager)"
+];
+function isLoraProviderNode(comfyClass) {
+  return LORA_PROVIDER_NODE_TYPES.includes(comfyClass);
+}
 function isMapLike(collection) {
   return collection && typeof collection.entries === "function" && typeof collection.values === "function";
 }
@@ -13278,7 +13348,7 @@ function getConnectedInputStackers(node) {
       continue;
     }
     const sourceNode = (_b = (_a = node.graph) == null ? void 0 : _a.getNodeById) == null ? void 0 : _b.call(_a, link.origin_id);
-    if (sourceNode && (sourceNode.comfyClass === "Lora Stacker (LoraManager)" || sourceNode.comfyClass === "Lora Randomizer (LoraManager)")) {
+    if (sourceNode && isLoraProviderNode(sourceNode.comfyClass)) {
       connectedStackers.push(sourceNode);
     }
   }
@@ -13308,7 +13378,15 @@ function getConnectedTriggerToggleNodes(node) {
   return connectedNodes;
 }
 function getActiveLorasFromNode(node) {
+  var _a, _b;
   const activeLoraNames = /* @__PURE__ */ new Set();
+  if (node.comfyClass === "Lora Cycler (LoraManager)") {
+    const cyclerWidget = (_a = node.widgets) == null ? void 0 : _a.find((w2) => w2.name === "cycler_config");
+    if ((_b = cyclerWidget == null ? void 0 : cyclerWidget.value) == null ? void 0 : _b.current_lora_filename) {
+      activeLoraNames.add(cyclerWidget.value.current_lora_filename);
+    }
+    return activeLoraNames;
+  }
   let lorasWidget = node.lorasWidget;
   if (!lorasWidget && node.widgets) {
     lorasWidget = node.widgets.find((w2) => w2.name === "loras");
@@ -13331,8 +13409,8 @@ function collectActiveLorasFromChain(node, visited = /* @__PURE__ */ new Set()) 
     return /* @__PURE__ */ new Set();
   }
   visited.add(nodeKey);
-  const isNodeActive = node.mode === void 0 || node.mode === 0 || node.mode === 3;
-  const allActiveLoraNames = isNodeActive ? getActiveLorasFromNode(node) : /* @__PURE__ */ new Set();
+  const isNodeActive2 = node.mode === void 0 || node.mode === 0 || node.mode === 3;
+  const allActiveLoraNames = isNodeActive2 ? getActiveLorasFromNode(node) : /* @__PURE__ */ new Set();
   const inputStackers = getConnectedInputStackers(node);
   for (const stacker of inputStackers) {
     const stackerLoras = collectActiveLorasFromChain(stacker, visited);
@@ -13383,8 +13461,8 @@ function getPoolConfigFromConnectedNode(node) {
   if (!poolNode) {
     return null;
   }
-  const isNodeActive = poolNode.mode === void 0 || poolNode.mode === 0 || poolNode.mode === 3;
-  if (!isNodeActive) {
+  const isNodeActive2 = poolNode.mode === void 0 || poolNode.mode === 0 || poolNode.mode === 3;
+  if (!isNodeActive2) {
     return null;
   }
   const poolWidget = (_a = poolNode.widgets) == null ? void 0 : _a.find((w2) => w2.name === "pool_config");
@@ -13405,7 +13483,7 @@ function updateDownstreamLoaders(startNode, visited = /* @__PURE__ */ new Set())
             if (targetNode && targetNode.comfyClass === "Lora Loader (LoraManager)") {
               const allActiveLoraNames = collectActiveLorasFromChain(targetNode);
               updateConnectedTriggerWords(targetNode, allActiveLoraNames);
-            } else if (targetNode && (targetNode.comfyClass === "Lora Stacker (LoraManager)" || targetNode.comfyClass === "Lora Randomizer (LoraManager)")) {
+            } else if (targetNode && isLoraProviderNode(targetNode.comfyClass)) {
               updateDownstreamLoaders(targetNode, visited);
             }
           }
@@ -13597,9 +13675,13 @@ function createLoraCyclerWidget(node) {
         return internalValue;
       },
       setValue(v2) {
+        const oldFilename = internalValue == null ? void 0 : internalValue.current_lora_filename;
         internalValue = v2;
         if (typeof widget.onSetValue === "function") {
           widget.onSetValue(v2);
+        }
+        if (oldFilename !== (v2 == null ? void 0 : v2.current_lora_filename)) {
+          updateDownstreamLoaders(node);
         }
       },
       serialize: true,
@@ -13609,7 +13691,11 @@ function createLoraCyclerWidget(node) {
     }
   );
   widget.updateConfig = (v2) => {
+    const oldFilename = internalValue == null ? void 0 : internalValue.current_lora_filename;
     internalValue = v2;
+    if (oldFilename !== (v2 == null ? void 0 : v2.current_lora_filename)) {
+      updateDownstreamLoaders(node);
+    }
   };
   node.getPoolConfig = () => getPoolConfigFromConnectedNode(node);
   const vueApp = createApp(LoraCyclerWidget, {
@@ -13726,8 +13812,19 @@ app$1.registerExtension({
     };
   },
   // Add display-only widget to Debug Metadata node
+  // Register mode change handlers for LoRA provider nodes
   // @ts-ignore
   async beforeRegisterNodeDef(nodeType, nodeData) {
+    const comfyClass = nodeType.comfyClass;
+    if (LORA_PROVIDER_NODE_TYPES$1.includes(comfyClass)) {
+      const originalOnNodeCreated = nodeType.prototype.onNodeCreated;
+      nodeType.prototype.onNodeCreated = function() {
+        originalOnNodeCreated == null ? void 0 : originalOnNodeCreated.apply(this, arguments);
+        const nodeSpecificCallback = comfyClass === "Lora Stacker (LoraManager)" ? (activeLoraNames) => updateConnectedTriggerWords(this, activeLoraNames) : void 0;
+        const onModeChange = createModeChangeCallback(this, updateDownstreamLoaders, nodeSpecificCallback);
+        setupModeChangeHandler(this, onModeChange);
+      };
+    }
     if (nodeData.name === "Debug Metadata (LoraManager)") {
       const onNodeCreated = nodeType.prototype.onNodeCreated;
       nodeType.prototype.onNodeCreated = function() {

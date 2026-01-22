@@ -5,6 +5,11 @@ import LoraRandomizerWidget from '@/components/LoraRandomizerWidget.vue'
 import LoraCyclerWidget from '@/components/LoraCyclerWidget.vue'
 import JsonDisplayWidget from '@/components/JsonDisplayWidget.vue'
 import type { LoraPoolConfig, LegacyLoraPoolConfig, RandomizerConfig, CyclerConfig } from './composables/types'
+import {
+  setupModeChangeHandler,
+  createModeChangeCallback,
+  LORA_PROVIDER_NODE_TYPES
+} from './mode-change-handler'
 
 const LORA_POOL_WIDGET_MIN_WIDTH = 500
 const LORA_POOL_WIDGET_MIN_HEIGHT = 400
@@ -237,9 +242,14 @@ function createLoraCyclerWidget(node) {
         return internalValue
       },
       setValue(v: CyclerConfig) {
+        const oldFilename = internalValue?.current_lora_filename
         internalValue = v
         if (typeof widget.onSetValue === 'function') {
           widget.onSetValue(v)
+        }
+        // Update downstream loaders when the active LoRA filename changes
+        if (oldFilename !== v?.current_lora_filename) {
+          updateDownstreamLoaders(node)
         }
       },
       serialize: true,
@@ -250,7 +260,12 @@ function createLoraCyclerWidget(node) {
   )
 
   widget.updateConfig = (v: CyclerConfig) => {
+    const oldFilename = internalValue?.current_lora_filename
     internalValue = v
+    // Update downstream loaders when the active LoRA filename changes
+    if (oldFilename !== v?.current_lora_filename) {
+      updateDownstreamLoaders(node)
+    }
   }
 
   // Add method to get pool config from connected node
@@ -392,8 +407,30 @@ app.registerExtension({
   },
 
   // Add display-only widget to Debug Metadata node
+  // Register mode change handlers for LoRA provider nodes
   // @ts-ignore
   async beforeRegisterNodeDef(nodeType, nodeData) {
+    const comfyClass = nodeType.comfyClass
+
+    // Register mode change handlers for LoRA provider nodes
+    if (LORA_PROVIDER_NODE_TYPES.includes(comfyClass)) {
+      const originalOnNodeCreated = nodeType.prototype.onNodeCreated
+
+      nodeType.prototype.onNodeCreated = function () {
+        originalOnNodeCreated?.apply(this, arguments)
+
+        // Create node-specific callback for Lora Stacker (updates direct trigger toggles)
+        const nodeSpecificCallback = comfyClass === "Lora Stacker (LoraManager)"
+          ? (activeLoraNames: Set<string>) => updateConnectedTriggerWords(this, activeLoraNames)
+          : undefined
+
+        // Create and set up the mode change handler
+        const onModeChange = createModeChangeCallback(this, updateDownstreamLoaders, nodeSpecificCallback)
+        setupModeChangeHandler(this, onModeChange)
+      }
+    }
+
+    // Add the JSON display widget to Debug Metadata node
     if (nodeData.name === 'Debug Metadata (LoraManager)') {
       const onNodeCreated = nodeType.prototype.onNodeCreated
 
