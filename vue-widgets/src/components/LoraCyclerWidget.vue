@@ -34,6 +34,9 @@ const props = defineProps<{
 // State management
 const state = useLoraCyclerState(props.widget)
 
+// Symbol to track if the widget has been executed at least once
+const HAS_EXECUTED = Symbol('HAS_EXECUTED')
+
 // Track last known pool config hash
 const lastPoolConfigHash = ref('')
 
@@ -122,6 +125,28 @@ onMounted(async () => {
   // Restore from saved value
   if (props.widget.value) {
     state.restoreFromConfig(props.widget.value as CyclerConfig)
+  }
+
+  // Add beforeQueued hook to handle index shifting for batch queue synchronization
+  // This ensures each execution uses a different LoRA in the cycle
+  ;(props.widget as any).beforeQueued = () => {
+    if ((props.widget as any)[HAS_EXECUTED]) {
+      // After first execution: shift indices (previous next_index becomes execution_index)
+      state.generateNextIndex()
+    } else {
+      // First execution: just initialize next_index (execution_index stays null)
+      // This means first execution uses current_index from widget
+      state.initializeNextIndex()
+      ;(props.widget as any)[HAS_EXECUTED] = true
+    }
+
+    // Update the widget value so the indices are included in the serialized config
+    const config = state.buildConfig()
+    if ((props.widget as any).updateConfig) {
+      ;(props.widget as any).updateConfig(config)
+    } else {
+      props.widget.value = config
+    }
   }
 
   // Mark component as mounted

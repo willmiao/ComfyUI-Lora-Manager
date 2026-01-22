@@ -93,6 +93,9 @@ export interface CyclerConfig {
   sort_by: 'filename' | 'model_name'
   current_lora_name: string   // For display
   current_lora_filename: string
+  // Dual-index mechanism for batch queue synchronization
+  execution_index?: number | null  // Index to use for current execution
+  next_index?: number | null       // Index for display after execution
 }
 
 export interface ComponentWidget {

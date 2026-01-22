@@ -1684,7 +1684,7 @@ to {
   opacity: 1;
 }
 
-.lora-cycler-widget[data-v-0f9d3d70] {
+.lora-cycler-widget[data-v-95dec8bd] {
   padding: 6px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 6px;
@@ -12833,6 +12833,8 @@ function useLoraCyclerState(widget) {
   const currentLoraName = ref("");
   const currentLoraFilename = ref("");
   const isLoading = ref(false);
+  const executionIndex = ref(null);
+  const nextIndex = ref(null);
   const buildConfig = () => ({
     current_index: currentIndex.value,
     total_count: totalCount.value,
@@ -12842,7 +12844,9 @@ function useLoraCyclerState(widget) {
     use_same_clip_strength: !useCustomClipRange.value,
     sort_by: sortBy.value,
     current_lora_name: currentLoraName.value,
-    current_lora_filename: currentLoraFilename.value
+    current_lora_filename: currentLoraFilename.value,
+    execution_index: executionIndex.value,
+    next_index: nextIndex.value
   });
   const restoreFromConfig = (config) => {
     currentIndex.value = config.current_index || 1;
@@ -12854,6 +12858,24 @@ function useLoraCyclerState(widget) {
     sortBy.value = config.sort_by || "filename";
     currentLoraName.value = config.current_lora_name || "";
     currentLoraFilename.value = config.current_lora_filename || "";
+  };
+  const generateNextIndex = () => {
+    executionIndex.value = nextIndex.value;
+    const current = executionIndex.value ?? currentIndex.value;
+    let next = current + 1;
+    if (totalCount.value > 0 && next > totalCount.value) {
+      next = 1;
+    }
+    nextIndex.value = next;
+  };
+  const initializeNextIndex = () => {
+    if (nextIndex.value === null) {
+      let next = currentIndex.value + 1;
+      if (totalCount.value > 0 && next > totalCount.value) {
+        next = 1;
+      }
+      nextIndex.value = next;
+    }
   };
   const hashPoolConfig = (poolConfig) => {
     if (!poolConfig || !poolConfig.filters) {
@@ -12967,6 +12989,8 @@ function useLoraCyclerState(widget) {
     currentLoraName,
     currentLoraFilename,
     isLoading,
+    executionIndex,
+    nextIndex,
     // Computed
     isClipStrengthDisabled,
     // Methods
@@ -12975,7 +12999,9 @@ function useLoraCyclerState(widget) {
     hashPoolConfig,
     fetchCyclerList,
     refreshList,
-    setIndex
+    setIndex,
+    generateNextIndex,
+    initializeNextIndex
   };
 }
 const _hoisted_1$1 = { class: "lora-cycler-widget" };
@@ -12988,6 +13014,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
   setup(__props) {
     const props = __props;
     const state = useLoraCyclerState(props.widget);
+    const HAS_EXECUTED = Symbol("HAS_EXECUTED");
     const lastPoolConfigHash = ref("");
     const isMounted = ref(false);
     const getPoolConfig = () => {
@@ -13051,6 +13078,20 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
       if (props.widget.value) {
         state.restoreFromConfig(props.widget.value);
       }
+      props.widget.beforeQueued = () => {
+        if (props.widget[HAS_EXECUTED]) {
+          state.generateNextIndex();
+        } else {
+          state.initializeNextIndex();
+          props.widget[HAS_EXECUTED] = true;
+        }
+        const config = state.buildConfig();
+        if (props.widget.updateConfig) {
+          props.widget.updateConfig(config);
+        } else {
+          props.widget.value = config;
+        }
+      };
       isMounted.value = true;
       try {
         const poolConfig = getPoolConfig();
@@ -13117,7 +13158,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-0f9d3d70"]]);
+const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-95dec8bd"]]);
 const _hoisted_1 = { class: "json-display-widget" };
 const _hoisted_2 = {
   class: "json-content",

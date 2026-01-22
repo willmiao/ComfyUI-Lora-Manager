@@ -19,6 +19,12 @@ export function useLoraCyclerState(widget: ComponentWidget) {
   const currentLoraFilename = ref('')
   const isLoading = ref(false)
 
+  // Dual-index mechanism for batch queue synchronization
+  // execution_index: index for generating execution_stack (= previous next_index)
+  // next_index: index for UI display (= what will be shown after execution)
+  const executionIndex = ref<number | null>(null)
+  const nextIndex = ref<number | null>(null)
+
   // Build config object from current state
   const buildConfig = (): CyclerConfig => ({
     current_index: currentIndex.value,
@@ -30,6 +36,8 @@ export function useLoraCyclerState(widget: ComponentWidget) {
     sort_by: sortBy.value,
     current_lora_name: currentLoraName.value,
     current_lora_filename: currentLoraFilename.value,
+    execution_index: executionIndex.value,
+    next_index: nextIndex.value,
   })
 
   // Restore state from config object
@@ -43,6 +51,33 @@ export function useLoraCyclerState(widget: ComponentWidget) {
     sortBy.value = config.sort_by || 'filename'
     currentLoraName.value = config.current_lora_name || ''
     currentLoraFilename.value = config.current_lora_filename || ''
+    // Note: execution_index and next_index are not restored from config
+    // as they are transient values used only during batch execution
+  }
+
+  // Shift indices for batch queue synchronization
+  // Previous next_index becomes current execution_index, and generate a new next_index
+  const generateNextIndex = () => {
+    executionIndex.value = nextIndex.value  // Previous next becomes current execution
+    // Calculate the next index (wrap to 1 if at end)
+    const current = executionIndex.value ?? currentIndex.value
+    let next = current + 1
+    if (totalCount.value > 0 && next > totalCount.value) {
+      next = 1
+    }
+    nextIndex.value = next
+  }
+
+  // Initialize next_index for first execution (execution_index stays null)
+  const initializeNextIndex = () => {
+    if (nextIndex.value === null) {
+      // First execution uses current_index, so next is current + 1
+      let next = currentIndex.value + 1
+      if (totalCount.value > 0 && next > totalCount.value) {
+        next = 1
+      }
+      nextIndex.value = next
+    }
   }
 
   // Generate hash from pool config for change detection
@@ -193,6 +228,8 @@ export function useLoraCyclerState(widget: ComponentWidget) {
     currentLoraName,
     currentLoraFilename,
     isLoading,
+    executionIndex,
+    nextIndex,
 
     // Computed
     isClipStrengthDisabled,
@@ -204,5 +241,7 @@ export function useLoraCyclerState(widget: ComponentWidget) {
     fetchCyclerList,
     refreshList,
     setIndex,
+    generateNextIndex,
+    initializeNextIndex,
   }
 }

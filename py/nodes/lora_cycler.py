@@ -56,6 +56,10 @@ class LoraCyclerNode:
         clip_strength = float(cycler_config.get("clip_strength", 1.0))
         sort_by = "filename"
 
+        # Dual-index mechanism for batch queue synchronization
+        execution_index = cycler_config.get("execution_index")  # Can be None
+        # next_index_from_config = cycler_config.get("next_index")  # Not used on backend
+
         # Get scanner and service
         scanner = await ServiceRegistry.get_lora_scanner()
         lora_service = LoraService(scanner)
@@ -81,8 +85,16 @@ class LoraCyclerNode:
                 },
             }
 
+        # Determine which index to use for this execution
+        # If execution_index is provided (batch queue case), use it
+        # Otherwise use current_index (first execution or non-batch case)
+        if execution_index is not None:
+            actual_index = execution_index
+        else:
+            actual_index = current_index
+
         # Clamp index to valid range (1-based)
-        clamped_index = max(1, min(current_index, total_count))
+        clamped_index = max(1, min(actual_index, total_count))
 
         # Get LoRA at current index (convert to 0-based for list access)
         current_lora = lora_list[clamped_index - 1]
