@@ -82,9 +82,22 @@ export interface LoraEntry {
   locked: boolean
 }
 
+// Cycler config
+export interface CyclerConfig {
+  current_index: number       // 1-based index
+  total_count: number         // Cached for display
+  pool_config_hash: string    // For change detection
+  model_strength: number
+  clip_strength: number
+  use_same_clip_strength: boolean
+  sort_by: 'filename' | 'model_name'
+  current_lora_name: string   // For display
+  current_lora_filename: string
+}
+
 export interface ComponentWidget {
-  serializeValue?: () => Promise<LoraPoolConfig | RandomizerConfig>
-  value?: LoraPoolConfig | LegacyLoraPoolConfig | RandomizerConfig
-  onSetValue?: (v: LoraPoolConfig | LegacyLoraPoolConfig | RandomizerConfig) => void
-  updateConfig?: (v: LoraPoolConfig | RandomizerConfig) => void
+  serializeValue?: () => Promise<LoraPoolConfig | RandomizerConfig | CyclerConfig>
+  value?: LoraPoolConfig | LegacyLoraPoolConfig | RandomizerConfig | CyclerConfig
+  onSetValue?: (v: LoraPoolConfig | LegacyLoraPoolConfig | RandomizerConfig | CyclerConfig) => void
+  updateConfig?: (v: LoraPoolConfig | RandomizerConfig | CyclerConfig) => void
 }

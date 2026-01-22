@@ -10,6 +10,7 @@ try:  # pragma: no cover - import fallback for pytest collection
     from .py.nodes.wanvideo_lora_select_from_text import WanVideoLoraSelectFromText
     from .py.nodes.lora_pool import LoraPoolNode
     from .py.nodes.lora_randomizer import LoraRandomizerNode
+    from .py.nodes.lora_cycler import LoraCyclerNode
     from .py.metadata_collector import init as init_metadata_collector
 except (
     ImportError
@@ -46,6 +47,9 @@ except (
     LoraRandomizerNode = importlib.import_module(
         "py.nodes.lora_randomizer"
     ).LoraRandomizerNode
+    LoraCyclerNode = importlib.import_module(
+        "py.nodes.lora_cycler"
+    ).LoraCyclerNode
     init_metadata_collector = importlib.import_module("py.metadata_collector").init
 
 NODE_CLASS_MAPPINGS = {
@@ -60,6 +64,7 @@ NODE_CLASS_MAPPINGS = {
     WanVideoLoraSelectFromText.NAME: WanVideoLoraSelectFromText,
     LoraPoolNode.NAME: LoraPoolNode,
     LoraRandomizerNode.NAME: LoraRandomizerNode,
+    LoraCyclerNode.NAME: LoraCyclerNode,
 }
 
 WEB_DIRECTORY = "./web/comfyui"

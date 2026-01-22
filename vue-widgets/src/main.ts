@@ -2,14 +2,18 @@ import { createApp, type App as VueApp } from 'vue'
 import PrimeVue from 'primevue/config'
 import LoraPoolWidget from '@/components/LoraPoolWidget.vue'
 import LoraRandomizerWidget from '@/components/LoraRandomizerWidget.vue'
+import LoraCyclerWidget from '@/components/LoraCyclerWidget.vue'
 import JsonDisplayWidget from '@/components/JsonDisplayWidget.vue'
-import type { LoraPoolConfig, LegacyLoraPoolConfig, RandomizerConfig } from './composables/types'
+import type { LoraPoolConfig, LegacyLoraPoolConfig, RandomizerConfig, CyclerConfig } from './composables/types'
 
 const LORA_POOL_WIDGET_MIN_WIDTH = 500
 const LORA_POOL_WIDGET_MIN_HEIGHT = 400
 const LORA_RANDOMIZER_WIDGET_MIN_WIDTH = 500
 const LORA_RANDOMIZER_WIDGET_MIN_HEIGHT = 448
 const LORA_RANDOMIZER_WIDGET_MAX_HEIGHT = LORA_RANDOMIZER_WIDGET_MIN_HEIGHT
+const LORA_CYCLER_WIDGET_MIN_WIDTH = 380
+const LORA_CYCLER_WIDGET_MIN_HEIGHT = 410
+const LORA_CYCLER_WIDGET_MAX_HEIGHT = LORA_CYCLER_WIDGET_MIN_HEIGHT
 const JSON_DISPLAY_WIDGET_MIN_WIDTH = 300
 const JSON_DISPLAY_WIDGET_MIN_HEIGHT = 200
 
@@ -211,6 +215,80 @@ function createLoraRandomizerWidget(node) {
 }
 
 // @ts-ignore
+function createLoraCyclerWidget(node) {
+  const container = document.createElement('div')
+  container.id = `lora-cycler-widget-${node.id}`
+  container.style.width = '100%'
+  container.style.height = '100%'
+  container.style.display = 'flex'
+  container.style.flexDirection = 'column'
+  container.style.overflow = 'hidden'
+
+  forwardMiddleMouseToCanvas(container)
+
+  let internalValue: CyclerConfig | undefined
+
+  const widget = node.addDOMWidget(
+    'cycler_config',
+    'CYCLER_CONFIG',
+    container,
+    {
+      getValue() {
+        return internalValue
+      },
+      setValue(v: CyclerConfig) {
+        internalValue = v
+        if (typeof widget.onSetValue === 'function') {
+          widget.onSetValue(v)
+        }
+      },
+      serialize: true,
+      getMinHeight() {
+        return LORA_CYCLER_WIDGET_MIN_HEIGHT
+      }
+    }
+  )
+
+  widget.updateConfig = (v: CyclerConfig) => {
+    internalValue = v
+  }
+
+  // Add method to get pool config from connected node
+  node.getPoolConfig = () => getPoolConfigFromConnectedNode(node)
+
+  const vueApp = createApp(LoraCyclerWidget, {
+    widget,
+    node
+  })
+
+  vueApp.use(PrimeVue, {
+    unstyled: true,
+    ripple: false
+  })
+
+  vueApp.mount(container)
+  vueApps.set(node.id + 30000, vueApp) // Offset to avoid collision with other widgets
+
+  widget.computeLayoutSize = () => {
+    const minWidth = LORA_CYCLER_WIDGET_MIN_WIDTH
+    const minHeight = LORA_CYCLER_WIDGET_MIN_HEIGHT
+    const maxHeight = LORA_CYCLER_WIDGET_MAX_HEIGHT
+
+    return { minHeight, minWidth, maxHeight }
+  }
+
+  widget.onRemove = () => {
+    const vueApp = vueApps.get(node.id + 30000)
+    if (vueApp) {
+      vueApp.unmount()
+      vueApps.delete(node.id + 30000)
+    }
+  }
+
+  return { widget }
+}
+
+// @ts-ignore
 function createJsonDisplayWidget(node) {
   const container = document.createElement('div')
   container.id = `json-display-widget-${node.id}`
@@ -288,6 +366,10 @@ app.registerExtension({
       // @ts-ignore
       RANDOMIZER_CONFIG(node) {
         return createLoraRandomizerWidget(node)
+      },
+      // @ts-ignore
+      CYCLER_CONFIG(node) {
+        return createLoraCyclerWidget(node)
       },
       // @ts-ignore
       async LORAS(node: any) {

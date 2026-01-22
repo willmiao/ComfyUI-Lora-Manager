@@ -479,3 +479,49 @@ class LoraService(BaseModelService):
             ]
 
         return available_loras
+
+    async def get_cycler_list(
+        self,
+        pool_config: Optional[Dict] = None,
+        sort_by: str = "filename"
+    ) -> List[Dict]:
+        """
+        Get filtered and sorted LoRA list for cycling.
+
+        Args:
+            pool_config: Optional pool config for filtering (filters dict)
+            sort_by: Sort field - 'filename' or 'model_name'
+
+        Returns:
+            List of LoRA dicts with file_name and model_name
+        """
+        # Get cached data
+        cache = await self.scanner.get_cached_data(force_refresh=False)
+        available_loras = cache.raw_data if cache else []
+
+        # Apply pool filters if provided
+        if pool_config:
+            available_loras = await self._apply_pool_filters(
+                available_loras, pool_config
+            )
+
+        # Sort by specified field
+        if sort_by == "model_name":
+            available_loras = sorted(
+                available_loras,
+                key=lambda x: (x.get("model_name") or x.get("file_name", "")).lower()
+            )
+        else:  # Default to filename
+            available_loras = sorted(
+                available_loras,
+                key=lambda x: x.get("file_name", "").lower()
+            )
+
+        # Return minimal data needed for cycling
+        return [
+            {
+                "file_name": lora["file_name"],
+                "model_name": lora.get("model_name", lora["file_name"]),
+            }
+            for lora in available_loras
+        ]

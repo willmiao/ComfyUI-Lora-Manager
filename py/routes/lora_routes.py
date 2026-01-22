@@ -63,6 +63,11 @@ class LoraRoutes(BaseModelRoutes):
             "POST", "/api/lm/{prefix}/random-sample", prefix, self.get_random_loras
         )
 
+        # Cycler routes
+        registrar.add_prefixed_route(
+            "POST", "/api/lm/{prefix}/cycler-list", prefix, self.get_cycler_list
+        )
+
         # ComfyUI integration
         registrar.add_prefixed_route(
             "POST", "/api/lm/{prefix}/get_trigger_words", prefix, self.get_trigger_words
@@ -281,6 +286,29 @@ class LoraRoutes(BaseModelRoutes):
             return web.json_response({"success": False, "error": str(e)}, status=400)
         except Exception as e:
             logger.error(f"Error getting random LoRAs: {e}", exc_info=True)
+            return web.json_response({"success": False, "error": str(e)}, status=500)
+
+    async def get_cycler_list(self, request: web.Request) -> web.Response:
+        """Get filtered and sorted LoRA list for cycler widget"""
+        try:
+            json_data = await request.json()
+
+            # Parse parameters
+            pool_config = json_data.get("pool_config")
+            sort_by = json_data.get("sort_by", "filename")
+
+            # Get cycler list from service
+            lora_list = await self.service.get_cycler_list(
+                pool_config=pool_config,
+                sort_by=sort_by
+            )
+
+            return web.json_response(
+                {"success": True, "loras": lora_list, "count": len(lora_list)}
+            )
+
+        except Exception as e:
+            logger.error(f"Error getting cycler list: {e}", exc_info=True)
             return web.json_response({"success": False, "error": str(e)}, status=500)
 
     async def get_trigger_words(self, request: web.Request) -> web.Response:

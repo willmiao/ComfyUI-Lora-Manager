@@ -1464,6 +1464,285 @@ to { transform: rotate(360deg);
   box-sizing: border-box;
 }
 
+.cycler-settings[data-v-0fe9bd62] {
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #e4e4e7;
+}
+.settings-header[data-v-0fe9bd62] {
+  margin-bottom: 8px;
+}
+.settings-title[data-v-0fe9bd62] {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--fg-color, #fff);
+  opacity: 0.6;
+  margin: 0;
+  text-transform: uppercase;
+}
+.setting-section[data-v-0fe9bd62] {
+  margin-bottom: 8px;
+}
+.setting-label[data-v-0fe9bd62] {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(226, 232, 240, 0.8);
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* Progress Display */
+.progress-section[data-v-0fe9bd62] {
+  margin-bottom: 12px;
+}
+.progress-display[data-v-0fe9bd62] {
+  background: rgba(26, 32, 44, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.2);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.progress-info[data-v-0fe9bd62] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.progress-label[data-v-0fe9bd62] {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(226, 232, 240, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.progress-name[data-v-0fe9bd62] {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(191, 219, 254, 1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.progress-counter[data-v-0fe9bd62] {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 12px;
+  flex-shrink: 0;
+}
+.progress-index[data-v-0fe9bd62] {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(66, 153, 225, 1);
+  font-family: 'SF Mono', 'Roboto Mono', monospace;
+}
+.progress-separator[data-v-0fe9bd62] {
+  font-size: 14px;
+  color: rgba(226, 232, 240, 0.4);
+  margin: 0 2px;
+}
+.progress-total[data-v-0fe9bd62] {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(226, 232, 240, 0.6);
+  font-family: 'SF Mono', 'Roboto Mono', monospace;
+}
+.refresh-button[data-v-0fe9bd62] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-left: 8px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: rgba(226, 232, 240, 0.6);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.refresh-button[data-v-0fe9bd62]:hover:not(:disabled) {
+  background: rgba(66, 153, 225, 0.2);
+  border-color: rgba(66, 153, 225, 0.4);
+  color: rgba(191, 219, 254, 1);
+}
+.refresh-button[data-v-0fe9bd62]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.refresh-icon[data-v-0fe9bd62] {
+  width: 14px;
+  height: 14px;
+}
+.refresh-icon.spinning[data-v-0fe9bd62] {
+  animation: spin-0fe9bd62 1s linear infinite;
+}
+@keyframes spin-0fe9bd62 {
+from {
+    transform: rotate(0deg);
+}
+to {
+    transform: rotate(360deg);
+}
+}
+
+/* Index Input */
+.index-input-container[data-v-0fe9bd62] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.index-input[data-v-0fe9bd62] {
+  width: 80px;
+  padding: 6px 10px;
+  background: rgba(26, 32, 44, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.2);
+  border-radius: 6px;
+  color: #e4e4e7;
+  font-size: 13px;
+  font-family: 'SF Mono', 'Roboto Mono', monospace;
+}
+.index-input[data-v-0fe9bd62]:focus {
+  outline: none;
+  border-color: rgba(66, 153, 225, 0.6);
+}
+.index-input[data-v-0fe9bd62]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.index-hint[data-v-0fe9bd62] {
+  font-size: 11px;
+  color: rgba(226, 232, 240, 0.4);
+}
+
+/* Slider Container */
+.slider-container[data-v-0fe9bd62] {
+  background: rgba(26, 32, 44, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.2);
+  border-radius: 6px;
+  padding: 6px;
+}
+.slider-container--disabled[data-v-0fe9bd62] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.section-header-with-toggle[data-v-0fe9bd62] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.section-header-with-toggle .setting-label[data-v-0fe9bd62] {
+  margin-bottom: 4px;
+}
+
+/* Toggle Switch */
+.toggle-switch[data-v-0fe9bd62] {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.toggle-switch__track[data-v-0fe9bd62] {
+  position: absolute;
+  inset: 0;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+.toggle-switch--active .toggle-switch__track[data-v-0fe9bd62] {
+  background: rgba(66, 153, 225, 0.3);
+  border-color: rgba(66, 153, 225, 0.6);
+}
+.toggle-switch__thumb[data-v-0fe9bd62] {
+  position: absolute;
+  top: 3px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--fg-color, #fff);
+  border-radius: 50%;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+.toggle-switch--active .toggle-switch__thumb[data-v-0fe9bd62] {
+  transform: translateX(16px);
+  background: #4299e1;
+  opacity: 1;
+}
+.toggle-switch:hover .toggle-switch__thumb[data-v-0fe9bd62] {
+  opacity: 1;
+}
+
+/* Sort Tabs */
+.sort-tabs[data-v-0fe9bd62] {
+  display: flex;
+  background: rgba(26, 32, 44, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.sort-tab[data-v-0fe9bd62] {
+  flex: 1;
+  position: relative;
+  padding: 8px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.sort-tab input[type="radio"][data-v-0fe9bd62] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.sort-tab-label[data-v-0fe9bd62] {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(226, 232, 240, 0.7);
+  transition: all 0.2s ease;
+}
+.sort-tab:hover .sort-tab-label[data-v-0fe9bd62] {
+  color: rgba(226, 232, 240, 0.9);
+}
+.sort-tab.active .sort-tab-label[data-v-0fe9bd62] {
+  color: rgba(191, 219, 254, 1);
+  font-weight: 600;
+}
+.sort-tab.active[data-v-0fe9bd62] {
+  background: rgba(66, 153, 225, 0.2);
+}
+.sort-tab.active[data-v-0fe9bd62]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(66, 153, 225, 0.9);
+}
+
+.lora-cycler-widget[data-v-85956227] {
+  padding: 6px;
+  background: rgba(40, 44, 52, 0.6);
+  border-radius: 6px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
 .json-display-widget[data-v-0f202476] {
   padding: 8px;
   background: rgba(40, 44, 52, 0.6);
@@ -9896,12 +10175,12 @@ var PrimeVue = {
     setup(app2, configOptions);
   }
 };
-const _hoisted_1$i = { class: "filter-chip__text" };
-const _hoisted_2$f = {
+const _hoisted_1$k = { class: "filter-chip__text" };
+const _hoisted_2$g = {
   key: 0,
   class: "filter-chip__count"
 };
-const _sfc_main$j = /* @__PURE__ */ defineComponent({
+const _sfc_main$l = /* @__PURE__ */ defineComponent({
   __name: "FilterChip",
   props: {
     label: {},
@@ -9919,8 +10198,8 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
       return openBlock(), createElementBlock("span", {
         class: normalizeClass(["filter-chip", variantClass.value])
       }, [
-        createBaseVNode("span", _hoisted_1$i, toDisplayString(__props.label), 1),
-        __props.count !== void 0 ? (openBlock(), createElementBlock("span", _hoisted_2$f, "(" + toDisplayString(__props.count) + ")", 1)) : createCommentVNode("", true),
+        createBaseVNode("span", _hoisted_1$k, toDisplayString(__props.label), 1),
+        __props.count !== void 0 ? (openBlock(), createElementBlock("span", _hoisted_2$g, "(" + toDisplayString(__props.count) + ")", 1)) : createCommentVNode("", true),
         __props.removable ? (openBlock(), createElementBlock("button", {
           key: 1,
           class: "filter-chip__remove",
@@ -9938,8 +10217,8 @@ const _export_sfc = (sfc, props) => {
   }
   return target;
 };
-const FilterChip = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["__scopeId", "data-v-7e36267d"]]);
-const _sfc_main$i = /* @__PURE__ */ defineComponent({
+const FilterChip = /* @__PURE__ */ _export_sfc(_sfc_main$l, [["__scopeId", "data-v-7e36267d"]]);
+const _sfc_main$k = /* @__PURE__ */ defineComponent({
   __name: "EditButton",
   emits: ["click"],
   setup(__props) {
@@ -9961,19 +10240,19 @@ const _sfc_main$i = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const EditButton = /* @__PURE__ */ _export_sfc(_sfc_main$i, [["__scopeId", "data-v-8da8aa4b"]]);
-const _hoisted_1$h = { class: "section" };
-const _hoisted_2$e = { class: "section__header" };
-const _hoisted_3$c = { class: "section__content" };
-const _hoisted_4$b = {
+const EditButton = /* @__PURE__ */ _export_sfc(_sfc_main$k, [["__scopeId", "data-v-8da8aa4b"]]);
+const _hoisted_1$j = { class: "section" };
+const _hoisted_2$f = { class: "section__header" };
+const _hoisted_3$d = { class: "section__content" };
+const _hoisted_4$c = {
   key: 0,
   class: "section__placeholder"
 };
-const _hoisted_5$9 = {
+const _hoisted_5$a = {
   key: 1,
   class: "section__chips"
 };
-const _sfc_main$h = /* @__PURE__ */ defineComponent({
+const _sfc_main$j = /* @__PURE__ */ defineComponent({
   __name: "BaseModelSection",
   props: {
     selected: {},
@@ -9987,15 +10266,15 @@ const _sfc_main$h = /* @__PURE__ */ defineComponent({
       return model == null ? void 0 : model.count;
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$h, [
-        createBaseVNode("div", _hoisted_2$e, [
+      return openBlock(), createElementBlock("div", _hoisted_1$j, [
+        createBaseVNode("div", _hoisted_2$f, [
           _cache[1] || (_cache[1] = createBaseVNode("span", { class: "section__title" }, "BASE MODEL", -1)),
           createVNode(EditButton, {
             onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("edit"))
           })
         ]),
-        createBaseVNode("div", _hoisted_3$c, [
-          __props.selected.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$b, " All models ")) : (openBlock(), createElementBlock("div", _hoisted_5$9, [
+        createBaseVNode("div", _hoisted_3$d, [
+          __props.selected.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$c, " All models ")) : (openBlock(), createElementBlock("div", _hoisted_5$a, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(__props.selected, (name) => {
               return openBlock(), createBlock(FilterChip, {
                 key: name,
@@ -10010,32 +10289,32 @@ const _sfc_main$h = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const BaseModelSection = /* @__PURE__ */ _export_sfc(_sfc_main$h, [["__scopeId", "data-v-12f059e2"]]);
-const _hoisted_1$g = { class: "section" };
-const _hoisted_2$d = { class: "section__columns" };
-const _hoisted_3$b = { class: "section__column" };
-const _hoisted_4$a = { class: "section__column-header" };
-const _hoisted_5$8 = { class: "section__column-content" };
-const _hoisted_6$8 = {
+const BaseModelSection = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["__scopeId", "data-v-12f059e2"]]);
+const _hoisted_1$i = { class: "section" };
+const _hoisted_2$e = { class: "section__columns" };
+const _hoisted_3$c = { class: "section__column" };
+const _hoisted_4$b = { class: "section__column-header" };
+const _hoisted_5$9 = { class: "section__column-content" };
+const _hoisted_6$9 = {
   key: 0,
   class: "section__empty"
 };
-const _hoisted_7$6 = {
+const _hoisted_7$7 = {
   key: 1,
   class: "section__chips"
 };
-const _hoisted_8$5 = { class: "section__column" };
-const _hoisted_9$3 = { class: "section__column-header" };
-const _hoisted_10$3 = { class: "section__column-content" };
-const _hoisted_11$2 = {
+const _hoisted_8$6 = { class: "section__column" };
+const _hoisted_9$4 = { class: "section__column-header" };
+const _hoisted_10$4 = { class: "section__column-content" };
+const _hoisted_11$3 = {
   key: 0,
   class: "section__empty"
 };
-const _hoisted_12$2 = {
+const _hoisted_12$3 = {
   key: 1,
   class: "section__chips"
 };
-const _sfc_main$g = /* @__PURE__ */ defineComponent({
+const _sfc_main$i = /* @__PURE__ */ defineComponent({
   __name: "TagsSection",
   props: {
     includeTags: {},
@@ -10044,20 +10323,20 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
   emits: ["edit-include", "edit-exclude"],
   setup(__props) {
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$g, [
+      return openBlock(), createElementBlock("div", _hoisted_1$i, [
         _cache[4] || (_cache[4] = createBaseVNode("div", { class: "section__header" }, [
           createBaseVNode("span", { class: "section__title" }, "TAGS")
         ], -1)),
-        createBaseVNode("div", _hoisted_2$d, [
-          createBaseVNode("div", _hoisted_3$b, [
-            createBaseVNode("div", _hoisted_4$a, [
+        createBaseVNode("div", _hoisted_2$e, [
+          createBaseVNode("div", _hoisted_3$c, [
+            createBaseVNode("div", _hoisted_4$b, [
               _cache[2] || (_cache[2] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
               createVNode(EditButton, {
                 onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("edit-include"))
               })
             ]),
-            createBaseVNode("div", _hoisted_5$8, [
-              __props.includeTags.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_6$8, " None ")) : (openBlock(), createElementBlock("div", _hoisted_7$6, [
+            createBaseVNode("div", _hoisted_5$9, [
+              __props.includeTags.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_6$9, " None ")) : (openBlock(), createElementBlock("div", _hoisted_7$7, [
                 (openBlock(true), createElementBlock(Fragment, null, renderList(__props.includeTags, (tag) => {
                   return openBlock(), createBlock(FilterChip, {
                     key: tag,
@@ -10068,15 +10347,15 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
               ]))
             ])
           ]),
-          createBaseVNode("div", _hoisted_8$5, [
-            createBaseVNode("div", _hoisted_9$3, [
+          createBaseVNode("div", _hoisted_8$6, [
+            createBaseVNode("div", _hoisted_9$4, [
               _cache[3] || (_cache[3] = createBaseVNode("span", { class: "section__column-title section__column-title--exclude" }, "EXCLUDE", -1)),
               createVNode(EditButton, {
                 onClick: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("edit-exclude"))
               })
             ]),
-            createBaseVNode("div", _hoisted_10$3, [
-              __props.excludeTags.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_11$2, " None ")) : (openBlock(), createElementBlock("div", _hoisted_12$2, [
+            createBaseVNode("div", _hoisted_10$4, [
+              __props.excludeTags.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_11$3, " None ")) : (openBlock(), createElementBlock("div", _hoisted_12$3, [
                 (openBlock(true), createElementBlock(Fragment, null, renderList(__props.excludeTags, (tag) => {
                   return openBlock(), createBlock(FilterChip, {
                     key: tag,
@@ -10092,32 +10371,32 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const TagsSection = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-b869b780"]]);
-const _hoisted_1$f = { class: "section" };
-const _hoisted_2$c = { class: "section__columns" };
-const _hoisted_3$a = { class: "section__column" };
-const _hoisted_4$9 = { class: "section__column-header" };
-const _hoisted_5$7 = { class: "section__content" };
-const _hoisted_6$7 = {
+const TagsSection = /* @__PURE__ */ _export_sfc(_sfc_main$i, [["__scopeId", "data-v-b869b780"]]);
+const _hoisted_1$h = { class: "section" };
+const _hoisted_2$d = { class: "section__columns" };
+const _hoisted_3$b = { class: "section__column" };
+const _hoisted_4$a = { class: "section__column-header" };
+const _hoisted_5$8 = { class: "section__content" };
+const _hoisted_6$8 = {
   key: 0,
   class: "section__paths"
 };
-const _hoisted_7$5 = {
+const _hoisted_7$6 = {
   key: 1,
   class: "section__empty"
 };
-const _hoisted_8$4 = { class: "section__column" };
-const _hoisted_9$2 = { class: "section__column-header" };
-const _hoisted_10$2 = { class: "section__content" };
-const _hoisted_11$1 = {
+const _hoisted_8$5 = { class: "section__column" };
+const _hoisted_9$3 = { class: "section__column-header" };
+const _hoisted_10$3 = { class: "section__content" };
+const _hoisted_11$2 = {
   key: 0,
   class: "section__paths"
 };
-const _hoisted_12$1 = {
+const _hoisted_12$2 = {
   key: 1,
   class: "section__empty"
 };
-const _sfc_main$f = /* @__PURE__ */ defineComponent({
+const _sfc_main$h = /* @__PURE__ */ defineComponent({
   __name: "FoldersSection",
   props: {
     includeFolders: {},
@@ -10138,13 +10417,13 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
       emit2("update:excludeFolders", props.excludeFolders.filter((p2) => p2 !== path));
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$f, [
+      return openBlock(), createElementBlock("div", _hoisted_1$h, [
         _cache[6] || (_cache[6] = createBaseVNode("div", { class: "section__header" }, [
           createBaseVNode("span", { class: "section__title" }, "FOLDERS")
         ], -1)),
-        createBaseVNode("div", _hoisted_2$c, [
-          createBaseVNode("div", _hoisted_3$a, [
-            createBaseVNode("div", _hoisted_4$9, [
+        createBaseVNode("div", _hoisted_2$d, [
+          createBaseVNode("div", _hoisted_3$b, [
+            createBaseVNode("div", _hoisted_4$a, [
               _cache[3] || (_cache[3] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
               createBaseVNode("button", {
                 type: "button",
@@ -10159,8 +10438,8 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
                 ], -1)
               ])])
             ]),
-            createBaseVNode("div", _hoisted_5$7, [
-              __props.includeFolders.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_6$7, [
+            createBaseVNode("div", _hoisted_5$8, [
+              __props.includeFolders.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_6$8, [
                 (openBlock(true), createElementBlock(Fragment, null, renderList(__props.includeFolders, (path) => {
                   return openBlock(), createBlock(FilterChip, {
                     key: path,
@@ -10170,11 +10449,11 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
                     onRemove: ($event) => removeInclude(path)
                   }, null, 8, ["label", "onRemove"]);
                 }), 128))
-              ])) : (openBlock(), createElementBlock("div", _hoisted_7$5, " No folders selected "))
+              ])) : (openBlock(), createElementBlock("div", _hoisted_7$6, " No folders selected "))
             ])
           ]),
-          createBaseVNode("div", _hoisted_8$4, [
-            createBaseVNode("div", _hoisted_9$2, [
+          createBaseVNode("div", _hoisted_8$5, [
+            createBaseVNode("div", _hoisted_9$3, [
               _cache[5] || (_cache[5] = createBaseVNode("span", { class: "section__column-title section__column-title--exclude" }, "EXCLUDE", -1)),
               createBaseVNode("button", {
                 type: "button",
@@ -10189,8 +10468,8 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
                 ], -1)
               ])])
             ]),
-            createBaseVNode("div", _hoisted_10$2, [
-              __props.excludeFolders.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_11$1, [
+            createBaseVNode("div", _hoisted_10$3, [
+              __props.excludeFolders.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_11$2, [
                 (openBlock(true), createElementBlock(Fragment, null, renderList(__props.excludeFolders, (path) => {
                   return openBlock(), createBlock(FilterChip, {
                     key: path,
@@ -10200,7 +10479,7 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
                     onRemove: ($event) => removeExclude(path)
                   }, null, 8, ["label", "onRemove"]);
                 }), 128))
-              ])) : (openBlock(), createElementBlock("div", _hoisted_12$1, " No folders selected "))
+              ])) : (openBlock(), createElementBlock("div", _hoisted_12$2, " No folders selected "))
             ])
           ])
         ])
@@ -10208,14 +10487,14 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const FoldersSection = /* @__PURE__ */ _export_sfc(_sfc_main$f, [["__scopeId", "data-v-af9caf84"]]);
-const _hoisted_1$e = { class: "section" };
-const _hoisted_2$b = { class: "section__toggles" };
-const _hoisted_3$9 = { class: "toggle-item" };
-const _hoisted_4$8 = ["aria-checked"];
-const _hoisted_5$6 = { class: "toggle-item" };
-const _hoisted_6$6 = ["aria-checked"];
-const _sfc_main$e = /* @__PURE__ */ defineComponent({
+const FoldersSection = /* @__PURE__ */ _export_sfc(_sfc_main$h, [["__scopeId", "data-v-af9caf84"]]);
+const _hoisted_1$g = { class: "section" };
+const _hoisted_2$c = { class: "section__toggles" };
+const _hoisted_3$a = { class: "toggle-item" };
+const _hoisted_4$9 = ["aria-checked"];
+const _hoisted_5$7 = { class: "toggle-item" };
+const _hoisted_6$7 = ["aria-checked"];
+const _sfc_main$g = /* @__PURE__ */ defineComponent({
   __name: "LicenseSection",
   props: {
     noCreditRequired: { type: Boolean },
@@ -10224,12 +10503,12 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
   emits: ["update:noCreditRequired", "update:allowSelling"],
   setup(__props) {
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$e, [
+      return openBlock(), createElementBlock("div", _hoisted_1$g, [
         _cache[6] || (_cache[6] = createBaseVNode("div", { class: "section__header" }, [
           createBaseVNode("span", { class: "section__title" }, "LICENSE")
         ], -1)),
-        createBaseVNode("div", _hoisted_2$b, [
-          createBaseVNode("label", _hoisted_3$9, [
+        createBaseVNode("div", _hoisted_2$c, [
+          createBaseVNode("label", _hoisted_3$a, [
             _cache[3] || (_cache[3] = createBaseVNode("span", { class: "toggle-item__label" }, "No Credit Required", -1)),
             createBaseVNode("button", {
               type: "button",
@@ -10240,9 +10519,9 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
             }, [..._cache[2] || (_cache[2] = [
               createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
               createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
-            ])], 10, _hoisted_4$8)
+            ])], 10, _hoisted_4$9)
           ]),
-          createBaseVNode("label", _hoisted_5$6, [
+          createBaseVNode("label", _hoisted_5$7, [
             _cache[5] || (_cache[5] = createBaseVNode("span", { class: "toggle-item__label" }, "Allow Selling", -1)),
             createBaseVNode("button", {
               type: "button",
@@ -10253,37 +10532,37 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
             }, [..._cache[4] || (_cache[4] = [
               createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
               createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
-            ])], 10, _hoisted_6$6)
+            ])], 10, _hoisted_6$7)
           ])
         ])
       ]);
     };
   }
 });
-const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-dea4adf6"]]);
-const _hoisted_1$d = { class: "preview" };
-const _hoisted_2$a = { class: "preview__title" };
-const _hoisted_3$8 = ["disabled"];
-const _hoisted_4$7 = {
+const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-dea4adf6"]]);
+const _hoisted_1$f = { class: "preview" };
+const _hoisted_2$b = { class: "preview__title" };
+const _hoisted_3$9 = ["disabled"];
+const _hoisted_4$8 = {
   key: 0,
   class: "preview__tooltip"
 };
-const _hoisted_5$5 = { class: "preview__tooltip-content" };
-const _hoisted_6$5 = ["src"];
-const _hoisted_7$4 = {
+const _hoisted_5$6 = { class: "preview__tooltip-content" };
+const _hoisted_6$6 = ["src"];
+const _hoisted_7$5 = {
   key: 1,
   class: "preview__thumb preview__thumb--placeholder"
 };
-const _hoisted_8$3 = { class: "preview__name" };
-const _hoisted_9$1 = {
+const _hoisted_8$4 = { class: "preview__name" };
+const _hoisted_9$2 = {
   key: 0,
   class: "preview__more"
 };
-const _hoisted_10$1 = {
+const _hoisted_10$2 = {
   key: 0,
   class: "preview__empty"
 };
-const _sfc_main$d = /* @__PURE__ */ defineComponent({
+const _sfc_main$f = /* @__PURE__ */ defineComponent({
   __name: "LoraPoolPreview",
   props: {
     items: {},
@@ -10298,13 +10577,13 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
       img.style.display = "none";
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$d, [
+      return openBlock(), createElementBlock("div", _hoisted_1$f, [
         createBaseVNode("div", {
           class: "preview__header",
           onMouseenter: _cache[1] || (_cache[1] = ($event) => showTooltip.value = true),
           onMouseleave: _cache[2] || (_cache[2] = ($event) => showTooltip.value = false)
         }, [
-          createBaseVNode("span", _hoisted_2$a, "Matching LoRAs: " + toDisplayString(__props.matchCount.toLocaleString()), 1),
+          createBaseVNode("span", _hoisted_2$b, "Matching LoRAs: " + toDisplayString(__props.matchCount.toLocaleString()), 1),
           createBaseVNode("button", {
             type: "button",
             class: normalizeClass(["preview__refresh", { "preview__refresh--loading": __props.isLoading }]),
@@ -10322,12 +10601,12 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
                 d: "M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"
               })
             ], -1)
-          ])], 10, _hoisted_3$8)
+          ])], 10, _hoisted_3$9)
         ], 32),
         createVNode(Transition, { name: "tooltip" }, {
           default: withCtx(() => [
-            showTooltip.value && __props.items.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_4$7, [
-              createBaseVNode("div", _hoisted_5$5, [
+            showTooltip.value && __props.items.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_4$8, [
+              createBaseVNode("div", _hoisted_5$6, [
                 (openBlock(true), createElementBlock(Fragment, null, renderList(__props.items.slice(0, 5), (item) => {
                   return openBlock(), createElementBlock("div", {
                     key: item.file_path,
@@ -10338,7 +10617,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
                       src: item.preview_url,
                       class: "preview__thumb",
                       onError: onImageError
-                    }, null, 40, _hoisted_6$5)) : (openBlock(), createElementBlock("div", _hoisted_7$4, [..._cache[4] || (_cache[4] = [
+                    }, null, 40, _hoisted_6$6)) : (openBlock(), createElementBlock("div", _hoisted_7$5, [..._cache[4] || (_cache[4] = [
                       createBaseVNode("svg", {
                         viewBox: "0 0 16 16",
                         fill: "currentColor"
@@ -10347,24 +10626,24 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
                         createBaseVNode("path", { d: "M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" })
                       ], -1)
                     ])])),
-                    createBaseVNode("span", _hoisted_8$3, toDisplayString(item.model_name || item.file_name), 1)
+                    createBaseVNode("span", _hoisted_8$4, toDisplayString(item.model_name || item.file_name), 1)
                   ]);
                 }), 128)),
-                __props.matchCount > 5 ? (openBlock(), createElementBlock("div", _hoisted_9$1, " +" + toDisplayString((__props.matchCount - 5).toLocaleString()) + " more ", 1)) : createCommentVNode("", true)
+                __props.matchCount > 5 ? (openBlock(), createElementBlock("div", _hoisted_9$2, " +" + toDisplayString((__props.matchCount - 5).toLocaleString()) + " more ", 1)) : createCommentVNode("", true)
               ])
             ])) : createCommentVNode("", true)
           ]),
           _: 1
         }),
-        __props.items.length === 0 && !__props.isLoading ? (openBlock(), createElementBlock("div", _hoisted_10$1, " No matching LoRAs ")) : createCommentVNode("", true)
+        __props.items.length === 0 && !__props.isLoading ? (openBlock(), createElementBlock("div", _hoisted_10$2, " No matching LoRAs ")) : createCommentVNode("", true)
       ]);
     };
   }
 });
-const LoraPoolPreview = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-6a4b50a1"]]);
-const _hoisted_1$c = { class: "summary-view" };
-const _hoisted_2$9 = { class: "summary-view__filters" };
-const _sfc_main$c = /* @__PURE__ */ defineComponent({
+const LoraPoolPreview = /* @__PURE__ */ _export_sfc(_sfc_main$f, [["__scopeId", "data-v-6a4b50a1"]]);
+const _hoisted_1$e = { class: "summary-view" };
+const _hoisted_2$a = { class: "summary-view__filters" };
+const _sfc_main$e = /* @__PURE__ */ defineComponent({
   __name: "LoraPoolSummaryView",
   props: {
     selectedBaseModels: {},
@@ -10382,8 +10661,8 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
   emits: ["open-modal", "update:includeFolders", "update:excludeFolders", "update:noCreditRequired", "update:allowSelling", "refresh"],
   setup(__props) {
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$c, [
-        createBaseVNode("div", _hoisted_2$9, [
+      return openBlock(), createElementBlock("div", _hoisted_1$e, [
+        createBaseVNode("div", _hoisted_2$a, [
           createVNode(BaseModelSection, {
             selected: __props.selectedBaseModels,
             models: __props.availableBaseModels,
@@ -10420,20 +10699,20 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraPoolSummaryView = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-328e7526"]]);
-const _hoisted_1$b = { class: "lora-pool-modal__header" };
-const _hoisted_2$8 = { class: "lora-pool-modal__title-container" };
-const _hoisted_3$7 = { class: "lora-pool-modal__title" };
-const _hoisted_4$6 = {
+const LoraPoolSummaryView = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-328e7526"]]);
+const _hoisted_1$d = { class: "lora-pool-modal__header" };
+const _hoisted_2$9 = { class: "lora-pool-modal__title-container" };
+const _hoisted_3$8 = { class: "lora-pool-modal__title" };
+const _hoisted_4$7 = {
   key: 0,
   class: "lora-pool-modal__subtitle"
 };
-const _hoisted_5$4 = {
+const _hoisted_5$5 = {
   key: 0,
   class: "lora-pool-modal__search"
 };
-const _hoisted_6$4 = { class: "lora-pool-modal__body" };
-const _sfc_main$b = /* @__PURE__ */ defineComponent({
+const _hoisted_6$5 = { class: "lora-pool-modal__body" };
+const _sfc_main$d = /* @__PURE__ */ defineComponent({
   __name: "ModalWrapper",
   props: {
     visible: { type: Boolean },
@@ -10481,10 +10760,10 @@ const _sfc_main$b = /* @__PURE__ */ defineComponent({
                 role: "dialog",
                 "aria-modal": "true"
               }, [
-                createBaseVNode("div", _hoisted_1$b, [
-                  createBaseVNode("div", _hoisted_2$8, [
-                    createBaseVNode("h3", _hoisted_3$7, toDisplayString(__props.title), 1),
-                    __props.subtitle ? (openBlock(), createElementBlock("p", _hoisted_4$6, toDisplayString(__props.subtitle), 1)) : createCommentVNode("", true)
+                createBaseVNode("div", _hoisted_1$d, [
+                  createBaseVNode("div", _hoisted_2$9, [
+                    createBaseVNode("h3", _hoisted_3$8, toDisplayString(__props.title), 1),
+                    __props.subtitle ? (openBlock(), createElementBlock("p", _hoisted_4$7, toDisplayString(__props.subtitle), 1)) : createCommentVNode("", true)
                   ]),
                   createBaseVNode("button", {
                     class: "lora-pool-modal__close",
@@ -10493,10 +10772,10 @@ const _sfc_main$b = /* @__PURE__ */ defineComponent({
                     "aria-label": "Close"
                   }, " × ")
                 ]),
-                _ctx.$slots.search ? (openBlock(), createElementBlock("div", _hoisted_5$4, [
+                _ctx.$slots.search ? (openBlock(), createElementBlock("div", _hoisted_5$5, [
                   renderSlot(_ctx.$slots, "search", {}, void 0, true)
                 ])) : createCommentVNode("", true),
-                createBaseVNode("div", _hoisted_6$4, [
+                createBaseVNode("div", _hoisted_6$5, [
                   renderSlot(_ctx.$slots, "default", {}, void 0, true)
                 ])
               ], 2)
@@ -10508,24 +10787,24 @@ const _sfc_main$b = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const ModalWrapper = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["__scopeId", "data-v-fce76ca8"]]);
-const _hoisted_1$a = { class: "search-container" };
-const _hoisted_2$7 = { class: "model-list" };
-const _hoisted_3$6 = ["checked", "onChange"];
-const _hoisted_4$5 = { class: "model-checkbox-visual" };
-const _hoisted_5$3 = {
+const ModalWrapper = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-fce76ca8"]]);
+const _hoisted_1$c = { class: "search-container" };
+const _hoisted_2$8 = { class: "model-list" };
+const _hoisted_3$7 = ["checked", "onChange"];
+const _hoisted_4$6 = { class: "model-checkbox-visual" };
+const _hoisted_5$4 = {
   key: 0,
   class: "check-icon",
   viewBox: "0 0 16 16",
   fill: "currentColor"
 };
-const _hoisted_6$3 = { class: "model-name" };
-const _hoisted_7$3 = { class: "model-count" };
-const _hoisted_8$2 = {
+const _hoisted_6$4 = { class: "model-name" };
+const _hoisted_7$4 = { class: "model-count" };
+const _hoisted_8$3 = {
   key: 0,
   class: "no-results"
 };
-const _sfc_main$a = /* @__PURE__ */ defineComponent({
+const _sfc_main$c = /* @__PURE__ */ defineComponent({
   __name: "BaseModelModal",
   props: {
     visible: { type: Boolean },
@@ -10575,7 +10854,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
         onClose: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("close"))
       }, {
         search: withCtx(() => [
-          createBaseVNode("div", _hoisted_1$a, [
+          createBaseVNode("div", _hoisted_1$c, [
             _cache[3] || (_cache[3] = createBaseVNode("svg", {
               class: "search-icon",
               viewBox: "0 0 16 16",
@@ -10610,7 +10889,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
           ])
         ]),
         default: withCtx(() => [
-          createBaseVNode("div", _hoisted_2$7, [
+          createBaseVNode("div", _hoisted_2$8, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(filteredModels.value, (model) => {
               return openBlock(), createElementBlock("label", {
                 key: model.name,
@@ -10621,17 +10900,17 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
                   checked: isSelected(model.name),
                   onChange: ($event) => toggleModel(model.name),
                   class: "model-checkbox"
-                }, null, 40, _hoisted_3$6),
-                createBaseVNode("span", _hoisted_4$5, [
-                  isSelected(model.name) ? (openBlock(), createElementBlock("svg", _hoisted_5$3, [..._cache[4] || (_cache[4] = [
+                }, null, 40, _hoisted_3$7),
+                createBaseVNode("span", _hoisted_4$6, [
+                  isSelected(model.name) ? (openBlock(), createElementBlock("svg", _hoisted_5$4, [..._cache[4] || (_cache[4] = [
                     createBaseVNode("path", { d: "M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" }, null, -1)
                   ])])) : createCommentVNode("", true)
                 ]),
-                createBaseVNode("span", _hoisted_6$3, toDisplayString(model.name), 1),
-                createBaseVNode("span", _hoisted_7$3, "(" + toDisplayString(model.count) + ")", 1)
+                createBaseVNode("span", _hoisted_6$4, toDisplayString(model.name), 1),
+                createBaseVNode("span", _hoisted_7$4, "(" + toDisplayString(model.count) + ")", 1)
               ]);
             }), 128)),
-            filteredModels.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_8$2, " No models found ")) : createCommentVNode("", true)
+            filteredModels.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_8$3, " No models found ")) : createCommentVNode("", true)
           ])
         ]),
         _: 1
@@ -10639,15 +10918,15 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-e02ca44a"]]);
-const _hoisted_1$9 = { class: "search-container" };
-const _hoisted_2$6 = { class: "tags-container" };
-const _hoisted_3$5 = ["onClick"];
-const _hoisted_4$4 = {
+const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-e02ca44a"]]);
+const _hoisted_1$b = { class: "search-container" };
+const _hoisted_2$7 = { class: "tags-container" };
+const _hoisted_3$6 = ["onClick"];
+const _hoisted_4$5 = {
   key: 0,
   class: "no-results"
 };
-const _sfc_main$9 = /* @__PURE__ */ defineComponent({
+const _sfc_main$b = /* @__PURE__ */ defineComponent({
   __name: "TagsModal",
   props: {
     visible: { type: Boolean },
@@ -10703,7 +10982,7 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
         onClose: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("close"))
       }, {
         search: withCtx(() => [
-          createBaseVNode("div", _hoisted_1$9, [
+          createBaseVNode("div", _hoisted_1$b, [
             _cache[3] || (_cache[3] = createBaseVNode("svg", {
               class: "search-icon",
               viewBox: "0 0 16 16",
@@ -10737,16 +11016,16 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
           ])
         ]),
         default: withCtx(() => [
-          createBaseVNode("div", _hoisted_2$6, [
+          createBaseVNode("div", _hoisted_2$7, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(filteredTags.value, (tag) => {
               return openBlock(), createElementBlock("button", {
                 key: tag.tag,
                 type: "button",
                 class: normalizeClass(["tag-chip", { "tag-chip--selected": isSelected(tag.tag) }]),
                 onClick: ($event) => toggleTag(tag.tag)
-              }, toDisplayString(tag.tag), 11, _hoisted_3$5);
+              }, toDisplayString(tag.tag), 11, _hoisted_3$6);
             }), 128)),
-            filteredTags.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$4, " No tags found ")) : createCommentVNode("", true)
+            filteredTags.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$5, " No tags found ")) : createCommentVNode("", true)
           ])
         ]),
         _: 1
@@ -10754,26 +11033,26 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const TagsModal = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-110d6f7d"]]);
-const _hoisted_1$8 = { class: "tree-node" };
-const _hoisted_2$5 = {
+const TagsModal = /* @__PURE__ */ _export_sfc(_sfc_main$b, [["__scopeId", "data-v-110d6f7d"]]);
+const _hoisted_1$a = { class: "tree-node" };
+const _hoisted_2$6 = {
   key: 1,
   class: "tree-node__toggle-spacer"
 };
-const _hoisted_3$4 = { class: "tree-node__checkbox-label" };
-const _hoisted_4$3 = ["checked"];
-const _hoisted_5$2 = {
+const _hoisted_3$5 = { class: "tree-node__checkbox-label" };
+const _hoisted_4$4 = ["checked"];
+const _hoisted_5$3 = {
   key: 0,
   class: "tree-node__check-icon",
   viewBox: "0 0 16 16",
   fill: "currentColor"
 };
-const _hoisted_6$2 = { class: "tree-node__label" };
-const _hoisted_7$2 = {
+const _hoisted_6$3 = { class: "tree-node__label" };
+const _hoisted_7$3 = {
   key: 0,
   class: "tree-node__children"
 };
-const _sfc_main$8 = /* @__PURE__ */ defineComponent({
+const _sfc_main$a = /* @__PURE__ */ defineComponent({
   __name: "FolderTreeNode",
   props: {
     node: {},
@@ -10798,7 +11077,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
     };
     return (_ctx, _cache) => {
       const _component_FolderTreeNode = resolveComponent("FolderTreeNode", true);
-      return openBlock(), createElementBlock("div", _hoisted_1$8, [
+      return openBlock(), createElementBlock("div", _hoisted_1$a, [
         createBaseVNode("div", {
           class: normalizeClass(["tree-node__item", [
             `tree-node__item--${__props.variant}`,
@@ -10820,18 +11099,18 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
             }, [..._cache[4] || (_cache[4] = [
               createBaseVNode("path", { d: "M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" }, null, -1)
             ])], 2))
-          ])) : (openBlock(), createElementBlock("span", _hoisted_2$5)),
-          createBaseVNode("label", _hoisted_3$4, [
+          ])) : (openBlock(), createElementBlock("span", _hoisted_2$6)),
+          createBaseVNode("label", _hoisted_3$5, [
             createBaseVNode("input", {
               type: "checkbox",
               class: "tree-node__checkbox",
               checked: isSelected.value,
               onChange: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("toggle-select", __props.node.key))
-            }, null, 40, _hoisted_4$3),
+            }, null, 40, _hoisted_4$4),
             createBaseVNode("span", {
               class: normalizeClass(["tree-node__checkbox-visual", `tree-node__checkbox-visual--${__props.variant}`])
             }, [
-              isSelected.value ? (openBlock(), createElementBlock("svg", _hoisted_5$2, [..._cache[5] || (_cache[5] = [
+              isSelected.value ? (openBlock(), createElementBlock("svg", _hoisted_5$3, [..._cache[5] || (_cache[5] = [
                 createBaseVNode("path", { d: "M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" }, null, -1)
               ])])) : createCommentVNode("", true)
             ], 2)
@@ -10844,9 +11123,9 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
             createBaseVNode("path", { d: "M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3H14a2 2 0 0 1 2 2v1.5a.5.5 0 0 1-1 0V5a1 1 0 0 0-1-1H9.828a3 3 0 0 1-2.12-.879l-.83-.828A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981l.006.139C1.72 3.042 1.95 3 2.19 3h5.396l.707.707a1 1 0 0 0 .707.293H14.5a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0V5H9a2 2 0 0 1-1.414-.586l-.828-.828A1 1 0 0 0 6.172 3H2.19a1.5 1.5 0 0 0-1.69.87z" }),
             createBaseVNode("path", { d: "M1.5 4.5h13a.5.5 0 0 1 .5.5v8a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a.5.5 0 0 1 .5-.5z" })
           ], -1)),
-          createBaseVNode("span", _hoisted_6$2, toDisplayString(__props.node.label), 1)
+          createBaseVNode("span", _hoisted_6$3, toDisplayString(__props.node.label), 1)
         ], 6),
-        hasChildren.value && isExpanded.value ? (openBlock(), createElementBlock("div", _hoisted_7$2, [
+        hasChildren.value && isExpanded.value ? (openBlock(), createElementBlock("div", _hoisted_7$3, [
           (openBlock(true), createElementBlock(Fragment, null, renderList(__props.node.children, (child) => {
             return openBlock(), createBlock(_component_FolderTreeNode, {
               key: child.key,
@@ -10864,14 +11143,14 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const FolderTreeNode = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-90187dd4"]]);
-const _hoisted_1$7 = { class: "search-container" };
-const _hoisted_2$4 = { class: "folder-tree" };
-const _hoisted_3$3 = {
+const FolderTreeNode = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-90187dd4"]]);
+const _hoisted_1$9 = { class: "search-container" };
+const _hoisted_2$5 = { class: "folder-tree" };
+const _hoisted_3$4 = {
   key: 1,
   class: "no-results"
 };
-const _sfc_main$7 = /* @__PURE__ */ defineComponent({
+const _sfc_main$9 = /* @__PURE__ */ defineComponent({
   __name: "FoldersModal",
   props: {
     visible: { type: Boolean },
@@ -10935,7 +11214,7 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
         onClose: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("close"))
       }, {
         search: withCtx(() => [
-          createBaseVNode("div", _hoisted_1$7, [
+          createBaseVNode("div", _hoisted_1$9, [
             _cache[2] || (_cache[2] = createBaseVNode("svg", {
               class: "search-icon",
               viewBox: "0 0 16 16",
@@ -10954,7 +11233,7 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
           ])
         ]),
         default: withCtx(() => [
-          createBaseVNode("div", _hoisted_2$4, [
+          createBaseVNode("div", _hoisted_2$5, [
             filteredFolders.value.length > 0 ? (openBlock(true), createElementBlock(Fragment, { key: 0 }, renderList(filteredFolders.value, (node) => {
               return openBlock(), createBlock(FolderTreeNode, {
                 key: node.key,
@@ -10966,7 +11245,7 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
                 onToggleExpand: toggleExpand,
                 onToggleSelect: toggleSelect
               }, null, 8, ["node", "selected", "expanded", "variant"]);
-            }), 128)) : (openBlock(), createElementBlock("div", _hoisted_3$3, " No folders found "))
+            }), 128)) : (openBlock(), createElementBlock("div", _hoisted_3$4, " No folders found "))
           ])
         ]),
         _: 1
@@ -10974,7 +11253,7 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const FoldersModal = /* @__PURE__ */ _export_sfc(_sfc_main$7, [["__scopeId", "data-v-046dcbf4"]]);
+const FoldersModal = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-046dcbf4"]]);
 function useLoraPoolApi() {
   const isLoading = ref(false);
   const fetchBaseModels = async (limit = 50) => {
@@ -11234,8 +11513,8 @@ function useModalState() {
     isModalOpen
   };
 }
-const _hoisted_1$6 = { class: "lora-pool-widget" };
-const _sfc_main$6 = /* @__PURE__ */ defineComponent({
+const _hoisted_1$8 = { class: "lora-pool-widget" };
+const _sfc_main$8 = /* @__PURE__ */ defineComponent({
   __name: "LoraPoolWidget",
   props: {
     widget: {},
@@ -11266,7 +11545,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
       await state.refreshPreview();
     });
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$6, [
+      return openBlock(), createElementBlock("div", _hoisted_1$8, [
         createVNode(LoraPoolSummaryView, {
           "selected-base-models": unref(state).selectedBaseModels.value,
           "available-base-models": unref(state).availableBaseModels.value,
@@ -11329,22 +11608,22 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["__scopeId", "data-v-7d3f681d"]]);
-const _hoisted_1$5 = { class: "last-used-preview" };
-const _hoisted_2$3 = { class: "last-used-preview__content" };
-const _hoisted_3$2 = ["src", "onError"];
-const _hoisted_4$2 = {
+const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-7d3f681d"]]);
+const _hoisted_1$7 = { class: "last-used-preview" };
+const _hoisted_2$4 = { class: "last-used-preview__content" };
+const _hoisted_3$3 = ["src", "onError"];
+const _hoisted_4$3 = {
   key: 1,
   class: "last-used-preview__thumb last-used-preview__thumb--placeholder"
 };
-const _hoisted_5$1 = { class: "last-used-preview__info" };
-const _hoisted_6$1 = { class: "last-used-preview__name" };
-const _hoisted_7$1 = { class: "last-used-preview__strength" };
-const _hoisted_8$1 = {
+const _hoisted_5$2 = { class: "last-used-preview__info" };
+const _hoisted_6$2 = { class: "last-used-preview__name" };
+const _hoisted_7$2 = { class: "last-used-preview__strength" };
+const _hoisted_8$2 = {
   key: 0,
   class: "last-used-preview__more"
 };
-const _sfc_main$5 = /* @__PURE__ */ defineComponent({
+const _sfc_main$7 = /* @__PURE__ */ defineComponent({
   __name: "LastUsedPreview",
   props: {
     loras: {}
@@ -11372,8 +11651,8 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
       previewUrls.value[loraName] = "";
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$5, [
-        createBaseVNode("div", _hoisted_2$3, [
+      return openBlock(), createElementBlock("div", _hoisted_1$7, [
+        createBaseVNode("div", _hoisted_2$4, [
           (openBlock(true), createElementBlock(Fragment, null, renderList(displayLoras.value, (lora) => {
             return openBlock(), createElementBlock("div", {
               key: lora.name,
@@ -11384,7 +11663,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
                 src: previewUrls.value[lora.name],
                 class: "last-used-preview__thumb",
                 onError: ($event) => onImageError(lora.name)
-              }, null, 40, _hoisted_3$2)) : (openBlock(), createElementBlock("div", _hoisted_4$2, [..._cache[0] || (_cache[0] = [
+              }, null, 40, _hoisted_3$3)) : (openBlock(), createElementBlock("div", _hoisted_4$3, [..._cache[0] || (_cache[0] = [
                 createBaseVNode("svg", {
                   viewBox: "0 0 16 16",
                   fill: "currentColor"
@@ -11393,21 +11672,21 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
                   createBaseVNode("path", { d: "M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" })
                 ], -1)
               ])])),
-              createBaseVNode("div", _hoisted_5$1, [
-                createBaseVNode("span", _hoisted_6$1, toDisplayString(lora.name), 1),
-                createBaseVNode("span", _hoisted_7$1, " M: " + toDisplayString(lora.strength) + toDisplayString(lora.clipStrength !== void 0 ? ` / C: ${lora.clipStrength}` : ""), 1)
+              createBaseVNode("div", _hoisted_5$2, [
+                createBaseVNode("span", _hoisted_6$2, toDisplayString(lora.name), 1),
+                createBaseVNode("span", _hoisted_7$2, " M: " + toDisplayString(lora.strength) + toDisplayString(lora.clipStrength !== void 0 ? ` / C: ${lora.clipStrength}` : ""), 1)
               ])
             ]);
           }), 128)),
-          __props.loras.length > 5 ? (openBlock(), createElementBlock("div", _hoisted_8$1, " +" + toDisplayString((__props.loras.length - 5).toLocaleString()) + " more LoRAs ", 1)) : createCommentVNode("", true)
+          __props.loras.length > 5 ? (openBlock(), createElementBlock("div", _hoisted_8$2, " +" + toDisplayString((__props.loras.length - 5).toLocaleString()) + " more LoRAs ", 1)) : createCommentVNode("", true)
         ])
       ]);
     };
   }
 });
-const LastUsedPreview = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-b940502e"]]);
-const _hoisted_1$4 = { class: "slider-handle__value" };
-const _sfc_main$4 = /* @__PURE__ */ defineComponent({
+const LastUsedPreview = /* @__PURE__ */ _export_sfc(_sfc_main$7, [["__scopeId", "data-v-b940502e"]]);
+const _hoisted_1$6 = { class: "slider-handle__value" };
+const _sfc_main$6 = /* @__PURE__ */ defineComponent({
   __name: "SingleSlider",
   props: {
     min: {},
@@ -11532,16 +11811,16 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
           onPointercancel: withModifiers(stopDrag, ["stop"])
         }, [
           _cache[1] || (_cache[1] = createBaseVNode("div", { class: "slider-handle__thumb" }, null, -1)),
-          createBaseVNode("div", _hoisted_1$4, toDisplayString(formatValue(__props.value)), 1)
+          createBaseVNode("div", _hoisted_1$6, toDisplayString(formatValue(__props.value)), 1)
         ], 36)
       ], 34);
     };
   }
 });
-const SingleSlider = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-2db219ac"]]);
-const _hoisted_1$3 = { class: "slider-handle__value" };
-const _hoisted_2$2 = { class: "slider-handle__value" };
-const _sfc_main$3 = /* @__PURE__ */ defineComponent({
+const SingleSlider = /* @__PURE__ */ _export_sfc(_sfc_main$6, [["__scopeId", "data-v-2db219ac"]]);
+const _hoisted_1$5 = { class: "slider-handle__value" };
+const _hoisted_2$3 = { class: "slider-handle__value" };
+const _sfc_main$5 = /* @__PURE__ */ defineComponent({
   __name: "DualRangeSlider",
   props: {
     min: {},
@@ -11802,7 +12081,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
           onPointercancel: withModifiers(stopDrag, ["stop"])
         }, [
           _cache[3] || (_cache[3] = createBaseVNode("div", { class: "slider-handle__thumb" }, null, -1)),
-          createBaseVNode("div", _hoisted_1$3, toDisplayString(formatValue(__props.valueMin)), 1)
+          createBaseVNode("div", _hoisted_1$5, toDisplayString(formatValue(__props.valueMin)), 1)
         ], 36),
         createBaseVNode("div", {
           class: "slider-handle slider-handle--max",
@@ -11813,35 +12092,35 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
           onPointercancel: withModifiers(stopDrag, ["stop"])
         }, [
           _cache[4] || (_cache[4] = createBaseVNode("div", { class: "slider-handle__thumb" }, null, -1)),
-          createBaseVNode("div", _hoisted_2$2, toDisplayString(formatValue(__props.valueMax)), 1)
+          createBaseVNode("div", _hoisted_2$3, toDisplayString(formatValue(__props.valueMax)), 1)
         ], 36)
       ], 34);
     };
   }
 });
-const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-0a55d005"]]);
-const _hoisted_1$2 = { class: "randomizer-settings" };
-const _hoisted_2$1 = { class: "setting-section" };
-const _hoisted_3$1 = { class: "count-mode-tabs" };
-const _hoisted_4$1 = ["checked"];
-const _hoisted_5 = ["checked"];
-const _hoisted_6 = { class: "slider-container" };
-const _hoisted_7 = { class: "setting-section" };
-const _hoisted_8 = { class: "slider-container" };
-const _hoisted_9 = { class: "setting-section" };
-const _hoisted_10 = { class: "section-header-with-toggle" };
-const _hoisted_11 = ["aria-checked"];
-const _hoisted_12 = { class: "setting-section" };
-const _hoisted_13 = { class: "section-header-with-toggle" };
-const _hoisted_14 = { class: "setting-label" };
-const _hoisted_15 = ["aria-checked"];
-const _hoisted_16 = { class: "setting-section" };
-const _hoisted_17 = { class: "roll-buttons-with-tooltip" };
-const _hoisted_18 = { class: "roll-buttons" };
-const _hoisted_19 = ["disabled"];
-const _hoisted_20 = ["disabled"];
-const _hoisted_21 = ["disabled"];
-const _sfc_main$2 = /* @__PURE__ */ defineComponent({
+const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-0a55d005"]]);
+const _hoisted_1$4 = { class: "randomizer-settings" };
+const _hoisted_2$2 = { class: "setting-section" };
+const _hoisted_3$2 = { class: "count-mode-tabs" };
+const _hoisted_4$2 = ["checked"];
+const _hoisted_5$1 = ["checked"];
+const _hoisted_6$1 = { class: "slider-container" };
+const _hoisted_7$1 = { class: "setting-section" };
+const _hoisted_8$1 = { class: "slider-container" };
+const _hoisted_9$1 = { class: "setting-section" };
+const _hoisted_10$1 = { class: "section-header-with-toggle" };
+const _hoisted_11$1 = ["aria-checked"];
+const _hoisted_12$1 = { class: "setting-section" };
+const _hoisted_13$1 = { class: "section-header-with-toggle" };
+const _hoisted_14$1 = { class: "setting-label" };
+const _hoisted_15$1 = ["aria-checked"];
+const _hoisted_16$1 = { class: "setting-section" };
+const _hoisted_17$1 = { class: "roll-buttons-with-tooltip" };
+const _hoisted_18$1 = { class: "roll-buttons" };
+const _hoisted_19$1 = ["disabled"];
+const _hoisted_20$1 = ["disabled"];
+const _hoisted_21$1 = ["disabled"];
+const _sfc_main$4 = /* @__PURE__ */ defineComponent({
   __name: "LoraRandomizerSettingsView",
   props: {
     countMode: {},
@@ -11881,13 +12160,13 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       );
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$2, [
+      return openBlock(), createElementBlock("div", _hoisted_1$4, [
         _cache[29] || (_cache[29] = createBaseVNode("div", { class: "settings-header" }, [
           createBaseVNode("h3", { class: "settings-title" }, "RANDOMIZER SETTINGS")
         ], -1)),
-        createBaseVNode("div", _hoisted_2$1, [
+        createBaseVNode("div", _hoisted_2$2, [
           _cache[20] || (_cache[20] = createBaseVNode("label", { class: "setting-label" }, "LoRA Count", -1)),
-          createBaseVNode("div", _hoisted_3$1, [
+          createBaseVNode("div", _hoisted_3$2, [
             createBaseVNode("label", {
               class: normalizeClass(["count-mode-tab", { active: __props.countMode === "fixed" }])
             }, [
@@ -11897,7 +12176,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                 value: "fixed",
                 checked: __props.countMode === "fixed",
                 onChange: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("update:countMode", "fixed"))
-              }, null, 40, _hoisted_4$1),
+              }, null, 40, _hoisted_4$2),
               _cache[18] || (_cache[18] = createBaseVNode("span", { class: "count-mode-tab-label" }, "Fixed", -1))
             ], 2),
             createBaseVNode("label", {
@@ -11909,11 +12188,11 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                 value: "range",
                 checked: __props.countMode === "range",
                 onChange: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("update:countMode", "range"))
-              }, null, 40, _hoisted_5),
+              }, null, 40, _hoisted_5$1),
               _cache[19] || (_cache[19] = createBaseVNode("span", { class: "count-mode-tab-label" }, "Range", -1))
             ], 2)
           ]),
-          createBaseVNode("div", _hoisted_6, [
+          createBaseVNode("div", _hoisted_6$1, [
             __props.countMode === "fixed" ? (openBlock(), createBlock(SingleSlider, {
               key: 0,
               min: 1,
@@ -11935,9 +12214,9 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
             }, null, 8, ["value-min", "value-max"]))
           ])
         ]),
-        createBaseVNode("div", _hoisted_7, [
+        createBaseVNode("div", _hoisted_7$1, [
           _cache[21] || (_cache[21] = createBaseVNode("label", { class: "setting-label" }, "Model Strength Range", -1)),
-          createBaseVNode("div", _hoisted_8, [
+          createBaseVNode("div", _hoisted_8$1, [
             createVNode(DualRangeSlider, {
               min: -10,
               max: 10,
@@ -11952,8 +12231,8 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
             }, null, 8, ["value-min", "value-max"])
           ])
         ]),
-        createBaseVNode("div", _hoisted_9, [
-          createBaseVNode("div", _hoisted_10, [
+        createBaseVNode("div", _hoisted_9$1, [
+          createBaseVNode("div", _hoisted_10$1, [
             _cache[23] || (_cache[23] = createBaseVNode("label", { class: "setting-label" }, " Preset Strength Scale ", -1)),
             createBaseVNode("button", {
               type: "button",
@@ -11965,7 +12244,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
             }, [..._cache[22] || (_cache[22] = [
               createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
               createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
-            ])], 10, _hoisted_11)
+            ])], 10, _hoisted_11$1)
           ]),
           createBaseVNode("div", {
             class: normalizeClass(["slider-container", { "slider-container--disabled": !__props.useRecommendedStrength }])
@@ -11983,9 +12262,9 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
             }, null, 8, ["value-min", "value-max", "disabled"])
           ], 2)
         ]),
-        createBaseVNode("div", _hoisted_12, [
-          createBaseVNode("div", _hoisted_13, [
-            createBaseVNode("label", _hoisted_14, " Clip Strength Range - " + toDisplayString(__props.useCustomClipRange ? "Custom Range" : "Use Model Strength"), 1),
+        createBaseVNode("div", _hoisted_12$1, [
+          createBaseVNode("div", _hoisted_13$1, [
+            createBaseVNode("label", _hoisted_14$1, " Clip Strength Range - " + toDisplayString(__props.useCustomClipRange ? "Custom Range" : "Use Model Strength"), 1),
             createBaseVNode("button", {
               type: "button",
               class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.useCustomClipRange }]),
@@ -11996,7 +12275,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
             }, [..._cache[24] || (_cache[24] = [
               createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
               createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
-            ])], 10, _hoisted_15)
+            ])], 10, _hoisted_15$1)
           ]),
           createBaseVNode("div", {
             class: normalizeClass(["slider-container", { "slider-container--disabled": __props.isClipStrengthDisabled }])
@@ -12016,24 +12295,24 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
             }, null, 8, ["value-min", "value-max", "disabled"])
           ], 2)
         ]),
-        createBaseVNode("div", _hoisted_16, [
+        createBaseVNode("div", _hoisted_16$1, [
           _cache[28] || (_cache[28] = createBaseVNode("label", { class: "setting-label" }, "Roll Mode", -1)),
-          createBaseVNode("div", _hoisted_17, [
-            createBaseVNode("div", _hoisted_18, [
+          createBaseVNode("div", _hoisted_17$1, [
+            createBaseVNode("div", _hoisted_18$1, [
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "fixed" }]),
                 disabled: __props.isRolling,
                 onClick: _cache[13] || (_cache[13] = ($event) => _ctx.$emit("generate-fixed"))
               }, [..._cache[25] || (_cache[25] = [
                 createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-284e81b7><rect x="2" y="2" width="20" height="20" rx="5" data-v-284e81b7></rect><circle cx="12" cy="12" r="3" data-v-284e81b7></circle><circle cx="6" cy="8" r="1.5" data-v-284e81b7></circle><circle cx="18" cy="16" r="1.5" data-v-284e81b7></circle></svg><span class="roll-button__text" data-v-284e81b7>Generate Fixed</span>', 2)
-              ])], 10, _hoisted_19),
+              ])], 10, _hoisted_19$1),
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "always" }]),
                 disabled: __props.isRolling,
                 onClick: _cache[14] || (_cache[14] = ($event) => _ctx.$emit("always-randomize"))
               }, [..._cache[26] || (_cache[26] = [
                 createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-284e81b7><path d="M21 12a9 9 0 1 1-6.219-8.56" data-v-284e81b7></path><path d="M21 3v5h-5" data-v-284e81b7></path><circle cx="12" cy="12" r="3" data-v-284e81b7></circle><circle cx="6" cy="8" r="1.5" data-v-284e81b7></circle><circle cx="18" cy="16" r="1.5" data-v-284e81b7></circle></svg><span class="roll-button__text" data-v-284e81b7>Always Randomize</span>', 2)
-              ])], 10, _hoisted_20),
+              ])], 10, _hoisted_20$1),
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "fixed" && __props.canReuseLast && areLorasEqual(__props.currentLoras, __props.lastUsed) }]),
                 disabled: !__props.canReuseLast,
@@ -12054,7 +12333,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                   createBaseVNode("path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" })
                 ], -1),
                 createBaseVNode("span", { class: "roll-button__text" }, "Reuse Last", -1)
-              ])], 42, _hoisted_21)
+              ])], 42, _hoisted_21$1)
             ]),
             createVNode(Transition, { name: "tooltip" }, {
               default: withCtx(() => [
@@ -12071,7 +12350,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraRandomizerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-284e81b7"]]);
+const LoraRandomizerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-284e81b7"]]);
 function useLoraRandomizerState(widget) {
   const countMode = ref("range");
   const countFixed = ref(3);
@@ -12250,8 +12529,8 @@ function useLoraRandomizerState(widget) {
     initializeNextSeed
   };
 }
-const _hoisted_1$1 = { class: "lora-randomizer-widget" };
-const _sfc_main$1 = /* @__PURE__ */ defineComponent({
+const _hoisted_1$3 = { class: "lora-randomizer-widget" };
+const _sfc_main$3 = /* @__PURE__ */ defineComponent({
   __name: "LoraRandomizerWidget",
   props: {
     widget: {},
@@ -12388,7 +12667,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
       };
     });
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$1, [
+      return openBlock(), createElementBlock("div", _hoisted_1$3, [
         createVNode(LoraRandomizerSettingsView, {
           "count-mode": unref(state).countMode.value,
           "count-fixed": unref(state).countFixed.value,
@@ -12429,7 +12708,508 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-45df1002"]]);
+const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-45df1002"]]);
+const _hoisted_1$2 = { class: "cycler-settings" };
+const _hoisted_2$1 = { class: "setting-section progress-section" };
+const _hoisted_3$1 = { class: "progress-display" };
+const _hoisted_4$1 = { class: "progress-info" };
+const _hoisted_5 = ["title"];
+const _hoisted_6 = { class: "progress-counter" };
+const _hoisted_7 = { class: "progress-index" };
+const _hoisted_8 = { class: "progress-total" };
+const _hoisted_9 = ["disabled"];
+const _hoisted_10 = { class: "setting-section" };
+const _hoisted_11 = { class: "index-input-container" };
+const _hoisted_12 = ["max", "value", "disabled"];
+const _hoisted_13 = { class: "index-hint" };
+const _hoisted_14 = { class: "setting-section" };
+const _hoisted_15 = { class: "slider-container" };
+const _hoisted_16 = { class: "setting-section" };
+const _hoisted_17 = { class: "section-header-with-toggle" };
+const _hoisted_18 = { class: "setting-label" };
+const _hoisted_19 = ["aria-checked"];
+const _hoisted_20 = { class: "setting-section" };
+const _hoisted_21 = { class: "sort-tabs" };
+const _hoisted_22 = ["checked"];
+const _hoisted_23 = ["checked"];
+const _sfc_main$2 = /* @__PURE__ */ defineComponent({
+  __name: "LoraCyclerSettingsView",
+  props: {
+    currentIndex: {},
+    totalCount: {},
+    currentLoraName: {},
+    currentLoraFilename: {},
+    modelStrength: {},
+    clipStrength: {},
+    useCustomClipRange: { type: Boolean },
+    isClipStrengthDisabled: { type: Boolean },
+    sortBy: {},
+    isLoading: { type: Boolean }
+  },
+  emits: ["update:currentIndex", "update:modelStrength", "update:clipStrength", "update:useCustomClipRange", "update:sortBy", "refresh"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emit2 = __emit;
+    const tempIndex = ref("");
+    const onIndexInput = (event) => {
+      const input = event.target;
+      tempIndex.value = input.value;
+    };
+    const onIndexBlur = (event) => {
+      const input = event.target;
+      const value = parseInt(input.value, 10);
+      if (!isNaN(value)) {
+        const clampedValue = Math.max(1, Math.min(value, props.totalCount || 1));
+        emit2("update:currentIndex", clampedValue);
+        input.value = clampedValue.toString();
+      } else {
+        input.value = props.currentIndex.toString();
+      }
+      tempIndex.value = "";
+    };
+    return (_ctx, _cache) => {
+      return openBlock(), createElementBlock("div", _hoisted_1$2, [
+        _cache[15] || (_cache[15] = createBaseVNode("div", { class: "settings-header" }, [
+          createBaseVNode("h3", { class: "settings-title" }, "CYCLER SETTINGS")
+        ], -1)),
+        createBaseVNode("div", _hoisted_2$1, [
+          createBaseVNode("div", _hoisted_3$1, [
+            createBaseVNode("div", _hoisted_4$1, [
+              _cache[6] || (_cache[6] = createBaseVNode("span", { class: "progress-label" }, "Next LoRA:", -1)),
+              createBaseVNode("span", {
+                class: "progress-name",
+                title: __props.currentLoraFilename
+              }, toDisplayString(__props.currentLoraName || "None"), 9, _hoisted_5)
+            ]),
+            createBaseVNode("div", _hoisted_6, [
+              createBaseVNode("span", _hoisted_7, toDisplayString(__props.currentIndex), 1),
+              _cache[8] || (_cache[8] = createBaseVNode("span", { class: "progress-separator" }, "/", -1)),
+              createBaseVNode("span", _hoisted_8, toDisplayString(__props.totalCount), 1),
+              createBaseVNode("button", {
+                class: "refresh-button",
+                disabled: __props.isLoading,
+                onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("refresh")),
+                title: "Refresh list"
+              }, [
+                (openBlock(), createElementBlock("svg", {
+                  class: normalizeClass(["refresh-icon", { spinning: __props.isLoading }]),
+                  viewBox: "0 0 24 24",
+                  fill: "none",
+                  stroke: "currentColor",
+                  "stroke-width": "2",
+                  "stroke-linecap": "round",
+                  "stroke-linejoin": "round"
+                }, [..._cache[7] || (_cache[7] = [
+                  createBaseVNode("path", { d: "M21 12a9 9 0 1 1-6.219-8.56" }, null, -1),
+                  createBaseVNode("path", { d: "M21 3v5h-5" }, null, -1)
+                ])], 2))
+              ], 8, _hoisted_9)
+            ])
+          ])
+        ]),
+        createBaseVNode("div", _hoisted_10, [
+          _cache[9] || (_cache[9] = createBaseVNode("label", { class: "setting-label" }, "Starting Index", -1)),
+          createBaseVNode("div", _hoisted_11, [
+            createBaseVNode("input", {
+              type: "number",
+              class: "index-input",
+              min: 1,
+              max: __props.totalCount || 1,
+              value: __props.currentIndex,
+              disabled: __props.totalCount === 0,
+              onInput: onIndexInput,
+              onBlur: onIndexBlur
+            }, null, 40, _hoisted_12),
+            createBaseVNode("span", _hoisted_13, "1 - " + toDisplayString(__props.totalCount || 1), 1)
+          ])
+        ]),
+        createBaseVNode("div", _hoisted_14, [
+          _cache[10] || (_cache[10] = createBaseVNode("label", { class: "setting-label" }, "Model Strength", -1)),
+          createBaseVNode("div", _hoisted_15, [
+            createVNode(SingleSlider, {
+              min: -10,
+              max: 10,
+              value: __props.modelStrength,
+              step: 0.1,
+              "default-range": { min: 0.5, max: 1.5 },
+              "onUpdate:value": _cache[1] || (_cache[1] = ($event) => _ctx.$emit("update:modelStrength", $event))
+            }, null, 8, ["value"])
+          ])
+        ]),
+        createBaseVNode("div", _hoisted_16, [
+          createBaseVNode("div", _hoisted_17, [
+            createBaseVNode("label", _hoisted_18, " Clip Strength - " + toDisplayString(__props.useCustomClipRange ? "Custom Value" : "Use Model Strength"), 1),
+            createBaseVNode("button", {
+              type: "button",
+              class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.useCustomClipRange }]),
+              onClick: _cache[2] || (_cache[2] = ($event) => _ctx.$emit("update:useCustomClipRange", !__props.useCustomClipRange)),
+              role: "switch",
+              "aria-checked": __props.useCustomClipRange,
+              title: "Use custom clip strength when enabled, otherwise use model strength"
+            }, [..._cache[11] || (_cache[11] = [
+              createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
+              createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
+            ])], 10, _hoisted_19)
+          ]),
+          createBaseVNode("div", {
+            class: normalizeClass(["slider-container", { "slider-container--disabled": __props.isClipStrengthDisabled }])
+          }, [
+            createVNode(SingleSlider, {
+              min: -10,
+              max: 10,
+              value: __props.clipStrength,
+              step: 0.1,
+              "default-range": { min: 0.5, max: 1.5 },
+              disabled: __props.isClipStrengthDisabled,
+              "onUpdate:value": _cache[3] || (_cache[3] = ($event) => _ctx.$emit("update:clipStrength", $event))
+            }, null, 8, ["value", "disabled"])
+          ], 2)
+        ]),
+        createBaseVNode("div", _hoisted_20, [
+          _cache[14] || (_cache[14] = createBaseVNode("label", { class: "setting-label" }, "Sort By", -1)),
+          createBaseVNode("div", _hoisted_21, [
+            createBaseVNode("label", {
+              class: normalizeClass(["sort-tab", { active: __props.sortBy === "filename" }])
+            }, [
+              createBaseVNode("input", {
+                type: "radio",
+                name: "sort-by",
+                value: "filename",
+                checked: __props.sortBy === "filename",
+                onChange: _cache[4] || (_cache[4] = ($event) => _ctx.$emit("update:sortBy", "filename"))
+              }, null, 40, _hoisted_22),
+              _cache[12] || (_cache[12] = createBaseVNode("span", { class: "sort-tab-label" }, "Filename", -1))
+            ], 2),
+            createBaseVNode("label", {
+              class: normalizeClass(["sort-tab", { active: __props.sortBy === "model_name" }])
+            }, [
+              createBaseVNode("input", {
+                type: "radio",
+                name: "sort-by",
+                value: "model_name",
+                checked: __props.sortBy === "model_name",
+                onChange: _cache[5] || (_cache[5] = ($event) => _ctx.$emit("update:sortBy", "model_name"))
+              }, null, 40, _hoisted_23),
+              _cache[13] || (_cache[13] = createBaseVNode("span", { class: "sort-tab-label" }, "Model Name", -1))
+            ], 2)
+          ])
+        ])
+      ]);
+    };
+  }
+});
+const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-0fe9bd62"]]);
+function useLoraCyclerState(widget) {
+  const currentIndex = ref(1);
+  const totalCount = ref(0);
+  const poolConfigHash = ref("");
+  const modelStrength = ref(1);
+  const clipStrength = ref(1);
+  const useCustomClipRange = ref(false);
+  const sortBy = ref("filename");
+  const currentLoraName = ref("");
+  const currentLoraFilename = ref("");
+  const isLoading = ref(false);
+  const buildConfig = () => ({
+    current_index: currentIndex.value,
+    total_count: totalCount.value,
+    pool_config_hash: poolConfigHash.value,
+    model_strength: modelStrength.value,
+    clip_strength: clipStrength.value,
+    use_same_clip_strength: !useCustomClipRange.value,
+    sort_by: sortBy.value,
+    current_lora_name: currentLoraName.value,
+    current_lora_filename: currentLoraFilename.value
+  });
+  const restoreFromConfig = (config) => {
+    currentIndex.value = config.current_index || 1;
+    totalCount.value = config.total_count || 0;
+    poolConfigHash.value = config.pool_config_hash || "";
+    modelStrength.value = config.model_strength ?? 1;
+    clipStrength.value = config.clip_strength ?? 1;
+    useCustomClipRange.value = !(config.use_same_clip_strength ?? true);
+    sortBy.value = config.sort_by || "filename";
+    currentLoraName.value = config.current_lora_name || "";
+    currentLoraFilename.value = config.current_lora_filename || "";
+  };
+  const hashPoolConfig = (poolConfig) => {
+    if (!poolConfig || !poolConfig.filters) {
+      return "";
+    }
+    try {
+      return btoa(JSON.stringify(poolConfig.filters));
+    } catch {
+      return "";
+    }
+  };
+  const fetchCyclerList = async (poolConfig) => {
+    try {
+      isLoading.value = true;
+      const requestBody = {
+        sort_by: sortBy.value
+      };
+      if (poolConfig == null ? void 0 : poolConfig.filters) {
+        requestBody.pool_config = poolConfig.filters;
+      }
+      const response = await fetch("/api/lm/loras/cycler-list", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestBody)
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch cycler list");
+      }
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || "Failed to get cycler list");
+      }
+      return data.loras || [];
+    } catch (error) {
+      console.error("[LoraCyclerState] Error fetching cycler list:", error);
+      throw error;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+  const refreshList = async (poolConfig) => {
+    try {
+      const newHash = hashPoolConfig(poolConfig);
+      const hashChanged = newHash !== poolConfigHash.value;
+      const loraList = await fetchCyclerList(poolConfig);
+      totalCount.value = loraList.length;
+      if (hashChanged) {
+        currentIndex.value = 1;
+        poolConfigHash.value = newHash;
+      }
+      if (currentIndex.value > totalCount.value) {
+        currentIndex.value = Math.max(1, totalCount.value);
+      }
+      if (loraList.length > 0 && currentIndex.value > 0) {
+        const currentLora = loraList[currentIndex.value - 1];
+        if (currentLora) {
+          currentLoraName.value = sortBy.value === "filename" ? currentLora.file_name : currentLora.model_name || currentLora.file_name;
+          currentLoraFilename.value = currentLora.file_name;
+        }
+      } else {
+        currentLoraName.value = "";
+        currentLoraFilename.value = "";
+      }
+      return loraList;
+    } catch (error) {
+      console.error("[LoraCyclerState] Error refreshing list:", error);
+      throw error;
+    }
+  };
+  const setIndex = (index) => {
+    if (index >= 1 && index <= totalCount.value) {
+      currentIndex.value = index;
+    }
+  };
+  const isClipStrengthDisabled = computed(() => !useCustomClipRange.value);
+  watch(modelStrength, (newValue) => {
+    if (!useCustomClipRange.value) {
+      clipStrength.value = newValue;
+    }
+  });
+  watch([
+    currentIndex,
+    totalCount,
+    poolConfigHash,
+    modelStrength,
+    clipStrength,
+    useCustomClipRange,
+    sortBy,
+    currentLoraName,
+    currentLoraFilename
+  ], () => {
+    const config = buildConfig();
+    if (widget.updateConfig) {
+      widget.updateConfig(config);
+    } else {
+      widget.value = config;
+    }
+  }, { deep: true });
+  return {
+    // State refs
+    currentIndex,
+    totalCount,
+    poolConfigHash,
+    modelStrength,
+    clipStrength,
+    useCustomClipRange,
+    sortBy,
+    currentLoraName,
+    currentLoraFilename,
+    isLoading,
+    // Computed
+    isClipStrengthDisabled,
+    // Methods
+    buildConfig,
+    restoreFromConfig,
+    hashPoolConfig,
+    fetchCyclerList,
+    refreshList,
+    setIndex
+  };
+}
+const _hoisted_1$1 = { class: "lora-cycler-widget" };
+const _sfc_main$1 = /* @__PURE__ */ defineComponent({
+  __name: "LoraCyclerWidget",
+  props: {
+    widget: {},
+    node: {}
+  },
+  setup(__props) {
+    const props = __props;
+    const state = useLoraCyclerState(props.widget);
+    const lastPoolConfigHash = ref("");
+    const isMounted = ref(false);
+    const getPoolConfig = () => {
+      if (props.node.getPoolConfig) {
+        return props.node.getPoolConfig();
+      }
+      return null;
+    };
+    const handleIndexUpdate = async (newIndex) => {
+      state.setIndex(newIndex);
+      try {
+        const poolConfig = getPoolConfig();
+        const loraList = await state.fetchCyclerList(poolConfig);
+        if (loraList.length > 0 && newIndex > 0 && newIndex <= loraList.length) {
+          const currentLora = loraList[newIndex - 1];
+          if (currentLora) {
+            state.currentLoraName.value = state.sortBy.value === "filename" ? currentLora.file_name : currentLora.model_name || currentLora.file_name;
+            state.currentLoraFilename.value = currentLora.file_name;
+          }
+        }
+      } catch (error) {
+        console.error("[LoraCyclerWidget] Error updating index:", error);
+      }
+    };
+    const handleSortByChange = async (newSortBy) => {
+      state.sortBy.value = newSortBy;
+      try {
+        const poolConfig = getPoolConfig();
+        await state.refreshList(poolConfig);
+      } catch (error) {
+        console.error("[LoraCyclerWidget] Error changing sort:", error);
+      }
+    };
+    const handleUseCustomClipRangeChange = (newValue) => {
+      state.useCustomClipRange.value = newValue;
+      if (!newValue) {
+        state.clipStrength.value = state.modelStrength.value;
+      }
+    };
+    const handleRefresh = async () => {
+      try {
+        const poolConfig = getPoolConfig();
+        await state.refreshList(poolConfig);
+      } catch (error) {
+        console.error("[LoraCyclerWidget] Error refreshing:", error);
+      }
+    };
+    const checkPoolConfigChanges = async () => {
+      if (!isMounted.value) return;
+      const poolConfig = getPoolConfig();
+      const newHash = state.hashPoolConfig(poolConfig);
+      if (newHash !== lastPoolConfigHash.value) {
+        console.log("[LoraCyclerWidget] Pool config changed, refreshing list");
+        lastPoolConfigHash.value = newHash;
+        try {
+          await state.refreshList(poolConfig);
+        } catch (error) {
+          console.error("[LoraCyclerWidget] Error on pool config change:", error);
+        }
+      }
+    };
+    onMounted(async () => {
+      var _a;
+      props.widget.serializeValue = async () => {
+        return state.buildConfig();
+      };
+      props.widget.onSetValue = (v2) => {
+        state.restoreFromConfig(v2);
+      };
+      if (props.widget.value) {
+        state.restoreFromConfig(props.widget.value);
+      }
+      isMounted.value = true;
+      try {
+        const poolConfig = getPoolConfig();
+        lastPoolConfigHash.value = state.hashPoolConfig(poolConfig);
+        await state.refreshList(poolConfig);
+      } catch (error) {
+        console.error("[LoraCyclerWidget] Error on initial load:", error);
+      }
+      const originalOnExecuted = (_a = props.node.onExecuted) == null ? void 0 : _a.bind(props.node);
+      props.node.onExecuted = function(output) {
+        console.log("[LoraCyclerWidget] Node executed with output:", output);
+        if ((output == null ? void 0 : output.next_index) !== void 0) {
+          const val = Array.isArray(output.next_index) ? output.next_index[0] : output.next_index;
+          state.currentIndex.value = val;
+        }
+        if ((output == null ? void 0 : output.total_count) !== void 0) {
+          const val = Array.isArray(output.total_count) ? output.total_count[0] : output.total_count;
+          state.totalCount.value = val;
+        }
+        if ((output == null ? void 0 : output.current_lora_name) !== void 0) {
+          const val = Array.isArray(output.current_lora_name) ? output.current_lora_name[0] : output.current_lora_name;
+          state.currentLoraName.value = val;
+        }
+        if ((output == null ? void 0 : output.current_lora_filename) !== void 0) {
+          const val = Array.isArray(output.current_lora_filename) ? output.current_lora_filename[0] : output.current_lora_filename;
+          state.currentLoraFilename.value = val;
+        }
+        if ((output == null ? void 0 : output.next_lora_name) !== void 0) {
+          const val = Array.isArray(output.next_lora_name) ? output.next_lora_name[0] : output.next_lora_name;
+          state.currentLoraName.value = val;
+        }
+        if ((output == null ? void 0 : output.next_lora_filename) !== void 0) {
+          const val = Array.isArray(output.next_lora_filename) ? output.next_lora_filename[0] : output.next_lora_filename;
+          state.currentLoraFilename.value = val;
+        }
+        if ((output == null ? void 0 : output.sort_by) !== void 0) {
+          const val = Array.isArray(output.sort_by) ? output.sort_by[0] : output.sort_by;
+          state.sortBy.value = val;
+        }
+        if (originalOnExecuted) {
+          return originalOnExecuted(output);
+        }
+      };
+      const checkInterval = setInterval(checkPoolConfigChanges, 1e3);
+      props.widget.onRemoveCleanup = () => {
+        clearInterval(checkInterval);
+      };
+    });
+    return (_ctx, _cache) => {
+      return openBlock(), createElementBlock("div", _hoisted_1$1, [
+        createVNode(LoraCyclerSettingsView, {
+          "current-index": unref(state).currentIndex.value,
+          "total-count": unref(state).totalCount.value,
+          "current-lora-name": unref(state).currentLoraName.value,
+          "current-lora-filename": unref(state).currentLoraFilename.value,
+          "model-strength": unref(state).modelStrength.value,
+          "clip-strength": unref(state).clipStrength.value,
+          "use-custom-clip-range": unref(state).useCustomClipRange.value,
+          "is-clip-strength-disabled": unref(state).isClipStrengthDisabled.value,
+          "sort-by": unref(state).sortBy.value,
+          "is-loading": unref(state).isLoading.value,
+          "onUpdate:currentIndex": handleIndexUpdate,
+          "onUpdate:modelStrength": _cache[0] || (_cache[0] = ($event) => unref(state).modelStrength.value = $event),
+          "onUpdate:clipStrength": _cache[1] || (_cache[1] = ($event) => unref(state).clipStrength.value = $event),
+          "onUpdate:useCustomClipRange": handleUseCustomClipRangeChange,
+          "onUpdate:sortBy": handleSortByChange,
+          onRefresh: handleRefresh
+        }, null, 8, ["current-index", "total-count", "current-lora-name", "current-lora-filename", "model-strength", "clip-strength", "use-custom-clip-range", "is-clip-strength-disabled", "sort-by", "is-loading"])
+      ]);
+    };
+  }
+});
+const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-85956227"]]);
 const _hoisted_1 = { class: "json-display-widget" };
 const _hoisted_2 = {
   class: "json-content",
@@ -12731,6 +13511,9 @@ const LORA_POOL_WIDGET_MIN_HEIGHT = 400;
 const LORA_RANDOMIZER_WIDGET_MIN_WIDTH = 500;
 const LORA_RANDOMIZER_WIDGET_MIN_HEIGHT = 448;
 const LORA_RANDOMIZER_WIDGET_MAX_HEIGHT = LORA_RANDOMIZER_WIDGET_MIN_HEIGHT;
+const LORA_CYCLER_WIDGET_MIN_WIDTH = 380;
+const LORA_CYCLER_WIDGET_MIN_HEIGHT = 410;
+const LORA_CYCLER_WIDGET_MAX_HEIGHT = LORA_CYCLER_WIDGET_MIN_HEIGHT;
 const JSON_DISPLAY_WIDGET_MIN_WIDTH = 300;
 const JSON_DISPLAY_WIDGET_MIN_HEIGHT = 200;
 function forwardMiddleMouseToCanvas(container) {
@@ -12887,6 +13670,65 @@ function createLoraRandomizerWidget(node) {
   };
   return { widget };
 }
+function createLoraCyclerWidget(node) {
+  const container = document.createElement("div");
+  container.id = `lora-cycler-widget-${node.id}`;
+  container.style.width = "100%";
+  container.style.height = "100%";
+  container.style.display = "flex";
+  container.style.flexDirection = "column";
+  container.style.overflow = "hidden";
+  forwardMiddleMouseToCanvas(container);
+  let internalValue;
+  const widget = node.addDOMWidget(
+    "cycler_config",
+    "CYCLER_CONFIG",
+    container,
+    {
+      getValue() {
+        return internalValue;
+      },
+      setValue(v2) {
+        internalValue = v2;
+        if (typeof widget.onSetValue === "function") {
+          widget.onSetValue(v2);
+        }
+      },
+      serialize: true,
+      getMinHeight() {
+        return LORA_CYCLER_WIDGET_MIN_HEIGHT;
+      }
+    }
+  );
+  widget.updateConfig = (v2) => {
+    internalValue = v2;
+  };
+  node.getPoolConfig = () => getPoolConfigFromConnectedNode(node);
+  const vueApp = createApp(LoraCyclerWidget, {
+    widget,
+    node
+  });
+  vueApp.use(PrimeVue, {
+    unstyled: true,
+    ripple: false
+  });
+  vueApp.mount(container);
+  vueApps.set(node.id + 3e4, vueApp);
+  widget.computeLayoutSize = () => {
+    const minWidth = LORA_CYCLER_WIDGET_MIN_WIDTH;
+    const minHeight = LORA_CYCLER_WIDGET_MIN_HEIGHT;
+    const maxHeight = LORA_CYCLER_WIDGET_MAX_HEIGHT;
+    return { minHeight, minWidth, maxHeight };
+  };
+  widget.onRemove = () => {
+    const vueApp2 = vueApps.get(node.id + 3e4);
+    if (vueApp2) {
+      vueApp2.unmount();
+      vueApps.delete(node.id + 3e4);
+    }
+  };
+  return { widget };
+}
 function createJsonDisplayWidget(node) {
   const container = document.createElement("div");
   container.id = `json-display-widget-${node.id}`;
@@ -12953,6 +13795,10 @@ app$1.registerExtension({
       // @ts-ignore
       RANDOMIZER_CONFIG(node) {
         return createLoraRandomizerWidget(node);
+      },
+      // @ts-ignore
+      CYCLER_CONFIG(node) {
+        return createLoraCyclerWidget(node);
       },
       // @ts-ignore
       async LORAS(node) {
