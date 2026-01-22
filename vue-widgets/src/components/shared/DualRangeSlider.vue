@@ -83,10 +83,12 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   scaleMode?: ScaleMode
   segments?: Segment[]
+  allowEqualValues?: boolean
 }>(), {
   disabled: false,
   scaleMode: 'linear',
-  segments: () => []
+  segments: () => [],
+  allowEqualValues: false
 })
 
 const emit = defineEmits<{
@@ -242,12 +244,12 @@ const updateValue = (event: PointerEvent) => {
 
   if (dragging.value === 'min') {
     const maxMultiplier = getSegmentStepMultiplier(props.valueMax)
-    const maxAllowed = props.valueMax - (props.step * maxMultiplier)
+    const maxAllowed = props.allowEqualValues ? props.valueMax : props.valueMax - (props.step * maxMultiplier)
     const newValue = Math.min(value, maxAllowed)
     emit('update:valueMin', newValue)
   } else {
     const minMultiplier = getSegmentStepMultiplier(props.valueMin)
-    const minAllowed = props.valueMin + (props.step * minMultiplier)
+    const minAllowed = props.allowEqualValues ? props.valueMin : props.valueMin + (props.step * minMultiplier)
     const newValue = Math.max(value, minAllowed)
     emit('update:valueMax', newValue)
   }
@@ -290,14 +292,14 @@ const onWheel = (event: WheelEvent) => {
     const effectiveStep = props.step * multiplier
     const newValue = snapToStep(props.valueMin + delta * effectiveStep, multiplier)
     const maxMultiplier = getSegmentStepMultiplier(props.valueMax)
-    const maxAllowed = props.valueMax - (props.step * maxMultiplier)
+    const maxAllowed = props.allowEqualValues ? props.valueMax : props.valueMax - (props.step * maxMultiplier)
     emit('update:valueMin', Math.min(newValue, maxAllowed))
   } else if (relativeX > maxPixel) {
     const multiplier = getSegmentStepMultiplier(props.valueMax)
     const effectiveStep = props.step * multiplier
     const newValue = snapToStep(props.valueMax + delta * effectiveStep, multiplier)
     const minMultiplier = getSegmentStepMultiplier(props.valueMin)
-    const minAllowed = props.valueMin + (props.step * minMultiplier)
+    const minAllowed = props.allowEqualValues ? props.valueMin : props.valueMin + (props.step * minMultiplier)
     emit('update:valueMax', Math.max(newValue, minAllowed))
   } else {
     const minMultiplier = getSegmentStepMultiplier(props.valueMin)
@@ -309,8 +311,8 @@ const onWheel = (event: WheelEvent) => {
       emit('update:valueMin', Math.max(newMin, props.min))
       emit('update:valueMax', Math.min(newMax, props.max))
     } else {
-      const minAllowed = props.valueMin + (props.step * minMultiplier)
-      if (newMin < newMax - (props.step * minMultiplier)) {
+      const maxAllowed = props.allowEqualValues ? newMax : newMax - (props.step * minMultiplier)
+      if (newMin <= maxAllowed) {
         emit('update:valueMin', newMin)
         emit('update:valueMax', newMax)
       }

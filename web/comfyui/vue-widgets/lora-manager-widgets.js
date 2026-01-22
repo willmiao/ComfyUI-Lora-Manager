@@ -1139,7 +1139,7 @@ to { transform: rotate(360deg);
   line-height: 14px;
 }
 
-.dual-range-slider[data-v-0a55d005] {
+.dual-range-slider[data-v-05ce9afb] {
   position: relative;
   width: 100%;
   height: 24px;
@@ -1147,14 +1147,14 @@ to { transform: rotate(360deg);
   cursor: default !important;
   touch-action: none;
 }
-.dual-range-slider.disabled[data-v-0a55d005] {
+.dual-range-slider.disabled[data-v-05ce9afb] {
   opacity: 0.4;
   pointer-events: none;
 }
-.dual-range-slider.is-dragging[data-v-0a55d005] {
+.dual-range-slider.is-dragging[data-v-05ce9afb] {
   cursor: ew-resize !important;
 }
-.slider-track[data-v-0a55d005] {
+.slider-track[data-v-05ce9afb] {
   position: absolute;
   top: 12px;
   left: 0;
@@ -1164,13 +1164,13 @@ to { transform: rotate(360deg);
   border-radius: 4px;
   cursor: default !important;
 }
-.slider-track__bg[data-v-0a55d005] {
+.slider-track__bg[data-v-05ce9afb] {
   position: absolute;
   inset: 0;
   background: rgba(66, 153, 225, 0.15);
   border-radius: 2px;
 }
-.slider-track__active[data-v-0a55d005] {
+.slider-track__active[data-v-05ce9afb] {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -1178,24 +1178,24 @@ to { transform: rotate(360deg);
   border-radius: 2px;
   transition: left 0.05s linear, width 0.05s linear;
 }
-.slider-track__default[data-v-0a55d005] {
+.slider-track__default[data-v-05ce9afb] {
   position: absolute;
   top: 0;
   bottom: 0;
   background: rgba(66, 153, 225, 0.1);
   border-radius: 2px;
 }
-.slider-track__segment[data-v-0a55d005] {
+.slider-track__segment[data-v-05ce9afb] {
   position: absolute;
   top: 0;
   bottom: 0;
   background: rgba(66, 153, 225, 0.08);
   border-radius: 2px;
 }
-.slider-track__segment--expanded[data-v-0a55d005] {
+.slider-track__segment--expanded[data-v-05ce9afb] {
   background: rgba(66, 153, 225, 0.15);
 }
-.slider-track__segment[data-v-0a55d005]:not(:last-child)::after {
+.slider-track__segment[data-v-05ce9afb]:not(:last-child)::after {
   content: '';
   position: absolute;
   top: -1px;
@@ -1204,7 +1204,7 @@ to { transform: rotate(360deg);
   width: 1px;
   background: rgba(255, 255, 255, 0.1);
 }
-.slider-handle[data-v-0a55d005] {
+.slider-handle[data-v-05ce9afb] {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
@@ -1212,7 +1212,7 @@ to { transform: rotate(360deg);
   z-index: 2;
   touch-action: none;
 }
-.slider-handle__thumb[data-v-0a55d005] {
+.slider-handle__thumb[data-v-05ce9afb] {
   width: 14px;
   height: 14px;
   background: var(--fg-color, #fff);
@@ -1223,13 +1223,13 @@ to { transform: rotate(360deg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.15s ease;
 }
-.slider-handle:hover .slider-handle__thumb[data-v-0a55d005] {
+.slider-handle:hover .slider-handle__thumb[data-v-05ce9afb] {
   transform: scale(1.1);
 }
-.slider-handle:active .slider-handle__thumb[data-v-0a55d005] {
+.slider-handle:active .slider-handle__thumb[data-v-05ce9afb] {
   transform: scale(1.15);
 }
-.slider-handle__value[data-v-0a55d005] {
+.slider-handle__value[data-v-05ce9afb] {
   position: absolute;
   top: -6px;
   left: 50%;
@@ -1242,23 +1242,23 @@ to { transform: rotate(360deg);
   pointer-events: none;
   line-height: 14px;
 }
-.slider-handle--min .slider-handle__value[data-v-0a55d005] {
+.slider-handle--min .slider-handle__value[data-v-05ce9afb] {
   text-align: center;
 }
-.slider-handle--max .slider-handle__value[data-v-0a55d005] {
+.slider-handle--max .slider-handle__value[data-v-05ce9afb] {
   text-align: center;
 }
 
-.randomizer-settings[data-v-284e81b7] {
+.randomizer-settings[data-v-f7a531b6] {
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #e4e4e7;
 }
-.settings-header[data-v-284e81b7] {
+.settings-header[data-v-f7a531b6] {
   margin-bottom: 8px;
 }
-.settings-title[data-v-284e81b7] {
+.settings-title[data-v-f7a531b6] {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -1267,28 +1267,28 @@ to { transform: rotate(360deg);
   margin: 0;
   text-transform: uppercase;
 }
-.setting-section[data-v-284e81b7] {
+.setting-section[data-v-f7a531b6] {
   margin-bottom: 6px;
 }
-.setting-label[data-v-284e81b7] {
+.setting-label[data-v-f7a531b6] {
   font-size: 13px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.8);
   display: block;
   margin-bottom: 8px;
 }
-.section-header-with-toggle[data-v-284e81b7] {
+.section-header-with-toggle[data-v-f7a531b6] {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
 }
-.section-header-with-toggle .setting-label[data-v-284e81b7] {
+.section-header-with-toggle .setting-label[data-v-f7a531b6] {
   margin-bottom: 4px;
 }
 
 /* Count Mode Tabs */
-.count-mode-tabs[data-v-284e81b7] {
+.count-mode-tabs[data-v-f7a531b6] {
   display: flex;
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
@@ -1296,7 +1296,7 @@ to { transform: rotate(360deg);
   overflow: hidden;
   margin-bottom: 8px;
 }
-.count-mode-tab[data-v-284e81b7] {
+.count-mode-tab[data-v-f7a531b6] {
   flex: 1;
   position: relative;
   padding: 8px 12px;
@@ -1304,29 +1304,29 @@ to { transform: rotate(360deg);
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.count-mode-tab input[type="radio"][data-v-284e81b7] {
+.count-mode-tab input[type="radio"][data-v-f7a531b6] {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
 }
-.count-mode-tab-label[data-v-284e81b7] {
+.count-mode-tab-label[data-v-f7a531b6] {
   font-size: 13px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.7);
   transition: all 0.2s ease;
 }
-.count-mode-tab:hover .count-mode-tab-label[data-v-284e81b7] {
+.count-mode-tab:hover .count-mode-tab-label[data-v-f7a531b6] {
   color: rgba(226, 232, 240, 0.9);
 }
-.count-mode-tab.active .count-mode-tab-label[data-v-284e81b7] {
+.count-mode-tab.active .count-mode-tab-label[data-v-f7a531b6] {
   color: rgba(191, 219, 254, 1);
   font-weight: 600;
 }
-.count-mode-tab.active[data-v-284e81b7] {
+.count-mode-tab.active[data-v-f7a531b6] {
   background: rgba(66, 153, 225, 0.2);
 }
-.count-mode-tab.active[data-v-284e81b7]::after {
+.count-mode-tab.active[data-v-f7a531b6]::after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -1335,19 +1335,19 @@ to { transform: rotate(360deg);
   height: 2px;
   background: rgba(66, 153, 225, 0.9);
 }
-.slider-container[data-v-284e81b7] {
+.slider-container[data-v-f7a531b6] {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
   padding: 6px;
 }
-.slider-container--disabled[data-v-284e81b7] {
+.slider-container--disabled[data-v-f7a531b6] {
   opacity: 0.5;
   pointer-events: none;
 }
 
 /* Toggle Switch (same style as LicenseSection) */
-.toggle-switch[data-v-284e81b7] {
+.toggle-switch[data-v-f7a531b6] {
   position: relative;
   width: 36px;
   height: 20px;
@@ -1356,7 +1356,7 @@ to { transform: rotate(360deg);
   border: none;
   cursor: pointer;
 }
-.toggle-switch__track[data-v-284e81b7] {
+.toggle-switch__track[data-v-f7a531b6] {
   position: absolute;
   inset: 0;
   background: var(--comfy-input-bg, #333);
@@ -1364,11 +1364,11 @@ to { transform: rotate(360deg);
   border-radius: 10px;
   transition: all 0.2s;
 }
-.toggle-switch--active .toggle-switch__track[data-v-284e81b7] {
+.toggle-switch--active .toggle-switch__track[data-v-f7a531b6] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.toggle-switch__thumb[data-v-284e81b7] {
+.toggle-switch__thumb[data-v-f7a531b6] {
   position: absolute;
   top: 3px;
   left: 2px;
@@ -1379,27 +1379,27 @@ to { transform: rotate(360deg);
   transition: all 0.2s;
   opacity: 0.6;
 }
-.toggle-switch--active .toggle-switch__thumb[data-v-284e81b7] {
+.toggle-switch--active .toggle-switch__thumb[data-v-f7a531b6] {
   transform: translateX(16px);
   background: #4299e1;
   opacity: 1;
 }
-.toggle-switch:hover .toggle-switch__thumb[data-v-284e81b7] {
+.toggle-switch:hover .toggle-switch__thumb[data-v-f7a531b6] {
   opacity: 1;
 }
 
 /* Roll buttons with tooltip container */
-.roll-buttons-with-tooltip[data-v-284e81b7] {
+.roll-buttons-with-tooltip[data-v-f7a531b6] {
   position: relative;
 }
 
 /* Roll buttons container */
-.roll-buttons[data-v-284e81b7] {
+.roll-buttons[data-v-f7a531b6] {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 6px;
 }
-.roll-button[data-v-284e81b7] {
+.roll-button[data-v-f7a531b6] {
   padding: 6px 8px;
   background: rgba(30, 30, 36, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1416,39 +1416,39 @@ to { transform: rotate(360deg);
   transition: all 0.2s;
   white-space: nowrap;
 }
-.roll-button[data-v-284e81b7]:hover:not(:disabled) {
+.roll-button[data-v-f7a531b6]:hover:not(:disabled) {
   background: rgba(66, 153, 225, 0.2);
   border-color: rgba(66, 153, 225, 0.4);
   color: #bfdbfe;
 }
-.roll-button.selected[data-v-284e81b7] {
+.roll-button.selected[data-v-f7a531b6] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
   color: #e4e4e7;
   box-shadow: 0 0 0 1px rgba(66, 153, 225, 0.3);
 }
-.roll-button[data-v-284e81b7]:disabled {
+.roll-button[data-v-f7a531b6]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.roll-button__icon[data-v-284e81b7] {
+.roll-button__icon[data-v-f7a531b6] {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
 }
-.roll-button__text[data-v-284e81b7] {
+.roll-button__text[data-v-f7a531b6] {
   font-size: 12px;
   text-align: center;
   line-height: 1.2;
 }
 
 /* Tooltip transitions */
-.tooltip-enter-active[data-v-284e81b7],
-.tooltip-leave-active[data-v-284e81b7] {
+.tooltip-enter-active[data-v-f7a531b6],
+.tooltip-leave-active[data-v-f7a531b6] {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
-.tooltip-enter-from[data-v-284e81b7],
-.tooltip-leave-to[data-v-284e81b7] {
+.tooltip-enter-from[data-v-f7a531b6],
+.tooltip-leave-to[data-v-f7a531b6] {
   opacity: 0;
   transform: translateY(4px);
 }
@@ -11831,7 +11831,8 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
     defaultRange: {},
     disabled: { type: Boolean, default: false },
     scaleMode: { default: "linear" },
-    segments: { default: () => [] }
+    segments: { default: () => [] },
+    allowEqualValues: { type: Boolean, default: false }
   },
   emits: ["update:valueMin", "update:valueMax"],
   setup(__props, { emit: __emit }) {
@@ -11960,12 +11961,12 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
       const value = snapToStep(rawValue, multiplier);
       if (dragging.value === "min") {
         const maxMultiplier = getSegmentStepMultiplier(props.valueMax);
-        const maxAllowed = props.valueMax - props.step * maxMultiplier;
+        const maxAllowed = props.allowEqualValues ? props.valueMax : props.valueMax - props.step * maxMultiplier;
         const newValue = Math.min(value, maxAllowed);
         emit2("update:valueMin", newValue);
       } else {
         const minMultiplier = getSegmentStepMultiplier(props.valueMin);
-        const minAllowed = props.valueMin + props.step * minMultiplier;
+        const minAllowed = props.allowEqualValues ? props.valueMin : props.valueMin + props.step * minMultiplier;
         const newValue = Math.max(value, minAllowed);
         emit2("update:valueMax", newValue);
       }
@@ -11999,14 +12000,14 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
         const effectiveStep = props.step * multiplier;
         const newValue = snapToStep(props.valueMin + delta * effectiveStep, multiplier);
         const maxMultiplier = getSegmentStepMultiplier(props.valueMax);
-        const maxAllowed = props.valueMax - props.step * maxMultiplier;
+        const maxAllowed = props.allowEqualValues ? props.valueMax : props.valueMax - props.step * maxMultiplier;
         emit2("update:valueMin", Math.min(newValue, maxAllowed));
       } else if (relativeX > maxPixel) {
         const multiplier = getSegmentStepMultiplier(props.valueMax);
         const effectiveStep = props.step * multiplier;
         const newValue = snapToStep(props.valueMax + delta * effectiveStep, multiplier);
         const minMultiplier = getSegmentStepMultiplier(props.valueMin);
-        const minAllowed = props.valueMin + props.step * minMultiplier;
+        const minAllowed = props.allowEqualValues ? props.valueMin : props.valueMin + props.step * minMultiplier;
         emit2("update:valueMax", Math.max(newValue, minAllowed));
       } else {
         const minMultiplier = getSegmentStepMultiplier(props.valueMin);
@@ -12017,8 +12018,8 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
           emit2("update:valueMin", Math.max(newMin, props.min));
           emit2("update:valueMax", Math.min(newMax, props.max));
         } else {
-          props.valueMin + props.step * minMultiplier;
-          if (newMin < newMax - props.step * minMultiplier) {
+          const maxAllowed = props.allowEqualValues ? newMax : newMax - props.step * minMultiplier;
+          if (newMin <= maxAllowed) {
             emit2("update:valueMin", newMin);
             emit2("update:valueMax", newMax);
           }
@@ -12098,7 +12099,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-0a55d005"]]);
+const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-05ce9afb"]]);
 const _hoisted_1$4 = { class: "randomizer-settings" };
 const _hoisted_2$2 = { class: "setting-section" };
 const _hoisted_3$2 = { class: "count-mode-tabs" };
@@ -12209,6 +12210,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
               "value-max": __props.countMax,
               step: 1,
               "default-range": { min: 1, max: 5 },
+              "allow-equal-values": true,
               "onUpdate:valueMin": _cache[3] || (_cache[3] = ($event) => _ctx.$emit("update:countMin", $event)),
               "onUpdate:valueMax": _cache[4] || (_cache[4] = ($event) => _ctx.$emit("update:countMax", $event))
             }, null, 8, ["value-min", "value-max"]))
@@ -12226,6 +12228,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
               "default-range": { min: -2, max: 3 },
               "scale-mode": "segmented",
               segments: strengthSegments,
+              "allow-equal-values": true,
               "onUpdate:valueMin": _cache[5] || (_cache[5] = ($event) => _ctx.$emit("update:modelStrengthMin", $event)),
               "onUpdate:valueMax": _cache[6] || (_cache[6] = ($event) => _ctx.$emit("update:modelStrengthMax", $event))
             }, null, 8, ["value-min", "value-max"])
@@ -12257,6 +12260,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
               step: 0.1,
               "default-range": { min: 0.5, max: 1 },
               disabled: !__props.useRecommendedStrength,
+              "allow-equal-values": true,
               "onUpdate:valueMin": _cache[8] || (_cache[8] = ($event) => _ctx.$emit("update:recommendedStrengthScaleMin", $event)),
               "onUpdate:valueMax": _cache[9] || (_cache[9] = ($event) => _ctx.$emit("update:recommendedStrengthScaleMax", $event))
             }, null, 8, ["value-min", "value-max", "disabled"])
@@ -12290,6 +12294,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
               "scale-mode": "segmented",
               segments: strengthSegments,
               disabled: __props.isClipStrengthDisabled,
+              "allow-equal-values": true,
               "onUpdate:valueMin": _cache[11] || (_cache[11] = ($event) => _ctx.$emit("update:clipStrengthMin", $event)),
               "onUpdate:valueMax": _cache[12] || (_cache[12] = ($event) => _ctx.$emit("update:clipStrengthMax", $event))
             }, null, 8, ["value-min", "value-max", "disabled"])
@@ -12304,14 +12309,14 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                 disabled: __props.isRolling,
                 onClick: _cache[13] || (_cache[13] = ($event) => _ctx.$emit("generate-fixed"))
               }, [..._cache[25] || (_cache[25] = [
-                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-284e81b7><rect x="2" y="2" width="20" height="20" rx="5" data-v-284e81b7></rect><circle cx="12" cy="12" r="3" data-v-284e81b7></circle><circle cx="6" cy="8" r="1.5" data-v-284e81b7></circle><circle cx="18" cy="16" r="1.5" data-v-284e81b7></circle></svg><span class="roll-button__text" data-v-284e81b7>Generate Fixed</span>', 2)
+                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-f7a531b6><rect x="2" y="2" width="20" height="20" rx="5" data-v-f7a531b6></rect><circle cx="12" cy="12" r="3" data-v-f7a531b6></circle><circle cx="6" cy="8" r="1.5" data-v-f7a531b6></circle><circle cx="18" cy="16" r="1.5" data-v-f7a531b6></circle></svg><span class="roll-button__text" data-v-f7a531b6>Generate Fixed</span>', 2)
               ])], 10, _hoisted_19$1),
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "always" }]),
                 disabled: __props.isRolling,
                 onClick: _cache[14] || (_cache[14] = ($event) => _ctx.$emit("always-randomize"))
               }, [..._cache[26] || (_cache[26] = [
-                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-284e81b7><path d="M21 12a9 9 0 1 1-6.219-8.56" data-v-284e81b7></path><path d="M21 3v5h-5" data-v-284e81b7></path><circle cx="12" cy="12" r="3" data-v-284e81b7></circle><circle cx="6" cy="8" r="1.5" data-v-284e81b7></circle><circle cx="18" cy="16" r="1.5" data-v-284e81b7></circle></svg><span class="roll-button__text" data-v-284e81b7>Always Randomize</span>', 2)
+                createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-f7a531b6><path d="M21 12a9 9 0 1 1-6.219-8.56" data-v-f7a531b6></path><path d="M21 3v5h-5" data-v-f7a531b6></path><circle cx="12" cy="12" r="3" data-v-f7a531b6></circle><circle cx="6" cy="8" r="1.5" data-v-f7a531b6></circle><circle cx="18" cy="16" r="1.5" data-v-f7a531b6></circle></svg><span class="roll-button__text" data-v-f7a531b6>Always Randomize</span>', 2)
               ])], 10, _hoisted_20$1),
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "fixed" && __props.canReuseLast && areLorasEqual(__props.currentLoras, __props.lastUsed) }]),
@@ -12350,7 +12355,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraRandomizerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-284e81b7"]]);
+const LoraRandomizerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-f7a531b6"]]);
 function useLoraRandomizerState(widget) {
   const countMode = ref("range");
   const countFixed = ref(3);

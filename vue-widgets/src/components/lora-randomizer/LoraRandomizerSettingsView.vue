@@ -48,6 +48,7 @@
           :value-max="countMax"
           :step="1"
           :default-range="{ min: 1, max: 5 }"
+          :allow-equal-values="true"
           @update:value-min="$emit('update:countMin', $event)"
           @update:value-max="$emit('update:countMax', $event)"
         />
@@ -67,6 +68,7 @@
           :default-range="{ min: -2, max: 3 }"
           :scale-mode="'segmented'"
           :segments="strengthSegments"
+          :allow-equal-values="true"
           @update:value-min="$emit('update:modelStrengthMin', $event)"
           @update:value-max="$emit('update:modelStrengthMax', $event)"
         />
@@ -101,6 +103,7 @@
           :step="0.1"
           :default-range="{ min: 0.5, max: 1.0 }"
           :disabled="!useRecommendedStrength"
+          :allow-equal-values="true"
           @update:value-min="$emit('update:recommendedStrengthScaleMin', $event)"
           @update:value-max="$emit('update:recommendedStrengthScaleMax', $event)"
         />
@@ -137,6 +140,7 @@
           :scale-mode="'segmented'"
           :segments="strengthSegments"
           :disabled="isClipStrengthDisabled"
+          :allow-equal-values="true"
           @update:value-min="$emit('update:clipStrengthMin', $event)"
           @update:value-max="$emit('update:clipStrengthMax', $event)"
         />
