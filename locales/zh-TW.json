@@ -1214,6 +1214,7 @@
         "checkingUpdates": "正在檢查更新...",
         "checkingMessage": "請稍候，正在檢查最新版本。",
         "showNotifications": "顯示更新通知",
+        "latestBadge": "最新",
         "updateProgress": {
             "preparing": "正在準備更新...",
             "installing": "正在安裝更新...",

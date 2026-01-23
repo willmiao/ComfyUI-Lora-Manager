@@ -45,8 +45,9 @@ class UpdateRoutes:
             # Fetch remote version from GitHub
             if nightly:
                 remote_version, changelog = await UpdateRoutes._get_nightly_version()
+                releases = None
             else:
-                remote_version, changelog = await UpdateRoutes._get_remote_version()
+                remote_version, changelog, releases = await UpdateRoutes._get_remote_version()
             
             # Compare versions
             if nightly:
@@ -59,7 +60,7 @@ class UpdateRoutes:
                     remote_version.replace('v', '')
                 )
             
-            return web.json_response({
+            response_data = {
                 'success': True,
                 'current_version': local_version,
                 'latest_version': remote_version,
@@ -67,7 +68,13 @@ class UpdateRoutes:
                 'changelog': changelog,
                 'git_info': git_info,
                 'nightly': nightly
-            })
+            }
+            
+            # Include releases list for stable mode
+            if releases is not None:
+                response_data['releases'] = releases
+            
+            return web.json_response(response_data)
             
         except NETWORK_EXCEPTIONS as e:
             logger.warning("Network unavailable during update check: %s", e)
@@ -443,42 +450,58 @@ class UpdateRoutes:
         return git_info
     
     @staticmethod
-    async def _get_remote_version() -> tuple[str, List[str]]:
+    async def _get_remote_version() -> tuple[str, List[str], List[Dict]]:
         """
         Fetch remote version from GitHub
         Returns:
-            tuple: (version string, changelog list)
+            tuple: (version string, changelog list, releases list)
         """
         repo_owner = "willmiao"
         repo_name = "ComfyUI-Lora-Manager"
         
-        # Use GitHub API to fetch the latest release
-        github_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest"
+        # Use GitHub API to fetch the last 5 releases
+        github_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases?per_page=5"
         
         try:
             downloader = await get_downloader()
             success, data = await downloader.make_request('GET', github_url, custom_headers={'Accept': 'application/vnd.github+json'})
             
             if not success:
-                logger.warning(f"Failed to fetch GitHub release: {data}")
-                return "v0.0.0", []
+                logger.warning(f"Failed to fetch GitHub releases: {data}")
+                return "v0.0.0", [], []
             
-            version = data.get('tag_name', '')
-            if not version.startswith('v'):
-                version = f"v{version}"
+            # Parse releases
+            releases = []
+            for i, release in enumerate(data):
+                version = release.get('tag_name', '')
+                if not version.startswith('v'):
+                    version = f"v{version}"
+                
+                # Extract changelog from release notes
+                body = release.get('body', '')
+                changelog = UpdateRoutes._parse_changelog(body)
+                
+                releases.append({
+                    'version': version,
+                    'changelog': changelog,
+                    'published_at': release.get('published_at', ''),
+                    'is_latest': i == 0
+                })
             
-            # Extract changelog from release notes
-            body = data.get('body', '')
-            changelog = UpdateRoutes._parse_changelog(body)
+            # Get latest version and its changelog
+            if releases:
+                latest_version = releases[0]['version']
+                latest_changelog = releases[0]['changelog']
+                return latest_version, latest_changelog, releases
             
-            return version, changelog
+            return "v0.0.0", [], []
         
         except NETWORK_EXCEPTIONS as e:
             logger.warning("Unable to reach GitHub for release info: %s", e)
-            return "v0.0.0", []
+            return "v0.0.0", [], []
         except Exception as e:
             logger.error(f"Error fetching remote version: {e}", exc_info=True)
-            return "v0.0.0", []
+            return "v0.0.0", [], []
     
     @staticmethod
     def _parse_changelog(release_notes: str) -> List[str]:

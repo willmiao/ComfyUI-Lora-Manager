@@ -1,8 +1,4 @@
 /* Update Modal Styles */
-.update-modal {
-    max-width: 600px;
-}
-
 .update-header {
     display: flex;
     align-items: center;

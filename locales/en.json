@@ -1214,6 +1214,7 @@
         "checkingUpdates": "Checking for updates...",
         "checkingMessage": "Please wait while we check for the latest version.",
         "showNotifications": "Show update notifications",
+        "latestBadge": "Latest",
         "updateProgress": {
             "preparing": "Preparing update...",
             "installing": "Installing update...",

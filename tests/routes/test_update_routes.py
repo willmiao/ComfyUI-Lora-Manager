@@ -24,11 +24,12 @@ async def test_get_remote_version_offline_logs_without_traceback(monkeypatch, ca
     caplog.set_level(logging.WARNING)
     monkeypatch.setattr(update_routes, "get_downloader", lambda: _stub_downloader(OfflineDownloader()))
 
-    version, changelog = await update_routes.UpdateRoutes._get_remote_version()
+    version, changelog, releases = await update_routes.UpdateRoutes._get_remote_version()
 
     assert version == "v0.0.0"
     assert changelog == []
-    assert "Failed to fetch GitHub release" in caplog.text
+    assert releases == []
+    assert "Failed to fetch GitHub releases" in caplog.text
     assert "Cannot connect to host" in caplog.text
     assert "Traceback" not in caplog.text
 
@@ -38,10 +39,11 @@ async def test_get_remote_version_network_error_logs_warning(monkeypatch, caplog
     caplog.set_level(logging.WARNING)
     monkeypatch.setattr(update_routes, "get_downloader", lambda: _stub_downloader(RaisingDownloader()))
 
-    version, changelog = await update_routes.UpdateRoutes._get_remote_version()
+    version, changelog, releases = await update_routes.UpdateRoutes._get_remote_version()
 
     assert version == "v0.0.0"
     assert changelog == []
+    assert releases == []
     assert "Unable to reach GitHub for release info" in caplog.text
     assert "Traceback" not in caplog.text
 

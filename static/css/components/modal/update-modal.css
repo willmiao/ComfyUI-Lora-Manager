@@ -122,3 +122,48 @@
 .changelog-item a:hover {
     text-decoration: underline;
 }
+
+/* Multiple releases styling */
+.changelog-content > .changelog-item + .changelog-item {
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--lora-border);
+}
+
+.changelog-item h4 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+    font-size: 1em;
+}
+
+.changelog-item .latest-badge {
+    background-color: var(--lora-accent);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75em;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.changelog-item .publish-date {
+    font-size: 0.85em;
+    color: var(--text-color);
+    opacity: 0.6;
+    font-weight: normal;
+}
+
+.changelog-item.latest {
+    background-color: rgba(66, 153, 225, 0.05);
+    border-radius: var(--border-radius-sm);
+    padding: var(--space-3);
+    border: 1px solid rgba(66, 153, 225, 0.2);
+}
+
+[data-theme="dark"] .changelog-item.latest {
+    background-color: rgba(66, 153, 225, 0.1);
+    border-color: rgba(66, 153, 225, 0.3);
+}

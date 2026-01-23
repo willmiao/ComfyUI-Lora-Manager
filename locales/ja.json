@@ -1214,6 +1214,7 @@
         "checkingUpdates": "更新を確認中...",
         "checkingMessage": "最新バージョンを確認しています。お待ちください。",
         "showNotifications": "更新通知を表示",
+        "latestBadge": "最新",
         "updateProgress": {
             "preparing": "更新を準備中...",
             "installing": "更新をインストール中...",

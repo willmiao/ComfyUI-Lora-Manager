@@ -1214,6 +1214,7 @@
         "checkingUpdates": "בודק עדכונים...",
         "checkingMessage": "אנא המתן בזמן שאנו בודקים את הגרסה האחרונה.",
         "showNotifications": "הצג התראות עדכון",
+        "latestBadge": "עדכן",
         "updateProgress": {
             "preparing": "מכין עדכון...",
             "installing": "מתקין עדכון...",

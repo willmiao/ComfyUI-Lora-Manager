@@ -1214,6 +1214,7 @@
         "checkingUpdates": "업데이트 확인 중...",
         "checkingMessage": "최신 버전을 확인하는 동안 잠시 기다려주세요.",
         "showNotifications": "업데이트 알림 표시",
+        "latestBadge": "최신",
         "updateProgress": {
             "preparing": "업데이트 준비 중...",
             "installing": "업데이트 설치 중...",

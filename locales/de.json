@@ -1214,6 +1214,7 @@
         "checkingUpdates": "Nach Updates wird gesucht...",
         "checkingMessage": "Bitte warten Sie, während wir nach der neuesten Version suchen.",
         "showNotifications": "Update-Benachrichtigungen anzeigen",
+        "latestBadge": "Neueste",
         "updateProgress": {
             "preparing": "Update wird vorbereitet...",
             "installing": "Update wird installiert...",

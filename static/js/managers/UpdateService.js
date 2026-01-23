@@ -509,38 +509,90 @@ export class UpdateService {
         }
         
         // Update changelog content if available
-        if (this.updateInfo && this.updateInfo.changelog) {
+        if (this.updateInfo && (this.updateInfo.changelog || this.updateInfo.releases)) {
             const changelogContent = modal.querySelector('.changelog-content');
             if (changelogContent) {
                 changelogContent.innerHTML = ''; // Clear existing content
                 
-                // Create changelog item
-                const changelogItem = document.createElement('div');
-                changelogItem.className = 'changelog-item';
-                
-                const versionHeader = document.createElement('h4');
-                versionHeader.textContent = `${translate('common.status.version', {}, 'Version')} ${this.latestVersion}`;
-                changelogItem.appendChild(versionHeader);
-                
-                // Create changelog list
-                const changelogList = document.createElement('ul');
-                
-                if (this.updateInfo.changelog && this.updateInfo.changelog.length > 0) {
-                    this.updateInfo.changelog.forEach(item => {
-                        const listItem = document.createElement('li');
-                        // Parse markdown in changelog items
-                        listItem.innerHTML = this.parseMarkdown(item);
-                        changelogList.appendChild(listItem);
+                // Check if we have multiple releases
+                const releases = this.updateInfo.releases;
+                if (releases && Array.isArray(releases) && releases.length > 0) {
+                    // Display multiple releases (up to 5)
+                    releases.forEach(release => {
+                        const changelogItem = document.createElement('div');
+                        changelogItem.className = 'changelog-item';
+                        if (release.is_latest) {
+                            changelogItem.classList.add('latest');
+                        }
+                        
+                        const versionHeader = document.createElement('h4');
+                        
+                        if (release.is_latest) {
+                            const badge = document.createElement('span');
+                            badge.className = 'latest-badge';
+                            badge.textContent = translate('update.latestBadge', {}, 'Latest');
+                            versionHeader.appendChild(badge);
+                            versionHeader.appendChild(document.createTextNode(' '));
+                        }
+                        
+                        const versionSpan = document.createElement('span');
+                        versionSpan.className = 'version';
+                        versionSpan.textContent = `${translate('common.status.version', {}, 'Version')} ${release.version}`;
+                        versionHeader.appendChild(versionSpan);
+                        
+                        if (release.published_at) {
+                            const dateSpan = document.createElement('span');
+                            dateSpan.className = 'publish-date';
+                            dateSpan.textContent = this.formatRelativeTime(new Date(release.published_at).getTime());
+                            versionHeader.appendChild(dateSpan);
+                        }
+                        
+                        changelogItem.appendChild(versionHeader);
+                        
+                        // Create changelog list
+                        const changelogList = document.createElement('ul');
+                        
+                        if (release.changelog && release.changelog.length > 0) {
+                            release.changelog.forEach(item => {
+                                const listItem = document.createElement('li');
+                                listItem.innerHTML = this.parseMarkdown(item);
+                                changelogList.appendChild(listItem);
+                            });
+                        } else {
+                            const listItem = document.createElement('li');
+                            listItem.textContent = translate('update.noChangelogAvailable', {}, 'No detailed changelog available.');
+                            changelogList.appendChild(listItem);
+                        }
+                        
+                        changelogItem.appendChild(changelogList);
+                        changelogContent.appendChild(changelogItem);
                     });
                 } else {
-                    // If no changelog items available
-                    const listItem = document.createElement('li');
-                    listItem.textContent = translate('update.noChangelogAvailable', {}, 'No detailed changelog available. Check GitHub for more information.');
-                    changelogList.appendChild(listItem);
+                    // Fallback: display single changelog (old behavior)
+                    const changelogItem = document.createElement('div');
+                    changelogItem.className = 'changelog-item';
+                    
+                    const versionHeader = document.createElement('h4');
+                    versionHeader.textContent = `${translate('common.status.version', {}, 'Version')} ${this.latestVersion}`;
+                    changelogItem.appendChild(versionHeader);
+                    
+                    const changelogList = document.createElement('ul');
+                    
+                    if (this.updateInfo.changelog && this.updateInfo.changelog.length > 0) {
+                        this.updateInfo.changelog.forEach(item => {
+                            const listItem = document.createElement('li');
+                            listItem.innerHTML = this.parseMarkdown(item);
+                            changelogList.appendChild(listItem);
+                        });
+                    } else {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = translate('update.noChangelogAvailable', {}, 'No detailed changelog available. Check GitHub for more information.');
+                        changelogList.appendChild(listItem);
+                    }
+                    
+                    changelogItem.appendChild(changelogList);
+                    changelogContent.appendChild(changelogItem);
                 }
-                
-                changelogItem.appendChild(changelogList);
-                changelogContent.appendChild(changelogItem);
             }
         }
         
