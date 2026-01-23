@@ -10,23 +10,32 @@ class TriggerWordToggle:
     NAME = "TriggerWord Toggle (LoraManager)"
     CATEGORY = "Lora Manager/utils"
     DESCRIPTION = "Toggle trigger words on/off"
-    
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "group_mode": ("BOOLEAN", {
-                    "default": True,
-                    "tooltip": "When enabled, treats each group of trigger words as a single toggleable unit."
-                }),
-                "default_active": ("BOOLEAN", {
-                    "default": True,
-                    "tooltip": "Sets the default initial state (active or inactive) when trigger words are added."
-                }),
-                "allow_strength_adjustment": ("BOOLEAN", {
-                    "default": False,
-                    "tooltip": "Enable mouse wheel adjustment of each trigger word's strength."
-                }),
+                "group_mode": (
+                    "BOOLEAN",
+                    {
+                        "default": True,
+                        "tooltip": "When enabled, treats each group of trigger words as a single toggleable unit.",
+                    },
+                ),
+                "default_active": (
+                    "BOOLEAN",
+                    {
+                        "default": True,
+                        "tooltip": "Sets the default initial state (active or inactive) when trigger words are added.",
+                    },
+                ),
+                "allow_strength_adjustment": (
+                    "BOOLEAN",
+                    {
+                        "default": False,
+                        "tooltip": "Enable mouse wheel adjustment of each trigger word's strength.",
+                    },
+                ),
             },
             "optional": FlexibleOptionalInputType(any_type),
             "hidden": {
@@ -38,15 +47,15 @@ class TriggerWordToggle:
     RETURN_NAMES = ("filtered_trigger_words",)
     FUNCTION = "process_trigger_words"
 
-    def _get_toggle_data(self, kwargs, key='toggle_trigger_words'):
+    def _get_toggle_data(self, kwargs, key="toggle_trigger_words"):
         """Helper to extract data from either old or new kwargs format"""
         if key not in kwargs:
             return None
-            
+
         data = kwargs[key]
         # Handle new format: {'key': {'__value__': ...}}
-        if isinstance(data, dict) and '__value__' in data:
-            return data['__value__']
+        if isinstance(data, dict) and "__value__" in data:
+            return data["__value__"]
         # Handle old format: {'key': ...}
         else:
             return data
@@ -60,13 +69,25 @@ class TriggerWordToggle:
         **kwargs,
     ):
         # Handle both old and new formats for trigger_words
-        trigger_words_data = self._get_toggle_data(kwargs, 'orinalMessage')
-        trigger_words = trigger_words_data if isinstance(trigger_words_data, str) else ""
-        
+        trigger_words_data = self._get_toggle_data(kwargs, "orinalMessage")
+        trigger_words = (
+            trigger_words_data if isinstance(trigger_words_data, str) else ""
+        )
+
         filtered_triggers = trigger_words
-        
+
+        # Check if trigger_words is provided and different from orinalMessage
+        trigger_words_override = self._get_toggle_data(kwargs, "trigger_words")
+        if (
+            trigger_words_override
+            and isinstance(trigger_words_override, str)
+            and trigger_words_override != trigger_words
+        ):
+            filtered_triggers = trigger_words_override
+            return (filtered_triggers,)
+
         # Get toggle data with support for both formats
-        trigger_data = self._get_toggle_data(kwargs, 'toggle_trigger_words')
+        trigger_data = self._get_toggle_data(kwargs, "toggle_trigger_words")
         if trigger_data:
             try:
                 # Convert to list if it's a JSON string
@@ -77,7 +98,9 @@ class TriggerWordToggle:
                     if group_mode:
                         if allow_strength_adjustment:
                             parsed_items = [
-                                self._parse_trigger_item(item, allow_strength_adjustment)
+                                self._parse_trigger_item(
+                                    item, allow_strength_adjustment
+                                )
                                 for item in trigger_data
                             ]
                             filtered_groups = [
@@ -91,11 +114,14 @@ class TriggerWordToggle:
                             ]
                         else:
                             filtered_groups = [
-                                (item.get('text') or "").strip()
+                                (item.get("text") or "").strip()
                                 for item in trigger_data
-                                if (item.get('text') or "").strip() and item.get('active', False)
+                                if (item.get("text") or "").strip()
+                                and item.get("active", False)
                             ]
-                        filtered_triggers = ', '.join(filtered_groups) if filtered_groups else ""
+                        filtered_triggers = (
+                            ", ".join(filtered_groups) if filtered_groups else ""
+                        )
                     else:
                         parsed_items = [
                             self._parse_trigger_item(item, allow_strength_adjustment)
@@ -110,28 +136,34 @@ class TriggerWordToggle:
                             for item in parsed_items
                             if item["text"] and item["active"]
                         ]
-                        filtered_triggers = ', '.join(filtered_words) if filtered_words else ""
+                        filtered_triggers = (
+                            ", ".join(filtered_words) if filtered_words else ""
+                        )
                 else:
                     # Fallback to original message parsing if data is not in the expected list format
                     if group_mode:
-                        groups = re.split(r',{2,}', trigger_words)
+                        groups = re.split(r",{2,}", trigger_words)
                         groups = [group.strip() for group in groups if group.strip()]
-                        filtered_triggers = ', '.join(groups)
+                        filtered_triggers = ", ".join(groups)
                     else:
-                        words = [word.strip() for word in trigger_words.split(',') if word.strip()]
-                        filtered_triggers = ', '.join(words)
+                        words = [
+                            word.strip()
+                            for word in trigger_words.split(",")
+                            if word.strip()
+                        ]
+                        filtered_triggers = ", ".join(words)
 
             except Exception as e:
                 logger.error(f"Error processing trigger words: {e}")
-            
+
         return (filtered_triggers,)
 
     def _parse_trigger_item(self, item, allow_strength_adjustment):
-        text = (item.get('text') or "").strip()
-        active = bool(item.get('active', False))
-        strength = item.get('strength')
+        text = (item.get("text") or "").strip()
+        active = bool(item.get("active", False))
+        strength = item.get("strength")
 
-        strength_match = re.match(r'^\((.+):([\d.]+)\)$', text)
+        strength_match = re.match(r"^\((.+):([\d.]+)\)$", text)
         if strength_match:
             text = strength_match.group(1).strip()
             if strength is None:
