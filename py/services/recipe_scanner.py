@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 from ..config import config
 from .recipe_cache import RecipeCache
 from .recipe_fts_index import RecipeFTSIndex
+from .persistent_recipe_cache import PersistentRecipeCache, get_persistent_recipe_cache
 from .service_registry import ServiceRegistry
 from .lora_scanner import LoraScanner
 from .metadata_service import get_default_metadata_provider
@@ -78,6 +79,9 @@ class RecipeScanner:
             # FTS index for fast search
             self._fts_index: Optional[RecipeFTSIndex] = None
             self._fts_index_task: Optional[asyncio.Task] = None
+            # Persistent cache for fast startup
+            self._persistent_cache: Optional[PersistentRecipeCache] = None
+            self._json_path_map: Dict[str, str] = {}  # recipe_id -> json_path
             if lora_scanner:
                 self._lora_scanner = lora_scanner
             if checkpoint_scanner:
@@ -108,6 +112,11 @@ class RecipeScanner:
         if self._fts_index:
             self._fts_index.clear()
         self._fts_index = None
+
+        # Reset persistent cache instance for new library
+        self._persistent_cache = None
+        self._json_path_map = {}
+        PersistentRecipeCache.clear_instances()
 
         self._cache = None
         self._initialization_task = None
@@ -321,12 +330,17 @@ class RecipeScanner:
             with open(recipe_json_path, 'w', encoding='utf-8') as f:
                 json.dump(recipe, f, indent=4, ensure_ascii=False)
 
-            # 4. Update EXIF if image exists
+            # 4. Update persistent SQLite cache
+            if self._persistent_cache:
+                self._persistent_cache.update_recipe(recipe, recipe_json_path)
+                self._json_path_map[str(recipe_id)] = recipe_json_path
+
+            # 5. Update EXIF if image exists
             image_path = recipe.get('file_path')
             if image_path and os.path.exists(image_path):
                 from ..utils.exif_utils import ExifUtils
                 ExifUtils.append_recipe_metadata(image_path, recipe)
-            
+
             return True
         except Exception as e:
             logger.error(f"Error persisting recipe {recipe_id}: {e}")
@@ -408,116 +422,267 @@ class RecipeScanner:
             logger.error(f"Recipe Scanner: Error initializing cache in background: {e}")
     
     def _initialize_recipe_cache_sync(self):
-        """Synchronous version of recipe cache initialization for thread pool execution"""
+        """Synchronous version of recipe cache initialization for thread pool execution.
+
+        Uses persistent cache for fast startup when available:
+        1. Try to load from persistent SQLite cache
+        2. Reconcile with filesystem (check mtime/size for changes)
+        3. Fall back to full directory scan if cache miss or reconciliation fails
+        4. Persist results for next startup
+        """
         try:
             # Create a new event loop for this thread
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            
-            # Create a synchronous method to bypass the async lock
-            def sync_initialize_cache():
-                # We need to implement scan_all_recipes logic synchronously here
-                # instead of calling the async method to avoid event loop issues
-                recipes = []
-                recipes_dir = self.recipes_dir
-                
-                if not recipes_dir or not os.path.exists(recipes_dir):
-                    logger.warning(f"Recipes directory not found: {recipes_dir}")
-                    return recipes
-                
-                # Get all recipe JSON files in the recipes directory
-                recipe_files = []
-                for root, _, files in os.walk(recipes_dir):
-                    recipe_count = sum(1 for f in files if f.lower().endswith('.recipe.json'))
-                    if recipe_count > 0:
-                        for file in files:
-                            if file.lower().endswith('.recipe.json'):
-                                recipe_files.append(os.path.join(root, file))
-                
-                # Process each recipe file
-                for recipe_path in recipe_files:
-                    try:
-                        with open(recipe_path, 'r', encoding='utf-8') as f:
-                            recipe_data = json.load(f)
-                        
-                        # Validate recipe data
-                        if not recipe_data or not isinstance(recipe_data, dict):
-                            logger.warning(f"Invalid recipe data in {recipe_path}")
-                            continue
-                        
-                        # Ensure required fields exist
-                        required_fields = ['id', 'file_path', 'title']
-                        if not all(field in recipe_data for field in required_fields):
-                            logger.warning(f"Missing required fields in {recipe_path}")
-                            continue
-                        
-                        # Ensure the image file exists and prioritize local siblings
-                        image_path = recipe_data.get('file_path')
-                        if image_path:
-                            recipe_dir = os.path.dirname(recipe_path)
-                            image_filename = os.path.basename(image_path)
-                            local_sibling_path = os.path.normpath(os.path.join(recipe_dir, image_filename))
-                            
-                            # If local sibling exists and stored path is different, prefer local
-                            if os.path.exists(local_sibling_path) and os.path.normpath(image_path) != local_sibling_path:
-                                recipe_data['file_path'] = local_sibling_path
-                                # Persist the repair
-                                try:
-                                    with open(recipe_path, 'w', encoding='utf-8') as f:
-                                        json.dump(recipe_data, f, indent=4, ensure_ascii=False)
-                                    logger.info(f"Updated recipe image path to local sibling: {local_sibling_path}")
-                                except Exception as e:
-                                    logger.warning(f"Failed to persist repair for {recipe_path}: {e}")
-                            elif not os.path.exists(image_path):
-                                logger.warning(f"Recipe image not found and no local sibling: {image_path}")
-                        
-                        # Ensure loras array exists
-                        if 'loras' not in recipe_data:
-                            recipe_data['loras'] = []
-                        
-                        # Ensure gen_params exists
-                        if 'gen_params' not in recipe_data:
-                            recipe_data['gen_params'] = {}
-                        
-                        # Add to list without async operations
-                        recipes.append(recipe_data)
-                    except Exception as e:
-                        logger.error(f"Error loading recipe file {recipe_path}: {e}")
-                        import traceback
-                        traceback.print_exc(file=sys.stderr)
-                
-                # Update cache with the collected data
-                self._cache.raw_data = recipes
-                self._update_folder_metadata(self._cache)
-                
-                # Create a simplified resort function that doesn't use await
-                if hasattr(self._cache, "resort"):
-                    try:
-                        # Sort by name
-                        self._cache.sorted_by_name = natsorted(
-                            self._cache.raw_data,
-                            key=lambda x: x.get('title', '').lower()
-                        )
-                        
-                        # Sort by date (modified or created)
-                        self._cache.sorted_by_date = sorted(
-                            self._cache.raw_data,
-                            key=lambda x: x.get('modified', x.get('created_date', 0)),
-                            reverse=True
-                        )
-                    except Exception as e:
-                        logger.error(f"Error sorting recipe cache: {e}")
-                
+
+            # Initialize persistent cache
+            if self._persistent_cache is None:
+                self._persistent_cache = get_persistent_recipe_cache()
+
+            recipes_dir = self.recipes_dir
+            if not recipes_dir or not os.path.exists(recipes_dir):
+                logger.warning(f"Recipes directory not found: {recipes_dir}")
                 return self._cache
-            
-            # Run our sync initialization that avoids lock conflicts
-            return sync_initialize_cache()
+
+            # Try to load from persistent cache first
+            persisted = self._persistent_cache.load_cache()
+            if persisted:
+                recipes, changed, json_paths = self._reconcile_recipe_cache(persisted, recipes_dir)
+                self._json_path_map = json_paths
+
+                if not changed:
+                    # Fast path: use cached data directly
+                    logger.info("Recipe cache hit: loaded %d recipes from persistent cache", len(recipes))
+                    self._cache.raw_data = recipes
+                    self._update_folder_metadata(self._cache)
+                    self._sort_cache_sync()
+                    return self._cache
+                else:
+                    # Partial update: some files changed
+                    logger.info("Recipe cache partial hit: reconciled %d recipes with filesystem", len(recipes))
+                    self._cache.raw_data = recipes
+                    self._update_folder_metadata(self._cache)
+                    self._sort_cache_sync()
+                    # Persist updated cache
+                    self._persistent_cache.save_cache(recipes, json_paths)
+                    return self._cache
+
+            # Fall back to full directory scan
+            logger.info("Recipe cache miss: performing full directory scan")
+            recipes, json_paths = self._full_directory_scan_sync(recipes_dir)
+            self._json_path_map = json_paths
+
+            # Update cache with the collected data
+            self._cache.raw_data = recipes
+            self._update_folder_metadata(self._cache)
+            self._sort_cache_sync()
+
+            # Persist for next startup
+            self._persistent_cache.save_cache(recipes, json_paths)
+
+            return self._cache
         except Exception as e:
             logger.error(f"Error in thread-based recipe cache initialization: {e}")
+            import traceback
+            traceback.print_exc(file=sys.stderr)
             return self._cache if hasattr(self, '_cache') else None
         finally:
             # Clean up the event loop
             loop.close()
+
+    def _reconcile_recipe_cache(
+        self,
+        persisted: "PersistedRecipeData",
+        recipes_dir: str,
+    ) -> Tuple[List[Dict], bool, Dict[str, str]]:
+        """Reconcile persisted cache with current filesystem state.
+
+        Args:
+            persisted: The persisted recipe data from SQLite cache.
+            recipes_dir: Path to the recipes directory.
+
+        Returns:
+            Tuple of (recipes list, changed flag, json_paths dict).
+        """
+        from .persistent_recipe_cache import PersistedRecipeData
+
+        recipes: List[Dict] = []
+        json_paths: Dict[str, str] = {}
+        changed = False
+
+        # Build set of current recipe files
+        current_files: Dict[str, Tuple[float, int]] = {}
+        for root, _, files in os.walk(recipes_dir):
+            for file in files:
+                if file.lower().endswith('.recipe.json'):
+                    file_path = os.path.join(root, file)
+                    try:
+                        stat = os.stat(file_path)
+                        current_files[file_path] = (stat.st_mtime, stat.st_size)
+                    except OSError:
+                        continue
+
+        # Build lookup of persisted recipes by json_path
+        persisted_by_path: Dict[str, Dict] = {}
+        for recipe in persisted.raw_data:
+            recipe_id = str(recipe.get('id', ''))
+            if recipe_id:
+                # Find the json_path from file_stats
+                for json_path, (mtime, size) in persisted.file_stats.items():
+                    if os.path.basename(json_path).startswith(recipe_id):
+                        persisted_by_path[json_path] = recipe
+                        break
+
+        # Also index by recipe ID for faster lookups
+        persisted_by_id: Dict[str, Dict] = {
+            str(r.get('id', '')): r for r in persisted.raw_data if r.get('id')
+        }
+
+        # Process current files
+        for file_path, (current_mtime, current_size) in current_files.items():
+            cached_stats = persisted.file_stats.get(file_path)
+
+            if cached_stats:
+                cached_mtime, cached_size = cached_stats
+                # Check if file is unchanged
+                if abs(current_mtime - cached_mtime) < 1.0 and current_size == cached_size:
+                    # Use cached data
+                    cached_recipe = persisted_by_path.get(file_path)
+                    if cached_recipe:
+                        recipe_id = str(cached_recipe.get('id', ''))
+                        # Track folder from file path
+                        cached_recipe['folder'] = cached_recipe.get('folder') or self._calculate_folder(file_path)
+                        recipes.append(cached_recipe)
+                        json_paths[recipe_id] = file_path
+                        continue
+
+            # File is new or changed - need to re-read
+            changed = True
+            recipe_data = self._load_recipe_file_sync(file_path)
+            if recipe_data:
+                recipe_id = str(recipe_data.get('id', ''))
+                recipes.append(recipe_data)
+                json_paths[recipe_id] = file_path
+
+        # Check for deleted files
+        for json_path in persisted.file_stats.keys():
+            if json_path not in current_files:
+                changed = True
+                logger.debug("Recipe file deleted: %s", json_path)
+
+        return recipes, changed, json_paths
+
+    def _full_directory_scan_sync(self, recipes_dir: str) -> Tuple[List[Dict], Dict[str, str]]:
+        """Perform a full synchronous directory scan for recipes.
+
+        Args:
+            recipes_dir: Path to the recipes directory.
+
+        Returns:
+            Tuple of (recipes list, json_paths dict).
+        """
+        recipes: List[Dict] = []
+        json_paths: Dict[str, str] = {}
+
+        # Get all recipe JSON files
+        recipe_files = []
+        for root, _, files in os.walk(recipes_dir):
+            for file in files:
+                if file.lower().endswith('.recipe.json'):
+                    recipe_files.append(os.path.join(root, file))
+
+        # Process each recipe file
+        for recipe_path in recipe_files:
+            recipe_data = self._load_recipe_file_sync(recipe_path)
+            if recipe_data:
+                recipe_id = str(recipe_data.get('id', ''))
+                recipes.append(recipe_data)
+                json_paths[recipe_id] = recipe_path
+
+        return recipes, json_paths
+
+    def _load_recipe_file_sync(self, recipe_path: str) -> Optional[Dict]:
+        """Load a single recipe file synchronously.
+
+        Args:
+            recipe_path: Path to the recipe JSON file.
+
+        Returns:
+            Recipe dictionary if valid, None otherwise.
+        """
+        try:
+            with open(recipe_path, 'r', encoding='utf-8') as f:
+                recipe_data = json.load(f)
+
+            # Validate recipe data
+            if not recipe_data or not isinstance(recipe_data, dict):
+                logger.warning(f"Invalid recipe data in {recipe_path}")
+                return None
+
+            # Ensure required fields exist
+            required_fields = ['id', 'file_path', 'title']
+            if not all(field in recipe_data for field in required_fields):
+                logger.warning(f"Missing required fields in {recipe_path}")
+                return None
+
+            # Ensure the image file exists and prioritize local siblings
+            image_path = recipe_data.get('file_path')
+            path_updated = False
+            if image_path:
+                recipe_dir = os.path.dirname(recipe_path)
+                image_filename = os.path.basename(image_path)
+                local_sibling_path = os.path.normpath(os.path.join(recipe_dir, image_filename))
+
+                # If local sibling exists and stored path is different, prefer local
+                if os.path.exists(local_sibling_path) and os.path.normpath(image_path) != local_sibling_path:
+                    recipe_data['file_path'] = local_sibling_path
+                    path_updated = True
+                    logger.info(f"Updated recipe image path to local sibling: {local_sibling_path}")
+                elif not os.path.exists(image_path):
+                    logger.warning(f"Recipe image not found and no local sibling: {image_path}")
+
+            if path_updated:
+                try:
+                    with open(recipe_path, 'w', encoding='utf-8') as f:
+                        json.dump(recipe_data, f, indent=4, ensure_ascii=False)
+                except Exception as e:
+                    logger.warning(f"Failed to persist repair for {recipe_path}: {e}")
+
+            # Track folder placement relative to recipes directory
+            recipe_data['folder'] = recipe_data.get('folder') or self._calculate_folder(recipe_path)
+
+            # Ensure loras array exists
+            if 'loras' not in recipe_data:
+                recipe_data['loras'] = []
+
+            # Ensure gen_params exists
+            if 'gen_params' not in recipe_data:
+                recipe_data['gen_params'] = {}
+
+            return recipe_data
+        except Exception as e:
+            logger.error(f"Error loading recipe file {recipe_path}: {e}")
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+            return None
+
+    def _sort_cache_sync(self) -> None:
+        """Sort cache data synchronously."""
+        try:
+            # Sort by name
+            self._cache.sorted_by_name = natsorted(
+                self._cache.raw_data,
+                key=lambda x: x.get('title', '').lower()
+            )
+
+            # Sort by date (modified or created)
+            self._cache.sorted_by_date = sorted(
+                self._cache.raw_data,
+                key=lambda x: (x.get('modified', x.get('created_date', 0)), x.get('file_path', '')),
+                reverse=True
+            )
+        except Exception as e:
+            logger.error(f"Error sorting recipe cache: {e}")
 
     async def _wait_for_lora_scanner(self) -> None:
         """Ensure the LoRA scanner has initialized before recipe enrichment."""
@@ -570,7 +735,10 @@ class RecipeScanner:
         self._post_scan_task = loop.create_task(_run_enrichment(), name="recipe_cache_enrichment")
 
     def _schedule_fts_index_build(self) -> None:
-        """Build FTS index in background without blocking."""
+        """Build FTS index in background without blocking.
+
+        Validates existing index first and reuses it if valid.
+        """
 
         if self._fts_index_task and not self._fts_index_task.done():
             return  # Already running
@@ -587,7 +755,25 @@ class RecipeScanner:
             try:
                 self._fts_index = RecipeFTSIndex()
 
-                # Run in thread pool (SQLite is blocking)
+                # Check if existing index is valid
+                recipe_ids = {str(r.get('id', '')) for r in self._cache.raw_data if r.get('id')}
+                recipe_count = len(self._cache.raw_data)
+
+                # Run validation in thread pool
+                is_valid = await loop.run_in_executor(
+                    None,
+                    self._fts_index.validate_index,
+                    recipe_count,
+                    recipe_ids
+                )
+
+                if is_valid:
+                    logger.info("FTS index validated, reusing existing index with %d recipes", recipe_count)
+                    self._fts_index._ready.set()
+                    return
+
+                # Only rebuild if validation fails
+                logger.info("FTS index invalid or outdated, rebuilding...")
                 await loop.run_in_executor(
                     None,
                     self._fts_index.build_index,
@@ -875,6 +1061,12 @@ class RecipeScanner:
         # Update FTS index
         self._update_fts_index_for_recipe(recipe_data, 'add')
 
+        # Persist to SQLite cache
+        if self._persistent_cache:
+            recipe_id = str(recipe_data.get('id', ''))
+            json_path = self._json_path_map.get(recipe_id, '')
+            self._persistent_cache.update_recipe(recipe_data, json_path)
+
     async def remove_recipe(self, recipe_id: str) -> bool:
         """Remove a recipe from the cache by ID."""
 
@@ -891,6 +1083,12 @@ class RecipeScanner:
 
         # Update FTS index
         self._update_fts_index_for_recipe(recipe_id, 'remove')
+
+        # Remove from SQLite cache
+        if self._persistent_cache:
+            self._persistent_cache.remove_recipe(recipe_id)
+            self._json_path_map.pop(recipe_id, None)
+
         return True
 
     async def bulk_remove(self, recipe_ids: Iterable[str]) -> int:
@@ -900,9 +1098,13 @@ class RecipeScanner:
         removed = await cache.bulk_remove(recipe_ids, resort=False)
         if removed:
             self._schedule_resort()
-            # Update FTS index for each removed recipe
-            for recipe_id in (str(r.get('id', '')) for r in removed):
+            # Update FTS index and persistent cache for each removed recipe
+            for recipe in removed:
+                recipe_id = str(recipe.get('id', ''))
                 self._update_fts_index_for_recipe(recipe_id, 'remove')
+                if self._persistent_cache:
+                    self._persistent_cache.remove_recipe(recipe_id)
+                    self._json_path_map.pop(recipe_id, None)
         return len(removed)
 
     async def scan_all_recipes(self) -> List[Dict]:
@@ -1695,11 +1897,11 @@ class RecipeScanner:
 
     async def update_recipe_metadata(self, recipe_id: str, metadata: dict) -> bool:
         """Update recipe metadata (like title and tags) in both file system and cache
-        
+
         Args:
             recipe_id: The ID of the recipe to update
             metadata: Dictionary containing metadata fields to update (title, tags, etc.)
-            
+
         Returns:
             bool: True if successful, False otherwise
         """
@@ -1707,16 +1909,16 @@ class RecipeScanner:
         recipe_json_path = await self.get_recipe_json_path(recipe_id)
         if not recipe_json_path or not os.path.exists(recipe_json_path):
             return False
-            
+
         try:
             # Load existing recipe data
             with open(recipe_json_path, 'r', encoding='utf-8') as f:
                 recipe_data = json.load(f)
-                
+
             # Update fields
             for key, value in metadata.items():
                 recipe_data[key] = value
-                
+
             # Save updated recipe
             with open(recipe_json_path, 'w', encoding='utf-8') as f:
                 json.dump(recipe_data, f, indent=4, ensure_ascii=False)
@@ -1728,6 +1930,11 @@ class RecipeScanner:
 
             # Update FTS index
             self._update_fts_index_for_recipe(recipe_data, 'update')
+
+            # Update persistent SQLite cache
+            if self._persistent_cache:
+                self._persistent_cache.update_recipe(recipe_data, recipe_json_path)
+                self._json_path_map[recipe_id] = recipe_json_path
 
             # If the recipe has an image, update its EXIF metadata
             from ..utils.exif_utils import ExifUtils
@@ -1799,6 +2006,11 @@ class RecipeScanner:
 
         # Update FTS index
         self._update_fts_index_for_recipe(recipe_data, 'update')
+
+        # Update persistent SQLite cache
+        if self._persistent_cache:
+            self._persistent_cache.update_recipe(recipe_data, recipe_json_path)
+            self._json_path_map[recipe_id] = recipe_json_path
 
         updated_lora = dict(lora_entry)
         if target_lora is not None:
@@ -1923,26 +2135,31 @@ class RecipeScanner:
         if not recipes_to_update:
             return 0, 0
             
-        # Persist changes to disk
+        # Persist changes to disk and SQLite cache
         async with self._mutation_lock:
             for recipe in recipes_to_update:
-                recipe_id = recipe.get('id')
+                recipe_id = str(recipe.get('id', ''))
                 if not recipe_id:
                     continue
-                    
+
                 recipe_path = os.path.join(self.recipes_dir, f"{recipe_id}.recipe.json")
                 try:
                     self._write_recipe_file(recipe_path, recipe)
                     file_updated_count += 1
                     logger.info(f"Updated file_name in recipe {recipe_path}: -> {new_file_name}")
+
+                    # Update persistent SQLite cache
+                    if self._persistent_cache:
+                        self._persistent_cache.update_recipe(recipe, recipe_path)
+                        self._json_path_map[recipe_id] = recipe_path
                 except Exception as e:
                     logger.error(f"Error updating recipe file {recipe_path}: {e}")
-        
+
         # We don't necessarily need to resort because LoRA file_name isn't a sort key,
         # but we might want to schedule a resort if we're paranoid or if searching relies on sorted state.
         # Given it's a rename of a dependency, search results might change if searching by LoRA name.
         self._schedule_resort()
-            
+
         return file_updated_count, cache_updated_count
 
     async def find_recipes_by_fingerprint(self, fingerprint: str) -> list:

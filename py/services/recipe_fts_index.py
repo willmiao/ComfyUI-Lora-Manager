@@ -403,6 +403,78 @@ class RecipeFTSIndex:
         except Exception:
             return 0
 
+    def get_indexed_recipe_ids(self) -> Set[str]:
+        """Return all recipe IDs currently in the index.
+
+        Returns:
+            Set of recipe ID strings.
+        """
+        if not self._schema_initialized:
+            self.initialize()
+
+        if not self._schema_initialized:
+            return set()
+
+        try:
+            with self._lock:
+                conn = self._connect(readonly=True)
+                try:
+                    cursor = conn.execute("SELECT recipe_id FROM recipe_fts")
+                    return {row[0] for row in cursor.fetchall() if row[0]}
+                finally:
+                    conn.close()
+        except FileNotFoundError:
+            return set()
+        except Exception as exc:
+            logger.debug("Failed to get indexed recipe IDs: %s", exc)
+            return set()
+
+    def validate_index(self, recipe_count: int, recipe_ids: Set[str]) -> bool:
+        """Check if the FTS index matches the expected recipes.
+
+        This method validates whether the existing FTS index can be reused
+        without a full rebuild. It checks:
+        1. The index has been initialized
+        2. The count matches
+        3. The recipe IDs match
+
+        Args:
+            recipe_count: Expected number of recipes.
+            recipe_ids: Expected set of recipe IDs.
+
+        Returns:
+            True if the index is valid and can be reused, False otherwise.
+        """
+        if not self._schema_initialized:
+            self.initialize()
+
+        if not self._schema_initialized:
+            return False
+
+        try:
+            indexed_count = self.get_indexed_count()
+            if indexed_count != recipe_count:
+                logger.debug(
+                    "FTS index count mismatch: indexed=%d, expected=%d",
+                    indexed_count, recipe_count
+                )
+                return False
+
+            indexed_ids = self.get_indexed_recipe_ids()
+            if indexed_ids != recipe_ids:
+                missing = recipe_ids - indexed_ids
+                extra = indexed_ids - recipe_ids
+                if missing:
+                    logger.debug("FTS index missing %d recipe IDs", len(missing))
+                if extra:
+                    logger.debug("FTS index has %d extra recipe IDs", len(extra))
+                return False
+
+            return True
+        except Exception as exc:
+            logger.debug("FTS index validation failed: %s", exc)
+            return False
+
     # Internal helpers
 
     def _connect(self, readonly: bool = False) -> sqlite3.Connection:
