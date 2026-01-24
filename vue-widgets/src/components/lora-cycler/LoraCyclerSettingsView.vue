@@ -52,6 +52,9 @@
           :disabled="totalCount === 0"
           @input="onIndexInput"
           @blur="onIndexBlur"
+          @pointerdown.stop
+          @pointermove.stop
+          @pointerup.stop
         />
         <span class="index-hint">1 - {{ totalCount || 1 }}</span>
       </div>

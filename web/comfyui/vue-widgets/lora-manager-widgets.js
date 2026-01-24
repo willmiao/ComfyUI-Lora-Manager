@@ -1464,16 +1464,16 @@ to { transform: rotate(360deg);
   box-sizing: border-box;
 }
 
-.cycler-settings[data-v-af73e0cf] {
+.cycler-settings[data-v-8690e14a] {
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #e4e4e7;
 }
-.settings-header[data-v-af73e0cf] {
+.settings-header[data-v-8690e14a] {
   margin-bottom: 8px;
 }
-.settings-title[data-v-af73e0cf] {
+.settings-title[data-v-8690e14a] {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -1482,10 +1482,10 @@ to { transform: rotate(360deg);
   margin: 0;
   text-transform: uppercase;
 }
-.setting-section[data-v-af73e0cf] {
+.setting-section[data-v-8690e14a] {
   margin-bottom: 8px;
 }
-.setting-label[data-v-af73e0cf] {
+.setting-label[data-v-8690e14a] {
   font-size: 13px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.8);
@@ -1494,10 +1494,10 @@ to { transform: rotate(360deg);
 }
 
 /* Progress Display */
-.progress-section[data-v-af73e0cf] {
+.progress-section[data-v-8690e14a] {
   margin-bottom: 12px;
 }
-.progress-display[data-v-af73e0cf] {
+.progress-display[data-v-8690e14a] {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
@@ -1506,21 +1506,21 @@ to { transform: rotate(360deg);
   justify-content: space-between;
   align-items: center;
 }
-.progress-info[data-v-af73e0cf] {
+.progress-info[data-v-8690e14a] {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
   flex: 1;
 }
-.progress-label[data-v-af73e0cf] {
+.progress-label[data-v-8690e14a] {
   font-size: 10px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.5);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-.progress-name[data-v-af73e0cf] {
+.progress-name[data-v-8690e14a] {
   font-size: 13px;
   font-weight: 500;
   color: rgba(191, 219, 254, 1);
@@ -1528,31 +1528,31 @@ to { transform: rotate(360deg);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.progress-counter[data-v-af73e0cf] {
+.progress-counter[data-v-8690e14a] {
   display: flex;
   align-items: center;
   gap: 4px;
   padding-left: 12px;
   flex-shrink: 0;
 }
-.progress-index[data-v-af73e0cf] {
+.progress-index[data-v-8690e14a] {
   font-size: 18px;
   font-weight: 600;
   color: rgba(66, 153, 225, 1);
   font-family: 'SF Mono', 'Roboto Mono', monospace;
 }
-.progress-separator[data-v-af73e0cf] {
+.progress-separator[data-v-8690e14a] {
   font-size: 14px;
   color: rgba(226, 232, 240, 0.4);
   margin: 0 2px;
 }
-.progress-total[data-v-af73e0cf] {
+.progress-total[data-v-8690e14a] {
   font-size: 14px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.6);
   font-family: 'SF Mono', 'Roboto Mono', monospace;
 }
-.refresh-button[data-v-af73e0cf] {
+.refresh-button[data-v-8690e14a] {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1567,23 +1567,23 @@ to { transform: rotate(360deg);
   cursor: pointer;
   transition: all 0.2s;
 }
-.refresh-button[data-v-af73e0cf]:hover:not(:disabled) {
+.refresh-button[data-v-8690e14a]:hover:not(:disabled) {
   background: rgba(66, 153, 225, 0.2);
   border-color: rgba(66, 153, 225, 0.4);
   color: rgba(191, 219, 254, 1);
 }
-.refresh-button[data-v-af73e0cf]:disabled {
+.refresh-button[data-v-8690e14a]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.refresh-icon[data-v-af73e0cf] {
+.refresh-icon[data-v-8690e14a] {
   width: 14px;
   height: 14px;
 }
-.refresh-icon.spinning[data-v-af73e0cf] {
-  animation: spin-af73e0cf 1s linear infinite;
+.refresh-icon.spinning[data-v-8690e14a] {
+  animation: spin-8690e14a 1s linear infinite;
 }
-@keyframes spin-af73e0cf {
+@keyframes spin-8690e14a {
 from {
     transform: rotate(0deg);
 }
@@ -1593,12 +1593,12 @@ to {
 }
 
 /* Index Input */
-.index-input-container[data-v-af73e0cf] {
+.index-input-container[data-v-8690e14a] {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.index-input[data-v-af73e0cf] {
+.index-input[data-v-8690e14a] {
   width: 80px;
   padding: 6px 10px;
   background: rgba(26, 32, 44, 0.9);
@@ -1608,42 +1608,42 @@ to {
   font-size: 13px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
 }
-.index-input[data-v-af73e0cf]:focus {
+.index-input[data-v-8690e14a]:focus {
   outline: none;
   border-color: rgba(66, 153, 225, 0.6);
 }
-.index-input[data-v-af73e0cf]:disabled {
+.index-input[data-v-8690e14a]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.index-hint[data-v-af73e0cf] {
+.index-hint[data-v-8690e14a] {
   font-size: 11px;
   color: rgba(226, 232, 240, 0.4);
 }
 
 /* Slider Container */
-.slider-container[data-v-af73e0cf] {
+.slider-container[data-v-8690e14a] {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
   padding: 6px;
 }
-.slider-container--disabled[data-v-af73e0cf] {
+.slider-container--disabled[data-v-8690e14a] {
   opacity: 0.5;
   pointer-events: none;
 }
-.section-header-with-toggle[data-v-af73e0cf] {
+.section-header-with-toggle[data-v-8690e14a] {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
 }
-.section-header-with-toggle .setting-label[data-v-af73e0cf] {
+.section-header-with-toggle .setting-label[data-v-8690e14a] {
   margin-bottom: 4px;
 }
 
 /* Toggle Switch */
-.toggle-switch[data-v-af73e0cf] {
+.toggle-switch[data-v-8690e14a] {
   position: relative;
   width: 36px;
   height: 20px;
@@ -1652,7 +1652,7 @@ to {
   border: none;
   cursor: pointer;
 }
-.toggle-switch__track[data-v-af73e0cf] {
+.toggle-switch__track[data-v-8690e14a] {
   position: absolute;
   inset: 0;
   background: var(--comfy-input-bg, #333);
@@ -1660,11 +1660,11 @@ to {
   border-radius: 10px;
   transition: all 0.2s;
 }
-.toggle-switch--active .toggle-switch__track[data-v-af73e0cf] {
+.toggle-switch--active .toggle-switch__track[data-v-8690e14a] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.toggle-switch__thumb[data-v-af73e0cf] {
+.toggle-switch__thumb[data-v-8690e14a] {
   position: absolute;
   top: 3px;
   left: 2px;
@@ -1675,12 +1675,12 @@ to {
   transition: all 0.2s;
   opacity: 0.6;
 }
-.toggle-switch--active .toggle-switch__thumb[data-v-af73e0cf] {
+.toggle-switch--active .toggle-switch__thumb[data-v-8690e14a] {
   transform: translateX(16px);
   background: #4299e1;
   opacity: 1;
 }
-.toggle-switch:hover .toggle-switch__thumb[data-v-af73e0cf] {
+.toggle-switch:hover .toggle-switch__thumb[data-v-8690e14a] {
   opacity: 1;
 }
 
@@ -12721,13 +12721,13 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     };
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", _hoisted_1$2, [
-        _cache[10] || (_cache[10] = createBaseVNode("div", { class: "settings-header" }, [
+        _cache[13] || (_cache[13] = createBaseVNode("div", { class: "settings-header" }, [
           createBaseVNode("h3", { class: "settings-title" }, "CYCLER SETTINGS")
         ], -1)),
         createBaseVNode("div", _hoisted_2$1, [
           createBaseVNode("div", _hoisted_3$1, [
             createBaseVNode("div", _hoisted_4$1, [
-              _cache[4] || (_cache[4] = createBaseVNode("span", { class: "progress-label" }, "Next LoRA:", -1)),
+              _cache[7] || (_cache[7] = createBaseVNode("span", { class: "progress-label" }, "Next LoRA:", -1)),
               createBaseVNode("span", {
                 class: "progress-name",
                 title: __props.currentLoraFilename
@@ -12735,7 +12735,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
             ]),
             createBaseVNode("div", _hoisted_6, [
               createBaseVNode("span", _hoisted_7, toDisplayString(__props.currentIndex), 1),
-              _cache[6] || (_cache[6] = createBaseVNode("span", { class: "progress-separator" }, "/", -1)),
+              _cache[9] || (_cache[9] = createBaseVNode("span", { class: "progress-separator" }, "/", -1)),
               createBaseVNode("span", _hoisted_8, toDisplayString(__props.totalCount), 1),
               createBaseVNode("button", {
                 class: "refresh-button",
@@ -12751,7 +12751,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
                   "stroke-width": "2",
                   "stroke-linecap": "round",
                   "stroke-linejoin": "round"
-                }, [..._cache[5] || (_cache[5] = [
+                }, [..._cache[8] || (_cache[8] = [
                   createBaseVNode("path", { d: "M21 12a9 9 0 1 1-6.219-8.56" }, null, -1),
                   createBaseVNode("path", { d: "M21 3v5h-5" }, null, -1)
                 ])], 2))
@@ -12760,7 +12760,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           ])
         ]),
         createBaseVNode("div", _hoisted_10, [
-          _cache[7] || (_cache[7] = createBaseVNode("label", { class: "setting-label" }, "Starting Index", -1)),
+          _cache[10] || (_cache[10] = createBaseVNode("label", { class: "setting-label" }, "Starting Index", -1)),
           createBaseVNode("div", _hoisted_11, [
             createBaseVNode("input", {
               type: "number",
@@ -12770,13 +12770,19 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
               value: __props.currentIndex,
               disabled: __props.totalCount === 0,
               onInput: onIndexInput,
-              onBlur: onIndexBlur
+              onBlur: onIndexBlur,
+              onPointerdown: _cache[1] || (_cache[1] = withModifiers(() => {
+              }, ["stop"])),
+              onPointermove: _cache[2] || (_cache[2] = withModifiers(() => {
+              }, ["stop"])),
+              onPointerup: _cache[3] || (_cache[3] = withModifiers(() => {
+              }, ["stop"]))
             }, null, 40, _hoisted_12),
             createBaseVNode("span", _hoisted_13, "1 - " + toDisplayString(__props.totalCount || 1), 1)
           ])
         ]),
         createBaseVNode("div", _hoisted_14, [
-          _cache[8] || (_cache[8] = createBaseVNode("label", { class: "setting-label" }, "Model Strength", -1)),
+          _cache[11] || (_cache[11] = createBaseVNode("label", { class: "setting-label" }, "Model Strength", -1)),
           createBaseVNode("div", _hoisted_15, [
             createVNode(SingleSlider, {
               min: -10,
@@ -12784,7 +12790,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
               value: __props.modelStrength,
               step: 0.1,
               "default-range": { min: 0.5, max: 1.5 },
-              "onUpdate:value": _cache[1] || (_cache[1] = ($event) => _ctx.$emit("update:modelStrength", $event))
+              "onUpdate:value": _cache[4] || (_cache[4] = ($event) => _ctx.$emit("update:modelStrength", $event))
             }, null, 8, ["value"])
           ])
         ]),
@@ -12794,11 +12800,11 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
             createBaseVNode("button", {
               type: "button",
               class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.useCustomClipRange }]),
-              onClick: _cache[2] || (_cache[2] = ($event) => _ctx.$emit("update:useCustomClipRange", !__props.useCustomClipRange)),
+              onClick: _cache[5] || (_cache[5] = ($event) => _ctx.$emit("update:useCustomClipRange", !__props.useCustomClipRange)),
               role: "switch",
               "aria-checked": __props.useCustomClipRange,
               title: "Use custom clip strength when enabled, otherwise use model strength"
-            }, [..._cache[9] || (_cache[9] = [
+            }, [..._cache[12] || (_cache[12] = [
               createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
               createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
             ])], 10, _hoisted_19)
@@ -12813,7 +12819,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
               step: 0.1,
               "default-range": { min: 0.5, max: 1.5 },
               disabled: __props.isClipStrengthDisabled,
-              "onUpdate:value": _cache[3] || (_cache[3] = ($event) => _ctx.$emit("update:clipStrength", $event))
+              "onUpdate:value": _cache[6] || (_cache[6] = ($event) => _ctx.$emit("update:clipStrength", $event))
             }, null, 8, ["value", "disabled"])
           ], 2)
         ])
@@ -12821,7 +12827,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-af73e0cf"]]);
+const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-8690e14a"]]);
 function useLoraCyclerState(widget) {
   const currentIndex = ref(1);
   const totalCount = ref(0);
@@ -13318,14 +13324,14 @@ function setupModeChangeHandler(node, onModeChange) {
     }
   });
 }
-function createModeChangeCallback(node, updateDownstreamLoaders, nodeSpecificCallback) {
+function createModeChangeCallback(node, updateDownstreamLoaders2, nodeSpecificCallback) {
   return (newMode, _oldMode) => {
     const isNodeCurrentlyActive = isNodeActive(newMode);
     const activeLoraNames = isNodeCurrentlyActive ? getActiveLorasFromNodeByType(node) : /* @__PURE__ */ new Set();
     if (nodeSpecificCallback) {
       nodeSpecificCallback(activeLoraNames);
     }
-    updateDownstreamLoaders(node);
+    updateDownstreamLoaders2(node);
   };
 }
 const app = {};
@@ -13509,7 +13515,7 @@ function getPoolConfigFromConnectedNode(node) {
   const poolWidget = (_a = poolNode.widgets) == null ? void 0 : _a.find((w2) => w2.name === "pool_config");
   return (poolWidget == null ? void 0 : poolWidget.value) || null;
 }
-function updateDownstreamLoaders$1(startNode, visited = /* @__PURE__ */ new Set()) {
+function updateDownstreamLoaders(startNode, visited = /* @__PURE__ */ new Set()) {
   var _a, _b;
   const nodeKey = getNodeKey(startNode);
   if (!nodeKey || visited.has(nodeKey)) return;
@@ -13525,7 +13531,7 @@ function updateDownstreamLoaders$1(startNode, visited = /* @__PURE__ */ new Set(
               const allActiveLoraNames = collectActiveLorasFromChain(targetNode);
               updateConnectedTriggerWords(targetNode, allActiveLoraNames);
             } else if (targetNode && isLoraProviderNode(targetNode.comfyClass)) {
-              updateDownstreamLoaders$1(targetNode, visited);
+              updateDownstreamLoaders(targetNode, visited);
             }
           }
         }
@@ -13722,7 +13728,7 @@ function createLoraCyclerWidget(node) {
           widget.onSetValue(v2);
         }
         if (oldFilename !== (v2 == null ? void 0 : v2.current_lora_filename)) {
-          updateDownstreamLoaders$1(node);
+          updateDownstreamLoaders(node);
         }
       },
       serialize: true,
@@ -13735,7 +13741,7 @@ function createLoraCyclerWidget(node) {
     const oldFilename = internalValue == null ? void 0 : internalValue.current_lora_filename;
     internalValue = v2;
     if (oldFilename !== (v2 == null ? void 0 : v2.current_lora_filename)) {
-      updateDownstreamLoaders$1(node);
+      updateDownstreamLoaders(node);
     }
   };
   node.getPoolConfig = () => getPoolConfigFromConnectedNode(node);
@@ -13846,7 +13852,7 @@ app$1.registerExtension({
         }
         const isRandomizerNode = node.comfyClass === "Lora Randomizer (LoraManager)";
         const callback = isRandomizerNode ? () => {
-          updateDownstreamLoaders$1(node);
+          updateDownstreamLoaders(node);
         } : null;
         return addLorasWidgetCache(node, "loras", { isRandomizerNode }, callback);
       }
@@ -13862,7 +13868,7 @@ app$1.registerExtension({
       nodeType.prototype.onNodeCreated = function() {
         originalOnNodeCreated == null ? void 0 : originalOnNodeCreated.apply(this, arguments);
         const nodeSpecificCallback = comfyClass === "Lora Stacker (LoraManager)" ? (activeLoraNames) => updateConnectedTriggerWords(this, activeLoraNames) : void 0;
-        const onModeChange = createModeChangeCallback(this, updateDownstreamLoaders$1, nodeSpecificCallback);
+        const onModeChange = createModeChangeCallback(this, updateDownstreamLoaders, nodeSpecificCallback);
         setupModeChangeHandler(this, onModeChange);
       };
     }
