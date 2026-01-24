@@ -130,7 +130,12 @@ export function initDrag(
         e.target.closest('.lm-lora-expand-button')) {
       return;
     }
-    
+
+    // Only handle left mouse button (allow middle button for canvas drag, right button for context menu)
+    if (e.button !== 0) {
+      return;
+    }
+
     // Store initial values
     const lorasData = parseLoraValue(widget.value);
     const loraData = lorasData.find(l => l.name === name);
@@ -255,7 +260,12 @@ export function initHeaderDrag(headerEl, widget, renderFunction) {
         e.target.closest('input')) {
       return;
     }
-    
+
+    // Only handle left mouse button (allow middle button for canvas drag, right button for context menu)
+    if (e.button !== 0) {
+      return;
+    }
+
     // Store initial X position
     initialX = e.clientX;
     
