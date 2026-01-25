@@ -23,6 +23,7 @@ const LORA_CYCLER_WIDGET_MAX_HEIGHT = LORA_CYCLER_WIDGET_MIN_HEIGHT
 const JSON_DISPLAY_WIDGET_MIN_WIDTH = 300
 const JSON_DISPLAY_WIDGET_MIN_HEIGHT = 200
 const AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT = 60
+const AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT = 100
 
 // @ts-ignore - ComfyUI external module
 import { app } from '../../../scripts/app.js'
@@ -441,7 +442,12 @@ function createAutocompleteTextWidgetFactory(
       serialize: true,
       getMinHeight() {
         return AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT
-      }
+      },
+      ...(modelType === 'loras' && {
+        getMaxHeight() {
+          return AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT
+        }
+      })
     }
   )
 
@@ -466,12 +472,6 @@ function createAutocompleteTextWidgetFactory(
   // Use a unique key combining node.id and widget name to avoid collisions
   const appKey = node.id * 100000 + widgetName.charCodeAt(0)
   vueApps.set(appKey, vueApp)
-
-  widget.computeLayoutSize = () => {
-    const minHeight = AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT
-
-    return { minHeight }
-  }
 
   widget.onRemove = () => {
     const vueApp = vueApps.get(appKey)

@@ -13735,6 +13735,7 @@ const LORA_CYCLER_WIDGET_MAX_HEIGHT = LORA_CYCLER_WIDGET_MIN_HEIGHT;
 const JSON_DISPLAY_WIDGET_MIN_WIDTH = 300;
 const JSON_DISPLAY_WIDGET_MIN_HEIGHT = 200;
 const AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT = 60;
+const AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT = 100;
 function forwardMiddleMouseToCanvas(container) {
   if (!container) return;
   container.addEventListener("pointerdown", (event) => {
@@ -14065,6 +14066,11 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
       serialize: true,
       getMinHeight() {
         return AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT;
+      },
+      ...modelType === "loras" && {
+        getMaxHeight() {
+          return AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT;
+        }
       }
     }
   );
@@ -14084,10 +14090,6 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
   vueApp.mount(container);
   const appKey = node.id * 1e5 + widgetName.charCodeAt(0);
   vueApps.set(appKey, vueApp);
-  widget.computeLayoutSize = () => {
-    const minHeight = AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT;
-    return { minHeight };
-  };
   widget.onRemove = () => {
     const vueApp2 = vueApps.get(appKey);
     if (vueApp2) {
