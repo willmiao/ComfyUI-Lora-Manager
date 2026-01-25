@@ -1,6 +1,7 @@
 import { api } from "../../scripts/api.js";
 import { app } from "../../scripts/app.js";
 import { TextAreaCaretHelper } from "./textarea_caret_helper.js";
+import { getPromptCustomWordsAutocompletePreference } from "./settings.js";
 
 function parseUsageTipNumber(value) {
     if (typeof value === 'number' && Number.isFinite(value)) {
@@ -420,15 +421,19 @@ class AutoComplete {
         if (this.modelType === 'prompt') {
             const match = rawSearchTerm.match(/^emb:(.*)$/i);
             if (match) {
-                // User typed "emb:" prefix - search embeddings
+                // User typed "emb:" prefix - always allow embeddings search
                 endpoint = '/lm/embeddings/relative-paths';
                 searchTerm = (match[1] || '').trim();
                 this.searchType = 'embeddings';
-            } else {
-                // No prefix - search custom words
+            } else if (getPromptCustomWordsAutocompletePreference()) {
+                // Setting enabled - allow custom words search
                 endpoint = '/lm/custom-words/search';
                 searchTerm = rawSearchTerm;
                 this.searchType = 'custom_words';
+            } else {
+                // Setting disabled - no autocomplete for non-emb: terms
+                this.hide();
+                return;
             }
         }
 

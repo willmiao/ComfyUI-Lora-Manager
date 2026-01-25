@@ -2,57 +2,11 @@ import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { CONVERTED_TYPE, getNodeFromGraph } from "./utils.js";
 import { addTagsWidget } from "./tags_widget.js";
-
-// Setting ID for wheel sensitivity
-const TRIGGER_WORD_WHEEL_SENSITIVITY_ID = "loramanager.trigger_word_wheel_sensitivity";
-const TRIGGER_WORD_WHEEL_SENSITIVITY_DEFAULT = 0.02;
-
-// Get the wheel sensitivity setting value
-const getWheelSensitivity = (() => {
-    let settingsUnavailableLogged = false;
-
-    return () => {
-        const settingManager = app?.extensionManager?.setting;
-        if (!settingManager || typeof settingManager.get !== "function") {
-            if (!settingsUnavailableLogged) {
-                console.warn("LoRA Manager: settings API unavailable, using default wheel sensitivity.");
-                settingsUnavailableLogged = true;
-            }
-            return TRIGGER_WORD_WHEEL_SENSITIVITY_DEFAULT;
-        }
-
-        try {
-            const value = settingManager.get(TRIGGER_WORD_WHEEL_SENSITIVITY_ID);
-            return value ?? TRIGGER_WORD_WHEEL_SENSITIVITY_DEFAULT;
-        } catch (error) {
-            if (!settingsUnavailableLogged) {
-                console.warn("LoRA Manager: unable to read wheel sensitivity setting, using default.", error);
-                settingsUnavailableLogged = true;
-            }
-            return TRIGGER_WORD_WHEEL_SENSITIVITY_DEFAULT;
-        }
-    };
-})();
+import { getWheelSensitivity } from "./settings.js";
 
 // TriggerWordToggle extension for ComfyUI
 app.registerExtension({
     name: "LoraManager.TriggerWordToggle",
-    
-    settings: [
-        {
-            id: TRIGGER_WORD_WHEEL_SENSITIVITY_ID,
-            name: "Trigger Word Wheel Sensitivity",
-            type: "slider",
-            attrs: {
-                min: 0.01,
-                max: 0.1,
-                step: 0.01,
-            },
-            defaultValue: TRIGGER_WORD_WHEEL_SENSITIVITY_DEFAULT,
-            tooltip: "Mouse wheel sensitivity for adjusting trigger word strength (default: 0.02)",
-            category: ["LoRA Manager", "Trigger Word Toggle", "Wheel Sensitivity"],
-        },
-    ],
     
     setup() {
         // Add message handler to listen for messages from Python
