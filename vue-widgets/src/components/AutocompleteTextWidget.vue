@@ -130,7 +130,7 @@ watch(
 .text-input.vue-dom-mode {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
-  padding: 24px 12px 8px;
+  padding: 8px 12px;
   margin: 0 0 4px;
   border-radius: 8px;
   font-size: 12px;
