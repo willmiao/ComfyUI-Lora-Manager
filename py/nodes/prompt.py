@@ -15,7 +15,7 @@ class PromptLM:
         return {
             "required": {
                 "text": (
-                    "AUTOCOMPLETE_TEXT_EMBEDDINGS",
+                    "AUTOCOMPLETE_TEXT_PROMPT",
                     {
                         "placeholder": "Enter prompt...",
                         "tooltip": "The text to be encoded.",

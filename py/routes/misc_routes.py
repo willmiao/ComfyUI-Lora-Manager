@@ -18,6 +18,7 @@ from ..services.settings_manager import get_settings_manager
 from ..services.downloader import get_downloader
 from ..utils.usage_stats import UsageStats
 from .handlers.misc_handlers import (
+    CustomWordsHandler,
     FileSystemHandler,
     HealthCheckHandler,
     LoraCodeHandler,
@@ -117,6 +118,7 @@ class MiscRoutes:
             service_registry=self._service_registry_adapter,
             metadata_provider_factory=self._metadata_provider_factory,
         )
+        custom_words = CustomWordsHandler()
 
         return self._handler_set_factory(
             health=health,
@@ -129,6 +131,7 @@ class MiscRoutes:
             model_library=model_library,
             metadata_archive=metadata_archive,
             filesystem=filesystem,
+            custom_words=custom_words,
         )
 
 

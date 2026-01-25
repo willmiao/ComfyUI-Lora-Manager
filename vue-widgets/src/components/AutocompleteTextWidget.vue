@@ -31,7 +31,7 @@ export interface AutocompleteTextWidgetInterface {
 const props = defineProps<{
   widget: AutocompleteTextWidgetInterface
   node: { id: number }
-  modelType?: 'loras' | 'embeddings'
+  modelType?: 'loras' | 'embeddings' | 'custom_words' | 'prompt'
   placeholder?: string
   showPreview?: boolean
   spellcheck?: boolean

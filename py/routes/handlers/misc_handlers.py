@@ -1201,6 +1201,52 @@ class FileSystemHandler:
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
+class CustomWordsHandler:
+    """Handler for custom autocomplete words."""
+
+    def __init__(self) -> None:
+        from ...services.custom_words_service import get_custom_words_service
+        self._service = get_custom_words_service()
+
+    async def get_custom_words(self, request: web.Request) -> web.Response:
+        """Get the content of the custom words file."""
+        try:
+            content = self._service.get_content()
+            return web.Response(text=content, content_type="text/plain")
+        except Exception as exc:
+            logger.error("Error getting custom words: %s", exc, exc_info=True)
+            return web.json_response({"error": str(exc)}, status=500)
+
+    async def update_custom_words(self, request: web.Request) -> web.Response:
+        """Update the custom words file content."""
+        try:
+            content = await request.text()
+            success = self._service.save_words(content)
+            if success:
+                return web.Response(status=200)
+            else:
+                return web.json_response({"error": "Failed to save custom words"}, status=500)
+        except Exception as exc:
+            logger.error("Error updating custom words: %s", exc, exc_info=True)
+            return web.json_response({"error": str(exc)}, status=500)
+
+    async def search_custom_words(self, request: web.Request) -> web.Response:
+        """Search custom words with autocomplete."""
+        try:
+            search_term = request.query.get("search", "")
+            limit = int(request.query.get("limit", "20"))
+
+            results = self._service.search_words(search_term, limit)
+
+            return web.json_response({
+                "success": True,
+                "words": results
+            })
+        except Exception as exc:
+            logger.error("Error searching custom words: %s", exc, exc_info=True)
+            return web.json_response({"error": str(exc)}, status=500)
+
+
 class NodeRegistryHandler:
     def __init__(
         self,
@@ -1427,6 +1473,7 @@ class MiscHandlerSet:
         model_library: ModelLibraryHandler,
         metadata_archive: MetadataArchiveHandler,
         filesystem: FileSystemHandler,
+        custom_words: CustomWordsHandler,
     ) -> None:
         self.health = health
         self.settings = settings
@@ -1438,6 +1485,7 @@ class MiscHandlerSet:
         self.model_library = model_library
         self.metadata_archive = metadata_archive
         self.filesystem = filesystem
+        self.custom_words = custom_words
 
     def to_route_mapping(
         self,
@@ -1465,6 +1513,9 @@ class MiscHandlerSet:
             "get_model_versions_status": self.model_library.get_model_versions_status,
             "open_file_location": self.filesystem.open_file_location,
             "open_settings_location": self.filesystem.open_settings_location,
+            "get_custom_words": self.custom_words.get_custom_words,
+            "update_custom_words": self.custom_words.update_custom_words,
+            "search_custom_words": self.custom_words.search_custom_words,
         }
 
 

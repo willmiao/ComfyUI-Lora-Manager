@@ -410,7 +410,7 @@ if (app.ui?.settings) {
 function createAutocompleteTextWidgetFactory(
   node: any,
   widgetName: string,
-  modelType: 'loras' | 'embeddings',
+  modelType: 'loras' | 'embeddings' | 'prompt',
   inputOptions: { placeholder?: string } = {}
 ) {
   const container = document.createElement('div')
@@ -529,6 +529,12 @@ app.registerExtension({
       AUTOCOMPLETE_TEXT_EMBEDDINGS(node) {
         const options = widgetInputOptions.get(`${node.comfyClass}:text`) || {}
         return createAutocompleteTextWidgetFactory(node, 'text', 'embeddings', options)
+      },
+      // Autocomplete text widget for prompt (supports both embeddings and custom words)
+      // @ts-ignore
+      AUTOCOMPLETE_TEXT_PROMPT(node) {
+        const options = widgetInputOptions.get(`${node.comfyClass}:text`) || {}
+        return createAutocompleteTextWidgetFactory(node, 'text', 'prompt', options)
       }
     }
   },

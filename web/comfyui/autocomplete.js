@@ -148,6 +148,52 @@ const MODEL_BEHAVIORS = {
             return `embedding:${folder}${trimmedName}, `;
         },
     },
+    custom_words: {
+        enablePreview: false,
+        async getInsertText(_instance, relativePath) {
+            return `${relativePath}, `;
+        },
+    },
+    prompt: {
+        enablePreview: true,
+        init(instance) {
+            if (!instance.options.showPreview) {
+                return;
+            }
+            instance.initPreviewTooltip({ modelType: 'embeddings' });
+        },
+        showPreview(instance, relativePath, itemElement) {
+            if (!instance.previewTooltip || instance.searchType !== 'embeddings') {
+                return;
+            }
+            instance.showPreviewForItem(relativePath, itemElement);
+        },
+        hidePreview(instance) {
+            if (!instance.previewTooltip || instance.searchType !== 'embeddings') {
+                return;
+            }
+            instance.previewTooltip.hide();
+        },
+        destroy(instance) {
+            if (instance.previewTooltip) {
+                instance.previewTooltip.cleanup();
+                instance.previewTooltip = null;
+            }
+        },
+        async getInsertText(instance, relativePath) {
+            const rawSearchTerm = instance.getSearchTerm(instance.inputElement.value);
+            const match = rawSearchTerm.match(/^emb:(.*)$/i);
+
+            if (match) {
+                const { directories, fileName } = splitRelativePath(relativePath);
+                const trimmedName = removeGeneralExtension(fileName);
+                const folder = directories.length ? `${directories.join('\\')}\\` : '';
+                return `embedding:${folder}${trimmedName}, `;
+            } else {
+                return `${relativePath}, `;
+            }
+        },
+    },
 };
 
 function getModelBehavior(modelType) {
@@ -175,6 +221,7 @@ class AutoComplete {
         this.currentSearchTerm = '';
         this.previewTooltip = null;
         this.previewTooltipPromise = null;
+        this.searchType = null;
 
         // Initialize TextAreaCaretHelper
         this.helper = new TextAreaCaretHelper(inputElement, () => app.canvas.ds.scale);
@@ -355,6 +402,7 @@ class AutoComplete {
         // Get the search term (text after last comma / '>')
         const rawSearchTerm = this.getSearchTerm(value);
         let searchTerm = rawSearchTerm;
+        let endpoint = `/lm/${this.modelType}/relative-paths`;
 
         // For embeddings, only trigger autocomplete when the current token
         // starts with the explicit "emb:" prefix. This avoids interrupting
@@ -368,14 +416,30 @@ class AutoComplete {
             searchTerm = (match[1] || '').trim();
         }
 
+        // For prompt model type, check if we're searching embeddings or custom words
+        if (this.modelType === 'prompt') {
+            const match = rawSearchTerm.match(/^emb:(.*)$/i);
+            if (match) {
+                // User typed "emb:" prefix - search embeddings
+                endpoint = '/lm/embeddings/relative-paths';
+                searchTerm = (match[1] || '').trim();
+                this.searchType = 'embeddings';
+            } else {
+                // No prefix - search custom words
+                endpoint = '/lm/custom-words/search';
+                searchTerm = rawSearchTerm;
+                this.searchType = 'custom_words';
+            }
+        }
+
         if (searchTerm.length < this.options.minChars) {
             this.hide();
             return;
         }
-        
+
         // Debounce the search
         this.debounceTimer = setTimeout(() => {
-            this.search(searchTerm);
+            this.search(searchTerm, endpoint);
         }, this.options.debounceDelay);
     }
     
@@ -385,25 +449,43 @@ class AutoComplete {
         if (!beforeCursor) {
             return '';
         }
-        
+
         // Split on comma and '>' delimiters only (do not split on spaces)
         const segments = beforeCursor.split(/[,\>]+/);
-        
+
         // Return the last non-empty segment as search term
         const lastSegment = segments[segments.length - 1] || '';
         return lastSegment.trim();
     }
-    
-    async search(term = '') {
+
+    async search(term = '', endpoint = null) {
         try {
             this.currentSearchTerm = term;
-            const response = await api.fetchApi(`/lm/${this.modelType}/relative-paths?search=${encodeURIComponent(term)}&limit=${this.options.maxItems}`);
+
+            if (!endpoint) {
+                endpoint = `/lm/${this.modelType}/relative-paths`;
+            }
+
+            const url = endpoint.includes('?')
+                ? `${endpoint}&search=${encodeURIComponent(term)}&limit=${this.options.maxItems}`
+                : `${endpoint}?search=${encodeURIComponent(term)}&limit=${this.options.maxItems}`;
+
+            const response = await api.fetchApi(url);
             const data = await response.json();
-            
-            if (data.success && data.relative_paths && data.relative_paths.length > 0) {
-                this.items = data.relative_paths;
-                this.render();
-                this.show();
+
+            // Support both response formats:
+            // 1. Model endpoint format: { success: true, relative_paths: [...] }
+            // 2. Custom words format: { success: true, words: [...] }
+            if (data.success) {
+                const items = data.relative_paths || data.words || [];
+                if (items.length > 0) {
+                    this.items = items;
+                    this.render();
+                    this.show();
+                } else {
+                    this.items = [];
+                    this.hide();
+                }
             } else {
                 this.items = [];
                 this.hide();

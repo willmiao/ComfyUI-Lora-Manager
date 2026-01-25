@@ -1725,7 +1725,7 @@ to {
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-46db5331] {
+.autocomplete-text-widget[data-v-d5278afc] {
   background: transparent;
   height: 100%;
   display: flex;
@@ -1734,7 +1734,7 @@ to {
 }
 
 /* Canvas mode styles (default) - matches built-in comfy-multiline-input */
-.text-input[data-v-46db5331] {
+.text-input[data-v-d5278afc] {
   flex: 1;
   width: 100%;
   background-color: var(--comfy-input-bg, #222);
@@ -1751,7 +1751,7 @@ to {
 }
 
 /* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
-.text-input.vue-dom-mode[data-v-46db5331] {
+.text-input.vue-dom-mode[data-v-d5278afc] {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
   padding: 8px 12px;
@@ -1760,7 +1760,7 @@ to {
   font-size: 12px;
   font-family: inherit;
 }
-.text-input[data-v-46db5331]:focus {
+.text-input[data-v-d5278afc]:focus {
   outline: none;
 }`));
       document.head.appendChild(elementStyle);
@@ -13456,7 +13456,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-46db5331"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-d5278afc"]]);
 const LORA_PROVIDER_NODE_TYPES$1 = [
   "Lora Stacker (LoraManager)",
   "Lora Randomizer (LoraManager)",
@@ -14141,6 +14141,12 @@ app$1.registerExtension({
       AUTOCOMPLETE_TEXT_EMBEDDINGS(node) {
         const options = widgetInputOptions.get(`${node.comfyClass}:text`) || {};
         return createAutocompleteTextWidgetFactory(node, "text", "embeddings", options);
+      },
+      // Autocomplete text widget for prompt (supports both embeddings and custom words)
+      // @ts-ignore
+      AUTOCOMPLETE_TEXT_PROMPT(node) {
+        const options = widgetInputOptions.get(`${node.comfyClass}:text`) || {};
+        return createAutocompleteTextWidgetFactory(node, "text", "prompt", options);
       }
     };
   },
