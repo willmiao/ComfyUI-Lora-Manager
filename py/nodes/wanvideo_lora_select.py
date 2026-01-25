@@ -15,12 +15,9 @@ class WanVideoLoraSelectLM:
             "required": {
                 "low_mem_load": ("BOOLEAN", {"default": False, "tooltip": "Load LORA models with less VRAM usage, slower loading. This affects ALL LoRAs, not just the current ones. No effect if merge_loras is False"}),
                 "merge_loras": ("BOOLEAN", {"default": True, "tooltip": "Merge LoRAs into the model, otherwise they are loaded on the fly. Always disabled for GGUF and scaled fp8 models. This affects ALL LoRAs, not just the current one"}),
-                "text": ("STRING", {
-                    "multiline": True, 
-                    "pysssss.autocomplete": False, 
-                    "dynamicPrompts": True, 
+                "text": ("AUTOCOMPLETE_TEXT_LORAS", {
+                    "placeholder": "Type LoRA syntax...",
                     "tooltip": "Format: <lora:lora_name:strength> separated by spaces or punctuation",
-                    "placeholder": "LoRA syntax input: <lora:name:strength>"
                 }),
             },
             "optional": FlexibleOptionalInputType(any_type),

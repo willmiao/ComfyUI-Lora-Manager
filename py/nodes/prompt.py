@@ -15,11 +15,9 @@ class PromptLoraManager:
         return {
             "required": {
                 "text": (
-                    'STRING',
+                    "AUTOCOMPLETE_TEXT_EMBEDDINGS",
                     {
-                        "multiline": True,
-                        "pysssss.autocomplete": False, 
-                        "dynamicPrompts": True,
+                        "placeholder": "Enter prompt...",
                         "tooltip": "The text to be encoded.",
                     },
                 ),

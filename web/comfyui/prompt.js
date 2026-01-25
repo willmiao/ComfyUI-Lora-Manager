@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { chainCallback, setupInputWidgetWithAutocomplete } from "./utils.js";
+import { chainCallback } from "./utils.js";
 
 app.registerExtension({
   name: "LoraManager.Prompt",
@@ -9,36 +9,12 @@ app.registerExtension({
       chainCallback(nodeType.prototype, "onNodeCreated", function () {
         this.serialize_widgets = true;
 
-        const textWidget = this.widgets?.[0];
-        if (!textWidget) {
-          return;
+        // Get the text input widget (AUTOCOMPLETE_TEXT_EMBEDDINGS type, created by Vue widgets)
+        const inputWidget = this.widgets?.[0];
+        if (inputWidget) {
+          this.inputWidget = inputWidget;
         }
-
-        const originalCallback =
-          typeof textWidget.callback === "function" ? textWidget.callback : null;
-
-        textWidget.callback = setupInputWidgetWithAutocomplete(
-          this,
-          textWidget,
-          originalCallback,
-          "embeddings"
-        );
       });
-    }
-  },
-  async loadedGraphNode(node) {
-    if (node.comfyClass == "Prompt (LoraManager)") {
-      const textWidget = node.widgets?.[0];
-      if (textWidget && !node.autocomplete) {
-        const { setupInputWidgetWithAutocomplete } = await import("./utils.js");
-        const modelType = "embeddings";
-        const autocompleteOptions = {
-          maxItems: 20,
-          minChars: 1,
-          debounceDelay: 200,
-        };
-        textWidget.callback = setupInputWidgetWithAutocomplete(node, textWidget, textWidget.callback, modelType, autocompleteOptions);
-      }
     }
   },
 });

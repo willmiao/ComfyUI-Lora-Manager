@@ -35,7 +35,6 @@ vi.mock(API_MODULE, () => ({
 const collectActiveLorasFromChain = vi.fn();
 const updateConnectedTriggerWords = vi.fn();
 const mergeLoras = vi.fn();
-const setupInputWidgetWithAutocomplete = vi.fn();
 const getAllGraphNodes = vi.fn();
 const getNodeFromGraph = vi.fn();
 
@@ -43,7 +42,6 @@ vi.mock(UTILS_MODULE, () => ({
   collectActiveLorasFromChain,
   updateConnectedTriggerWords,
   mergeLoras,
-  setupInputWidgetWithAutocomplete,
   chainCallback: (proto, property, callback) => {
     proto[property] = callback;
   },
@@ -73,11 +71,6 @@ describe("Lora Loader trigger word updates", () => {
     mergeLoras.mockClear();
     mergeLoras.mockImplementation(() => [{ name: "Alpha", active: true }]);
 
-    setupInputWidgetWithAutocomplete.mockClear();
-    setupInputWidgetWithAutocomplete.mockImplementation(
-      (_node, _widget, originalCallback) => originalCallback
-    );
-
     addLorasWidget.mockClear();
     addLorasWidget.mockImplementation((_node, _name, _opts, callback) => ({
       widget: { value: [], callback },
@@ -94,27 +87,31 @@ describe("Lora Loader trigger word updates", () => {
     const nodeType = { comfyClass: "Lora Loader (LoraManager)", prototype: {} };
     await extension.beforeRegisterNodeDef(nodeType, {}, {});
 
+    // Create mock widget (AUTOCOMPLETE_TEXT_LORAS type created by Vue widgets)
+    const inputWidget = {
+      value: "",
+      options: {},
+      callback: null, // Will be set by onNodeCreated
+    };
+
     const node = {
       comfyClass: "Lora Loader (LoraManager)",
-      widgets: [
-        {
-          value: "",
-          options: {},
-          inputEl: {},
-        },
-      ],
+      widgets: [inputWidget],
       addInput: vi.fn(),
       graph: {},
     };
 
     nodeType.prototype.onNodeCreated.call(node);
 
-    expect(setupInputWidgetWithAutocomplete).toHaveBeenCalled();
+    // The widget is now the AUTOCOMPLETE_TEXT_LORAS type, created automatically by Vue widgets
+    expect(node.inputWidget).toBe(inputWidget);
     expect(node.lorasWidget).toBeDefined();
 
-    const inputCallback = node.widgets[0].callback;
+    // The callback should have been set up by onNodeCreated
+    const inputCallback = inputWidget.callback;
     expect(typeof inputCallback).toBe("function");
 
+    // Simulate typing in the input widget
     inputCallback("<lora:Alpha:1.0>");
 
     expect(mergeLoras).toHaveBeenCalledWith("<lora:Alpha:1.0>", []);
@@ -128,4 +125,3 @@ describe("Lora Loader trigger word updates", () => {
     expect([...triggerWordSet]).toEqual(["Alpha"]);
   });
 });
-

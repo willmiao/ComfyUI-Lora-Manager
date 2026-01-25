@@ -5,7 +5,6 @@ import {
   updateConnectedTriggerWords,
   chainCallback,
   mergeLoras,
-  setupInputWidgetWithAutocomplete,
   getAllGraphNodes,
   getNodeFromGraph,
 } from "./utils.js";
@@ -129,12 +128,12 @@ app.registerExtension({
           set(value) {
             const oldValue = _mode;
             _mode = value;
-            
+
             // Trigger mode change handler
             if (self.onModeChange) {
               self.onModeChange(value, oldValue);
             }
-            
+
             console.log(`[Lora Loader] Node mode changed from ${oldValue} to ${value}`);
           }
         });
@@ -142,14 +141,14 @@ app.registerExtension({
         // Define the mode change handler
         this.onModeChange = function(newMode, oldMode) {
           console.log(`Lora Loader node mode changed: from ${oldMode} to ${newMode}`);
-          
+
           // Update connected trigger word toggle nodes when mode changes
           const allActiveLoraNames = collectActiveLorasFromChain(self);
           updateConnectedTriggerWords(self, allActiveLoraNames);
         };
 
+        // Get the text input widget (AUTOCOMPLETE_TEXT_LORAS type, created by Vue widgets)
         const inputWidget = this.widgets[0];
-        inputWidget.options.getMaxHeight = () => 100;
         this.inputWidget = inputWidget;
 
         const scheduleInputSync = debounce((lorasValue) => {
@@ -202,7 +201,8 @@ app.registerExtension({
           }
         ).widget;
 
-        const originalCallback = (value) => {
+        // Set up callback for the text input widget to trigger merge logic
+        inputWidget.callback = (value) => {
           if (isUpdating) return;
           isUpdating = true;
 
@@ -218,13 +218,6 @@ app.registerExtension({
             isUpdating = false;
           }
         };
-
-        // Setup input widget with autocomplete
-        inputWidget.callback = setupInputWidgetWithAutocomplete(
-          this,
-          inputWidget,
-          originalCallback
-        );
       });
     }
   },
@@ -241,27 +234,6 @@ app.registerExtension({
       // Merge the loras data
       const mergedLoras = mergeLoras(node.widgets[0].value, existingLoras);
       node.lorasWidget.value = mergedLoras;
-
-      // Initialize autocomplete after DOM is fully rendered
-      const inputWidget = node.inputWidget || node.widgets[0];
-      if (inputWidget && !node.autocomplete) {
-        const { setupInputWidgetWithAutocomplete } = await import("./utils.js");
-        const modelType = "loras";
-        const autocompleteOptions = {
-          maxItems: 20,
-          minChars: 1,
-          debounceDelay: 200,
-        };
-        // Fix: Assign the enhanced callback to replace the original
-        inputWidget.callback = setupInputWidgetWithAutocomplete(node, inputWidget, inputWidget.callback, modelType, autocompleteOptions);
-
-        // Eager initialization: trigger callback after short delay to ensure DOM is ready
-        setTimeout(() => {
-          if (!node.autocomplete && inputWidget.callback) {
-            inputWidget.callback(inputWidget.value);
-          }
-        }, 100);
-      }
     }
   },
 });

@@ -1,14 +1,10 @@
 import { app } from "../../scripts/app.js";
 import {
   getActiveLorasFromNode,
-  collectActiveLorasFromChain,
   updateConnectedTriggerWords,
   updateDownstreamLoaders,
   chainCallback,
   mergeLoras,
-  setupInputWidgetWithAutocomplete,
-  getLinkFromGraph,
-  getNodeKey,
 } from "./utils.js";
 import { addLorasWidget } from "./loras_widget.js";
 import { applyLoraValuesToText, debounce } from "./lora_syntax_utils.js";
@@ -31,8 +27,8 @@ app.registerExtension({
         let isUpdating = false;
         let isSyncingInput = false;
 
+        // Get the text input widget (AUTOCOMPLETE_TEXT_LORAS type, created by Vue widgets)
         const inputWidget = this.widgets[0];
-        inputWidget.options.getMaxHeight = () => 100;
         this.inputWidget = inputWidget;
 
         const scheduleInputSync = debounce((lorasValue) => {
@@ -95,39 +91,32 @@ app.registerExtension({
 
         this.lorasWidget = result.widget;
 
-        // Wrap the callback with autocomplete setup
-        const originalCallback = (value) => {
+        // Set up callback for the text input widget to trigger merge logic
+        inputWidget.callback = (value) => {
           if (isUpdating) return;
           isUpdating = true;
 
           try {
-            const currentLoras = this.lorasWidget.value || [];
+            const currentLoras = this.lorasWidget?.value || [];
             const mergedLoras = mergeLoras(value, currentLoras);
-
-            this.lorasWidget.value = mergedLoras;
-
+            if (this.lorasWidget) {
+              this.lorasWidget.value = mergedLoras;
+            }
             // Update this stacker's direct trigger toggles with its own active loras
             // Only if the stacker node itself is active (mode 0 for Always, mode 3 for On Trigger)
             const isNodeActive = this.mode === undefined || this.mode === 0 || this.mode === 3;
             const activeLoraNames = isNodeActive ? getActiveLorasFromNode(this) : new Set();
             updateConnectedTriggerWords(this, activeLoraNames);
-
             // Find all Lora Loader nodes in the chain that might need updates
             updateDownstreamLoaders(this);
           } finally {
             isUpdating = false;
           }
         };
-
-        // Setup input widget with autocomplete
-        inputWidget.callback = setupInputWidgetWithAutocomplete(
-          this,
-          inputWidget,
-          originalCallback
-        );
       });
     }
   },
+
   async loadedGraphNode(node) {
     if (node.comfyClass == "Lora Stacker (LoraManager)") {
       // Restore saved value if exists
@@ -138,20 +127,9 @@ app.registerExtension({
         existingLoras = savedValue || [];
       }
       // Merge the loras data
-      const mergedLoras = mergeLoras(node.widgets[0].value, existingLoras);
-      node.lorasWidget.value = mergedLoras;
-
       const inputWidget = node.inputWidget || node.widgets[0];
-      if (inputWidget && !node.autocomplete) {
-        const { setupInputWidgetWithAutocomplete } = await import("./utils.js");
-        const modelType = "loras";
-        const autocompleteOptions = {
-          maxItems: 20,
-          minChars: 1,
-          debounceDelay: 200,
-        };
-        inputWidget.callback = setupInputWidgetWithAutocomplete(node, inputWidget, inputWidget.callback, modelType, autocompleteOptions);
-      }
+      const mergedLoras = mergeLoras(inputWidget.value, existingLoras);
+      node.lorasWidget.value = mergedLoras;
     }
   },
 });

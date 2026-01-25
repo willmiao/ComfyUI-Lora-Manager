@@ -7,7 +7,6 @@ const {
   LORAS_WIDGET_MODULE,
   LORA_LOADER_MODULE,
   LORA_STACKER_MODULE,
-  VUE_WIDGETS_MODULE,
 } = vi.hoisted(() => ({
   APP_MODULE: new URL("../../../scripts/app.js", import.meta.url).pathname,
   API_MODULE: new URL("../../../scripts/api.js", import.meta.url).pathname,
@@ -15,21 +14,17 @@ const {
   LORAS_WIDGET_MODULE: new URL("../../../web/comfyui/loras_widget.js", import.meta.url).pathname,
   LORA_LOADER_MODULE: new URL("../../../web/comfyui/lora_loader.js", import.meta.url).pathname,
   LORA_STACKER_MODULE: new URL("../../../web/comfyui/lora_stacker.js", import.meta.url).pathname,
-  VUE_WIDGETS_MODULE: new URL("../../../web/comfyui/vue-widgets/lora-manager-widgets.js", import.meta.url).pathname,
 }));
 
 const extensionState = {
   loraLoader: null,
   loraStacker: null,
-  vueWidgets: null,
 };
 const registerExtensionMock = vi.fn((extension) => {
   if (extension.name === "LoraManager.LoraLoader") {
     extensionState.loraLoader = extension;
   } else if (extension.name === "LoraManager.LoraStacker") {
     extensionState.loraStacker = extension;
-  } else if (extension.name === "LoraManager.VueWidgets") {
-    extensionState.vueWidgets = extension;
   }
 });
 
@@ -51,7 +46,6 @@ const updateConnectedTriggerWords = vi.fn();
 const updateDownstreamLoaders = vi.fn();
 const getActiveLorasFromNode = vi.fn();
 const mergeLoras = vi.fn();
-const setupInputWidgetWithAutocomplete = vi.fn();
 const getAllGraphNodes = vi.fn();
 const getNodeFromGraph = vi.fn();
 const getNodeKey = vi.fn();
@@ -69,7 +63,6 @@ vi.mock(UTILS_MODULE, async (importOriginal) => {
     updateDownstreamLoaders,
     getActiveLorasFromNode,
     mergeLoras,
-    setupInputWidgetWithAutocomplete,
     chainCallback,
     getAllGraphNodes,
     getNodeFromGraph,
@@ -90,7 +83,6 @@ describe("Node mode change handling", () => {
 
     extensionState.loraLoader = null;
     extensionState.loraStacker = null;
-    extensionState.vueWidgets = null;
     registerExtensionMock.mockClear();
 
     collectActiveLorasFromChain.mockClear();
@@ -106,11 +98,6 @@ describe("Node mode change handling", () => {
     mergeLoras.mockClear();
     mergeLoras.mockImplementation(() => [{ name: "Alpha", active: true }]);
 
-    setupInputWidgetWithAutocomplete.mockClear();
-    setupInputWidgetWithAutocomplete.mockImplementation(
-      (_node, _widget, originalCallback) => originalCallback
-    );
-
     addLorasWidget.mockClear();
     addLorasWidget.mockImplementation((_node, _name, _opts, callback) => ({
       widget: { value: [], callback },
@@ -118,33 +105,27 @@ describe("Node mode change handling", () => {
   });
 
   describe("Lora Stacker mode change handling", () => {
-    let node, extension, vueWidgetsExtension;
+    let node, extension;
 
     beforeEach(async () => {
-      // Import the Vue widgets module first to register mode change handlers
-      await import(VUE_WIDGETS_MODULE);
-
       await import(LORA_STACKER_MODULE);
 
       expect(registerExtensionMock).toHaveBeenCalled();
       extension = extensionState.loraStacker;
       expect(extension).toBeDefined();
-      vueWidgetsExtension = extensionState.vueWidgets;
-      expect(vueWidgetsExtension).toBeDefined();
 
       const nodeType = { comfyClass: "Lora Stacker (LoraManager)", prototype: {} };
       const nodeData = { name: "Lora Stacker (LoraManager)" };
 
-      // Call both extensions' beforeRegisterNodeDef
       await extension.beforeRegisterNodeDef(nodeType, nodeData, {});
-      await vueWidgetsExtension.beforeRegisterNodeDef(nodeType, nodeData, {});
 
       // Create widgets with proper structure for lora_stacker.js
+      // Widget at index 0 is the AUTOCOMPLETE_TEXT_LORAS widget (created by Vue widgets)
       const inputWidget = {
-        name: "input",
+        name: "text",
         value: "",
-        options: {}, // lora_stacker.js:35 expects options to exist
-        callback: () => {},
+        options: {},
+        callback: null, // Will be set by onNodeCreated
       };
 
       const lorasWidget = {
@@ -173,12 +154,6 @@ describe("Node mode change handling", () => {
       const initialMode = node.mode;
       expect(initialMode).toBe(0);
 
-      // Verify that the mode property is configured as a custom property descriptor
-      // (set up by the mode change handler from Vue widgets)
-      const modeDescriptor = Object.getOwnPropertyDescriptor(node, 'mode');
-      expect(modeDescriptor).toBeDefined();
-      expect(modeDescriptor.set).toBeInstanceOf(Function);
-
       // Change mode from 0 to 3
       node.mode = 3;
 
@@ -187,14 +162,7 @@ describe("Node mode change handling", () => {
     });
 
     it("should update trigger words based on node activity when mode changes", () => {
-      // The loras widget has Alpha and Beta as active
-      const activeLoras = new Set(["Alpha", "Beta"]);
-
-      // Verify that the mode property is configured with a custom setter
-      const modeDescriptor = Object.getOwnPropertyDescriptor(node, 'mode');
-      expect(modeDescriptor?.set).toBeInstanceOf(Function);
-
-      // Change to active mode (0) - the mode setter should handle this
+      // Change to active mode (0)
       node.mode = 0;
       expect(node.mode).toBe(0);
 
@@ -221,13 +189,14 @@ describe("Node mode change handling", () => {
       const nodeType = { comfyClass: "Lora Loader (LoraManager)", prototype: {} };
       await extension.beforeRegisterNodeDef(nodeType, {}, {});
 
+      // Widget at index 0 is the AUTOCOMPLETE_TEXT_LORAS widget (created by Vue widgets)
       node = {
         comfyClass: "Lora Loader (LoraManager)",
         widgets: [
           {
             value: "",
             options: {},
-            callback: () => {},
+            callback: null, // Will be set by onNodeCreated
           },
         ],
         addInput: vi.fn(),

@@ -4,7 +4,6 @@ import {
   updateConnectedTriggerWords,
   chainCallback,
   mergeLoras,
-  setupInputWidgetWithAutocomplete,
 } from "./utils.js";
 import { addLorasWidget } from "./loras_widget.js";
 import { applyLoraValuesToText, debounce } from "./lora_syntax_utils.js";
@@ -31,8 +30,8 @@ app.registerExtension({
         let isUpdating = false;
         let isSyncingInput = false;
 
+        // Get the text input widget (AUTOCOMPLETE_TEXT_LORAS type, at index 2 after low_mem_load and merge_loras)
         const inputWidget = this.widgets[2];
-        inputWidget.options.getMaxHeight = () => 100;
         this.inputWidget = inputWidget;
 
         const scheduleInputSync = debounce((lorasValue) => {
@@ -81,17 +80,17 @@ app.registerExtension({
 
         this.lorasWidget = result.widget;
 
-        // Wrap the callback with autocomplete setup
-        const originalCallback = (value) => {
+        // Set up callback for the text input widget to trigger merge logic
+        inputWidget.callback = (value) => {
           if (isUpdating) return;
           isUpdating = true;
 
           try {
-            const currentLoras = this.lorasWidget.value || [];
+            const currentLoras = this.lorasWidget?.value || [];
             const mergedLoras = mergeLoras(value, currentLoras);
-
-            this.lorasWidget.value = mergedLoras;
-
+            if (this.lorasWidget) {
+              this.lorasWidget.value = mergedLoras;
+            }
             // Update this node's direct trigger toggles with its own active loras
             const activeLoraNames = getActiveLorasFromNode(this);
             updateConnectedTriggerWords(this, activeLoraNames);
@@ -99,14 +98,10 @@ app.registerExtension({
             isUpdating = false;
           }
         };
-        inputWidget.callback = setupInputWidgetWithAutocomplete(
-          this,
-          inputWidget,
-          originalCallback
-        );
       });
     }
   },
+
   async loadedGraphNode(node) {
     if (node.comfyClass == "WanVideo Lora Select (LoraManager)") {
       // Restore saved value if exists
@@ -117,20 +112,9 @@ app.registerExtension({
         existingLoras = savedValue || [];
       }
       // Merge the loras data
-      const mergedLoras = mergeLoras(node.widgets[2].value, existingLoras);
-      node.lorasWidget.value = mergedLoras;
-
       const inputWidget = node.inputWidget || node.widgets[2];
-      if (inputWidget && !node.autocomplete) {
-        const { setupInputWidgetWithAutocomplete } = await import("./utils.js");
-        const modelType = "loras";
-        const autocompleteOptions = {
-          maxItems: 20,
-          minChars: 1,
-          debounceDelay: 200,
-        };
-        inputWidget.callback = setupInputWidgetWithAutocomplete(node, inputWidget, inputWidget.callback, modelType, autocompleteOptions);
-      }
+      const mergedLoras = mergeLoras(inputWidget.value, existingLoras);
+      node.lorasWidget.value = mergedLoras;
     }
   },
 });

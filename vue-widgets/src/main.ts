@@ -4,6 +4,7 @@ import LoraPoolWidget from '@/components/LoraPoolWidget.vue'
 import LoraRandomizerWidget from '@/components/LoraRandomizerWidget.vue'
 import LoraCyclerWidget from '@/components/LoraCyclerWidget.vue'
 import JsonDisplayWidget from '@/components/JsonDisplayWidget.vue'
+import AutocompleteTextWidget from '@/components/AutocompleteTextWidget.vue'
 import type { LoraPoolConfig, LegacyLoraPoolConfig, RandomizerConfig, CyclerConfig } from './composables/types'
 import {
   setupModeChangeHandler,
@@ -21,6 +22,7 @@ const LORA_CYCLER_WIDGET_MIN_HEIGHT = 314
 const LORA_CYCLER_WIDGET_MAX_HEIGHT = LORA_CYCLER_WIDGET_MIN_HEIGHT
 const JSON_DISPLAY_WIDGET_MIN_WIDTH = 300
 const JSON_DISPLAY_WIDGET_MIN_HEIGHT = 200
+const AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT = 60
 
 // @ts-ignore - ComfyUI external module
 import { app } from '../../../scripts/app.js'
@@ -369,6 +371,119 @@ function createJsonDisplayWidget(node) {
   return { widget }
 }
 
+// Store nodeData options per widget type for autocomplete widgets
+const widgetInputOptions: Map<string, { placeholder?: string }> = new Map()
+
+// Listen for Vue DOM mode setting changes and dispatch custom event
+const initVueDomModeListener = () => {
+  if (app.ui?.settings?.addEventListener) {
+    app.ui.settings.addEventListener('Comfy.VueNodes.Enabled.change', () => {
+      // Use requestAnimationFrame to ensure the setting value has been updated
+      // before we read it (the event may fire before internal state updates)
+      requestAnimationFrame(() => {
+        const isVueDomMode = app.ui?.settings?.getSettingValue?.('Comfy.VueNodes.Enabled') ?? false
+        // Dispatch custom event for Vue components to listen to
+        document.dispatchEvent(new CustomEvent('lora-manager:vue-mode-change', {
+          detail: { isVueDomMode }
+        }))
+      })
+    })
+  }
+}
+
+// Initialize listener when app is ready
+if (app.ui?.settings) {
+  initVueDomModeListener()
+} else {
+  // Defer until app is ready
+  const checkAppReady = setInterval(() => {
+    if (app.ui?.settings) {
+      initVueDomModeListener()
+      clearInterval(checkAppReady)
+    }
+  }, 100)
+}
+
+// Factory function for creating autocomplete text widgets
+// @ts-ignore
+function createAutocompleteTextWidgetFactory(
+  node: any,
+  widgetName: string,
+  modelType: 'loras' | 'embeddings',
+  inputOptions: { placeholder?: string } = {}
+) {
+  const container = document.createElement('div')
+  container.id = `autocomplete-text-widget-${node.id}-${widgetName}`
+  container.style.width = '100%'
+  container.style.height = '100%'
+  container.style.display = 'flex'
+  container.style.flexDirection = 'column'
+  container.style.overflow = 'hidden'
+
+  forwardMiddleMouseToCanvas(container)
+
+  let internalValue = ''
+
+  const widget = node.addDOMWidget(
+    widgetName,
+    `AUTOCOMPLETE_TEXT_${modelType.toUpperCase()}`,
+    container,
+    {
+      getValue() {
+        return internalValue
+      },
+      setValue(v: string) {
+        internalValue = v ?? ''
+        if (typeof widget.onSetValue === 'function') {
+          widget.onSetValue(v)
+        }
+      },
+      serialize: true,
+      getMinHeight() {
+        return AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT
+      }
+    }
+  )
+
+  // Get spellcheck setting from ComfyUI settings (default: false)
+  const spellcheck = app.ui?.settings?.getSettingValue?.('Comfy.TextareaWidget.Spellcheck') ?? false
+
+  const vueApp = createApp(AutocompleteTextWidget, {
+    widget,
+    node,
+    modelType,
+    placeholder: inputOptions.placeholder || widgetName,
+    showPreview: true,
+    spellcheck
+  })
+
+  vueApp.use(PrimeVue, {
+    unstyled: true,
+    ripple: false
+  })
+
+  vueApp.mount(container)
+  // Use a unique key combining node.id and widget name to avoid collisions
+  const appKey = node.id * 100000 + widgetName.charCodeAt(0)
+  vueApps.set(appKey, vueApp)
+
+  widget.computeLayoutSize = () => {
+    const minHeight = AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT
+
+    return { minHeight }
+  }
+
+  widget.onRemove = () => {
+    const vueApp = vueApps.get(appKey)
+    if (vueApp) {
+      vueApp.unmount()
+      vueApps.delete(appKey)
+    }
+  }
+
+  return { widget }
+}
+
 app.registerExtension({
   name: 'LoraManager.VueWidgets',
 
@@ -402,15 +517,39 @@ app.registerExtension({
         } : null
 
         return addLorasWidgetCache(node, 'loras', { isRandomizerNode }, callback)
+      },
+      // Autocomplete text widget for LoRAs (used by Lora Loader, Lora Stacker, WanVideo Lora Select)
+      // @ts-ignore
+      AUTOCOMPLETE_TEXT_LORAS(node) {
+        const options = widgetInputOptions.get(`${node.comfyClass}:text`) || {}
+        return createAutocompleteTextWidgetFactory(node, 'text', 'loras', options)
+      },
+      // Autocomplete text widget for embeddings (used by Prompt node)
+      // @ts-ignore
+      AUTOCOMPLETE_TEXT_EMBEDDINGS(node) {
+        const options = widgetInputOptions.get(`${node.comfyClass}:text`) || {}
+        return createAutocompleteTextWidgetFactory(node, 'text', 'embeddings', options)
       }
     }
   },
 
   // Add display-only widget to Debug Metadata node
   // Register mode change handlers for LoRA provider nodes
+  // Extract and store input options for autocomplete widgets
   // @ts-ignore
   async beforeRegisterNodeDef(nodeType, nodeData) {
     const comfyClass = nodeType.comfyClass
+
+    // Extract and store input options for autocomplete widgets
+    const inputs = { ...nodeData.input?.required, ...nodeData.input?.optional }
+    for (const [inputName, inputDef] of Object.entries(inputs)) {
+      // @ts-ignore
+      if (Array.isArray(inputDef) && typeof inputDef[0] === 'string' && inputDef[0].startsWith('AUTOCOMPLETE_TEXT_')) {
+        // @ts-ignore
+        const options = inputDef[1] || {}
+        widgetInputOptions.set(`${nodeData.name}:${inputName}`, options)
+      }
+    }
 
     // Register mode change handlers for LoRA provider nodes
     if (LORA_PROVIDER_NODE_TYPES.includes(comfyClass)) {

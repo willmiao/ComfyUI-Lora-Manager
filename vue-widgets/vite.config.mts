@@ -22,7 +22,8 @@ export default defineConfig({
         rollupOptions: {
             external: [
                 '../../../scripts/app.js',
-                '../loras_widget.js'
+                '../loras_widget.js',
+                '../autocomplete.js'
             ],
             output: {
                 dir: '../web/comfyui/vue-widgets',
