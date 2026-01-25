@@ -6,7 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class LoraStacker:
+class LoraStackerLM:
     NAME = "Lora Stacker (LoraManager)"
     CATEGORY = "Lora Manager/stackers"
 

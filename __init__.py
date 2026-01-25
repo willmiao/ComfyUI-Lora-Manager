@@ -1,16 +1,16 @@
 try:  # pragma: no cover - import fallback for pytest collection
     from .py.lora_manager import LoraManager
-    from .py.nodes.lora_loader import LoraManagerLoader, LoraManagerTextLoader
-    from .py.nodes.trigger_word_toggle import TriggerWordToggle
-    from .py.nodes.prompt import PromptLoraManager
-    from .py.nodes.lora_stacker import LoraStacker
+    from .py.nodes.lora_loader import LoraLoaderLM, LoraTextLoaderLM
+    from .py.nodes.trigger_word_toggle import TriggerWordToggleLM
+    from .py.nodes.prompt import PromptLM
+    from .py.nodes.lora_stacker import LoraStackerLM
     from .py.nodes.save_image import SaveImageLM
-    from .py.nodes.debug_metadata import DebugMetadata
+    from .py.nodes.debug_metadata import DebugMetadataLM
     from .py.nodes.wanvideo_lora_select import WanVideoLoraSelectLM
-    from .py.nodes.wanvideo_lora_select_from_text import WanVideoLoraSelectFromText
-    from .py.nodes.lora_pool import LoraPoolNode
-    from .py.nodes.lora_randomizer import LoraRandomizerNode
-    from .py.nodes.lora_cycler import LoraCyclerNode
+    from .py.nodes.wanvideo_lora_select_from_text import WanVideoLoraTextSelectLM
+    from .py.nodes.lora_pool import LoraPoolLM
+    from .py.nodes.lora_randomizer import LoraRandomizerLM
+    from .py.nodes.lora_cycler import LoraCyclerLM
     from .py.metadata_collector import init as init_metadata_collector
 except (
     ImportError
@@ -23,48 +23,48 @@ except (
     if str(package_root) not in sys.path:
         sys.path.append(str(package_root))
 
-    PromptLoraManager = importlib.import_module("py.nodes.prompt").PromptLoraManager
+    PromptLM = importlib.import_module("py.nodes.prompt").PromptLM
     LoraManager = importlib.import_module("py.lora_manager").LoraManager
-    LoraManagerLoader = importlib.import_module(
+    LoraLoaderLM = importlib.import_module(
         "py.nodes.lora_loader"
-    ).LoraManagerLoader
-    LoraManagerTextLoader = importlib.import_module(
+    ).LoraLoaderLM
+    LoraTextLoaderLM = importlib.import_module(
         "py.nodes.lora_loader"
-    ).LoraManagerTextLoader
-    TriggerWordToggle = importlib.import_module(
+    ).LoraTextLoaderLM
+    TriggerWordToggleLM = importlib.import_module(
         "py.nodes.trigger_word_toggle"
-    ).TriggerWordToggle
-    LoraStacker = importlib.import_module("py.nodes.lora_stacker").LoraStacker
+    ).TriggerWordToggleLM
+    LoraStackerLM = importlib.import_module("py.nodes.lora_stacker").LoraStackerLM
     SaveImageLM = importlib.import_module("py.nodes.save_image").SaveImageLM
-    DebugMetadata = importlib.import_module("py.nodes.debug_metadata").DebugMetadata
+    DebugMetadataLM = importlib.import_module("py.nodes.debug_metadata").DebugMetadataLM
     WanVideoLoraSelectLM = importlib.import_module(
         "py.nodes.wanvideo_lora_select"
     ).WanVideoLoraSelectLM
-    WanVideoLoraSelectFromText = importlib.import_module(
+    WanVideoLoraTextSelectLM = importlib.import_module(
         "py.nodes.wanvideo_lora_select_from_text"
-    ).WanVideoLoraSelectFromText
-    LoraPoolNode = importlib.import_module("py.nodes.lora_pool").LoraPoolNode
-    LoraRandomizerNode = importlib.import_module(
+    ).WanVideoLoraTextSelectLM
+    LoraPoolLM = importlib.import_module("py.nodes.lora_pool").LoraPoolLM
+    LoraRandomizerLM = importlib.import_module(
         "py.nodes.lora_randomizer"
-    ).LoraRandomizerNode
-    LoraCyclerNode = importlib.import_module(
+    ).LoraRandomizerLM
+    LoraCyclerLM = importlib.import_module(
         "py.nodes.lora_cycler"
-    ).LoraCyclerNode
+    ).LoraCyclerLM
     init_metadata_collector = importlib.import_module("py.metadata_collector").init
 
 NODE_CLASS_MAPPINGS = {
-    PromptLoraManager.NAME: PromptLoraManager,
-    LoraManagerLoader.NAME: LoraManagerLoader,
-    LoraManagerTextLoader.NAME: LoraManagerTextLoader,
-    TriggerWordToggle.NAME: TriggerWordToggle,
-    LoraStacker.NAME: LoraStacker,
+    PromptLM.NAME: PromptLM,
+    LoraLoaderLM.NAME: LoraLoaderLM,
+    LoraTextLoaderLM.NAME: LoraTextLoaderLM,
+    TriggerWordToggleLM.NAME: TriggerWordToggleLM,
+    LoraStackerLM.NAME: LoraStackerLM,
     SaveImageLM.NAME: SaveImageLM,
-    DebugMetadata.NAME: DebugMetadata,
+    DebugMetadataLM.NAME: DebugMetadataLM,
     WanVideoLoraSelectLM.NAME: WanVideoLoraSelectLM,
-    WanVideoLoraSelectFromText.NAME: WanVideoLoraSelectFromText,
-    LoraPoolNode.NAME: LoraPoolNode,
-    LoraRandomizerNode.NAME: LoraRandomizerNode,
-    LoraCyclerNode.NAME: LoraCyclerNode,
+    WanVideoLoraTextSelectLM.NAME: WanVideoLoraTextSelectLM,
+    LoraPoolLM.NAME: LoraPoolLM,
+    LoraRandomizerLM.NAME: LoraRandomizerLM,
+    LoraCyclerLM.NAME: LoraCyclerLM,
 }
 
 WEB_DIRECTORY = "./web/comfyui"

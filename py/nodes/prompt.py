@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-class PromptLoraManager:
+class PromptLM:
     """Encodes text (and optional trigger words) into CLIP conditioning."""
 
     NAME = "Prompt (LoraManager)"

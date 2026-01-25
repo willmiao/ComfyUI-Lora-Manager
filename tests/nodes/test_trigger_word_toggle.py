@@ -1,8 +1,8 @@
-from py.nodes.trigger_word_toggle import TriggerWordToggle
+from py.nodes.trigger_word_toggle import TriggerWordToggleLM
 
 
 def test_group_mode_preserves_parenthesized_groups():
-    node = TriggerWordToggle()
+    node = TriggerWordToggleLM()
     trigger_data = [
         {
             "text": "flat color, dark theme",
@@ -42,7 +42,7 @@ def test_group_mode_preserves_parenthesized_groups():
 
 
 def test_duplicate_words_keep_individual_active_states():
-    node = TriggerWordToggle()
+    node = TriggerWordToggleLM()
     trigger_data = [
         {"text": "A", "active": True, "strength": None, "highlighted": False},
         {"text": "A", "active": False, "strength": None, "highlighted": False},
@@ -61,7 +61,7 @@ def test_duplicate_words_keep_individual_active_states():
 
 
 def test_duplicate_words_preserve_strength_per_instance():
-    node = TriggerWordToggle()
+    node = TriggerWordToggleLM()
     trigger_data = [
         {"text": "(A:0.50)", "active": False, "strength": 0.50, "highlighted": False},
         {"text": "A", "active": True, "strength": 1.2, "highlighted": False},
@@ -81,7 +81,7 @@ def test_duplicate_words_preserve_strength_per_instance():
 
 
 def test_duplicate_groups_respect_active_state():
-    node = TriggerWordToggle()
+    node = TriggerWordToggleLM()
     trigger_data = [
         {"text": "A, B", "active": False, "strength": None, "highlighted": False},
         {"text": "A, B", "active": True, "strength": None, "highlighted": False},
@@ -100,7 +100,7 @@ def test_duplicate_groups_respect_active_state():
 
 
 def test_trigger_words_override_different_from_original():
-    node = TriggerWordToggle()
+    node = TriggerWordToggleLM()
     trigger_data = [
         {
             "text": "69yottea_style_illu",
@@ -127,7 +127,7 @@ def test_trigger_words_override_different_from_original():
 
 
 def test_trigger_words_override_with_new_format():
-    node = TriggerWordToggle()
+    node = TriggerWordToggleLM()
 
     (filtered,) = node.process_trigger_words(
         id="node",
@@ -142,7 +142,7 @@ def test_trigger_words_override_with_new_format():
 
 
 def test_trigger_words_same_as_original_processes_toggle():
-    node = TriggerWordToggle()
+    node = TriggerWordToggleLM()
     trigger_data = [
         {"text": "word1", "active": True, "strength": None, "highlighted": False},
         {"text": "word2", "active": False, "strength": None, "highlighted": False},
@@ -162,7 +162,7 @@ def test_trigger_words_same_as_original_processes_toggle():
 
 
 def test_trigger_words_override_empty_toggle_data():
-    node = TriggerWordToggle()
+    node = TriggerWordToggleLM()
 
     (filtered,) = node.process_trigger_words(
         id="node",

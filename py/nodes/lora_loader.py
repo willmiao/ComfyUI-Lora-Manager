@@ -6,7 +6,7 @@ from .utils import FlexibleOptionalInputType, any_type, extract_lora_name, get_l
 
 logger = logging.getLogger(__name__)
 
-class LoraManagerLoader:
+class LoraLoaderLM:
     NAME = "Lora Loader (LoraManager)"
     CATEGORY = "Lora Manager/loaders"
     
@@ -128,7 +128,7 @@ class LoraManagerLoader:
 
         return (model, clip, trigger_words_text, formatted_loras_text)
 
-class LoraManagerTextLoader:
+class LoraTextLoaderLM:
     NAME = "LoRA Text Loader (LoraManager)"
     CATEGORY = "Lora Manager/loaders"
     

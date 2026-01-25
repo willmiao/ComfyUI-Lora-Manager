@@ -4,7 +4,7 @@ from ..metadata_collector.metadata_processor import MetadataProcessor
 logger = logging.getLogger(__name__)
 
 
-class DebugMetadata:
+class DebugMetadataLM:
     NAME = "Debug Metadata (LoraManager)"
     CATEGORY = "Lora Manager/utils"
     DESCRIPTION = "Debug node to verify metadata_processor functionality"

@@ -15,7 +15,7 @@ from .utils import extract_lora_name
 logger = logging.getLogger(__name__)
 
 
-class LoraRandomizerNode:
+class LoraRandomizerLM:
     """Node that randomly selects LoRAs from a pool"""
 
     NAME = "Lora Randomizer (LoraManager)"
@@ -72,7 +72,7 @@ class LoraRandomizerNode:
         loras = self._preprocess_loras_input(loras)
 
         roll_mode = randomizer_config.get("roll_mode", "always")
-        logger.debug(f"[LoraRandomizerNode] roll_mode: {roll_mode}")
+        logger.debug(f"[LoraRandomizerLM] roll_mode: {roll_mode}")
 
         # Dual seed mechanism for batch queue synchronization
         # execution_seed: seed for generating execution_stack (= previous next_seed)
@@ -127,7 +127,7 @@ class LoraRandomizerNode:
             lora_path, trigger_words = get_lora_info(lora["name"])
             if not lora_path:
                 logger.warning(
-                    f"[LoraRandomizerNode] Could not find path for LoRA: {lora['name']}"
+                    f"[LoraRandomizerLM] Could not find path for LoRA: {lora['name']}"
                 )
                 continue
 

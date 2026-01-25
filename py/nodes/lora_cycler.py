@@ -13,7 +13,7 @@ from ..utils.utils import get_lora_info
 logger = logging.getLogger(__name__)
 
 
-class LoraCyclerNode:
+class LoraCyclerLM:
     """Node that sequentially cycles through LoRAs from a pool"""
 
     NAME = "Lora Cycler (LoraManager)"
@@ -72,7 +72,7 @@ class LoraCyclerNode:
         total_count = len(lora_list)
 
         if total_count == 0:
-            logger.warning("[LoraCyclerNode] No LoRAs available in pool")
+            logger.warning("[LoraCyclerLM] No LoRAs available in pool")
             return {
                 "result": ([],),
                 "ui": {
@@ -103,7 +103,7 @@ class LoraCyclerNode:
         lora_path, _ = get_lora_info(current_lora["file_name"])
         if not lora_path:
             logger.warning(
-                f"[LoraCyclerNode] Could not find path for LoRA: {current_lora['file_name']}"
+                f"[LoraCyclerLM] Could not find path for LoRA: {current_lora['file_name']}"
             )
             lora_stack = []
         else:

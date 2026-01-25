@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # 定义新节点的类
-class WanVideoLoraSelectFromText:
+class WanVideoLoraTextSelectLM:
     # 节点在UI中显示的名称
     NAME = "WanVideo Lora Select From Text (LoraManager)"
     # 节点所属的分类
@@ -117,9 +117,9 @@ class WanVideoLoraSelectFromText:
         return (loras_list, trigger_words_text, active_loras_text)
 
 NODE_CLASS_MAPPINGS = {
-    "WanVideoLoraSelectFromText": WanVideoLoraSelectFromText
+    "WanVideoLoraTextSelectLM": WanVideoLoraTextSelectLM
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "WanVideoLoraSelectFromText": "WanVideo Lora Select From Text (LoraManager)"
+    "WanVideoLoraTextSelectLM": "WanVideo Lora Select From Text (LoraManager)"
 }

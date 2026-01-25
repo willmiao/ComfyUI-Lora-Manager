@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class LoraPoolNode:
+class LoraPoolLM:
     """
     A node that defines LoRA filter criteria through a Vue-based widget.
 
@@ -67,7 +67,7 @@ class LoraPoolNode:
         filters = pool_config.get("filters", self._default_config()["filters"])
 
         # Log for debugging
-        logger.debug(f"[LoraPoolNode] Processing filters: {filters}")
+        logger.debug(f"[LoraPoolLM] Processing filters: {filters}")
 
         return (filters,)
 

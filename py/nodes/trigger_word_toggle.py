@@ -6,7 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class TriggerWordToggle:
+class TriggerWordToggleLM:
     NAME = "TriggerWord Toggle (LoraManager)"
     CATEGORY = "Lora Manager/utils"
     DESCRIPTION = "Toggle trigger words on/off"

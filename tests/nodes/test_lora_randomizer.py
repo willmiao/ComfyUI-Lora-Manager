@@ -1,17 +1,17 @@
-"""Tests for LoraRandomizerNode roll_mode functionality"""
+"""Tests for LoraRandomizerLM roll_mode functionality"""
 
 from unittest.mock import AsyncMock
 
 import pytest
 
-from py.nodes.lora_randomizer import LoraRandomizerNode
+from py.nodes.lora_randomizer import LoraRandomizerLM
 from py.services import service_registry
 
 
 @pytest.fixture
 def randomizer_node():
-    """Create a LoraRandomizerNode instance for testing"""
-    return LoraRandomizerNode()
+    """Create a LoraRandomizerLM instance for testing"""
+    return LoraRandomizerLM()
 
 
 @pytest.fixture
