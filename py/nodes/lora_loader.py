@@ -17,7 +17,7 @@ class LoraManagerLoader:
                 "model": ("MODEL",),
                 # "clip": ("CLIP",),
                 "text": ("AUTOCOMPLETE_TEXT_LORAS", {
-                    "placeholder": "Type LoRA syntax...",
+                    "placeholder": "Search LoRAs to add...",
                     "tooltip": "Format: <lora:lora_name:strength> separated by spaces or punctuation",
                 }),
             },
