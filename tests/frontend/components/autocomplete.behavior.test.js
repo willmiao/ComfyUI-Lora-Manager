@@ -37,6 +37,7 @@ vi.mock(APP_MODULE, () => ({
     canvas: {
       ds: { scale: 1 },
     },
+    registerExtension: vi.fn(),
   },
 }));
 
