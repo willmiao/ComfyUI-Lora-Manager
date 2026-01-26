@@ -224,6 +224,20 @@ class Config:
             logger.error(f"Error checking link status for {path}: {e}")
             return False
 
+    def _entry_is_symlink(self, entry: os.DirEntry) -> bool:
+        """Check if a directory entry is a symlink, including Windows junctions."""
+        if entry.is_symlink():
+            return True
+        if platform.system() == 'Windows':
+            try:
+                import ctypes
+                FILE_ATTRIBUTE_REPARSE_POINT = 0x400
+                attrs = ctypes.windll.kernel32.GetFileAttributesW(entry.path)
+                return attrs != -1 and (attrs & FILE_ATTRIBUTE_REPARSE_POINT)
+            except Exception:
+                pass
+        return False
+
     def _normalize_path(self, path: str) -> str:
         return os.path.normpath(path).replace(os.sep, '/')
 
@@ -241,8 +255,32 @@ class Config:
     def _build_symlink_fingerprint(self) -> Dict[str, object]:
         roots = [self._normalize_path(path) for path in self._symlink_roots() if path]
         unique_roots = sorted(set(roots))
-        # Fingerprint now only contains the root paths to avoid sensitivity to folder content changes.
-        return {"roots": unique_roots}
+
+        # Include first-level symlinks in fingerprint for change detection.
+        # This ensures new symlinks under roots trigger a cache invalidation.
+        # Use lists (not tuples) for JSON serialization compatibility.
+        direct_symlinks: List[List[str]] = []
+        for root in unique_roots:
+            try:
+                if os.path.isdir(root):
+                    with os.scandir(root) as it:
+                        for entry in it:
+                            if self._entry_is_symlink(entry):
+                                try:
+                                    target = os.path.realpath(entry.path)
+                                    direct_symlinks.append([
+                                        self._normalize_path(entry.path),
+                                        self._normalize_path(target)
+                                    ])
+                                except OSError:
+                                    pass
+            except (OSError, PermissionError):
+                pass
+
+        return {
+            "roots": unique_roots,
+            "direct_symlinks": sorted(direct_symlinks)
+        }
 
     def _initialize_symlink_mappings(self) -> None:
         start = time.perf_counter()
@@ -255,15 +293,19 @@ class Config:
             )
             self._rebuild_preview_roots()
 
-            # Only rescan if target roots have changed. 
-            # This is stable across file additions/deletions.
             current_fingerprint = self._build_symlink_fingerprint()
             cached_fingerprint = self._cached_fingerprint
-            
-            if cached_fingerprint and current_fingerprint == cached_fingerprint:
+
+            # Check 1: First-level symlinks unchanged (catches new symlinks at root)
+            fingerprint_valid = cached_fingerprint and current_fingerprint == cached_fingerprint
+
+            # Check 2: All cached mappings still valid (catches changes at any depth)
+            mappings_valid = self._validate_cached_mappings() if fingerprint_valid else False
+
+            if fingerprint_valid and mappings_valid:
                 return
 
-            logger.info("Symlink root paths changed; rescanning symbolic links")
+            logger.info("Symlink configuration changed; rescanning symbolic links")
 
         self.rebuild_symlink_cache()
         logger.info(
@@ -354,6 +396,36 @@ class Config:
 
         return True
 
+    def _validate_cached_mappings(self) -> bool:
+        """Verify all cached symlink mappings are still valid.
+
+        Returns True if all mappings are valid, False if rescan is needed.
+        This catches removed or retargeted symlinks at ANY depth.
+        """
+        for target, link in self._path_mappings.items():
+            # Convert normalized paths back to OS paths
+            link_path = link.replace('/', os.sep)
+
+            # Check if symlink still exists
+            if not self._is_link(link_path):
+                logger.debug("Cached symlink no longer exists: %s", link_path)
+                return False
+
+            # Check if target is still the same
+            try:
+                actual_target = self._normalize_path(os.path.realpath(link_path))
+                if actual_target != target:
+                    logger.debug(
+                        "Symlink target changed: %s -> %s (cached: %s)",
+                        link_path, actual_target, target
+                    )
+                    return False
+            except OSError:
+                logger.debug("Cannot resolve symlink: %s", link_path)
+                return False
+
+        return True
+
     def _save_symlink_cache(self) -> None:
         cache_path = self._get_symlink_cache_path()
         payload = {
@@ -406,10 +478,9 @@ class Config:
                 with os.scandir(current_display) as it:
                     for entry in it:
                         try:
-                            # 1. High speed detection using dirent data (is_symlink)
-                            is_link = entry.is_symlink()
-                            
-                            # On Windows, is_symlink handles reparse points
+                            # 1. Detect symlinks including Windows junctions
+                            is_link = self._entry_is_symlink(entry)
+
                             if is_link:
                                 # Only resolve realpath when we actually find a link
                                 target_path = os.path.realpath(entry.path)
