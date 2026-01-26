@@ -185,7 +185,7 @@ const MODEL_BEHAVIORS = {
         async getInsertText(_instance, relativePath) {
             const { directories, fileName } = splitRelativePath(relativePath);
             const trimmedName = removeGeneralExtension(fileName);
-            const folder = directories.length ? `${directories.join('\\')}\\` : '';
+            const folder = directories.length ? `${directories.join('/')}/` : '';
             return `embedding:${folder}${trimmedName}, `;
         },
     },
@@ -225,10 +225,10 @@ const MODEL_BEHAVIORS = {
             const rawSearchTerm = instance.getSearchTerm(instance.inputElement.value);
             const match = rawSearchTerm.match(/^emb:(.*)$/i);
 
-            if (match) {
+            if (match || instance.searchType === 'embeddings') {
                 const { directories, fileName } = splitRelativePath(relativePath);
                 const trimmedName = removeGeneralExtension(fileName);
-                const folder = directories.length ? `${directories.join('\\')}\\` : '';
+                const folder = directories.length ? `${directories.join('/')}/` : '';
                 return `embedding:${folder}${trimmedName}, `;
             } else {
                 return `${relativePath}, `;
