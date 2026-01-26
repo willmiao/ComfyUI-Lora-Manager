@@ -217,3 +217,57 @@ def test_new_symlink_triggers_rescan(monkeypatch: pytest.MonkeyPatch, tmp_path):
     second_cfg = config_module.Config()
     normalized_external = _normalize(str(external_dir))
     assert normalized_external in second_cfg._path_mappings
+
+
+def test_removed_deep_symlink_triggers_rescan(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    """Removing a deep symlink should trigger cache invalidation."""
+    loras_dir, settings_dir = _setup_paths(monkeypatch, tmp_path)
+
+    # Create nested structure with deep symlink
+    subdir = loras_dir / "anime"
+    subdir.mkdir()
+    external_dir = tmp_path / "external"
+    external_dir.mkdir()
+    deep_symlink = subdir / "styles"
+    deep_symlink.symlink_to(external_dir, target_is_directory=True)
+
+    # Initial scan finds the deep symlink
+    first_cfg = config_module.Config()
+    normalized_external = _normalize(str(external_dir))
+    assert normalized_external in first_cfg._path_mappings
+
+    # Remove the deep symlink
+    deep_symlink.unlink()
+
+    # Second config should detect invalid cached mapping and rescan
+    second_cfg = config_module.Config()
+    assert normalized_external not in second_cfg._path_mappings
+
+
+def test_retargeted_deep_symlink_triggers_rescan(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    """Changing a deep symlink's target should trigger cache invalidation."""
+    loras_dir, settings_dir = _setup_paths(monkeypatch, tmp_path)
+
+    # Create nested structure
+    subdir = loras_dir / "anime"
+    subdir.mkdir()
+    target_v1 = tmp_path / "external_v1"
+    target_v1.mkdir()
+    target_v2 = tmp_path / "external_v2"
+    target_v2.mkdir()
+
+    deep_symlink = subdir / "styles"
+    deep_symlink.symlink_to(target_v1, target_is_directory=True)
+
+    # Initial scan
+    first_cfg = config_module.Config()
+    assert _normalize(str(target_v1)) in first_cfg._path_mappings
+
+    # Retarget the symlink
+    deep_symlink.unlink()
+    deep_symlink.symlink_to(target_v2, target_is_directory=True)
+
+    # Second config should detect changed target and rescan
+    second_cfg = config_module.Config()
+    assert _normalize(str(target_v2)) in second_cfg._path_mappings
+    assert _normalize(str(target_v1)) not in second_cfg._path_mappings

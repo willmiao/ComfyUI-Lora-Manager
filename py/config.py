@@ -293,15 +293,19 @@ class Config:
             )
             self._rebuild_preview_roots()
 
-            # Only rescan if target roots have changed. 
-            # This is stable across file additions/deletions.
             current_fingerprint = self._build_symlink_fingerprint()
             cached_fingerprint = self._cached_fingerprint
-            
-            if cached_fingerprint and current_fingerprint == cached_fingerprint:
+
+            # Check 1: First-level symlinks unchanged (catches new symlinks at root)
+            fingerprint_valid = cached_fingerprint and current_fingerprint == cached_fingerprint
+
+            # Check 2: All cached mappings still valid (catches changes at any depth)
+            mappings_valid = self._validate_cached_mappings() if fingerprint_valid else False
+
+            if fingerprint_valid and mappings_valid:
                 return
 
-            logger.info("Symlink root paths changed; rescanning symbolic links")
+            logger.info("Symlink configuration changed; rescanning symbolic links")
 
         self.rebuild_symlink_cache()
         logger.info(
@@ -346,6 +350,36 @@ class Config:
 
         self._path_mappings = normalized_mappings
         logger.info("Symlink cache loaded with %d mappings", len(self._path_mappings))
+        return True
+
+    def _validate_cached_mappings(self) -> bool:
+        """Verify all cached symlink mappings are still valid.
+
+        Returns True if all mappings are valid, False if rescan is needed.
+        This catches removed or retargeted symlinks at ANY depth.
+        """
+        for target, link in self._path_mappings.items():
+            # Convert normalized paths back to OS paths
+            link_path = link.replace('/', os.sep)
+
+            # Check if symlink still exists
+            if not self._is_link(link_path):
+                logger.debug("Cached symlink no longer exists: %s", link_path)
+                return False
+
+            # Check if target is still the same
+            try:
+                actual_target = self._normalize_path(os.path.realpath(link_path))
+                if actual_target != target:
+                    logger.debug(
+                        "Symlink target changed: %s -> %s (cached: %s)",
+                        link_path, actual_target, target
+                    )
+                    return False
+            except OSError:
+                logger.debug("Cannot resolve symlink: %s", link_path)
+                return False
+
         return True
 
     def _save_symlink_cache(self) -> None:
