@@ -1,7 +1,7 @@
 import { api } from "../../scripts/api.js";
 import { app } from "../../scripts/app.js";
 import { TextAreaCaretHelper } from "./textarea_caret_helper.js";
-import { getPromptCustomWordsAutocompletePreference } from "./settings.js";
+import { getPromptTagAutocompletePreference } from "./settings.js";
 
 // Command definitions for category filtering
 const TAG_COMMANDS = {
@@ -461,7 +461,7 @@ class AutoComplete {
             searchTerm = (match[1] || '').trim();
         }
 
-        // For prompt model type, check if we're searching embeddings or custom words
+        // For prompt model type, check if we're searching embeddings, commands, or tags
         if (this.modelType === 'prompt') {
             const match = rawSearchTerm.match(/^emb:(.*)$/i);
             if (match) {
@@ -471,8 +471,8 @@ class AutoComplete {
                 this.searchType = 'embeddings';
                 this.activeCommand = null;
                 this.showingCommands = false;
-            } else if (getPromptCustomWordsAutocompletePreference()) {
-                // Setting enabled - check for command mode
+            } else {
+                // Check for command mode FIRST (always runs, regardless of setting)
                 const commandResult = this._parseCommandInput(rawSearchTerm);
 
                 if (commandResult.showCommands) {
@@ -498,18 +498,18 @@ class AutoComplete {
                         endpoint = `/lm/custom-words/search?category=${categories}`;
                         this.searchType = 'custom_words';
                     }
-                } else {
-                    // No command - regular custom words search with enriched results
+                } else if (getPromptTagAutocompletePreference()) {
+                    // No command and setting enabled - regular tag search with enriched results
                     this.showingCommands = false;
                     this.activeCommand = null;
                     endpoint = '/lm/custom-words/search?enriched=true';
                     searchTerm = rawSearchTerm;
                     this.searchType = 'custom_words';
+                } else {
+                    // No command and setting disabled - no autocomplete for direct typing
+                    this.hide();
+                    return;
                 }
-            } else {
-                // Setting disabled - no autocomplete for non-emb: terms
-                this.hide();
-                return;
             }
         }
 

@@ -10,8 +10,8 @@ const TRIGGER_WORD_WHEEL_SENSITIVITY_DEFAULT = 0.02;
 const AUTO_PATH_CORRECTION_SETTING_ID = "loramanager.auto_path_correction";
 const AUTO_PATH_CORRECTION_DEFAULT = true;
 
-const PROMPT_CUSTOM_WORDS_AUTOCOMPLETE_SETTING_ID = "loramanager.prompt_custom_words_autocomplete";
-const PROMPT_CUSTOM_WORDS_AUTOCOMPLETE_DEFAULT = true;
+const PROMPT_TAG_AUTOCOMPLETE_SETTING_ID = "loramanager.prompt_tag_autocomplete";
+const PROMPT_TAG_AUTOCOMPLETE_DEFAULT = true;
 
 // ============================================================================
 // Helper Functions
@@ -69,28 +69,28 @@ const getAutoPathCorrectionPreference = (() => {
     };
 })();
 
-const getPromptCustomWordsAutocompletePreference = (() => {
+const getPromptTagAutocompletePreference = (() => {
     let settingsUnavailableLogged = false;
 
     return () => {
         const settingManager = app?.extensionManager?.setting;
         if (!settingManager || typeof settingManager.get !== "function") {
             if (!settingsUnavailableLogged) {
-                console.warn("LoRA Manager: settings API unavailable, using default custom words autocomplete setting.");
+                console.warn("LoRA Manager: settings API unavailable, using default tag autocomplete setting.");
                 settingsUnavailableLogged = true;
             }
-            return PROMPT_CUSTOM_WORDS_AUTOCOMPLETE_DEFAULT;
+            return PROMPT_TAG_AUTOCOMPLETE_DEFAULT;
         }
 
         try {
-            const value = settingManager.get(PROMPT_CUSTOM_WORDS_AUTOCOMPLETE_SETTING_ID);
-            return value ?? PROMPT_CUSTOM_WORDS_AUTOCOMPLETE_DEFAULT;
+            const value = settingManager.get(PROMPT_TAG_AUTOCOMPLETE_SETTING_ID);
+            return value ?? PROMPT_TAG_AUTOCOMPLETE_DEFAULT;
         } catch (error) {
             if (!settingsUnavailableLogged) {
-                console.warn("LoRA Manager: unable to read custom words autocomplete setting, using default.", error);
+                console.warn("LoRA Manager: unable to read tag autocomplete setting, using default.", error);
                 settingsUnavailableLogged = true;
             }
-            return PROMPT_CUSTOM_WORDS_AUTOCOMPLETE_DEFAULT;
+            return PROMPT_TAG_AUTOCOMPLETE_DEFAULT;
         }
     };
 })();
@@ -124,11 +124,11 @@ app.registerExtension({
             category: ["LoRA Manager", "Automation", "Auto path correction"],
         },
         {
-            id: PROMPT_CUSTOM_WORDS_AUTOCOMPLETE_SETTING_ID,
-            name: "Enable Custom Words Autocomplete in Prompt Nodes",
+            id: PROMPT_TAG_AUTOCOMPLETE_SETTING_ID,
+            name: "Enable Tag Autocomplete in Prompt Nodes",
             type: "boolean",
-            defaultValue: PROMPT_CUSTOM_WORDS_AUTOCOMPLETE_DEFAULT,
-            tooltip: "When enabled, prompt nodes will autocomplete custom words. When disabled, only 'emb:' prefix will trigger embeddings autocomplete.",
+            defaultValue: PROMPT_TAG_AUTOCOMPLETE_DEFAULT,
+            tooltip: "When enabled, typing will trigger tag autocomplete suggestions. Commands (e.g., /character, /artist) always work regardless of this setting.",
             category: ["LoRA Manager", "Autocomplete", "Prompt"],
         },
     ],
@@ -138,4 +138,4 @@ app.registerExtension({
 // Exports
 // ============================================================================
 
-export { getWheelSensitivity, getAutoPathCorrectionPreference, getPromptCustomWordsAutocompletePreference };
+export { getWheelSensitivity, getAutoPathCorrectionPreference, getPromptTagAutocompletePreference };
