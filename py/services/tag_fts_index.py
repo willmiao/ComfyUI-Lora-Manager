@@ -16,7 +16,7 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
-from ..utils.settings_paths import get_settings_dir
+from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
 
 logger = logging.getLogger(__name__)
 
@@ -89,17 +89,11 @@ class TagFTSIndex:
 
     def _resolve_default_db_path(self) -> str:
         """Resolve the default database path."""
-        override = os.environ.get("LORA_MANAGER_TAG_FTS_DB")
-        if override:
-            return override
-
-        try:
-            settings_dir = get_settings_dir(create=True)
-        except Exception as exc:
-            logger.warning("Falling back to current directory for FTS index: %s", exc)
-            settings_dir = "."
-
-        return os.path.join(settings_dir, self._DEFAULT_FILENAME)
+        env_override = os.environ.get("LORA_MANAGER_TAG_FTS_DB")
+        return resolve_cache_path_with_migration(
+            CacheType.TAG_FTS,
+            env_override=env_override,
+        )
 
     def _resolve_default_csv_path(self) -> str:
         """Resolve the default CSV file path."""

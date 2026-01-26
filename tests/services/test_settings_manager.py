@@ -37,7 +37,7 @@ def test_portable_settings_use_project_root(tmp_path, monkeypatch):
     monkeypatch.delenv("LORA_MANAGER_CACHE_DB", raising=False)
 
     cache = cache_module.PersistentModelCache(library_name="portable_lib")
-    expected_cache_path = tmp_path / "model_cache" / "portable_lib.sqlite"
+    expected_cache_path = tmp_path / "cache" / "model" / "portable_lib.sqlite"
 
     assert cache.get_database_path() == str(expected_cache_path)
     assert expected_cache_path.parent.is_dir()

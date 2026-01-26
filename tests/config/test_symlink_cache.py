@@ -4,6 +4,7 @@ import os
 import pytest
 
 from py import config as config_module
+from py.utils import cache_paths as cache_paths_module
 
 
 def _normalize(path: str) -> str:
@@ -28,9 +29,14 @@ def _setup_paths(monkeypatch: pytest.MonkeyPatch, tmp_path):
         }
         return mapping.get(kind, [])
 
+    def fake_get_settings_dir(create: bool = True) -> str:
+        return str(settings_dir)
+
     monkeypatch.setattr(config_module.folder_paths, "get_folder_paths", fake_get_folder_paths)
     monkeypatch.setattr(config_module, "standalone_mode", True)
-    monkeypatch.setattr(config_module, "get_settings_dir", lambda create=True: str(settings_dir))
+    monkeypatch.setattr(config_module, "get_settings_dir", fake_get_settings_dir)
+    # Also patch cache_paths module which has its own import of get_settings_dir
+    monkeypatch.setattr(cache_paths_module, "get_settings_dir", fake_get_settings_dir)
 
     return loras_dir, settings_dir
 
@@ -57,7 +63,7 @@ def test_symlink_scan_skips_file_links(monkeypatch: pytest.MonkeyPatch, tmp_path
     normalized_file_real = _normalize(os.path.realpath(file_target))
     assert normalized_file_real not in cfg._path_mappings
 
-    cache_path = settings_dir / "cache" / "symlink_map.json"
+    cache_path = settings_dir / "cache" / "symlink" / "symlink_map.json"
     assert cache_path.exists()
 
 
@@ -71,7 +77,7 @@ def test_symlink_cache_reuses_previous_scan(monkeypatch: pytest.MonkeyPatch, tmp
 
     first_cfg = config_module.Config()
     cached_mappings = dict(first_cfg._path_mappings)
-    cache_path = settings_dir / "cache" / "symlink_map.json"
+    cache_path = settings_dir / "cache" / "symlink" / "symlink_map.json"
     assert cache_path.exists()
 
     def fail_scan(self):
@@ -97,7 +103,7 @@ def test_symlink_cache_survives_noise_mtime(monkeypatch: pytest.MonkeyPatch, tmp
     noise_file = recipes_dir / "touchme.txt"
 
     first_cfg = config_module.Config()
-    cache_path = settings_dir / "cache" / "symlink_map.json"
+    cache_path = settings_dir / "cache" / "symlink" / "symlink_map.json"
     assert cache_path.exists()
 
     # Update a noisy path to bump parent directory mtime
@@ -164,9 +170,14 @@ def test_symlink_roots_are_preserved(monkeypatch: pytest.MonkeyPatch, tmp_path):
         }
         return mapping.get(kind, [])
 
+    def fake_get_settings_dir(create: bool = True) -> str:
+        return str(settings_dir)
+
     monkeypatch.setattr(config_module.folder_paths, "get_folder_paths", fake_get_folder_paths)
     monkeypatch.setattr(config_module, "standalone_mode", True)
-    monkeypatch.setattr(config_module, "get_settings_dir", lambda create=True: str(settings_dir))
+    monkeypatch.setattr(config_module, "get_settings_dir", fake_get_settings_dir)
+    # Also patch cache_paths module which has its own import of get_settings_dir
+    monkeypatch.setattr(cache_paths_module, "get_settings_dir", fake_get_settings_dir)
 
     cfg = config_module.Config()
 
@@ -174,6 +185,65 @@ def test_symlink_roots_are_preserved(monkeypatch: pytest.MonkeyPatch, tmp_path):
     normalized_link = _normalize(str(loras_link))
     assert cfg._path_mappings[normalized_real] == normalized_link
 
-    cache_path = settings_dir / "cache" / "symlink_map.json"
+    cache_path = settings_dir / "cache" / "symlink" / "symlink_map.json"
     payload = json.loads(cache_path.read_text(encoding="utf-8"))
     assert payload["path_mappings"][normalized_real] == normalized_link
+
+
+def test_legacy_symlink_cache_automatic_cleanup(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    """Test that legacy symlink cache is automatically cleaned up after migration."""
+    settings_dir = tmp_path / "settings"
+    loras_dir = tmp_path / "loras"
+    loras_dir.mkdir()
+    checkpoint_dir = tmp_path / "checkpoints"
+    checkpoint_dir.mkdir()
+    embedding_dir = tmp_path / "embeddings"
+    embedding_dir.mkdir()
+
+    def fake_get_folder_paths(kind: str):
+        mapping = {
+            "loras": [str(loras_dir)],
+            "checkpoints": [str(checkpoint_dir)],
+            "unet": [],
+            "embeddings": [str(embedding_dir)],
+        }
+        return mapping.get(kind, [])
+
+    def fake_get_settings_dir(create: bool = True) -> str:
+        return str(settings_dir)
+
+    monkeypatch.setattr(config_module.folder_paths, "get_folder_paths", fake_get_folder_paths)
+    monkeypatch.setattr(config_module, "standalone_mode", True)
+    monkeypatch.setattr(config_module, "get_settings_dir", fake_get_settings_dir)
+    monkeypatch.setattr(cache_paths_module, "get_settings_dir", fake_get_settings_dir)
+
+    # Create legacy symlink cache at old location
+    settings_dir.mkdir(parents=True, exist_ok=True)
+    legacy_cache_dir = settings_dir / "cache"
+    legacy_cache_dir.mkdir(exist_ok=True)
+    legacy_cache_path = legacy_cache_dir / "symlink_map.json"
+
+    # Write some legacy cache data
+    legacy_data = {
+        "fingerprint": {"roots": []},
+        "path_mappings": {
+            "/legacy/target": "/legacy/link"
+        }
+    }
+    legacy_cache_path.write_text(json.dumps(legacy_data), encoding="utf-8")
+
+    # Verify legacy file exists
+    assert legacy_cache_path.exists()
+
+    # Initialize Config - this should trigger migration and automatic cleanup
+    cfg = config_module.Config()
+
+    # New canonical cache should exist
+    new_cache_path = settings_dir / "cache" / "symlink" / "symlink_map.json"
+    assert new_cache_path.exists()
+
+    # Legacy file should be automatically cleaned up
+    assert not legacy_cache_path.exists()
+
+    # Config should still work correctly
+    assert isinstance(cfg._path_mappings, dict)
