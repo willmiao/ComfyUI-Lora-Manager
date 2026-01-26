@@ -575,3 +575,84 @@ body.lm-lora-reordering * {
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   margin: 6px 0;
 }
+
+/* Autocomplete styling */
+.lm-autocomplete-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lm-autocomplete-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.lm-autocomplete-count {
+  font-size: 11px;
+  color: rgba(226, 232, 240, 0.5);
+}
+
+.lm-autocomplete-category {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+/* Category-specific badge colors */
+.lm-autocomplete-category--general {
+  background: rgba(0, 155, 230, 0.2);
+  color: #4bb4ff;
+}
+
+.lm-autocomplete-category--artist {
+  background: rgba(255, 138, 139, 0.2);
+  color: #ffc3c3;
+}
+
+.lm-autocomplete-category--copyright {
+  background: rgba(199, 151, 255, 0.2);
+  color: #ddc9fb;
+}
+
+.lm-autocomplete-category--character {
+  background: rgba(53, 198, 74, 0.2);
+  color: #93e49a;
+}
+
+.lm-autocomplete-category--meta {
+  background: rgba(234, 208, 132, 0.2);
+  color: #f7e7c3;
+}
+
+.lm-autocomplete-category--species {
+  background: rgba(237, 137, 54, 0.2);
+  color: #f6ad55;
+}
+
+.lm-autocomplete-category--lore {
+  background: rgba(72, 187, 120, 0.2);
+  color: #68d391;
+}
+
+/* Command list styling */
+.comfy-autocomplete-command {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.lm-autocomplete-command-name {
+  font-family: 'Consolas', 'Monaco', monospace;
+  color: rgba(66, 153, 225, 0.9);
+}
+
+.lm-autocomplete-command-label {
+  font-size: 12px;
+  color: rgba(226, 232, 240, 0.6);
+}

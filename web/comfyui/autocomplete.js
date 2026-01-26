@@ -3,6 +3,46 @@ import { app } from "../../scripts/app.js";
 import { TextAreaCaretHelper } from "./textarea_caret_helper.js";
 import { getPromptCustomWordsAutocompletePreference } from "./settings.js";
 
+// Command definitions for category filtering
+const TAG_COMMANDS = {
+    '/character': { categories: [4, 11], label: 'Character' },
+    '/char': { categories: [4, 11], label: 'Character' },
+    '/artist': { categories: [1, 8], label: 'Artist' },
+    '/general': { categories: [0, 7], label: 'General' },
+    '/copyright': { categories: [3, 10], label: 'Copyright' },
+    '/meta': { categories: [5, 14], label: 'Meta' },
+    '/species': { categories: [12], label: 'Species' },
+    '/lore': { categories: [15], label: 'Lore' },
+    '/emb': { type: 'embedding', label: 'Embeddings' },
+    '/embedding': { type: 'embedding', label: 'Embeddings' },
+};
+
+// Category display information
+const CATEGORY_INFO = {
+    0: { bg: 'rgba(0, 155, 230, 0.2)', text: '#4bb4ff', label: 'General' },
+    1: { bg: 'rgba(255, 138, 139, 0.2)', text: '#ffc3c3', label: 'Artist' },
+    3: { bg: 'rgba(199, 151, 255, 0.2)', text: '#ddc9fb', label: 'Copyright' },
+    4: { bg: 'rgba(53, 198, 74, 0.2)', text: '#93e49a', label: 'Character' },
+    5: { bg: 'rgba(234, 208, 132, 0.2)', text: '#f7e7c3', label: 'Meta' },
+    7: { bg: 'rgba(0, 155, 230, 0.2)', text: '#4bb4ff', label: 'General' },
+    8: { bg: 'rgba(255, 138, 139, 0.2)', text: '#ffc3c3', label: 'Artist' },
+    10: { bg: 'rgba(199, 151, 255, 0.2)', text: '#ddc9fb', label: 'Copyright' },
+    11: { bg: 'rgba(53, 198, 74, 0.2)', text: '#93e49a', label: 'Character' },
+    12: { bg: 'rgba(237, 137, 54, 0.2)', text: '#f6ad55', label: 'Species' },
+    14: { bg: 'rgba(234, 208, 132, 0.2)', text: '#f7e7c3', label: 'Meta' },
+    15: { bg: 'rgba(72, 187, 120, 0.2)', text: '#68d391', label: 'Lore' },
+};
+
+// Format post count with K/M suffix
+function formatPostCount(count) {
+    if (count >= 1000000) {
+        return (count / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    } else if (count >= 1000) {
+        return (count / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    }
+    return count.toString();
+}
+
 function parseUsageTipNumber(value) {
     if (typeof value === 'number' && Number.isFinite(value)) {
         return value;
@@ -145,7 +185,7 @@ const MODEL_BEHAVIORS = {
         async getInsertText(_instance, relativePath) {
             const { directories, fileName } = splitRelativePath(relativePath);
             const trimmedName = removeGeneralExtension(fileName);
-            const folder = directories.length ? `${directories.join('\\')}\\` : '';
+            const folder = directories.length ? `${directories.join('/')}/` : '';
             return `embedding:${folder}${trimmedName}, `;
         },
     },
@@ -170,7 +210,7 @@ const MODEL_BEHAVIORS = {
             instance.showPreviewForItem(relativePath, itemElement);
         },
         hidePreview(instance) {
-            if (!instance.previewTooltip || instance.searchType !== 'embeddings') {
+            if (!instance.previewTooltip) {
                 return;
             }
             instance.previewTooltip.hide();
@@ -185,10 +225,10 @@ const MODEL_BEHAVIORS = {
             const rawSearchTerm = instance.getSearchTerm(instance.inputElement.value);
             const match = rawSearchTerm.match(/^emb:(.*)$/i);
 
-            if (match) {
+            if (match || instance.searchType === 'embeddings') {
                 const { directories, fileName } = splitRelativePath(relativePath);
                 const trimmedName = removeGeneralExtension(fileName);
-                const folder = directories.length ? `${directories.join('\\')}\\` : '';
+                const folder = directories.length ? `${directories.join('/')}/` : '';
                 return `embedding:${folder}${trimmedName}, `;
             } else {
                 return `${relativePath}, `;
@@ -223,6 +263,10 @@ class AutoComplete {
         this.previewTooltip = null;
         this.previewTooltipPromise = null;
         this.searchType = null;
+
+        // Command mode state
+        this.activeCommand = null;  // Current active command (e.g., { categories: [4, 11], label: 'Character' })
+        this.showingCommands = false;  // Whether showing command list dropdown
 
         // Initialize TextAreaCaretHelper
         this.helper = new TextAreaCaretHelper(inputElement, () => app.canvas.ds.scale);
@@ -425,11 +469,43 @@ class AutoComplete {
                 endpoint = '/lm/embeddings/relative-paths';
                 searchTerm = (match[1] || '').trim();
                 this.searchType = 'embeddings';
+                this.activeCommand = null;
+                this.showingCommands = false;
             } else if (getPromptCustomWordsAutocompletePreference()) {
-                // Setting enabled - allow custom words search
-                endpoint = '/lm/custom-words/search';
-                searchTerm = rawSearchTerm;
-                this.searchType = 'custom_words';
+                // Setting enabled - check for command mode
+                const commandResult = this._parseCommandInput(rawSearchTerm);
+
+                if (commandResult.showCommands) {
+                    // Show command list dropdown
+                    this.showingCommands = true;
+                    this.activeCommand = null;
+                    this.searchType = 'commands';
+                    this._showCommandList(commandResult.commandFilter);
+                    return;
+                } else if (commandResult.command) {
+                    // Command is active, use filtered search
+                    this.showingCommands = false;
+                    this.activeCommand = commandResult.command;
+                    searchTerm = commandResult.searchTerm;
+
+                    if (commandResult.command.type === 'embedding') {
+                        // /emb or /embedding command
+                        endpoint = '/lm/embeddings/relative-paths';
+                        this.searchType = 'embeddings';
+                    } else {
+                        // Category filter command
+                        const categories = commandResult.command.categories.join(',');
+                        endpoint = `/lm/custom-words/search?category=${categories}`;
+                        this.searchType = 'custom_words';
+                    }
+                } else {
+                    // No command - regular custom words search with enriched results
+                    this.showingCommands = false;
+                    this.activeCommand = null;
+                    endpoint = '/lm/custom-words/search?enriched=true';
+                    searchTerm = rawSearchTerm;
+                    this.searchType = 'custom_words';
+                }
             } else {
                 // Setting disabled - no autocomplete for non-emb: terms
                 this.hide();
@@ -501,24 +577,220 @@ class AutoComplete {
             this.hide();
         }
     }
-    
+
+    /**
+     * Parse command input to detect command mode
+     * @param {string} rawInput - Raw input text
+     * @returns {Object} - { showCommands, commandFilter, command, searchTerm }
+     */
+    _parseCommandInput(rawInput) {
+        const trimmed = rawInput.trim();
+
+        // Check if input starts with "/"
+        if (!trimmed.startsWith('/')) {
+            return { showCommands: false, command: null, searchTerm: trimmed };
+        }
+
+        // Split into potential command and search term
+        const spaceIndex = trimmed.indexOf(' ');
+
+        if (spaceIndex === -1) {
+            // Still typing command (e.g., "/cha")
+            const partialCommand = trimmed.toLowerCase();
+
+            // Check for exact command match
+            if (TAG_COMMANDS[partialCommand]) {
+                return {
+                    showCommands: false,
+                    command: TAG_COMMANDS[partialCommand],
+                    searchTerm: '',
+                };
+            }
+
+            // Show command suggestions
+            return {
+                showCommands: true,
+                commandFilter: partialCommand.slice(1), // Remove leading "/"
+                command: null,
+                searchTerm: '',
+            };
+        }
+
+        // Command with search term (e.g., "/char miku")
+        const commandPart = trimmed.slice(0, spaceIndex).toLowerCase();
+        const searchPart = trimmed.slice(spaceIndex + 1).trim();
+
+        if (TAG_COMMANDS[commandPart]) {
+            return {
+                showCommands: false,
+                command: TAG_COMMANDS[commandPart],
+                searchTerm: searchPart,
+            };
+        }
+
+        // Unknown command, treat as regular search
+        return { showCommands: false, command: null, searchTerm: trimmed };
+    }
+
+    /**
+     * Show the command list dropdown
+     * @param {string} filter - Optional filter for commands
+     */
+    _showCommandList(filter = '') {
+        const filterLower = filter.toLowerCase();
+
+        // Get unique commands (avoid duplicates like /char and /character)
+        const seenLabels = new Set();
+        const commands = [];
+
+        for (const [cmd, info] of Object.entries(TAG_COMMANDS)) {
+            if (seenLabels.has(info.label)) continue;
+
+            if (!filter || cmd.slice(1).startsWith(filterLower)) {
+                seenLabels.add(info.label);
+                commands.push({ command: cmd, ...info });
+            }
+        }
+
+        if (commands.length === 0) {
+            this.hide();
+            return;
+        }
+
+        this.items = commands;
+        this._renderCommandList();
+        this.show();
+    }
+
+    /**
+     * Render the command list dropdown
+     */
+    _renderCommandList() {
+        this.dropdown.innerHTML = '';
+        this.selectedIndex = -1;
+
+        this.items.forEach((item, index) => {
+            const itemEl = document.createElement('div');
+            itemEl.className = 'comfy-autocomplete-item comfy-autocomplete-command';
+
+            const cmdSpan = document.createElement('span');
+            cmdSpan.className = 'lm-autocomplete-command-name';
+            cmdSpan.textContent = item.command;
+
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'lm-autocomplete-command-label';
+            labelSpan.textContent = item.label;
+
+            itemEl.appendChild(cmdSpan);
+            itemEl.appendChild(labelSpan);
+
+            itemEl.style.cssText = `
+                padding: 8px 12px;
+                cursor: pointer;
+                color: rgba(226, 232, 240, 0.8);
+                border-bottom: 1px solid rgba(226, 232, 240, 0.1);
+                transition: all 0.2s ease;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+            `;
+
+            itemEl.addEventListener('mouseenter', () => {
+                this.selectItem(index);
+            });
+
+            itemEl.addEventListener('click', () => {
+                this._insertCommand(item.command);
+            });
+
+            this.dropdown.appendChild(itemEl);
+        });
+
+        // Remove border from last item
+        if (this.dropdown.lastChild) {
+            this.dropdown.lastChild.style.borderBottom = 'none';
+        }
+
+        // Auto-select first item
+        if (this.items.length > 0) {
+            setTimeout(() => this.selectItem(0), 100);
+        }
+    }
+
+    /**
+     * Insert a command into the input
+     * @param {string} command - The command to insert (e.g., "/char")
+     */
+    _insertCommand(command) {
+        const currentValue = this.inputElement.value;
+        const caretPos = this.getCaretPosition();
+
+        // Find the start of the current command being typed
+        const beforeCursor = currentValue.substring(0, caretPos);
+        const segments = beforeCursor.split(/[,\>]+/);
+        const lastSegment = segments[segments.length - 1];
+        const commandStartPos = caretPos - lastSegment.length;
+
+        // Insert command with trailing space
+        const insertText = command + ' ';
+        const newValue = currentValue.substring(0, commandStartPos) + insertText + currentValue.substring(caretPos);
+        const newCaretPos = commandStartPos + insertText.length;
+
+        this.inputElement.value = newValue;
+
+        // Trigger input event
+        const event = new Event('input', { bubbles: true });
+        this.inputElement.dispatchEvent(event);
+
+        this.hide();
+
+        // Focus and position cursor
+        this.inputElement.focus();
+        this.inputElement.setSelectionRange(newCaretPos, newCaretPos);
+    }
+
     render() {
         this.dropdown.innerHTML = '';
         this.selectedIndex = -1;
-        
+
         // Early return if no items to prevent empty dropdown
         if (!this.items || this.items.length === 0) {
             return;
         }
-        
-        this.items.forEach((relativePath, index) => {
+
+        // Check if items are enriched (have tag_name, category, post_count)
+        const isEnriched = this.items[0] && typeof this.items[0] === 'object' && 'tag_name' in this.items[0];
+
+        this.items.forEach((itemData, index) => {
             const item = document.createElement('div');
             item.className = 'comfy-autocomplete-item';
-            
-            // Create highlighted content
-            const highlightedContent = this.highlightMatch(relativePath, this.currentSearchTerm);
-            item.innerHTML = highlightedContent;
-            
+
+            // Get the display text and path for insertion
+            const displayText = isEnriched ? itemData.tag_name : itemData;
+            const insertPath = isEnriched ? itemData.tag_name : itemData;
+
+            if (isEnriched) {
+                // Render enriched item with category badge and post count
+                this._renderEnrichedItem(item, itemData, this.currentSearchTerm);
+            } else {
+                // Create highlighted content for simple items, wrapped in a span
+                // to prevent flex layout from breaking up the text
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'lm-autocomplete-name';
+                nameSpan.innerHTML = this.highlightMatch(displayText, this.currentSearchTerm);
+                nameSpan.style.cssText = `
+                    flex: 1;
+                    min-width: 0;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                `;
+                item.appendChild(nameSpan);
+            }
+
             // Apply item styles with new color scheme
             item.style.cssText = `
                 padding: 8px 12px;
@@ -530,36 +802,101 @@ class AutoComplete {
                 overflow: hidden;
                 text-overflow: ellipsis;
                 position: relative;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 8px;
             `;
-            
+
             // Hover and selection handlers
             item.addEventListener('mouseenter', () => {
                 this.selectItem(index);
             });
-            
+
             item.addEventListener('mouseleave', () => {
                 this.hidePreview();
             });
-            
+
             // Click handler
             item.addEventListener('click', () => {
-                this.insertSelection(relativePath);
+                this.insertSelection(insertPath);
             });
-            
+
             this.dropdown.appendChild(item);
         });
-        
+
         // Remove border from last item
         if (this.dropdown.lastChild) {
             this.dropdown.lastChild.style.borderBottom = 'none';
         }
-        
+
         // Auto-select the first item with a small delay
         if (this.items.length > 0) {
             setTimeout(() => {
-            this.selectItem(0);
-            }, 100); // 50ms delay
+                this.selectItem(0);
+            }, 100);
         }
+    }
+
+    /**
+     * Render an enriched autocomplete item with category badge and post count
+     * @param {HTMLElement} itemEl - The item element to populate
+     * @param {Object} itemData - The enriched item data { tag_name, category, post_count }
+     * @param {string} searchTerm - The current search term for highlighting
+     */
+    _renderEnrichedItem(itemEl, itemData, searchTerm) {
+        // Create name span with highlighted match
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'lm-autocomplete-name';
+        nameSpan.innerHTML = this.highlightMatch(itemData.tag_name, searchTerm);
+        nameSpan.style.cssText = `
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        `;
+
+        // Create meta container for count and badge
+        const metaSpan = document.createElement('span');
+        metaSpan.className = 'lm-autocomplete-meta';
+        metaSpan.style.cssText = `
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        `;
+
+        // Add post count
+        if (itemData.post_count > 0) {
+            const countSpan = document.createElement('span');
+            countSpan.className = 'lm-autocomplete-count';
+            countSpan.textContent = formatPostCount(itemData.post_count);
+            countSpan.style.cssText = `
+                font-size: 11px;
+                color: rgba(226, 232, 240, 0.5);
+            `;
+            metaSpan.appendChild(countSpan);
+        }
+
+        // Add category badge
+        const categoryInfo = CATEGORY_INFO[itemData.category];
+        if (categoryInfo) {
+            const badgeSpan = document.createElement('span');
+            badgeSpan.className = 'lm-autocomplete-category';
+            badgeSpan.textContent = categoryInfo.label;
+            badgeSpan.style.cssText = `
+                font-size: 10px;
+                padding: 2px 6px;
+                border-radius: 10px;
+                background: ${categoryInfo.bg};
+                color: ${categoryInfo.text};
+                white-space: nowrap;
+            `;
+            metaSpan.appendChild(badgeSpan);
+        }
+
+        itemEl.appendChild(nameSpan);
+        itemEl.appendChild(metaSpan);
     }
     
     highlightMatch(text, searchTerm) {
@@ -655,10 +992,11 @@ class AutoComplete {
         this.dropdown.style.display = 'none';
         this.isVisible = false;
         this.selectedIndex = -1;
-        
+        this.showingCommands = false;
+
         // Hide preview tooltip
         this.hidePreview();
-        
+
         // Clear selection styles from all items
         const items = this.dropdown.querySelectorAll('.comfy-autocomplete-item');
         items.forEach(item => {
@@ -715,7 +1053,17 @@ class AutoComplete {
             case 'Enter':
                 e.preventDefault();
                 if (this.selectedIndex >= 0 && this.selectedIndex < this.items.length) {
-                    this.insertSelection(this.items[this.selectedIndex]);
+                    if (this.showingCommands) {
+                        // Insert command
+                        this._insertCommand(this.items[this.selectedIndex].command);
+                    } else {
+                        // Insert selection (handle enriched items)
+                        const selectedItem = this.items[this.selectedIndex];
+                        const insertPath = typeof selectedItem === 'object' && 'tag_name' in selectedItem
+                            ? selectedItem.tag_name
+                            : selectedItem;
+                        this.insertSelection(insertPath);
+                    }
                 }
                 break;
                 

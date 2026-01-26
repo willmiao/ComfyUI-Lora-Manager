@@ -10,13 +10,12 @@ from __future__ import annotations
 import json
 import logging
 import os
-import re
 import sqlite3
 import threading
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Set, Tuple
 
-from ..utils.settings_paths import get_project_root, get_settings_dir
+from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
 
 logger = logging.getLogger(__name__)
 
@@ -312,20 +311,12 @@ class PersistentRecipeCache:
     # Internal helpers
 
     def _resolve_default_path(self, library_name: str) -> str:
-        override = os.environ.get("LORA_MANAGER_RECIPE_CACHE_DB")
-        if override:
-            return override
-        try:
-            settings_dir = get_settings_dir(create=True)
-        except Exception as exc:
-            logger.warning("Falling back to project directory for recipe cache: %s", exc)
-            settings_dir = get_project_root()
-        safe_name = re.sub(r"[^A-Za-z0-9_.-]", "_", library_name or "default")
-        if safe_name.lower() in ("default", ""):
-            legacy_path = os.path.join(settings_dir, self._DEFAULT_FILENAME)
-            if os.path.exists(legacy_path):
-                return legacy_path
-        return os.path.join(settings_dir, "recipe_cache", f"{safe_name}.sqlite")
+        env_override = os.environ.get("LORA_MANAGER_RECIPE_CACHE_DB")
+        return resolve_cache_path_with_migration(
+            CacheType.RECIPE,
+            library_name=library_name,
+            env_override=env_override,
+        )
 
     def _initialize_schema(self) -> None:
         with self._db_lock:

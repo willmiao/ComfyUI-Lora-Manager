@@ -9,6 +9,7 @@ import json
 import urllib.parse
 import time
 
+from .utils.cache_paths import CacheType, get_cache_file_path, get_legacy_cache_paths
 from .utils.settings_paths import ensure_settings_file, get_settings_dir, load_settings_template
 
 # Use an environment variable to control standalone mode
@@ -241,9 +242,8 @@ class Config:
         return os.path.normpath(path).replace(os.sep, '/')
 
     def _get_symlink_cache_path(self) -> Path:
-        cache_dir = Path(get_settings_dir(create=True)) / "cache"
-        cache_dir.mkdir(parents=True, exist_ok=True)
-        return cache_dir / "symlink_map.json"
+        canonical_path = get_cache_file_path(CacheType.SYMLINK, create_dir=True)
+        return Path(canonical_path)
 
     def _symlink_roots(self) -> List[str]:
         roots: List[str] = []
@@ -322,14 +322,28 @@ class Config:
     def _load_persisted_cache_into_mappings(self) -> bool:
         """Load the symlink cache and store its fingerprint for comparison."""
         cache_path = self._get_symlink_cache_path()
-        if not cache_path.exists():
-            return False
 
-        try:
-            with cache_path.open("r", encoding="utf-8") as handle:
-                payload = json.load(handle)
-        except Exception as exc:
-            logger.info("Failed to load symlink cache %s: %s", cache_path, exc)
+        # Check canonical path first, then legacy paths for migration
+        paths_to_check = [cache_path]
+        legacy_paths = get_legacy_cache_paths(CacheType.SYMLINK)
+        paths_to_check.extend(Path(p) for p in legacy_paths if p != str(cache_path))
+
+        loaded_path = None
+        payload = None
+
+        for check_path in paths_to_check:
+            if not check_path.exists():
+                continue
+            try:
+                with check_path.open("r", encoding="utf-8") as handle:
+                    payload = json.load(handle)
+                    loaded_path = check_path
+                    break
+            except Exception as exc:
+                logger.info("Failed to load symlink cache %s: %s", check_path, exc)
+                continue
+
+        if payload is None:
             return False
 
         if not isinstance(payload, dict):
@@ -349,7 +363,37 @@ class Config:
             normalized_mappings[self._normalize_path(target)] = self._normalize_path(link)
 
         self._path_mappings = normalized_mappings
-        logger.info("Symlink cache loaded with %d mappings", len(self._path_mappings))
+
+        # Log migration if loaded from legacy path
+        if loaded_path is not None and loaded_path != cache_path:
+            logger.info(
+                "Symlink cache migrated from %s (will save to %s)",
+                loaded_path,
+                cache_path,
+            )
+
+            try:
+                if loaded_path.exists():
+                    loaded_path.unlink()
+                    logger.info("Cleaned up legacy symlink cache: %s", loaded_path)
+
+                    try:
+                        parent_dir = loaded_path.parent
+                        if parent_dir.name == "cache" and not any(parent_dir.iterdir()):
+                            parent_dir.rmdir()
+                            logger.info("Removed empty legacy cache directory: %s", parent_dir)
+                    except Exception:
+                        pass
+
+            except Exception as exc:
+                logger.warning(
+                    "Failed to cleanup legacy symlink cache %s: %s",
+                    loaded_path,
+                    exc,
+                )
+        else:
+            logger.info("Symlink cache loaded with %d mappings", len(self._path_mappings))
+
         return True
 
     def _validate_cached_mappings(self) -> bool:

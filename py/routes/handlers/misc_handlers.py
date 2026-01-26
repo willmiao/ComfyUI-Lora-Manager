@@ -1231,12 +1231,31 @@ class CustomWordsHandler:
             return web.json_response({"error": str(exc)}, status=500)
 
     async def search_custom_words(self, request: web.Request) -> web.Response:
-        """Search custom words with autocomplete."""
+        """Search custom words with autocomplete.
+
+        Query parameters:
+            search: The search term to match against.
+            limit: Maximum number of results to return (default: 20).
+            category: Optional category filter. Can be:
+                - A category name (e.g., "character", "artist", "general")
+                - Comma-separated category IDs (e.g., "4,11" for character)
+            enriched: If "true", return enriched results with category and post_count
+                      even without category filtering.
+        """
         try:
             search_term = request.query.get("search", "")
             limit = int(request.query.get("limit", "20"))
+            category_param = request.query.get("category", "")
+            enriched_param = request.query.get("enriched", "").lower() == "true"
 
-            results = self._service.search_words(search_term, limit)
+            # Parse category parameter
+            categories = None
+            if category_param:
+                categories = self._parse_category_param(category_param)
+
+            results = self._service.search_words(
+                search_term, limit, categories=categories, enriched=enriched_param
+            )
 
             return web.json_response({
                 "success": True,
@@ -1245,6 +1264,37 @@ class CustomWordsHandler:
         except Exception as exc:
             logger.error("Error searching custom words: %s", exc, exc_info=True)
             return web.json_response({"error": str(exc)}, status=500)
+
+    def _parse_category_param(self, param: str) -> list[int] | None:
+        """Parse category parameter into list of category IDs.
+
+        Args:
+            param: Category parameter value (name or comma-separated IDs).
+
+        Returns:
+            List of category IDs, or None if parsing fails.
+        """
+        from ...services.tag_fts_index import CATEGORY_NAME_TO_IDS
+
+        param = param.strip().lower()
+        if not param:
+            return None
+
+        # Try to parse as category name first
+        if param in CATEGORY_NAME_TO_IDS:
+            return CATEGORY_NAME_TO_IDS[param]
+
+        # Try to parse as comma-separated integers
+        try:
+            category_ids = []
+            for part in param.split(","):
+                part = part.strip()
+                if part:
+                    category_ids.append(int(part))
+            return category_ids if category_ids else None
+        except ValueError:
+            logger.debug("Invalid category parameter: %s", param)
+            return None
 
 
 class NodeRegistryHandler:
