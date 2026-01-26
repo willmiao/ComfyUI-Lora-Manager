@@ -2,6 +2,9 @@
 
 This service provides functionality to parse CSV-formatted custom words,
 search them with priority-based ranking, and manage storage.
+
+It also integrates with TagFTSIndex to search the Danbooru/e621 tag database
+for comprehensive autocomplete suggestions with category filtering.
 """
 
 from __future__ import annotations
@@ -10,7 +13,7 @@ import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +38,7 @@ class CustomWordsService:
     - Parses CSV format: word[,priority] or word[,alias][,priority]
     - Searches words with priority-based ranking
     - Caches parsed words for performance
+    - Integrates with TagFTSIndex for Danbooru/e621 tag search
     """
 
     _instance: Optional[CustomWordsService] = None
@@ -51,6 +55,7 @@ class CustomWordsService:
 
         self._words_cache: Dict[str, WordEntry] = {}
         self._file_path: Optional[Path] = None
+        self._tag_index: Optional[Any] = None  # Lazy-loaded TagFTSIndex
         self._initialized = True
 
         self._determine_file_path()
@@ -97,6 +102,17 @@ class CustomWordsService:
     def get_file_path(self) -> Optional[Path]:
         """Get the current file path for custom words."""
         return self._file_path
+
+    def _get_tag_index(self):
+        """Get or create the TagFTSIndex instance (lazy initialization)."""
+        if self._tag_index is None:
+            try:
+                from .tag_fts_index import get_tag_fts_index
+                self._tag_index = get_tag_fts_index()
+            except Exception as e:
+                logger.warning(f"Failed to initialize TagFTSIndex: {e}")
+                self._tag_index = None
+        return self._tag_index
 
     def load_words(self) -> Dict[str, WordEntry]:
         """Load and parse words from the custom words file.
@@ -160,10 +176,20 @@ class CustomWordsService:
 
         return words
 
-    def search_words(self, search_term: str, limit: int = 20) -> List[str]:
+    def search_words(
+        self,
+        search_term: str,
+        limit: int = 20,
+        categories: Optional[List[int]] = None,
+        enriched: bool = False
+    ) -> Union[List[str], List[Dict[str, Any]]]:
         """Search custom words with priority-based ranking.
 
-        Matching priority:
+        When categories are provided or enriched is True, uses TagFTSIndex to search
+        the Danbooru/e621 tag database and returns enriched results with category
+        and post_count.
+
+        Matching priority (for custom words):
         1. Words with priority (sorted by priority descending)
         2. Prefix matches (word starts with search term)
         3. Include matches (word contains search term)
@@ -171,10 +197,29 @@ class CustomWordsService:
         Args:
             search_term: The search term to match against.
             limit: Maximum number of results to return.
+            categories: Optional list of category IDs to filter by.
+                       When provided, searches TagFTSIndex instead of custom words.
+            enriched: If True, return enriched results even without category filtering.
 
         Returns:
-            List of matching word texts.
+            List of matching word texts (when categories is None and enriched is False), or
+            List of dicts with tag_name, category, post_count (when categories is provided
+            or enriched is True).
         """
+        # Use TagFTSIndex when categories are specified or when explicitly requested
+        tag_index = self._get_tag_index()
+        if tag_index is not None:
+            # Search the tag database
+            results = tag_index.search(search_term, categories=categories, limit=limit)
+            if results:
+                # If categories were specified or enriched requested, return enriched results
+                if categories is not None or enriched:
+                    return results
+                # Otherwise, convert to simple string list for backward compatibility
+                return [r["tag_name"] for r in results]
+            # Fall through to custom words if no tag results
+
+        # Fall back to custom words search
         words = self._words_cache if self._words_cache else self.load_words()
 
         if not search_term:
@@ -212,14 +257,18 @@ class CustomWordsService:
         # Combine results: 20% top priority + all prefix matches + rest of priority + all include
         top_priority_count = max(1, limit // 5)
 
-        results = (
+        text_results = (
             [entry.text for entry, _ in priority_matches[:top_priority_count]]
             + [entry.text for entry, _ in prefix_matches]
             + [entry.text for entry, _ in priority_matches[top_priority_count:]]
             + [entry.text for entry, _ in include_matches]
         )
 
-        return results[:limit]
+        # If categories were requested but tag index failed, return empty enriched format
+        if categories is not None:
+            return [{"tag_name": t, "category": 0, "post_count": 0} for t in text_results[:limit]]
+
+        return text_results[:limit]
 
     def save_words(self, content: str) -> bool:
         """Save custom words content to file.
