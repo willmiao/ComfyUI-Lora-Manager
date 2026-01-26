@@ -6,9 +6,6 @@
       :spellcheck="spellcheck ?? false"
       :class="['text-input', { 'vue-dom-mode': isVueDomMode }]"
       @input="onInput"
-      @pointerdown.stop
-      @pointermove.stop
-      @pointerup.stop
     />
   </div>
 </template>

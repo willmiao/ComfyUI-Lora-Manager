@@ -1725,7 +1725,7 @@ to {
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-82697d49] {
+.autocomplete-text-widget[data-v-f4679753] {
   background: transparent;
   height: 100%;
   display: flex;
@@ -1734,7 +1734,7 @@ to {
 }
 
 /* Canvas mode styles (default) - matches built-in comfy-multiline-input */
-.text-input[data-v-82697d49] {
+.text-input[data-v-f4679753] {
   flex: 1;
   width: 100%;
   background-color: var(--comfy-input-bg, #222);
@@ -1751,7 +1751,7 @@ to {
 }
 
 /* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
-.text-input.vue-dom-mode[data-v-82697d49] {
+.text-input.vue-dom-mode[data-v-f4679753] {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
   padding: 8px 12px;
@@ -1760,7 +1760,7 @@ to {
   font-size: 12px;
   font-family: inherit;
 }
-.text-input[data-v-82697d49]:focus {
+.text-input[data-v-f4679753]:focus {
   outline: none;
 }`));
       document.head.appendChild(elementStyle);
@@ -13430,19 +13430,13 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           placeholder: __props.placeholder,
           spellcheck: __props.spellcheck ?? false,
           class: normalizeClass(["text-input", { "vue-dom-mode": isVueDomMode.value }]),
-          onInput,
-          onPointerdown: _cache[0] || (_cache[0] = withModifiers(() => {
-          }, ["stop"])),
-          onPointermove: _cache[1] || (_cache[1] = withModifiers(() => {
-          }, ["stop"])),
-          onPointerup: _cache[2] || (_cache[2] = withModifiers(() => {
-          }, ["stop"]))
+          onInput
         }, null, 42, _hoisted_2)
       ]);
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-82697d49"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-f4679753"]]);
 const LORA_PROVIDER_NODE_TYPES$1 = [
   "Lora Stacker (LoraManager)",
   "Lora Randomizer (LoraManager)",
