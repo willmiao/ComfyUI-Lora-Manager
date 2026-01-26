@@ -1202,33 +1202,11 @@ class FileSystemHandler:
 
 
 class CustomWordsHandler:
-    """Handler for custom autocomplete words."""
+    """Handler for autocomplete via TagFTSIndex."""
 
     def __init__(self) -> None:
         from ...services.custom_words_service import get_custom_words_service
         self._service = get_custom_words_service()
-
-    async def get_custom_words(self, request: web.Request) -> web.Response:
-        """Get the content of the custom words file."""
-        try:
-            content = self._service.get_content()
-            return web.Response(text=content, content_type="text/plain")
-        except Exception as exc:
-            logger.error("Error getting custom words: %s", exc, exc_info=True)
-            return web.json_response({"error": str(exc)}, status=500)
-
-    async def update_custom_words(self, request: web.Request) -> web.Response:
-        """Update the custom words file content."""
-        try:
-            content = await request.text()
-            success = self._service.save_words(content)
-            if success:
-                return web.Response(status=200)
-            else:
-                return web.json_response({"error": "Failed to save custom words"}, status=500)
-        except Exception as exc:
-            logger.error("Error updating custom words: %s", exc, exc_info=True)
-            return web.json_response({"error": str(exc)}, status=500)
 
     async def search_custom_words(self, request: web.Request) -> web.Response:
         """Search custom words with autocomplete.
@@ -1563,8 +1541,6 @@ class MiscHandlerSet:
             "get_model_versions_status": self.model_library.get_model_versions_status,
             "open_file_location": self.filesystem.open_file_location,
             "open_settings_location": self.filesystem.open_settings_location,
-            "get_custom_words": self.custom_words.get_custom_words,
-            "update_custom_words": self.custom_words.update_custom_words,
             "search_custom_words": self.custom_words.search_custom_words,
         }
 
