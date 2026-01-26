@@ -210,7 +210,7 @@ const MODEL_BEHAVIORS = {
             instance.showPreviewForItem(relativePath, itemElement);
         },
         hidePreview(instance) {
-            if (!instance.previewTooltip || instance.searchType !== 'embeddings') {
+            if (!instance.previewTooltip) {
                 return;
             }
             instance.previewTooltip.hide();
