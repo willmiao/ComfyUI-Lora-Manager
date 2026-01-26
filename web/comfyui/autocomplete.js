@@ -841,14 +841,31 @@ class AutoComplete {
     /**
      * Render an enriched autocomplete item with category badge and post count
      * @param {HTMLElement} itemEl - The item element to populate
-     * @param {Object} itemData - The enriched item data { tag_name, category, post_count }
+     * @param {Object} itemData - The enriched item data { tag_name, category, post_count, matched_alias? }
      * @param {string} searchTerm - The current search term for highlighting
      */
     _renderEnrichedItem(itemEl, itemData, searchTerm) {
         // Create name span with highlighted match
         const nameSpan = document.createElement('span');
         nameSpan.className = 'lm-autocomplete-name';
-        nameSpan.innerHTML = this.highlightMatch(itemData.tag_name, searchTerm);
+
+        // If matched via alias, show: "tag_name ← alias" with alias highlighted
+        if (itemData.matched_alias) {
+            const tagText = document.createTextNode(itemData.tag_name + ' ');
+            nameSpan.appendChild(tagText);
+
+            const aliasSpan = document.createElement('span');
+            aliasSpan.className = 'lm-matched-alias';
+            aliasSpan.innerHTML = '← ' + this.highlightMatch(itemData.matched_alias, searchTerm);
+            aliasSpan.style.cssText = `
+                font-size: 11px;
+                color: rgba(226, 232, 240, 0.5);
+            `;
+            nameSpan.appendChild(aliasSpan);
+        } else {
+            nameSpan.innerHTML = this.highlightMatch(itemData.tag_name, searchTerm);
+        }
+
         nameSpan.style.cssText = `
             flex: 1;
             min-width: 0;

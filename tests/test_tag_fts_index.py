@@ -188,6 +188,171 @@ class TestTagFTSIndexSearch:
         assert len(results) <= 1
 
 
+class TestAliasSearch:
+    """Tests for alias search functionality."""
+
+    @pytest.fixture
+    def populated_fts(self, temp_db_path, temp_csv_path):
+        """Create a populated FTS index."""
+        fts = TagFTSIndex(db_path=temp_db_path, csv_path=temp_csv_path)
+        fts.build_index()
+        return fts
+
+    def test_search_by_alias_returns_canonical_tag(self, populated_fts):
+        """Test that searching by alias returns the canonical tag with matched_alias."""
+        # Search for "miku" which is an alias for "hatsune_miku"
+        results = populated_fts.search("miku")
+
+        assert len(results) >= 1
+        hatsune_result = next((r for r in results if r["tag_name"] == "hatsune_miku"), None)
+        assert hatsune_result is not None
+        assert hatsune_result["matched_alias"] == "miku"
+
+    def test_search_by_canonical_name_no_matched_alias(self, populated_fts):
+        """Test that searching by canonical name does not set matched_alias."""
+        # Search for "hatsune" which directly matches "hatsune_miku"
+        results = populated_fts.search("hatsune")
+
+        assert len(results) >= 1
+        hatsune_result = next((r for r in results if r["tag_name"] == "hatsune_miku"), None)
+        assert hatsune_result is not None
+        assert "matched_alias" not in hatsune_result
+
+    def test_search_by_prefix_alias(self, populated_fts):
+        """Test prefix matching on aliases."""
+        # "1girls" is an alias for "1girl" - search by prefix "1gir"
+        results = populated_fts.search("1gir")
+
+        assert len(results) >= 1
+        result = next((r for r in results if r["tag_name"] == "1girl"), None)
+        assert result is not None
+        # Should not have matched_alias since "1girl" starts with "1gir"
+        assert "matched_alias" not in result
+
+    def test_alias_search_with_category_filter(self, populated_fts):
+        """Test that alias search works with category filtering."""
+        # Search for "youmu" (alias for konpaku_youmu) with character category filter
+        results = populated_fts.search("youmu", categories=[4, 11])
+
+        assert len(results) >= 1
+        result = results[0]
+        assert result["tag_name"] == "konpaku_youmu"
+        assert result["matched_alias"] == "youmu"
+        assert result["category"] in [4, 11]
+
+    def test_tag_without_aliases_still_works(self, populated_fts):
+        """Test that tags without aliases still work correctly."""
+        # "artist_request" has no aliases
+        results = populated_fts.search("artist_req")
+
+        assert len(results) >= 1
+        result = next((r for r in results if r["tag_name"] == "artist_request"), None)
+        assert result is not None
+        assert "matched_alias" not in result
+
+    def test_multiple_aliases_first_match_returned(self, populated_fts):
+        """Test that when multiple aliases could match, the first one is returned."""
+        # "highres" has aliases: "high_res,high_resolution,hires"
+        # Searching for "high_r" should match "high_res" first
+        results = populated_fts.search("high_r")
+
+        assert len(results) >= 1
+        highres_result = next((r for r in results if r["tag_name"] == "highres"), None)
+        assert highres_result is not None
+        assert highres_result["matched_alias"] == "high_res"
+
+    def test_search_by_short_alias(self, populated_fts):
+        """Test searching by a short alias."""
+        # "/lh" style short aliases - using "hires" which is short for highres
+        results = populated_fts.search("hires")
+
+        assert len(results) >= 1
+        result = next((r for r in results if r["tag_name"] == "highres"), None)
+        assert result is not None
+        assert result["matched_alias"] == "hires"
+
+    def test_search_by_word_within_alias(self, populated_fts):
+        """Test searching by a word within a compound alias like 'sole_female'."""
+        # "sole_female" is an alias for "1girl"
+        # Searching "female" should match "1girl" with matched_alias "sole_female"
+        results = populated_fts.search("female")
+
+        assert len(results) >= 1
+        result = next((r for r in results if r["tag_name"] == "1girl"), None)
+        assert result is not None
+        assert result["matched_alias"] == "sole_female"
+
+    def test_search_by_second_word_in_alias(self, populated_fts):
+        """Test that searching for second word in underscore-separated alias works."""
+        # "female_solo" is an alias for "solo"
+        # Searching "solo" would match the tag directly, but let's test another case
+        # "single" is an alias for "solo" - straightforward match
+        results = populated_fts.search("single")
+
+        assert len(results) >= 1
+        result = next((r for r in results if r["tag_name"] == "solo"), None)
+        assert result is not None
+        assert result["matched_alias"] == "single"
+
+
+class TestSlashPrefixAliases:
+    """Tests for slash-prefixed alias search (e.g., /lh for long_hair)."""
+
+    @pytest.fixture
+    def fts_with_slash_aliases(self, temp_db_path):
+        """Create an FTS index with slash-prefixed aliases."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, encoding="utf-8") as f:
+            # Format: tag_name,category,post_count,aliases
+            f.write('long_hair,0,4350743,"/lh,longhair,very_long_hair"\n')
+            f.write('breasts,0,3439214,"/b,boobs,oppai"\n')
+            f.write('short_hair,0,1500000,"/sh,shorthair"\n')
+            csv_path = f.name
+
+        try:
+            fts = TagFTSIndex(db_path=temp_db_path, csv_path=csv_path)
+            fts.build_index()
+            yield fts
+        finally:
+            if os.path.exists(csv_path):
+                os.unlink(csv_path)
+
+    def test_search_slash_alias_with_slash(self, fts_with_slash_aliases):
+        """Test searching with slash prefix returns correct result."""
+        results = fts_with_slash_aliases.search("/lh")
+
+        assert len(results) >= 1
+        result = results[0]
+        assert result["tag_name"] == "long_hair"
+        assert result["matched_alias"] == "/lh"
+
+    def test_search_slash_alias_without_slash(self, fts_with_slash_aliases):
+        """Test searching without slash prefix also works."""
+        results = fts_with_slash_aliases.search("lh")
+
+        assert len(results) >= 1
+        result = results[0]
+        assert result["tag_name"] == "long_hair"
+        assert result["matched_alias"] == "/lh"
+
+    def test_search_regular_alias_still_works(self, fts_with_slash_aliases):
+        """Test that non-slash aliases still work."""
+        results = fts_with_slash_aliases.search("longhair")
+
+        assert len(results) >= 1
+        result = results[0]
+        assert result["tag_name"] == "long_hair"
+        assert result["matched_alias"] == "longhair"
+
+    def test_direct_tag_name_search(self, fts_with_slash_aliases):
+        """Test that direct tag name search doesn't show alias."""
+        results = fts_with_slash_aliases.search("long_hair")
+
+        assert len(results) >= 1
+        result = results[0]
+        assert result["tag_name"] == "long_hair"
+        assert "matched_alias" not in result
+
+
 class TestTagFTSIndexClear:
     """Tests for clearing the FTS index."""
 
