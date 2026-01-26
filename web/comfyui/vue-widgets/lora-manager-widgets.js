@@ -1725,7 +1725,7 @@ to {
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-d5278afc] {
+.autocomplete-text-widget[data-v-82697d49] {
   background: transparent;
   height: 100%;
   display: flex;
@@ -1734,7 +1734,7 @@ to {
 }
 
 /* Canvas mode styles (default) - matches built-in comfy-multiline-input */
-.text-input[data-v-d5278afc] {
+.text-input[data-v-82697d49] {
   flex: 1;
   width: 100%;
   background-color: var(--comfy-input-bg, #222);
@@ -1751,7 +1751,7 @@ to {
 }
 
 /* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
-.text-input.vue-dom-mode[data-v-d5278afc] {
+.text-input.vue-dom-mode[data-v-82697d49] {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
   padding: 8px 12px;
@@ -1760,7 +1760,7 @@ to {
   font-size: 12px;
   font-family: inherit;
 }
-.text-input[data-v-d5278afc]:focus {
+.text-input[data-v-82697d49]:focus {
   outline: none;
 }`));
       document.head.appendChild(elementStyle);
@@ -1770,7 +1770,7 @@ to {
   }
 })();
 var _a;
-import { app as app$1 } from "../../../scripts/app.js";
+import { app } from "../../../scripts/app.js";
 /**
 * @vue/shared v3.5.26
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
@@ -3317,7 +3317,7 @@ function onWatcherCleanup(cleanupFn, failSilently = false, owner = activeWatcher
     cleanups.push(cleanupFn);
   }
 }
-function watch$1(source, cb, options = EMPTY_OBJ) {
+function watch$2(source, cb, options = EMPTY_OBJ) {
   const { immediate, deep, once, scheduler, augmentJob, call } = options;
   const reactiveGetter = (source2) => {
     if (deep) return source2;
@@ -3914,7 +3914,7 @@ const useSSRContext = () => {
     return ctx;
   }
 };
-function watch(source, cb, options) {
+function watch$1(source, cb, options) {
   return doWatch(source, cb, options);
 }
 function doWatch(source, cb, options = EMPTY_OBJ) {
@@ -3964,7 +3964,7 @@ function doWatch(source, cb, options = EMPTY_OBJ) {
       }
     }
   };
-  const watchHandle = watch$1(source, cb, baseWatchOptions);
+  const watchHandle = watch$2(source, cb, baseWatchOptions);
   if (isInSSRComponentSetup) {
     if (ssrCleanup) {
       ssrCleanup.push(watchHandle);
@@ -5319,12 +5319,12 @@ function createWatcher(raw, ctx, publicThis, key) {
     const handler = ctx[raw];
     if (isFunction(handler)) {
       {
-        watch(getter, handler);
+        watch$1(getter, handler);
       }
     }
   } else if (isFunction(raw)) {
     {
-      watch(getter, raw.bind(publicThis));
+      watch$1(getter, raw.bind(publicThis));
     }
   } else if (isObject(raw)) {
     if (isArray(raw)) {
@@ -5332,7 +5332,7 @@ function createWatcher(raw, ctx, publicThis, key) {
     } else {
       const handler = isFunction(raw.handler) ? raw.handler.bind(publicThis) : ctx[raw.handler];
       if (isFunction(handler)) {
-        watch(getter, handler, raw);
+        watch$1(getter, handler, raw);
       }
     }
   } else ;
@@ -9649,7 +9649,7 @@ function useStyle(css3) {
       onStyleMounted === null || onStyleMounted === void 0 || onStyleMounted(_name);
     }
     if (isLoaded.value) return;
-    stop = watch(cssRef, function(value) {
+    stop = watch$1(cssRef, function(value) {
       styleRef.value.textContent = value;
       onStyleUpdated === null || onStyleUpdated === void 0 || onStyleUpdated(_name);
     }, {
@@ -10104,7 +10104,7 @@ function setupConfig(app2, PrimeVue2) {
       isThemeChanged.value = true;
     }
   });
-  var stopConfigWatcher = watch(PrimeVue2.config, function(newValue, oldValue) {
+  var stopConfigWatcher = watch$1(PrimeVue2.config, function(newValue, oldValue) {
     PrimeVueService.emit("config:change", {
       newValue,
       oldValue
@@ -10113,7 +10113,7 @@ function setupConfig(app2, PrimeVue2) {
     immediate: true,
     deep: true
   });
-  var stopRippleWatcher = watch(function() {
+  var stopRippleWatcher = watch$1(function() {
     return PrimeVue2.config.ripple;
   }, function(newValue, oldValue) {
     PrimeVueService.emit("config:ripple:change", {
@@ -10124,7 +10124,7 @@ function setupConfig(app2, PrimeVue2) {
     immediate: true,
     deep: true
   });
-  var stopThemeWatcher = watch(function() {
+  var stopThemeWatcher = watch$1(function() {
     return PrimeVue2.config.theme;
   }, function(newValue, oldValue) {
     if (!isThemeChanged.value) {
@@ -10142,7 +10142,7 @@ function setupConfig(app2, PrimeVue2) {
     immediate: true,
     deep: false
   });
-  var stopUnstyledWatcher = watch(function() {
+  var stopUnstyledWatcher = watch$1(function() {
     return PrimeVue2.config.unstyled;
   }, function(newValue, oldValue) {
     if (!newValue && PrimeVue2.config.theme) {
@@ -10730,7 +10730,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
     onUnmounted(() => {
       document.removeEventListener("keydown", handleKeydown);
     });
-    watch(() => props.visible, (isVisible) => {
+    watch$1(() => props.visible, (isVisible) => {
       if (isVisible) {
         document.body.style.overflow = "hidden";
       } else {
@@ -10830,7 +10830,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
       searchQuery.value = "";
       (_a2 = searchInputRef.value) == null ? void 0 : _a2.focus();
     };
-    watch(() => props.visible, (isVisible) => {
+    watch$1(() => props.visible, (isVisible) => {
       if (isVisible) {
         nextTick(() => {
           var _a2;
@@ -10957,7 +10957,7 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
       searchQuery.value = "";
       (_a2 = searchInputRef.value) == null ? void 0 : _a2.focus();
     };
-    watch(() => props.visible, (isVisible) => {
+    watch$1(() => props.visible, (isVisible) => {
       if (isVisible) {
         nextTick(() => {
           var _a2;
@@ -11192,7 +11192,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
       const newSelected = props.selected.includes(key) ? props.selected.filter((k2) => k2 !== key) : [...props.selected, key];
       emit2("update:selected", newSelected);
     };
-    watch(() => props.visible, (isVisible) => {
+    watch$1(() => props.visible, (isVisible) => {
       if (isVisible) {
         searchQuery.value = "";
         expandedKeys.value = /* @__PURE__ */ new Set();
@@ -11452,7 +11452,7 @@ function useLoraPoolState(widget) {
       refreshPreview();
     }, 300);
   };
-  watch([
+  watch$1([
     selectedBaseModels,
     includeTags,
     excludeTags,
@@ -12473,7 +12473,7 @@ function useLoraRandomizerState(widget) {
   };
   const isClipStrengthDisabled = computed(() => !useCustomClipRange.value);
   const isRecommendedStrengthEnabled = computed(() => useRecommendedStrength.value);
-  watch([
+  watch$1([
     countMode,
     countFixed,
     countMin,
@@ -12598,7 +12598,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
         state.rollMode.value = "fixed";
       }
     };
-    watch(() => {
+    watch$1(() => {
       var _a2, _b;
       return (_b = (_a2 = props.node.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "loras")) == null ? void 0 : _b.value;
     }, (newVal) => {
@@ -13000,12 +13000,12 @@ function useLoraCyclerState(widget) {
     }
   };
   const isClipStrengthDisabled = computed(() => !useCustomClipRange.value);
-  watch(modelStrength, (newValue) => {
+  watch$1(modelStrength, (newValue) => {
     if (!useCustomClipRange.value) {
       clipStrength.value = newValue;
     }
   });
-  watch([
+  watch$1([
     currentIndex,
     totalCount,
     poolConfigHash,
@@ -13396,67 +13396,53 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       const customEvent = event;
       isVueDomMode.value = customEvent.detail.isVueDomMode;
     };
-    onMounted(() => {
-      document.addEventListener("lora-manager:vue-mode-change", onModeChange);
-    });
-    onUnmounted(() => {
-      document.removeEventListener("lora-manager:vue-mode-change", onModeChange);
-    });
     const textareaRef = ref(null);
-    const textValue = ref("");
     useAutocomplete(
       textareaRef,
       props.modelType ?? "loras",
       { showPreview: props.showPreview ?? true }
     );
     const onInput = () => {
-      if (typeof props.widget.callback === "function") {
-        props.widget.callback(textValue.value);
+      if (textareaRef.value && typeof props.widget.callback === "function") {
+        props.widget.callback(textareaRef.value.value);
       }
     };
     onMounted(() => {
-      props.widget.serializeValue = async () => textValue.value;
-      props.widget.onSetValue = (v2) => {
-        if (v2 !== textValue.value) {
-          textValue.value = v2 ?? "";
-        }
-      };
-      if (props.widget.value !== void 0 && props.widget.value !== null) {
-        textValue.value = props.widget.value;
+      if (textareaRef.value) {
+        props.widget.inputEl = textareaRef.value;
       }
+      if (textareaRef.value && typeof props.widget.callback === "function") {
+        props.widget.callback(textareaRef.value.value);
+      }
+      document.addEventListener("lora-manager:vue-mode-change", onModeChange);
     });
-    watch(
-      () => props.widget.value,
-      (newValue) => {
-        if (newValue !== void 0 && newValue !== textValue.value) {
-          textValue.value = newValue ?? "";
-        }
+    onUnmounted(() => {
+      if (props.widget.inputEl === textareaRef.value) {
+        props.widget.inputEl = void 0;
       }
-    );
+      document.removeEventListener("lora-manager:vue-mode-change", onModeChange);
+    });
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", _hoisted_1, [
-        withDirectives(createBaseVNode("textarea", {
+        createBaseVNode("textarea", {
           ref_key: "textareaRef",
           ref: textareaRef,
-          "onUpdate:modelValue": _cache[0] || (_cache[0] = ($event) => textValue.value = $event),
           placeholder: __props.placeholder,
           spellcheck: __props.spellcheck ?? false,
           class: normalizeClass(["text-input", { "vue-dom-mode": isVueDomMode.value }]),
           onInput,
-          onPointerdown: _cache[1] || (_cache[1] = withModifiers(() => {
+          onPointerdown: _cache[0] || (_cache[0] = withModifiers(() => {
           }, ["stop"])),
-          onPointermove: _cache[2] || (_cache[2] = withModifiers(() => {
+          onPointermove: _cache[1] || (_cache[1] = withModifiers(() => {
           }, ["stop"])),
-          onPointerup: _cache[3] || (_cache[3] = withModifiers(() => {
+          onPointerup: _cache[2] || (_cache[2] = withModifiers(() => {
           }, ["stop"]))
-        }, null, 42, _hoisted_2), [
-          [vModelText, textValue.value]
-        ])
+        }, null, 42, _hoisted_2)
       ]);
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-d5278afc"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-82697d49"]]);
 const LORA_PROVIDER_NODE_TYPES$1 = [
   "Lora Stacker (LoraManager)",
   "Lora Randomizer (LoraManager)",
@@ -13519,7 +13505,7 @@ function createModeChangeCallback(node, updateDownstreamLoaders2, nodeSpecificCa
     updateDownstreamLoaders2(node);
   };
 }
-const app = {};
+const app$1 = {};
 const ROOT_GRAPH_ID = "root";
 const LORA_PROVIDER_NODE_TYPES = [
   "Lora Stacker (LoraManager)",
@@ -13539,7 +13525,7 @@ function getNodeGraphId(node) {
   if (!node) {
     return ROOT_GRAPH_ID;
   }
-  return getGraphId(node.graph || app.graph);
+  return getGraphId(node.graph || app$1.graph);
 }
 function getNodeReference(node) {
   if (!node) {
@@ -13740,7 +13726,7 @@ function forwardMiddleMouseToCanvas(container) {
   if (!container) return;
   container.addEventListener("pointerdown", (event) => {
     if (event.button === 1) {
-      const canvas = app$1.canvas;
+      const canvas = app.canvas;
       if (canvas && typeof canvas.processMouseDown === "function") {
         canvas.processMouseDown(event);
       }
@@ -13748,7 +13734,7 @@ function forwardMiddleMouseToCanvas(container) {
   });
   container.addEventListener("pointermove", (event) => {
     if ((event.buttons & 4) === 4) {
-      const canvas = app$1.canvas;
+      const canvas = app.canvas;
       if (canvas && typeof canvas.processMouseMove === "function") {
         canvas.processMouseMove(event);
       }
@@ -13756,7 +13742,7 @@ function forwardMiddleMouseToCanvas(container) {
   });
   container.addEventListener("pointerup", (event) => {
     if (event.button === 1) {
-      const canvas = app$1.canvas;
+      const canvas = app.canvas;
       if (canvas && typeof canvas.processMouseUp === "function") {
         canvas.processMouseUp(event);
       }
@@ -14015,11 +14001,11 @@ function createJsonDisplayWidget(node) {
 const widgetInputOptions = /* @__PURE__ */ new Map();
 const initVueDomModeListener = () => {
   var _a2, _b;
-  if ((_b = (_a2 = app$1.ui) == null ? void 0 : _a2.settings) == null ? void 0 : _b.addEventListener) {
-    app$1.ui.settings.addEventListener("Comfy.VueNodes.Enabled.change", () => {
+  if ((_b = (_a2 = app.ui) == null ? void 0 : _a2.settings) == null ? void 0 : _b.addEventListener) {
+    app.ui.settings.addEventListener("Comfy.VueNodes.Enabled.change", () => {
       requestAnimationFrame(() => {
         var _a3, _b2, _c;
-        const isVueDomMode = ((_c = (_b2 = (_a3 = app$1.ui) == null ? void 0 : _a3.settings) == null ? void 0 : _b2.getSettingValue) == null ? void 0 : _c.call(_b2, "Comfy.VueNodes.Enabled")) ?? false;
+        const isVueDomMode = ((_c = (_b2 = (_a3 = app.ui) == null ? void 0 : _a3.settings) == null ? void 0 : _b2.getSettingValue) == null ? void 0 : _c.call(_b2, "Comfy.VueNodes.Enabled")) ?? false;
         document.dispatchEvent(new CustomEvent("lora-manager:vue-mode-change", {
           detail: { isVueDomMode }
         }));
@@ -14027,12 +14013,12 @@ const initVueDomModeListener = () => {
     });
   }
 };
-if ((_a = app$1.ui) == null ? void 0 : _a.settings) {
+if ((_a = app.ui) == null ? void 0 : _a.settings) {
   initVueDomModeListener();
 } else {
   const checkAppReady = setInterval(() => {
     var _a2;
-    if ((_a2 = app$1.ui) == null ? void 0 : _a2.settings) {
+    if ((_a2 = app.ui) == null ? void 0 : _a2.settings) {
       initVueDomModeListener();
       clearInterval(checkAppReady);
     }
@@ -14048,19 +14034,18 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
   container.style.flexDirection = "column";
   container.style.overflow = "hidden";
   forwardMiddleMouseToCanvas(container);
-  let internalValue = "";
   const widget = node.addDOMWidget(
     widgetName,
     `AUTOCOMPLETE_TEXT_${modelType.toUpperCase()}`,
     container,
     {
       getValue() {
-        return internalValue;
+        var _a3;
+        return ((_a3 = widget.inputEl) == null ? void 0 : _a3.value) ?? "";
       },
       setValue(v2) {
-        internalValue = v2 ?? "";
-        if (typeof widget.onSetValue === "function") {
-          widget.onSetValue(v2);
+        if (widget.inputEl) {
+          widget.inputEl.value = v2 ?? "";
         }
       },
       serialize: true,
@@ -14074,7 +14059,7 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
       }
     }
   );
-  const spellcheck = ((_c = (_b = (_a2 = app$1.ui) == null ? void 0 : _a2.settings) == null ? void 0 : _b.getSettingValue) == null ? void 0 : _c.call(_b, "Comfy.TextareaWidget.Spellcheck")) ?? false;
+  const spellcheck = ((_c = (_b = (_a2 = app.ui) == null ? void 0 : _a2.settings) == null ? void 0 : _b.getSettingValue) == null ? void 0 : _c.call(_b, "Comfy.TextareaWidget.Spellcheck")) ?? false;
   const vueApp = createApp(AutocompleteTextWidget, {
     widget,
     node,
@@ -14099,7 +14084,7 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
   };
   return { widget };
 }
-app$1.registerExtension({
+app.registerExtension({
   name: "LoraManager.VueWidgets",
   getCustomWidgets() {
     return {

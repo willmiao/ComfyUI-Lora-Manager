@@ -2,7 +2,6 @@
   <div class="autocomplete-text-widget">
     <textarea
       ref="textareaRef"
-      v-model="textValue"
       :placeholder="placeholder"
       :spellcheck="spellcheck ?? false"
       :class="['text-input', { 'vue-dom-mode': isVueDomMode }]"
@@ -15,16 +14,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useAutocomplete } from '@/composables/useAutocomplete'
 
 // Access LiteGraph global for initial mode detection
 declare const LiteGraph: { vueNodesMode?: boolean } | undefined
 
 export interface AutocompleteTextWidgetInterface {
-  serializeValue?: () => Promise<string>
-  value?: string
-  onSetValue?: (v: string) => void
+  inputEl?: HTMLTextAreaElement
   callback?: (v: string) => void
 }
 
@@ -46,20 +43,10 @@ const onModeChange = (event: Event) => {
   isVueDomMode.value = customEvent.detail.isVueDomMode
 }
 
-onMounted(() => {
-  // Listen for custom event dispatched by main.ts
-  document.addEventListener('lora-manager:vue-mode-change', onModeChange)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('lora-manager:vue-mode-change', onModeChange)
-})
-
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
-const textValue = ref('')
 
 // Initialize autocomplete with direct ref access
-const { isInitialized } = useAutocomplete(
+useAutocomplete(
   textareaRef,
   props.modelType ?? 'loras',
   { showPreview: props.showPreview ?? true }
@@ -67,37 +54,35 @@ const { isInitialized } = useAutocomplete(
 
 const onInput = () => {
   // Call widget callback when text changes
-  if (typeof props.widget.callback === 'function') {
-    props.widget.callback(textValue.value)
+  if (textareaRef.value && typeof props.widget.callback === 'function') {
+    props.widget.callback(textareaRef.value.value)
   }
 }
 
 onMounted(() => {
-  // Setup serialization
-  props.widget.serializeValue = async () => textValue.value
-
-  // Handle external value updates (e.g., loading workflow, paste)
-  props.widget.onSetValue = (v: string) => {
-    if (v !== textValue.value) {
-      textValue.value = v ?? ''
-    }
+  // Register textarea reference with widget
+  if (textareaRef.value) {
+    props.widget.inputEl = textareaRef.value
   }
 
-  // Restore from saved value if exists
-  if (props.widget.value !== undefined && props.widget.value !== null) {
-    textValue.value = props.widget.value
+  // Setup callback for input changes
+  if (textareaRef.value && typeof props.widget.callback === 'function') {
+    props.widget.callback(textareaRef.value.value)
   }
+
+  // Listen for custom event dispatched by main.ts
+  document.addEventListener('lora-manager:vue-mode-change', onModeChange)
 })
 
-// Watch for external value changes and sync
-watch(
-  () => props.widget.value,
-  (newValue) => {
-    if (newValue !== undefined && newValue !== textValue.value) {
-      textValue.value = newValue ?? ''
-    }
+onUnmounted(() => {
+  // Clean up textarea reference
+  if (props.widget.inputEl === textareaRef.value) {
+    props.widget.inputEl = undefined
   }
-)
+
+  // Remove event listener
+  document.removeEventListener('lora-manager:vue-mode-change', onModeChange)
+})
 </script>
 
 <style scoped>

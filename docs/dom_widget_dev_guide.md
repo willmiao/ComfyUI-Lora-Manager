@@ -240,6 +240,8 @@ inputEl.addEventListener("change", () => {
 });
 ```
 
+> **⚠️ Important**: For Vue-based DOM widgets with text inputs, follow the [Value Persistence Best Practices](dom-widgets/value-persistence-best-practices.md) to avoid sync issues. Key takeaway: use DOM element as single source of truth, avoid internal state variables and v-model.
+
 ### 5.3 The Restoration Mechanism (`configure`)
 
 *   **`configure(data)`**: When a Workflow is loaded, `LGraphNode` calls its `configure(data)` method.

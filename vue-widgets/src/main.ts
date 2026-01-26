@@ -423,20 +423,17 @@ function createAutocompleteTextWidgetFactory(
 
   forwardMiddleMouseToCanvas(container)
 
-  let internalValue = ''
-
   const widget = node.addDOMWidget(
     widgetName,
     `AUTOCOMPLETE_TEXT_${modelType.toUpperCase()}`,
     container,
     {
       getValue() {
-        return internalValue
+        return widget.inputEl?.value ?? ''
       },
       setValue(v: string) {
-        internalValue = v ?? ''
-        if (typeof widget.onSetValue === 'function') {
-          widget.onSetValue(v)
+        if (widget.inputEl) {
+          widget.inputEl.value = v ?? ''
         }
       },
       serialize: true,
