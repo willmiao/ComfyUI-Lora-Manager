@@ -1,144 +1,225 @@
 # DOM Widget Value Persistence - Best Practices
 
-## Problem
+## Overview
 
-DOM widgets with text inputs failed to persist values after:
-- Loading workflows
-- Switching workflows  
-- Reloading pages
+DOM widgets require different persistence patterns depending on their complexity. This document covers two patterns:
 
-## Root Cause
+1. **Simple Text Widgets**: DOM element as source of truth (e.g., textarea, input)
+2. **Complex Widgets**: Internal value with `widget.callback` (e.g., LoraPoolWidget, RandomizerWidget)
 
-**Multiple sources of truth** causing sync issues:
-- Internal state variable (`internalValue` in main.ts)
-- Vue reactive ref (`textValue` in component)
-- DOM element value (actual textarea)
-- ComfyUI widget value (`props.widget.value`)
+## Understanding ComfyUI's Built-in Callback Mechanism
 
-**Broken sync chains:**
-```
-getValue() → internalValue (not actual DOM value)
-setValue(v) → internalValue → onSetValue() → textValue.value (async chain)
-serializeValue() → textValue.value (different from getValue)
-watch() → another sync layer
+When `widget.value` is set (e.g., during workflow load), ComfyUI's `domWidget.ts` triggers this flow:
+
+```typescript
+// From ComfyUI_frontend/src/scripts/domWidget.ts:146-149
+set value(v: V) {
+  this.options.setValue?.(v)      // 1. Update internal state
+  this.callback?.(this.value)     // 2. Notify listeners for UI updates
+}
 ```
 
-## Solution
+This means:
+- `setValue()` handles storing the value
+- `widget.callback()` is automatically called to notify the UI
+- You don't need custom callback mechanisms like `onSetValue`
 
-Follow ComfyUI built-in `addMultilineWidget` pattern:
+---
 
-### ✅ Do
+## Pattern 1: Simple Text Input Widgets
 
-1. **Single source of truth**: Use the DOM element directly
-   ```typescript
-   // main.ts
-   const widget = node.addDOMWidget(name, type, container, {
-     getValue() {
-       return widget.inputEl?.value ?? ''
-     },
-     setValue(v: string) {
-       if (widget.inputEl) {
-         widget.inputEl.value = v ?? ''
-       }
-     }
-   })
-   ```
+For widgets where the value IS the DOM element's text content (textarea, input fields).
 
-2. **Register DOM reference** when component mounts
-   ```typescript
-   // Vue component
-   onMounted(() => {
-     if (textareaRef.value) {
-       props.widget.inputEl = textareaRef.value
-     }
-   })
-   ```
+### When to Use
 
-3. **Clean up reference** on unmount
-   ```typescript
-   onUnmounted(() => {
-     if (props.widget.inputEl === textareaRef.value) {
-       props.widget.inputEl = undefined
-     }
-   })
-   ```
+- Single text input/textarea widgets
+- Value is a simple string
+- No complex state management needed
 
-4. **Simplify interface** - only expose what's needed
-   ```typescript
-   export interface MyWidgetInterface {
-     inputEl?: HTMLTextAreaElement
-     callback?: (v: string) => void
-   }
-   ```
+### Implementation
 
-### ❌ Don't
+**main.ts:**
+```typescript
+const widget = node.addDOMWidget(name, type, container, {
+  getValue() {
+    return widget.inputEl?.value ?? ''
+  },
+  setValue(v: string) {
+    if (widget.inputEl) {
+      widget.inputEl.value = v ?? ''
+    }
+  }
+})
+```
 
-1. **Don't create internal state variables**
-   ```typescript
-   // Wrong
-   let internalValue = ''
-   getValue() { return internalValue }
-   ```
+**Vue Component:**
+```typescript
+onMounted(() => {
+  if (textareaRef.value) {
+    props.widget.inputEl = textareaRef.value
+  }
+})
 
-2. **Don't use v-model** for text inputs in DOM widgets
-   ```html
-   <!-- Wrong -->
-   <textarea v-model="textValue" />
+onUnmounted(() => {
+  if (props.widget.inputEl === textareaRef.value) {
+    props.widget.inputEl = undefined
+  }
+})
+```
 
-   <!-- Right -->
-   <textarea ref="textareaRef" @input="onInput" />
-   ```
+### Why This Works
 
-3. **Don't add serializeValue** - getValue/setValue handle it
-   ```typescript
-   // Wrong
-   props.widget.serializeValue = async () => textValue.value
-   ```
+- Single source of truth: the DOM element
+- `getValue()` reads directly from DOM
+- `setValue()` writes directly to DOM
+- No sync issues between multiple state variables
 
-4. **Don't add onSetValue** callback
-   ```typescript
-   // Wrong
-   setValue(v: string) {
-     internalValue = v
-     widget.onSetValue?.(v) // Unnecessary layer
-   }
-   ```
+---
 
-5. **Don't watch props.widget.value** - creates race conditions
-   ```typescript
-   // Wrong
-   watch(() => props.widget.value, (newValue) => {
-     textValue.value = newValue
-   })
-   ```
+## Pattern 2: Complex Widgets
 
-6. **Don't restore from props.widget.value** in onMounted
-   ```typescript
-   // Wrong
-   onMounted(() => {
-     if (props.widget.value) {
-       textValue.value = props.widget.value
-     }
-   })
-   ```
+For widgets with structured data (JSON configs, arrays, objects) where the value cannot be stored in a DOM element.
 
-## Key Principles
+### When to Use
 
-1. **One source of truth**: DOM element value only
-2. **Direct sync**: getValue/setValue read/write DOM directly
-3. **No async chains**: Eliminate intermediate variables
-4. **Match built-in patterns**: Study ComfyUI's `addMultilineWidget` implementation
-5. **Minimal interface**: Only expose `inputEl` and `callback`
+- Value is a complex object/array (e.g., `{ loras: [...], settings: {...} }`)
+- Multiple UI elements contribute to the value
+- Vue reactive state manages the UI
+
+### Implementation
+
+**main.ts:**
+```typescript
+let internalValue: MyConfig | undefined
+
+const widget = node.addDOMWidget(name, type, container, {
+  getValue() {
+    return internalValue
+  },
+  setValue(v: MyConfig) {
+    internalValue = v
+    // NO custom onSetValue needed - widget.callback is called automatically
+  },
+  serialize: true  // Ensure value is saved with workflow
+})
+```
+
+**Vue Component:**
+```typescript
+const config = ref<MyConfig>(getDefaultConfig())
+
+onMounted(() => {
+  // Set up callback for UI updates when widget.value changes externally
+  // (e.g., workflow load, undo/redo)
+  props.widget.callback = (newValue: MyConfig) => {
+    if (newValue) {
+      config.value = newValue
+    }
+  }
+
+  // Restore initial value if workflow was already loaded
+  if (props.widget.value) {
+    config.value = props.widget.value
+  }
+})
+
+// When UI changes, update widget value
+function onConfigChange(newConfig: MyConfig) {
+  config.value = newConfig
+  props.widget.value = newConfig  // This also triggers callback
+}
+```
+
+### Why This Works
+
+1. **Clear separation**: `internalValue` stores the data, Vue ref manages the UI
+2. **Built-in callback**: ComfyUI calls `widget.callback()` automatically after `setValue()`
+3. **Bidirectional sync**:
+   - External → UI: `setValue()` updates `internalValue`, `callback()` updates Vue ref
+   - UI → External: User interaction updates Vue ref, which updates `widget.value`
+
+---
+
+## Common Mistakes
+
+### ❌ Creating custom callback mechanisms
+
+```typescript
+// Wrong - unnecessary complexity
+setValue(v: MyConfig) {
+  internalValue = v
+  widget.onSetValue?.(v)  // Don't add this - use widget.callback instead
+}
+```
+
+Use the built-in `widget.callback` instead.
+
+### ❌ Using v-model for simple text inputs in DOM widgets
+
+```html
+<!-- Wrong - creates sync issues -->
+<textarea v-model="textValue" />
+
+<!-- Right for simple text widgets -->
+<textarea ref="textareaRef" @input="onInput" />
+```
+
+### ❌ Watching props.widget.value
+
+```typescript
+// Wrong - creates race conditions
+watch(() => props.widget.value, (newValue) => {
+  config.value = newValue
+})
+```
+
+Use `widget.callback` instead - it's called at the right time in the lifecycle.
+
+### ❌ Multiple sources of truth
+
+```typescript
+// Wrong - who is the source of truth?
+let internalValue = ''        // State 1
+const textValue = ref('')     // State 2
+const domElement = textarea   // State 3
+props.widget.value            // State 4
+```
+
+Choose ONE source of truth:
+- **Simple widgets**: DOM element
+- **Complex widgets**: `internalValue` (with Vue ref as derived UI state)
+
+### ❌ Adding serializeValue for simple widgets
+
+```typescript
+// Wrong - getValue/setValue handle serialization
+props.widget.serializeValue = async () => textValue.value
+```
+
+---
+
+## Decision Guide
+
+| Widget Type | Source of Truth | Use `widget.callback` | Example |
+|-------------|-----------------|----------------------|---------|
+| Simple text input | DOM element (`inputEl`) | Optional | AutocompleteTextWidget |
+| Complex config | `internalValue` | Yes, for UI sync | LoraPoolWidget |
+| Vue component widget | Vue ref + `internalValue` | Yes | RandomizerWidget |
+
+---
 
 ## Testing Checklist
 
 - [ ] Load workflow - value restores correctly
 - [ ] Switch workflow - value persists
 - [ ] Reload page - value persists
-- [ ] Type in widget - callback fires
+- [ ] UI interaction - value updates
+- [ ] Undo/redo - value syncs with UI
 - [ ] No console errors
+
+---
 
 ## References
 
-- ComfyUI built-in: `/home/miao/code/ComfyUI_frontend/src/renderer/extensions/vueNodes/widgets/composables/useStringWidget.ts`
-- Example fix: `vue-widgets/src/components/AutocompleteTextWidget.vue` (after fix)
+- ComfyUI DOMWidget implementation: `ComfyUI_frontend/src/scripts/domWidget.ts`
+- Simple text widget example: `ComfyUI_frontend/src/renderer/extensions/vueNodes/widgets/composables/useStringWidget.ts`
