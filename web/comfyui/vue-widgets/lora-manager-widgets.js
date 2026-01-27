@@ -970,7 +970,7 @@ to { transform: rotate(360deg);
   font-size: 13px;
 }
 
-.lora-pool-widget[data-v-7d3f681d] {
+.lora-pool-widget[data-v-1cc8816c] {
   padding: 12px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 4px;
@@ -1770,7 +1770,7 @@ to {
   }
 })();
 var _a;
-import { app } from "../../../scripts/app.js";
+import { app as app$1 } from "../../../scripts/app.js";
 /**
 * @vue/shared v3.5.26
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
@@ -3317,7 +3317,7 @@ function onWatcherCleanup(cleanupFn, failSilently = false, owner = activeWatcher
     cleanups.push(cleanupFn);
   }
 }
-function watch$2(source, cb, options = EMPTY_OBJ) {
+function watch$1(source, cb, options = EMPTY_OBJ) {
   const { immediate, deep, once, scheduler, augmentJob, call } = options;
   const reactiveGetter = (source2) => {
     if (deep) return source2;
@@ -3914,7 +3914,7 @@ const useSSRContext = () => {
     return ctx;
   }
 };
-function watch$1(source, cb, options) {
+function watch(source, cb, options) {
   return doWatch(source, cb, options);
 }
 function doWatch(source, cb, options = EMPTY_OBJ) {
@@ -3964,7 +3964,7 @@ function doWatch(source, cb, options = EMPTY_OBJ) {
       }
     }
   };
-  const watchHandle = watch$2(source, cb, baseWatchOptions);
+  const watchHandle = watch$1(source, cb, baseWatchOptions);
   if (isInSSRComponentSetup) {
     if (ssrCleanup) {
       ssrCleanup.push(watchHandle);
@@ -5319,12 +5319,12 @@ function createWatcher(raw, ctx, publicThis, key) {
     const handler = ctx[raw];
     if (isFunction(handler)) {
       {
-        watch$1(getter, handler);
+        watch(getter, handler);
       }
     }
   } else if (isFunction(raw)) {
     {
-      watch$1(getter, raw.bind(publicThis));
+      watch(getter, raw.bind(publicThis));
     }
   } else if (isObject(raw)) {
     if (isArray(raw)) {
@@ -5332,7 +5332,7 @@ function createWatcher(raw, ctx, publicThis, key) {
     } else {
       const handler = isFunction(raw.handler) ? raw.handler.bind(publicThis) : ctx[raw.handler];
       if (isFunction(handler)) {
-        watch$1(getter, handler, raw);
+        watch(getter, handler, raw);
       }
     }
   } else ;
@@ -9649,7 +9649,7 @@ function useStyle(css3) {
       onStyleMounted === null || onStyleMounted === void 0 || onStyleMounted(_name);
     }
     if (isLoaded.value) return;
-    stop = watch$1(cssRef, function(value) {
+    stop = watch(cssRef, function(value) {
       styleRef.value.textContent = value;
       onStyleUpdated === null || onStyleUpdated === void 0 || onStyleUpdated(_name);
     }, {
@@ -10104,7 +10104,7 @@ function setupConfig(app2, PrimeVue2) {
       isThemeChanged.value = true;
     }
   });
-  var stopConfigWatcher = watch$1(PrimeVue2.config, function(newValue, oldValue) {
+  var stopConfigWatcher = watch(PrimeVue2.config, function(newValue, oldValue) {
     PrimeVueService.emit("config:change", {
       newValue,
       oldValue
@@ -10113,7 +10113,7 @@ function setupConfig(app2, PrimeVue2) {
     immediate: true,
     deep: true
   });
-  var stopRippleWatcher = watch$1(function() {
+  var stopRippleWatcher = watch(function() {
     return PrimeVue2.config.ripple;
   }, function(newValue, oldValue) {
     PrimeVueService.emit("config:ripple:change", {
@@ -10124,7 +10124,7 @@ function setupConfig(app2, PrimeVue2) {
     immediate: true,
     deep: true
   });
-  var stopThemeWatcher = watch$1(function() {
+  var stopThemeWatcher = watch(function() {
     return PrimeVue2.config.theme;
   }, function(newValue, oldValue) {
     if (!isThemeChanged.value) {
@@ -10142,7 +10142,7 @@ function setupConfig(app2, PrimeVue2) {
     immediate: true,
     deep: false
   });
-  var stopUnstyledWatcher = watch$1(function() {
+  var stopUnstyledWatcher = watch(function() {
     return PrimeVue2.config.unstyled;
   }, function(newValue, oldValue) {
     if (!newValue && PrimeVue2.config.theme) {
@@ -10730,7 +10730,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
     onUnmounted(() => {
       document.removeEventListener("keydown", handleKeydown);
     });
-    watch$1(() => props.visible, (isVisible) => {
+    watch(() => props.visible, (isVisible) => {
       if (isVisible) {
         document.body.style.overflow = "hidden";
       } else {
@@ -10830,7 +10830,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
       searchQuery.value = "";
       (_a2 = searchInputRef.value) == null ? void 0 : _a2.focus();
     };
-    watch$1(() => props.visible, (isVisible) => {
+    watch(() => props.visible, (isVisible) => {
       if (isVisible) {
         nextTick(() => {
           var _a2;
@@ -10957,7 +10957,7 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
       searchQuery.value = "";
       (_a2 = searchInputRef.value) == null ? void 0 : _a2.focus();
     };
-    watch$1(() => props.visible, (isVisible) => {
+    watch(() => props.visible, (isVisible) => {
       if (isVisible) {
         nextTick(() => {
           var _a2;
@@ -11192,7 +11192,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
       const newSelected = props.selected.includes(key) ? props.selected.filter((k2) => k2 !== key) : [...props.selected, key];
       emit2("update:selected", newSelected);
     };
-    watch$1(() => props.visible, (isVisible) => {
+    watch(() => props.visible, (isVisible) => {
       if (isVisible) {
         searchQuery.value = "";
         expandedKeys.value = /* @__PURE__ */ new Set();
@@ -11336,6 +11336,7 @@ function useLoraPoolApi() {
 }
 function useLoraPoolState(widget) {
   const api = useLoraPoolApi();
+  let isRestoring = false;
   const selectedBaseModels = ref([]);
   const includeTags = ref([]);
   const excludeTags = ref([]);
@@ -11372,9 +11373,7 @@ function useLoraPoolState(widget) {
         lastUpdated: Date.now()
       }
     };
-    if (widget.updateConfig) {
-      widget.updateConfig(config);
-    } else {
+    if (!isRestoring) {
       widget.value = config;
     }
     return config;
@@ -11403,22 +11402,27 @@ function useLoraPoolState(widget) {
   };
   const restoreFromConfig = (rawConfig) => {
     var _a2, _b, _c, _d, _e2, _f;
-    const config = rawConfig.version === 1 ? migrateConfig(rawConfig) : rawConfig;
-    if (!(config == null ? void 0 : config.filters)) return;
-    const { filters, preview } = config;
-    const updateIfChanged = (refValue, newValue) => {
-      if (JSON.stringify(refValue.value) !== JSON.stringify(newValue)) {
-        refValue.value = newValue;
-      }
-    };
-    updateIfChanged(selectedBaseModels, filters.baseModels || []);
-    updateIfChanged(includeTags, ((_a2 = filters.tags) == null ? void 0 : _a2.include) || []);
-    updateIfChanged(excludeTags, ((_b = filters.tags) == null ? void 0 : _b.exclude) || []);
-    updateIfChanged(includeFolders, ((_c = filters.folders) == null ? void 0 : _c.include) || []);
-    updateIfChanged(excludeFolders, ((_d = filters.folders) == null ? void 0 : _d.exclude) || []);
-    updateIfChanged(noCreditRequired, ((_e2 = filters.license) == null ? void 0 : _e2.noCreditRequired) ?? false);
-    updateIfChanged(allowSelling, ((_f = filters.license) == null ? void 0 : _f.allowSelling) ?? false);
-    matchCount.value = (preview == null ? void 0 : preview.matchCount) || 0;
+    isRestoring = true;
+    try {
+      const config = rawConfig.version === 1 ? migrateConfig(rawConfig) : rawConfig;
+      if (!(config == null ? void 0 : config.filters)) return;
+      const { filters, preview } = config;
+      const updateIfChanged = (refValue, newValue) => {
+        if (JSON.stringify(refValue.value) !== JSON.stringify(newValue)) {
+          refValue.value = newValue;
+        }
+      };
+      updateIfChanged(selectedBaseModels, filters.baseModels || []);
+      updateIfChanged(includeTags, ((_a2 = filters.tags) == null ? void 0 : _a2.include) || []);
+      updateIfChanged(excludeTags, ((_b = filters.tags) == null ? void 0 : _b.exclude) || []);
+      updateIfChanged(includeFolders, ((_c = filters.folders) == null ? void 0 : _c.include) || []);
+      updateIfChanged(excludeFolders, ((_d = filters.folders) == null ? void 0 : _d.exclude) || []);
+      updateIfChanged(noCreditRequired, ((_e2 = filters.license) == null ? void 0 : _e2.noCreditRequired) ?? false);
+      updateIfChanged(allowSelling, ((_f = filters.license) == null ? void 0 : _f.allowSelling) ?? false);
+      matchCount.value = (preview == null ? void 0 : preview.matchCount) || 0;
+    } finally {
+      isRestoring = false;
+    }
   };
   const fetchFilterOptions = async () => {
     const [baseModels, tags, folders] = await Promise.all([
@@ -11452,7 +11456,7 @@ function useLoraPoolState(widget) {
       refreshPreview();
     }, 300);
   };
-  watch$1([
+  watch([
     selectedBaseModels,
     includeTags,
     excludeTags,
@@ -11520,17 +11524,14 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
       modalState.openModal(modal);
     };
     onMounted(async () => {
-      props.widget.serializeValue = async () => {
-        const config = state.buildConfig();
-        console.log("[LoraPoolWidget] Serializing config:", config);
-        return config;
-      };
-      props.widget.onSetValue = (v2) => {
-        state.restoreFromConfig(v2);
-        state.refreshPreview();
+      props.widget.callback = (v2) => {
+        if (v2) {
+          console.log("[LoraPoolWidget] Restoring config from callback");
+          state.restoreFromConfig(v2);
+        }
       };
       if (props.widget.value) {
-        console.log("[LoraPoolWidget] Restoring from saved value:", props.widget.value);
+        console.log("[LoraPoolWidget] Restoring from initial value");
         state.restoreFromConfig(props.widget.value);
       }
       await state.fetchFilterOptions();
@@ -11600,7 +11601,7 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-7d3f681d"]]);
+const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-1cc8816c"]]);
 const _hoisted_1$8 = { class: "last-used-preview" };
 const _hoisted_2$5 = { class: "last-used-preview__content" };
 const _hoisted_3$3 = ["src", "onError"];
@@ -12473,7 +12474,7 @@ function useLoraRandomizerState(widget) {
   };
   const isClipStrengthDisabled = computed(() => !useCustomClipRange.value);
   const isRecommendedStrengthEnabled = computed(() => useRecommendedStrength.value);
-  watch$1([
+  watch([
     countMode,
     countFixed,
     countMin,
@@ -12598,7 +12599,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
         state.rollMode.value = "fixed";
       }
     };
-    watch$1(() => {
+    watch(() => {
       var _a2, _b;
       return (_b = (_a2 = props.node.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "loras")) == null ? void 0 : _b.value;
     }, (newVal) => {
@@ -13000,12 +13001,12 @@ function useLoraCyclerState(widget) {
     }
   };
   const isClipStrengthDisabled = computed(() => !useCustomClipRange.value);
-  watch$1(modelStrength, (newValue) => {
+  watch(modelStrength, (newValue) => {
     if (!useCustomClipRange.value) {
       clipStrength.value = newValue;
     }
   });
-  watch$1([
+  watch([
     currentIndex,
     totalCount,
     poolConfigHash,
@@ -13499,7 +13500,7 @@ function createModeChangeCallback(node, updateDownstreamLoaders2, nodeSpecificCa
     updateDownstreamLoaders2(node);
   };
 }
-const app$1 = {};
+const app = {};
 const ROOT_GRAPH_ID = "root";
 const LORA_PROVIDER_NODE_TYPES = [
   "Lora Stacker (LoraManager)",
@@ -13519,7 +13520,7 @@ function getNodeGraphId(node) {
   if (!node) {
     return ROOT_GRAPH_ID;
   }
-  return getGraphId(node.graph || app$1.graph);
+  return getGraphId(node.graph || app.graph);
 }
 function getNodeReference(node) {
   if (!node) {
@@ -13720,7 +13721,7 @@ function forwardMiddleMouseToCanvas(container) {
   if (!container) return;
   container.addEventListener("pointerdown", (event) => {
     if (event.button === 1) {
-      const canvas = app.canvas;
+      const canvas = app$1.canvas;
       if (canvas && typeof canvas.processMouseDown === "function") {
         canvas.processMouseDown(event);
       }
@@ -13728,7 +13729,7 @@ function forwardMiddleMouseToCanvas(container) {
   });
   container.addEventListener("pointermove", (event) => {
     if ((event.buttons & 4) === 4) {
-      const canvas = app.canvas;
+      const canvas = app$1.canvas;
       if (canvas && typeof canvas.processMouseMove === "function") {
         canvas.processMouseMove(event);
       }
@@ -13736,7 +13737,7 @@ function forwardMiddleMouseToCanvas(container) {
   });
   container.addEventListener("pointerup", (event) => {
     if (event.button === 1) {
-      const canvas = app.canvas;
+      const canvas = app$1.canvas;
       if (canvas && typeof canvas.processMouseUp === "function") {
         canvas.processMouseUp(event);
       }
@@ -13765,9 +13766,6 @@ function createLoraPoolWidget(node) {
       },
       setValue(v2) {
         internalValue = v2;
-        if (typeof widget.onSetValue === "function") {
-          widget.onSetValue(v2);
-        }
       },
       serialize: true,
       // Per dev guide: providing getMinHeight via options allows the system to
@@ -13777,9 +13775,6 @@ function createLoraPoolWidget(node) {
       }
     }
   );
-  widget.updateConfig = (v2) => {
-    internalValue = v2;
-  };
   const vueApp = createApp(LoraPoolWidget, {
     widget,
     node
@@ -13995,11 +13990,11 @@ function createJsonDisplayWidget(node) {
 const widgetInputOptions = /* @__PURE__ */ new Map();
 const initVueDomModeListener = () => {
   var _a2, _b;
-  if ((_b = (_a2 = app.ui) == null ? void 0 : _a2.settings) == null ? void 0 : _b.addEventListener) {
-    app.ui.settings.addEventListener("Comfy.VueNodes.Enabled.change", () => {
+  if ((_b = (_a2 = app$1.ui) == null ? void 0 : _a2.settings) == null ? void 0 : _b.addEventListener) {
+    app$1.ui.settings.addEventListener("Comfy.VueNodes.Enabled.change", () => {
       requestAnimationFrame(() => {
         var _a3, _b2, _c;
-        const isVueDomMode = ((_c = (_b2 = (_a3 = app.ui) == null ? void 0 : _a3.settings) == null ? void 0 : _b2.getSettingValue) == null ? void 0 : _c.call(_b2, "Comfy.VueNodes.Enabled")) ?? false;
+        const isVueDomMode = ((_c = (_b2 = (_a3 = app$1.ui) == null ? void 0 : _a3.settings) == null ? void 0 : _b2.getSettingValue) == null ? void 0 : _c.call(_b2, "Comfy.VueNodes.Enabled")) ?? false;
         document.dispatchEvent(new CustomEvent("lora-manager:vue-mode-change", {
           detail: { isVueDomMode }
         }));
@@ -14007,12 +14002,12 @@ const initVueDomModeListener = () => {
     });
   }
 };
-if ((_a = app.ui) == null ? void 0 : _a.settings) {
+if ((_a = app$1.ui) == null ? void 0 : _a.settings) {
   initVueDomModeListener();
 } else {
   const checkAppReady = setInterval(() => {
     var _a2;
-    if ((_a2 = app.ui) == null ? void 0 : _a2.settings) {
+    if ((_a2 = app$1.ui) == null ? void 0 : _a2.settings) {
       initVueDomModeListener();
       clearInterval(checkAppReady);
     }
@@ -14053,7 +14048,7 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
       }
     }
   );
-  const spellcheck = ((_c = (_b = (_a2 = app.ui) == null ? void 0 : _a2.settings) == null ? void 0 : _b.getSettingValue) == null ? void 0 : _c.call(_b, "Comfy.TextareaWidget.Spellcheck")) ?? false;
+  const spellcheck = ((_c = (_b = (_a2 = app$1.ui) == null ? void 0 : _a2.settings) == null ? void 0 : _b.getSettingValue) == null ? void 0 : _c.call(_b, "Comfy.TextareaWidget.Spellcheck")) ?? false;
   const vueApp = createApp(AutocompleteTextWidget, {
     widget,
     node,
@@ -14078,7 +14073,7 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
   };
   return { widget };
 }
-app.registerExtension({
+app$1.registerExtension({
   name: "LoraManager.VueWidgets",
   getCustomWidgets() {
     return {

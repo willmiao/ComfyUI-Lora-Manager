@@ -95,29 +95,29 @@ const openModal = (modal: ModalType) => {
 
 // Lifecycle
 onMounted(async () => {
-  // Setup serialization
-  props.widget.serializeValue = async () => {
-    const config = state.buildConfig()
-    console.log('[LoraPoolWidget] Serializing config:', config)
-    return config
+  // Setup callback for external value updates (e.g., workflow load, undo/redo)
+  // ComfyUI calls this automatically after setValue() in domWidget.ts
+  // NOTE: callback should NOT call refreshPreview() to avoid infinite loops:
+  // watch(filters) → refreshPreview() → buildConfig() → widget.value = v → callback → refreshPreview() → ...
+  props.widget.callback = (v: LoraPoolConfig | LegacyLoraPoolConfig) => {
+    if (v) {
+      console.log('[LoraPoolWidget] Restoring config from callback')
+      state.restoreFromConfig(v)
+      // Preview will refresh automatically via watch() when restoreFromConfig changes filter refs
+    }
   }
 
-  // Handle external value updates (e.g., loading workflow, paste)
-  props.widget.onSetValue = (v) => {
-    state.restoreFromConfig(v as LoraPoolConfig | LegacyLoraPoolConfig)
-    state.refreshPreview()
-  }
-
-  // Restore from saved value
+  // Restore from saved value if workflow was already loaded
   if (props.widget.value) {
-    console.log('[LoraPoolWidget] Restoring from saved value:', props.widget.value)
+    console.log('[LoraPoolWidget] Restoring from initial value')
     state.restoreFromConfig(props.widget.value as LoraPoolConfig | LegacyLoraPoolConfig)
   }
 
   // Fetch filter options
   await state.fetchFilterOptions()
 
-  // Initial preview
+  // Initial preview (only called once on mount)
+  // When workflow is loaded, callback restores config, then watch triggers this
   await state.refreshPreview()
 })
 </script>

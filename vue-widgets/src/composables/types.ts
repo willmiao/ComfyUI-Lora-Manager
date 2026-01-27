@@ -99,8 +99,13 @@ export interface CyclerConfig {
 }
 
 export interface ComponentWidget {
+  /** @deprecated Use callback instead. Kept for backward compatibility with other widgets. */
   serializeValue?: () => Promise<LoraPoolConfig | RandomizerConfig | CyclerConfig>
   value?: LoraPoolConfig | LegacyLoraPoolConfig | RandomizerConfig | CyclerConfig
+  /** @deprecated Use callback instead. Kept for backward compatibility with other widgets. */
   onSetValue?: (v: LoraPoolConfig | LegacyLoraPoolConfig | RandomizerConfig | CyclerConfig) => void
+  /** @deprecated Directly set widget.value instead. Kept for backward compatibility with other widgets. */
   updateConfig?: (v: LoraPoolConfig | RandomizerConfig | CyclerConfig) => void
+  /** Called by ComfyUI automatically after setValue() - use this for UI sync */
+  callback?: (v: LoraPoolConfig | LegacyLoraPoolConfig | RandomizerConfig | CyclerConfig) => void
 }

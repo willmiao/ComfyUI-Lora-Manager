@@ -90,9 +90,8 @@ function createLoraPoolWidget(node) {
       },
       setValue(v: LoraPoolConfig | LegacyLoraPoolConfig) {
         internalValue = v
-        if (typeof widget.onSetValue === 'function') {
-          widget.onSetValue(v)
-        }
+        // ComfyUI automatically calls widget.callback after setValue
+        // No need for custom onSetValue mechanism
       },
       serialize: true,
       // Per dev guide: providing getMinHeight via options allows the system to
@@ -102,10 +101,6 @@ function createLoraPoolWidget(node) {
       }
     }
   )
-
-  widget.updateConfig = (v: LoraPoolConfig) => {
-    internalValue = v
-  }
 
   const vueApp = createApp(LoraPoolWidget, {
     widget,
