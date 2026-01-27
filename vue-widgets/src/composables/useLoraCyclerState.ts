@@ -6,7 +6,11 @@ export interface CyclerLoraItem {
   model_name: string
 }
 
-export function useLoraCyclerState(widget: ComponentWidget) {
+export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
+  // Flag to prevent infinite loops during config restoration
+  // callback → restoreFromConfig → watch → widget.value = config → callback → ...
+  let isRestoring = false
+
   // State refs
   const currentIndex = ref(1)  // 1-based
   const totalCount = ref(0)
@@ -26,33 +30,58 @@ export function useLoraCyclerState(widget: ComponentWidget) {
   const nextIndex = ref<number | null>(null)
 
   // Build config object from current state
-  const buildConfig = (): CyclerConfig => ({
-    current_index: currentIndex.value,
-    total_count: totalCount.value,
-    pool_config_hash: poolConfigHash.value,
-    model_strength: modelStrength.value,
-    clip_strength: clipStrength.value,
-    use_same_clip_strength: !useCustomClipRange.value,
-    sort_by: sortBy.value,
-    current_lora_name: currentLoraName.value,
-    current_lora_filename: currentLoraFilename.value,
-    execution_index: executionIndex.value,
-    next_index: nextIndex.value,
-  })
+  const buildConfig = (): CyclerConfig => {
+    // Skip updating widget.value during restoration to prevent infinite loops
+    if (isRestoring) {
+      return {
+        current_index: currentIndex.value,
+        total_count: totalCount.value,
+        pool_config_hash: poolConfigHash.value,
+        model_strength: modelStrength.value,
+        clip_strength: clipStrength.value,
+        use_same_clip_strength: !useCustomClipRange.value,
+        sort_by: sortBy.value,
+        current_lora_name: currentLoraName.value,
+        current_lora_filename: currentLoraFilename.value,
+        execution_index: executionIndex.value,
+        next_index: nextIndex.value,
+      }
+    }
+    return {
+      current_index: currentIndex.value,
+      total_count: totalCount.value,
+      pool_config_hash: poolConfigHash.value,
+      model_strength: modelStrength.value,
+      clip_strength: clipStrength.value,
+      use_same_clip_strength: !useCustomClipRange.value,
+      sort_by: sortBy.value,
+      current_lora_name: currentLoraName.value,
+      current_lora_filename: currentLoraFilename.value,
+      execution_index: executionIndex.value,
+      next_index: nextIndex.value,
+    }
+  }
 
   // Restore state from config object
   const restoreFromConfig = (config: CyclerConfig) => {
-    currentIndex.value = config.current_index || 1
-    totalCount.value = config.total_count || 0
-    poolConfigHash.value = config.pool_config_hash || ''
-    modelStrength.value = config.model_strength ?? 1.0
-    clipStrength.value = config.clip_strength ?? 1.0
-    useCustomClipRange.value = !(config.use_same_clip_strength ?? true)
-    sortBy.value = config.sort_by || 'filename'
-    currentLoraName.value = config.current_lora_name || ''
-    currentLoraFilename.value = config.current_lora_filename || ''
-    // Note: execution_index and next_index are not restored from config
-    // as they are transient values used only during batch execution
+    // Set flag to prevent buildConfig from triggering widget.value updates during restoration
+    isRestoring = true
+
+    try {
+      currentIndex.value = config.current_index || 1
+      totalCount.value = config.total_count || 0
+      poolConfigHash.value = config.pool_config_hash || ''
+      modelStrength.value = config.model_strength ?? 1.0
+      clipStrength.value = config.clip_strength ?? 1.0
+      useCustomClipRange.value = !(config.use_same_clip_strength ?? true)
+      sortBy.value = config.sort_by || 'filename'
+      currentLoraName.value = config.current_lora_name || ''
+      currentLoraFilename.value = config.current_lora_filename || ''
+      // Note: execution_index and next_index are not restored from config
+      // as they are transient values used only during batch execution
+    } finally {
+      isRestoring = false
+    }
   }
 
   // Shift indices for batch queue synchronization
@@ -208,12 +237,7 @@ export function useLoraCyclerState(widget: ComponentWidget) {
     currentLoraName,
     currentLoraFilename,
   ], () => {
-    const config = buildConfig()
-    if (widget.updateConfig) {
-      widget.updateConfig(config)
-    } else {
-      widget.value = config
-    }
+    widget.value = buildConfig()
   }, { deep: true })
 
   return {

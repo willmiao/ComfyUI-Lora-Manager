@@ -157,10 +157,8 @@ function createLoraRandomizerWidget(node) {
       },
       setValue(v: RandomizerConfig) {
         internalValue = v
-        console.log('randomizer widget value update: ', internalValue)
-        if (typeof widget.onSetValue === 'function') {
-          widget.onSetValue(v)
-        }
+        // ComfyUI automatically calls widget.callback after setValue
+        // No need for custom onSetValue mechanism
       },
       serialize: true,
       getMinHeight() {
@@ -168,10 +166,6 @@ function createLoraRandomizerWidget(node) {
       }
     }
   )
-
-  widget.updateConfig = (v: RandomizerConfig) => {
-    internalValue = v
-  }
 
   // Add method to get pool config from connected node
   node.getPoolConfig = () => getPoolConfigFromConnectedNode(node)
@@ -242,9 +236,8 @@ function createLoraCyclerWidget(node) {
       setValue(v: CyclerConfig) {
         const oldFilename = internalValue?.current_lora_filename
         internalValue = v
-        if (typeof widget.onSetValue === 'function') {
-          widget.onSetValue(v)
-        }
+        // ComfyUI automatically calls widget.callback after setValue
+        // No need for custom onSetValue mechanism
         // Update downstream loaders when the active LoRA filename changes
         if (oldFilename !== v?.current_lora_filename) {
           updateDownstreamLoaders(node)
@@ -256,15 +249,6 @@ function createLoraCyclerWidget(node) {
       }
     }
   )
-
-  widget.updateConfig = (v: CyclerConfig) => {
-    const oldFilename = internalValue?.current_lora_filename
-    internalValue = v
-    // Update downstream loaders when the active LoRA filename changes
-    if (oldFilename !== v?.current_lora_filename) {
-      updateDownstreamLoaders(node)
-    }
-  }
 
   // Add method to get pool config from connected node
   node.getPoolConfig = () => getPoolConfigFromConnectedNode(node)

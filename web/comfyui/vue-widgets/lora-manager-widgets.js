@@ -1453,7 +1453,7 @@ to { transform: rotate(360deg);
   transform: translateY(4px);
 }
 
-.lora-randomizer-widget[data-v-45df1002] {
+.lora-randomizer-widget[data-v-8063df56] {
   padding: 6px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 6px;
@@ -1684,7 +1684,7 @@ to {
   opacity: 1;
 }
 
-.lora-cycler-widget[data-v-95dec8bd] {
+.lora-cycler-widget[data-v-6c9d29f9] {
   padding: 6px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 6px;
@@ -12327,6 +12327,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
 });
 const LoraRandomizerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-f7a531b6"]]);
 function useLoraRandomizerState(widget) {
+  let isRestoring = false;
   const countMode = ref("range");
   const countFixed = ref(3);
   const countMin = ref(2);
@@ -12344,24 +12345,46 @@ function useLoraRandomizerState(widget) {
   const lastUsed = ref(null);
   const executionSeed = ref(null);
   const nextSeed = ref(null);
-  const buildConfig = () => ({
-    count_mode: countMode.value,
-    count_fixed: countFixed.value,
-    count_min: countMin.value,
-    count_max: countMax.value,
-    model_strength_min: modelStrengthMin.value,
-    model_strength_max: modelStrengthMax.value,
-    use_same_clip_strength: !useCustomClipRange.value,
-    clip_strength_min: clipStrengthMin.value,
-    clip_strength_max: clipStrengthMax.value,
-    roll_mode: rollMode.value,
-    last_used: lastUsed.value,
-    use_recommended_strength: useRecommendedStrength.value,
-    recommended_strength_scale_min: recommendedStrengthScaleMin.value,
-    recommended_strength_scale_max: recommendedStrengthScaleMax.value,
-    execution_seed: executionSeed.value,
-    next_seed: nextSeed.value
-  });
+  const buildConfig = () => {
+    if (isRestoring) {
+      return {
+        count_mode: countMode.value,
+        count_fixed: countFixed.value,
+        count_min: countMin.value,
+        count_max: countMax.value,
+        model_strength_min: modelStrengthMin.value,
+        model_strength_max: modelStrengthMax.value,
+        use_same_clip_strength: !useCustomClipRange.value,
+        clip_strength_min: clipStrengthMin.value,
+        clip_strength_max: clipStrengthMax.value,
+        roll_mode: rollMode.value,
+        last_used: lastUsed.value,
+        use_recommended_strength: useRecommendedStrength.value,
+        recommended_strength_scale_min: recommendedStrengthScaleMin.value,
+        recommended_strength_scale_max: recommendedStrengthScaleMax.value,
+        execution_seed: executionSeed.value,
+        next_seed: nextSeed.value
+      };
+    }
+    return {
+      count_mode: countMode.value,
+      count_fixed: countFixed.value,
+      count_min: countMin.value,
+      count_max: countMax.value,
+      model_strength_min: modelStrengthMin.value,
+      model_strength_max: modelStrengthMax.value,
+      use_same_clip_strength: !useCustomClipRange.value,
+      clip_strength_min: clipStrengthMin.value,
+      clip_strength_max: clipStrengthMax.value,
+      roll_mode: rollMode.value,
+      last_used: lastUsed.value,
+      use_recommended_strength: useRecommendedStrength.value,
+      recommended_strength_scale_min: recommendedStrengthScaleMin.value,
+      recommended_strength_scale_max: recommendedStrengthScaleMax.value,
+      execution_seed: executionSeed.value,
+      next_seed: nextSeed.value
+    };
+  };
   const generateNewSeed = () => {
     executionSeed.value = nextSeed.value;
     nextSeed.value = Math.floor(Math.random() * 2147483647);
@@ -12372,29 +12395,34 @@ function useLoraRandomizerState(widget) {
     }
   };
   const restoreFromConfig = (config) => {
-    countMode.value = config.count_mode || "range";
-    countFixed.value = config.count_fixed || 3;
-    countMin.value = config.count_min || 2;
-    countMax.value = config.count_max || 5;
-    modelStrengthMin.value = config.model_strength_min ?? 0;
-    modelStrengthMax.value = config.model_strength_max ?? 1;
-    useCustomClipRange.value = !(config.use_same_clip_strength ?? true);
-    clipStrengthMin.value = config.clip_strength_min ?? 0;
-    clipStrengthMax.value = config.clip_strength_max ?? 1;
-    const rawRollMode = config.roll_mode;
-    if (rawRollMode === "frontend") {
-      rollMode.value = "fixed";
-    } else if (rawRollMode === "backend") {
-      rollMode.value = "always";
-    } else if (rawRollMode === "fixed" || rawRollMode === "always") {
-      rollMode.value = rawRollMode;
-    } else {
-      rollMode.value = "fixed";
+    isRestoring = true;
+    try {
+      countMode.value = config.count_mode || "range";
+      countFixed.value = config.count_fixed || 3;
+      countMin.value = config.count_min || 2;
+      countMax.value = config.count_max || 5;
+      modelStrengthMin.value = config.model_strength_min ?? 0;
+      modelStrengthMax.value = config.model_strength_max ?? 1;
+      useCustomClipRange.value = !(config.use_same_clip_strength ?? true);
+      clipStrengthMin.value = config.clip_strength_min ?? 0;
+      clipStrengthMax.value = config.clip_strength_max ?? 1;
+      const rawRollMode = config.roll_mode;
+      if (rawRollMode === "frontend") {
+        rollMode.value = "fixed";
+      } else if (rawRollMode === "backend") {
+        rollMode.value = "always";
+      } else if (rawRollMode === "fixed" || rawRollMode === "always") {
+        rollMode.value = rawRollMode;
+      } else {
+        rollMode.value = "fixed";
+      }
+      lastUsed.value = config.last_used || null;
+      useRecommendedStrength.value = config.use_recommended_strength ?? false;
+      recommendedStrengthScaleMin.value = config.recommended_strength_scale_min ?? 0.5;
+      recommendedStrengthScaleMax.value = config.recommended_strength_scale_max ?? 1;
+    } finally {
+      isRestoring = false;
     }
-    lastUsed.value = config.last_used || null;
-    useRecommendedStrength.value = config.use_recommended_strength ?? false;
-    recommendedStrengthScaleMin.value = config.recommended_strength_scale_min ?? 0.5;
-    recommendedStrengthScaleMax.value = config.recommended_strength_scale_max ?? 1;
   };
   const rollLoras = async (poolConfig, lockedLoras) => {
     try {
@@ -12466,12 +12494,7 @@ function useLoraRandomizerState(widget) {
     recommendedStrengthScaleMin,
     recommendedStrengthScaleMax
   ], () => {
-    const config = buildConfig();
-    if (widget.updateConfig) {
-      widget.updateConfig(config);
-    } else {
-      widget.value = config;
-    }
+    widget.value = buildConfig();
   }, { deep: true });
   return {
     // State refs
@@ -12596,12 +12619,10 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
         }
       }
       isMounted.value = true;
-      props.widget.serializeValue = async () => {
-        const config = state.buildConfig();
-        return config;
-      };
-      props.widget.onSetValue = (v2) => {
-        state.restoreFromConfig(v2);
+      props.widget.callback = (v2) => {
+        if (v2) {
+          state.restoreFromConfig(v2);
+        }
       };
       if (props.widget.value) {
         state.restoreFromConfig(props.widget.value);
@@ -12614,12 +12635,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
             state.initializeNextSeed();
             props.widget[HAS_EXECUTED] = true;
           }
-          const config = state.buildConfig();
-          if (props.widget.updateConfig) {
-            props.widget.updateConfig(config);
-          } else {
-            props.widget.value = config;
-          }
+          props.widget.value = state.buildConfig();
         }
       };
       const originalOnExecuted = (_b = props.node.onExecuted) == null ? void 0 : _b.bind(props.node);
@@ -12683,7 +12699,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-45df1002"]]);
+const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-8063df56"]]);
 const _hoisted_1$3 = { class: "cycler-settings" };
 const _hoisted_2$2 = { class: "setting-section progress-section" };
 const _hoisted_3$1 = { class: "progress-display" };
@@ -12847,6 +12863,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
 });
 const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-8690e14a"]]);
 function useLoraCyclerState(widget) {
+  let isRestoring = false;
   const currentIndex = ref(1);
   const totalCount = ref(0);
   const poolConfigHash = ref("");
@@ -12859,29 +12876,51 @@ function useLoraCyclerState(widget) {
   const isLoading = ref(false);
   const executionIndex = ref(null);
   const nextIndex = ref(null);
-  const buildConfig = () => ({
-    current_index: currentIndex.value,
-    total_count: totalCount.value,
-    pool_config_hash: poolConfigHash.value,
-    model_strength: modelStrength.value,
-    clip_strength: clipStrength.value,
-    use_same_clip_strength: !useCustomClipRange.value,
-    sort_by: sortBy.value,
-    current_lora_name: currentLoraName.value,
-    current_lora_filename: currentLoraFilename.value,
-    execution_index: executionIndex.value,
-    next_index: nextIndex.value
-  });
+  const buildConfig = () => {
+    if (isRestoring) {
+      return {
+        current_index: currentIndex.value,
+        total_count: totalCount.value,
+        pool_config_hash: poolConfigHash.value,
+        model_strength: modelStrength.value,
+        clip_strength: clipStrength.value,
+        use_same_clip_strength: !useCustomClipRange.value,
+        sort_by: sortBy.value,
+        current_lora_name: currentLoraName.value,
+        current_lora_filename: currentLoraFilename.value,
+        execution_index: executionIndex.value,
+        next_index: nextIndex.value
+      };
+    }
+    return {
+      current_index: currentIndex.value,
+      total_count: totalCount.value,
+      pool_config_hash: poolConfigHash.value,
+      model_strength: modelStrength.value,
+      clip_strength: clipStrength.value,
+      use_same_clip_strength: !useCustomClipRange.value,
+      sort_by: sortBy.value,
+      current_lora_name: currentLoraName.value,
+      current_lora_filename: currentLoraFilename.value,
+      execution_index: executionIndex.value,
+      next_index: nextIndex.value
+    };
+  };
   const restoreFromConfig = (config) => {
-    currentIndex.value = config.current_index || 1;
-    totalCount.value = config.total_count || 0;
-    poolConfigHash.value = config.pool_config_hash || "";
-    modelStrength.value = config.model_strength ?? 1;
-    clipStrength.value = config.clip_strength ?? 1;
-    useCustomClipRange.value = !(config.use_same_clip_strength ?? true);
-    sortBy.value = config.sort_by || "filename";
-    currentLoraName.value = config.current_lora_name || "";
-    currentLoraFilename.value = config.current_lora_filename || "";
+    isRestoring = true;
+    try {
+      currentIndex.value = config.current_index || 1;
+      totalCount.value = config.total_count || 0;
+      poolConfigHash.value = config.pool_config_hash || "";
+      modelStrength.value = config.model_strength ?? 1;
+      clipStrength.value = config.clip_strength ?? 1;
+      useCustomClipRange.value = !(config.use_same_clip_strength ?? true);
+      sortBy.value = config.sort_by || "filename";
+      currentLoraName.value = config.current_lora_name || "";
+      currentLoraFilename.value = config.current_lora_filename || "";
+    } finally {
+      isRestoring = false;
+    }
   };
   const generateNextIndex = () => {
     executionIndex.value = nextIndex.value;
@@ -12994,12 +13033,7 @@ function useLoraCyclerState(widget) {
     currentLoraName,
     currentLoraFilename
   ], () => {
-    const config = buildConfig();
-    if (widget.updateConfig) {
-      widget.updateConfig(config);
-    } else {
-      widget.value = config;
-    }
+    widget.value = buildConfig();
   }, { deep: true });
   return {
     // State refs
@@ -13093,11 +13127,10 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     };
     onMounted(async () => {
       var _a2;
-      props.widget.serializeValue = async () => {
-        return state.buildConfig();
-      };
-      props.widget.onSetValue = (v2) => {
-        state.restoreFromConfig(v2);
+      props.widget.callback = (v2) => {
+        if (v2) {
+          state.restoreFromConfig(v2);
+        }
       };
       if (props.widget.value) {
         state.restoreFromConfig(props.widget.value);
@@ -13109,12 +13142,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           state.initializeNextIndex();
           props.widget[HAS_EXECUTED] = true;
         }
-        const config = state.buildConfig();
-        if (props.widget.updateConfig) {
-          props.widget.updateConfig(config);
-        } else {
-          props.widget.value = config;
-        }
+        props.widget.value = state.buildConfig();
       };
       isMounted.value = true;
       try {
@@ -13182,7 +13210,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-95dec8bd"]]);
+const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-6c9d29f9"]]);
 const _hoisted_1$1 = { class: "json-display-widget" };
 const _hoisted_2$1 = {
   class: "json-content",
@@ -13796,10 +13824,6 @@ function createLoraRandomizerWidget(node) {
       },
       setValue(v2) {
         internalValue = v2;
-        console.log("randomizer widget value update: ", internalValue);
-        if (typeof widget.onSetValue === "function") {
-          widget.onSetValue(v2);
-        }
       },
       serialize: true,
       getMinHeight() {
@@ -13807,9 +13831,6 @@ function createLoraRandomizerWidget(node) {
       }
     }
   );
-  widget.updateConfig = (v2) => {
-    internalValue = v2;
-  };
   node.getPoolConfig = () => getPoolConfigFromConnectedNode(node);
   widget.onRoll = (randomLoras) => {
     const lorasWidget = node.widgets.find((w2) => w2.name === "loras");
@@ -13863,9 +13884,6 @@ function createLoraCyclerWidget(node) {
       setValue(v2) {
         const oldFilename = internalValue == null ? void 0 : internalValue.current_lora_filename;
         internalValue = v2;
-        if (typeof widget.onSetValue === "function") {
-          widget.onSetValue(v2);
-        }
         if (oldFilename !== (v2 == null ? void 0 : v2.current_lora_filename)) {
           updateDownstreamLoaders(node);
         }
@@ -13876,13 +13894,6 @@ function createLoraCyclerWidget(node) {
       }
     }
   );
-  widget.updateConfig = (v2) => {
-    const oldFilename = internalValue == null ? void 0 : internalValue.current_lora_filename;
-    internalValue = v2;
-    if (oldFilename !== (v2 == null ? void 0 : v2.current_lora_filename)) {
-      updateDownstreamLoaders(node);
-    }
-  };
   node.getPoolConfig = () => getPoolConfigFromConnectedNode(node);
   const vueApp = createApp(LoraCyclerWidget, {
     widget,

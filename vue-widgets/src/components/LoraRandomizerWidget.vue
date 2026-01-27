@@ -45,9 +45,11 @@ import LoraRandomizerSettingsView from './lora-randomizer/LoraRandomizerSettings
 import { useLoraRandomizerState } from '../composables/useLoraRandomizerState'
 import type { ComponentWidget, RandomizerConfig, LoraEntry } from '../composables/types'
 
+type RandomizerWidget = ComponentWidget<RandomizerConfig>
+
 // Props
 const props = defineProps<{
-  widget: ComponentWidget
+  widget: RandomizerWidget
   node: { id: number; inputs?: any[]; widgets?: any[]; graph?: any }
 }>()
 
@@ -177,20 +179,17 @@ onMounted(async () => {
   // Mark component as mounted so watch can now respond to changes
   isMounted.value = true
 
-  // Setup serialization
-  props.widget.serializeValue = async () => {
-    const config = state.buildConfig()
-    return config
+  // Setup callback for external value updates (e.g., workflow load, undo/redo)
+  // ComfyUI calls this automatically after setValue() in domWidget.ts
+  props.widget.callback = (v: RandomizerConfig) => {
+    if (v) {
+      state.restoreFromConfig(v)
+    }
   }
 
-  // Handle external value updates (e.g., loading workflow, paste)
-  props.widget.onSetValue = (v) => {
-    state.restoreFromConfig(v as RandomizerConfig)
-  }
-
-  // Restore from saved value
+  // Restore from saved value if workflow was already loaded
   if (props.widget.value) {
-    state.restoreFromConfig(props.widget.value as RandomizerConfig)
+    state.restoreFromConfig(props.widget.value)
   }
 
   // Add beforeQueued hook to handle seed shifting for batch queue synchronization
@@ -209,12 +208,7 @@ onMounted(async () => {
       }
 
       // Update the widget value so the seeds are included in the serialized config
-      const config = state.buildConfig()
-      if ((props.widget as any).updateConfig) {
-        ;(props.widget as any).updateConfig(config)
-      } else {
-        props.widget.value = config
-      }
+      props.widget.value = state.buildConfig()
     }
   }
 

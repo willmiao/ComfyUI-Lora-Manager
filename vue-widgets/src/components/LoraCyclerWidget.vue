@@ -25,9 +25,11 @@ import LoraCyclerSettingsView from './lora-cycler/LoraCyclerSettingsView.vue'
 import { useLoraCyclerState } from '../composables/useLoraCyclerState'
 import type { ComponentWidget, CyclerConfig, LoraPoolConfig } from '../composables/types'
 
+type CyclerWidget = ComponentWidget<CyclerConfig>
+
 // Props
 const props = defineProps<{
-  widget: ComponentWidget
+  widget: CyclerWidget
   node: { id: number; inputs?: any[]; widgets?: any[]; graph?: any }
 }>()
 
@@ -112,19 +114,17 @@ const checkPoolConfigChanges = async () => {
 
 // Lifecycle
 onMounted(async () => {
-  // Setup serialization
-  props.widget.serializeValue = async () => {
-    return state.buildConfig()
+  // Setup callback for external value updates (e.g., workflow load, undo/redo)
+  // ComfyUI calls this automatically after setValue() in domWidget.ts
+  props.widget.callback = (v: CyclerConfig) => {
+    if (v) {
+      state.restoreFromConfig(v)
+    }
   }
 
-  // Handle external value updates (e.g., loading workflow, paste)
-  props.widget.onSetValue = (v) => {
-    state.restoreFromConfig(v as CyclerConfig)
-  }
-
-  // Restore from saved value
+  // Restore from saved value if workflow was already loaded
   if (props.widget.value) {
-    state.restoreFromConfig(props.widget.value as CyclerConfig)
+    state.restoreFromConfig(props.widget.value)
   }
 
   // Add beforeQueued hook to handle index shifting for batch queue synchronization
@@ -141,12 +141,7 @@ onMounted(async () => {
     }
 
     // Update the widget value so the indices are included in the serialized config
-    const config = state.buildConfig()
-    if ((props.widget as any).updateConfig) {
-      ;(props.widget as any).updateConfig(config)
-    } else {
-      props.widget.value = config
-    }
+    props.widget.value = state.buildConfig()
   }
 
   // Mark component as mounted
