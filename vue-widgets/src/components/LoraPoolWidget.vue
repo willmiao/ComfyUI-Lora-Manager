@@ -76,11 +76,11 @@ import TagsModal from './lora-pool/modals/TagsModal.vue'
 import FoldersModal from './lora-pool/modals/FoldersModal.vue'
 import { useLoraPoolState } from '../composables/useLoraPoolState'
 import { useModalState, type ModalType } from '../composables/useModalState'
-import type { ComponentWidget, LoraPoolConfig, LegacyLoraPoolConfig } from '../composables/types'
+import type { ComponentWidget, LoraPoolConfig } from '../composables/types'
 
 // Props
 const props = defineProps<{
-  widget: ComponentWidget
+  widget: ComponentWidget<LoraPoolConfig>
   node: { id: number }
 }>()
 
@@ -99,7 +99,7 @@ onMounted(async () => {
   // ComfyUI calls this automatically after setValue() in domWidget.ts
   // NOTE: callback should NOT call refreshPreview() to avoid infinite loops:
   // watch(filters) → refreshPreview() → buildConfig() → widget.value = v → callback → refreshPreview() → ...
-  props.widget.callback = (v: LoraPoolConfig | LegacyLoraPoolConfig) => {
+  props.widget.callback = (v: LoraPoolConfig) => {
     if (v) {
       console.log('[LoraPoolWidget] Restoring config from callback')
       state.restoreFromConfig(v)
@@ -110,7 +110,7 @@ onMounted(async () => {
   // Restore from saved value if workflow was already loaded
   if (props.widget.value) {
     console.log('[LoraPoolWidget] Restoring from initial value')
-    state.restoreFromConfig(props.widget.value as LoraPoolConfig | LegacyLoraPoolConfig)
+    state.restoreFromConfig(props.widget.value as LoraPoolConfig)
   }
 
   // Fetch filter options

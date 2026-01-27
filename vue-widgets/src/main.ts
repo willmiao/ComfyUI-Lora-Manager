@@ -5,7 +5,7 @@ import LoraRandomizerWidget from '@/components/LoraRandomizerWidget.vue'
 import LoraCyclerWidget from '@/components/LoraCyclerWidget.vue'
 import JsonDisplayWidget from '@/components/JsonDisplayWidget.vue'
 import AutocompleteTextWidget from '@/components/AutocompleteTextWidget.vue'
-import type { LoraPoolConfig, LegacyLoraPoolConfig, RandomizerConfig, CyclerConfig } from './composables/types'
+import type { LoraPoolConfig, RandomizerConfig, CyclerConfig } from './composables/types'
 import {
   setupModeChangeHandler,
   createModeChangeCallback,
@@ -78,7 +78,7 @@ function createLoraPoolWidget(node) {
 
   forwardMiddleMouseToCanvas(container)
 
-  let internalValue: LoraPoolConfig | LegacyLoraPoolConfig | undefined
+  let internalValue: LoraPoolConfig | undefined
 
   const widget = node.addDOMWidget(
     'pool_config',
@@ -88,7 +88,7 @@ function createLoraPoolWidget(node) {
       getValue() {
         return internalValue
       },
-      setValue(v: LoraPoolConfig | LegacyLoraPoolConfig) {
+      setValue(v: LoraPoolConfig) {
         internalValue = v
         // ComfyUI automatically calls widget.callback after setValue
         // No need for custom onSetValue mechanism

@@ -970,7 +970,7 @@ to { transform: rotate(360deg);
   font-size: 13px;
 }
 
-.lora-pool-widget[data-v-1cc8816c] {
+.lora-pool-widget[data-v-4456abba] {
   padding: 12px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 4px;
@@ -11378,33 +11378,10 @@ function useLoraPoolState(widget) {
     }
     return config;
   };
-  const migrateConfig = (legacy) => {
-    var _a2, _b, _c, _d, _e2;
-    return {
-      version: 2,
-      filters: {
-        baseModels: legacy.filters.baseModels || [],
-        tags: {
-          include: ((_a2 = legacy.filters.tags) == null ? void 0 : _a2.include) || [],
-          exclude: ((_b = legacy.filters.tags) == null ? void 0 : _b.exclude) || []
-        },
-        folders: {
-          include: ((_c = legacy.filters.folder) == null ? void 0 : _c.path) ? [legacy.filters.folder.path] : [],
-          exclude: []
-        },
-        license: {
-          noCreditRequired: ((_d = legacy.filters.license) == null ? void 0 : _d.noCreditRequired) ?? false,
-          allowSelling: ((_e2 = legacy.filters.license) == null ? void 0 : _e2.allowSellingGeneratedContent) ?? false
-        }
-      },
-      preview: legacy.preview || { matchCount: 0, lastUpdated: 0 }
-    };
-  };
-  const restoreFromConfig = (rawConfig) => {
+  const restoreFromConfig = (config) => {
     var _a2, _b, _c, _d, _e2, _f;
     isRestoring = true;
     try {
-      const config = rawConfig.version === 1 ? migrateConfig(rawConfig) : rawConfig;
       if (!(config == null ? void 0 : config.filters)) return;
       const { filters, preview } = config;
       const updateIfChanged = (refValue, newValue) => {
@@ -11601,7 +11578,7 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-1cc8816c"]]);
+const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$9, [["__scopeId", "data-v-4456abba"]]);
 const _hoisted_1$8 = { class: "last-used-preview" };
 const _hoisted_2$5 = { class: "last-used-preview__content" };
 const _hoisted_3$3 = ["src", "onError"];

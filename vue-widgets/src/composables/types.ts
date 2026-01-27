@@ -37,22 +37,6 @@ export interface FolderTreeNode {
   children?: FolderTreeNode[]
 }
 
-// Legacy config for migration (v1)
-export interface LegacyLoraPoolConfig {
-  version: 1
-  filters: {
-    baseModels: string[]
-    tags: { include: string[]; exclude: string[] }
-    folder: { path: string | null; recursive: boolean }
-    favoritesOnly: boolean
-    license: {
-      noCreditRequired: boolean | null
-      allowSellingGeneratedContent: boolean | null
-    }
-  }
-  preview: { matchCount: number; lastUpdated: number }
-}
-
 // Randomizer config
 export interface RandomizerConfig {
   count_mode: 'fixed' | 'range'
@@ -98,14 +82,17 @@ export interface CyclerConfig {
   next_index?: number | null       // Index for display after execution
 }
 
-export interface ComponentWidget {
+// Widget config union type
+export type WidgetConfig = LoraPoolConfig | RandomizerConfig | CyclerConfig
+
+export interface ComponentWidget<T = WidgetConfig> {
   /** @deprecated Use callback instead. Kept for backward compatibility with other widgets. */
-  serializeValue?: () => Promise<LoraPoolConfig | RandomizerConfig | CyclerConfig>
-  value?: LoraPoolConfig | LegacyLoraPoolConfig | RandomizerConfig | CyclerConfig
+  serializeValue?: () => Promise<T>
+  value?: T
   /** @deprecated Use callback instead. Kept for backward compatibility with other widgets. */
-  onSetValue?: (v: LoraPoolConfig | LegacyLoraPoolConfig | RandomizerConfig | CyclerConfig) => void
+  onSetValue?: (v: T) => void
   /** @deprecated Directly set widget.value instead. Kept for backward compatibility with other widgets. */
-  updateConfig?: (v: LoraPoolConfig | RandomizerConfig | CyclerConfig) => void
+  updateConfig?: (v: T) => void
   /** Called by ComfyUI automatically after setValue() - use this for UI sync */
-  callback?: (v: LoraPoolConfig | LegacyLoraPoolConfig | RandomizerConfig | CyclerConfig) => void
+  callback?: (v: T) => void
 }

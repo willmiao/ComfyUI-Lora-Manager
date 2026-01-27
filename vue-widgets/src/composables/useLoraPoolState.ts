@@ -1,7 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import type {
   LoraPoolConfig,
-  LegacyLoraPoolConfig,
   BaseModelOption,
   TagOption,
   FolderTreeNode,
@@ -10,7 +9,7 @@ import type {
 } from './types'
 import { useLoraPoolApi } from './useLoraPoolApi'
 
-export function useLoraPoolState(widget: ComponentWidget) {
+export function useLoraPoolState(widget: ComponentWidget<LoraPoolConfig>) {
   const api = useLoraPoolApi()
 
   // Flag to prevent infinite loops during config restoration
@@ -70,41 +69,13 @@ export function useLoraPoolState(widget: ComponentWidget) {
     return config
   }
 
-  // Migrate legacy config (v1) to current format (v2)
-  const migrateConfig = (legacy: LegacyLoraPoolConfig): LoraPoolConfig => {
-    return {
-      version: 2,
-      filters: {
-        baseModels: legacy.filters.baseModels || [],
-        tags: {
-          include: legacy.filters.tags?.include || [],
-          exclude: legacy.filters.tags?.exclude || []
-        },
-        folders: {
-          include: legacy.filters.folder?.path ? [legacy.filters.folder.path] : [],
-          exclude: []
-        },
-        license: {
-          noCreditRequired: legacy.filters.license?.noCreditRequired ?? false,
-          allowSelling: legacy.filters.license?.allowSellingGeneratedContent ?? false
-        }
-      },
-      preview: legacy.preview || { matchCount: 0, lastUpdated: 0 }
-    }
-  }
-
   // Restore state from config
-  const restoreFromConfig = (rawConfig: LoraPoolConfig | LegacyLoraPoolConfig) => {
+  const restoreFromConfig = (config: LoraPoolConfig) => {
     // Set flag to prevent buildConfig from triggering widget.value updates during restoration
     // This breaks the infinite loop: callback → restoreFromConfig → watch → refreshPreview → buildConfig → widget.value = config → callback
     isRestoring = true
 
     try {
-      // Migrate if needed
-      const config = rawConfig.version === 1
-        ? migrateConfig(rawConfig as LegacyLoraPoolConfig)
-        : rawConfig as LoraPoolConfig
-
       if (!config?.filters) return
 
       const { filters, preview } = config
