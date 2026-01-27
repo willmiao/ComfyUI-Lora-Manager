@@ -738,8 +738,16 @@ class AutoComplete {
         // Find the start of the current command being typed
         const beforeCursor = currentValue.substring(0, caretPos);
         const segments = beforeCursor.split(/[,\>]+/);
-        const lastSegment = segments[segments.length - 1];
-        const commandStartPos = caretPos - lastSegment.length;
+        const lastSegment = segments[segments.length - 1] || '';
+        let commandStartPos = caretPos - lastSegment.length;
+
+        // Preserve leading space if the last segment starts with a space
+        // This handles cases like "1girl, /character" where we want to keep the space
+        // after the comma instead of replacing it
+        if (lastSegment.length > 0 && lastSegment[0] === ' ') {
+            // Move start position past the leading space to preserve it
+            commandStartPos = commandStartPos + 1;
+        }
 
         // Insert command with trailing space
         const insertText = command + ' ';
