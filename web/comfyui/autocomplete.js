@@ -1,7 +1,7 @@
 import { api } from "../../scripts/api.js";
 import { app } from "../../scripts/app.js";
 import { TextAreaCaretHelper } from "./textarea_caret_helper.js";
-import { getPromptTagAutocompletePreference } from "./settings.js";
+import { getPromptTagAutocompletePreference, getTagSpaceReplacementPreference } from "./settings.js";
 
 // Command definitions for category filtering
 const TAG_COMMANDS = {
@@ -231,7 +231,13 @@ const MODEL_BEHAVIORS = {
                 const folder = directories.length ? `${directories.join('/')}/` : '';
                 return `embedding:${folder}${trimmedName}, `;
             } else {
-                return `${relativePath}, `;
+                let tagText = relativePath;
+
+                if (getTagSpaceReplacementPreference()) {
+                    tagText = tagText.replace(/_/g, ' ');
+                }
+
+                return `${tagText}, `;
             }
         },
     },

@@ -13,6 +13,9 @@ const AUTO_PATH_CORRECTION_DEFAULT = true;
 const PROMPT_TAG_AUTOCOMPLETE_SETTING_ID = "loramanager.prompt_tag_autocomplete";
 const PROMPT_TAG_AUTOCOMPLETE_DEFAULT = true;
 
+const TAG_SPACE_REPLACEMENT_SETTING_ID = "loramanager.tag_space_replacement";
+const TAG_SPACE_REPLACEMENT_DEFAULT = false;
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -95,6 +98,32 @@ const getPromptTagAutocompletePreference = (() => {
     };
 })();
 
+const getTagSpaceReplacementPreference = (() => {
+    let settingsUnavailableLogged = false;
+
+    return () => {
+        const settingManager = app?.extensionManager?.setting;
+        if (!settingManager || typeof settingManager.get !== "function") {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: settings API unavailable, using default tag space replacement setting.");
+                settingsUnavailableLogged = true;
+            }
+            return TAG_SPACE_REPLACEMENT_DEFAULT;
+        }
+
+        try {
+            const value = settingManager.get(TAG_SPACE_REPLACEMENT_SETTING_ID);
+            return value ?? TAG_SPACE_REPLACEMENT_DEFAULT;
+        } catch (error) {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: unable to read tag space replacement setting, using default.", error);
+                settingsUnavailableLogged = true;
+            }
+            return TAG_SPACE_REPLACEMENT_DEFAULT;
+        }
+    };
+})();
+
 // ============================================================================
 // Register Extension with All Settings
 // ============================================================================
@@ -131,6 +160,14 @@ app.registerExtension({
             tooltip: "When enabled, typing will trigger tag autocomplete suggestions. Commands (e.g., /character, /artist) always work regardless of this setting.",
             category: ["LoRA Manager", "Autocomplete", "Prompt"],
         },
+        {
+            id: TAG_SPACE_REPLACEMENT_SETTING_ID,
+            name: "Replace underscores with spaces in tags",
+            type: "boolean",
+            defaultValue: TAG_SPACE_REPLACEMENT_DEFAULT,
+            tooltip: "When enabled, tag names with underscores will have them replaced with spaces when inserted (e.g., 'blonde_hair' becomes 'blonde hair').",
+            category: ["LoRA Manager", "Autocomplete", "Tag Formatting"],
+        },
     ],
 });
 
@@ -138,4 +175,4 @@ app.registerExtension({
 // Exports
 // ============================================================================
 
-export { getWheelSensitivity, getAutoPathCorrectionPreference, getPromptTagAutocompletePreference };
+export { getWheelSensitivity, getAutoPathCorrectionPreference, getPromptTagAutocompletePreference, getTagSpaceReplacementPreference };
