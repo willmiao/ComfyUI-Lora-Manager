@@ -204,6 +204,9 @@
         },
         "filter": {
             "title": "Filter Models",
+            "presets": "Presets",
+            "savePreset": "Save current active filters as a new preset (first select filters below, then click here)",
+            "noPresets": "No presets saved yet. Select filters below and click + to save",
             "baseModel": "Base Model",
             "modelTags": "Tags (Top 20)",
             "modelTypes": "Model Types",

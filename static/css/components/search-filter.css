@@ -466,6 +466,124 @@
     border-color: var(--lora-accent);
 }
 
+/* Presets Section Styles */
+.presets-section {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+}
+
+.presets-section h4 {
+    margin: 0 0 8px 0;
+}
+
+.filter-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.filter-preset {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 4px 4px 10px;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--lora-surface);
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.filter-preset:hover {
+    background-color: var(--lora-surface-hover);
+    border-color: var(--lora-accent);
+}
+
+.filter-preset.active {
+    background-color: var(--lora-accent);
+    border-color: var(--lora-accent);
+}
+
+.filter-preset.active .preset-name {
+    color: white;
+    font-weight: 600;
+}
+
+.filter-preset.active .preset-delete-btn {
+    color: white;
+    opacity: 0.8;
+}
+
+.filter-preset.active .preset-delete-btn:hover {
+    opacity: 1;
+    color: white;
+}
+
+.preset-name {
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-color);
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.preset-delete-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    opacity: 0.5;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    transition: all 0.2s ease;
+    margin-left: auto;
+}
+
+.preset-delete-btn:hover {
+    opacity: 1;
+    color: var(--lora-error, #e74c3c);
+}
+
+.add-preset-btn {
+    background-color: transparent !important;
+    border: 1px dashed var(--border-color) !important;
+    color: var(--text-color);
+    opacity: 0.7;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    font-size: 14px;
+}
+
+.add-preset-btn:hover {
+    opacity: 1;
+    border-color: var(--lora-accent) !important;
+    color: var(--lora-accent);
+    background-color: var(--lora-surface-hover) !important;
+}
+
+.add-preset-btn i {
+    font-size: 12px;
+}
+
+.no-presets {
+    width: 100%;
+    padding: 12px 8px;
+    text-align: center;
+    font-size: 0.9em;
+    color: var(--text-color);
+    opacity: 0.6;
+    font-style: italic;
+}
+
 /* Mobile adjustments */
 @media (max-width: 768px) {
     .search-options-panel,

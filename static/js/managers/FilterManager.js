@@ -20,6 +20,7 @@ export class FilterManager {
         this.filterButton = document.getElementById('filterButton');
         this.activeFiltersCount = document.getElementById('activeFiltersCount');
         this.tagsLoaded = false;
+        this.activePreset = null; // Track currently active preset
 
         this.initialize();
 
@@ -109,12 +110,35 @@ export class FilterManager {
             return;
         }
 
+        // Collect existing tag names from the API response
+        const existingTagNames = new Set(tags.map(t => t.tag));
+
+        // Add any active filter tags that aren't in the top 20
+        if (this.filters.tags) {
+            Object.keys(this.filters.tags).forEach(tagName => {
+                // Skip special tags like __no_tags__
+                if (tagName.startsWith('__')) return;
+
+                if (!existingTagNames.has(tagName)) {
+                    // Add this tag to the list with count 0 (unknown)
+                    tags.push({ tag: tagName, count: 0 });
+                    existingTagNames.add(tagName);
+                }
+            });
+        }
+
         tags.forEach(tag => {
             const tagEl = document.createElement('div');
             tagEl.className = 'filter-tag tag-filter';
             const tagName = tag.tag;
             tagEl.dataset.tag = tagName;
-            tagEl.innerHTML = `${tagName} <span class="tag-count">${tag.count}</span>`;
+
+            // Show count only if it's > 0 (known count)
+            if (tag.count > 0) {
+                tagEl.innerHTML = `${tagName} <span class="tag-count">${tag.count}</span>`;
+            } else {
+                tagEl.textContent = tagName;
+            }
 
             // Add click handler to cycle through tri-state filter and automatically apply
             tagEl.addEventListener('click', async () => {
@@ -376,6 +400,9 @@ export class FilterManager {
                     this.loadTopTags();
                     this.tagsLoaded = true;
                 }
+
+                // Render presets
+                this.renderPresets();
             } else {
                 this.closeFilterPanel();
             }
@@ -446,7 +473,7 @@ export class FilterManager {
         }
     }
 
-    async applyFilters(showToastNotification = true) {
+    async applyFilters(showToastNotification = true, isPresetApply = false) {
         const pageState = getCurrentPageState();
         const storageKey = `${this.currentPage}_filters`;
 
@@ -456,6 +483,12 @@ export class FilterManager {
 
         // Update state with current filters
         pageState.filters = filtersSnapshot;
+
+        // Deactivate preset if this is a manual filter change (not from applying a preset)
+        if (!isPresetApply && this.activePreset) {
+            this.activePreset = null;
+            this.renderPresets(); // Re-render to remove active state
+        }
 
         // Call the appropriate manager's load method based on page type
         if (this.currentPage === 'recipes' && window.recipeManager) {
@@ -492,6 +525,9 @@ export class FilterManager {
     }
 
     async clearFilters() {
+        // Clear active preset
+        this.activePreset = null;
+
         // Clear all filters
         this.filters = this.initializeFilters({
             ...this.filters,
@@ -508,6 +544,7 @@ export class FilterManager {
         // Update UI
         this.updateTagSelections();
         this.updateActiveFiltersCount();
+        this.renderPresets(); // Re-render to remove active state
 
         // Remove from local Storage
         const storageKey = `${this.currentPage}_filters`;
@@ -693,6 +730,213 @@ export class FilterManager {
             element.classList.add('active');
         } else if (state === 'exclude') {
             element.classList.add('exclude');
+        }
+    }
+
+    // Preset management methods
+    loadPresets() {
+        const presetsKey = `${this.currentPage}_filter_presets`;
+        const presets = getStorageItem(presetsKey);
+
+        // If no presets exist and this is the loras page, add default example presets
+        if ((!presets || presets.length === 0) && this.currentPage === 'loras') {
+            return this.getDefaultPresets();
+        }
+
+        return Array.isArray(presets) ? presets : [];
+    }
+
+    getDefaultPresets() {
+        // Example presets that users can modify or delete
+        return [
+            {
+                name: "WAN Models",
+                filters: {
+                    baseModel: ["Wan Video 1.3B t2v", "Wan Video 14B t2v", "Wan Video 14B i2v 480p", "Wan Video 14B i2v 720p"],
+                    tags: {},
+                    license: {},
+                    modelTypes: []
+                },
+                createdAt: Date.now(),
+                isDefault: true
+            }
+        ];
+    }
+
+    savePresets(presets) {
+        const presetsKey = `${this.currentPage}_filter_presets`;
+        setStorageItem(presetsKey, presets);
+    }
+
+    createPreset(name) {
+        if (!name || !name.trim()) {
+            showToast('Preset name cannot be empty', {}, 'error');
+            return;
+        }
+
+        const presets = this.loadPresets();
+
+        // Check for duplicate names
+        if (presets.some(p => p.name === name.trim())) {
+            showToast('A preset with this name already exists', {}, 'error');
+            return;
+        }
+
+        const preset = {
+            name: name.trim(),
+            filters: this.cloneFilters(),
+            createdAt: Date.now()
+        };
+
+        presets.push(preset);
+        this.savePresets(presets);
+        this.renderPresets();
+        showToast(`Preset "${name}" created`, {}, 'success');
+    }
+
+    deletePreset(name) {
+        const presets = this.loadPresets();
+        const filtered = presets.filter(p => p.name !== name);
+
+        // If no presets left, remove from storage so defaults can appear
+        if (filtered.length === 0) {
+            const presetsKey = `${this.currentPage}_filter_presets`;
+            removeStorageItem(presetsKey);
+        } else {
+            this.savePresets(filtered);
+        }
+
+        this.renderPresets();
+        showToast(`Preset "${name}" deleted`, {}, 'success');
+    }
+
+    async applyPreset(name) {
+        const presets = this.loadPresets();
+        const preset = presets.find(p => p.name === name);
+
+        if (!preset) {
+            showToast('Preset not found', {}, 'error');
+            return;
+        }
+
+        // Set active preset
+        this.activePreset = name;
+
+        // Apply the preset filters
+        this.filters = this.initializeFilters(preset.filters);
+
+        // Update state
+        const pageState = getCurrentPageState();
+        pageState.filters = this.cloneFilters();
+
+        // If tags haven't been loaded yet, load them first
+        if (!this.tagsLoaded) {
+            await this.loadTopTags();
+            this.tagsLoaded = true;
+        }
+
+        // Update UI - this will show the blue outlines on active filters
+        // Must be done AFTER tags are loaded
+        this.updateTagSelections();
+        this.updateActiveFiltersCount();
+        this.renderPresets(); // Re-render to show active state
+
+        // Apply filters (pass true for isPresetApply so it doesn't clear activePreset)
+        // Don't show toast here, we'll show it after
+        await this.applyFilters(false, true);
+
+        // Show success toast without closing the panel
+        showToast(`Preset "${name}" applied`, {}, 'success');
+    }
+
+    renderPresets() {
+        const presetsContainer = document.getElementById('filterPresets');
+        if (!presetsContainer) return;
+
+        const presets = this.loadPresets();
+        presetsContainer.innerHTML = '';
+
+        // Render existing presets
+        presets.forEach(preset => {
+            const presetEl = document.createElement('div');
+            presetEl.className = 'filter-preset';
+
+            // Mark as active if this is the active preset
+            const isActive = this.activePreset === preset.name;
+            if (isActive) {
+                presetEl.classList.add('active');
+            }
+
+            // Stop propagation on the preset element itself
+            presetEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+
+            const presetName = document.createElement('span');
+            presetName.className = 'preset-name';
+
+            // Add checkmark icon if active
+            if (isActive) {
+                presetName.innerHTML = `<i class="fas fa-check"></i> ${preset.name}`;
+            } else {
+                presetName.textContent = preset.name;
+            }
+            presetName.title = `Click to apply preset "${preset.name}"`;
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'preset-delete-btn';
+            deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+            deleteBtn.title = 'Delete preset';
+
+            // Apply preset on name click (toggle if already active)
+            presetName.addEventListener('click', async (e) => {
+                e.stopPropagation(); // Prevent click from bubbling to document
+
+                // If this preset is already active, deactivate it (clear filters)
+                if (this.activePreset === preset.name) {
+                    await this.clearFilters();
+                } else {
+                    await this.applyPreset(preset.name);
+                }
+            });
+
+            // Delete preset on delete button click
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm(`Delete preset "${preset.name}"?`)) {
+                    this.deletePreset(preset.name);
+                }
+            });
+
+            presetEl.appendChild(presetName);
+            presetEl.appendChild(deleteBtn);
+            presetsContainer.appendChild(presetEl);
+        });
+
+        // Add the "Add new preset" button as the last element
+        const addBtn = document.createElement('div');
+        addBtn.className = 'filter-preset add-preset-btn';
+        addBtn.innerHTML = '<i class="fas fa-plus"></i> Add';
+        addBtn.title = 'Save current filters as a new preset';
+
+        addBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.showSavePresetDialog();
+        });
+
+        presetsContainer.appendChild(addBtn);
+    }
+
+    showSavePresetDialog() {
+        // Check if there are any active filters
+        if (!this.hasActiveFilters()) {
+            showToast('No active filters to save', {}, 'info');
+            return;
+        }
+
+        const name = prompt('Enter preset name:');
+        if (name !== null) {
+            this.createPreset(name);
         }
     }
 }
