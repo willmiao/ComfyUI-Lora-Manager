@@ -115,11 +115,3 @@ class WanVideoLoraTextSelectLM:
         active_loras_text = " ".join(formatted_loras)
 
         return (loras_list, trigger_words_text, active_loras_text)
-
-NODE_CLASS_MAPPINGS = {
-    "WanVideoLoraTextSelectLM": WanVideoLoraTextSelectLM
-}
-
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "WanVideoLoraTextSelectLM": "WanVideo Lora Select From Text (LoraManager)"
-}

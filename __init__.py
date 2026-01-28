@@ -3,6 +3,7 @@ try:  # pragma: no cover - import fallback for pytest collection
     from .py.nodes.lora_loader import LoraLoaderLM, LoraTextLoaderLM
     from .py.nodes.trigger_word_toggle import TriggerWordToggleLM
     from .py.nodes.prompt import PromptLM
+    from .py.nodes.text import TextLM
     from .py.nodes.lora_stacker import LoraStackerLM
     from .py.nodes.save_image import SaveImageLM
     from .py.nodes.debug_metadata import DebugMetadataLM
@@ -24,6 +25,7 @@ except (
         sys.path.append(str(package_root))
 
     PromptLM = importlib.import_module("py.nodes.prompt").PromptLM
+    TextLM = importlib.import_module("py.nodes.text").TextLM
     LoraManager = importlib.import_module("py.lora_manager").LoraManager
     LoraLoaderLM = importlib.import_module(
         "py.nodes.lora_loader"
@@ -54,6 +56,7 @@ except (
 
 NODE_CLASS_MAPPINGS = {
     PromptLM.NAME: PromptLM,
+    TextLM.NAME: TextLM,
     LoraLoaderLM.NAME: LoraLoaderLM,
     LoraTextLoaderLM.NAME: LoraTextLoaderLM,
     TriggerWordToggleLM.NAME: TriggerWordToggleLM,
