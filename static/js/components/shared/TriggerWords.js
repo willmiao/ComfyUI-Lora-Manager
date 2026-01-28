@@ -382,6 +382,19 @@ export function setupTriggerWordsEditMode() {
                 this.value = ''; // Clear input after adding
             }
         });
+
+        // Auto-commit on blur to prevent data loss when clicking save
+        triggerWordInput.addEventListener('blur', function () {
+            if (this.value.trim()) {
+                // Small delay to avoid conflict with save button click
+                setTimeout(() => {
+                    if (document.contains(this) && this.value.trim()) {
+                        addNewTriggerWord(this.value.trim());
+                        this.value = '';
+                    }
+                }, 150);
+            }
+        });
     }
 
     // Set up save button
@@ -619,6 +632,14 @@ async function saveTriggerWords() {
     const editBtn = document.querySelector('.edit-trigger-words-btn');
     const filePath = editBtn.dataset.filePath;
     const triggerWordsSection = editBtn.closest('.trigger-words');
+
+    // Auto-commit any pending input to prevent data loss
+    const input = triggerWordsSection.querySelector('.metadata-input');
+    if (input && input.value.trim()) {
+        addNewTriggerWord(input.value.trim());
+        input.value = '';
+    }
+
     const triggerWordTags = triggerWordsSection.querySelectorAll('.trigger-word-tag');
     const words = Array.from(triggerWordTags).map(tag => tag.dataset.word);
 
