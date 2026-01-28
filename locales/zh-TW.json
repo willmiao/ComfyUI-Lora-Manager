@@ -1165,7 +1165,11 @@
         "exampleImages": {
             "opened": "範例圖片資料夾已開啟",
             "openingFolder": "正在開啟範例圖片資料夾",
-            "failedToOpen": "開啟範例圖片資料夾失敗"
+            "failedToOpen": "開啟範例圖片資料夾失敗",
+            "setupRequired": "範例圖片儲存",
+            "setupDescription": "要新增自訂範例圖片，您需要先設定下載位置。",
+            "setupUsage": "此路徑用於儲存下載的範例圖片和自訂圖片。",
+            "openSettings": "開啟設定"
         }
     },
     "help": {

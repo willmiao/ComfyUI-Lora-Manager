@@ -1165,7 +1165,11 @@
         "exampleImages": {
             "opened": "예시 이미지 폴더가 열렸습니다",
             "openingFolder": "예시 이미지 폴더를 여는 중",
-            "failedToOpen": "예시 이미지 폴더 열기 실패"
+            "failedToOpen": "예시 이미지 폴더 열기 실패",
+            "setupRequired": "예시 이미지 저장소",
+            "setupDescription": "사용자 지정 예시 이미지를 추가하려면 먼저 다운로드 위치를 설정해야 합니다.",
+            "setupUsage": "이 경로는 다운로드한 예시 이미지와 사용자 지정 이미지 모두에 사용됩니다.",
+            "openSettings": "설정 열기"
         }
     },
     "help": {

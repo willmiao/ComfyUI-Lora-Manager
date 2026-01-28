@@ -1165,7 +1165,11 @@
         "exampleImages": {
             "opened": "Beispielbilder-Ordner geöffnet",
             "openingFolder": "Beispielbilder-Ordner wird geöffnet",
-            "failedToOpen": "Fehler beim Öffnen des Beispielbilder-Ordners"
+            "failedToOpen": "Fehler beim Öffnen des Beispielbilder-Ordners",
+            "setupRequired": "Beispielbilder-Speicher",
+            "setupDescription": "Um benutzerdefinierte Beispielbilder hinzuzufügen, müssen Sie zuerst einen Download-Speicherort festlegen.",
+            "setupUsage": "Dieser Pfad wird sowohl für heruntergeladene als auch für benutzerdefinierte Beispielbilder verwendet.",
+            "openSettings": "Einstellungen öffnen"
         }
     },
     "help": {

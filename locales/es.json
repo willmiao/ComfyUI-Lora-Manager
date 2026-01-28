@@ -1165,7 +1165,11 @@
         "exampleImages": {
             "opened": "Carpeta de imágenes de ejemplo abierta",
             "openingFolder": "Abriendo carpeta de imágenes de ejemplo",
-            "failedToOpen": "Error al abrir carpeta de imágenes de ejemplo"
+            "failedToOpen": "Error al abrir carpeta de imágenes de ejemplo",
+            "setupRequired": "Almacenamiento de imágenes de ejemplo",
+            "setupDescription": "Para agregar imágenes de ejemplo personalizadas, primero necesita establecer una ubicación de descarga.",
+            "setupUsage": "Esta ruta se utiliza tanto para imágenes de ejemplo descargadas como personalizadas.",
+            "openSettings": "Abrir configuración"
         }
     },
     "help": {

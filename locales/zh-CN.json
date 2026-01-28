@@ -1165,7 +1165,11 @@
         "exampleImages": {
             "opened": "示例图片文件夹已打开",
             "openingFolder": "正在打开示例图片文件夹",
-            "failedToOpen": "打开示例图片文件夹失败"
+            "failedToOpen": "打开示例图片文件夹失败",
+            "setupRequired": "示例图片存储",
+            "setupDescription": "要添加自定义示例图片，您需要先设置下载位置。",
+            "setupUsage": "此路径用于存储下载的示例图片和自定义图片。",
+            "openSettings": "打开设置"
         }
     },
     "help": {

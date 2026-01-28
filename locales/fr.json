@@ -1165,7 +1165,11 @@
         "exampleImages": {
             "opened": "Dossier d'images d'exemple ouvert",
             "openingFolder": "Ouverture du dossier d'images d'exemple",
-            "failedToOpen": "Échec de l'ouverture du dossier d'images d'exemple"
+            "failedToOpen": "Échec de l'ouverture du dossier d'images d'exemple",
+            "setupRequired": "Stockage d'images d'exemple",
+            "setupDescription": "Pour ajouter des images d'exemple personnalisées, vous devez d'abord définir un emplacement de téléchargement.",
+            "setupUsage": "Ce chemin est utilisé pour les images d'exemple téléchargées et personnalisées.",
+            "openSettings": "Ouvrir les paramètres"
         }
     },
     "help": {

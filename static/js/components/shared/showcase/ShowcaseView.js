@@ -4,6 +4,8 @@
  */
 import { showToast } from '../../../utils/uiHelpers.js';
 import { state } from '../../../state/index.js';
+import { modalManager } from '../../../managers/ModalManager.js';
+import { translate } from '../../../utils/i18nHelpers.js';
 import { NSFW_LEVELS } from '../../../utils/constants.js';
 import { 
     initLazyLoading,
@@ -275,6 +277,40 @@ function findLocalFile(img, index, exampleFiles) {
  * @returns {string} HTML content for import interface
  */
 function renderImportInterface(isEmpty) {
+    // Check if example images path is configured
+    const exampleImagesPath = state.global.settings.example_images_path;
+    const isPathConfigured = exampleImagesPath && exampleImagesPath.trim() !== '';
+    
+    // If path is not configured, show setup guidance
+    if (!isPathConfigured) {
+        const title = translate('uiHelpers.exampleImages.setupRequired', {}, 'Example Images Storage');
+        const description = translate('uiHelpers.exampleImages.setupDescription', {}, 'To add custom example images, you need to set a download location first.');
+        const usage = translate('uiHelpers.exampleImages.setupUsage', {}, 'This path is used for both downloaded and custom example images.');
+        const openSettings = translate('uiHelpers.exampleImages.openSettings', {}, 'Open Settings');
+        
+        return `
+            <div class="example-import-area ${isEmpty ? 'empty' : ''}">
+                <div class="import-container import-container--needs-setup" id="exampleImportContainer">
+                    <div class="import-setup-guidance">
+                        <div class="setup-icon">
+                            <i class="fas fa-folder-plus"></i>
+                        </div>
+                        <h3>${title}</h3>
+                        <p class="setup-description">
+                            ${description}
+                        </p>
+                        <p class="setup-usage">
+                            ${usage}
+                        </p>
+                        <button class="select-files-btn setup-settings-btn" id="openExampleSettingsBtn">
+                            <i class="fas fa-cog"></i> ${openSettings}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
     return `
         <div class="example-import-area ${isEmpty ? 'empty' : ''}">
             <div class="import-container" id="exampleImportContainer">
@@ -301,6 +337,33 @@ function renderImportInterface(isEmpty) {
 }
 
 /**
+ * Open settings modal and scroll to example images section
+ */
+function openSettingsForExampleImages() {
+    modalManager.showModal('settingsModal');
+    
+    // Wait for modal to be visible, then scroll to example images section
+    setTimeout(() => {
+        const exampleImagesInput = document.getElementById('exampleImagesPath');
+        if (exampleImagesInput) {
+            // Find the parent settings-section
+            const section = exampleImagesInput.closest('.settings-section');
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Add a brief highlight effect
+                section.style.transition = 'background-color 0.3s ease';
+                section.style.backgroundColor = 'rgba(66, 153, 225, 0.1)';
+                setTimeout(() => {
+                    section.style.backgroundColor = '';
+                }, 1500);
+            }
+            // Focus the input
+            exampleImagesInput.focus();
+        }
+    }, 100);
+}
+
+/**
  * Initialize the example import functionality
  * @param {string} modelHash - The SHA256 hash of the model
  * @param {Element} container - The container element for the import area
@@ -311,6 +374,14 @@ export function initExampleImport(modelHash, container) {
     const importContainer = container.querySelector('#exampleImportContainer');
     const fileInput = container.querySelector('#exampleFilesInput');
     const selectFilesBtn = container.querySelector('#selectExampleFilesBtn');
+    const openSettingsBtn = container.querySelector('#openExampleSettingsBtn');
+    
+    // Set up "Open Settings" button for setup guidance state
+    if (openSettingsBtn) {
+        openSettingsBtn.addEventListener('click', () => {
+            openSettingsForExampleImages();
+        });
+    }
     
     // Set up file selection button
     if (selectFilesBtn) {

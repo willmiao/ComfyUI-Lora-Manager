@@ -1165,7 +1165,11 @@
         "exampleImages": {
             "opened": "Example images folder opened",
             "openingFolder": "Opening example images folder",
-            "failedToOpen": "Failed to open example images folder"
+            "failedToOpen": "Failed to open example images folder",
+            "setupRequired": "Example Images Storage",
+            "setupDescription": "To add custom example images, you need to set a download location first.",
+            "setupUsage": "This path is used for both downloaded and custom example images.",
+            "openSettings": "Open Settings"
         }
     },
     "help": {

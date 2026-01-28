@@ -482,3 +482,75 @@
 [data-theme="dark"] .import-container {
   background: rgba(255, 255, 255, 0.03);
 }
+
+/* Setup Guidance State - When example images path is not configured */
+.import-container--needs-setup {
+  cursor: default;
+  border-style: solid;
+  border-color: var(--border-color);
+  background: var(--lora-surface);
+}
+
+.import-container--needs-setup:hover {
+  border-color: var(--border-color);
+  transform: none;
+}
+
+.import-setup-guidance {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2);
+  text-align: center;
+}
+
+.setup-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-1);
+}
+
+.setup-icon i {
+  font-size: 1.75rem;
+  color: var(--lora-accent);
+}
+
+.import-setup-guidance h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.setup-description {
+  margin: 0;
+  color: var(--text-color);
+  opacity: 0.9;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+.setup-usage {
+  margin: 0;
+  font-size: 0.85em;
+  color: var(--text-color);
+  opacity: 0.6;
+  font-style: italic;
+}
+
+.setup-settings-btn {
+  margin-top: var(--space-2);
+  background: var(--lora-accent) !important;
+  color: var(--lora-text) !important;
+}
+
+.setup-settings-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}

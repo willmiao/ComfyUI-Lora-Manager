@@ -1165,7 +1165,11 @@
         "exampleImages": {
             "opened": "例画像フォルダが開かれました",
             "openingFolder": "例画像フォルダを開いています",
-            "failedToOpen": "例画像フォルダを開くのに失敗しました"
+            "failedToOpen": "例画像フォルダを開くのに失敗しました",
+            "setupRequired": "例画像ストレージ",
+            "setupDescription": "カスタム例画像を追加するには、まずダウンロード場所を設定する必要があります。",
+            "setupUsage": "このパスは、ダウンロードした例画像とカスタム画像の両方に使用されます。",
+            "openSettings": "設定を開く"
         }
     },
     "help": {
