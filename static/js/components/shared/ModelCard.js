@@ -597,7 +597,7 @@ export function createModelCard(model, modelType) {
                     </span>
                     ${hasUpdateAvailable ? `
                         <span class="model-update-badge" title="${updateBadgeTooltip}">
-                            ${updateBadgeLabel}
+                            <i class="fas fa-arrow-up"></i>
                         </span>
                     ` : ''}
                 </div>
