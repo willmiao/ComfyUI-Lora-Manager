@@ -5,7 +5,7 @@ import logging
 import os
 import time
 
-from ..utils.constants import VALID_LORA_TYPES
+from ..utils.constants import VALID_LORA_SUB_TYPES, VALID_CHECKPOINT_SUB_TYPES
 from ..utils.models import BaseModelMetadata
 from ..utils.metadata_manager import MetadataManager
 from ..utils.usage_stats import UsageStats
@@ -15,8 +15,8 @@ from .model_query import (
     ModelFilterSet,
     SearchStrategy,
     SettingsProvider,
-    normalize_civitai_model_type,
-    resolve_civitai_model_type,
+    normalize_sub_type,
+    resolve_sub_type,
 )
 from .settings_manager import get_settings_manager
 
@@ -568,16 +568,21 @@ class BaseModelService(ABC):
         return await self.scanner.get_base_models(limit)
 
     async def get_model_types(self, limit: int = 20) -> List[Dict[str, Any]]:
-        """Get counts of normalized CivitAI model types present in the cache."""
+        """Get counts of sub-types present in the cache."""
         cache = await self.scanner.get_cached_data()
 
         type_counts: Dict[str, int] = {}
         for entry in cache.raw_data:
-            normalized_type = normalize_civitai_model_type(
-                resolve_civitai_model_type(entry)
-            )
-            if not normalized_type or normalized_type not in VALID_LORA_TYPES:
+            normalized_type = normalize_sub_type(resolve_sub_type(entry))
+            if not normalized_type:
                 continue
+            
+            # Filter by valid sub-types based on scanner type
+            if self.model_type == "lora" and normalized_type not in VALID_LORA_SUB_TYPES:
+                continue
+            if self.model_type == "checkpoint" and normalized_type not in VALID_CHECKPOINT_SUB_TYPES:
+                continue
+            
             type_counts[normalized_type] = type_counts.get(normalized_type, 0) + 1
 
         sorted_types = sorted(

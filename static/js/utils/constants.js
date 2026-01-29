@@ -57,11 +57,21 @@ export const BASE_MODELS = {
     UNKNOWN: "Other"
 };
 
-export const MODEL_TYPE_DISPLAY_NAMES = {
+// Model sub-type display names (new canonical field: sub_type)
+export const MODEL_SUBTYPE_DISPLAY_NAMES = {
+    // LoRA sub-types
     lora: "LoRA",
     locon: "LyCORIS",
     dora: "DoRA",
+    // Checkpoint sub-types
+    checkpoint: "Checkpoint",
+    diffusion_model: "Diffusion Model",
+    // Embedding sub-types
+    embedding: "Embedding",
 };
+
+// Backward compatibility alias
+export const MODEL_TYPE_DISPLAY_NAMES = MODEL_SUBTYPE_DISPLAY_NAMES;
 
 export const BASE_MODEL_ABBREVIATIONS = {
     // Stable Diffusion 1.x models

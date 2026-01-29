@@ -173,14 +173,14 @@ class LoraMetadata(BaseModelMetadata):
 @dataclass
 class CheckpointMetadata(BaseModelMetadata):
     """Represents the metadata structure for a Checkpoint model"""
-    model_type: str = "checkpoint"  # Model type (checkpoint, diffusion_model, etc.)
+    sub_type: str = "checkpoint"  # Model sub-type (checkpoint, diffusion_model, etc.)
 
     @classmethod
     def from_civitai_info(cls, version_info: Dict, file_info: Dict, save_path: str) -> 'CheckpointMetadata':
         """Create CheckpointMetadata instance from Civitai version info"""
         file_name = file_info['name']
         base_model = determine_base_model(version_info.get('baseModel', ''))
-        model_type = version_info.get('type', 'checkpoint')
+        sub_type = version_info.get('type', 'checkpoint')
         
         # Extract tags and description if available
         tags = []
@@ -203,7 +203,7 @@ class CheckpointMetadata(BaseModelMetadata):
             preview_nsfw_level=0,
             from_civitai=True,
             civitai=version_info,
-            model_type=model_type,
+            sub_type=sub_type,
             tags=tags,
             modelDescription=description
         )
@@ -211,14 +211,14 @@ class CheckpointMetadata(BaseModelMetadata):
 @dataclass
 class EmbeddingMetadata(BaseModelMetadata):
     """Represents the metadata structure for an Embedding model"""
-    model_type: str = "embedding"  # Model type (embedding, textual_inversion, etc.)
+    sub_type: str = "embedding"
 
     @classmethod
     def from_civitai_info(cls, version_info: Dict, file_info: Dict, save_path: str) -> 'EmbeddingMetadata':
         """Create EmbeddingMetadata instance from Civitai version info"""
         file_name = file_info['name']
         base_model = determine_base_model(version_info.get('baseModel', ''))
-        model_type = version_info.get('type', 'embedding')
+        sub_type = version_info.get('type', 'embedding')
         
         # Extract tags and description if available
         tags = []
@@ -241,7 +241,7 @@ class EmbeddingMetadata(BaseModelMetadata):
             preview_nsfw_level=0,
             from_civitai=True,
             civitai=version_info,
-            model_type=model_type,
+            sub_type=sub_type,
             tags=tags,
             modelDescription=description
         )

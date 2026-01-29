@@ -21,7 +21,8 @@ class CheckpointScanner(ModelScanner):
             hash_index=ModelHashIndex()
         )
 
-    def _resolve_model_type(self, root_path: Optional[str]) -> Optional[str]:
+    def _resolve_sub_type(self, root_path: Optional[str]) -> Optional[str]:
+        """Resolve the sub-type based on the root path."""
         if not root_path:
             return None
 
@@ -34,18 +35,28 @@ class CheckpointScanner(ModelScanner):
         return None
 
     def adjust_metadata(self, metadata, file_path, root_path):
-        if hasattr(metadata, "model_type"):
-            model_type = self._resolve_model_type(root_path)
-            if model_type:
-                metadata.model_type = model_type
+        """Adjust metadata during scanning to set sub_type."""
+        # Support both old 'model_type' and new 'sub_type' for backward compatibility
+        if hasattr(metadata, "sub_type"):
+            sub_type = self._resolve_sub_type(root_path)
+            if sub_type:
+                metadata.sub_type = sub_type
+        elif hasattr(metadata, "model_type"):
+            # Backward compatibility: fallback to model_type if sub_type not available
+            sub_type = self._resolve_sub_type(root_path)
+            if sub_type:
+                metadata.model_type = sub_type
         return metadata
 
     def adjust_cached_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
-        model_type = self._resolve_model_type(
+        """Adjust entries loaded from the persisted cache to ensure sub_type is set."""
+        sub_type = self._resolve_sub_type(
             self._find_root_for_file(entry.get("file_path"))
         )
-        if model_type:
-            entry["model_type"] = model_type
+        if sub_type:
+            entry["sub_type"] = sub_type
+            # Also set model_type for backward compatibility during transition
+            entry["model_type"] = sub_type
         return entry
 
     def get_model_roots(self) -> List[str]:

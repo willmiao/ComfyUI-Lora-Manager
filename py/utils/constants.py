@@ -45,8 +45,13 @@ SUPPORTED_MEDIA_EXTENSIONS = {
     "videos": [".mp4", ".webm"],
 }
 
-# Valid Lora types
-VALID_LORA_TYPES = ["lora", "locon", "dora"]
+# Valid sub-types for each scanner type
+VALID_LORA_SUB_TYPES = ["lora", "locon", "dora"]
+VALID_CHECKPOINT_SUB_TYPES = ["checkpoint", "diffusion_model"]
+VALID_EMBEDDING_SUB_TYPES = ["embedding"]
+
+# Backward compatibility alias
+VALID_LORA_TYPES = VALID_LORA_SUB_TYPES
 
 # Supported Civitai model types for user model queries (case-insensitive)
 CIVITAI_USER_MODEL_TYPES = [

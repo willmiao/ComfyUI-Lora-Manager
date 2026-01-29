@@ -33,30 +33,52 @@ def _coerce_to_str(value: Any) -> Optional[str]:
     return candidate if candidate else None
 
 
-def normalize_civitai_model_type(value: Any) -> Optional[str]:
-    """Return a lowercase string suitable for comparisons."""
+def normalize_sub_type(value: Any) -> Optional[str]:
+    """Return a lowercase string suitable for sub_type comparisons."""
     candidate = _coerce_to_str(value)
     return candidate.lower() if candidate else None
 
 
-def resolve_civitai_model_type(entry: Mapping[str, Any]) -> str:
-    """Extract the model type from CivitAI metadata, defaulting to LORA."""
+# Backward compatibility alias
+normalize_civitai_model_type = normalize_sub_type
+
+
+def resolve_sub_type(entry: Mapping[str, Any]) -> str:
+    """Extract the sub-type from metadata, checking multiple sources.
+    
+    Priority:
+    1. entry['sub_type'] - new canonical field
+    2. entry['model_type'] - backward compatibility
+    3. civitai.model.type - CivitAI API data
+    4. DEFAULT_CIVITAI_MODEL_TYPE - fallback
+    """
     if not isinstance(entry, Mapping):
         return DEFAULT_CIVITAI_MODEL_TYPE
 
-    civitai = entry.get("civitai")
-    if isinstance(civitai, Mapping):
-        civitai_model = civitai.get("model")
-        if isinstance(civitai_model, Mapping):
-            model_type = _coerce_to_str(civitai_model.get("type"))
-            if model_type:
-                return model_type
+    # Priority 1: Check new canonical field 'sub_type'
+    sub_type = _coerce_to_str(entry.get("sub_type"))
+    if sub_type:
+        return sub_type
 
+    # Priority 2: Backward compatibility - check 'model_type' field
     model_type = _coerce_to_str(entry.get("model_type"))
     if model_type:
         return model_type
 
+    # Priority 3: Extract from CivitAI metadata
+    civitai = entry.get("civitai")
+    if isinstance(civitai, Mapping):
+        civitai_model = civitai.get("model")
+        if isinstance(civitai_model, Mapping):
+            civitai_type = _coerce_to_str(civitai_model.get("type"))
+            if civitai_type:
+                return civitai_type
+
     return DEFAULT_CIVITAI_MODEL_TYPE
+
+
+# Backward compatibility alias
+resolve_civitai_model_type = resolve_sub_type
 
 
 class SettingsProvider(Protocol):
@@ -313,7 +335,7 @@ class ModelFilterSet:
             normalized_model_types = {
                 model_type
                 for model_type in (
-                    normalize_civitai_model_type(value) for value in model_types
+                    normalize_sub_type(value) for value in model_types
                 )
                 if model_type
             }
@@ -321,7 +343,7 @@ class ModelFilterSet:
                 items = [
                     item
                     for item in items
-                    if normalize_civitai_model_type(resolve_civitai_model_type(item))
+                    if normalize_sub_type(resolve_sub_type(item))
                     in normalized_model_types
                 ]
             model_types_duration = time.perf_counter() - t0

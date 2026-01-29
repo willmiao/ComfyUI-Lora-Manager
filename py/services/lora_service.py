@@ -23,6 +23,9 @@ class LoraService(BaseModelService):
 
     async def format_response(self, lora_data: Dict) -> Dict:
         """Format LoRA data for API response"""
+        # Get sub_type from cache entry (new field) or fallback to model_type (old field)
+        sub_type = lora_data.get("sub_type") or lora_data.get("model_type", "lora")
+        
         return {
             "model_name": lora_data["model_name"],
             "file_name": lora_data["file_name"],
@@ -43,6 +46,8 @@ class LoraService(BaseModelService):
             "notes": lora_data.get("notes", ""),
             "favorite": lora_data.get("favorite", False),
             "update_available": bool(lora_data.get("update_available", False)),
+            "sub_type": sub_type,  # New canonical field
+            "model_type": sub_type,  # Backward compatibility
             "civitai": self.filter_civitai_data(
                 lora_data.get("civitai", {}), minimal=True
             ),
