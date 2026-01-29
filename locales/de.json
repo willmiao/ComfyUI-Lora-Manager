@@ -9,6 +9,7 @@
             "back": "Zurück",
             "next": "Weiter",
             "backToTop": "Nach oben",
+            "add": "Hinzufügen",
             "settings": "Einstellungen",
             "help": "Hilfe"
         },
@@ -204,6 +205,19 @@
         },
         "filter": {
             "title": "Modelle filtern",
+            "presets": "Voreinstellungen",
+            "savePreset": "Aktive Filter als neue Voreinstellung speichern.",
+            "savePresetDisabledActive": "Speichern nicht möglich: Eine Voreinstellung ist bereits aktiv. Ändern Sie die Filter, um eine neue Voreinstellung zu speichern",
+            "savePresetDisabledNoFilters": "Wählen Sie zuerst Filter aus, um als Voreinstellung zu speichern",
+            "savePresetPrompt": "Voreinstellungsname eingeben:",
+            "presetClickTooltip": "Voreinstellung \"{name}\" anwenden",
+            "presetDeleteTooltip": "Voreinstellung löschen",
+            "presetDeleteConfirm": "Voreinstellung \"{name}\" löschen?",
+            "presetDeleteConfirmClick": "Zum Bestätigen erneut klicken",
+            "presetOverwriteConfirm": "Voreinstellung \"{name}\" existiert bereits. Überschreiben?",
+            "presetNamePlaceholder": "Voreinstellungsname...",
+            "restoreDefaults": "Standard wiederherstellen",
+            "noPresets": "Noch keine Voreinstellungen gespeichert. Filter unten auswählen und auf + klicken zum Speichern",
             "baseModel": "Basis-Modell",
             "modelTags": "Tags (Top 20)",
             "modelTypes": "Model Types",
@@ -1419,7 +1433,26 @@
         "filters": {
             "applied": "{message}",
             "cleared": "Filter gelöscht",
-            "noCustomFilterToClear": "Kein benutzerdefinierter Filter zum Löschen"
+            "noCustomFilterToClear": "Kein benutzerdefinierter Filter zum Löschen",
+            "noActiveFilters": "Keine aktiven Filter zum Speichern"
+        },
+        "presets": {
+            "created": "Voreinstellung \"{name}\" erstellt",
+            "deleted": "Voreinstellung \"{name}\" gelöscht",
+            "applied": "Voreinstellung \"{name}\" angewendet",
+            "overwritten": "Voreinstellung \"{name}\" überschrieben",
+            "restored": "Standard-Voreinstellungen wiederhergestellt"
+        },
+        "error": {
+            "presetNameEmpty": "Voreinstellungsname darf nicht leer sein",
+            "presetNameTooLong": "Voreinstellungsname darf maximal {max} Zeichen haben",
+            "presetNameInvalidChars": "Voreinstellungsname enthält ungültige Zeichen",
+            "presetNameExists": "Eine Voreinstellung mit diesem Namen existiert bereits",
+            "maxPresetsReached": "Maximal {max} Voreinstellungen erlaubt. Löschen Sie eine, um weitere hinzuzufügen.",
+            "presetNotFound": "Voreinstellung nicht gefunden",
+            "invalidPreset": "Ungültige Voreinstellungsdaten",
+            "deletePresetFailed": "Fehler beim Löschen der Voreinstellung",
+            "applyPresetFailed": "Fehler beim Anwenden der Voreinstellung"
         },
         "downloads": {
             "imagesCompleted": "Beispielbilder {action} abgeschlossen",

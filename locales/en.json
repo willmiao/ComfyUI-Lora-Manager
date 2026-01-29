@@ -10,7 +10,8 @@
             "next": "Next",
             "backToTop": "Back to top",
             "settings": "Settings",
-            "help": "Help"
+            "help": "Help",
+            "add": "Add"
         },
         "status": {
             "loading": "Loading...",
@@ -205,7 +206,17 @@
         "filter": {
             "title": "Filter Models",
             "presets": "Presets",
-            "savePreset": "Save current active filters as a new preset (first select filters below, then click here)",
+            "savePreset": "Save current active filters as a new preset.",
+            "savePresetDisabledActive": "Cannot save: A preset is already active. Modify filters to save new preset.",
+            "savePresetDisabledNoFilters": "Select filters first to save as preset",
+            "savePresetPrompt": "Enter preset name:",
+            "presetClickTooltip": "Click to apply preset \"{name}\"",
+            "presetDeleteTooltip": "Delete preset",
+            "presetDeleteConfirm": "Delete preset \"{name}\"?",
+            "presetDeleteConfirmClick": "Click again to confirm",
+            "presetOverwriteConfirm": "Preset \"{name}\" already exists. Overwrite?",
+            "presetNamePlaceholder": "Preset name...",
+            "restoreDefaults": "Restore defaults",
             "noPresets": "No presets saved yet. Select filters below and click + to save",
             "baseModel": "Base Model",
             "modelTags": "Tags (Top 20)",
@@ -1422,7 +1433,26 @@
         "filters": {
             "applied": "{message}",
             "cleared": "Filters cleared",
-            "noCustomFilterToClear": "No custom filter to clear"
+            "noCustomFilterToClear": "No custom filter to clear",
+            "noActiveFilters": "No active filters to save"
+        },
+        "presets": {
+            "created": "Preset \"{name}\" created",
+            "deleted": "Preset \"{name}\" deleted",
+            "applied": "Preset \"{name}\" applied",
+            "overwritten": "Preset \"{name}\" overwritten",
+            "restored": "Default presets restored"
+        },
+        "error": {
+            "presetNameEmpty": "Preset name cannot be empty",
+            "presetNameTooLong": "Preset name must be {max} characters or less",
+            "presetNameInvalidChars": "Preset name contains invalid characters",
+            "presetNameExists": "A preset with this name already exists",
+            "maxPresetsReached": "Maximum {max} presets allowed. Delete one to add more.",
+            "presetNotFound": "Preset not found",
+            "invalidPreset": "Invalid preset data",
+            "deletePresetFailed": "Failed to delete preset",
+            "applyPresetFailed": "Failed to apply preset"
         },
         "downloads": {
             "imagesCompleted": "Example images {action} completed",

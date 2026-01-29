@@ -552,26 +552,112 @@
 }
 
 .add-preset-btn {
-    background-color: transparent !important;
-    border: 1px dashed var(--border-color) !important;
+    background-color: transparent;
+    border: 1px dashed var(--border-color);
     color: var(--text-color);
-    opacity: 0.7;
+    opacity: 0.85;
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 4px 10px;
     font-size: 14px;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: all 0.25s ease;
 }
 
-.add-preset-btn:hover {
+/* Enabled state - visual cue that button is actionable */
+.add-preset-btn:not(.disabled) {
+    border-color: var(--lora-accent);
+    border-style: solid;
+    background-color: rgba(66, 153, 225, 0.08);
+}
+
+.add-preset-btn:hover:not(.disabled) {
     opacity: 1;
-    border-color: var(--lora-accent) !important;
+    background-color: rgba(66, 153, 225, 0.15);
     color: var(--lora-accent);
-    background-color: var(--lora-surface-hover) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(66, 153, 225, 0.2);
+}
+
+/* Disabled state - clear "unavailable" visual language */
+.add-preset-btn.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    background-color: rgba(128, 128, 128, 0.05);
+    border-style: dashed;
+    border-color: var(--border-color);
+    color: var(--text-muted);
 }
 
 .add-preset-btn i {
     font-size: 12px;
+    transition: transform 0.2s ease;
+}
+
+/* Inline preset naming input */
+.preset-inline-input-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px;
+    background-color: var(--lora-surface);
+    border: 1px solid var(--lora-accent);
+    border-radius: var(--border-radius-sm);
+}
+
+.preset-inline-input {
+    width: 120px;
+    padding: 4px 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 13px;
+    outline: none;
+}
+
+.preset-inline-input::placeholder {
+    color: var(--text-color);
+    opacity: 0.5;
+}
+
+.preset-inline-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    padding: 4px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: color 0.2s ease;
+    opacity: 0.7;
+}
+
+.preset-inline-btn:hover {
+    opacity: 1;
+}
+
+.preset-inline-btn.save:hover {
+    color: var(--lora-accent);
+}
+
+.preset-inline-btn.cancel:hover {
+    color: var(--lora-error, #e74c3c);
+}
+
+/* Two-step delete confirmation */
+.preset-delete-btn.confirm {
+    color: var(--lora-accent);
+    opacity: 1;
+    animation: pulse-confirm 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-confirm {
+    from { opacity: 0.7; }
+    to { opacity: 1; }
 }
 
 .no-presets {

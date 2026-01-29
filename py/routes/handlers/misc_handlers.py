@@ -255,6 +255,7 @@ class SettingsHandler:
         "model_name_display",
         "update_flag_strategy",
         "auto_organize_exclusions",
+        "filter_presets",
     )
 
     _PROXY_KEYS = {

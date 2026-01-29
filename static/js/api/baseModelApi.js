@@ -59,6 +59,18 @@ export class BaseModelApiClient {
                 sort_by: pageState.sortBy
             }, pageState);
 
+            // If params is null, it means wildcard resolved to no matches - return empty results
+            if (params === null) {
+                return {
+                    items: [],
+                    totalItems: 0,
+                    totalPages: 0,
+                    currentPage: page,
+                    hasMore: false,
+                    folders: []
+                };
+            }
+
             const response = await fetch(`${this.apiConfig.endpoints.list}?${params}`);
             if (!response.ok) {
                 throw new Error(`Failed to fetch ${this.apiConfig.config.displayName}s: ${response.statusText}`);
@@ -868,6 +880,13 @@ export class BaseModelApiClient {
             }
 
             if (pageState.filters.baseModel && pageState.filters.baseModel.length > 0) {
+                // Check for empty wildcard marker - if present, no models should match
+                const EMPTY_WILDCARD_MARKER = '__EMPTY_WILDCARD_RESULT__';
+                if (pageState.filters.baseModel.length === 1 && 
+                    pageState.filters.baseModel[0] === EMPTY_WILDCARD_MARKER) {
+                    // Wildcard resolved to no matches - return empty results
+                    return null;  // Signal to return empty results
+                }
                 pageState.filters.baseModel.forEach(model => {
                     params.append('base_model', model);
                 });

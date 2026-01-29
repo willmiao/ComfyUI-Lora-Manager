@@ -10,7 +10,8 @@
             "next": "다음",
             "backToTop": "맨 위로",
             "settings": "설정",
-            "help": "도움말"
+            "help": "도움말",
+            "add": "추가"
         },
         "status": {
             "loading": "로딩 중...",
@@ -204,6 +205,19 @@
         },
         "filter": {
             "title": "모델 필터",
+            "presets": "프리셋",
+            "savePreset": "현재 활성 필터를 새 프리셋으로 저장.",
+            "savePresetDisabledActive": "저장할 수 없음: 프리셋이 이미 활성화되어 있습니다. 필터를 수정한 후 새 프리셋을 저장하세요",
+            "savePresetDisabledNoFilters": "먼저 필터를 선택한 후 프리셋으로 저장",
+            "savePresetPrompt": "프리셋 이름 입력:",
+            "presetClickTooltip": "프리셋 \"{name}\" 적용하려면 클릭",
+            "presetDeleteTooltip": "프리셋 삭제",
+            "presetDeleteConfirm": "프리셋 \"{name}\" 삭제하시겠습니까?",
+            "presetDeleteConfirmClick": "다시 클릭하여 확인",
+            "presetOverwriteConfirm": "프리셋 \"{name}\"이(가) 이미 존재합니다. 덮어쓰시겠습니까?",
+            "presetNamePlaceholder": "프리셋 이름...",
+            "restoreDefaults": "기본값 복원",
+            "noPresets": "저장된 프리셋이 없습니다. 아래 필터를 선택하고 +를 클릭하여 저장",
             "baseModel": "베이스 모델",
             "modelTags": "태그 (상위 20개)",
             "modelTypes": "Model Types",
@@ -1419,7 +1433,26 @@
         "filters": {
             "applied": "{message}",
             "cleared": "필터가 지워졌습니다",
-            "noCustomFilterToClear": "지울 사용자 정의 필터가 없습니다"
+            "noCustomFilterToClear": "지울 사용자 정의 필터가 없습니다",
+            "noActiveFilters": "저장할 활성 필터가 없습니다"
+        },
+        "presets": {
+            "created": "프리셋 \"{name}\" 생성됨",
+            "deleted": "프리셋 \"{name}\" 삭제됨",
+            "applied": "프리셋 \"{name}\" 적용됨",
+            "overwritten": "프리셋 \"{name}\" 덮어쓰기 완료",
+            "restored": "기본 프리셋 복원 완료"
+        },
+        "error": {
+            "presetNameEmpty": "프리셋 이름을 입력하세요",
+            "presetNameTooLong": "프리셋 이름은 {max}자 이하여야 합니다",
+            "presetNameInvalidChars": "프리셋 이름에 유효하지 않은 문자가 포함되어 있습니다",
+            "presetNameExists": "동일한 이름의 프리셋이 이미 존재합니다",
+            "maxPresetsReached": "최대 {max}개의 프리셋만 허용됩니다. 더 추가하려면 기존 것을 삭제하세요.",
+            "presetNotFound": "프리셋을 찾을 수 없습니다",
+            "invalidPreset": "잘못된 프리셋 데이터입니다",
+            "deletePresetFailed": "프리셋 삭제에 실패했습니다",
+            "applyPresetFailed": "프리셋 적용에 실패했습니다"
         },
         "downloads": {
             "imagesCompleted": "예시 이미지 {action}이(가) 완료되었습니다",

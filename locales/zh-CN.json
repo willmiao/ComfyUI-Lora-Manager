@@ -10,7 +10,8 @@
             "next": "下一步",
             "backToTop": "返回顶部",
             "settings": "设置",
-            "help": "帮助"
+            "help": "帮助",
+            "add": "添加"
         },
         "status": {
             "loading": "加载中...",
@@ -204,6 +205,19 @@
         },
         "filter": {
             "title": "筛选模型",
+            "presets": "预设",
+            "savePreset": "将当前激活的筛选器保存为新预设。",
+            "savePresetDisabledActive": "无法保存：已有预设处于激活状态。修改筛选器后可保存新预设",
+            "savePresetDisabledNoFilters": "先选择筛选器，然后保存为预设",
+            "savePresetPrompt": "输入预设名称：",
+            "presetClickTooltip": "点击应用预设 \"{name}\"",
+            "presetDeleteTooltip": "删除预设",
+            "presetDeleteConfirm": "删除预设 \"{name}\"？",
+            "presetDeleteConfirmClick": "再次点击确认",
+            "presetOverwriteConfirm": "预设 \"{name}\" 已存在。是否覆盖？",
+            "presetNamePlaceholder": "预设名称...",
+            "restoreDefaults": "恢复默认",
+            "noPresets": "尚未保存预设。选择下方筛选器并点击 + 保存",
             "baseModel": "基础模型",
             "modelTags": "标签（前20）",
             "modelTypes": "Model Types",
@@ -1419,7 +1433,26 @@
         "filters": {
             "applied": "{message}",
             "cleared": "筛选已清除",
-            "noCustomFilterToClear": "没有自定义筛选可清除"
+            "noCustomFilterToClear": "没有自定义筛选可清除",
+            "noActiveFilters": "没有可保存的激活筛选"
+        },
+        "presets": {
+            "created": "预设 \"{name}\" 已创建",
+            "deleted": "预设 \"{name}\" 已删除",
+            "applied": "预设 \"{name}\" 已应用",
+            "overwritten": "预设 \"{name}\" 已覆盖",
+            "restored": "默认预设已恢复"
+        },
+        "error": {
+            "presetNameEmpty": "预设名称不能为空",
+            "presetNameTooLong": "预设名称不能超过 {max} 个字符",
+            "presetNameInvalidChars": "预设名称包含无效字符",
+            "presetNameExists": "已存在同名预设",
+            "maxPresetsReached": "最多允许 {max} 个预设。删除一个以添加更多。",
+            "presetNotFound": "预设未找到",
+            "invalidPreset": "无效的预设数据",
+            "deletePresetFailed": "删除预设失败",
+            "applyPresetFailed": "应用预设失败"
         },
         "downloads": {
             "imagesCompleted": "示例图片{action}完成",

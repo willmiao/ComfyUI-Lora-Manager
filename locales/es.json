@@ -10,7 +10,8 @@
             "next": "Siguiente",
             "backToTop": "Volver arriba",
             "settings": "Configuración",
-            "help": "Ayuda"
+            "help": "Ayuda",
+            "add": "Añadir"
         },
         "status": {
             "loading": "Cargando...",
@@ -204,6 +205,19 @@
         },
         "filter": {
             "title": "Filtrar modelos",
+            "presets": "Preajustes",
+            "savePreset": "Guardar filtros activos como nuevo preajuste.",
+            "savePresetDisabledActive": "No se puede guardar: Ya hay un preajuste activo. Modifique los filtros para guardar un nuevo preajuste",
+            "savePresetDisabledNoFilters": "Seleccione filtros primero para guardar como preajuste",
+            "savePresetPrompt": "Ingrese el nombre del preajuste:",
+            "presetClickTooltip": "Hacer clic para aplicar preajuste \"{name}\"",
+            "presetDeleteTooltip": "Eliminar preajuste",
+            "presetDeleteConfirm": "¿Eliminar preajuste \"{name}\"?",
+            "presetDeleteConfirmClick": "Haga clic de nuevo para confirmar",
+            "presetOverwriteConfirm": "El preset \"{name}\" ya existe. ¿Sobrescribir?",
+            "presetNamePlaceholder": "Nombre del preajuste...",
+            "restoreDefaults": "Restaurar predeterminados",
+            "noPresets": "Aún no hay preajustes guardados. Seleccione filtros abajo y haga clic en + para guardar",
             "baseModel": "Modelo base",
             "modelTags": "Etiquetas (Top 20)",
             "modelTypes": "Model Types",
@@ -1419,7 +1433,26 @@
         "filters": {
             "applied": "{message}",
             "cleared": "Filtros limpiados",
-            "noCustomFilterToClear": "No hay filtro personalizado para limpiar"
+            "noCustomFilterToClear": "No hay filtro personalizado para limpiar",
+            "noActiveFilters": "No hay filtros activos para guardar"
+        },
+        "presets": {
+            "created": "Preajuste \"{name}\" creado",
+            "deleted": "Preajuste \"{name}\" eliminado",
+            "applied": "Preajuste \"{name}\" aplicado",
+            "overwritten": "Preset \"{name}\" sobrescrito",
+            "restored": "Presets predeterminados restaurados"
+        },
+        "error": {
+            "presetNameEmpty": "El nombre del preajuste no puede estar vacío",
+            "presetNameTooLong": "El nombre del preajuste debe tener {max} caracteres o menos",
+            "presetNameInvalidChars": "El nombre del preajuste contiene caracteres inválidos",
+            "presetNameExists": "Ya existe un preajuste con este nombre",
+            "maxPresetsReached": "Máximo {max} preajustes permitidos. Elimine uno para agregar más.",
+            "presetNotFound": "Preajuste no encontrado",
+            "invalidPreset": "Datos de preajuste inválidos",
+            "deletePresetFailed": "Error al eliminar el preajuste",
+            "applyPresetFailed": "Error al aplicar el preajuste"
         },
         "downloads": {
             "imagesCompleted": "Imágenes de ejemplo {action} completadas",

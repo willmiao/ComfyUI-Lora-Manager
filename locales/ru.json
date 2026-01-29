@@ -10,7 +10,8 @@
             "next": "Далее",
             "backToTop": "Наверх",
             "settings": "Настройки",
-            "help": "Справка"
+            "help": "Справка",
+            "add": "Добавить"
         },
         "status": {
             "loading": "Загрузка...",
@@ -204,6 +205,19 @@
         },
         "filter": {
             "title": "Фильтр моделей",
+            "presets": "Пресеты",
+            "savePreset": "Сохранить текущие активные фильтры как новый пресет.",
+            "savePresetDisabledActive": "Невозможно сохранить: Пресет уже активен. Измените фильтры, чтобы сохранить новый пресет",
+            "savePresetDisabledNoFilters": "Сначала выберите фильтры для сохранения как пресет",
+            "savePresetPrompt": "Введите имя пресета:",
+            "presetClickTooltip": "Нажмите чтобы применить пресет \"{name}\"",
+            "presetDeleteTooltip": "Удалить пресет",
+            "presetDeleteConfirm": "Удалить пресет \"{name}\"?",
+            "presetDeleteConfirmClick": "Нажмите еще раз для подтверждения",
+            "presetOverwriteConfirm": "Пресет \"{name}\" уже существует. Перезаписать?",
+            "presetNamePlaceholder": "Имя пресета...",
+            "restoreDefaults": "Восстановить по умолчанию",
+            "noPresets": "Пресеты еще не сохранены. Выберите фильтры ниже и нажмите + для сохранения",
             "baseModel": "Базовая модель",
             "modelTags": "Теги (Топ 20)",
             "modelTypes": "Model Types",
@@ -1419,7 +1433,26 @@
         "filters": {
             "applied": "{message}",
             "cleared": "Фильтры очищены",
-            "noCustomFilterToClear": "Нет пользовательского фильтра для очистки"
+            "noCustomFilterToClear": "Нет пользовательского фильтра для очистки",
+            "noActiveFilters": "Нет активных фильтров для сохранения"
+        },
+        "presets": {
+            "created": "Пресет \"{name}\" создан",
+            "deleted": "Пресет \"{name}\" удален",
+            "applied": "Пресет \"{name}\" применен",
+            "overwritten": "Пресет \"{name}\" перезаписан",
+            "restored": "Пресеты по умолчанию восстановлены"
+        },
+        "error": {
+            "presetNameEmpty": "Имя пресета не может быть пустым",
+            "presetNameTooLong": "Имя пресета должно содержать не более {max} символов",
+            "presetNameInvalidChars": "Имя пресета содержит недопустимые символы",
+            "presetNameExists": "Пресет с таким именем уже существует",
+            "maxPresetsReached": "Допустимо максимум {max} пресетов. Удалите один, чтобы добавить больше.",
+            "presetNotFound": "Пресет не найден",
+            "invalidPreset": "Недопустимые данные пресета",
+            "deletePresetFailed": "Не удалось удалить пресет",
+            "applyPresetFailed": "Не удалось применить пресет"
         },
         "downloads": {
             "imagesCompleted": "Примеры изображений {action} завершены",

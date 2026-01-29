@@ -10,7 +10,8 @@
             "next": "Suivant",
             "backToTop": "Retour en haut",
             "settings": "Paramètres",
-            "help": "Aide"
+            "help": "Aide",
+            "add": "Ajouter"
         },
         "status": {
             "loading": "Chargement...",
@@ -204,6 +205,19 @@
         },
         "filter": {
             "title": "Filtrer les modèles",
+            "presets": "Préréglages",
+            "savePreset": "Enregistrer les filtres actifs comme nouveau préréglage.",
+            "savePresetDisabledActive": "Impossible d'enregistrer : Un préréglage est déjà actif. Modifiez les filtres pour enregistrer un nouveau préréglage",
+            "savePresetDisabledNoFilters": "Sélectionnez d'abord des filtres à enregistrer comme préréglage",
+            "savePresetPrompt": "Entrez le nom du préréglage :",
+            "presetClickTooltip": "Cliquer pour appliquer le préréglage \"{name}\"",
+            "presetDeleteTooltip": "Supprimer le préréglage",
+            "presetDeleteConfirm": "Supprimer le préréglage \"{name}\" ?",
+            "presetDeleteConfirmClick": "Cliquez à nouveau pour confirmer",
+            "presetOverwriteConfirm": "Le préréglage \"{name}\" existe déjà. Remplacer?",
+            "presetNamePlaceholder": "Nom du préréglage...",
+            "restoreDefaults": "Restaurer les paramètres par défaut",
+            "noPresets": "Aucun préréglage enregistré. Sélectionnez des filtres ci-dessous et cliquez sur + pour enregistrer",
             "baseModel": "Modèle de base",
             "modelTags": "Tags (Top 20)",
             "modelTypes": "Model Types",
@@ -1419,7 +1433,26 @@
         "filters": {
             "applied": "{message}",
             "cleared": "Filtres effacés",
-            "noCustomFilterToClear": "Aucun filtre personnalisé à effacer"
+            "noCustomFilterToClear": "Aucun filtre personnalisé à effacer",
+            "noActiveFilters": "Aucun filtre actif à enregistrer"
+        },
+        "presets": {
+            "created": "Préréglage \"{name}\" créé",
+            "deleted": "Préréglage \"{name}\" supprimé",
+            "applied": "Préréglage \"{name}\" appliqué",
+            "overwritten": "Préréglage \"{name}\" remplacé",
+            "restored": "Paramètres par défaut restaurés"
+        },
+        "error": {
+            "presetNameEmpty": "Le nom du préréglage ne peut pas être vide",
+            "presetNameTooLong": "Le nom du préréglage doit contenir au maximum {max} caractères",
+            "presetNameInvalidChars": "Le nom du préréglage contient des caractères invalides",
+            "presetNameExists": "Un préréglage avec ce nom existe déjà",
+            "maxPresetsReached": "Maximum {max} préréglages autorisés. Supprimez-en un pour en ajouter plus.",
+            "presetNotFound": "Préréglage non trouvé",
+            "invalidPreset": "Données de préréglage invalides",
+            "deletePresetFailed": "Échec de la suppression du préréglage",
+            "applyPresetFailed": "Échec de l'application du préréglage"
         },
         "downloads": {
             "imagesCompleted": "Images d'exemple {action} terminées",

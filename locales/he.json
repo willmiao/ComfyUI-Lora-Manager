@@ -9,6 +9,7 @@
             "back": "חזור",
             "next": "הבא",
             "backToTop": "חזור למעלה",
+            "add": "הוסף",
             "settings": "הגדרות",
             "help": "עזרה"
         },
@@ -204,6 +205,19 @@
         },
         "filter": {
             "title": "סנן מודלים",
+            "presets": "קביעות מראש",
+            "savePreset": "שמור מסננים פעילים כקביעה מראש חדשה.",
+            "savePresetDisabledActive": "לא ניתן לשמור: קביעה מראש כבר פעילה. שנה מסננים כדי לשמור קביעה מראש חדשה",
+            "savePresetDisabledNoFilters": "בחר מסננים תחילה כדי לשמור כקביעה מראש",
+            "savePresetPrompt": "הזן שם קביעה מראש:",
+            "presetClickTooltip": "לחץ כדי להפעיל קביעה מראש \"{name}\"",
+            "presetDeleteTooltip": "מחק קביעה מראש",
+            "presetDeleteConfirm": "למחוק קביעה מראש \"{name}\"?",
+            "presetDeleteConfirmClick": "לחץ שוב לאישור",
+            "presetOverwriteConfirm": "הפריסט \"{name}\" כבר קיים. לדרוס?",
+            "presetNamePlaceholder": "שם קביעה מראש...",
+            "restoreDefaults": "שחזור ברירות מחדל",
+            "noPresets": "עדיין אין קביעות מראש שמורות. בחר מסננים למטה ולחץ על + כדי לשמור",
             "baseModel": "מודל בסיס",
             "modelTags": "תגיות (20 המובילות)",
             "modelTypes": "Model Types",
@@ -1419,7 +1433,26 @@
         "filters": {
             "applied": "{message}",
             "cleared": "המסננים נוקו",
-            "noCustomFilterToClear": "אין מסנן מותאם אישית לניקוי"
+            "noCustomFilterToClear": "אין מסנן מותאם אישית לניקוי",
+            "noActiveFilters": "אין מסננים פעילים לשמירה"
+        },
+        "presets": {
+            "created": "קביעה מראש \"{name}\" נוצרה",
+            "deleted": "קביעה מראש \"{name}\" נמחקה",
+            "applied": "קביעה מראש \"{name}\" הופעלה",
+            "overwritten": "קביעה מראש \"{name}\" נדרסה",
+            "restored": "ברירות המחדל שוחזרו"
+        },
+        "error": {
+            "presetNameEmpty": "שם קביעה מראש לא יכול להיות ריק",
+            "presetNameTooLong": "שם קביעה מראש חייב להיות {max} תווים או פחות",
+            "presetNameInvalidChars": "שם קביעה מראש מכיל תווים לא חוקיים",
+            "presetNameExists": "קביעה מראש עם שם זה כבר קיימת",
+            "maxPresetsReached": "מותר מקסימום {max} קביעות מראש. מחק אחת כדי להוסיף עוד.",
+            "presetNotFound": "קביעה מראש לא נמצאה",
+            "invalidPreset": "נתוני קביעה מראש לא חוקיים",
+            "deletePresetFailed": "מחיקת קביעה מראש נכשלה",
+            "applyPresetFailed": "הפעלת קביעה מראש נכשלה"
         },
         "downloads": {
             "imagesCompleted": "{action} תמונות הדוגמה הושלם",

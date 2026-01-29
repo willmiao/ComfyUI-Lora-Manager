@@ -10,7 +10,8 @@
             "next": "次へ",
             "backToTop": "トップに戻る",
             "settings": "設定",
-            "help": "ヘルプ"
+            "help": "ヘルプ",
+            "add": "追加"
         },
         "status": {
             "loading": "読み込み中...",
@@ -204,6 +205,19 @@
         },
         "filter": {
             "title": "モデルをフィルタ",
+            "presets": "プリセット",
+            "savePreset": "現在のアクティブフィルタを新しいプリセットとして保存。",
+            "savePresetDisabledActive": "保存できません：プリセットがすでにアクティブです。フィルタを変更して新しいプリセットを保存してください",
+            "savePresetDisabledNoFilters": "先にフィルタを選択してからプリセットとして保存",
+            "savePresetPrompt": "プリセット名を入力：",
+            "presetClickTooltip": "プリセット \"{name}\" を適用するにはクリック",
+            "presetDeleteTooltip": "プリセットを削除",
+            "presetDeleteConfirm": "プリセット \"{name}\" を削除しますか？",
+            "presetDeleteConfirmClick": "もう一度クリックして確認",
+            "presetOverwriteConfirm": "プリセット「{name}」は既に存在します。上書きしますか？",
+            "presetNamePlaceholder": "プリセット名...",
+            "restoreDefaults": "デフォルトを復元",
+            "noPresets": "まだプリセットが保存されていません。下のフィルタを選択して+をクリックして保存",
             "baseModel": "ベースモデル",
             "modelTags": "タグ（上位20）",
             "modelTypes": "Model Types",
@@ -1419,7 +1433,26 @@
         "filters": {
             "applied": "{message}",
             "cleared": "フィルタがクリアされました",
-            "noCustomFilterToClear": "クリアするカスタムフィルタがありません"
+            "noCustomFilterToClear": "クリアするカスタムフィルタがありません",
+            "noActiveFilters": "保存するアクティブフィルタがありません"
+        },
+        "presets": {
+            "created": "プリセット \"{name}\" が作成されました",
+            "deleted": "プリセット \"{name}\" が削除されました",
+            "applied": "プリセット \"{name}\" が適用されました",
+            "overwritten": "プリセット「{name}」を上書きしました",
+            "restored": "デフォルトのプリセットを復元しました"
+        },
+        "error": {
+            "presetNameEmpty": "プリセット名を入力してください",
+            "presetNameTooLong": "プリセット名は{max}文字以内にしてください",
+            "presetNameInvalidChars": "プリセット名に使用できない文字が含まれています",
+            "presetNameExists": "同じ名前のプリセットが既に存在します",
+            "maxPresetsReached": "プリセットは最大{max}個までです。追加するには既存のものを削除してください。",
+            "presetNotFound": "プリセットが見つかりません",
+            "invalidPreset": "無効なプリセットデータです",
+            "deletePresetFailed": "プリセットの削除に失敗しました",
+            "applyPresetFailed": "プリセットの適用に失敗しました"
         },
         "downloads": {
             "imagesCompleted": "例画像 {action} が完了しました",
