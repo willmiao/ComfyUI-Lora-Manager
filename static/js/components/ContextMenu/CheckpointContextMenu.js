@@ -26,7 +26,7 @@ export class CheckpointContextMenu extends BaseContextMenu {
         // Update the "Move to other root" label based on current model type
         const moveOtherItem = this.menu.querySelector('[data-action="move-other"]');
         if (moveOtherItem) {
-            const currentType = card.dataset.model_type || 'checkpoint';
+            const currentType = card.dataset.sub_type || 'checkpoint';
             const otherType = currentType === 'checkpoint' ? 'diffusion_model' : 'checkpoint';
             const typeLabel = i18n.t(`checkpoints.modelTypes.${otherType}`);
             moveOtherItem.innerHTML = `<i class="fas fa-exchange-alt"></i> ${i18n.t('checkpoints.contextMenu.moveToOtherTypeFolder', { otherType: typeLabel })}`;
@@ -65,11 +65,11 @@ export class CheckpointContextMenu extends BaseContextMenu {
                 apiClient.refreshSingleModelMetadata(this.currentCard.dataset.filepath);
                 break;
             case 'move':
-                moveManager.showMoveModal(this.currentCard.dataset.filepath, this.currentCard.dataset.model_type);
+                moveManager.showMoveModal(this.currentCard.dataset.filepath, this.currentCard.dataset.sub_type);
                 break;
             case 'move-other':
                 {
-                    const currentType = this.currentCard.dataset.model_type || 'checkpoint';
+                    const currentType = this.currentCard.dataset.sub_type || 'checkpoint';
                     const otherType = currentType === 'checkpoint' ? 'diffusion_model' : 'checkpoint';
                     moveManager.showMoveModal(this.currentCard.dataset.filepath, otherType);
                 }

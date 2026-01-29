@@ -1075,7 +1075,7 @@ class RecipeModal {
         const checkpointName = checkpoint.name || checkpoint.modelName || checkpoint.file_name || 'Checkpoint';
         const versionLabel = checkpoint.version || checkpoint.modelVersionName || '';
         const baseModel = checkpoint.baseModel || checkpoint.base_model || '';
-        const modelTypeRaw = (checkpoint.model_type || checkpoint.type || 'checkpoint').toLowerCase();
+        const modelTypeRaw = (checkpoint.sub_type || checkpoint.type || 'checkpoint').toLowerCase();
         const modelTypeLabel = modelTypeRaw === 'diffusion_model' ? 'Diffusion Model' : 'Checkpoint';
 
         const previewMedia = isPreviewVideo ? `
@@ -1172,7 +1172,7 @@ class RecipeModal {
             return;
         }
 
-        const modelType = (checkpoint.model_type || checkpoint.type || 'checkpoint').toLowerCase();
+        const modelType = (checkpoint.sub_type || checkpoint.type || 'checkpoint').toLowerCase();
         const isDiffusionModel = modelType === 'diffusion_model' || modelType === 'unet';
         const widgetName = isDiffusionModel ? 'unet_name' : 'ckpt_name';
 

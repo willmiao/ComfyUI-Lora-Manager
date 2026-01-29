@@ -22,8 +22,8 @@ class EmbeddingService(BaseModelService):
     
     async def format_response(self, embedding_data: Dict) -> Dict:
         """Format Embedding data for API response"""
-        # Get sub_type from cache entry (new field) or fallback to model_type (old field)
-        sub_type = embedding_data.get("sub_type") or embedding_data.get("model_type", "embedding")
+        # Get sub_type from cache entry (new canonical field)
+        sub_type = embedding_data.get("sub_type", "embedding")
         
         return {
             "model_name": embedding_data["model_name"],
@@ -40,8 +40,7 @@ class EmbeddingService(BaseModelService):
             "from_civitai": embedding_data.get("from_civitai", True),
             # "usage_count": embedding_data.get("usage_count", 0), # TODO: Enable when embedding usage tracking is implemented
             "notes": embedding_data.get("notes", ""),
-            "sub_type": sub_type,  # New canonical field
-            "model_type": sub_type,  # Backward compatibility
+            "sub_type": sub_type,
             "favorite": embedding_data.get("favorite", False),
             "update_available": bool(embedding_data.get("update_available", False)),
             "civitai": self.filter_civitai_data(embedding_data.get("civitai", {}), minimal=True)

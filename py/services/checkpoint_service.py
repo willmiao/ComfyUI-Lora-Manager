@@ -22,8 +22,8 @@ class CheckpointService(BaseModelService):
     
     async def format_response(self, checkpoint_data: Dict) -> Dict:
         """Format Checkpoint data for API response"""
-        # Get sub_type from cache entry (new field) or fallback to model_type (old field)
-        sub_type = checkpoint_data.get("sub_type") or checkpoint_data.get("model_type", "checkpoint")
+        # Get sub_type from cache entry (new canonical field)
+        sub_type = checkpoint_data.get("sub_type", "checkpoint")
         
         return {
             "model_name": checkpoint_data["model_name"],
@@ -40,8 +40,7 @@ class CheckpointService(BaseModelService):
             "from_civitai": checkpoint_data.get("from_civitai", True),
             "usage_count": checkpoint_data.get("usage_count", 0),
             "notes": checkpoint_data.get("notes", ""),
-            "sub_type": sub_type,  # New canonical field
-            "model_type": sub_type,  # Backward compatibility
+            "sub_type": sub_type,
             "favorite": checkpoint_data.get("favorite", False),
             "update_available": bool(checkpoint_data.get("update_available", False)),
             "civitai": self.filter_civitai_data(checkpoint_data.get("civitai", {}), minimal=True)

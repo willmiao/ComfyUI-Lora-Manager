@@ -479,7 +479,7 @@ async def test_execute_download_retries_urls(monkeypatch, tmp_path):
     assert dummy_scanner.calls  # ensure cache updated
 
 
-async def test_execute_download_adjusts_checkpoint_model_type(monkeypatch, tmp_path):
+async def test_execute_download_adjusts_checkpoint_sub_type(monkeypatch, tmp_path):
     manager = DownloadManager()
 
     root_dir = tmp_path / "checkpoints"
@@ -494,7 +494,7 @@ async def test_execute_download_adjusts_checkpoint_model_type(monkeypatch, tmp_p
             self.file_name = path.stem
             self.preview_url = None
             self.preview_nsfw_level = 0
-            self.model_type = "checkpoint"
+            self.sub_type = "checkpoint"
 
         def generate_unique_filename(self, *_args, **_kwargs):
             return os.path.basename(self.file_path)
@@ -505,7 +505,7 @@ async def test_execute_download_adjusts_checkpoint_model_type(monkeypatch, tmp_p
         def to_dict(self):
             return {
                 "file_path": self.file_path,
-                "model_type": self.model_type,
+                "sub_type": self.sub_type,
                 "sha256": self.sha256,
             }
 
@@ -538,12 +538,12 @@ async def test_execute_download_adjusts_checkpoint_model_type(monkeypatch, tmp_p
             self, metadata_obj, _file_path: str, root_path: Optional[str]
         ):
             if root_path:
-                metadata_obj.model_type = "diffusion_model"
+                metadata_obj.sub_type = "diffusion_model"
             return metadata_obj
 
         def adjust_cached_entry(self, entry):
             if entry.get("file_path", "").startswith(self.root):
-                entry["model_type"] = "diffusion_model"
+                entry["sub_type"] = "diffusion_model"
             return entry
 
         async def add_model_to_cache(self, metadata_dict, relative_path):
@@ -570,12 +570,12 @@ async def test_execute_download_adjusts_checkpoint_model_type(monkeypatch, tmp_p
     )
 
     assert result == {"success": True}
-    assert metadata.model_type == "diffusion_model"
+    assert metadata.sub_type == "diffusion_model"
     saved_metadata = MetadataManager.save_metadata.await_args.args[1]
-    assert saved_metadata.model_type == "diffusion_model"
+    assert saved_metadata.sub_type == "diffusion_model"
     assert dummy_scanner.add_calls
     cached_entry, _ = dummy_scanner.add_calls[0]
-    assert cached_entry["model_type"] == "diffusion_model"
+    assert cached_entry["sub_type"] == "diffusion_model"
 
 
 async def test_execute_download_extracts_zip_single_model(monkeypatch, tmp_path):

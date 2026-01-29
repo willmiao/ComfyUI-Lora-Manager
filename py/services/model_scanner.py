@@ -275,16 +275,10 @@ class ModelScanner:
         _, license_flags = resolve_license_info(license_source or {})
         entry['license_flags'] = license_flags
 
-        # Handle sub_type (new canonical field) and model_type (backward compatibility)
+        # Handle sub_type (new canonical field)
         sub_type = get_value('sub_type', None)
-        model_type = get_value('model_type', None)
-        
-        # Prefer sub_type, fallback to model_type for backward compatibility
-        effective_sub_type = sub_type or model_type
-        if effective_sub_type:
-            entry['sub_type'] = effective_sub_type
-            # Also keep model_type for backward compatibility during transition
-            entry['model_type'] = effective_sub_type
+        if sub_type:
+            entry['sub_type'] = sub_type
 
         return entry
 

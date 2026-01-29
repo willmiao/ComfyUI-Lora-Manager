@@ -176,7 +176,7 @@ function handleSendToWorkflow(card, replaceMode, modelType) {
             return;
         }
 
-        const subtype = (card.dataset.model_type || 'checkpoint').toLowerCase();
+        const subtype = (card.dataset.sub_type || 'checkpoint').toLowerCase();
         const isDiffusionModel = subtype === 'diffusion_model';
         const widgetName = isDiffusionModel ? 'unet_name' : 'ckpt_name';
         const actionTypeText = translate(
@@ -453,9 +453,9 @@ export function createModelCard(model, modelType) {
         card.dataset.usage_tips = model.usage_tips;
     }
 
-    // checkpoint specific data
-    if (modelType === MODEL_TYPES.CHECKPOINT) {
-        card.dataset.model_type = model.model_type; // checkpoint or diffusion_model
+    // Set sub_type for all model types (lora/locon/dora, checkpoint/diffusion_model, embedding)
+    if (model.sub_type) {
+        card.dataset.sub_type = model.sub_type;
     }
 
     // Store metadata if available

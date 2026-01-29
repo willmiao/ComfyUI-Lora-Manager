@@ -136,8 +136,7 @@ class TestCheckpointScannerSubType:
             
             result = scanner.adjust_cached_entry(entry)
             assert result["sub_type"] == "diffusion_model"
-            # Also sets model_type for backward compatibility
-            assert result["model_type"] == "diffusion_model"
+            assert "model_type" not in result  # Removed in refactoring
         finally:
             if original_checkpoints_roots is not None:
                 config_module.config.checkpoints_roots = original_checkpoints_roots

@@ -126,7 +126,7 @@ async def test_persisted_cache_restores_model_type(tmp_path: Path, monkeypatch):
     assert loaded is True
 
     cache = await scanner.get_cached_data()
-    types_by_path = {item["file_path"]: item.get("model_type") for item in cache.raw_data}
+    types_by_path = {item["file_path"]: item.get("sub_type") for item in cache.raw_data}
 
     assert types_by_path[normalized_checkpoint_file] == "checkpoint"
     assert types_by_path[normalized_unet_file] == "diffusion_model"

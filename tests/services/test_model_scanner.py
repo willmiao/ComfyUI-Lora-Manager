@@ -521,7 +521,7 @@ async def test_reconcile_cache_applies_adjust_cached_entry(tmp_path: Path):
 
     def _adjust(self, entry: dict) -> dict:
         applied.append(entry["file_path"])
-        entry["model_type"] = "adjusted"
+        entry["custom_field"] = "adjusted"
         return entry
 
     scanner.adjust_cached_entry = MethodType(_adjust, scanner)
@@ -538,7 +538,7 @@ async def test_reconcile_cache_applies_adjust_cached_entry(tmp_path: Path):
     assert normalized_new in applied
 
     new_entry = next(item for item in scanner._cache.raw_data if item["file_path"] == normalized_new)
-    assert new_entry["model_type"] == "adjusted"
+    assert new_entry["custom_field"] == "adjusted"
 
 
 @pytest.mark.asyncio

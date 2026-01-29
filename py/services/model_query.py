@@ -39,10 +39,6 @@ def normalize_sub_type(value: Any) -> Optional[str]:
     return candidate.lower() if candidate else None
 
 
-# Backward compatibility alias
-normalize_civitai_model_type = normalize_sub_type
-
-
 def resolve_sub_type(entry: Mapping[str, Any]) -> str:
     """Extract the sub-type from metadata, checking multiple sources.
     
@@ -75,10 +71,6 @@ def resolve_sub_type(entry: Mapping[str, Any]) -> str:
                 return civitai_type
 
     return DEFAULT_CIVITAI_MODEL_TYPE
-
-
-# Backward compatibility alias
-resolve_civitai_model_type = resolve_sub_type
 
 
 class SettingsProvider(Protocol):

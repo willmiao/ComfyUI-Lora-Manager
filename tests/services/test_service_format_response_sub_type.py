@@ -42,7 +42,7 @@ class TestLoraServiceFormatResponse:
             "usage_tips": "",
             "notes": "",
             "favorite": False,
-            "sub_type": "locon",  # New field
+            "sub_type": "locon",
             "civitai": {},
         }
         
@@ -50,31 +50,7 @@ class TestLoraServiceFormatResponse:
         
         assert "sub_type" in result
         assert result["sub_type"] == "locon"
-
-    @pytest.mark.asyncio
-    async def test_format_response_falls_back_to_model_type(self, lora_service):
-        """format_response should fall back to model_type if sub_type missing."""
-        lora_data = {
-            "model_name": "Test LoRA",
-            "file_name": "test_lora",
-            "preview_url": "test.webp",
-            "preview_nsfw_level": 0,
-            "base_model": "SDXL",
-            "folder": "",
-            "sha256": "abc123",
-            "file_path": "/models/test_lora.safetensors",
-            "size": 1000,
-            "modified": 1234567890.0,
-            "tags": [],
-            "from_civitai": True,
-            "model_type": "dora",  # Old field
-            "civitai": {},
-        }
-        
-        result = await lora_service.format_response(lora_data)
-        
-        assert result["sub_type"] == "dora"
-        assert result["model_type"] == "dora"  # Both should be set
+        assert "model_type" not in result  # Removed in refactoring
 
     @pytest.mark.asyncio
     async def test_format_response_defaults_to_lora(self, lora_service):
@@ -98,7 +74,7 @@ class TestLoraServiceFormatResponse:
         result = await lora_service.format_response(lora_data)
         
         assert result["sub_type"] == "lora"
-        assert result["model_type"] == "lora"
+        assert "model_type" not in result  # Removed in refactoring
 
 
 class TestCheckpointServiceFormatResponse:
@@ -138,7 +114,7 @@ class TestCheckpointServiceFormatResponse:
         
         assert "sub_type" in result
         assert result["sub_type"] == "checkpoint"
-        assert result["model_type"] == "checkpoint"
+        assert "model_type" not in result  # Removed in refactoring
 
     @pytest.mark.asyncio
     async def test_format_response_includes_sub_type_diffusion_model(self, checkpoint_service):
@@ -163,7 +139,7 @@ class TestCheckpointServiceFormatResponse:
         result = await checkpoint_service.format_response(checkpoint_data)
         
         assert result["sub_type"] == "diffusion_model"
-        assert result["model_type"] == "diffusion_model"
+        assert "model_type" not in result  # Removed in refactoring
 
 
 class TestEmbeddingServiceFormatResponse:
@@ -203,7 +179,7 @@ class TestEmbeddingServiceFormatResponse:
         
         assert "sub_type" in result
         assert result["sub_type"] == "embedding"
-        assert result["model_type"] == "embedding"
+        assert "model_type" not in result  # Removed in refactoring
 
     @pytest.mark.asyncio
     async def test_format_response_defaults_to_embedding(self, embedding_service):
@@ -227,4 +203,4 @@ class TestEmbeddingServiceFormatResponse:
         result = await embedding_service.format_response(embedding_data)
         
         assert result["sub_type"] == "embedding"
-        assert result["model_type"] == "embedding"
+        assert "model_type" not in result  # Removed in refactoring

@@ -36,16 +36,9 @@ class CheckpointScanner(ModelScanner):
 
     def adjust_metadata(self, metadata, file_path, root_path):
         """Adjust metadata during scanning to set sub_type."""
-        # Support both old 'model_type' and new 'sub_type' for backward compatibility
-        if hasattr(metadata, "sub_type"):
-            sub_type = self._resolve_sub_type(root_path)
-            if sub_type:
-                metadata.sub_type = sub_type
-        elif hasattr(metadata, "model_type"):
-            # Backward compatibility: fallback to model_type if sub_type not available
-            sub_type = self._resolve_sub_type(root_path)
-            if sub_type:
-                metadata.model_type = sub_type
+        sub_type = self._resolve_sub_type(root_path)
+        if sub_type:
+            metadata.sub_type = sub_type
         return metadata
 
     def adjust_cached_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
@@ -55,8 +48,6 @@ class CheckpointScanner(ModelScanner):
         )
         if sub_type:
             entry["sub_type"] = sub_type
-            # Also set model_type for backward compatibility during transition
-            entry["model_type"] = sub_type
         return entry
 
     def get_model_roots(self) -> List[str]:

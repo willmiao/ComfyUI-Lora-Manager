@@ -340,9 +340,9 @@ class MoveManager {
                                     folder: newRelativeFolder
                                 };
 
-                                // Only update model_type if it's present in the cache_entry
-                                if (result.cache_entry && result.cache_entry.model_type) {
-                                    updateData.model_type = result.cache_entry.model_type;
+                                // Only update sub_type if it's present in the cache_entry
+                                if (result.cache_entry && result.cache_entry.sub_type) {
+                                    updateData.sub_type = result.cache_entry.sub_type;
                                 }
 
                                 state.virtualScroller.updateSingleItem(result.original_file_path, updateData);
@@ -374,9 +374,9 @@ class MoveManager {
                             folder: newRelativeFolder
                         };
 
-                        // Only update model_type if it's present in the cache_entry
-                        if (result.cache_entry && result.cache_entry.model_type) {
-                            updateData.model_type = result.cache_entry.model_type;
+                        // Only update sub_type if it's present in the cache_entry
+                        if (result.cache_entry && result.cache_entry.sub_type) {
+                            updateData.sub_type = result.cache_entry.sub_type;
                         }
 
                         state.virtualScroller.updateSingleItem(this.currentFilePath, updateData);
