@@ -28,6 +28,9 @@ CORE_USER_SETTING_KEYS: Tuple[str, ...] = (
     "folder_paths",
 )
 
+# Threshold for aggressive cleanup: if file contains this many default keys, clean it up
+DEFAULT_KEYS_CLEANUP_THRESHOLD = 10
+
 
 DEFAULT_SETTINGS: Dict[str, Any] = {
     "civitai_api_key": "",
@@ -95,6 +98,9 @@ class SettingsManager:
         if self._needs_initial_save:
             self._save_settings()
             self._needs_initial_save = False
+        else:
+            # Clean up existing settings file by removing default values
+            self._cleanup_default_values_from_disk()
 
     def _detect_standalone_mode(self) -> bool:
         """Return ``True`` when running in standalone mode."""
@@ -226,7 +232,7 @@ class SettingsManager:
         return merged
 
     def _ensure_default_settings(self) -> None:
-        """Ensure all default settings keys exist"""
+        """Ensure all default settings keys exist in memory (but don't save defaults to disk)"""
         defaults = self._get_default_settings()
         updated_existing = False
         inserted_defaults = False
@@ -265,10 +271,10 @@ class SettingsManager:
                     self.settings[key] = value
                 inserted_defaults = True
 
-        if updated_existing or (
-            inserted_defaults and self._bootstrap_reason in {"invalid", "unreadable"}
-        ):
+        # Save only if existing values were normalized/updated
+        if updated_existing:
             self._save_settings()
+        # Note: inserted_defaults no longer triggers save - defaults stay in memory only
 
     def _migrate_to_library_registry(self) -> None:
         """Ensure settings include the multi-library registry structure."""
@@ -711,6 +717,42 @@ class SettingsManager:
 
         self._startup_messages.append(payload)
 
+    def _cleanup_default_values_from_disk(self) -> None:
+        """Remove default values from existing settings.json to keep it clean.
+
+        Only performs cleanup if the file contains a significant number of default
+        values (indicating it's "bloated"). Small files (like template-based configs)
+        are preserved as-is to avoid unexpected changes.
+        """
+        # Only cleanup existing files (not new ones)
+        if self._bootstrap_reason == "missing" or self._original_disk_payload is None:
+            return
+
+        defaults = self._get_default_settings()
+        disk_keys = set(self._original_disk_payload.keys())
+
+        # Count how many keys on disk are set to their default values
+        default_value_keys = set()
+        for key in disk_keys:
+            if key in CORE_USER_SETTING_KEYS:
+                continue  # Core keys don't count as "cleanup candidates"
+            disk_value = self._original_disk_payload.get(key)
+            default_value = defaults.get(key)
+            # Compare using JSON serialization for complex objects
+            if json.dumps(disk_value, sort_keys=True, default=str) == json.dumps(default_value, sort_keys=True, default=str):
+                default_value_keys.add(key)
+
+        # Only cleanup if there are "many" default keys (indicating a bloated file)
+        # This preserves small/template-based configs while cleaning up legacy bloated files
+        if len(default_value_keys) >= DEFAULT_KEYS_CLEANUP_THRESHOLD:
+            logger.info(
+                "Cleaning up %d default value(s) from settings.json to keep it minimal",
+                len(default_value_keys)
+            )
+            self._save_settings()
+            # Update original payload to match what we just saved
+            self._original_disk_payload = self._serialize_settings_for_disk()
+
     def _collect_configuration_warnings(self) -> None:
         if not self._standalone_mode:
             return
@@ -1101,7 +1143,12 @@ class SettingsManager:
             self._seed_template = None
 
     def _serialize_settings_for_disk(self) -> Dict[str, Any]:
-        """Return the settings payload that should be persisted to disk."""
+        """Return the settings payload that should be persisted to disk.
+
+        Only saves settings that differ from defaults, keeping the config file
+        clean and focused on user customizations. Default values are still
+        available at runtime via _get_default_settings().
+        """
 
         if self._bootstrap_reason == "missing":
             minimal: Dict[str, Any] = {}
@@ -1115,7 +1162,25 @@ class SettingsManager:
 
             return minimal
 
-        return copy.deepcopy(self.settings)
+        # Only save settings that differ from defaults
+        defaults = self._get_default_settings()
+        minimal = {}
+
+        for key, value in self.settings.items():
+            default_value = defaults.get(key)
+
+            # Core settings are always saved (even if equal to default)
+            if key in CORE_USER_SETTING_KEYS:
+                minimal[key] = copy.deepcopy(value)
+            # Complex objects need deep comparison
+            elif isinstance(value, (dict, list)) and default_value is not None:
+                if json.dumps(value, sort_keys=True, default=str) != json.dumps(default_value, sort_keys=True, default=str):
+                    minimal[key] = copy.deepcopy(value)
+            # Simple values use direct comparison
+            elif value != default_value:
+                minimal[key] = copy.deepcopy(value)
+
+        return minimal
 
     def get_libraries(self) -> Dict[str, Dict[str, Any]]:
         """Return a copy of the registered libraries."""
