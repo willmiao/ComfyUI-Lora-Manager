@@ -12,8 +12,9 @@ class TextLM:
         return {
             "required": {
                 "text": (
-                    "AUTOCOMPLETE_TEXT_PROMPT",
+                    "AUTOCOMPLETE_TEXT_PROMPT,STRING",
                     {
+                        "widgetType": "AUTOCOMPLETE_TEXT_PROMPT",
                         "placeholder": "Enter text... /char, /artist for quick tag search",
                         "tooltip": "The text output.",
                     },

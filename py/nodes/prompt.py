@@ -15,8 +15,9 @@ class PromptLM:
         return {
             "required": {
                 "text": (
-                    "AUTOCOMPLETE_TEXT_PROMPT",
+                    "AUTOCOMPLETE_TEXT_PROMPT,STRING",
                     {
+                        "widgetType": "AUTOCOMPLETE_TEXT_PROMPT",
                         "placeholder": "Enter prompt... /char, /artist for quick tag search",
                         "tooltip": "The text to be encoded.",
                     },
