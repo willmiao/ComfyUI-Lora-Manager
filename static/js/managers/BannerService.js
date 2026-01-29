@@ -36,7 +36,7 @@ class BannerService {
     /**
      * Initialize the banner service
      */
-    initialize() {
+    async initialize() {
         if (this.initialized) return;
 
         this.container = document.getElementById('banner-container');
@@ -44,6 +44,9 @@ class BannerService {
             console.warn('Banner container not found');
             return;
         }
+
+        // Load dismissed banners from backend first (for persistence across browser modes)
+        await this.loadDismissedBannersFromBackend();
 
         // Register default banners
         this.registerBanner('civitai-extension', {
@@ -76,8 +79,34 @@ class BannerService {
 
         this.prepareCommunitySupportBanner();
 
-        this.showActiveBanners();
+        await this.showActiveBanners();
         this.initialized = true;
+    }
+
+    /**
+     * Load dismissed banners from backend settings
+     * Falls back to localStorage if backend is unavailable
+     */
+    async loadDismissedBannersFromBackend() {
+        try {
+            const response = await fetch('/api/lm/settings');
+            const data = await response.json();
+            if (data.success && data.settings && Array.isArray(data.settings.dismissed_banners)) {
+                // Merge backend dismissed banners with localStorage
+                const backendDismissed = data.settings.dismissed_banners;
+                const localDismissed = getStorageItem('dismissed_banners', []);
+                
+                // Use Set to get unique banner IDs
+                const mergedDismissed = [...new Set([...backendDismissed, ...localDismissed])];
+                
+                // Save merged list to localStorage as cache
+                if (mergedDismissed.length > 0) {
+                    setStorageItem('dismissed_banners', mergedDismissed);
+                }
+            }
+        } catch (e) {
+            console.debug('Failed to fetch dismissed banners from backend, using localStorage');
+        }
     }
 
     /**
@@ -101,6 +130,7 @@ class BannerService {
      * @returns {boolean}
      */
     isBannerDismissed(bannerId) {
+        // Check localStorage (which is synced with backend on load)
         const dismissedBanners = getStorageItem('dismissed_banners', []);
         return dismissedBanners.includes(bannerId);
     }
@@ -109,13 +139,16 @@ class BannerService {
      * Dismiss a banner
      * @param {string} bannerId - Banner ID
      */
-    dismissBanner(bannerId) {
+    async dismissBanner(bannerId) {
         const dismissedBanners = getStorageItem('dismissed_banners', []);
         let bannerAlreadyDismissed = dismissedBanners.includes(bannerId);
         
         if (!bannerAlreadyDismissed) {
             dismissedBanners.push(bannerId);
             setStorageItem('dismissed_banners', dismissedBanners);
+            
+            // Save to backend for persistence (survives incognito/private mode)
+            await this.saveDismissedBannersToBackend(dismissedBanners);
         }
 
         // Remove banner from DOM
@@ -140,9 +173,25 @@ class BannerService {
     }
 
     /**
+     * Save dismissed banners to backend settings
+     * @param {string[]} dismissedBanners - Array of dismissed banner IDs
+     */
+    async saveDismissedBannersToBackend(dismissedBanners) {
+        try {
+            await fetch('/api/lm/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dismissed_banners: dismissedBanners })
+            });
+        } catch (e) {
+            console.error('Failed to save dismissed banners to backend:', e);
+        }
+    }
+
+    /**
      * Show all active (non-dismissed) banners
      */
-    showActiveBanners() {
+    async showActiveBanners() {
         if (!this.container) return;
 
         const activeBanners = Array.from(this.banners.values())
@@ -177,7 +226,7 @@ class BannerService {
         }).join('') : '';
 
         const dismissButtonHtml = banner.dismissible ? 
-            `<button class="banner-dismiss" onclick="bannerService.dismissBanner('${banner.id}')" title="Dismiss">
+            `<button class="banner-dismiss" onclick="bannerService.dismissBanner('${banner.id}').catch(console.error)" title="Dismiss">
                 <i class="fas fa-times"></i>
             </button>` : '';
 
@@ -227,8 +276,20 @@ class BannerService {
     /**
      * Clear all dismissed banners (for testing/admin purposes)
      */
-    clearDismissedBanners() {
+    async clearDismissedBanners() {
         setStorageItem('dismissed_banners', []);
+        
+        // Also clear on backend
+        try {
+            await fetch('/api/lm/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dismissed_banners: [] })
+            });
+        } catch (e) {
+            console.error('Failed to clear dismissed banners on backend:', e);
+        }
+        
         location.reload();
     }
 

@@ -82,7 +82,23 @@ export class OnboardingManager {
     }
 
     // Check if user should see onboarding
-    shouldShowOnboarding() {
+    // First checks backend settings (persistent), falls back to localStorage
+    async shouldShowOnboarding() {
+        // Try to get state from backend first (persistent across browser modes)
+        try {
+            const response = await fetch('/api/lm/settings');
+            const data = await response.json();
+            if (data.success && data.settings && data.settings.onboarding_completed === true) {
+                // Sync to localStorage as cache
+                setStorageItem('onboarding_completed', true);
+                return false;
+            }
+        } catch (e) {
+            // Backend unavailable, fall back to localStorage
+            console.debug('Failed to fetch onboarding state from backend, using localStorage');
+        }
+
+        // Fallback to localStorage (for backward compatibility)
         const completed = getStorageItem('onboarding_completed');
         const skipped = getStorageItem('onboarding_skipped');
         return !completed && !skipped;
@@ -90,7 +106,8 @@ export class OnboardingManager {
 
     // Start the onboarding process
     async start() {
-        if (!this.shouldShowOnboarding()) {
+        const shouldShow = await this.shouldShowOnboarding();
+        if (!shouldShow) {
             return;
         }
 
@@ -159,9 +176,9 @@ export class OnboardingManager {
             });
 
             // Handle skip button - skip entire tutorial
-            document.getElementById('skipLanguageBtn').addEventListener('click', () => {
+            document.getElementById('skipLanguageBtn').addEventListener('click', async () => {
                 document.body.removeChild(modal);
-                this.skip(); // Skip entire tutorial instead of just language selection
+                await this.skip(); // Skip entire tutorial instead of just language selection
                 resolve();
             });
 
@@ -205,11 +222,11 @@ export class OnboardingManager {
     }
 
     // Start the tutorial steps
-    startTutorial() {
+    async startTutorial() {
         this.isActive = true;
         this.currentStep = 0;
         this.createOverlay();
-        this.showStep(0);
+        await this.showStep(0);
     }
 
     // Create overlay elements
@@ -231,9 +248,9 @@ export class OnboardingManager {
     }
 
     // Show specific step
-    showStep(stepIndex) {
+    async showStep(stepIndex) {
         if (stepIndex >= this.steps.length) {
-            this.complete();
+            await this.complete();
             return;
         }
 
@@ -242,7 +259,7 @@ export class OnboardingManager {
 
         if (!target && step.target !== 'body') {
             // Skip this step if target not found
-            this.showStep(stepIndex + 1);
+            await this.showStep(stepIndex + 1);
             return;
         }
 
@@ -426,25 +443,48 @@ export class OnboardingManager {
     }
 
     // Navigate to next step
-    nextStep() {
-        this.showStep(this.currentStep + 1);
+    async nextStep() {
+        await this.showStep(this.currentStep + 1);
     }
 
     // Navigate to previous step
-    previousStep() {
+    async previousStep() {
         if (this.currentStep > 0) {
-            this.showStep(this.currentStep - 1);
+            await this.showStep(this.currentStep - 1);
         }
     }
 
     // Skip the tutorial
-    skip() {
+    async skip() {
+        // Save to backend for persistence (survives incognito/private mode)
+        try {
+            await fetch('/api/lm/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ onboarding_completed: true })
+            });
+        } catch (e) {
+            console.error('Failed to save onboarding state to backend:', e);
+        }
+        // Also save to localStorage as cache and for backward compatibility
         setStorageItem('onboarding_skipped', true);
+        setStorageItem('onboarding_completed', true);
         this.cleanup();
     }
 
     // Complete the tutorial
-    complete() {
+    async complete() {
+        // Save to backend for persistence (survives incognito/private mode)
+        try {
+            await fetch('/api/lm/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ onboarding_completed: true })
+            });
+        } catch (e) {
+            console.error('Failed to save onboarding state to backend:', e);
+        }
+        // Also save to localStorage as cache and for backward compatibility
         setStorageItem('onboarding_completed', true);
         this.cleanup();
     }

@@ -46,7 +46,7 @@ export class AppCore {
         state.loadingManager = new LoadingManager();
         modalManager.initialize();
         updateService.initialize();
-        bannerService.initialize();
+        await bannerService.initialize();
         window.modalManager = modalManager;
         window.settingsManager = settingsManager;
         const exampleImagesManager = new ExampleImagesManager();
@@ -81,8 +81,8 @@ export class AppCore {
         this.initialized = true;
         
         // Start onboarding if needed (after everything is initialized)
-        setTimeout(() => {
-            onboardingManager.start();
+        setTimeout(async () => {
+            await onboardingManager.start();
         }, 1000); // Small delay to ensure all elements are rendered
         
         // Return the core instance for chaining

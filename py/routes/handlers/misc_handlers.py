@@ -231,6 +231,8 @@ class SettingsHandler:
         "enable_metadata_archive_db",
         "language",
         "use_portable_settings",
+        "onboarding_completed",
+        "dismissed_banners",
         "proxy_enabled",
         "proxy_type",
         "proxy_host",

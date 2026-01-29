@@ -35,6 +35,8 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "hash_chunk_size_mb": DEFAULT_HASH_CHUNK_SIZE_MB,
     "language": "en",
     "show_only_sfw": False,
+    "onboarding_completed": False,
+    "dismissed_banners": [],
     "enable_metadata_archive_db": False,
     "proxy_enabled": False,
     "proxy_host": "",
