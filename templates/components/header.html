@@ -156,7 +156,7 @@
       <div class="tags-loading">{{ t('common.status.loading') }}</div>
     </div>
   </div>
-  {% if current_page == 'loras' %}
+  {% if current_page == 'loras' or current_page == 'checkpoints' %}
   <div class="filter-section">
     <h4>{{ t('header.filter.modelTypes') }}</h4>
     <div class="filter-tags" id="modelTypeTags">
