@@ -64,6 +64,17 @@ export class BulkManager {
                 deleteAll: true,
                 setContentRating: true
             },
+            [MODEL_TYPES.MISC]: {
+                addTags: true,
+                sendToWorkflow: false,
+                copyAll: false,
+                refreshAll: true,
+                checkUpdates: true,
+                moveAll: true,
+                autoOrganize: true,
+                deleteAll: true,
+                setContentRating: true
+            },
             recipes: {
                 addTags: false,
                 sendToWorkflow: false,

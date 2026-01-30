@@ -1,0 +1,51 @@
+import { appCore } from './core.js';
+import { confirmDelete, closeDeleteModal, confirmExclude, closeExcludeModal } from './utils/modalUtils.js';
+import { createPageControls } from './components/controls/index.js';
+import { ModelDuplicatesManager } from './components/ModelDuplicatesManager.js';
+import { MODEL_TYPES } from './api/apiConfig.js';
+
+// Initialize the Misc (VAE/Upscaler) page
+export class MiscPageManager {
+    constructor() {
+        // Initialize page controls
+        this.pageControls = createPageControls(MODEL_TYPES.MISC);
+
+        // Initialize the ModelDuplicatesManager
+        this.duplicatesManager = new ModelDuplicatesManager(this, MODEL_TYPES.MISC);
+
+        // Expose only necessary functions to global scope
+        this._exposeRequiredGlobalFunctions();
+    }
+
+    _exposeRequiredGlobalFunctions() {
+        // Minimal set of functions that need to remain global
+        window.confirmDelete = confirmDelete;
+        window.closeDeleteModal = closeDeleteModal;
+        window.confirmExclude = confirmExclude;
+        window.closeExcludeModal = closeExcludeModal;
+
+        // Expose duplicates manager
+        window.modelDuplicatesManager = this.duplicatesManager;
+    }
+
+    async initialize() {
+        // Initialize common page features (including context menus)
+        appCore.initializePageFeatures();
+
+        console.log('Misc Manager initialized');
+    }
+}
+
+export async function initializeMiscPage() {
+    // Initialize core application
+    await appCore.initialize();
+
+    // Initialize misc page
+    const miscPage = new MiscPageManager();
+    await miscPage.initialize();
+
+    return miscPage;
+}
+
+// Initialize everything when DOM is ready
+document.addEventListener('DOMContentLoaded', initializeMiscPage);

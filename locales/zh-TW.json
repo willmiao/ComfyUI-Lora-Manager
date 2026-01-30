@@ -179,6 +179,7 @@
             "recipes": "配方",
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
+            "misc": "[TODO: Translate] Misc",
             "statistics": "統計"
         },
         "search": {
@@ -187,7 +188,8 @@
                 "loras": "搜尋 LoRA...",
                 "recipes": "搜尋配方...",
                 "checkpoints": "搜尋 checkpoint...",
-                "embeddings": "搜尋 embedding..."
+                "embeddings": "搜尋 embedding...",
+                "misc": "[TODO: Translate] Search VAE/Upscaler models..."
             },
             "options": "搜尋選項",
             "searchIn": "搜尋範圍：",
@@ -688,6 +690,16 @@
     "embeddings": {
         "title": "Embedding 模型"
     },
+    "misc": {
+        "title": "[TODO: Translate] VAE & Upscaler Models",
+        "modelTypes": {
+            "vae": "[TODO: Translate] VAE",
+            "upscaler": "[TODO: Translate] Upscaler"
+        },
+        "contextMenu": {
+            "moveToOtherTypeFolder": "[TODO: Translate] Move to {otherType} Folder"
+        }
+    },
     "sidebar": {
         "modelRoot": "根目錄",
         "collapseAll": "全部摺疊資料夾",
@@ -1104,6 +1116,10 @@
             "title": "初始化統計",
             "message": "正在處理模型資料以產生統計，可能需要幾分鐘..."
         },
+        "misc": {
+            "title": "[TODO: Translate] Initializing Misc Model Manager",
+            "message": "[TODO: Translate] Scanning VAE and Upscaler models..."
+        },
         "tips": {
             "title": "小技巧",
             "civitai": {
@@ -1163,12 +1179,18 @@
             "recipeAdded": "配方已附加到工作流",
             "recipeReplaced": "配方已取代於工作流",
             "recipeFailedToSend": "傳送配方到工作流失敗",
+            "vaeUpdated": "[TODO: Translate] VAE updated in workflow",
+            "vaeFailed": "[TODO: Translate] Failed to update VAE in workflow",
+            "upscalerUpdated": "[TODO: Translate] Upscaler updated in workflow",
+            "upscalerFailed": "[TODO: Translate] Failed to update upscaler in workflow",
             "noMatchingNodes": "目前工作流程中沒有相容的節點",
             "noTargetNodeSelected": "未選擇目標節點"
         },
         "nodeSelector": {
             "recipe": "配方",
             "lora": "LoRA",
+            "vae": "[TODO: Translate] VAE",
+            "upscaler": "[TODO: Translate] Upscaler",
             "replace": "取代",
             "append": "附加",
             "selectTargetNode": "選擇目標節點",

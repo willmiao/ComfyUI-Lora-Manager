@@ -219,7 +219,7 @@ class EmbeddingMetadata(BaseModelMetadata):
         file_name = file_info['name']
         base_model = determine_base_model(version_info.get('baseModel', ''))
         sub_type = version_info.get('type', 'embedding')
-        
+
         # Extract tags and description if available
         tags = []
         description = ""
@@ -228,7 +228,53 @@ class EmbeddingMetadata(BaseModelMetadata):
                 tags = version_info['model']['tags']
             if 'description' in version_info['model']:
                 description = version_info['model']['description']
-        
+
+        return cls(
+            file_name=os.path.splitext(file_name)[0],
+            model_name=version_info.get('model').get('name', os.path.splitext(file_name)[0]),
+            file_path=save_path.replace(os.sep, '/'),
+            size=file_info.get('sizeKB', 0) * 1024,
+            modified=datetime.now().timestamp(),
+            sha256=file_info['hashes'].get('SHA256', '').lower(),
+            base_model=base_model,
+            preview_url=None,  # Will be updated after preview download
+            preview_nsfw_level=0,
+            from_civitai=True,
+            civitai=version_info,
+            sub_type=sub_type,
+            tags=tags,
+            modelDescription=description
+        )
+
+@dataclass
+class MiscMetadata(BaseModelMetadata):
+    """Represents the metadata structure for a Misc model (VAE, Upscaler)"""
+    sub_type: str = "vae"
+
+    @classmethod
+    def from_civitai_info(cls, version_info: Dict, file_info: Dict, save_path: str) -> 'MiscMetadata':
+        """Create MiscMetadata instance from Civitai version info"""
+        file_name = file_info['name']
+        base_model = determine_base_model(version_info.get('baseModel', ''))
+
+        # Determine sub_type from CivitAI model type
+        civitai_type = version_info.get('model', {}).get('type', '').lower()
+        if civitai_type == 'vae':
+            sub_type = 'vae'
+        elif civitai_type == 'upscaler':
+            sub_type = 'upscaler'
+        else:
+            sub_type = 'vae'  # Default to vae
+
+        # Extract tags and description if available
+        tags = []
+        description = ""
+        if 'model' in version_info:
+            if 'tags' in version_info['model']:
+                tags = version_info['model']['tags']
+            if 'description' in version_info['model']:
+                description = version_info['model']['description']
+
         return cls(
             file_name=os.path.splitext(file_name)[0],
             model_name=version_info.get('model').get('name', os.path.splitext(file_name)[0]),

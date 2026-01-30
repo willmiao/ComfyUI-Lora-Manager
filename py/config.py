@@ -89,8 +89,11 @@ class Config:
         self.checkpoints_roots = None
         self.unet_roots = None
         self.embeddings_roots = None
+        self.vae_roots = None
+        self.upscaler_roots = None
         self.base_models_roots = self._init_checkpoint_paths()
         self.embeddings_roots = self._init_embedding_paths()
+        self.misc_roots = self._init_misc_paths()
         # Scan symbolic links during initialization
         self._initialize_symlink_mappings()
         
@@ -151,6 +154,8 @@ class Config:
                 'checkpoints': list(self.checkpoints_roots or []),
                 'unet': list(self.unet_roots or []),
                 'embeddings': list(self.embeddings_roots or []),
+                'vae': list(self.vae_roots or []),
+                'upscale_models': list(self.upscaler_roots or []),
             }
 
             normalized_target_paths = _normalize_folder_paths_for_comparison(target_folder_paths)
@@ -250,6 +255,7 @@ class Config:
         roots.extend(self.loras_roots or [])
         roots.extend(self.base_models_roots or [])
         roots.extend(self.embeddings_roots or [])
+        roots.extend(self.misc_roots or [])
         return roots
 
     def _build_symlink_fingerprint(self) -> Dict[str, object]:
@@ -599,6 +605,8 @@ class Config:
             preview_roots.update(self._expand_preview_root(root))
         for root in self.embeddings_roots or []:
             preview_roots.update(self._expand_preview_root(root))
+        for root in self.misc_roots or []:
+            preview_roots.update(self._expand_preview_root(root))
 
         for target, link in self._path_mappings.items():
             preview_roots.update(self._expand_preview_root(target))
@@ -606,11 +614,12 @@ class Config:
 
         self._preview_root_paths = {path for path in preview_roots if path.is_absolute()}
         logger.debug(
-            "Preview roots rebuilt: %d paths from %d lora roots, %d checkpoint roots, %d embedding roots, %d symlink mappings",
+            "Preview roots rebuilt: %d paths from %d lora roots, %d checkpoint roots, %d embedding roots, %d misc roots, %d symlink mappings",
             len(self._preview_root_paths),
             len(self.loras_roots or []),
             len(self.base_models_roots or []),
             len(self.embeddings_roots or []),
+            len(self.misc_roots or []),
             len(self._path_mappings),
         )
 
@@ -768,6 +777,49 @@ class Config:
         except Exception as e:
             logger.warning(f"Error initializing embedding paths: {e}")
             return []
+
+    def _init_misc_paths(self) -> List[str]:
+        """Initialize and validate misc (VAE and upscaler) paths from ComfyUI settings"""
+        try:
+            raw_vae_paths = folder_paths.get_folder_paths("vae")
+            raw_upscaler_paths = folder_paths.get_folder_paths("upscale_models")
+            unique_paths = self._prepare_misc_paths(raw_vae_paths, raw_upscaler_paths)
+
+            logger.info("Found misc roots:" + ("\n - " + "\n - ".join(unique_paths) if unique_paths else "[]"))
+
+            if not unique_paths:
+                logger.warning("No valid VAE or upscaler folders found in ComfyUI configuration")
+                return []
+
+            return unique_paths
+        except Exception as e:
+            logger.warning(f"Error initializing misc paths: {e}")
+            return []
+
+    def _prepare_misc_paths(
+        self, vae_paths: Iterable[str], upscaler_paths: Iterable[str]
+    ) -> List[str]:
+        vae_map = self._dedupe_existing_paths(vae_paths)
+        upscaler_map = self._dedupe_existing_paths(upscaler_paths)
+
+        merged_map: Dict[str, str] = {}
+        for real_path, original in {**vae_map, **upscaler_map}.items():
+            if real_path not in merged_map:
+                merged_map[real_path] = original
+
+        unique_paths = sorted(merged_map.values(), key=lambda p: p.lower())
+
+        vae_values = set(vae_map.values())
+        upscaler_values = set(upscaler_map.values())
+        self.vae_roots = [p for p in unique_paths if p in vae_values]
+        self.upscaler_roots = [p for p in unique_paths if p in upscaler_values]
+
+        for original_path in unique_paths:
+            real_path = os.path.normpath(os.path.realpath(original_path)).replace(os.sep, '/')
+            if real_path != original_path:
+                self.add_path_mapping(original_path, real_path)
+
+        return unique_paths
 
     def get_preview_static_url(self, preview_path: str) -> str:
         if not preview_path:

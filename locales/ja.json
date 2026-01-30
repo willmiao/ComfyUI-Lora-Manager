@@ -179,6 +179,7 @@
             "recipes": "レシピ",
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
+            "misc": "[TODO: Translate] Misc",
             "statistics": "統計"
         },
         "search": {
@@ -187,7 +188,8 @@
                 "loras": "LoRAを検索...",
                 "recipes": "レシピを検索...",
                 "checkpoints": "checkpointを検索...",
-                "embeddings": "embeddingを検索..."
+                "embeddings": "embeddingを検索...",
+                "misc": "[TODO: Translate] Search VAE/Upscaler models..."
             },
             "options": "検索オプション",
             "searchIn": "検索対象：",
@@ -688,6 +690,16 @@
     "embeddings": {
         "title": "Embeddingモデル"
     },
+    "misc": {
+        "title": "[TODO: Translate] VAE & Upscaler Models",
+        "modelTypes": {
+            "vae": "[TODO: Translate] VAE",
+            "upscaler": "[TODO: Translate] Upscaler"
+        },
+        "contextMenu": {
+            "moveToOtherTypeFolder": "[TODO: Translate] Move to {otherType} Folder"
+        }
+    },
     "sidebar": {
         "modelRoot": "ルート",
         "collapseAll": "すべてのフォルダを折りたたむ",
@@ -1104,6 +1116,10 @@
             "title": "統計を初期化中",
             "message": "統計用のモデルデータを処理中。数分かかる場合があります..."
         },
+        "misc": {
+            "title": "[TODO: Translate] Initializing Misc Model Manager",
+            "message": "[TODO: Translate] Scanning VAE and Upscaler models..."
+        },
         "tips": {
             "title": "ヒント&コツ",
             "civitai": {
@@ -1163,12 +1179,18 @@
             "recipeAdded": "レシピがワークフローに追加されました",
             "recipeReplaced": "レシピがワークフローで置換されました",
             "recipeFailedToSend": "レシピをワークフローに送信できませんでした",
+            "vaeUpdated": "[TODO: Translate] VAE updated in workflow",
+            "vaeFailed": "[TODO: Translate] Failed to update VAE in workflow",
+            "upscalerUpdated": "[TODO: Translate] Upscaler updated in workflow",
+            "upscalerFailed": "[TODO: Translate] Failed to update upscaler in workflow",
             "noMatchingNodes": "現在のワークフローには互換性のあるノードがありません",
             "noTargetNodeSelected": "ターゲットノードが選択されていません"
         },
         "nodeSelector": {
             "recipe": "レシピ",
             "lora": "LoRA",
+            "vae": "[TODO: Translate] VAE",
+            "upscaler": "[TODO: Translate] Upscaler",
             "replace": "置換",
             "append": "追加",
             "selectTargetNode": "ターゲットノードを選択",

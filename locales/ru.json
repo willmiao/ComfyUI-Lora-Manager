@@ -179,6 +179,7 @@
             "recipes": "Рецепты",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
+            "misc": "[TODO: Translate] Misc",
             "statistics": "Статистика"
         },
         "search": {
@@ -187,7 +188,8 @@
                 "loras": "Поиск LoRAs...",
                 "recipes": "Поиск рецептов...",
                 "checkpoints": "Поиск checkpoints...",
-                "embeddings": "Поиск embeddings..."
+                "embeddings": "Поиск embeddings...",
+                "misc": "[TODO: Translate] Search VAE/Upscaler models..."
             },
             "options": "Опции поиска",
             "searchIn": "Искать в:",
@@ -688,6 +690,16 @@
     "embeddings": {
         "title": "Модели Embedding"
     },
+    "misc": {
+        "title": "[TODO: Translate] VAE & Upscaler Models",
+        "modelTypes": {
+            "vae": "[TODO: Translate] VAE",
+            "upscaler": "[TODO: Translate] Upscaler"
+        },
+        "contextMenu": {
+            "moveToOtherTypeFolder": "[TODO: Translate] Move to {otherType} Folder"
+        }
+    },
     "sidebar": {
         "modelRoot": "Корень",
         "collapseAll": "Свернуть все папки",
@@ -1104,6 +1116,10 @@
             "title": "Инициализация статистики",
             "message": "Обработка данных моделей для статистики. Это может занять несколько минут..."
         },
+        "misc": {
+            "title": "[TODO: Translate] Initializing Misc Model Manager",
+            "message": "[TODO: Translate] Scanning VAE and Upscaler models..."
+        },
         "tips": {
             "title": "Советы и хитрости",
             "civitai": {
@@ -1163,12 +1179,18 @@
             "recipeAdded": "Рецепт добавлен в workflow",
             "recipeReplaced": "Рецепт заменён в workflow",
             "recipeFailedToSend": "Не удалось отправить рецепт в workflow",
+            "vaeUpdated": "[TODO: Translate] VAE updated in workflow",
+            "vaeFailed": "[TODO: Translate] Failed to update VAE in workflow",
+            "upscalerUpdated": "[TODO: Translate] Upscaler updated in workflow",
+            "upscalerFailed": "[TODO: Translate] Failed to update upscaler in workflow",
             "noMatchingNodes": "В текущем workflow нет совместимых узлов",
             "noTargetNodeSelected": "Целевой узел не выбран"
         },
         "nodeSelector": {
             "recipe": "Рецепт",
             "lora": "LoRA",
+            "vae": "[TODO: Translate] VAE",
+            "upscaler": "[TODO: Translate] Upscaler",
             "replace": "Заменить",
             "append": "Добавить",
             "selectTargetNode": "Выберите целевой узел",

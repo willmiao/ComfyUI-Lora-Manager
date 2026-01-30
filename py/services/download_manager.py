@@ -9,7 +9,7 @@ from collections import OrderedDict
 import uuid
 from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlparse
-from ..utils.models import LoraMetadata, CheckpointMetadata, EmbeddingMetadata
+from ..utils.models import LoraMetadata, CheckpointMetadata, EmbeddingMetadata, MiscMetadata
 from ..utils.constants import CARD_PREVIEW_WIDTH, DIFFUSION_MODEL_BASE_MODELS, VALID_LORA_TYPES
 from ..utils.civitai_utils import rewrite_preview_url
 from ..utils.preview_selection import select_preview_media
@@ -59,6 +59,10 @@ class DownloadManager:
     async def _get_checkpoint_scanner(self):
         """Get the checkpoint scanner from registry"""
         return await ServiceRegistry.get_checkpoint_scanner()
+
+    async def _get_misc_scanner(self):
+        """Get the misc scanner from registry"""
+        return await ServiceRegistry.get_misc_scanner()
 
     async def download_from_civitai(
         self,
@@ -275,6 +279,7 @@ class DownloadManager:
                 lora_scanner = await self._get_lora_scanner()
                 checkpoint_scanner = await self._get_checkpoint_scanner()
                 embedding_scanner = await ServiceRegistry.get_embedding_scanner()
+                misc_scanner = await self._get_misc_scanner()
 
                 # Check lora scanner first
                 if await lora_scanner.check_model_version_exists(model_version_id):
@@ -297,6 +302,13 @@ class DownloadManager:
                     return {
                         "success": False,
                         "error": "Model version already exists in embedding library",
+                    }
+
+                # Check misc scanner (VAE, Upscaler)
+                if await misc_scanner.check_model_version_exists(model_version_id):
+                    return {
+                        "success": False,
+                        "error": "Model version already exists in misc library",
                     }
 
             # Use CivArchive provider directly when source is 'civarchive'
@@ -337,6 +349,10 @@ class DownloadManager:
                 model_type = "lora"
             elif model_type_from_info == "textualinversion":
                 model_type = "embedding"
+            elif model_type_from_info == "vae":
+                model_type = "misc"
+            elif model_type_from_info == "upscaler":
+                model_type = "misc"
             else:
                 return {
                     "success": False,
@@ -379,6 +395,14 @@ class DownloadManager:
                             "success": False,
                             "error": "Model version already exists in embedding library",
                         }
+                elif model_type == "misc":
+                    # Check misc scanner (VAE, Upscaler)
+                    misc_scanner = await self._get_misc_scanner()
+                    if await misc_scanner.check_model_version_exists(version_id):
+                        return {
+                            "success": False,
+                            "error": "Model version already exists in misc library",
+                        }
 
             # Handle use_default_paths
             if use_default_paths:
@@ -413,6 +437,26 @@ class DownloadManager:
                             "error": "Default embedding root path not set in settings",
                         }
                     save_dir = default_path
+                elif model_type == "misc":
+                    from ..config import config
+
+                    civitai_type = version_info.get("model", {}).get("type", "").lower()
+                    if civitai_type == "vae":
+                        default_paths = config.vae_roots
+                        error_msg = "VAE root path not configured"
+                    elif civitai_type == "upscaler":
+                        default_paths = config.upscaler_roots
+                        error_msg = "Upscaler root path not configured"
+                    else:
+                        default_paths = config.misc_roots
+                        error_msg = "Misc root path not configured"
+
+                    if not default_paths:
+                        return {
+                            "success": False,
+                            "error": error_msg,
+                        }
+                    save_dir = default_paths[0] if default_paths else ""
 
                 # Calculate relative path using template
                 relative_path = self._calculate_relative_path(version_info, model_type)
@@ -515,6 +559,11 @@ class DownloadManager:
                     version_info, file_info, save_path
                 )
                 logger.info(f"Creating EmbeddingMetadata for {file_name}")
+            elif model_type == "misc":
+                metadata = MiscMetadata.from_civitai_info(
+                    version_info, file_info, save_path
+                )
+                logger.info(f"Creating MiscMetadata for {file_name}")
 
             # 6. Start download process
             result = await self._execute_download(
@@ -620,6 +669,8 @@ class DownloadManager:
                 scanner = await self._get_checkpoint_scanner()
             elif model_type == "embedding":
                 scanner = await ServiceRegistry.get_embedding_scanner()
+            elif model_type == "misc":
+                scanner = await self._get_misc_scanner()
         except Exception as exc:
             logger.debug("Failed to acquire scanner for %s models: %s", model_type, exc)
 
@@ -1016,6 +1067,9 @@ class DownloadManager:
             elif model_type == "embedding":
                 scanner = await ServiceRegistry.get_embedding_scanner()
                 logger.info(f"Updating embedding cache for {actual_file_paths[0]}")
+            elif model_type == "misc":
+                scanner = await self._get_misc_scanner()
+                logger.info(f"Updating misc cache for {actual_file_paths[0]}")
 
             adjust_cached_entry = (
                 getattr(scanner, "adjust_cached_entry", None)
@@ -1124,6 +1178,14 @@ class DownloadManager:
                 ".safetensors",
                 ".pkl",
                 ".sft",
+            }
+        if model_type == "misc":
+            return {
+                ".ckpt",
+                ".pt",
+                ".bin",
+                ".pth",
+                ".safetensors",
             }
         return {".safetensors"}
 

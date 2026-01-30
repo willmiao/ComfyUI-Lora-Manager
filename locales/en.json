@@ -179,6 +179,7 @@
             "recipes": "Recipes",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
+            "misc": "Misc",
             "statistics": "Stats"
         },
         "search": {
@@ -187,7 +188,8 @@
                 "loras": "Search LoRAs...",
                 "recipes": "Search recipes...",
                 "checkpoints": "Search checkpoints...",
-                "embeddings": "Search embeddings..."
+                "embeddings": "Search embeddings...",
+                "misc": "Search VAE/Upscaler models..."
             },
             "options": "Search Options",
             "searchIn": "Search In:",
@@ -688,6 +690,16 @@
     "embeddings": {
         "title": "Embedding Models"
     },
+    "misc": {
+        "title": "VAE & Upscaler Models",
+        "modelTypes": {
+            "vae": "VAE",
+            "upscaler": "Upscaler"
+        },
+        "contextMenu": {
+            "moveToOtherTypeFolder": "Move to {otherType} Folder"
+        }
+    },
     "sidebar": {
         "modelRoot": "Root",
         "collapseAll": "Collapse All Folders",
@@ -1104,6 +1116,10 @@
             "title": "Initializing Statistics",
             "message": "Processing model data for statistics. This may take a few minutes..."
         },
+        "misc": {
+            "title": "Initializing Misc Model Manager",
+            "message": "Scanning VAE and Upscaler models..."
+        },
         "tips": {
             "title": "Tips & Tricks",
             "civitai": {
@@ -1163,12 +1179,18 @@
             "recipeAdded": "Recipe appended to workflow",
             "recipeReplaced": "Recipe replaced in workflow",
             "recipeFailedToSend": "Failed to send recipe to workflow",
+            "vaeUpdated": "VAE updated in workflow",
+            "vaeFailed": "Failed to update VAE in workflow",
+            "upscalerUpdated": "Upscaler updated in workflow",
+            "upscalerFailed": "Failed to update upscaler in workflow",
             "noMatchingNodes": "No compatible nodes available in the current workflow",
             "noTargetNodeSelected": "No target node selected"
         },
         "nodeSelector": {
             "recipe": "Recipe",
             "lora": "LoRA",
+            "vae": "VAE",
+            "upscaler": "Upscaler",
             "replace": "Replace",
             "append": "Append",
             "selectTargetNode": "Select target node",

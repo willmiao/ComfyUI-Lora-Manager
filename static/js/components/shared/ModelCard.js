@@ -214,6 +214,52 @@ function handleSendToWorkflow(card, replaceMode, modelType) {
             missingNodesMessage,
             missingTargetMessage,
         });
+    } else if (modelType === MODEL_TYPES.MISC) {
+        const modelPath = card.dataset.filepath;
+        if (!modelPath) {
+            const message = translate('modelCard.sendToWorkflow.missingPath', {}, 'Unable to determine model path for this card');
+            showToast(message, {}, 'error');
+            return;
+        }
+
+        const subtype = (card.dataset.sub_type || 'vae').toLowerCase();
+        const isVae = subtype === 'vae';
+        const widgetName = isVae ? 'vae_name' : 'model_name';
+        const actionTypeText = translate(
+            isVae ? 'uiHelpers.nodeSelector.vae' : 'uiHelpers.nodeSelector.upscaler',
+            {},
+            isVae ? 'VAE' : 'Upscaler'
+        );
+        const successMessage = translate(
+            isVae ? 'uiHelpers.workflow.vaeUpdated' : 'uiHelpers.workflow.upscalerUpdated',
+            {},
+            isVae ? 'VAE updated in workflow' : 'Upscaler updated in workflow'
+        );
+        const failureMessage = translate(
+            isVae ? 'uiHelpers.workflow.vaeFailed' : 'uiHelpers.workflow.upscalerFailed',
+            {},
+            isVae ? 'Failed to update VAE node' : 'Failed to update upscaler node'
+        );
+        const missingNodesMessage = translate(
+            'uiHelpers.workflow.noMatchingNodes',
+            {},
+            'No compatible nodes available in the current workflow'
+        );
+        const missingTargetMessage = translate(
+            'uiHelpers.workflow.noTargetNodeSelected',
+            {},
+            'No target node selected'
+        );
+
+        sendModelPathToWorkflow(modelPath, {
+            widgetName,
+            collectionType: MODEL_TYPES.MISC,
+            actionTypeText,
+            successMessage,
+            failureMessage,
+            missingNodesMessage,
+            missingTargetMessage,
+        });
     } else {
         showToast('modelCard.sendToWorkflow.checkpointNotImplemented', {}, 'info');
     }
@@ -230,6 +276,10 @@ function handleCopyAction(card, modelType) {
     } else if (modelType === MODEL_TYPES.EMBEDDING) {
         const embeddingName = card.dataset.file_name;
         copyToClipboard(embeddingName, 'Embedding name copied');
+    } else if (modelType === MODEL_TYPES.MISC) {
+        const miscName = card.dataset.file_name;
+        const message = translate('modelCard.actions.miscNameCopied', {}, 'Model name copied');
+        copyToClipboard(miscName, message);
     }
 }
 

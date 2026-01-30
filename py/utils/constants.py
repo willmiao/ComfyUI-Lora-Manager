@@ -49,6 +49,7 @@ SUPPORTED_MEDIA_EXTENSIONS = {
 VALID_LORA_SUB_TYPES = ["lora", "locon", "dora"]
 VALID_CHECKPOINT_SUB_TYPES = ["checkpoint", "diffusion_model"]
 VALID_EMBEDDING_SUB_TYPES = ["embedding"]
+VALID_MISC_SUB_TYPES = ["vae", "upscaler"]
 
 # Backward compatibility alias
 VALID_LORA_TYPES = VALID_LORA_SUB_TYPES
@@ -94,6 +95,7 @@ DEFAULT_PRIORITY_TAG_CONFIG = {
     "lora": ", ".join(CIVITAI_MODEL_TAGS),
     "checkpoint": ", ".join(CIVITAI_MODEL_TAGS),
     "embedding": ", ".join(CIVITAI_MODEL_TAGS),
+    "misc": ", ".join(CIVITAI_MODEL_TAGS),
 }
 
 # baseModel values from CivitAI that should be treated as diffusion models (unet)

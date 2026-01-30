@@ -184,15 +184,17 @@ class LoraManager:
             lora_scanner = await ServiceRegistry.get_lora_scanner()
             checkpoint_scanner = await ServiceRegistry.get_checkpoint_scanner()
             embedding_scanner = await ServiceRegistry.get_embedding_scanner()
-            
+            misc_scanner = await ServiceRegistry.get_misc_scanner()
+
             # Initialize recipe scanner if needed
             recipe_scanner = await ServiceRegistry.get_recipe_scanner()
-            
+
             # Create low-priority initialization tasks
             init_tasks = [
                 asyncio.create_task(lora_scanner.initialize_in_background(), name='lora_cache_init'),
                 asyncio.create_task(checkpoint_scanner.initialize_in_background(), name='checkpoint_cache_init'),
                 asyncio.create_task(embedding_scanner.initialize_in_background(), name='embedding_cache_init'),
+                asyncio.create_task(misc_scanner.initialize_in_background(), name='misc_cache_init'),
                 asyncio.create_task(recipe_scanner.initialize_in_background(), name='recipe_cache_init')
             ]
 
@@ -252,8 +254,9 @@ class LoraManager:
             # Collect all model roots
             all_roots = set()
             all_roots.update(config.loras_roots)
-            all_roots.update(config.base_models_roots) 
+            all_roots.update(config.base_models_roots)
             all_roots.update(config.embeddings_roots)
+            all_roots.update(config.misc_roots or [])
             
             total_deleted = 0
             total_size_freed = 0

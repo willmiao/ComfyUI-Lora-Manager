@@ -177,6 +177,35 @@ export const state = {
             showFavoritesOnly: false,
             showUpdateAvailableOnly: false,
             duplicatesMode: false,
+        },
+
+        [MODEL_TYPES.MISC]: {
+            currentPage: 1,
+            isLoading: false,
+            hasMore: true,
+            sortBy: 'name',
+            activeFolder: getStorageItem(`${MODEL_TYPES.MISC}_activeFolder`),
+            previewVersions: new Map(),
+            searchManager: null,
+            searchOptions: {
+                filename: true,
+                modelname: true,
+                creator: false,
+                recursive: getStorageItem(`${MODEL_TYPES.MISC}_recursiveSearch`, true),
+            },
+            filters: {
+                baseModel: [],
+                tags: {},
+                license: {},
+                modelTypes: []
+            },
+            bulkMode: false,
+            selectedModels: new Set(),
+            metadataCache: new Map(),
+            showFavoritesOnly: false,
+            showUpdateAvailableOnly: false,
+            duplicatesMode: false,
+            subType: 'vae'
         }
     },
 

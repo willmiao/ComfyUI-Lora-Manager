@@ -233,23 +233,44 @@ class ServiceRegistry:
     async def get_embedding_scanner(cls):
         """Get or create Embedding scanner instance"""
         service_name = "embedding_scanner"
-        
+
         if service_name in cls._services:
             return cls._services[service_name]
-        
+
         async with cls._get_lock(service_name):
             # Double-check after acquiring lock
             if service_name in cls._services:
                 return cls._services[service_name]
-            
+
             # Import here to avoid circular imports
             from .embedding_scanner import EmbeddingScanner
-            
+
             scanner = await EmbeddingScanner.get_instance()
             cls._services[service_name] = scanner
             logger.debug(f"Created and registered {service_name}")
             return scanner
-    
+
+    @classmethod
+    async def get_misc_scanner(cls):
+        """Get or create Misc scanner instance (VAE, Upscaler)"""
+        service_name = "misc_scanner"
+
+        if service_name in cls._services:
+            return cls._services[service_name]
+
+        async with cls._get_lock(service_name):
+            # Double-check after acquiring lock
+            if service_name in cls._services:
+                return cls._services[service_name]
+
+            # Import here to avoid circular imports
+            from .misc_scanner import MiscScanner
+
+            scanner = await MiscScanner.get_instance()
+            cls._services[service_name] = scanner
+            logger.debug(f"Created and registered {service_name}")
+            return scanner
+
     @classmethod
     def clear_services(cls):
         """Clear all registered services - mainly for testing"""

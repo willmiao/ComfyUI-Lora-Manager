@@ -68,6 +68,9 @@ export const MODEL_SUBTYPE_DISPLAY_NAMES = {
     diffusion_model: "Diffusion Model",
     // Embedding sub-types
     embedding: "Embedding",
+    // Misc sub-types
+    vae: "VAE",
+    upscaler: "Upscaler",
 };
 
 // Backward compatibility alias
@@ -81,6 +84,8 @@ export const MODEL_SUBTYPE_ABBREVIATIONS = {
     checkpoint: "CKPT",
     diffusion_model: "DM",
     embedding: "EMB",
+    vae: "VAE",
+    upscaler: "UP",
 };
 
 export function getSubTypeAbbreviation(subType) {

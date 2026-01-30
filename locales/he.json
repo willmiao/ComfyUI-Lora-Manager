@@ -9,9 +9,9 @@
             "back": "חזור",
             "next": "הבא",
             "backToTop": "חזור למעלה",
-            "add": "הוסף",
             "settings": "הגדרות",
-            "help": "עזרה"
+            "help": "עזרה",
+            "add": "הוסף"
         },
         "status": {
             "loading": "טוען...",
@@ -179,6 +179,7 @@
             "recipes": "מתכונים",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
+            "misc": "[TODO: Translate] Misc",
             "statistics": "סטטיסטיקה"
         },
         "search": {
@@ -187,7 +188,8 @@
                 "loras": "חפש LoRAs...",
                 "recipes": "חפש מתכונים...",
                 "checkpoints": "חפש checkpoints...",
-                "embeddings": "חפש embeddings..."
+                "embeddings": "חפש embeddings...",
+                "misc": "[TODO: Translate] Search VAE/Upscaler models..."
             },
             "options": "אפשרויות חיפוש",
             "searchIn": "חפש ב:",
@@ -688,6 +690,16 @@
     "embeddings": {
         "title": "מודלי Embedding"
     },
+    "misc": {
+        "title": "[TODO: Translate] VAE & Upscaler Models",
+        "modelTypes": {
+            "vae": "[TODO: Translate] VAE",
+            "upscaler": "[TODO: Translate] Upscaler"
+        },
+        "contextMenu": {
+            "moveToOtherTypeFolder": "[TODO: Translate] Move to {otherType} Folder"
+        }
+    },
     "sidebar": {
         "modelRoot": "שורש",
         "collapseAll": "כווץ את כל התיקיות",
@@ -1104,6 +1116,10 @@
             "title": "מאתחל סטטיסטיקה",
             "message": "מעבד נתוני מודלים עבור סטטיסטיקה. זה עשוי לקחת מספר דקות..."
         },
+        "misc": {
+            "title": "[TODO: Translate] Initializing Misc Model Manager",
+            "message": "[TODO: Translate] Scanning VAE and Upscaler models..."
+        },
         "tips": {
             "title": "טיפים וטריקים",
             "civitai": {
@@ -1163,12 +1179,18 @@
             "recipeAdded": "מתכון נוסף ל-workflow",
             "recipeReplaced": "מתכון הוחלף ב-workflow",
             "recipeFailedToSend": "שליחת מתכון ל-workflow נכשלה",
+            "vaeUpdated": "[TODO: Translate] VAE updated in workflow",
+            "vaeFailed": "[TODO: Translate] Failed to update VAE in workflow",
+            "upscalerUpdated": "[TODO: Translate] Upscaler updated in workflow",
+            "upscalerFailed": "[TODO: Translate] Failed to update upscaler in workflow",
             "noMatchingNodes": "אין צמתים תואמים זמינים ב-workflow הנוכחי",
             "noTargetNodeSelected": "לא נבחר צומת יעד"
         },
         "nodeSelector": {
             "recipe": "מתכון",
             "lora": "LoRA",
+            "vae": "[TODO: Translate] VAE",
+            "upscaler": "[TODO: Translate] Upscaler",
             "replace": "החלף",
             "append": "הוסף",
             "selectTargetNode": "בחר צומת יעד",

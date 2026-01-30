@@ -28,10 +28,9 @@ async function getCardCreator(pageType) {
 
 // Function to get the appropriate data fetcher based on page type
 async function getDataFetcher(pageType) {
-    if (pageType === 'loras' || pageType === 'embeddings' || pageType === 'checkpoints') {
+    if (pageType === 'loras' || pageType === 'embeddings' || pageType === 'checkpoints' || pageType === 'misc') {
         return (page = 1, pageSize = 100) => getModelApiClient().fetchModelsPage(page, pageSize);
     } else if (pageType === 'recipes') {
-        // Import the recipeApi module and use the fetchRecipesPage function
         const { fetchRecipesPage } = await import('../api/recipeApi.js');
         return fetchRecipesPage;
     }

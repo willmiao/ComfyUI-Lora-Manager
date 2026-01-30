@@ -9,9 +9,9 @@
             "back": "Zurück",
             "next": "Weiter",
             "backToTop": "Nach oben",
-            "add": "Hinzufügen",
             "settings": "Einstellungen",
-            "help": "Hilfe"
+            "help": "Hilfe",
+            "add": "Hinzufügen"
         },
         "status": {
             "loading": "Wird geladen...",
@@ -179,6 +179,7 @@
             "recipes": "Rezepte",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
+            "misc": "[TODO: Translate] Misc",
             "statistics": "Statistiken"
         },
         "search": {
@@ -187,7 +188,8 @@
                 "loras": "LoRAs suchen...",
                 "recipes": "Rezepte suchen...",
                 "checkpoints": "Checkpoints suchen...",
-                "embeddings": "Embeddings suchen..."
+                "embeddings": "Embeddings suchen...",
+                "misc": "[TODO: Translate] Search VAE/Upscaler models..."
             },
             "options": "Suchoptionen",
             "searchIn": "Suchen in:",
@@ -688,6 +690,16 @@
     "embeddings": {
         "title": "Embedding-Modelle"
     },
+    "misc": {
+        "title": "[TODO: Translate] VAE & Upscaler Models",
+        "modelTypes": {
+            "vae": "[TODO: Translate] VAE",
+            "upscaler": "[TODO: Translate] Upscaler"
+        },
+        "contextMenu": {
+            "moveToOtherTypeFolder": "[TODO: Translate] Move to {otherType} Folder"
+        }
+    },
     "sidebar": {
         "modelRoot": "Stammverzeichnis",
         "collapseAll": "Alle Ordner einklappen",
@@ -1104,6 +1116,10 @@
             "title": "Statistiken werden initialisiert",
             "message": "Modelldaten für Statistiken werden verarbeitet. Dies kann einige Minuten dauern..."
         },
+        "misc": {
+            "title": "[TODO: Translate] Initializing Misc Model Manager",
+            "message": "[TODO: Translate] Scanning VAE and Upscaler models..."
+        },
         "tips": {
             "title": "Tipps & Tricks",
             "civitai": {
@@ -1163,12 +1179,18 @@
             "recipeAdded": "Rezept zum Workflow hinzugefügt",
             "recipeReplaced": "Rezept im Workflow ersetzt",
             "recipeFailedToSend": "Fehler beim Senden des Rezepts an den Workflow",
+            "vaeUpdated": "[TODO: Translate] VAE updated in workflow",
+            "vaeFailed": "[TODO: Translate] Failed to update VAE in workflow",
+            "upscalerUpdated": "[TODO: Translate] Upscaler updated in workflow",
+            "upscalerFailed": "[TODO: Translate] Failed to update upscaler in workflow",
             "noMatchingNodes": "Keine kompatiblen Knoten im aktuellen Workflow verfügbar",
             "noTargetNodeSelected": "Kein Zielknoten ausgewählt"
         },
         "nodeSelector": {
             "recipe": "Rezept",
             "lora": "LoRA",
+            "vae": "[TODO: Translate] VAE",
+            "upscaler": "[TODO: Translate] Upscaler",
             "replace": "Ersetzen",
             "append": "Anhängen",
             "selectTargetNode": "Zielknoten auswählen",

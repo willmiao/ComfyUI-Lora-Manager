@@ -179,6 +179,7 @@
             "recipes": "레시피",
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
+            "misc": "[TODO: Translate] Misc",
             "statistics": "통계"
         },
         "search": {
@@ -187,7 +188,8 @@
                 "loras": "LoRA 검색...",
                 "recipes": "레시피 검색...",
                 "checkpoints": "Checkpoint 검색...",
-                "embeddings": "Embedding 검색..."
+                "embeddings": "Embedding 검색...",
+                "misc": "[TODO: Translate] Search VAE/Upscaler models..."
             },
             "options": "검색 옵션",
             "searchIn": "검색 범위:",
@@ -688,6 +690,16 @@
     "embeddings": {
         "title": "Embedding 모델"
     },
+    "misc": {
+        "title": "[TODO: Translate] VAE & Upscaler Models",
+        "modelTypes": {
+            "vae": "[TODO: Translate] VAE",
+            "upscaler": "[TODO: Translate] Upscaler"
+        },
+        "contextMenu": {
+            "moveToOtherTypeFolder": "[TODO: Translate] Move to {otherType} Folder"
+        }
+    },
     "sidebar": {
         "modelRoot": "루트",
         "collapseAll": "모든 폴더 접기",
@@ -1104,6 +1116,10 @@
             "title": "통계 초기화 중",
             "message": "통계를 위한 모델 데이터를 처리하고 있습니다. 몇 분이 걸릴 수 있습니다..."
         },
+        "misc": {
+            "title": "[TODO: Translate] Initializing Misc Model Manager",
+            "message": "[TODO: Translate] Scanning VAE and Upscaler models..."
+        },
         "tips": {
             "title": "팁 & 요령",
             "civitai": {
@@ -1163,12 +1179,18 @@
             "recipeAdded": "레시피가 워크플로에 추가되었습니다",
             "recipeReplaced": "레시피가 워크플로에서 교체되었습니다",
             "recipeFailedToSend": "레시피를 워크플로로 전송하지 못했습니다",
+            "vaeUpdated": "[TODO: Translate] VAE updated in workflow",
+            "vaeFailed": "[TODO: Translate] Failed to update VAE in workflow",
+            "upscalerUpdated": "[TODO: Translate] Upscaler updated in workflow",
+            "upscalerFailed": "[TODO: Translate] Failed to update upscaler in workflow",
             "noMatchingNodes": "현재 워크플로에서 호환되는 노드가 없습니다",
             "noTargetNodeSelected": "대상 노드가 선택되지 않았습니다"
         },
         "nodeSelector": {
             "recipe": "레시피",
             "lora": "LoRA",
+            "vae": "[TODO: Translate] VAE",
+            "upscaler": "[TODO: Translate] Upscaler",
             "replace": "교체",
             "append": "추가",
             "selectTargetNode": "대상 노드 선택",

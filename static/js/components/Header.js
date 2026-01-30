@@ -32,6 +32,7 @@ export class HeaderManager {
       if (path.includes('/checkpoints')) return 'checkpoints';
       if (path.includes('/embeddings')) return 'embeddings';
       if (path.includes('/statistics')) return 'statistics';
+      if (path.includes('/misc')) return 'misc';
       if (path.includes('/loras')) return 'loras';
       return 'unknown';
     }

@@ -179,6 +179,7 @@
             "recipes": "Recetas",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
+            "misc": "[TODO: Translate] Misc",
             "statistics": "Estadísticas"
         },
         "search": {
@@ -187,7 +188,8 @@
                 "loras": "Buscar LoRAs...",
                 "recipes": "Buscar recetas...",
                 "checkpoints": "Buscar checkpoints...",
-                "embeddings": "Buscar embeddings..."
+                "embeddings": "Buscar embeddings...",
+                "misc": "[TODO: Translate] Search VAE/Upscaler models..."
             },
             "options": "Opciones de búsqueda",
             "searchIn": "Buscar en:",
@@ -688,6 +690,16 @@
     "embeddings": {
         "title": "Modelos embedding"
     },
+    "misc": {
+        "title": "[TODO: Translate] VAE & Upscaler Models",
+        "modelTypes": {
+            "vae": "[TODO: Translate] VAE",
+            "upscaler": "[TODO: Translate] Upscaler"
+        },
+        "contextMenu": {
+            "moveToOtherTypeFolder": "[TODO: Translate] Move to {otherType} Folder"
+        }
+    },
     "sidebar": {
         "modelRoot": "Raíz",
         "collapseAll": "Colapsar todas las carpetas",
@@ -1104,6 +1116,10 @@
             "title": "Inicializando estadísticas",
             "message": "Procesando datos del modelo para estadísticas. Esto puede tomar unos minutos..."
         },
+        "misc": {
+            "title": "[TODO: Translate] Initializing Misc Model Manager",
+            "message": "[TODO: Translate] Scanning VAE and Upscaler models..."
+        },
         "tips": {
             "title": "Consejos y trucos",
             "civitai": {
@@ -1163,12 +1179,18 @@
             "recipeAdded": "Receta añadida al flujo de trabajo",
             "recipeReplaced": "Receta reemplazada en el flujo de trabajo",
             "recipeFailedToSend": "Error al enviar receta al flujo de trabajo",
+            "vaeUpdated": "[TODO: Translate] VAE updated in workflow",
+            "vaeFailed": "[TODO: Translate] Failed to update VAE in workflow",
+            "upscalerUpdated": "[TODO: Translate] Upscaler updated in workflow",
+            "upscalerFailed": "[TODO: Translate] Failed to update upscaler in workflow",
             "noMatchingNodes": "No hay nodos compatibles disponibles en el flujo de trabajo actual",
             "noTargetNodeSelected": "No se ha seleccionado ningún nodo de destino"
         },
         "nodeSelector": {
             "recipe": "Receta",
             "lora": "LoRA",
+            "vae": "[TODO: Translate] VAE",
+            "upscaler": "[TODO: Translate] Upscaler",
             "replace": "Reemplazar",
             "append": "Añadir",
             "selectTargetNode": "Seleccionar nodo de destino",
