@@ -73,6 +73,24 @@ export const MODEL_SUBTYPE_DISPLAY_NAMES = {
 // Backward compatibility alias
 export const MODEL_TYPE_DISPLAY_NAMES = MODEL_SUBTYPE_DISPLAY_NAMES;
 
+// Abbreviated sub-type names for compact display (e.g., in model card labels)
+export const MODEL_SUBTYPE_ABBREVIATIONS = {
+    lora: "LoRA",
+    locon: "LyCO",
+    dora: "DoRA",
+    checkpoint: "CKPT",
+    diffusion_model: "DM",
+    embedding: "EMB",
+};
+
+export function getSubTypeAbbreviation(subType) {
+    if (!subType || typeof subType !== 'string') {
+        return '';
+    }
+    const normalized = subType.toLowerCase();
+    return MODEL_SUBTYPE_ABBREVIATIONS[normalized] || subType.toUpperCase().slice(0, 4);
+}
+
 export const BASE_MODEL_ABBREVIATIONS = {
     // Stable Diffusion 1.x models
     [BASE_MODELS.SD_1_4]: 'SD1',

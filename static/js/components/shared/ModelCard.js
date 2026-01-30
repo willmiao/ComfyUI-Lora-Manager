@@ -4,7 +4,7 @@ import { showModelModal } from './ModelModal.js';
 import { toggleShowcase } from './showcase/ShowcaseView.js';
 import { bulkManager } from '../../managers/BulkManager.js';
 import { modalManager } from '../../managers/ModalManager.js';
-import { NSFW_LEVELS, getBaseModelAbbreviation } from '../../utils/constants.js';
+import { NSFW_LEVELS, getBaseModelAbbreviation, getSubTypeAbbreviation, MODEL_SUBTYPE_DISPLAY_NAMES } from '../../utils/constants.js';
 import { MODEL_TYPES } from '../../api/apiConfig.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { showDeleteModal } from '../../utils/modalUtils.js';
@@ -580,6 +580,11 @@ export function createModelCard(model, modelType) {
     const baseModelLabel = model.base_model || 'Unknown';
     const baseModelAbbreviation = getBaseModelAbbreviation(baseModelLabel);
 
+    // Sub-type display (e.g., LoRA, LyCO, DoRA, CKPT, DM, EMB)
+    const subType = model.sub_type || '';
+    const subTypeAbbreviation = getSubTypeAbbreviation(subType);
+    const fullSubTypeName = MODEL_SUBTYPE_DISPLAY_NAMES[subType?.toLowerCase()] || subType || '';
+
     card.innerHTML = `
         <div class="card-preview ${shouldBlur ? 'blurred' : ''}">
             ${isVideo ?
@@ -592,8 +597,11 @@ export function createModelCard(model, modelType) {
                       <i class="fas fa-eye"></i>
                   </button>` : ''}
                 <div class="card-header-info">
-                    <span class="base-model-label ${shouldBlur ? 'with-toggle' : ''}" title="${baseModelLabel}">
-                        ${baseModelAbbreviation}
+                    <span class="base-model-label ${shouldBlur ? 'with-toggle' : ''}"
+                          title="${fullSubTypeName ? fullSubTypeName + ' | ' : ''}${baseModelLabel}">
+                        ${subTypeAbbreviation ? `<span class="model-sub-type">${subTypeAbbreviation}</span>` : ''}
+                        ${subTypeAbbreviation ? `<span class="model-separator"></span>` : ''}
+                        <span class="model-base-type">${baseModelAbbreviation}</span>
                     </span>
                     ${hasUpdateAvailable ? `
                         <span class="model-update-badge" title="${updateBadgeTooltip}">

@@ -296,6 +296,19 @@
     min-height: 20px;
 }
 
+/* Gradient overlay on right side for icon readability */
+.card-header::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100%;
+    background: linear-gradient(to left, oklch(0% 0 0 / 0.4) 0%, transparent 100%);
+    pointer-events: none;
+    border-top-right-radius: var(--border-radius);
+}
+
 .card-header-info {
     display: flex;
     align-items: center;
@@ -426,15 +439,39 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     color: white;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-    background: rgba(255, 255, 255, 0.2);
-    padding: 2px var(--space-1);
+    background: rgba(255, 255, 255, 0.12);
+    padding: 2px 6px;
     border-radius: var(--border-radius-xs);
-    backdrop-filter: blur(2px);
-    font-size: 0.85em;
+    backdrop-filter: blur(4px);
+    font-size: 0.8em;
     line-height: 1.2;
+    font-weight: 500;
+}
+
+/* Subtle separator between sub-type and base model */
+.model-separator {
+    width: 1px;
+    height: 0.6em;
+    background: rgba(255, 255, 255, 0.25);
+    flex-shrink: 0;
+}
+
+/* Sub-type abbreviation styling */
+.model-sub-type {
+    opacity: 0.9;
+    flex-shrink: 0;
+}
+
+/* Base model abbreviation styling */
+.model-base-type {
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Style for version name */
