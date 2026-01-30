@@ -216,8 +216,6 @@
             "presetDeleteConfirmClick": "Click again to confirm",
             "presetOverwriteConfirm": "Preset \"{name}\" already exists. Overwrite?",
             "presetNamePlaceholder": "Preset name...",
-            "restoreDefaults": "Restore defaults",
-            "noPresets": "No presets saved yet. Select filters below and click + to save",
             "baseModel": "Base Model",
             "modelTags": "Tags (Top 20)",
             "modelTypes": "Model Types",

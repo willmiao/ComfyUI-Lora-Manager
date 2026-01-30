@@ -195,9 +195,6 @@ export class FilterPresetManager {
         }
 
         if (!presets) {
-            if (this.currentPage === 'loras') {
-                return this.getDefaultPresets();
-            }
             return [];
         }
 
@@ -213,28 +210,12 @@ export class FilterPresetManager {
             return true;
         });
 
-        if (validPresets.length === 0 && this.currentPage === 'loras') {
-            return this.getDefaultPresets();
-        }
+
 
         return validPresets;
     }
 
-    getDefaultPresets() {
-        return [
-            {
-                name: "WAN Models",
-                filters: {
-                    baseModel: ["Wan Video*"],
-                    tags: {},
-                    license: {},
-                    modelTypes: []
-                },
-                createdAt: Date.now(),
-                isDefault: true
-            }
-        ];
-    }
+
 
     /**
      * Resolve base model patterns to actual available models
@@ -542,16 +523,7 @@ export class FilterPresetManager {
         return Array.isArray(localPresets) && localPresets.length > 0;
     }
 
-    async restoreDefaultPresets() {
-        const defaultPresets = this.getDefaultPresets();
-        await this.savePresets(defaultPresets);
-        this.renderPresets();
-        showToast(
-            translate('toast.presets.restored', {}, 'Default presets restored'),
-            {},
-            'success'
-        );
-    }
+
 
     /**
      * Check if the add button should be disabled
@@ -763,31 +735,6 @@ export class FilterPresetManager {
         const presets = this.loadPresets();
         presetsContainer.innerHTML = '';
 
-        // Show empty state with restore option if no presets
-        if (presets.length === 0) {
-            const emptyState = document.createElement('div');
-            emptyState.className = 'presets-empty-state';
-            emptyState.style.cssText = 'width: 100%; padding: 12px; text-align: center;';
-
-            const noPresetsMsg = document.createElement('div');
-            noPresetsMsg.className = 'no-presets';
-            noPresetsMsg.style.cssText = 'margin-bottom: 8px;';
-            noPresetsMsg.textContent = translate('header.filter.noPresets', {}, 'No presets saved yet. Select filters below and click + to save');
-
-            const restoreLink = document.createElement('button');
-            restoreLink.className = 'restore-defaults-btn';
-            restoreLink.style.cssText = 'background: none; border: none; color: var(--lora-accent); cursor: pointer; font-size: 13px; text-decoration: underline; padding: 4px 8px;';
-            restoreLink.textContent = translate('header.filter.restoreDefaults', {}, 'Restore defaults');
-            restoreLink.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.restoreDefaultPresets();
-            });
-
-            emptyState.appendChild(noPresetsMsg);
-            emptyState.appendChild(restoreLink);
-            presetsContainer.appendChild(emptyState);
-        }
-
         // Render existing presets
         presets.forEach(preset => {
             const presetEl = document.createElement('div');
@@ -840,7 +787,7 @@ export class FilterPresetManager {
             presetsContainer.appendChild(presetEl);
         });
 
-        // Add the "Add new preset" button as the last element
+        // Add the "Add new preset" button (always shown, unified style)
         const addBtn = document.createElement('div');
         addBtn.className = 'filter-preset add-preset-btn';
         addBtn.innerHTML = `<i class="fas fa-plus"></i> ${translate('common.actions.add', {}, 'Add')}`;
@@ -854,7 +801,7 @@ export class FilterPresetManager {
 
         presetsContainer.appendChild(addBtn);
 
-        // Update add button state
+        // Update add button state (handles disabled state based on filters)
         this.updateAddButtonState();
     }
 

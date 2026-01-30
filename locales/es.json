@@ -216,8 +216,6 @@
             "presetDeleteConfirmClick": "Haga clic de nuevo para confirmar",
             "presetOverwriteConfirm": "El preset \"{name}\" ya existe. ¿Sobrescribir?",
             "presetNamePlaceholder": "Nombre del preajuste...",
-            "restoreDefaults": "Restaurar predeterminados",
-            "noPresets": "Aún no hay preajustes guardados. Seleccione filtros abajo y haga clic en + para guardar",
             "baseModel": "Modelo base",
             "modelTags": "Etiquetas (Top 20)",
             "modelTypes": "Model Types",

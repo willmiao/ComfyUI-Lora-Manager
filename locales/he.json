@@ -216,8 +216,6 @@
             "presetDeleteConfirmClick": "לחץ שוב לאישור",
             "presetOverwriteConfirm": "הפריסט \"{name}\" כבר קיים. לדרוס?",
             "presetNamePlaceholder": "שם קביעה מראש...",
-            "restoreDefaults": "שחזור ברירות מחדל",
-            "noPresets": "עדיין אין קביעות מראש שמורות. בחר מסננים למטה ולחץ על + כדי לשמור",
             "baseModel": "מודל בסיס",
             "modelTags": "תגיות (20 המובילות)",
             "modelTypes": "Model Types",

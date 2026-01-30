@@ -216,8 +216,6 @@
             "presetDeleteConfirmClick": "再次點擊確認",
             "presetOverwriteConfirm": "預設 \"{name}\" 已存在。是否覆蓋？",
             "presetNamePlaceholder": "預設名稱...",
-            "restoreDefaults": "恢復預設",
-            "noPresets": "尚未儲存預設。選擇下方篩選器並點擊 + 儲存",
             "baseModel": "基礎模型",
             "modelTags": "標籤（前 20）",
             "modelTypes": "Model Types",

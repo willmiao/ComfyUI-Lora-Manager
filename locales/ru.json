@@ -216,8 +216,6 @@
             "presetDeleteConfirmClick": "Нажмите еще раз для подтверждения",
             "presetOverwriteConfirm": "Пресет \"{name}\" уже существует. Перезаписать?",
             "presetNamePlaceholder": "Имя пресета...",
-            "restoreDefaults": "Восстановить по умолчанию",
-            "noPresets": "Пресеты еще не сохранены. Выберите фильтры ниже и нажмите + для сохранения",
             "baseModel": "Базовая модель",
             "modelTags": "Теги (Топ 20)",
             "modelTypes": "Model Types",

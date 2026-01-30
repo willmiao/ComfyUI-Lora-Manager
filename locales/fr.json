@@ -216,8 +216,6 @@
             "presetDeleteConfirmClick": "Cliquez à nouveau pour confirmer",
             "presetOverwriteConfirm": "Le préréglage \"{name}\" existe déjà. Remplacer?",
             "presetNamePlaceholder": "Nom du préréglage...",
-            "restoreDefaults": "Restaurer les paramètres par défaut",
-            "noPresets": "Aucun préréglage enregistré. Sélectionnez des filtres ci-dessous et cliquez sur + pour enregistrer",
             "baseModel": "Modèle de base",
             "modelTags": "Tags (Top 20)",
             "modelTypes": "Model Types",

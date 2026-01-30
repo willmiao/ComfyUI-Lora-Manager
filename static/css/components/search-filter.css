@@ -660,15 +660,7 @@
     to { opacity: 1; }
 }
 
-.no-presets {
-    width: 100%;
-    padding: 12px 8px;
-    text-align: center;
-    font-size: 0.9em;
-    color: var(--text-color);
-    opacity: 0.6;
-    font-style: italic;
-}
+
 
 /* Mobile adjustments */
 @media (max-width: 768px) {

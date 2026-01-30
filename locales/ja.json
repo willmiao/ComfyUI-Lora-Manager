@@ -216,8 +216,6 @@
             "presetDeleteConfirmClick": "もう一度クリックして確認",
             "presetOverwriteConfirm": "プリセット「{name}」は既に存在します。上書きしますか？",
             "presetNamePlaceholder": "プリセット名...",
-            "restoreDefaults": "デフォルトを復元",
-            "noPresets": "まだプリセットが保存されていません。下のフィルタを選択して+をクリックして保存",
             "baseModel": "ベースモデル",
             "modelTags": "タグ（上位20）",
             "modelTypes": "Model Types",

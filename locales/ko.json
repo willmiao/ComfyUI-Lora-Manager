@@ -216,8 +216,6 @@
             "presetDeleteConfirmClick": "다시 클릭하여 확인",
             "presetOverwriteConfirm": "프리셋 \"{name}\"이(가) 이미 존재합니다. 덮어쓰시겠습니까?",
             "presetNamePlaceholder": "프리셋 이름...",
-            "restoreDefaults": "기본값 복원",
-            "noPresets": "저장된 프리셋이 없습니다. 아래 필터를 선택하고 +를 클릭하여 저장",
             "baseModel": "베이스 모델",
             "modelTags": "태그 (상위 20개)",
             "modelTypes": "Model Types",

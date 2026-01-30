@@ -216,8 +216,6 @@
             "presetDeleteConfirmClick": "Zum Bestätigen erneut klicken",
             "presetOverwriteConfirm": "Voreinstellung \"{name}\" existiert bereits. Überschreiben?",
             "presetNamePlaceholder": "Voreinstellungsname...",
-            "restoreDefaults": "Standard wiederherstellen",
-            "noPresets": "Noch keine Voreinstellungen gespeichert. Filter unten auswählen und auf + klicken zum Speichern",
             "baseModel": "Basis-Modell",
             "modelTags": "Tags (Top 20)",
             "modelTypes": "Model Types",
