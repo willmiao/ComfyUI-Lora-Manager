@@ -223,7 +223,7 @@ class MetadataManager:
                     preview_url=normalize_path(preview_url),
                     tags=[],
                     modelDescription="",
-                    model_type="checkpoint",
+                    sub_type="checkpoint",
                     from_civitai=True
                 )
             elif model_class.__name__ == "EmbeddingMetadata":
@@ -238,6 +238,7 @@ class MetadataManager:
                     preview_url=normalize_path(preview_url),
                     tags=[],
                     modelDescription="",
+                    sub_type="embedding",
                     from_civitai=True
                 )
             else:  # Default to LoraMetadata
