@@ -113,6 +113,12 @@
     max-width: 110px;
 }
 
+/* Compact mode: hide sub-type to save space */
+.compact-density .model-sub-type,
+.compact-density .model-separator {
+    display: none;
+}
+
 .compact-density .card-actions i {
     font-size: 0.95em;
     padding: 3px;
