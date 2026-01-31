@@ -22,6 +22,7 @@ export default defineConfig({
         rollupOptions: {
             external: [
                 '../../../scripts/app.js',
+                '../../../scripts/api.js',
                 '../loras_widget.js',
                 '../autocomplete.js'
             ],

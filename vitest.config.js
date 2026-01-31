@@ -6,7 +6,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ['tests/frontend/setup.js'],
     include: [
-      'tests/frontend/**/*.test.js'
+      'tests/frontend/**/*.test.js',
+      'tests/frontend/**/*.test.ts'
     ],
     coverage: {
       enabled: process.env.VITEST_COVERAGE === 'true',

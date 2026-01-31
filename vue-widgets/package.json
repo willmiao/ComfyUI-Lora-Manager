@@ -12,9 +12,13 @@
     "@comfyorg/comfyui-frontend-types": "^1.35.4",
     "@types/node": "^22.10.1",
     "@vitejs/plugin-vue": "^5.2.3",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^26.0.0",
     "typescript": "^5.7.2",
     "vite": "^6.3.5",
     "vite-plugin-css-injected-by-js": "^3.5.2",
+    "vitest": "^3.0.0",
     "vue-tsc": "^2.1.10"
   },
   "scripts": {
@@ -24,6 +28,9 @@
     "typecheck": "vue-tsc --noEmit",
     "clean": "rm -rf ../web/comfyui/vue-widgets",
     "rebuild": "npm run clean && npm run build",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   }
 }

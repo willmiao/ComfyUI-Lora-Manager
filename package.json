@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run",
+    "test": "npm run test:js && npm run test:vue",
+    "test:js": "vitest run",
+    "test:vue": "cd vue-widgets && npx vitest run",
     "test:watch": "vitest",
     "test:coverage": "node scripts/run_frontend_coverage.js"
   },

@@ -27,6 +27,8 @@ const AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT = 100
 
 // @ts-ignore - ComfyUI external module
 import { app } from '../../../scripts/app.js'
+// @ts-ignore - ComfyUI external module
+import { api } from '../../../scripts/api.js'
 // @ts-ignore
 import { getPoolConfigFromConnectedNode, getActiveLorasFromNode, updateConnectedTriggerWords, updateDownstreamLoaders } from '../../web/comfyui/utils.js'
 
@@ -255,7 +257,8 @@ function createLoraCyclerWidget(node) {
 
   const vueApp = createApp(LoraCyclerWidget, {
     widget,
-    node
+    node,
+    api
   })
 
   vueApp.use(PrimeVue, {

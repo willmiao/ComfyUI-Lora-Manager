@@ -10,10 +10,18 @@
       :use-custom-clip-range="state.useCustomClipRange.value"
       :is-clip-strength-disabled="state.isClipStrengthDisabled.value"
       :is-loading="state.isLoading.value"
+      :repeat-count="state.repeatCount.value"
+      :repeat-used="state.displayRepeatUsed.value"
+      :is-paused="state.isPaused.value"
+      :is-workflow-executing="state.isWorkflowExecuting.value"
+      :executing-repeat-step="state.executingRepeatStep.value"
       @update:current-index="handleIndexUpdate"
       @update:model-strength="state.modelStrength.value = $event"
       @update:clip-strength="state.clipStrength.value = $event"
       @update:use-custom-clip-range="handleUseCustomClipRangeChange"
+      @update:repeat-count="handleRepeatCountChange"
+      @toggle-pause="handleTogglePause"
+      @reset-index="handleResetIndex"
       @refresh="handleRefresh"
     />
   </div>
@@ -31,6 +39,7 @@ type CyclerWidget = ComponentWidget<CyclerConfig>
 const props = defineProps<{
   widget: CyclerWidget
   node: { id: number; inputs?: any[]; widgets?: any[]; graph?: any }
+  api?: any  // ComfyUI API for execution events
 }>()
 
 // State management
@@ -38,6 +47,35 @@ const state = useLoraCyclerState(props.widget)
 
 // Symbol to track if the widget has been executed at least once
 const HAS_EXECUTED = Symbol('HAS_EXECUTED')
+
+// Execution context queue for batch queue synchronization
+// In batch queue mode, all beforeQueued calls happen BEFORE any onExecuted calls,
+// so we need to snapshot the state at queue time and replay it during execution
+interface ExecutionContext {
+  isPaused: boolean
+  repeatUsed: number
+  repeatCount: number
+  shouldAdvanceDisplay: boolean
+  displayRepeatUsed: number  // Value to show in UI after completion
+}
+const executionQueue: ExecutionContext[] = []
+
+// Track pending executions for batch queue support (deferred UI updates)
+// Uses FIFO order since executions are processed in the order they were queued
+interface PendingExecution {
+  repeatUsed: number
+  repeatCount: number
+  shouldAdvanceDisplay: boolean
+  displayRepeatUsed: number  // Value to show in UI after completion
+  output?: {
+    nextIndex: number
+    nextLoraName: string
+    nextLoraFilename: string
+    currentLoraName: string
+    currentLoraFilename: string
+  }
+}
+const pendingExecutions: PendingExecution[] = []
 
 // Track last known pool config hash
 const lastPoolConfigHash = ref('')
@@ -61,6 +99,9 @@ const handleIndexUpdate = async (newIndex: number) => {
   ;(props.widget as any)[HAS_EXECUTED] = false
   state.executionIndex.value = null
   state.nextIndex.value = null
+
+  // Clear execution queue since user is manually changing state
+  executionQueue.length = 0
 
   state.setIndex(newIndex)
 
@@ -100,6 +141,79 @@ const handleRefresh = async () => {
   }
 }
 
+// Handle repeat count change
+const handleRepeatCountChange = (newValue: number) => {
+  state.repeatCount.value = newValue
+  // Reset repeatUsed when changing repeat count
+  state.repeatUsed.value = 0
+  state.displayRepeatUsed.value = 0
+}
+
+// Clear all pending items from server queue
+const clearPendingQueue = async () => {
+  try {
+    // Clear local execution queue
+    executionQueue.length = 0
+
+    // Clear server queue (pending items only)
+    await fetch('/queue', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clear: true })
+    })
+
+    console.log('[LoraCyclerWidget] Cleared pending queue on pause')
+  } catch (error) {
+    console.error('[LoraCyclerWidget] Error clearing queue:', error)
+  }
+}
+
+// Handle pause toggle
+const handleTogglePause = async () => {
+  const wasPaused = state.isPaused.value
+  state.togglePause()
+
+  // When transitioning to paused state, clear pending queue
+  if (!wasPaused && state.isPaused.value) {
+    // Reset execution state so subsequent manual queues start fresh
+    ;(props.widget as any)[HAS_EXECUTED] = false
+    state.executionIndex.value = null
+    state.nextIndex.value = null
+
+    await clearPendingQueue()
+  }
+}
+
+// Handle reset index
+const handleResetIndex = async () => {
+  // Reset execution state
+  ;(props.widget as any)[HAS_EXECUTED] = false
+  state.executionIndex.value = null
+  state.nextIndex.value = null
+
+  // Clear execution queue since user is resetting state
+  executionQueue.length = 0
+
+  // Reset index and repeat state
+  state.resetIndex()
+
+  // Refresh list to update current LoRA display
+  try {
+    const poolConfig = getPoolConfig()
+    const loraList = await state.fetchCyclerList(poolConfig)
+
+    if (loraList.length > 0) {
+      const currentLora = loraList[0]
+      if (currentLora) {
+        state.currentLoraName.value = currentLora.file_name
+        state.currentLoraFilename.value = currentLora.file_name
+      }
+    }
+  } catch (error) {
+    console.error('[LoraCyclerWidget] Error resetting index:', error)
+  }
+}
+
 // Check for pool config changes
 const checkPoolConfigChanges = async () => {
   if (!isMounted.value) return
@@ -135,16 +249,65 @@ onMounted(async () => {
 
   // Add beforeQueued hook to handle index shifting for batch queue synchronization
   // This ensures each execution uses a different LoRA in the cycle
+  // Now with support for repeat count and pause features
+  //
+  // IMPORTANT: In batch queue mode, ALL beforeQueued calls happen BEFORE any execution.
+  // We push an "execution context" snapshot to a queue so that onExecuted can use the
+  // correct state values that were captured at queue time (not the live state).
   ;(props.widget as any).beforeQueued = () => {
+    if (state.isPaused.value) {
+      // When paused: use current index, don't advance, don't count toward repeat limit
+      // Push context indicating this execution should NOT advance display
+      executionQueue.push({
+        isPaused: true,
+        repeatUsed: state.repeatUsed.value,
+        repeatCount: state.repeatCount.value,
+        shouldAdvanceDisplay: false,
+        displayRepeatUsed: state.displayRepeatUsed.value  // Keep current display value when paused
+      })
+      // CRITICAL: Clear execution_index when paused to force backend to use current_index
+      // This ensures paused executions use the same LoRA regardless of any
+      // execution_index set by previous non-paused beforeQueued calls
+      const pausedConfig = state.buildConfig()
+      pausedConfig.execution_index = null
+      props.widget.value = pausedConfig
+      return
+    }
+
     if ((props.widget as any)[HAS_EXECUTED]) {
-      // After first execution: shift indices (previous next_index becomes execution_index)
-      state.generateNextIndex()
+      // After first execution: check repeat logic
+      if (state.repeatUsed.value < state.repeatCount.value) {
+        // Still repeating: increment repeatUsed, use same index
+        state.repeatUsed.value++
+      } else {
+        // Repeat complete: reset repeatUsed to 1, advance to next index
+        state.repeatUsed.value = 1
+        state.generateNextIndex()
+      }
     } else {
-      // First execution: just initialize next_index (execution_index stays null)
-      // This means first execution uses current_index from widget
+      // First execution: initialize
+      state.repeatUsed.value = 1
       state.initializeNextIndex()
       ;(props.widget as any)[HAS_EXECUTED] = true
     }
+
+    // Determine if this execution should advance the display
+    // (only when repeat cycle is complete for this queued item)
+    const shouldAdvanceDisplay = state.repeatUsed.value >= state.repeatCount.value
+
+    // Calculate the display value to show after this execution completes
+    // When advancing to a new LoRA: reset to 0 (fresh start for new LoRA)
+    // When repeating same LoRA: show current repeat step
+    const displayRepeatUsed = shouldAdvanceDisplay ? 0 : state.repeatUsed.value
+
+    // Push execution context snapshot to queue
+    executionQueue.push({
+      isPaused: false,
+      repeatUsed: state.repeatUsed.value,
+      repeatCount: state.repeatCount.value,
+      shouldAdvanceDisplay,
+      displayRepeatUsed
+    })
 
     // Update the widget value so the indices are included in the serialized config
     props.widget.value = state.buildConfig()
@@ -163,35 +326,62 @@ onMounted(async () => {
   }
 
   // Override onExecuted to handle backend UI updates
+  // This defers the UI update until workflow completes (via API events)
   const originalOnExecuted = (props.node as any).onExecuted?.bind(props.node)
 
   ;(props.node as any).onExecuted = function(output: any) {
     console.log("[LoraCyclerWidget] Node executed with output:", output)
 
-    // Update state from backend response (values are wrapped in arrays)
-    if (output?.next_index !== undefined) {
-      const val = Array.isArray(output.next_index) ? output.next_index[0] : output.next_index
-      state.currentIndex.value = val
-    }
+    // Pop execution context from queue (FIFO order)
+    const context = executionQueue.shift()
+
+    // Determine if we should advance the display index
+    const shouldAdvanceDisplay = context
+      ? context.shouldAdvanceDisplay
+      : (!state.isPaused.value && state.repeatUsed.value >= state.repeatCount.value)
+
+    // Extract output values
+    const nextIndex = output?.next_index !== undefined
+      ? (Array.isArray(output.next_index) ? output.next_index[0] : output.next_index)
+      : state.currentIndex.value
+    const nextLoraName = output?.next_lora_name !== undefined
+      ? (Array.isArray(output.next_lora_name) ? output.next_lora_name[0] : output.next_lora_name)
+      : ''
+    const nextLoraFilename = output?.next_lora_filename !== undefined
+      ? (Array.isArray(output.next_lora_filename) ? output.next_lora_filename[0] : output.next_lora_filename)
+      : ''
+    const currentLoraName = output?.current_lora_name !== undefined
+      ? (Array.isArray(output.current_lora_name) ? output.current_lora_name[0] : output.current_lora_name)
+      : ''
+    const currentLoraFilename = output?.current_lora_filename !== undefined
+      ? (Array.isArray(output.current_lora_filename) ? output.current_lora_filename[0] : output.current_lora_filename)
+      : ''
+
+    // Update total count immediately (doesn't need to wait for workflow completion)
     if (output?.total_count !== undefined) {
       const val = Array.isArray(output.total_count) ? output.total_count[0] : output.total_count
       state.totalCount.value = val
     }
-    if (output?.current_lora_name !== undefined) {
-      const val = Array.isArray(output.current_lora_name) ? output.current_lora_name[0] : output.current_lora_name
-      state.currentLoraName.value = val
-    }
-    if (output?.current_lora_filename !== undefined) {
-      const val = Array.isArray(output.current_lora_filename) ? output.current_lora_filename[0] : output.current_lora_filename
-      state.currentLoraFilename.value = val
-    }
-    if (output?.next_lora_name !== undefined) {
-      const val = Array.isArray(output.next_lora_name) ? output.next_lora_name[0] : output.next_lora_name
-      state.currentLoraName.value = val
-    }
-    if (output?.next_lora_filename !== undefined) {
-      const val = Array.isArray(output.next_lora_filename) ? output.next_lora_filename[0] : output.next_lora_filename
-      state.currentLoraFilename.value = val
+
+    // Store pending update (will be applied on workflow completion)
+    if (context) {
+      pendingExecutions.push({
+        repeatUsed: context.repeatUsed,
+        repeatCount: context.repeatCount,
+        shouldAdvanceDisplay,
+        displayRepeatUsed: context.displayRepeatUsed,
+        output: {
+          nextIndex,
+          nextLoraName,
+          nextLoraFilename,
+          currentLoraName,
+          currentLoraFilename
+        }
+      })
+
+      // Update visual feedback state (don't update displayRepeatUsed yet - wait for workflow completion)
+      state.executingRepeatStep.value = context.repeatUsed
+      state.isWorkflowExecuting.value = true
     }
 
     // Call original onExecuted if it exists
@@ -200,11 +390,69 @@ onMounted(async () => {
     }
   }
 
+  // Set up execution tracking via API events
+  if (props.api) {
+    // Handle workflow completion events using FIFO order
+    // Note: The 'executing' event doesn't contain prompt_id (only node ID as string),
+    // so we use FIFO order instead of prompt_id matching since executions are processed
+    // in the order they were queued
+    const handleExecutionComplete = () => {
+      // Process the first pending execution (FIFO order)
+      if (pendingExecutions.length === 0) {
+        return
+      }
+
+      const pending = pendingExecutions.shift()!
+
+      // Apply UI update now that workflow is complete
+      // Update repeat display (deferred like index updates)
+      state.displayRepeatUsed.value = pending.displayRepeatUsed
+
+      if (pending.output) {
+        if (pending.shouldAdvanceDisplay) {
+          state.currentIndex.value = pending.output.nextIndex
+          state.currentLoraName.value = pending.output.nextLoraName
+          state.currentLoraFilename.value = pending.output.nextLoraFilename
+        } else {
+          // When not advancing, show current LoRA info
+          state.currentLoraName.value = pending.output.currentLoraName
+          state.currentLoraFilename.value = pending.output.currentLoraFilename
+        }
+      }
+
+      // Reset visual feedback if no more pending
+      if (pendingExecutions.length === 0) {
+        state.isWorkflowExecuting.value = false
+        state.executingRepeatStep.value = 0
+      }
+    }
+
+    props.api.addEventListener('execution_success', handleExecutionComplete)
+    props.api.addEventListener('execution_error', handleExecutionComplete)
+    props.api.addEventListener('execution_interrupted', handleExecutionComplete)
+
+    // Store cleanup function for API listeners
+    const apiCleanup = () => {
+      props.api.removeEventListener('execution_success', handleExecutionComplete)
+      props.api.removeEventListener('execution_error', handleExecutionComplete)
+      props.api.removeEventListener('execution_interrupted', handleExecutionComplete)
+    }
+
+    // Extend existing cleanup
+    const existingCleanup = (props.widget as any).onRemoveCleanup
+    ;(props.widget as any).onRemoveCleanup = () => {
+      existingCleanup?.()
+      apiCleanup()
+    }
+  }
+
   // Watch for connection changes by polling (since ComfyUI doesn't provide connection events)
   const checkInterval = setInterval(checkPoolConfigChanges, 1000)
 
   // Cleanup on unmount (handled by Vue's effect scope)
+  const existingCleanupForInterval = (props.widget as any).onRemoveCleanup
   ;(props.widget as any).onRemoveCleanup = () => {
+    existingCleanupForInterval?.()
     clearInterval(checkInterval)
   }
 })

@@ -80,6 +80,10 @@ export interface CyclerConfig {
   // Dual-index mechanism for batch queue synchronization
   execution_index?: number | null  // Index to use for current execution
   next_index?: number | null       // Index for display after execution
+  // Advanced index control features
+  repeat_count: number        // How many times each LoRA should repeat (default: 1)
+  repeat_used: number         // How many times current index has been used
+  is_paused: boolean          // Whether iteration is paused
 }
 
 // Widget config union type

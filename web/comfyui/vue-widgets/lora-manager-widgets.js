@@ -1464,16 +1464,16 @@ to { transform: rotate(360deg);
   box-sizing: border-box;
 }
 
-.cycler-settings[data-v-8690e14a] {
+.cycler-settings[data-v-3831ffe1] {
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #e4e4e7;
 }
-.settings-header[data-v-8690e14a] {
+.settings-header[data-v-3831ffe1] {
   margin-bottom: 8px;
 }
-.settings-title[data-v-8690e14a] {
+.settings-title[data-v-3831ffe1] {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -1482,10 +1482,10 @@ to { transform: rotate(360deg);
   margin: 0;
   text-transform: uppercase;
 }
-.setting-section[data-v-8690e14a] {
+.setting-section[data-v-3831ffe1] {
   margin-bottom: 8px;
 }
-.setting-label[data-v-8690e14a] {
+.setting-label[data-v-3831ffe1] {
   font-size: 13px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.8);
@@ -1494,10 +1494,10 @@ to { transform: rotate(360deg);
 }
 
 /* Progress Display */
-.progress-section[data-v-8690e14a] {
+.progress-section[data-v-3831ffe1] {
   margin-bottom: 12px;
 }
-.progress-display[data-v-8690e14a] {
+.progress-display[data-v-3831ffe1] {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
@@ -1505,22 +1505,33 @@ to { transform: rotate(360deg);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: border-color 0.3s ease;
 }
-.progress-info[data-v-8690e14a] {
+.progress-display.executing[data-v-3831ffe1] {
+  border-color: rgba(66, 153, 225, 0.5);
+  animation: pulse-3831ffe1 2s ease-in-out infinite;
+}
+@keyframes pulse-3831ffe1 {
+0%, 100% { border-color: rgba(66, 153, 225, 0.3);
+}
+50% { border-color: rgba(66, 153, 225, 0.7);
+}
+}
+.progress-info[data-v-3831ffe1] {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
   flex: 1;
 }
-.progress-label[data-v-8690e14a] {
+.progress-label[data-v-3831ffe1] {
   font-size: 10px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.5);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-.progress-name[data-v-8690e14a] {
+.progress-name[data-v-3831ffe1] {
   font-size: 13px;
   font-weight: 500;
   color: rgba(191, 219, 254, 1);
@@ -1528,31 +1539,37 @@ to { transform: rotate(360deg);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.progress-counter[data-v-8690e14a] {
+.progress-counter[data-v-3831ffe1] {
   display: flex;
   align-items: center;
   gap: 4px;
   padding-left: 12px;
   flex-shrink: 0;
 }
-.progress-index[data-v-8690e14a] {
+.progress-index[data-v-3831ffe1] {
   font-size: 18px;
   font-weight: 600;
   color: rgba(66, 153, 225, 1);
   font-family: 'SF Mono', 'Roboto Mono', monospace;
+  min-width: 4ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
-.progress-separator[data-v-8690e14a] {
+.progress-separator[data-v-3831ffe1] {
   font-size: 14px;
   color: rgba(226, 232, 240, 0.4);
   margin: 0 2px;
 }
-.progress-total[data-v-8690e14a] {
+.progress-total[data-v-3831ffe1] {
   font-size: 14px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.6);
   font-family: 'SF Mono', 'Roboto Mono', monospace;
+  min-width: 4ch;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
 }
-.refresh-button[data-v-8690e14a] {
+.refresh-button[data-v-3831ffe1] {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1567,23 +1584,23 @@ to { transform: rotate(360deg);
   cursor: pointer;
   transition: all 0.2s;
 }
-.refresh-button[data-v-8690e14a]:hover:not(:disabled) {
+.refresh-button[data-v-3831ffe1]:hover:not(:disabled) {
   background: rgba(66, 153, 225, 0.2);
   border-color: rgba(66, 153, 225, 0.4);
   color: rgba(191, 219, 254, 1);
 }
-.refresh-button[data-v-8690e14a]:disabled {
+.refresh-button[data-v-3831ffe1]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.refresh-icon[data-v-8690e14a] {
+.refresh-icon[data-v-3831ffe1] {
   width: 14px;
   height: 14px;
 }
-.refresh-icon.spinning[data-v-8690e14a] {
-  animation: spin-8690e14a 1s linear infinite;
+.refresh-icon.spinning[data-v-3831ffe1] {
+  animation: spin-3831ffe1 1s linear infinite;
 }
-@keyframes spin-8690e14a {
+@keyframes spin-3831ffe1 {
 from {
     transform: rotate(0deg);
 }
@@ -1592,15 +1609,40 @@ to {
 }
 }
 
-/* Index Input */
-.index-input-container[data-v-8690e14a] {
+/* Repeat Badge */
+.repeat-badge[data-v-3831ffe1] {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 2px 6px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 4px;
+}
+.repeat-badge-label[data-v-3831ffe1] {
+  font-size: 10px;
+  color: rgba(253, 230, 138, 0.7);
+  text-transform: uppercase;
+}
+.repeat-badge-value[data-v-3831ffe1] {
+  font-size: 12px;
+  font-family: 'SF Mono', 'Roboto Mono', monospace;
+  color: rgba(253, 230, 138, 1);
+  min-width: 3ch;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Index Controls Row */
+.index-controls-row[data-v-3831ffe1] {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
-.index-input[data-v-8690e14a] {
-  width: 80px;
-  padding: 6px 10px;
+.index-input[data-v-3831ffe1] {
+  width: 60px;
+  padding: 6px 8px;
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
@@ -1608,42 +1650,104 @@ to {
   font-size: 13px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
 }
-.index-input[data-v-8690e14a]:focus {
+.index-input[data-v-3831ffe1]:focus {
   outline: none;
   border-color: rgba(66, 153, 225, 0.6);
 }
-.index-input[data-v-8690e14a]:disabled {
+.index-input[data-v-3831ffe1]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.index-hint[data-v-8690e14a] {
+.index-hint[data-v-3831ffe1] {
+  font-size: 11px;
+  color: rgba(226, 232, 240, 0.4);
+  min-width: 7ch;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Repeat Controls */
+.repeat-label[data-v-3831ffe1] {
+  font-size: 13px;
+  color: rgba(226, 232, 240, 0.6);
+  margin-left: 4px;
+}
+.repeat-input[data-v-3831ffe1] {
+  width: 44px;
+  padding: 6px 6px;
+  background: rgba(26, 32, 44, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.2);
+  border-radius: 6px;
+  color: #e4e4e7;
+  font-size: 13px;
+  font-family: 'SF Mono', 'Roboto Mono', monospace;
+  text-align: center;
+}
+.repeat-input[data-v-3831ffe1]:focus {
+  outline: none;
+  border-color: rgba(66, 153, 225, 0.6);
+}
+.repeat-hint[data-v-3831ffe1] {
   font-size: 11px;
   color: rgba(226, 232, 240, 0.4);
 }
 
+/* Control Buttons */
+.control-btn[data-v-3831ffe1] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: rgba(226, 232, 240, 0.6);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.control-btn[data-v-3831ffe1]:hover {
+  background: rgba(66, 153, 225, 0.2);
+  border-color: rgba(66, 153, 225, 0.4);
+  color: rgba(191, 219, 254, 1);
+}
+.control-btn.active[data-v-3831ffe1] {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: rgba(253, 230, 138, 1);
+}
+.control-btn.active[data-v-3831ffe1]:hover {
+  background: rgba(245, 158, 11, 0.3);
+  border-color: rgba(245, 158, 11, 0.6);
+}
+.control-icon[data-v-3831ffe1] {
+  width: 14px;
+  height: 14px;
+}
+
 /* Slider Container */
-.slider-container[data-v-8690e14a] {
+.slider-container[data-v-3831ffe1] {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
   padding: 6px;
 }
-.slider-container--disabled[data-v-8690e14a] {
+.slider-container--disabled[data-v-3831ffe1] {
   opacity: 0.5;
   pointer-events: none;
 }
-.section-header-with-toggle[data-v-8690e14a] {
+.section-header-with-toggle[data-v-3831ffe1] {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
 }
-.section-header-with-toggle .setting-label[data-v-8690e14a] {
+.section-header-with-toggle .setting-label[data-v-3831ffe1] {
   margin-bottom: 4px;
 }
 
 /* Toggle Switch */
-.toggle-switch[data-v-8690e14a] {
+.toggle-switch[data-v-3831ffe1] {
   position: relative;
   width: 36px;
   height: 20px;
@@ -1652,7 +1756,7 @@ to {
   border: none;
   cursor: pointer;
 }
-.toggle-switch__track[data-v-8690e14a] {
+.toggle-switch__track[data-v-3831ffe1] {
   position: absolute;
   inset: 0;
   background: var(--comfy-input-bg, #333);
@@ -1660,11 +1764,11 @@ to {
   border-radius: 10px;
   transition: all 0.2s;
 }
-.toggle-switch--active .toggle-switch__track[data-v-8690e14a] {
+.toggle-switch--active .toggle-switch__track[data-v-3831ffe1] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.toggle-switch__thumb[data-v-8690e14a] {
+.toggle-switch__thumb[data-v-3831ffe1] {
   position: absolute;
   top: 3px;
   left: 2px;
@@ -1675,16 +1779,16 @@ to {
   transition: all 0.2s;
   opacity: 0.6;
 }
-.toggle-switch--active .toggle-switch__thumb[data-v-8690e14a] {
+.toggle-switch--active .toggle-switch__thumb[data-v-3831ffe1] {
   transform: translateX(16px);
   background: #4299e1;
   opacity: 1;
 }
-.toggle-switch:hover .toggle-switch__thumb[data-v-8690e14a] {
+.toggle-switch:hover .toggle-switch__thumb[data-v-3831ffe1] {
   opacity: 1;
 }
 
-.lora-cycler-widget[data-v-2ca548b3] {
+.lora-cycler-widget[data-v-e8c2adc1] {
   padding: 6px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 6px;
@@ -1771,6 +1875,7 @@ to {
 })();
 var _a;
 import { app as app$1 } from "../../../scripts/app.js";
+import { api } from "../../../scripts/api.js";
 /**
 * @vue/shared v3.5.26
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
@@ -11335,7 +11440,7 @@ function useLoraPoolApi() {
   };
 }
 function useLoraPoolState(widget) {
-  const api = useLoraPoolApi();
+  const api2 = useLoraPoolApi();
   let isRestoring = false;
   const selectedBaseModels = ref([]);
   const includeTags = ref([]);
@@ -11349,7 +11454,7 @@ function useLoraPoolState(widget) {
   const folderTree = ref([]);
   const previewItems = ref([]);
   const matchCount = ref(0);
-  const isLoading = computed(() => api.isLoading.value);
+  const isLoading = computed(() => api2.isLoading.value);
   const buildConfig = () => {
     const config = {
       version: 2,
@@ -11403,16 +11508,16 @@ function useLoraPoolState(widget) {
   };
   const fetchFilterOptions = async () => {
     const [baseModels, tags, folders] = await Promise.all([
-      api.fetchBaseModels(),
-      api.fetchTags(),
-      api.fetchFolderTree()
+      api2.fetchBaseModels(),
+      api2.fetchTags(),
+      api2.fetchFolderTree()
     ]);
     availableBaseModels.value = baseModels;
     availableTags.value = tags;
     folderTree.value = folders;
   };
   const refreshPreview = async () => {
-    const result = await api.fetchLoras({
+    const result = await api2.fetchLoras({
       baseModels: selectedBaseModels.value,
       tagsInclude: includeTags.value,
       tagsExclude: excludeTags.value,
@@ -12089,8 +12194,8 @@ const _hoisted_16$1 = { class: "setting-section" };
 const _hoisted_17$1 = { class: "roll-buttons-with-tooltip" };
 const _hoisted_18$1 = { class: "roll-buttons" };
 const _hoisted_19$1 = ["disabled"];
-const _hoisted_20 = ["disabled"];
-const _hoisted_21 = ["disabled"];
+const _hoisted_20$1 = ["disabled"];
+const _hoisted_21$1 = ["disabled"];
 const _sfc_main$5 = /* @__PURE__ */ defineComponent({
   __name: "LoraRandomizerSettingsView",
   props: {
@@ -12287,7 +12392,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
                 onClick: _cache[14] || (_cache[14] = ($event) => _ctx.$emit("always-randomize"))
               }, [..._cache[26] || (_cache[26] = [
                 createStaticVNode('<svg class="roll-button__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-v-f7a531b6><path d="M21 12a9 9 0 1 1-6.219-8.56" data-v-f7a531b6></path><path d="M21 3v5h-5" data-v-f7a531b6></path><circle cx="12" cy="12" r="3" data-v-f7a531b6></circle><circle cx="6" cy="8" r="1.5" data-v-f7a531b6></circle><circle cx="18" cy="16" r="1.5" data-v-f7a531b6></circle></svg><span class="roll-button__text" data-v-f7a531b6>Always Randomize</span>', 2)
-              ])], 10, _hoisted_20),
+              ])], 10, _hoisted_20$1),
               createBaseVNode("button", {
                 class: normalizeClass(["roll-button", { selected: __props.rollMode === "fixed" && __props.canReuseLast && areLorasEqual(__props.currentLoras, __props.lastUsed) }]),
                 disabled: !__props.canReuseLast,
@@ -12308,7 +12413,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
                   createBaseVNode("path", { d: "M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" })
                 ], -1),
                 createBaseVNode("span", { class: "roll-button__text" }, "Reuse Last", -1)
-              ])], 42, _hoisted_21)
+              ])], 42, _hoisted_21$1)
             ]),
             createVNode(Transition, { name: "tooltip" }, {
               default: withCtx(() => [
@@ -12702,23 +12807,42 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
 const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-8063df56"]]);
 const _hoisted_1$3 = { class: "cycler-settings" };
 const _hoisted_2$2 = { class: "setting-section progress-section" };
-const _hoisted_3$1 = { class: "progress-display" };
-const _hoisted_4$1 = { class: "progress-info" };
+const _hoisted_3$1 = { class: "progress-info" };
+const _hoisted_4$1 = { class: "progress-label" };
 const _hoisted_5 = ["title"];
 const _hoisted_6 = { class: "progress-counter" };
 const _hoisted_7 = { class: "progress-index" };
 const _hoisted_8 = { class: "progress-total" };
-const _hoisted_9 = ["disabled"];
-const _hoisted_10 = { class: "setting-section" };
-const _hoisted_11 = { class: "index-input-container" };
-const _hoisted_12 = ["max", "value", "disabled"];
-const _hoisted_13 = { class: "index-hint" };
-const _hoisted_14 = { class: "setting-section" };
-const _hoisted_15 = { class: "slider-container" };
-const _hoisted_16 = { class: "setting-section" };
-const _hoisted_17 = { class: "section-header-with-toggle" };
-const _hoisted_18 = { class: "setting-label" };
-const _hoisted_19 = ["aria-checked"];
+const _hoisted_9 = {
+  key: 0,
+  class: "repeat-badge"
+};
+const _hoisted_10 = { class: "repeat-badge-value" };
+const _hoisted_11 = ["disabled"];
+const _hoisted_12 = { class: "setting-section" };
+const _hoisted_13 = { class: "index-controls-row" };
+const _hoisted_14 = ["max", "value", "disabled"];
+const _hoisted_15 = { class: "index-hint" };
+const _hoisted_16 = ["value"];
+const _hoisted_17 = ["title"];
+const _hoisted_18 = {
+  key: 0,
+  viewBox: "0 0 24 24",
+  fill: "currentColor",
+  class: "control-icon"
+};
+const _hoisted_19 = {
+  key: 1,
+  viewBox: "0 0 24 24",
+  fill: "currentColor",
+  class: "control-icon"
+};
+const _hoisted_20 = { class: "setting-section" };
+const _hoisted_21 = { class: "slider-container" };
+const _hoisted_22 = { class: "setting-section" };
+const _hoisted_23 = { class: "section-header-with-toggle" };
+const _hoisted_24 = { class: "setting-label" };
+const _hoisted_25 = ["aria-checked"];
 const _sfc_main$3 = /* @__PURE__ */ defineComponent({
   __name: "LoraCyclerSettingsView",
   props: {
@@ -12730,13 +12854,19 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     clipStrength: {},
     useCustomClipRange: { type: Boolean },
     isClipStrengthDisabled: { type: Boolean },
-    isLoading: { type: Boolean }
+    isLoading: { type: Boolean },
+    repeatCount: {},
+    repeatUsed: {},
+    isPaused: { type: Boolean },
+    isWorkflowExecuting: { type: Boolean },
+    executingRepeatStep: {}
   },
-  emits: ["update:currentIndex", "update:modelStrength", "update:clipStrength", "update:useCustomClipRange", "refresh"],
+  emits: ["update:currentIndex", "update:modelStrength", "update:clipStrength", "update:useCustomClipRange", "update:repeatCount", "toggle-pause", "reset-index", "refresh"],
   setup(__props, { emit: __emit }) {
     const props = __props;
     const emit2 = __emit;
     const tempIndex = ref("");
+    const tempRepeat = ref("");
     const onIndexInput = (event) => {
       const input = event.target;
       tempIndex.value = input.value;
@@ -12753,15 +12883,33 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
       }
       tempIndex.value = "";
     };
+    const onRepeatInput = (event) => {
+      const input = event.target;
+      tempRepeat.value = input.value;
+    };
+    const onRepeatBlur = (event) => {
+      const input = event.target;
+      const value = parseInt(input.value, 10);
+      if (!isNaN(value)) {
+        const clampedValue = Math.max(1, Math.min(value, 99));
+        emit2("update:repeatCount", clampedValue);
+        input.value = clampedValue.toString();
+      } else {
+        input.value = props.repeatCount.toString();
+      }
+      tempRepeat.value = "";
+    };
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", _hoisted_1$3, [
-        _cache[13] || (_cache[13] = createBaseVNode("div", { class: "settings-header" }, [
+        _cache[23] || (_cache[23] = createBaseVNode("div", { class: "settings-header" }, [
           createBaseVNode("h3", { class: "settings-title" }, "CYCLER SETTINGS")
         ], -1)),
         createBaseVNode("div", _hoisted_2$2, [
-          createBaseVNode("div", _hoisted_3$1, [
-            createBaseVNode("div", _hoisted_4$1, [
-              _cache[7] || (_cache[7] = createBaseVNode("span", { class: "progress-label" }, "Next LoRA:", -1)),
+          createBaseVNode("div", {
+            class: normalizeClass(["progress-display", { executing: __props.isWorkflowExecuting }])
+          }, [
+            createBaseVNode("div", _hoisted_3$1, [
+              createBaseVNode("span", _hoisted_4$1, toDisplayString(__props.isWorkflowExecuting ? "Using LoRA:" : "Next LoRA:"), 1),
               createBaseVNode("span", {
                 class: "progress-name",
                 title: __props.currentLoraFilename
@@ -12769,8 +12917,12 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
             ]),
             createBaseVNode("div", _hoisted_6, [
               createBaseVNode("span", _hoisted_7, toDisplayString(__props.currentIndex), 1),
-              _cache[9] || (_cache[9] = createBaseVNode("span", { class: "progress-separator" }, "/", -1)),
+              _cache[14] || (_cache[14] = createBaseVNode("span", { class: "progress-separator" }, "/", -1)),
               createBaseVNode("span", _hoisted_8, toDisplayString(__props.totalCount), 1),
+              __props.repeatCount > 1 ? (openBlock(), createElementBlock("div", _hoisted_9, [
+                _cache[12] || (_cache[12] = createBaseVNode("span", { class: "repeat-badge-label" }, "Rep", -1)),
+                createBaseVNode("span", _hoisted_10, toDisplayString(__props.repeatUsed) + "/" + toDisplayString(__props.repeatCount), 1)
+              ])) : createCommentVNode("", true),
               createBaseVNode("button", {
                 class: "refresh-button",
                 disabled: __props.isLoading,
@@ -12785,17 +12937,17 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
                   "stroke-width": "2",
                   "stroke-linecap": "round",
                   "stroke-linejoin": "round"
-                }, [..._cache[8] || (_cache[8] = [
+                }, [..._cache[13] || (_cache[13] = [
                   createBaseVNode("path", { d: "M21 12a9 9 0 1 1-6.219-8.56" }, null, -1),
                   createBaseVNode("path", { d: "M21 3v5h-5" }, null, -1)
                 ])], 2))
-              ], 8, _hoisted_9)
+              ], 8, _hoisted_11)
             ])
-          ])
+          ], 2)
         ]),
-        createBaseVNode("div", _hoisted_10, [
-          _cache[10] || (_cache[10] = createBaseVNode("label", { class: "setting-label" }, "Starting Index", -1)),
-          createBaseVNode("div", _hoisted_11, [
+        createBaseVNode("div", _hoisted_12, [
+          _cache[20] || (_cache[20] = createBaseVNode("label", { class: "setting-label" }, "Starting Index", -1)),
+          createBaseVNode("div", _hoisted_13, [
             createBaseVNode("input", {
               type: "number",
               class: "index-input",
@@ -12811,37 +12963,79 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
               }, ["stop"])),
               onPointerup: _cache[3] || (_cache[3] = withModifiers(() => {
               }, ["stop"]))
-            }, null, 40, _hoisted_12),
-            createBaseVNode("span", _hoisted_13, "1 - " + toDisplayString(__props.totalCount || 1), 1)
+            }, null, 40, _hoisted_14),
+            createBaseVNode("span", _hoisted_15, "1 - " + toDisplayString(__props.totalCount || 1), 1),
+            _cache[18] || (_cache[18] = createBaseVNode("span", { class: "repeat-label" }, "x", -1)),
+            createBaseVNode("input", {
+              type: "number",
+              class: "repeat-input",
+              min: "1",
+              max: "99",
+              value: __props.repeatCount,
+              onInput: onRepeatInput,
+              onBlur: onRepeatBlur,
+              onPointerdown: _cache[4] || (_cache[4] = withModifiers(() => {
+              }, ["stop"])),
+              onPointermove: _cache[5] || (_cache[5] = withModifiers(() => {
+              }, ["stop"])),
+              onPointerup: _cache[6] || (_cache[6] = withModifiers(() => {
+              }, ["stop"])),
+              title: "Repeat each LoRA this many times"
+            }, null, 40, _hoisted_16),
+            _cache[19] || (_cache[19] = createBaseVNode("span", { class: "repeat-hint" }, "times", -1)),
+            createBaseVNode("button", {
+              class: normalizeClass(["control-btn", { active: __props.isPaused }]),
+              onClick: _cache[7] || (_cache[7] = ($event) => _ctx.$emit("toggle-pause")),
+              title: __props.isPaused ? "Continue iteration" : "Pause iteration"
+            }, [
+              __props.isPaused ? (openBlock(), createElementBlock("svg", _hoisted_18, [..._cache[15] || (_cache[15] = [
+                createBaseVNode("path", { d: "M8 5v14l11-7z" }, null, -1)
+              ])])) : (openBlock(), createElementBlock("svg", _hoisted_19, [..._cache[16] || (_cache[16] = [
+                createBaseVNode("path", { d: "M6 4h4v16H6zm8 0h4v16h-4z" }, null, -1)
+              ])]))
+            ], 10, _hoisted_17),
+            createBaseVNode("button", {
+              class: "control-btn",
+              onClick: _cache[8] || (_cache[8] = ($event) => _ctx.$emit("reset-index")),
+              title: "Reset to index 1"
+            }, [..._cache[17] || (_cache[17] = [
+              createBaseVNode("svg", {
+                viewBox: "0 0 24 24",
+                fill: "currentColor",
+                class: "control-icon"
+              }, [
+                createBaseVNode("path", { d: "M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" })
+              ], -1)
+            ])])
           ])
         ]),
-        createBaseVNode("div", _hoisted_14, [
-          _cache[11] || (_cache[11] = createBaseVNode("label", { class: "setting-label" }, "Model Strength", -1)),
-          createBaseVNode("div", _hoisted_15, [
+        createBaseVNode("div", _hoisted_20, [
+          _cache[21] || (_cache[21] = createBaseVNode("label", { class: "setting-label" }, "Model Strength", -1)),
+          createBaseVNode("div", _hoisted_21, [
             createVNode(SingleSlider, {
               min: -10,
               max: 10,
               value: __props.modelStrength,
               step: 0.1,
               "default-range": { min: 0.5, max: 1.5 },
-              "onUpdate:value": _cache[4] || (_cache[4] = ($event) => _ctx.$emit("update:modelStrength", $event))
+              "onUpdate:value": _cache[9] || (_cache[9] = ($event) => _ctx.$emit("update:modelStrength", $event))
             }, null, 8, ["value"])
           ])
         ]),
-        createBaseVNode("div", _hoisted_16, [
-          createBaseVNode("div", _hoisted_17, [
-            createBaseVNode("label", _hoisted_18, " Clip Strength - " + toDisplayString(__props.useCustomClipRange ? "Custom Value" : "Use Model Strength"), 1),
+        createBaseVNode("div", _hoisted_22, [
+          createBaseVNode("div", _hoisted_23, [
+            createBaseVNode("label", _hoisted_24, " Clip Strength - " + toDisplayString(__props.useCustomClipRange ? "Custom Value" : "Use Model Strength"), 1),
             createBaseVNode("button", {
               type: "button",
               class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.useCustomClipRange }]),
-              onClick: _cache[5] || (_cache[5] = ($event) => _ctx.$emit("update:useCustomClipRange", !__props.useCustomClipRange)),
+              onClick: _cache[10] || (_cache[10] = ($event) => _ctx.$emit("update:useCustomClipRange", !__props.useCustomClipRange)),
               role: "switch",
               "aria-checked": __props.useCustomClipRange,
               title: "Use custom clip strength when enabled, otherwise use model strength"
-            }, [..._cache[12] || (_cache[12] = [
+            }, [..._cache[22] || (_cache[22] = [
               createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
               createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
-            ])], 10, _hoisted_19)
+            ])], 10, _hoisted_25)
           ]),
           createBaseVNode("div", {
             class: normalizeClass(["slider-container", { "slider-container--disabled": __props.isClipStrengthDisabled }])
@@ -12853,7 +13047,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
               step: 0.1,
               "default-range": { min: 0.5, max: 1.5 },
               disabled: __props.isClipStrengthDisabled,
-              "onUpdate:value": _cache[6] || (_cache[6] = ($event) => _ctx.$emit("update:clipStrength", $event))
+              "onUpdate:value": _cache[11] || (_cache[11] = ($event) => _ctx.$emit("update:clipStrength", $event))
             }, null, 8, ["value", "disabled"])
           ], 2)
         ])
@@ -12861,7 +13055,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-8690e14a"]]);
+const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-3831ffe1"]]);
 function useLoraCyclerState(widget) {
   let isRestoring = false;
   const currentIndex = ref(1);
@@ -12876,6 +13070,12 @@ function useLoraCyclerState(widget) {
   const isLoading = ref(false);
   const executionIndex = ref(null);
   const nextIndex = ref(null);
+  const repeatCount = ref(1);
+  const repeatUsed = ref(0);
+  const displayRepeatUsed = ref(0);
+  const isPaused = ref(false);
+  const isWorkflowExecuting = ref(false);
+  const executingRepeatStep = ref(0);
   const buildConfig = () => {
     if (isRestoring) {
       return {
@@ -12889,7 +13089,10 @@ function useLoraCyclerState(widget) {
         current_lora_name: currentLoraName.value,
         current_lora_filename: currentLoraFilename.value,
         execution_index: executionIndex.value,
-        next_index: nextIndex.value
+        next_index: nextIndex.value,
+        repeat_count: repeatCount.value,
+        repeat_used: repeatUsed.value,
+        is_paused: isPaused.value
       };
     }
     return {
@@ -12903,7 +13106,10 @@ function useLoraCyclerState(widget) {
       current_lora_name: currentLoraName.value,
       current_lora_filename: currentLoraFilename.value,
       execution_index: executionIndex.value,
-      next_index: nextIndex.value
+      next_index: nextIndex.value,
+      repeat_count: repeatCount.value,
+      repeat_used: repeatUsed.value,
+      is_paused: isPaused.value
     };
   };
   const restoreFromConfig = (config) => {
@@ -12918,6 +13124,9 @@ function useLoraCyclerState(widget) {
       sortBy.value = config.sort_by || "filename";
       currentLoraName.value = config.current_lora_name || "";
       currentLoraFilename.value = config.current_lora_filename || "";
+      repeatCount.value = config.repeat_count ?? 1;
+      repeatUsed.value = config.repeat_used ?? 0;
+      isPaused.value = config.is_paused ?? false;
     } finally {
       isRestoring = false;
     }
@@ -13016,6 +13225,14 @@ function useLoraCyclerState(widget) {
       currentIndex.value = index;
     }
   };
+  const resetIndex = () => {
+    currentIndex.value = 1;
+    repeatUsed.value = 0;
+    displayRepeatUsed.value = 0;
+  };
+  const togglePause = () => {
+    isPaused.value = !isPaused.value;
+  };
   const isClipStrengthDisabled = computed(() => !useCustomClipRange.value);
   watch(modelStrength, (newValue) => {
     if (!useCustomClipRange.value) {
@@ -13031,7 +13248,10 @@ function useLoraCyclerState(widget) {
     useCustomClipRange,
     sortBy,
     currentLoraName,
-    currentLoraFilename
+    currentLoraFilename,
+    repeatCount,
+    repeatUsed,
+    isPaused
   ], () => {
     widget.value = buildConfig();
   }, { deep: true });
@@ -13049,6 +13269,12 @@ function useLoraCyclerState(widget) {
     isLoading,
     executionIndex,
     nextIndex,
+    repeatCount,
+    repeatUsed,
+    displayRepeatUsed,
+    isPaused,
+    isWorkflowExecuting,
+    executingRepeatStep,
     // Computed
     isClipStrengthDisabled,
     // Methods
@@ -13059,7 +13285,9 @@ function useLoraCyclerState(widget) {
     refreshList,
     setIndex,
     generateNextIndex,
-    initializeNextIndex
+    initializeNextIndex,
+    resetIndex,
+    togglePause
   };
 }
 const _hoisted_1$2 = { class: "lora-cycler-widget" };
@@ -13067,12 +13295,15 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
   __name: "LoraCyclerWidget",
   props: {
     widget: {},
-    node: {}
+    node: {},
+    api: {}
   },
   setup(__props) {
     const props = __props;
     const state = useLoraCyclerState(props.widget);
     const HAS_EXECUTED = Symbol("HAS_EXECUTED");
+    const executionQueue = [];
+    const pendingExecutions = [];
     const lastPoolConfigHash = ref("");
     const isMounted = ref(false);
     const getPoolConfig = () => {
@@ -13085,6 +13316,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       props.widget[HAS_EXECUTED] = false;
       state.executionIndex.value = null;
       state.nextIndex.value = null;
+      executionQueue.length = 0;
       state.setIndex(newIndex);
       try {
         const poolConfig = getPoolConfig();
@@ -13114,6 +13346,54 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
         console.error("[LoraCyclerWidget] Error refreshing:", error);
       }
     };
+    const handleRepeatCountChange = (newValue) => {
+      state.repeatCount.value = newValue;
+      state.repeatUsed.value = 0;
+      state.displayRepeatUsed.value = 0;
+    };
+    const clearPendingQueue = async () => {
+      try {
+        executionQueue.length = 0;
+        await fetch("/queue", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ clear: true })
+        });
+        console.log("[LoraCyclerWidget] Cleared pending queue on pause");
+      } catch (error) {
+        console.error("[LoraCyclerWidget] Error clearing queue:", error);
+      }
+    };
+    const handleTogglePause = async () => {
+      const wasPaused = state.isPaused.value;
+      state.togglePause();
+      if (!wasPaused && state.isPaused.value) {
+        props.widget[HAS_EXECUTED] = false;
+        state.executionIndex.value = null;
+        state.nextIndex.value = null;
+        await clearPendingQueue();
+      }
+    };
+    const handleResetIndex = async () => {
+      props.widget[HAS_EXECUTED] = false;
+      state.executionIndex.value = null;
+      state.nextIndex.value = null;
+      executionQueue.length = 0;
+      state.resetIndex();
+      try {
+        const poolConfig = getPoolConfig();
+        const loraList = await state.fetchCyclerList(poolConfig);
+        if (loraList.length > 0) {
+          const currentLora = loraList[0];
+          if (currentLora) {
+            state.currentLoraName.value = currentLora.file_name;
+            state.currentLoraFilename.value = currentLora.file_name;
+          }
+        }
+      } catch (error) {
+        console.error("[LoraCyclerWidget] Error resetting index:", error);
+      }
+    };
     const checkPoolConfigChanges = async () => {
       if (!isMounted.value) return;
       const poolConfig = getPoolConfig();
@@ -13139,12 +13419,41 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
         state.restoreFromConfig(props.widget.value);
       }
       props.widget.beforeQueued = () => {
+        if (state.isPaused.value) {
+          executionQueue.push({
+            isPaused: true,
+            repeatUsed: state.repeatUsed.value,
+            repeatCount: state.repeatCount.value,
+            shouldAdvanceDisplay: false,
+            displayRepeatUsed: state.displayRepeatUsed.value
+            // Keep current display value when paused
+          });
+          const pausedConfig = state.buildConfig();
+          pausedConfig.execution_index = null;
+          props.widget.value = pausedConfig;
+          return;
+        }
         if (props.widget[HAS_EXECUTED]) {
-          state.generateNextIndex();
+          if (state.repeatUsed.value < state.repeatCount.value) {
+            state.repeatUsed.value++;
+          } else {
+            state.repeatUsed.value = 1;
+            state.generateNextIndex();
+          }
         } else {
+          state.repeatUsed.value = 1;
           state.initializeNextIndex();
           props.widget[HAS_EXECUTED] = true;
         }
+        const shouldAdvanceDisplay = state.repeatUsed.value >= state.repeatCount.value;
+        const displayRepeatUsed = shouldAdvanceDisplay ? 0 : state.repeatUsed.value;
+        executionQueue.push({
+          isPaused: false,
+          repeatUsed: state.repeatUsed.value,
+          repeatCount: state.repeatCount.value,
+          shouldAdvanceDisplay,
+          displayRepeatUsed
+        });
         props.widget.value = state.buildConfig();
       };
       isMounted.value = true;
@@ -13158,36 +13467,78 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       const originalOnExecuted = (_a2 = props.node.onExecuted) == null ? void 0 : _a2.bind(props.node);
       props.node.onExecuted = function(output) {
         console.log("[LoraCyclerWidget] Node executed with output:", output);
-        if ((output == null ? void 0 : output.next_index) !== void 0) {
-          const val = Array.isArray(output.next_index) ? output.next_index[0] : output.next_index;
-          state.currentIndex.value = val;
-        }
+        const context = executionQueue.shift();
+        const shouldAdvanceDisplay = context ? context.shouldAdvanceDisplay : !state.isPaused.value && state.repeatUsed.value >= state.repeatCount.value;
+        const nextIndex = (output == null ? void 0 : output.next_index) !== void 0 ? Array.isArray(output.next_index) ? output.next_index[0] : output.next_index : state.currentIndex.value;
+        const nextLoraName = (output == null ? void 0 : output.next_lora_name) !== void 0 ? Array.isArray(output.next_lora_name) ? output.next_lora_name[0] : output.next_lora_name : "";
+        const nextLoraFilename = (output == null ? void 0 : output.next_lora_filename) !== void 0 ? Array.isArray(output.next_lora_filename) ? output.next_lora_filename[0] : output.next_lora_filename : "";
+        const currentLoraName = (output == null ? void 0 : output.current_lora_name) !== void 0 ? Array.isArray(output.current_lora_name) ? output.current_lora_name[0] : output.current_lora_name : "";
+        const currentLoraFilename = (output == null ? void 0 : output.current_lora_filename) !== void 0 ? Array.isArray(output.current_lora_filename) ? output.current_lora_filename[0] : output.current_lora_filename : "";
         if ((output == null ? void 0 : output.total_count) !== void 0) {
           const val = Array.isArray(output.total_count) ? output.total_count[0] : output.total_count;
           state.totalCount.value = val;
         }
-        if ((output == null ? void 0 : output.current_lora_name) !== void 0) {
-          const val = Array.isArray(output.current_lora_name) ? output.current_lora_name[0] : output.current_lora_name;
-          state.currentLoraName.value = val;
-        }
-        if ((output == null ? void 0 : output.current_lora_filename) !== void 0) {
-          const val = Array.isArray(output.current_lora_filename) ? output.current_lora_filename[0] : output.current_lora_filename;
-          state.currentLoraFilename.value = val;
-        }
-        if ((output == null ? void 0 : output.next_lora_name) !== void 0) {
-          const val = Array.isArray(output.next_lora_name) ? output.next_lora_name[0] : output.next_lora_name;
-          state.currentLoraName.value = val;
-        }
-        if ((output == null ? void 0 : output.next_lora_filename) !== void 0) {
-          const val = Array.isArray(output.next_lora_filename) ? output.next_lora_filename[0] : output.next_lora_filename;
-          state.currentLoraFilename.value = val;
+        if (context) {
+          pendingExecutions.push({
+            repeatUsed: context.repeatUsed,
+            repeatCount: context.repeatCount,
+            shouldAdvanceDisplay,
+            displayRepeatUsed: context.displayRepeatUsed,
+            output: {
+              nextIndex,
+              nextLoraName,
+              nextLoraFilename,
+              currentLoraName,
+              currentLoraFilename
+            }
+          });
+          state.executingRepeatStep.value = context.repeatUsed;
+          state.isWorkflowExecuting.value = true;
         }
         if (originalOnExecuted) {
           return originalOnExecuted(output);
         }
       };
+      if (props.api) {
+        const handleExecutionComplete = () => {
+          if (pendingExecutions.length === 0) {
+            return;
+          }
+          const pending = pendingExecutions.shift();
+          state.displayRepeatUsed.value = pending.displayRepeatUsed;
+          if (pending.output) {
+            if (pending.shouldAdvanceDisplay) {
+              state.currentIndex.value = pending.output.nextIndex;
+              state.currentLoraName.value = pending.output.nextLoraName;
+              state.currentLoraFilename.value = pending.output.nextLoraFilename;
+            } else {
+              state.currentLoraName.value = pending.output.currentLoraName;
+              state.currentLoraFilename.value = pending.output.currentLoraFilename;
+            }
+          }
+          if (pendingExecutions.length === 0) {
+            state.isWorkflowExecuting.value = false;
+            state.executingRepeatStep.value = 0;
+          }
+        };
+        props.api.addEventListener("execution_success", handleExecutionComplete);
+        props.api.addEventListener("execution_error", handleExecutionComplete);
+        props.api.addEventListener("execution_interrupted", handleExecutionComplete);
+        const apiCleanup = () => {
+          props.api.removeEventListener("execution_success", handleExecutionComplete);
+          props.api.removeEventListener("execution_error", handleExecutionComplete);
+          props.api.removeEventListener("execution_interrupted", handleExecutionComplete);
+        };
+        const existingCleanup = props.widget.onRemoveCleanup;
+        props.widget.onRemoveCleanup = () => {
+          existingCleanup == null ? void 0 : existingCleanup();
+          apiCleanup();
+        };
+      }
       const checkInterval = setInterval(checkPoolConfigChanges, 1e3);
+      const existingCleanupForInterval = props.widget.onRemoveCleanup;
       props.widget.onRemoveCleanup = () => {
+        existingCleanupForInterval == null ? void 0 : existingCleanupForInterval();
         clearInterval(checkInterval);
       };
     });
@@ -13203,17 +13554,25 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           "use-custom-clip-range": unref(state).useCustomClipRange.value,
           "is-clip-strength-disabled": unref(state).isClipStrengthDisabled.value,
           "is-loading": unref(state).isLoading.value,
+          "repeat-count": unref(state).repeatCount.value,
+          "repeat-used": unref(state).displayRepeatUsed.value,
+          "is-paused": unref(state).isPaused.value,
+          "is-workflow-executing": unref(state).isWorkflowExecuting.value,
+          "executing-repeat-step": unref(state).executingRepeatStep.value,
           "onUpdate:currentIndex": handleIndexUpdate,
           "onUpdate:modelStrength": _cache[0] || (_cache[0] = ($event) => unref(state).modelStrength.value = $event),
           "onUpdate:clipStrength": _cache[1] || (_cache[1] = ($event) => unref(state).clipStrength.value = $event),
           "onUpdate:useCustomClipRange": handleUseCustomClipRangeChange,
+          "onUpdate:repeatCount": handleRepeatCountChange,
+          onTogglePause: handleTogglePause,
+          onResetIndex: handleResetIndex,
           onRefresh: handleRefresh
-        }, null, 8, ["current-index", "total-count", "current-lora-name", "current-lora-filename", "model-strength", "clip-strength", "use-custom-clip-range", "is-clip-strength-disabled", "is-loading"])
+        }, null, 8, ["current-index", "total-count", "current-lora-name", "current-lora-filename", "model-strength", "clip-strength", "use-custom-clip-range", "is-clip-strength-disabled", "is-loading", "repeat-count", "repeat-used", "is-paused", "is-workflow-executing", "executing-repeat-step"])
       ]);
     };
   }
 });
-const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-2ca548b3"]]);
+const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-e8c2adc1"]]);
 const _hoisted_1$1 = { class: "json-display-widget" };
 const _hoisted_2$1 = {
   class: "json-content",
@@ -13900,7 +14259,8 @@ function createLoraCyclerWidget(node) {
   node.getPoolConfig = () => getPoolConfigFromConnectedNode(node);
   const vueApp = createApp(LoraCyclerWidget, {
     widget,
-    node
+    node,
+    api
   });
   vueApp.use(PrimeVue, {
     unstyled: true,

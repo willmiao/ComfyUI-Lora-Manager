@@ -126,9 +126,7 @@ class LoraCyclerLM:
                 "current_index": [clamped_index],
                 "next_index": [next_index],
                 "total_count": [total_count],
-                "current_lora_name": [
-                    current_lora.get("model_name", current_lora["file_name"])
-                ],
+                "current_lora_name": [current_lora["file_name"]],
                 "current_lora_filename": [current_lora["file_name"]],
                 "next_lora_name": [next_display_name],
                 "next_lora_filename": [next_lora["file_name"]],

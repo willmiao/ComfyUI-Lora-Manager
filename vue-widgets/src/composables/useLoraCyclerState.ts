@@ -29,6 +29,16 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
   const executionIndex = ref<number | null>(null)
   const nextIndex = ref<number | null>(null)
 
+  // Advanced index control features
+  const repeatCount = ref(1)        // How many times each LoRA should repeat
+  const repeatUsed = ref(0)         // How many times current index has been used (internal tracking)
+  const displayRepeatUsed = ref(0)  // For UI display, deferred updates like currentIndex
+  const isPaused = ref(false)       // Whether iteration is paused
+
+  // Execution progress tracking (visual feedback)
+  const isWorkflowExecuting = ref(false)    // Workflow is currently running
+  const executingRepeatStep = ref(0)        // Which repeat step (1-based, 0 = not executing)
+
   // Build config object from current state
   const buildConfig = (): CyclerConfig => {
     // Skip updating widget.value during restoration to prevent infinite loops
@@ -45,6 +55,9 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
         current_lora_filename: currentLoraFilename.value,
         execution_index: executionIndex.value,
         next_index: nextIndex.value,
+        repeat_count: repeatCount.value,
+        repeat_used: repeatUsed.value,
+        is_paused: isPaused.value,
       }
     }
     return {
@@ -59,6 +72,9 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
       current_lora_filename: currentLoraFilename.value,
       execution_index: executionIndex.value,
       next_index: nextIndex.value,
+      repeat_count: repeatCount.value,
+      repeat_used: repeatUsed.value,
+      is_paused: isPaused.value,
     }
   }
 
@@ -77,6 +93,10 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
       sortBy.value = config.sort_by || 'filename'
       currentLoraName.value = config.current_lora_name || ''
       currentLoraFilename.value = config.current_lora_filename || ''
+      // Advanced index control features
+      repeatCount.value = config.repeat_count ?? 1
+      repeatUsed.value = config.repeat_used ?? 0
+      isPaused.value = config.is_paused ?? false
       // Note: execution_index and next_index are not restored from config
       // as they are transient values used only during batch execution
     } finally {
@@ -215,6 +235,19 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
     }
   }
 
+  // Reset index to 1 and clear repeat state
+  const resetIndex = () => {
+    currentIndex.value = 1
+    repeatUsed.value = 0
+    displayRepeatUsed.value = 0
+    // Note: isPaused is intentionally not reset - user may want to stay paused after reset
+  }
+
+  // Toggle pause state
+  const togglePause = () => {
+    isPaused.value = !isPaused.value
+  }
+
   // Computed property to check if clip strength is disabled
   const isClipStrengthDisabled = computed(() => !useCustomClipRange.value)
 
@@ -236,6 +269,9 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
     sortBy,
     currentLoraName,
     currentLoraFilename,
+    repeatCount,
+    repeatUsed,
+    isPaused,
   ], () => {
     widget.value = buildConfig()
   }, { deep: true })
@@ -254,6 +290,12 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
     isLoading,
     executionIndex,
     nextIndex,
+    repeatCount,
+    repeatUsed,
+    displayRepeatUsed,
+    isPaused,
+    isWorkflowExecuting,
+    executingRepeatStep,
 
     // Computed
     isClipStrengthDisabled,
@@ -267,5 +309,7 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
     setIndex,
     generateNextIndex,
     initializeNextIndex,
+    resetIndex,
+    togglePause,
   }
 }
