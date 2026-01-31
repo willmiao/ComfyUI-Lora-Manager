@@ -43,8 +43,15 @@ class ExampleImagesProcessor:
         return media_url
     
     @staticmethod
-    def _get_file_extension_from_content_or_headers(content, headers, fallback_url=None):
-        """Determine file extension from content magic bytes or headers"""
+    def _get_file_extension_from_content_or_headers(content, headers, fallback_url=None, media_type_hint=None):
+        """Determine file extension from content magic bytes or headers
+        
+        Args:
+            content: File content bytes
+            headers: HTTP response headers
+            fallback_url: Original URL for extension extraction
+            media_type_hint: Optional media type hint from metadata (e.g., "video" or "image")
+        """
         # Check magic bytes for common formats
         if content:
             if content.startswith(b'\xFF\xD8\xFF'):
@@ -81,6 +88,10 @@ class ExampleImagesProcessor:
             ext = os.path.splitext(filename)[1].lower()
             if ext in SUPPORTED_MEDIA_EXTENSIONS['images'] or ext in SUPPORTED_MEDIA_EXTENSIONS['videos']:
                 return ext
+        
+        # Use media type hint from metadata if available
+        if media_type_hint == "video":
+            return '.mp4'
         
         # Default fallback
         return '.jpg'
@@ -136,7 +147,7 @@ class ExampleImagesProcessor:
                 if success:
                     # Determine file extension from content or headers
                     media_ext = ExampleImagesProcessor._get_file_extension_from_content_or_headers(
-                        content, headers, original_url
+                        content, headers, original_url, image.get("type")
                     )
                     
                     # Check if the detected file type is supported
@@ -219,7 +230,7 @@ class ExampleImagesProcessor:
                 if success:
                     # Determine file extension from content or headers
                     media_ext = ExampleImagesProcessor._get_file_extension_from_content_or_headers(
-                        content, headers, original_url
+                        content, headers, original_url, image.get("type")
                     )
                     
                     # Check if the detected file type is supported

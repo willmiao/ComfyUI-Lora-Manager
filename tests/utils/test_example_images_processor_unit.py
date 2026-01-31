@@ -75,6 +75,31 @@ def test_get_file_extension_defaults_to_jpg() -> None:
     assert ext == ".jpg"
 
 
+def test_get_file_extension_from_media_type_hint_video() -> None:
+    """Test that media_type_hint='video' returns .mp4 when other methods fail"""
+    ext = processor_module.ExampleImagesProcessor._get_file_extension_from_content_or_headers(
+        b"", {}, "https://c.genur.art/536be3c9-e506-4365-b078-bfbc5df9ceec", "video"
+    )
+    assert ext == ".mp4"
+
+
+def test_get_file_extension_from_media_type_hint_image() -> None:
+    """Test that media_type_hint='image' falls back to .jpg"""
+    ext = processor_module.ExampleImagesProcessor._get_file_extension_from_content_or_headers(
+        b"", {}, "https://example.com/no-extension", "image"
+    )
+    assert ext == ".jpg"
+
+
+def test_get_file_extension_media_type_hint_low_priority() -> None:
+    """Test that media_type_hint is only used as last resort (after URL extension)"""
+    # URL has extension, should use that instead of media_type_hint
+    ext = processor_module.ExampleImagesProcessor._get_file_extension_from_content_or_headers(
+        b"", {}, "https://example.com/video.mp4", "image"
+    )
+    assert ext == ".mp4"
+
+
 class StubScanner:
     def __init__(self, models: list[Dict[str, Any]]) -> None:
         self._cache = SimpleNamespace(raw_data=models)
