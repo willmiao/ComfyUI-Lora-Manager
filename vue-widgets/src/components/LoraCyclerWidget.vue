@@ -13,6 +13,7 @@
       :repeat-count="state.repeatCount.value"
       :repeat-used="state.displayRepeatUsed.value"
       :is-paused="state.isPaused.value"
+      :is-pause-disabled="hasQueuedPrompts"
       :is-workflow-executing="state.isWorkflowExecuting.value"
       :executing-repeat-step="state.executingRepeatStep.value"
       @update:current-index="handleIndexUpdate"
@@ -60,6 +61,9 @@ interface ExecutionContext {
 }
 const executionQueue: ExecutionContext[] = []
 
+// Reactive flag to track if there are queued prompts (for disabling pause button)
+const hasQueuedPrompts = ref(false)
+
 // Track pending executions for batch queue support (deferred UI updates)
 // Uses FIFO order since executions are processed in the order they were queued
 interface PendingExecution {
@@ -102,6 +106,7 @@ const handleIndexUpdate = async (newIndex: number) => {
 
   // Clear execution queue since user is manually changing state
   executionQueue.length = 0
+  hasQueuedPrompts.value = false
 
   state.setIndex(newIndex)
 
@@ -149,39 +154,9 @@ const handleRepeatCountChange = (newValue: number) => {
   state.displayRepeatUsed.value = 0
 }
 
-// Clear all pending items from server queue
-const clearPendingQueue = async () => {
-  try {
-    // Clear local execution queue
-    executionQueue.length = 0
-
-    // Clear server queue (pending items only)
-    await fetch('/queue', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clear: true })
-    })
-
-    console.log('[LoraCyclerWidget] Cleared pending queue on pause')
-  } catch (error) {
-    console.error('[LoraCyclerWidget] Error clearing queue:', error)
-  }
-}
-
 // Handle pause toggle
-const handleTogglePause = async () => {
-  const wasPaused = state.isPaused.value
+const handleTogglePause = () => {
   state.togglePause()
-
-  // When transitioning to paused state, clear pending queue
-  if (!wasPaused && state.isPaused.value) {
-    // Reset execution state so subsequent manual queues start fresh
-    ;(props.widget as any)[HAS_EXECUTED] = false
-    state.executionIndex.value = null
-    state.nextIndex.value = null
-
-    await clearPendingQueue()
-  }
 }
 
 // Handle reset index
@@ -193,6 +168,7 @@ const handleResetIndex = async () => {
 
   // Clear execution queue since user is resetting state
   executionQueue.length = 0
+  hasQueuedPrompts.value = false
 
   // Reset index and repeat state
   state.resetIndex()
@@ -265,6 +241,7 @@ onMounted(async () => {
         shouldAdvanceDisplay: false,
         displayRepeatUsed: state.displayRepeatUsed.value  // Keep current display value when paused
       })
+      hasQueuedPrompts.value = true
       // CRITICAL: Clear execution_index when paused to force backend to use current_index
       // This ensures paused executions use the same LoRA regardless of any
       // execution_index set by previous non-paused beforeQueued calls
@@ -308,6 +285,7 @@ onMounted(async () => {
       shouldAdvanceDisplay,
       displayRepeatUsed
     })
+    hasQueuedPrompts.value = true
 
     // Update the widget value so the indices are included in the serialized config
     props.widget.value = state.buildConfig()
@@ -334,6 +312,7 @@ onMounted(async () => {
 
     // Pop execution context from queue (FIFO order)
     const context = executionQueue.shift()
+    hasQueuedPrompts.value = executionQueue.length > 0
 
     // Determine if we should advance the display index
     const shouldAdvanceDisplay = context

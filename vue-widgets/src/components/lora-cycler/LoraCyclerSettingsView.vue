@@ -87,8 +87,9 @@
         <button
           class="control-btn"
           :class="{ active: isPaused }"
+          :disabled="isPauseDisabled"
           @click="$emit('toggle-pause')"
-          :title="isPaused ? 'Continue iteration' : 'Pause iteration'"
+          :title="isPauseDisabled ? 'Cannot pause while prompts are queued' : (isPaused ? 'Continue iteration' : 'Pause iteration')"
         >
           <svg v-if="isPaused" viewBox="0 0 24 24" fill="currentColor" class="control-icon">
             <path d="M8 5v14l11-7z"/>
@@ -175,6 +176,7 @@ const props = defineProps<{
   repeatCount: number
   repeatUsed: number
   isPaused: boolean
+  isPauseDisabled: boolean
   isWorkflowExecuting: boolean
   executingRepeatStep: number
 }>()
@@ -504,10 +506,15 @@ const onRepeatBlur = (event: Event) => {
   transition: all 0.2s;
 }
 
-.control-btn:hover {
+.control-btn:hover:not(:disabled) {
   background: rgba(66, 153, 225, 0.2);
   border-color: rgba(66, 153, 225, 0.4);
   color: rgba(191, 219, 254, 1);
+}
+
+.control-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .control-btn.active {

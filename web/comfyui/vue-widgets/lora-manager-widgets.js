@@ -1464,16 +1464,16 @@ to { transform: rotate(360deg);
   box-sizing: border-box;
 }
 
-.cycler-settings[data-v-3831ffe1] {
+.cycler-settings[data-v-9be19e47] {
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #e4e4e7;
 }
-.settings-header[data-v-3831ffe1] {
+.settings-header[data-v-9be19e47] {
   margin-bottom: 8px;
 }
-.settings-title[data-v-3831ffe1] {
+.settings-title[data-v-9be19e47] {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -1482,10 +1482,10 @@ to { transform: rotate(360deg);
   margin: 0;
   text-transform: uppercase;
 }
-.setting-section[data-v-3831ffe1] {
+.setting-section[data-v-9be19e47] {
   margin-bottom: 8px;
 }
-.setting-label[data-v-3831ffe1] {
+.setting-label[data-v-9be19e47] {
   font-size: 13px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.8);
@@ -1494,10 +1494,10 @@ to { transform: rotate(360deg);
 }
 
 /* Progress Display */
-.progress-section[data-v-3831ffe1] {
+.progress-section[data-v-9be19e47] {
   margin-bottom: 12px;
 }
-.progress-display[data-v-3831ffe1] {
+.progress-display[data-v-9be19e47] {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
@@ -1507,31 +1507,31 @@ to { transform: rotate(360deg);
   align-items: center;
   transition: border-color 0.3s ease;
 }
-.progress-display.executing[data-v-3831ffe1] {
+.progress-display.executing[data-v-9be19e47] {
   border-color: rgba(66, 153, 225, 0.5);
-  animation: pulse-3831ffe1 2s ease-in-out infinite;
+  animation: pulse-9be19e47 2s ease-in-out infinite;
 }
-@keyframes pulse-3831ffe1 {
+@keyframes pulse-9be19e47 {
 0%, 100% { border-color: rgba(66, 153, 225, 0.3);
 }
 50% { border-color: rgba(66, 153, 225, 0.7);
 }
 }
-.progress-info[data-v-3831ffe1] {
+.progress-info[data-v-9be19e47] {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
   flex: 1;
 }
-.progress-label[data-v-3831ffe1] {
+.progress-label[data-v-9be19e47] {
   font-size: 10px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.5);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-.progress-name[data-v-3831ffe1] {
+.progress-name[data-v-9be19e47] {
   font-size: 13px;
   font-weight: 500;
   color: rgba(191, 219, 254, 1);
@@ -1539,14 +1539,14 @@ to { transform: rotate(360deg);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.progress-counter[data-v-3831ffe1] {
+.progress-counter[data-v-9be19e47] {
   display: flex;
   align-items: center;
   gap: 4px;
   padding-left: 12px;
   flex-shrink: 0;
 }
-.progress-index[data-v-3831ffe1] {
+.progress-index[data-v-9be19e47] {
   font-size: 18px;
   font-weight: 600;
   color: rgba(66, 153, 225, 1);
@@ -1555,12 +1555,12 @@ to { transform: rotate(360deg);
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.progress-separator[data-v-3831ffe1] {
+.progress-separator[data-v-9be19e47] {
   font-size: 14px;
   color: rgba(226, 232, 240, 0.4);
   margin: 0 2px;
 }
-.progress-total[data-v-3831ffe1] {
+.progress-total[data-v-9be19e47] {
   font-size: 14px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.6);
@@ -1569,7 +1569,7 @@ to { transform: rotate(360deg);
   text-align: left;
   font-variant-numeric: tabular-nums;
 }
-.refresh-button[data-v-3831ffe1] {
+.refresh-button[data-v-9be19e47] {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1584,23 +1584,23 @@ to { transform: rotate(360deg);
   cursor: pointer;
   transition: all 0.2s;
 }
-.refresh-button[data-v-3831ffe1]:hover:not(:disabled) {
+.refresh-button[data-v-9be19e47]:hover:not(:disabled) {
   background: rgba(66, 153, 225, 0.2);
   border-color: rgba(66, 153, 225, 0.4);
   color: rgba(191, 219, 254, 1);
 }
-.refresh-button[data-v-3831ffe1]:disabled {
+.refresh-button[data-v-9be19e47]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.refresh-icon[data-v-3831ffe1] {
+.refresh-icon[data-v-9be19e47] {
   width: 14px;
   height: 14px;
 }
-.refresh-icon.spinning[data-v-3831ffe1] {
-  animation: spin-3831ffe1 1s linear infinite;
+.refresh-icon.spinning[data-v-9be19e47] {
+  animation: spin-9be19e47 1s linear infinite;
 }
-@keyframes spin-3831ffe1 {
+@keyframes spin-9be19e47 {
 from {
     transform: rotate(0deg);
 }
@@ -1610,7 +1610,7 @@ to {
 }
 
 /* Repeat Badge */
-.repeat-badge[data-v-3831ffe1] {
+.repeat-badge[data-v-9be19e47] {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -1620,12 +1620,12 @@ to {
   border: 1px solid rgba(245, 158, 11, 0.3);
   border-radius: 4px;
 }
-.repeat-badge-label[data-v-3831ffe1] {
+.repeat-badge-label[data-v-9be19e47] {
   font-size: 10px;
   color: rgba(253, 230, 138, 0.7);
   text-transform: uppercase;
 }
-.repeat-badge-value[data-v-3831ffe1] {
+.repeat-badge-value[data-v-9be19e47] {
   font-size: 12px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
   color: rgba(253, 230, 138, 1);
@@ -1634,13 +1634,13 @@ to {
 }
 
 /* Index Controls Row */
-.index-controls-row[data-v-3831ffe1] {
+.index-controls-row[data-v-9be19e47] {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
-.index-input[data-v-3831ffe1] {
+.index-input[data-v-9be19e47] {
   width: 60px;
   padding: 6px 8px;
   background: rgba(26, 32, 44, 0.9);
@@ -1650,15 +1650,15 @@ to {
   font-size: 13px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
 }
-.index-input[data-v-3831ffe1]:focus {
+.index-input[data-v-9be19e47]:focus {
   outline: none;
   border-color: rgba(66, 153, 225, 0.6);
 }
-.index-input[data-v-3831ffe1]:disabled {
+.index-input[data-v-9be19e47]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.index-hint[data-v-3831ffe1] {
+.index-hint[data-v-9be19e47] {
   font-size: 11px;
   color: rgba(226, 232, 240, 0.4);
   min-width: 7ch;
@@ -1666,12 +1666,12 @@ to {
 }
 
 /* Repeat Controls */
-.repeat-label[data-v-3831ffe1] {
+.repeat-label[data-v-9be19e47] {
   font-size: 13px;
   color: rgba(226, 232, 240, 0.6);
   margin-left: 4px;
 }
-.repeat-input[data-v-3831ffe1] {
+.repeat-input[data-v-9be19e47] {
   width: 44px;
   padding: 6px 6px;
   background: rgba(26, 32, 44, 0.9);
@@ -1682,17 +1682,17 @@ to {
   font-family: 'SF Mono', 'Roboto Mono', monospace;
   text-align: center;
 }
-.repeat-input[data-v-3831ffe1]:focus {
+.repeat-input[data-v-9be19e47]:focus {
   outline: none;
   border-color: rgba(66, 153, 225, 0.6);
 }
-.repeat-hint[data-v-3831ffe1] {
+.repeat-hint[data-v-9be19e47] {
   font-size: 11px;
   color: rgba(226, 232, 240, 0.4);
 }
 
 /* Control Buttons */
-.control-btn[data-v-3831ffe1] {
+.control-btn[data-v-9be19e47] {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1706,48 +1706,52 @@ to {
   cursor: pointer;
   transition: all 0.2s;
 }
-.control-btn[data-v-3831ffe1]:hover {
+.control-btn[data-v-9be19e47]:hover:not(:disabled) {
   background: rgba(66, 153, 225, 0.2);
   border-color: rgba(66, 153, 225, 0.4);
   color: rgba(191, 219, 254, 1);
 }
-.control-btn.active[data-v-3831ffe1] {
+.control-btn[data-v-9be19e47]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.control-btn.active[data-v-9be19e47] {
   background: rgba(245, 158, 11, 0.2);
   border-color: rgba(245, 158, 11, 0.5);
   color: rgba(253, 230, 138, 1);
 }
-.control-btn.active[data-v-3831ffe1]:hover {
+.control-btn.active[data-v-9be19e47]:hover {
   background: rgba(245, 158, 11, 0.3);
   border-color: rgba(245, 158, 11, 0.6);
 }
-.control-icon[data-v-3831ffe1] {
+.control-icon[data-v-9be19e47] {
   width: 14px;
   height: 14px;
 }
 
 /* Slider Container */
-.slider-container[data-v-3831ffe1] {
+.slider-container[data-v-9be19e47] {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
   padding: 6px;
 }
-.slider-container--disabled[data-v-3831ffe1] {
+.slider-container--disabled[data-v-9be19e47] {
   opacity: 0.5;
   pointer-events: none;
 }
-.section-header-with-toggle[data-v-3831ffe1] {
+.section-header-with-toggle[data-v-9be19e47] {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
 }
-.section-header-with-toggle .setting-label[data-v-3831ffe1] {
+.section-header-with-toggle .setting-label[data-v-9be19e47] {
   margin-bottom: 4px;
 }
 
 /* Toggle Switch */
-.toggle-switch[data-v-3831ffe1] {
+.toggle-switch[data-v-9be19e47] {
   position: relative;
   width: 36px;
   height: 20px;
@@ -1756,7 +1760,7 @@ to {
   border: none;
   cursor: pointer;
 }
-.toggle-switch__track[data-v-3831ffe1] {
+.toggle-switch__track[data-v-9be19e47] {
   position: absolute;
   inset: 0;
   background: var(--comfy-input-bg, #333);
@@ -1764,11 +1768,11 @@ to {
   border-radius: 10px;
   transition: all 0.2s;
 }
-.toggle-switch--active .toggle-switch__track[data-v-3831ffe1] {
+.toggle-switch--active .toggle-switch__track[data-v-9be19e47] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.toggle-switch__thumb[data-v-3831ffe1] {
+.toggle-switch__thumb[data-v-9be19e47] {
   position: absolute;
   top: 3px;
   left: 2px;
@@ -1779,16 +1783,16 @@ to {
   transition: all 0.2s;
   opacity: 0.6;
 }
-.toggle-switch--active .toggle-switch__thumb[data-v-3831ffe1] {
+.toggle-switch--active .toggle-switch__thumb[data-v-9be19e47] {
   transform: translateX(16px);
   background: #4299e1;
   opacity: 1;
 }
-.toggle-switch:hover .toggle-switch__thumb[data-v-3831ffe1] {
+.toggle-switch:hover .toggle-switch__thumb[data-v-9be19e47] {
   opacity: 1;
 }
 
-.lora-cycler-widget[data-v-e8c2adc1] {
+.lora-cycler-widget[data-v-9c17d0bf] {
   padding: 6px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 6px;
@@ -12824,7 +12828,7 @@ const _hoisted_13 = { class: "index-controls-row" };
 const _hoisted_14 = ["max", "value", "disabled"];
 const _hoisted_15 = { class: "index-hint" };
 const _hoisted_16 = ["value"];
-const _hoisted_17 = ["title"];
+const _hoisted_17 = ["disabled", "title"];
 const _hoisted_18 = {
   key: 0,
   viewBox: "0 0 24 24",
@@ -12858,6 +12862,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     repeatCount: {},
     repeatUsed: {},
     isPaused: { type: Boolean },
+    isPauseDisabled: { type: Boolean },
     isWorkflowExecuting: { type: Boolean },
     executingRepeatStep: {}
   },
@@ -12985,8 +12990,9 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
             _cache[19] || (_cache[19] = createBaseVNode("span", { class: "repeat-hint" }, "times", -1)),
             createBaseVNode("button", {
               class: normalizeClass(["control-btn", { active: __props.isPaused }]),
+              disabled: __props.isPauseDisabled,
               onClick: _cache[7] || (_cache[7] = ($event) => _ctx.$emit("toggle-pause")),
-              title: __props.isPaused ? "Continue iteration" : "Pause iteration"
+              title: __props.isPauseDisabled ? "Cannot pause while prompts are queued" : __props.isPaused ? "Continue iteration" : "Pause iteration"
             }, [
               __props.isPaused ? (openBlock(), createElementBlock("svg", _hoisted_18, [..._cache[15] || (_cache[15] = [
                 createBaseVNode("path", { d: "M8 5v14l11-7z" }, null, -1)
@@ -13055,7 +13061,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-3831ffe1"]]);
+const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-9be19e47"]]);
 function useLoraCyclerState(widget) {
   let isRestoring = false;
   const currentIndex = ref(1);
@@ -13303,6 +13309,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     const state = useLoraCyclerState(props.widget);
     const HAS_EXECUTED = Symbol("HAS_EXECUTED");
     const executionQueue = [];
+    const hasQueuedPrompts = ref(false);
     const pendingExecutions = [];
     const lastPoolConfigHash = ref("");
     const isMounted = ref(false);
@@ -13317,6 +13324,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       state.executionIndex.value = null;
       state.nextIndex.value = null;
       executionQueue.length = 0;
+      hasQueuedPrompts.value = false;
       state.setIndex(newIndex);
       try {
         const poolConfig = getPoolConfig();
@@ -13351,34 +13359,15 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       state.repeatUsed.value = 0;
       state.displayRepeatUsed.value = 0;
     };
-    const clearPendingQueue = async () => {
-      try {
-        executionQueue.length = 0;
-        await fetch("/queue", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ clear: true })
-        });
-        console.log("[LoraCyclerWidget] Cleared pending queue on pause");
-      } catch (error) {
-        console.error("[LoraCyclerWidget] Error clearing queue:", error);
-      }
-    };
-    const handleTogglePause = async () => {
-      const wasPaused = state.isPaused.value;
+    const handleTogglePause = () => {
       state.togglePause();
-      if (!wasPaused && state.isPaused.value) {
-        props.widget[HAS_EXECUTED] = false;
-        state.executionIndex.value = null;
-        state.nextIndex.value = null;
-        await clearPendingQueue();
-      }
     };
     const handleResetIndex = async () => {
       props.widget[HAS_EXECUTED] = false;
       state.executionIndex.value = null;
       state.nextIndex.value = null;
       executionQueue.length = 0;
+      hasQueuedPrompts.value = false;
       state.resetIndex();
       try {
         const poolConfig = getPoolConfig();
@@ -13428,6 +13417,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
             displayRepeatUsed: state.displayRepeatUsed.value
             // Keep current display value when paused
           });
+          hasQueuedPrompts.value = true;
           const pausedConfig = state.buildConfig();
           pausedConfig.execution_index = null;
           props.widget.value = pausedConfig;
@@ -13454,6 +13444,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           shouldAdvanceDisplay,
           displayRepeatUsed
         });
+        hasQueuedPrompts.value = true;
         props.widget.value = state.buildConfig();
       };
       isMounted.value = true;
@@ -13468,6 +13459,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       props.node.onExecuted = function(output) {
         console.log("[LoraCyclerWidget] Node executed with output:", output);
         const context = executionQueue.shift();
+        hasQueuedPrompts.value = executionQueue.length > 0;
         const shouldAdvanceDisplay = context ? context.shouldAdvanceDisplay : !state.isPaused.value && state.repeatUsed.value >= state.repeatCount.value;
         const nextIndex = (output == null ? void 0 : output.next_index) !== void 0 ? Array.isArray(output.next_index) ? output.next_index[0] : output.next_index : state.currentIndex.value;
         const nextLoraName = (output == null ? void 0 : output.next_lora_name) !== void 0 ? Array.isArray(output.next_lora_name) ? output.next_lora_name[0] : output.next_lora_name : "";
@@ -13557,6 +13549,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           "repeat-count": unref(state).repeatCount.value,
           "repeat-used": unref(state).displayRepeatUsed.value,
           "is-paused": unref(state).isPaused.value,
+          "is-pause-disabled": hasQueuedPrompts.value,
           "is-workflow-executing": unref(state).isWorkflowExecuting.value,
           "executing-repeat-step": unref(state).executingRepeatStep.value,
           "onUpdate:currentIndex": handleIndexUpdate,
@@ -13567,12 +13560,12 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           onTogglePause: handleTogglePause,
           onResetIndex: handleResetIndex,
           onRefresh: handleRefresh
-        }, null, 8, ["current-index", "total-count", "current-lora-name", "current-lora-filename", "model-strength", "clip-strength", "use-custom-clip-range", "is-clip-strength-disabled", "is-loading", "repeat-count", "repeat-used", "is-paused", "is-workflow-executing", "executing-repeat-step"])
+        }, null, 8, ["current-index", "total-count", "current-lora-name", "current-lora-filename", "model-strength", "clip-strength", "use-custom-clip-range", "is-clip-strength-disabled", "is-loading", "repeat-count", "repeat-used", "is-paused", "is-pause-disabled", "is-workflow-executing", "executing-repeat-step"])
       ]);
     };
   }
 });
-const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-e8c2adc1"]]);
+const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-9c17d0bf"]]);
 const _hoisted_1$1 = { class: "json-display-widget" };
 const _hoisted_2$1 = {
   class: "json-content",

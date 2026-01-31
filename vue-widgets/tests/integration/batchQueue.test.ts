@@ -497,64 +497,39 @@ describe('Batch Queue Integration Tests', () => {
       // What matters is widget.value which is what the backend uses
     })
 
-it('should clear server queue when pausing mid-batch', async () => {
-      // This tests the fix for the batch queue pause bug:
-      // When user presses pause during batch execution, pending queue items should be cleared
+it('should have hasQueuedPrompts true when execution queue has items', async () => {
+      // This tests the pause button disabled state
+      const harness = createTestHarness({ totalCount: 5 })
+
+      // Initially no queued prompts
+      expect(harness.executionQueue.length).toBe(0)
+
+      // Queue some prompts
+      harness.widget.beforeQueued()
+      harness.widget.beforeQueued()
+      harness.widget.beforeQueued()
+
+      // Execution queue should have items
+      expect(harness.executionQueue.length).toBe(3)
+    })
+
+    it('should have empty execution queue after all executions complete', async () => {
+      // This tests that pause button becomes enabled after executions complete
       const harness = createTestHarness({ totalCount: 5 })
       const simulator = new BatchQueueSimulator({ totalCount: 5 })
 
-      // Mock fetch to track calls to /queue
-      const fetchCalls: { url: string; body: any }[] = []
-      const originalFetch = global.fetch
-      global.fetch = vi.fn().mockImplementation((url: string, options?: RequestInit) => {
-        if (url === '/queue') {
-          fetchCalls.push({ url, body: options?.body ? JSON.parse(options.body as string) : null })
-          return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
-        }
-        // Call through for other URLs (like cycler-list API)
-        return originalFetch(url, options)
-      }) as any
+      // Run batch queue execution
+      await simulator.runBatchQueue(
+        3,
+        {
+          beforeQueued: () => harness.widget.beforeQueued(),
+          onExecuted: (output) => harness.node.onExecuted(output)
+        },
+        () => harness.getConfig()
+      )
 
-      try {
-        // Queue 4 prompts while not paused
-        harness.widget.beforeQueued()
-        harness.widget.beforeQueued()
-        harness.widget.beforeQueued()
-        harness.widget.beforeQueued()
-
-        // Verify 4 contexts were queued
-        expect(harness.executionQueue.length).toBe(4)
-
-        // Simulate pressing pause (this is what handleTogglePause does in the component)
-        const wasPaused = harness.state.isPaused.value
-        harness.state.togglePause()
-
-        // When transitioning to paused, the component should:
-        // 1. Reset execution state
-        // 2. Clear execution queue
-        // 3. Call fetch('/queue', { clear: true })
-        if (!wasPaused && harness.state.isPaused.value) {
-          // Reset execution state (mimics component behavior)
-          harness.resetExecutionState()
-
-          // Clear server queue (mimics component behavior)
-          await fetch('/queue', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ clear: true })
-          })
-        }
-
-        // Verify execution queue was cleared
-        expect(harness.executionQueue.length).toBe(0)
-
-        // Verify fetch was called with correct parameters
-        expect(fetchCalls.length).toBe(1)
-        expect(fetchCalls[0].url).toBe('/queue')
-        expect(fetchCalls[0].body).toEqual({ clear: true })
-      } finally {
-        global.fetch = originalFetch
-      }
+      // After all executions, queue should be empty
+      expect(harness.executionQueue.length).toBe(0)
     })
 
     it('should resume cycling after unpause', async () => {
