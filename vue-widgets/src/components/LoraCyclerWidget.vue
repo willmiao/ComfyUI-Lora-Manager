@@ -56,6 +56,12 @@ const getPoolConfig = (): LoraPoolConfig | null => {
 
 // Handle index update from user
 const handleIndexUpdate = async (newIndex: number) => {
+  // Reset execution state when user manually changes index
+  // This ensures the next execution starts from the user-set index
+  ;(props.widget as any)[HAS_EXECUTED] = false
+  state.executionIndex.value = null
+  state.nextIndex.value = null
+
   state.setIndex(newIndex)
 
   // Refresh list to update current LoRA display

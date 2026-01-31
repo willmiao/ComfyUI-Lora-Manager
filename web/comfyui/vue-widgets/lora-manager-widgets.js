@@ -1684,7 +1684,7 @@ to {
   opacity: 1;
 }
 
-.lora-cycler-widget[data-v-6c9d29f9] {
+.lora-cycler-widget[data-v-2ca548b3] {
   padding: 6px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 6px;
@@ -13082,6 +13082,9 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       return null;
     };
     const handleIndexUpdate = async (newIndex) => {
+      props.widget[HAS_EXECUTED] = false;
+      state.executionIndex.value = null;
+      state.nextIndex.value = null;
       state.setIndex(newIndex);
       try {
         const poolConfig = getPoolConfig();
@@ -13210,7 +13213,7 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-6c9d29f9"]]);
+const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-2ca548b3"]]);
 const _hoisted_1$1 = { class: "json-display-widget" };
 const _hoisted_2$1 = {
   class: "json-content",
