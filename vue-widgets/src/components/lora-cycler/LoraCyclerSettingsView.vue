@@ -16,97 +16,92 @@
           <span class="progress-separator">/</span>
           <span class="progress-total">{{ totalCount }}</span>
 
-          <!-- Repeat indicator (only shown when repeatCount > 1) -->
-          <div v-if="repeatCount > 1" class="repeat-badge">
-            <span class="repeat-badge-label">Rep</span>
-            <span class="repeat-badge-value">{{ repeatUsed }}/{{ repeatCount }}</span>
+          <!-- Repeat progress indicator (only shown when repeatCount > 1) -->
+          <div v-if="repeatCount > 1" class="repeat-progress">
+            <div class="repeat-progress-track">
+              <div
+                class="repeat-progress-fill"
+                :style="{ width: `${(repeatUsed / repeatCount) * 100}%` }"
+                :class="{ 'is-complete': repeatUsed >= repeatCount }"
+              ></div>
+            </div>
+            <span class="repeat-progress-text">{{ repeatUsed }}/{{ repeatCount }}</span>
           </div>
-
-          <button
-            class="refresh-button"
-            :disabled="isLoading"
-            @click="$emit('refresh')"
-            title="Refresh list"
-          >
-            <svg
-              class="refresh-icon"
-              :class="{ spinning: isLoading }"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-              <path d="M21 3v5h-5"/>
-            </svg>
-          </button>
         </div>
       </div>
     </div>
 
     <!-- Starting Index with Advanced Controls -->
     <div class="setting-section">
-      <label class="setting-label">Starting Index</label>
       <div class="index-controls-row">
-        <!-- Index input -->
-        <input
-          type="number"
-          class="index-input"
-          :min="1"
-          :max="totalCount || 1"
-          :value="currentIndex"
-          :disabled="totalCount === 0"
-          @input="onIndexInput"
-          @blur="onIndexBlur"
-          @pointerdown.stop
-          @pointermove.stop
-          @pointerup.stop
-        />
-        <span class="index-hint">1 - {{ totalCount || 1 }}</span>
+        <!-- Left: Index group -->
+        <div class="control-group">
+          <label class="control-group-label">Starting Index</label>
+          <div class="control-group-content">
+            <input
+              type="number"
+              class="index-input"
+              :min="1"
+              :max="totalCount || 1"
+              :value="currentIndex"
+              :disabled="totalCount === 0"
+              @input="onIndexInput"
+              @blur="onIndexBlur"
+              @pointerdown.stop
+              @pointermove.stop
+              @pointerup.stop
+            />
+            <span class="index-hint">/ {{ totalCount || 1 }}</span>
+          </div>
+        </div>
 
-        <!-- Repeat control -->
-        <span class="repeat-label">x</span>
-        <input
-          type="number"
-          class="repeat-input"
-          min="1"
-          max="99"
-          :value="repeatCount"
-          @input="onRepeatInput"
-          @blur="onRepeatBlur"
-          @pointerdown.stop
-          @pointermove.stop
-          @pointerup.stop
-          title="Repeat each LoRA this many times"
-        />
-        <span class="repeat-hint">times</span>
+        <!-- Right: Repeat group -->
+        <div class="control-group">
+          <label class="control-group-label">Repeat</label>
+          <div class="control-group-content">
+            <input
+              type="number"
+              class="repeat-input"
+              min="1"
+              max="99"
+              :value="repeatCount"
+              @input="onRepeatInput"
+              @blur="onRepeatBlur"
+              @pointerdown.stop
+              @pointermove.stop
+              @pointerup.stop
+              title="Each LoRA will be used this many times before moving to the next"
+            />
+            <span class="repeat-suffix">×</span>
+          </div>
+        </div>
 
-        <!-- Control buttons -->
-        <button
-          class="control-btn"
-          :class="{ active: isPaused }"
-          :disabled="isPauseDisabled"
-          @click="$emit('toggle-pause')"
-          :title="isPauseDisabled ? 'Cannot pause while prompts are queued' : (isPaused ? 'Continue iteration' : 'Pause iteration')"
-        >
-          <svg v-if="isPaused" viewBox="0 0 24 24" fill="currentColor" class="control-icon">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-          <svg v-else viewBox="0 0 24 24" fill="currentColor" class="control-icon">
-            <path d="M6 4h4v16H6zm8 0h4v16h-4z"/>
-          </svg>
-        </button>
-        <button
-          class="control-btn"
-          @click="$emit('reset-index')"
-          title="Reset to index 1"
-        >
-          <svg viewBox="0 0 24 24" fill="currentColor" class="control-icon">
-            <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-          </svg>
-        </button>
+        <!-- Action buttons -->
+        <div class="action-buttons">
+          <button
+            class="control-btn"
+            :class="{ active: isPaused }"
+            :disabled="isPauseDisabled"
+            @click="$emit('toggle-pause')"
+            :title="isPauseDisabled ? 'Cannot pause while prompts are queued' : (isPaused ? 'Continue iteration' : 'Pause iteration')"
+          >
+            <svg v-if="isPaused" viewBox="0 0 24 24" fill="currentColor" class="control-icon">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+            <svg v-else viewBox="0 0 24 24" fill="currentColor" class="control-icon">
+              <path d="M6 4h4v16H6zm8 0h4v16h-4z"/>
+            </svg>
+          </button>
+          <button
+            class="control-btn"
+            @click="$emit('reset-index')"
+            title="Reset to index 1"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" class="control-icon">
+              <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -172,7 +167,6 @@ const props = defineProps<{
   clipStrength: number
   useCustomClipRange: boolean
   isClipStrengthDisabled: boolean
-  isLoading: boolean
   repeatCount: number
   repeatUsed: number
   isPaused: boolean
@@ -189,7 +183,6 @@ const emit = defineEmits<{
   'update:repeatCount': [value: number]
   'toggle-pause': []
   'reset-index': []
-  'refresh': []
 }>()
 
 // Temporary value for input while typing
@@ -354,94 +347,87 @@ const onRepeatBlur = (event: Event) => {
   font-variant-numeric: tabular-nums;
 }
 
-.refresh-button {
+/* Repeat Progress */
+.repeat-progress {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  margin-left: 8px;
-  padding: 0;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  color: rgba(226, 232, 240, 0.6);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.refresh-button:hover:not(:disabled) {
-  background: rgba(66, 153, 225, 0.2);
-  border-color: rgba(66, 153, 225, 0.4);
-  color: rgba(191, 219, 254, 1);
-}
-
-.refresh-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.refresh-icon {
-  width: 14px;
-  height: 14px;
-}
-
-.refresh-icon.spinning {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Repeat Badge */
-.repeat-badge {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  gap: 6px;
   margin-left: 8px;
   padding: 2px 6px;
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(26, 32, 44, 0.6);
+  border: 1px solid rgba(226, 232, 240, 0.1);
   border-radius: 4px;
 }
 
-.repeat-badge-label {
-  font-size: 10px;
-  color: rgba(253, 230, 138, 0.7);
-  text-transform: uppercase;
+.repeat-progress-track {
+  width: 32px;
+  height: 4px;
+  background: rgba(226, 232, 240, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
 }
 
-.repeat-badge-value {
-  font-size: 12px;
+.repeat-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.repeat-progress-fill.is-complete {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.repeat-progress-text {
+  font-size: 10px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
-  color: rgba(253, 230, 138, 1);
+  color: rgba(253, 230, 138, 0.9);
   min-width: 3ch;
   font-variant-numeric: tabular-nums;
 }
 
-/* Index Controls Row */
+/* Index Controls Row - Grouped Layout */
 .index-controls-row {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+/* Control Group */
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.control-group-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(226, 232, 240, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+
+.control-group-content {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  height: 32px;
 }
 
 .index-input {
-  width: 60px;
-  padding: 6px 8px;
+  width: 50px;
+  height: 32px;
+  padding: 0 8px;
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
   color: #e4e4e7;
   font-size: 13px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
+  line-height: 32px;
+  box-sizing: border-box;
 }
 
 .index-input:focus {
@@ -455,22 +441,17 @@ const onRepeatBlur = (event: Event) => {
 }
 
 .index-hint {
-  font-size: 11px;
+  font-size: 12px;
   color: rgba(226, 232, 240, 0.4);
-  min-width: 7ch;
   font-variant-numeric: tabular-nums;
+  line-height: 32px;
 }
 
 /* Repeat Controls */
-.repeat-label {
-  font-size: 13px;
-  color: rgba(226, 232, 240, 0.6);
-  margin-left: 4px;
-}
-
 .repeat-input {
-  width: 44px;
-  padding: 6px 6px;
+  width: 40px;
+  height: 32px;
+  padding: 0 6px;
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
@@ -478,6 +459,8 @@ const onRepeatBlur = (event: Event) => {
   font-size: 13px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
   text-align: center;
+  line-height: 32px;
+  box-sizing: border-box;
 }
 
 .repeat-input:focus {
@@ -485,9 +468,19 @@ const onRepeatBlur = (event: Event) => {
   border-color: rgba(66, 153, 225, 0.6);
 }
 
-.repeat-hint {
-  font-size: 11px;
+.repeat-suffix {
+  font-size: 13px;
   color: rgba(226, 232, 240, 0.4);
+  font-weight: 500;
+  line-height: 32px;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
 }
 
 /* Control Buttons */

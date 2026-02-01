@@ -23,7 +23,6 @@
       @update:repeat-count="handleRepeatCountChange"
       @toggle-pause="handleTogglePause"
       @reset-index="handleResetIndex"
-      @refresh="handleRefresh"
     />
   </div>
 </template>
@@ -133,16 +132,6 @@ const handleUseCustomClipRangeChange = (newValue: boolean) => {
   // When toggling off, sync clip strength to model strength
   if (!newValue) {
     state.clipStrength.value = state.modelStrength.value
-  }
-}
-
-// Handle refresh button click
-const handleRefresh = async () => {
-  try {
-    const poolConfig = getPoolConfig()
-    await state.refreshList(poolConfig)
-  } catch (error) {
-    console.error('[LoraCyclerWidget] Error refreshing:', error)
   }
 }
 

@@ -1464,16 +1464,16 @@ to { transform: rotate(360deg);
   box-sizing: border-box;
 }
 
-.cycler-settings[data-v-9be19e47] {
+.cycler-settings[data-v-a14881ad] {
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #e4e4e7;
 }
-.settings-header[data-v-9be19e47] {
+.settings-header[data-v-a14881ad] {
   margin-bottom: 8px;
 }
-.settings-title[data-v-9be19e47] {
+.settings-title[data-v-a14881ad] {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -1482,10 +1482,10 @@ to { transform: rotate(360deg);
   margin: 0;
   text-transform: uppercase;
 }
-.setting-section[data-v-9be19e47] {
+.setting-section[data-v-a14881ad] {
   margin-bottom: 8px;
 }
-.setting-label[data-v-9be19e47] {
+.setting-label[data-v-a14881ad] {
   font-size: 13px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.8);
@@ -1494,10 +1494,10 @@ to { transform: rotate(360deg);
 }
 
 /* Progress Display */
-.progress-section[data-v-9be19e47] {
+.progress-section[data-v-a14881ad] {
   margin-bottom: 12px;
 }
-.progress-display[data-v-9be19e47] {
+.progress-display[data-v-a14881ad] {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
@@ -1507,31 +1507,31 @@ to { transform: rotate(360deg);
   align-items: center;
   transition: border-color 0.3s ease;
 }
-.progress-display.executing[data-v-9be19e47] {
+.progress-display.executing[data-v-a14881ad] {
   border-color: rgba(66, 153, 225, 0.5);
-  animation: pulse-9be19e47 2s ease-in-out infinite;
+  animation: pulse-a14881ad 2s ease-in-out infinite;
 }
-@keyframes pulse-9be19e47 {
+@keyframes pulse-a14881ad {
 0%, 100% { border-color: rgba(66, 153, 225, 0.3);
 }
 50% { border-color: rgba(66, 153, 225, 0.7);
 }
 }
-.progress-info[data-v-9be19e47] {
+.progress-info[data-v-a14881ad] {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
   flex: 1;
 }
-.progress-label[data-v-9be19e47] {
+.progress-label[data-v-a14881ad] {
   font-size: 10px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.5);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-.progress-name[data-v-9be19e47] {
+.progress-name[data-v-a14881ad] {
   font-size: 13px;
   font-weight: 500;
   color: rgba(191, 219, 254, 1);
@@ -1539,14 +1539,14 @@ to { transform: rotate(360deg);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.progress-counter[data-v-9be19e47] {
+.progress-counter[data-v-a14881ad] {
   display: flex;
   align-items: center;
   gap: 4px;
   padding-left: 12px;
   flex-shrink: 0;
 }
-.progress-index[data-v-9be19e47] {
+.progress-index[data-v-a14881ad] {
   font-size: 18px;
   font-weight: 600;
   color: rgba(66, 153, 225, 1);
@@ -1555,12 +1555,12 @@ to { transform: rotate(360deg);
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.progress-separator[data-v-9be19e47] {
+.progress-separator[data-v-a14881ad] {
   font-size: 14px;
   color: rgba(226, 232, 240, 0.4);
   margin: 0 2px;
 }
-.progress-total[data-v-9be19e47] {
+.progress-total[data-v-a14881ad] {
   font-size: 14px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.6);
@@ -1569,111 +1569,102 @@ to { transform: rotate(360deg);
   text-align: left;
   font-variant-numeric: tabular-nums;
 }
-.refresh-button[data-v-9be19e47] {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  margin-left: 8px;
-  padding: 0;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  color: rgba(226, 232, 240, 0.6);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.refresh-button[data-v-9be19e47]:hover:not(:disabled) {
-  background: rgba(66, 153, 225, 0.2);
-  border-color: rgba(66, 153, 225, 0.4);
-  color: rgba(191, 219, 254, 1);
-}
-.refresh-button[data-v-9be19e47]:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.refresh-icon[data-v-9be19e47] {
-  width: 14px;
-  height: 14px;
-}
-.refresh-icon.spinning[data-v-9be19e47] {
-  animation: spin-9be19e47 1s linear infinite;
-}
-@keyframes spin-9be19e47 {
-from {
-    transform: rotate(0deg);
-}
-to {
-    transform: rotate(360deg);
-}
-}
 
-/* Repeat Badge */
-.repeat-badge[data-v-9be19e47] {
+/* Repeat Progress */
+.repeat-progress[data-v-a14881ad] {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   margin-left: 8px;
   padding: 2px 6px;
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(26, 32, 44, 0.6);
+  border: 1px solid rgba(226, 232, 240, 0.1);
   border-radius: 4px;
 }
-.repeat-badge-label[data-v-9be19e47] {
-  font-size: 10px;
-  color: rgba(253, 230, 138, 0.7);
-  text-transform: uppercase;
+.repeat-progress-track[data-v-a14881ad] {
+  width: 32px;
+  height: 4px;
+  background: rgba(226, 232, 240, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
 }
-.repeat-badge-value[data-v-9be19e47] {
-  font-size: 12px;
+.repeat-progress-fill[data-v-a14881ad] {
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+.repeat-progress-fill.is-complete[data-v-a14881ad] {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+.repeat-progress-text[data-v-a14881ad] {
+  font-size: 10px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
-  color: rgba(253, 230, 138, 1);
+  color: rgba(253, 230, 138, 0.9);
   min-width: 3ch;
   font-variant-numeric: tabular-nums;
 }
 
-/* Index Controls Row */
-.index-controls-row[data-v-9be19e47] {
+/* Index Controls Row - Grouped Layout */
+.index-controls-row[data-v-a14881ad] {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
 }
-.index-input[data-v-9be19e47] {
-  width: 60px;
-  padding: 6px 8px;
+
+/* Control Group */
+.control-group[data-v-a14881ad] {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.control-group-label[data-v-a14881ad] {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(226, 232, 240, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+.control-group-content[data-v-a14881ad] {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  height: 32px;
+}
+.index-input[data-v-a14881ad] {
+  width: 50px;
+  height: 32px;
+  padding: 0 8px;
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
   color: #e4e4e7;
   font-size: 13px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
+  line-height: 32px;
+  box-sizing: border-box;
 }
-.index-input[data-v-9be19e47]:focus {
+.index-input[data-v-a14881ad]:focus {
   outline: none;
   border-color: rgba(66, 153, 225, 0.6);
 }
-.index-input[data-v-9be19e47]:disabled {
+.index-input[data-v-a14881ad]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.index-hint[data-v-9be19e47] {
-  font-size: 11px;
+.index-hint[data-v-a14881ad] {
+  font-size: 12px;
   color: rgba(226, 232, 240, 0.4);
-  min-width: 7ch;
   font-variant-numeric: tabular-nums;
+  line-height: 32px;
 }
 
 /* Repeat Controls */
-.repeat-label[data-v-9be19e47] {
-  font-size: 13px;
-  color: rgba(226, 232, 240, 0.6);
-  margin-left: 4px;
-}
-.repeat-input[data-v-9be19e47] {
-  width: 44px;
-  padding: 6px 6px;
+.repeat-input[data-v-a14881ad] {
+  width: 40px;
+  height: 32px;
+  padding: 0 6px;
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
@@ -1681,18 +1672,30 @@ to {
   font-size: 13px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
   text-align: center;
+  line-height: 32px;
+  box-sizing: border-box;
 }
-.repeat-input[data-v-9be19e47]:focus {
+.repeat-input[data-v-a14881ad]:focus {
   outline: none;
   border-color: rgba(66, 153, 225, 0.6);
 }
-.repeat-hint[data-v-9be19e47] {
-  font-size: 11px;
+.repeat-suffix[data-v-a14881ad] {
+  font-size: 13px;
   color: rgba(226, 232, 240, 0.4);
+  font-weight: 500;
+  line-height: 32px;
+}
+
+/* Action Buttons */
+.action-buttons[data-v-a14881ad] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
 }
 
 /* Control Buttons */
-.control-btn[data-v-9be19e47] {
+.control-btn[data-v-a14881ad] {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1706,52 +1709,52 @@ to {
   cursor: pointer;
   transition: all 0.2s;
 }
-.control-btn[data-v-9be19e47]:hover:not(:disabled) {
+.control-btn[data-v-a14881ad]:hover:not(:disabled) {
   background: rgba(66, 153, 225, 0.2);
   border-color: rgba(66, 153, 225, 0.4);
   color: rgba(191, 219, 254, 1);
 }
-.control-btn[data-v-9be19e47]:disabled {
+.control-btn[data-v-a14881ad]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.control-btn.active[data-v-9be19e47] {
+.control-btn.active[data-v-a14881ad] {
   background: rgba(245, 158, 11, 0.2);
   border-color: rgba(245, 158, 11, 0.5);
   color: rgba(253, 230, 138, 1);
 }
-.control-btn.active[data-v-9be19e47]:hover {
+.control-btn.active[data-v-a14881ad]:hover {
   background: rgba(245, 158, 11, 0.3);
   border-color: rgba(245, 158, 11, 0.6);
 }
-.control-icon[data-v-9be19e47] {
+.control-icon[data-v-a14881ad] {
   width: 14px;
   height: 14px;
 }
 
 /* Slider Container */
-.slider-container[data-v-9be19e47] {
+.slider-container[data-v-a14881ad] {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
   padding: 6px;
 }
-.slider-container--disabled[data-v-9be19e47] {
+.slider-container--disabled[data-v-a14881ad] {
   opacity: 0.5;
   pointer-events: none;
 }
-.section-header-with-toggle[data-v-9be19e47] {
+.section-header-with-toggle[data-v-a14881ad] {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
 }
-.section-header-with-toggle .setting-label[data-v-9be19e47] {
+.section-header-with-toggle .setting-label[data-v-a14881ad] {
   margin-bottom: 4px;
 }
 
 /* Toggle Switch */
-.toggle-switch[data-v-9be19e47] {
+.toggle-switch[data-v-a14881ad] {
   position: relative;
   width: 36px;
   height: 20px;
@@ -1760,7 +1763,7 @@ to {
   border: none;
   cursor: pointer;
 }
-.toggle-switch__track[data-v-9be19e47] {
+.toggle-switch__track[data-v-a14881ad] {
   position: absolute;
   inset: 0;
   background: var(--comfy-input-bg, #333);
@@ -1768,11 +1771,11 @@ to {
   border-radius: 10px;
   transition: all 0.2s;
 }
-.toggle-switch--active .toggle-switch__track[data-v-9be19e47] {
+.toggle-switch--active .toggle-switch__track[data-v-a14881ad] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.toggle-switch__thumb[data-v-9be19e47] {
+.toggle-switch__thumb[data-v-a14881ad] {
   position: absolute;
   top: 3px;
   left: 2px;
@@ -1783,16 +1786,16 @@ to {
   transition: all 0.2s;
   opacity: 0.6;
 }
-.toggle-switch--active .toggle-switch__thumb[data-v-9be19e47] {
+.toggle-switch--active .toggle-switch__thumb[data-v-a14881ad] {
   transform: translateX(16px);
   background: #4299e1;
   opacity: 1;
 }
-.toggle-switch:hover .toggle-switch__thumb[data-v-9be19e47] {
+.toggle-switch:hover .toggle-switch__thumb[data-v-a14881ad] {
   opacity: 1;
 }
 
-.lora-cycler-widget[data-v-9c17d0bf] {
+.lora-cycler-widget[data-v-cce5520b] {
   padding: 6px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 6px;
@@ -12819,34 +12822,39 @@ const _hoisted_7 = { class: "progress-index" };
 const _hoisted_8 = { class: "progress-total" };
 const _hoisted_9 = {
   key: 0,
-  class: "repeat-badge"
+  class: "repeat-progress"
 };
-const _hoisted_10 = { class: "repeat-badge-value" };
-const _hoisted_11 = ["disabled"];
+const _hoisted_10 = { class: "repeat-progress-track" };
+const _hoisted_11 = { class: "repeat-progress-text" };
 const _hoisted_12 = { class: "setting-section" };
 const _hoisted_13 = { class: "index-controls-row" };
-const _hoisted_14 = ["max", "value", "disabled"];
-const _hoisted_15 = { class: "index-hint" };
-const _hoisted_16 = ["value"];
-const _hoisted_17 = ["disabled", "title"];
-const _hoisted_18 = {
+const _hoisted_14 = { class: "control-group" };
+const _hoisted_15 = { class: "control-group-content" };
+const _hoisted_16 = ["max", "value", "disabled"];
+const _hoisted_17 = { class: "index-hint" };
+const _hoisted_18 = { class: "control-group" };
+const _hoisted_19 = { class: "control-group-content" };
+const _hoisted_20 = ["value"];
+const _hoisted_21 = { class: "action-buttons" };
+const _hoisted_22 = ["disabled", "title"];
+const _hoisted_23 = {
   key: 0,
   viewBox: "0 0 24 24",
   fill: "currentColor",
   class: "control-icon"
 };
-const _hoisted_19 = {
+const _hoisted_24 = {
   key: 1,
   viewBox: "0 0 24 24",
   fill: "currentColor",
   class: "control-icon"
 };
-const _hoisted_20 = { class: "setting-section" };
-const _hoisted_21 = { class: "slider-container" };
-const _hoisted_22 = { class: "setting-section" };
-const _hoisted_23 = { class: "section-header-with-toggle" };
-const _hoisted_24 = { class: "setting-label" };
-const _hoisted_25 = ["aria-checked"];
+const _hoisted_25 = { class: "setting-section" };
+const _hoisted_26 = { class: "slider-container" };
+const _hoisted_27 = { class: "setting-section" };
+const _hoisted_28 = { class: "section-header-with-toggle" };
+const _hoisted_29 = { class: "setting-label" };
+const _hoisted_30 = ["aria-checked"];
 const _sfc_main$3 = /* @__PURE__ */ defineComponent({
   __name: "LoraCyclerSettingsView",
   props: {
@@ -12858,7 +12866,6 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     clipStrength: {},
     useCustomClipRange: { type: Boolean },
     isClipStrengthDisabled: { type: Boolean },
-    isLoading: { type: Boolean },
     repeatCount: {},
     repeatUsed: {},
     isPaused: { type: Boolean },
@@ -12866,7 +12873,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     isWorkflowExecuting: { type: Boolean },
     executingRepeatStep: {}
   },
-  emits: ["update:currentIndex", "update:modelStrength", "update:clipStrength", "update:useCustomClipRange", "update:repeatCount", "toggle-pause", "reset-index", "refresh"],
+  emits: ["update:currentIndex", "update:modelStrength", "update:clipStrength", "update:useCustomClipRange", "update:repeatCount", "toggle-pause", "reset-index"],
   setup(__props, { emit: __emit }) {
     const props = __props;
     const emit2 = __emit;
@@ -12906,7 +12913,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     };
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", _hoisted_1$3, [
-        _cache[23] || (_cache[23] = createBaseVNode("div", { class: "settings-header" }, [
+        _cache[20] || (_cache[20] = createBaseVNode("div", { class: "settings-header" }, [
           createBaseVNode("h3", { class: "settings-title" }, "CYCLER SETTINGS")
         ], -1)),
         createBaseVNode("div", _hoisted_2$2, [
@@ -12922,126 +12929,122 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
             ]),
             createBaseVNode("div", _hoisted_6, [
               createBaseVNode("span", _hoisted_7, toDisplayString(__props.currentIndex), 1),
-              _cache[14] || (_cache[14] = createBaseVNode("span", { class: "progress-separator" }, "/", -1)),
+              _cache[11] || (_cache[11] = createBaseVNode("span", { class: "progress-separator" }, "/", -1)),
               createBaseVNode("span", _hoisted_8, toDisplayString(__props.totalCount), 1),
               __props.repeatCount > 1 ? (openBlock(), createElementBlock("div", _hoisted_9, [
-                _cache[12] || (_cache[12] = createBaseVNode("span", { class: "repeat-badge-label" }, "Rep", -1)),
-                createBaseVNode("span", _hoisted_10, toDisplayString(__props.repeatUsed) + "/" + toDisplayString(__props.repeatCount), 1)
-              ])) : createCommentVNode("", true),
-              createBaseVNode("button", {
-                class: "refresh-button",
-                disabled: __props.isLoading,
-                onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("refresh")),
-                title: "Refresh list"
-              }, [
-                (openBlock(), createElementBlock("svg", {
-                  class: normalizeClass(["refresh-icon", { spinning: __props.isLoading }]),
-                  viewBox: "0 0 24 24",
-                  fill: "none",
-                  stroke: "currentColor",
-                  "stroke-width": "2",
-                  "stroke-linecap": "round",
-                  "stroke-linejoin": "round"
-                }, [..._cache[13] || (_cache[13] = [
-                  createBaseVNode("path", { d: "M21 12a9 9 0 1 1-6.219-8.56" }, null, -1),
-                  createBaseVNode("path", { d: "M21 3v5h-5" }, null, -1)
-                ])], 2))
-              ], 8, _hoisted_11)
+                createBaseVNode("div", _hoisted_10, [
+                  createBaseVNode("div", {
+                    class: normalizeClass(["repeat-progress-fill", { "is-complete": __props.repeatUsed >= __props.repeatCount }]),
+                    style: normalizeStyle({ width: `${__props.repeatUsed / __props.repeatCount * 100}%` })
+                  }, null, 6)
+                ]),
+                createBaseVNode("span", _hoisted_11, toDisplayString(__props.repeatUsed) + "/" + toDisplayString(__props.repeatCount), 1)
+              ])) : createCommentVNode("", true)
             ])
           ], 2)
         ]),
         createBaseVNode("div", _hoisted_12, [
-          _cache[20] || (_cache[20] = createBaseVNode("label", { class: "setting-label" }, "Starting Index", -1)),
           createBaseVNode("div", _hoisted_13, [
-            createBaseVNode("input", {
-              type: "number",
-              class: "index-input",
-              min: 1,
-              max: __props.totalCount || 1,
-              value: __props.currentIndex,
-              disabled: __props.totalCount === 0,
-              onInput: onIndexInput,
-              onBlur: onIndexBlur,
-              onPointerdown: _cache[1] || (_cache[1] = withModifiers(() => {
-              }, ["stop"])),
-              onPointermove: _cache[2] || (_cache[2] = withModifiers(() => {
-              }, ["stop"])),
-              onPointerup: _cache[3] || (_cache[3] = withModifiers(() => {
-              }, ["stop"]))
-            }, null, 40, _hoisted_14),
-            createBaseVNode("span", _hoisted_15, "1 - " + toDisplayString(__props.totalCount || 1), 1),
-            _cache[18] || (_cache[18] = createBaseVNode("span", { class: "repeat-label" }, "x", -1)),
-            createBaseVNode("input", {
-              type: "number",
-              class: "repeat-input",
-              min: "1",
-              max: "99",
-              value: __props.repeatCount,
-              onInput: onRepeatInput,
-              onBlur: onRepeatBlur,
-              onPointerdown: _cache[4] || (_cache[4] = withModifiers(() => {
-              }, ["stop"])),
-              onPointermove: _cache[5] || (_cache[5] = withModifiers(() => {
-              }, ["stop"])),
-              onPointerup: _cache[6] || (_cache[6] = withModifiers(() => {
-              }, ["stop"])),
-              title: "Repeat each LoRA this many times"
-            }, null, 40, _hoisted_16),
-            _cache[19] || (_cache[19] = createBaseVNode("span", { class: "repeat-hint" }, "times", -1)),
-            createBaseVNode("button", {
-              class: normalizeClass(["control-btn", { active: __props.isPaused }]),
-              disabled: __props.isPauseDisabled,
-              onClick: _cache[7] || (_cache[7] = ($event) => _ctx.$emit("toggle-pause")),
-              title: __props.isPauseDisabled ? "Cannot pause while prompts are queued" : __props.isPaused ? "Continue iteration" : "Pause iteration"
-            }, [
-              __props.isPaused ? (openBlock(), createElementBlock("svg", _hoisted_18, [..._cache[15] || (_cache[15] = [
-                createBaseVNode("path", { d: "M8 5v14l11-7z" }, null, -1)
-              ])])) : (openBlock(), createElementBlock("svg", _hoisted_19, [..._cache[16] || (_cache[16] = [
-                createBaseVNode("path", { d: "M6 4h4v16H6zm8 0h4v16h-4z" }, null, -1)
-              ])]))
-            ], 10, _hoisted_17),
-            createBaseVNode("button", {
-              class: "control-btn",
-              onClick: _cache[8] || (_cache[8] = ($event) => _ctx.$emit("reset-index")),
-              title: "Reset to index 1"
-            }, [..._cache[17] || (_cache[17] = [
-              createBaseVNode("svg", {
-                viewBox: "0 0 24 24",
-                fill: "currentColor",
-                class: "control-icon"
+            createBaseVNode("div", _hoisted_14, [
+              _cache[12] || (_cache[12] = createBaseVNode("label", { class: "control-group-label" }, "Starting Index", -1)),
+              createBaseVNode("div", _hoisted_15, [
+                createBaseVNode("input", {
+                  type: "number",
+                  class: "index-input",
+                  min: 1,
+                  max: __props.totalCount || 1,
+                  value: __props.currentIndex,
+                  disabled: __props.totalCount === 0,
+                  onInput: onIndexInput,
+                  onBlur: onIndexBlur,
+                  onPointerdown: _cache[0] || (_cache[0] = withModifiers(() => {
+                  }, ["stop"])),
+                  onPointermove: _cache[1] || (_cache[1] = withModifiers(() => {
+                  }, ["stop"])),
+                  onPointerup: _cache[2] || (_cache[2] = withModifiers(() => {
+                  }, ["stop"]))
+                }, null, 40, _hoisted_16),
+                createBaseVNode("span", _hoisted_17, "/ " + toDisplayString(__props.totalCount || 1), 1)
+              ])
+            ]),
+            createBaseVNode("div", _hoisted_18, [
+              _cache[14] || (_cache[14] = createBaseVNode("label", { class: "control-group-label" }, "Repeat", -1)),
+              createBaseVNode("div", _hoisted_19, [
+                createBaseVNode("input", {
+                  type: "number",
+                  class: "repeat-input",
+                  min: "1",
+                  max: "99",
+                  value: __props.repeatCount,
+                  onInput: onRepeatInput,
+                  onBlur: onRepeatBlur,
+                  onPointerdown: _cache[3] || (_cache[3] = withModifiers(() => {
+                  }, ["stop"])),
+                  onPointermove: _cache[4] || (_cache[4] = withModifiers(() => {
+                  }, ["stop"])),
+                  onPointerup: _cache[5] || (_cache[5] = withModifiers(() => {
+                  }, ["stop"])),
+                  title: "Each LoRA will be used this many times before moving to the next"
+                }, null, 40, _hoisted_20),
+                _cache[13] || (_cache[13] = createBaseVNode("span", { class: "repeat-suffix" }, "×", -1))
+              ])
+            ]),
+            createBaseVNode("div", _hoisted_21, [
+              createBaseVNode("button", {
+                class: normalizeClass(["control-btn", { active: __props.isPaused }]),
+                disabled: __props.isPauseDisabled,
+                onClick: _cache[6] || (_cache[6] = ($event) => _ctx.$emit("toggle-pause")),
+                title: __props.isPauseDisabled ? "Cannot pause while prompts are queued" : __props.isPaused ? "Continue iteration" : "Pause iteration"
               }, [
-                createBaseVNode("path", { d: "M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" })
-              ], -1)
-            ])])
+                __props.isPaused ? (openBlock(), createElementBlock("svg", _hoisted_23, [..._cache[15] || (_cache[15] = [
+                  createBaseVNode("path", { d: "M8 5v14l11-7z" }, null, -1)
+                ])])) : (openBlock(), createElementBlock("svg", _hoisted_24, [..._cache[16] || (_cache[16] = [
+                  createBaseVNode("path", { d: "M6 4h4v16H6zm8 0h4v16h-4z" }, null, -1)
+                ])]))
+              ], 10, _hoisted_22),
+              createBaseVNode("button", {
+                class: "control-btn",
+                onClick: _cache[7] || (_cache[7] = ($event) => _ctx.$emit("reset-index")),
+                title: "Reset to index 1"
+              }, [..._cache[17] || (_cache[17] = [
+                createBaseVNode("svg", {
+                  viewBox: "0 0 24 24",
+                  fill: "currentColor",
+                  class: "control-icon"
+                }, [
+                  createBaseVNode("path", { d: "M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" })
+                ], -1)
+              ])])
+            ])
           ])
         ]),
-        createBaseVNode("div", _hoisted_20, [
-          _cache[21] || (_cache[21] = createBaseVNode("label", { class: "setting-label" }, "Model Strength", -1)),
-          createBaseVNode("div", _hoisted_21, [
+        createBaseVNode("div", _hoisted_25, [
+          _cache[18] || (_cache[18] = createBaseVNode("label", { class: "setting-label" }, "Model Strength", -1)),
+          createBaseVNode("div", _hoisted_26, [
             createVNode(SingleSlider, {
               min: -10,
               max: 10,
               value: __props.modelStrength,
               step: 0.1,
               "default-range": { min: 0.5, max: 1.5 },
-              "onUpdate:value": _cache[9] || (_cache[9] = ($event) => _ctx.$emit("update:modelStrength", $event))
+              "onUpdate:value": _cache[8] || (_cache[8] = ($event) => _ctx.$emit("update:modelStrength", $event))
             }, null, 8, ["value"])
           ])
         ]),
-        createBaseVNode("div", _hoisted_22, [
-          createBaseVNode("div", _hoisted_23, [
-            createBaseVNode("label", _hoisted_24, " Clip Strength - " + toDisplayString(__props.useCustomClipRange ? "Custom Value" : "Use Model Strength"), 1),
+        createBaseVNode("div", _hoisted_27, [
+          createBaseVNode("div", _hoisted_28, [
+            createBaseVNode("label", _hoisted_29, " Clip Strength - " + toDisplayString(__props.useCustomClipRange ? "Custom Value" : "Use Model Strength"), 1),
             createBaseVNode("button", {
               type: "button",
               class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.useCustomClipRange }]),
-              onClick: _cache[10] || (_cache[10] = ($event) => _ctx.$emit("update:useCustomClipRange", !__props.useCustomClipRange)),
+              onClick: _cache[9] || (_cache[9] = ($event) => _ctx.$emit("update:useCustomClipRange", !__props.useCustomClipRange)),
               role: "switch",
               "aria-checked": __props.useCustomClipRange,
               title: "Use custom clip strength when enabled, otherwise use model strength"
-            }, [..._cache[22] || (_cache[22] = [
+            }, [..._cache[19] || (_cache[19] = [
               createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
               createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
-            ])], 10, _hoisted_25)
+            ])], 10, _hoisted_30)
           ]),
           createBaseVNode("div", {
             class: normalizeClass(["slider-container", { "slider-container--disabled": __props.isClipStrengthDisabled }])
@@ -13053,7 +13056,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
               step: 0.1,
               "default-range": { min: 0.5, max: 1.5 },
               disabled: __props.isClipStrengthDisabled,
-              "onUpdate:value": _cache[11] || (_cache[11] = ($event) => _ctx.$emit("update:clipStrength", $event))
+              "onUpdate:value": _cache[10] || (_cache[10] = ($event) => _ctx.$emit("update:clipStrength", $event))
             }, null, 8, ["value", "disabled"])
           ], 2)
         ])
@@ -13061,7 +13064,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-9be19e47"]]);
+const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-a14881ad"]]);
 function useLoraCyclerState(widget) {
   let isRestoring = false;
   const currentIndex = ref(1);
@@ -13346,14 +13349,6 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
         state.clipStrength.value = state.modelStrength.value;
       }
     };
-    const handleRefresh = async () => {
-      try {
-        const poolConfig = getPoolConfig();
-        await state.refreshList(poolConfig);
-      } catch (error) {
-        console.error("[LoraCyclerWidget] Error refreshing:", error);
-      }
-    };
     const handleRepeatCountChange = (newValue) => {
       state.repeatCount.value = newValue;
       state.repeatUsed.value = 0;
@@ -13558,14 +13553,13 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           "onUpdate:useCustomClipRange": handleUseCustomClipRangeChange,
           "onUpdate:repeatCount": handleRepeatCountChange,
           onTogglePause: handleTogglePause,
-          onResetIndex: handleResetIndex,
-          onRefresh: handleRefresh
+          onResetIndex: handleResetIndex
         }, null, 8, ["current-index", "total-count", "current-lora-name", "current-lora-filename", "model-strength", "clip-strength", "use-custom-clip-range", "is-clip-strength-disabled", "is-loading", "repeat-count", "repeat-used", "is-paused", "is-pause-disabled", "is-workflow-executing", "executing-repeat-step"])
       ]);
     };
   }
 });
-const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-9c17d0bf"]]);
+const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-cce5520b"]]);
 const _hoisted_1$1 = { class: "json-display-widget" };
 const _hoisted_2$1 = {
   class: "json-content",
