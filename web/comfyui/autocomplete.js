@@ -2,6 +2,7 @@ import { api } from "../../scripts/api.js";
 import { app } from "../../scripts/app.js";
 import { TextAreaCaretHelper } from "./textarea_caret_helper.js";
 import { getPromptTagAutocompletePreference, getTagSpaceReplacementPreference } from "./settings.js";
+import { showToast } from "./utils.js";
 
 // Command definitions for category filtering
 const TAG_COMMANDS = {
@@ -15,6 +16,21 @@ const TAG_COMMANDS = {
     '/lore': { categories: [15], label: 'Lore' },
     '/emb': { type: 'embedding', label: 'Embeddings' },
     '/embedding': { type: 'embedding', label: 'Embeddings' },
+    // Autocomplete toggle commands - only show one based on current state
+    '/ac': {
+        type: 'toggle_setting',
+        settingId: 'loramanager.prompt_tag_autocomplete',
+        value: true,
+        label: 'Autocomplete: ON',
+        condition: () => !getPromptTagAutocompletePreference()
+    },
+    '/noac': {
+        type: 'toggle_setting',
+        settingId: 'loramanager.prompt_tag_autocomplete',
+        value: false,
+        label: 'Autocomplete: OFF',
+        condition: () => getPromptTagAutocompletePreference()
+    },
 };
 
 // Category display information
@@ -488,6 +504,10 @@ class AutoComplete {
                     this.searchType = 'commands';
                     this._showCommandList(commandResult.commandFilter);
                     return;
+                } else if (commandResult.command?.type === 'toggle_setting') {
+                    // Handle toggle setting command (/ac, /noac)
+                    this._handleToggleSettingCommand(commandResult.command);
+                    return;
                 } else if (commandResult.command) {
                     // Command is active, use filtered search
                     this.showingCommands = false;
@@ -606,9 +626,14 @@ class AutoComplete {
 
             // Check for exact command match
             if (TAG_COMMANDS[partialCommand]) {
+                const cmd = TAG_COMMANDS[partialCommand];
+                // Filter out toggle commands that don't meet their condition
+                if (cmd.type === 'toggle_setting' && cmd.condition && !cmd.condition()) {
+                    return { showCommands: false, command: null, searchTerm: '' };
+                }
                 return {
                     showCommands: false,
-                    command: TAG_COMMANDS[partialCommand],
+                    command: cmd,
                     searchTerm: '',
                 };
             }
@@ -627,9 +652,14 @@ class AutoComplete {
         const searchPart = trimmed.slice(spaceIndex + 1).trim();
 
         if (TAG_COMMANDS[commandPart]) {
+            const cmd = TAG_COMMANDS[commandPart];
+            // Filter out toggle commands that don't meet their condition
+            if (cmd.type === 'toggle_setting' && cmd.condition && !cmd.condition()) {
+                return { showCommands: false, command: null, searchTerm: trimmed };
+            }
             return {
                 showCommands: false,
-                command: TAG_COMMANDS[commandPart],
+                command: cmd,
                 searchTerm: searchPart,
             };
         }
@@ -651,6 +681,11 @@ class AutoComplete {
 
         for (const [cmd, info] of Object.entries(TAG_COMMANDS)) {
             if (seenLabels.has(info.label)) continue;
+
+            // Filter out toggle commands that don't meet their condition
+            if (info.type === 'toggle_setting' && info.condition) {
+                if (!info.condition()) continue;
+            }
 
             if (!filter || cmd.slice(1).startsWith(filterLower)) {
                 seenLabels.add(info.label);
@@ -1172,6 +1207,119 @@ class AutoComplete {
     refreshCaretHelper() {
         if (this.inputElement && document.body.contains(this.inputElement)) {
             this.helper = new TextAreaCaretHelper(this.inputElement, () => app.canvas.ds.scale);
+        }
+    }
+
+    /**
+     * Handle toggle setting command (/ac, /noac)
+     * @param {Object} command - The toggle command with settingId and value
+     */
+    async _handleToggleSettingCommand(command) {
+        const { settingId, value } = command;
+
+        try {
+            // Use ComfyUI's setting API to update global setting
+            const settingManager = app?.extensionManager?.setting;
+            if (settingManager && typeof settingManager.set === 'function') {
+                await settingManager.set(settingId, value);
+                this._showToggleFeedback(value);
+                this._clearCurrentToken();
+            } else {
+                // Fallback: use legacy settings API
+                const setting = app.ui.settings.settingsById?.[settingId];
+                if (setting) {
+                    app.ui.settings.setSettingValue(settingId, value);
+                    this._showToggleFeedback(value);
+                    this._clearCurrentToken();
+                }
+            }
+        } catch (error) {
+            console.error('[Lora Manager] Failed to toggle setting:', error);
+            showToast({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to toggle autocomplete setting',
+                life: 3000
+            });
+        }
+
+        this.hide();
+    }
+
+    /**
+     * Show visual feedback for toggle action using toast
+     * @param {boolean} enabled - New autocomplete state
+     */
+    _showToggleFeedback(enabled) {
+        showToast({
+            severity: enabled ? 'success' : 'secondary',
+            summary: enabled ? 'Autocomplete Enabled' : 'Autocomplete Disabled',
+            detail: enabled 
+                ? 'Tag autocomplete is now ON. Type to see suggestions.' 
+                : 'Tag autocomplete is now OFF. Use /ac to re-enable.',
+            life: 3000
+        });
+    }
+
+    /**
+     * Clear the current command token from input
+     * Preserves leading spaces after delimiters (e.g., "1girl, /ac" -> "1girl, ")
+     */
+    _clearCurrentToken() {
+        const currentValue = this.inputElement.value;
+        const caretPos = this.inputElement.selectionStart;
+
+        // Find the command text before cursor
+        const beforeCursor = currentValue.substring(0, caretPos);
+        const segments = beforeCursor.split(/[,\>]+/);
+        const lastSegment = segments[segments.length - 1] || '';
+        
+        // Find the command start position, preserving leading spaces
+        // lastSegment includes leading spaces (e.g., " /ac"), find where command actually starts
+        const commandMatch = lastSegment.match(/^(\s*)(\/\w+)/);
+        if (commandMatch) {
+            // commandMatch[1] is leading spaces, commandMatch[2] is the command
+            const leadingSpaces = commandMatch[1].length;
+            // Keep the spaces by starting after them
+            const commandStartPos = caretPos - lastSegment.length + leadingSpaces;
+            
+            // Skip trailing spaces when deleting
+            let endPos = caretPos;
+            while (endPos < currentValue.length && currentValue[endPos] === ' ') {
+                endPos++;
+            }
+
+            const newValue = currentValue.substring(0, commandStartPos) + currentValue.substring(endPos);
+            const newCaretPos = commandStartPos;
+
+            this.inputElement.value = newValue;
+
+            // Trigger input event to notify about the change
+            const event = new Event('input', { bubbles: true });
+            this.inputElement.dispatchEvent(event);
+
+            // Focus back to input and position cursor
+            this.inputElement.focus();
+            this.inputElement.setSelectionRange(newCaretPos, newCaretPos);
+        } else {
+            // Fallback: delete the whole last segment (original behavior)
+            const commandStartPos = caretPos - lastSegment.length;
+            
+            let endPos = caretPos;
+            while (endPos < currentValue.length && currentValue[endPos] === ' ') {
+                endPos++;
+            }
+
+            const newValue = currentValue.substring(0, commandStartPos) + currentValue.substring(endPos);
+            const newCaretPos = commandStartPos;
+
+            this.inputElement.value = newValue;
+
+            const event = new Event('input', { bubbles: true });
+            this.inputElement.dispatchEvent(event);
+
+            this.inputElement.focus();
+            this.inputElement.setSelectionRange(newCaretPos, newCaretPos);
         }
     }
 
