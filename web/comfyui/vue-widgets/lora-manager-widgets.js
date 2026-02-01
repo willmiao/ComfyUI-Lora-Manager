@@ -1053,7 +1053,7 @@ to { transform: rotate(360deg);
   padding: 4px;
 }
 
-.single-slider[data-v-2db219ac] {
+.single-slider[data-v-d04b968b] {
   position: relative;
   width: 100%;
   height: 24px;
@@ -1061,14 +1061,14 @@ to { transform: rotate(360deg);
   cursor: default !important;
   touch-action: none;
 }
-.single-slider.disabled[data-v-2db219ac] {
+.single-slider.disabled[data-v-d04b968b] {
   opacity: 0.4;
   pointer-events: none;
 }
-.single-slider.is-dragging[data-v-2db219ac] {
+.single-slider.is-dragging[data-v-d04b968b] {
   cursor: ew-resize !important;
 }
-.slider-track[data-v-2db219ac] {
+.slider-track[data-v-d04b968b] {
   position: absolute;
   top: 12px;
   left: 0;
@@ -1078,13 +1078,13 @@ to { transform: rotate(360deg);
   border-radius: 4px;
   cursor: default !important;
 }
-.slider-track__bg[data-v-2db219ac] {
+.slider-track__bg[data-v-d04b968b] {
   position: absolute;
   inset: 0;
   background: rgba(66, 153, 225, 0.15);
   border-radius: 2px;
 }
-.slider-track__active[data-v-2db219ac] {
+.slider-track__active[data-v-d04b968b] {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -1093,14 +1093,14 @@ to { transform: rotate(360deg);
   border-radius: 2px;
   transition: width 0.05s linear;
 }
-.slider-track__default[data-v-2db219ac] {
+.slider-track__default[data-v-d04b968b] {
   position: absolute;
   top: 0;
   bottom: 0;
   background: rgba(66, 153, 225, 0.1);
   border-radius: 2px;
 }
-.slider-handle[data-v-2db219ac] {
+.slider-handle[data-v-d04b968b] {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
@@ -1108,7 +1108,7 @@ to { transform: rotate(360deg);
   z-index: 2;
   touch-action: none;
 }
-.slider-handle__thumb[data-v-2db219ac] {
+.slider-handle__thumb[data-v-d04b968b] {
   width: 14px;
   height: 14px;
   background: var(--fg-color, #fff);
@@ -1119,13 +1119,13 @@ to { transform: rotate(360deg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.15s ease;
 }
-.slider-handle:hover .slider-handle__thumb[data-v-2db219ac] {
+.slider-handle:hover .slider-handle__thumb[data-v-d04b968b] {
   transform: scale(1.1);
 }
-.slider-handle:active .slider-handle__thumb[data-v-2db219ac] {
+.slider-handle:active .slider-handle__thumb[data-v-d04b968b] {
   transform: scale(1.15);
 }
-.slider-handle__value[data-v-2db219ac] {
+.slider-handle__value[data-v-d04b968b] {
   position: absolute;
   top: -6px;
   left: 50%;
@@ -1139,7 +1139,7 @@ to { transform: rotate(360deg);
   line-height: 14px;
 }
 
-.dual-range-slider[data-v-05ce9afb] {
+.dual-range-slider[data-v-9f6c6950] {
   position: relative;
   width: 100%;
   height: 24px;
@@ -1147,14 +1147,14 @@ to { transform: rotate(360deg);
   cursor: default !important;
   touch-action: none;
 }
-.dual-range-slider.disabled[data-v-05ce9afb] {
+.dual-range-slider.disabled[data-v-9f6c6950] {
   opacity: 0.4;
   pointer-events: none;
 }
-.dual-range-slider.is-dragging[data-v-05ce9afb] {
+.dual-range-slider.is-dragging[data-v-9f6c6950] {
   cursor: ew-resize !important;
 }
-.slider-track[data-v-05ce9afb] {
+.slider-track[data-v-9f6c6950] {
   position: absolute;
   top: 12px;
   left: 0;
@@ -1164,13 +1164,13 @@ to { transform: rotate(360deg);
   border-radius: 4px;
   cursor: default !important;
 }
-.slider-track__bg[data-v-05ce9afb] {
+.slider-track__bg[data-v-9f6c6950] {
   position: absolute;
   inset: 0;
   background: rgba(66, 153, 225, 0.15);
   border-radius: 2px;
 }
-.slider-track__active[data-v-05ce9afb] {
+.slider-track__active[data-v-9f6c6950] {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -1178,24 +1178,24 @@ to { transform: rotate(360deg);
   border-radius: 2px;
   transition: left 0.05s linear, width 0.05s linear;
 }
-.slider-track__default[data-v-05ce9afb] {
+.slider-track__default[data-v-9f6c6950] {
   position: absolute;
   top: 0;
   bottom: 0;
   background: rgba(66, 153, 225, 0.1);
   border-radius: 2px;
 }
-.slider-track__segment[data-v-05ce9afb] {
+.slider-track__segment[data-v-9f6c6950] {
   position: absolute;
   top: 0;
   bottom: 0;
   background: rgba(66, 153, 225, 0.08);
   border-radius: 2px;
 }
-.slider-track__segment--expanded[data-v-05ce9afb] {
+.slider-track__segment--expanded[data-v-9f6c6950] {
   background: rgba(66, 153, 225, 0.15);
 }
-.slider-track__segment[data-v-05ce9afb]:not(:last-child)::after {
+.slider-track__segment[data-v-9f6c6950]:not(:last-child)::after {
   content: '';
   position: absolute;
   top: -1px;
@@ -1204,7 +1204,7 @@ to { transform: rotate(360deg);
   width: 1px;
   background: rgba(255, 255, 255, 0.1);
 }
-.slider-handle[data-v-05ce9afb] {
+.slider-handle[data-v-9f6c6950] {
   position: absolute;
   top: 0;
   transform: translateX(-50%);
@@ -1212,7 +1212,7 @@ to { transform: rotate(360deg);
   z-index: 2;
   touch-action: none;
 }
-.slider-handle__thumb[data-v-05ce9afb] {
+.slider-handle__thumb[data-v-9f6c6950] {
   width: 14px;
   height: 14px;
   background: var(--fg-color, #fff);
@@ -1223,13 +1223,13 @@ to { transform: rotate(360deg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.15s ease;
 }
-.slider-handle:hover .slider-handle__thumb[data-v-05ce9afb] {
+.slider-handle:hover .slider-handle__thumb[data-v-9f6c6950] {
   transform: scale(1.1);
 }
-.slider-handle:active .slider-handle__thumb[data-v-05ce9afb] {
+.slider-handle:active .slider-handle__thumb[data-v-9f6c6950] {
   transform: scale(1.15);
 }
-.slider-handle__value[data-v-05ce9afb] {
+.slider-handle__value[data-v-9f6c6950] {
   position: absolute;
   top: -6px;
   left: 50%;
@@ -1242,10 +1242,10 @@ to { transform: rotate(360deg);
   pointer-events: none;
   line-height: 14px;
 }
-.slider-handle--min .slider-handle__value[data-v-05ce9afb] {
+.slider-handle--min .slider-handle__value[data-v-9f6c6950] {
   text-align: center;
 }
-.slider-handle--max .slider-handle__value[data-v-05ce9afb] {
+.slider-handle--max .slider-handle__value[data-v-9f6c6950] {
   text-align: center;
 }
 
@@ -11953,7 +11953,8 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
     };
     const snapToStep = (value) => {
       const steps = Math.round((value - props.min) / props.step);
-      return Math.max(props.min, Math.min(props.max, props.min + steps * props.step));
+      const rawValue = Math.max(props.min, Math.min(props.max, props.min + steps * props.step));
+      return Math.round(rawValue * 100) / 100;
     };
     const startDrag = (event) => {
       if (props.disabled) return;
@@ -12042,7 +12043,7 @@ const _sfc_main$8 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const SingleSlider = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-2db219ac"]]);
+const SingleSlider = /* @__PURE__ */ _export_sfc(_sfc_main$8, [["__scopeId", "data-v-d04b968b"]]);
 const _hoisted_1$7 = { class: "slider-handle__value" };
 const _hoisted_2$5 = { class: "slider-handle__value" };
 const _sfc_main$7 = /* @__PURE__ */ defineComponent({
@@ -12160,7 +12161,8 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
     const snapToStep = (value, segmentMultiplier) => {
       const effectiveStep = segmentMultiplier ? props.step * segmentMultiplier : props.step;
       const steps = Math.round((value - props.min) / effectiveStep);
-      return Math.max(props.min, Math.min(props.max, props.min + steps * effectiveStep));
+      const rawValue = Math.max(props.min, Math.min(props.max, props.min + steps * effectiveStep));
+      return Math.round(rawValue * 100) / 100;
     };
     const startDrag = (handle, event) => {
       if (props.disabled) return;
@@ -12324,7 +12326,7 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$7, [["__scopeId", "data-v-05ce9afb"]]);
+const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$7, [["__scopeId", "data-v-9f6c6950"]]);
 const _hoisted_1$6 = { class: "randomizer-settings" };
 const _hoisted_2$4 = { class: "setting-section" };
 const _hoisted_3$3 = { class: "count-mode-tabs" };

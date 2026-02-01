@@ -206,7 +206,9 @@ const stepToDecimals = (step: number): number => {
 const snapToStep = (value: number, segmentMultiplier?: number): number => {
   const effectiveStep = segmentMultiplier ? props.step * segmentMultiplier : props.step
   const steps = Math.round((value - props.min) / effectiveStep)
-  return Math.max(props.min, Math.min(props.max, props.min + steps * effectiveStep))
+  const rawValue = Math.max(props.min, Math.min(props.max, props.min + steps * effectiveStep))
+  // Fix floating point precision issues, limit to 2 decimal places
+  return Math.round(rawValue * 100) / 100
 }
 
 const startDrag = (handle: 'min' | 'max', event: PointerEvent) => {
