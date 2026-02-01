@@ -529,7 +529,10 @@ class AutoComplete {
                     this.showingCommands = false;
                     this.activeCommand = null;
                     endpoint = '/lm/custom-words/search?enriched=true';
-                    searchTerm = rawSearchTerm;
+                    // Extract last space-separated token for search
+                    // Tag names don't contain spaces, so we only need the last token
+                    // This allows "hello 1gi" to search for "1gi" and find "1girl"
+                    searchTerm = this._getLastSpaceToken(rawSearchTerm);
                     this.searchType = 'custom_words';
                 } else {
                     // No command and setting disabled - no autocomplete for direct typing
@@ -563,6 +566,17 @@ class AutoComplete {
         // Return the last non-empty segment as search term
         const lastSegment = segments[segments.length - 1] || '';
         return lastSegment.trim();
+    }
+
+    /**
+     * Extract the last space-separated token from a search term
+     * Tag names don't contain spaces, so for tag autocomplete we only need the last token
+     * @param {string} term - The full search term (e.g., "hello 1gi")
+     * @returns {string} - The last token (e.g., "1gi"), or the original term if no spaces
+     */
+    _getLastSpaceToken(term) {
+        const tokens = term.trim().split(/\s+/);
+        return tokens[tokens.length - 1] || term;
     }
 
     async search(term = '', endpoint = null) {
@@ -1152,7 +1166,16 @@ class AutoComplete {
 
         // Use getSearchTerm to get the current search term before cursor
         const beforeCursor = currentValue.substring(0, caretPos);
-        const searchTerm = this.getSearchTerm(beforeCursor);
+        const fullSearchTerm = this.getSearchTerm(beforeCursor);
+
+        // For regular tag autocomplete (no command), only replace the last space-separated token
+        // This allows "hello 1gi" + selecting "1girl" to become "hello 1girl, "
+        // Command mode (e.g., "/char miku") should replace the entire command+search
+        let searchTerm = fullSearchTerm;
+        if (this.modelType === 'prompt' && this.searchType === 'custom_words' && !this.activeCommand) {
+            searchTerm = this._getLastSpaceToken(fullSearchTerm);
+        }
+
         const searchStartPos = caretPos - searchTerm.length;
 
         // Only replace the search term, not everything after the last comma
