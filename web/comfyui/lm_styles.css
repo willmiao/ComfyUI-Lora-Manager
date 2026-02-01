@@ -1,7 +1,7 @@
 /* Shared styling for the LoRA Manager frontend widgets */
 .lm-tooltip {
   position: fixed;
-  z-index: 9999;
+  z-index: 10001;
   background: rgba(0, 0, 0, 0.85);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);

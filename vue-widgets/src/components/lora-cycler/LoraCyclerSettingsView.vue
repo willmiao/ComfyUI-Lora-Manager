@@ -7,9 +7,18 @@
     <!-- Progress Display -->
     <div class="setting-section progress-section">
       <div class="progress-display" :class="{ executing: isWorkflowExecuting }">
-        <div class="progress-info">
+        <div
+          class="progress-info"
+          :class="{ disabled: isPauseDisabled }"
+          @click="handleOpenSelector"
+        >
           <span class="progress-label">{{ isWorkflowExecuting ? 'Using LoRA:' : 'Next LoRA:' }}</span>
-          <span class="progress-name" :title="currentLoraFilename">{{ currentLoraName || 'None' }}</span>
+          <span class="progress-name clickable" :class="{ disabled: isPauseDisabled }" :title="currentLoraFilename">
+            {{ currentLoraName || 'None' }}
+            <svg class="selector-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 10l5 5 5-5z"/>
+            </svg>
+          </span>
         </div>
         <div class="progress-counter">
           <span class="progress-index">{{ currentIndex }}</span>
@@ -183,11 +192,19 @@ const emit = defineEmits<{
   'update:repeatCount': [value: number]
   'toggle-pause': []
   'reset-index': []
+  'open-lora-selector': []
 }>()
 
 // Temporary value for input while typing
 const tempIndex = ref<string>('')
 const tempRepeat = ref<string>('')
+
+const handleOpenSelector = () => {
+  if (props.isPauseDisabled) {
+    return
+  }
+  emit('open-lora-selector')
+}
 
 const onIndexInput = (event: Event) => {
   const input = event.target as HTMLInputElement
@@ -311,6 +328,42 @@ const onRepeatBlur = (event: Event) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.progress-name.clickable {
+  cursor: pointer;
+  padding: 2px 6px;
+  margin: -2px -6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.progress-name.clickable:hover:not(.disabled) {
+  background: rgba(66, 153, 225, 0.2);
+  color: rgba(191, 219, 254, 1);
+}
+
+.progress-name.clickable.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.progress-info.disabled {
+  cursor: not-allowed;
+}
+
+.selector-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.progress-name.clickable:hover .selector-icon {
+  opacity: 0.8;
 }
 
 .progress-counter {

@@ -24,7 +24,8 @@ export default defineConfig({
                 '../../../scripts/app.js',
                 '../../../scripts/api.js',
                 '../loras_widget.js',
-                '../autocomplete.js'
+                '../autocomplete.js',
+                '../preview_tooltip.js'
             ],
             output: {
                 dir: '../web/comfyui/vue-widgets',

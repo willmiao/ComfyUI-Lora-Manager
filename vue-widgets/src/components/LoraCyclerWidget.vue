@@ -23,6 +23,15 @@
       @update:repeat-count="handleRepeatCountChange"
       @toggle-pause="handleTogglePause"
       @reset-index="handleResetIndex"
+      @open-lora-selector="isModalOpen = true"
+    />
+
+    <LoraListModal
+      :visible="isModalOpen"
+      :lora-list="cachedLoraList"
+      :current-index="state.currentIndex.value"
+      @close="isModalOpen = false"
+      @select="handleModalSelect"
     />
   </div>
 </template>
@@ -30,8 +39,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import LoraCyclerSettingsView from './lora-cycler/LoraCyclerSettingsView.vue'
+import LoraListModal from './lora-cycler/LoraListModal.vue'
 import { useLoraCyclerState } from '../composables/useLoraCyclerState'
-import type { ComponentWidget, CyclerConfig, LoraPoolConfig } from '../composables/types'
+import type { ComponentWidget, CyclerConfig, LoraPoolConfig, LoraItem } from '../composables/types'
 
 type CyclerWidget = ComponentWidget<CyclerConfig>
 
@@ -86,6 +96,12 @@ const lastPoolConfigHash = ref('')
 // Track if component is mounted
 const isMounted = ref(false)
 
+// Modal state
+const isModalOpen = ref(false)
+
+// Cache for LoRA list (used by modal)
+const cachedLoraList = ref<LoraItem[]>([])
+
 // Get pool config from connected node
 const getPoolConfig = (): LoraPoolConfig | null => {
   // Check if getPoolConfig method exists on node (added by main.ts)
@@ -93,6 +109,17 @@ const getPoolConfig = (): LoraPoolConfig | null => {
     return (props.node as any).getPoolConfig()
   }
   return null
+}
+
+// Update display from LoRA list and index
+const updateDisplayFromLoraList = (loraList: LoraItem[], index: number) => {
+  if (loraList.length > 0 && index > 0 && index <= loraList.length) {
+    const currentLora = loraList[index - 1]
+    if (currentLora) {
+      state.currentLoraName.value = currentLora.file_name
+      state.currentLoraFilename.value = currentLora.file_name
+    }
+  }
 }
 
 // Handle index update from user
@@ -113,17 +140,16 @@ const handleIndexUpdate = async (newIndex: number) => {
   try {
     const poolConfig = getPoolConfig()
     const loraList = await state.fetchCyclerList(poolConfig)
-
-    if (loraList.length > 0 && newIndex > 0 && newIndex <= loraList.length) {
-      const currentLora = loraList[newIndex - 1]
-      if (currentLora) {
-        state.currentLoraName.value = currentLora.file_name
-        state.currentLoraFilename.value = currentLora.file_name
-      }
-    }
+    cachedLoraList.value = loraList
+    updateDisplayFromLoraList(loraList, newIndex)
   } catch (error) {
     console.error('[LoraCyclerWidget] Error updating index:', error)
   }
+}
+
+// Handle LoRA selection from modal
+const handleModalSelect = (index: number) => {
+  handleIndexUpdate(index)
 }
 
 // Handle use custom clip range toggle
@@ -166,14 +192,8 @@ const handleResetIndex = async () => {
   try {
     const poolConfig = getPoolConfig()
     const loraList = await state.fetchCyclerList(poolConfig)
-
-    if (loraList.length > 0) {
-      const currentLora = loraList[0]
-      if (currentLora) {
-        state.currentLoraName.value = currentLora.file_name
-        state.currentLoraFilename.value = currentLora.file_name
-      }
-    }
+    cachedLoraList.value = loraList
+    updateDisplayFromLoraList(loraList, 1)
   } catch (error) {
     console.error('[LoraCyclerWidget] Error resetting index:', error)
   }
@@ -191,6 +211,9 @@ const checkPoolConfigChanges = async () => {
     lastPoolConfigHash.value = newHash
     try {
       await state.refreshList(poolConfig)
+      // Update cached list when pool config changes
+      const loraList = await state.fetchCyclerList(poolConfig)
+      cachedLoraList.value = loraList
     } catch (error) {
       console.error('[LoraCyclerWidget] Error on pool config change:', error)
     }
@@ -288,6 +311,9 @@ onMounted(async () => {
     const poolConfig = getPoolConfig()
     lastPoolConfigHash.value = state.hashPoolConfig(poolConfig)
     await state.refreshList(poolConfig)
+    // Cache the initial LoRA list for modal
+    const loraList = await state.fetchCyclerList(poolConfig)
+    cachedLoraList.value = loraList
   } catch (error) {
     console.error('[LoraCyclerWidget] Error on initial load:', error)
   }
