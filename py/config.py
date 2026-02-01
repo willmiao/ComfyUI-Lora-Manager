@@ -441,82 +441,53 @@ class Config:
             logger.info("Failed to write symlink cache %s: %s", cache_path, exc)
 
     def _scan_symbolic_links(self):
-        """Scan all symbolic links in LoRA, Checkpoint, and Embedding root directories"""
+        """Scan symbolic links in LoRA, Checkpoint, and Embedding root directories.
+
+        Only scans the first level of each root directory to avoid performance
+        issues with large file systems. Detects symlinks and Windows junctions
+        at the root level only (not nested symlinks in subdirectories).
+        """
         start = time.perf_counter()
         
         # Reset mappings before rescanning to avoid stale entries
         self._path_mappings.clear()
         self._seed_root_symlink_mappings()
-        visited_dirs: Set[str] = set()
         for root in self._symlink_roots():
-            self._scan_directory_links(root, visited_dirs)
+            self._scan_first_level_symlinks(root)
         logger.debug(
             "Symlink scan finished in %.2f ms with %d mappings",
             (time.perf_counter() - start) * 1000,
             len(self._path_mappings),
         )
 
-    def _scan_directory_links(self, root: str, visited_dirs: Set[str]):
-        """Iteratively scan directory symlinks to avoid deep recursion."""
+    def _scan_first_level_symlinks(self, root: str):
+        """Scan only the first level of a directory for symlinks.
+        
+        This avoids traversing the entire directory tree which can be extremely
+        slow for large model collections. Only symlinks directly under the root
+        are detected.
+        """
         try:
-            # Note: We only use realpath for the initial root if it's not already resolved
-            # to ensure we have a valid entry point.
-            root_real = self._normalize_path(os.path.realpath(root))
-        except OSError:
-            root_real = self._normalize_path(root)
+            with os.scandir(root) as it:
+                for entry in it:
+                    try:
+                        # Only detect symlinks including Windows junctions
+                        # Skip normal directories to avoid deep traversal
+                        if not self._entry_is_symlink(entry):
+                            continue
 
-        if root_real in visited_dirs:
-            return
+                        # Resolve the symlink target
+                        target_path = os.path.realpath(entry.path)
+                        if not os.path.isdir(target_path):
+                            continue
 
-        visited_dirs.add(root_real)
-        # Stack entries: (display_path, real_resolved_path)
-        stack: List[Tuple[str, str]] = [(root, root_real)]
-
-        while stack:
-            current_display, current_real = stack.pop()
-            try:
-                with os.scandir(current_display) as it:
-                    for entry in it:
-                        try:
-                            # 1. Detect symlinks including Windows junctions
-                            is_link = self._entry_is_symlink(entry)
-
-                            if is_link:
-                                # Only resolve realpath when we actually find a link
-                                target_path = os.path.realpath(entry.path)
-                                if not os.path.isdir(target_path):
-                                    continue
-
-                                normalized_target = self._normalize_path(target_path)
-                                self.add_path_mapping(entry.path, target_path)
-                                
-                                if normalized_target in visited_dirs:
-                                    continue
-                                    
-                                visited_dirs.add(normalized_target)
-                                stack.append((target_path, normalized_target))
-                                continue
-
-                            # 2. Process normal directories
-                            if not entry.is_dir(follow_symlinks=False):
-                                continue
-
-                            # For normal directories, we avoid realpath() call by 
-                            # incrementally building the real path relative to current_real.
-                            # This is safe because 'entry' is NOT a symlink.
-                            entry_real = self._normalize_path(os.path.join(current_real, entry.name))
-                            
-                            if entry_real in visited_dirs:
-                                continue
-                            
-                            visited_dirs.add(entry_real)
-                            stack.append((entry.path, entry_real))
-                        except Exception as inner_exc:
-                            logger.debug(
-                                "Error processing directory entry %s: %s", entry.path, inner_exc
-                            )
-            except Exception as e:
-                logger.error(f"Error scanning links in {current_display}: {e}")
+                        self.add_path_mapping(entry.path, target_path)
+                    except Exception as inner_exc:
+                        logger.debug(
+                            "Error processing directory entry %s: %s", entry.path, inner_exc
+                        )
+        except Exception as e:
+            logger.error(f"Error scanning links in {root}: {e}")
 
 
 
