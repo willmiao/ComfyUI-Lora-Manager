@@ -1,4 +1,7 @@
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Check if running in standalone mode
 standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1" or os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
@@ -14,7 +17,7 @@ if not standalone_mode:
         # Initialize registry
         registry = MetadataRegistry()
         
-        print("ComfyUI Metadata Collector initialized")
+        logger.info("ComfyUI Metadata Collector initialized")
         
     def get_metadata(prompt_id=None):
         """Helper function to get metadata from the registry"""
@@ -23,7 +26,7 @@ if not standalone_mode:
 else:
     # Standalone mode - provide dummy implementations
     def init():
-        print("ComfyUI Metadata Collector disabled in standalone mode")
+        logger.info("ComfyUI Metadata Collector disabled in standalone mode")
         
     def get_metadata(prompt_id=None):
         """Dummy implementation for standalone mode"""

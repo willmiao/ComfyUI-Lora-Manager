@@ -1,6 +1,9 @@
 import sys
 import inspect
+import logging
 from .metadata_registry import MetadataRegistry
+
+logger = logging.getLogger(__name__)
 
 class MetadataHook:
     """Install hooks for metadata collection"""
@@ -23,7 +26,7 @@ class MetadataHook:
                     
             # If we can't find the execution module, we can't install hooks
             if execution is None:
-                print("Could not locate ComfyUI execution module, metadata collection disabled")
+                logger.warning("Could not locate ComfyUI execution module, metadata collection disabled")
                 return
             
             # Detect whether we're using the new async version of ComfyUI
@@ -37,16 +40,16 @@ class MetadataHook:
                 is_async = inspect.iscoroutinefunction(execution._map_node_over_list)
             
             if is_async:
-                print("Detected async ComfyUI execution, installing async metadata hooks")
+                logger.info("Detected async ComfyUI execution, installing async metadata hooks")
                 MetadataHook._install_async_hooks(execution, map_node_func_name)
             else:
-                print("Detected sync ComfyUI execution, installing sync metadata hooks")
+                logger.info("Detected sync ComfyUI execution, installing sync metadata hooks")
                 MetadataHook._install_sync_hooks(execution)
             
-            print("Metadata collection hooks installed for runtime values")
+            logger.info("Metadata collection hooks installed for runtime values")
             
         except Exception as e:
-            print(f"Error installing metadata hooks: {str(e)}")
+            logger.error(f"Error installing metadata hooks: {str(e)}")
     
     @staticmethod
     def _install_sync_hooks(execution):
@@ -82,7 +85,7 @@ class MetadataHook:
                         if node_id is not None:
                             registry.record_node_execution(node_id, class_type, input_data_all, None)
                 except Exception as e:
-                    print(f"Error collecting metadata (pre-execution): {str(e)}")
+                    logger.error(f"Error collecting metadata (pre-execution): {str(e)}")
             
             # Execute the original function
             results = original_map_node_over_list(obj, input_data_all, func, allow_interrupt, execution_block_cb, pre_execute_cb)
@@ -113,7 +116,7 @@ class MetadataHook:
                         if node_id is not None:
                             registry.update_node_execution(node_id, class_type, results)
                 except Exception as e:
-                    print(f"Error collecting metadata (post-execution): {str(e)}")
+                    logger.error(f"Error collecting metadata (post-execution): {str(e)}")
             
             return results
             
@@ -159,7 +162,7 @@ class MetadataHook:
                         if node_id is not None:
                             registry.record_node_execution(node_id, class_type, input_data_all, None)
                 except Exception as e:
-                    print(f"Error collecting metadata (pre-execution): {str(e)}")
+                    logger.error(f"Error collecting metadata (pre-execution): {str(e)}")
             
             # Call original function with all args/kwargs
             results = await original_map_node_over_list(
@@ -176,7 +179,7 @@ class MetadataHook:
                         if node_id is not None:
                             registry.update_node_execution(node_id, class_type, results)
                 except Exception as e:
-                    print(f"Error collecting metadata (post-execution): {str(e)}")
+                    logger.error(f"Error collecting metadata (post-execution): {str(e)}")
             
             return results
         
