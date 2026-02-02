@@ -522,32 +522,37 @@ class RecipeScanner:
                     except OSError:
                         continue
 
-        # Build lookup of persisted recipes by json_path
-        persisted_by_path: Dict[str, Dict] = {}
-        for recipe in persisted.raw_data:
-            recipe_id = str(recipe.get('id', ''))
-            if recipe_id:
-                # Find the json_path from file_stats
-                for json_path, (mtime, size) in persisted.file_stats.items():
-                    if os.path.basename(json_path).startswith(recipe_id):
-                        persisted_by_path[json_path] = recipe
-                        break
-
-        # Also index by recipe ID for faster lookups
-        persisted_by_id: Dict[str, Dict] = {
+        # Build recipe_id -> recipe lookup (O(n) instead of O(n²))
+        recipe_by_id: Dict[str, Dict] = {
             str(r.get('id', '')): r for r in persisted.raw_data if r.get('id')
         }
+
+        # Build json_path -> recipe lookup from file_stats (O(m))
+        persisted_by_path: Dict[str, Dict] = {}
+        for json_path in persisted.file_stats.keys():
+            basename = os.path.basename(json_path)
+            if basename.lower().endswith('.recipe.json'):
+                recipe_id = basename[:-len('.recipe.json')]
+                if recipe_id in recipe_by_id:
+                    persisted_by_path[json_path] = recipe_by_id[recipe_id]
 
         # Process current files
         for file_path, (current_mtime, current_size) in current_files.items():
             cached_stats = persisted.file_stats.get(file_path)
 
+            # Extract recipe_id from current file for fallback lookup
+            basename = os.path.basename(file_path)
+            recipe_id_from_file = basename[:-len('.recipe.json')] if basename.lower().endswith('.recipe.json') else None
+
             if cached_stats:
                 cached_mtime, cached_size = cached_stats
                 # Check if file is unchanged
                 if abs(current_mtime - cached_mtime) < 1.0 and current_size == cached_size:
-                    # Use cached data
+                    # Try direct path lookup first
                     cached_recipe = persisted_by_path.get(file_path)
+                    # Fallback to recipe_id lookup if path lookup fails
+                    if not cached_recipe and recipe_id_from_file:
+                        cached_recipe = recipe_by_id.get(recipe_id_from_file)
                     if cached_recipe:
                         recipe_id = str(cached_recipe.get('id', ''))
                         # Track folder from file path
