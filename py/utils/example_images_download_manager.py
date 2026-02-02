@@ -216,6 +216,11 @@ class DownloadManager:
                     self._progress["failed_models"] = set()
 
                 self._is_downloading = True
+                snapshot = self._progress.snapshot()
+
+                # Create the download task without awaiting it
+                # This ensures the HTTP response is returned immediately
+                # while the actual processing happens in the background
                 self._download_task = asyncio.create_task(
                     self._download_all_example_images(
                         output_dir,
@@ -227,7 +232,10 @@ class DownloadManager:
                     )
                 )
 
-                snapshot = self._progress.snapshot()
+                # Add a callback to handle task completion/errors
+                self._download_task.add_done_callback(
+                    lambda t: self._handle_download_task_done(t, output_dir)
+                )
             except ExampleImagesDownloadError:
                 # Re-raise our own exception types without wrapping
                 self._is_downloading = False
@@ -241,9 +249,24 @@ class DownloadManager:
                 )
                 raise ExampleImagesDownloadError(str(e)) from e
 
-        await self._broadcast_progress(status="running")
+        # Broadcast progress in the background without blocking the response
+        # This ensures the HTTP response is returned immediately
+        asyncio.create_task(self._broadcast_progress(status="running"))
 
         return {"success": True, "message": "Download started", "status": snapshot}
+
+    def _handle_download_task_done(self, task: asyncio.Task, output_dir: str) -> None:
+        """Handle download task completion, including saving progress on error."""
+        try:
+            # This will re-raise any exception from the task
+            task.result()
+        except Exception as e:
+            logger.error(f"Download task failed with error: {e}", exc_info=True)
+            # Ensure progress is saved even on failure
+            try:
+                self._save_progress(output_dir)
+            except Exception as save_error:
+                logger.error(f"Failed to save progress after task failure: {save_error}")
 
     async def get_status(self, request):
         """Get the current status of example images download."""
@@ -253,6 +276,130 @@ class DownloadManager:
             "is_downloading": self._is_downloading,
             "status": self._progress.snapshot(),
         }
+
+    async def check_pending_models(self, model_types: list[str]) -> dict:
+        """Quickly check how many models need example images downloaded.
+        
+        This is a lightweight check that avoids the overhead of starting
+        a full download task when no work is needed.
+        
+        Returns:
+            dict with keys:
+                - total_models: Total number of models across specified types
+                - pending_count: Number of models needing example images
+                - processed_count: Number of already processed models
+                - failed_count: Number of models marked as failed
+                - needs_download: True if there are pending models to process
+        """
+        from ..services.service_registry import ServiceRegistry
+
+        if self._is_downloading:
+            return {
+                "success": True,
+                "is_downloading": True,
+                "total_models": 0,
+                "pending_count": 0,
+                "processed_count": 0,
+                "failed_count": 0,
+                "needs_download": False,
+                "message": "Download already in progress",
+            }
+
+        try:
+            # Get scanners
+            scanners = []
+            if "lora" in model_types:
+                lora_scanner = await ServiceRegistry.get_lora_scanner()
+                scanners.append(("lora", lora_scanner))
+
+            if "checkpoint" in model_types:
+                checkpoint_scanner = await ServiceRegistry.get_checkpoint_scanner()
+                scanners.append(("checkpoint", checkpoint_scanner))
+
+            if "embedding" in model_types:
+                embedding_scanner = await ServiceRegistry.get_embedding_scanner()
+                scanners.append(("embedding", embedding_scanner))
+
+            # Load progress file to check processed models
+            settings_manager = get_settings_manager()
+            active_library = settings_manager.get_active_library_name()
+            output_dir = self._resolve_output_dir(active_library)
+            
+            processed_models: set[str] = set()
+            failed_models: set[str] = set()
+            
+            if output_dir:
+                progress_file = os.path.join(output_dir, ".download_progress.json")
+                if os.path.exists(progress_file):
+                    try:
+                        with open(progress_file, "r", encoding="utf-8") as f:
+                            saved_progress = json.load(f)
+                            processed_models = set(saved_progress.get("processed_models", []))
+                            failed_models = set(saved_progress.get("failed_models", []))
+                    except Exception:
+                        pass  # Ignore progress file errors for quick check
+
+            # Count models
+            total_models = 0
+            models_with_hash = 0
+            
+            for scanner_type, scanner in scanners:
+                cache = await scanner.get_cached_data()
+                if cache and cache.raw_data:
+                    for model in cache.raw_data:
+                        total_models += 1
+                        if model.get("sha256"):
+                            models_with_hash += 1
+
+            # Calculate pending count
+            # A model is pending if it has a hash and is not in processed_models
+            # We also exclude failed_models unless force mode would be used
+            pending_count = models_with_hash - len(processed_models.intersection(
+                {m.get("sha256", "").lower() for scanner_type, scanner in scanners 
+                 for m in (await scanner.get_cached_data()).raw_data if m.get("sha256")}
+            ))
+            
+            # More accurate pending count: check which models actually need processing
+            pending_hashes = set()
+            for scanner_type, scanner in scanners:
+                cache = await scanner.get_cached_data()
+                if cache and cache.raw_data:
+                    for model in cache.raw_data:
+                        raw_hash = model.get("sha256")
+                        if not raw_hash:
+                            continue
+                        model_hash = raw_hash.lower()
+                        if model_hash not in processed_models:
+                            # Check if model folder exists with files
+                            model_dir = ExampleImagePathResolver.get_model_folder(
+                                model_hash, active_library
+                            )
+                            if not _model_directory_has_files(model_dir):
+                                pending_hashes.add(model_hash)
+
+            pending_count = len(pending_hashes)
+
+            return {
+                "success": True,
+                "is_downloading": False,
+                "total_models": total_models,
+                "pending_count": pending_count,
+                "processed_count": len(processed_models),
+                "failed_count": len(failed_models),
+                "needs_download": pending_count > 0,
+            }
+
+        except Exception as e:
+            logger.error(f"Error checking pending models: {e}", exc_info=True)
+            return {
+                "success": False,
+                "error": str(e),
+                "total_models": 0,
+                "pending_count": 0,
+                "processed_count": 0,
+                "failed_count": 0,
+                "needs_download": False,
+            }
 
     async def pause_download(self, request):
         """Pause the example images download."""

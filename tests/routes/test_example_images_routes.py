@@ -502,6 +502,7 @@ def test_handler_set_route_mapping_includes_all_handlers() -> None:
         "resume_example_images",
         "stop_example_images",
         "force_download_example_images",
+        "check_example_images_needed",
         "import_example_images",
         "delete_example_image",
         "set_example_image_nsfw_level",

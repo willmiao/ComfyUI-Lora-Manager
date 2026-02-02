@@ -92,6 +92,19 @@ class ExampleImagesDownloadHandler:
         except ExampleImagesDownloadError as exc:
             return web.json_response({'success': False, 'error': str(exc)}, status=500)
 
+    async def check_example_images_needed(self, request: web.Request) -> web.StreamResponse:
+        """Lightweight check to see if any models need example images downloaded."""
+        try:
+            payload = await request.json()
+            model_types = payload.get('model_types', ['lora', 'checkpoint', 'embedding'])
+            result = await self._download_manager.check_pending_models(model_types)
+            return web.json_response(result)
+        except Exception as exc:
+            return web.json_response(
+                {'success': False, 'error': str(exc)},
+                status=500
+            )
+
 
 class ExampleImagesManagementHandler:
     """HTTP adapters for import/delete endpoints."""
@@ -161,6 +174,7 @@ class ExampleImagesHandlerSet:
             "resume_example_images": self.download.resume_example_images,
             "stop_example_images": self.download.stop_example_images,
             "force_download_example_images": self.download.force_download_example_images,
+            "check_example_images_needed": self.download.check_example_images_needed,
             "import_example_images": self.management.import_example_images,
             "delete_example_image": self.management.delete_example_image,
             "set_example_image_nsfw_level": self.management.set_example_image_nsfw_level,

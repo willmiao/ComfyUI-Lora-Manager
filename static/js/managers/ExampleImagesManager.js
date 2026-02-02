@@ -21,7 +21,7 @@ export class ExampleImagesManager {
         // Auto download properties
         this.autoDownloadInterval = null;
         this.lastAutoDownloadCheck = 0;
-        this.autoDownloadCheckInterval = 10 * 60 * 1000; // 10 minutes in milliseconds
+        this.autoDownloadCheckInterval = 30 * 60 * 1000; // 30 minutes in milliseconds
         this.pageInitTime = Date.now(); // Track when page was initialized
 
         // Initialize download path field and check download status
@@ -808,19 +808,58 @@ export class ExampleImagesManager {
             return;
         }
 
-        this.lastAutoDownloadCheck = now;
-
         if (!this.canAutoDownload()) {
             console.log('Auto download conditions not met, skipping check');
             return;
         }
 
         try {
-            console.log('Performing auto download check...');
+            console.log('Performing auto download pre-check...');
 
+            // Step 1: Lightweight pre-check to see if any work is needed
+            const checkResponse = await fetch('/api/lm/check-example-images-needed', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model_types: ['lora', 'checkpoint', 'embedding']
+                })
+            });
+
+            if (!checkResponse.ok) {
+                console.warn('Auto download pre-check HTTP error:', checkResponse.status);
+                return;
+            }
+
+            const checkData = await checkResponse.json();
+
+            if (!checkData.success) {
+                console.warn('Auto download pre-check failed:', checkData.error);
+                return;
+            }
+
+            // Update the check timestamp only after successful pre-check
+            this.lastAutoDownloadCheck = now;
+
+            // If download already in progress, skip
+            if (checkData.is_downloading) {
+                console.log('Download already in progress, skipping auto check');
+                return;
+            }
+
+            // If no models need downloading, skip
+            if (!checkData.needs_download || checkData.pending_count === 0) {
+                console.log(`Auto download pre-check complete: ${checkData.processed_count}/${checkData.total_models} models already processed, no work needed`);
+                return;
+            }
+
+            console.log(`Auto download pre-check: ${checkData.pending_count} models need processing, starting download...`);
+
+            // Step 2: Start the actual download (fire-and-forget)
             const optimize = state.global.settings.optimize_example_images;
 
-            const response = await fetch('/api/lm/download-example-images', {
+            fetch('/api/lm/download-example-images', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -830,18 +869,29 @@ export class ExampleImagesManager {
                     model_types: ['lora', 'checkpoint', 'embedding'],
                     auto_mode: true // Flag to indicate this is an automatic download
                 })
+            }).then(response => {
+                if (!response.ok) {
+                    console.warn('Auto download start HTTP error:', response.status);
+                    return null;
+                }
+                return response.json();
+            }).then(data => {
+                if (data && !data.success) {
+                    console.warn('Auto download start failed:', data.error);
+                    // If already in progress, push back the next check to avoid hammering the API
+                    if (data.error && data.error.includes('already in progress')) {
+                        console.log('Download already in progress, backing off next check');
+                        this.lastAutoDownloadCheck = now + (5 * 60 * 1000); // Back off for 5 extra minutes
+                    }
+                } else if (data && data.success) {
+                    console.log('Auto download started:', data.message || 'Download started');
+                }
+            }).catch(error => {
+                console.error('Auto download start error:', error);
             });
 
-            const data = await response.json();
-
-            if (!data.success) {
-                console.warn('Auto download check failed:', data.error);
-                // If already in progress, push back the next check to avoid hammering the API
-                if (data.error && data.error.includes('already in progress')) {
-                    console.log('Download already in progress, backing off next check');
-                    this.lastAutoDownloadCheck = now + (5 * 60 * 1000); // Back off for 5 extra minutes
-                }
-            }
+            // Immediately return without waiting for the download fetch to complete
+            // This keeps the UI responsive
         } catch (error) {
             console.error('Auto download check error:', error);
         }

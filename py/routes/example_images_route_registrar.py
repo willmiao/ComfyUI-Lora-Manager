@@ -30,6 +30,7 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/force-download-example-images", "force_download_example_images"),
     RouteDefinition("POST", "/api/lm/cleanup-example-image-folders", "cleanup_example_image_folders"),
     RouteDefinition("POST", "/api/lm/example-images/set-nsfw-level", "set_example_image_nsfw_level"),
+    RouteDefinition("POST", "/api/lm/check-example-images-needed", "check_example_images_needed"),
 )
 
 
