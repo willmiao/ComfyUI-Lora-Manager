@@ -1572,6 +1572,20 @@
             "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM Civitai Extension as a thank-you gift. Every contribution truly makes a difference.",
             "supportCta": "Support on Ko-fi",
             "learnMore": "LM Civitai Extension Tutorial"
+        },
+        "cacheHealth": {
+            "corrupted": {
+                "title": "Обнаружено повреждение кэша"
+            },
+            "degraded": {
+                "title": "Обнаружены проблемы с кэшем"
+            },
+            "content": "{invalid} из {total} записей кэша недействительны ({rate}). Это может привести к отсутствию моделей или ошибкам. Рекомендуется перестроить кэш.",
+            "rebuildCache": "Перестроить кэш",
+            "dismiss": "Отклонить",
+            "rebuilding": "Перестроение кэша...",
+            "rebuildFailed": "Не удалось перестроить кэш: {error}",
+            "retry": "Повторить"
         }
     }
 }

@@ -20,6 +20,8 @@ from .service_registry import ServiceRegistry
 from .websocket_manager import ws_manager
 from .persistent_model_cache import get_persistent_cache
 from .settings_manager import get_settings_manager
+from .cache_entry_validator import CacheEntryValidator
+from .cache_health_monitor import CacheHealthMonitor, CacheHealthStatus
 
 logger = logging.getLogger(__name__)
 
@@ -468,6 +470,39 @@ class ModelScanner:
             for tag in adjusted_item.get('tags') or []:
                 tags_count[tag] = tags_count.get(tag, 0) + 1
 
+        # Validate cache entries and check health
+        valid_entries, invalid_entries = CacheEntryValidator.validate_batch(
+            adjusted_raw_data, auto_repair=True
+        )
+
+        if invalid_entries:
+            monitor = CacheHealthMonitor()
+            report = monitor.check_health(adjusted_raw_data, auto_repair=True)
+
+            if report.status != CacheHealthStatus.HEALTHY:
+                # Broadcast health warning to frontend
+                await ws_manager.broadcast_cache_health_warning(report, page_type)
+                logger.warning(
+                    f"{self.model_type.capitalize()} Scanner: Cache health issue detected - "
+                    f"{report.invalid_entries} invalid entries, {report.repaired_entries} repaired"
+                )
+
+            # Use only valid entries
+            adjusted_raw_data = valid_entries
+
+            # Rebuild tags count from valid entries only
+            tags_count = {}
+            for item in adjusted_raw_data:
+                for tag in item.get('tags') or []:
+                    tags_count[tag] = tags_count.get(tag, 0) + 1
+
+            # Remove invalid entries from hash index
+            for invalid_entry in invalid_entries:
+                file_path = CacheEntryValidator.get_file_path_safe(invalid_entry)
+                sha256 = CacheEntryValidator.get_sha256_safe(invalid_entry)
+                if file_path:
+                    hash_index.remove_by_path(file_path, sha256)
+
         scan_result = CacheBuildResult(
             raw_data=adjusted_raw_data,
             hash_index=hash_index,
@@ -776,6 +811,18 @@ class ModelScanner:
                                     model_data = self.adjust_cached_entry(dict(model_data))
                                     if not model_data:
                                         continue
+
+                                    # Validate the new entry before adding
+                                    validation_result = CacheEntryValidator.validate(
+                                        model_data, auto_repair=True
+                                    )
+                                    if not validation_result.is_valid:
+                                        logger.warning(
+                                            f"Skipping invalid entry during reconcile: {path}"
+                                        )
+                                        continue
+                                    model_data = validation_result.entry
+
                                     self._ensure_license_flags(model_data)
                                     # Add to cache
                                     self._cache.raw_data.append(model_data)
@@ -1090,6 +1137,17 @@ class ModelScanner:
                             processed_files += 1
 
                             if result:
+                                # Validate the entry before adding
+                                validation_result = CacheEntryValidator.validate(
+                                    result, auto_repair=True
+                                )
+                                if not validation_result.is_valid:
+                                    logger.warning(
+                                        f"Skipping invalid scan result: {file_path}"
+                                    )
+                                    continue
+                                result = validation_result.entry
+
                                 self._ensure_license_flags(result)
                                 raw_data.append(result)
 

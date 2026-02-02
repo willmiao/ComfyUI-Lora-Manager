@@ -5,7 +5,6 @@ import logging
 logger = logging.getLogger(__name__)
 from typing import Any, Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
-from operator import itemgetter
 from natsort import natsorted
 
 # Supported sort modes: (sort_key, order)
@@ -229,17 +228,17 @@ class ModelCache:
                 reverse=reverse
             )
         elif sort_key == 'date':
-            # Sort by modified timestamp
+            # Sort by modified timestamp (use .get() with default to handle missing fields)
             result = sorted(
                 data,
-                key=itemgetter('modified'),
+                key=lambda x: x.get('modified', 0.0),
                 reverse=reverse
             )
         elif sort_key == 'size':
-            # Sort by file size
+            # Sort by file size (use .get() with default to handle missing fields)
             result = sorted(
                 data,
-                key=itemgetter('size'),
+                key=lambda x: x.get('size', 0),
                 reverse=reverse
             )
         elif sort_key == 'usage':

@@ -9,9 +9,9 @@
             "back": "Zurück",
             "next": "Weiter",
             "backToTop": "Nach oben",
-            "add": "Hinzufügen",
             "settings": "Einstellungen",
-            "help": "Hilfe"
+            "help": "Hilfe",
+            "add": "Hinzufügen"
         },
         "status": {
             "loading": "Wird geladen...",
@@ -1572,6 +1572,20 @@
             "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM Civitai Extension as a thank-you gift. Every contribution truly makes a difference.",
             "supportCta": "Support on Ko-fi",
             "learnMore": "LM Civitai Extension Tutorial"
+        },
+        "cacheHealth": {
+            "corrupted": {
+                "title": "Cache-Korruption erkannt"
+            },
+            "degraded": {
+                "title": "Cache-Probleme erkannt"
+            },
+            "content": "{invalid} von {total} Cache-Einträgen sind ungültig ({rate}). Dies kann zu fehlenden Modellen oder Fehlern führen. Ein Neuaufbau des Caches wird empfohlen.",
+            "rebuildCache": "Cache neu aufbauen",
+            "dismiss": "Verwerfen",
+            "rebuilding": "Cache wird neu aufgebaut...",
+            "rebuildFailed": "Fehler beim Neuaufbau des Caches: {error}",
+            "retry": "Wiederholen"
         }
     }
 }

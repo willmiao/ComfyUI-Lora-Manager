@@ -4,9 +4,11 @@ import {
     removeStorageItem
 } from '../utils/storageHelpers.js';
 import { translate } from '../utils/i18nHelpers.js';
-import { state } from '../state/index.js'
+import { state } from '../state/index.js';
+import { getModelApiClient } from '../api/modelApiFactory.js';
 
 const COMMUNITY_SUPPORT_BANNER_ID = 'community-support';
+const CACHE_HEALTH_BANNER_ID = 'cache-health-warning';
 const COMMUNITY_SUPPORT_BANNER_DELAY_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
 const COMMUNITY_SUPPORT_FIRST_SEEN_AT_KEY = 'community_support_banner_first_seen_at';
 const COMMUNITY_SUPPORT_VERSION_KEY = 'community_support_banner_state_version';
@@ -291,6 +293,177 @@ class BannerService {
         }
         
         location.reload();
+    }
+
+    /**
+     * Register a cache health warning banner
+     * @param {Object} healthData - Health data from WebSocket
+     */
+    registerCacheHealthBanner(healthData) {
+        if (!healthData || healthData.status === 'healthy') {
+            return;
+        }
+
+        // Remove existing cache health banner if any
+        this.removeBannerElement(CACHE_HEALTH_BANNER_ID);
+
+        const isCorrupted = healthData.status === 'corrupted';
+        const titleKey = isCorrupted
+            ? 'banners.cacheHealth.corrupted.title'
+            : 'banners.cacheHealth.degraded.title';
+        const defaultTitle = isCorrupted
+            ? 'Cache Corruption Detected'
+            : 'Cache Issues Detected';
+
+        const title = translate(titleKey, {}, defaultTitle);
+
+        const contentKey = 'banners.cacheHealth.content';
+        const defaultContent = 'Found {invalid} of {total} cache entries are invalid ({rate}). This may cause missing models or errors. Rebuilding the cache is recommended.';
+        const content = translate(contentKey, {
+            invalid: healthData.details?.invalid || 0,
+            total: healthData.details?.total || 0,
+            rate: healthData.details?.corruption_rate || '0%'
+        }, defaultContent);
+
+        this.registerBanner(CACHE_HEALTH_BANNER_ID, {
+            id: CACHE_HEALTH_BANNER_ID,
+            title: title,
+            content: content,
+            pageType: healthData.pageType,
+            actions: [
+                {
+                    text: translate('banners.cacheHealth.rebuildCache', {}, 'Rebuild Cache'),
+                    icon: 'fas fa-sync-alt',
+                    action: 'rebuild-cache',
+                    type: 'primary'
+                },
+                {
+                    text: translate('banners.cacheHealth.dismiss', {}, 'Dismiss'),
+                    icon: 'fas fa-times',
+                    action: 'dismiss',
+                    type: 'secondary'
+                }
+            ],
+            dismissible: true,
+            priority: 10, // High priority
+            onRegister: (bannerElement) => {
+                // Attach click handlers for actions
+                const rebuildBtn = bannerElement.querySelector('[data-action="rebuild-cache"]');
+                const dismissBtn = bannerElement.querySelector('[data-action="dismiss"]');
+
+                if (rebuildBtn) {
+                    rebuildBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.handleRebuildCache(bannerElement, healthData.pageType);
+                    });
+                }
+
+                if (dismissBtn) {
+                    dismissBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.dismissBanner(CACHE_HEALTH_BANNER_ID);
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * Handle rebuild cache action from banner
+     * @param {HTMLElement} bannerElement - The banner element
+     * @param {string} pageType - The page type (loras, checkpoints, embeddings)
+     */
+    async handleRebuildCache(bannerElement, pageType) {
+        const currentPageType = pageType || this.getCurrentPageType();
+
+        try {
+            const apiClient = getModelApiClient(currentPageType);
+
+            // Update banner to show rebuilding status
+            const actionsContainer = bannerElement.querySelector('.banner-actions');
+            if (actionsContainer) {
+                actionsContainer.innerHTML = `
+                    <span class="banner-loading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>${translate('banners.cacheHealth.rebuilding', {}, 'Rebuilding cache...')}</span>
+                    </span>
+                `;
+            }
+
+            await apiClient.refreshModels(true);
+
+            // Remove banner on success without marking as dismissed
+            this.removeBannerElement(CACHE_HEALTH_BANNER_ID);
+        } catch (error) {
+            console.error('Cache rebuild failed:', error);
+
+            const actionsContainer = bannerElement.querySelector('.banner-actions');
+            if (actionsContainer) {
+                actionsContainer.innerHTML = `
+                    <span class="banner-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>${translate('banners.cacheHealth.rebuildFailed', {}, 'Rebuild failed. Please try again.')}</span>
+                    </span>
+                    <a href="#" class="banner-action banner-action-primary" data-action="rebuild-cache">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>${translate('banners.cacheHealth.retry', {}, 'Retry')}</span>
+                    </a>
+                `;
+
+                // Re-attach click handler
+                const retryBtn = actionsContainer.querySelector('[data-action="rebuild-cache"]');
+                if (retryBtn) {
+                    retryBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.handleRebuildCache(bannerElement, pageType);
+                    });
+                }
+            }
+        }
+    }
+
+    /**
+     * Get the current page type from the URL
+     * @returns {string} Page type (loras, checkpoints, embeddings, recipes)
+     */
+    getCurrentPageType() {
+        const path = window.location.pathname;
+        if (path.includes('/checkpoints')) return 'checkpoints';
+        if (path.includes('/embeddings')) return 'embeddings';
+        if (path.includes('/recipes')) return 'recipes';
+        return 'loras';
+    }
+
+    /**
+     * Get the rebuild cache endpoint for the given page type
+     * @param {string} pageType - The page type
+     * @returns {string} The API endpoint URL
+     */
+    getRebuildEndpoint(pageType) {
+        const endpoints = {
+            'loras': '/api/lm/loras/reload?rebuild=true',
+            'checkpoints': '/api/lm/checkpoints/reload?rebuild=true',
+            'embeddings': '/api/lm/embeddings/reload?rebuild=true'
+        };
+        return endpoints[pageType] || endpoints['loras'];
+    }
+
+    /**
+     * Remove a banner element from DOM without marking as dismissed
+     * @param {string} bannerId - Banner ID to remove
+     */
+    removeBannerElement(bannerId) {
+        const bannerElement = document.querySelector(`[data-banner-id="${bannerId}"]`);
+        if (bannerElement) {
+            bannerElement.style.animation = 'banner-slide-up 0.3s ease-in-out forwards';
+            setTimeout(() => {
+                bannerElement.remove();
+                this.updateContainerVisibility();
+            }, 300);
+        }
+
+        // Also remove from banners map
+        this.banners.delete(bannerId);
     }
 
     prepareCommunitySupportBanner() {

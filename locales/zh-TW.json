@@ -1572,6 +1572,20 @@
             "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM Civitai Extension as a thank-you gift. Every contribution truly makes a difference.",
             "supportCta": "Support on Ko-fi",
             "learnMore": "LM Civitai Extension Tutorial"
+        },
+        "cacheHealth": {
+            "corrupted": {
+                "title": "檢測到快取損壞"
+            },
+            "degraded": {
+                "title": "檢測到快取問題"
+            },
+            "content": "{total} 個快取項目中有 {invalid} 個無效（{rate}）。這可能會導致模型遺失或錯誤。建議重建快取。",
+            "rebuildCache": "重建快取",
+            "dismiss": "關閉",
+            "rebuilding": "重建快取中...",
+            "rebuildFailed": "重建快取失敗：{error}",
+            "retry": "重試"
         }
     }
 }

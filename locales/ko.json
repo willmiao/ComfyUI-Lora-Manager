@@ -1572,6 +1572,20 @@
             "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM Civitai Extension as a thank-you gift. Every contribution truly makes a difference.",
             "supportCta": "Support on Ko-fi",
             "learnMore": "LM Civitai Extension Tutorial"
+        },
+        "cacheHealth": {
+            "corrupted": {
+                "title": "캐시 손상이 감지되었습니다"
+            },
+            "degraded": {
+                "title": "캐시 문제가 감지되었습니다"
+            },
+            "content": "{total}개의 캐시 항목 중 {invalid}개가 유효하지 않습니다 ({rate}). 모델 누락이나 오류가 발생할 수 있습니다. 캐시를 재구축하는 것이 좋습니다.",
+            "rebuildCache": "캐시 재구축",
+            "dismiss": "무시",
+            "rebuilding": "캐시 재구축 중...",
+            "rebuildFailed": "캐시 재구축 실패: {error}",
+            "retry": "다시 시도"
         }
     }
 }

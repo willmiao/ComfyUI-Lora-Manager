@@ -1572,6 +1572,20 @@
             "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM Civitai Extension as a thank-you gift. Every contribution truly makes a difference.",
             "supportCta": "Support on Ko-fi",
             "learnMore": "LM Civitai Extension Tutorial"
+        },
+        "cacheHealth": {
+            "corrupted": {
+                "title": "Corrupción de caché detectada"
+            },
+            "degraded": {
+                "title": "Problemas de caché detectados"
+            },
+            "content": "{invalid} de {total} entradas de caché son inválidas ({rate}). Esto puede causar modelos faltantes o errores. Se recomienda reconstruir la caché.",
+            "rebuildCache": "Reconstruir caché",
+            "dismiss": "Descartar",
+            "rebuilding": "Reconstruyendo caché...",
+            "rebuildFailed": "Error al reconstruir la caché: {error}",
+            "retry": "Reintentar"
         }
     }
 }

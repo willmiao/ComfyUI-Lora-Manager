@@ -198,6 +198,12 @@ class InitializationManager {
     handleProgressUpdate(data) {
         if (!data) return;
         console.log('Received progress update:', data);
+
+        // Handle cache health warning messages
+        if (data.type === 'cache_health_warning') {
+            this.handleCacheHealthWarning(data);
+            return;
+        }
         
         // Check if this update is for our page type
         if (data.pageType && data.pageType !== this.pageType) {
@@ -464,6 +470,29 @@ class InitializationManager {
         if (remainingTime) {
             remainingTime.textContent = 'Done!';
         }
+    }
+
+    /**
+     * Handle cache health warning messages from WebSocket
+     */
+    handleCacheHealthWarning(data) {
+        console.log('Cache health warning received:', data);
+
+        // Import bannerService dynamically to avoid circular dependencies
+        import('../managers/BannerService.js').then(({ bannerService }) => {
+            // Initialize banner service if not already done
+            if (!bannerService.initialized) {
+                bannerService.initialize().then(() => {
+                    bannerService.registerCacheHealthBanner(data);
+                }).catch(err => {
+                    console.error('Failed to initialize banner service:', err);
+                });
+            } else {
+                bannerService.registerCacheHealthBanner(data);
+            }
+        }).catch(err => {
+            console.error('Failed to load banner service:', err);
+        });
     }
 
     /**

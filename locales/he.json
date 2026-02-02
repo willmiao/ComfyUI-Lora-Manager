@@ -9,9 +9,9 @@
             "back": "חזור",
             "next": "הבא",
             "backToTop": "חזור למעלה",
-            "add": "הוסף",
             "settings": "הגדרות",
-            "help": "עזרה"
+            "help": "עזרה",
+            "add": "הוסף"
         },
         "status": {
             "loading": "טוען...",
@@ -1572,6 +1572,20 @@
             "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM Civitai Extension as a thank-you gift. Every contribution truly makes a difference.",
             "supportCta": "Support on Ko-fi",
             "learnMore": "LM Civitai Extension Tutorial"
+        },
+        "cacheHealth": {
+            "corrupted": {
+                "title": "זוהתה שחיתות במטמון"
+            },
+            "degraded": {
+                "title": "זוהו בעיות במטמון"
+            },
+            "content": "{invalid} מתוך {total} רשומות מטמון אינן תקינות ({rate}). זה עלול לגרום לדגמים חסרים או לשגיאות. מומלץ לבנות מחדש את המטמון.",
+            "rebuildCache": "בניית מטמון מחדש",
+            "dismiss": "ביטול",
+            "rebuilding": "בונה מחדש את המטמון...",
+            "rebuildFailed": "נכשלה בניית המטמון מחדש: {error}",
+            "retry": "נסה שוב"
         }
     }
 }
