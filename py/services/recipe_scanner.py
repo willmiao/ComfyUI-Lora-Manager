@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 from ..config import config
 from .recipe_cache import RecipeCache
 from .recipe_fts_index import RecipeFTSIndex
-from .persistent_recipe_cache import PersistentRecipeCache, get_persistent_recipe_cache
+from .persistent_recipe_cache import PersistentRecipeCache, get_persistent_recipe_cache, PersistedRecipeData
 from .service_registry import ServiceRegistry
 from .lora_scanner import LoraScanner
 from .metadata_service import get_default_metadata_provider
@@ -431,6 +431,16 @@ class RecipeScanner:
         4. Persist results for next startup
         """
         try:
+            # Ensure cache exists to avoid None reference errors
+            if self._cache is None:
+                self._cache = RecipeCache(
+                    raw_data=[],
+                    sorted_by_name=[],
+                    sorted_by_date=[],
+                    folders=[],
+                    folder_tree={},
+                )
+
             # Create a new event loop for this thread
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -492,7 +502,7 @@ class RecipeScanner:
 
     def _reconcile_recipe_cache(
         self,
-        persisted: "PersistedRecipeData",
+        persisted: PersistedRecipeData,
         recipes_dir: str,
     ) -> Tuple[List[Dict], bool, Dict[str, str]]:
         """Reconcile persisted cache with current filesystem state.
@@ -504,8 +514,6 @@ class RecipeScanner:
         Returns:
             Tuple of (recipes list, changed flag, json_paths dict).
         """
-        from .persistent_recipe_cache import PersistedRecipeData
-
         recipes: List[Dict] = []
         json_paths: Dict[str, str] = {}
         changed = False
