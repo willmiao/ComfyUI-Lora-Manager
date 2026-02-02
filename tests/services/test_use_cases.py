@@ -242,6 +242,148 @@ async def test_bulk_metadata_refresh_reports_errors() -> None:
     assert progress.events[-1]["error"] == "boom"
 
 
+async def test_bulk_metadata_refresh_skips_confirmed_not_found_models(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Models marked as from_civitai=False and civitai_deleted=True should be skipped."""
+    scanner = MockScanner()
+    scanner._cache.raw_data = [
+        {
+            "file_path": "model1.safetensors",
+            "sha256": "hash1",
+            "from_civitai": False,
+            "civitai_deleted": True,
+            "model_name": "NotOnCivitAI",
+        },
+        {
+            "file_path": "model2.safetensors",
+            "sha256": "hash2",
+            "from_civitai": True,
+            "model_name": "OnCivitAI",
+        },
+    ]
+    service = MockModelService(scanner)
+    metadata_sync = StubMetadataSync()
+    settings = StubSettings(enable_metadata_archive_db=False)
+    progress = ProgressCollector()
+
+    async def fake_hydrate(model_data: Dict[str, Any]) -> Dict[str, Any]:
+        # Preserve the original data (simulating no metadata file on disk)
+        return model_data
+
+    monkeypatch.setattr(MetadataManager, "hydrate_model_data", staticmethod(fake_hydrate))
+
+    use_case = BulkMetadataRefreshUseCase(
+        service=service,
+        metadata_sync=metadata_sync,
+        settings_service=settings,
+        logger=logging.getLogger("test"),
+    )
+
+    result = await use_case.execute_with_error_handling(progress_callback=progress)
+
+    assert result["success"] is True
+    # Only model2 should be processed (model1 is skipped)
+    assert result["processed"] == 1
+    assert result["updated"] == 1
+    assert len(metadata_sync.calls) == 1
+    assert metadata_sync.calls[0]["file_path"] == "model2.safetensors"
+
+
+async def test_bulk_metadata_refresh_skips_when_archive_checked(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Models with db_checked=True should be skipped even if archive DB is enabled."""
+    scanner = MockScanner()
+    scanner._cache.raw_data = [
+        {
+            "file_path": "model1.safetensors",
+            "sha256": "hash1",
+            "from_civitai": False,
+            "civitai_deleted": True,
+            "db_checked": True,
+            "model_name": "ArchiveChecked",
+        },
+        {
+            "file_path": "model2.safetensors",
+            "sha256": "hash2",
+            "from_civitai": False,
+            "civitai_deleted": True,
+            "db_checked": False,
+            "model_name": "ArchiveNotChecked",
+        },
+    ]
+    service = MockModelService(scanner)
+    metadata_sync = StubMetadataSync()
+    settings = StubSettings(enable_metadata_archive_db=True)
+    progress = ProgressCollector()
+
+    async def fake_hydrate(model_data: Dict[str, Any]) -> Dict[str, Any]:
+        return model_data
+
+    monkeypatch.setattr(MetadataManager, "hydrate_model_data", staticmethod(fake_hydrate))
+
+    use_case = BulkMetadataRefreshUseCase(
+        service=service,
+        metadata_sync=metadata_sync,
+        settings_service=settings,
+        logger=logging.getLogger("test"),
+    )
+
+    result = await use_case.execute_with_error_handling(progress_callback=progress)
+
+    assert result["success"] is True
+    # Only model2 should be processed (model1 has db_checked=True)
+    assert result["processed"] == 1
+    assert result["updated"] == 1
+    assert len(metadata_sync.calls) == 1
+    assert metadata_sync.calls[0]["file_path"] == "model2.safetensors"
+
+
+async def test_bulk_metadata_refresh_processes_never_fetched_models(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Models that have never been fetched (from_civitai=None) should be processed."""
+    scanner = MockScanner()
+    scanner._cache.raw_data = [
+        {
+            "file_path": "model1.safetensors",
+            "sha256": "hash1",
+            "from_civitai": None,
+            "model_name": "NeverFetched",
+        },
+        {
+            "file_path": "model2.safetensors",
+            "sha256": "hash2",
+            "model_name": "NoFromCivitaiField",
+        },
+    ]
+    service = MockModelService(scanner)
+    metadata_sync = StubMetadataSync()
+    settings = StubSettings(enable_metadata_archive_db=False)
+    progress = ProgressCollector()
+
+    async def fake_hydrate(model_data: Dict[str, Any]) -> Dict[str, Any]:
+        return model_data
+
+    monkeypatch.setattr(MetadataManager, "hydrate_model_data", staticmethod(fake_hydrate))
+
+    use_case = BulkMetadataRefreshUseCase(
+        service=service,
+        metadata_sync=metadata_sync,
+        settings_service=settings,
+        logger=logging.getLogger("test"),
+    )
+
+    result = await use_case.execute_with_error_handling(progress_callback=progress)
+
+    assert result["success"] is True
+    # Both models should be processed
+    assert result["processed"] == 2
+    assert result["updated"] == 2
+    assert len(metadata_sync.calls) == 2
+
+
 async def test_download_model_use_case_raises_validation_error() -> None:
     coordinator = StubDownloadCoordinator(error="validation")
     use_case = DownloadModelUseCase(download_coordinator=coordinator)
