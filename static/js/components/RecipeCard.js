@@ -26,6 +26,7 @@ class RecipeCard {
         card.dataset.nsfwLevel = this.recipe.preview_nsfw_level || 0;
         card.dataset.created = this.recipe.created_date;
         card.dataset.id = this.recipe.id || '';
+        card.dataset.folder = this.recipe.folder || '';
 
         // Get base model with fallback
         const baseModelLabel = (this.recipe.base_model || '').trim() || 'Unknown';
