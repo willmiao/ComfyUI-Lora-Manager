@@ -483,6 +483,81 @@ async def test_relink_metadata_raises_when_version_missing():
         )
 
 @pytest.mark.asyncio
+async def test_fetch_and_update_model_persists_db_checked_when_sqlite_fails(tmp_path):
+    """
+    Regression test: When a deleted model is checked against sqlite and not found,
+    db_checked=True must be persisted to disk so the model is skipped in future refreshes.
+
+    Previously, db_checked was set in memory but never saved because the save_metadata
+    call was inside the `if civitai_api_not_found:` block, which is False for deleted
+    models (since the default CivitAI API is never tried).
+    """
+    default_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(),
+        get_model_version=AsyncMock(),
+    )
+    civarchive_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(None, "Model not found")),
+        get_model_version=AsyncMock(),
+    )
+    sqlite_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(None, "Model not found")),
+        get_model_version=AsyncMock(),
+    )
+
+    async def select_provider(name: str):
+        if name == "civarchive_api":
+            return civarchive_provider
+        if name == "sqlite":
+            return sqlite_provider
+        return default_provider
+
+    provider_selector = AsyncMock(side_effect=select_provider)
+    helpers = build_service(
+        settings_values={"enable_metadata_archive_db": True},
+        default_provider=default_provider,
+        provider_selector=provider_selector,
+    )
+
+    model_path = tmp_path / "model.safetensors"
+    model_data = {
+        "civitai_deleted": True,
+        "db_checked": False,
+        "from_civitai": False,
+        "file_path": str(model_path),
+        "model_name": "Deleted Model",
+    }
+    update_cache = AsyncMock()
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="deadbeef",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    # The call should fail because neither provider found metadata
+    assert not ok
+    assert error is not None
+    assert "Model not found" in error or "not found in metadata archive DB" in error
+
+    # Both providers should have been tried
+    assert civarchive_provider.get_model_by_hash.await_count == 1
+    assert sqlite_provider.get_model_by_hash.await_count == 1
+
+    # db_checked should be True in memory
+    assert model_data["db_checked"] is True
+
+    # CRITICAL: metadata should have been saved to disk with db_checked=True
+    helpers.metadata_manager.save_metadata.assert_awaited_once()
+    saved_call = helpers.metadata_manager.save_metadata.await_args
+    saved_data = saved_call.args[1]
+    assert saved_data["db_checked"] is True
+    assert "folder" not in saved_data  # folder should be stripped
+    assert "last_checked_at" in saved_data  # timestamp should be set
+
+
+@pytest.mark.asyncio
 async def test_fetch_and_update_model_does_not_overwrite_api_metadata_with_archive(tmp_path):
     helpers = build_service()
 

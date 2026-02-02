@@ -243,17 +243,27 @@ class MetadataSyncService:
                 last_error = error or last_error
 
             if civitai_metadata is None or metadata_provider is None:
+                # Track if we need to save metadata
+                needs_save = False
+
                 if sqlite_attempted:
                     model_data["db_checked"] = True
+                    needs_save = True
 
                 if civitai_api_not_found:
                     model_data["from_civitai"] = False
                     model_data["civitai_deleted"] = True
                     model_data["db_checked"] = sqlite_attempted or (enable_archive and model_data.get("db_checked", False))
                     model_data["last_checked_at"] = datetime.now().timestamp()
+                    needs_save = True
 
+                # Save metadata if any state was updated
+                if needs_save:
                     data_to_save = model_data.copy()
                     data_to_save.pop("folder", None)
+                    # Update last_checked_at for sqlite-only attempts if not already set
+                    if "last_checked_at" not in data_to_save:
+                        data_to_save["last_checked_at"] = datetime.now().timestamp()
                     await self._metadata_manager.save_metadata(file_path, data_to_save)
 
                 default_error = (
