@@ -17,7 +17,7 @@ async def extract_lora_metadata(file_path: str) -> Dict:
                 base_model = determine_base_model(metadata.get("ss_base_model_version"))
                 return {"base_model": base_model}
     except Exception as e:
-        print(f"Error reading metadata from {file_path}: {str(e)}")
+        logger.error(f"Error reading metadata from {file_path}: {str(e)}")
     return {"base_model": "Unknown"}
 
 async def extract_checkpoint_metadata(file_path: str) -> dict:

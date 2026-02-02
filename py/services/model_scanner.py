@@ -686,7 +686,6 @@ class ModelScanner:
 
     async def _initialize_cache(self) -> None:
         """Initialize or refresh the cache"""
-        print("init start", flush=True)
         self._is_initializing = True  # Set flag
         try:
             start_time = time.time()
@@ -700,7 +699,6 @@ class ModelScanner:
             scan_result = await self._gather_model_data()
             await self._apply_scan_result(scan_result)
             await self._save_persistent_cache(scan_result)
-            print("init end", flush=True)
 
             logger.info(
                 f"{self.model_type.capitalize()} Scanner: Cache initialization completed in {time.time() - start_time:.2f} seconds, "

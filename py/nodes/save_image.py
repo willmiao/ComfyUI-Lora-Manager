@@ -8,6 +8,9 @@ from ..metadata_collector.metadata_processor import MetadataProcessor
 from ..metadata_collector import get_metadata
 from PIL import Image, PngImagePlugin
 import piexif
+import logging
+
+logger = logging.getLogger(__name__)
 
 class SaveImageLM:
     NAME = "Save Image (LoraManager)"
@@ -385,7 +388,7 @@ class SaveImageLM:
                             exif_bytes = piexif.dump(exif_dict)
                             save_kwargs["exif"] = exif_bytes
                         except Exception as e:
-                            print(f"Error adding EXIF data: {e}")
+                            logger.error(f"Error adding EXIF data: {e}")
                     img.save(file_path, format="JPEG", **save_kwargs)
                 elif file_format == "webp":
                     try:
@@ -403,7 +406,7 @@ class SaveImageLM:
                         exif_bytes = piexif.dump(exif_dict)
                         save_kwargs["exif"] = exif_bytes
                     except Exception as e:
-                        print(f"Error adding EXIF data: {e}")
+                        logger.error(f"Error adding EXIF data: {e}")
                     
                     img.save(file_path, format="WEBP", **save_kwargs)
                 
@@ -414,7 +417,7 @@ class SaveImageLM:
                 })
                 
             except Exception as e:
-                print(f"Error saving image: {e}")
+                logger.error(f"Error saving image: {e}")
         
         return results
 
