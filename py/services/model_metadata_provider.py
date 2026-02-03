@@ -676,10 +676,12 @@ class ModelMetadataProviderManager:
         
     def _get_provider(self, provider_name: str = None) -> ModelMetadataProvider:
         """Get provider by name or default provider"""
-        if provider_name and provider_name in self.providers:
+        if provider_name:
+            if provider_name not in self.providers:
+                raise ValueError(f"Provider '{provider_name}' is not registered")
             return self.providers[provider_name]
-        
+
         if self.default_provider is None:
             raise ValueError("No default provider set and no valid provider specified")
-            
+
         return self.providers[self.default_provider]

@@ -44,6 +44,8 @@ async def initialize_metadata_providers():
                 logger.debug(f"SQLite metadata provider registered with database: {db_path}")
             else:
                 logger.warning("Metadata archive database is enabled but database file not found")
+                logger.info("Automatically disabling enable_metadata_archive_db setting")
+                settings_manager.set('enable_metadata_archive_db', False)
         except Exception as e:
             logger.error(f"Failed to initialize SQLite metadata provider: {e}")
     
