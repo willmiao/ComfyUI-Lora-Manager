@@ -2231,3 +2231,26 @@ class RecipeScanner:
         duplicate_groups = {k: v for k, v in fingerprint_groups.items() if len(v) > 1}
         
         return duplicate_groups
+    
+    async def find_duplicate_recipes_by_source(self) -> dict:
+        """Find all recipe duplicates based on source_path (Civitai image URLs)
+        
+        Returns:
+            Dictionary where keys are source URLs and values are lists of recipe IDs
+        """
+        cache = await self.get_cached_data()
+        
+        url_groups = {}
+        for recipe in cache.raw_data:
+            source_url = recipe.get('source_path', '').strip()
+            if not source_url:
+                continue
+            
+            if source_url not in url_groups:
+                url_groups[source_url] = []
+                
+            url_groups[source_url].append(recipe.get('id'))
+        
+        duplicate_groups = {k: v for k, v in url_groups.items() if len(v) > 1}
+        
+        return duplicate_groups

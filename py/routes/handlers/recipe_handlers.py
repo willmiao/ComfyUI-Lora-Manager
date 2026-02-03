@@ -412,10 +412,11 @@ class RecipeQueryHandler:
             if recipe_scanner is None:
                 raise RuntimeError("Recipe scanner unavailable")
 
-            duplicate_groups = await recipe_scanner.find_all_duplicate_recipes()
+            fingerprint_groups = await recipe_scanner.find_all_duplicate_recipes()
+            url_groups = await recipe_scanner.find_duplicate_recipes_by_source()
             response_data = []
 
-            for fingerprint, recipe_ids in duplicate_groups.items():
+            for fingerprint, recipe_ids in fingerprint_groups.items():
                 if len(recipe_ids) <= 1:
                     continue
 
@@ -439,7 +440,39 @@ class RecipeQueryHandler:
                     recipes.sort(key=lambda entry: entry.get("modified", 0), reverse=True)
                     response_data.append(
                         {
+                            "type": "fingerprint",
                             "fingerprint": fingerprint,
+                            "count": len(recipes),
+                            "recipes": recipes,
+                        }
+                    )
+
+            for url, recipe_ids in url_groups.items():
+                if len(recipe_ids) <= 1:
+                    continue
+
+                recipes = []
+                for recipe_id in recipe_ids:
+                    recipe = await recipe_scanner.get_recipe_by_id(recipe_id)
+                    if recipe:
+                        recipes.append(
+                            {
+                                "id": recipe.get("id"),
+                                "title": recipe.get("title"),
+                                "file_url": recipe.get("file_url")
+                                or self._format_recipe_file_url(recipe.get("file_path", "")),
+                                "modified": recipe.get("modified"),
+                                "created_date": recipe.get("created_date"),
+                                "lora_count": len(recipe.get("loras", [])),
+                            }
+                        )
+
+                if len(recipes) >= 2:
+                    recipes.sort(key=lambda entry: entry.get("modified", 0), reverse=True)
+                    response_data.append(
+                        {
+                            "type": "source_url",
+                            "fingerprint": url,
                             "count": len(recipes),
                             "recipes": recipes,
                         }
@@ -1021,7 +1054,7 @@ class RecipeManagementHandler:
             "exclude": False,
         }
 
-    async def _download_remote_media(self, image_url: str) -> tuple[bytes, str]:
+    async def _download_remote_media(self, image_url: str) -> tuple[bytes, str, Any]:
         civitai_client = self._civitai_client_getter()
         downloader = await self._downloader_factory()
         temp_path = None
@@ -1029,6 +1062,7 @@ class RecipeManagementHandler:
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
                 temp_path = temp_file.name
             download_url = image_url
+            image_info = None
             civitai_match = re.match(r"https://civitai\.com/images/(\d+)", image_url)
             if civitai_match:
                 if civitai_client is None:

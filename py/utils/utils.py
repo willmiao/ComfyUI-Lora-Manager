@@ -138,19 +138,15 @@ def calculate_recipe_fingerprint(loras):
     if not loras:
         return ""
     
-    # Filter valid entries and extract hash and strength
     valid_loras = []
     for lora in loras:
-        # Skip excluded loras
         if lora.get("exclude", False):
             continue
             
-        # Get the hash - use modelVersionId as fallback if hash is empty
         hash_value = lora.get("hash", "").lower()
-        if not hash_value and lora.get("isDeleted", False) and lora.get("modelVersionId"):
+        if not hash_value and lora.get("modelVersionId"):
             hash_value = str(lora.get("modelVersionId"))
             
-        # Skip entries without a valid hash
         if not hash_value:
             continue
             
