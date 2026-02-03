@@ -33,6 +33,10 @@ class PreviewHandler:
             raise web.HTTPBadRequest(text="Invalid preview path encoding") from exc
 
         normalized = decoded_path.replace("\\", "/")
+
+        if not self._config.is_preview_path_allowed(normalized):
+            raise web.HTTPForbidden(text="Preview path is not within an allowed directory")
+
         candidate = Path(normalized)
         try:
             resolved = candidate.expanduser().resolve(strict=False)
@@ -40,12 +44,8 @@ class PreviewHandler:
             logger.debug("Failed to resolve preview path %s: %s", normalized, exc)
             raise web.HTTPBadRequest(text="Unable to resolve preview path") from exc
 
-        resolved_str = str(resolved)
-        if not self._config.is_preview_path_allowed(resolved_str):
-            raise web.HTTPForbidden(text="Preview path is not within an allowed directory")
-
         if not resolved.is_file():
-            logger.debug("Preview file not found at %s", resolved_str)
+            logger.debug("Preview file not found at %s", str(resolved))
             raise web.HTTPNotFound(text="Preview file not found")
 
         # aiohttp's FileResponse handles range requests and content headers for us.

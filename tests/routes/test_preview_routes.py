@@ -188,3 +188,91 @@ def test_is_preview_path_allowed_rejects_prefix_without_separator(tmp_path):
     # The sibling path should NOT be allowed even though it shares a prefix
     assert not config.is_preview_path_allowed(str(sibling_file)), \
         f"Path in '{sibling_root}' should NOT be allowed when root is '{library_root}'"
+
+
+async def test_preview_handler_serves_from_deep_symlink(tmp_path):
+    """Test that previews under deep symlinks are served correctly."""
+    library_root = tmp_path / "library"
+    library_root.mkdir()
+
+    # Create nested structure with deep symlink at second level
+    subdir = library_root / "anime"
+    subdir.mkdir()
+    external_dir = tmp_path / "external"
+    external_dir.mkdir()
+    deep_symlink = subdir / "styles"
+    deep_symlink.symlink_to(external_dir, target_is_directory=True)
+
+    # Create preview file under deep symlink
+    preview_file = deep_symlink / "model.preview.webp"
+    preview_file.write_bytes(b"preview_content")
+
+    config = Config()
+    config.apply_library_settings(
+        {
+            "folder_paths": {
+                "loras": [str(library_root)],
+                "checkpoints": [],
+                "unet": [],
+                "embeddings": [],
+            }
+        }
+    )
+
+    handler = PreviewHandler(config=config)
+    encoded_path = urllib.parse.quote(str(preview_file), safe="")
+    request = make_mocked_request("GET", f"/api/lm/previews?path={encoded_path}")
+
+    response = await handler.serve_preview(request)
+
+    assert isinstance(response, web.FileResponse)
+    assert response.status == 200
+    assert Path(response._path) == preview_file.resolve()
+
+
+async def test_deep_symlink_discovered_on_first_access(tmp_path):
+    """Test that deep symlinks are discovered on first preview access."""
+    library_root = tmp_path / "library"
+    library_root.mkdir()
+
+    # Create nested structure with deep symlink at second level
+    subdir = library_root / "category"
+    subdir.mkdir()
+    external_dir = tmp_path / "storage"
+    external_dir.mkdir()
+    deep_symlink = subdir / "models"
+    deep_symlink.symlink_to(external_dir, target_is_directory=True)
+
+    # Create preview file under deep symlink
+    preview_file = deep_symlink / "test.png"
+    preview_file.write_bytes(b"test_image")
+
+    config = Config()
+    config.apply_library_settings(
+        {
+            "folder_paths": {
+                "loras": [str(library_root)],
+                "checkpoints": [],
+                "unet": [],
+                "embeddings": [],
+            }
+        }
+    )
+
+    # Deep symlink should not be in mappings initially
+    normalized_external = os.path.normpath(str(external_dir)).replace(os.sep, '/')
+    assert normalized_external not in config._path_mappings
+
+    handler = PreviewHandler(config=config)
+    encoded_path = urllib.parse.quote(str(preview_file), safe="")
+    request = make_mocked_request("GET", f"/api/lm/previews?path={encoded_path}")
+
+    # First access should trigger symlink discovery and serve the preview
+    response = await handler.serve_preview(request)
+
+    assert isinstance(response, web.FileResponse)
+    assert response.status == 200
+    assert Path(response._path) == preview_file.resolve()
+
+    # Deep symlink should now be in mappings
+    assert normalized_external in config._path_mappings

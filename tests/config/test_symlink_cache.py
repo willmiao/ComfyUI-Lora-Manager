@@ -298,6 +298,134 @@ def test_deep_symlink_not_scanned(monkeypatch: pytest.MonkeyPatch, tmp_path):
     assert normalized_external not in cfg._path_mappings
 
 
+def test_deep_symlink_discovered_on_preview_access(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    """Deep symlinks are discovered dynamically when preview is accessed."""
+    loras_dir, settings_dir = _setup_paths(monkeypatch, tmp_path)
+
+    # Create nested structure with deep symlink at second level
+    subdir = loras_dir / "anime"
+    subdir.mkdir()
+    external_dir = tmp_path / "external"
+    external_dir.mkdir()
+    deep_symlink = subdir / "styles"
+    deep_symlink.symlink_to(external_dir, target_is_directory=True)
+
+    # Create preview file under deep symlink
+    preview_file = deep_symlink / "model.preview.jpeg"
+    preview_file.write_bytes(b"preview")
+
+    # Config should not initially detect deep symlinks
+    cfg = config_module.Config()
+    normalized_external = _normalize(str(external_dir))
+    normalized_deep_link = _normalize(str(deep_symlink))
+    assert normalized_external not in cfg._path_mappings
+
+    # First preview access triggers symlink discovery automatically and returns True
+    is_allowed = cfg.is_preview_path_allowed(str(preview_file))
+
+    # After discovery, preview should be allowed
+    assert is_allowed
+    assert normalized_external in cfg._path_mappings
+    assert cfg._path_mappings[normalized_external] == normalized_deep_link
+
+    # Verify preview path is now allowed without triggering discovery again
+    assert cfg.is_preview_path_allowed(str(preview_file))
+
+
+def test_deep_symlink_at_third_level(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    """Deep symlinks at third level are also discovered dynamically."""
+    loras_dir, settings_dir = _setup_paths(monkeypatch, tmp_path)
+
+    # Create nested structure with deep symlink at third level
+    level1 = loras_dir / "category"
+    level1.mkdir()
+    level2 = level1 / "subcategory"
+    level2.mkdir()
+    external_dir = tmp_path / "external_deep"
+    external_dir.mkdir()
+    deep_symlink = level2 / "deep"
+    deep_symlink.symlink_to(external_dir, target_is_directory=True)
+
+    # Create preview file under deep symlink
+    preview_file = deep_symlink / "preview.webp"
+    preview_file.write_bytes(b"test")
+
+    cfg = config_module.Config()
+
+    # First preview access triggers symlink discovery at third level
+    is_allowed = cfg.is_preview_path_allowed(str(preview_file))
+
+    assert is_allowed
+    normalized_external = _normalize(str(external_dir))
+    normalized_deep_link = _normalize(str(deep_symlink))
+    assert normalized_external in cfg._path_mappings
+    assert cfg._path_mappings[normalized_external] == normalized_deep_link
+
+
+def test_deep_symlink_points_outside_roots(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    """Deep symlinks can point to locations outside configured roots."""
+    loras_dir, settings_dir = _setup_paths(monkeypatch, tmp_path)
+
+    # Create nested structure with deep symlink pointing outside roots
+    subdir = loras_dir / "shared"
+    subdir.mkdir()
+    outside_root = tmp_path / "storage"
+    outside_root.mkdir()
+    deep_symlink = subdir / "models"
+    deep_symlink.symlink_to(outside_root, target_is_directory=True)
+
+    # Create preview file under deep symlink (outside original roots)
+    preview_file = deep_symlink / "external.png"
+    preview_file.write_bytes(b"external")
+
+    cfg = config_module.Config()
+
+    # Preview access triggers symlink discovery
+    is_allowed = cfg.is_preview_path_allowed(str(preview_file))
+
+    # After discovery, preview should be allowed even though target is outside roots
+    assert is_allowed
+    normalized_outside = _normalize(str(outside_root))
+    assert normalized_outside in cfg._path_mappings
+
+
+def test_normal_path_unaffected_by_discovery(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    """Normal paths (no symlinks) are not affected by symlink discovery logic."""
+    loras_dir, settings_dir = _setup_paths(monkeypatch, tmp_path)
+
+    # Create normal file structure (no symlinks)
+    preview_file = loras_dir / "normal.preview.jpeg"
+    preview_file.write_bytes(b"normal")
+
+    cfg = config_module.Config()
+
+    # Normal paths work without any discovery
+    assert cfg.is_preview_path_allowed(str(preview_file))
+    assert len(cfg._path_mappings) == 0
+
+
+def test_first_level_symlink_still_works(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    """First-level symlinks continue to work as before."""
+    loras_dir, settings_dir = _setup_paths(monkeypatch, tmp_path)
+
+    # Create first-level symlink
+    external_dir = tmp_path / "first_level_external"
+    external_dir.mkdir()
+    first_symlink = loras_dir / "first_level"
+    first_symlink.symlink_to(external_dir, target_is_directory=True)
+
+    # Create preview file under first-level symlink
+    preview_file = first_symlink / "model.png"
+    preview_file.write_bytes(b"first_level")
+
+    cfg = config_module.Config()
+
+    # First-level symlinks are scanned during initialization
+    normalized_external = _normalize(str(external_dir))
+    assert normalized_external in cfg._path_mappings
+    assert cfg.is_preview_path_allowed(str(preview_file))
+
+
 def test_legacy_symlink_cache_automatic_cleanup(monkeypatch: pytest.MonkeyPatch, tmp_path):
     """Test that legacy symlink cache is automatically cleaned up after migration."""
     settings_dir = tmp_path / "settings"

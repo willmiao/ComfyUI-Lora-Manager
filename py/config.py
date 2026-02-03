@@ -766,7 +766,23 @@ class Config:
         return f'/api/lm/previews?path={encoded_path}'
 
     def is_preview_path_allowed(self, preview_path: str) -> bool:
-        """Return ``True`` if ``preview_path`` is within an allowed directory."""
+        """Return ``True`` if ``preview_path`` is within an allowed directory.
+        
+        If the path is initially rejected, attempts to discover deep symlinks
+        that were not scanned during initialization. If a symlink is found,
+        updates the in-memory path mappings and retries the check.
+        """
+
+        if self._is_path_in_allowed_roots(preview_path):
+            return True
+
+        if self._try_discover_deep_symlink(preview_path):
+            return self._is_path_in_allowed_roots(preview_path)
+
+        return False
+
+    def _is_path_in_allowed_roots(self, preview_path: str) -> bool:
+        """Check if preview_path is within allowed preview roots without modification."""
 
         if not preview_path:
             return False
@@ -776,29 +792,72 @@ class Config:
         except Exception:
             return False
 
-        # Use os.path.normcase for case-insensitive comparison on Windows.
-        # On Windows, Path.relative_to() is case-sensitive for drive letters,
-        # causing paths like 'a:/folder' to not match 'A:/folder'.
         candidate_str = os.path.normcase(str(candidate))
         for root in self._preview_root_paths:
             root_str = os.path.normcase(str(root))
-            # Check if candidate is equal to or under the root directory
             if candidate_str == root_str or candidate_str.startswith(root_str + os.sep):
                 return True
 
-        if self._preview_root_paths:
-            logger.debug(
-                "Preview path rejected: %s (candidate=%s, num_roots=%d, first_root=%s)",
-                preview_path,
-                candidate_str,
-                len(self._preview_root_paths),
-                os.path.normcase(str(next(iter(self._preview_root_paths)))),
-            )
-        else:
-            logger.debug(
-                "Preview path rejected (no roots configured): %s",
-                preview_path,
-            )
+        logger.debug(
+            "Path not in allowed roots: %s (candidate=%s, num_roots=%d)",
+            preview_path,
+            candidate_str,
+            len(self._preview_root_paths),
+        )
+
+        return False
+
+    def _try_discover_deep_symlink(self, preview_path: str) -> bool:
+        """Attempt to discover a deep symlink that contains the preview_path.
+
+        Walks up from the preview path to the root directories, checking each
+        parent directory for symlinks. If a symlink is found, updates the
+        in-memory path mappings and preview roots.
+
+        Only updates in-memory state (self._path_mappings and self._preview_root_paths),
+        does not modify the persistent cache file.
+
+        Returns:
+            True if a symlink was discovered and mappings updated, False otherwise.
+        """
+        if not preview_path:
+            return False
+
+        try:
+            candidate = Path(preview_path).expanduser()
+        except Exception:
+            return False
+
+        current = candidate
+        while True:
+            try:
+                if self._is_link(str(current)):
+                    try:
+                        target = os.path.realpath(str(current))
+                        normalized_target = self._normalize_path(target)
+                        normalized_link = self._normalize_path(str(current))
+
+                        self._path_mappings[normalized_target] = normalized_link
+                        self._preview_root_paths.update(self._expand_preview_root(normalized_target))
+                        self._preview_root_paths.update(self._expand_preview_root(normalized_link))
+
+                        logger.debug(
+                            "Discovered deep symlink: %s -> %s (preview path: %s)",
+                            normalized_link,
+                            normalized_target,
+                            preview_path
+                        )
+
+                        return True
+                    except OSError:
+                        pass
+            except OSError:
+                pass
+
+            parent = current.parent
+            if parent == current:
+                break
+            current = parent
 
         return False
 
