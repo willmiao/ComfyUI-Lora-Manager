@@ -60,6 +60,22 @@ class TriggerWordToggleLM:
         else:
             return data
 
+    def _normalize_trigger_words(self, trigger_words):
+        """Normalize trigger words by splitting by both single and double commas, stripping whitespace, and filtering empty strings"""
+        if not trigger_words or not isinstance(trigger_words, str):
+            return set()
+        
+        # Split by double commas first to preserve groups, then by single commas
+        groups = re.split(r",{2,}", trigger_words)
+        words = []
+        for group in groups:
+            # Split each group by single comma
+            group_words = [word.strip() for word in group.split(",")]
+            words.extend(group_words)
+        
+        # Filter out empty strings and return as set
+        return set(word for word in words if word)
+
     def process_trigger_words(
         self,
         id,
@@ -81,7 +97,7 @@ class TriggerWordToggleLM:
         if (
             trigger_words_override
             and isinstance(trigger_words_override, str)
-            and trigger_words_override != trigger_words
+            and self._normalize_trigger_words(trigger_words_override) != self._normalize_trigger_words(trigger_words)
         ):
             filtered_triggers = trigger_words_override
             return (filtered_triggers,)
