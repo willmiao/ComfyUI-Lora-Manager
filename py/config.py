@@ -645,6 +645,23 @@ class Config:
         checkpoint_map = self._dedupe_existing_paths(checkpoint_paths)
         unet_map = self._dedupe_existing_paths(unet_paths)
 
+        # Detect when checkpoints and unet share the same physical location
+        # This is a configuration issue that can cause duplicate model entries
+        overlapping_real_paths = set(checkpoint_map.keys()) & set(unet_map.keys())
+        if overlapping_real_paths:
+            logger.warning(
+                "Detected overlapping paths between 'checkpoints' and 'diffusion_models' (unet). "
+                "They should not point to the same physical folder as they are different model types. "
+                "Please fix your ComfyUI path configuration to separate these folders. "
+                "Falling back to 'checkpoints' for backward compatibility. "
+                "Overlapping real paths: %s",
+                [checkpoint_map.get(rp, rp) for rp in overlapping_real_paths]
+            )
+            # Remove overlapping paths from unet_map to prioritize checkpoints
+            for rp in overlapping_real_paths:
+                if rp in unet_map:
+                    del unet_map[rp]
+
         merged_map: Dict[str, str] = {}
         for real_path, original in {**checkpoint_map, **unet_map}.items():
             if real_path not in merged_map:
