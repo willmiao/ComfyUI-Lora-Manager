@@ -502,7 +502,7 @@ const onRepeatBlur = (event: Event) => {
 
 /* Repeat Controls */
 .repeat-input {
-  width: 40px;
+  width: 50px;
   height: 32px;
   padding: 0 6px;
   background: rgba(26, 32, 44, 0.9);
