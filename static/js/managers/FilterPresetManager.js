@@ -751,12 +751,7 @@ export class FilterPresetManager {
 
             const presetName = document.createElement('span');
             presetName.className = 'preset-name';
-
-            if (isActive) {
-                presetName.innerHTML = `<i class="fas fa-check"></i> ${preset.name}`;
-            } else {
-                presetName.textContent = preset.name;
-            }
+            presetName.textContent = preset.name;
             presetName.title = translate('header.filter.presetClickTooltip', { name: preset.name }, `Click to apply preset "${preset.name}"`);
 
             const deleteBtn = document.createElement('button');

@@ -512,6 +512,10 @@
 
 .filter-preset.active .preset-delete-btn {
     color: white;
+    opacity: 0;
+}
+
+.filter-preset:hover.active .preset-delete-btn {
     opacity: 0.8;
 }
 
@@ -529,13 +533,16 @@
     align-items: center;
     gap: 6px;
     white-space: nowrap;
+    max-width: 120px; /* Prevent long names from breaking layout */
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .preset-delete-btn {
     background: none;
     border: none;
     color: var(--text-color);
-    opacity: 0.5;
+    opacity: 0; /* Hidden by default */
     cursor: pointer;
     padding: 4px;
     display: flex;
@@ -544,6 +551,10 @@
     font-size: 11px;
     transition: all 0.2s ease;
     margin-left: auto;
+}
+
+.filter-preset:hover .preset-delete-btn {
+    opacity: 0.5; /* Show on hover */
 }
 
 .preset-delete-btn:hover {
