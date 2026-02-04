@@ -549,6 +549,17 @@ export class FilterManager {
                 showToast('toast.filters.cleared', {}, 'info');
             }
         }
+
+        // Refresh duplicates with new filters
+        if (window.modelDuplicatesManager) {
+            if (window.modelDuplicatesManager.inDuplicateMode) {
+                // In duplicate mode: refresh the duplicate list
+                await window.modelDuplicatesManager.findDuplicates();
+            } else {
+                // Not in duplicate mode: just update badge count
+                window.modelDuplicatesManager.checkDuplicatesCount();
+            }
+        }
     }
 
     async clearFilters() {

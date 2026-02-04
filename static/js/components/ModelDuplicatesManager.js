@@ -48,15 +48,18 @@ export class ModelDuplicatesManager {
     // Method to check for duplicates count using existing endpoint
     async checkDuplicatesCount() {
         try {
+            const params = this._buildFilterQueryParams();
             const endpoint = `/api/lm/${this.modelType}/find-duplicates`;
-            const response = await fetch(endpoint);
-            
+            const url = params.toString() ? `${endpoint}?${params}` : endpoint;
+
+            const response = await fetch(url);
+
             if (!response.ok) {
                 throw new Error(`Failed to get duplicates count: ${response.statusText}`);
             }
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 const duplicatesCount = (data.duplicates || []).length;
                 this.updateDuplicatesBadge(duplicatesCount);
@@ -103,29 +106,30 @@ export class ModelDuplicatesManager {
     
     async findDuplicates() {
         try {
-            // Determine API endpoint based on model type
+            const params = this._buildFilterQueryParams();
             const endpoint = `/api/lm/${this.modelType}/find-duplicates`;
-            
-            const response = await fetch(endpoint);
+            const url = params.toString() ? `${endpoint}?${params}` : endpoint;
+
+            const response = await fetch(url);
             if (!response.ok) {
                 throw new Error(`Failed to find duplicates: ${response.statusText}`);
             }
-            
+
             const data = await response.json();
             if (!data.success) {
                 throw new Error(data.error || 'Unknown error finding duplicates');
             }
-            
+
             this.duplicateGroups = data.duplicates || [];
-            
+
             // Update the badge with the current count
             this.updateDuplicatesBadge(this.duplicateGroups.length);
-            
+
             if (this.duplicateGroups.length === 0) {
                 showToast('toast.duplicates.noDuplicatesFound', { type: this.modelType }, 'info');
                 return false;
             }
-            
+
             this.enterDuplicateMode();
             return true;
         } catch (error) {
@@ -133,6 +137,51 @@ export class ModelDuplicatesManager {
             showToast('toast.duplicates.findFailed', { message: error.message }, 'error');
             return false;
         }
+    }
+
+    /**
+     * Build query parameters from current filter state for duplicate finding.
+     * @returns {URLSearchParams} The query parameters to append to the API endpoint
+     */
+    _buildFilterQueryParams() {
+        const params = new URLSearchParams();
+        const pageState = getCurrentPageState();
+        const filters = pageState?.filters;
+
+        if (!filters) return params;
+
+        // Base model filters
+        if (filters.baseModel && Array.isArray(filters.baseModel)) {
+            filters.baseModel.forEach(m => params.append('base_model', m));
+        }
+
+        // Tag filters (tri-state: include/exclude)
+        if (filters.tags && typeof filters.tags === 'object') {
+            Object.entries(filters.tags).forEach(([tag, state]) => {
+                if (state === 'include') {
+                    params.append('tag_include', tag);
+                } else if (state === 'exclude') {
+                    params.append('tag_exclude', tag);
+                }
+            });
+        }
+
+        // Model type filters
+        if (filters.modelTypes && Array.isArray(filters.modelTypes)) {
+            filters.modelTypes.forEach(t => params.append('model_type', t));
+        }
+
+        // Folder filter (from active folder state)
+        if (pageState.activeFolder) {
+            params.append('folder', pageState.activeFolder);
+        }
+
+        // Favorites filter
+        if (pageState.showFavoritesOnly) {
+            params.append('favorites_only', 'true');
+        }
+
+        return params;
     }
     
     enterDuplicateMode() {
