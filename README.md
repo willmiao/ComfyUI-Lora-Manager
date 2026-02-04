@@ -34,6 +34,10 @@ Enhance your Civitai browsing experience with our companion browser extension! S
 
 ## Release Notes
 
+### v0.9.15
+* **Filter Presets** - Save filter combinations as presets for quick switching and reapplication.
+* **Bug Fixes** - Fixed various bugs for improved stability.
+
 ### v0.9.14
 * **LoRA Cycler Node** - Introduced a new LoRA Cycler node that enables iteration through specified LoRAs with support for repeat count and pause iteration functionality. Refer to the new "Lora Cycler" template workflow for concrete example.
 * **Enhanced Prompt Node with Tag Autocomplete** - Enhanced the Prompt node with comprehensive tag autocomplete based on merged Danbooru + e621 tags. Supports tag search and autocomplete functionality. Implemented a command system with shortcuts like `/char` or `/artist` for category-specific tag searching. Added `/ac` or `/noac` commands to quickly enable or disable autocomplete. Refer to the "Lora Manager Basic" template workflow in ComfyUI -> Templates -> ComfyUI-Lora-Manager for detailed tips.
