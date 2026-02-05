@@ -127,6 +127,10 @@ export class ModelDuplicatesManager {
 
             if (this.duplicateGroups.length === 0) {
                 showToast('toast.duplicates.noDuplicatesFound', { type: this.modelType }, 'info');
+                // If already in duplicate mode, exit to clear the display
+                if (this.inDuplicateMode) {
+                    this.exitDuplicateMode();
+                }
                 return false;
             }
 
