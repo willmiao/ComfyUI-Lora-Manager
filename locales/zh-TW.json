@@ -223,7 +223,11 @@
             "noCreditRequired": "無需署名",
             "allowSellingGeneratedContent": "允許銷售",
             "noTags": "無標籤",
-            "clearAll": "清除所有篩選"
+            "clearAll": "清除所有篩選",
+            "any": "任一",
+            "all": "全部",
+            "tagLogicAny": "符合任一票籤 (或)",
+            "tagLogicAll": "符合所有標籤 (與)"
         },
         "theme": {
             "toggle": "切換主題",

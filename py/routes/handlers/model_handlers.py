@@ -270,6 +270,11 @@ class ModelListingHandler:
             request.query.get("update_available_only", "false").lower() == "true"
         )
 
+        # Tag logic: "any" (OR) or "all" (AND) for include tags
+        tag_logic = request.query.get("tag_logic", "any").lower()
+        if tag_logic not in ("any", "all"):
+            tag_logic = "any"
+
         # New license-based query filters
         credit_required = request.query.get("credit_required")
         if credit_required is not None:
@@ -298,6 +303,7 @@ class ModelListingHandler:
             "fuzzy_search": fuzzy_search,
             "base_models": base_models,
             "tags": tag_filters,
+            "tag_logic": tag_logic,
             "search_options": search_options,
             "hash_filters": hash_filters,
             "favorites_only": favorites_only,

@@ -223,7 +223,11 @@
             "noCreditRequired": "크레딧 표기 없음",
             "allowSellingGeneratedContent": "판매 허용",
             "noTags": "태그 없음",
-            "clearAll": "모든 필터 지우기"
+            "clearAll": "모든 필터 지우기",
+            "any": "아무",
+            "all": "모두",
+            "tagLogicAny": "모든 태그 일치 (OR)",
+            "tagLogicAll": "모든 태그 일치 (AND)"
         },
         "theme": {
             "toggle": "테마 토글",

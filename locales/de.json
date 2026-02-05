@@ -223,7 +223,11 @@
             "noCreditRequired": "Kein Credit erforderlich",
             "allowSellingGeneratedContent": "Verkauf erlaubt",
             "noTags": "Keine Tags",
-            "clearAll": "Alle Filter löschen"
+            "clearAll": "Alle Filter löschen",
+            "any": "Beliebig",
+            "all": "Alle",
+            "tagLogicAny": "Jedes Tag abgleichen (ODER)",
+            "tagLogicAll": "Alle Tags abgleichen (UND)"
         },
         "theme": {
             "toggle": "Theme wechseln",

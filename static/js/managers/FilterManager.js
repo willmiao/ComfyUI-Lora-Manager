@@ -63,6 +63,9 @@ export class FilterManager {
             this.initializeLicenseFilters();
         }
 
+        // Initialize tag logic toggle
+        this.initializeTagLogicToggle();
+
         // Add click handler for filter button
         if (this.filterButton) {
             this.filterButton.addEventListener('click', () => {
@@ -82,6 +85,45 @@ export class FilterManager {
 
         // Initialize active filters from localStorage if available
         this.loadFiltersFromStorage();
+    }
+
+    initializeTagLogicToggle() {
+        const toggleContainer = document.getElementById('tagLogicToggle');
+        if (!toggleContainer) return;
+
+        const options = toggleContainer.querySelectorAll('.tag-logic-option');
+        
+        options.forEach(option => {
+            option.addEventListener('click', async () => {
+                const value = option.dataset.value;
+                if (this.filters.tagLogic === value) return;
+                
+                this.filters.tagLogic = value;
+                this.updateTagLogicToggleUI();
+                
+                // Auto-apply filter when logic changes
+                await this.applyFilters(false);
+            });
+        });
+
+        // Set initial state
+        this.updateTagLogicToggleUI();
+    }
+
+    updateTagLogicToggleUI() {
+        const toggleContainer = document.getElementById('tagLogicToggle');
+        if (!toggleContainer) return;
+
+        const options = toggleContainer.querySelectorAll('.tag-logic-option');
+        const currentLogic = this.filters.tagLogic || 'any';
+        
+        options.forEach(option => {
+            if (option.dataset.value === currentLogic) {
+                option.classList.add('active');
+            } else {
+                option.classList.remove('active');
+            }
+        });
     }
 
     async loadTopTags() {
@@ -573,8 +615,12 @@ export class FilterManager {
             baseModel: [],
             tags: {},
             license: {},
-            modelTypes: []
+            modelTypes: [],
+            tagLogic: 'any'
         });
+
+        // Update tag logic toggle UI
+        this.updateTagLogicToggleUI();
 
         // Update state
         const pageState = getCurrentPageState();
@@ -620,6 +666,7 @@ export class FilterManager {
                 pageState.filters = this.cloneFilters();
 
                 this.updateTagSelections();
+                this.updateTagLogicToggleUI();
                 this.updateActiveFiltersCount();
 
                 if (this.hasActiveFilters()) {
@@ -655,7 +702,8 @@ export class FilterManager {
             baseModel: Array.isArray(source.baseModel) ? [...source.baseModel] : [],
             tags: this.normalizeTagFilters(source.tags),
             license: this.shouldShowLicenseFilters() ? this.normalizeLicenseFilters(source.license) : {},
-            modelTypes: this.normalizeModelTypeFilters(source.modelTypes)
+            modelTypes: this.normalizeModelTypeFilters(source.modelTypes),
+            tagLogic: source.tagLogic || 'any'
         };
     }
 
@@ -737,7 +785,8 @@ export class FilterManager {
             baseModel: [...(this.filters.baseModel || [])],
             tags: { ...(this.filters.tags || {}) },
             license: { ...(this.filters.license || {}) },
-            modelTypes: [...(this.filters.modelTypes || [])]
+            modelTypes: [...(this.filters.modelTypes || [])],
+            tagLogic: this.filters.tagLogic || 'any'
         };
     }
 

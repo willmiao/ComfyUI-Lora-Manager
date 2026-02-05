@@ -150,7 +150,13 @@
     </div>
   </div>
   <div class="filter-section">
-    <h4>{{ t('header.filter.modelTags') }}</h4>
+    <div class="filter-section-header">
+      <h4>{{ t('header.filter.modelTags') }}</h4>
+      <div class="tag-logic-toggle" id="tagLogicToggle">
+        <button class="tag-logic-option" data-value="any" title="{{ t('header.filter.tagLogicAny') }}">{{ t('header.filter.any') }}</button>
+        <button class="tag-logic-option" data-value="all" title="{{ t('header.filter.tagLogicAll') }}">{{ t('header.filter.all') }}</button>
+      </div>
+    </div>
     <div class="filter-tags" id="modelTagsFilter">
       <!-- Top tags will be dynamically inserted here -->
       <div class="tags-loading">{{ t('common.status.loading') }}</div>

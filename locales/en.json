@@ -223,7 +223,11 @@
             "noCreditRequired": "No Credit Required",
             "allowSellingGeneratedContent": "Allow Selling",
             "noTags": "No tags",
-            "clearAll": "Clear All Filters"
+            "clearAll": "Clear All Filters",
+            "any": "Any",
+            "all": "All",
+            "tagLogicAny": "Match any tag (OR)",
+            "tagLogicAll": "Match all tags (AND)"
         },
         "theme": {
             "toggle": "Toggle theme",

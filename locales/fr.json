@@ -223,7 +223,11 @@
             "noCreditRequired": "Crédit non requis",
             "allowSellingGeneratedContent": "Vente autorisée",
             "noTags": "Aucun tag",
-            "clearAll": "Effacer tous les filtres"
+            "clearAll": "Effacer tous les filtres",
+            "any": "N'importe quel",
+            "all": "Tous",
+            "tagLogicAny": "Correspondre à n'importe quel tag (OU)",
+            "tagLogicAll": "Correspondre à tous les tags (ET)"
         },
         "theme": {
             "toggle": "Basculer le thème",

@@ -924,6 +924,11 @@ export class BaseModelApiClient {
                     params.append('model_type', type);
                 });
             }
+
+            // Add tag logic parameter (any = OR, all = AND)
+            if (pageState.filters.tagLogic) {
+                params.append('tag_logic', pageState.filters.tagLogic);
+            }
         }
 
         this._addModelSpecificParams(params, pageState);

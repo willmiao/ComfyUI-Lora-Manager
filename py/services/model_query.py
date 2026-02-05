@@ -99,6 +99,7 @@ class FilterCriteria:
     favorites_only: bool = False
     search_options: Optional[Dict[str, Any]] = None
     model_types: Optional[Sequence[str]] = None
+    tag_logic: str = "any"  # "any" (OR) or "all" (AND)
 
 
 class ModelCacheRepository:
@@ -300,11 +301,29 @@ class ModelFilterSet:
                 include_tags = {tag for tag in tag_filters if tag}
 
             if include_tags:
+                tag_logic = criteria.tag_logic.lower() if criteria.tag_logic else "any"
 
                 def matches_include(item_tags):
                     if not item_tags and "__no_tags__" in include_tags:
                         return True
-                    return any(tag in include_tags for tag in (item_tags or []))
+                    if tag_logic == "all":
+                        # AND logic: item must have ALL include tags
+                        # Special case: __no_tags__ is handled separately
+                        non_special_tags = include_tags - {"__no_tags__"}
+                        if "__no_tags__" in include_tags:
+                            # If __no_tags__ is selected along with other tags,
+                            # treat it as "no tags OR (all other tags)"
+                            if not item_tags:
+                                return True
+                            # Otherwise, check if all non-special tags match
+                            if non_special_tags:
+                                return all(tag in (item_tags or []) for tag in non_special_tags)
+                            return True
+                        # Normal case: all tags must match
+                        return all(tag in (item_tags or []) for tag in non_special_tags)
+                    else:
+                        # OR logic (default): item must have ANY include tag
+                        return any(tag in include_tags for tag in (item_tags or []))
 
                 items = [item for item in items if matches_include(item.get("tags"))]
 

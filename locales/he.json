@@ -223,7 +223,11 @@
             "noCreditRequired": "ללא קרדיט נדרש",
             "allowSellingGeneratedContent": "אפשר מכירה",
             "noTags": "ללא תגיות",
-            "clearAll": "נקה את כל המסננים"
+            "clearAll": "נקה את כל המסננים",
+            "any": "כלשהו",
+            "all": "כל התגים",
+            "tagLogicAny": "התאם כל תג (או)",
+            "tagLogicAll": "התאם את כל התגים (וגם)"
         },
         "theme": {
             "toggle": "החלף ערכת נושא",

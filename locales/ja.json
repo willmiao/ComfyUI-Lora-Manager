@@ -223,7 +223,11 @@
             "noCreditRequired": "クレジット不要",
             "allowSellingGeneratedContent": "販売許可",
             "noTags": "タグなし",
-            "clearAll": "すべてのフィルタをクリア"
+            "clearAll": "すべてのフィルタをクリア",
+            "any": "いずれか",
+            "all": "すべて",
+            "tagLogicAny": "いずれかのタグに一致 (OR)",
+            "tagLogicAll": "すべてのタグに一致 (AND)"
         },
         "theme": {
             "toggle": "テーマの切り替え",

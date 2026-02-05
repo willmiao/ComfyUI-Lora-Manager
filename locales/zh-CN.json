@@ -223,7 +223,11 @@
             "noCreditRequired": "无需署名",
             "allowSellingGeneratedContent": "允许销售",
             "noTags": "无标签",
-            "clearAll": "清除所有筛选"
+            "clearAll": "清除所有筛选",
+            "any": "任一",
+            "all": "全部",
+            "tagLogicAny": "匹配任一标签 (或)",
+            "tagLogicAll": "匹配所有标签 (与)"
         },
         "theme": {
             "toggle": "切换主题",

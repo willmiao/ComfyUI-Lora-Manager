@@ -223,7 +223,11 @@
             "noCreditRequired": "Без указания авторства",
             "allowSellingGeneratedContent": "Продажа разрешена",
             "noTags": "Без тегов",
-            "clearAll": "Очистить все фильтры"
+            "clearAll": "Очистить все фильтры",
+            "any": "Любой",
+            "all": "Все",
+            "tagLogicAny": "Совпадение с любым тегом (ИЛИ)",
+            "tagLogicAll": "Совпадение со всеми тегами (И)"
         },
         "theme": {
             "toggle": "Переключить тему",

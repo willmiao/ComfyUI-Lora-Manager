@@ -81,6 +81,7 @@ class BaseModelService(ABC):
         update_available_only: bool = False,
         credit_required: Optional[bool] = None,
         allow_selling_generated_content: Optional[bool] = None,
+        tag_logic: str = "any",
         **kwargs,
     ) -> Dict:
         """Get paginated and filtered model data"""
@@ -109,6 +110,7 @@ class BaseModelService(ABC):
                 tags=tags,
                 favorites_only=favorites_only,
                 search_options=search_options,
+                tag_logic=tag_logic,
             )
 
             if search:
@@ -241,6 +243,7 @@ class BaseModelService(ABC):
         tags: Optional[Dict[str, str]] = None,
         favorites_only: bool = False,
         search_options: dict = None,
+        tag_logic: str = "any",
     ) -> List[Dict]:
         """Apply common filters that work across all model types"""
         normalized_options = self.search_strategy.normalize_options(search_options)
@@ -253,6 +256,7 @@ class BaseModelService(ABC):
             tags=tags,
             favorites_only=favorites_only,
             search_options=normalized_options,
+            tag_logic=tag_logic,
         )
         return self.filter_set.apply(data, criteria)
 
