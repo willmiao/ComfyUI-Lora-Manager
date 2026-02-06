@@ -4,11 +4,14 @@
  * - Main image display with navigation
  * - Thumbnail rail for quick switching
  * - Params panel for image metadata
+ * - Upload area for custom examples
  * - Keyboard navigation support (← →)
  */
 
 import { escapeHtml } from '../shared/utils.js';
 import { translate } from '../../utils/i18nHelpers.js';
+import { showToast } from '../../utils/uiHelpers.js';
+import { getModelApiClient } from '../../api/modelApiFactory.js';
 
 export class Showcase {
   constructor(container) {
@@ -18,6 +21,8 @@ export class Showcase {
     this.modelHash = '';
     this.filePath = '';
     this.paramsVisible = false;
+    this.uploadAreaVisible = false;
+    this.isUploading = false;
   }
 
   /**
@@ -29,6 +34,7 @@ export class Showcase {
     this.filePath = filePath || '';
     this.currentIndex = 0;
     this.paramsVisible = false;
+    this.uploadAreaVisible = false;
 
     this.element.innerHTML = this.getTemplate();
     this.bindEvents();
@@ -85,11 +91,16 @@ export class Showcase {
           <div class="showcase__empty">
             <i class="fas fa-images"></i>
             <p>${translate('modals.model.examples.empty', {}, 'No example images available')}</p>
+            <button class="showcase__add-btn" data-action="add-example">
+              <i class="fas fa-plus"></i>
+              ${translate('modals.model.examples.addFirst', {}, 'Add your first example')}
+            </button>
           </div>
         `}
       </div>
       
       ${this.renderThumbnailRail()}
+      ${this.renderUploadArea()}
     `;
   }
 
@@ -97,17 +108,6 @@ export class Showcase {
    * Render the thumbnail rail
    */
   renderThumbnailRail() {
-    if (this.images.length === 0) {
-      return `
-        <div class="thumbnail-rail">
-          <button class="thumbnail-rail__add" data-action="add-example">
-            <i class="fas fa-plus"></i>
-            <span>${translate('modals.model.examples.add', {}, 'Add')}</span>
-          </button>
-        </div>
-      `;
-    }
-
     const thumbnails = this.images.map((img, index) => {
       const url = img.url || img;
       const isNsfw = img.nsfw || false;
@@ -124,13 +124,39 @@ export class Showcase {
     return `
       <div class="thumbnail-rail">
         ${thumbnails}
-        <button class="thumbnail-rail__add" data-action="add-example">
+        <button class="thumbnail-rail__add" data-action="toggle-upload" title="${translate('modals.model.examples.add', {}, 'Add custom example')}">
           <i class="fas fa-plus"></i>
           <span>${translate('modals.model.examples.add', {}, 'Add')}</span>
         </button>
       </div>
-      <div class="thumbnail-rail__upload">
-        <!-- Upload area will be expanded here -->
+    `;
+  }
+
+  /**
+   * Render the upload area
+   */
+  renderUploadArea() {
+    return `
+      <div class="upload-area ${this.uploadAreaVisible ? 'visible' : ''}">
+        <div class="upload-area__content">
+          <div class="upload-area__dropzone" data-action="dropzone">
+            <input type="file" 
+                   class="upload-area__input" 
+                   accept="image/*,video/mp4,video/webm" 
+                   multiple
+                   data-action="file-select">
+            <div class="upload-area__placeholder">
+              <i class="fas fa-cloud-upload-alt"></i>
+              <p class="upload-area__title">${translate('modals.model.examples.dropFiles', {}, 'Drop files here or click to browse')}</p>
+              <p class="upload-area__hint">${translate('modals.model.examples.supportedFormats', {}, 'Supports: JPG, PNG, WEBP, MP4, WEBM')}</p>
+            </div>
+          </div>
+          <div class="upload-area__actions">
+            <button class="upload-area__cancel" data-action="cancel-upload">
+              ${translate('common.actions.cancel', {}, 'Cancel')}
+            </button>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -171,13 +197,194 @@ export class Showcase {
           this.deleteExample();
           break;
         case 'add-example':
-          this.showUploadArea();
+        case 'toggle-upload':
+          this.toggleUploadArea();
+          break;
+        case 'cancel-upload':
+          this.hideUploadArea();
           break;
         case 'copy-prompt':
           this.copyPrompt();
           break;
       }
     });
+
+    // File input change
+    const fileInput = this.element.querySelector('.upload-area__input');
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        this.handleFileSelect(e.target.files);
+      });
+    }
+
+    // Drag and drop
+    const dropzone = this.element.querySelector('.upload-area__dropzone');
+    if (dropzone) {
+      dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+      });
+
+      dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('dragover');
+      });
+
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        this.handleFileSelect(e.dataTransfer.files);
+      });
+
+      dropzone.addEventListener('click', () => {
+        fileInput?.click();
+      });
+    }
+  }
+
+  /**
+   * Toggle upload area visibility
+   */
+  toggleUploadArea() {
+    this.uploadAreaVisible = !this.uploadAreaVisible;
+    const uploadArea = this.element.querySelector('.upload-area');
+    if (uploadArea) {
+      uploadArea.classList.toggle('visible', this.uploadAreaVisible);
+    }
+  }
+
+  /**
+   * Hide upload area
+   */
+  hideUploadArea() {
+    this.uploadAreaVisible = false;
+    const uploadArea = this.element.querySelector('.upload-area');
+    if (uploadArea) {
+      uploadArea.classList.remove('visible');
+    }
+  }
+
+  /**
+   * Handle file selection
+   */
+  async handleFileSelect(files) {
+    if (!files || files.length === 0) return;
+    if (this.isUploading) return;
+
+    this.isUploading = true;
+    
+    const uploadArea = this.element.querySelector('.upload-area');
+    const dropzone = this.element.querySelector('.upload-area__dropzone');
+    
+    // Show loading state
+    if (dropzone) {
+      dropzone.innerHTML = `
+        <div class="upload-area__uploading">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>${translate('modals.model.examples.uploading', {}, 'Uploading...')}</p>
+        </div>
+      `;
+    }
+
+    try {
+      for (const file of files) {
+        await this.uploadFile(file);
+      }
+      
+      showToast('modals.model.examples.uploadSuccess', {}, 'success');
+      this.hideUploadArea();
+      
+      // Refresh the showcase by reloading model data
+      this.refreshShowcase();
+    } catch (error) {
+      console.error('Failed to upload file:', error);
+      showToast('modals.model.examples.uploadFailed', {}, 'error');
+      
+      // Reset dropzone
+      if (dropzone) {
+        dropzone.innerHTML = `
+          <input type="file" 
+                 class="upload-area__input" 
+                 accept="image/*,video/mp4,video/webm" 
+                 multiple
+                 data-action="file-select">
+          <div class="upload-area__placeholder">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p class="upload-area__title">${translate('modals.model.examples.dropFiles', {}, 'Drop files here or click to browse')}</p>
+            <p class="upload-area__hint">${translate('modals.model.examples.supportedFormats', {}, 'Supports: JPG, PNG, WEBP, MP4, WEBM')}</p>
+          </div>
+        `;
+      }
+    } finally {
+      this.isUploading = false;
+    }
+  }
+
+  /**
+   * Upload a single file
+   */
+  async uploadFile(file) {
+    if (!this.filePath) {
+      throw new Error('No file path available');
+    }
+
+    // Check file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'video/mp4', 'video/webm'];
+    if (!allowedTypes.includes(file.type)) {
+      throw new Error(`Unsupported file type: ${file.type}`);
+    }
+
+    // Check file size (100MB limit)
+    const maxSize = 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      throw new Error('File too large (max 100MB)');
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('model_path', this.filePath);
+
+    const response = await fetch('/api/lm/upload-example', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || 'Upload failed');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Refresh showcase after upload
+   */
+  async refreshShowcase() {
+    if (!this.filePath) return;
+
+    try {
+      const client = getModelApiClient();
+      const metadata = await client.fetchModelMetadata(this.filePath);
+      
+      if (metadata) {
+        const regularImages = metadata.images || [];
+        const customImages = metadata.customImages || [];
+        const allImages = [...regularImages, ...customImages];
+        
+        this.images = allImages;
+        this.currentIndex = allImages.length - 1;
+        
+        // Re-render
+        this.render({ images: allImages, modelHash: this.modelHash, filePath: this.filePath });
+        
+        // Load the newly uploaded image
+        if (this.currentIndex >= 0) {
+          this.loadImage(this.currentIndex);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh showcase:', error);
+    }
   }
 
   /**
@@ -339,7 +546,6 @@ export class Showcase {
 
     try {
       await navigator.clipboard.writeText(prompt);
-      const { showToast } = await import('../../utils/uiHelpers.js');
       showToast('modals.model.params.promptCopied', {}, 'success');
     } catch (err) {
       console.error('Failed to copy prompt:', err);
@@ -356,14 +562,12 @@ export class Showcase {
     const url = image.url || image;
     
     try {
-      const { getModelApiClient } = await import('../../api/modelApiFactory.js');
-      await getModelApiClient().setModelPreview(this.filePath, url);
+      const client = getModelApiClient();
+      await client.setModelPreview(this.filePath, url);
       
-      const { showToast } = await import('../../utils/uiHelpers.js');
       showToast('modals.model.actions.previewSet', {}, 'success');
     } catch (err) {
       console.error('Failed to set preview:', err);
-      const { showToast } = await import('../../utils/uiHelpers.js');
       showToast('modals.model.actions.previewFailed', {}, 'error');
     }
   }
@@ -375,15 +579,45 @@ export class Showcase {
     const image = this.images[this.currentIndex];
     if (!image || !this.filePath) return;
 
-    // TODO: Implement delete confirmation and API call
-    console.log('Delete example:', image);
-  }
+    const url = image.url || image;
+    const isCustom = image.isCustom || false;
+    
+    // Confirm deletion
+    const confirmed = confirm(translate('modals.model.examples.confirmDelete', {}, 'Delete this example image?'));
+    if (!confirmed) return;
 
-  /**
-   * Show upload area for adding new examples
-   */
-  showUploadArea() {
-    // TODO: Implement upload area expansion
-    console.log('Show upload area');
+    try {
+      const response = await fetch('/api/lm/delete-example', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model_path: this.filePath,
+          image_url: url,
+          is_custom: isCustom
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete example');
+      }
+
+      showToast('modals.model.examples.deleted', {}, 'success');
+      
+      // Remove from local array and refresh
+      this.images.splice(this.currentIndex, 1);
+      if (this.currentIndex >= this.images.length) {
+        this.currentIndex = Math.max(0, this.images.length - 1);
+      }
+      
+      // Re-render
+      this.render({ images: this.images, modelHash: this.modelHash, filePath: this.filePath });
+      
+      if (this.images.length > 0) {
+        this.loadImage(this.currentIndex);
+      }
+    } catch (err) {
+      console.error('Failed to delete example:', err);
+      showToast('modals.model.examples.deleteFailed', {}, 'error');
+    }
   }
 }

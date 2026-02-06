@@ -4,11 +4,15 @@
  * - Fixed header with model info
  * - Compact metadata grid
  * - Editable fields (usage tips, trigger words, notes)
- * - Tabs with accordion content
+ * - Tabs with accordion content (Description, Versions, Recipes)
  */
 
 import { escapeHtml, formatFileSize } from '../shared/utils.js';
 import { translate } from '../../utils/i18nHelpers.js';
+import { showToast } from '../../utils/uiHelpers.js';
+import { getModelApiClient } from '../../api/modelApiFactory.js';
+import { VersionsTab } from './VersionsTab.js';
+import { RecipesTab } from './RecipesTab.js';
 
 export class MetadataPanel {
   constructor(container) {
@@ -16,6 +20,12 @@ export class MetadataPanel {
     this.model = null;
     this.modelType = null;
     this.activeTab = 'description';
+    this.versionsTab = null;
+    this.recipesTab = null;
+    this.notesDebounceTimer = null;
+    this.isEditingUsageTips = false;
+    this.isEditingTriggerWords = false;
+    this.editingTriggerWords = [];
   }
 
   /**
@@ -41,7 +51,7 @@ export class MetadataPanel {
       <div class="metadata__header">
         <div class="metadata__title-row">
           <h2 class="metadata__name">${escapeHtml(m.model_name || 'Unknown')}</h2>
-          <button class="metadata__edit-btn" data-action="edit-name" title="${translate('modals.model.actions.editName', {}, 'Edit name')}">
+          <button class="metadata__edit-btn" data-action="edit-name" title="${translate('modals.model.actions.editModelName', {}, 'Edit model name')}">
             <i class="fas fa-pencil-alt"></i>
           </button>
         </div>
@@ -100,7 +110,7 @@ export class MetadataPanel {
           
           <div class="metadata__info-item metadata__info-item--full">
             <span class="metadata__info-label">${translate('modals.model.metadata.location', {}, 'Location')}</span>
-            <span class="metadata__info-value metadata__info-value--path" data-action="open-location" title="${translate('modals.model.actions.openLocation', {}, 'Open file location')}">
+            <span class="metadata__info-value metadata__info-value--path" data-action="open-location" title="${translate('modals.model.actions.openFileLocation', {}, 'Open file location')}">
               ${escapeHtml((m.file_path || '').replace(/[^/]+$/, '') || 'N/A')}
             </span>
           </div>
@@ -173,7 +183,6 @@ export class MetadataPanel {
       { key: 'sell', icon: 'shopping-cart-off', title: translate('modals.model.license.noSell', {}, 'No selling models') },
     ];
 
-    // Parse and normalize values
     let allowed = new Set();
     const values = Array.isArray(value) ? value : [value];
     
@@ -183,7 +192,6 @@ export class MetadataPanel {
       if (cleaned) allowed.add(cleaned);
     });
 
-    // Apply hierarchy
     if (allowed.has('sell')) {
       allowed.add('rent');
       allowed.add('rentcivit');
@@ -193,7 +201,6 @@ export class MetadataPanel {
       allowed.add('rentcivit');
     }
 
-    // Return disallowed items
     return COMMERCIAL_CONFIG.filter(config => !allowed.has(config.key));
   }
 
@@ -217,50 +224,104 @@ export class MetadataPanel {
   }
 
   /**
-   * Render LoRA specific sections
+   * Render LoRA specific sections with editing
    */
   renderLoraSpecific() {
     const m = this.model;
     const usageTips = m.usage_tips ? JSON.parse(m.usage_tips) : {};
-    const triggerWords = m.civitai?.trainedWords || [];
+    const triggerWords = this.isEditingTriggerWords 
+      ? this.editingTriggerWords 
+      : (m.civitai?.trainedWords || []);
 
     return `
       <div class="metadata__section">
         <div class="metadata__section-header">
           <span class="metadata__section-title">${translate('modals.model.metadata.usageTips', {}, 'Usage Tips')}</span>
-          <button class="metadata__section-edit" data-action="edit-usage-tips">
-            <i class="fas fa-pencil-alt"></i>
-          </button>
+          ${!this.isEditingUsageTips ? `
+            <button class="metadata__section-edit" data-action="edit-usage-tips" title="${translate('modals.model.usageTips.add', {}, 'Add usage tip')}">
+              <i class="fas fa-plus"></i>
+            </button>
+          ` : ''}
         </div>
         <div class="metadata__tags--editable">
           ${Object.entries(usageTips).map(([key, value]) => `
-            <span class="metadata__tag metadata__tag--editable" data-key="${escapeHtml(key)}" data-value="${escapeHtml(String(value))}">
+            <span class="metadata__tag metadata__tag--editable" data-key="${escapeHtml(key)}" data-action="remove-usage-tip" title="${translate('common.actions.delete', {}, 'Delete')}">
               ${escapeHtml(key)}: ${escapeHtml(String(value))}
             </span>
           `).join('')}
-          <span class="metadata__tag metadata__tag--add" data-action="add-usage-tip">
-            <i class="fas fa-plus"></i>
-          </span>
+          ${this.isEditingUsageTips ? this.renderUsageTipEditor() : ''}
         </div>
       </div>
       
       <div class="metadata__section">
         <div class="metadata__section-header">
-          <span class="metadata__section-title">${translate('modals.model.metadata.triggerWords', {}, 'Trigger Words')}</span>
-          <button class="metadata__section-edit" data-action="edit-trigger-words">
-            <i class="fas fa-pencil-alt"></i>
-          </button>
+          <span class="metadata__section-title">${translate('modals.model.triggerWords.label', {}, 'Trigger Words')}</span>
+          <div class="metadata__section-actions">
+            ${!this.isEditingTriggerWords ? `
+              <button class="metadata__section-edit" data-action="copy-trigger-words" title="${translate('modals.model.triggerWords.copyWord', {}, 'Copy all trigger words')}">
+                <i class="fas fa-copy"></i>
+              </button>
+              <button class="metadata__section-edit" data-action="edit-trigger-words" title="${translate('modals.model.triggerWords.edit', {}, 'Edit trigger words')}">
+                <i class="fas fa-pencil-alt"></i>
+              </button>
+            ` : `
+              <button class="metadata__section-edit" data-action="cancel-trigger-words" title="${translate('common.actions.cancel', {}, 'Cancel')}">
+                <i class="fas fa-times"></i>
+              </button>
+              <button class="metadata__section-edit metadata__section-edit--primary" data-action="save-trigger-words" title="${translate('common.actions.save', {}, 'Save')}">
+                <i class="fas fa-check"></i>
+              </button>
+            `}
+          </div>
         </div>
         <div class="metadata__tags--editable">
           ${triggerWords.map(word => `
-            <span class="metadata__tag metadata__tag--editable" data-word="${escapeHtml(word)}">
+            <span class="metadata__tag ${this.isEditingTriggerWords ? 'metadata__tag--removable' : 'metadata__tag--editable'}" 
+                  data-word="${escapeHtml(word)}"
+                  ${this.isEditingTriggerWords ? 'data-action="remove-trigger-word"' : 'data-action="copy-trigger-word"'}
+                  title="${this.isEditingTriggerWords ? translate('common.actions.delete', {}, 'Delete') : translate('modals.model.triggerWords.copyWord', {}, 'Copy trigger word')}">
               ${escapeHtml(word)}
+              ${this.isEditingTriggerWords ? '<i class="fas fa-times"></i>' : ''}
             </span>
           `).join('')}
-          <span class="metadata__tag metadata__tag--add" data-action="add-trigger-word">
-            <i class="fas fa-plus"></i>
-          </span>
+          ${this.isEditingTriggerWords ? `
+            <input type="text" 
+                   class="metadata__tag-input" 
+                   placeholder="${translate('modals.model.triggerWords.addPlaceholder', {}, 'Type to add...')}" 
+                   data-action="add-trigger-word-input"
+                   autofocus>
+          ` : triggerWords.length === 0 ? `
+            <span class="metadata__tag metadata__tag--placeholder">${translate('modals.model.triggerWords.noTriggerWordsNeeded', {}, 'No trigger words needed')}</span>
+          ` : ''}
         </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Render usage tip editor
+   */
+  renderUsageTipEditor() {
+    return `
+      <div class="usage-tip-editor">
+        <select class="usage-tip-key" data-action="usage-tip-key-change">
+          <option value="">${translate('modals.model.usageTips.addPresetParameter', {}, 'Select parameter...')}</option>
+          <option value="strength">${translate('modals.model.usageTips.strength', {}, 'Strength')}</option>
+          <option value="strength_min">${translate('modals.model.usageTips.strengthMin', {}, 'Strength Min')}</option>
+          <option value="strength_max">${translate('modals.model.usageTips.strengthMax', {}, 'Strength Max')}</option>
+          <option value="clip_strength">${translate('modals.model.usageTips.clipStrength', {}, 'Clip Strength')}</option>
+          <option value="clip_skip">${translate('modals.model.usageTips.clipSkip', {}, 'Clip Skip')}</option>
+        </select>
+        <input type="text" 
+               class="usage-tip-value" 
+               placeholder="${translate('modals.model.usageTips.valuePlaceholder', {}, 'Value')}" 
+               data-action="usage-tip-value-input">
+        <button class="usage-tip-add" data-action="add-usage-tip">
+          <i class="fas fa-check"></i>
+        </button>
+        <button class="usage-tip-cancel" data-action="cancel-usage-tips">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
     `;
   }
@@ -270,16 +331,16 @@ export class MetadataPanel {
    */
   renderNotes(notes) {
     return `
-      <div class="metadata__section">
+      <div class="metadata__section metadata__section--notes">
         <div class="metadata__section-header">
           <span class="metadata__section-title">${translate('modals.model.metadata.additionalNotes', {}, 'Notes')}</span>
-          <button class="metadata__section-edit" data-action="edit-notes">
-            <i class="fas fa-pencil-alt"></i>
-          </button>
+          <span class="metadata__save-indicator" data-save-indicator style="display: none;">
+            <i class="fas fa-check"></i> Saved
+          </span>
         </div>
         <textarea class="metadata__notes" 
                   placeholder="${translate('modals.model.metadata.addNotesPlaceholder', {}, 'Add your notes here...')}"
-                  data-action="save-notes">${escapeHtml(notes || '')}</textarea>
+                  data-action="notes-input">${escapeHtml(notes || '')}</textarea>
       </div>
     `;
   }
@@ -324,7 +385,7 @@ export class MetadataPanel {
         <div class="tab-panel ${this.activeTab === 'description' ? 'active' : ''}" data-panel="description">
           <div class="accordion expanded">
             <div class="accordion__header" data-action="toggle-accordion">
-              <span class="accordion__title">${translate('modals.model.accordion.aboutVersion', {}, 'About this version')}</span>
+              <span class="accordion__title">${translate('modals.model.metadata.aboutThisVersion', {}, 'About this version')}</span>
               <i class="accordion__icon fas fa-chevron-down"></i>
             </div>
             <div class="accordion__content">
@@ -332,7 +393,7 @@ export class MetadataPanel {
                 ${civitai.description ? `
                   <div class="markdown-content">${civitai.description}</div>
                 ` : `
-                  <p class="text-muted">${translate('modals.model.description.empty', {}, 'No description available')}</p>
+                  <p class="text-muted">${translate('modals.model.description.noDescription', {}, 'No description available')}</p>
                 `}
               </div>
             </div>
@@ -348,7 +409,7 @@ export class MetadataPanel {
                 ${civitai.model?.description ? `
                   <div class="markdown-content">${civitai.model.description}</div>
                 ` : `
-                  <p class="text-muted">${translate('modals.model.description.empty', {}, 'No description available')}</p>
+                  <p class="text-muted">${translate('modals.model.description.noDescription', {}, 'No description available')}</p>
                 `}
               </div>
             </div>
@@ -356,18 +417,12 @@ export class MetadataPanel {
         </div>
         
         <div class="tab-panel ${this.activeTab === 'versions' ? 'active' : ''}" data-panel="versions">
-          <div class="versions-loading">
-            <i class="fas fa-spinner fa-spin"></i>
-            <span>${translate('modals.model.loading.versions', {}, 'Loading versions...')}</span>
-          </div>
+          <div class="versions-tab-container"></div>
         </div>
         
         ${this.modelType === 'loras' ? `
           <div class="tab-panel ${this.activeTab === 'recipes' ? 'active' : ''}" data-panel="recipes">
-            <div class="recipes-loading">
-              <i class="fas fa-spinner fa-spin"></i>
-              <span>${translate('modals.model.loading.recipes', {}, 'Loading recipes...')}</span>
-            </div>
+            <div class="recipes-tab-container"></div>
           </div>
         ` : ''}
       </div>
@@ -396,27 +451,78 @@ export class MetadataPanel {
           this.openFileLocation();
           break;
         case 'view-creator':
-          const username = target.dataset.username;
+          const username = target.dataset.username || target.closest('[data-username]')?.dataset.username;
           if (username) {
             window.open(`https://civitai.com/user/${username}`, '_blank');
           }
           break;
         case 'edit-name':
+          this.editModelName();
+          break;
         case 'edit-usage-tips':
+          this.startEditingUsageTips();
+          break;
+        case 'cancel-usage-tips':
+          this.cancelEditingUsageTips();
+          break;
+        case 'add-usage-tip':
+          this.addUsageTip();
+          break;
+        case 'remove-usage-tip':
+          const key = target.dataset.key;
+          if (key) this.removeUsageTip(key);
+          break;
         case 'edit-trigger-words':
-        case 'edit-notes':
-          // TODO: Implement edit modes
-          console.log('Edit:', action);
+          this.startEditingTriggerWords();
+          break;
+        case 'cancel-trigger-words':
+          this.cancelEditingTriggerWords();
+          break;
+        case 'save-trigger-words':
+          this.saveTriggerWords();
+          break;
+        case 'copy-trigger-words':
+          this.copyAllTriggerWords();
+          break;
+        case 'copy-trigger-word':
+          const word = target.dataset.word;
+          if (word) this.copyTriggerWord(word);
+          break;
+        case 'remove-trigger-word':
+          const wordToRemove = target.dataset.word || target.closest('[data-word]')?.dataset.word;
+          if (wordToRemove) this.removeTriggerWord(wordToRemove);
           break;
       }
     });
 
-    // Notes textarea auto-save
-    const notesTextarea = this.element.querySelector('.metadata__notes');
-    if (notesTextarea) {
-      notesTextarea.addEventListener('blur', () => {
-        this.saveNotes(notesTextarea.value);
-      });
+    // Handle input events
+    this.element.addEventListener('input', (e) => {
+      if (e.target.dataset.action === 'notes-input') {
+        this.handleNotesInput(e.target.value);
+      }
+    });
+
+    this.element.addEventListener('keydown', (e) => {
+      if (e.target.dataset.action === 'add-trigger-word-input' && e.key === 'Enter') {
+        e.preventDefault();
+        const value = e.target.value.trim();
+        if (value) {
+          this.addTriggerWord(value);
+          e.target.value = '';
+        }
+      }
+      
+      if (e.target.dataset.action === 'usage-tip-value-input' && e.key === 'Enter') {
+        e.preventDefault();
+        this.addUsageTip();
+      }
+    });
+
+    // Load initial tab content
+    if (this.activeTab === 'versions') {
+      this.loadVersionsTab();
+    } else if (this.activeTab === 'recipes') {
+      this.loadRecipesTab();
     }
   }
 
@@ -438,44 +544,306 @@ export class MetadataPanel {
 
     // Load tab-specific data
     if (tabId === 'versions') {
-      this.loadVersions();
+      this.loadVersionsTab();
     } else if (tabId === 'recipes') {
-      this.loadRecipes();
+      this.loadRecipesTab();
     }
   }
 
   /**
-   * Load versions data
+   * Load versions tab
    */
-  async loadVersions() {
-    // TODO: Implement versions loading
-    console.log('Load versions');
+  loadVersionsTab() {
+    if (!this.versionsTab) {
+      const container = this.element.querySelector('.versions-tab-container');
+      if (container) {
+        this.versionsTab = new VersionsTab(container);
+        this.versionsTab.render({ model: this.model, modelType: this.modelType });
+      }
+    }
   }
 
   /**
-   * Load recipes data
+   * Load recipes tab
    */
-  async loadRecipes() {
-    // TODO: Implement recipes loading
-    console.log('Load recipes');
+  loadRecipesTab() {
+    if (!this.recipesTab) {
+      const container = this.element.querySelector('.recipes-tab-container');
+      if (container) {
+        this.recipesTab = new RecipesTab(container);
+        this.recipesTab.render({ model: this.model });
+      }
+    }
   }
 
   /**
-   * Save notes
+   * Handle notes input with auto-save
+   */
+  handleNotesInput(value) {
+    // Clear existing timer
+    if (this.notesDebounceTimer) {
+      clearTimeout(this.notesDebounceTimer);
+    }
+
+    // Show saving indicator
+    const indicator = this.element.querySelector('[data-save-indicator]');
+    if (indicator) {
+      indicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+      indicator.style.display = 'inline-flex';
+    }
+
+    // Debounce save
+    this.notesDebounceTimer = setTimeout(() => {
+      this.saveNotes(value);
+    }, 800);
+  }
+
+  /**
+   * Save notes to server
    */
   async saveNotes(notes) {
     if (!this.model?.file_path) return;
     
     try {
-      const { getModelApiClient } = await import('../../api/modelApiFactory.js');
-      await getModelApiClient().saveModelMetadata(this.model.file_path, { notes });
+      const client = getModelApiClient(this.modelType);
+      await client.saveModelMetadata(this.model.file_path, { notes });
       
-      const { showToast } = await import('../../utils/uiHelpers.js');
+      const indicator = this.element.querySelector('[data-save-indicator]');
+      if (indicator) {
+        indicator.innerHTML = '<i class="fas fa-check"></i> Saved';
+        setTimeout(() => {
+          indicator.style.display = 'none';
+        }, 2000);
+      }
+      
       showToast('modals.model.notes.saved', {}, 'success');
     } catch (err) {
       console.error('Failed to save notes:', err);
-      const { showToast } = await import('../../utils/i18nHelpers.js');
+      
+      const indicator = this.element.querySelector('[data-save-indicator]');
+      if (indicator) {
+        indicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed';
+      }
+      
       showToast('modals.model.notes.saveFailed', {}, 'error');
+    }
+  }
+
+  /**
+   * Start editing usage tips
+   */
+  startEditingUsageTips() {
+    this.isEditingUsageTips = true;
+    this.refreshLoraSpecificSection();
+  }
+
+  /**
+   * Cancel editing usage tips
+   */
+  cancelEditingUsageTips() {
+    this.isEditingUsageTips = false;
+    this.refreshLoraSpecificSection();
+  }
+
+  /**
+   * Add usage tip
+   */
+  async addUsageTip() {
+    const keySelect = this.element.querySelector('.usage-tip-key');
+    const valueInput = this.element.querySelector('.usage-tip-value');
+    
+    const key = keySelect?.value;
+    const value = valueInput?.value.trim();
+    
+    if (!key || !value) return;
+
+    try {
+      const usageTips = this.model.usage_tips ? JSON.parse(this.model.usage_tips) : {};
+      usageTips[key] = value;
+      
+      const client = getModelApiClient(this.modelType);
+      await client.saveModelMetadata(this.model.file_path, { usage_tips: JSON.stringify(usageTips) });
+      
+      this.model.usage_tips = JSON.stringify(usageTips);
+      this.isEditingUsageTips = false;
+      this.refreshLoraSpecificSection();
+      showToast('common.actions.save', {}, 'success');
+    } catch (err) {
+      console.error('Failed to save usage tip:', err);
+      showToast('modals.model.notes.saveFailed', {}, 'error');
+    }
+  }
+
+  /**
+   * Remove usage tip
+   */
+  async removeUsageTip(key) {
+    try {
+      const usageTips = this.model.usage_tips ? JSON.parse(this.model.usage_tips) : {};
+      delete usageTips[key];
+      
+      const client = getModelApiClient(this.modelType);
+      await client.saveModelMetadata(this.model.file_path, { 
+        usage_tips: Object.keys(usageTips).length > 0 ? JSON.stringify(usageTips) : null 
+      });
+      
+      this.model.usage_tips = Object.keys(usageTips).length > 0 ? JSON.stringify(usageTips) : null;
+      this.refreshLoraSpecificSection();
+      showToast('common.actions.delete', {}, 'success');
+    } catch (err) {
+      console.error('Failed to remove usage tip:', err);
+      showToast('modals.model.notes.saveFailed', {}, 'error');
+    }
+  }
+
+  /**
+   * Start editing trigger words
+   */
+  startEditingTriggerWords() {
+    this.isEditingTriggerWords = true;
+    this.editingTriggerWords = [...(this.model.civitai?.trainedWords || [])];
+    this.refreshLoraSpecificSection();
+    
+    // Focus input
+    setTimeout(() => {
+      const input = this.element.querySelector('.metadata__tag-input');
+      if (input) input.focus();
+    }, 0);
+  }
+
+  /**
+   * Cancel editing trigger words
+   */
+  cancelEditingTriggerWords() {
+    this.isEditingTriggerWords = false;
+    this.editingTriggerWords = [];
+    this.refreshLoraSpecificSection();
+  }
+
+  /**
+   * Add trigger word during editing
+   */
+  addTriggerWord(word) {
+    if (!word.trim()) return;
+    if (this.editingTriggerWords.includes(word.trim())) {
+      showToast('modals.model.triggerWords.validation.duplicate', {}, 'warning');
+      return;
+    }
+    this.editingTriggerWords.push(word.trim());
+    this.refreshLoraSpecificSection();
+    
+    // Focus input again
+    setTimeout(() => {
+      const input = this.element.querySelector('.metadata__tag-input');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    }, 0);
+  }
+
+  /**
+   * Remove trigger word during editing
+   */
+  removeTriggerWord(word) {
+    this.editingTriggerWords = this.editingTriggerWords.filter(w => w !== word);
+    this.refreshLoraSpecificSection();
+  }
+
+  /**
+   * Save trigger words
+   */
+  async saveTriggerWords() {
+    try {
+      const client = getModelApiClient(this.modelType);
+      await client.saveModelMetadata(this.model.file_path, { 
+        trained_words: this.editingTriggerWords 
+      });
+      
+      // Update local model data
+      if (!this.model.civitai) this.model.civitai = {};
+      this.model.civitai.trainedWords = [...this.editingTriggerWords];
+      
+      this.isEditingTriggerWords = false;
+      this.editingTriggerWords = [];
+      this.refreshLoraSpecificSection();
+      showToast('common.actions.save', {}, 'success');
+    } catch (err) {
+      console.error('Failed to save trigger words:', err);
+      showToast('modals.model.notes.saveFailed', {}, 'error');
+    }
+  }
+
+  /**
+   * Copy single trigger word
+   */
+  async copyTriggerWord(word) {
+    try {
+      await navigator.clipboard.writeText(word);
+      showToast('modals.model.triggerWords.copyWord', {}, 'success');
+    } catch (err) {
+      console.error('Failed to copy trigger word:', err);
+    }
+  }
+
+  /**
+   * Copy all trigger words
+   */
+  async copyAllTriggerWords() {
+    const words = this.model.civitai?.trainedWords || [];
+    if (words.length === 0) return;
+    
+    try {
+      await navigator.clipboard.writeText(words.join(', '));
+      showToast('modals.model.triggerWords.copyWord', {}, 'success');
+    } catch (err) {
+      console.error('Failed to copy trigger words:', err);
+    }
+  }
+
+  /**
+   * Refresh LoRA specific section
+   */
+  refreshLoraSpecificSection() {
+    if (this.modelType !== 'loras') return;
+    
+    const sections = this.element.querySelectorAll('.metadata__section');
+    // First two sections are usage tips and trigger words
+    if (sections.length >= 2) {
+      const newHtml = this.renderLoraSpecific();
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = newHtml;
+      
+      const newSections = tempDiv.querySelectorAll('.metadata__section');
+      if (newSections.length >= 2) {
+        sections[0].replaceWith(newSections[0]);
+        sections[1].replaceWith(newSections[1]);
+      }
+    }
+  }
+
+  /**
+   * Edit model name
+   */
+  async editModelName() {
+    const currentName = this.model.model_name || '';
+    const newName = prompt(
+      translate('modals.model.actions.editModelName', {}, 'Edit model name'),
+      currentName
+    );
+    
+    if (newName !== null && newName.trim() !== '' && newName !== currentName) {
+      try {
+        const client = getModelApiClient(this.modelType);
+        await client.saveModelMetadata(this.model.file_path, { model_name: newName.trim() });
+        
+        this.model.model_name = newName.trim();
+        this.element.querySelector('.metadata__name').textContent = newName.trim();
+        showToast('common.actions.save', {}, 'success');
+      } catch (err) {
+        console.error('Failed to save model name:', err);
+        showToast('modals.model.notes.saveFailed', {}, 'error');
+      }
     }
   }
 
@@ -494,11 +862,9 @@ export class MetadataPanel {
       
       if (!response.ok) throw new Error('Failed to open file location');
       
-      const { showToast } = await import('../../utils/uiHelpers.js');
       showToast('modals.model.openFileLocation.success', {}, 'success');
     } catch (err) {
       console.error('Failed to open file location:', err);
-      const { showToast } = await import('../../utils/uiHelpers.js');
       showToast('modals.model.openFileLocation.failed', {}, 'error');
     }
   }

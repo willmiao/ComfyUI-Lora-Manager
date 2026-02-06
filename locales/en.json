@@ -911,7 +911,12 @@
                 "viewOnCivitai": "View on Civitai",
                 "viewOnCivitaiText": "View on Civitai",
                 "viewCreatorProfile": "View Creator Profile",
-                "openFileLocation": "Open File Location"
+                "openFileLocation": "Open File Location",
+                "viewParams": "View parameters",
+                "setPreview": "Set as preview",
+                "previewSet": "Preview updated successfully",
+                "previewFailed": "Failed to update preview",
+                "delete": "Delete"
             },
             "openFileLocation": {
                 "success": "File location opened successfully",
@@ -930,13 +935,15 @@
                 "additionalNotes": "Additional Notes",
                 "notesHint": "Press Enter to save, Shift+Enter for new line",
                 "addNotesPlaceholder": "Add your notes here...",
-                "aboutThisVersion": "About this version"
+                "aboutThisVersion": "About this version",
+                "triggerWords": "Trigger Words"
             },
             "notes": {
                 "saved": "Notes saved successfully",
                 "saveFailed": "Failed to save notes"
             },
             "usageTips": {
+                "add": "Add",
                 "addPresetParameter": "Add preset parameter...",
                 "strengthMin": "Strength Min",
                 "strengthMax": "Strength Max",
@@ -945,17 +952,24 @@
                 "clipStrength": "Clip Strength",
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Value",
-                "add": "Add",
                 "invalidRange": "Invalid range format. Use x.x-y.y"
+            },
+            "params": {
+                "title": "Generation Parameters",
+                "prompt": "Prompt",
+                "negativePrompt": "Negative Prompt",
+                "noData": "No generation data available",
+                "promptCopied": "Prompt copied to clipboard"
             },
             "triggerWords": {
                 "label": "Trigger Words",
-                "noTriggerWordsNeeded": "No trigger word needed",
+                "noTriggerWordsNeeded": "No trigger words needed",
                 "edit": "Edit trigger words",
                 "cancel": "Cancel editing",
                 "save": "Save changes",
-                "addPlaceholder": "Type to add or click suggestions below",
+                "addPlaceholder": "Type to add trigger word...",
                 "copyWord": "Copy trigger word",
+                "copyAll": "Copy all trigger words",
                 "deleteWord": "Delete trigger word",
                 "suggestions": {
                     "noSuggestions": "No suggestions available",
@@ -965,6 +979,9 @@
                     "wordSuggestions": "Word Suggestions",
                     "wordsFound": "{count} words found",
                     "loading": "Loading suggestions..."
+                },
+                "validation": {
+                    "duplicate": "This trigger word already exists"
                 }
             },
             "description": {
@@ -990,7 +1007,11 @@
                 "previousWithShortcut": "Previous model (←)",
                 "nextWithShortcut": "Next model (→)",
                 "noPrevious": "No previous model available",
-                "noNext": "No next model available"
+                "noNext": "No next model available",
+                "previous": "Previous",
+                "next": "Next",
+                "switchModel": "Switch model",
+                "browseExamples": "Browse examples"
             },
             "license": {
                 "noImageSell": "No selling generated content",
@@ -1001,6 +1022,23 @@
                 "noDerivatives": "No sharing merges",
                 "noReLicense": "Same permissions required",
                 "restrictionsLabel": "License restrictions"
+            },
+            "examples": {
+                "add": "Add",
+                "addFirst": "Add your first example",
+                "dropFiles": "Drop files here or click to browse",
+                "supportedFormats": "Supports: JPG, PNG, WEBP, MP4, WEBM",
+                "uploading": "Uploading...",
+                "uploadSuccess": "Example uploaded successfully",
+                "uploadFailed": "Failed to upload example",
+                "confirmDelete": "Delete this example image?",
+                "deleted": "Example deleted successfully",
+                "deleteFailed": "Failed to delete example",
+                "title": "Example",
+                "empty": "No example images available"
+            },
+            "accordion": {
+                "modelDescription": "Model Description"
             },
             "loading": {
                 "exampleImages": "Loading example images...",

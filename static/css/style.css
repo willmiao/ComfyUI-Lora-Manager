@@ -34,6 +34,11 @@
 @import 'components/model-modal/thumbnail-rail.css';
 @import 'components/model-modal/metadata.css';
 @import 'components/model-modal/tabs.css';
+
+/* Model Modal Phase 2 - Tabs and Upload */
+@import 'components/model-modal/versions.css';
+@import 'components/model-modal/recipes.css';
+@import 'components/model-modal/upload.css';
 @import 'components/shared/edit-metadata.css';
 @import 'components/search-filter.css';
 @import 'components/bulk.css';
