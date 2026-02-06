@@ -209,6 +209,12 @@ export class Showcase {
               <!-- Media will be loaded here -->
             </div>
             
+            <div class="showcase__counter">
+              <span class="showcase__counter-current">1</span>
+              <span class="showcase__counter-separator">/</span>
+              <span class="showcase__counter-total">${this.images.length}</span>
+            </div>
+            
             <div class="showcase__controls">
               <button class="showcase__control-btn ${this.hasNsfwContent() ? '' : 'hidden'}" 
                       data-action="toggle-global-blur" 
@@ -425,6 +431,41 @@ export class Showcase {
         fileInput?.click();
       });
     }
+
+    // Thumbnail rail horizontal scroll on wheel
+    const thumbnailRail = this.element.querySelector('.thumbnail-rail');
+    if (thumbnailRail) {
+      thumbnailRail.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        thumbnailRail.scrollLeft += e.deltaY;
+      }, { passive: false });
+    }
+
+    // Main image navigation on wheel (with threshold to prevent accidental switching)
+    const mainImageWrapper = this.element.querySelector('.showcase__image-wrapper');
+    if (mainImageWrapper) {
+      let wheelAccumulated = 0;
+      const WHEEL_THRESHOLD = 150;
+
+      mainImageWrapper.addEventListener('wheel', (e) => {
+        // Don't interfere with params panel scrolling
+        const paramsPanel = this.element.querySelector('.showcase__params.visible');
+        if (paramsPanel && paramsPanel.contains(e.target)) {
+          return;
+        }
+
+        e.preventDefault();
+        wheelAccumulated += e.deltaY;
+
+        if (wheelAccumulated > WHEEL_THRESHOLD) {
+          this.nextImage();
+          wheelAccumulated = 0;
+        } else if (wheelAccumulated < -WHEEL_THRESHOLD) {
+          this.prevImage();
+          wheelAccumulated = 0;
+        }
+      }, { passive: false });
+    }
   }
 
   /**
@@ -637,8 +678,25 @@ export class Showcase {
       item.classList.toggle('active', i === index);
     });
 
+    // Update counter
+    this.updateCounter();
+
     // Update params
     this.updateParams(image);
+  }
+
+  /**
+   * Update image counter display
+   */
+  updateCounter() {
+    const counterCurrent = this.element.querySelector('.showcase__counter-current');
+    const counterTotal = this.element.querySelector('.showcase__counter-total');
+    if (counterCurrent) {
+      counterCurrent.textContent = this.currentIndex + 1;
+    }
+    if (counterTotal) {
+      counterTotal.textContent = this.images.length;
+    }
   }
 
   /**

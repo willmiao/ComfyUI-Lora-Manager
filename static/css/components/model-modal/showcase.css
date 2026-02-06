@@ -227,6 +227,44 @@
   z-index: 5;
 }
 
+/* Image counter */
+.showcase__counter {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--border-radius-xs);
+  font-size: 0.85em;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.showcase__image-wrapper:hover .showcase__counter {
+  opacity: 1;
+}
+
+.showcase__counter-current {
+  font-weight: 600;
+  min-width: 2ch;
+  text-align: center;
+}
+
+.showcase__counter-separator {
+  opacity: 0.6;
+}
+
+.showcase__counter-total {
+  opacity: 0.8;
+}
+
 .showcase__image-wrapper:hover .showcase__controls {
   opacity: 1;
   transform: translateY(0);
