@@ -1979,16 +1979,22 @@ to { transform: rotate(360deg);
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-f4679753] {
+.autocomplete-text-widget[data-v-2081708c] {
   background: transparent;
   height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
+.input-wrapper[data-v-2081708c] {
+  position: relative;
+  flex: 1;
+  display: flex;
+  width: 100%;
+}
 
 /* Canvas mode styles (default) - matches built-in comfy-multiline-input */
-.text-input[data-v-f4679753] {
+.text-input[data-v-2081708c] {
   flex: 1;
   width: 100%;
   background-color: var(--comfy-input-bg, #222);
@@ -2005,7 +2011,7 @@ to { transform: rotate(360deg);
 }
 
 /* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
-.text-input.vue-dom-mode[data-v-f4679753] {
+.text-input.vue-dom-mode[data-v-2081708c] {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
   padding: 8px 12px;
@@ -2014,8 +2020,54 @@ to { transform: rotate(360deg);
   font-size: 12px;
   font-family: inherit;
 }
-.text-input[data-v-f4679753]:focus {
+.text-input[data-v-2081708c]:focus {
   outline: none;
+}
+
+/* Clear button styles */
+.clear-button[data-v-2081708c] {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(128, 128, 128, 0.5);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+  z-index: 10;
+}
+.clear-button[data-v-2081708c]:hover {
+  opacity: 1;
+  background: rgba(255, 100, 100, 0.8);
+}
+.clear-button svg[data-v-2081708c] {
+  width: 12px;
+  height: 12px;
+}
+
+/* Vue DOM mode adjustments for clear button */
+.text-input.vue-dom-mode ~ .clear-button[data-v-2081708c] {
+  right: 8px;
+  top: 8px;
+  width: 20px;
+  height: 20px;
+  background: rgba(107, 114, 128, 0.6);
+}
+.text-input.vue-dom-mode ~ .clear-button[data-v-2081708c]:hover {
+  background: oklch(62% 0.18 25);
+}
+.text-input.vue-dom-mode ~ .clear-button svg[data-v-2081708c] {
+  width: 14px;
+  height: 14px;
 }`));
       document.head.appendChild(elementStyle);
     }
@@ -10490,7 +10542,7 @@ const _sfc_main$m = /* @__PURE__ */ defineComponent({
 const EditButton = /* @__PURE__ */ _export_sfc(_sfc_main$m, [["__scopeId", "data-v-8da8aa4b"]]);
 const _hoisted_1$l = { class: "section" };
 const _hoisted_2$h = { class: "section__header" };
-const _hoisted_3$e = { class: "section__content" };
+const _hoisted_3$f = { class: "section__content" };
 const _hoisted_4$d = {
   key: 0,
   class: "section__placeholder"
@@ -10520,7 +10572,7 @@ const _sfc_main$l = /* @__PURE__ */ defineComponent({
             onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("edit"))
           })
         ]),
-        createBaseVNode("div", _hoisted_3$e, [
+        createBaseVNode("div", _hoisted_3$f, [
           __props.selected.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$d, " All models ")) : (openBlock(), createElementBlock("div", _hoisted_5$b, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(__props.selected, (name) => {
               return openBlock(), createBlock(FilterChip, {
@@ -10539,7 +10591,7 @@ const _sfc_main$l = /* @__PURE__ */ defineComponent({
 const BaseModelSection = /* @__PURE__ */ _export_sfc(_sfc_main$l, [["__scopeId", "data-v-12f059e2"]]);
 const _hoisted_1$k = { class: "section" };
 const _hoisted_2$g = { class: "section__columns" };
-const _hoisted_3$d = { class: "section__column" };
+const _hoisted_3$e = { class: "section__column" };
 const _hoisted_4$c = { class: "section__column-header" };
 const _hoisted_5$a = { class: "section__column-content" };
 const _hoisted_6$a = {
@@ -10575,7 +10627,7 @@ const _sfc_main$k = /* @__PURE__ */ defineComponent({
           createBaseVNode("span", { class: "section__title" }, "TAGS")
         ], -1)),
         createBaseVNode("div", _hoisted_2$g, [
-          createBaseVNode("div", _hoisted_3$d, [
+          createBaseVNode("div", _hoisted_3$e, [
             createBaseVNode("div", _hoisted_4$c, [
               _cache[2] || (_cache[2] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
               createVNode(EditButton, {
@@ -10621,7 +10673,7 @@ const _sfc_main$k = /* @__PURE__ */ defineComponent({
 const TagsSection = /* @__PURE__ */ _export_sfc(_sfc_main$k, [["__scopeId", "data-v-b869b780"]]);
 const _hoisted_1$j = { class: "section" };
 const _hoisted_2$f = { class: "section__columns" };
-const _hoisted_3$c = { class: "section__column" };
+const _hoisted_3$d = { class: "section__column" };
 const _hoisted_4$b = { class: "section__column-header" };
 const _hoisted_5$9 = { class: "section__content" };
 const _hoisted_6$9 = {
@@ -10669,7 +10721,7 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
           createBaseVNode("span", { class: "section__title" }, "FOLDERS")
         ], -1)),
         createBaseVNode("div", _hoisted_2$f, [
-          createBaseVNode("div", _hoisted_3$c, [
+          createBaseVNode("div", _hoisted_3$d, [
             createBaseVNode("div", _hoisted_4$b, [
               _cache[3] || (_cache[3] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
               createBaseVNode("button", {
@@ -10737,7 +10789,7 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
 const FoldersSection = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["__scopeId", "data-v-af9caf84"]]);
 const _hoisted_1$i = { class: "section" };
 const _hoisted_2$e = { class: "section__toggles" };
-const _hoisted_3$b = { class: "toggle-item" };
+const _hoisted_3$c = { class: "toggle-item" };
 const _hoisted_4$a = ["aria-checked"];
 const _hoisted_5$8 = { class: "toggle-item" };
 const _hoisted_6$8 = ["aria-checked"];
@@ -10755,7 +10807,7 @@ const _sfc_main$i = /* @__PURE__ */ defineComponent({
           createBaseVNode("span", { class: "section__title" }, "LICENSE")
         ], -1)),
         createBaseVNode("div", _hoisted_2$e, [
-          createBaseVNode("label", _hoisted_3$b, [
+          createBaseVNode("label", _hoisted_3$c, [
             _cache[3] || (_cache[3] = createBaseVNode("span", { class: "toggle-item__label" }, "No Credit Required", -1)),
             createBaseVNode("button", {
               type: "button",
@@ -10789,7 +10841,7 @@ const _sfc_main$i = /* @__PURE__ */ defineComponent({
 const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$i, [["__scopeId", "data-v-dea4adf6"]]);
 const _hoisted_1$h = { class: "preview" };
 const _hoisted_2$d = { class: "preview__title" };
-const _hoisted_3$a = ["disabled"];
+const _hoisted_3$b = ["disabled"];
 const _hoisted_4$9 = {
   key: 0,
   class: "preview__tooltip"
@@ -10848,7 +10900,7 @@ const _sfc_main$h = /* @__PURE__ */ defineComponent({
                 d: "M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"
               })
             ], -1)
-          ])], 10, _hoisted_3$a)
+          ])], 10, _hoisted_3$b)
         ], 32),
         createVNode(Transition, { name: "tooltip" }, {
           default: withCtx(() => [
@@ -10949,7 +11001,7 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
 const LoraPoolSummaryView = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-328e7526"]]);
 const _hoisted_1$f = { class: "lora-pool-modal__header" };
 const _hoisted_2$b = { class: "lora-pool-modal__title-container" };
-const _hoisted_3$9 = { class: "lora-pool-modal__title" };
+const _hoisted_3$a = { class: "lora-pool-modal__title" };
 const _hoisted_4$8 = {
   key: 0,
   class: "lora-pool-modal__subtitle"
@@ -11009,7 +11061,7 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
               }, [
                 createBaseVNode("div", _hoisted_1$f, [
                   createBaseVNode("div", _hoisted_2$b, [
-                    createBaseVNode("h3", _hoisted_3$9, toDisplayString(__props.title), 1),
+                    createBaseVNode("h3", _hoisted_3$a, toDisplayString(__props.title), 1),
                     __props.subtitle ? (openBlock(), createElementBlock("p", _hoisted_4$8, toDisplayString(__props.subtitle), 1)) : createCommentVNode("", true)
                   ]),
                   createBaseVNode("button", {
@@ -11037,7 +11089,7 @@ const _sfc_main$f = /* @__PURE__ */ defineComponent({
 const ModalWrapper = /* @__PURE__ */ _export_sfc(_sfc_main$f, [["__scopeId", "data-v-7b4de03d"]]);
 const _hoisted_1$e = { class: "search-container" };
 const _hoisted_2$a = { class: "model-list" };
-const _hoisted_3$8 = ["checked", "onChange"];
+const _hoisted_3$9 = ["checked", "onChange"];
 const _hoisted_4$7 = { class: "model-checkbox-visual" };
 const _hoisted_5$5 = {
   key: 0,
@@ -11147,7 +11199,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
                   checked: isSelected(model.name),
                   onChange: ($event) => toggleModel(model.name),
                   class: "model-checkbox"
-                }, null, 40, _hoisted_3$8),
+                }, null, 40, _hoisted_3$9),
                 createBaseVNode("span", _hoisted_4$7, [
                   isSelected(model.name) ? (openBlock(), createElementBlock("svg", _hoisted_5$5, [..._cache[4] || (_cache[4] = [
                     createBaseVNode("path", { d: "M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z" }, null, -1)
@@ -11168,7 +11220,7 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
 const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-e02ca44a"]]);
 const _hoisted_1$d = { class: "search-container" };
 const _hoisted_2$9 = { class: "tags-container" };
-const _hoisted_3$7 = ["onClick"];
+const _hoisted_3$8 = ["onClick"];
 const _hoisted_4$6 = {
   key: 0,
   class: "no-results"
@@ -11270,7 +11322,7 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
                 type: "button",
                 class: normalizeClass(["tag-chip", { "tag-chip--selected": isSelected(tag.tag) }]),
                 onClick: ($event) => toggleTag(tag.tag)
-              }, toDisplayString(tag.tag), 11, _hoisted_3$7);
+              }, toDisplayString(tag.tag), 11, _hoisted_3$8);
             }), 128)),
             filteredTags.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$6, " No tags found ")) : createCommentVNode("", true)
           ])
@@ -11286,7 +11338,7 @@ const _hoisted_2$8 = {
   key: 1,
   class: "tree-node__toggle-spacer"
 };
-const _hoisted_3$6 = { class: "tree-node__checkbox-label" };
+const _hoisted_3$7 = { class: "tree-node__checkbox-label" };
 const _hoisted_4$5 = ["checked"];
 const _hoisted_5$4 = {
   key: 0,
@@ -11347,7 +11399,7 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
               createBaseVNode("path", { d: "M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" }, null, -1)
             ])], 2))
           ])) : (openBlock(), createElementBlock("span", _hoisted_2$8)),
-          createBaseVNode("label", _hoisted_3$6, [
+          createBaseVNode("label", _hoisted_3$7, [
             createBaseVNode("input", {
               type: "checkbox",
               class: "tree-node__checkbox",
@@ -11393,7 +11445,7 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
 const FolderTreeNode = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-90187dd4"]]);
 const _hoisted_1$b = { class: "search-container" };
 const _hoisted_2$7 = { class: "folder-tree" };
-const _hoisted_3$5 = {
+const _hoisted_3$6 = {
   key: 1,
   class: "no-results"
 };
@@ -11492,7 +11544,7 @@ const _sfc_main$b = /* @__PURE__ */ defineComponent({
                 onToggleExpand: toggleExpand,
                 onToggleSelect: toggleSelect
               }, null, 8, ["node", "selected", "expanded", "variant"]);
-            }), 128)) : (openBlock(), createElementBlock("div", _hoisted_3$5, " No folders found "))
+            }), 128)) : (openBlock(), createElementBlock("div", _hoisted_3$6, " No folders found "))
           ])
         ]),
         _: 1
@@ -11836,7 +11888,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
 const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-4456abba"]]);
 const _hoisted_1$9 = { class: "last-used-preview" };
 const _hoisted_2$6 = { class: "last-used-preview__content" };
-const _hoisted_3$4 = ["src", "onError"];
+const _hoisted_3$5 = ["src", "onError"];
 const _hoisted_4$4 = {
   key: 1,
   class: "last-used-preview__thumb last-used-preview__thumb--placeholder"
@@ -11888,7 +11940,7 @@ const _sfc_main$9 = /* @__PURE__ */ defineComponent({
                 src: previewUrls.value[lora.name],
                 class: "last-used-preview__thumb",
                 onError: ($event) => onImageError(lora.name)
-              }, null, 40, _hoisted_3$4)) : (openBlock(), createElementBlock("div", _hoisted_4$4, [..._cache[0] || (_cache[0] = [
+              }, null, 40, _hoisted_3$5)) : (openBlock(), createElementBlock("div", _hoisted_4$4, [..._cache[0] || (_cache[0] = [
                 createBaseVNode("svg", {
                   viewBox: "0 0 16 16",
                   fill: "currentColor"
@@ -12329,7 +12381,7 @@ const _sfc_main$7 = /* @__PURE__ */ defineComponent({
 const DualRangeSlider = /* @__PURE__ */ _export_sfc(_sfc_main$7, [["__scopeId", "data-v-9f6c6950"]]);
 const _hoisted_1$6 = { class: "randomizer-settings" };
 const _hoisted_2$4 = { class: "setting-section" };
-const _hoisted_3$3 = { class: "count-mode-tabs" };
+const _hoisted_3$4 = { class: "count-mode-tabs" };
 const _hoisted_4$3 = ["checked"];
 const _hoisted_5$2 = ["checked"];
 const _hoisted_6$2 = { class: "slider-container" };
@@ -12394,7 +12446,7 @@ const _sfc_main$6 = /* @__PURE__ */ defineComponent({
         ], -1)),
         createBaseVNode("div", _hoisted_2$4, [
           _cache[20] || (_cache[20] = createBaseVNode("label", { class: "setting-label" }, "LoRA Count", -1)),
-          createBaseVNode("div", _hoisted_3$3, [
+          createBaseVNode("div", _hoisted_3$4, [
             createBaseVNode("label", {
               class: normalizeClass(["count-mode-tab", { active: __props.countMode === "fixed" }])
             }, [
@@ -12959,7 +13011,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
 const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-8063df56"]]);
 const _hoisted_1$4 = { class: "cycler-settings" };
 const _hoisted_2$3 = { class: "setting-section progress-section" };
-const _hoisted_3$2 = { class: "progress-label" };
+const _hoisted_3$3 = { class: "progress-label" };
 const _hoisted_4$2 = ["title"];
 const _hoisted_5$1 = { class: "progress-counter" };
 const _hoisted_6$1 = { class: "progress-index" };
@@ -13074,7 +13126,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
               class: normalizeClass(["progress-info", { disabled: __props.isPauseDisabled }]),
               onClick: handleOpenSelector
             }, [
-              createBaseVNode("span", _hoisted_3$2, toDisplayString(__props.isWorkflowExecuting ? "Using LoRA:" : "Next LoRA:"), 1),
+              createBaseVNode("span", _hoisted_3$3, toDisplayString(__props.isWorkflowExecuting ? "Using LoRA:" : "Next LoRA:"), 1),
               createBaseVNode("span", {
                 class: normalizeClass(["progress-name clickable", { disabled: __props.isPauseDisabled }]),
                 title: __props.currentLoraFilename
@@ -13229,7 +13281,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
 const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-5b16b9d3"]]);
 const _hoisted_1$3 = { class: "search-container" };
 const _hoisted_2$2 = { class: "lora-list" };
-const _hoisted_3$1 = ["onMouseenter", "onClick"];
+const _hoisted_3$2 = ["onMouseenter", "onClick"];
 const _hoisted_4$1 = { class: "lora-index" };
 const _hoisted_5 = ["title"];
 const _hoisted_6 = {
@@ -13399,7 +13451,7 @@ const _sfc_main$3 = /* @__PURE__ */ defineComponent({
                   title: item.lora.file_name
                 }, toDisplayString(item.lora.file_name), 9, _hoisted_5),
                 __props.currentIndex === item.index ? (openBlock(), createElementBlock("span", _hoisted_6, "Current")) : createCommentVNode("", true)
-              ], 42, _hoisted_3$1);
+              ], 42, _hoisted_3$2);
             }), 128)),
             filteredList.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_7, " No LoRAs found ")) : createCommentVNode("", true)
           ])
@@ -13926,7 +13978,7 @@ const _hoisted_2$1 = {
   class: "json-content",
   ref: "contentRef"
 };
-const _hoisted_3 = ["innerHTML"];
+const _hoisted_3$1 = ["innerHTML"];
 const _hoisted_4 = {
   key: 1,
   class: "placeholder"
@@ -14021,7 +14073,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
           hasMetadata.value ? (openBlock(), createElementBlock("pre", {
             key: 0,
             innerHTML: highlightedJson.value
-          }, null, 8, _hoisted_3)) : (openBlock(), createElementBlock("div", _hoisted_4, "No metadata available"))
+          }, null, 8, _hoisted_3$1)) : (openBlock(), createElementBlock("div", _hoisted_4, "No metadata available"))
         ], 512)
       ]);
     };
@@ -14094,7 +14146,8 @@ function useAutocomplete(textareaRef, modelType = "loras", options = {}) {
   };
 }
 const _hoisted_1 = { class: "autocomplete-text-widget" };
-const _hoisted_2 = ["placeholder", "spellcheck"];
+const _hoisted_2 = { class: "input-wrapper" };
+const _hoisted_3 = ["placeholder", "spellcheck"];
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "AutocompleteTextWidget",
   props: {
@@ -14113,46 +14166,111 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       isVueDomMode.value = customEvent.detail.isVueDomMode;
     };
     const textareaRef = ref(null);
+    const hasText = ref(false);
+    const showClearButton = computed(() => hasText.value);
     useAutocomplete(
       textareaRef,
       props.modelType ?? "loras",
       { showPreview: props.showPreview ?? true }
     );
+    const updateHasTextState = () => {
+      hasText.value = textareaRef.value ? textareaRef.value.value.length > 0 : false;
+    };
     const onInput = () => {
+      updateHasTextState();
       if (textareaRef.value && typeof props.widget.callback === "function") {
         props.widget.callback(textareaRef.value.value);
+      }
+    };
+    const onExternalValueChange = (event) => {
+      updateHasTextState();
+    };
+    const setupWidgetOnSetValue = () => {
+      if (props.widget) {
+        props.widget.onSetValue = (value) => {
+          hasText.value = value.length > 0;
+        };
+      }
+    };
+    const clearText = () => {
+      if (textareaRef.value) {
+        textareaRef.value.value = "";
+        hasText.value = false;
+        textareaRef.value.focus();
+        if (typeof props.widget.callback === "function") {
+          props.widget.callback("");
+        }
+        textareaRef.value.dispatchEvent(new Event("input"));
       }
     };
     onMounted(() => {
       if (textareaRef.value) {
         props.widget.inputEl = textareaRef.value;
+        hasText.value = textareaRef.value.value.length > 0;
+        textareaRef.value.addEventListener("lora-manager:autocomplete-value-changed", onExternalValueChange);
       }
       if (textareaRef.value && typeof props.widget.callback === "function") {
         props.widget.callback(textareaRef.value.value);
       }
+      setupWidgetOnSetValue();
       document.addEventListener("lora-manager:vue-mode-change", onModeChange);
     });
     onUnmounted(() => {
       if (props.widget.inputEl === textareaRef.value) {
         props.widget.inputEl = void 0;
       }
+      if (textareaRef.value) {
+        textareaRef.value.removeEventListener("lora-manager:autocomplete-value-changed", onExternalValueChange);
+      }
+      if (props.widget) {
+        props.widget.onSetValue = void 0;
+      }
       document.removeEventListener("lora-manager:vue-mode-change", onModeChange);
     });
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", _hoisted_1, [
-        createBaseVNode("textarea", {
-          ref_key: "textareaRef",
-          ref: textareaRef,
-          placeholder: __props.placeholder,
-          spellcheck: __props.spellcheck ?? false,
-          class: normalizeClass(["text-input", { "vue-dom-mode": isVueDomMode.value }]),
-          onInput
-        }, null, 42, _hoisted_2)
+        createBaseVNode("div", _hoisted_2, [
+          createBaseVNode("textarea", {
+            ref_key: "textareaRef",
+            ref: textareaRef,
+            placeholder: __props.placeholder,
+            spellcheck: __props.spellcheck ?? false,
+            class: normalizeClass(["text-input", { "vue-dom-mode": isVueDomMode.value }]),
+            onInput
+          }, null, 42, _hoisted_3),
+          showClearButton.value ? (openBlock(), createElementBlock("button", {
+            key: 0,
+            type: "button",
+            class: "clear-button",
+            title: "Clear text",
+            onClick: clearText
+          }, [..._cache[0] || (_cache[0] = [
+            createBaseVNode("svg", {
+              viewBox: "0 0 24 24",
+              fill: "none",
+              stroke: "currentColor",
+              "stroke-width": "2"
+            }, [
+              createBaseVNode("line", {
+                x1: "18",
+                y1: "6",
+                x2: "6",
+                y2: "18"
+              }),
+              createBaseVNode("line", {
+                x1: "6",
+                y1: "6",
+                x2: "18",
+                y2: "18"
+              })
+            ], -1)
+          ])])) : createCommentVNode("", true)
+        ])
       ]);
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-f4679753"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-2081708c"]]);
 const LORA_PROVIDER_NODE_TYPES$1 = [
   "Lora Stacker (LoraManager)",
   "Lora Randomizer (LoraManager)",
@@ -14734,6 +14852,12 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
       setValue(v2) {
         if (widget.inputEl) {
           widget.inputEl.value = v2 ?? "";
+          widget.inputEl.dispatchEvent(new CustomEvent("lora-manager:autocomplete-value-changed", {
+            detail: { value: v2 ?? "" }
+          }));
+        }
+        if (typeof widget.onSetValue === "function") {
+          widget.onSetValue(v2 ?? "");
         }
       },
       serialize: true,

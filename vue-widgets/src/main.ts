@@ -416,6 +416,14 @@ function createAutocompleteTextWidgetFactory(
       setValue(v: string) {
         if (widget.inputEl) {
           widget.inputEl.value = v ?? ''
+          // Notify Vue component of value change via custom event
+          widget.inputEl.dispatchEvent(new CustomEvent('lora-manager:autocomplete-value-changed', {
+            detail: { value: v ?? '' }
+          }))
+        }
+        // Also call onSetValue if defined (for Vue component integration)
+        if (typeof widget.onSetValue === 'function') {
+          widget.onSetValue(v ?? '')
         }
       },
       serialize: true,
