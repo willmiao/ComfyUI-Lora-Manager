@@ -55,7 +55,12 @@
   object-fit: cover;
 }
 
-/* NSFW blur */
+/* NSFW blur for thumbnails - BEM naming to avoid conflicts with global .nsfw-blur */
+.thumbnail-rail__item--nsfw-blurred img {
+  filter: blur(8px);
+}
+
+/* Legacy support for old class names (deprecated) */
 .thumbnail-rail__item.nsfw img {
   filter: blur(8px);
 }
@@ -72,6 +77,8 @@
   border-radius: var(--border-radius-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  pointer-events: none;
+  user-select: none;
 }
 
 /* Add button */

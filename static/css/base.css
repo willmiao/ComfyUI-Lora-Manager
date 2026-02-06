@@ -65,6 +65,8 @@ body {
     --space-1: calc(8px * 1);
     --space-2: calc(8px * 2);
     --space-3: calc(8px * 3);
+    --space-4: calc(8px * 4);
+    --space-5: calc(8px * 5);
 
     /* Z-index Scale */
     --z-base: 10;

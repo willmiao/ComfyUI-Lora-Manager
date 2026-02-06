@@ -44,6 +44,128 @@
   opacity: 0.5;
 }
 
+/* Media container for images and videos */
+.showcase__media-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.showcase-media-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.showcase__media-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.showcase__media {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: var(--border-radius-sm);
+  transition: filter 0.2s ease;
+}
+
+.showcase__media.blurred {
+  filter: blur(25px);
+}
+
+/* NSFW notice for main media - redesigned to avoid conflicts with card.css */
+.showcase__nsfw-notice {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: white;
+  background: rgba(0, 0, 0, 0.75);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--border-radius-base);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 5;
+  user-select: none;
+}
+
+.showcase__nsfw-notice-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.showcase__nsfw-notice-text {
+  margin: 0;
+  font-size: 1.1em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Show content button in NSFW notice - styled like card.css show-content-btn */
+.showcase__nsfw-show-btn {
+  background: var(--lora-accent);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-xs);
+  padding: 6px var(--space-3);
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: 500;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.showcase__nsfw-show-btn:hover {
+  background: oklch(58% 0.28 256);
+  transform: scale(1.05);
+}
+
+.showcase__nsfw-show-btn i {
+  font-size: 1em;
+}
+
+/* Control button active state for blur toggle */
+.showcase__control-btn.hidden {
+  display: none !important;
+}
+
+/* Video indicator for thumbnails */
+.thumbnail-rail__video-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 1.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* NSFW blur for thumbnails */
+.thumbnail-rail__item.nsfw-blur img {
+  filter: blur(8px);
+}
+
 /* Navigation arrows */
 .showcase__nav {
   position: absolute;
@@ -131,6 +253,16 @@
 
 .showcase__control-btn--danger:hover {
   background: var(--lora-error);
+}
+
+/* Active state for toggle buttons */
+.showcase__control-btn.active {
+  background: var(--lora-accent);
+  color: white;
+}
+
+.showcase__control-btn.active:hover {
+  background: var(--lora-accent-hover, #3182ce);
 }
 
 /* Params panel (slide up) */
