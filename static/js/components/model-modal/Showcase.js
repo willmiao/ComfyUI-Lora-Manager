@@ -28,6 +28,7 @@ export class Showcase {
     this.isUploading = false;
     this.localFiles = [];
     this.globalBlurEnabled = true; // Will be initialized based on user settings
+    this.isLoading = false; // Track loading state
   }
 
   /**
@@ -156,6 +157,45 @@ export class Showcase {
   }
 
   /**
+   * Preload media (image or video)
+   * @param {string} url - Media URL
+   * @param {boolean} isVideo - Whether media is video
+   * @returns {Promise} Resolves when media is loaded
+   */
+  preloadMedia(url, isVideo = false) {
+    return new Promise((resolve, reject) => {
+      if (isVideo) {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.src = url;
+        video.addEventListener('loadeddata', () => resolve(url));
+        video.addEventListener('error', reject);
+      } else {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.referrerPolicy = 'no-referrer';
+        img.onload = () => resolve(url);
+        img.onerror = reject;
+        img.src = url;
+      }
+    });
+  }
+
+  /**
+   * Render loading skeleton
+   * @returns {string} Skeleton HTML
+   */
+  renderLoadingSkeleton() {
+    return `
+      <div class="showcase__skeleton">
+        <div class="skeleton-animation">
+          <i class="fas fa-circle-notch fa-spin skeleton-spinner"></i>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
    * Get the HTML template
    */
   getTemplate() {
@@ -239,6 +279,7 @@ export class Showcase {
       const needsBlur = nsfwLevel > NSFW_LEVELS.PG13;
       const shouldBlur = this.globalBlurEnabled && needsBlur;
       const isVideo = this.isVideo(img, localFile);
+      const blurClass = shouldBlur ? 'blurred' : '';
       
       return `
         <div class="thumbnail-rail__item ${index === 0 ? 'active' : ''} ${shouldBlur ? 'thumbnail-rail__item--nsfw-blurred' : ''}" 
@@ -250,7 +291,7 @@ export class Showcase {
               <i class="fas fa-play-circle"></i>
             </div>
           ` : ''}
-          <img src="${url}" loading="lazy" alt="" ${shouldBlur ? 'class="blurred"' : ''}>
+          <img src="${url}" loading="lazy" alt="" class="${blurClass}" onload="this.classList.add('loaded')">
           ${shouldBlur ? '<span class="thumbnail-rail__nsfw-badge">NSFW</span>' : ''}
         </div>
       `;
@@ -539,7 +580,7 @@ export class Showcase {
   /**
    * Load and display an image by index
    */
-  loadImage(index) {
+  async loadImage(index) {
     if (index < 0 || index >= this.images.length) return;
     
     this.currentIndex = index;
@@ -556,7 +597,32 @@ export class Showcase {
     // Update main media container
     const mediaContainer = this.element.querySelector('.showcase__media-container');
     if (mediaContainer) {
-      mediaContainer.innerHTML = this.renderMediaElement(url, isVideo, shouldBlur, nsfwText, nsfwLevel);
+      // Show skeleton while loading
+      mediaContainer.innerHTML = this.renderLoadingSkeleton();
+      
+      try {
+        // Preload media
+        await this.preloadMedia(url, isVideo);
+        
+        // Render media with fade-in effect
+        mediaContainer.innerHTML = this.renderMediaElement(url, isVideo, shouldBlur, nsfwText, nsfwLevel);
+        
+        // Trigger fade-in animation
+        const media = mediaContainer.querySelector('.showcase__media');
+        if (media) {
+          requestAnimationFrame(() => {
+            media.classList.add('loaded');
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load media:', error);
+        mediaContainer.innerHTML = `
+          <div class="showcase__error">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>${translate('modals.model.examples.loadError', {}, 'Failed to load media')}</p>
+          </div>
+        `;
+      }
     }
     
     // Update global blur toggle button visibility
