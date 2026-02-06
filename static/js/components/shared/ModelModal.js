@@ -22,6 +22,12 @@ import { loadRecipesForLora } from './RecipeTab.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { state } from '../../state/index.js';
 
+// Import new ModelModal for split-view overlay (Phase 1)
+import { modelModal as newModelModal } from '../model-modal/index.js';
+
+// Feature flag: Use new split-view design
+const USE_NEW_MODAL = true;
+
 function getModalFilePath(fallback = '') {
     const modalElement = document.getElementById('modelModal');
     if (modalElement && modalElement.dataset && modalElement.dataset.filePath) {
@@ -238,6 +244,12 @@ function renderLicenseIcons(modelData) {
  * @param {string} modelType - Type of model ('lora' or 'checkpoint')
  */
 export async function showModelModal(model, modelType) {
+    // Use new split-view overlay design when feature flag is enabled
+    if (USE_NEW_MODAL) {
+        return newModelModal.show(model, modelType);
+    }
+    
+    // Legacy implementation below (deprecated, kept for fallback)
     const modalId = 'modelModal';
     const modalTitle = model.model_name;
     cleanupNavigationShortcuts();
@@ -1020,11 +1032,5 @@ async function openFileLocation(filePath) {
     }
 }
 
-// Export the model modal API
-const modelModal = {
-    show: showModelModal,
-    toggleShowcase,
-    scrollToTop
-};
-
-export { modelModal };
+// Re-export for compatibility
+export { toggleShowcase, scrollToTop };

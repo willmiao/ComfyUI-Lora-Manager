@@ -1,0 +1,161 @@
+/* Model Modal Overlay - Split View Layout */
+
+.model-overlay {
+  position: fixed;
+  top: var(--header-height, 48px);
+  left: var(--sidebar-width, 250px);
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-modal, 1000);
+  
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 0;
+  
+  background: var(--bg-color);
+  opacity: 0;
+  animation: modalOverlayFadeIn 0.25s ease-out forwards;
+}
+
+.model-overlay.sidebar-collapsed {
+  left: var(--sidebar-collapsed-width, 60px);
+  grid-template-columns: 1.3fr 0.7fr;
+}
+
+@keyframes modalOverlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.model-overlay.closing {
+  animation: modalOverlayFadeOut 0.2s ease-out forwards;
+}
+
+@keyframes modalOverlayFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Close button */
+.model-overlay__close {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 10;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.model-overlay__close:hover {
+  background: rgba(0, 0, 0, 0.5);
+  transform: scale(1.05);
+}
+
+/* Keyboard shortcut hint */
+.model-overlay__hint {
+  position: absolute;
+  top: var(--space-2);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-1) var(--space-3);
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  font-size: 0.85em;
+  border-radius: var(--border-radius-sm);
+  opacity: 0;
+  animation: hintFadeIn 0.3s ease-out 0.5s forwards, hintFadeOut 0.3s ease-out 3.5s forwards;
+  z-index: 10;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+@keyframes hintFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes hintFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.model-overlay__hint.hidden {
+  display: none;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 1400px) {
+  .model-overlay {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .model-overlay.sidebar-collapsed {
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+}
+
+@media (max-width: 1200px) {
+  .model-overlay {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .model-overlay.sidebar-collapsed {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Mobile: stack layout */
+@media (max-width: 768px) {
+  .model-overlay {
+    left: 0;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    overflow-y: auto;
+  }
+  
+  .model-overlay.sidebar-collapsed {
+    left: 0;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+}
+
+/* Body scroll lock when modal is open */
+body.modal-open {
+  overflow: hidden !important;
+}
+
+/* Transition effect for content when switching models */
+.showcase.transitioning,
+.metadata.transitioning {
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
+}

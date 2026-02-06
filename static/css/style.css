@@ -27,6 +27,13 @@
 @import 'components/lora-modal/showcase.css';
 @import 'components/lora-modal/triggerwords.css';
 @import 'components/lora-modal/versions.css';
+
+/* New Model Modal Split-View Design (Phase 1) */
+@import 'components/model-modal/overlay.css';
+@import 'components/model-modal/showcase.css';
+@import 'components/model-modal/thumbnail-rail.css';
+@import 'components/model-modal/metadata.css';
+@import 'components/model-modal/tabs.css';
 @import 'components/shared/edit-metadata.css';
 @import 'components/search-filter.css';
 @import 'components/bulk.css';

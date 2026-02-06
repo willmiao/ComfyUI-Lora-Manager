@@ -1,0 +1,153 @@
+/* Tabs - Content Area */
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--lora-border);
+  background: var(--lora-surface);
+}
+
+.tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-1);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-color);
+  cursor: pointer;
+  font-size: 0.85em;
+  font-weight: 500;
+  transition: all 0.2s;
+  opacity: 0.7;
+}
+
+.tab:hover {
+  opacity: 1;
+  background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.05);
+}
+
+.tab.active {
+  border-bottom-color: var(--lora-accent);
+  opacity: 1;
+  font-weight: 600;
+}
+
+.tab__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: var(--border-radius-xs);
+  background: var(--badge-update-bg);
+  color: var(--badge-update-text);
+  font-size: 0.65em;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tab__badge--pulse {
+  animation: tabBadgePulse 2s ease-in-out infinite;
+}
+
+@keyframes tabBadgePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--badge-update-bg) 50%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--badge-update-bg) 0%, transparent);
+  }
+}
+
+/* Tab content */
+.tab-panels {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2);
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+  animation: tabPanelFadeIn 0.2s ease-out;
+}
+
+@keyframes tabPanelFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Accordion within tab panels */
+.accordion {
+  border: 1px solid var(--lora-border);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--space-2);
+}
+
+.accordion__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: var(--lora-surface);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.accordion__header:hover {
+  background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.05);
+}
+
+.accordion__title {
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+.accordion__icon {
+  transition: transform 0.3s ease;
+}
+
+.accordion.expanded .accordion__icon {
+  transform: rotate(180deg);
+}
+
+.accordion__content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.accordion.expanded .accordion__content {
+  max-height: 500px; /* Adjust based on content */
+}
+
+.accordion__body {
+  padding: var(--space-3);
+  border-top: 1px solid var(--lora-border);
+  font-size: 0.9em;
+  line-height: 1.6;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .tab {
+    font-size: 0.8em;
+    padding: var(--space-2) var(--space-1);
+  }
+  
+  .tab__badge {
+    display: none; /* Hide badges on small screens */
+  }
+}
