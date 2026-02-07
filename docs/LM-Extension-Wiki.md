@@ -1,31 +1,27 @@
 ## Overview
 
-The **LoRA Manager Civitai Extension** is a Browser extension designed to work seamlessly with [LoRA Manager](https://github.com/willmiao/ComfyUI-Lora-Manager) to significantly enhance your browsing experience on [Civitai](https://civitai.com).
-It also supports browsing on [CivArchive](https://civarchive.com/) (formerly CivitaiArchive).
-
-With this extension, you can:
+The **LoRA Manager Civitai Extension** is a Browser extension designed to work seamlessly with [LoRA Manager](https://github.com/willmiao/ComfyUI-Lora-Manager) to significantly enhance your browsing experience on [Civitai](https://civitai.com). With this extension, you can:
 
 ✅ Instantly see which models are already present in your local library  
 ✅ Download new models with a single click  
 ✅ Manage downloads efficiently with queue and parallel download support  
 ✅ Keep your downloaded models automatically organized according to your custom settings    
 
-![Civitai Models page](https://github.com/willmiao/ComfyUI-Lora-Manager/blob/main/wiki-images/civitai-models-page.png)  
+![Civitai Models page](https://github.com/willmiao/ComfyUI-Lora-Manager/blob/main/wiki-images/civitai-models-page.png) 
+
+**Update:** It now also supports browsing on [CivArchive](https://civarchive.com/) (formerly CivitaiArchive). 
+
 ![CivArchive Models page](https://github.com/willmiao/ComfyUI-Lora-Manager/blob/main/wiki-images/civarchive-models-page.png)  
 
 ---
 
-## Why Are All Features for Supporters Only?
+## Why Supporter Access?
 
-I love building tools for the Stable Diffusion and ComfyUI communities, and LoRA Manager is a passion project that I've poured countless hours into. When I created this companion extension, my hope was to offer its core features for free, as a thank-you to all of you.
+LoRA Manager is built with love for the Stable Diffusion and ComfyUI communities. Your support makes it possible for me to keep improving and maintaining the tool full-time.
 
-Unfortunately, I've reached a point where I need to be realistic. The level of support from the free model has been far lower than what's needed to justify the continuous development and maintenance for both projects. It was a difficult decision, but I've chosen to make the extension's features exclusive to supporters.
+Supporter-exclusive features help ensure the long-term sustainability of LoRA Manager, allowing continuous updates, new features, and better performance for everyone.
 
-This change is crucial for me to be able to continue dedicating my time to improving the free and open-source LoRA Manager, which I'm committed to keeping available for everyone.
-
-Your support does more than just unlock a few features—it allows me to keep innovating and ensures the core LoRA Manager project thrives. I'm incredibly grateful for your understanding and any support you can offer. ❤️
-
-(_For those who previously supported me on Ko-fi with a one-time donation, I'll be sending out license keys individually as a thank-you._)
+Every contribution directly fuels development and keeps the core LoRA Manager free and open-source. In addition to monthly supporters, one-time donation supporters will also receive a license key, with the duration scaling according to the contribution amount. Thank you for helping keep this project alive and growing. ❤️
 
 
 ---
@@ -90,19 +86,26 @@ Clicking the download button adds the corresponding model version to the downloa
 
 On a specific model page, visual indicators also appear on version buttons, showing which versions are already in your local library.
 
-When switching to a specific version by clicking a version button:
+**Starting from v0.4.8**, model pages use a dedicated download button for better compatibility. When switching to a specific version by clicking a version button:
 
-- Clicking the download button will open a dropdown:
-  - Download via **LoRA Manager**  
-  - Download via **Original Download** (browser download)  
-
-You can check **Remember my choice** to set your preferred default. You can change this setting anytime in the extension's settings.
+- The new **dedicated download button** directly triggers download via **LoRA Manager**
+- The **original download button** remains unchanged for standard browser downloads
 
 ![Civitai Model Page](https://github.com/willmiao/ComfyUI-Lora-Manager/blob/main/wiki-images/civitai-model-page.png)
 
-### Resources on Image Pages (2025-08-05) — now shows in-library indicators for image resources. ‘Import image as recipe’ coming soon!
+### Hide Models Already in Library (Beta)
+
+**New in v0.4.8**: A new **Hide models already in library (Beta)** option makes it easier to focus on models you haven't added yet. It can be enabled from Settings, or toggled quickly using **Ctrl + Shift + H** (macOS: **Command + Shift + H**).
+
+### Resources on Image Pages — now shows in-library indicators for image resources plus one-click recipe import
+
+- **One-Click Import Civitai Image as Recipe** — Import any Civitai image as a recipe with a single click in the Resources Used panel.
+- **Auto-Queue Missing Assets** — In Settings you can decide if LoRAs or checkpoints referenced by that image should automatically be added to your download queue.
+- **More Accurate Metadata** — Importing directly from the page is faster than copying inside LM and keeps on-site tags and other metadata perfectly aligned.
 
 ![Civitai Image Page](https://github.com/willmiao/ComfyUI-Lora-Manager/blob/main/wiki-images/civitai-image-page.jpg)
+
+[![alt](url)](https://github.com/user-attachments/assets/41fd4240-c949-4f83-bde7-8f3124c09494)
 
 ---
 
@@ -170,11 +173,11 @@ _Thanks to user **Temikus** for sharing this solution!_
 The extension will evolve alongside **LoRA Manager** improvements. Planned features include:
 
 - [x] Support for **additional model types** (e.g., embeddings)
-- [ ] One-click **Recipe Import**  
-- [x] Display of in-library status for all resources in the **Resources Used** section of the image page  
+- [x] One-click **Recipe Import**
+- [x] Display of in-library status for all resources in the **Resources Used** section of the image page
 - [x] One-click **Auto-organize Models**
+- [x] **Hide models already in library (Beta)** - Focus on models you haven't added yet
 
 **Stay tuned — and thank you for your support!**
 
 ---
-
