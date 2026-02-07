@@ -31,9 +31,6 @@ export class ModelModal {
    * @param {string} modelType - Type of model ('loras', 'checkpoints', 'embeddings')
    */
   static async show(model, modelType) {
-    // Prevent navigation spam
-    if (this.isNavigating) return;
-    
     // If already open, animate transition to new model
     if (this.isOpen()) {
       await this.transitionToModel(model, modelType);
@@ -151,8 +148,12 @@ export class ModelModal {
    * Transition to a different model with animation
    */
   static async transitionToModel(model, modelType) {
-    if (this.isNavigating) return;
-    this.isNavigating = true;
+    // Ensure components are initialized
+    if (!this.showcase || !this.metadataPanel) {
+      console.warn('Showcase or MetadataPanel not initialized, falling back to show()');
+      await this.show(model, modelType);
+      return;
+    }
 
     // Fade out current content
     this.showcase?.element?.classList.add('transitioning');
@@ -160,11 +161,30 @@ export class ModelModal {
 
     await new Promise(resolve => setTimeout(resolve, 150));
 
-    // Close and reopen with new model
-    this.close(false); // Don't remove overlay immediately
-    await this.show(model, modelType);
+    // Fetch complete metadata for new model
+    let completeCivitaiData = model.civitai || {};
+    if (model.file_path) {
+      try {
+        const fullMetadata = await getModelApiClient().fetchModelMetadata(model.file_path);
+        completeCivitaiData = fullMetadata || model.civitai || {};
+      } catch (error) {
+        console.warn('Failed to fetch complete metadata:', error);
+      }
+    }
 
-    this.isNavigating = false;
+    // Update model data in-place
+    this.currentModel = {
+      ...model,
+      civitai: completeCivitaiData
+    };
+    this.currentModelType = modelType;
+
+    // Render new content in-place
+    await this.render();
+
+    // Fade in new content
+    this.showcase?.element?.classList.remove('transitioning');
+    this.metadataPanel?.element?.classList.remove('transitioning');
   }
 
   /**

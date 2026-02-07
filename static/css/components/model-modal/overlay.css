@@ -7,12 +7,12 @@
   right: 0;
   bottom: 0;
   z-index: var(--z-modal, 1000);
-  
+
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
   gap: 0;
-  
-  background: var(--bg-color);
+
+  background: var(--bg-color) !important;
   opacity: 0;
   animation: modalOverlayFadeIn 0.25s ease-out forwards;
 }
@@ -32,6 +32,7 @@
 }
 
 .model-overlay.closing {
+  opacity: 1 !important;
   animation: modalOverlayFadeOut 0.2s ease-out forwards;
 }
 
@@ -154,8 +155,13 @@ body.modal-open {
 }
 
 /* Transition effect for content when switching models */
+.showcase,
+.metadata {
+  opacity: 1;
+  transition: opacity 0.15s ease-out;
+}
+
 .showcase.transitioning,
 .metadata.transitioning {
   opacity: 0;
-  transition: opacity 0.15s ease-out;
 }
