@@ -16,6 +16,191 @@ import { state } from '../../state/index.js';
 import { NSFW_LEVELS } from '../../utils/constants.js';
 import { getNsfwLevelSelector } from '../shared/NsfwLevelSelector.js';
 
+/**
+ * Image Loading Queue - Controls concurrent image loading
+ */
+class ImageLoadingQueue {
+  constructor(maxConcurrent = 3) {
+    this.maxConcurrent = maxConcurrent;
+    this.running = 0;
+    this.queue = [];
+  }
+
+  async add(loadFn, priority = 0) {
+    return new Promise((resolve, reject) => {
+      this.queue.push({ loadFn, resolve, reject, priority });
+      this.queue.sort((a, b) => b.priority - a.priority);
+      this.process();
+    });
+  }
+
+  async process() {
+    if (this.running >= this.maxConcurrent || this.queue.length === 0) {
+      return;
+    }
+
+    this.running++;
+    const { loadFn, resolve, reject } = this.queue.shift();
+
+    try {
+      const result = await loadFn();
+      resolve(result);
+    } catch (error) {
+      reject(error);
+    } finally {
+      this.running--;
+      this.process();
+    }
+  }
+}
+
+/**
+ * Image Cache using IndexedDB
+ */
+class ImageCache {
+  constructor() {
+    this.dbName = 'LoraManagerImageCache';
+    this.storeName = 'images';
+    this.db = null;
+    this.maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+    this.maxSize = 500; // Max 500 cached images (~50-100 models worth)
+    this.initPromise = this.init();
+  }
+
+  async init() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(this.dbName, 1);
+      
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        this.db = request.result;
+        resolve(this.db);
+      };
+      
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains(this.storeName)) {
+          const store = db.createObjectStore(this.storeName, { keyPath: 'url' });
+          store.createIndex('timestamp', 'timestamp', { unique: false });
+        }
+      };
+    });
+  }
+
+  async get(url) {
+    await this.initPromise;
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.storeName], 'readonly');
+      const store = transaction.objectStore(this.storeName);
+      const request = store.get(url);
+      
+      request.onsuccess = () => {
+        const result = request.result;
+        if (!result) {
+          resolve(null);
+          return;
+        }
+        
+        // Check if cache is expired
+        const age = Date.now() - result.timestamp;
+        if (age > this.maxAge) {
+          this.delete(url);
+          resolve(null);
+          return;
+        }
+        
+        resolve(result.blob);
+      };
+      
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async set(url, blob) {
+    await this.initPromise;
+    
+    // Check current cache size and cleanup if needed
+    await this.cleanupIfNeeded();
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.storeName], 'readwrite');
+      const store = transaction.objectStore(this.storeName);
+      
+      const request = store.put({
+        url,
+        blob,
+        timestamp: Date.now(),
+        size: blob.size
+      });
+      
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async delete(url) {
+    await this.initPromise;
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.storeName], 'readwrite');
+      const store = transaction.objectStore(this.storeName);
+      const request = store.delete(url);
+      
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async cleanupIfNeeded() {
+    const transaction = this.db.transaction([this.storeName], 'readonly');
+    const store = transaction.objectStore(this.storeName);
+    const countRequest = store.count();
+    
+    return new Promise((resolve) => {
+      countRequest.onsuccess = async () => {
+        if (countRequest.result >= this.maxSize) {
+          // Delete oldest 20% of entries
+          const index = store.index('timestamp');
+          const cursorRequest = index.openCursor();
+          const toDelete = [];
+          
+          cursorRequest.onsuccess = (event) => {
+            const cursor = event.target.result;
+            if (cursor && toDelete.length < Math.floor(this.maxSize * 0.2)) {
+              toDelete.push(cursor.value.url);
+              cursor.continue();
+            } else {
+              // Delete collected entries
+              toDelete.forEach(url => this.delete(url));
+              resolve();
+            }
+          };
+        } else {
+          resolve();
+        }
+      };
+    });
+  }
+
+  async clear() {
+    await this.initPromise;
+    
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.storeName], 'readwrite');
+      const store = transaction.objectStore(this.storeName);
+      const request = store.clear();
+      
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+}
+
+// Global instances - Optimized for better performance
+const imageQueue = new ImageLoadingQueue(6); // Increased from 3 to 6 for faster loading
+const imageCache = new ImageCache();
+
 export class Showcase {
   constructor(container) {
     this.element = container;
@@ -29,6 +214,9 @@ export class Showcase {
     this.localFiles = [];
     this.globalBlurEnabled = true; // Will be initialized based on user settings
     this.isLoading = false; // Track loading state
+    
+    // Lazy loading observer for thumbnails
+    this.thumbnailObserver = null;
   }
 
   /**
@@ -50,9 +238,82 @@ export class Showcase {
 
     this.element.innerHTML = this.getTemplate();
     this.bindEvents();
+    this.initLazyLoading();
     
     if (this.images.length > 0) {
       this.loadImage(0);
+    }
+  }
+
+  /**
+   * Initialize lazy loading for thumbnails using Intersection Observer
+   */
+  initLazyLoading() {
+    // Disconnect existing observer if any
+    if (this.thumbnailObserver) {
+      this.thumbnailObserver.disconnect();
+    }
+
+    // Create new observer
+    this.thumbnailObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          const src = img.dataset.src;
+          
+          if (src) {
+            // Load through queue and cache
+            this.loadImageWithCache(src, img);
+          }
+          
+          // Stop observing this image
+          this.thumbnailObserver.unobserve(img);
+        }
+      });
+    }, {
+      root: this.element.querySelector('.thumbnail-rail'),
+      rootMargin: '100px', // Start loading 100px before visible
+      threshold: 0.1
+    });
+
+    // Observe all lazy-load thumbnails
+    const lazyImages = this.element.querySelectorAll('img[data-src]');
+    lazyImages.forEach(img => this.thumbnailObserver.observe(img));
+  }
+
+  /**
+   * Load image with caching support
+   * @param {string} url - Image URL
+   * @param {HTMLImageElement} imgElement - Image element to load into
+   */
+  async loadImageWithCache(url, imgElement) {
+    try {
+      // Check cache first
+      const cachedBlob = await imageCache.get(url);
+      
+      if (cachedBlob) {
+        // Use cached image
+        const objectUrl = URL.createObjectURL(cachedBlob);
+        imgElement.src = objectUrl;
+        imgElement.classList.add('loaded');
+        
+        // Clean up object URL after load
+        imgElement.onload = () => {
+          URL.revokeObjectURL(objectUrl);
+        };
+        return;
+      }
+
+      // Load through queue (limited concurrency) - pass true to use queue
+      await this.preloadMedia(url, false, true);
+      
+      // Set the image src after loading (cache miss case)
+      imgElement.src = url;
+      imgElement.classList.add('loaded');
+    } catch (error) {
+      console.error('Failed to load image:', error);
+      // Set fallback or error state
+      imgElement.classList.add('load-error');
     }
   }
 
@@ -157,28 +418,93 @@ export class Showcase {
   }
 
   /**
-   * Preload media (image or video)
+   * Transform Civitai URL to optimized version
+   * @param {string} url - Original Civitai URL
+   * @param {boolean} isThumbnail - Whether this is for a thumbnail (smaller size)
+   * @returns {string} Optimized URL or original URL if not from Civitai
+   */
+  transformCivitaiUrl(url, isThumbnail = false) {
+    if (!url || !url.includes('image.civitai.com')) {
+      return url;
+    }
+
+    const width = isThumbnail ? '320' : '450';
+
+    if (url.includes('.mp4') || url.includes('.webm')) {
+      if (isThumbnail) {
+        return url.replace(/\/original=true\/(.*)$/, `/anim=false,transcode=true,width=${width},original=false,optimized=true/$1`);
+      } else {
+        return url.replace(/\/original=true\/(.*)$/, `/transcode=true,width=${width},optimized=true/$1`);
+      }
+    } else {
+      if (isThumbnail) {
+        return url.replace(/\/original=true\/(.*)$/, `/anim=false,width=${width},optimized=true/$1`);
+      } else {
+        return url.replace(/\/original=true\/(.*)$/, `/width=${width},optimized=true/$1`);
+      }
+    }
+  }
+
+  /**
+   * Preload media (image or video) with caching support
+   * Main images load immediately without queue to avoid latency
    * @param {string} url - Media URL
    * @param {boolean} isVideo - Whether media is video
+   * @param {boolean} useQueue - Whether to use loading queue (thumbnails only)
    * @returns {Promise} Resolves when media is loaded
    */
-  preloadMedia(url, isVideo = false) {
-    return new Promise((resolve, reject) => {
-      if (isVideo) {
+  async preloadMedia(url, isVideo = false, useQueue = false) {
+    // For videos, use standard loading without cache
+    if (isVideo) {
+      return new Promise((resolve, reject) => {
         const video = document.createElement('video');
         video.preload = 'metadata';
         video.src = url;
         video.addEventListener('loadeddata', () => resolve(url));
         video.addEventListener('error', reject);
-      } else {
+      });
+    }
+
+    // Check cache first
+    const cachedBlob = await imageCache.get(url);
+    if (cachedBlob) {
+      return url; // Return original URL, will use blob URL when rendering
+    }
+
+    const loadImage = async () => {
+      return new Promise(async (resolve, reject) => {
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.referrerPolicy = 'no-referrer';
-        img.onload = () => resolve(url);
+        
+        img.onload = async () => {
+          // Cache the loaded image
+          try {
+            const response = await fetch(url, {
+              credentials: 'omit',
+              referrerPolicy: 'no-referrer'
+            });
+            const blob = await response.blob();
+            await imageCache.set(url, blob);
+          } catch (cacheError) {
+            // Non-fatal: continue even if caching fails
+            console.warn('Failed to cache image:', cacheError);
+          }
+          resolve(url);
+        };
+        
         img.onerror = reject;
         img.src = url;
-      }
-    });
+      });
+    };
+
+    // Main images load immediately without queue to avoid any latency
+    // Only thumbnails use queue to prevent network congestion
+    if (useQueue) {
+      return imageQueue.add(loadImage, 0);
+    } else {
+      return loadImage();
+    }
   }
 
   /**
@@ -279,7 +605,7 @@ export class Showcase {
       const localFile = this.findLocalFile(img, index);
       const remoteUrl = img.url || img;
       const localUrl = localFile ? localFile.path : '';
-      const url = localUrl || remoteUrl;
+      const url = localUrl || this.transformCivitaiUrl(remoteUrl, true);
       const nsfwLevel = img.nsfwLevel !== undefined ? img.nsfwLevel : 0;
       // Check if this specific image needs blur based on global state
       const needsBlur = nsfwLevel > NSFW_LEVELS.PG13;
@@ -287,8 +613,16 @@ export class Showcase {
       const isVideo = this.isVideo(img, localFile);
       const blurClass = shouldBlur ? 'blurred' : '';
       
+      // Smart loading: current index and nearby thumbnails load immediately
+      // Others use lazy loading via IntersectionObserver
+      const currentIndex = this.currentIndex || 0;
+      const preloadRange = 2; // Load current +/- 2 thumbnails immediately
+      const shouldPreload = Math.abs(index - currentIndex) <= preloadRange;
+      const srcAttr = shouldPreload ? `src="${url}"` : `data-src="${url}"`;
+      const loadingClass = shouldPreload ? '' : 'lazy-load';
+      
       return `
-        <div class="thumbnail-rail__item ${index === 0 ? 'active' : ''} ${shouldBlur ? 'thumbnail-rail__item--nsfw-blurred' : ''}" 
+        <div class="thumbnail-rail__item ${index === currentIndex ? 'active' : ''} ${shouldBlur ? 'thumbnail-rail__item--nsfw-blurred' : ''}" 
              data-index="${index}"
              data-action="select-image"
              data-nsfw-level="${nsfwLevel}">
@@ -297,7 +631,7 @@ export class Showcase {
               <i class="fas fa-play-circle"></i>
             </div>
           ` : ''}
-          <img src="${url}" loading="lazy" alt="" class="${blurClass}" onload="this.classList.add('loaded')">
+          <img ${srcAttr} alt="" class="${blurClass} ${loadingClass}" onload="this.classList.add('loaded')" data-index="${index}">
           ${shouldBlur ? '<span class="thumbnail-rail__nsfw-badge">NSFW</span>' : ''}
         </div>
       `;
@@ -629,7 +963,7 @@ export class Showcase {
     const localFile = this.findLocalFile(image, index);
     const remoteUrl = image.url || image;
     const localUrl = localFile ? localFile.path : '';
-    const url = localUrl || remoteUrl;
+    const url = localUrl || this.transformCivitaiUrl(remoteUrl, false);
     const nsfwLevel = image.nsfwLevel !== undefined ? image.nsfwLevel : 0;
     const shouldBlur = this.shouldBlurContent(nsfwLevel);
     const isVideo = this.isVideo(image, localFile);
@@ -642,18 +976,57 @@ export class Showcase {
       mediaContainer.innerHTML = this.renderLoadingSkeleton();
       
       try {
-        // Preload media
-        await this.preloadMedia(url, isVideo);
+        // Check cache first for instant display
+        let displayUrl = url;
+        let objectUrl = null;
+        const cachedBlob = !isVideo ? await imageCache.get(url) : null;
         
-        // Render media with fade-in effect
-        mediaContainer.innerHTML = this.renderMediaElement(url, isVideo, shouldBlur, nsfwText, nsfwLevel);
+        if (cachedBlob) {
+          // Use cached image immediately
+          objectUrl = URL.createObjectURL(cachedBlob);
+          displayUrl = objectUrl;
+          
+          // Render with cached image
+          mediaContainer.innerHTML = this.renderMediaElement(displayUrl, isVideo, shouldBlur, nsfwText, nsfwLevel);
+          
+          // Trigger fade-in animation
+          const media = mediaContainer.querySelector('.showcase__media');
+          if (media) {
+            requestAnimationFrame(() => {
+              media.classList.add('loaded');
+            });
+          }
+        } else {
+          // Preload media (will cache it)
+          await this.preloadMedia(url, isVideo);
+          
+          // Try to get from cache after loading
+          const newlyCachedBlob = !isVideo ? await imageCache.get(url) : null;
+          if (newlyCachedBlob) {
+            objectUrl = URL.createObjectURL(newlyCachedBlob);
+            displayUrl = objectUrl;
+          }
+          
+          // Render media with fade-in effect
+          mediaContainer.innerHTML = this.renderMediaElement(displayUrl, isVideo, shouldBlur, nsfwText, nsfwLevel);
+          
+          // Trigger fade-in animation
+          const media = mediaContainer.querySelector('.showcase__media');
+          if (media) {
+            requestAnimationFrame(() => {
+              media.classList.add('loaded');
+            });
+          }
+        }
         
-        // Trigger fade-in animation
-        const media = mediaContainer.querySelector('.showcase__media');
-        if (media) {
-          requestAnimationFrame(() => {
-            media.classList.add('loaded');
-          });
+        // Clean up object URL when image loads (for next navigation)
+        if (objectUrl) {
+          const media = mediaContainer.querySelector('.showcase__media');
+          if (media) {
+            media.onload = () => {
+              URL.revokeObjectURL(objectUrl);
+            };
+          }
         }
       } catch (error) {
         console.error('Failed to load media:', error);
@@ -1112,6 +1485,17 @@ export class Showcase {
     } catch (err) {
       console.error('Failed to delete example:', err);
       showToast('modals.model.examples.deleteFailed', {}, 'error');
+    }
+  }
+
+  /**
+   * Clean up resources when component is destroyed
+   */
+  destroy() {
+    // Disconnect lazy loading observer
+    if (this.thumbnailObserver) {
+      this.thumbnailObserver.disconnect();
+      this.thumbnailObserver = null;
     }
   }
 }

@@ -516,3 +516,51 @@
     right: var(--space-1);
   }
 }
+
+/* ============================================
+   Lazy Loading Styles
+   ============================================ */
+
+/* Thumbnail lazy loading placeholder */
+.thumbnail-rail__item img {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: var(--lora-surface);
+}
+
+/* Loaded state */
+.thumbnail-rail__item img.loaded {
+  opacity: 1;
+}
+
+/* Loading state with skeleton animation */
+.thumbnail-rail__item img.lazy-load {
+  background: linear-gradient(
+    90deg,
+    var(--lora-surface) 25%,
+    var(--lora-border) 50%,
+    var(--lora-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: lazy-loading-shimmer 1.5s infinite;
+}
+
+@keyframes lazy-loading-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Error state for failed loads */
+.thumbnail-rail__item img.load-error {
+  opacity: 0.3;
+  background: var(--lora-error);
+}
+
+/* Cached image - subtle highlight */
+.thumbnail-rail__item img[data-cached="true"] {
+  border: 1px solid var(--lora-accent);
+}
