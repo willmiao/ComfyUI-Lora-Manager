@@ -217,8 +217,18 @@ class RecipeModal {
         }
 
         // Set recipe image
-        const modalImage = document.getElementById('recipeModalImage');
-        if (modalImage) {
+        const mediaContainer = document.getElementById('recipePreviewContainer');
+        if (mediaContainer) {
+            // Stop any playing video before replacing content
+            const existingVideo = mediaContainer.querySelector('video');
+            if (existingVideo) {
+                existingVideo.pause();
+                existingVideo.currentTime = 0;
+            }
+
+            // Clear the container
+            mediaContainer.innerHTML = '';
+
             // Ensure file_url exists, fallback to file_path if needed
             const imageUrl = recipe.file_url ||
                 (recipe.file_path ? `/loras_static/root1/preview/${recipe.file_path.split('/').pop()}` :
@@ -226,10 +236,6 @@ class RecipeModal {
 
             // Check if the file is a video (mp4)
             const isVideo = imageUrl.toLowerCase().endsWith('.mp4');
-
-            // Replace the image element with appropriate media element
-            const mediaContainer = modalImage.parentElement;
-            mediaContainer.innerHTML = '';
 
             if (isVideo) {
                 const videoElement = document.createElement('video');

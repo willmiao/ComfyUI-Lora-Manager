@@ -140,6 +140,12 @@ export class ModalManager {
             this.registerModal('recipeModal', {
                 element: recipeModal,
                 onClose: () => {
+                    // Stop any playing video
+                    const video = recipeModal.querySelector('video');
+                    if (video) {
+                        video.pause();
+                        video.currentTime = 0;
+                    }
                     this.getModal('recipeModal').element.style.display = 'none';
                     document.body.classList.remove('modal-open');
                 },
