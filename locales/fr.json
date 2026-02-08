@@ -1466,6 +1466,7 @@
             "folderTreeFailed": "Échec du chargement de l'arborescence des dossiers",
             "folderTreeError": "Erreur lors du chargement de l'arborescence des dossiers",
             "imagesImported": "Images d'exemple importées avec succès",
+            "imagesPartial": "{success} image(s) importée(s), {failed} échouée(s)",
             "importFailed": "Échec de l'importation des images d'exemple : {message}"
         },
         "triggerWords": {

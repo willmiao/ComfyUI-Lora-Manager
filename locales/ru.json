@@ -1466,6 +1466,7 @@
             "folderTreeFailed": "Не удалось загрузить дерево папок",
             "folderTreeError": "Ошибка загрузки дерева папок",
             "imagesImported": "Примеры изображений успешно импортированы",
+            "imagesPartial": "{success} изображ. импортировано, {failed} не удалось",
             "importFailed": "Не удалось импортировать примеры изображений: {message}"
         },
         "triggerWords": {

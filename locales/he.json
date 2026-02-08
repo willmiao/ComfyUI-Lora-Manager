@@ -1466,6 +1466,7 @@
             "folderTreeFailed": "טעינת עץ התיקיות נכשלה",
             "folderTreeError": "שגיאה בטעינת עץ התיקיות",
             "imagesImported": "תמונות הדוגמה יובאו בהצלחה",
+            "imagesPartial": "{success} תמונה/ות יובאו, {failed} נכשלו",
             "importFailed": "ייבוא תמונות הדוגמה נכשל: {message}"
         },
         "triggerWords": {

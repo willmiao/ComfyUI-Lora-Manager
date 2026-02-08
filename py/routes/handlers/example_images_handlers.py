@@ -1,10 +1,13 @@
 """Handler set for example image routes."""
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Callable, Mapping
 
 from aiohttp import web
+
+logger = logging.getLogger(__name__)
 
 from ...services.use_cases.example_images import (
     DownloadExampleImagesConfigurationError,
@@ -121,6 +124,9 @@ class ExampleImagesManagementHandler:
         except ImportExampleImagesValidationError as exc:
             return web.json_response({'success': False, 'error': str(exc)}, status=400)
         except ExampleImagesImportError as exc:
+            return web.json_response({'success': False, 'error': str(exc)}, status=500)
+        except Exception as exc:
+            logger.exception("Unexpected error importing example images")
             return web.json_response({'success': False, 'error': str(exc)}, status=500)
 
     async def delete_example_image(self, request: web.Request) -> web.StreamResponse:

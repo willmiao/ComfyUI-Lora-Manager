@@ -1466,6 +1466,7 @@
             "folderTreeFailed": "加载文件夹树失败",
             "folderTreeError": "加载文件夹树出错",
             "imagesImported": "示例图片导入成功",
+            "imagesPartial": "成功导入 {success} 张图片，{failed} 张失败",
             "importFailed": "导入示例图片失败：{message}"
         },
         "triggerWords": {

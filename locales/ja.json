@@ -1466,6 +1466,7 @@
             "folderTreeFailed": "フォルダツリーの読み込みに失敗しました",
             "folderTreeError": "フォルダツリー読み込みエラー",
             "imagesImported": "例画像が正常にインポートされました",
+            "imagesPartial": "{success} 件の画像をインポート、{failed} 件失敗",
             "importFailed": "例画像のインポートに失敗しました：{message}"
         },
         "triggerWords": {

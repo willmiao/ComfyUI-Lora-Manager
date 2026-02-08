@@ -1466,6 +1466,7 @@
             "folderTreeFailed": "Fehler beim Laden des Ordnerbaums",
             "folderTreeError": "Fehler beim Laden des Ordnerbaums",
             "imagesImported": "Beispielbilder erfolgreich importiert",
+            "imagesPartial": "{success} Bild(er) importiert, {failed} fehlgeschlagen",
             "importFailed": "Fehler beim Importieren der Beispielbilder: {message}"
         },
         "triggerWords": {

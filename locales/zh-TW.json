@@ -1466,6 +1466,7 @@
             "folderTreeFailed": "載入資料夾樹狀結構失敗",
             "folderTreeError": "載入資料夾樹狀結構錯誤",
             "imagesImported": "範例圖片匯入成功",
+            "imagesPartial": "成功匯入 {success} 張圖片，{failed} 張失敗",
             "importFailed": "匯入範例圖片失敗：{message}"
         },
         "triggerWords": {

@@ -455,34 +455,49 @@ async function handleImportFiles(files, modelHash, importContainer) {
     }
     
     try {
-        // Use FormData to upload files
-        const formData = new FormData();
-        formData.append('model_hash', modelHash);
-        
-        validFiles.forEach(file => {
-            formData.append('files', file);
-        });
-        
-        // Call API to import files
-        const response = await fetch('/api/lm/import-example-images', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (!result.success) {
-            throw new Error(result.error || 'Failed to import example files');
+        // Upload files one at a time to avoid exceeding server size limits
+        let lastSuccessResult = null;
+        let successCount = 0;
+        const errors = [];
+
+        for (const file of validFiles) {
+            try {
+                const formData = new FormData();
+                formData.append('model_hash', modelHash);
+                formData.append('files', file);
+
+                const response = await fetch('/api/lm/import-example-images', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    errors.push(`${file.name}: ${result.error || 'Unknown error'}`);
+                } else {
+                    lastSuccessResult = result;
+                    successCount++;
+                }
+            } catch (err) {
+                errors.push(`${file.name}: ${err.message}`);
+            }
         }
-        
+
+        if (successCount === 0) {
+            throw new Error(errors.join('; '));
+        }
+
+        const result = lastSuccessResult;
+
         // Get updated local files
         const updatedFilesResponse = await fetch(`/api/lm/example-image-files?model_hash=${modelHash}`);
         const updatedFilesResult = await updatedFilesResponse.json();
-        
+
         if (!updatedFilesResult.success) {
             throw new Error(updatedFilesResult.error || 'Failed to get updated file list');
         }
-        
+
         // Re-render the showcase content
         const showcaseTab = document.getElementById('showcase-tab');
         if (showcaseTab) {
@@ -492,18 +507,22 @@ async function handleImportFiles(files, modelHash, importContainer) {
             // Combine both arrays for rendering
             const allImages = [...regularImages, ...customImages];
             showcaseTab.innerHTML = renderShowcaseContent(allImages, updatedFilesResult.files, true);
-            
+
             // Re-initialize showcase functionality
             const carousel = showcaseTab.querySelector('.carousel');
             if (carousel && !carousel.classList.contains('collapsed')) {
                 initShowcaseContent(carousel);
             }
-            
+
             // Initialize the import UI for the new content
             initExampleImport(modelHash, showcaseTab);
-            
-            showToast('toast.import.imagesImported', {}, 'success');
-            
+
+            if (errors.length > 0) {
+                showToast('toast.import.imagesPartial', { success: successCount, failed: errors.length }, 'warning');
+            } else {
+                showToast('toast.import.imagesImported', {}, 'success');
+            }
+
             // Update VirtualScroller if available
             if (state.virtualScroller && result.model_file_path) {
                 // Create an update object with only the necessary properties
@@ -513,7 +532,7 @@ async function handleImportFiles(files, modelHash, importContainer) {
                         customImages: customImages
                     }
                 };
-                
+
                 // Update the item in the virtual scroller
                 state.virtualScroller.updateSingleItem(result.model_file_path, updateData);
             }

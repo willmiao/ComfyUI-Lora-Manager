@@ -1466,6 +1466,7 @@
             "folderTreeFailed": "Failed to load folder tree",
             "folderTreeError": "Error loading folder tree",
             "imagesImported": "Example images imported successfully",
+            "imagesPartial": "{success} image(s) imported, {failed} failed",
             "importFailed": "Failed to import example images: {message}"
         },
         "triggerWords": {

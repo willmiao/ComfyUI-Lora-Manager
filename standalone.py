@@ -154,6 +154,7 @@ class StandaloneServer:
         self.app = web.Application(
             logger=logger,
             middlewares=[cache_control],
+            client_max_size=256 * 1024 * 1024,
             handler_args={
                 "max_field_size": HEADER_SIZE_LIMIT,
                 "max_line_size": HEADER_SIZE_LIMIT,

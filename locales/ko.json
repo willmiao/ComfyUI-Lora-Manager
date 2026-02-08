@@ -1466,6 +1466,7 @@
             "folderTreeFailed": "폴더 트리 로딩 실패",
             "folderTreeError": "폴더 트리 로딩 오류",
             "imagesImported": "예시 이미지가 성공적으로 가져와졌습니다",
+            "imagesPartial": "{success}개 이미지 가져오기 성공, {failed}개 실패",
             "importFailed": "예시 이미지 가져오기 실패: {message}"
         },
         "triggerWords": {

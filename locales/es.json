@@ -1466,6 +1466,7 @@
             "folderTreeFailed": "Error al cargar árbol de carpetas",
             "folderTreeError": "Error al cargar árbol de carpetas",
             "imagesImported": "Imágenes de ejemplo importadas exitosamente",
+            "imagesPartial": "{success} imagen(es) importada(s), {failed} fallida(s)",
             "importFailed": "Error al importar imágenes de ejemplo: {message}"
         },
         "triggerWords": {
