@@ -69,6 +69,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "model_card_footer_action": "replace_preview",
     "update_flag_strategy": "same_base",
     "auto_organize_exclusions": [],
+    "metadata_refresh_skip_paths": [],
 }
 
 
@@ -259,6 +260,17 @@ class SettingsManager:
                 updated_existing = True
         else:
             self.settings["auto_organize_exclusions"] = []
+            inserted_defaults = True
+
+        if "metadata_refresh_skip_paths" in self.settings:
+            normalized_skip_paths = self.normalize_metadata_refresh_skip_paths(
+                self.settings.get("metadata_refresh_skip_paths")
+            )
+            if normalized_skip_paths != self.settings.get("metadata_refresh_skip_paths"):
+                self.settings["metadata_refresh_skip_paths"] = normalized_skip_paths
+                updated_existing = True
+        else:
+            self.settings["metadata_refresh_skip_paths"] = []
             inserted_defaults = True
 
         for key, value in defaults.items():
@@ -805,6 +817,7 @@ class SettingsManager:
         defaults['priority_tags'] = DEFAULT_PRIORITY_TAG_CONFIG.copy()
         defaults.setdefault('folder_paths', {})
         defaults['auto_organize_exclusions'] = []
+        defaults['metadata_refresh_skip_paths'] = []
 
         library_name = defaults.get("active_library") or "default"
         default_library = self._build_library_payload(
@@ -876,6 +889,44 @@ class SettingsManager:
             self._save_settings()
         return exclusions
 
+    def normalize_metadata_refresh_skip_paths(self, value: Any) -> List[str]:
+        if value is None:
+            return []
+
+        if isinstance(value, str):
+            candidates: Iterable[str] = (
+                value.replace("\n", ",").replace(";", ",").split(",")
+            )
+        elif isinstance(value, Sequence) and not isinstance(value, (bytes, bytearray, str)):
+            candidates = value
+        else:
+            return []
+
+        paths: List[str] = []
+        for raw in candidates:
+            if isinstance(raw, str):
+                token = raw.replace("\\", "/").strip().strip("/")
+                if token:
+                    paths.append(token)
+
+        unique_paths: List[str] = []
+        seen = set()
+        for path in paths:
+            if path not in seen:
+                seen.add(path)
+                unique_paths.append(path)
+
+        return unique_paths
+
+    def get_metadata_refresh_skip_paths(self) -> List[str]:
+        skip_paths = self.normalize_metadata_refresh_skip_paths(
+            self.settings.get("metadata_refresh_skip_paths")
+        )
+        if skip_paths != self.settings.get("metadata_refresh_skip_paths"):
+            self.settings["metadata_refresh_skip_paths"] = skip_paths
+            self._save_settings()
+        return skip_paths
+
     def get_startup_messages(self) -> List[Dict[str, Any]]:
         return [message.copy() for message in self._startup_messages]
 
@@ -913,6 +964,8 @@ class SettingsManager:
         """Set setting value and save"""
         if key == "auto_organize_exclusions":
             value = self.normalize_auto_organize_exclusions(value)
+        elif key == "metadata_refresh_skip_paths":
+            value = self.normalize_metadata_refresh_skip_paths(value)
         self.settings[key] = value
         portable_switch_pending = False
         if key == "use_portable_settings" and isinstance(value, bool):

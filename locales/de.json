@@ -292,6 +292,15 @@
                 "saveFailed": "Fehler beim Speichern der Ausschlüsse: {message}"
             }
         },
+        "metadataRefreshSkipPaths": {
+            "label": "Metadaten-Aktualisierung: Übersprungene Pfade",
+            "placeholder": "Beispiel: temp, archived/old, test_models",
+            "help": "Modelle in diesen Verzeichnispfaden bei der Massenaktualisierung der Metadaten (\"Alle Metadaten abrufen\") überspringen. Geben Sie durch Kommas getrennte relative Ordnerpfade ein.",
+            "validation": {
+                "noPaths": "Geben Sie mindestens einen durch Kommas getrennten Pfad ein.",
+                "saveFailed": "Übersprungene Pfade konnten nicht gespeichert werden: {message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "Anzeige-Dichte",
             "displayDensityOptions": {

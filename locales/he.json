@@ -292,6 +292,15 @@
                 "saveFailed": "לא ניתן לשמור את ההוצאות: {message}"
             }
         },
+        "metadataRefreshSkipPaths": {
+            "label": "נתיבים לדילוג ברענון מטא-נתונים",
+            "placeholder": "דוגמה: temp, archived/old, test_models",
+            "help": "דלג על מודלים בנתיבי תיקיות אלה בעת רענון מטא-נתונים המוני (\"אחזר את כל המטא-נתונים\"). הזן נתיבי תיקיות יחסיים מופרדים בפסיקים.",
+            "validation": {
+                "noPaths": "הזן לפחות נתיב אחד מופרד בפסיקים.",
+                "saveFailed": "לא ניתן לשמור נתיבי דילוג: {message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "צפיפות תצוגה",
             "displayDensityOptions": {

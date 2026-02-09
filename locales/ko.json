@@ -292,6 +292,15 @@
                 "saveFailed": "제외 항목을 저장할 수 없습니다: {message}"
             }
         },
+        "metadataRefreshSkipPaths": {
+            "label": "메타데이터 새로고침 건너뛰기 경로",
+            "placeholder": "예: temp, archived/old, test_models",
+            "help": "일괄 메타데이터 새로고침(\"모든 메타데이터 가져오기\") 시 이 디렉터리 경로의 모델을 건너뜁니다. 쉼표로 구분된 상대 폴더 경로를 입력하세요.",
+            "validation": {
+                "noPaths": "쉼표로 구분하여 하나 이상의 경로를 입력하세요.",
+                "saveFailed": "건너뛰기 경로를 저장할 수 없습니다: {message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "표시 밀도",
             "displayDensityOptions": {

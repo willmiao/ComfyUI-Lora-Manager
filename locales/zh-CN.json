@@ -292,6 +292,15 @@
                 "saveFailed": "无法保存排除项：{message}"
             }
         },
+        "metadataRefreshSkipPaths": {
+            "label": "元数据刷新跳过路径",
+            "placeholder": "示例：temp, archived/old, test_models",
+            "help": "批量刷新元数据（\"获取全部元数据\"）时跳过这些目录路径中的模型。输入以逗号分隔的相对文件夹路径。",
+            "validation": {
+                "noPaths": "请输入至少一个路径，以逗号分隔。",
+                "saveFailed": "无法保存跳过路径：{message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "显示密度",
             "displayDensityOptions": {

@@ -35,6 +35,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     priority_tags: { ...DEFAULT_PRIORITY_TAG_CONFIG },
     update_flag_strategy: 'same_base',
     auto_organize_exclusions: [],
+    metadata_refresh_skip_paths: [],
 });
 
 export function createDefaultSettings() {

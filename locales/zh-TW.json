@@ -292,6 +292,15 @@
                 "saveFailed": "無法儲存排除項目：{message}"
             }
         },
+        "metadataRefreshSkipPaths": {
+            "label": "中繼資料重新整理跳過路徑",
+            "placeholder": "範例：temp, archived/old, test_models",
+            "help": "批次重新整理中繼資料（「擷取所有中繼資料」）時跳過這些目錄路徑中的模型。輸入以逗號分隔的相對資料夾路徑。",
+            "validation": {
+                "noPaths": "請輸入至少一個路徑，以逗號分隔。",
+                "saveFailed": "無法儲存跳過路徑：{message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "顯示密度",
             "displayDensityOptions": {

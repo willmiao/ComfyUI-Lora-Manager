@@ -292,6 +292,15 @@
                 "saveFailed": "Не удалось сохранить исключения: {message}"
             }
         },
+        "metadataRefreshSkipPaths": {
+            "label": "Пути для пропуска обновления метаданных",
+            "placeholder": "Пример: temp, archived/old, test_models",
+            "help": "Пропускать модели в этих каталогах при массовом обновлении метаданных («Получить все метаданные»). Введите относительные пути папок через запятую.",
+            "validation": {
+                "noPaths": "Введите хотя бы один путь, разделённый запятыми.",
+                "saveFailed": "Не удалось сохранить пути для пропуска: {message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "Плотность отображения",
             "displayDensityOptions": {

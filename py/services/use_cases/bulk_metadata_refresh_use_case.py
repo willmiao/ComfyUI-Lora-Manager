@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional, Protocol, Sequence
+from typing import Any, Dict, List, Optional, Protocol, Sequence
 
 from ..metadata_sync_service import MetadataSyncService
 from ...utils.metadata_manager import MetadataManager
@@ -43,11 +43,13 @@ class BulkMetadataRefreshUseCase:
         total_models = len(cache.raw_data)
 
         enable_metadata_archive_db = self._settings.get("enable_metadata_archive_db", False)
+        skip_paths = self._settings.get("metadata_refresh_skip_paths", [])
         to_process: Sequence[Dict[str, Any]] = [
             model
             for model in cache.raw_data
             if model.get("sha256")
             and not model.get("skip_metadata_refresh", False)
+            and not self._is_in_skip_path(model.get("folder", ""), skip_paths)
             and (not model.get("civitai") or not model["civitai"].get("id"))
             and not (
                 # Skip models confirmed not on CivitAI when no need to retry
@@ -120,6 +122,21 @@ class BulkMetadataRefreshUseCase:
         )
 
         return {"success": True, "message": message, "processed": processed, "updated": success, "total": total_models}
+
+    @staticmethod
+    def _is_in_skip_path(folder: str, skip_paths: List[str]) -> bool:
+        if not skip_paths or not folder:
+            return False
+        normalized = folder.replace("\\", "/").strip("/")
+        if not normalized:
+            return False
+        for sp in skip_paths:
+            nsp = sp.replace("\\", "/").strip("/")
+            if not nsp:
+                continue
+            if normalized == nsp or normalized.startswith(nsp + "/"):
+                return True
+        return False
 
     async def execute_with_error_handling(
         self,

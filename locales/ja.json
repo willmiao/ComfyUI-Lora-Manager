@@ -292,6 +292,15 @@
                 "saveFailed": "除外設定を保存できませんでした: {message}"
             }
         },
+        "metadataRefreshSkipPaths": {
+            "label": "メタデータ更新スキップパス",
+            "placeholder": "例：temp, archived/old, test_models",
+            "help": "一括メタデータ更新（「すべてのメタデータを取得」）時にこれらのディレクトリパス内のモデルをスキップします。カンマ区切りで相対フォルダパスを入力してください。",
+            "validation": {
+                "noPaths": "カンマで区切って少なくとも1つのパスを入力してください。",
+                "saveFailed": "スキップパスの保存に失敗しました：{message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "表示密度",
             "displayDensityOptions": {

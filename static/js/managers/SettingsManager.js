@@ -133,6 +133,10 @@ export class SettingsManager {
             backendSettings?.auto_organize_exclusions ?? defaults.auto_organize_exclusions
         );
 
+        merged.metadata_refresh_skip_paths = this.normalizePatternList(
+            backendSettings?.metadata_refresh_skip_paths ?? defaults.metadata_refresh_skip_paths
+        );
+
         Object.keys(merged).forEach(key => this.backendSettingKeys.add(key));
 
         return merged;
@@ -349,6 +353,16 @@ export class SettingsManager {
             });
         }
 
+        const metadataRefreshSkipPathsInput = document.getElementById('metadataRefreshSkipPaths');
+        if (metadataRefreshSkipPathsInput) {
+            metadataRefreshSkipPathsInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    this.saveMetadataRefreshSkipPaths();
+                }
+            });
+        }
+
         this.setupPriorityTagInputs();
 
         this.initialized = true;
@@ -408,6 +422,16 @@ export class SettingsManager {
         const autoOrganizeExclusionsError = document.getElementById('autoOrganizeExclusionsError');
         if (autoOrganizeExclusionsError) {
             autoOrganizeExclusionsError.textContent = '';
+        }
+
+        const metadataRefreshSkipPathsInput = document.getElementById('metadataRefreshSkipPaths');
+        if (metadataRefreshSkipPathsInput) {
+            const skipPaths = this.normalizePatternList(state.global.settings.metadata_refresh_skip_paths);
+            metadataRefreshSkipPathsInput.value = skipPaths.join(', ');
+        }
+        const metadataRefreshSkipPathsError = document.getElementById('metadataRefreshSkipPathsError');
+        if (metadataRefreshSkipPathsError) {
+            metadataRefreshSkipPathsError.textContent = '';
         }
 
         // Set video autoplay on hover setting
@@ -1715,6 +1739,58 @@ export class SettingsManager {
                     'settings.autoOrganizeExclusions.validation.saveFailed',
                     { message: error.message },
                     `Unable to save exclusions: ${error.message}`
+                );
+            }
+            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
+        }
+    }
+
+    async saveMetadataRefreshSkipPaths() {
+        const input = document.getElementById('metadataRefreshSkipPaths');
+        const errorElement = document.getElementById('metadataRefreshSkipPathsError');
+        if (!input) return;
+
+        const normalized = this.normalizePatternList(input.value);
+
+        if (input.value.trim() && normalized.length === 0) {
+            if (errorElement) {
+                errorElement.textContent = translate(
+                    'settings.metadataRefreshSkipPaths.validation.noPaths',
+                    {},
+                    'Enter at least one path separated by commas.'
+                );
+            }
+            return;
+        }
+
+        const current = this.normalizePatternList(state.global.settings.metadata_refresh_skip_paths);
+        if (normalized.join('|') === current.join('|')) {
+            if (errorElement) {
+                errorElement.textContent = '';
+            }
+            return;
+        }
+
+        try {
+            if (errorElement) {
+                errorElement.textContent = '';
+            }
+
+            await this.saveSetting('metadata_refresh_skip_paths', normalized);
+            input.value = normalized.join(', ');
+
+            showToast(
+                'toast.settings.settingsUpdated',
+                { setting: translate('settings.metadataRefreshSkipPaths.label') },
+                'success'
+            );
+        } catch (error) {
+            console.error('Failed to save metadata refresh skip paths:', error);
+            if (errorElement) {
+                errorElement.textContent = translate(
+                    'settings.metadataRefreshSkipPaths.validation.saveFailed',
+                    { message: error.message },
+                    `Unable to save skip paths: ${error.message}`
                 );
             }
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');

@@ -536,6 +536,25 @@
                 <div class="settings-input-error-message" id="autoOrganizeExclusionsError"></div>
             </div>
 
+            <div class="setting-item priority-tags-item auto-organize-exclusions-item">
+                <div class="setting-row priority-tags-header">
+                    <div class="setting-info priority-tags-info">
+                        <label>{{ t('settings.metadataRefreshSkipPaths.label') }}</label>
+                    </div>
+                </div>
+                <div class="input-help">
+                    {{ t('settings.metadataRefreshSkipPaths.help') }}
+                </div>
+                <textarea
+                    id="metadataRefreshSkipPaths"
+                    class="priority-tags-input auto-organize-exclusions-input"
+                    rows="3"
+                    placeholder="{{ t('settings.metadataRefreshSkipPaths.placeholder') }}"
+                    onblur="settingsManager.saveMetadataRefreshSkipPaths()"
+                ></textarea>
+                <div class="settings-input-error-message" id="metadataRefreshSkipPathsError"></div>
+            </div>
+
             <!-- Add Example Images Settings Section -->
             <div class="settings-section">
                 <h3>{{ t('settings.sections.exampleImages') }}</h3>

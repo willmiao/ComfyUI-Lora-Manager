@@ -292,6 +292,15 @@
                 "saveFailed": "Impossible d'enregistrer les exclusions : {message}"
             }
         },
+        "metadataRefreshSkipPaths": {
+            "label": "Chemins à ignorer pour l'actualisation des métadonnées",
+            "placeholder": "Exemple : temp, archived/old, test_models",
+            "help": "Ignorer les modèles dans ces chemins de répertoires lors de l'actualisation groupée des métadonnées (\"Récupérer toutes les métadonnées\"). Entrez des chemins de dossiers relatifs séparés par des virgules.",
+            "validation": {
+                "noPaths": "Entrez au moins un chemin séparé par des virgules.",
+                "saveFailed": "Impossible d'enregistrer les chemins à ignorer : {message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "Densité d'affichage",
             "displayDensityOptions": {
