@@ -132,7 +132,7 @@
         "badges": {
             "update": "更新",
             "updateAvailable": "有可用更新",
-            "skipRefresh": "[TODO: Translate] Metadata refresh skipped"
+            "skipRefresh": "元数据刷新已跳过"
         },
         "usage": {
             "timesUsed": "使用次数"
@@ -528,12 +528,12 @@
             "checkUpdates": "检查所选更新",
             "moveAll": "移动所选中到文件夹",
             "autoOrganize": "自动整理所选模型",
-            "skipMetadataRefresh": "[TODO: Translate] Skip Metadata Refresh for Selected",
-            "resumeMetadataRefresh": "[TODO: Translate] Resume Metadata Refresh for Selected",
+            "skipMetadataRefresh": "跳过所选模型的元数据刷新",
+            "resumeMetadataRefresh": "恢复所选模型的元数据刷新",
             "deleteAll": "删除选中模型",
             "clear": "清除选择",
-            "skipMetadataRefreshCount": "[TODO: Translate] Skip ({count} models)",
-            "resumeMetadataRefreshCount": "[TODO: Translate] Resume ({count} models)",
+            "skipMetadataRefreshCount": "跳过（{count} 个模型）",
+            "resumeMetadataRefreshCount": "恢复（{count} 个模型）",
             "autoOrganizeProgress": {
                 "initializing": "正在初始化自动整理...",
                 "starting": "正在为 {type} 启动自动整理...",
@@ -1384,11 +1384,11 @@
             "bulkBaseModelUpdateSuccess": "成功为 {count} 个模型更新基础模型",
             "bulkBaseModelUpdatePartial": "更新了 {success} 个模型，{failed} 个失败",
             "bulkBaseModelUpdateFailed": "为选中模型更新基础模型失败",
-            "skipMetadataRefreshUpdating": "[TODO: Translate] Updating metadata refresh flag for {count} model(s)...",
-            "skipMetadataRefreshSet": "[TODO: Translate] Metadata refresh skipped for {count} model(s)",
-            "skipMetadataRefreshCleared": "[TODO: Translate] Metadata refresh resumed for {count} model(s)",
-            "skipMetadataRefreshPartial": "[TODO: Translate] Updated {success} model(s), {failed} failed",
-            "skipMetadataRefreshFailed": "[TODO: Translate] Failed to update metadata refresh flag for selected models",
+            "skipMetadataRefreshUpdating": "正在更新 {count} 个模型的元数据刷新标志...",
+            "skipMetadataRefreshSet": "已为 {count} 个模型跳过元数据刷新",
+            "skipMetadataRefreshCleared": "已为 {count} 个模型恢复元数据刷新",
+            "skipMetadataRefreshPartial": "已更新 {success} 个模型，{failed} 个失败",
+            "skipMetadataRefreshFailed": "未能更新所选模型的元数据刷新标志",
             "bulkContentRatingUpdating": "正在为 {count} 个模型更新内容评级...",
             "bulkContentRatingSet": "已将 {count} 个模型的内容评级设置为 {level}",
             "bulkContentRatingPartial": "已将 {success} 个模型的内容评级设置为 {level}，{failed} 个失败",

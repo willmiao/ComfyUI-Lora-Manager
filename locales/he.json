@@ -132,7 +132,7 @@
         "badges": {
             "update": "עדכון",
             "updateAvailable": "עדכון זמין",
-            "skipRefresh": "[TODO: Translate] Metadata refresh skipped"
+            "skipRefresh": "רענון המטא-נתונים דולג"
         },
         "usage": {
             "timesUsed": "מספר שימושים"
@@ -528,12 +528,12 @@
             "checkUpdates": "בדוק עדכונים לבחירה",
             "moveAll": "העבר הכל לתיקייה",
             "autoOrganize": "ארגן אוטומטית נבחרים",
-            "skipMetadataRefresh": "[TODO: Translate] Skip Metadata Refresh for Selected",
-            "resumeMetadataRefresh": "[TODO: Translate] Resume Metadata Refresh for Selected",
+            "skipMetadataRefresh": "דילוג על רענון מטא-נתונים לנבחרים",
+            "resumeMetadataRefresh": "המשך רענון מטא-נתונים לנבחרים",
             "deleteAll": "מחק את כל המודלים",
             "clear": "נקה בחירה",
-            "skipMetadataRefreshCount": "[TODO: Translate] Skip ({count} models)",
-            "resumeMetadataRefreshCount": "[TODO: Translate] Resume ({count} models)",
+            "skipMetadataRefreshCount": "דילוג（{count} מודלים）",
+            "resumeMetadataRefreshCount": "המשך（{count} מודלים）",
             "autoOrganizeProgress": {
                 "initializing": "מאתחל ארגון אוטומטי...",
                 "starting": "מתחיל ארגון אוטומטי עבור {type}...",
@@ -1384,11 +1384,11 @@
             "bulkBaseModelUpdateSuccess": "עודכן בהצלחה מודל הבסיס עבור {count} מודל(ים)",
             "bulkBaseModelUpdatePartial": "עודכנו {success} מודל(ים), נכשלו {failed} מודל(ים)",
             "bulkBaseModelUpdateFailed": "עדכון מודל הבסיס עבור המודלים שנבחרו נכשל",
-            "skipMetadataRefreshUpdating": "[TODO: Translate] Updating metadata refresh flag for {count} model(s)...",
-            "skipMetadataRefreshSet": "[TODO: Translate] Metadata refresh skipped for {count} model(s)",
-            "skipMetadataRefreshCleared": "[TODO: Translate] Metadata refresh resumed for {count} model(s)",
-            "skipMetadataRefreshPartial": "[TODO: Translate] Updated {success} model(s), {failed} failed",
-            "skipMetadataRefreshFailed": "[TODO: Translate] Failed to update metadata refresh flag for selected models",
+            "skipMetadataRefreshUpdating": "מעדכן דגל רענון מטא-נתונים עבור {count} מודל(ים)...",
+            "skipMetadataRefreshSet": "רענון מטא-נתונים דולג עבור {count} מודל(ים)",
+            "skipMetadataRefreshCleared": "רענון מטא-נתונים התחדש עבור {count} מודל(ים)",
+            "skipMetadataRefreshPartial": "{success} מודל(ים) עודכנו, {failed} נכשלו",
+            "skipMetadataRefreshFailed": "נכשל בעדכון דגל רענון מטא-נתונים עבור המודלים הנבחרים",
             "bulkContentRatingUpdating": "מעדכן דירוג תוכן עבור {count} מודלים...",
             "bulkContentRatingSet": "דירוג התוכן הוגדר ל-{level} עבור {count} מודלים",
             "bulkContentRatingPartial": "דירוג התוכן הוגדר ל-{level} עבור {success} מודלים, {failed} נכשלו",

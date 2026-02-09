@@ -132,7 +132,7 @@
         "badges": {
             "update": "Actualización",
             "updateAvailable": "Actualización disponible",
-            "skipRefresh": "[TODO: Translate] Metadata refresh skipped"
+            "skipRefresh": "Actualización de metadatos omitida"
         },
         "usage": {
             "timesUsed": "Veces usado"
@@ -528,12 +528,12 @@
             "checkUpdates": "Comprobar actualizaciones para la selección",
             "moveAll": "Mover todos a carpeta",
             "autoOrganize": "Auto-organizar seleccionados",
-            "skipMetadataRefresh": "[TODO: Translate] Skip Metadata Refresh for Selected",
-            "resumeMetadataRefresh": "[TODO: Translate] Resume Metadata Refresh for Selected",
+            "skipMetadataRefresh": "Omitir actualización de metadatos para seleccionados",
+            "resumeMetadataRefresh": "Reanudar actualización de metadatos para seleccionados",
             "deleteAll": "Eliminar todos los modelos",
             "clear": "Limpiar selección",
-            "skipMetadataRefreshCount": "[TODO: Translate] Skip ({count} models)",
-            "resumeMetadataRefreshCount": "[TODO: Translate] Resume ({count} models)",
+            "skipMetadataRefreshCount": "Omitir（{count} modelos）",
+            "resumeMetadataRefreshCount": "Reanudar（{count} modelos）",
             "autoOrganizeProgress": {
                 "initializing": "Inicializando auto-organización...",
                 "starting": "Iniciando auto-organización para {type}...",
@@ -1384,11 +1384,11 @@
             "bulkBaseModelUpdateSuccess": "Modelo base actualizado exitosamente para {count} modelo(s)",
             "bulkBaseModelUpdatePartial": "Actualizados {success} modelo(s), fallaron {failed} modelo(s)",
             "bulkBaseModelUpdateFailed": "Error al actualizar el modelo base para los modelos seleccionados",
-            "skipMetadataRefreshUpdating": "[TODO: Translate] Updating metadata refresh flag for {count} model(s)...",
-            "skipMetadataRefreshSet": "[TODO: Translate] Metadata refresh skipped for {count} model(s)",
-            "skipMetadataRefreshCleared": "[TODO: Translate] Metadata refresh resumed for {count} model(s)",
-            "skipMetadataRefreshPartial": "[TODO: Translate] Updated {success} model(s), {failed} failed",
-            "skipMetadataRefreshFailed": "[TODO: Translate] Failed to update metadata refresh flag for selected models",
+            "skipMetadataRefreshUpdating": "Actualizando flag de actualización de metadatos para {count} modelo(s)...",
+            "skipMetadataRefreshSet": "Actualización de metadatos omitida para {count} modelo(s)",
+            "skipMetadataRefreshCleared": "Actualización de metadatos reanudada para {count} modelo(s)",
+            "skipMetadataRefreshPartial": "{success} modelo(s) actualizados, {failed} fallaron",
+            "skipMetadataRefreshFailed": "Error al actualizar flag de actualización de metadatos para los modelos seleccionados",
             "bulkContentRatingUpdating": "Actualizando la clasificación de contenido para {count} modelo(s)...",
             "bulkContentRatingSet": "Clasificación de contenido establecida en {level} para {count} modelo(s)",
             "bulkContentRatingPartial": "Clasificación de contenido establecida en {level} para {success} modelo(s), {failed} fallaron",

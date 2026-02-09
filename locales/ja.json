@@ -132,7 +132,7 @@
         "badges": {
             "update": "アップデート",
             "updateAvailable": "アップデートがあります",
-            "skipRefresh": "[TODO: Translate] Metadata refresh skipped"
+            "skipRefresh": "メタデータの更新がスキップされました"
         },
         "usage": {
             "timesUsed": "使用回数"
@@ -528,12 +528,12 @@
             "checkUpdates": "選択項目の更新を確認",
             "moveAll": "すべてをフォルダに移動",
             "autoOrganize": "自動整理を実行",
-            "skipMetadataRefresh": "[TODO: Translate] Skip Metadata Refresh for Selected",
-            "resumeMetadataRefresh": "[TODO: Translate] Resume Metadata Refresh for Selected",
+            "skipMetadataRefresh": "選択したモデルのメタデータ更新をスキップ",
+            "resumeMetadataRefresh": "選択したモデルのメタデータ更新を再開",
             "deleteAll": "すべてのモデルを削除",
             "clear": "選択をクリア",
-            "skipMetadataRefreshCount": "[TODO: Translate] Skip ({count} models)",
-            "resumeMetadataRefreshCount": "[TODO: Translate] Resume ({count} models)",
+            "skipMetadataRefreshCount": "スキップ（{count}モデル）",
+            "resumeMetadataRefreshCount": "再開（{count}モデル）",
             "autoOrganizeProgress": {
                 "initializing": "自動整理を初期化中...",
                 "starting": "{type}の自動整理を開始中...",
@@ -1384,11 +1384,11 @@
             "bulkBaseModelUpdateSuccess": "{count} モデルのベースモデルが正常に更新されました",
             "bulkBaseModelUpdatePartial": "{success} モデルを更新、{failed} モデルは失敗しました",
             "bulkBaseModelUpdateFailed": "選択したモデルのベースモデルの更新に失敗しました",
-            "skipMetadataRefreshUpdating": "[TODO: Translate] Updating metadata refresh flag for {count} model(s)...",
-            "skipMetadataRefreshSet": "[TODO: Translate] Metadata refresh skipped for {count} model(s)",
-            "skipMetadataRefreshCleared": "[TODO: Translate] Metadata refresh resumed for {count} model(s)",
-            "skipMetadataRefreshPartial": "[TODO: Translate] Updated {success} model(s), {failed} failed",
-            "skipMetadataRefreshFailed": "[TODO: Translate] Failed to update metadata refresh flag for selected models",
+            "skipMetadataRefreshUpdating": "{count}モデルのメタデータ更新フラグを更新中...",
+            "skipMetadataRefreshSet": "{count}モデルのメタデータ更新をスキップしました",
+            "skipMetadataRefreshCleared": "{count}モデルのメタデータ更新を再開しました",
+            "skipMetadataRefreshPartial": "{success}モデルを更新しました。{failed}モデルで失敗しました",
+            "skipMetadataRefreshFailed": "選択したモデルのメタデータ更新フラグの更新に失敗しました",
             "bulkContentRatingUpdating": "{count} 件のモデルのコンテンツレーティングを更新中...",
             "bulkContentRatingSet": "{count} 件のモデルのコンテンツレーティングを {level} に設定しました",
             "bulkContentRatingPartial": "{success} 件のモデルのコンテンツレーティングを {level} に設定、{failed} 件は失敗しました",
