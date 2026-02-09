@@ -1,7 +1,7 @@
 import { BaseContextMenu } from './BaseContextMenu.js';
 import { state } from '../../state/index.js';
 import { bulkManager } from '../../managers/BulkManager.js';
-import { updateElementText } from '../../utils/i18nHelpers.js';
+import { updateElementText, translate } from '../../utils/i18nHelpers.js';
 
 export class BulkContextMenu extends BaseContextMenu {
     constructor() {
@@ -71,6 +71,40 @@ export class BulkContextMenu extends BaseContextMenu {
         if (setContentRatingItem) {
             setContentRatingItem.style.display = config.setContentRating ? 'flex' : 'none';
         }
+
+        const skipMetadataRefreshItem = this.menu.querySelector('[data-action="skip-metadata-refresh"]');
+        const resumeMetadataRefreshItem = this.menu.querySelector('[data-action="resume-metadata-refresh"]');
+
+        if (skipMetadataRefreshItem && resumeMetadataRefreshItem) {
+            const skipCount = this.countSkipStatus(true);
+            const resumeCount = this.countSkipStatus(false);
+            const totalCount = skipCount + resumeCount;
+
+            if (skipCount === totalCount) {
+                skipMetadataRefreshItem.style.display = 'none';
+                resumeMetadataRefreshItem.style.display = 'flex';
+                resumeMetadataRefreshItem.querySelector('span').textContent = translate(
+                    'loras.bulkOperations.resumeMetadataRefresh'
+                );
+            } else if (resumeCount === totalCount) {
+                skipMetadataRefreshItem.style.display = 'flex';
+                resumeMetadataRefreshItem.style.display = 'none';
+                skipMetadataRefreshItem.querySelector('span').textContent = translate(
+                    'loras.bulkOperations.skipMetadataRefresh'
+                );
+            } else {
+                skipMetadataRefreshItem.style.display = 'flex';
+                resumeMetadataRefreshItem.style.display = 'flex';
+                skipMetadataRefreshItem.querySelector('span').textContent = translate(
+                    'loras.bulkOperations.skipMetadataRefreshCount',
+                    { count: resumeCount }
+                );
+                resumeMetadataRefreshItem.querySelector('span').textContent = translate(
+                    'loras.bulkOperations.resumeMetadataRefreshCount',
+                    { count: skipCount }
+                );
+            }
+        }
     }
 
     updateSelectedCountHeader() {
@@ -78,6 +112,20 @@ export class BulkContextMenu extends BaseContextMenu {
         if (headerElement) {
             updateElementText(headerElement, 'loras.bulkOperations.selected', { count: state.selectedModels.size });
         }
+    }
+
+    countSkipStatus(skipState) {
+        let count = 0;
+        for (const filePath of state.selectedModels) {
+            const card = document.querySelector(`.model-card[data-filepath="${filePath}"]`);
+            if (card) {
+                const isSkipped = card.dataset.skip_metadata_refresh === 'true';
+                if (isSkipped === skipState) {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 
     showMenu(x, y, card) {
@@ -117,6 +165,12 @@ export class BulkContextMenu extends BaseContextMenu {
                 break;
             case 'auto-organize':
                 bulkManager.autoOrganizeSelectedModels();
+                break;
+            case 'skip-metadata-refresh':
+                bulkManager.setSkipMetadataRefresh(true);
+                break;
+            case 'resume-metadata-refresh':
+                bulkManager.setSkipMetadataRefresh(false);
                 break;
             case 'delete-all':
                 bulkManager.showBulkDeleteModal();

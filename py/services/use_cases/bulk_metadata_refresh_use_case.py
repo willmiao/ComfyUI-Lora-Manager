@@ -47,6 +47,7 @@ class BulkMetadataRefreshUseCase:
             model
             for model in cache.raw_data
             if model.get("sha256")
+            and not model.get("skip_metadata_refresh", False)
             and (not model.get("civitai") or not model["civitai"].get("id"))
             and not (
                 # Skip models confirmed not on CivitAI when no need to retry

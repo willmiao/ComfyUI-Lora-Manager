@@ -48,6 +48,7 @@ class LoraService(BaseModelService):
             "notes": lora_data.get("notes", ""),
             "favorite": lora_data.get("favorite", False),
             "update_available": bool(lora_data.get("update_available", False)),
+            "skip_metadata_refresh": bool(lora_data.get("skip_metadata_refresh", False)),
             "sub_type": sub_type,
             "civitai": self.filter_civitai_data(
                 lora_data.get("civitai", {}), minimal=True

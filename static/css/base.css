@@ -60,6 +60,9 @@ body {
     --badge-update-bg: oklch(72% 0.2 220);
     --badge-update-text: oklch(28% 0.03 220);
     --badge-update-glow: oklch(72% 0.2 220 / 0.28);
+    --badge-skip-refresh-bg: oklch(82% 0.12 45);
+    --badge-skip-refresh-text: oklch(35% 0.02 45);
+    --badge-skip-refresh-glow: oklch(82% 0.12 45 / 0.15);
 
     /* Spacing Scale */
     --space-1: calc(8px * 1);
@@ -114,6 +117,9 @@ html[data-theme="light"] {
     --badge-update-bg: oklch(62% 0.18 220);
     --badge-update-text: oklch(98% 0.02 240);
     --badge-update-glow: oklch(62% 0.18 220 / 0.4);
+    --badge-skip-refresh-bg: oklch(82% 0.12 45);
+    --badge-skip-refresh-text: oklch(98% 0.02 45);
+    --badge-skip-refresh-glow: oklch(82% 0.12 45 / 0.15);
 }
 
 body {

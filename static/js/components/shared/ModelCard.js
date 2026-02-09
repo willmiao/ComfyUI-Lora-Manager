@@ -433,9 +433,10 @@ export function createModelCard(model, modelType) {
     card.dataset.usage_count = String(model.usage_count);
     card.dataset.notes = model.notes || '';
     card.dataset.base_model = model.base_model || 'Unknown';
-    card.dataset.favorite = model.favorite ? 'true' : 'false';
-    const hasUpdateAvailable = Boolean(model.update_available);
-    card.dataset.update_available = hasUpdateAvailable ? 'true' : 'false';
+        card.dataset.favorite = model.favorite ? 'true' : 'false';
+        const hasUpdateAvailable = Boolean(model.update_available);
+        card.dataset.update_available = hasUpdateAvailable ? 'true' : 'false';
+        card.dataset.skip_metadata_refresh = model.skip_metadata_refresh ? 'true' : 'false';
 
     // To only show usage_count when sorting by usage. 
     const pageState = getCurrentPageState();
@@ -480,6 +481,10 @@ export function createModelCard(model, modelType) {
     const shouldBlur = state.settings.blur_mature_content && nsfwLevel > NSFW_LEVELS.PG13;
     if (shouldBlur) {
         card.classList.add('nsfw-content');
+    }
+
+    if (model.skip_metadata_refresh) {
+        card.classList.add('skip-refresh');
     }
 
     // Apply selection state if in bulk mode and this card is in the selected set (LoRA only)
@@ -606,6 +611,11 @@ export function createModelCard(model, modelType) {
                     ${hasUpdateAvailable ? `
                         <span class="model-update-badge" title="${updateBadgeTooltip}">
                             <i class="fas fa-arrow-up"></i>
+                        </span>
+                    ` : ''}
+                    ${model.skip_metadata_refresh ? `
+                        <span class="model-skip-refresh-badge" title="${translate('modelCard.badges.skipRefresh', {}, 'Metadata refresh skipped')}">
+                            <i class="fas fa-ban"></i>
                         </span>
                     ` : ''}
                 </div>

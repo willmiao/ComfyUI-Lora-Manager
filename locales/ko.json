@@ -131,7 +131,8 @@
         },
         "badges": {
             "update": "업데이트",
-            "updateAvailable": "업데이트 가능"
+            "updateAvailable": "업데이트 가능",
+            "skipRefresh": "[TODO: Translate] Metadata refresh skipped"
         },
         "usage": {
             "timesUsed": "사용 횟수"
@@ -527,8 +528,12 @@
             "checkUpdates": "선택 항목 업데이트 확인",
             "moveAll": "모두 폴더로 이동",
             "autoOrganize": "자동 정리 선택",
+            "skipMetadataRefresh": "[TODO: Translate] Skip Metadata Refresh for Selected",
+            "resumeMetadataRefresh": "[TODO: Translate] Resume Metadata Refresh for Selected",
             "deleteAll": "모든 모델 삭제",
             "clear": "선택 지우기",
+            "skipMetadataRefreshCount": "[TODO: Translate] Skip ({count} models)",
+            "resumeMetadataRefreshCount": "[TODO: Translate] Resume ({count} models)",
             "autoOrganizeProgress": {
                 "initializing": "자동 정리 초기화 중...",
                 "starting": "{type}에 대한 자동 정리 시작...",
@@ -1379,6 +1384,11 @@
             "bulkBaseModelUpdateSuccess": "{count}개의 모델에 베이스 모델이 성공적으로 업데이트되었습니다",
             "bulkBaseModelUpdatePartial": "{success}개의 모델이 업데이트되었고, {failed}개의 모델이 실패했습니다",
             "bulkBaseModelUpdateFailed": "선택한 모델의 베이스 모델 업데이트에 실패했습니다",
+            "skipMetadataRefreshUpdating": "[TODO: Translate] Updating metadata refresh flag for {count} model(s)...",
+            "skipMetadataRefreshSet": "[TODO: Translate] Metadata refresh skipped for {count} model(s)",
+            "skipMetadataRefreshCleared": "[TODO: Translate] Metadata refresh resumed for {count} model(s)",
+            "skipMetadataRefreshPartial": "[TODO: Translate] Updated {success} model(s), {failed} failed",
+            "skipMetadataRefreshFailed": "[TODO: Translate] Failed to update metadata refresh flag for selected models",
             "bulkContentRatingUpdating": "{count}개 모델의 콘텐츠 등급을 업데이트하는 중...",
             "bulkContentRatingSet": "{count}개 모델의 콘텐츠 등급을 {level}(으)로 설정했습니다",
             "bulkContentRatingPartial": "{success}개 모델의 콘텐츠 등급을 {level}(으)로 설정했고, {failed}개는 실패했습니다",

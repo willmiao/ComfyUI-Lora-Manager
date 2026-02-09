@@ -131,7 +131,8 @@
         },
         "badges": {
             "update": "Обновление",
-            "updateAvailable": "Доступно обновление"
+            "updateAvailable": "Доступно обновление",
+            "skipRefresh": "[TODO: Translate] Metadata refresh skipped"
         },
         "usage": {
             "timesUsed": "Количество использований"
@@ -527,8 +528,12 @@
             "checkUpdates": "Проверить обновления для выбранных",
             "moveAll": "Переместить все в папку",
             "autoOrganize": "Автоматически организовать выбранные",
+            "skipMetadataRefresh": "[TODO: Translate] Skip Metadata Refresh for Selected",
+            "resumeMetadataRefresh": "[TODO: Translate] Resume Metadata Refresh for Selected",
             "deleteAll": "Удалить все модели",
             "clear": "Очистить выбор",
+            "skipMetadataRefreshCount": "[TODO: Translate] Skip ({count} models)",
+            "resumeMetadataRefreshCount": "[TODO: Translate] Resume ({count} models)",
             "autoOrganizeProgress": {
                 "initializing": "Инициализация автоматической организации...",
                 "starting": "Запуск автоматической организации для {type}...",
@@ -1379,6 +1384,11 @@
             "bulkBaseModelUpdateSuccess": "Базовая модель успешно обновлена для {count} моделей",
             "bulkBaseModelUpdatePartial": "Обновлено {success} моделей, не удалось обновить {failed} моделей",
             "bulkBaseModelUpdateFailed": "Не удалось обновить базовую модель для выбранных моделей",
+            "skipMetadataRefreshUpdating": "[TODO: Translate] Updating metadata refresh flag for {count} model(s)...",
+            "skipMetadataRefreshSet": "[TODO: Translate] Metadata refresh skipped for {count} model(s)",
+            "skipMetadataRefreshCleared": "[TODO: Translate] Metadata refresh resumed for {count} model(s)",
+            "skipMetadataRefreshPartial": "[TODO: Translate] Updated {success} model(s), {failed} failed",
+            "skipMetadataRefreshFailed": "[TODO: Translate] Failed to update metadata refresh flag for selected models",
             "bulkContentRatingUpdating": "Обновление рейтинга контента для {count} модель(ей)...",
             "bulkContentRatingSet": "Рейтинг контента установлен на {level} для {count} модель(ей)",
             "bulkContentRatingPartial": "Рейтинг контента {level} установлен для {success} модель(ей), {failed} не удалось",

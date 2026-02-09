@@ -40,7 +40,8 @@ export class BulkManager {
                 moveAll: true,
                 autoOrganize: true,
                 deleteAll: true,
-                setContentRating: true
+                setContentRating: true,
+                skipMetadataRefresh: true
             },
             [MODEL_TYPES.EMBEDDING]: {
                 addTags: true,
@@ -51,7 +52,8 @@ export class BulkManager {
                 moveAll: true,
                 autoOrganize: true,
                 deleteAll: true,
-                setContentRating: false
+                setContentRating: false,
+                skipMetadataRefresh: true
             },
             [MODEL_TYPES.CHECKPOINT]: {
                 addTags: true,
@@ -62,7 +64,8 @@ export class BulkManager {
                 moveAll: false,
                 autoOrganize: true,
                 deleteAll: true,
-                setContentRating: true
+                setContentRating: true,
+                skipMetadataRefresh: true
             },
             recipes: {
                 addTags: false,
@@ -73,7 +76,8 @@ export class BulkManager {
                 moveAll: true,
                 autoOrganize: false,
                 deleteAll: true,
-                setContentRating: false
+                setContentRating: false,
+                skipMetadataRefresh: false
             }
         };
 
@@ -1193,6 +1197,59 @@ export class BulkManager {
         }
 
         return successCount > 0;
+    }
+
+    async setSkipMetadataRefresh(value) {
+        if (state.selectedModels.size === 0) {
+            showToast('toast.models.noModelsSelected', {}, 'warning');
+            return;
+        }
+
+        const totalCount = state.selectedModels.size;
+
+        state.loadingManager.showSimpleLoading(
+            translate('toast.models.skipMetadataRefreshUpdating', { count: totalCount })
+        );
+        let cancelled = false;
+        state.loadingManager.showCancelButton(() => {
+            cancelled = true;
+        });
+
+        let successCount = 0;
+        let failureCount = 0;
+
+        try {
+            const apiClient = getModelApiClient();
+            for (const filePath of state.selectedModels) {
+                if (cancelled) {
+                    showToast('toast.api.operationCancelled', {}, 'info');
+                    break;
+                }
+                try {
+                    await apiClient.saveModelMetadata(filePath, { skip_metadata_refresh: value });
+                    successCount++;
+                } catch (error) {
+                    failureCount++;
+                    console.error(`Failed to set skip_metadata_refresh for ${filePath}:`, error);
+                }
+            }
+        } finally {
+            state.loadingManager?.hide?.();
+        }
+
+        if (successCount === totalCount) {
+            const toastKey = value
+                ? 'toast.models.skipMetadataRefreshSet'
+                : 'toast.models.skipMetadataRefreshCleared';
+            showToast(toastKey, { count: successCount }, 'success');
+        } else if (successCount > 0) {
+            showToast('toast.models.skipMetadataRefreshPartial', {
+                success: successCount,
+                failed: failureCount
+            }, 'warning');
+        } else {
+            showToast('toast.models.skipMetadataRefreshFailed', {}, 'error');
+        }
     }
 
     /**

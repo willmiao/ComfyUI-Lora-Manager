@@ -131,7 +131,8 @@
         },
         "badges": {
             "update": "更新",
-            "updateAvailable": "有可用更新"
+            "updateAvailable": "有可用更新",
+            "skipRefresh": "[TODO: Translate] Metadata refresh skipped"
         },
         "usage": {
             "timesUsed": "使用次數"
@@ -527,8 +528,12 @@
             "checkUpdates": "檢查所選更新",
             "moveAll": "全部移動到資料夾",
             "autoOrganize": "自動整理所選模型",
+            "skipMetadataRefresh": "[TODO: Translate] Skip Metadata Refresh for Selected",
+            "resumeMetadataRefresh": "[TODO: Translate] Resume Metadata Refresh for Selected",
             "deleteAll": "刪除全部模型",
             "clear": "清除選取",
+            "skipMetadataRefreshCount": "[TODO: Translate] Skip ({count} models)",
+            "resumeMetadataRefreshCount": "[TODO: Translate] Resume ({count} models)",
             "autoOrganizeProgress": {
                 "initializing": "正在初始化自動整理...",
                 "starting": "正在開始自動整理 {type}...",
@@ -1379,6 +1384,11 @@
             "bulkBaseModelUpdateSuccess": "已成功為 {count} 個模型更新基礎模型",
             "bulkBaseModelUpdatePartial": "已更新 {success} 個模型，{failed} 個模型失敗",
             "bulkBaseModelUpdateFailed": "更新所選模型的基礎模型失敗",
+            "skipMetadataRefreshUpdating": "[TODO: Translate] Updating metadata refresh flag for {count} model(s)...",
+            "skipMetadataRefreshSet": "[TODO: Translate] Metadata refresh skipped for {count} model(s)",
+            "skipMetadataRefreshCleared": "[TODO: Translate] Metadata refresh resumed for {count} model(s)",
+            "skipMetadataRefreshPartial": "[TODO: Translate] Updated {success} model(s), {failed} failed",
+            "skipMetadataRefreshFailed": "[TODO: Translate] Failed to update metadata refresh flag for selected models",
             "bulkContentRatingUpdating": "正在為 {count} 個模型更新內容分級...",
             "bulkContentRatingSet": "已將 {count} 個模型的內容分級設定為 {level}",
             "bulkContentRatingPartial": "已將 {success} 個模型的內容分級設定為 {level}，{failed} 個失敗",

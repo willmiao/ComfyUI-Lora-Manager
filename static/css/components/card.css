@@ -658,3 +658,25 @@
     margin-left: 1px;
     line-height: 1;
 }
+
+.model-skip-refresh-badge {
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border-radius: 3px;
+    background: var(--badge-skip-refresh-bg);
+    color: var(--badge-skip-refresh-text);
+    font-size: 0.65rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px var(--badge-skip-refresh-glow);
+    border: 1px solid color-mix(in oklab, var(--badge-skip-refresh-bg) 70%, transparent);
+    opacity: 0.85;
+}
+
+.model-skip-refresh-badge i {
+    margin-left: 0;
+    line-height: 1;
+}

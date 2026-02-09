@@ -52,6 +52,7 @@ class PersistentModelCache:
         "trained_words",
         "license_flags",
         "civitai_deleted",
+        "skip_metadata_refresh",
         "exclude",
         "db_checked",
         "last_checked_at",
@@ -183,6 +184,7 @@ class PersistentModelCache:
                 "tags": tags.get(file_path, []),
                 "civitai": civitai,
                 "civitai_deleted": bool(row["civitai_deleted"]),
+                "skip_metadata_refresh": bool(row["skip_metadata_refresh"]),
                 "license_flags": int(license_value),
             }
             raw_data.append(item)
@@ -491,6 +493,7 @@ class PersistentModelCache:
             "civitai_creator_username": "TEXT",
             "civitai_model_type": "TEXT",
             "civitai_deleted": "INTEGER DEFAULT 0",
+            "skip_metadata_refresh": "INTEGER DEFAULT 0",
             # Persisting without explicit flags should assume CivitAI's documented defaults (0b111001 == 57).
             "license_flags": f"INTEGER DEFAULT {DEFAULT_LICENSE_FLAGS}",
         }
@@ -563,6 +566,7 @@ class PersistentModelCache:
             trained_words_json,
             int(license_flags),
             1 if item.get("civitai_deleted") else 0,
+            1 if item.get("skip_metadata_refresh") else 0,
             1 if item.get("exclude") else 0,
             1 if item.get("db_checked") else 0,
             float(item.get("last_checked_at") or 0.0),

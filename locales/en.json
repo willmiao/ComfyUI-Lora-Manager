@@ -131,7 +131,8 @@
         },
         "badges": {
             "update": "Update",
-            "updateAvailable": "Update available"
+            "updateAvailable": "Update available",
+            "skipRefresh": "Metadata refresh skipped"
         },
         "usage": {
             "timesUsed": "Times used"
@@ -527,8 +528,12 @@
             "checkUpdates": "Check Updates for Selected",
             "moveAll": "Move Selected to Folder",
             "autoOrganize": "Auto-Organize Selected",
+            "skipMetadataRefresh": "Skip Metadata Refresh for Selected",
+            "resumeMetadataRefresh": "Resume Metadata Refresh for Selected",
             "deleteAll": "Delete Selected Models",
             "clear": "Clear Selection",
+            "skipMetadataRefreshCount": "Skip ({count} models)",
+            "resumeMetadataRefreshCount": "Resume ({count} models)",
             "autoOrganizeProgress": {
                 "initializing": "Initializing auto-organize...",
                 "starting": "Starting auto-organize for {type}...",
@@ -1379,6 +1384,11 @@
             "bulkBaseModelUpdateSuccess": "Successfully updated base model for {count} model(s)",
             "bulkBaseModelUpdatePartial": "Updated {success} model(s), failed {failed} model(s)",
             "bulkBaseModelUpdateFailed": "Failed to update base model for selected models",
+            "skipMetadataRefreshUpdating": "Updating metadata refresh flag for {count} model(s)...",
+            "skipMetadataRefreshSet": "Metadata refresh skipped for {count} model(s)",
+            "skipMetadataRefreshCleared": "Metadata refresh resumed for {count} model(s)",
+            "skipMetadataRefreshPartial": "Updated {success} model(s), {failed} failed",
+            "skipMetadataRefreshFailed": "Failed to update metadata refresh flag for selected models",
             "bulkContentRatingUpdating": "Updating content rating for {count} model(s)...",
             "bulkContentRatingSet": "Set content rating to {level} for {count} model(s)",
             "bulkContentRatingPartial": "Set content rating to {level} for {success} model(s), {failed} failed",

@@ -131,7 +131,8 @@
         },
         "badges": {
             "update": "Mise à jour",
-            "updateAvailable": "Mise à jour disponible"
+            "updateAvailable": "Mise à jour disponible",
+            "skipRefresh": "[TODO: Translate] Metadata refresh skipped"
         },
         "usage": {
             "timesUsed": "Nombre d'utilisations"
@@ -527,8 +528,12 @@
             "checkUpdates": "Vérifier les mises à jour pour la sélection",
             "moveAll": "Déplacer tout vers un dossier",
             "autoOrganize": "Auto-organiser la sélection",
+            "skipMetadataRefresh": "[TODO: Translate] Skip Metadata Refresh for Selected",
+            "resumeMetadataRefresh": "[TODO: Translate] Resume Metadata Refresh for Selected",
             "deleteAll": "Supprimer tous les modèles",
             "clear": "Effacer la sélection",
+            "skipMetadataRefreshCount": "[TODO: Translate] Skip ({count} models)",
+            "resumeMetadataRefreshCount": "[TODO: Translate] Resume ({count} models)",
             "autoOrganizeProgress": {
                 "initializing": "Initialisation de l'auto-organisation...",
                 "starting": "Démarrage de l'auto-organisation pour {type}...",
@@ -1379,6 +1384,11 @@
             "bulkBaseModelUpdateSuccess": "Modèle de base mis à jour avec succès pour {count} modèle(s)",
             "bulkBaseModelUpdatePartial": "{success} modèle(s) mis à jour, {failed} modèle(s) en échec",
             "bulkBaseModelUpdateFailed": "Échec de la mise à jour du modèle de base pour les modèles sélectionnés",
+            "skipMetadataRefreshUpdating": "[TODO: Translate] Updating metadata refresh flag for {count} model(s)...",
+            "skipMetadataRefreshSet": "[TODO: Translate] Metadata refresh skipped for {count} model(s)",
+            "skipMetadataRefreshCleared": "[TODO: Translate] Metadata refresh resumed for {count} model(s)",
+            "skipMetadataRefreshPartial": "[TODO: Translate] Updated {success} model(s), {failed} failed",
+            "skipMetadataRefreshFailed": "[TODO: Translate] Failed to update metadata refresh flag for selected models",
             "bulkContentRatingUpdating": "Mise à jour de la classification du contenu pour {count} modèle(s)...",
             "bulkContentRatingSet": "Classification du contenu définie sur {level} pour {count} modèle(s)",
             "bulkContentRatingPartial": "Classification du contenu définie sur {level} pour {success} modèle(s), {failed} échec(s)",
