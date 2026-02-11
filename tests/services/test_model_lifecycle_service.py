@@ -322,3 +322,339 @@ async def test_delete_model_removes_gguf_file(tmp_path: Path):
     assert not metadata_path.exists()
     assert not preview_path.exists()
     assert any(item.endswith("model.gguf") for item in result["deleted_files"])
+
+
+# =============================================================================
+# Tests for exclude_model functionality
+# =============================================================================
+
+
+@pytest.mark.asyncio
+async def test_exclude_model_marks_as_excluded(tmp_path: Path):
+    """Verify exclude_model marks model as excluded and updates metadata."""
+    model_path = tmp_path / "test_model.safetensors"
+    model_path.write_bytes(b"content")
+
+    metadata_path = tmp_path / "test_model.metadata.json"
+    metadata_payload = {"file_name": "test_model", "file_path": str(model_path)}
+    metadata_path.write_text(json.dumps(metadata_payload))
+
+    raw_data = [
+        {
+            "file_path": str(model_path),
+            "tags": ["tag1", "tag2"],
+        }
+    ]
+
+    class ExcludeTestScanner:
+        def __init__(self, raw_data):
+            self.cache = DummyCache(raw_data)
+            self.model_type = "lora"
+            self._tags_count = {"tag1": 1, "tag2": 1}
+            self._hash_index = DummyHashIndex()
+            self._excluded_models = []
+
+        async def get_cached_data(self):
+            return self.cache
+
+    scanner = ExcludeTestScanner(raw_data)
+
+    saved_metadata = []
+
+    class SavingMetadataManager:
+        async def save_metadata(self, path: str, metadata: dict):
+            saved_metadata.append((path, metadata.copy()))
+
+    async def metadata_loader(path: str):
+        return metadata_payload.copy()
+
+    service = ModelLifecycleService(
+        scanner=scanner,
+        metadata_manager=SavingMetadataManager(),
+        metadata_loader=metadata_loader,
+    )
+
+    result = await service.exclude_model(str(model_path))
+
+    assert result["success"] is True
+    assert "excluded" in result["message"].lower()
+    assert saved_metadata[0][1]["exclude"] is True
+    assert str(model_path) in scanner._excluded_models
+
+
+@pytest.mark.asyncio
+async def test_exclude_model_updates_tag_counts(tmp_path: Path):
+    """Verify exclude_model decrements tag counts correctly."""
+    model_path = tmp_path / "test_model.safetensors"
+    model_path.write_bytes(b"content")
+
+    metadata_path = tmp_path / "test_model.metadata.json"
+    metadata_path.write_text(json.dumps({}))
+
+    raw_data = [
+        {
+            "file_path": str(model_path),
+            "tags": ["tag1", "tag2"],
+        }
+    ]
+
+    class TagCountScanner:
+        def __init__(self, raw_data):
+            self.cache = DummyCache(raw_data)
+            self.model_type = "lora"
+            self._tags_count = {"tag1": 2, "tag2": 1}
+            self._hash_index = DummyHashIndex()
+            self._excluded_models = []
+
+        async def get_cached_data(self):
+            return self.cache
+
+    scanner = TagCountScanner(raw_data)
+
+    class DummyMetadataManagerLocal:
+        async def save_metadata(self, path: str, metadata: dict):
+            pass
+
+    async def metadata_loader(path: str):
+        return {}
+
+    service = ModelLifecycleService(
+        scanner=scanner,
+        metadata_manager=DummyMetadataManagerLocal(),
+        metadata_loader=metadata_loader,
+    )
+
+    await service.exclude_model(str(model_path))
+
+    # tag2 count should become 0 and be removed
+    assert "tag2" not in scanner._tags_count
+    # tag1 count should decrement to 1
+    assert scanner._tags_count["tag1"] == 1
+
+
+@pytest.mark.asyncio
+async def test_exclude_model_empty_path_raises_error():
+    """Verify exclude_model raises ValueError for empty path."""
+    service = ModelLifecycleService(
+        scanner=VersionAwareScanner([]),
+        metadata_manager=DummyMetadataManager({}),
+        metadata_loader=lambda x: {},
+    )
+
+    with pytest.raises(ValueError, match="Model path is required"):
+        await service.exclude_model("")
+
+
+# =============================================================================
+# Tests for bulk_delete_models functionality
+# =============================================================================
+
+
+@pytest.mark.asyncio
+async def test_bulk_delete_models_deletes_multiple_files(tmp_path: Path):
+    """Verify bulk_delete_models deletes multiple models via scanner."""
+    model1_path = tmp_path / "model1.safetensors"
+    model1_path.write_bytes(b"content1")
+    model2_path = tmp_path / "model2.safetensors"
+    model2_path.write_bytes(b"content2")
+
+    file_paths = [str(model1_path), str(model2_path)]
+
+    class BulkDeleteScanner:
+        def __init__(self):
+            self.model_type = "lora"
+            self.bulk_delete_calls = []
+
+        async def bulk_delete_models(self, paths):
+            self.bulk_delete_calls.append(paths)
+            return {"success": True, "deleted": paths}
+
+    scanner = BulkDeleteScanner()
+
+    service = ModelLifecycleService(
+        scanner=scanner,
+        metadata_manager=DummyMetadataManager({}),
+        metadata_loader=lambda x: {},
+    )
+
+    result = await service.bulk_delete_models(file_paths)
+
+    assert result["success"] is True
+    assert len(scanner.bulk_delete_calls) == 1
+    assert scanner.bulk_delete_calls[0] == file_paths
+
+
+@pytest.mark.asyncio
+async def test_bulk_delete_models_empty_list_raises_error():
+    """Verify bulk_delete_models raises ValueError for empty list."""
+    service = ModelLifecycleService(
+        scanner=VersionAwareScanner([]),
+        metadata_manager=DummyMetadataManager({}),
+        metadata_loader=lambda x: {},
+    )
+
+    with pytest.raises(ValueError, match="No file paths provided"):
+        await service.bulk_delete_models([])
+
+
+# =============================================================================
+# Tests for error paths and edge cases
+# =============================================================================
+
+
+@pytest.mark.asyncio
+async def test_delete_model_empty_path_raises_error():
+    """Verify delete_model raises ValueError for empty path."""
+    service = ModelLifecycleService(
+        scanner=VersionAwareScanner([]),
+        metadata_manager=DummyMetadataManager({}),
+        metadata_loader=lambda x: {},
+    )
+
+    with pytest.raises(ValueError, match="Model path is required"):
+        await service.delete_model("")
+
+
+@pytest.mark.asyncio
+async def test_rename_model_empty_path_raises_error():
+    """Verify rename_model raises ValueError for empty path."""
+    service = ModelLifecycleService(
+        scanner=DummyScanner(),
+        metadata_manager=DummyMetadataManager({}),
+        metadata_loader=lambda x: {},
+    )
+
+    with pytest.raises(ValueError, match="required"):
+        await service.rename_model(file_path="", new_file_name="new_name")
+
+
+@pytest.mark.asyncio
+async def test_rename_model_empty_name_raises_error(tmp_path: Path):
+    """Verify rename_model raises ValueError for empty new name."""
+    model_path = tmp_path / "model.safetensors"
+    model_path.write_bytes(b"content")
+
+    service = ModelLifecycleService(
+        scanner=DummyScanner(),
+        metadata_manager=DummyMetadataManager({}),
+        metadata_loader=lambda x: {},
+    )
+
+    with pytest.raises(ValueError, match="required"):
+        await service.rename_model(file_path=str(model_path), new_file_name="")
+
+
+@pytest.mark.asyncio
+async def test_rename_model_invalid_characters_raises_error(tmp_path: Path):
+    """Verify rename_model raises ValueError for invalid characters."""
+    model_path = tmp_path / "model.safetensors"
+    model_path.write_bytes(b"content")
+
+    service = ModelLifecycleService(
+        scanner=DummyScanner(),
+        metadata_manager=DummyMetadataManager({}),
+        metadata_loader=lambda x: {},
+    )
+
+    invalid_names = [
+        "model/name",
+        "model\\\\name",
+        "model:name",
+        "model*name",
+        "model?name",
+        'model"name',
+        "model<name>",
+        "model|name",
+    ]
+
+    for invalid_name in invalid_names:
+        with pytest.raises(ValueError, match="Invalid characters"):
+            await service.rename_model(
+                file_path=str(model_path), new_file_name=invalid_name
+            )
+
+
+@pytest.mark.asyncio
+async def test_rename_model_existing_file_raises_error(tmp_path: Path):
+    """Verify rename_model raises ValueError if target exists."""
+    old_name = "model"
+    new_name = "existing"
+    extension = ".safetensors"
+
+    old_path = tmp_path / f"{old_name}{extension}"
+    old_path.write_bytes(b"content")
+
+    # Create existing file with target name
+    existing_path = tmp_path / f"{new_name}{extension}"
+    existing_path.write_bytes(b"existing content")
+
+    service = ModelLifecycleService(
+        scanner=DummyScanner(),
+        metadata_manager=DummyMetadataManager({}),
+        metadata_loader=lambda x: {},
+    )
+
+    with pytest.raises(ValueError, match="already exists"):
+        await service.rename_model(
+            file_path=str(old_path), new_file_name=new_name
+        )
+
+
+# =============================================================================
+# Tests for _extract_model_id_from_payload utility
+# =============================================================================
+
+
+@pytest.mark.asyncio
+async def test_extract_model_id_from_civitai_payload():
+    """Verify model ID extraction from civitai-formatted payload."""
+    service = ModelLifecycleService(
+        scanner=DummyScanner(),
+        metadata_manager=DummyMetadataManager({}),
+        metadata_loader=lambda x: {},
+    )
+
+    # Test civitai.modelId
+    payload1 = {"civitai": {"modelId": 12345}}
+    assert service._extract_model_id_from_payload(payload1) == 12345
+
+    # Test civitai.model.id nested
+    payload2 = {"civitai": {"model": {"id": 67890}}}
+    assert service._extract_model_id_from_payload(payload2) == 67890
+
+    # Test model_id fallback
+    payload3 = {"model_id": 11111}
+    assert service._extract_model_id_from_payload(payload3) == 11111
+
+    # Test civitai_model_id fallback
+    payload4 = {"civitai_model_id": 22222}
+    assert service._extract_model_id_from_payload(payload4) == 22222
+
+
+@pytest.mark.asyncio
+async def test_extract_model_id_returns_none_for_invalid_payload():
+    """Verify model ID extraction returns None for invalid payloads."""
+    service = ModelLifecycleService(
+        scanner=DummyScanner(),
+        metadata_manager=DummyMetadataManager({}),
+        metadata_loader=lambda x: {},
+    )
+
+    assert service._extract_model_id_from_payload({}) is None
+    assert service._extract_model_id_from_payload(None) is None
+    assert service._extract_model_id_from_payload("string") is None
+    assert service._extract_model_id_from_payload({"civitai": None}) is None
+    assert service._extract_model_id_from_payload({"civitai": {}}) is None
+
+
+@pytest.mark.asyncio
+async def test_extract_model_id_handles_string_values():
+    """Verify model ID extraction handles string values."""
+    service = ModelLifecycleService(
+        scanner=DummyScanner(),
+        metadata_manager=DummyMetadataManager({}),
+        metadata_loader=lambda x: {},
+    )
+
+    payload = {"civitai": {"modelId": "54321"}}
+    assert service._extract_model_id_from_payload(payload) == 54321

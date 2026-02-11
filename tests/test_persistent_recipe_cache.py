@@ -255,3 +255,213 @@ class TestPersistentRecipeCache:
         assert len(loras) == 2
         assert loras[0]["modelVersionId"] == 12345
         assert loras[1]["clip_strength"] == 0.8
+
+    # =============================================================================
+    # Tests for concurrent access (from Phase 2 improvement plan)
+    # =============================================================================
+
+    def test_concurrent_reads_do_not_corrupt_data(self, temp_db_path, sample_recipes):
+        """Verify concurrent reads don't corrupt database state."""
+        import threading
+        import time
+
+        cache = PersistentRecipeCache(db_path=temp_db_path)
+        cache.save_cache(sample_recipes)
+
+        results = []
+        errors = []
+
+        def read_operation():
+            try:
+                for _ in range(10):
+                    loaded = cache.load_cache()
+                    if loaded is not None:
+                        results.append(len(loaded.raw_data))
+                    time.sleep(0.01)
+            except Exception as e:
+                errors.append(str(e))
+
+        # Start multiple reader threads
+        threads = [threading.Thread(target=read_operation) for _ in range(5)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        # No errors should occur
+        assert len(errors) == 0, f"Errors during concurrent reads: {errors}"
+        # All reads should return consistent data
+        assert all(count == 2 for count in results), "Inconsistent read results"
+
+    def test_concurrent_write_and_read(self, temp_db_path, sample_recipes):
+        """Verify thread safety under concurrent writes and reads."""
+        import threading
+        import time
+
+        cache = PersistentRecipeCache(db_path=temp_db_path)
+        cache.save_cache(sample_recipes)
+
+        write_errors = []
+        read_errors = []
+        write_count = [0]
+
+        def write_operation():
+            try:
+                for i in range(5):
+                    recipe = {
+                        "id": f"concurrent-{i}",
+                        "title": f"Concurrent Recipe {i}",
+                    }
+                    cache.update_recipe(recipe)
+                    write_count[0] += 1
+                    time.sleep(0.02)
+            except Exception as e:
+                write_errors.append(str(e))
+
+        def read_operation():
+            try:
+                for _ in range(10):
+                    cache.load_cache()
+                    cache.get_recipe_count()
+                    time.sleep(0.01)
+            except Exception as e:
+                read_errors.append(str(e))
+
+        # Mix of read and write threads
+        threads = (
+            [threading.Thread(target=write_operation) for _ in range(2)]
+            + [threading.Thread(target=read_operation) for _ in range(3)]
+        )
+
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        # No errors should occur
+        assert len(write_errors) == 0, f"Write errors: {write_errors}"
+        assert len(read_errors) == 0, f"Read errors: {read_errors}"
+        # Writes should complete successfully
+        assert write_count[0] > 0
+
+    def test_concurrent_updates_to_same_recipe(self, temp_db_path):
+        """Verify concurrent updates to the same recipe don't corrupt data."""
+        import threading
+
+        cache = PersistentRecipeCache(db_path=temp_db_path)
+
+        # Initialize with one recipe
+        initial_recipe = {
+            "id": "concurrent-update",
+            "title": "Initial Title",
+            "version": 1,
+        }
+        cache.save_cache([initial_recipe])
+
+        errors = []
+        successful_updates = []
+
+        def update_operation(thread_id):
+            try:
+                for i in range(5):
+                    recipe = {
+                        "id": "concurrent-update",
+                        "title": f"Title from thread {thread_id} update {i}",
+                        "version": i + 1,
+                    }
+                    cache.update_recipe(recipe)
+                    successful_updates.append((thread_id, i))
+            except Exception as e:
+                errors.append(f"Thread {thread_id}: {e}")
+
+        # Multiple threads updating the same recipe
+        threads = [
+            threading.Thread(target=update_operation, args=(i,)) for i in range(3)
+        ]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        # No errors should occur
+        assert len(errors) == 0, f"Update errors: {errors}"
+        # All updates should complete
+        assert len(successful_updates) == 15
+
+        # Final state should be valid
+        final_count = cache.get_recipe_count()
+        assert final_count == 1
+
+    def test_schema_initialization_thread_safety(self, temp_db_path):
+        """Verify schema initialization is thread-safe."""
+        import threading
+
+        errors = []
+        initialized_caches = []
+
+        def create_cache():
+            try:
+                cache = PersistentRecipeCache(db_path=temp_db_path)
+                initialized_caches.append(cache)
+            except Exception as e:
+                errors.append(str(e))
+
+        # Multiple threads creating cache simultaneously
+        threads = [threading.Thread(target=create_cache) for _ in range(5)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        # No errors should occur
+        assert len(errors) == 0, f"Initialization errors: {errors}"
+        # All caches should be created
+        assert len(initialized_caches) == 5
+
+    def test_concurrent_save_and_remove(self, temp_db_path, sample_recipes):
+        """Verify concurrent save and remove operations don't corrupt database."""
+        import threading
+        import time
+
+        cache = PersistentRecipeCache(db_path=temp_db_path)
+
+        errors = []
+        operation_counts = {"saves": 0, "removes": 0}
+
+        def save_operation():
+            try:
+                for i in range(5):
+                    recipes = [
+                        {"id": f"recipe-{j}", "title": f"Recipe {j}"}
+                        for j in range(i * 2, i * 2 + 2)
+                    ]
+                    cache.save_cache(recipes)
+                    operation_counts["saves"] += 1
+                    time.sleep(0.015)
+            except Exception as e:
+                errors.append(f"Save error: {e}")
+
+        def remove_operation():
+            try:
+                for i in range(5):
+                    cache.remove_recipe(f"recipe-{i}")
+                    operation_counts["removes"] += 1
+                    time.sleep(0.02)
+            except Exception as e:
+                errors.append(f"Remove error: {e}")
+
+        # Concurrent save and remove threads
+        threads = [
+            threading.Thread(target=save_operation),
+            threading.Thread(target=remove_operation),
+        ]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        # No errors should occur
+        assert len(errors) == 0, f"Operation errors: {errors}"
+        # Operations should complete
+        assert operation_counts["saves"] == 5
+        assert operation_counts["removes"] == 5
