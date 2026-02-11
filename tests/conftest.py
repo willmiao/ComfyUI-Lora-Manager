@@ -269,3 +269,75 @@ def mock_scanner(mock_cache: MockCache, mock_hash_index: MockHashIndex) -> MockS
 def mock_service(mock_scanner: MockScanner) -> MockModelService:
     return MockModelService(scanner=mock_scanner)
 
+
+@pytest.fixture
+def mock_downloader():
+    """Provide a configurable mock downloader."""
+    class MockDownloader:
+        def __init__(self):
+            self.download_calls = []
+            self.should_fail = False
+            self.return_value = (True, "success")
+
+        async def download_file(self, url, target_path, **kwargs):
+            self.download_calls.append({"url": url, "target_path": target_path, "kwargs": kwargs})
+            if self.should_fail:
+                return False, "Download failed"
+            return self.return_value
+
+    return MockDownloader()
+
+
+@pytest.fixture
+def mock_websocket_manager():
+    """Provide a recording WebSocket manager."""
+    class RecordingWebSocketManager:
+        def __init__(self):
+            self.payloads = []
+            self.broadcast_count = 0
+
+        async def broadcast(self, payload):
+            self.payloads.append(payload)
+            self.broadcast_count += 1
+
+        def get_payloads_by_type(self, msg_type: str):
+            """Get all payloads of a specific message type."""
+            return [p for p in self.payloads if p.get("type") == msg_type]
+
+    return RecordingWebSocketManager()
+
+
+@pytest.fixture(autouse=True)
+def reset_singletons():
+    """Reset all singletons before each test to ensure isolation."""
+    # Import here to avoid circular imports
+    from py.services.download_manager import DownloadManager
+    from py.services.service_registry import ServiceRegistry
+    from py.services.model_scanner import ModelScanner
+    from py.services.settings_manager import get_settings_manager
+
+    # Reset DownloadManager singleton
+    DownloadManager._instance = None
+
+    # Reset ServiceRegistry
+    ServiceRegistry._services = {}
+    ServiceRegistry._initialized = False
+
+    # Reset ModelScanner instances
+    if hasattr(ModelScanner, '_instances'):
+        ModelScanner._instances.clear()
+
+    # Reset SettingsManager
+    settings_manager = get_settings_manager()
+    if hasattr(settings_manager, '_reset'):
+        settings_manager._reset()
+
+    yield
+
+    # Cleanup after test
+    DownloadManager._instance = None
+    ServiceRegistry._services = {}
+    ServiceRegistry._initialized = False
+    if hasattr(ModelScanner, '_instances'):
+        ModelScanner._instances.clear()
+
