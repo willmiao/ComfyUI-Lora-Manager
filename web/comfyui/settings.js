@@ -7,9 +7,6 @@ import { app } from "../../scripts/app.js";
 const TRIGGER_WORD_WHEEL_SENSITIVITY_ID = "loramanager.trigger_word_wheel_sensitivity";
 const TRIGGER_WORD_WHEEL_SENSITIVITY_DEFAULT = 0.02;
 
-const TRIGGER_WORD_MAX_HEIGHT_ID = "loramanager.trigger_word_max_height";
-const TRIGGER_WORD_MAX_HEIGHT_DEFAULT = 300;
-
 const AUTO_PATH_CORRECTION_SETTING_ID = "loramanager.auto_path_correction";
 const AUTO_PATH_CORRECTION_DEFAULT = true;
 
@@ -171,50 +168,11 @@ app.registerExtension({
             tooltip: "When enabled, tag names with underscores will have them replaced with spaces when inserted (e.g., 'blonde_hair' becomes 'blonde hair').",
             category: ["LoRA Manager", "Autocomplete", "Tag Formatting"],
         },
-        {
-            id: TRIGGER_WORD_MAX_HEIGHT_ID,
-            name: "Trigger Word Toggle Max Height",
-            type: "slider",
-            attrs: {
-                min: 150,
-                max: 600,
-                step: 10,
-            },
-            defaultValue: TRIGGER_WORD_MAX_HEIGHT_DEFAULT,
-            tooltip: "Maximum height (in pixels) for the Trigger Word Toggle node. Content exceeding this height will be scrollable. Note: Requires page reload to take effect.",
-            category: ["LoRA Manager", "Trigger Word Toggle", "Max Height"],
-        },
     ],
 });
-
-const getTriggerWordMaxHeight = (() => {
-    let settingsUnavailableLogged = false;
-
-    return () => {
-        const settingManager = app?.extensionManager?.setting;
-        if (!settingManager || typeof settingManager.get !== "function") {
-            if (!settingsUnavailableLogged) {
-                console.warn("LoRA Manager: settings API unavailable, using default max height.");
-                settingsUnavailableLogged = true;
-            }
-            return TRIGGER_WORD_MAX_HEIGHT_DEFAULT;
-        }
-
-        try {
-            const value = settingManager.get(TRIGGER_WORD_MAX_HEIGHT_ID);
-            return value ?? TRIGGER_WORD_MAX_HEIGHT_DEFAULT;
-        } catch (error) {
-            if (!settingsUnavailableLogged) {
-                console.warn("LoRA Manager: unable to read max height setting, using default.", error);
-                settingsUnavailableLogged = true;
-            }
-            return TRIGGER_WORD_MAX_HEIGHT_DEFAULT;
-        }
-    };
-})();
 
 // ============================================================================
 // Exports
 // ============================================================================
 
-export { getWheelSensitivity, getAutoPathCorrectionPreference, getPromptTagAutocompletePreference, getTagSpaceReplacementPreference, getTriggerWordMaxHeight };
+export { getWheelSensitivity, getAutoPathCorrectionPreference, getPromptTagAutocompletePreference, getTagSpaceReplacementPreference };
