@@ -1,4 +1,5 @@
 import { forwardMiddleMouseToCanvas } from "./utils.js";
+import { getTriggerWordMaxHeight } from "./settings.js";
 
 export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.02, options = {}) {
   // Create container for tags
@@ -12,6 +13,9 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
   // Set initial height
   const defaultHeight = 150;
   
+  // Get max height from settings
+  const maxHeight = getTriggerWordMaxHeight();
+
   Object.assign(container.style, {
     display: "flex",
     flexWrap: "wrap",
@@ -22,7 +26,8 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
     width: "100%",
     boxSizing: "border-box",
     overflow: "auto",
-    alignItems: "flex-start" // Ensure tags align at the top of each row
+    alignItems: "flex-start", // Ensure tags align at the top of each row
+    maxHeight: `${maxHeight}px` // Set max height for scrollable container
   });
 
   // Initialize default value as array
@@ -200,13 +205,14 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
 
   // Function to update widget height consistently
   const updateWidgetHeight = (height) => {
-    // Ensure minimum height
-    const finalHeight = Math.max(defaultHeight, height);
-    
+    const maxHeight = getTriggerWordMaxHeight();
+    // Ensure height is within bounds [defaultHeight, maxHeight]
+    const finalHeight = Math.min(Math.max(defaultHeight, height), maxHeight);
+
     // Update CSS variables
     container.style.setProperty('--comfy-widget-min-height', `${finalHeight}px`);
     container.style.setProperty('--comfy-widget-height', `${finalHeight}px`);
-    
+
     // Force node to update size after a short delay to ensure DOM is updated
     if (node) {
       setTimeout(() => {
@@ -340,6 +346,9 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
       widgetValue = v;
       renderTags(widgetValue, widget);
     },
+    getMaxHeight: function() {
+      return getTriggerWordMaxHeight();
+    },
     hideOnZoom: true,
     selectOn: ['click', 'focus']
   });
@@ -354,5 +363,5 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
     return widgetValue
   };
 
-  return { minWidth: 300, minHeight: defaultHeight, widget };
+  return { minWidth: 300, minHeight: defaultHeight, maxHeight: getTriggerWordMaxHeight(), widget };
 }
