@@ -1,0 +1,67 @@
+# serializer version: 1
+# name: TestModelLibraryHandlerSnapshots.test_check_model_exists_empty_response
+  dict({
+    'modelType': None,
+    'success': True,
+    'versions': list([
+    ]),
+  })
+# ---
+# name: TestNodeRegistryHandlerSnapshots.test_register_nodes_error_response
+  dict({
+    'message': '0 nodes registered successfully',
+    'success': True,
+  })
+# ---
+# name: TestNodeRegistryHandlerSnapshots.test_register_nodes_success_response
+  dict({
+    'message': '1 nodes registered successfully',
+    'success': True,
+  })
+# ---
+# name: TestSettingsHandlerSnapshots.test_get_settings_response_format
+  dict({
+    'messages': list([
+    ]),
+    'settings': dict({
+      'civitai_api_key': 'test-key',
+      'language': 'en',
+    }),
+    'success': True,
+  })
+# ---
+# name: TestSettingsHandlerSnapshots.test_update_settings_success_response
+  dict({
+    'success': True,
+  })
+# ---
+# name: TestUtilityFunctionSnapshots.test_calculate_recipe_fingerprint_various_inputs
+  list([
+    '',
+    'abc123:1.0',
+    'abc123:1.0|def456:0.75',
+    'abc123:0.5|def456:1.0',
+    'abc123:0.8',
+    '12345:1.0',
+    '',
+    '',
+    '',
+  ])
+# ---
+# name: TestUtilityFunctionSnapshots.test_sanitize_folder_name_various_inputs
+  dict({
+    '': '',
+    '   spaces   ': 'spaces',
+    '___underscores___': 'underscores',
+    'folder with spaces': 'folder with spaces',
+    'folder"with"quotes': 'folder_with_quotes',
+    'folder*with*asterisks': 'folder_with_asterisks',
+    'folder.with.dots': 'folder.with.dots',
+    'folder/with/slashes': 'folder_with_slashes',
+    'folder<with>brackets': 'folder_with_brackets',
+    'folder?with?questions': 'folder_with_questions',
+    'folder\\with\\backslashes': 'folder_with_backslashes',
+    'folder|with|pipes': 'folder_with_pipes',
+    'normal_folder': 'normal_folder',
+  })
+# ---

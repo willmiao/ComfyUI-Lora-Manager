@@ -19,3 +19,6 @@ model_cache/
 vue-widgets/node_modules/
 vue-widgets/.vite/
 vue-widgets/dist/
+
+# Hypothesis test cache
+.hypothesis/

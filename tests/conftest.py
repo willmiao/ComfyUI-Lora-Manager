@@ -15,6 +15,27 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 PY_INIT = REPO_ROOT / "py" / "__init__.py"
 
 
+class MockModule(types.ModuleType):
+    """A mock module class that is hashable (unlike SimpleNamespace).
+    
+    This allows the module to be stored in sets/dicts without causing issues
+    with tools like Hypothesis that iterate over sys.modules.
+    """
+    
+    def __init__(self, name: str, **kwargs):
+        super().__init__(name)
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+    
+    def __hash__(self):
+        return hash(self.__name__)
+    
+    def __eq__(self, other):
+        if isinstance(other, MockModule):
+            return self.__name__ == other.__name__
+        return NotImplemented
+
+
 def _load_repo_package(name: str) -> types.ModuleType:
     """Ensure the repository's ``py`` package is importable under *name*."""
 
@@ -41,32 +62,32 @@ _repo_package = _load_repo_package("py")
 sys.modules.setdefault("py_local", _repo_package)
 
 # Mock ComfyUI modules before any imports from the main project
-server_mock = types.SimpleNamespace()
+server_mock = MockModule("server")
 server_mock.PromptServer = mock.MagicMock()
 sys.modules['server'] = server_mock
 
-folder_paths_mock = types.SimpleNamespace()
+folder_paths_mock = MockModule("folder_paths")
 folder_paths_mock.get_folder_paths = mock.MagicMock(return_value=[])
 folder_paths_mock.folder_names_and_paths = {}
 sys.modules['folder_paths'] = folder_paths_mock
 
 # Mock other ComfyUI modules that might be imported
-comfy_mock = types.SimpleNamespace()
-comfy_mock.utils = types.SimpleNamespace()
-comfy_mock.model_management = types.SimpleNamespace()
-comfy_mock.comfy_types = types.SimpleNamespace()
+comfy_mock = MockModule("comfy")
+comfy_mock.utils = MockModule("comfy.utils")
+comfy_mock.model_management = MockModule("comfy.model_management")
+comfy_mock.comfy_types = MockModule("comfy.comfy_types")
 comfy_mock.comfy_types.IO = mock.MagicMock()
 sys.modules['comfy'] = comfy_mock
 sys.modules['comfy.utils'] = comfy_mock.utils
 sys.modules['comfy.model_management'] = comfy_mock.model_management
 sys.modules['comfy.comfy_types'] = comfy_mock.comfy_types
 
-execution_mock = types.SimpleNamespace()
+execution_mock = MockModule("execution")
 execution_mock.PromptExecutor = mock.MagicMock()
 sys.modules['execution'] = execution_mock
 
 # Mock ComfyUI nodes module  
-nodes_mock = types.SimpleNamespace()
+nodes_mock = MockModule("nodes")
 nodes_mock.LoraLoader = mock.MagicMock()
 nodes_mock.SaveImage = mock.MagicMock()
 nodes_mock.NODE_CLASS_MAPPINGS = {}
