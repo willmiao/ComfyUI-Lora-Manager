@@ -105,35 +105,6 @@ def _isolate_settings_dir(tmp_path_factory, monkeypatch, request):
     settings_manager_module.reset_settings_manager()
 
 
-def pytest_pyfunc_call(pyfuncitem):
-    """Allow bare async tests to run without pytest.mark.asyncio."""
-    test_function = pyfuncitem.function
-    if inspect.iscoroutinefunction(test_function):
-        func = pyfuncitem.obj
-        signature = inspect.signature(func)
-        accepted_kwargs: Dict[str, Any] = {}
-        for name, parameter in signature.parameters.items():
-            if parameter.kind is inspect.Parameter.VAR_POSITIONAL:
-                continue
-            if parameter.kind is inspect.Parameter.VAR_KEYWORD:
-                accepted_kwargs = dict(pyfuncitem.funcargs)
-                break
-            if name in pyfuncitem.funcargs:
-                accepted_kwargs[name] = pyfuncitem.funcargs[name]
-
-        original_policy = asyncio.get_event_loop_policy()
-        policy = pyfuncitem.funcargs.get("event_loop_policy")
-        if policy is not None and policy is not original_policy:
-            asyncio.set_event_loop_policy(policy)
-        try:
-            asyncio.run(func(**accepted_kwargs))
-        finally:
-            if policy is not None and policy is not original_policy:
-                asyncio.set_event_loop_policy(original_policy)
-        return True
-    return None
-
-
 @dataclass
 class MockHashIndex:
     """Minimal hash index stub mirroring the scanner contract."""

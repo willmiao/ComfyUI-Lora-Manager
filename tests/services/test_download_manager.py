@@ -149,6 +149,7 @@ def noop_cleanup(monkeypatch):
     monkeypatch.setattr(DownloadManager, "_cleanup_download_record", _cleanup)
 
 
+@pytest.mark.asyncio
 async def test_download_requires_identifier():
     manager = DownloadManager()
     result = await manager.download_from_civitai()
@@ -158,6 +159,7 @@ async def test_download_requires_identifier():
     }
 
 
+@pytest.mark.asyncio
 async def test_successful_download_uses_defaults(
     monkeypatch, scanners, metadata_provider, tmp_path
 ):
@@ -218,6 +220,7 @@ async def test_successful_download_uses_defaults(
     assert captured["download_urls"] == ["https://example.invalid/file.safetensors"]
 
 
+@pytest.mark.asyncio
 async def test_download_uses_active_mirrors(
     monkeypatch, scanners, metadata_provider, tmp_path
 ):
@@ -283,6 +286,7 @@ async def test_download_uses_active_mirrors(
     assert captured["download_urls"] == ["https://mirror.example/file.safetensors"]
 
 
+@pytest.mark.asyncio
 async def test_download_aborts_when_version_exists(
     monkeypatch, scanners, metadata_provider
 ):
@@ -301,6 +305,7 @@ async def test_download_aborts_when_version_exists(
     assert execute_mock.await_count == 0
 
 
+@pytest.mark.asyncio
 async def test_download_handles_metadata_errors(monkeypatch, scanners):
     async def failing_provider(*_args, **_kwargs):
         return None
@@ -322,6 +327,7 @@ async def test_download_handles_metadata_errors(monkeypatch, scanners):
     assert "download_id" in result
 
 
+@pytest.mark.asyncio
 async def test_download_rejects_unsupported_model_type(monkeypatch, scanners):
     class Provider:
         async def get_model_version(self, *_args, **_kwargs):
@@ -394,6 +400,7 @@ def test_relative_path_sanitizes_model_and_version_placeholders():
     assert relative_path == "Fancy_Model/Version_One"
 
 
+@pytest.mark.asyncio
 async def test_execute_download_retries_urls(monkeypatch, tmp_path):
     manager = DownloadManager()
 
@@ -479,6 +486,7 @@ async def test_execute_download_retries_urls(monkeypatch, tmp_path):
     assert dummy_scanner.calls  # ensure cache updated
 
 
+@pytest.mark.asyncio
 async def test_execute_download_adjusts_checkpoint_sub_type(monkeypatch, tmp_path):
     manager = DownloadManager()
 
@@ -578,6 +586,7 @@ async def test_execute_download_adjusts_checkpoint_sub_type(monkeypatch, tmp_pat
     assert cached_entry["sub_type"] == "diffusion_model"
 
 
+@pytest.mark.asyncio
 async def test_execute_download_extracts_zip_single_model(monkeypatch, tmp_path):
     manager = DownloadManager()
     save_dir = tmp_path / "downloads"
@@ -645,6 +654,7 @@ async def test_execute_download_extracts_zip_single_model(monkeypatch, tmp_path)
     assert dummy_scanner.add_model_to_cache.await_count == 1
 
 
+@pytest.mark.asyncio
 async def test_execute_download_extracts_zip_multiple_models(monkeypatch, tmp_path):
     manager = DownloadManager()
     save_dir = tmp_path / "downloads"
@@ -720,6 +730,7 @@ async def test_execute_download_extracts_zip_multiple_models(monkeypatch, tmp_pa
     assert metadata_calls[1].args[1].sha256 == "hash-two"
 
 
+@pytest.mark.asyncio
 async def test_execute_download_extracts_zip_pt_embedding(monkeypatch, tmp_path):
     manager = DownloadManager()
     save_dir = tmp_path / "downloads"
@@ -824,6 +835,7 @@ def test_distribute_preview_to_entries_keeps_existing_file(tmp_path):
     assert Path(targets[1]).read_bytes() == b"preview"
 
 
+@pytest.mark.asyncio
 async def test_pause_download_updates_state():
     manager = DownloadManager()
 
@@ -845,6 +857,7 @@ async def test_pause_download_updates_state():
     assert manager._active_downloads[download_id]["bytes_per_second"] == 0.0
 
 
+@pytest.mark.asyncio
 async def test_pause_download_rejects_unknown_task():
     manager = DownloadManager()
 
@@ -853,6 +866,7 @@ async def test_pause_download_rejects_unknown_task():
     assert result == {"success": False, "error": "Download task not found"}
 
 
+@pytest.mark.asyncio
 async def test_resume_download_sets_event_and_status():
     manager = DownloadManager()
 
@@ -873,6 +887,7 @@ async def test_resume_download_sets_event_and_status():
     assert manager._active_downloads[download_id]["status"] == "downloading"
 
 
+@pytest.mark.asyncio
 async def test_resume_download_requests_reconnect_for_stalled_stream():
     manager = DownloadManager()
 
@@ -893,6 +908,7 @@ async def test_resume_download_requests_reconnect_for_stalled_stream():
     assert pause_control.has_reconnect_request() is True
 
 
+@pytest.mark.asyncio
 async def test_resume_download_rejects_when_not_paused():
     manager = DownloadManager()
 
@@ -1131,6 +1147,7 @@ async def test_execute_download_respects_blur_setting(monkeypatch, tmp_path):
     assert stored_preview and stored_preview.endswith(".jpeg")
 
 
+@pytest.mark.asyncio
 async def test_civarchive_source_uses_civarchive_provider(
     monkeypatch, scanners, tmp_path
 ):
@@ -1235,6 +1252,7 @@ async def test_civarchive_source_uses_civarchive_provider(
     assert captured["version_info"]["source"] == "civarchive"
 
 
+@pytest.mark.asyncio
 async def test_civarchive_source_prioritizes_non_civitai_urls(
     monkeypatch, scanners, tmp_path
 ):
@@ -1323,6 +1341,7 @@ async def test_civarchive_source_prioritizes_non_civitai_urls(
     assert captured["download_urls"][1] == "https://another-mirror.org/file.safetensors"
 
 
+@pytest.mark.asyncio
 async def test_civarchive_source_fallback_to_default_provider(
     monkeypatch, scanners, tmp_path
 ):
