@@ -35,12 +35,16 @@
   font-size: 13px;
   font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   text-align: center;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  line-height: 1.4;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .lm-tooltip__license-overlay {
