@@ -143,27 +143,27 @@ class LoraMetadata(BaseModelMetadata):
     @classmethod
     def from_civitai_info(cls, version_info: Dict, file_info: Dict, save_path: str) -> 'LoraMetadata':
         """Create LoraMetadata instance from Civitai version info"""
-        file_name = file_info['name']
+        file_name = file_info.get('name', '')
         base_model = determine_base_model(version_info.get('baseModel', ''))
-        
+
         # Extract tags and description if available
         tags = []
         description = ""
-        if 'model' in version_info:
-            if 'tags' in version_info['model']:
-                tags = version_info['model']['tags']
-            if 'description' in version_info['model']:
-                description = version_info['model']['description']
-        
+        model_data = version_info.get('model') or {}
+        if 'tags' in model_data:
+            tags = model_data['tags']
+        if 'description' in model_data:
+            description = model_data['description']
+
         return cls(
             file_name=os.path.splitext(file_name)[0],
-            model_name=version_info.get('model').get('name', os.path.splitext(file_name)[0]),
+            model_name=model_data.get('name', os.path.splitext(file_name)[0]),
             file_path=save_path.replace(os.sep, '/'),
             size=file_info.get('sizeKB', 0) * 1024,
             modified=datetime.now().timestamp(),
-            sha256=file_info['hashes'].get('SHA256', '').lower(),
+            sha256=(file_info.get('hashes') or {}).get('SHA256', '').lower(),
             base_model=base_model,
-            preview_url=None,  # Will be updated after preview download
+            preview_url='',  # Will be updated after preview download
             preview_nsfw_level=0, # Will be updated after preview download
             from_civitai=True,
             civitai=version_info,
@@ -179,28 +179,28 @@ class CheckpointMetadata(BaseModelMetadata):
     @classmethod
     def from_civitai_info(cls, version_info: Dict, file_info: Dict, save_path: str) -> 'CheckpointMetadata':
         """Create CheckpointMetadata instance from Civitai version info"""
-        file_name = file_info['name']
+        file_name = file_info.get('name', '')
         base_model = determine_base_model(version_info.get('baseModel', ''))
         sub_type = version_info.get('type', 'checkpoint')
-        
+
         # Extract tags and description if available
         tags = []
         description = ""
-        if 'model' in version_info:
-            if 'tags' in version_info['model']:
-                tags = version_info['model']['tags']
-            if 'description' in version_info['model']:
-                description = version_info['model']['description']
-        
+        model_data = version_info.get('model') or {}
+        if 'tags' in model_data:
+            tags = model_data['tags']
+        if 'description' in model_data:
+            description = model_data['description']
+
         return cls(
             file_name=os.path.splitext(file_name)[0],
-            model_name=version_info.get('model').get('name', os.path.splitext(file_name)[0]),
+            model_name=model_data.get('name', os.path.splitext(file_name)[0]),
             file_path=save_path.replace(os.sep, '/'),
             size=file_info.get('sizeKB', 0) * 1024,
             modified=datetime.now().timestamp(),
-            sha256=file_info['hashes'].get('SHA256', '').lower(),
+            sha256=(file_info.get('hashes') or {}).get('SHA256', '').lower(),
             base_model=base_model,
-            preview_url=None,  # Will be updated after preview download
+            preview_url='',  # Will be updated after preview download
             preview_nsfw_level=0,
             from_civitai=True,
             civitai=version_info,
@@ -217,28 +217,28 @@ class EmbeddingMetadata(BaseModelMetadata):
     @classmethod
     def from_civitai_info(cls, version_info: Dict, file_info: Dict, save_path: str) -> 'EmbeddingMetadata':
         """Create EmbeddingMetadata instance from Civitai version info"""
-        file_name = file_info['name']
+        file_name = file_info.get('name', '')
         base_model = determine_base_model(version_info.get('baseModel', ''))
         sub_type = version_info.get('type', 'embedding')
-        
+
         # Extract tags and description if available
         tags = []
         description = ""
-        if 'model' in version_info:
-            if 'tags' in version_info['model']:
-                tags = version_info['model']['tags']
-            if 'description' in version_info['model']:
-                description = version_info['model']['description']
-        
+        model_data = version_info.get('model') or {}
+        if 'tags' in model_data:
+            tags = model_data['tags']
+        if 'description' in model_data:
+            description = model_data['description']
+
         return cls(
             file_name=os.path.splitext(file_name)[0],
-            model_name=version_info.get('model').get('name', os.path.splitext(file_name)[0]),
+            model_name=model_data.get('name', os.path.splitext(file_name)[0]),
             file_path=save_path.replace(os.sep, '/'),
             size=file_info.get('sizeKB', 0) * 1024,
             modified=datetime.now().timestamp(),
-            sha256=file_info['hashes'].get('SHA256', '').lower(),
+            sha256=(file_info.get('hashes') or {}).get('SHA256', '').lower(),
             base_model=base_model,
-            preview_url=None,  # Will be updated after preview download
+            preview_url='',  # Will be updated after preview download
             preview_nsfw_level=0,
             from_civitai=True,
             civitai=version_info,

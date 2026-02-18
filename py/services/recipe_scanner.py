@@ -1351,8 +1351,9 @@ class RecipeScanner:
                     
             # Get hash from the first file
             for file_info in version_info.get('files', []):
-                if file_info.get('hashes', {}).get('SHA256'):
-                    return file_info['hashes']['SHA256'], False  # Return hash with False for isDeleted flag
+                sha256_hash = (file_info.get('hashes') or {}).get('SHA256')
+                if sha256_hash:
+                    return sha256_hash, False  # Return hash with False for isDeleted flag
                     
             logger.debug(f"No SHA256 hash found in version info for ID: {model_version_id}")
             return None, False

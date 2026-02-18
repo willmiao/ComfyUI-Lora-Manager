@@ -496,7 +496,9 @@ class DownloadManager:
                 return {"success": False, "error": "No mirror URL found"}
 
             # 3. Prepare download
-            file_name = file_info["name"]
+            file_name = file_info.get("name", "")
+            if not file_name:
+                return {"success": False, "error": "No filename found in file info"}
             save_path = os.path.join(save_dir, file_name)
 
             # 5. Prepare metadata based on model type
