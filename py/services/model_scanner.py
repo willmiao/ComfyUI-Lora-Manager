@@ -1448,7 +1448,7 @@ class ModelScanner:
         return None
         
     async def get_top_tags(self, limit: int = 20) -> List[Dict[str, any]]:
-        """Get top tags sorted by count"""
+        """Get top tags sorted by count. If limit is 0, return all tags."""
         await self.get_cached_data()
         
         sorted_tags = sorted(
@@ -1457,6 +1457,8 @@ class ModelScanner:
             reverse=True
         )
         
+        if limit == 0:
+            return sorted_tags
         return sorted_tags[:limit]
         
     async def get_base_models(self, limit: int = 20) -> List[Dict[str, any]]:

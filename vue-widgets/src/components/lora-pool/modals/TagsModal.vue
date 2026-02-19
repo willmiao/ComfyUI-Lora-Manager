@@ -31,9 +31,9 @@
       </div>
     </template>
 
-    <div class="tags-container">
+    <div ref="tagsContainerRef" class="tags-container" @scroll="handleScroll">
       <button
-        v-for="tag in filteredTags"
+        v-for="tag in visibleTags"
         :key="tag.tag"
         type="button"
         class="tag-chip"
@@ -42,8 +42,11 @@
       >
         {{ tag.tag }}
       </button>
-      <div v-if="filteredTags.length === 0" class="no-results">
+      <div v-if="visibleTags.length === 0" class="no-results">
         No tags found
+      </div>
+      <div v-if="hasMoreTags" class="load-more-hint">
+        Scroll to load more...
       </div>
     </div>
   </ModalWrapper>
@@ -78,6 +81,11 @@ const subtitle = computed(() =>
 
 const searchQuery = ref('')
 const searchInputRef = ref<HTMLInputElement | null>(null)
+const tagsContainerRef = ref<HTMLElement | null>(null)
+const displayedCount = ref(200)
+
+const BATCH_SIZE = 200
+const SCROLL_THRESHOLD = 100
 
 const filteredTags = computed(() => {
   if (!searchQuery.value) {
@@ -85,6 +93,20 @@ const filteredTags = computed(() => {
   }
   const query = searchQuery.value.toLowerCase()
   return props.tags.filter(t => t.tag.toLowerCase().includes(query))
+})
+
+const visibleTags = computed(() => {
+  // When searching, show all filtered results
+  if (searchQuery.value) {
+    return filteredTags.value
+  }
+  // Otherwise, use virtual scrolling
+  return filteredTags.value.slice(0, displayedCount.value)
+})
+
+const hasMoreTags = computed(() => {
+  if (searchQuery.value) return false
+  return displayedCount.value < filteredTags.value.length
 })
 
 const isSelected = (tag: string) => {
@@ -100,15 +122,39 @@ const toggleTag = (tag: string) => {
 
 const clearSearch = () => {
   searchQuery.value = ''
+  displayedCount.value = BATCH_SIZE
   searchInputRef.value?.focus()
+}
+
+const handleScroll = () => {
+  if (searchQuery.value) return
+  
+  const container = tagsContainerRef.value
+  if (!container) return
+  
+  const { scrollTop, scrollHeight, clientHeight } = container
+  const scrollBottom = scrollHeight - scrollTop - clientHeight
+  
+  // Load more tags when user scrolls near bottom
+  if (scrollBottom < SCROLL_THRESHOLD && hasMoreTags.value) {
+    displayedCount.value = Math.min(
+      displayedCount.value + BATCH_SIZE,
+      filteredTags.value.length
+    )
+  }
 }
 
 watch(() => props.visible, (isVisible) => {
   if (isVisible) {
+    displayedCount.value = BATCH_SIZE
     nextTick(() => {
       searchInputRef.value?.focus()
     })
   }
+})
+
+watch(() => props.tags, () => {
+  displayedCount.value = BATCH_SIZE
 })
 </script>
 
@@ -244,5 +290,15 @@ watch(() => props.visible, (isVisible) => {
   color: var(--fg-color, #fff);
   opacity: 0.5;
   font-size: 13px;
+}
+
+.load-more-hint {
+  width: 100%;
+  padding: 12px;
+  text-align: center;
+  color: var(--fg-color, #fff);
+  opacity: 0.4;
+  font-size: 12px;
+  font-style: italic;
 }
 </style>

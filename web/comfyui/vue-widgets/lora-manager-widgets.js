@@ -708,10 +708,10 @@ to { transform: rotate(360deg);
   font-size: 13px;
 }
 
-.search-container[data-v-110d6f7d] {
+.search-container[data-v-48c2535d] {
   position: relative;
 }
-.search-icon[data-v-110d6f7d] {
+.search-icon[data-v-48c2535d] {
   position: absolute;
   left: 10px;
   top: 50%;
@@ -721,7 +721,7 @@ to { transform: rotate(360deg);
   color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.search-input[data-v-110d6f7d] {
+.search-input[data-v-48c2535d] {
   width: 100%;
   padding: 8px 12px 8px 32px;
   background: var(--comfy-input-bg, #333);
@@ -731,14 +731,14 @@ to { transform: rotate(360deg);
   font-size: 13px;
   outline: none;
 }
-.search-input[data-v-110d6f7d]:focus {
+.search-input[data-v-48c2535d]:focus {
   border-color: var(--fg-color, #fff);
 }
-.search-input[data-v-110d6f7d]::placeholder {
+.search-input[data-v-48c2535d]::placeholder {
   color: var(--fg-color, #fff);
   opacity: 0.4;
 }
-.clear-button[data-v-110d6f7d] {
+.clear-button[data-v-48c2535d] {
   position: absolute;
   right: 8px;
   top: 50%;
@@ -755,20 +755,20 @@ to { transform: rotate(360deg);
   opacity: 0.5;
   transition: opacity 0.15s;
 }
-.clear-button[data-v-110d6f7d]:hover {
+.clear-button[data-v-48c2535d]:hover {
   opacity: 0.8;
 }
-.clear-button svg[data-v-110d6f7d] {
+.clear-button svg[data-v-48c2535d] {
   width: 12px;
   height: 12px;
   color: var(--fg-color, #fff);
 }
-.tags-container[data-v-110d6f7d] {
+.tags-container[data-v-48c2535d] {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
-.tag-chip[data-v-110d6f7d] {
+.tag-chip[data-v-48c2535d] {
   padding: 6px 12px;
   background: var(--comfy-input-bg, #333);
   border: 1px solid var(--border-color, #555);
@@ -780,54 +780,63 @@ to { transform: rotate(360deg);
 }
 
 /* Default hover (gray for neutral) */
-.tag-chip[data-v-110d6f7d]:hover:not(.tag-chip--selected) {
+.tag-chip[data-v-48c2535d]:hover:not(.tag-chip--selected) {
   border-color: rgba(226, 232, 240, 0.5);
   background: rgba(255, 255, 255, 0.05);
 }
 
 /* Include variant hover - blue tint */
-.tags-modal--include .tag-chip[data-v-110d6f7d]:hover:not(.tag-chip--selected) {
+.tags-modal--include .tag-chip[data-v-48c2535d]:hover:not(.tag-chip--selected) {
   border-color: rgba(66, 153, 225, 0.4);
   background: rgba(66, 153, 225, 0.08);
 }
 
 /* Exclude variant hover - red tint */
-.tags-modal--exclude .tag-chip[data-v-110d6f7d]:hover:not(.tag-chip--selected) {
+.tags-modal--exclude .tag-chip[data-v-48c2535d]:hover:not(.tag-chip--selected) {
   border-color: rgba(239, 68, 68, 0.4);
   background: rgba(239, 68, 68, 0.08);
 }
 
 /* Selected chips hover - slightly deepen the color */
-.tags-modal--include .tag-chip--selected[data-v-110d6f7d]:hover {
+.tags-modal--include .tag-chip--selected[data-v-48c2535d]:hover {
   background: rgba(66, 153, 225, 0.25);
   border-color: rgba(66, 153, 225, 0.7);
 }
-.tags-modal--exclude .tag-chip--selected[data-v-110d6f7d]:hover {
+.tags-modal--exclude .tag-chip--selected[data-v-48c2535d]:hover {
   background: rgba(239, 68, 68, 0.25);
   border-color: rgba(239, 68, 68, 0.7);
 }
 
 /* Include variant - blue when selected */
-.tags-modal--include .tag-chip--selected[data-v-110d6f7d],
-.tag-chip--selected[data-v-110d6f7d] {
+.tags-modal--include .tag-chip--selected[data-v-48c2535d],
+.tag-chip--selected[data-v-48c2535d] {
   background: rgba(66, 153, 225, 0.2);
   border-color: rgba(66, 153, 225, 0.6);
   color: #4299e1;
 }
 
 /* Exclude variant - red when selected */
-.tags-modal--exclude .tag-chip--selected[data-v-110d6f7d] {
+.tags-modal--exclude .tag-chip--selected[data-v-48c2535d] {
   background: rgba(239, 68, 68, 0.2);
   border-color: rgba(239, 68, 68, 0.6);
   color: #ef4444;
 }
-.no-results[data-v-110d6f7d] {
+.no-results[data-v-48c2535d] {
   width: 100%;
   padding: 20px;
   text-align: center;
   color: var(--fg-color, #fff);
   opacity: 0.5;
   font-size: 13px;
+}
+.load-more-hint[data-v-48c2535d] {
+  width: 100%;
+  padding: 12px;
+  text-align: center;
+  color: var(--fg-color, #fff);
+  opacity: 0.4;
+  font-size: 12px;
+  font-style: italic;
 }
 
 .tree-node__item[data-v-90187dd4] {
@@ -11219,12 +11228,17 @@ const _sfc_main$e = /* @__PURE__ */ defineComponent({
 });
 const BaseModelModal = /* @__PURE__ */ _export_sfc(_sfc_main$e, [["__scopeId", "data-v-e02ca44a"]]);
 const _hoisted_1$d = { class: "search-container" };
-const _hoisted_2$9 = { class: "tags-container" };
-const _hoisted_3$8 = ["onClick"];
-const _hoisted_4$6 = {
+const _hoisted_2$9 = ["onClick"];
+const _hoisted_3$8 = {
   key: 0,
   class: "no-results"
 };
+const _hoisted_4$6 = {
+  key: 1,
+  class: "load-more-hint"
+};
+const BATCH_SIZE = 200;
+const SCROLL_THRESHOLD = 100;
 const _sfc_main$d = /* @__PURE__ */ defineComponent({
   __name: "TagsModal",
   props: {
@@ -11245,12 +11259,24 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
     );
     const searchQuery = ref("");
     const searchInputRef = ref(null);
+    const tagsContainerRef = ref(null);
+    const displayedCount = ref(200);
     const filteredTags = computed(() => {
       if (!searchQuery.value) {
         return props.tags;
       }
       const query = searchQuery.value.toLowerCase();
       return props.tags.filter((t) => t.tag.toLowerCase().includes(query));
+    });
+    const visibleTags = computed(() => {
+      if (searchQuery.value) {
+        return filteredTags.value;
+      }
+      return filteredTags.value.slice(0, displayedCount.value);
+    });
+    const hasMoreTags = computed(() => {
+      if (searchQuery.value) return false;
+      return displayedCount.value < filteredTags.value.length;
     });
     const isSelected = (tag) => {
       return props.selected.includes(tag);
@@ -11262,15 +11288,33 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
     const clearSearch = () => {
       var _a2;
       searchQuery.value = "";
+      displayedCount.value = BATCH_SIZE;
       (_a2 = searchInputRef.value) == null ? void 0 : _a2.focus();
+    };
+    const handleScroll = () => {
+      if (searchQuery.value) return;
+      const container = tagsContainerRef.value;
+      if (!container) return;
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const scrollBottom = scrollHeight - scrollTop - clientHeight;
+      if (scrollBottom < SCROLL_THRESHOLD && hasMoreTags.value) {
+        displayedCount.value = Math.min(
+          displayedCount.value + BATCH_SIZE,
+          filteredTags.value.length
+        );
+      }
     };
     watch(() => props.visible, (isVisible) => {
       if (isVisible) {
+        displayedCount.value = BATCH_SIZE;
         nextTick(() => {
           var _a2;
           (_a2 = searchInputRef.value) == null ? void 0 : _a2.focus();
         });
       }
+    });
+    watch(() => props.tags, () => {
+      displayedCount.value = BATCH_SIZE;
     });
     return (_ctx, _cache) => {
       return openBlock(), createBlock(ModalWrapper, {
@@ -11315,24 +11359,30 @@ const _sfc_main$d = /* @__PURE__ */ defineComponent({
           ])
         ]),
         default: withCtx(() => [
-          createBaseVNode("div", _hoisted_2$9, [
-            (openBlock(true), createElementBlock(Fragment, null, renderList(filteredTags.value, (tag) => {
+          createBaseVNode("div", {
+            ref_key: "tagsContainerRef",
+            ref: tagsContainerRef,
+            class: "tags-container",
+            onScroll: handleScroll
+          }, [
+            (openBlock(true), createElementBlock(Fragment, null, renderList(visibleTags.value, (tag) => {
               return openBlock(), createElementBlock("button", {
                 key: tag.tag,
                 type: "button",
                 class: normalizeClass(["tag-chip", { "tag-chip--selected": isSelected(tag.tag) }]),
                 onClick: ($event) => toggleTag(tag.tag)
-              }, toDisplayString(tag.tag), 11, _hoisted_3$8);
+              }, toDisplayString(tag.tag), 11, _hoisted_2$9);
             }), 128)),
-            filteredTags.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$6, " No tags found ")) : createCommentVNode("", true)
-          ])
+            visibleTags.value.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_3$8, " No tags found ")) : createCommentVNode("", true),
+            hasMoreTags.value ? (openBlock(), createElementBlock("div", _hoisted_4$6, " Scroll to load more... ")) : createCommentVNode("", true)
+          ], 544)
         ]),
         _: 1
       }, 8, ["visible", "title", "subtitle", "modal-class"]);
     };
   }
 });
-const TagsModal = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-110d6f7d"]]);
+const TagsModal = /* @__PURE__ */ _export_sfc(_sfc_main$d, [["__scopeId", "data-v-48c2535d"]]);
 const _hoisted_1$c = { class: "tree-node" };
 const _hoisted_2$8 = {
   key: 1,
@@ -11565,7 +11615,7 @@ function useLoraPoolApi() {
       return [];
     }
   };
-  const fetchTags = async (limit = 100) => {
+  const fetchTags = async (limit = 0) => {
     try {
       const response = await fetch(`/api/lm/loras/top-tags?limit=${limit}`);
       const data = await response.json();

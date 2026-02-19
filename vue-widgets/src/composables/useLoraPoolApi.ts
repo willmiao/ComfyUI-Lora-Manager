@@ -15,7 +15,7 @@ export function useLoraPoolApi() {
     }
   }
 
-  const fetchTags = async (limit = 100): Promise<TagOption[]> => {
+  const fetchTags = async (limit = 0): Promise<TagOption[]> => {
     try {
       const response = await fetch(`/api/lm/loras/top-tags?limit=${limit}`)
       const data = await response.json()

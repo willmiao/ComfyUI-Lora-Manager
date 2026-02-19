@@ -648,7 +648,7 @@ class ModelQueryHandler:
     async def get_top_tags(self, request: web.Request) -> web.Response:
         try:
             limit = int(request.query.get("limit", "20"))
-            if limit < 1 or limit > 100:
+            if limit < 0:
                 limit = 20
             top_tags = await self._service.get_top_tags(limit)
             return web.json_response({"success": True, "tags": top_tags})
