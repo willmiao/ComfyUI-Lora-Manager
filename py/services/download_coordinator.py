@@ -86,6 +86,7 @@ class DownloadCoordinator:
             progress_callback=progress_callback,
             download_id=download_id,
             source=payload.get("source"),
+            file_params=payload.get("file_params"),
         )
 
         result["download_id"] = download_id
