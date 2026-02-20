@@ -427,8 +427,8 @@
             }
         },
         "hideEarlyAccessUpdates": {
-            "label": "[TODO: Translate] Hide Early Access Updates",
-            "help": "[TODO: Translate] When enabled, models with only early access updates will not show 'Update available' badge"
+            "label": "Ocultar actualizaciones de acceso temprano",
+            "help": "Solo actualizaciones de acceso temprano"
         },
         "misc": {
             "includeTriggerWords": "Incluir palabras clave en la sintaxis de LoRA",
@@ -1036,18 +1036,18 @@
                 "labels": {
                     "unnamed": "Versión sin nombre",
                     "noDetails": "Sin detalles adicionales",
-                    "earlyAccess": "[TODO: Translate] Early Access"
+                    "earlyAccess": "EA"
                 },
                 "eaTime": {
-                    "endingSoon": "[TODO: Translate] ending soon",
-                    "hours": "[TODO: Translate] in {count}h",
-                    "days": "[TODO: Translate] in {count}d"
+                    "endingSoon": "terminando pronto",
+                    "hours": "en {count}h",
+                    "days": "en {count}d"
                 },
                 "badges": {
                     "current": "Versión actual",
                     "inLibrary": "En la biblioteca",
                     "newer": "Versión más reciente",
-                    "earlyAccess": "[TODO: Translate] Early Access",
+                    "earlyAccess": "Acceso temprano",
                     "ignored": "Ignorada"
                 },
                 "actions": {
@@ -1055,7 +1055,7 @@
                     "delete": "Eliminar",
                     "ignore": "Ignorar",
                     "unignore": "Dejar de ignorar",
-                    "earlyAccessTooltip": "[TODO: Translate] Requires early access purchase",
+                    "earlyAccessTooltip": "Requiere compra de acceso temprano",
                     "resumeModelUpdates": "Reanudar actualizaciones para este modelo",
                     "ignoreModelUpdates": "Ignorar actualizaciones para este modelo",
                     "viewLocalVersions": "Ver todas las versiones locales",
