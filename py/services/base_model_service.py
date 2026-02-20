@@ -380,6 +380,13 @@ class BaseModelService(ABC):
             strategy = "same_base"
         same_base_mode = strategy == "same_base"
 
+        # Check user setting for hiding early access updates
+        hide_early_access = False
+        try:
+            hide_early_access = bool(self.settings.get("hide_early_access_updates", False))
+        except Exception:
+            hide_early_access = False
+
         records = None
         resolved: Optional[Dict[int, bool]] = None
         if same_base_mode:
@@ -388,7 +395,7 @@ class BaseModelService(ABC):
                 try:
                     records = await record_method(self.model_type, ordered_ids)
                     resolved = {
-                        model_id: record.has_update()
+                        model_id: record.has_update(hide_early_access=hide_early_access)
                         for model_id, record in records.items()
                     }
                 except Exception as exc:
@@ -406,7 +413,7 @@ class BaseModelService(ABC):
             bulk_method = getattr(self.update_service, "has_updates_bulk", None)
             if callable(bulk_method):
                 try:
-                    resolved = await bulk_method(self.model_type, ordered_ids)
+                    resolved = await bulk_method(self.model_type, ordered_ids, hide_early_access=hide_early_access)
                 except Exception as exc:
                     logger.error(
                         "Failed to resolve update status in bulk for %s models (%s): %s",
@@ -419,7 +426,7 @@ class BaseModelService(ABC):
 
         if resolved is None:
             tasks = [
-                self.update_service.has_update(self.model_type, model_id)
+                self.update_service.has_update(self.model_type, model_id, hide_early_access=hide_early_access)
                 for model_id in ordered_ids
             ]
             results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -457,6 +464,7 @@ class BaseModelService(ABC):
                     flag = record.has_update_for_base(
                         threshold_version,
                         base_model,
+                        hide_early_access=hide_early_access,
                     )
                 else:
                     flag = default_flag

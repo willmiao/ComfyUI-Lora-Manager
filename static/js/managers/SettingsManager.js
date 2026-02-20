@@ -475,6 +475,12 @@ export class SettingsManager {
             updateFlagStrategySelect.value = state.global.settings.update_flag_strategy || 'same_base';
         }
 
+        // Set hide early access updates setting
+        const hideEarlyAccessUpdatesCheckbox = document.getElementById('hideEarlyAccessUpdates');
+        if (hideEarlyAccessUpdatesCheckbox) {
+            hideEarlyAccessUpdatesCheckbox.checked = state.global.settings.hide_early_access_updates || false;
+        }
+
         // Set optimize example images setting
         const optimizeExampleImagesCheckbox = document.getElementById('optimizeExampleImages');
         if (optimizeExampleImagesCheckbox) {

@@ -1533,11 +1533,13 @@ class ModelUpdateHandler:
         service,
         update_service,
         metadata_provider_selector,
+        settings_service,
         logger: logging.Logger,
     ) -> None:
         self._service = service
         self._update_service = update_service
         self._metadata_provider_selector = metadata_provider_selector
+        self._settings = settings_service
         self._logger = logger
 
     async def fetch_missing_civitai_license_data(
@@ -1774,6 +1776,9 @@ class ModelUpdateHandler:
                 {"success": False, "error": "Model not tracked"}, status=404
             )
 
+        # Enrich EA versions with detailed info if needed
+        record = await self._enrich_early_access_details(record)
+
         overrides = await self._build_version_context(record)
         return web.json_response(
             {
@@ -1811,6 +1816,78 @@ class ModelUpdateHandler:
                 "Failed to acquire civitai provider: %s", exc, exc_info=True
             )
             return None
+
+    async def _enrich_early_access_details(self, record):
+        """Fetch detailed EA info for versions missing exact end time.
+
+        Identifies versions with is_early_access=True but no early_access_ends_at,
+        then fetches detailed info from CivitAI to get the exact end time.
+        """
+        if not record or not record.versions:
+            return record
+
+        # Find versions that need enrichment
+        versions_needing_update = []
+        for version in record.versions:
+            if version.is_early_access and not version.early_access_ends_at:
+                versions_needing_update.append(version)
+
+        if not versions_needing_update:
+            return record
+
+        provider = await self._get_civitai_provider()
+        if not provider:
+            return record
+
+        # Fetch detailed info for each version needing update
+        updated_versions = []
+        for version in versions_needing_update:
+            try:
+                version_info, error = await provider.get_model_version_info(
+                    str(version.version_id)
+                )
+                if version_info and not error:
+                    ea_ends_at = version_info.get("earlyAccessEndsAt")
+                    if ea_ends_at:
+                        # Create updated version with EA end time
+                        from dataclasses import replace
+
+                        updated_version = replace(
+                            version, early_access_ends_at=ea_ends_at
+                        )
+                        updated_versions.append(updated_version)
+                        self._logger.debug(
+                            "Enriched EA info for version %s: %s",
+                            version.version_id,
+                            ea_ends_at,
+                        )
+            except Exception as exc:
+                self._logger.debug(
+                    "Failed to fetch EA details for version %s: %s",
+                    version.version_id,
+                    exc,
+                )
+
+        if not updated_versions:
+            return record
+
+        # Update record with enriched versions
+        version_map = {v.version_id: v for v in record.versions}
+        for updated in updated_versions:
+            version_map[updated.version_id] = updated
+
+        # Create new record with updated versions
+        from dataclasses import replace
+
+        new_record = replace(
+            record, versions=list(version_map.values()),
+        )
+
+        # Optionally persist to database for caching
+        # Note: We don't persist here to avoid side effects; the data will be
+        # refreshed on next bulk update if still needed
+
+        return new_record
 
     async def _collect_models_missing_license(
         self,
@@ -1978,6 +2055,15 @@ class ModelUpdateHandler:
         version_context: Optional[Dict[int, Dict[str, Optional[str]]]] = None,
     ) -> Dict:
         context = version_context or {}
+        # Check user setting for hiding early access versions
+        hide_early_access = False
+        if self._settings is not None:
+            try:
+                hide_early_access = bool(
+                    self._settings.get("hide_early_access_updates", False)
+                )
+            except Exception:
+                pass
         return {
             "modelType": record.model_type,
             "modelId": record.model_id,
@@ -1986,7 +2072,7 @@ class ModelUpdateHandler:
             "inLibraryVersionIds": record.in_library_version_ids,
             "lastCheckedAt": record.last_checked_at,
             "shouldIgnore": record.should_ignore_model,
-            "hasUpdate": record.has_update(),
+            "hasUpdate": record.has_update(hide_early_access=hide_early_access),
             "versions": [
                 self._serialize_version(version, context.get(version.version_id))
                 for version in record.versions
@@ -2002,6 +2088,24 @@ class ModelUpdateHandler:
         preview_url = (
             preview_override if preview_override is not None else version.preview_url
         )
+
+        # Determine if version is currently in early access
+        # Two-phase detection: use exact end time if available, otherwise fallback to basic flag
+        is_early_access = False
+        if version.early_access_ends_at:
+            try:
+                from datetime import datetime, timezone
+                ea_date = datetime.fromisoformat(
+                    version.early_access_ends_at.replace("Z", "+00:00")
+                )
+                is_early_access = ea_date > datetime.now(timezone.utc)
+            except (ValueError, AttributeError):
+                # If date parsing fails, treat as active EA (conservative)
+                is_early_access = True
+        elif getattr(version, 'is_early_access', False):
+            # Fallback to basic EA flag from bulk API
+            is_early_access = True
+
         return {
             "versionId": version.version_id,
             "name": version.name,
@@ -2011,6 +2115,8 @@ class ModelUpdateHandler:
             "previewUrl": preview_url,
             "isInLibrary": version.is_in_library,
             "shouldIgnore": version.should_ignore,
+            "earlyAccessEndsAt": version.early_access_ends_at,
+            "isEarlyAccess": is_early_access,
             "filePath": context.get("file_path"),
             "fileName": context.get("file_name"),
         }

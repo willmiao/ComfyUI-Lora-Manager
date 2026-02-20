@@ -426,6 +426,10 @@
                 "any": "Flag any available update"
             }
         },
+        "hideEarlyAccessUpdates": {
+            "label": "Hide Early Access Updates",
+            "help": "When enabled, models with only early access updates will not show 'Update available' badge"
+        },
         "misc": {
             "includeTriggerWords": "Include Trigger Words in LoRA Syntax",
             "includeTriggerWordsHelp": "Include trained trigger words when copying LoRA syntax to clipboard"
@@ -1031,12 +1035,19 @@
                 },
                 "labels": {
                     "unnamed": "Untitled Version",
-                    "noDetails": "No additional details"
+                    "noDetails": "No additional details",
+                    "earlyAccess": "EA"
+                },
+                "eaTime": {
+                    "endingSoon": "ending soon",
+                    "hours": "in {count}h",
+                    "days": "in {count}d"
                 },
                 "badges": {
                     "current": "Current Version",
                     "inLibrary": "In Library",
                     "newer": "Newer Version",
+                    "earlyAccess": "Early Access",
                     "ignored": "Ignored"
                 },
                 "actions": {
@@ -1044,6 +1055,7 @@
                     "delete": "Delete",
                     "ignore": "Ignore",
                     "unignore": "Unignore",
+                    "earlyAccessTooltip": "Requires early access purchase",
                     "resumeModelUpdates": "Resume updates for this model",
                     "ignoreModelUpdates": "Ignore updates for this model",
                     "viewLocalVersions": "View all local versions",

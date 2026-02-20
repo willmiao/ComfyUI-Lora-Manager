@@ -426,6 +426,10 @@
                 "any": "Отмечать любые доступные обновления"
             }
         },
+        "hideEarlyAccessUpdates": {
+            "label": "[TODO: Translate] Hide Early Access Updates",
+            "help": "[TODO: Translate] When enabled, models with only early access updates will not show 'Update available' badge"
+        },
         "misc": {
             "includeTriggerWords": "Включать триггерные слова в синтаксис LoRA",
             "includeTriggerWordsHelp": "Включать обученные триггерные слова при копировании синтаксиса LoRA в буфер обмена"
@@ -1031,12 +1035,19 @@
                 },
                 "labels": {
                     "unnamed": "Версия без названия",
-                    "noDetails": "Дополнительная информация отсутствует"
+                    "noDetails": "Дополнительная информация отсутствует",
+                    "earlyAccess": "[TODO: Translate] Early Access"
+                },
+                "eaTime": {
+                    "endingSoon": "[TODO: Translate] ending soon",
+                    "hours": "[TODO: Translate] in {count}h",
+                    "days": "[TODO: Translate] in {count}d"
                 },
                 "badges": {
                     "current": "Текущая версия",
                     "inLibrary": "В библиотеке",
                     "newer": "Более новая версия",
+                    "earlyAccess": "[TODO: Translate] Early Access",
                     "ignored": "Игнорируется"
                 },
                 "actions": {
@@ -1044,6 +1055,7 @@
                     "delete": "Удалить",
                     "ignore": "Игнорировать",
                     "unignore": "Перестать игнорировать",
+                    "earlyAccessTooltip": "[TODO: Translate] Requires early access purchase",
                     "resumeModelUpdates": "Возобновить обновления для этой модели",
                     "ignoreModelUpdates": "Игнорировать обновления для этой модели",
                     "viewLocalVersions": "Показать все локальные версии",

@@ -355,6 +355,23 @@
                         {{ t('settings.updateFlagStrategy.help') }}
                     </div>
                 </div>
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="hideEarlyAccessUpdates">{{ t('settings.hideEarlyAccessUpdates.label') }}</label>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="hideEarlyAccessUpdates"
+                                       onchange="settingsManager.saveToggleSetting('hideEarlyAccessUpdates', 'hide_early_access_updates')">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="input-help">
+                        {{ t('settings.hideEarlyAccessUpdates.help') }}
+                    </div>
+                </div>
             </div>
 
             <!-- Default Path Customization Section -->

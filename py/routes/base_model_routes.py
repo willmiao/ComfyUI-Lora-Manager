@@ -204,6 +204,7 @@ class BaseModelRoutes(ABC):
             service=service,
             update_service=update_service,
             metadata_provider_selector=get_metadata_provider,
+            settings_service=self._settings,
             logger=logger,
         )
         return ModelHandlerSet(

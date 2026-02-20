@@ -7,7 +7,8 @@ import os
 import sqlite3
 import time
 from dataclasses import dataclass, replace
-from typing import Dict, Iterable, List, Mapping, Optional, Sequence
+from datetime import datetime, timezone
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
 from .errors import RateLimitError, ResourceNotFoundError
 from .settings_manager import get_settings_manager
@@ -64,7 +65,9 @@ class ModelVersionRecord:
     preview_url: Optional[str]
     is_in_library: bool
     should_ignore: bool
+    early_access_ends_at: Optional[str] = None
     sort_index: int = 0
+    is_early_access: bool = False
 
 
 @dataclass
@@ -97,8 +100,12 @@ class ModelUpdateRecord:
 
         return [version.version_id for version in self.versions if version.is_in_library]
 
-    def has_update(self) -> bool:
-        """Return True when a non-ignored remote version newer than the newest local copy is available."""
+    def has_update(self, hide_early_access: bool = False) -> bool:
+        """Return True when a non-ignored remote version newer than the newest local copy is available.
+
+        Args:
+            hide_early_access: If True, exclude early access versions from update check.
+        """
 
         if self.should_ignore_model:
             return False
@@ -110,22 +117,56 @@ class ModelUpdateRecord:
 
         if max_in_library is None:
             return any(
-                not version.is_in_library and not version.should_ignore for version in self.versions
+                not version.is_in_library
+                and not version.should_ignore
+                and not (hide_early_access and ModelUpdateRecord._is_early_access_active(version))
+                for version in self.versions
             )
 
         for version in self.versions:
             if version.is_in_library or version.should_ignore:
                 continue
+            if hide_early_access and ModelUpdateRecord._is_early_access_active(version):
+                continue
             if version.version_id > max_in_library:
                 return True
         return False
+
+    @staticmethod
+    def _is_early_access_active(version: ModelVersionRecord) -> bool:
+        """Check if a version is currently in early access period.
+
+        Uses two-phase detection:
+        1. If exact EA end time available (from single version API), use it for precise check
+        2. Otherwise fallback to basic EA flag (from bulk API)
+        """
+        # Phase 2: Precise check with exact end time
+        if version.early_access_ends_at:
+            try:
+                ea_date = datetime.fromisoformat(
+                    version.early_access_ends_at.replace("Z", "+00:00")
+                )
+                return ea_date > datetime.now(timezone.utc)
+            except (ValueError, AttributeError):
+                # If date parsing fails, treat as active EA (conservative)
+                return True
+
+        # Phase 1: Basic EA flag from bulk API
+        return version.is_early_access
 
     def has_update_for_base(
         self,
         local_version_id: Optional[int],
         local_base_model: Optional[str],
+        hide_early_access: bool = False,
     ) -> bool:
-        """Return True when a newer remote version with the same base model exists."""
+        """Return True when a newer remote version with the same base model exists.
+
+        Args:
+            local_version_id: The current local version id.
+            local_base_model: The base model to filter by.
+            hide_early_access: If True, exclude early access versions from update check.
+        """
 
         if self.should_ignore_model:
             return False
@@ -152,6 +193,8 @@ class ModelUpdateRecord:
 
         for version in self.versions:
             if version.is_in_library or version.should_ignore:
+                continue
+            if hide_early_access and ModelUpdateRecord._is_early_access_active(version):
                 continue
             version_base = _normalize_base_model(version.base_model)
             if version_base != normalized_base:
@@ -268,6 +311,14 @@ class ModelUpdateService:
                 "ALTER TABLE model_update_versions "
                 "ADD COLUMN should_ignore INTEGER NOT NULL DEFAULT 0"
             ),
+            "early_access_ends_at": (
+                "ALTER TABLE model_update_versions "
+                "ADD COLUMN early_access_ends_at TEXT"
+            ),
+            "is_early_access": (
+                "ALTER TABLE model_update_versions "
+                "ADD COLUMN is_early_access INTEGER NOT NULL DEFAULT 0"
+            ),
         }
 
         for column, statement in migrations.items():
@@ -367,6 +418,8 @@ class ModelUpdateService:
                 preview_url TEXT,
                 is_in_library INTEGER NOT NULL DEFAULT 0,
                 should_ignore INTEGER NOT NULL DEFAULT 0,
+                early_access_ends_at TEXT,
+                is_early_access INTEGER NOT NULL DEFAULT 0,
                 PRIMARY KEY (model_id, version_id),
                 FOREIGN KEY(model_id) REFERENCES model_update_status(model_id) ON DELETE CASCADE
             )
@@ -384,6 +437,8 @@ class ModelUpdateService:
             "preview_url",
             "is_in_library",
             "should_ignore",
+            "early_access_ends_at",
+            "is_early_access",
         ]
         defaults = {
             "sort_index": "0",
@@ -394,6 +449,8 @@ class ModelUpdateService:
             "preview_url": "NULL",
             "is_in_library": "0",
             "should_ignore": "0",
+            "early_access_ends_at": "NULL",
+            "is_early_access": "0",
         }
 
         select_parts = []
@@ -667,6 +724,8 @@ class ModelUpdateService:
                         is_in_library=False,
                         should_ignore=should_ignore,
                         sort_index=len(versions),
+                        early_access_ends_at=None,
+                        is_early_access=False,
                     )
                 )
 
@@ -686,16 +745,17 @@ class ModelUpdateService:
         async with self._lock:
             return self._get_record(model_type, model_id)
 
-    async def has_update(self, model_type: str, model_id: int) -> bool:
+    async def has_update(self, model_type: str, model_id: int, hide_early_access: bool = False) -> bool:
         """Determine if a model has updates pending."""
 
         record = await self.get_record(model_type, model_id)
-        return record.has_update() if record else False
+        return record.has_update(hide_early_access=hide_early_access) if record else False
 
     async def has_updates_bulk(
         self,
         model_type: str,
         model_ids: Sequence[int],
+        hide_early_access: bool = False,
     ) -> Dict[int, bool]:
         """Return update availability for each model id in a single database pass."""
 
@@ -707,7 +767,7 @@ class ModelUpdateService:
             records = self._get_records_bulk(model_type, normalized_ids)
 
         return {
-            model_id: records.get(model_id).has_update() if records.get(model_id) else False
+            model_id: records.get(model_id).has_update(hide_early_access=hide_early_access) if records.get(model_id) else False
             for model_id in normalized_ids
         }
 
@@ -987,6 +1047,8 @@ class ModelUpdateService:
                         is_in_library=True,
                         should_ignore=ignore_map.get(missing_id, False),
                         sort_index=len(versions),
+                        early_access_ends_at=None,
+                        is_early_access=False,
                     )
                 )
 
@@ -1029,6 +1091,8 @@ class ModelUpdateService:
                     is_in_library=version_id in local_set,
                     should_ignore=ignore_map.get(version_id, remote_version.should_ignore),
                     sort_index=sort_map.get(version_id, index),
+                    early_access_ends_at=remote_version.early_access_ends_at,
+                    is_early_access=remote_version.is_early_access,
                 )
             )
 
@@ -1055,6 +1119,8 @@ class ModelUpdateService:
                             is_in_library=True,
                             should_ignore=ignore_map.get(version_id, False),
                             sort_index=len(versions),
+                            early_access_ends_at=None,
+                            is_early_access=False,
                         )
                     )
 
@@ -1120,6 +1186,11 @@ class ModelUpdateService:
         released_at = _normalize_string(entry.get("publishedAt") or entry.get("createdAt"))
         size_bytes = self._extract_size_bytes(entry.get("files"))
         preview_url = self._extract_preview_url(entry.get("images"))
+        early_access_ends_at = _normalize_string(entry.get("earlyAccessEndsAt"))
+
+        # Check availability field from bulk API for basic EA detection
+        availability = _normalize_string(entry.get("availability"))
+        is_early_access = availability == "EarlyAccess"
 
         return ModelVersionRecord(
             version_id=version_id,
@@ -1130,7 +1201,9 @@ class ModelUpdateService:
             preview_url=preview_url,
             is_in_library=False,
             should_ignore=False,
+            early_access_ends_at=early_access_ends_at,
             sort_index=index,
+            is_early_access=is_early_access,
         )
 
     def _extract_size_bytes(self, files) -> Optional[int]:
@@ -1231,7 +1304,8 @@ class ModelUpdateService:
             version_rows = conn.execute(
                 f"""
                 SELECT model_id, version_id, sort_index, name, base_model, released_at,
-                       size_bytes, preview_url, is_in_library, should_ignore
+                       size_bytes, preview_url, is_in_library, should_ignore, early_access_ends_at,
+                       is_early_access
                 FROM model_update_versions
                 WHERE model_id IN ({placeholders})
                 ORDER BY model_id ASC, sort_index ASC, version_id ASC
@@ -1252,7 +1326,9 @@ class ModelUpdateService:
                     preview_url=row["preview_url"],
                     is_in_library=bool(row["is_in_library"]),
                     should_ignore=bool(row["should_ignore"]),
+                    early_access_ends_at=row["early_access_ends_at"],
                     sort_index=_normalize_int(row["sort_index"]) or 0,
+                    is_early_access=bool(row["is_early_access"]),
                 )
             )
 
@@ -1308,8 +1384,9 @@ class ModelUpdateService:
                     """
                     INSERT INTO model_update_versions (
                         version_id, model_id, sort_index, name, base_model, released_at,
-                        size_bytes, preview_url, is_in_library, should_ignore
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        size_bytes, preview_url, is_in_library, should_ignore, early_access_ends_at,
+                        is_early_access
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         version.version_id,
@@ -1322,6 +1399,8 @@ class ModelUpdateService:
                         version.preview_url,
                         1 if version.is_in_library else 0,
                         1 if version.should_ignore else 0,
+                        version.early_access_ends_at,
+                        1 if version.is_early_access else 0,
                     ),
                 )
             conn.commit()

@@ -387,3 +387,51 @@
         min-width: 0;
     }
 }
+
+/* Early Access styles - Buzz theme color (#F59F00) */
+.version-badge-early-access {
+    background: color-mix(in oklch, #F59F00 25%, transparent);
+    color: #E67700;
+    border-color: color-mix(in oklch, #F59F00 55%, transparent);
+}
+
+[data-theme="dark"] .version-badge-early-access {
+    background: color-mix(in oklch, #F59F00 20%, transparent);
+    color: #F59F00;
+    border-color: color-mix(in oklch, #F59F00 45%, transparent);
+}
+
+.version-meta-ea {
+    color: #E67700;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .version-meta-ea {
+    color: #F59F00;
+}
+
+/* Early Access row - gray out effect */
+.model-version-row.is-early-access {
+    opacity: 0.85;
+    filter: grayscale(40%);
+    transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.model-version-row.is-early-access:hover {
+    opacity: 0.95;
+    filter: grayscale(25%);
+}
+
+/* Early Access download button - Buzz theme color (#F59F00) */
+.version-action-early-access {
+    background: color-mix(in oklch, #F59F00 15%, transparent);
+    color: #E67700;
+    border-color: color-mix(in oklch, #F59F00 50%, transparent);
+    cursor: not-allowed;
+}
+
+[data-theme="dark"] .version-action-early-access {
+    background: color-mix(in oklch, #F59F00 12%, transparent);
+    color: #F59F00;
+    border-color: color-mix(in oklch, #F59F00 40%, transparent);
+}

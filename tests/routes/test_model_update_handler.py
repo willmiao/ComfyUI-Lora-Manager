@@ -66,6 +66,7 @@ async def test_build_version_context_includes_static_urls():
         service=service,
         update_service=SimpleNamespace(),
         metadata_provider_selector=lambda *_: None,
+        settings_service=SimpleNamespace(get=lambda *_: False),
         logger=logging.getLogger(__name__),
     )
 
@@ -145,6 +146,7 @@ async def test_refresh_model_updates_filters_records_without_updates():
         service=service,
         update_service=update_service,
         metadata_provider_selector=metadata_selector,
+        settings_service=SimpleNamespace(get=lambda *_: False),
         logger=logging.getLogger(__name__),
     )
 
@@ -207,6 +209,7 @@ async def test_refresh_model_updates_with_target_ids():
         service=service,
         update_service=update_service,
         metadata_provider_selector=metadata_selector,
+        settings_service=SimpleNamespace(get=lambda *_: False),
         logger=logging.getLogger(__name__),
     )
 
@@ -258,6 +261,7 @@ async def test_refresh_model_updates_accepts_snake_case_ids():
         service=service,
         update_service=update_service,
         metadata_provider_selector=metadata_selector,
+        settings_service=SimpleNamespace(get=lambda *_: False),
         logger=logging.getLogger(__name__),
     )
 
@@ -337,6 +341,7 @@ async def test_fetch_missing_license_data_updates_metadata(monkeypatch):
         service=DummyService(cache),
         update_service=SimpleNamespace(),
         metadata_provider_selector=metadata_selector,
+        settings_service=SimpleNamespace(get=lambda *_: False),
         logger=logging.getLogger(__name__),
     )
 
@@ -423,6 +428,7 @@ async def test_fetch_missing_license_data_filters_model_ids(monkeypatch):
         service=DummyService(cache),
         update_service=SimpleNamespace(),
         metadata_provider_selector=metadata_selector,
+        settings_service=SimpleNamespace(get=lambda *_: False),
         logger=logging.getLogger(__name__),
     )
 

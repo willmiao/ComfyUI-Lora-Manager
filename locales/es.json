@@ -426,6 +426,10 @@
                 "any": "Marcar cualquier actualización disponible"
             }
         },
+        "hideEarlyAccessUpdates": {
+            "label": "[TODO: Translate] Hide Early Access Updates",
+            "help": "[TODO: Translate] When enabled, models with only early access updates will not show 'Update available' badge"
+        },
         "misc": {
             "includeTriggerWords": "Incluir palabras clave en la sintaxis de LoRA",
             "includeTriggerWordsHelp": "Incluir palabras clave entrenadas al copiar la sintaxis de LoRA al portapapeles"
@@ -1031,12 +1035,19 @@
                 },
                 "labels": {
                     "unnamed": "Versión sin nombre",
-                    "noDetails": "Sin detalles adicionales"
+                    "noDetails": "Sin detalles adicionales",
+                    "earlyAccess": "[TODO: Translate] Early Access"
+                },
+                "eaTime": {
+                    "endingSoon": "[TODO: Translate] ending soon",
+                    "hours": "[TODO: Translate] in {count}h",
+                    "days": "[TODO: Translate] in {count}d"
                 },
                 "badges": {
                     "current": "Versión actual",
                     "inLibrary": "En la biblioteca",
                     "newer": "Versión más reciente",
+                    "earlyAccess": "[TODO: Translate] Early Access",
                     "ignored": "Ignorada"
                 },
                 "actions": {
@@ -1044,6 +1055,7 @@
                     "delete": "Eliminar",
                     "ignore": "Ignorar",
                     "unignore": "Dejar de ignorar",
+                    "earlyAccessTooltip": "[TODO: Translate] Requires early access purchase",
                     "resumeModelUpdates": "Reanudar actualizaciones para este modelo",
                     "ignoreModelUpdates": "Ignorar actualizaciones para este modelo",
                     "viewLocalVersions": "Ver todas las versiones locales",

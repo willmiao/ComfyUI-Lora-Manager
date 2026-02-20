@@ -79,7 +79,7 @@ class StubUpdateService:
         self.bulk_calls = []
         self.bulk_error = bulk_error
 
-    async def has_updates_bulk(self, model_type, model_ids):
+    async def has_updates_bulk(self, model_type, model_ids, hide_early_access: bool = False):
         self.bulk_calls.append((model_type, list(model_ids)))
         if self.bulk_error:
             raise RuntimeError("bulk failure")
@@ -91,7 +91,7 @@ class StubUpdateService:
             results[model_id] = result
         return results
 
-    async def has_update(self, model_type, model_id):
+    async def has_update(self, model_type, model_id, hide_early_access: bool = False):
         self.calls.append((model_type, model_id))
         result = self.decisions.get(model_id, False)
         if isinstance(result, Exception):

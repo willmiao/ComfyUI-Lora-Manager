@@ -257,6 +257,7 @@ class SettingsHandler:
         "auto_organize_exclusions",
         "metadata_refresh_skip_paths",
         "filter_presets",
+        "hide_early_access_updates",
     )
 
     _PROXY_KEYS = {

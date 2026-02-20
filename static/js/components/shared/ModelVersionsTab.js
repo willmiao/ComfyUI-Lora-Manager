@@ -123,7 +123,70 @@ function formatDateLabel(value) {
     });
 }
 
-function buildMetaMarkup(version) {
+/**
+ * Format EA end time as smart relative time
+ * - < 1 day: "in Xh" (hours)
+ * - 1-7 days: "in Xd" (days)
+ * - > 7 days: "Jan 15" (short date)
+ */
+function formatEarlyAccessTime(endsAt) {
+    if (!endsAt) {
+        return null;
+    }
+    const endDate = new Date(endsAt);
+    if (Number.isNaN(endDate.getTime())) {
+        return null;
+    }
+
+    const now = new Date();
+    const diffMs = endDate.getTime() - now.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    const diffDays = diffHours / 24;
+
+    if (diffHours < 1) {
+        return translate('modals.model.versions.eaTime.endingSoon', {}, 'ending soon');
+    }
+    if (diffHours < 24) {
+        const hours = Math.ceil(diffHours);
+        return translate(
+            'modals.model.versions.eaTime.hours',
+            { count: hours },
+            `in ${hours}h`
+        );
+    }
+    if (diffDays <= 7) {
+        const days = Math.ceil(diffDays);
+        return translate(
+            'modals.model.versions.eaTime.days',
+            { count: days },
+            `in ${days}d`
+        );
+    }
+    // More than 7 days: show short date
+    return endDate.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+    });
+}
+
+function isEarlyAccessActive(version) {
+    // Two-phase detection:
+    // 1. Use pre-computed isEarlyAccess flag if available (from backend)
+    // 2. Otherwise check exact end time if available
+    if (typeof version.isEarlyAccess === 'boolean') {
+        return version.isEarlyAccess;
+    }
+    if (!version.earlyAccessEndsAt) {
+        return false;
+    }
+    try {
+        return new Date(version.earlyAccessEndsAt) > new Date();
+    } catch {
+        return false;
+    }
+}
+
+function buildMetaMarkup(version, options = {}) {
     const segments = [];
     if (version.baseModel) {
         segments.push(
@@ -136,6 +199,14 @@ function buildMetaMarkup(version) {
     }
     if (typeof version.sizeBytes === 'number' && version.sizeBytes > 0) {
         segments.push(escapeHtml(formatFileSize(version.sizeBytes)));
+    }
+
+    // Add early access info if applicable
+    if (options.showEarlyAccess && isEarlyAccessActive(version)) {
+        const eaTime = formatEarlyAccessTime(version.earlyAccessEndsAt);
+        if (eaTime) {
+            segments.push(`<span class="version-meta-ea"><i class="fas fa-clock"></i> ${escapeHtml(eaTime)}</span>`);
+        }
     }
 
     if (!segments.length) {
@@ -235,6 +306,7 @@ function resolveUpdateAvailability(record, baseModel, currentVersionId) {
 
     const strategy = state?.global?.settings?.update_flag_strategy;
     const sameBaseMode = strategy === DISPLAY_FILTER_MODES.SAME_BASE;
+    const hideEarlyAccess = state?.global?.settings?.hide_early_access_updates;
 
     if (!sameBaseMode) {
         return Boolean(record?.hasUpdate);
@@ -276,6 +348,9 @@ function resolveUpdateAvailability(record, baseModel, currentVersionId) {
 
     return record.versions.some(version => {
         if (version.isInLibrary || version.shouldIgnore) {
+            return false;
+        }
+        if (hideEarlyAccess && isEarlyAccessActive(version)) {
             return false;
         }
         const versionBase = normalizeBaseModelName(version.baseModel);
@@ -349,6 +424,7 @@ function renderRow(version, options) {
     const isNewer =
         typeof latestLibraryVersionId === 'number' &&
         version.versionId > latestLibraryVersionId;
+    const isEarlyAccess = isEarlyAccessActive(version);
     const badges = [];
 
     if (isCurrent) {
@@ -359,6 +435,10 @@ function renderRow(version, options) {
         badges.push(buildBadge(translate('modals.model.versions.badges.inLibrary', {}, 'In Library'), 'success'));
     } else if (isNewer && !version.shouldIgnore) {
         badges.push(buildBadge(translate('modals.model.versions.badges.newer', {}, 'Newer Version'), 'info'));
+    }
+
+    if (isEarlyAccess) {
+        badges.push(buildBadge(translate('modals.model.versions.badges.earlyAccess', {}, 'Early Access'), 'early-access'));
     }
 
     if (version.shouldIgnore) {
@@ -377,8 +457,10 @@ function renderRow(version, options) {
 
     const actions = [];
     if (!version.isInLibrary) {
+        // Download button with optional EA bolt icon
+        const downloadIcon = isEarlyAccess ? '<i class="fas fa-bolt"></i> ' : '';
         actions.push(
-            `<button class="version-action version-action-primary" data-version-action="download">${escapeHtml(downloadLabel)}</button>`
+            `<button class="version-action version-action-primary" data-version-action="download">${downloadIcon}${escapeHtml(downloadLabel)}</button>`
         );
     } else if (version.filePath) {
         actions.push(
@@ -402,7 +484,7 @@ function renderRow(version, options) {
     );
 
     const rowAttributes = [
-        `class="model-version-row${isCurrent ? ' is-current' : ''}${linkTarget ? ' is-clickable' : ''}"`,
+        `class="model-version-row${isCurrent ? ' is-current' : ''}${linkTarget ? ' is-clickable' : ''}${isEarlyAccess ? ' is-early-access' : ''}"`,
         `data-version-id="${escapeHtml(version.versionId)}"`,
     ];
     if (linkTarget) {
@@ -419,7 +501,7 @@ function renderRow(version, options) {
                 </div>
                 <div class="version-badges">${badges.join('')}</div>
                 <div class="version-meta">
-                    ${buildMetaMarkup(version)}
+                    ${buildMetaMarkup(version, { showEarlyAccess: true })}
                 </div>
             </div>
             <div class="version-actions">
