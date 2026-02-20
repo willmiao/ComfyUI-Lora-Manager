@@ -220,45 +220,17 @@ class HealthCheckHandler:
 class SettingsHandler:
     """Sync settings between backend and frontend."""
 
-    _SYNC_KEYS = (
-        "civitai_api_key",
-        "default_lora_root",
-        "default_checkpoint_root",
-        "default_unet_root",
-        "default_embedding_root",
-        "base_model_path_mappings",
-        "download_path_templates",
-        "enable_metadata_archive_db",
-        "language",
-        "use_portable_settings",
-        "onboarding_completed",
-        "dismissed_banners",
-        "proxy_enabled",
-        "proxy_type",
-        "proxy_host",
-        "proxy_port",
-        "proxy_username",
-        "proxy_password",
-        "example_images_path",
-        "optimize_example_images",
-        "auto_download_example_images",
-        "blur_mature_content",
-        "autoplay_on_hover",
-        "display_density",
-        "card_info_display",
-        "show_folder_sidebar",
-        "include_trigger_words",
-        "show_only_sfw",
-        "compact_mode",
-        "priority_tags",
-        "model_card_footer_action",
-        "model_name_display",
-        "update_flag_strategy",
-        "auto_organize_exclusions",
-        "metadata_refresh_skip_paths",
-        "filter_presets",
-        "hide_early_access_updates",
-    )
+    # Settings keys that should NOT be synced to frontend.
+    # All other settings are synced by default.
+    _NO_SYNC_KEYS = frozenset({
+        # Internal/performance settings (not used by frontend)
+        "hash_chunk_size_mb",
+        "download_stall_timeout_seconds",
+        # Complex internal structures retrieved via separate endpoints
+        "folder_paths",
+        "libraries",
+        "active_library",
+    })
 
     _PROXY_KEYS = {
         "proxy_enabled",
@@ -305,10 +277,12 @@ class SettingsHandler:
     async def get_settings(self, request: web.Request) -> web.Response:
         try:
             response_data = {}
-            for key in self._SYNC_KEYS:
-                value = self._settings.get(key)
-                if value is not None:
-                    response_data[key] = value
+            # Sync all settings except those in _NO_SYNC_KEYS
+            for key in self._settings.keys():
+                if key not in self._NO_SYNC_KEYS:
+                    value = self._settings.get(key)
+                    if value is not None:
+                        response_data[key] = value
             settings_file = getattr(self._settings, "settings_file", None)
             if settings_file:
                 response_data["settings_file"] = settings_file

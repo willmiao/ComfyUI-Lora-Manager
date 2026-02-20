@@ -26,6 +26,7 @@
     'settings': dict({
       'civitai_api_key': 'test-key',
       'language': 'en',
+      'theme': 'dark',
     }),
     'success': True,
   })

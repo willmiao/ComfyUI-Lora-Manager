@@ -45,6 +45,9 @@ class DummySettings:
     def set(self, key, value):
         self.data[key] = value
 
+    def keys(self):
+        return self.data.keys()
+
 
 async def noop_async(*_args, **_kwargs):
     """No-op async function."""

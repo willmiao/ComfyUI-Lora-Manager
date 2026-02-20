@@ -44,6 +44,9 @@ class DummySettings:
     def delete(self, key):
         self.data.pop(key, None)
 
+    def keys(self):
+        return self.data.keys()
+
 
 class DummyDownloader:
     def __init__(self):
@@ -62,8 +65,14 @@ async def dummy_downloader_factory():
 
 
 @pytest.mark.asyncio
-async def test_get_settings_filters_sync_keys():
-    settings_service = DummySettings({"civitai_api_key": "abc", "extraneous": "value"})
+async def test_get_settings_excludes_no_sync_keys():
+    """Verify that settings in _NO_SYNC_KEYS are not synced, but others are."""
+    settings_service = DummySettings({
+        "civitai_api_key": "abc",
+        "hash_chunk_size_mb": 10,
+        "folder_paths": {"/some/path"},
+        "regular_setting": "value",
+    })
     handler = SettingsHandler(
         settings_service=settings_service,
         metadata_provider_updater=noop_async,
@@ -74,7 +83,12 @@ async def test_get_settings_filters_sync_keys():
     payload = json.loads(response.text)
 
     assert payload["success"] is True
-    assert payload["settings"] == {"civitai_api_key": "abc"}
+    # Regular settings should be synced
+    assert payload["settings"]["civitai_api_key"] == "abc"
+    assert payload["settings"]["regular_setting"] == "value"
+    # _NO_SYNC_KEYS should not be synced
+    assert "hash_chunk_size_mb" not in payload["settings"]
+    assert "folder_paths" not in payload["settings"]
 
 
 @pytest.mark.asyncio

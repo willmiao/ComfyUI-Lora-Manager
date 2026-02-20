@@ -994,6 +994,10 @@ class SettingsManager:
             self._save_settings()
             logger.info(f"Deleted setting: {key}")
 
+    def keys(self) -> Iterable[str]:
+        """Return all setting keys."""
+        return self.settings.keys()
+
     def _prepare_portable_switch(self, use_portable: bool) -> None:
         """Prepare switching the settings storage location."""
 
