@@ -295,7 +295,7 @@
         "metadataRefreshSkipPaths": {
             "label": "Metadata refresh skip paths",
             "placeholder": "Example: temp, archived/old, test_models",
-            "help": "Skip models in these directory paths during bulk metadata refresh (\"Fetch All Metadata\"). Enter relative folder paths separated by commas.",
+            "help": "Skip models in these directory paths during bulk metadata refresh (\"Fetch All Metadata\"). Enter folder paths relative to your model root directory, separated by commas.",
             "validation": {
                 "noPaths": "Enter at least one path separated by commas.",
                 "saveFailed": "Unable to save skip paths: {message}"

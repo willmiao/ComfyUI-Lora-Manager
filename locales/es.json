@@ -295,7 +295,7 @@
         "metadataRefreshSkipPaths": {
             "label": "Rutas a omitir en la actualización de metadatos",
             "placeholder": "Ejemplo: temp, archived/old, test_models",
-            "help": "Omitir modelos en estas rutas de directorio durante la actualización masiva de metadatos (\"Obtener todos los metadatos\"). Ingrese rutas de carpetas relativas separadas por comas.",
+            "help": "Omitir modelos en estas rutas de directorio durante la actualización masiva de metadatos (\"Obtener todos los metadatos\"). Ingrese rutas de carpetas relativas al directorio raíz de modelos, separadas por comas.",
             "validation": {
                 "noPaths": "Ingrese al menos una ruta separada por comas.",
                 "saveFailed": "No se pudieron guardar las rutas a omitir: {message}"
