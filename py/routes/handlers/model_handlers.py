@@ -1142,6 +1142,7 @@ class ModelDownloadHandler:
                 request.query.get("use_default_paths", "false").lower() == "true"
             )
             source = request.query.get("source")
+            file_params_json = request.query.get("file_params")
 
             data = {"model_id": model_id, "use_default_paths": use_default_paths}
             if model_version_id:
@@ -1150,6 +1151,12 @@ class ModelDownloadHandler:
                 data["download_id"] = download_id
             if source:
                 data["source"] = source
+            if file_params_json:
+                import json
+                try:
+                    data["file_params"] = json.loads(file_params_json)
+                except json.JSONDecodeError:
+                    self._logger.warning("Invalid file_params JSON: %s", file_params_json)
 
             loop = asyncio.get_event_loop()
             future = loop.create_future()
