@@ -1091,6 +1091,56 @@ export function initVersionsTab({
         });
     }
 
+    async function resolveDownloadPathFromCurrentVersion() {
+        if (!normalizedCurrentVersionId || !controller.record?.versions) {
+            return null;
+        }
+
+        const currentVersion = controller.record.versions.find(
+            v => v.versionId === normalizedCurrentVersionId && v.isInLibrary && v.filePath
+        );
+        if (!currentVersion?.filePath) {
+            return null;
+        }
+
+        try {
+            const client = ensureClient();
+            const rootsData = await client.fetchModelRoots();
+            const roots = rootsData?.roots;
+            if (!Array.isArray(roots) || roots.length === 0) {
+                return null;
+            }
+
+            const normalizedFilePath = currentVersion.filePath.replace(/\\/g, '/');
+            let matchedRoot = null;
+            let relativePath = null;
+
+            for (const root of roots) {
+                const normalizedRoot = root.replace(/\\/g, '/');
+                if (normalizedFilePath.startsWith(normalizedRoot)) {
+                    matchedRoot = root;
+                    relativePath = normalizedFilePath.slice(normalizedRoot.length);
+                    if (relativePath.startsWith('/')) {
+                        relativePath = relativePath.slice(1);
+                    }
+                    break;
+                }
+            }
+
+            if (!matchedRoot || !relativePath) {
+                return null;
+            }
+
+            const lastSlash = relativePath.lastIndexOf('/');
+            const targetFolder = lastSlash > 0 ? relativePath.slice(0, lastSlash) : '';
+
+            return { modelRoot: matchedRoot, targetFolder };
+        } catch (error) {
+            console.debug('Failed to resolve download path from current version:', error);
+            return null;
+        }
+    }
+
     async function handleDownloadVersion(button, versionId) {
         if (!controller.record) {
             return;
@@ -1105,8 +1155,11 @@ export function initVersionsTab({
         button.disabled = true;
 
         try {
+            const pathInfo = await resolveDownloadPathFromCurrentVersion();
             const success = await downloadManager.downloadVersionWithDefaults(modelType, modelId, versionId, {
                 versionName: version.name || `#${version.versionId}`,
+                modelRoot: pathInfo?.modelRoot || '',
+                targetFolder: pathInfo?.targetFolder || '',
             });
 
             if (success) {

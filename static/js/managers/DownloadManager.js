@@ -620,7 +620,12 @@ export class DownloadManager {
         });
     }
 
-    async downloadVersionWithDefaults(modelType, modelId, versionId, { versionName = '', source = null } = {}) {
+    async downloadVersionWithDefaults(modelType, modelId, versionId, { 
+        versionName = '', 
+        source = null,
+        modelRoot = '',
+        targetFolder = ''
+    } = {}) {
         try {
             this.apiClient = getModelApiClient(modelType);
         } catch (error) {
@@ -630,13 +635,14 @@ export class DownloadManager {
         this.modelId = modelId ? modelId.toString() : null;
         this.source = source;
 
+        const useDefaultPaths = !modelRoot;
         return this.executeDownloadWithProgress({
             modelId,
             versionId,
             versionName,
-            modelRoot: '',
-            targetFolder: '',
-            useDefaultPaths: true,
+            modelRoot: modelRoot || '',
+            targetFolder: targetFolder || '',
+            useDefaultPaths,
             source,
             closeModal: false,
         });
