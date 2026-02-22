@@ -405,19 +405,29 @@ function createAutocompleteTextWidgetFactory(
 
   forwardMiddleMouseToCanvas(container)
 
+  // Store textarea reference on the container element so cloned widgets can access it
+  // This is necessary because when widgets are promoted to subgraph nodes,
+  // the cloned widget shares the same element but needs access to inputEl
+  const widgetElementRef = { inputEl: undefined as HTMLTextAreaElement | undefined }
+  ;(container as any).__widgetInputEl = widgetElementRef
+
   const widget = node.addDOMWidget(
     widgetName,
     `AUTOCOMPLETE_TEXT_${modelType.toUpperCase()}`,
     container,
     {
       getValue() {
-        return widget.inputEl?.value ?? ''
+        // Access inputEl from widget or from the shared element reference
+        const inputEl = widget.inputEl ?? (container as any).__widgetInputEl?.inputEl
+        return inputEl?.value ?? ''
       },
       setValue(v: string) {
-        if (widget.inputEl) {
-          widget.inputEl.value = v ?? ''
+        // Access inputEl from widget or from the shared element reference
+        const inputEl = widget.inputEl ?? (container as any).__widgetInputEl?.inputEl
+        if (inputEl) {
+          inputEl.value = v ?? ''
           // Notify Vue component of value change via custom event
-          widget.inputEl.dispatchEvent(new CustomEvent('lora-manager:autocomplete-value-changed', {
+          inputEl.dispatchEvent(new CustomEvent('lora-manager:autocomplete-value-changed', {
             detail: { value: v ?? '' }
           }))
         }

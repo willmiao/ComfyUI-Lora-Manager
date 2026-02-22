@@ -117,6 +117,16 @@ onMounted(() => {
   // Register textarea reference with widget
   if (textareaRef.value) {
     props.widget.inputEl = textareaRef.value
+    
+    // Also store on the container element for cloned widgets (subgraph promotion)
+    // When widgets are promoted to subgraph nodes, the cloned widget shares the same
+    // DOM element but has its own inputEl property. We store the reference on the
+    // container so both original and cloned widgets can access it.
+    const container = textareaRef.value.closest('[id^="autocomplete-text-widget-"]') as HTMLElement
+    if (container && (container as any).__widgetInputEl) {
+      (container as any).__widgetInputEl.inputEl = textareaRef.value
+    }
+    
     // Initialize hasText state
     hasText.value = textareaRef.value.value.length > 0
     

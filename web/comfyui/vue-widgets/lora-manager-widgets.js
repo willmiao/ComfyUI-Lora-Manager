@@ -1988,14 +1988,14 @@ to { transform: rotate(360deg);
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-2081708c] {
+.autocomplete-text-widget[data-v-653446fd] {
   background: transparent;
   height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
-.input-wrapper[data-v-2081708c] {
+.input-wrapper[data-v-653446fd] {
   position: relative;
   flex: 1;
   display: flex;
@@ -2003,7 +2003,7 @@ to { transform: rotate(360deg);
 }
 
 /* Canvas mode styles (default) - matches built-in comfy-multiline-input */
-.text-input[data-v-2081708c] {
+.text-input[data-v-653446fd] {
   flex: 1;
   width: 100%;
   background-color: var(--comfy-input-bg, #222);
@@ -2020,7 +2020,7 @@ to { transform: rotate(360deg);
 }
 
 /* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
-.text-input.vue-dom-mode[data-v-2081708c] {
+.text-input.vue-dom-mode[data-v-653446fd] {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
   padding: 8px 12px;
@@ -2029,12 +2029,12 @@ to { transform: rotate(360deg);
   font-size: 12px;
   font-family: inherit;
 }
-.text-input[data-v-2081708c]:focus {
+.text-input[data-v-653446fd]:focus {
   outline: none;
 }
 
 /* Clear button styles */
-.clear-button[data-v-2081708c] {
+.clear-button[data-v-653446fd] {
   position: absolute;
   right: 4px;
   top: 4px;
@@ -2054,27 +2054,27 @@ to { transform: rotate(360deg);
   transition: opacity 0.2s ease, background-color 0.2s ease;
   z-index: 10;
 }
-.clear-button[data-v-2081708c]:hover {
+.clear-button[data-v-653446fd]:hover {
   opacity: 1;
   background: rgba(255, 100, 100, 0.8);
 }
-.clear-button svg[data-v-2081708c] {
+.clear-button svg[data-v-653446fd] {
   width: 12px;
   height: 12px;
 }
 
 /* Vue DOM mode adjustments for clear button */
-.text-input.vue-dom-mode ~ .clear-button[data-v-2081708c] {
+.text-input.vue-dom-mode ~ .clear-button[data-v-653446fd] {
   right: 8px;
   top: 8px;
   width: 20px;
   height: 20px;
   background: rgba(107, 114, 128, 0.6);
 }
-.text-input.vue-dom-mode ~ .clear-button[data-v-2081708c]:hover {
+.text-input.vue-dom-mode ~ .clear-button[data-v-653446fd]:hover {
   background: oklch(62% 0.18 25);
 }
-.text-input.vue-dom-mode ~ .clear-button svg[data-v-2081708c] {
+.text-input.vue-dom-mode ~ .clear-button svg[data-v-653446fd] {
   width: 14px;
   height: 14px;
 }`));
@@ -14256,6 +14256,10 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     onMounted(() => {
       if (textareaRef.value) {
         props.widget.inputEl = textareaRef.value;
+        const container = textareaRef.value.closest('[id^="autocomplete-text-widget-"]');
+        if (container && container.__widgetInputEl) {
+          container.__widgetInputEl.inputEl = textareaRef.value;
+        }
         hasText.value = textareaRef.value.value.length > 0;
         textareaRef.value.addEventListener("lora-manager:autocomplete-value-changed", onExternalValueChange);
       }
@@ -14320,7 +14324,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-2081708c"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-653446fd"]]);
 const LORA_PROVIDER_NODE_TYPES$1 = [
   "Lora Stacker (LoraManager)",
   "Lora Randomizer (LoraManager)",
@@ -14890,6 +14894,8 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
   container.style.flexDirection = "column";
   container.style.overflow = "hidden";
   forwardMiddleMouseToCanvas(container);
+  const widgetElementRef = { inputEl: void 0 };
+  container.__widgetInputEl = widgetElementRef;
   const widget = node.addDOMWidget(
     widgetName,
     `AUTOCOMPLETE_TEXT_${modelType.toUpperCase()}`,
@@ -14897,12 +14903,15 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
     {
       getValue() {
         var _a3;
-        return ((_a3 = widget.inputEl) == null ? void 0 : _a3.value) ?? "";
+        const inputEl = widget.inputEl ?? ((_a3 = container.__widgetInputEl) == null ? void 0 : _a3.inputEl);
+        return (inputEl == null ? void 0 : inputEl.value) ?? "";
       },
       setValue(v2) {
-        if (widget.inputEl) {
-          widget.inputEl.value = v2 ?? "";
-          widget.inputEl.dispatchEvent(new CustomEvent("lora-manager:autocomplete-value-changed", {
+        var _a3;
+        const inputEl = widget.inputEl ?? ((_a3 = container.__widgetInputEl) == null ? void 0 : _a3.inputEl);
+        if (inputEl) {
+          inputEl.value = v2 ?? "";
+          inputEl.dispatchEvent(new CustomEvent("lora-manager:autocomplete-value-changed", {
             detail: { value: v2 ?? "" }
           }));
         }
