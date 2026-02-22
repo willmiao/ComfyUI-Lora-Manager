@@ -744,3 +744,8 @@ export class DownloadManager {
 
 // Create global instance
 export const downloadManager = new DownloadManager();
+
+// Expose to window for browser extension integration
+if (typeof window !== 'undefined') {
+    window.downloadManager = downloadManager;
+}

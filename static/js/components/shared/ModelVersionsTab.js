@@ -1142,6 +1142,11 @@ export function initVersionsTab({
 
         const actionButton = event.target.closest('[data-version-action]');
         if (actionButton) {
+            // Check if browser extension has already handled this action
+            if (actionButton.dataset.lmExtensionHandled === 'true') {
+                return;
+            }
+            
             const row = actionButton.closest('.model-version-row');
             if (!row) {
                 return;
@@ -1188,6 +1193,11 @@ export function initVersionsTab({
         }
         event.preventDefault();
         window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    });
+
+    // Listen for extension-triggered refresh requests
+    container.addEventListener('lm:refreshVersions', async () => {
+        await refresh();
     });
 
     return {
