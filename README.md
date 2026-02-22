@@ -34,6 +34,14 @@ Enhance your Civitai browsing experience with our companion browser extension! S
 
 ## Release Notes
 
+### v0.9.16
+* **Duplicate Detection Enhancement** - The model duplicates mode now respects filter configurations, making it easier to find duplicate groups within specific filtered results.
+* **Tag Logic Toggle** - Added OR/AND toggle for include tags filtering in the filters panel, providing more flexible tag-based model searches.
+* **Metadata Refresh Skip Paths** - New setting to exclude specific paths from metadata refresh operations. Models under these paths will be skipped when fetching metadata from remote sources.
+* **Dynamic Trigger Words in Prompt Node** - Prompt node now supports dynamic numbers of trigger word inputs for greater flexibility.
+* **Early Access Updates** - Model updates now display Early Access information, with a new setting to ignore Early Access updates if desired.
+* **LM Civitai Extension Integration** - Added integration with the LM Civitai Extension. Clicking the download button in model updates now sends downloads to the extension's download queue for seamless one-click downloads.
+
 ### v0.9.15
 * **Filter Presets** - Save filter combinations as presets for quick switching and reapplication.
 * **Bug Fixes** - Fixed various bugs for improved stability.

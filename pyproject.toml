@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-lora-manager"
 description = "Revolutionize your workflow with the ultimate LoRA companion for ComfyUI!"
-version = "0.9.15"
+version = "0.9.16"
 license = {file = "LICENSE"}
 dependencies = [
     "aiohttp",
