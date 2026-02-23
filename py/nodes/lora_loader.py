@@ -1,7 +1,8 @@
 import logging
 import re
-from nodes import LoraLoader
-from ..utils.utils import get_lora_info
+import comfy.utils # type: ignore
+import comfy.sd # type: ignore
+from ..utils.utils import get_lora_info_absolute
 from .utils import FlexibleOptionalInputType, any_type, extract_lora_name, get_loras_list, nunchaku_load_lora
 
 logger = logging.getLogger(__name__)
@@ -58,12 +59,13 @@ class LoraLoaderLM:
                     model = nunchaku_load_lora(model, lora_path, model_strength)
                     # clip remains unchanged for Nunchaku models
                 else:
-                    # Use default loader for standard models
-                    model, clip = LoraLoader().load_lora(model, clip, lora_path, model_strength, clip_strength)
+                    # Use lower-level API to load LoRA directly without folder_paths validation
+                    lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
+                    model, clip = comfy.sd.load_lora_for_models(model, clip, lora, model_strength, clip_strength)
                 
                 # Extract lora name for trigger words lookup
                 lora_name = extract_lora_name(lora_path)
-                _, trigger_words = get_lora_info(lora_name)
+                _, trigger_words = get_lora_info_absolute(lora_name)
                 
                 all_trigger_words.extend(trigger_words)
                 # Add clip strength to output if different from model strength (except for Nunchaku models)
@@ -84,7 +86,7 @@ class LoraLoaderLM:
             clip_strength = float(lora.get('clipStrength', model_strength))
             
             # Get lora path and trigger words
-            lora_path, trigger_words = get_lora_info(lora_name)
+            lora_path, trigger_words = get_lora_info_absolute(lora_name)
             
             # Apply the LoRA using the appropriate loader
             if is_nunchaku_model:
@@ -92,8 +94,9 @@ class LoraLoaderLM:
                 model = nunchaku_load_lora(model, lora_path, model_strength)
                 # clip remains unchanged
             else:
-                # Use default loader for standard models
-                model, clip = LoraLoader().load_lora(model, clip, lora_path, model_strength, clip_strength)
+                # Use lower-level API to load LoRA directly without folder_paths validation
+                lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
+                model, clip = comfy.sd.load_lora_for_models(model, clip, lora, model_strength, clip_strength)
             
             # Include clip strength in output if different from model strength and not a Nunchaku model
             if not is_nunchaku_model and abs(model_strength - clip_strength) > 0.001:
@@ -199,12 +202,13 @@ class LoraTextLoaderLM:
                     model = nunchaku_load_lora(model, lora_path, model_strength)
                     # clip remains unchanged for Nunchaku models
                 else:
-                    # Use default loader for standard models
-                    model, clip = LoraLoader().load_lora(model, clip, lora_path, model_strength, clip_strength)
+                    # Use lower-level API to load LoRA directly without folder_paths validation
+                    lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
+                    model, clip = comfy.sd.load_lora_for_models(model, clip, lora, model_strength, clip_strength)
                 
                 # Extract lora name for trigger words lookup
                 lora_name = extract_lora_name(lora_path)
-                _, trigger_words = get_lora_info(lora_name)
+                _, trigger_words = get_lora_info_absolute(lora_name)
                 
                 all_trigger_words.extend(trigger_words)
                 # Add clip strength to output if different from model strength (except for Nunchaku models)
@@ -221,7 +225,7 @@ class LoraTextLoaderLM:
             clip_strength = lora['clip_strength']
             
             # Get lora path and trigger words
-            lora_path, trigger_words = get_lora_info(lora_name)
+            lora_path, trigger_words = get_lora_info_absolute(lora_name)
             
             # Apply the LoRA using the appropriate loader
             if is_nunchaku_model:
@@ -229,8 +233,9 @@ class LoraTextLoaderLM:
                 model = nunchaku_load_lora(model, lora_path, model_strength)
                 # clip remains unchanged
             else:
-                # Use default loader for standard models
-                model, clip = LoraLoader().load_lora(model, clip, lora_path, model_strength, clip_strength)
+                # Use lower-level API to load LoRA directly without folder_paths validation
+                lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
+                model, clip = comfy.sd.load_lora_for_models(model, clip, lora, model_strength, clip_strength)
             
             # Include clip strength in output if different from model strength and not a Nunchaku model
             if not is_nunchaku_model and abs(model_strength - clip_strength) > 0.001:

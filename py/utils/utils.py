@@ -50,6 +50,52 @@ def get_lora_info(lora_name):
         # No event loop is running, we can use asyncio.run()
         return asyncio.run(_get_lora_info_async())
 
+
+def get_lora_info_absolute(lora_name):
+    """Get the absolute lora path and trigger words from cache
+    
+    Returns:
+        tuple: (absolute_path, trigger_words) where absolute_path is the full 
+               file system path to the LoRA file, or original lora_name if not found
+    """
+    async def _get_lora_info_absolute_async():
+        scanner = await ServiceRegistry.get_lora_scanner()
+        cache = await scanner.get_cached_data()
+        
+        for item in cache.raw_data:
+            if item.get('file_name') == lora_name:
+                file_path = item.get('file_path')
+                if file_path:
+                    # Return absolute path directly
+                    # Get trigger words from civitai metadata
+                    civitai = item.get('civitai', {})
+                    trigger_words = civitai.get('trainedWords', []) if civitai else []
+                    return file_path, trigger_words
+        return lora_name, []
+    
+    try:
+        # Check if we're already in an event loop
+        loop = asyncio.get_running_loop()
+        # If we're in a running loop, we need to use a different approach
+        # Create a new thread to run the async code
+        import concurrent.futures
+        
+        def run_in_thread():
+            new_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(new_loop)
+            try:
+                return new_loop.run_until_complete(_get_lora_info_absolute_async())
+            finally:
+                new_loop.close()
+        
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(run_in_thread)
+            return future.result()
+            
+    except RuntimeError:
+        # No event loop is running, we can use asyncio.run()
+        return asyncio.run(_get_lora_info_absolute_async())
+
 def fuzzy_match(text: str, pattern: str, threshold: float = 0.85) -> bool:
         """
         Check if text matches pattern using fuzzy matching.
