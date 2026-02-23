@@ -633,7 +633,7 @@ export function createModelCard(model, modelType) {
             ` : ''}
             <div class="card-footer">
                 <div class="model-info">
-                    <span class="model-name">${getDisplayName(model)}</span>
+                    <span class="model-name" title="${getDisplayName(model).replace(/"/g, '&quot;')}">${getDisplayName(model)}</span>
                     <div>
                         ${model.civitai?.name ? `<span class="version-name">${model.civitai.name}</span>` : ''}
                         ${hasUsageCount ? `<span class="version-name" title="${translate('modelCard.usage.timesUsed', {}, 'Times used')}">${model.usage_count}×</span>` : ''}

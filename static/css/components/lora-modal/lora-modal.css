@@ -392,6 +392,7 @@
     border: 1px solid transparent;
     outline: none;
     flex: 1;
+    overflow-wrap: anywhere; /* Allow wrapping at any character, including hyphens */
 }
 
 .model-name-content:focus {
