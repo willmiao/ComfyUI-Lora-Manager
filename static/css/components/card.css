@@ -282,7 +282,7 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;  /* Changed from flex-end to allow for text wrapping */
-    min-height: 32px;
+    min-height: auto;
     gap: var(--space-1);  /* Add gap between model info and actions */
 }
 
@@ -413,7 +413,7 @@
     font-size: 0.95em;
     word-break: break-word;
     display: block;
-    max-height: 3em; /* Increased to ensure two full lines */
+    max-height: 4.2em; /* Allow up to 3 lines */
     overflow: hidden;
     /* Add line height for consistency */
     line-height: 1.4;
