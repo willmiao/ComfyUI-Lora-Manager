@@ -2,7 +2,7 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { showToast } from "./utils.js";
-import { getAutoPathCorrectionPreference } from "./settings.js";
+import { getAutoPathCorrectionPreference, getUsageStatisticsPreference } from "./settings.js";
 
 // Define target nodes and their widget configurations
 const PATH_CORRECTION_TARGETS = [
@@ -25,6 +25,11 @@ app.registerExtension({
     setup() {
         // Listen for successful executions
         api.addEventListener("execution_success", ({ detail }) => {
+            // Skip if usage statistics is disabled
+            if (!getUsageStatisticsPreference()) {
+                return;
+            }
+
             if (detail && detail.prompt_id) {
                 this.updateUsageStats(detail.prompt_id);
             }

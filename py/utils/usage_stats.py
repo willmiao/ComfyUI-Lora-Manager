@@ -57,6 +57,9 @@ class UsageStats:
             "last_save_time": 0
         }
         
+        # Track if stats have been modified since last save
+        self._is_dirty = False
+        
         # Queue for prompt_ids to process
         self.pending_prompt_ids = set()
         
@@ -180,27 +183,39 @@ class UsageStats:
     async def save_stats(self, force=False):
         """Save statistics to file"""
         try:
-            # Only save if it's been at least save_interval since last save or force is True
+            # Only save if:
+            # 1. force is True, OR
+            # 2. stats have been modified (is_dirty) AND save_interval has passed
             current_time = time.time()
-            if not force and (current_time - self.stats.get("last_save_time", 0)) < self.save_interval:
-                return False
-                
+            time_since_last_save = current_time - self.stats.get("last_save_time", 0)
+
+            if not force:
+                if not self._is_dirty:
+                    # No changes to save
+                    return False
+                if time_since_last_save < self.save_interval:
+                    # Too soon since last save
+                    return False
+
             # Use a lock to prevent concurrent writes
             async with self._lock:
                 # Update last save time
                 self.stats["last_save_time"] = current_time
-                
+
                 # Create directory if it doesn't exist
                 os.makedirs(os.path.dirname(self._stats_file_path), exist_ok=True)
-                
+
                 # Write to a temporary file first, then move it to avoid corruption
                 temp_path = f"{self._stats_file_path}.tmp"
                 with open(temp_path, 'w', encoding='utf-8') as f:
                     json.dump(self.stats, f, indent=2, ensure_ascii=False)
-                
+
                 # Replace the old file with the new one
                 os.replace(temp_path, self._stats_file_path)
-                
+
+                # Clear dirty flag since we've saved
+                self._is_dirty = False
+
                 logger.debug(f"Saved usage statistics to {self._stats_file_path}")
                 return True
         except Exception as e:
@@ -218,25 +233,32 @@ class UsageStats:
             while True:
                 # Wait a short interval before checking for new prompt_ids
                 await asyncio.sleep(5)  # Check every 5 seconds
-                
+
                 # Process any pending prompt_ids
                 if self.pending_prompt_ids:
                     async with self._lock:
                         # Get a copy of the set and clear original
                         prompt_ids = self.pending_prompt_ids.copy()
                         self.pending_prompt_ids.clear()
-                    
+
                     # Process each prompt_id
-                    registry = MetadataRegistry()
-                    for prompt_id in prompt_ids:
-                        try:
-                            metadata = registry.get_metadata(prompt_id)
-                            await self._process_metadata(metadata)
-                        except Exception as e:
-                            logger.error(f"Error processing prompt_id {prompt_id}: {e}")
-                
-                # Periodically save stats
-                await self.save_stats()
+                    try:
+                        registry = MetadataRegistry()
+                    except NameError:
+                        # MetadataRegistry not available (standalone mode)
+                        registry = None
+                    
+                    if registry:
+                        for prompt_id in prompt_ids:
+                            try:
+                                metadata = registry.get_metadata(prompt_id)
+                                await self._process_metadata(metadata)
+                            except Exception as e:
+                                logger.error(f"Error processing prompt_id {prompt_id}: {e}")
+
+                # Periodically save stats (only if there are changes)
+                if self._is_dirty:
+                    await self.save_stats()
         except asyncio.CancelledError:
             # Task was cancelled, clean up
             await self.save_stats(force=True)
@@ -254,9 +276,10 @@ class UsageStats:
         """Process metadata from an execution"""
         if not metadata or not isinstance(metadata, dict):
             return
-            
+
         # Increment total executions count
         self.stats["total_executions"] += 1
+        self._is_dirty = True
         
         # Get today's date in YYYY-MM-DD format
         today = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -373,7 +396,11 @@ class UsageStats:
         """Process a prompt execution immediately (synchronous approach)"""
         if not prompt_id:
             return
-            
+
+        if standalone_mode:
+            # Usage statistics are not available in standalone mode
+            return
+
         try:
             # Process metadata for this prompt_id
             registry = MetadataRegistry()

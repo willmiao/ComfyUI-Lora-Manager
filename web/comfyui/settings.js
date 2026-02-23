@@ -16,6 +16,9 @@ const PROMPT_TAG_AUTOCOMPLETE_DEFAULT = true;
 const TAG_SPACE_REPLACEMENT_SETTING_ID = "loramanager.tag_space_replacement";
 const TAG_SPACE_REPLACEMENT_DEFAULT = false;
 
+const USAGE_STATISTICS_SETTING_ID = "loramanager.usage_statistics";
+const USAGE_STATISTICS_DEFAULT = true;
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -124,6 +127,32 @@ const getTagSpaceReplacementPreference = (() => {
     };
 })();
 
+const getUsageStatisticsPreference = (() => {
+    let settingsUnavailableLogged = false;
+
+    return () => {
+        const settingManager = app?.extensionManager?.setting;
+        if (!settingManager || typeof settingManager.get !== "function") {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: settings API unavailable, using default usage statistics setting.");
+                settingsUnavailableLogged = true;
+            }
+            return USAGE_STATISTICS_DEFAULT;
+        }
+
+        try {
+            const value = settingManager.get(USAGE_STATISTICS_SETTING_ID);
+            return value ?? USAGE_STATISTICS_DEFAULT;
+        } catch (error) {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: unable to read usage statistics setting, using default.", error);
+                settingsUnavailableLogged = true;
+            }
+            return USAGE_STATISTICS_DEFAULT;
+        }
+    };
+})();
+
 // ============================================================================
 // Register Extension with All Settings
 // ============================================================================
@@ -168,6 +197,14 @@ app.registerExtension({
             tooltip: "When enabled, tag names with underscores will have them replaced with spaces when inserted (e.g., 'blonde_hair' becomes 'blonde hair').",
             category: ["LoRA Manager", "Autocomplete", "Tag Formatting"],
         },
+        {
+            id: USAGE_STATISTICS_SETTING_ID,
+            name: "Enable usage statistics tracking",
+            type: "boolean",
+            defaultValue: USAGE_STATISTICS_DEFAULT,
+            tooltip: "When enabled, LoRA Manager will track model usage statistics during workflow execution. Disabling this will prevent unnecessary disk writes.",
+            category: ["LoRA Manager", "Statistics", "Usage Tracking"],
+        },
     ],
 });
 
@@ -175,4 +212,4 @@ app.registerExtension({
 // Exports
 // ============================================================================
 
-export { getWheelSensitivity, getAutoPathCorrectionPreference, getPromptTagAutocompletePreference, getTagSpaceReplacementPreference };
+export { getWheelSensitivity, getAutoPathCorrectionPreference, getPromptTagAutocompletePreference, getTagSpaceReplacementPreference, getUsageStatisticsPreference };
