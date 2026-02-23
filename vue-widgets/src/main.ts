@@ -147,7 +147,23 @@ function createLoraRandomizerWidget(node) {
 
   forwardMiddleMouseToCanvas(container)
 
-  let internalValue: RandomizerConfig | undefined
+  // Initialize with default config to avoid sending undefined/empty string to backend
+  const defaultConfig: RandomizerConfig = {
+    count_mode: 'range',
+    count_fixed: 3,
+    count_min: 2,
+    count_max: 5,
+    model_strength_min: 0.0,
+    model_strength_max: 1.0,
+    use_same_clip_strength: true,
+    clip_strength_min: 0.0,
+    clip_strength_max: 1.0,
+    roll_mode: 'fixed',
+    use_recommended_strength: false,
+    recommended_strength_scale_min: 0.5,
+    recommended_strength_scale_max: 1.0,
+  }
+  let internalValue: RandomizerConfig = defaultConfig
 
   const widget = node.addDOMWidget(
     'randomizer_config',

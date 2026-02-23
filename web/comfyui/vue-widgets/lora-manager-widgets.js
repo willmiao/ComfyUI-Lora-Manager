@@ -14695,7 +14695,22 @@ function createLoraRandomizerWidget(node) {
   container.style.flexDirection = "column";
   container.style.overflow = "hidden";
   forwardMiddleMouseToCanvas(container);
-  let internalValue;
+  const defaultConfig = {
+    count_mode: "range",
+    count_fixed: 3,
+    count_min: 2,
+    count_max: 5,
+    model_strength_min: 0,
+    model_strength_max: 1,
+    use_same_clip_strength: true,
+    clip_strength_min: 0,
+    clip_strength_max: 1,
+    roll_mode: "fixed",
+    use_recommended_strength: false,
+    recommended_strength_scale_min: 0.5,
+    recommended_strength_scale_max: 1
+  };
+  let internalValue = defaultConfig;
   const widget = node.addDOMWidget(
     "randomizer_config",
     "RANDOMIZER_CONFIG",
