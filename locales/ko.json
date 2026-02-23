@@ -275,6 +275,11 @@
             "download": "[TODO: Translate] Download",
             "advanced": "[TODO: Translate] Advanced"
         },
+        "search": {
+            "placeholder": "[TODO: Translate] Search settings...",
+            "clear": "[TODO: Translate] Clear search",
+            "noResults": "[TODO: Translate] No settings found matching \"{query}\""
+        },
         "storage": {
             "locationLabel": "휴대용 모드",
             "locationHelp": "활성화하면 settings.json을 리포지토리에 유지하고, 비활성화하면 사용자 구성 디렉터리에 저장합니다."

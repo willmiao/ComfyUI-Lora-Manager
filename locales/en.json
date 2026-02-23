@@ -275,6 +275,11 @@
             "download": "Download",
             "advanced": "Advanced"
         },
+        "search": {
+            "placeholder": "Search settings...",
+            "clear": "Clear search",
+            "noResults": "No settings found matching \"{query}\""
+        },
         "storage": {
             "locationLabel": "Portable mode",
             "locationHelp": "Enable to keep settings.json inside the repository; disable to store it in your user config directory."

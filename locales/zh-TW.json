@@ -275,6 +275,11 @@
             "download": "[TODO: Translate] Download",
             "advanced": "[TODO: Translate] Advanced"
         },
+        "search": {
+            "placeholder": "[TODO: Translate] Search settings...",
+            "clear": "[TODO: Translate] Clear search",
+            "noResults": "[TODO: Translate] No settings found matching \"{query}\""
+        },
         "storage": {
             "locationLabel": "可攜式模式",
             "locationHelp": "啟用可將 settings.json 保存在儲存庫中；停用則保存在使用者設定目錄。"

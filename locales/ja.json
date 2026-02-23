@@ -275,6 +275,11 @@
             "download": "[TODO: Translate] Download",
             "advanced": "[TODO: Translate] Advanced"
         },
+        "search": {
+            "placeholder": "[TODO: Translate] Search settings...",
+            "clear": "[TODO: Translate] Clear search",
+            "noResults": "[TODO: Translate] No settings found matching \"{query}\""
+        },
         "storage": {
             "locationLabel": "ポータブルモード",
             "locationHelp": "有効にすると settings.json をリポジトリ内に保持し、無効にするとユーザー設定ディレクトリに格納します。"

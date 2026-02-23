@@ -275,6 +275,11 @@
             "download": "[TODO: Translate] Download",
             "advanced": "[TODO: Translate] Advanced"
         },
+        "search": {
+            "placeholder": "[TODO: Translate] Search settings...",
+            "clear": "[TODO: Translate] Clear search",
+            "noResults": "[TODO: Translate] No settings found matching \"{query}\""
+        },
         "storage": {
             "locationLabel": "Mode portable",
             "locationHelp": "Activez pour garder settings.json dans le dépôt ; désactivez pour le placer dans votre dossier de configuration utilisateur."

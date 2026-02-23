@@ -275,6 +275,11 @@
             "download": "[TODO: Translate] Download",
             "advanced": "[TODO: Translate] Advanced"
         },
+        "search": {
+            "placeholder": "[TODO: Translate] Search settings...",
+            "clear": "[TODO: Translate] Clear search",
+            "noResults": "[TODO: Translate] No settings found matching \"{query}\""
+        },
         "storage": {
             "locationLabel": "מצב נייד",
             "locationHelp": "הפעל כדי לשמור את settings.json בתוך המאגר; בטל כדי לשמור אותו בתיקיית ההגדרות של המשתמש."

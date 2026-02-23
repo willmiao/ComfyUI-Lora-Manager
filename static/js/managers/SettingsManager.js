@@ -365,6 +365,7 @@ export class SettingsManager {
 
         this.setupPriorityTagInputs();
         this.initializeNavigation();
+        this.initializeSearch();
 
         this.initialized = true;
     }
@@ -435,8 +436,264 @@ export class SettingsManager {
             }
         });
 
+        // Initialize section collapse/expand
+        this.initializeSectionCollapse();
+
         // Initial update
         updateActiveNav();
+    }
+
+    initializeSectionCollapse() {
+        const sections = document.querySelectorAll('.settings-section, .setting-item[id^="section-"]');
+        const STORAGE_KEY = 'settingsModal_collapsedSections';
+        
+        // Load collapsed state from localStorage
+        let collapsedSections = {};
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                collapsedSections = JSON.parse(stored);
+            }
+        } catch (e) {
+            console.warn('Failed to load collapsed sections state:', e);
+        }
+
+        sections.forEach(section => {
+            const sectionId = section.getAttribute('data-section') || section.id;
+            const header = section.querySelector('.settings-section-header');
+            const toggleBtn = section.querySelector('.settings-section-toggle');
+            
+            if (!header || !toggleBtn) return;
+
+            // Apply initial collapsed state
+            if (collapsedSections[sectionId]) {
+                section.classList.add('collapsed');
+            }
+
+            // Handle toggle click
+            const toggleSection = () => {
+                const isCollapsed = section.classList.toggle('collapsed');
+                
+                // Save state to localStorage
+                collapsedSections[sectionId] = isCollapsed;
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(collapsedSections));
+                } catch (e) {
+                    console.warn('Failed to save collapsed sections state:', e);
+                }
+            };
+
+            // Click on header or toggle button
+            header.addEventListener('click', (e) => {
+                // Don't toggle if clicking on interactive elements within header
+                if (e.target.closest('a, button:not(.settings-section-toggle), input, select')) {
+                    return;
+                }
+                toggleSection();
+            });
+
+            toggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleSection();
+            });
+        });
+    }
+
+    initializeSearch() {
+        const searchInput = document.getElementById('settingsSearchInput');
+        const searchClear = document.getElementById('settingsSearchClear');
+        
+        if (!searchInput) return;
+
+        // Debounced search handler
+        let searchTimeout;
+        const debouncedSearch = (query) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.performSearch(query);
+            }, 150);
+        };
+
+        // Handle input changes
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            
+            // Show/hide clear button
+            if (searchClear) {
+                searchClear.style.display = query ? 'flex' : 'none';
+            }
+            
+            debouncedSearch(query);
+        });
+
+        // Handle clear button click
+        if (searchClear) {
+            searchClear.addEventListener('click', () => {
+                searchInput.value = '';
+                searchClear.style.display = 'none';
+                searchInput.focus();
+                this.performSearch('');
+            });
+        }
+
+        // Handle Escape key to clear search
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (searchInput.value) {
+                    searchInput.value = '';
+                    if (searchClear) searchClear.style.display = 'none';
+                    this.performSearch('');
+                }
+            }
+        });
+    }
+
+    performSearch(query) {
+        const sections = document.querySelectorAll('.settings-section, .setting-item[id^="section-"]');
+        const settingsForm = document.querySelector('.settings-form');
+        
+        // Remove existing empty state
+        const existingEmptyState = settingsForm?.querySelector('.settings-search-empty');
+        if (existingEmptyState) {
+            existingEmptyState.remove();
+        }
+
+        if (!query) {
+            // Reset all sections to visible and remove highlights
+            sections.forEach(section => {
+                section.classList.remove('search-hidden', 'search-match');
+                this.removeSearchHighlights(section);
+            });
+            return;
+        }
+
+        const lowerQuery = query.toLowerCase();
+        let matchCount = 0;
+
+        sections.forEach(section => {
+            const sectionText = this.getSectionSearchableText(section);
+            const hasMatch = sectionText.includes(lowerQuery);
+
+            if (hasMatch) {
+                section.classList.remove('search-hidden');
+                section.classList.add('search-match');
+                this.highlightSearchMatches(section, lowerQuery);
+                matchCount++;
+                
+                // Expand section if it has matches
+                section.classList.remove('collapsed');
+            } else {
+                section.classList.add('search-hidden');
+                section.classList.remove('search-match');
+                this.removeSearchHighlights(section);
+            }
+        });
+
+        // Show empty state if no matches found
+        if (matchCount === 0 && settingsForm) {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'settings-search-empty';
+            emptyState.innerHTML = `
+                <i class="fas fa-search"></i>
+                <p>${translate('settings.search.noResults', { query }, `No settings found matching "${query}"`)}</p>
+            `;
+            settingsForm.appendChild(emptyState);
+        }
+    }
+
+    getSectionSearchableText(section) {
+        // Get all text content from labels, help text, and headers
+        const labels = section.querySelectorAll('label');
+        const helpTexts = section.querySelectorAll('.input-help');
+        const headers = section.querySelectorAll('h3');
+        
+        let text = '';
+        
+        labels.forEach(el => text += ' ' + el.textContent);
+        helpTexts.forEach(el => text += ' ' + el.textContent);
+        headers.forEach(el => text += ' ' + el.textContent);
+        
+        return text.toLowerCase();
+    }
+
+    highlightSearchMatches(section, query) {
+        // Remove existing highlights first
+        this.removeSearchHighlights(section);
+        
+        if (!query) return;
+
+        // Highlight in labels and help text
+        const textElements = section.querySelectorAll('label, .input-help, h3');
+        
+        textElements.forEach(element => {
+            const walker = document.createTreeWalker(
+                element,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+            
+            const textNodes = [];
+            let node;
+            while (node = walker.nextNode()) {
+                if (node.textContent.toLowerCase().includes(query)) {
+                    textNodes.push(node);
+                }
+            }
+            
+            textNodes.forEach(textNode => {
+                const parent = textNode.parentElement;
+                const text = textNode.textContent;
+                const lowerText = text.toLowerCase();
+                
+                // Split text by query and wrap matches in highlight spans
+                const parts = [];
+                let lastIndex = 0;
+                let index;
+                
+                while ((index = lowerText.indexOf(query, lastIndex)) !== -1) {
+                    // Add text before match
+                    if (index > lastIndex) {
+                        parts.push(document.createTextNode(text.substring(lastIndex, index)));
+                    }
+                    
+                    // Add highlighted match
+                    const highlight = document.createElement('span');
+                    highlight.className = 'settings-search-highlight';
+                    highlight.textContent = text.substring(index, index + query.length);
+                    parts.push(highlight);
+                    
+                    lastIndex = index + query.length;
+                }
+                
+                // Add remaining text
+                if (lastIndex < text.length) {
+                    parts.push(document.createTextNode(text.substring(lastIndex)));
+                }
+                
+                // Replace original text node with highlighted version
+                if (parts.length > 1) {
+                    parts.forEach(part => parent.insertBefore(part, textNode));
+                    parent.removeChild(textNode);
+                }
+            });
+        });
+    }
+
+    removeSearchHighlights(section) {
+        const highlights = section.querySelectorAll('.settings-search-highlight');
+        
+        highlights.forEach(highlight => {
+            const parent = highlight.parentElement;
+            if (parent) {
+                // Replace highlight with its text content
+                parent.insertBefore(document.createTextNode(highlight.textContent), highlight);
+                parent.removeChild(highlight);
+                
+                // Normalize to merge adjacent text nodes
+                parent.normalize();
+            }
+        });
     }
 
     async openSettingsFileLocation() {

@@ -120,9 +120,115 @@
 .settings-header {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
     gap: var(--space-1);
     margin-bottom: var(--space-2);
+    padding-right: 40px; /* Space for close button */
+}
+
+.settings-header .settings-search-wrapper {
+    margin-left: auto;
+}
+
+/* Search Input Styles */
+.settings-search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 240px;
+}
+
+.settings-search-icon {
+    position: absolute;
+    left: 10px;
+    color: var(--text-color);
+    opacity: 0.5;
+    font-size: 0.9em;
+    pointer-events: none;
+}
+
+.settings-search-input {
+    width: 100%;
+    padding: 6px 28px 6px 32px;
+    height: 32px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    background-color: var(--lora-surface);
+    color: var(--text-color);
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+
+.settings-search-input:focus {
+    border-color: var(--lora-accent);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+}
+
+.settings-search-input::placeholder {
+    color: var(--text-color);
+    opacity: 0.5;
+}
+
+.settings-search-clear {
+    position: absolute;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: rgba(var(--border-color-rgb, 148, 163, 184), 0.3);
+    color: var(--text-color);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7em;
+    opacity: 0.6;
+    transition: all 0.2s ease;
+}
+
+.settings-search-clear:hover {
+    opacity: 1;
+    background: rgba(var(--border-color-rgb, 148, 163, 184), 0.5);
+}
+
+/* Search Highlight Styles */
+.settings-search-highlight {
+    background-color: rgba(var(--lora-accent-rgb, 79, 70, 229), 0.3);
+    color: var(--lora-accent);
+    padding: 0 2px;
+    border-radius: 2px;
+    font-weight: 500;
+}
+
+/* Section visibility during search */
+.settings-section.search-match,
+.setting-item.search-match {
+    display: block !important;
+}
+
+.settings-section.search-hidden,
+.setting-item.search-hidden {
+    display: none !important;
+}
+
+/* Empty search results state */
+.settings-search-empty {
+    text-align: center;
+    padding: var(--space-4);
+    color: var(--text-color);
+    opacity: 0.7;
+}
+
+.settings-search-empty i {
+    font-size: 2em;
+    margin-bottom: var(--space-2);
+    opacity: 0.5;
+}
+
+.settings-search-empty p {
+    margin: 0;
+    font-size: 0.95em;
 }
 
 .settings-header h2 {
@@ -461,11 +567,64 @@
     padding-top: var(--space-2);
 }
 
-.settings-section h3 {
-    font-size: 1.1em;
+.settings-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    padding: var(--space-1) 0;
     margin-bottom: var(--space-2);
+    transition: opacity 0.2s ease;
+}
+
+.settings-section-header:hover {
+    opacity: 0.8;
+}
+
+.settings-section-header h3 {
+    font-size: 1.1em;
+    margin: 0;
     color: var(--text-color);
     opacity: 0.9;
+}
+
+.settings-section-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    opacity: 0.6;
+}
+
+.settings-section-toggle:hover {
+    opacity: 1;
+}
+
+.settings-section-toggle .chevron {
+    transition: transform 0.3s ease;
+}
+
+.settings-section.collapsed .settings-section-toggle .chevron {
+    transform: rotate(-90deg);
+}
+
+.settings-section-content {
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    max-height: 2000px;
+    opacity: 1;
+}
+
+.settings-section.collapsed .settings-section-content {
+    max-height: 0;
+    opacity: 0;
 }
 
 .setting-item {
@@ -804,6 +963,17 @@ input:checked + .toggle-slider:before {
     
     .settings-modal .modal-body {
         flex-direction: column;
+    }
+    
+    .settings-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2);
+    }
+
+    .settings-header .settings-search-wrapper {
+        margin-left: 0;
+        width: 100%;
     }
     
     .settings-nav {
