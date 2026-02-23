@@ -510,6 +510,9 @@ export async function sendLoraToWorkflow(loraSyntax, replaceMode = false, syntax
     if (!node) {
       return false;
     }
+    if (node.mode !== undefined && node.mode !== 0) {
+      return false;
+    }
     if (node.capabilities && typeof node.capabilities === 'object') {
       if (node.capabilities.supports_lora === true) {
         return true;
@@ -569,6 +572,12 @@ export async function sendModelPathToWorkflow(modelPath, options) {
   }
 
   const targetNodes = filterRegistryNodes(registry.nodes, (node) => {
+    if (!node) {
+      return false;
+    }
+    if (node.mode !== undefined && node.mode !== 0) {
+      return false;
+    }
     const widgetNames = getWidgetNames(node);
     return widgetNames.includes(widgetName);
   });

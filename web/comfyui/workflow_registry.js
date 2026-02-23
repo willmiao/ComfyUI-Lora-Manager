@@ -62,6 +62,7 @@ app.registerExtension({
                     title: node.title || node.comfyClass,
                     type: node.comfyClass,
                     comfy_class: node.comfyClass,
+                    mode: node.mode,
                     capabilities: {
                         supports_lora: supportsLora,
                         widget_names: widgetNames,

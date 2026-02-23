@@ -192,6 +192,7 @@ class NodeRegistry:
                     "comfy_class": comfy_class,
                     "capabilities": capabilities,
                     "widget_names": widget_names,
+                    "mode": node.get("mode"),
                 }
             logger.debug("Registered %s nodes in registry", len(nodes))
             self._registry_updated.set()
