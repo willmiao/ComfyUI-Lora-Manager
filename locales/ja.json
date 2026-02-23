@@ -269,6 +269,12 @@
             "storageLocation": "設定の場所",
             "proxySettings": "プロキシ設定"
         },
+        "nav": {
+            "general": "[TODO: Translate] General",
+            "interface": "[TODO: Translate] Interface",
+            "download": "[TODO: Translate] Download",
+            "advanced": "[TODO: Translate] Advanced"
+        },
         "storage": {
             "locationLabel": "ポータブルモード",
             "locationHelp": "有効にすると settings.json をリポジトリ内に保持し、無効にするとユーザー設定ディレクトリに格納します。"

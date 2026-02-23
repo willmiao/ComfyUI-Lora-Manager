@@ -12,8 +12,44 @@
                 <i class="fas fa-external-link-alt" aria-hidden="true"></i>
             </button>
         </div>
-        <div class="settings-form">
-            <div class="setting-item api-key-item">
+        <div class="modal-body">
+            <!-- Navigation Sidebar -->
+            <nav class="settings-nav" role="navigation" aria-label="Settings sections">
+                <div class="settings-nav-title">{{ t('common.actions.settings') }}</div>
+                <ul class="settings-nav-list">
+                    <li class="settings-nav-group">
+                        <div class="settings-nav-group-title">{{ t('settings.nav.general') }}</div>
+                        <button type="button" class="settings-nav-item" data-target="section-api-key">{{ t('settings.civitaiApiKey') }}</button>
+                        <button type="button" class="settings-nav-item" data-target="section-storage">{{ t('settings.sections.storageLocation') }}</button>
+                    </li>
+                    <li class="settings-nav-group">
+                        <div class="settings-nav-group-title">{{ t('settings.nav.interface') }}</div>
+                        <button type="button" class="settings-nav-item" data-target="section-content-filtering">{{ t('settings.sections.contentFiltering') }}</button>
+                        <button type="button" class="settings-nav-item" data-target="section-video">{{ t('settings.sections.videoSettings') }}</button>
+                        <button type="button" class="settings-nav-item" data-target="section-layout">{{ t('settings.sections.layoutSettings') }}</button>
+                    </li>
+                    <li class="settings-nav-group">
+                        <div class="settings-nav-group-title">{{ t('settings.nav.download') }}</div>
+                        <button type="button" class="settings-nav-item" data-target="section-folder">{{ t('settings.sections.folderSettings') }}</button>
+                        <button type="button" class="settings-nav-item" data-target="section-update-flags">{{ t('settings.sections.updateFlags') }}</button>
+                        <button type="button" class="settings-nav-item" data-target="section-path-templates">{{ t('settings.downloadPathTemplates.title') }}</button>
+                        <button type="button" class="settings-nav-item" data-target="section-example-images">{{ t('settings.sections.exampleImages') }}</button>
+                    </li>
+                    <li class="settings-nav-group">
+                        <div class="settings-nav-group-title">{{ t('settings.nav.advanced') }}</div>
+                        <button type="button" class="settings-nav-item" data-target="section-priority-tags">{{ t('settings.priorityTags.title') }}</button>
+                        <button type="button" class="settings-nav-item" data-target="section-exclusions">{{ t('settings.autoOrganizeExclusions.label') }}</button>
+                        <button type="button" class="settings-nav-item" data-target="section-metadata-archive">{{ t('settings.sections.metadataArchive') }}</button>
+                        <button type="button" class="settings-nav-item" data-target="section-proxy">{{ t('settings.sections.proxySettings') }}</button>
+                        <button type="button" class="settings-nav-item" data-target="section-misc">{{ t('settings.sections.misc') }}</button>
+                    </li>
+                </ul>
+            </nav>
+            
+            <!-- Content Area -->
+            <div class="settings-content">
+                <div class="settings-form">
+                    <div id="section-api-key" class="setting-item api-key-item">
                 <div class="setting-row">
                     <div class="setting-info">
                         <label for="civitaiApiKey">{{ t('settings.civitaiApiKey') }}:</label>
@@ -37,7 +73,7 @@
                 </div>
             </div>
             
-            <div class="settings-section">
+            <div id="section-storage" class="settings-section">
                 <h3>{{ t('settings.sections.storageLocation') }}</h3>
                 <div class="setting-item">
                     <div class="setting-row">
@@ -58,7 +94,7 @@
                 </div>
             </div>
 
-            <div class="settings-section">
+            <div id="section-content-filtering" class="settings-section">
                 <h3>{{ t('settings.sections.contentFiltering') }}</h3>
                 
                 <div class="setting-item">
@@ -99,7 +135,7 @@
             </div>
             
             <!-- Add Video Settings Section -->
-            <div class="settings-section">
+            <div id="section-video" class="settings-section">
                 <h3>{{ t('settings.sections.videoSettings') }}</h3>
                 
                 <div class="setting-item">
@@ -122,7 +158,7 @@
             </div>
 
             <!-- Add Layout Settings Section -->
-            <div class="settings-section">
+            <div id="section-layout" class="settings-section">
                 <h3>{{ t('settings.sections.layoutSettings') }}</h3>
 
                 <div class="setting-item">
@@ -248,7 +284,7 @@
             </div>
             
             <!-- Add Folder Settings Section -->
-            <div class="settings-section">
+            <div id="section-folder" class="settings-section">
                 <h3>{{ t('settings.sections.folderSettings') }}</h3>
 
                 <div class="setting-item">
@@ -337,7 +373,7 @@
             </div>
 
             <!-- Update Flag Strategy Section -->
-            <div class="settings-section">
+            <div id="section-update-flags" class="settings-section">
                 <h3>{{ t('settings.sections.updateFlags') }}</h3>
                 <div class="setting-item">
                     <div class="setting-row">
@@ -375,7 +411,7 @@
             </div>
 
             <!-- Default Path Customization Section -->
-            <div class="settings-section">
+            <div id="section-path-templates" class="settings-section">
                 <h3>{{ t('settings.downloadPathTemplates.title') }}</h3>
                 
                 <div class="setting-item">
@@ -496,7 +532,7 @@
                 </div>
             </div>
 
-            <div class="setting-item priority-tags-item">
+            <div id="section-priority-tags" class="setting-item priority-tags-item">
                 <div class="setting-row priority-tags-header">
                     <div class="setting-info priority-tags-info">
                         <label>{{ t('settings.priorityTags.title') }}</label>
@@ -534,7 +570,7 @@
                 </div>
             </div>
 
-            <div class="setting-item priority-tags-item auto-organize-exclusions-item">
+            <div id="section-exclusions" class="setting-item priority-tags-item auto-organize-exclusions-item">
                 <div class="setting-row priority-tags-header">
                     <div class="setting-info priority-tags-info">
                         <label>{{ t('settings.autoOrganizeExclusions.label') }}</label>
@@ -573,7 +609,7 @@
             </div>
 
             <!-- Add Example Images Settings Section -->
-            <div class="settings-section">
+            <div id="section-example-images" class="settings-section">
                 <h3>{{ t('settings.sections.exampleImages') }}</h3>
                 
                 <div class="setting-item">
@@ -631,7 +667,7 @@
             </div>
             
             <!-- Metadata Archive Section -->
-            <div class="settings-section">
+            <div id="section-metadata-archive" class="settings-section">
                 <h3>{{ t('settings.sections.metadataArchive') }}</h3>
                 
                 <div class="setting-item">
@@ -678,7 +714,7 @@
             </div>
 
             <!-- Proxy Settings Section -->
-            <div class="settings-section">
+            <div id="section-proxy" class="settings-section">
                 <h3>{{ t('settings.sections.proxySettings') }}</h3>
                 
                 <div class="setting-item">
@@ -801,7 +837,7 @@
             </div>
 
             <!-- Misc. Section -->
-            <div class="settings-section">
+            <div id="section-misc" class="settings-section">
                 <h3>{{ t('settings.sections.misc') }}</h3>
                 <div class="setting-item">
                     <div class="setting-row">
@@ -822,6 +858,8 @@
                 </div>
             </div>
             
+                </div>
+            </div>
         </div>
     </div>
 </div>

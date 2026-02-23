@@ -269,6 +269,12 @@
             "storageLocation": "Расположение настроек",
             "proxySettings": "Настройки прокси"
         },
+        "nav": {
+            "general": "[TODO: Translate] General",
+            "interface": "[TODO: Translate] Interface",
+            "download": "[TODO: Translate] Download",
+            "advanced": "[TODO: Translate] Advanced"
+        },
         "storage": {
             "locationLabel": "Портативный режим",
             "locationHelp": "Включите, чтобы хранить settings.json в репозитории; выключите, чтобы сохранить его в папке конфигурации пользователя."

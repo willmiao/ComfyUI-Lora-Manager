@@ -269,6 +269,12 @@
             "storageLocation": "Ubicación de ajustes",
             "proxySettings": "Configuración de proxy"
         },
+        "nav": {
+            "general": "[TODO: Translate] General",
+            "interface": "[TODO: Translate] Interface",
+            "download": "[TODO: Translate] Download",
+            "advanced": "[TODO: Translate] Advanced"
+        },
         "storage": {
             "locationLabel": "Modo portátil",
             "locationHelp": "Activa para mantener settings.json dentro del repositorio; desactívalo para guardarlo en tu directorio de configuración de usuario."

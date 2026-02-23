@@ -364,8 +364,79 @@ export class SettingsManager {
         }
 
         this.setupPriorityTagInputs();
+        this.initializeNavigation();
 
         this.initialized = true;
+    }
+
+    initializeNavigation() {
+        const settingsContent = document.querySelector('.settings-content');
+        const navItems = document.querySelectorAll('.settings-nav-item');
+
+        if (!settingsContent || navItems.length === 0) return;
+
+        // Handle navigation item clicks
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                const targetId = item.dataset.target;
+                if (!targetId) return;
+
+                const targetSection = document.getElementById(targetId);
+                if (targetSection) {
+                    targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+
+                // Update active state
+                navItems.forEach(nav => nav.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+
+        // Setup scroll spy
+        const sections = document.querySelectorAll('.settings-section, .setting-item[id^="section-"]');
+        
+        const updateActiveNav = () => {
+            const scrollTop = settingsContent.scrollTop;
+            const contentHeight = settingsContent.clientHeight;
+
+            let currentSection = null;
+            let minDistance = Infinity;
+
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - settingsContent.offsetTop;
+                const distance = Math.abs(sectionTop - scrollTop);
+
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    currentSection = section;
+                }
+            });
+
+            if (currentSection) {
+                const sectionId = currentSection.id;
+                navItems.forEach(item => {
+                    item.classList.remove('active');
+                    if (item.dataset.target === sectionId) {
+                        item.classList.add('active');
+                    }
+                });
+            }
+        };
+
+        // Use requestAnimationFrame for performance
+        let ticking = false;
+        settingsContent.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    updateActiveNav();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        });
+
+        // Initial update
+        updateActiveNav();
     }
 
     async openSettingsFileLocation() {

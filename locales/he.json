@@ -269,6 +269,12 @@
             "storageLocation": "מיקום ההגדרות",
             "proxySettings": "הגדרות פרוקסי"
         },
+        "nav": {
+            "general": "[TODO: Translate] General",
+            "interface": "[TODO: Translate] Interface",
+            "download": "[TODO: Translate] Download",
+            "advanced": "[TODO: Translate] Advanced"
+        },
         "storage": {
             "locationLabel": "מצב נייד",
             "locationHelp": "הפעל כדי לשמור את settings.json בתוך המאגר; בטל כדי לשמור אותו בתיקיית ההגדרות של המשתמש."

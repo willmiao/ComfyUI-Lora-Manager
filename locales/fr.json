@@ -269,6 +269,12 @@
             "storageLocation": "Emplacement des paramètres",
             "proxySettings": "Paramètres du proxy"
         },
+        "nav": {
+            "general": "[TODO: Translate] General",
+            "interface": "[TODO: Translate] Interface",
+            "download": "[TODO: Translate] Download",
+            "advanced": "[TODO: Translate] Advanced"
+        },
         "storage": {
             "locationLabel": "Mode portable",
             "locationHelp": "Activez pour garder settings.json dans le dépôt ; désactivez pour le placer dans votre dossier de configuration utilisateur."

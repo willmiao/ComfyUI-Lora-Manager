@@ -269,6 +269,12 @@
             "storageLocation": "설정 위치",
             "proxySettings": "프록시 설정"
         },
+        "nav": {
+            "general": "[TODO: Translate] General",
+            "interface": "[TODO: Translate] Interface",
+            "download": "[TODO: Translate] Download",
+            "advanced": "[TODO: Translate] Advanced"
+        },
         "storage": {
             "locationLabel": "휴대용 모드",
             "locationHelp": "활성화하면 settings.json을 리포지토리에 유지하고, 비활성화하면 사용자 구성 디렉터리에 저장합니다."

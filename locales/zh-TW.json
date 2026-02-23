@@ -269,6 +269,12 @@
             "storageLocation": "設定位置",
             "proxySettings": "代理設定"
         },
+        "nav": {
+            "general": "[TODO: Translate] General",
+            "interface": "[TODO: Translate] Interface",
+            "download": "[TODO: Translate] Download",
+            "advanced": "[TODO: Translate] Advanced"
+        },
         "storage": {
             "locationLabel": "可攜式模式",
             "locationHelp": "啟用可將 settings.json 保存在儲存庫中；停用則保存在使用者設定目錄。"

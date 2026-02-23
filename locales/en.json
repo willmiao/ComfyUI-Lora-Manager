@@ -269,6 +269,12 @@
             "storageLocation": "Settings Location",
             "proxySettings": "Proxy Settings"
         },
+        "nav": {
+            "general": "General",
+            "interface": "Interface",
+            "download": "Download",
+            "advanced": "Advanced"
+        },
         "storage": {
             "locationLabel": "Portable mode",
             "locationHelp": "Enable to keep settings.json inside the repository; disable to store it in your user config directory."
