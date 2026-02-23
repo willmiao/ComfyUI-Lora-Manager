@@ -1,4 +1,4 @@
-/* Settings styles */
+/* Settings Modal - macOS Settings Style */
 .settings-toggle {
     width: 36px;
     height: 36px;
@@ -20,9 +20,10 @@
 }
 
 .settings-modal {
-    max-width: 950px;
-    width: 90vw;
-    max-height: 85vh;
+    width: 800px;
+    height: 600px;
+    max-width: 95vw;
+    max-height: 90vh;
     display: flex;
     flex-direction: column;
 }
@@ -49,17 +50,6 @@
     background: rgba(255, 255, 255, 0.02);
 }
 
-.settings-nav-title {
-    font-size: 0.85em;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-color);
-    opacity: 0.6;
-    margin-bottom: var(--space-2);
-    padding: 0 var(--space-1);
-}
-
 .settings-nav-list {
     list-style: none;
     padding: 0;
@@ -70,28 +60,30 @@
     margin-bottom: var(--space-2);
 }
 
+/* Hide group titles - we use flat navigation */
 .settings-nav-group-title {
-    font-size: 0.8em;
-    font-weight: 500;
-    color: var(--text-color);
-    opacity: 0.8;
-    padding: var(--space-1) var(--space-1);
-    margin-bottom: var(--space-1);
+    display: none;
+}
+
+/* Hide settings title */
+.settings-nav-title {
+    display: none;
 }
 
 .settings-nav-item {
     display: block;
     width: 100%;
-    padding: 8px 12px;
+    padding: 10px 14px;
     border: none;
     background: transparent;
     color: var(--text-color);
     text-align: left;
-    font-size: 0.9em;
+    font-size: 14px;
+    font-weight: 500;
     cursor: pointer;
     border-radius: var(--border-radius-xs);
     transition: all 0.2s ease;
-    margin-bottom: 2px;
+    margin-bottom: 4px;
 }
 
 .settings-nav-item:hover {
@@ -102,7 +94,7 @@
 .settings-nav-item.active {
     background: var(--lora-accent);
     color: white;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 /* Content Area */
@@ -560,71 +552,46 @@
     padding: 6px 0;
 }
 
-/* Settings Styles */
+/* Settings Section - macOS Settings Style */
 .settings-section {
-    margin-top: var(--space-3);
-    border-top: 1px solid var(--lora-border);
-    padding-top: var(--space-2);
+    display: none;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.settings-section.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .settings-section-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    cursor: pointer;
-    user-select: none;
-    padding: var(--space-1) 0;
-    margin-bottom: var(--space-2);
-    transition: opacity 0.2s ease;
-}
-
-.settings-section-header:hover {
-    opacity: 0.8;
+    padding: 0 0 var(--space-2) 0;
+    margin-bottom: var(--space-3);
+    border-bottom: 2px solid var(--lora-accent);
 }
 
 .settings-section-header h3 {
-    font-size: 1.1em;
+    font-size: 20px;
+    font-weight: 600;
     margin: 0;
     color: var(--text-color);
-    opacity: 0.9;
 }
 
+/* Remove toggle button styles */
 .settings-section-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border: none;
-    background: transparent;
-    color: var(--text-color);
-    cursor: pointer;
-    transition: transform 0.3s ease;
-    opacity: 0.6;
-}
-
-.settings-section-toggle:hover {
-    opacity: 1;
-}
-
-.settings-section-toggle .chevron {
-    transition: transform 0.3s ease;
-}
-
-.settings-section.collapsed .settings-section-toggle .chevron {
-    transform: rotate(-90deg);
-}
-
-.settings-section-content {
-    overflow: hidden;
-    transition: max-height 0.3s ease, opacity 0.3s ease;
-    max-height: 2000px;
-    opacity: 1;
-}
-
-.settings-section.collapsed .settings-section-content {
-    max-height: 0;
-    opacity: 0;
+    display: none;
 }
 
 .setting-item {

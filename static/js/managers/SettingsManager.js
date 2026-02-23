@@ -371,132 +371,39 @@ export class SettingsManager {
     }
 
     initializeNavigation() {
-        const settingsContent = document.querySelector('.settings-content');
         const navItems = document.querySelectorAll('.settings-nav-item');
+        const sections = document.querySelectorAll('.settings-section');
 
-        if (!settingsContent || navItems.length === 0) return;
+        if (navItems.length === 0 || sections.length === 0) return;
 
-        // Handle navigation item clicks
+        // Handle navigation item clicks - macOS Settings style: show section instead of scroll
         navItems.forEach(item => {
             item.addEventListener('click', (e) => {
-                const targetId = item.dataset.target;
-                if (!targetId) return;
+                const sectionId = item.dataset.section;
+                if (!sectionId) return;
 
-                const targetSection = document.getElementById(targetId);
+                // Hide all sections
+                sections.forEach(section => {
+                    section.classList.remove('active');
+                });
+
+                // Show target section
+                const targetSection = document.getElementById(`section-${sectionId}`);
                 if (targetSection) {
-                    targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    targetSection.classList.add('active');
                 }
 
-                // Update active state
+                // Update active nav state
                 navItems.forEach(nav => nav.classList.remove('active'));
                 item.classList.add('active');
             });
         });
 
-        // Setup scroll spy
-        const sections = document.querySelectorAll('.settings-section, .setting-item[id^="section-"]');
-        
-        const updateActiveNav = () => {
-            const scrollTop = settingsContent.scrollTop;
-            const contentHeight = settingsContent.clientHeight;
-
-            let currentSection = null;
-            let minDistance = Infinity;
-
-            sections.forEach(section => {
-                const sectionTop = section.offsetTop - settingsContent.offsetTop;
-                const distance = Math.abs(sectionTop - scrollTop);
-
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    currentSection = section;
-                }
-            });
-
-            if (currentSection) {
-                const sectionId = currentSection.id;
-                navItems.forEach(item => {
-                    item.classList.remove('active');
-                    if (item.dataset.target === sectionId) {
-                        item.classList.add('active');
-                    }
-                });
-            }
-        };
-
-        // Use requestAnimationFrame for performance
-        let ticking = false;
-        settingsContent.addEventListener('scroll', () => {
-            if (!ticking) {
-                window.requestAnimationFrame(() => {
-                    updateActiveNav();
-                    ticking = false;
-                });
-                ticking = true;
-            }
-        });
-
-        // Initialize section collapse/expand
-        this.initializeSectionCollapse();
-
-        // Initial update
-        updateActiveNav();
-    }
-
-    initializeSectionCollapse() {
-        const sections = document.querySelectorAll('.settings-section, .setting-item[id^="section-"]');
-        const STORAGE_KEY = 'settingsModal_collapsedSections';
-        
-        // Load collapsed state from localStorage
-        let collapsedSections = {};
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) {
-                collapsedSections = JSON.parse(stored);
-            }
-        } catch (e) {
-            console.warn('Failed to load collapsed sections state:', e);
+        // Show first section by default
+        const firstSection = sections[0];
+        if (firstSection) {
+            firstSection.classList.add('active');
         }
-
-        sections.forEach(section => {
-            const sectionId = section.getAttribute('data-section') || section.id;
-            const header = section.querySelector('.settings-section-header');
-            const toggleBtn = section.querySelector('.settings-section-toggle');
-            
-            if (!header || !toggleBtn) return;
-
-            // Apply initial collapsed state
-            if (collapsedSections[sectionId]) {
-                section.classList.add('collapsed');
-            }
-
-            // Handle toggle click
-            const toggleSection = () => {
-                const isCollapsed = section.classList.toggle('collapsed');
-                
-                // Save state to localStorage
-                collapsedSections[sectionId] = isCollapsed;
-                try {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(collapsedSections));
-                } catch (e) {
-                    console.warn('Failed to save collapsed sections state:', e);
-                }
-            };
-
-            // Click on header or toggle button
-            header.addEventListener('click', (e) => {
-                // Don't toggle if clicking on interactive elements within header
-                if (e.target.closest('a, button:not(.settings-section-toggle), input, select')) {
-                    return;
-                }
-                toggleSection();
-            });
-
-            toggleBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                toggleSection();
-            });
-        });
     }
 
     initializeSearch() {
@@ -549,7 +456,8 @@ export class SettingsManager {
     }
 
     performSearch(query) {
-        const sections = document.querySelectorAll('.settings-section, .setting-item[id^="section-"]');
+        const sections = document.querySelectorAll('.settings-section');
+        const navItems = document.querySelectorAll('.settings-nav-item');
         const settingsForm = document.querySelector('.settings-form');
         
         // Remove existing empty state
@@ -559,15 +467,15 @@ export class SettingsManager {
         }
 
         if (!query) {
-            // Reset all sections to visible and remove highlights
+            // Reset: remove highlights only, keep current section visible
             sections.forEach(section => {
-                section.classList.remove('search-hidden', 'search-match');
                 this.removeSearchHighlights(section);
             });
             return;
         }
 
         const lowerQuery = query.toLowerCase();
+        let firstMatchSection = null;
         let matchCount = 0;
 
         sections.forEach(section => {
@@ -575,19 +483,36 @@ export class SettingsManager {
             const hasMatch = sectionText.includes(lowerQuery);
 
             if (hasMatch) {
-                section.classList.remove('search-hidden');
-                section.classList.add('search-match');
                 this.highlightSearchMatches(section, lowerQuery);
                 matchCount++;
                 
-                // Expand section if it has matches
-                section.classList.remove('collapsed');
+                // Track first match to auto-switch
+                if (!firstMatchSection) {
+                    firstMatchSection = section;
+                }
             } else {
-                section.classList.add('search-hidden');
-                section.classList.remove('search-match');
                 this.removeSearchHighlights(section);
             }
         });
+
+        // Auto-switch to first matching section
+        if (firstMatchSection) {
+            const sectionId = firstMatchSection.id.replace('section-', '');
+            
+            // Hide all sections
+            sections.forEach(section => section.classList.remove('active'));
+            
+            // Show matching section
+            firstMatchSection.classList.add('active');
+            
+            // Update nav active state
+            navItems.forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.section === sectionId) {
+                    item.classList.add('active');
+                }
+            });
+        }
 
         // Show empty state if no matches found
         if (matchCount === 0 && settingsForm) {
