@@ -270,10 +270,12 @@
             "proxySettings": "プロキシ設定"
         },
         "nav": {
-            "general": "[TODO: Translate] General",
-            "interface": "[TODO: Translate] Interface",
-            "download": "[TODO: Translate] Download",
-            "advanced": "[TODO: Translate] Advanced"
+            "general": "一般",
+            "interface": "インターフェース",
+            "download": "ダウンロード",
+            "organization": "整理",
+            "system": "システム",
+            "network": "ネットワーク"
         },
         "search": {
             "placeholder": "[TODO: Translate] Search settings...",

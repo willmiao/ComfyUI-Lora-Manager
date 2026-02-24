@@ -270,10 +270,12 @@
             "proxySettings": "Paramètres du proxy"
         },
         "nav": {
-            "general": "[TODO: Translate] General",
-            "interface": "[TODO: Translate] Interface",
-            "download": "[TODO: Translate] Download",
-            "advanced": "[TODO: Translate] Advanced"
+            "general": "Général",
+            "interface": "Interface",
+            "download": "Téléchargement",
+            "organization": "Organisation",
+            "system": "Système",
+            "network": "Réseau"
         },
         "search": {
             "placeholder": "[TODO: Translate] Search settings...",

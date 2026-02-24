@@ -270,10 +270,12 @@
             "proxySettings": "הגדרות פרוקסי"
         },
         "nav": {
-            "general": "[TODO: Translate] General",
-            "interface": "[TODO: Translate] Interface",
-            "download": "[TODO: Translate] Download",
-            "advanced": "[TODO: Translate] Advanced"
+            "general": "כללי",
+            "interface": "ממשק",
+            "download": "הורדה",
+            "organization": "ארגון",
+            "system": "מערכת",
+            "network": "רשת"
         },
         "search": {
             "placeholder": "[TODO: Translate] Search settings...",

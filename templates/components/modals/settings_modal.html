@@ -36,7 +36,9 @@
                         <button type="button" class="settings-nav-item active" data-section="general">{{ t('settings.nav.general') }}</button>
                         <button type="button" class="settings-nav-item" data-section="interface">{{ t('settings.nav.interface') }}</button>
                         <button type="button" class="settings-nav-item" data-section="download">{{ t('settings.nav.download') }}</button>
-                        <button type="button" class="settings-nav-item" data-section="advanced">{{ t('settings.nav.advanced') }}</button>
+                        <button type="button" class="settings-nav-item" data-section="organization">{{ t('settings.nav.organization') }}</button>
+                        <button type="button" class="settings-nav-item" data-section="system">{{ t('settings.nav.system') }}</button>
+                        <button type="button" class="settings-nav-item" data-section="network">{{ t('settings.nav.network') }}</button>
                     </li>
                 </ul>
             </nav>
@@ -92,6 +94,32 @@
                             </div>
                             <div class="input-help">
                                 {{ t('settings.storage.locationHelp') }}
+                            </div>
+                        </div>
+                        
+                        <!-- Language -->
+                        <div class="setting-item">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <label for="languageSelect">{{ t('common.language.select') }}</label>
+                                </div>
+                                <div class="setting-control select-control">
+                                    <select id="languageSelect" onchange="settingsManager.saveLanguageSetting()">
+                                        <option value="en">{{ t('common.language.english') }}</option>
+                                        <option value="zh-CN">{{ t('common.language.chinese_simplified') }}</option>
+                                        <option value="zh-TW">{{ t('common.language.chinese_traditional') }}</option>
+                                        <option value="ru">{{ t('common.language.russian') }}</option>
+                                        <option value="de">{{ t('common.language.german') }}</option>
+                                        <option value="ja">{{ t('common.language.japanese') }}</option>
+                                        <option value="ko">{{ t('common.language.korean') }}</option>
+                                        <option value="fr">{{ t('common.language.french') }}</option>
+                                        <option value="es">{{ t('common.language.spanish') }}</option>
+                                        <option value="he">{{ t('common.language.Hebrew') }}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="input-help">
+                                {{ t('common.language.select_help') }}
                             </div>
                         </div>
                     </div>
@@ -249,32 +277,6 @@
                             </div>
                             <div class="input-help">
                                 {{ t('settings.layoutSettings.modelCardFooterActionHelp') }}
-                            </div>
-                        </div>
-                        
-                        <!-- Language -->
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="languageSelect">{{ t('common.language.select') }}</label>
-                                </div>
-                                <div class="setting-control select-control">
-                                    <select id="languageSelect" onchange="settingsManager.saveLanguageSetting()">
-                                        <option value="en">{{ t('common.language.english') }}</option>
-                                        <option value="zh-CN">{{ t('common.language.chinese_simplified') }}</option>
-                                        <option value="zh-TW">{{ t('common.language.chinese_traditional') }}</option>
-                                        <option value="ru">{{ t('common.language.russian') }}</option>
-                                        <option value="de">{{ t('common.language.german') }}</option>
-                                        <option value="ja">{{ t('common.language.japanese') }}</option>
-                                        <option value="ko">{{ t('common.language.korean') }}</option>
-                                        <option value="fr">{{ t('common.language.french') }}</option>
-                                        <option value="es">{{ t('common.language.spanish') }}</option>
-                                        <option value="he">{{ t('common.language.Hebrew') }}</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="input-help">
-                                {{ t('common.language.select_help') }}
                             </div>
                         </div>
                     </div>
@@ -569,13 +571,6 @@
                                 {{ t('settings.exampleImages.optimizeImagesHelp') }}
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Section 4: Advanced -->
-                    <div id="section-advanced" class="settings-section" data-section="advanced">
-                        <div class="settings-section-header">
-                            <h3>{{ t('settings.nav.advanced') }}</h3>
-                        </div>
                         
                         <!-- Priority Tags -->
                         <div class="setting-item priority-tags-item">
@@ -614,9 +609,13 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="priority-tags-example">
-                                {{ t('settings.priorityTags.example') }}: <code>character, concept, clothing, realistic, anime, toon, furry, style, poses, background, tool, vehicle, buildings, objects, assets, animal, action</code>
-                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Section 4: Organization -->
+                    <div id="section-organization" class="settings-section" data-section="organization">
+                        <div class="settings-section-header">
+                            <h3>{{ t('settings.nav.organization') }}</h3>
                         </div>
                         
                         <!-- Auto-organize Exclusions -->
@@ -646,128 +645,55 @@
                             <textarea id="metadataRefreshSkipPaths" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.metadataRefreshSkipPaths.placeholder') }}"></textarea>
                             <div class="settings-input-error-message" id="metadataRefreshSkipPathsError"></div>
                         </div>
+                    </div>
+                    
+                    <!-- Section 5: System -->
+                    <div id="section-system" class="settings-section" data-section="system">
+                        <div class="settings-section-header">
+                            <h3>{{ t('settings.nav.system') }}</h3>
+                        </div>
                         
                         <!-- Metadata Archive -->
                         <div class="setting-item">
                             <div class="setting-row">
                                 <div class="setting-info">
-                                    <label for="metadataArchiveEnabled">{{ t('settings.metadataArchive.enabled') }}</label>
+                                    <label for="enableMetadataArchive">{{ t('settings.metadataArchive.enableArchiveDb') }}</label>
                                 </div>
                                 <div class="setting-control">
                                     <label class="toggle-switch">
-                                        <input type="checkbox" id="metadataArchiveEnabled"
-                                               onchange="settingsManager.saveToggleSetting('metadataArchiveEnabled', 'metadata_archive_enabled')">
+                                        <input type="checkbox" id="enableMetadataArchive"
+                                               onchange="settingsManager.saveToggleSetting('enableMetadataArchive', 'enable_metadata_archive_db')">
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
                             </div>
                             <div class="input-help">
-                                {{ t('settings.metadataArchive.enabledHelp') }}
+                                {{ t('settings.metadataArchive.enableArchiveDbHelp') }}
+                            </div>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div class="metadata-archive-status" id="metadataArchiveStatus">
+                                <!-- Status will be populated by JavaScript -->
                             </div>
                         </div>
                         
                         <div class="setting-item">
                             <div class="setting-row">
                                 <div class="setting-info">
-                                    <label for="metadataArchivePath">{{ t('settings.metadataArchive.path') }}</label>
-                                </div>
-                                <div class="setting-control path-control">
-                                    <input type="text" id="metadataArchivePath" placeholder="{{ t('settings.metadataArchive.pathPlaceholder') }}" />
-                                </div>
-                            </div>
-                            <div class="input-help">
-                                {{ t('settings.metadataArchive.pathHelp') }}
-                            </div>
-                        </div>
-                        
-                        <!-- Proxy Settings -->
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="proxyEnabled">{{ t('settings.proxySettings.enabled') }}</label>
+                                    <label>{{ t('settings.metadataArchive.management') }}</label>
                                 </div>
                                 <div class="setting-control">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="proxyEnabled"
-                                               onchange="settingsManager.saveToggleSetting('proxyEnabled', 'proxy_enabled')">
-                                        <span class="toggle-slider"></span>
-                                    </label>
+                                    <button type="button" id="downloadMetadataArchiveBtn" class="primary-btn" onclick="settingsManager.downloadMetadataArchive()">
+                                        {{ t('settings.metadataArchive.downloadButton') }}
+                                    </button>
+                                    <button type="button" id="removeMetadataArchiveBtn" class="danger-btn" onclick="settingsManager.removeMetadataArchive()" style="margin-left: 10px;">
+                                        {{ t('settings.metadataArchive.removeButton') }}
+                                    </button>
                                 </div>
                             </div>
                             <div class="input-help">
-                                {{ t('settings.proxySettings.enabledHelp') }}
-                            </div>
-                        </div>
-                        
-                        <div id="proxySettingsGroup" class="proxy-settings-group" style="display: none;">
-                            <div class="setting-item">
-                                <div class="setting-row">
-                                    <div class="setting-info">
-                                        <label for="proxyType">{{ t('settings.proxySettings.type') }}</label>
-                                    </div>
-                                    <div class="setting-control select-control">
-                                        <select id="proxyType" onchange="settingsManager.saveSelectSetting('proxyType', 'proxy_type')">
-                                            <option value="http">HTTP</option>
-                                            <option value="https">HTTPS</option>
-                                            <option value="socks5">SOCKS5</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="setting-item">
-                                <div class="setting-row">
-                                    <div class="setting-info">
-                                        <label for="proxyHost">{{ t('settings.proxySettings.host') }}</label>
-                                    </div>
-                                    <div class="setting-control">
-                                        <div class="text-input-wrapper">
-                                            <input type="text" id="proxyHost" placeholder="{{ t('settings.proxySettings.hostPlaceholder') }}" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="setting-item">
-                                <div class="setting-row">
-                                    <div class="setting-info">
-                                        <label for="proxyPort">{{ t('settings.proxySettings.port') }}</label>
-                                    </div>
-                                    <div class="setting-control">
-                                        <div class="text-input-wrapper">
-                                            <input type="text" id="proxyPort" placeholder="{{ t('settings.proxySettings.portPlaceholder') }}" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="setting-item">
-                                <div class="setting-row">
-                                    <div class="setting-info">
-                                        <label for="proxyUsername">{{ t('settings.proxySettings.username') }}</label>
-                                    </div>
-                                    <div class="setting-control">
-                                        <div class="text-input-wrapper">
-                                            <input type="text" id="proxyUsername" placeholder="{{ t('settings.proxySettings.usernamePlaceholder') }}" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="setting-item">
-                                <div class="setting-row">
-                                    <div class="setting-info">
-                                        <label for="proxyPassword">{{ t('settings.proxySettings.password') }}</label>
-                                    </div>
-                                    <div class="setting-control">
-                                        <div class="api-key-input">
-                                            <input type="password" id="proxyPassword" placeholder="{{ t('settings.proxySettings.passwordPlaceholder') }}" />
-                                            <button class="toggle-visibility">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                                {{ t('settings.metadataArchive.managementHelp') }}
                             </div>
                         </div>
                         
@@ -787,6 +713,132 @@
                             </div>
                             <div class="input-help">
                                 {{ t('settings.misc.includeTriggerWordsHelp') }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Section 6: Network -->
+                    <div id="section-network" class="settings-section" data-section="network">
+                        <div class="settings-section-header">
+                            <h3>{{ t('settings.nav.network') }}</h3>
+                        </div>
+                        
+                        <!-- Proxy Settings -->
+                        <div class="setting-item">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <label for="proxyEnabled">{{ t('settings.proxySettings.enableProxy') }}</label>
+                                </div>
+                                <div class="setting-control">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="proxyEnabled"
+                                               onchange="settingsManager.saveToggleSetting('proxyEnabled', 'proxy_enabled')">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="input-help">
+                                {{ t('settings.proxySettings.enableProxyHelp') }}
+                            </div>
+                        </div>
+                        
+                        <div id="proxySettingsGroup" class="proxy-settings-group" style="display: none;">
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="proxyType">{{ t('settings.proxySettings.proxyType') }}</label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="proxyType" onchange="settingsManager.saveSelectSetting('proxyType', 'proxy_type')">
+                                            <option value="http">HTTP</option>
+                                            <option value="https">HTTPS</option>
+                                            <option value="socks4">SOCKS4</option>
+                                            <option value="socks5">SOCKS5</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="input-help">
+                                    {{ t('settings.proxySettings.proxyTypeHelp') }}
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="proxyHost">{{ t('settings.proxySettings.proxyHost') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <div class="text-input-wrapper">
+                                            <input type="text" id="proxyHost" 
+                                                   placeholder="{{ t('settings.proxySettings.proxyHostPlaceholder') }}"
+                                                   onblur="settingsManager.saveInputSetting('proxyHost', 'proxy_host')"
+                                                   onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="input-help">
+                                    {{ t('settings.proxySettings.proxyHostHelp') }}
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="proxyPort">{{ t('settings.proxySettings.proxyPort') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <div class="text-input-wrapper">
+                                            <input type="text" id="proxyPort" 
+                                                   placeholder="{{ t('settings.proxySettings.proxyPortPlaceholder') }}"
+                                                   onblur="settingsManager.saveInputSetting('proxyPort', 'proxy_port')"
+                                                   onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="input-help">
+                                    {{ t('settings.proxySettings.proxyPortHelp') }}
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="proxyUsername">{{ t('settings.proxySettings.proxyUsername') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <div class="text-input-wrapper">
+                                            <input type="text" id="proxyUsername" 
+                                                   placeholder="{{ t('settings.proxySettings.proxyUsernamePlaceholder') }}"
+                                                   onblur="settingsManager.saveInputSetting('proxyUsername', 'proxy_username')"
+                                                   onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="input-help">
+                                    {{ t('settings.proxySettings.proxyUsernameHelp') }}
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="proxyPassword">{{ t('settings.proxySettings.proxyPassword') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <div class="api-key-input">
+                                            <input type="password" id="proxyPassword" 
+                                                   placeholder="{{ t('settings.proxySettings.proxyPasswordPlaceholder') }}"
+                                                   onblur="settingsManager.saveInputSetting('proxyPassword', 'proxy_password')"
+                                                   onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                            <button class="toggle-visibility">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="input-help">
+                                    {{ t('settings.proxySettings.proxyPasswordHelp') }}
+                                </div>
                             </div>
                         </div>
                     </div>

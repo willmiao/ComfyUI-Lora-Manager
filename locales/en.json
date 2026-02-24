@@ -273,7 +273,9 @@
             "general": "General",
             "interface": "Interface",
             "download": "Download",
-            "advanced": "Advanced"
+            "organization": "Organization",
+            "system": "System",
+            "network": "Network"
         },
         "search": {
             "placeholder": "Search settings...",

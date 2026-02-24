@@ -270,10 +270,12 @@
             "proxySettings": "Настройки прокси"
         },
         "nav": {
-            "general": "[TODO: Translate] General",
-            "interface": "[TODO: Translate] Interface",
-            "download": "[TODO: Translate] Download",
-            "advanced": "[TODO: Translate] Advanced"
+            "general": "Общее",
+            "interface": "Интерфейс",
+            "download": "Загрузка",
+            "organization": "Организация",
+            "system": "Система",
+            "network": "Сеть"
         },
         "search": {
             "placeholder": "[TODO: Translate] Search settings...",

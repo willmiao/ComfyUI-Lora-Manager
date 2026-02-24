@@ -270,10 +270,12 @@
             "proxySettings": "代理设置"
         },
         "nav": {
-            "general": "[TODO: Translate] General",
-            "interface": "[TODO: Translate] Interface",
-            "download": "[TODO: Translate] Download",
-            "advanced": "[TODO: Translate] Advanced"
+            "general": "通用",
+            "interface": "界面",
+            "download": "下载",
+            "organization": "整理",
+            "system": "系统",
+            "network": "网络"
         },
         "search": {
             "placeholder": "[TODO: Translate] Search settings...",
