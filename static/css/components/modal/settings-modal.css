@@ -440,9 +440,30 @@
     gap: var(--space-2);
 }
 
-.priority-tags-header {
+.priority-tags-header-row {
+    display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: flex-start;
+}
+
+.priority-tags-header-row .setting-info {
+    width: auto;
+    flex-shrink: 0;
+}
+
+.priority-tags-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    width: auto;
+}
+
+.priority-tags-header label {
+    display: inline-flex;
+    white-space: nowrap;
 }
 
 .priority-tags-info {
