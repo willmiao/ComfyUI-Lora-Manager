@@ -255,6 +255,7 @@
             "clipboardFallback": "נתיב ההגדרות: {{path}}"
         },
         "sections": {
+            "apiConfiguration": "[TODO: Translate] API Configuration",
             "contentFiltering": "סינון תוכן",
             "videoSettings": "הגדרות וידאו",
             "layoutSettings": "הגדרות פריסה",

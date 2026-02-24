@@ -255,6 +255,7 @@
             "clipboardFallback": "Settings path: {{path}}"
         },
         "sections": {
+            "apiConfiguration": "API Configuration",
             "contentFiltering": "Content Filtering",
             "videoSettings": "Video Settings",
             "layoutSettings": "Layout Settings",

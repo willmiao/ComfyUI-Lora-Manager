@@ -49,563 +49,606 @@
                     
                     <!-- Section 1: General -->
                     <div id="section-general" class="settings-section active" data-section="general">
-                        <div class="settings-section-header">
-                            <h3>{{ t('settings.nav.general') }}</h3>
-                        </div>
-                        
-                        <!-- API Key -->
-                        <div class="setting-item api-key-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="civitaiApiKey">{{ t('settings.civitaiApiKey') }}</label>
-                                </div>
-                                <div class="setting-control">
-                                    <div class="api-key-input">
-                                        <input type="password" 
-                                            id="civitaiApiKey" 
-                                            placeholder="{{ t('settings.civitaiApiKeyPlaceholder') }}"
-                                            value="{{ settings.get('civitai_api_key', '') }}"
-                                            onblur="settingsManager.saveInputSetting('civitaiApiKey', 'civitai_api_key')"
-                                            onkeydown="if(event.key === 'Enter') { this.blur(); }" />
-                                        <button class="toggle-visibility">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
+                        <!-- API Configuration -->
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.apiConfiguration') }}</h4>
+                            </div>
+                            <div class="setting-item api-key-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="civitaiApiKey">{{ t('settings.civitaiApiKey') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <div class="api-key-input">
+                                            <input type="password" 
+                                                id="civitaiApiKey" 
+                                                placeholder="{{ t('settings.civitaiApiKeyPlaceholder') }}"
+                                                value="{{ settings.get('civitai_api_key', '') }}"
+                                                onblur="settingsManager.saveInputSetting('civitaiApiKey', 'civitai_api_key')"
+                                                onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                            <button class="toggle-visibility">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="input-help">
-                                {{ t('settings.civitaiApiKeyHelp') }}
+                                <div class="input-help">
+                                    {{ t('settings.civitaiApiKeyHelp') }}
+                                </div>
                             </div>
                         </div>
                         
                         <!-- Storage Location -->
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="usePortableSettings">{{ t('settings.storage.locationLabel') }}</label>
-                                </div>
-                                <div class="setting-control">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="usePortableSettings" {% if settings.get('use_portable_settings', False) %}checked{% endif %}
-                                               onchange="settingsManager.saveToggleSetting('usePortableSettings', 'use_portable_settings')">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.storageLocation') }}</h4>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.storage.locationHelp') }}
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="usePortableSettings">{{ t('settings.storage.locationLabel') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="usePortableSettings" {% if settings.get('use_portable_settings', False) %}checked{% endif %}
+                                                   onchange="settingsManager.saveToggleSetting('usePortableSettings', 'use_portable_settings')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="input-help">
+                                    {{ t('settings.storage.locationHelp') }}
+                                </div>
                             </div>
                         </div>
                         
                         <!-- Language -->
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="languageSelect">{{ t('common.language.select') }}</label>
-                                </div>
-                                <div class="setting-control select-control">
-                                    <select id="languageSelect" onchange="settingsManager.saveLanguageSetting()">
-                                        <option value="en">{{ t('common.language.english') }}</option>
-                                        <option value="zh-CN">{{ t('common.language.chinese_simplified') }}</option>
-                                        <option value="zh-TW">{{ t('common.language.chinese_traditional') }}</option>
-                                        <option value="ru">{{ t('common.language.russian') }}</option>
-                                        <option value="de">{{ t('common.language.german') }}</option>
-                                        <option value="ja">{{ t('common.language.japanese') }}</option>
-                                        <option value="ko">{{ t('common.language.korean') }}</option>
-                                        <option value="fr">{{ t('common.language.french') }}</option>
-                                        <option value="es">{{ t('common.language.spanish') }}</option>
-                                        <option value="he">{{ t('common.language.Hebrew') }}</option>
-                                    </select>
-                                </div>
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('common.language.select') }}</h4>
                             </div>
-                            <div class="input-help">
-                                {{ t('common.language.select_help') }}
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="languageSelect">{{ t('common.language.select') }}</label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="languageSelect" onchange="settingsManager.saveLanguageSetting()">
+                                            <option value="en">{{ t('common.language.english') }}</option>
+                                            <option value="zh-CN">{{ t('common.language.chinese_simplified') }}</option>
+                                            <option value="zh-TW">{{ t('common.language.chinese_traditional') }}</option>
+                                            <option value="ru">{{ t('common.language.russian') }}</option>
+                                            <option value="de">{{ t('common.language.german') }}</option>
+                                            <option value="ja">{{ t('common.language.japanese') }}</option>
+                                            <option value="ko">{{ t('common.language.korean') }}</option>
+                                            <option value="fr">{{ t('common.language.french') }}</option>
+                                            <option value="es">{{ t('common.language.spanish') }}</option>
+                                            <option value="he">{{ t('common.language.Hebrew') }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="input-help">
+                                    {{ t('common.language.select_help') }}
+                                </div>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Section 2: Interface -->
                     <div id="section-interface" class="settings-section" data-section="interface">
-                        <div class="settings-section-header">
-                            <h3>{{ t('settings.nav.interface') }}</h3>
-                        </div>
-                        
                         <!-- Content Filtering -->
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="blurMatureContent">{{ t('settings.contentFiltering.blurNsfwContent') }}</label>
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.contentFiltering') }}</h4>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="blurMatureContent">{{ t('settings.contentFiltering.blurNsfwContent') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="blurMatureContent" checked 
+                                                   onchange="settingsManager.saveToggleSetting('blurMatureContent', 'blur_mature_content')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
                                 </div>
-                                <div class="setting-control">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="blurMatureContent" checked 
-                                               onchange="settingsManager.saveToggleSetting('blurMatureContent', 'blur_mature_content')">
-                                        <span class="toggle-slider"></span>
-                                    </label>
+                                <div class="input-help">
+                                    {{ t('settings.contentFiltering.blurNsfwContentHelp') }}
                                 </div>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.contentFiltering.blurNsfwContentHelp') }}
-                            </div>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="showOnlySFW">{{ t('settings.contentFiltering.showOnlySfw') }}</label>
+                            
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="showOnlySFW">{{ t('settings.contentFiltering.showOnlySfw') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="showOnlySFW" value="{{ settings.get('show_only_sfw', False) }}" {% if settings.get('show_only_sfw', False) %}checked{% endif %}
+                                                   onchange="settingsManager.saveToggleSetting('showOnlySFW', 'show_only_sfw')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
                                 </div>
-                                <div class="setting-control">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="showOnlySFW" value="{{ settings.get('show_only_sfw', False) }}" {% if settings.get('show_only_sfw', False) %}checked{% endif %}
-                                               onchange="settingsManager.saveToggleSetting('showOnlySFW', 'show_only_sfw')">
-                                        <span class="toggle-slider"></span>
-                                    </label>
+                                <div class="input-help">
+                                    {{ t('settings.contentFiltering.showOnlySfwHelp') }}
                                 </div>
-                            </div>
-                            <div class="input-help">
-                                {{ t('settings.contentFiltering.showOnlySfwHelp') }}
                             </div>
                         </div>
                         
                         <!-- Video Settings -->
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="autoplayOnHover">{{ t('settings.videoSettings.autoplayOnHover') }}</label>
-                                </div>
-                                <div class="setting-control">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="autoplayOnHover" 
-                                               onchange="settingsManager.saveToggleSetting('autoplayOnHover', 'autoplay_on_hover')">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.videoSettings') }}</h4>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.videoSettings.autoplayOnHoverHelp') }}
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="autoplayOnHover">{{ t('settings.videoSettings.autoplayOnHover') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="autoplayOnHover" 
+                                                   onchange="settingsManager.saveToggleSetting('autoplayOnHover', 'autoplay_on_hover')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="input-help">
+                                    {{ t('settings.videoSettings.autoplayOnHoverHelp') }}
+                                </div>
                             </div>
                         </div>
                         
                         <!-- Layout Settings -->
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="showFolderSidebar">{{ t('settings.layoutSettings.showFolderSidebar') }}</label>
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.layoutSettings') }}</h4>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="showFolderSidebar">{{ t('settings.layoutSettings.showFolderSidebar') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="showFolderSidebar"
+                                                   onchange="settingsManager.saveToggleSetting('showFolderSidebar', 'show_folder_sidebar')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
                                 </div>
-                                <div class="setting-control">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="showFolderSidebar"
-                                               onchange="settingsManager.saveToggleSetting('showFolderSidebar', 'show_folder_sidebar')">
-                                        <span class="toggle-slider"></span>
-                                    </label>
+                                <div class="input-help">
+                                    {{ t('settings.layoutSettings.showFolderSidebarHelp') }}
                                 </div>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.layoutSettings.showFolderSidebarHelp') }}
-                            </div>
-                        </div>
 
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="displayDensity">{{ t('settings.layoutSettings.displayDensity') }}</label>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="displayDensity">{{ t('settings.layoutSettings.displayDensity') }}</label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="displayDensity" onchange="settingsManager.saveSelectSetting('displayDensity', 'display_density')">
+                                            <option value="default">{{ t('settings.layoutSettings.displayDensityOptions.default') }}</option>
+                                            <option value="medium">{{ t('settings.layoutSettings.displayDensityOptions.medium') }}</option>
+                                            <option value="compact">{{ t('settings.layoutSettings.displayDensityOptions.compact') }}</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="setting-control select-control">
-                                    <select id="displayDensity" onchange="settingsManager.saveSelectSetting('displayDensity', 'display_density')">
-                                        <option value="default">{{ t('settings.layoutSettings.displayDensityOptions.default') }}</option>
-                                        <option value="medium">{{ t('settings.layoutSettings.displayDensityOptions.medium') }}</option>
-                                        <option value="compact">{{ t('settings.layoutSettings.displayDensityOptions.compact') }}</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="input-help">
-                                {{ t('settings.layoutSettings.displayDensityHelp') }}
-                                <ul class="list-description">
-                                    <li><strong>{{ t('settings.layoutSettings.displayDensityOptions.default') }}:</strong> {{ t('settings.layoutSettings.displayDensityDetails.default') }}</li>
-                                    <li><strong>{{ t('settings.layoutSettings.displayDensityOptions.medium') }}:</strong> {{ t('settings.layoutSettings.displayDensityDetails.medium') }}</li>
-                                    <li><strong>{{ t('settings.layoutSettings.displayDensityOptions.compact') }}:</strong> {{ t('settings.layoutSettings.displayDensityDetails.compact') }}</li>
-                                </ul>
-                                <span class="warning-text">{{ t('settings.layoutSettings.displayDensityWarning') }}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="modelNameDisplay">{{ t('settings.layoutSettings.modelNameDisplay') }}</label>
-                                </div>
-                                <div class="setting-control select-control">
-                                    <select id="modelNameDisplay" onchange="settingsManager.saveSelectSetting('modelNameDisplay', 'model_name_display')">
-                                        <option value="model_name">{{ t('settings.layoutSettings.modelNameDisplayOptions.modelName') }}</option>
-                                        <option value="file_name">{{ t('settings.layoutSettings.modelNameDisplayOptions.fileName') }}</option>
-                                    </select>
+                                <div class="input-help">
+                                    {{ t('settings.layoutSettings.displayDensityHelp') }}
+                                    <ul class="list-description">
+                                        <li><strong>{{ t('settings.layoutSettings.displayDensityOptions.default') }}:</strong> {{ t('settings.layoutSettings.displayDensityDetails.default') }}</li>
+                                        <li><strong>{{ t('settings.layoutSettings.displayDensityOptions.medium') }}:</strong> {{ t('settings.layoutSettings.displayDensityDetails.medium') }}</li>
+                                        <li><strong>{{ t('settings.layoutSettings.displayDensityOptions.compact') }}:</strong> {{ t('settings.layoutSettings.displayDensityDetails.compact') }}</li>
+                                    </ul>
+                                    <span class="warning-text">{{ t('settings.layoutSettings.displayDensityWarning') }}</span>
                                 </div>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.layoutSettings.modelNameDisplayHelp') }}
-                            </div>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="cardInfoDisplay">{{ t('settings.layoutSettings.cardInfoDisplay') }}</label>
+                            
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="modelNameDisplay">{{ t('settings.layoutSettings.modelNameDisplay') }}</label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="modelNameDisplay" onchange="settingsManager.saveSelectSetting('modelNameDisplay', 'model_name_display')">
+                                            <option value="model_name">{{ t('settings.layoutSettings.modelNameDisplayOptions.modelName') }}</option>
+                                            <option value="file_name">{{ t('settings.layoutSettings.modelNameDisplayOptions.fileName') }}</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="setting-control select-control">
-                                    <select id="cardInfoDisplay" onchange="settingsManager.saveSelectSetting('cardInfoDisplay', 'card_info_display')">
-                                        <option value="always">{{ t('settings.layoutSettings.cardInfoDisplayOptions.always') }}</option>
-                                        <option value="hover">{{ t('settings.layoutSettings.cardInfoDisplayOptions.hover') }}</option>
-                                    </select>
+                                <div class="input-help">
+                                    {{ t('settings.layoutSettings.modelNameDisplayHelp') }}
                                 </div>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.layoutSettings.cardInfoDisplayHelp') }}
+                            
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="cardInfoDisplay">{{ t('settings.layoutSettings.cardInfoDisplay') }}</label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="cardInfoDisplay" onchange="settingsManager.saveSelectSetting('cardInfoDisplay', 'card_info_display')">
+                                            <option value="always">{{ t('settings.layoutSettings.cardInfoDisplayOptions.always') }}</option>
+                                            <option value="hover">{{ t('settings.layoutSettings.cardInfoDisplayOptions.hover') }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="input-help">
+                                    {{ t('settings.layoutSettings.cardInfoDisplayHelp') }}
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="modelCardFooterAction">{{ t('settings.layoutSettings.modelCardFooterAction') }}</label>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="modelCardFooterAction">{{ t('settings.layoutSettings.modelCardFooterAction') }}</label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="modelCardFooterAction" onchange="settingsManager.saveSelectSetting('modelCardFooterAction', 'model_card_footer_action')">
+                                            <option value="example_images">{{ t('settings.layoutSettings.modelCardFooterActionOptions.exampleImages') }}</option>
+                                            <option value="replace_preview">{{ t('settings.layoutSettings.modelCardFooterActionOptions.replacePreview') }}</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="setting-control select-control">
-                                    <select id="modelCardFooterAction" onchange="settingsManager.saveSelectSetting('modelCardFooterAction', 'model_card_footer_action')">
-                                        <option value="example_images">{{ t('settings.layoutSettings.modelCardFooterActionOptions.exampleImages') }}</option>
-                                        <option value="replace_preview">{{ t('settings.layoutSettings.modelCardFooterActionOptions.replacePreview') }}</option>
-                                    </select>
+                                <div class="input-help">
+                                    {{ t('settings.layoutSettings.modelCardFooterActionHelp') }}
                                 </div>
-                            </div>
-                            <div class="input-help">
-                                {{ t('settings.layoutSettings.modelCardFooterActionHelp') }}
                             </div>
                         </div>
                     </div>
                     
                     <!-- Section 3: Download -->
                     <div id="section-download" class="settings-section" data-section="download">
-                        <div class="settings-section-header">
-                            <h3>{{ t('settings.nav.download') }}</h3>
-                        </div>
-                        
                         <!-- Folder Settings -->
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="librarySelect">{{ t('settings.folderSettings.activeLibrary') }}</label>
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.folderSettings') }}</h4>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="librarySelect">{{ t('settings.folderSettings.activeLibrary') }}</label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="librarySelect" onchange="settingsManager.handleLibraryChange()">
+                                            <option value="">{{ t('settings.folderSettings.loadingLibraries') }}</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="setting-control select-control">
-                                    <select id="librarySelect" onchange="settingsManager.handleLibraryChange()">
-                                        <option value="">{{ t('settings.folderSettings.loadingLibraries') }}</option>
-                                    </select>
+                                <div class="input-help">
+                                    {{ t('settings.folderSettings.activeLibraryHelp') }}
                                 </div>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.folderSettings.activeLibraryHelp') }}
-                            </div>
-                        </div>
 
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="defaultLoraRoot">{{ t('settings.folderSettings.defaultLoraRoot') }}</label>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="defaultLoraRoot">{{ t('settings.folderSettings.defaultLoraRoot') }}</label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="defaultLoraRoot" onchange="settingsManager.saveSelectSetting('defaultLoraRoot', 'default_lora_root')">
+                                            <option value="">{{ t('settings.folderSettings.noDefault') }}</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="setting-control select-control">
-                                    <select id="defaultLoraRoot" onchange="settingsManager.saveSelectSetting('defaultLoraRoot', 'default_lora_root')">
-                                        <option value="">{{ t('settings.folderSettings.noDefault') }}</option>
-                                    </select>
+                                <div class="input-help">
+                                    {{ t('settings.folderSettings.defaultLoraRootHelp') }}
                                 </div>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.folderSettings.defaultLoraRootHelp') }}
+                            
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="defaultCheckpointRoot">{{ t('settings.folderSettings.defaultCheckpointRoot') }}</label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="defaultCheckpointRoot" onchange="settingsManager.saveSelectSetting('defaultCheckpointRoot', 'default_checkpoint_root')">
+                                            <option value="">{{ t('settings.folderSettings.noDefault') }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="input-help">
+                                    {{ t('settings.folderSettings.defaultCheckpointRootHelp') }}
+                                </div>
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="defaultUnetRoot">{{ t('settings.folderSettings.defaultUnetRoot') }}</label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="defaultUnetRoot" onchange="settingsManager.saveSelectSetting('defaultUnetRoot', 'default_unet_root')">
+                                            <option value="">{{ t('settings.folderSettings.noDefault') }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="input-help">
+                                    {{ t('settings.folderSettings.defaultUnetRootHelp') }}
+                                </div>
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="defaultEmbeddingRoot">{{ t('settings.folderSettings.defaultEmbeddingRoot') }}</label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="defaultEmbeddingRoot" onchange="settingsManager.saveSelectSetting('defaultEmbeddingRoot', 'default_embedding_root')">
+                                            <option value="">{{ t('settings.folderSettings.noDefault') }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="input-help">
+                                    {{ t('settings.folderSettings.defaultEmbeddingRootHelp') }}
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="defaultCheckpointRoot">{{ t('settings.folderSettings.defaultCheckpointRoot') }}</label>
-                                </div>
-                                <div class="setting-control select-control">
-                                    <select id="defaultCheckpointRoot" onchange="settingsManager.saveSelectSetting('defaultCheckpointRoot', 'default_checkpoint_root')">
-                                        <option value="">{{ t('settings.folderSettings.noDefault') }}</option>
-                                    </select>
+                        <!-- Download Path Templates -->
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.downloadPathTemplates.title') }}</h4>
+                            </div>
+                            <div class="setting-item">
+                                <div class="input-help">
+                                    {{ t('settings.downloadPathTemplates.help') }}
+                                    <div class="placeholder-info">
+                                        <strong>{{ t('settings.downloadPathTemplates.availablePlaceholders') }}</strong>
+                                        <span class="placeholder-tag">{base_model}</span>
+                                        <span class="placeholder-tag">{author}</span>
+                                        <span class="placeholder-tag">{first_tag}</span>
+                                        <span class="placeholder-tag">{model_name}</span>
+                                        <span class="placeholder-tag">{version_name}</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.folderSettings.defaultCheckpointRootHelp') }}
-                            </div>
-                        </div>
 
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="defaultUnetRoot">{{ t('settings.folderSettings.defaultUnetRoot') }}</label>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="loraTemplatePreset">{{ t('settings.downloadPathTemplates.modelTypes.lora') }}</label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="loraTemplatePreset" onchange="settingsManager.updateTemplatePreset('lora', this.value)">
+                                            <option value="">{{ t('settings.downloadPathTemplates.templateOptions.flatStructure') }}</option>
+                                            <option value="{base_model}">{{ t('settings.downloadPathTemplates.templateOptions.byBaseModel') }}</option>
+                                            <option value="{author}">{{ t('settings.downloadPathTemplates.templateOptions.byAuthor') }}</option>
+                                            <option value="{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.byFirstTag') }}</option>
+                                            <option value="{base_model}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelFirstTag') }}</option>
+                                            <option value="{base_model}/{author}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelAuthor') }}</option>
+                                            <option value="{author}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.authorFirstTag') }}</option>
+                                            <option value="{base_model}/{author}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelAuthorFirstTag') }}</option>
+                                            <option value="custom">{{ t('settings.downloadPathTemplates.templateOptions.customTemplate') }}</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="setting-control select-control">
-                                    <select id="defaultUnetRoot" onchange="settingsManager.saveSelectSetting('defaultUnetRoot', 'default_unet_root')">
-                                        <option value="">{{ t('settings.folderSettings.noDefault') }}</option>
-                                    </select>
+                                <div class="template-custom-row" id="loraCustomRow" style="display: none;">
+                                    <input type="text" id="loraCustomTemplate" class="template-custom-input" placeholder="{{ t('settings.downloadPathTemplates.customTemplatePlaceholder') }}" />
+                                    <div class="template-validation" id="loraValidation"></div>
                                 </div>
+                                <div class="template-preview" id="loraPreview"></div>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.folderSettings.defaultUnetRootHelp') }}
-                            </div>
-                        </div>
 
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="defaultEmbeddingRoot">{{ t('settings.folderSettings.defaultEmbeddingRoot') }}</label>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="checkpointTemplatePreset">{{ t('settings.downloadPathTemplates.modelTypes.checkpoint') }}</label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="checkpointTemplatePreset" onchange="settingsManager.updateTemplatePreset('checkpoint', this.value)">
+                                            <option value="">{{ t('settings.downloadPathTemplates.templateOptions.flatStructure') }}</option>
+                                            <option value="{base_model}">{{ t('settings.downloadPathTemplates.templateOptions.byBaseModel') }}</option>
+                                            <option value="{author}">{{ t('settings.downloadPathTemplates.templateOptions.byAuthor') }}</option>
+                                            <option value="{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.byFirstTag') }}</option>
+                                            <option value="{base_model}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelFirstTag') }}</option>
+                                            <option value="{base_model}/{author}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelAuthor') }}</option>
+                                            <option value="{author}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.authorFirstTag') }}</option>
+                                            <option value="{base_model}/{author}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelAuthorFirstTag') }}</option>
+                                            <option value="custom">{{ t('settings.downloadPathTemplates.templateOptions.customTemplate') }}</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="setting-control select-control">
-                                    <select id="defaultEmbeddingRoot" onchange="settingsManager.saveSelectSetting('defaultEmbeddingRoot', 'default_embedding_root')">
-                                        <option value="">{{ t('settings.folderSettings.noDefault') }}</option>
-                                    </select>
+                                <div class="template-custom-row" id="checkpointCustomRow" style="display: none;">
+                                    <input type="text" id="checkpointCustomTemplate" class="template-custom-input" placeholder="{{ t('settings.downloadPathTemplates.customTemplatePlaceholder') }}" />
+                                    <div class="template-validation" id="checkpointValidation"></div>
                                 </div>
+                                <div class="template-preview" id="checkpointPreview"></div>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.folderSettings.defaultEmbeddingRootHelp') }}
+
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="embeddingTemplatePreset">{{ t('settings.downloadPathTemplates.modelTypes.embedding') }}</label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="embeddingTemplatePreset" onchange="settingsManager.updateTemplatePreset('embedding', this.value)">
+                                            <option value="">{{ t('settings.downloadPathTemplates.templateOptions.flatStructure') }}</option>
+                                            <option value="{base_model}">{{ t('settings.downloadPathTemplates.templateOptions.byBaseModel') }}</option>
+                                            <option value="{author}">{{ t('settings.downloadPathTemplates.templateOptions.byAuthor') }}</option>
+                                            <option value="{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.byFirstTag') }}</option>
+                                            <option value="{base_model}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelFirstTag') }}</option>
+                                            <option value="{base_model}/{author}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelAuthor') }}</option>
+                                            <option value="{author}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.authorFirstTag') }}</option>
+                                            <option value="{base_model}/{author}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelAuthorFirstTag') }}</option>
+                                            <option value="custom">{{ t('settings.downloadPathTemplates.templateOptions.customTemplate') }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="template-custom-row" id="embeddingCustomRow" style="display: none;">
+                                    <input type="text" id="embeddingCustomTemplate" class="template-custom-input" placeholder="{{ t('settings.downloadPathTemplates.customTemplatePlaceholder') }}" />
+                                    <div class="template-validation" id="embeddingValidation"></div>
+                                </div>
+                                <div class="template-preview" id="embeddingPreview"></div>
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label>{{ t('settings.downloadPathTemplates.baseModelPathMappings') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <button type="button" class="add-mapping-btn" onclick="settingsManager.addMappingRow()">
+                                            <i class="fas fa-plus"></i>
+                                            <span>{{ t('settings.downloadPathTemplates.addMapping') }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="input-help">
+                                    {{ t('settings.downloadPathTemplates.baseModelPathMappingsHelp') }}
+                                </div>
+                                <div class="mappings-container">
+                                    <div id="baseModelMappingsContainer">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
                         <!-- Update Flags -->
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="updateFlagStrategy">{{ t('settings.updateFlagStrategy.label') }}</label>
-                                </div>
-                                <div class="setting-control select-control">
-                                    <select id="updateFlagStrategy" onchange="settingsManager.saveSelectSetting('updateFlagStrategy', 'update_flag_strategy')">
-                                        <option value="same_base">{{ t('settings.updateFlagStrategy.options.sameBase') }}</option>
-                                        <option value="any">{{ t('settings.updateFlagStrategy.options.any') }}</option>
-                                    </select>
-                                </div>
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.updateFlags') }}</h4>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.updateFlagStrategy.help') }}
-                            </div>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="hideEarlyAccessUpdates">{{ t('settings.hideEarlyAccessUpdates.label') }}</label>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="updateFlagStrategy">{{ t('settings.updateFlagStrategy.label') }}</label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="updateFlagStrategy" onchange="settingsManager.saveSelectSetting('updateFlagStrategy', 'update_flag_strategy')">
+                                            <option value="same_base">{{ t('settings.updateFlagStrategy.options.sameBase') }}</option>
+                                            <option value="any">{{ t('settings.updateFlagStrategy.options.any') }}</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="setting-control">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="hideEarlyAccessUpdates"
-                                               onchange="settingsManager.saveToggleSetting('hideEarlyAccessUpdates', 'hide_early_access_updates')">
-                                        <span class="toggle-slider"></span>
-                                    </label>
+                                <div class="input-help">
+                                    {{ t('settings.updateFlagStrategy.help') }}
                                 </div>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.hideEarlyAccessUpdates.help') }}
-                            </div>
-                        </div>
-                        
-                        <!-- Path Templates -->
-                        <div class="setting-item">
-                            <div class="input-help">
-                                {{ t('settings.downloadPathTemplates.help') }}
-                                <div class="placeholder-info">
-                                    <strong>{{ t('settings.downloadPathTemplates.availablePlaceholders') }}</strong>
-                                    <span class="placeholder-tag">{base_model}</span>
-                                    <span class="placeholder-tag">{author}</span>
-                                    <span class="placeholder-tag">{first_tag}</span>
-                                    <span class="placeholder-tag">{model_name}</span>
-                                    <span class="placeholder-tag">{version_name}</span>
+                            
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="hideEarlyAccessUpdates">{{ t('settings.hideEarlyAccessUpdates.label') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="hideEarlyAccessUpdates"
+                                                   onchange="settingsManager.saveToggleSetting('hideEarlyAccessUpdates', 'hide_early_access_updates')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="loraTemplatePreset">{{ t('settings.downloadPathTemplates.modelTypes.lora') }}</label>
-                                </div>
-                                <div class="setting-control select-control">
-                                    <select id="loraTemplatePreset" onchange="settingsManager.updateTemplatePreset('lora', this.value)">
-                                        <option value="">{{ t('settings.downloadPathTemplates.templateOptions.flatStructure') }}</option>
-                                        <option value="{base_model}">{{ t('settings.downloadPathTemplates.templateOptions.byBaseModel') }}</option>
-                                        <option value="{author}">{{ t('settings.downloadPathTemplates.templateOptions.byAuthor') }}</option>
-                                        <option value="{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.byFirstTag') }}</option>
-                                        <option value="{base_model}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelFirstTag') }}</option>
-                                        <option value="{base_model}/{author}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelAuthor') }}</option>
-                                        <option value="{author}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.authorFirstTag') }}</option>
-                                        <option value="{base_model}/{author}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelAuthorFirstTag') }}</option>
-                                        <option value="custom">{{ t('settings.downloadPathTemplates.templateOptions.customTemplate') }}</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="template-custom-row" id="loraCustomRow" style="display: none;">
-                                <input type="text" id="loraCustomTemplate" class="template-custom-input" placeholder="{{ t('settings.downloadPathTemplates.customTemplatePlaceholder') }}" />
-                                <div class="template-validation" id="loraValidation"></div>
-                            </div>
-                            <div class="template-preview" id="loraPreview"></div>
-                        </div>
-
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="checkpointTemplatePreset">{{ t('settings.downloadPathTemplates.modelTypes.checkpoint') }}</label>
-                                </div>
-                                <div class="setting-control select-control">
-                                    <select id="checkpointTemplatePreset" onchange="settingsManager.updateTemplatePreset('checkpoint', this.value)">
-                                        <option value="">{{ t('settings.downloadPathTemplates.templateOptions.flatStructure') }}</option>
-                                        <option value="{base_model}">{{ t('settings.downloadPathTemplates.templateOptions.byBaseModel') }}</option>
-                                        <option value="{author}">{{ t('settings.downloadPathTemplates.templateOptions.byAuthor') }}</option>
-                                        <option value="{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.byFirstTag') }}</option>
-                                        <option value="{base_model}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelFirstTag') }}</option>
-                                        <option value="{base_model}/{author}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelAuthor') }}</option>
-                                        <option value="{author}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.authorFirstTag') }}</option>
-                                        <option value="{base_model}/{author}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelAuthorFirstTag') }}</option>
-                                        <option value="custom">{{ t('settings.downloadPathTemplates.templateOptions.customTemplate') }}</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="template-custom-row" id="checkpointCustomRow" style="display: none;">
-                                <input type="text" id="checkpointCustomTemplate" class="template-custom-input" placeholder="{{ t('settings.downloadPathTemplates.customTemplatePlaceholder') }}" />
-                                <div class="template-validation" id="checkpointValidation"></div>
-                            </div>
-                            <div class="template-preview" id="checkpointPreview"></div>
-                        </div>
-
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="embeddingTemplatePreset">{{ t('settings.downloadPathTemplates.modelTypes.embedding') }}</label>
-                                </div>
-                                <div class="setting-control select-control">
-                                    <select id="embeddingTemplatePreset" onchange="settingsManager.updateTemplatePreset('embedding', this.value)">
-                                        <option value="">{{ t('settings.downloadPathTemplates.templateOptions.flatStructure') }}</option>
-                                        <option value="{base_model}">{{ t('settings.downloadPathTemplates.templateOptions.byBaseModel') }}</option>
-                                        <option value="{author}">{{ t('settings.downloadPathTemplates.templateOptions.byAuthor') }}</option>
-                                        <option value="{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.byFirstTag') }}</option>
-                                        <option value="{base_model}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelFirstTag') }}</option>
-                                        <option value="{base_model}/{author}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelAuthor') }}</option>
-                                        <option value="{author}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.authorFirstTag') }}</option>
-                                        <option value="{base_model}/{author}/{first_tag}">{{ t('settings.downloadPathTemplates.templateOptions.baseModelAuthorFirstTag') }}</option>
-                                        <option value="custom">{{ t('settings.downloadPathTemplates.templateOptions.customTemplate') }}</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="template-custom-row" id="embeddingCustomRow" style="display: none;">
-                                <input type="text" id="embeddingCustomTemplate" class="template-custom-input" placeholder="{{ t('settings.downloadPathTemplates.customTemplatePlaceholder') }}" />
-                                <div class="template-validation" id="embeddingValidation"></div>
-                            </div>
-                            <div class="template-preview" id="embeddingPreview"></div>
-                        </div>
-
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label>{{ t('settings.downloadPathTemplates.baseModelPathMappings') }}</label>
-                                </div>
-                                <div class="setting-control">
-                                    <button type="button" class="add-mapping-btn" onclick="settingsManager.addMappingRow()">
-                                        <i class="fas fa-plus"></i>
-                                        <span>{{ t('settings.downloadPathTemplates.addMapping') }}</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="input-help">
-                                {{ t('settings.downloadPathTemplates.baseModelPathMappingsHelp') }}
-                            </div>
-                            <div class="mappings-container">
-                                <div id="baseModelMappingsContainer">
+                                <div class="input-help">
+                                    {{ t('settings.hideEarlyAccessUpdates.help') }}
                                 </div>
                             </div>
                         </div>
                         
                         <!-- Example Images -->
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="exampleImagesPath">{{ t('settings.exampleImages.downloadLocation') }} <i class="fas fa-sync-alt restart-required-icon" title="{{ t('settings.exampleImages.restartRequired') }}"></i></label>
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.exampleImages') }}</h4>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="exampleImagesPath">{{ t('settings.exampleImages.downloadLocation') }} <i class="fas fa-sync-alt restart-required-icon" title="{{ t('settings.exampleImages.restartRequired') }}"></i></label>
+                                    </div>
+                                    <div class="setting-control path-control">
+                                        <input type="text" id="exampleImagesPath" placeholder="{{ t('settings.exampleImages.downloadLocationPlaceholder') }}" />
+                                        <button id="exampleImagesDownloadBtn" class="primary-btn">
+                                            <i class="fas fa-download"></i> <span id="exampleDownloadBtnText">{{ t('settings.exampleImages.download') }}</span>
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="setting-control path-control">
-                                    <input type="text" id="exampleImagesPath" placeholder="{{ t('settings.exampleImages.downloadLocationPlaceholder') }}" />
-                                    <button id="exampleImagesDownloadBtn" class="primary-btn">
-                                        <i class="fas fa-download"></i> <span id="exampleDownloadBtnText">{{ t('settings.exampleImages.download') }}</span>
-                                    </button>
+                                <div class="input-help">
+                                    {{ t('settings.exampleImages.downloadLocationHelp') }}
                                 </div>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.exampleImages.downloadLocationHelp') }}
-                            </div>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="autoDownloadExampleImages">{{ t('settings.exampleImages.autoDownload') }}</label>
+                            
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="autoDownloadExampleImages">{{ t('settings.exampleImages.autoDownload') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="autoDownloadExampleImages" checked 
+                                                   onchange="settingsManager.saveToggleSetting('autoDownloadExampleImages', 'auto_download_example_images')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
                                 </div>
-                                <div class="setting-control">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="autoDownloadExampleImages" checked 
-                                               onchange="settingsManager.saveToggleSetting('autoDownloadExampleImages', 'auto_download_example_images')">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="input-help">
-                                {{ t('settings.exampleImages.autoDownloadHelp') }}
-                            </div>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="optimizeExampleImages">{{ t('settings.exampleImages.optimizeImages') }}</label>
-                                </div>
-                                <div class="setting-control">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="optimizeExampleImages" checked 
-                                               onchange="settingsManager.saveToggleSetting('optimizeExampleImages', 'optimize_example_images')">
-                                        <span class="toggle-slider"></span>
-                                    </label>
+                                <div class="input-help">
+                                    {{ t('settings.exampleImages.autoDownloadHelp') }}
                                 </div>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.exampleImages.optimizeImagesHelp') }}
+                            
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="optimizeExampleImages">{{ t('settings.exampleImages.optimizeImages') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="optimizeExampleImages" checked 
+                                                   onchange="settingsManager.saveToggleSetting('optimizeExampleImages', 'optimize_example_images')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="input-help">
+                                    {{ t('settings.exampleImages.optimizeImagesHelp') }}
+                                </div>
                             </div>
                         </div>
                         
                         <!-- Priority Tags -->
-                        <div class="setting-item priority-tags-item">
-                            <div class="setting-row">
-                                <div class="setting-info priority-tags-header">
-                                    <label>{{ t('settings.priorityTags.title') }}</label>
-                                    <a class="settings-action-link priority-tags-help-link" href="https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/Priority-Tags-Configuration-Guide" target="_blank" rel="noopener" aria-label="{{ t('settings.priorityTags.helpLinkLabel') }}" title="{{ t('settings.priorityTags.helpLinkLabel') }}">
-                                        <i class="fas fa-question-circle" aria-hidden="true"></i>
-                                    </a>
-                                </div>
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.priorityTags.title') }}</h4>
                             </div>
-                            <div class="input-help">{{ t('settings.priorityTags.description') }}</div>
-                            <div class="priority-tags-tabs">
-                                <input type="radio" id="priority-tags-tab-lora" name="priority-tags-tab" class="priority-tags-tab-input" checked>
-                                <input type="radio" id="priority-tags-tab-checkpoint" name="priority-tags-tab" class="priority-tags-tab-input">
-                                <input type="radio" id="priority-tags-tab-embedding" name="priority-tags-tab" class="priority-tags-tab-input">
-                                
-                                <div class="priority-tags-tablist">
-                                    <label class="priority-tags-tab-label" for="priority-tags-tab-lora" id="priority-tags-tab-lora-label">{{ t('settings.priorityTags.modelTypes.lora') }}</label>
-                                    <label class="priority-tags-tab-label" for="priority-tags-tab-checkpoint" id="priority-tags-tab-checkpoint-label">{{ t('settings.priorityTags.modelTypes.checkpoint') }}</label>
-                                    <label class="priority-tags-tab-label" for="priority-tags-tab-embedding" id="priority-tags-tab-embedding-label">{{ t('settings.priorityTags.modelTypes.embedding') }}</label>
+                            <div class="setting-item priority-tags-item">
+                                <div class="setting-row">
+                                    <div class="setting-info priority-tags-header">
+                                        <label>{{ t('settings.priorityTags.title') }}</label>
+                                        <a class="settings-action-link priority-tags-help-link" href="https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/Priority-Tags-Configuration-Guide" target="_blank" rel="noopener" aria-label="{{ t('settings.priorityTags.helpLinkLabel') }}" title="{{ t('settings.priorityTags.helpLinkLabel') }}">
+                                            <i class="fas fa-question-circle" aria-hidden="true"></i>
+                                        </a>
+                                    </div>
                                 </div>
-                                
-                                <div class="priority-tags-panels">
-                                    <div class="priority-tags-panel" id="priority-tags-panel-lora">
-                                        <textarea id="loraPriorityTagsInput" class="priority-tags-input" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
-                                        <div class="settings-input-error-message" id="loraPriorityTagsError"></div>
+                                <div class="input-help">{{ t('settings.priorityTags.description') }}</div>
+                                <div class="priority-tags-tabs">
+                                    <input type="radio" id="priority-tags-tab-lora" name="priority-tags-tab" class="priority-tags-tab-input" checked>
+                                    <input type="radio" id="priority-tags-tab-checkpoint" name="priority-tags-tab" class="priority-tags-tab-input">
+                                    <input type="radio" id="priority-tags-tab-embedding" name="priority-tags-tab" class="priority-tags-tab-input">
+                                    
+                                    <div class="priority-tags-tablist">
+                                        <label class="priority-tags-tab-label" for="priority-tags-tab-lora" id="priority-tags-tab-lora-label">{{ t('settings.priorityTags.modelTypes.lora') }}</label>
+                                        <label class="priority-tags-tab-label" for="priority-tags-tab-checkpoint" id="priority-tags-tab-checkpoint-label">{{ t('settings.priorityTags.modelTypes.checkpoint') }}</label>
+                                        <label class="priority-tags-tab-label" for="priority-tags-tab-embedding" id="priority-tags-tab-embedding-label">{{ t('settings.priorityTags.modelTypes.embedding') }}</label>
                                     </div>
-                                    <div class="priority-tags-panel" id="priority-tags-panel-checkpoint">
-                                        <textarea id="checkpointPriorityTagsInput" class="priority-tags-input" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
-                                        <div class="settings-input-error-message" id="checkpointPriorityTagsError"></div>
-                                    </div>
-                                    <div class="priority-tags-panel" id="priority-tags-panel-embedding">
-                                        <textarea id="embeddingPriorityTagsInput" class="priority-tags-input" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
-                                        <div class="settings-input-error-message" id="embeddingPriorityTagsError"></div>
+                                    
+                                    <div class="priority-tags-panels">
+                                        <div class="priority-tags-panel" id="priority-tags-panel-lora">
+                                            <textarea id="loraPriorityTagsInput" class="priority-tags-input" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
+                                            <div class="settings-input-error-message" id="loraPriorityTagsError"></div>
+                                        </div>
+                                        <div class="priority-tags-panel" id="priority-tags-panel-checkpoint">
+                                            <textarea id="checkpointPriorityTagsInput" class="priority-tags-input" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
+                                            <div class="settings-input-error-message" id="checkpointPriorityTagsError"></div>
+                                        </div>
+                                        <div class="priority-tags-panel" id="priority-tags-panel-embedding">
+                                            <textarea id="embeddingPriorityTagsInput" class="priority-tags-input" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
+                                            <div class="settings-input-error-message" id="embeddingPriorityTagsError"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -614,230 +657,243 @@
                     
                     <!-- Section 4: Organization -->
                     <div id="section-organization" class="settings-section" data-section="organization">
-                        <div class="settings-section-header">
-                            <h3>{{ t('settings.nav.organization') }}</h3>
-                        </div>
-                        
                         <!-- Auto-organize Exclusions -->
-                        <div class="setting-item auto-organize-exclusions-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="autoOrganizeExclusions">{{ t('settings.autoOrganizeExclusions.label') }}</label>
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.autoOrganizeExclusions.label') }}</h4>
+                            </div>
+                            <div class="setting-item auto-organize-exclusions-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="autoOrganizeExclusions">{{ t('settings.autoOrganizeExclusions.label') }}</label>
+                                    </div>
                                 </div>
+                                <div class="input-help">
+                                    {{ t('settings.autoOrganizeExclusions.description') }}
+                                </div>
+                                <textarea id="autoOrganizeExclusions" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.autoOrganizeExclusions.placeholder') }}"></textarea>
+                                <div class="settings-input-error-message" id="autoOrganizeExclusionsError"></div>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.autoOrganizeExclusions.description') }}
-                            </div>
-                            <textarea id="autoOrganizeExclusions" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.autoOrganizeExclusions.placeholder') }}"></textarea>
-                            <div class="settings-input-error-message" id="autoOrganizeExclusionsError"></div>
                         </div>
                         
                         <!-- Metadata Refresh Skip Paths -->
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="metadataRefreshSkipPaths">{{ t('settings.metadataRefreshSkipPaths.label') }}</label>
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.metadataRefreshSkipPaths.label') }}</h4>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="metadataRefreshSkipPaths">{{ t('settings.metadataRefreshSkipPaths.label') }}</label>
+                                    </div>
                                 </div>
+                                <div class="input-help">
+                                    {{ t('settings.metadataRefreshSkipPaths.description') }}
+                                </div>
+                                <textarea id="metadataRefreshSkipPaths" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.metadataRefreshSkipPaths.placeholder') }}"></textarea>
+                                <div class="settings-input-error-message" id="metadataRefreshSkipPathsError"></div>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.metadataRefreshSkipPaths.description') }}
-                            </div>
-                            <textarea id="metadataRefreshSkipPaths" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.metadataRefreshSkipPaths.placeholder') }}"></textarea>
-                            <div class="settings-input-error-message" id="metadataRefreshSkipPathsError"></div>
                         </div>
                     </div>
                     
                     <!-- Section 5: System -->
                     <div id="section-system" class="settings-section" data-section="system">
-                        <div class="settings-section-header">
-                            <h3>{{ t('settings.nav.system') }}</h3>
-                        </div>
-                        
                         <!-- Metadata Archive -->
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="enableMetadataArchive">{{ t('settings.metadataArchive.enableArchiveDb') }}</label>
-                                </div>
-                                <div class="setting-control">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="enableMetadataArchive"
-                                               onchange="settingsManager.saveToggleSetting('enableMetadataArchive', 'enable_metadata_archive_db')">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.metadataArchive') }}</h4>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.metadataArchive.enableArchiveDbHelp') }}
-                            </div>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <div class="metadata-archive-status" id="metadataArchiveStatus">
-                                <!-- Status will be populated by JavaScript -->
-                            </div>
-                        </div>
-                        
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label>{{ t('settings.metadataArchive.management') }}</label>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="enableMetadataArchive">{{ t('settings.metadataArchive.enableArchiveDb') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="enableMetadataArchive"
+                                                   onchange="settingsManager.saveToggleSetting('enableMetadataArchive', 'enable_metadata_archive_db')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
                                 </div>
-                                <div class="setting-control">
-                                    <button type="button" id="downloadMetadataArchiveBtn" class="primary-btn" onclick="settingsManager.downloadMetadataArchive()">
-                                        {{ t('settings.metadataArchive.downloadButton') }}
-                                    </button>
-                                    <button type="button" id="removeMetadataArchiveBtn" class="danger-btn" onclick="settingsManager.removeMetadataArchive()" style="margin-left: 10px;">
-                                        {{ t('settings.metadataArchive.removeButton') }}
-                                    </button>
+                                <div class="input-help">
+                                    {{ t('settings.metadataArchive.enableArchiveDbHelp') }}
                                 </div>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.metadataArchive.managementHelp') }}
+                            
+                            <div class="setting-item">
+                                <div class="metadata-archive-status" id="metadataArchiveStatus">
+                                    <!-- Status will be populated by JavaScript -->
+                                </div>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label>{{ t('settings.metadataArchive.management') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <button type="button" id="downloadMetadataArchiveBtn" class="primary-btn" onclick="settingsManager.downloadMetadataArchive()">
+                                            {{ t('settings.metadataArchive.downloadButton') }}
+                                        </button>
+                                        <button type="button" id="removeMetadataArchiveBtn" class="danger-btn" onclick="settingsManager.removeMetadataArchive()" style="margin-left: 10px;">
+                                            {{ t('settings.metadataArchive.removeButton') }}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="input-help">
+                                    {{ t('settings.metadataArchive.managementHelp') }}
+                                </div>
                             </div>
                         </div>
                         
                         <!-- Misc -->
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="includeTriggerWords">{{ t('settings.misc.includeTriggerWords') }}</label>
-                                </div>
-                                <div class="setting-control">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="includeTriggerWords"
-                                               onchange="settingsManager.saveToggleSetting('includeTriggerWords', 'include_trigger_words')">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.misc') }}</h4>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.misc.includeTriggerWordsHelp') }}
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="includeTriggerWords">{{ t('settings.misc.includeTriggerWords') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="includeTriggerWords"
+                                                   onchange="settingsManager.saveToggleSetting('includeTriggerWords', 'include_trigger_words')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="input-help">
+                                    {{ t('settings.misc.includeTriggerWordsHelp') }}
+                                </div>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Section 6: Network -->
                     <div id="section-network" class="settings-section" data-section="network">
-                        <div class="settings-section-header">
-                            <h3>{{ t('settings.nav.network') }}</h3>
-                        </div>
-                        
                         <!-- Proxy Settings -->
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="proxyEnabled">{{ t('settings.proxySettings.enableProxy') }}</label>
-                                </div>
-                                <div class="setting-control">
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="proxyEnabled"
-                                               onchange="settingsManager.saveToggleSetting('proxyEnabled', 'proxy_enabled')">
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </div>
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.proxySettings') }}</h4>
                             </div>
-                            <div class="input-help">
-                                {{ t('settings.proxySettings.enableProxyHelp') }}
-                            </div>
-                        </div>
-                        
-                        <div id="proxySettingsGroup" class="proxy-settings-group" style="display: none;">
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="proxyType">{{ t('settings.proxySettings.proxyType') }}</label>
+                                        <label for="proxyEnabled">{{ t('settings.proxySettings.enableProxy') }}</label>
                                     </div>
-                                    <div class="setting-control select-control">
-                                        <select id="proxyType" onchange="settingsManager.saveSelectSetting('proxyType', 'proxy_type')">
-                                            <option value="http">HTTP</option>
-                                            <option value="https">HTTPS</option>
-                                            <option value="socks4">SOCKS4</option>
-                                            <option value="socks5">SOCKS5</option>
-                                        </select>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="proxyEnabled"
+                                                   onchange="settingsManager.saveToggleSetting('proxyEnabled', 'proxy_enabled')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
                                     </div>
                                 </div>
                                 <div class="input-help">
-                                    {{ t('settings.proxySettings.proxyTypeHelp') }}
+                                    {{ t('settings.proxySettings.enableProxyHelp') }}
                                 </div>
                             </div>
                             
-                            <div class="setting-item">
-                                <div class="setting-row">
-                                    <div class="setting-info">
-                                        <label for="proxyHost">{{ t('settings.proxySettings.proxyHost') }}</label>
-                                    </div>
-                                    <div class="setting-control">
-                                        <div class="text-input-wrapper">
-                                            <input type="text" id="proxyHost" 
-                                                   placeholder="{{ t('settings.proxySettings.proxyHostPlaceholder') }}"
-                                                   onblur="settingsManager.saveInputSetting('proxyHost', 'proxy_host')"
-                                                   onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                            <div id="proxySettingsGroup" class="proxy-settings-group" style="display: none;">
+                                <div class="setting-item">
+                                    <div class="setting-row">
+                                        <div class="setting-info">
+                                            <label for="proxyType">{{ t('settings.proxySettings.proxyType') }}</label>
+                                        </div>
+                                        <div class="setting-control select-control">
+                                            <select id="proxyType" onchange="settingsManager.saveSelectSetting('proxyType', 'proxy_type')">
+                                                <option value="http">HTTP</option>
+                                                <option value="https">HTTPS</option>
+                                                <option value="socks4">SOCKS4</option>
+                                                <option value="socks5">SOCKS5</option>
+                                            </select>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="input-help">
-                                    {{ t('settings.proxySettings.proxyHostHelp') }}
-                                </div>
-                            </div>
-                            
-                            <div class="setting-item">
-                                <div class="setting-row">
-                                    <div class="setting-info">
-                                        <label for="proxyPort">{{ t('settings.proxySettings.proxyPort') }}</label>
+                                    <div class="input-help">
+                                        {{ t('settings.proxySettings.proxyTypeHelp') }}
                                     </div>
-                                    <div class="setting-control">
-                                        <div class="text-input-wrapper">
-                                            <input type="text" id="proxyPort" 
-                                                   placeholder="{{ t('settings.proxySettings.proxyPortPlaceholder') }}"
-                                                   onblur="settingsManager.saveInputSetting('proxyPort', 'proxy_port')"
-                                                   onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-row">
+                                        <div class="setting-info">
+                                            <label for="proxyHost">{{ t('settings.proxySettings.proxyHost') }}</label>
+                                        </div>
+                                        <div class="setting-control">
+                                            <div class="text-input-wrapper">
+                                                <input type="text" id="proxyHost" 
+                                                       placeholder="{{ t('settings.proxySettings.proxyHostPlaceholder') }}"
+                                                       onblur="settingsManager.saveInputSetting('proxyHost', 'proxy_host')"
+                                                       onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="input-help">
-                                    {{ t('settings.proxySettings.proxyPortHelp') }}
-                                </div>
-                            </div>
-                            
-                            <div class="setting-item">
-                                <div class="setting-row">
-                                    <div class="setting-info">
-                                        <label for="proxyUsername">{{ t('settings.proxySettings.proxyUsername') }}</label>
+                                    <div class="input-help">
+                                        {{ t('settings.proxySettings.proxyHostHelp') }}
                                     </div>
-                                    <div class="setting-control">
-                                        <div class="text-input-wrapper">
-                                            <input type="text" id="proxyUsername" 
-                                                   placeholder="{{ t('settings.proxySettings.proxyUsernamePlaceholder') }}"
-                                                   onblur="settingsManager.saveInputSetting('proxyUsername', 'proxy_username')"
-                                                   onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-row">
+                                        <div class="setting-info">
+                                            <label for="proxyPort">{{ t('settings.proxySettings.proxyPort') }}</label>
+                                        </div>
+                                        <div class="setting-control">
+                                            <div class="text-input-wrapper">
+                                                <input type="text" id="proxyPort" 
+                                                       placeholder="{{ t('settings.proxySettings.proxyPortPlaceholder') }}"
+                                                       onblur="settingsManager.saveInputSetting('proxyPort', 'proxy_port')"
+                                                       onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="input-help">
-                                    {{ t('settings.proxySettings.proxyUsernameHelp') }}
-                                </div>
-                            </div>
-                            
-                            <div class="setting-item">
-                                <div class="setting-row">
-                                    <div class="setting-info">
-                                        <label for="proxyPassword">{{ t('settings.proxySettings.proxyPassword') }}</label>
+                                    <div class="input-help">
+                                        {{ t('settings.proxySettings.proxyPortHelp') }}
                                     </div>
-                                    <div class="setting-control">
-                                        <div class="api-key-input">
-                                            <input type="password" id="proxyPassword" 
-                                                   placeholder="{{ t('settings.proxySettings.proxyPasswordPlaceholder') }}"
-                                                   onblur="settingsManager.saveInputSetting('proxyPassword', 'proxy_password')"
-                                                   onkeydown="if(event.key === 'Enter') { this.blur(); }" />
-                                            <button class="toggle-visibility">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-row">
+                                        <div class="setting-info">
+                                            <label for="proxyUsername">{{ t('settings.proxySettings.proxyUsername') }}</label>
+                                        </div>
+                                        <div class="setting-control">
+                                            <div class="text-input-wrapper">
+                                                <input type="text" id="proxyUsername" 
+                                                       placeholder="{{ t('settings.proxySettings.proxyUsernamePlaceholder') }}"
+                                                       onblur="settingsManager.saveInputSetting('proxyUsername', 'proxy_username')"
+                                                       onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                            </div>
                                         </div>
                                     </div>
+                                    <div class="input-help">
+                                        {{ t('settings.proxySettings.proxyUsernameHelp') }}
+                                    </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.proxySettings.proxyPasswordHelp') }}
+                                
+                                <div class="setting-item">
+                                    <div class="setting-row">
+                                        <div class="setting-info">
+                                            <label for="proxyPassword">{{ t('settings.proxySettings.proxyPassword') }}</label>
+                                        </div>
+                                        <div class="setting-control">
+                                            <div class="api-key-input">
+                                                <input type="password" id="proxyPassword" 
+                                                       placeholder="{{ t('settings.proxySettings.proxyPasswordPlaceholder') }}"
+                                                       onblur="settingsManager.saveInputSetting('proxyPassword', 'proxy_password')"
+                                                       onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                                <button class="toggle-visibility">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="input-help">
+                                        {{ t('settings.proxySettings.proxyPasswordHelp') }}
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -573,20 +573,34 @@
     }
 }
 
+/* Remove old section header - replaced by subsection headers */
 .settings-section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 0 var(--space-2) 0;
-    margin-bottom: var(--space-3);
-    border-bottom: 2px solid var(--lora-accent);
+    display: none;
 }
 
-.settings-section-header h3 {
-    font-size: 20px;
+/* Subsection styling */
+.settings-subsection {
+    margin-bottom: var(--space-4);
+}
+
+.settings-subsection:last-child {
+    margin-bottom: 0;
+}
+
+.settings-subsection-header {
+    display: flex;
+    align-items: center;
+    padding: var(--space-2) 0;
+    margin-bottom: var(--space-2);
+    border-bottom: 1px solid var(--lora-border);
+}
+
+.settings-subsection-header h4 {
+    font-size: 16px;
     font-weight: 600;
     margin: 0;
     color: var(--text-color);
+    opacity: 0.9;
 }
 
 /* Remove toggle button styles */
@@ -598,8 +612,12 @@
     display: flex;
     flex-direction: column; /* Changed to column for help text placement */
     margin-bottom: var(--space-3); /* Increased to provide more spacing between items */
-    padding: var(--space-1);
+    padding: var(--space-2);
     border-radius: var(--border-radius-xs);
+}
+
+.setting-item:last-child {
+    margin-bottom: 0;
 }
 
 .setting-item:hover {
@@ -608,6 +626,32 @@
 
 [data-theme="dark"] .setting-item:hover {
     background: rgba(255, 255, 255, 0.05);
+}
+
+/* Subsection styling */
+.settings-subsection {
+    margin-bottom: var(--space-5);
+}
+
+.settings-subsection:last-child {
+    margin-bottom: 0;
+}
+
+.settings-subsection-header {
+    display: flex;
+    align-items: center;
+    padding: var(--space-2) var(--space-2) var(--space-2) 0;
+    margin-bottom: var(--space-2);
+    border-bottom: 1px solid var(--lora-border);
+}
+
+.settings-subsection-header h4 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-color);
+    opacity: 0.85;
+    letter-spacing: 0.3px;
 }
 
 /* Control row with label and input together */

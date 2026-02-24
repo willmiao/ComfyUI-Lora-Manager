@@ -255,6 +255,7 @@
             "clipboardFallback": "Einstellungspfad: {{path}}"
         },
         "sections": {
+            "apiConfiguration": "[TODO: Translate] API Configuration",
             "contentFiltering": "Inhaltsfilterung",
             "videoSettings": "Video-Einstellungen",
             "layoutSettings": "Layout-Einstellungen",
