@@ -58,6 +58,7 @@
                                 <div class="setting-row">
                                     <div class="setting-info">
                                         <label for="civitaiApiKey">{{ t('settings.civitaiApiKey') }}</label>
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.civitaiApiKeyHelp') }}"></i>
                                     </div>
                                     <div class="setting-control">
                                         <div class="api-key-input">
@@ -73,9 +74,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.civitaiApiKeyHelp') }}
-                                </div>
                             </div>
                         </div>
                         
@@ -87,7 +85,10 @@
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="usePortableSettings">{{ t('settings.storage.locationLabel') }}</label>
+                                        <label for="usePortableSettings">
+                                            {{ t('settings.storage.locationLabel') }}
+                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.storage.locationHelp') }}"></i>
+                                        </label>
                                     </div>
                                     <div class="setting-control">
                                         <label class="toggle-switch">
@@ -97,39 +98,31 @@
                                         </label>
                                     </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.storage.locationHelp') }}
-                                </div>
                             </div>
                         </div>
                         
                         <!-- Language -->
                         <div class="settings-subsection">
                             <div class="settings-subsection-header">
-                                <h4>{{ t('common.language.select') }}</h4>
+                                <h4>
+                                    {{ t('common.language.select') }}
+                                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('common.language.select_help') }}"></i>
+                                </h4>
                             </div>
                             <div class="setting-item">
-                                <div class="setting-row">
-                                    <div class="setting-info">
-                                        <label for="languageSelect">{{ t('common.language.select') }}</label>
-                                    </div>
-                                    <div class="setting-control select-control">
-                                        <select id="languageSelect" onchange="settingsManager.saveLanguageSetting()">
-                                            <option value="en">{{ t('common.language.english') }}</option>
-                                            <option value="zh-CN">{{ t('common.language.chinese_simplified') }}</option>
-                                            <option value="zh-TW">{{ t('common.language.chinese_traditional') }}</option>
-                                            <option value="ru">{{ t('common.language.russian') }}</option>
-                                            <option value="de">{{ t('common.language.german') }}</option>
-                                            <option value="ja">{{ t('common.language.japanese') }}</option>
-                                            <option value="ko">{{ t('common.language.korean') }}</option>
-                                            <option value="fr">{{ t('common.language.french') }}</option>
-                                            <option value="es">{{ t('common.language.spanish') }}</option>
-                                            <option value="he">{{ t('common.language.Hebrew') }}</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="input-help">
-                                    {{ t('common.language.select_help') }}
+                                <div class="setting-control select-control">
+                                    <select id="languageSelect" onchange="settingsManager.saveLanguageSetting()">
+                                        <option value="en">{{ t('common.language.english') }}</option>
+                                        <option value="zh-CN">{{ t('common.language.chinese_simplified') }}</option>
+                                        <option value="zh-TW">{{ t('common.language.chinese_traditional') }}</option>
+                                        <option value="ru">{{ t('common.language.russian') }}</option>
+                                        <option value="de">{{ t('common.language.german') }}</option>
+                                        <option value="ja">{{ t('common.language.japanese') }}</option>
+                                        <option value="ko">{{ t('common.language.korean') }}</option>
+                                        <option value="fr">{{ t('common.language.french') }}</option>
+                                        <option value="es">{{ t('common.language.spanish') }}</option>
+                                        <option value="he">{{ t('common.language.Hebrew') }}</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -145,7 +138,10 @@
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="blurMatureContent">{{ t('settings.contentFiltering.blurNsfwContent') }}</label>
+                                        <label for="blurMatureContent">
+                                        {{ t('settings.contentFiltering.blurNsfwContent') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.contentFiltering.blurNsfwContentHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control">
                                         <label class="toggle-switch">
@@ -155,15 +151,15 @@
                                         </label>
                                     </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.contentFiltering.blurNsfwContentHelp') }}
-                                </div>
                             </div>
                             
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="showOnlySFW">{{ t('settings.contentFiltering.showOnlySfw') }}</label>
+                                        <label for="showOnlySFW">
+                                        {{ t('settings.contentFiltering.showOnlySfw') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.contentFiltering.showOnlySfwHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control">
                                         <label class="toggle-switch">
@@ -172,9 +168,6 @@
                                             <span class="toggle-slider"></span>
                                         </label>
                                     </div>
-                                </div>
-                                <div class="input-help">
-                                    {{ t('settings.contentFiltering.showOnlySfwHelp') }}
                                 </div>
                             </div>
                         </div>
@@ -187,7 +180,10 @@
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="autoplayOnHover">{{ t('settings.videoSettings.autoplayOnHover') }}</label>
+                                        <label for="autoplayOnHover">
+                                        {{ t('settings.videoSettings.autoplayOnHover') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.videoSettings.autoplayOnHoverHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control">
                                         <label class="toggle-switch">
@@ -196,9 +192,6 @@
                                             <span class="toggle-slider"></span>
                                         </label>
                                     </div>
-                                </div>
-                                <div class="input-help">
-                                    {{ t('settings.videoSettings.autoplayOnHoverHelp') }}
                                 </div>
                             </div>
                         </div>
@@ -211,7 +204,10 @@
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="showFolderSidebar">{{ t('settings.layoutSettings.showFolderSidebar') }}</label>
+                                        <label for="showFolderSidebar">
+                                        {{ t('settings.layoutSettings.showFolderSidebar') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.layoutSettings.showFolderSidebarHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control">
                                         <label class="toggle-switch">
@@ -221,15 +217,15 @@
                                         </label>
                                     </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.layoutSettings.showFolderSidebarHelp') }}
-                                </div>
                             </div>
 
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="displayDensity">{{ t('settings.layoutSettings.displayDensity') }}</label>
+                                        <label for="displayDensity">
+                                        {{ t('settings.layoutSettings.displayDensity') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.layoutSettings.displayDensityHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control select-control">
                                         <select id="displayDensity" onchange="settingsManager.saveSelectSetting('displayDensity', 'display_density')">
@@ -239,9 +235,7 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.layoutSettings.displayDensityHelp') }}
-                                    <ul class="list-description">
+                                <div class="input-help"><ul class="list-description">
                                         <li><strong>{{ t('settings.layoutSettings.displayDensityOptions.default') }}:</strong> {{ t('settings.layoutSettings.displayDensityDetails.default') }}</li>
                                         <li><strong>{{ t('settings.layoutSettings.displayDensityOptions.medium') }}:</strong> {{ t('settings.layoutSettings.displayDensityDetails.medium') }}</li>
                                         <li><strong>{{ t('settings.layoutSettings.displayDensityOptions.compact') }}:</strong> {{ t('settings.layoutSettings.displayDensityDetails.compact') }}</li>
@@ -253,7 +247,10 @@
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="modelNameDisplay">{{ t('settings.layoutSettings.modelNameDisplay') }}</label>
+                                        <label for="modelNameDisplay">
+                                        {{ t('settings.layoutSettings.modelNameDisplay') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.layoutSettings.modelNameDisplayHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control select-control">
                                         <select id="modelNameDisplay" onchange="settingsManager.saveSelectSetting('modelNameDisplay', 'model_name_display')">
@@ -262,15 +259,15 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.layoutSettings.modelNameDisplayHelp') }}
-                                </div>
                             </div>
                             
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="cardInfoDisplay">{{ t('settings.layoutSettings.cardInfoDisplay') }}</label>
+                                        <label for="cardInfoDisplay">
+                                        {{ t('settings.layoutSettings.cardInfoDisplay') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.layoutSettings.cardInfoDisplayHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control select-control">
                                         <select id="cardInfoDisplay" onchange="settingsManager.saveSelectSetting('cardInfoDisplay', 'card_info_display')">
@@ -279,15 +276,15 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.layoutSettings.cardInfoDisplayHelp') }}
-                                </div>
                             </div>
 
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="modelCardFooterAction">{{ t('settings.layoutSettings.modelCardFooterAction') }}</label>
+                                        <label for="modelCardFooterAction">
+                                        {{ t('settings.layoutSettings.modelCardFooterAction') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.layoutSettings.modelCardFooterActionHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control select-control">
                                         <select id="modelCardFooterAction" onchange="settingsManager.saveSelectSetting('modelCardFooterAction', 'model_card_footer_action')">
@@ -295,9 +292,6 @@
                                             <option value="replace_preview">{{ t('settings.layoutSettings.modelCardFooterActionOptions.replacePreview') }}</option>
                                         </select>
                                     </div>
-                                </div>
-                                <div class="input-help">
-                                    {{ t('settings.layoutSettings.modelCardFooterActionHelp') }}
                                 </div>
                             </div>
                         </div>
@@ -313,7 +307,10 @@
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="librarySelect">{{ t('settings.folderSettings.activeLibrary') }}</label>
+                                        <label for="librarySelect">
+                                        {{ t('settings.folderSettings.activeLibrary') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.folderSettings.activeLibraryHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control select-control">
                                         <select id="librarySelect" onchange="settingsManager.handleLibraryChange()">
@@ -321,15 +318,15 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.folderSettings.activeLibraryHelp') }}
-                                </div>
                             </div>
 
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="defaultLoraRoot">{{ t('settings.folderSettings.defaultLoraRoot') }}</label>
+                                        <label for="defaultLoraRoot">
+                                        {{ t('settings.folderSettings.defaultLoraRoot') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.folderSettings.defaultLoraRootHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control select-control">
                                         <select id="defaultLoraRoot" onchange="settingsManager.saveSelectSetting('defaultLoraRoot', 'default_lora_root')">
@@ -337,15 +334,15 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.folderSettings.defaultLoraRootHelp') }}
-                                </div>
                             </div>
                             
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="defaultCheckpointRoot">{{ t('settings.folderSettings.defaultCheckpointRoot') }}</label>
+                                        <label for="defaultCheckpointRoot">
+                                        {{ t('settings.folderSettings.defaultCheckpointRoot') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.folderSettings.defaultCheckpointRootHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control select-control">
                                         <select id="defaultCheckpointRoot" onchange="settingsManager.saveSelectSetting('defaultCheckpointRoot', 'default_checkpoint_root')">
@@ -353,15 +350,15 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.folderSettings.defaultCheckpointRootHelp') }}
-                                </div>
                             </div>
 
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="defaultUnetRoot">{{ t('settings.folderSettings.defaultUnetRoot') }}</label>
+                                        <label for="defaultUnetRoot">
+                                        {{ t('settings.folderSettings.defaultUnetRoot') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.folderSettings.defaultUnetRootHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control select-control">
                                         <select id="defaultUnetRoot" onchange="settingsManager.saveSelectSetting('defaultUnetRoot', 'default_unet_root')">
@@ -369,15 +366,15 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.folderSettings.defaultUnetRootHelp') }}
-                                </div>
                             </div>
 
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="defaultEmbeddingRoot">{{ t('settings.folderSettings.defaultEmbeddingRoot') }}</label>
+                                        <label for="defaultEmbeddingRoot">
+                                        {{ t('settings.folderSettings.defaultEmbeddingRoot') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.folderSettings.defaultEmbeddingRootHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control select-control">
                                         <select id="defaultEmbeddingRoot" onchange="settingsManager.saveSelectSetting('defaultEmbeddingRoot', 'default_embedding_root')">
@@ -385,20 +382,19 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.folderSettings.defaultEmbeddingRootHelp') }}
-                                </div>
                             </div>
                         </div>
                         
                         <!-- Download Path Templates -->
                         <div class="settings-subsection">
                             <div class="settings-subsection-header">
-                                <h4>{{ t('settings.downloadPathTemplates.title') }}</h4>
+                                <h4>
+                                    {{ t('settings.downloadPathTemplates.title') }}
+                                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.downloadPathTemplates.help') }}"></i>
+                                </h4>
                             </div>
                             <div class="setting-item">
                                 <div class="input-help">
-                                    {{ t('settings.downloadPathTemplates.help') }}
                                     <div class="placeholder-info">
                                         <strong>{{ t('settings.downloadPathTemplates.availablePlaceholders') }}</strong>
                                         <span class="placeholder-tag">{base_model}</span>
@@ -491,7 +487,10 @@
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label>{{ t('settings.downloadPathTemplates.baseModelPathMappings') }}</label>
+                                        <label>
+                                            {{ t('settings.downloadPathTemplates.baseModelPathMappings') }}
+                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.downloadPathTemplates.baseModelPathMappingsHelp') }}"></i>
+                                        </label>
                                     </div>
                                     <div class="setting-control">
                                         <button type="button" class="add-mapping-btn" onclick="settingsManager.addMappingRow()">
@@ -499,9 +498,6 @@
                                             <span>{{ t('settings.downloadPathTemplates.addMapping') }}</span>
                                         </button>
                                     </div>
-                                </div>
-                                <div class="input-help">
-                                    {{ t('settings.downloadPathTemplates.baseModelPathMappingsHelp') }}
                                 </div>
                                 <div class="mappings-container">
                                     <div id="baseModelMappingsContainer">
@@ -513,13 +509,15 @@
                             <div class="setting-item priority-tags-item">
                                 <div class="setting-row priority-tags-header-row">
                                     <div class="setting-info priority-tags-header">
-                                        <label>{{ t('settings.priorityTags.title') }}</label>
+                                        <label>
+                                            {{ t('settings.priorityTags.title') }}
+                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.priorityTags.description') }}"></i>
+                                        </label>
                                         <a class="settings-action-link priority-tags-help-link" href="https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/Priority-Tags-Configuration-Guide" target="_blank" rel="noopener" aria-label="{{ t('settings.priorityTags.helpLinkLabel') }}" title="{{ t('settings.priorityTags.helpLinkLabel') }}">
                                             <i class="fas fa-question-circle" aria-hidden="true"></i>
                                         </a>
                                     </div>
                                 </div>
-                                <div class="input-help">{{ t('settings.priorityTags.description') }}</div>
                                 <div class="priority-tags-tabs">
                                     <input type="radio" id="priority-tags-tab-lora" name="priority-tags-tab" class="priority-tags-tab-input" checked>
                                     <input type="radio" id="priority-tags-tab-checkpoint" name="priority-tags-tab" class="priority-tags-tab-input">
@@ -557,7 +555,10 @@
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="updateFlagStrategy">{{ t('settings.updateFlagStrategy.label') }}</label>
+                                        <label for="updateFlagStrategy">
+                                        {{ t('settings.updateFlagStrategy.label') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.updateFlagStrategy.help') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control select-control">
                                         <select id="updateFlagStrategy" onchange="settingsManager.saveSelectSetting('updateFlagStrategy', 'update_flag_strategy')">
@@ -566,15 +567,15 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.updateFlagStrategy.help') }}
-                                </div>
                             </div>
                             
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="hideEarlyAccessUpdates">{{ t('settings.hideEarlyAccessUpdates.label') }}</label>
+                                        <label for="hideEarlyAccessUpdates">
+                                        {{ t('settings.hideEarlyAccessUpdates.label') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.hideEarlyAccessUpdates.help') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control">
                                         <label class="toggle-switch">
@@ -583,9 +584,6 @@
                                             <span class="toggle-slider"></span>
                                         </label>
                                     </div>
-                                </div>
-                                <div class="input-help">
-                                    {{ t('settings.hideEarlyAccessUpdates.help') }}
                                 </div>
                             </div>
                         </div>
@@ -607,15 +605,15 @@
                                         </button>
                                     </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.exampleImages.downloadLocationHelp') }}
-                                </div>
                             </div>
                             
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="autoDownloadExampleImages">{{ t('settings.exampleImages.autoDownload') }}</label>
+                                        <label for="autoDownloadExampleImages">
+                                        {{ t('settings.exampleImages.autoDownload') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.exampleImages.autoDownloadHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control">
                                         <label class="toggle-switch">
@@ -625,15 +623,15 @@
                                         </label>
                                     </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.exampleImages.autoDownloadHelp') }}
-                                </div>
                             </div>
                             
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="optimizeExampleImages">{{ t('settings.exampleImages.optimizeImages') }}</label>
+                                        <label for="optimizeExampleImages">
+                                        {{ t('settings.exampleImages.optimizeImages') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.exampleImages.optimizeImagesHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control">
                                         <label class="toggle-switch">
@@ -642,9 +640,6 @@
                                             <span class="toggle-slider"></span>
                                         </label>
                                     </div>
-                                </div>
-                                <div class="input-help">
-                                    {{ t('settings.exampleImages.optimizeImagesHelp') }}
                                 </div>
                             </div>
                         </div>
@@ -655,17 +650,12 @@
                         <!-- Auto-organize Exclusions -->
                         <div class="settings-subsection">
                             <div class="settings-subsection-header">
-                                <h4>{{ t('settings.autoOrganizeExclusions.label') }}</h4>
+                                <h4>
+                                    {{ t('settings.autoOrganizeExclusions.label') }}
+                                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.autoOrganizeExclusions.description') }}"></i>
+                                </h4>
                             </div>
                             <div class="setting-item auto-organize-exclusions-item">
-                                <div class="setting-row">
-                                    <div class="setting-info">
-                                        <label for="autoOrganizeExclusions">{{ t('settings.autoOrganizeExclusions.label') }}</label>
-                                    </div>
-                                </div>
-                                <div class="input-help">
-                                    {{ t('settings.autoOrganizeExclusions.description') }}
-                                </div>
                                 <textarea id="autoOrganizeExclusions" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.autoOrganizeExclusions.placeholder') }}"></textarea>
                                 <div class="settings-input-error-message" id="autoOrganizeExclusionsError"></div>
                             </div>
@@ -674,17 +664,12 @@
                         <!-- Metadata Refresh Skip Paths -->
                         <div class="settings-subsection">
                             <div class="settings-subsection-header">
-                                <h4>{{ t('settings.metadataRefreshSkipPaths.label') }}</h4>
+                                <h4>
+                                    {{ t('settings.metadataRefreshSkipPaths.label') }}
+                                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.metadataRefreshSkipPaths.description') }}"></i>
+                                </h4>
                             </div>
                             <div class="setting-item">
-                                <div class="setting-row">
-                                    <div class="setting-info">
-                                        <label for="metadataRefreshSkipPaths">{{ t('settings.metadataRefreshSkipPaths.label') }}</label>
-                                    </div>
-                                </div>
-                                <div class="input-help">
-                                    {{ t('settings.metadataRefreshSkipPaths.description') }}
-                                </div>
                                 <textarea id="metadataRefreshSkipPaths" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.metadataRefreshSkipPaths.placeholder') }}"></textarea>
                                 <div class="settings-input-error-message" id="metadataRefreshSkipPathsError"></div>
                             </div>
@@ -701,7 +686,10 @@
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="enableMetadataArchive">{{ t('settings.metadataArchive.enableArchiveDb') }}</label>
+                                        <label for="enableMetadataArchive">
+                                        {{ t('settings.metadataArchive.enableArchiveDb') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.metadataArchive.enableArchiveDbHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control">
                                         <label class="toggle-switch">
@@ -710,9 +698,6 @@
                                             <span class="toggle-slider"></span>
                                         </label>
                                     </div>
-                                </div>
-                                <div class="input-help">
-                                    {{ t('settings.metadataArchive.enableArchiveDbHelp') }}
                                 </div>
                             </div>
                             
@@ -725,7 +710,10 @@
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label>{{ t('settings.metadataArchive.management') }}</label>
+                                        <label>
+                                            {{ t('settings.metadataArchive.management') }}
+                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.metadataArchive.managementHelp') }}"></i>
+                                        </label>
                                     </div>
                                     <div class="setting-control">
                                         <button type="button" id="downloadMetadataArchiveBtn" class="primary-btn" onclick="settingsManager.downloadMetadataArchive()">
@@ -735,9 +723,6 @@
                                             {{ t('settings.metadataArchive.removeButton') }}
                                         </button>
                                     </div>
-                                </div>
-                                <div class="input-help">
-                                    {{ t('settings.metadataArchive.managementHelp') }}
                                 </div>
                             </div>
                         </div>
@@ -750,7 +735,10 @@
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="includeTriggerWords">{{ t('settings.misc.includeTriggerWords') }}</label>
+                                        <label for="includeTriggerWords">
+                                        {{ t('settings.misc.includeTriggerWords') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.misc.includeTriggerWordsHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control">
                                         <label class="toggle-switch">
@@ -759,9 +747,6 @@
                                             <span class="toggle-slider"></span>
                                         </label>
                                     </div>
-                                </div>
-                                <div class="input-help">
-                                    {{ t('settings.misc.includeTriggerWordsHelp') }}
                                 </div>
                             </div>
                         </div>
@@ -777,7 +762,10 @@
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="proxyEnabled">{{ t('settings.proxySettings.enableProxy') }}</label>
+                                        <label for="proxyEnabled">
+                                        {{ t('settings.proxySettings.enableProxy') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.enableProxyHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control">
                                         <label class="toggle-switch">
@@ -787,16 +775,16 @@
                                         </label>
                                     </div>
                                 </div>
-                                <div class="input-help">
-                                    {{ t('settings.proxySettings.enableProxyHelp') }}
-                                </div>
                             </div>
                             
                             <div id="proxySettingsGroup" class="proxy-settings-group" style="display: none;">
                                 <div class="setting-item">
                                     <div class="setting-row">
                                         <div class="setting-info">
-                                            <label for="proxyType">{{ t('settings.proxySettings.proxyType') }}</label>
+                                            <label for="proxyType">
+                                        {{ t('settings.proxySettings.proxyType') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyTypeHelp') }}"></i>
+                                    </label>
                                         </div>
                                         <div class="setting-control select-control">
                                             <select id="proxyType" onchange="settingsManager.saveSelectSetting('proxyType', 'proxy_type')">
@@ -807,15 +795,15 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="input-help">
-                                        {{ t('settings.proxySettings.proxyTypeHelp') }}
-                                    </div>
                                 </div>
                                 
                                 <div class="setting-item">
                                     <div class="setting-row">
                                         <div class="setting-info">
-                                            <label for="proxyHost">{{ t('settings.proxySettings.proxyHost') }}</label>
+                                            <label for="proxyHost">
+                                        {{ t('settings.proxySettings.proxyHost') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyHostHelp') }}"></i>
+                                    </label>
                                         </div>
                                         <div class="setting-control">
                                             <div class="text-input-wrapper">
@@ -826,15 +814,15 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="input-help">
-                                        {{ t('settings.proxySettings.proxyHostHelp') }}
-                                    </div>
                                 </div>
                                 
                                 <div class="setting-item">
                                     <div class="setting-row">
                                         <div class="setting-info">
-                                            <label for="proxyPort">{{ t('settings.proxySettings.proxyPort') }}</label>
+                                            <label for="proxyPort">
+                                        {{ t('settings.proxySettings.proxyPort') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyPortHelp') }}"></i>
+                                    </label>
                                         </div>
                                         <div class="setting-control">
                                             <div class="text-input-wrapper">
@@ -845,15 +833,15 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="input-help">
-                                        {{ t('settings.proxySettings.proxyPortHelp') }}
-                                    </div>
                                 </div>
                                 
                                 <div class="setting-item">
                                     <div class="setting-row">
                                         <div class="setting-info">
-                                            <label for="proxyUsername">{{ t('settings.proxySettings.proxyUsername') }}</label>
+                                            <label for="proxyUsername">
+                                        {{ t('settings.proxySettings.proxyUsername') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyUsernameHelp') }}"></i>
+                                    </label>
                                         </div>
                                         <div class="setting-control">
                                             <div class="text-input-wrapper">
@@ -864,15 +852,15 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="input-help">
-                                        {{ t('settings.proxySettings.proxyUsernameHelp') }}
-                                    </div>
                                 </div>
                                 
                                 <div class="setting-item">
                                     <div class="setting-row">
                                         <div class="setting-info">
-                                            <label for="proxyPassword">{{ t('settings.proxySettings.proxyPassword') }}</label>
+                                            <label for="proxyPassword">
+                                        {{ t('settings.proxySettings.proxyPassword') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyPasswordHelp') }}"></i>
+                                    </label>
                                         </div>
                                         <div class="setting-control">
                                             <div class="api-key-input">
@@ -885,9 +873,6 @@
                                                 </button>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="input-help">
-                                        {{ t('settings.proxySettings.proxyPasswordHelp') }}
                                     </div>
                                 </div>
                             </div>

@@ -631,13 +631,8 @@
 .setting-item {
     display: flex;
     flex-direction: column; /* Changed to column for help text placement */
-    margin-bottom: var(--space-3); /* Increased to provide more spacing between items */
     padding: var(--space-2);
     border-radius: var(--border-radius-xs);
-}
-
-.setting-item:last-child {
-    margin-bottom: 0;
 }
 
 .setting-item:hover {
@@ -663,14 +658,16 @@
     margin-bottom: 0;
     width: 35%; /* Increased from 30% to prevent wrapping */
     flex-shrink: 0; /* Prevent shrinking */
+    display: flex; /* Allow label and info-icon to be on same line */
+    align-items: center;
 }
 
 .setting-info label {
-    display: block;
     font-weight: 400;
     margin-bottom: 0;
     white-space: nowrap; /* Prevent label wrapping */
-    opacity: 0.85;
+    /* Use text color with alpha instead of opacity to avoid affecting tooltip */
+    color: rgba(from var(--text-color) r g b / 0.85);
 }
 
 .setting-control {
@@ -1147,4 +1144,71 @@ input:checked + .toggle-slider:before {
         padding-top: var(--space-2);
         margin-top: var(--space-2);
     }
+}
+
+/* Info icon styling for settings labels - Minimal style */
+.info-icon {
+    color: var(--text-color);
+    margin-left: 6px;
+    font-size: 0.85em;
+    vertical-align: text-bottom;
+    cursor: help;
+    opacity: 0.4;
+    transition: opacity 0.2s ease;
+}
+
+.info-icon:hover {
+    opacity: 0.7;
+}
+
+/* Tooltip using data-tooltip attribute */
+.info-icon[data-tooltip] {
+    position: relative;
+}
+
+.info-icon[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: normal;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    white-space: normal;
+    max-width: 220px;
+    width: max-content;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    pointer-events: none;
+    z-index: 10000;
+    line-height: 1.4;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    text-transform: none;
+}
+
+.info-icon[data-tooltip]:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Fix tooltip overflow on left edge - when icon is near left side of modal */
+.settings-subsection-header .info-icon[data-tooltip]::after {
+    left: 0;
+    transform: translateX(0);
+}
+
+.settings-subsection-header .info-icon[data-tooltip]::before {
+    left: 12px;
+}
+
+/* Dark theme adjustments for tooltip - Fully opaque */
+[data-theme="dark"] .info-icon[data-tooltip]::after {
+    background: rgba(40, 40, 40, 0.95);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
