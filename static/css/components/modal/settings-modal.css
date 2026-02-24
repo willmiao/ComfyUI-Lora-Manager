@@ -20,8 +20,8 @@
 }
 
 .settings-modal {
-    width: 800px;
-    height: 600px;
+    width: 1000px;
+    height: calc(92vh - var(--header-height, 48px));
     max-width: 95vw;
     max-height: 90vh;
     display: flex;
