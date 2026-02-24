@@ -43,11 +43,10 @@
     border-right: 1px solid var(--lora-border);
     padding: var(--space-2);
     overflow-y: auto;
-    background: rgba(0, 0, 0, 0.02);
 }
 
 [data-theme="dark"] .settings-nav {
-    background: rgba(255, 255, 255, 0.02);
+    background: transparent;
 }
 
 .settings-nav-list {
@@ -115,6 +114,7 @@
     gap: var(--space-1);
     margin-bottom: var(--space-2);
     padding-right: 40px; /* Space for close button */
+    padding-left: calc(var(--space-2) + 14px); /* Align with nav item text */
 }
 
 .settings-header .settings-search-wrapper {
@@ -601,7 +601,7 @@
 
 /* Subsection styling */
 .settings-subsection {
-    margin-bottom: var(--space-4);
+    margin-bottom: var(--space-5);
 }
 
 .settings-subsection:last-child {
@@ -617,11 +617,10 @@
 }
 
 .settings-subsection-header h4 {
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 700;
     margin: 0;
     color: var(--text-color);
-    opacity: 0.9;
 }
 
 /* Remove toggle button styles */
@@ -649,31 +648,7 @@
     background: rgba(255, 255, 255, 0.05);
 }
 
-/* Subsection styling */
-.settings-subsection {
-    margin-bottom: var(--space-5);
-}
 
-.settings-subsection:last-child {
-    margin-bottom: 0;
-}
-
-.settings-subsection-header {
-    display: flex;
-    align-items: center;
-    padding: var(--space-2) var(--space-2) var(--space-2) 0;
-    margin-bottom: var(--space-2);
-    border-bottom: 1px solid var(--lora-border);
-}
-
-.settings-subsection-header h4 {
-    font-size: 15px;
-    font-weight: 600;
-    margin: 0;
-    color: var(--text-color);
-    opacity: 0.85;
-    letter-spacing: 0.3px;
-}
 
 /* Control row with label and input together */
 .setting-row {
@@ -692,9 +667,10 @@
 
 .setting-info label {
     display: block;
-    font-weight: 500;
+    font-weight: 400;
     margin-bottom: 0;
     white-space: nowrap; /* Prevent label wrapping */
+    opacity: 0.85;
 }
 
 .setting-control {
