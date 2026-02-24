@@ -53,6 +53,11 @@ class LoraLoaderLM:
         # First process lora_stack if available
         if lora_stack:
             for lora_path, model_strength, clip_strength in lora_stack:
+                # Extract lora name and convert to absolute path
+                # lora_stack stores relative paths, but load_torch_file needs absolute paths
+                lora_name = extract_lora_name(lora_path)
+                absolute_lora_path, trigger_words = get_lora_info_absolute(lora_name)
+                
                 # Apply the LoRA using the appropriate loader
                 if is_nunchaku_model:
                     # Use our custom function for Flux models
@@ -60,12 +65,8 @@ class LoraLoaderLM:
                     # clip remains unchanged for Nunchaku models
                 else:
                     # Use lower-level API to load LoRA directly without folder_paths validation
-                    lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
+                    lora = comfy.utils.load_torch_file(absolute_lora_path, safe_load=True)
                     model, clip = comfy.sd.load_lora_for_models(model, clip, lora, model_strength, clip_strength)
-                
-                # Extract lora name for trigger words lookup
-                lora_name = extract_lora_name(lora_path)
-                _, trigger_words = get_lora_info_absolute(lora_name)
                 
                 all_trigger_words.extend(trigger_words)
                 # Add clip strength to output if different from model strength (except for Nunchaku models)
@@ -196,6 +197,11 @@ class LoraTextLoaderLM:
         # First process lora_stack if available
         if lora_stack:
             for lora_path, model_strength, clip_strength in lora_stack:
+                # Extract lora name and convert to absolute path
+                # lora_stack stores relative paths, but load_torch_file needs absolute paths
+                lora_name = extract_lora_name(lora_path)
+                absolute_lora_path, trigger_words = get_lora_info_absolute(lora_name)
+                
                 # Apply the LoRA using the appropriate loader
                 if is_nunchaku_model:
                     # Use our custom function for Flux models
@@ -203,12 +209,8 @@ class LoraTextLoaderLM:
                     # clip remains unchanged for Nunchaku models
                 else:
                     # Use lower-level API to load LoRA directly without folder_paths validation
-                    lora = comfy.utils.load_torch_file(lora_path, safe_load=True)
+                    lora = comfy.utils.load_torch_file(absolute_lora_path, safe_load=True)
                     model, clip = comfy.sd.load_lora_for_models(model, clip, lora, model_strength, clip_strength)
-                
-                # Extract lora name for trigger words lookup
-                lora_name = extract_lora_name(lora_path)
-                _, trigger_words = get_lora_info_absolute(lora_name)
                 
                 all_trigger_words.extend(trigger_words)
                 # Add clip strength to output if different from model strength (except for Nunchaku models)
