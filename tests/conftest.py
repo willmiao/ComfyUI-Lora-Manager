@@ -74,11 +74,15 @@ sys.modules['folder_paths'] = folder_paths_mock
 # Mock other ComfyUI modules that might be imported
 comfy_mock = MockModule("comfy")
 comfy_mock.utils = MockModule("comfy.utils")
+comfy_mock.utils.load_torch_file = mock.MagicMock(return_value={})
+comfy_mock.sd = MockModule("comfy.sd")
+comfy_mock.sd.load_lora_for_models = mock.MagicMock(return_value=(None, None))
 comfy_mock.model_management = MockModule("comfy.model_management")
 comfy_mock.comfy_types = MockModule("comfy.comfy_types")
 comfy_mock.comfy_types.IO = mock.MagicMock()
 sys.modules['comfy'] = comfy_mock
 sys.modules['comfy.utils'] = comfy_mock.utils
+sys.modules['comfy.sd'] = comfy_mock.sd
 sys.modules['comfy.model_management'] = comfy_mock.model_management
 sys.modules['comfy.comfy_types'] = comfy_mock.comfy_types
 
