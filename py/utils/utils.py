@@ -189,15 +189,23 @@ def calculate_recipe_fingerprint(loras):
         if lora.get("exclude", False):
             continue
             
-        hash_value = lora.get("hash", "").lower()
+        hash_value = lora.get("hash", "")
+        if isinstance(hash_value, str):
+            hash_value = hash_value.lower()
+        else:
+            hash_value = str(hash_value).lower() if hash_value else ""
         if not hash_value and lora.get("modelVersionId"):
             hash_value = str(lora.get("modelVersionId"))
-            
+
         if not hash_value:
             continue
-            
+
         # Normalize strength to 2 decimal places (check both strength and weight fields)
-        strength = round(float(lora.get("strength", lora.get("weight", 1.0))), 2)
+        strength_val = lora.get("strength", lora.get("weight", 1.0))
+        try:
+            strength = round(float(strength_val), 2)
+        except (ValueError, TypeError):
+            strength = 1.0
         
         valid_loras.append((hash_value, strength))
     
