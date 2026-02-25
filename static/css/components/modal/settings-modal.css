@@ -1158,7 +1158,7 @@ input:checked + .toggle-slider:before {
 }
 
 .info-icon:hover {
-    opacity: 0.7;
+    opacity: 1;
 }
 
 /* Tooltip using data-tooltip attribute */
@@ -1170,8 +1170,6 @@ input:checked + .toggle-slider:before {
     content: attr(data-tooltip);
     position: absolute;
     bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
     background: rgba(0, 0, 0, 0.9);
     color: white;
     padding: 8px 12px;
