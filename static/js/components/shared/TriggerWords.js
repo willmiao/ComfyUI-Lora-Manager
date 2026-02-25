@@ -530,7 +530,7 @@ function addNewTriggerWord(word) {
 
     // Validation: Check total number
     const currentTags = tagsContainer.querySelectorAll('.trigger-word-tag');
-    if (currentTags.length >= 30) {
+    if (currentTags.length >= 100) {
         showToast('toast.triggerWords.tooMany', {}, 'error');
         return;
     }
