@@ -476,6 +476,7 @@ export class SettingsManager {
 
         const lowerQuery = query.toLowerCase();
         let firstMatchSection = null;
+        let firstMatchElement = null;
         let matchCount = 0;
 
         sections.forEach(section => {
@@ -483,12 +484,13 @@ export class SettingsManager {
             const hasMatch = sectionText.includes(lowerQuery);
 
             if (hasMatch) {
-                this.highlightSearchMatches(section, lowerQuery);
+                const firstHighlight = this.highlightSearchMatches(section, lowerQuery);
                 matchCount++;
                 
                 // Track first match to auto-switch
                 if (!firstMatchSection) {
                     firstMatchSection = section;
+                    firstMatchElement = firstHighlight;
                 }
             } else {
                 this.removeSearchHighlights(section);
@@ -512,6 +514,16 @@ export class SettingsManager {
                     item.classList.add('active');
                 }
             });
+
+            // Scroll to first match after a short delay to allow section to become visible
+            if (firstMatchElement) {
+                requestAnimationFrame(() => {
+                    firstMatchElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                });
+            }
         }
 
         // Show empty state if no matches found
@@ -545,10 +557,11 @@ export class SettingsManager {
         // Remove existing highlights first
         this.removeSearchHighlights(section);
         
-        if (!query) return;
+        if (!query) return null;
 
         // Highlight in labels and help text
         const textElements = section.querySelectorAll('label, .input-help, h3');
+        let firstHighlight = null;
         
         textElements.forEach(element => {
             const walker = document.createTreeWalker(
@@ -588,6 +601,11 @@ export class SettingsManager {
                     highlight.textContent = text.substring(index, index + query.length);
                     parts.push(highlight);
                     
+                    // Track first highlight for scrolling
+                    if (!firstHighlight) {
+                        firstHighlight = highlight;
+                    }
+                    
                     lastIndex = index + query.length;
                 }
                 
@@ -603,6 +621,8 @@ export class SettingsManager {
                 }
             });
         });
+        
+        return firstHighlight;
     }
 
     removeSearchHighlights(section) {
