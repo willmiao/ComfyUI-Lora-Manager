@@ -255,33 +255,28 @@
             "clipboardFallback": "설정 경로: {{path}}"
         },
         "sections": {
-            "apiConfiguration": "[TODO: Translate] API Configuration",
             "contentFiltering": "콘텐츠 필터링",
             "videoSettings": "비디오 설정",
             "layoutSettings": "레이아웃 설정",
-            "folderSettings": "기본 루트",
-            "priorityTags": "우선순위 태그",
-            "downloadPathTemplates": "다운로드 경로 템플릿",
-            "exampleImages": "예시 이미지",
-            "updateFlags": "업데이트 표시",
-            "autoOrganize": "Auto-organize",
             "misc": "기타",
-            "metadataArchive": "메타데이터 아카이브 데이터베이스",
-            "storageLocation": "설정 위치",
+            "folderSettings": "기본 루트",
+            "downloadPathTemplates": "다운로드 경로 템플릿",
+            "priorityTags": "우선순위 태그",
+            "updateFlags": "업데이트 표시",
+            "exampleImages": "예시 이미지",
+            "autoOrganize": "자동 정리",
+            "metadata": "메타데이터",
             "proxySettings": "프록시 설정"
         },
         "nav": {
             "general": "일반",
             "interface": "인터페이스",
-            "download": "다운로드",
-            "organization": "정리",
-            "system": "시스템",
-            "network": "네트워크"
+            "library": "라이브러리"
         },
         "search": {
-            "placeholder": "[TODO: Translate] Search settings...",
-            "clear": "[TODO: Translate] Clear search",
-            "noResults": "[TODO: Translate] No settings found matching \"{query}\""
+            "placeholder": "설정 검색...",
+            "clear": "검색 지우기",
+            "noResults": "\"{query}\"와 일치하는 설정을 찾을 수 없습니다"
         },
         "storage": {
             "locationLabel": "휴대용 모드",

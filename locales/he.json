@@ -255,33 +255,28 @@
             "clipboardFallback": "נתיב ההגדרות: {{path}}"
         },
         "sections": {
-            "apiConfiguration": "[TODO: Translate] API Configuration",
             "contentFiltering": "סינון תוכן",
             "videoSettings": "הגדרות וידאו",
             "layoutSettings": "הגדרות פריסה",
-            "folderSettings": "תיקיות ברירת מחדל",
-            "priorityTags": "תגיות עדיפות",
-            "downloadPathTemplates": "תבניות נתיב הורדה",
-            "exampleImages": "תמונות דוגמה",
-            "updateFlags": "תגי עדכון",
-            "autoOrganize": "Auto-organize",
             "misc": "שונות",
-            "metadataArchive": "מסד נתונים של ארכיון מטא-דאטה",
-            "storageLocation": "מיקום ההגדרות",
+            "folderSettings": "תיקיות ברירת מחדל",
+            "downloadPathTemplates": "תבניות נתיב הורדה",
+            "priorityTags": "תגיות עדיפות",
+            "updateFlags": "תגי עדכון",
+            "exampleImages": "תמונות דוגמה",
+            "autoOrganize": "ארגון אוטומטי",
+            "metadata": "מטא-נתונים",
             "proxySettings": "הגדרות פרוקסי"
         },
         "nav": {
             "general": "כללי",
             "interface": "ממשק",
-            "download": "הורדה",
-            "organization": "ארגון",
-            "system": "מערכת",
-            "network": "רשת"
+            "library": "ספרייה"
         },
         "search": {
-            "placeholder": "[TODO: Translate] Search settings...",
-            "clear": "[TODO: Translate] Clear search",
-            "noResults": "[TODO: Translate] No settings found matching \"{query}\""
+            "placeholder": "חיפוש בהגדרות...",
+            "clear": "נקה חיפוש",
+            "noResults": "לא נמצאו הגדרות תואמות ל-\"{query}\""
         },
         "storage": {
             "locationLabel": "מצב נייד",

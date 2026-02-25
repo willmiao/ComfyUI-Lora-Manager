@@ -255,28 +255,23 @@
             "clipboardFallback": "Settings path: {{path}}"
         },
         "sections": {
-            "apiConfiguration": "API Configuration",
             "contentFiltering": "Content Filtering",
             "videoSettings": "Video Settings",
             "layoutSettings": "Layout Settings",
+            "misc": "Miscellaneous",
             "folderSettings": "Default Roots",
-            "priorityTags": "Priority Tags",
             "downloadPathTemplates": "Download Path Templates",
-            "exampleImages": "Example Images",
+            "priorityTags": "Priority Tags",
             "updateFlags": "Update Flags",
+            "exampleImages": "Example Images",
             "autoOrganize": "Auto-organize",
-            "misc": "Misc.",
-            "metadataArchive": "Metadata Archive Database",
-            "storageLocation": "Settings Location",
+            "metadata": "Metadata",
             "proxySettings": "Proxy Settings"
         },
         "nav": {
             "general": "General",
             "interface": "Interface",
-            "download": "Download",
-            "organization": "Organization",
-            "system": "System",
-            "network": "Network"
+            "library": "Library"
         },
         "search": {
             "placeholder": "Search settings...",

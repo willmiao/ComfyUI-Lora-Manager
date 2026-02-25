@@ -255,33 +255,28 @@
             "clipboardFallback": "Ruta de configuración: {{path}}"
         },
         "sections": {
-            "apiConfiguration": "[TODO: Translate] API Configuration",
             "contentFiltering": "Filtrado de contenido",
             "videoSettings": "Configuración de video",
             "layoutSettings": "Configuración de diseño",
-            "folderSettings": "Raíces predeterminadas",
-            "priorityTags": "Etiquetas prioritarias",
-            "downloadPathTemplates": "Plantillas de rutas de descarga",
-            "exampleImages": "Imágenes de ejemplo",
-            "updateFlags": "Indicadores de actualización",
-            "autoOrganize": "Auto-organize",
             "misc": "Varios",
-            "metadataArchive": "Base de datos de archivo de metadatos",
-            "storageLocation": "Ubicación de ajustes",
+            "folderSettings": "Raíces predeterminadas",
+            "downloadPathTemplates": "Plantillas de rutas de descarga",
+            "priorityTags": "Etiquetas prioritarias",
+            "updateFlags": "Indicadores de actualización",
+            "exampleImages": "Imágenes de ejemplo",
+            "autoOrganize": "Organización automática",
+            "metadata": "Metadatos",
             "proxySettings": "Configuración de proxy"
         },
         "nav": {
             "general": "General",
             "interface": "Interfaz",
-            "download": "Descarga",
-            "organization": "Organización",
-            "system": "Sistema",
-            "network": "Red"
+            "library": "Biblioteca"
         },
         "search": {
-            "placeholder": "[TODO: Translate] Search settings...",
-            "clear": "[TODO: Translate] Clear search",
-            "noResults": "[TODO: Translate] No settings found matching \"{query}\""
+            "placeholder": "Buscar ajustes...",
+            "clear": "Limpiar búsqueda",
+            "noResults": "No se encontraron ajustes que coincidan con \"{query}\""
         },
         "storage": {
             "locationLabel": "Modo portátil",

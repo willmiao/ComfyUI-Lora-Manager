@@ -255,33 +255,28 @@
             "clipboardFallback": "Einstellungspfad: {{path}}"
         },
         "sections": {
-            "apiConfiguration": "[TODO: Translate] API Configuration",
             "contentFiltering": "Inhaltsfilterung",
             "videoSettings": "Video-Einstellungen",
             "layoutSettings": "Layout-Einstellungen",
-            "folderSettings": "Standard-Roots",
-            "priorityTags": "Prioritäts-Tags",
-            "downloadPathTemplates": "Download-Pfad-Vorlagen",
-            "exampleImages": "Beispielbilder",
-            "updateFlags": "Update-Markierungen",
-            "autoOrganize": "Auto-organize",
             "misc": "Verschiedenes",
-            "metadataArchive": "Metadaten-Archiv-Datenbank",
-            "storageLocation": "Einstellungsort",
+            "folderSettings": "Standard-Roots",
+            "downloadPathTemplates": "Download-Pfad-Vorlagen",
+            "priorityTags": "Prioritäts-Tags",
+            "updateFlags": "Update-Markierungen",
+            "exampleImages": "Beispielbilder",
+            "autoOrganize": "Auto-Organisierung",
+            "metadata": "Metadaten",
             "proxySettings": "Proxy-Einstellungen"
         },
         "nav": {
             "general": "Allgemein",
             "interface": "Oberfläche",
-            "download": "Download",
-            "organization": "Organisation",
-            "system": "System",
-            "network": "Netzwerk"
+            "library": "Bibliothek"
         },
         "search": {
-            "placeholder": "[TODO: Translate] Search settings...",
-            "clear": "[TODO: Translate] Clear search",
-            "noResults": "[TODO: Translate] No settings found matching \"{query}\""
+            "placeholder": "Einstellungen durchsuchen...",
+            "clear": "Suche löschen",
+            "noResults": "Keine Einstellungen gefunden für \"{query}\""
         },
         "storage": {
             "locationLabel": "Portabler Modus",

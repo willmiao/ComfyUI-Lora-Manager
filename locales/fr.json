@@ -255,33 +255,28 @@
             "clipboardFallback": "Chemin des paramètres: {{path}}"
         },
         "sections": {
-            "apiConfiguration": "[TODO: Translate] API Configuration",
             "contentFiltering": "Filtrage du contenu",
             "videoSettings": "Paramètres vidéo",
             "layoutSettings": "Paramètres d'affichage",
-            "folderSettings": "Racines par défaut",
-            "priorityTags": "Étiquettes prioritaires",
-            "downloadPathTemplates": "Modèles de chemin de téléchargement",
-            "exampleImages": "Images d'exemple",
-            "updateFlags": "Indicateurs de mise à jour",
-            "autoOrganize": "Auto-organize",
             "misc": "Divers",
-            "metadataArchive": "Base de données d'archive des métadonnées",
-            "storageLocation": "Emplacement des paramètres",
+            "folderSettings": "Racines par défaut",
+            "downloadPathTemplates": "Modèles de chemin de téléchargement",
+            "priorityTags": "Étiquettes prioritaires",
+            "updateFlags": "Indicateurs de mise à jour",
+            "exampleImages": "Images d'exemple",
+            "autoOrganize": "Organisation automatique",
+            "metadata": "Métadonnées",
             "proxySettings": "Paramètres du proxy"
         },
         "nav": {
             "general": "Général",
             "interface": "Interface",
-            "download": "Téléchargement",
-            "organization": "Organisation",
-            "system": "Système",
-            "network": "Réseau"
+            "library": "Bibliothèque"
         },
         "search": {
-            "placeholder": "[TODO: Translate] Search settings...",
-            "clear": "[TODO: Translate] Clear search",
-            "noResults": "[TODO: Translate] No settings found matching \"{query}\""
+            "placeholder": "Rechercher dans les paramètres...",
+            "clear": "Effacer la recherche",
+            "noResults": "Aucun paramètre trouvé correspondant à \"{query}\""
         },
         "storage": {
             "locationLabel": "Mode portable",

@@ -255,33 +255,28 @@
             "clipboardFallback": "设置路径：{{path}}"
         },
         "sections": {
-            "apiConfiguration": "[TODO: Translate] API Configuration",
             "contentFiltering": "内容过滤",
             "videoSettings": "视频设置",
             "layoutSettings": "布局设置",
-            "folderSettings": "默认根目录",
-            "priorityTags": "优先标签",
-            "downloadPathTemplates": "下载路径模板",
-            "exampleImages": "示例图片",
-            "updateFlags": "更新标记",
-            "autoOrganize": "Auto-organize",
             "misc": "其他",
-            "metadataArchive": "元数据归档数据库",
-            "storageLocation": "设置位置",
+            "folderSettings": "默认根目录",
+            "downloadPathTemplates": "下载路径模板",
+            "priorityTags": "优先标签",
+            "updateFlags": "更新标记",
+            "exampleImages": "示例图片",
+            "autoOrganize": "自动整理",
+            "metadata": "元数据",
             "proxySettings": "代理设置"
         },
         "nav": {
             "general": "通用",
             "interface": "界面",
-            "download": "下载",
-            "organization": "整理",
-            "system": "系统",
-            "network": "网络"
+            "library": "库"
         },
         "search": {
-            "placeholder": "[TODO: Translate] Search settings...",
-            "clear": "[TODO: Translate] Clear search",
-            "noResults": "[TODO: Translate] No settings found matching \"{query}\""
+            "placeholder": "搜索设置...",
+            "clear": "清除搜索",
+            "noResults": "未找到匹配 \"{query}\" 的设置"
         },
         "storage": {
             "locationLabel": "便携模式",

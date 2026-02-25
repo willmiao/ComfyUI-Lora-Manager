@@ -35,10 +35,7 @@
                     <li class="settings-nav-group">
                         <button type="button" class="settings-nav-item active" data-section="general">{{ t('settings.nav.general') }}</button>
                         <button type="button" class="settings-nav-item" data-section="interface">{{ t('settings.nav.interface') }}</button>
-                        <button type="button" class="settings-nav-item" data-section="download">{{ t('settings.nav.download') }}</button>
-                        <button type="button" class="settings-nav-item" data-section="organization">{{ t('settings.nav.organization') }}</button>
-                        <button type="button" class="settings-nav-item" data-section="system">{{ t('settings.nav.system') }}</button>
-                        <button type="button" class="settings-nav-item" data-section="network">{{ t('settings.nav.network') }}</button>
+                        <button type="button" class="settings-nav-item" data-section="library">{{ t('settings.nav.library') }}</button>
                     </li>
                 </ul>
             </nav>
@@ -75,53 +72,167 @@
                             </div>
                         </div>
                         
-                        <!-- API Configuration -->
-                        <div class="settings-subsection">
-                            <div class="settings-subsection-header">
-                                <h4>{{ t('settings.sections.apiConfiguration') }}</h4>
+                        <!-- Storage Location -->
+                        <div class="setting-item">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <label for="usePortableSettings">
+                                        {{ t('settings.storage.locationLabel') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.storage.locationHelp') }}"></i>
+                                    </label>
+                                </div>
+                                <div class="setting-control">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="usePortableSettings" {% if settings.get('use_portable_settings', False) %}checked{% endif %}
+                                               onchange="settingsManager.saveToggleSetting('usePortableSettings', 'use_portable_settings')">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
                             </div>
-                            <div class="setting-item api-key-item">
-                                <div class="setting-row">
-                                    <div class="setting-info">
-                                        <label for="civitaiApiKey">{{ t('settings.civitaiApiKey') }}</label>
-                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.civitaiApiKeyHelp') }}"></i>
-                                    </div>
-                                    <div class="setting-control">
-                                        <div class="api-key-input">
-                                            <input type="password" 
-                                                id="civitaiApiKey" 
-                                                placeholder="{{ t('settings.civitaiApiKeyPlaceholder') }}"
-                                                value="{{ settings.get('civitai_api_key', '') }}"
-                                                onblur="settingsManager.saveInputSetting('civitaiApiKey', 'civitai_api_key')"
-                                                onkeydown="if(event.key === 'Enter') { this.blur(); }" />
-                                            <button class="toggle-visibility">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </div>
+                        </div>
+                        
+                        <!-- API Configuration -->
+                        <div class="setting-item api-key-item">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <label for="civitaiApiKey">{{ t('settings.civitaiApiKey') }}</label>
+                                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.civitaiApiKeyHelp') }}"></i>
+                                </div>
+                                <div class="setting-control">
+                                    <div class="api-key-input">
+                                        <input type="password" 
+                                            id="civitaiApiKey" 
+                                            placeholder="{{ t('settings.civitaiApiKeyPlaceholder') }}"
+                                            value="{{ settings.get('civitai_api_key', '') }}"
+                                            onblur="settingsManager.saveInputSetting('civitaiApiKey', 'civitai_api_key')"
+                                            onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                        <button class="toggle-visibility">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Storage Location -->
+                        <!-- Proxy Settings -->
                         <div class="settings-subsection">
                             <div class="settings-subsection-header">
-                                <h4>{{ t('settings.sections.storageLocation') }}</h4>
+                                <h4>{{ t('settings.sections.proxySettings') }}</h4>
                             </div>
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="usePortableSettings">
-                                            {{ t('settings.storage.locationLabel') }}
-                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.storage.locationHelp') }}"></i>
-                                        </label>
+                                        <label for="proxyEnabled">
+                                        {{ t('settings.proxySettings.enableProxy') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.enableProxyHelp') }}"></i>
+                                    </label>
                                     </div>
                                     <div class="setting-control">
                                         <label class="toggle-switch">
-                                            <input type="checkbox" id="usePortableSettings" {% if settings.get('use_portable_settings', False) %}checked{% endif %}
-                                                   onchange="settingsManager.saveToggleSetting('usePortableSettings', 'use_portable_settings')">
+                                            <input type="checkbox" id="proxyEnabled"
+                                                   onchange="settingsManager.saveToggleSetting('proxyEnabled', 'proxy_enabled')">
                                             <span class="toggle-slider"></span>
                                         </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="proxySettingsGroup" class="proxy-settings-group" style="display: none;">
+                                <div class="setting-item">
+                                    <div class="setting-row">
+                                        <div class="setting-info">
+                                            <label for="proxyType">
+                                        {{ t('settings.proxySettings.proxyType') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyTypeHelp') }}"></i>
+                                    </label>
+                                        </div>
+                                        <div class="setting-control select-control">
+                                            <select id="proxyType" onchange="settingsManager.saveSelectSetting('proxyType', 'proxy_type')">
+                                                <option value="http">HTTP</option>
+                                                <option value="https">HTTPS</option>
+                                                <option value="socks4">SOCKS4</option>
+                                                <option value="socks5">SOCKS5</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-row">
+                                        <div class="setting-info">
+                                            <label for="proxyHost">
+                                        {{ t('settings.proxySettings.proxyHost') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyHostHelp') }}"></i>
+                                    </label>
+                                        </div>
+                                        <div class="setting-control">
+                                            <div class="text-input-wrapper">
+                                                <input type="text" id="proxyHost" 
+                                                       placeholder="{{ t('settings.proxySettings.proxyHostPlaceholder') }}"
+                                                       onblur="settingsManager.saveInputSetting('proxyHost', 'proxy_host')"
+                                                       onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-row">
+                                        <div class="setting-info">
+                                            <label for="proxyPort">
+                                        {{ t('settings.proxySettings.proxyPort') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyPortHelp') }}"></i>
+                                    </label>
+                                        </div>
+                                        <div class="setting-control">
+                                            <div class="text-input-wrapper">
+                                                <input type="text" id="proxyPort" 
+                                                       placeholder="{{ t('settings.proxySettings.proxyPortPlaceholder') }}"
+                                                       onblur="settingsManager.saveInputSetting('proxyPort', 'proxy_port')"
+                                                       onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-row">
+                                        <div class="setting-info">
+                                            <label for="proxyUsername">
+                                        {{ t('settings.proxySettings.proxyUsername') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyUsernameHelp') }}"></i>
+                                    </label>
+                                        </div>
+                                        <div class="setting-control">
+                                            <div class="text-input-wrapper">
+                                                <input type="text" id="proxyUsername" 
+                                                       placeholder="{{ t('settings.proxySettings.proxyUsernamePlaceholder') }}"
+                                                       onblur="settingsManager.saveInputSetting('proxyUsername', 'proxy_username')"
+                                                       onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-row">
+                                        <div class="setting-info">
+                                            <label for="proxyPassword">
+                                        {{ t('settings.proxySettings.proxyPassword') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyPasswordHelp') }}"></i>
+                                    </label>
+                                        </div>
+                                        <div class="setting-control">
+                                            <div class="api-key-input">
+                                                <input type="password" id="proxyPassword" 
+                                                       placeholder="{{ t('settings.proxySettings.proxyPasswordPlaceholder') }}"
+                                                       onblur="settingsManager.saveInputSetting('proxyPassword', 'proxy_password')"
+                                                       onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                                <button class="toggle-visibility">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -295,10 +406,34 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Miscellaneous -->
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.misc') }}</h4>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="includeTriggerWords">
+                                        {{ t('settings.misc.includeTriggerWords') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.misc.includeTriggerWordsHelp') }}"></i>
+                                    </label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="includeTriggerWords"
+                                                   onchange="settingsManager.saveToggleSetting('includeTriggerWords', 'include_trigger_words')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
-                    <!-- Section 3: Download -->
-                    <div id="section-download" class="settings-section" data-section="download">
+                    <!-- Section 3: Library -->
+                    <div id="section-library" class="settings-section" data-section="library">
                         <!-- Folder Settings -->
                         <div class="settings-subsection">
                             <div class="settings-subsection-header">
@@ -643,46 +778,49 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Section 4: Organization -->
-                    <div id="section-organization" class="settings-section" data-section="organization">
-                        <!-- Auto-organize Exclusions -->
-                        <div class="setting-item auto-organize-exclusions-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="autoOrganizeExclusions">
-                                        {{ t('settings.autoOrganizeExclusions.label') }}
-                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.autoOrganizeExclusions.help') }}"></i>
-                                    </label>
-                                </div>
-                            </div>
-                            <textarea id="autoOrganizeExclusions" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.autoOrganizeExclusions.placeholder') }}"></textarea>
-                            <div class="settings-input-error-message" id="autoOrganizeExclusionsError"></div>
-                        </div>
                         
-                        <!-- Metadata Refresh Skip Paths -->
-                        <div class="setting-item">
-                            <div class="setting-row">
-                                <div class="setting-info">
-                                    <label for="metadataRefreshSkipPaths">
-                                        {{ t('settings.metadataRefreshSkipPaths.label') }}
-                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.metadataRefreshSkipPaths.help') }}"></i>
-                                    </label>
-                                </div>
-                            </div>
-                            <textarea id="metadataRefreshSkipPaths" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.metadataRefreshSkipPaths.placeholder') }}"></textarea>
-                            <div class="settings-input-error-message" id="metadataRefreshSkipPathsError"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- Section 5: System -->
-                    <div id="section-system" class="settings-section" data-section="system">
-                        <!-- Metadata Archive -->
+                        <!-- Auto-organize -->
                         <div class="settings-subsection">
                             <div class="settings-subsection-header">
-                                <h4>{{ t('settings.sections.metadataArchive') }}</h4>
+                                <h4>{{ t('settings.sections.autoOrganize') }}</h4>
                             </div>
+                            
+                            <!-- Auto-organize Exclusions -->
+                            <div class="setting-item auto-organize-exclusions-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="autoOrganizeExclusions">
+                                            {{ t('settings.autoOrganizeExclusions.label') }}
+                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.autoOrganizeExclusions.help') }}"></i>
+                                        </label>
+                                    </div>
+                                </div>
+                                <textarea id="autoOrganizeExclusions" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.autoOrganizeExclusions.placeholder') }}"></textarea>
+                                <div class="settings-input-error-message" id="autoOrganizeExclusionsError"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Metadata -->
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.metadata') }}</h4>
+                            </div>
+                            
+                            <!-- Metadata Refresh Skip Paths -->
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="metadataRefreshSkipPaths">
+                                            {{ t('settings.metadataRefreshSkipPaths.label') }}
+                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.metadataRefreshSkipPaths.help') }}"></i>
+                                        </label>
+                                    </div>
+                                </div>
+                                <textarea id="metadataRefreshSkipPaths" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.metadataRefreshSkipPaths.placeholder') }}"></textarea>
+                                <div class="settings-input-error-message" id="metadataRefreshSkipPathsError"></div>
+                            </div>
+                            
+                            <!-- Metadata Archive -->
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
@@ -726,159 +864,7 @@
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Misc -->
-                        <div class="settings-subsection">
-                            <div class="settings-subsection-header">
-                                <h4>{{ t('settings.sections.misc') }}</h4>
-                            </div>
-                            <div class="setting-item">
-                                <div class="setting-row">
-                                    <div class="setting-info">
-                                        <label for="includeTriggerWords">
-                                        {{ t('settings.misc.includeTriggerWords') }}
-                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.misc.includeTriggerWordsHelp') }}"></i>
-                                    </label>
-                                    </div>
-                                    <div class="setting-control">
-                                        <label class="toggle-switch">
-                                            <input type="checkbox" id="includeTriggerWords"
-                                                   onchange="settingsManager.saveToggleSetting('includeTriggerWords', 'include_trigger_words')">
-                                            <span class="toggle-slider"></span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
-                    
-                    <!-- Section 6: Network -->
-                    <div id="section-network" class="settings-section" data-section="network">
-                        <!-- Proxy Settings -->
-                        <div class="settings-subsection">
-                            <div class="settings-subsection-header">
-                                <h4>{{ t('settings.sections.proxySettings') }}</h4>
-                            </div>
-                            <div class="setting-item">
-                                <div class="setting-row">
-                                    <div class="setting-info">
-                                        <label for="proxyEnabled">
-                                        {{ t('settings.proxySettings.enableProxy') }}
-                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.enableProxyHelp') }}"></i>
-                                    </label>
-                                    </div>
-                                    <div class="setting-control">
-                                        <label class="toggle-switch">
-                                            <input type="checkbox" id="proxyEnabled"
-                                                   onchange="settingsManager.saveToggleSetting('proxyEnabled', 'proxy_enabled')">
-                                            <span class="toggle-slider"></span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div id="proxySettingsGroup" class="proxy-settings-group" style="display: none;">
-                                <div class="setting-item">
-                                    <div class="setting-row">
-                                        <div class="setting-info">
-                                            <label for="proxyType">
-                                        {{ t('settings.proxySettings.proxyType') }}
-                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyTypeHelp') }}"></i>
-                                    </label>
-                                        </div>
-                                        <div class="setting-control select-control">
-                                            <select id="proxyType" onchange="settingsManager.saveSelectSetting('proxyType', 'proxy_type')">
-                                                <option value="http">HTTP</option>
-                                                <option value="https">HTTPS</option>
-                                                <option value="socks4">SOCKS4</option>
-                                                <option value="socks5">SOCKS5</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="setting-item">
-                                    <div class="setting-row">
-                                        <div class="setting-info">
-                                            <label for="proxyHost">
-                                        {{ t('settings.proxySettings.proxyHost') }}
-                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyHostHelp') }}"></i>
-                                    </label>
-                                        </div>
-                                        <div class="setting-control">
-                                            <div class="text-input-wrapper">
-                                                <input type="text" id="proxyHost" 
-                                                       placeholder="{{ t('settings.proxySettings.proxyHostPlaceholder') }}"
-                                                       onblur="settingsManager.saveInputSetting('proxyHost', 'proxy_host')"
-                                                       onkeydown="if(event.key === 'Enter') { this.blur(); }" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="setting-item">
-                                    <div class="setting-row">
-                                        <div class="setting-info">
-                                            <label for="proxyPort">
-                                        {{ t('settings.proxySettings.proxyPort') }}
-                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyPortHelp') }}"></i>
-                                    </label>
-                                        </div>
-                                        <div class="setting-control">
-                                            <div class="text-input-wrapper">
-                                                <input type="text" id="proxyPort" 
-                                                       placeholder="{{ t('settings.proxySettings.proxyPortPlaceholder') }}"
-                                                       onblur="settingsManager.saveInputSetting('proxyPort', 'proxy_port')"
-                                                       onkeydown="if(event.key === 'Enter') { this.blur(); }" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="setting-item">
-                                    <div class="setting-row">
-                                        <div class="setting-info">
-                                            <label for="proxyUsername">
-                                        {{ t('settings.proxySettings.proxyUsername') }}
-                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyUsernameHelp') }}"></i>
-                                    </label>
-                                        </div>
-                                        <div class="setting-control">
-                                            <div class="text-input-wrapper">
-                                                <input type="text" id="proxyUsername" 
-                                                       placeholder="{{ t('settings.proxySettings.proxyUsernamePlaceholder') }}"
-                                                       onblur="settingsManager.saveInputSetting('proxyUsername', 'proxy_username')"
-                                                       onkeydown="if(event.key === 'Enter') { this.blur(); }" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="setting-item">
-                                    <div class="setting-row">
-                                        <div class="setting-info">
-                                            <label for="proxyPassword">
-                                        {{ t('settings.proxySettings.proxyPassword') }}
-                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyPasswordHelp') }}"></i>
-                                    </label>
-                                        </div>
-                                        <div class="setting-control">
-                                            <div class="api-key-input">
-                                                <input type="password" id="proxyPassword" 
-                                                       placeholder="{{ t('settings.proxySettings.proxyPasswordPlaceholder') }}"
-                                                       onblur="settingsManager.saveInputSetting('proxyPassword', 'proxy_password')"
-                                                       onkeydown="if(event.key === 'Enter') { this.blur(); }" />
-                                                <button class="toggle-visibility">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
                 </div>
             </div>
         </div>

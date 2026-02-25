@@ -255,33 +255,28 @@
             "clipboardFallback": "設定パス: {{path}}"
         },
         "sections": {
-            "apiConfiguration": "[TODO: Translate] API Configuration",
             "contentFiltering": "コンテンツフィルタリング",
             "videoSettings": "動画設定",
             "layoutSettings": "レイアウト設定",
-            "folderSettings": "デフォルトルート",
-            "priorityTags": "優先タグ",
-            "downloadPathTemplates": "ダウンロードパステンプレート",
-            "exampleImages": "例画像",
-            "updateFlags": "アップデートフラグ",
-            "autoOrganize": "Auto-organize",
             "misc": "その他",
-            "metadataArchive": "メタデータアーカイブデータベース",
-            "storageLocation": "設定の場所",
+            "folderSettings": "デフォルトルート",
+            "downloadPathTemplates": "ダウンロードパステンプレート",
+            "priorityTags": "優先タグ",
+            "updateFlags": "アップデートフラグ",
+            "exampleImages": "例画像",
+            "autoOrganize": "自動整理",
+            "metadata": "メタデータ",
             "proxySettings": "プロキシ設定"
         },
         "nav": {
             "general": "一般",
             "interface": "インターフェース",
-            "download": "ダウンロード",
-            "organization": "整理",
-            "system": "システム",
-            "network": "ネットワーク"
+            "library": "ライブラリ"
         },
         "search": {
-            "placeholder": "[TODO: Translate] Search settings...",
-            "clear": "[TODO: Translate] Clear search",
-            "noResults": "[TODO: Translate] No settings found matching \"{query}\""
+            "placeholder": "設定を検索...",
+            "clear": "検索をクリア",
+            "noResults": "\"{query}\" に一致する設定が見つかりません"
         },
         "storage": {
             "locationLabel": "ポータブルモード",

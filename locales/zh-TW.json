@@ -255,33 +255,28 @@
             "clipboardFallback": "設定路徑：{{path}}"
         },
         "sections": {
-            "apiConfiguration": "[TODO: Translate] API Configuration",
             "contentFiltering": "內容過濾",
             "videoSettings": "影片設定",
             "layoutSettings": "版面設定",
-            "folderSettings": "預設根目錄",
-            "priorityTags": "優先標籤",
-            "downloadPathTemplates": "下載路徑範本",
-            "exampleImages": "範例圖片",
-            "updateFlags": "更新標記",
-            "autoOrganize": "Auto-organize",
             "misc": "其他",
-            "metadataArchive": "中繼資料封存資料庫",
-            "storageLocation": "設定位置",
+            "folderSettings": "預設根目錄",
+            "downloadPathTemplates": "下載路徑範本",
+            "priorityTags": "優先標籤",
+            "updateFlags": "更新標記",
+            "exampleImages": "範例圖片",
+            "autoOrganize": "自動整理",
+            "metadata": "中繼資料",
             "proxySettings": "代理設定"
         },
         "nav": {
             "general": "通用",
             "interface": "介面",
-            "download": "下載",
-            "organization": "整理",
-            "system": "系統",
-            "network": "網路"
+            "library": "模型庫"
         },
         "search": {
-            "placeholder": "[TODO: Translate] Search settings...",
-            "clear": "[TODO: Translate] Clear search",
-            "noResults": "[TODO: Translate] No settings found matching \"{query}\""
+            "placeholder": "搜尋設定...",
+            "clear": "清除搜尋",
+            "noResults": "未找到符合 \"{query}\" 的設定"
         },
         "storage": {
             "locationLabel": "可攜式模式",

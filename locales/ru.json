@@ -255,33 +255,28 @@
             "clipboardFallback": "Путь настроек: {{path}}"
         },
         "sections": {
-            "apiConfiguration": "[TODO: Translate] API Configuration",
             "contentFiltering": "Фильтрация контента",
             "videoSettings": "Настройки видео",
             "layoutSettings": "Настройки макета",
-            "folderSettings": "Корневые папки",
-            "priorityTags": "Приоритетные теги",
-            "downloadPathTemplates": "Шаблоны путей загрузки",
-            "exampleImages": "Примеры изображений",
-            "updateFlags": "Метки обновлений",
-            "autoOrganize": "Auto-organize",
             "misc": "Разное",
-            "metadataArchive": "Архив метаданных",
-            "storageLocation": "Расположение настроек",
+            "folderSettings": "Корневые папки",
+            "downloadPathTemplates": "Шаблоны путей загрузки",
+            "priorityTags": "Приоритетные теги",
+            "updateFlags": "Метки обновлений",
+            "exampleImages": "Примеры изображений",
+            "autoOrganize": "Автоорганизация",
+            "metadata": "Метаданные",
             "proxySettings": "Настройки прокси"
         },
         "nav": {
             "general": "Общее",
             "interface": "Интерфейс",
-            "download": "Загрузка",
-            "organization": "Организация",
-            "system": "Система",
-            "network": "Сеть"
+            "library": "Библиотека"
         },
         "search": {
-            "placeholder": "[TODO: Translate] Search settings...",
-            "clear": "[TODO: Translate] Clear search",
-            "noResults": "[TODO: Translate] No settings found matching \"{query}\""
+            "placeholder": "Поиск в настройках...",
+            "clear": "Очистить поиск",
+            "noResults": "Настройки, соответствующие \"{query}\", не найдены"
         },
         "storage": {
             "locationLabel": "Портативный режим",
