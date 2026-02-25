@@ -54,6 +54,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "base_model_path_mappings": {},
     "download_path_templates": {},
     "folder_paths": {},
+    "extra_folder_paths": {},
     "example_images_path": "",
     "optimize_example_images": True,
     "auto_download_example_images": False,
@@ -402,6 +403,7 @@ class SettingsManager:
         active_library = libraries.get(active_name, {})
         folder_paths = copy.deepcopy(active_library.get("folder_paths", {}))
         self.settings["folder_paths"] = folder_paths
+        self.settings["extra_folder_paths"] = copy.deepcopy(active_library.get("extra_folder_paths", {}))
         self.settings["default_lora_root"] = active_library.get("default_lora_root", "")
         self.settings["default_checkpoint_root"] = active_library.get("default_checkpoint_root", "")
         self.settings["default_unet_root"] = active_library.get("default_unet_root", "")
@@ -417,6 +419,7 @@ class SettingsManager:
         self,
         *,
         folder_paths: Optional[Mapping[str, Iterable[str]]] = None,
+        extra_folder_paths: Optional[Mapping[str, Iterable[str]]] = None,
         default_lora_root: Optional[str] = None,
         default_checkpoint_root: Optional[str] = None,
         default_unet_root: Optional[str] = None,
@@ -431,6 +434,11 @@ class SettingsManager:
             payload["folder_paths"] = self._normalize_folder_paths(folder_paths)
         else:
             payload.setdefault("folder_paths", {})
+
+        if extra_folder_paths is not None:
+            payload["extra_folder_paths"] = self._normalize_folder_paths(extra_folder_paths)
+        else:
+            payload.setdefault("extra_folder_paths", {})
 
         if default_lora_root is not None:
             payload["default_lora_root"] = default_lora_root
@@ -546,6 +554,7 @@ class SettingsManager:
         self,
         *,
         folder_paths: Optional[Mapping[str, Iterable[str]]] = None,
+        extra_folder_paths: Optional[Mapping[str, Iterable[str]]] = None,
         default_lora_root: Optional[str] = None,
         default_checkpoint_root: Optional[str] = None,
         default_unet_root: Optional[str] = None,
@@ -563,6 +572,12 @@ class SettingsManager:
             normalized_paths = self._normalize_folder_paths(folder_paths)
             if library.get("folder_paths") != normalized_paths:
                 library["folder_paths"] = normalized_paths
+                changed = True
+
+        if extra_folder_paths is not None:
+            normalized_extra_paths = self._normalize_folder_paths(extra_folder_paths)
+            if library.get("extra_folder_paths") != normalized_extra_paths:
+                library["extra_folder_paths"] = normalized_extra_paths
                 changed = True
 
         if default_lora_root is not None and library.get("default_lora_root") != default_lora_root:
@@ -816,12 +831,14 @@ class SettingsManager:
         defaults['download_path_templates'] = {}
         defaults['priority_tags'] = DEFAULT_PRIORITY_TAG_CONFIG.copy()
         defaults.setdefault('folder_paths', {})
+        defaults.setdefault('extra_folder_paths', {})
         defaults['auto_organize_exclusions'] = []
         defaults['metadata_refresh_skip_paths'] = []
 
         library_name = defaults.get("active_library") or "default"
         default_library = self._build_library_payload(
             folder_paths=defaults.get("folder_paths", {}),
+            extra_folder_paths=defaults.get("extra_folder_paths", {}),
             default_lora_root=defaults.get("default_lora_root"),
             default_checkpoint_root=defaults.get("default_checkpoint_root"),
             default_embedding_root=defaults.get("default_embedding_root"),
@@ -927,6 +944,35 @@ class SettingsManager:
             self._save_settings()
         return skip_paths
 
+    def get_extra_folder_paths(self) -> Dict[str, List[str]]:
+        """Get extra folder paths for the active library.
+
+        These paths are only used by LoRA Manager and not shared with ComfyUI.
+        Returns a dictionary with keys like 'loras', 'checkpoints', 'embeddings', 'unet'.
+        """
+        extra_paths = self.settings.get("extra_folder_paths", {})
+        if not isinstance(extra_paths, dict):
+            return {}
+        return self._normalize_folder_paths(extra_paths)
+
+    def update_extra_folder_paths(
+        self,
+        extra_folder_paths: Mapping[str, Iterable[str]],
+    ) -> None:
+        """Update extra folder paths for the active library.
+
+        These paths are only used by LoRA Manager and not shared with ComfyUI.
+        Validates that extra paths don't overlap with other libraries' paths.
+        """
+        active_name = self.get_active_library_name()
+        self._validate_folder_paths(active_name, extra_folder_paths)
+
+        normalized_paths = self._normalize_folder_paths(extra_folder_paths)
+        self.settings["extra_folder_paths"] = normalized_paths
+        self._update_active_library_entry(extra_folder_paths=normalized_paths)
+        self._save_settings()
+        logger.info("Updated extra folder paths for library '%s'", active_name)
+
     def get_startup_messages(self) -> List[Dict[str, Any]]:
         return [message.copy() for message in self._startup_messages]
 
@@ -973,6 +1019,8 @@ class SettingsManager:
             self._prepare_portable_switch(value)
         if key == 'folder_paths' and isinstance(value, Mapping):
             self._update_active_library_entry(folder_paths=value)  # type: ignore[arg-type]
+        elif key == 'extra_folder_paths' and isinstance(value, Mapping):
+            self._update_active_library_entry(extra_folder_paths=value)  # type: ignore[arg-type]
         elif key == 'default_lora_root':
             self._update_active_library_entry(default_lora_root=str(value))
         elif key == 'default_checkpoint_root':
@@ -1284,6 +1332,7 @@ class SettingsManager:
         library_name: str,
         *,
         folder_paths: Optional[Mapping[str, Iterable[str]]] = None,
+        extra_folder_paths: Optional[Mapping[str, Iterable[str]]] = None,
         default_lora_root: Optional[str] = None,
         default_checkpoint_root: Optional[str] = None,
         default_unet_root: Optional[str] = None,
@@ -1300,11 +1349,15 @@ class SettingsManager:
         if folder_paths is not None:
             self._validate_folder_paths(name, folder_paths)
 
+        if extra_folder_paths is not None:
+            self._validate_folder_paths(name, extra_folder_paths)
+
         libraries = self.settings.setdefault("libraries", {})
         existing = libraries.get(name, {})
 
         payload = self._build_library_payload(
             folder_paths=folder_paths if folder_paths is not None else existing.get("folder_paths"),
+            extra_folder_paths=extra_folder_paths if extra_folder_paths is not None else existing.get("extra_folder_paths"),
             default_lora_root=default_lora_root if default_lora_root is not None else existing.get("default_lora_root"),
             default_checkpoint_root=(
                 default_checkpoint_root
@@ -1343,6 +1396,7 @@ class SettingsManager:
         library_name: str,
         *,
         folder_paths: Mapping[str, Iterable[str]],
+        extra_folder_paths: Optional[Mapping[str, Iterable[str]]] = None,
         default_lora_root: str = "",
         default_checkpoint_root: str = "",
         default_unet_root: str = "",
@@ -1359,6 +1413,7 @@ class SettingsManager:
         return self.upsert_library(
             library_name,
             folder_paths=folder_paths,
+            extra_folder_paths=extra_folder_paths,
             default_lora_root=default_lora_root,
             default_checkpoint_root=default_checkpoint_root,
             default_unet_root=default_unet_root,
@@ -1417,6 +1472,7 @@ class SettingsManager:
         self,
         folder_paths: Mapping[str, Iterable[str]],
         *,
+        extra_folder_paths: Optional[Mapping[str, Iterable[str]]] = None,
         default_lora_root: Optional[str] = None,
         default_checkpoint_root: Optional[str] = None,
         default_unet_root: Optional[str] = None,
@@ -1428,6 +1484,7 @@ class SettingsManager:
         self.upsert_library(
             active_name,
             folder_paths=folder_paths,
+            extra_folder_paths=extra_folder_paths,
             default_lora_root=default_lora_root,
             default_checkpoint_root=default_checkpoint_root,
             default_unet_root=default_unet_root,

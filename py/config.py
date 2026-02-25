@@ -91,6 +91,11 @@ class Config:
         self.embeddings_roots = None
         self.base_models_roots = self._init_checkpoint_paths()
         self.embeddings_roots = self._init_embedding_paths()
+        # Extra paths (only for LoRA Manager, not shared with ComfyUI)
+        self.extra_loras_roots: List[str] = []
+        self.extra_checkpoints_roots: List[str] = []
+        self.extra_unet_roots: List[str] = []
+        self.extra_embeddings_roots: List[str] = []
         # Scan symbolic links during initialization
         self._initialize_symlink_mappings()
         
@@ -250,6 +255,11 @@ class Config:
         roots.extend(self.loras_roots or [])
         roots.extend(self.base_models_roots or [])
         roots.extend(self.embeddings_roots or [])
+        # Include extra paths for scanning symlinks
+        roots.extend(self.extra_loras_roots or [])
+        roots.extend(self.extra_checkpoints_roots or [])
+        roots.extend(self.extra_unet_roots or [])
+        roots.extend(self.extra_embeddings_roots or [])
         return roots
 
     def _build_symlink_fingerprint(self) -> Dict[str, object]:
@@ -570,6 +580,15 @@ class Config:
             preview_roots.update(self._expand_preview_root(root))
         for root in self.embeddings_roots or []:
             preview_roots.update(self._expand_preview_root(root))
+        # Include extra paths for preview access
+        for root in self.extra_loras_roots or []:
+            preview_roots.update(self._expand_preview_root(root))
+        for root in self.extra_checkpoints_roots or []:
+            preview_roots.update(self._expand_preview_root(root))
+        for root in self.extra_unet_roots or []:
+            preview_roots.update(self._expand_preview_root(root))
+        for root in self.extra_embeddings_roots or []:
+            preview_roots.update(self._expand_preview_root(root))
 
         for target, link in self._path_mappings.items():
             preview_roots.update(self._expand_preview_root(target))
@@ -577,11 +596,11 @@ class Config:
 
         self._preview_root_paths = {path for path in preview_roots if path.is_absolute()}
         logger.debug(
-            "Preview roots rebuilt: %d paths from %d lora roots, %d checkpoint roots, %d embedding roots, %d symlink mappings",
+            "Preview roots rebuilt: %d paths from %d lora roots (%d extra), %d checkpoint roots (%d extra), %d embedding roots (%d extra), %d symlink mappings",
             len(self._preview_root_paths),
-            len(self.loras_roots or []),
-            len(self.base_models_roots or []),
-            len(self.embeddings_roots or []),
+            len(self.loras_roots or []), len(self.extra_loras_roots or []),
+            len(self.base_models_roots or []), len(self.extra_checkpoints_roots or []),
+            len(self.embeddings_roots or []), len(self.extra_embeddings_roots or []),
             len(self._path_mappings),
         )
 
@@ -692,7 +711,11 @@ class Config:
 
         return unique_paths
 
-    def _apply_library_paths(self, folder_paths: Mapping[str, Iterable[str]]) -> None:
+    def _apply_library_paths(
+        self,
+        folder_paths: Mapping[str, Iterable[str]],
+        extra_folder_paths: Optional[Mapping[str, Iterable[str]]] = None,
+    ) -> None:
         self._path_mappings.clear()
         self._preview_root_paths = set()
 
@@ -704,6 +727,20 @@ class Config:
         self.loras_roots = self._prepare_lora_paths(lora_paths)
         self.base_models_roots = self._prepare_checkpoint_paths(checkpoint_paths, unet_paths)
         self.embeddings_roots = self._prepare_embedding_paths(embedding_paths)
+
+        # Process extra paths (only for LoRA Manager, not shared with ComfyUI)
+        extra_paths = extra_folder_paths or {}
+        extra_lora_paths = extra_paths.get('loras', []) or []
+        extra_checkpoint_paths = extra_paths.get('checkpoints', []) or []
+        extra_unet_paths = extra_paths.get('unet', []) or []
+        extra_embedding_paths = extra_paths.get('embeddings', []) or []
+
+        self.extra_loras_roots = self._prepare_lora_paths(extra_lora_paths)
+        self.extra_checkpoints_roots = self._prepare_checkpoint_paths(extra_checkpoint_paths, extra_unet_paths)
+        self.extra_embeddings_roots = self._prepare_embedding_paths(extra_embedding_paths)
+        # extra_unet_roots is set by _prepare_checkpoint_paths (access unet_roots before it's reset)
+        unet_roots_value: List[str] = getattr(self, 'unet_roots', None) or []
+        self.extra_unet_roots = unet_roots_value
 
         self._initialize_symlink_mappings()
 
@@ -864,16 +901,19 @@ class Config:
     def apply_library_settings(self, library_config: Mapping[str, object]) -> None:
         """Update runtime paths to match the provided library configuration."""
         folder_paths = library_config.get('folder_paths') if isinstance(library_config, Mapping) else {}
+        extra_folder_paths = library_config.get('extra_folder_paths') if isinstance(library_config, Mapping) else None
         if not isinstance(folder_paths, Mapping):
             folder_paths = {}
+        if not isinstance(extra_folder_paths, Mapping):
+            extra_folder_paths = None
 
-        self._apply_library_paths(folder_paths)
+        self._apply_library_paths(folder_paths, extra_folder_paths)
 
         logger.info(
-            "Applied library settings with %d lora roots, %d checkpoint roots, and %d embedding roots",
-            len(self.loras_roots or []),
-            len(self.base_models_roots or []),
-            len(self.embeddings_roots or []),
+            "Applied library settings with %d lora roots (%d extra), %d checkpoint roots (%d extra), and %d embedding roots (%d extra)",
+            len(self.loras_roots or []), len(self.extra_loras_roots or []),
+            len(self.base_models_roots or []), len(self.extra_checkpoints_roots or []),
+            len(self.embeddings_roots or []), len(self.extra_embeddings_roots or []),
         )
 
     def get_library_registry_snapshot(self) -> Dict[str, object]:

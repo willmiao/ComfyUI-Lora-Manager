@@ -22,5 +22,15 @@ class EmbeddingScanner(ModelScanner):
         )
 
     def get_model_roots(self) -> List[str]:
-        """Get embedding root directories"""
-        return config.embeddings_roots
+        """Get embedding root directories (including extra paths)"""
+        roots: List[str] = []
+        roots.extend(config.embeddings_roots or [])
+        roots.extend(config.extra_embeddings_roots or [])
+        # Remove duplicates while preserving order
+        seen: set = set()
+        unique_roots: List[str] = []
+        for root in roots:
+            if root and root not in seen:
+                seen.add(root)
+                unique_roots.append(root)
+        return unique_roots

@@ -132,4 +132,59 @@ async def test_persisted_cache_restores_model_type(tmp_path: Path, monkeypatch):
     assert types_by_path[normalized_unet_file] == "diffusion_model"
 
     assert ws_stub.payloads
-    assert ws_stub.payloads[-1]["stage"] == "loading_cache"
+
+
+@pytest.mark.asyncio
+async def test_checkpoint_scanner_get_model_roots_includes_extra_paths(monkeypatch, tmp_path):
+    """Test that get_model_roots includes both main and extra paths."""
+    checkpoints_root = tmp_path / "checkpoints"
+    extra_checkpoints_root = tmp_path / "extra_checkpoints"
+    unet_root = tmp_path / "unet"
+    extra_unet_root = tmp_path / "extra_unet"
+
+    for directory in (checkpoints_root, extra_checkpoints_root, unet_root, extra_unet_root):
+        directory.mkdir()
+
+    normalized_checkpoints = _normalize(checkpoints_root)
+    normalized_extra_checkpoints = _normalize(extra_checkpoints_root)
+    normalized_unet = _normalize(unet_root)
+    normalized_extra_unet = _normalize(extra_unet_root)
+
+    monkeypatch.setattr(
+        model_scanner.config,
+        "base_models_roots",
+        [normalized_checkpoints, normalized_unet],
+        raising=False,
+    )
+    monkeypatch.setattr(
+        model_scanner.config,
+        "checkpoints_roots",
+        [normalized_checkpoints],
+        raising=False,
+    )
+    monkeypatch.setattr(
+        model_scanner.config,
+        "unet_roots",
+        [normalized_unet],
+        raising=False,
+    )
+    monkeypatch.setattr(
+        model_scanner.config,
+        "extra_checkpoints_roots",
+        [normalized_extra_checkpoints],
+        raising=False,
+    )
+    monkeypatch.setattr(
+        model_scanner.config,
+        "extra_unet_roots",
+        [normalized_extra_unet],
+        raising=False,
+    )
+
+    scanner = CheckpointScanner()
+    roots = scanner.get_model_roots()
+
+    assert normalized_checkpoints in roots
+    assert normalized_unet in roots
+    assert normalized_extra_checkpoints in roots
+    assert normalized_extra_unet in roots

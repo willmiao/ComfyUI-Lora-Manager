@@ -215,3 +215,110 @@ def test_save_paths_removes_template_default_library(monkeypatch, tmp_path):
     )
     assert payload["metadata"] == {"display_name": "ComfyUI", "source": "comfyui"}
     assert payload["activate"] is True
+
+
+def test_apply_library_settings_merges_extra_paths(monkeypatch, tmp_path):
+    """Test that apply_library_settings correctly merges folder_paths with extra_folder_paths."""
+    loras_dir = tmp_path / "loras"
+    extra_loras_dir = tmp_path / "extra_loras"
+    checkpoints_dir = tmp_path / "checkpoints"
+    extra_checkpoints_dir = tmp_path / "extra_checkpoints"
+    embeddings_dir = tmp_path / "embeddings"
+    extra_embeddings_dir = tmp_path / "extra_embeddings"
+
+    for directory in (loras_dir, extra_loras_dir, checkpoints_dir, extra_checkpoints_dir, embeddings_dir, extra_embeddings_dir):
+        directory.mkdir()
+
+    config_instance = config_module.Config()
+
+    folder_paths = {
+        "loras": [str(loras_dir)],
+        "checkpoints": [str(checkpoints_dir)],
+        "unet": [],
+        "embeddings": [str(embeddings_dir)],
+    }
+    extra_folder_paths = {
+        "loras": [str(extra_loras_dir)],
+        "checkpoints": [str(extra_checkpoints_dir)],
+        "unet": [],
+        "embeddings": [str(extra_embeddings_dir)],
+    }
+
+    library_config = {
+        "folder_paths": folder_paths,
+        "extra_folder_paths": extra_folder_paths,
+    }
+
+    config_instance.apply_library_settings(library_config)
+
+    assert str(loras_dir) in config_instance.loras_roots
+    assert str(extra_loras_dir) in config_instance.extra_loras_roots
+    assert str(checkpoints_dir) in config_instance.base_models_roots
+    assert str(extra_checkpoints_dir) in config_instance.extra_checkpoints_roots
+    assert str(embeddings_dir) in config_instance.embeddings_roots
+    assert str(extra_embeddings_dir) in config_instance.extra_embeddings_roots
+
+
+def test_apply_library_settings_without_extra_paths(monkeypatch, tmp_path):
+    """Test that apply_library_settings works when extra_folder_paths is not provided."""
+    loras_dir = tmp_path / "loras"
+    checkpoints_dir = tmp_path / "checkpoints"
+    embeddings_dir = tmp_path / "embeddings"
+
+    for directory in (loras_dir, checkpoints_dir, embeddings_dir):
+        directory.mkdir()
+
+    config_instance = config_module.Config()
+
+    folder_paths = {
+        "loras": [str(loras_dir)],
+        "checkpoints": [str(checkpoints_dir)],
+        "unet": [],
+        "embeddings": [str(embeddings_dir)],
+    }
+
+    library_config = {
+        "folder_paths": folder_paths,
+    }
+
+    config_instance.apply_library_settings(library_config)
+
+    assert str(loras_dir) in config_instance.loras_roots
+    assert config_instance.extra_loras_roots == []
+    assert str(checkpoints_dir) in config_instance.base_models_roots
+    assert config_instance.extra_checkpoints_roots == []
+    assert str(embeddings_dir) in config_instance.embeddings_roots
+    assert config_instance.extra_embeddings_roots == []
+
+
+def test_extra_paths_deduplication(monkeypatch, tmp_path):
+    """Test that extra paths are stored separately from main paths in Config."""
+    loras_dir = tmp_path / "loras"
+    extra_loras_dir = tmp_path / "extra_loras"
+    loras_dir.mkdir()
+    extra_loras_dir.mkdir()
+
+    config_instance = config_module.Config()
+
+    folder_paths = {
+        "loras": [str(loras_dir)],
+        "checkpoints": [],
+        "unet": [],
+        "embeddings": [],
+    }
+    extra_folder_paths = {
+        "loras": [str(extra_loras_dir)],
+        "checkpoints": [],
+        "unet": [],
+        "embeddings": [],
+    }
+
+    library_config = {
+        "folder_paths": folder_paths,
+        "extra_folder_paths": extra_folder_paths,
+    }
+
+    config_instance.apply_library_settings(library_config)
+
+    assert config_instance.loras_roots == [str(loras_dir)]
+    assert config_instance.extra_loras_roots == [str(extra_loras_dir)]

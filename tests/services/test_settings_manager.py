@@ -470,6 +470,100 @@ def test_upsert_library_creates_entry_and_activates(manager, tmp_path):
     assert str(lora_dir).replace(os.sep, "/") in normalized_stored_paths
 
 
+def test_extra_folder_paths_stored_separately(manager, tmp_path):
+    lora_dir = tmp_path / "loras"
+    extra_dir = tmp_path / "extra_loras"
+    lora_dir.mkdir()
+    extra_dir.mkdir()
+
+    manager.upsert_library(
+        "test_library",
+        folder_paths={"loras": [str(lora_dir)]},
+        extra_folder_paths={"loras": [str(extra_dir)]},
+        activate=True,
+    )
+
+    libraries = manager.get_libraries()
+    lib = libraries["test_library"]
+
+    # Verify folder_paths contains main path
+    assert str(lora_dir) in lib["folder_paths"]["loras"]
+    # Verify extra_folder_paths contains extra path
+    assert str(extra_dir) in lib["extra_folder_paths"]["loras"]
+    # Verify they are separate
+    assert str(extra_dir) not in lib["folder_paths"]["loras"]
+
+
+def test_get_extra_folder_paths(manager, tmp_path):
+    extra_dir = tmp_path / "extra_loras"
+    extra_dir.mkdir()
+
+    manager.update_extra_folder_paths({"loras": [str(extra_dir)]})
+
+    extra_paths = manager.get_extra_folder_paths()
+    assert str(extra_dir) in extra_paths.get("loras", [])
+
+
+def test_library_switch_preserves_extra_paths(manager, tmp_path):
+    """Test that switching libraries preserves each library's extra paths."""
+    lora_dir1 = tmp_path / "lib1_loras"
+    extra_dir1 = tmp_path / "lib1_extra"
+    lora_dir2 = tmp_path / "lib2_loras"
+    extra_dir2 = tmp_path / "lib2_extra"
+
+    for directory in (lora_dir1, extra_dir1, lora_dir2, extra_dir2):
+        directory.mkdir()
+
+    manager.create_library(
+        "library1",
+        folder_paths={"loras": [str(lora_dir1)]},
+        extra_folder_paths={"loras": [str(extra_dir1)]},
+        activate=True,
+    )
+
+    manager.create_library(
+        "library2",
+        folder_paths={"loras": [str(lora_dir2)]},
+        extra_folder_paths={"loras": [str(extra_dir2)]},
+    )
+
+    assert manager.get_active_library_name() == "library1"
+    lib1 = manager.get_active_library()
+    assert str(lora_dir1) in lib1["folder_paths"]["loras"]
+    assert str(extra_dir1) in lib1["extra_folder_paths"]["loras"]
+
+    manager.activate_library("library2")
+
+    assert manager.get_active_library_name() == "library2"
+    lib2 = manager.get_active_library()
+    assert str(lora_dir2) in lib2["folder_paths"]["loras"]
+    assert str(extra_dir2) in lib2["extra_folder_paths"]["loras"]
+
+
+def test_extra_paths_validation_no_overlap_with_other_libraries(manager, tmp_path):
+    """Test that extra paths cannot overlap with other libraries' paths."""
+    lora_dir1 = tmp_path / "lib1_loras"
+    lora_dir1.mkdir()
+
+    manager.create_library(
+        "library1",
+        folder_paths={"loras": [str(lora_dir1)]},
+        activate=True,
+    )
+
+    extra_dir = tmp_path / "extra_loras"
+    extra_dir.mkdir()
+
+    manager.create_library(
+        "library2",
+        folder_paths={"loras": [str(extra_dir)]},
+        activate=True,
+    )
+
+    with pytest.raises(ValueError, match="already assigned to library"):
+        manager.update_extra_folder_paths({"loras": [str(lora_dir1)]})
+
+
 def test_delete_library_switches_active(manager, tmp_path):
     other_dir = tmp_path / "other"
     other_dir.mkdir()

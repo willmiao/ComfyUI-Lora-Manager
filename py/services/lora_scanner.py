@@ -25,8 +25,18 @@ class LoraScanner(ModelScanner):
         )
     
     def get_model_roots(self) -> List[str]:
-        """Get lora root directories"""
-        return config.loras_roots
+        """Get lora root directories (including extra paths)"""
+        roots: List[str] = []
+        roots.extend(config.loras_roots or [])
+        roots.extend(config.extra_loras_roots or [])
+        # Remove duplicates while preserving order
+        seen: set = set()
+        unique_roots: List[str] = []
+        for root in roots:
+            if root and root not in seen:
+                seen.add(root)
+                unique_roots.append(root)
+        return unique_roots
 
     async def diagnose_hash_index(self):
         """Diagnostic method to verify hash index functionality"""

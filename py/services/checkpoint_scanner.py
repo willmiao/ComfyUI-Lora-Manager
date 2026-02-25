@@ -51,5 +51,16 @@ class CheckpointScanner(ModelScanner):
         return entry
 
     def get_model_roots(self) -> List[str]:
-        """Get checkpoint root directories"""
-        return config.base_models_roots
+        """Get checkpoint root directories (including extra paths)"""
+        roots: List[str] = []
+        roots.extend(config.base_models_roots or [])
+        roots.extend(config.extra_checkpoints_roots or [])
+        roots.extend(config.extra_unet_roots or [])
+        # Remove duplicates while preserving order
+        seen: set = set()
+        unique_roots: List[str] = []
+        for root in roots:
+            if root not in seen:
+                seen.add(root)
+                unique_roots.append(root)
+        return unique_roots
