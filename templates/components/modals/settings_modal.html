@@ -49,6 +49,32 @@
                     
                     <!-- Section 1: General -->
                     <div id="section-general" class="settings-section active" data-section="general">
+                        <!-- Language -->
+                        <div class="setting-item">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <label for="languageSelect">
+                                        {{ t('common.language.select') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('common.language.select_help') }}"></i>
+                                    </label>
+                                </div>
+                                <div class="setting-control select-control">
+                                    <select id="languageSelect" onchange="settingsManager.saveLanguageSetting()">
+                                        <option value="en">{{ t('common.language.english') }}</option>
+                                        <option value="zh-CN">{{ t('common.language.chinese_simplified') }}</option>
+                                        <option value="zh-TW">{{ t('common.language.chinese_traditional') }}</option>
+                                        <option value="ru">{{ t('common.language.russian') }}</option>
+                                        <option value="de">{{ t('common.language.german') }}</option>
+                                        <option value="ja">{{ t('common.language.japanese') }}</option>
+                                        <option value="ko">{{ t('common.language.korean') }}</option>
+                                        <option value="fr">{{ t('common.language.french') }}</option>
+                                        <option value="es">{{ t('common.language.spanish') }}</option>
+                                        <option value="he">{{ t('common.language.Hebrew') }}</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- API Configuration -->
                         <div class="settings-subsection">
                             <div class="settings-subsection-header">
@@ -97,32 +123,6 @@
                                             <span class="toggle-slider"></span>
                                         </label>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Language -->
-                        <div class="settings-subsection">
-                            <div class="settings-subsection-header">
-                                <h4>
-                                    {{ t('common.language.select') }}
-                                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('common.language.select_help') }}"></i>
-                                </h4>
-                            </div>
-                            <div class="setting-item">
-                                <div class="setting-control select-control">
-                                    <select id="languageSelect" onchange="settingsManager.saveLanguageSetting()">
-                                        <option value="en">{{ t('common.language.english') }}</option>
-                                        <option value="zh-CN">{{ t('common.language.chinese_simplified') }}</option>
-                                        <option value="zh-TW">{{ t('common.language.chinese_traditional') }}</option>
-                                        <option value="ru">{{ t('common.language.russian') }}</option>
-                                        <option value="de">{{ t('common.language.german') }}</option>
-                                        <option value="ja">{{ t('common.language.japanese') }}</option>
-                                        <option value="ko">{{ t('common.language.korean') }}</option>
-                                        <option value="fr">{{ t('common.language.french') }}</option>
-                                        <option value="es">{{ t('common.language.spanish') }}</option>
-                                        <option value="he">{{ t('common.language.Hebrew') }}</option>
-                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -648,31 +648,31 @@
                     <!-- Section 4: Organization -->
                     <div id="section-organization" class="settings-section" data-section="organization">
                         <!-- Auto-organize Exclusions -->
-                        <div class="settings-subsection">
-                            <div class="settings-subsection-header">
-                                <h4>
-                                    {{ t('settings.autoOrganizeExclusions.label') }}
-                                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.autoOrganizeExclusions.help') }}"></i>
-                                </h4>
+                        <div class="setting-item auto-organize-exclusions-item">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <label for="autoOrganizeExclusions">
+                                        {{ t('settings.autoOrganizeExclusions.label') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.autoOrganizeExclusions.help') }}"></i>
+                                    </label>
+                                </div>
                             </div>
-                            <div class="setting-item auto-organize-exclusions-item">
-                                <textarea id="autoOrganizeExclusions" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.autoOrganizeExclusions.placeholder') }}"></textarea>
-                                <div class="settings-input-error-message" id="autoOrganizeExclusionsError"></div>
-                            </div>
+                            <textarea id="autoOrganizeExclusions" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.autoOrganizeExclusions.placeholder') }}"></textarea>
+                            <div class="settings-input-error-message" id="autoOrganizeExclusionsError"></div>
                         </div>
                         
                         <!-- Metadata Refresh Skip Paths -->
-                        <div class="settings-subsection">
-                            <div class="settings-subsection-header">
-                                <h4>
-                                    {{ t('settings.metadataRefreshSkipPaths.label') }}
-                                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.metadataRefreshSkipPaths.help') }}"></i>
-                                </h4>
+                        <div class="setting-item">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <label for="metadataRefreshSkipPaths">
+                                        {{ t('settings.metadataRefreshSkipPaths.label') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.metadataRefreshSkipPaths.help') }}"></i>
+                                    </label>
+                                </div>
                             </div>
-                            <div class="setting-item">
-                                <textarea id="metadataRefreshSkipPaths" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.metadataRefreshSkipPaths.placeholder') }}"></textarea>
-                                <div class="settings-input-error-message" id="metadataRefreshSkipPathsError"></div>
-                            </div>
+                            <textarea id="metadataRefreshSkipPaths" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.metadataRefreshSkipPaths.placeholder') }}"></textarea>
+                            <div class="settings-input-error-message" id="metadataRefreshSkipPathsError"></div>
                         </div>
                     </div>
                     
