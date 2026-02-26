@@ -1210,3 +1210,61 @@ input:checked + .toggle-slider:before {
     background: rgba(40, 40, 40, 0.95);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
+
+/* Extra Folder Paths - Single input layout */
+.extra-folder-path-row {
+    margin-bottom: var(--space-2);
+}
+
+.extra-folder-path-row:last-child {
+    margin-bottom: 0;
+}
+
+.extra-folder-paths-container {
+    margin-top: var(--space-2);
+}
+
+.extra-folder-path-row .path-controls {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+}
+
+.extra-folder-path-row .path-controls .extra-folder-path-input {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 10px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    background-color: var(--lora-surface);
+    color: var(--text-color);
+    font-size: 0.9em;
+    height: 32px;
+    box-sizing: border-box;
+}
+
+.extra-folder-path-row .path-controls .extra-folder-path-input:focus {
+    border-color: var(--lora-accent);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
+}
+
+.extra-folder-path-row .path-controls .remove-path-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--lora-error);
+    background: transparent;
+    color: var(--lora-error);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.extra-folder-path-row .path-controls .remove-path-btn:hover {
+    background: var(--lora-error);
+    color: white;
+}

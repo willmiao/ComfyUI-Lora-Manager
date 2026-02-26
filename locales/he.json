@@ -260,6 +260,7 @@
             "layoutSettings": "הגדרות פריסה",
             "misc": "שונות",
             "folderSettings": "תיקיות ברירת מחדל",
+            "extraFolderPaths": "נתיבי תיקיות נוספים",
             "downloadPathTemplates": "תבניות נתיב הורדה",
             "priorityTags": "תגיות עדיפות",
             "updateFlags": "תגי עדכון",
@@ -484,6 +485,23 @@
             "proxyPassword": "סיסמה (אופציונלי)",
             "proxyPasswordPlaceholder": "password",
             "proxyPasswordHelp": "סיסמה לאימות מול הפרוקסי (אם נדרש)"
+        },
+        "extraFolderPaths": {
+            "title": "נתיבי תיקיות נוספים",
+            "help": "הוסף תיקיות מודלים נוספות מחוץ לנתיבים הסטנדרטיים של ComfyUI. נתיבים אלה נשמרים בנפרד ונסרקים לצד תיקיות ברירת המחדל.",
+            "description": "הגדר תיקיות נוספות לסריקת מודלים. נתיבים אלה ספציפיים ל-LoRA Manager וימוזגו עם נתיבי ברירת המחדל של ComfyUI.",
+            "modelTypes": {
+                "lora": "נתיבי LoRA",
+                "checkpoint": "נתיבי Checkpoint",
+                "unet": "נתיבי מודל דיפוזיה",
+                "embedding": "נתיבי Embedding"
+            },
+            "pathPlaceholder": "/נתיב/למודלים/נוספים",
+            "saveSuccess": "נתיבי תיקיות נוספים עודכנו.",
+            "saveError": "נכשל בעדכון נתיבי תיקיות נוספים: {message}",
+            "validation": {
+                "duplicatePath": "נתיב זה כבר מוגדר"
+            }
         }
     },
     "loras": {

@@ -260,6 +260,7 @@
             "layoutSettings": "Layout Settings",
             "misc": "Miscellaneous",
             "folderSettings": "Default Roots",
+            "extraFolderPaths": "Extra Folder Paths",
             "downloadPathTemplates": "Download Path Templates",
             "priorityTags": "Priority Tags",
             "updateFlags": "Update Flags",
@@ -359,6 +360,23 @@
             "defaultEmbeddingRoot": "Embedding Root",
             "defaultEmbeddingRootHelp": "Set default embedding root directory for downloads, imports and moves",
             "noDefault": "No Default"
+        },
+        "extraFolderPaths": {
+            "title": "Extra Folder Paths",
+            "help": "Add additional model folders outside of ComfyUI's standard paths. These paths are stored separately and scanned alongside the default folders.",
+            "description": "Configure additional folders to scan for models. These paths are specific to LoRA Manager and will be merged with ComfyUI's default paths.",
+            "modelTypes": {
+                "lora": "LoRA Paths",
+                "checkpoint": "Checkpoint Paths",
+                "unet": "Diffusion Model Paths",
+                "embedding": "Embedding Paths"
+            },
+            "pathPlaceholder": "/path/to/extra/models",
+            "saveSuccess": "Extra folder paths updated.",
+            "saveError": "Failed to update extra folder paths: {message}",
+            "validation": {
+                "duplicatePath": "This path is already configured"
+            }
         },
         "priorityTags": {
             "title": "Priority Tags",

@@ -519,7 +519,90 @@
                                 </div>
                             </div>
                         </div>
-                        
+
+                        <!-- Extra Folder Paths -->
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>
+                                    {{ t('settings.extraFolderPaths.title') }}
+                                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.extraFolderPaths.help') }}"></i>
+                                </h4>
+                            </div>
+                            <div class="setting-item">
+                                <div class="input-help">
+                                    {{ t('settings.extraFolderPaths.description') }}
+                                </div>
+                            </div>
+
+                            <!-- LoRA Paths -->
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label>{{ t('settings.extraFolderPaths.modelTypes.lora') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <button type="button" class="add-mapping-btn" onclick="settingsManager.addExtraFolderPathRow('loras')">
+                                            <i class="fas fa-plus"></i>
+                                            <span>{{ t('common.actions.add') }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="extra-folder-paths-container" id="extraFolderPaths-loras">
+                                </div>
+                            </div>
+
+                            <!-- Checkpoint Paths -->
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label>{{ t('settings.extraFolderPaths.modelTypes.checkpoint') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <button type="button" class="add-mapping-btn" onclick="settingsManager.addExtraFolderPathRow('checkpoints')">
+                                            <i class="fas fa-plus"></i>
+                                            <span>{{ t('common.actions.add') }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="extra-folder-paths-container" id="extraFolderPaths-checkpoints">
+                                </div>
+                            </div>
+
+                            <!-- Diffusion Model (Unet) Paths -->
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label>{{ t('settings.extraFolderPaths.modelTypes.unet') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <button type="button" class="add-mapping-btn" onclick="settingsManager.addExtraFolderPathRow('unet')">
+                                            <i class="fas fa-plus"></i>
+                                            <span>{{ t('common.actions.add') }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="extra-folder-paths-container" id="extraFolderPaths-unet">
+                                </div>
+                            </div>
+
+                            <!-- Embedding Paths -->
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label>{{ t('settings.extraFolderPaths.modelTypes.embedding') }}</label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <button type="button" class="add-mapping-btn" onclick="settingsManager.addExtraFolderPathRow('embeddings')">
+                                            <i class="fas fa-plus"></i>
+                                            <span>{{ t('common.actions.add') }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="extra-folder-paths-container" id="extraFolderPaths-embeddings">
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Download Path Templates -->
                         <div class="settings-subsection">
                             <div class="settings-subsection-header">

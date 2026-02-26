@@ -260,6 +260,7 @@
             "layoutSettings": "Paramètres d'affichage",
             "misc": "Divers",
             "folderSettings": "Racines par défaut",
+            "extraFolderPaths": "Chemins de dossiers supplémentaires",
             "downloadPathTemplates": "Modèles de chemin de téléchargement",
             "priorityTags": "Étiquettes prioritaires",
             "updateFlags": "Indicateurs de mise à jour",
@@ -484,6 +485,23 @@
             "proxyPassword": "Mot de passe (optionnel)",
             "proxyPasswordPlaceholder": "mot_de_passe",
             "proxyPasswordHelp": "Mot de passe pour l'authentification proxy (si nécessaire)"
+        },
+        "extraFolderPaths": {
+            "title": "Chemins de dossiers supplémentaires",
+            "help": "Ajoutez des dossiers de modèles supplémentaires en dehors des chemins standard de ComfyUI. Ces chemins sont stockés séparément et analysés aux côtés des dossiers par défaut.",
+            "description": "Configurez des dossiers supplémentaires pour l'analyse de modèles. Ces chemins sont spécifiques à LoRA Manager et seront fusionnés avec les chemins par défaut de ComfyUI.",
+            "modelTypes": {
+                "lora": "Chemins LoRA",
+                "checkpoint": "Chemins Checkpoint",
+                "unet": "Chemins de modèle de diffusion",
+                "embedding": "Chemins Embedding"
+            },
+            "pathPlaceholder": "/chemin/vers/modèles/supplémentaires",
+            "saveSuccess": "Chemins de dossiers supplémentaires mis à jour.",
+            "saveError": "Échec de la mise à jour des chemins de dossiers supplémentaires: {message}",
+            "validation": {
+                "duplicatePath": "Ce chemin est déjà configuré"
+            }
         }
     },
     "loras": {

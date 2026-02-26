@@ -799,6 +799,9 @@ export class SettingsManager {
         // Load default unet root
         await this.loadUnetRoots();
 
+        // Load extra folder paths
+        this.loadExtraFolderPaths();
+
         // Load language setting
         const languageSelect = document.getElementById('languageSelect');
         if (languageSelect) {
@@ -1298,6 +1301,119 @@ export class SettingsManager {
         } catch (error) {
             console.error('Error loading embedding roots:', error);
             showToast('toast.settings.embeddingRootsFailed', { message: error.message }, 'error');
+        }
+    }
+
+    loadExtraFolderPaths() {
+        const extraFolderPaths = state.global.settings.extra_folder_paths || {};
+
+        // Load paths for each model type
+        ['loras', 'checkpoints', 'unet', 'embeddings'].forEach((modelType) => {
+            const container = document.getElementById(`extraFolderPaths-${modelType}`);
+            if (!container) return;
+
+            // Clear existing paths
+            container.innerHTML = '';
+
+            // Add existing paths
+            const paths = extraFolderPaths[modelType] || [];
+            paths.forEach((path) => {
+                this.addExtraFolderPathRow(modelType, path);
+            });
+
+            // Add empty row for new path if no paths exist
+            if (paths.length === 0) {
+                this.addExtraFolderPathRow(modelType, '');
+            }
+        });
+    }
+
+    addExtraFolderPathRow(modelType, path = '') {
+        const container = document.getElementById(`extraFolderPaths-${modelType}`);
+        if (!container) return;
+
+        const row = document.createElement('div');
+        row.className = 'extra-folder-path-row mapping-row';
+
+        row.innerHTML = `
+            <div class="path-controls">
+                <input type="text" class="extra-folder-path-input"
+                       placeholder="${translate('settings.extraFolderPaths.pathPlaceholder', {}, '/path/to/models')}" value="${path}"
+                       onblur="settingsManager.updateExtraFolderPaths('${modelType}')"
+                       onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                <button type="button" class="remove-path-btn"
+                        onclick="this.parentElement.parentElement.remove(); settingsManager.updateExtraFolderPaths('${modelType}')"
+                        title="${translate('common.actions.delete', {}, 'Delete')}">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+
+        container.appendChild(row);
+
+        // Focus the input if it's empty (new row)
+        if (!path) {
+            const input = row.querySelector('.extra-folder-path-input');
+            if (input) {
+                setTimeout(() => input.focus(), 0);
+            }
+        }
+    }
+
+    async updateExtraFolderPaths(changedModelType) {
+        const extraFolderPaths = {};
+
+        // Collect paths for all model types
+        ['loras', 'checkpoints', 'unet', 'embeddings'].forEach((modelType) => {
+            const container = document.getElementById(`extraFolderPaths-${modelType}`);
+            if (!container) return;
+
+            const inputs = container.querySelectorAll('.extra-folder-path-input');
+            const paths = [];
+
+            inputs.forEach((input) => {
+                const value = input.value.trim();
+                if (value) {
+                    paths.push(value);
+                }
+            });
+
+            extraFolderPaths[modelType] = paths;
+        });
+
+        // Check if paths have actually changed
+        const currentPaths = state.global.settings.extra_folder_paths || {};
+        const pathsChanged = JSON.stringify(currentPaths) !== JSON.stringify(extraFolderPaths);
+
+        if (!pathsChanged) {
+            return;
+        }
+
+        // Update state
+        state.global.settings.extra_folder_paths = extraFolderPaths;
+
+        try {
+            // Save to backend - this triggers path validation
+            await this.saveSetting('extra_folder_paths', extraFolderPaths);
+            showToast('toast.settings.settingsUpdated', { setting: 'Extra Folder Paths' }, 'success');
+
+            // Add empty row if no valid paths exist for the changed type
+            const container = document.getElementById(`extraFolderPaths-${changedModelType}`);
+            if (container) {
+                const inputs = container.querySelectorAll('.extra-folder-path-input');
+                const hasEmptyRow = Array.from(inputs).some((input) => !input.value.trim());
+
+                if (!hasEmptyRow) {
+                    this.addExtraFolderPathRow(changedModelType, '');
+                }
+            }
+        } catch (error) {
+            console.error('Failed to save extra folder paths:', error);
+            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
+
+            // Restore previous state on error
+            state.global.settings.extra_folder_paths = currentPaths;
+            this.loadExtraFolderPaths();
         }
     }
 

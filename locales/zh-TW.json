@@ -260,6 +260,7 @@
             "layoutSettings": "版面設定",
             "misc": "其他",
             "folderSettings": "預設根目錄",
+            "extraFolderPaths": "額外資料夾路徑",
             "downloadPathTemplates": "下載路徑範本",
             "priorityTags": "優先標籤",
             "updateFlags": "更新標記",
@@ -484,6 +485,23 @@
             "proxyPassword": "密碼（選填）",
             "proxyPasswordPlaceholder": "password",
             "proxyPasswordHelp": "代理驗證所需的密碼（如有需要）"
+        },
+        "extraFolderPaths": {
+            "title": "額外資料夾路徑",
+            "help": "在 ComfyUI 的標準路徑之外新增額外的模型資料夾。這些路徑單獨儲存，並與預設資料夾一起掃描。",
+            "description": "設定額外的資料夾以掃描模型。這些路徑是 LoRA Manager 特有的，將與 ComfyUI 的預設路徑合併。",
+            "modelTypes": {
+                "lora": "LoRA 路徑",
+                "checkpoint": "Checkpoint 路徑",
+                "unet": "Diffusion 模型路徑",
+                "embedding": "Embedding 路徑"
+            },
+            "pathPlaceholder": "/額外/模型/路徑",
+            "saveSuccess": "額外資料夾路徑已更新。",
+            "saveError": "更新額外資料夾路徑失敗：{message}",
+            "validation": {
+                "duplicatePath": "此路徑已設定"
+            }
         }
     },
     "loras": {

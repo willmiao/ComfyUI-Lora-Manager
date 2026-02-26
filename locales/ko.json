@@ -260,6 +260,7 @@
             "layoutSettings": "레이아웃 설정",
             "misc": "기타",
             "folderSettings": "기본 루트",
+            "extraFolderPaths": "추가 폴다 경로",
             "downloadPathTemplates": "다운로드 경로 템플릿",
             "priorityTags": "우선순위 태그",
             "updateFlags": "업데이트 표시",
@@ -484,6 +485,23 @@
             "proxyPassword": "비밀번호 (선택사항)",
             "proxyPasswordPlaceholder": "password",
             "proxyPasswordHelp": "프록시 인증에 필요한 비밀번호 (필요한 경우)"
+        },
+        "extraFolderPaths": {
+            "title": "추가 폴다 경로",
+            "help": "ComfyUI의 표준 경로 외부에 추가 모델 폴드를 추가하세요. 이러한 경로는 별도로 저장되며 기본 폴와 함께 스캔됩니다.",
+            "description": "모델을 스캔하기 위한 추가 폴를 설정하세요. 이러한 경로는 LoRA Manager 특유의 것이며 ComfyUI의 기본 경로와 병합됩니다.",
+            "modelTypes": {
+                "lora": "LoRA 경로",
+                "checkpoint": "Checkpoint 경로",
+                "unet": "Diffusion 모델 경로",
+                "embedding": "Embedding 경로"
+            },
+            "pathPlaceholder": "/추가/모델/경로",
+            "saveSuccess": "추가 폴다 경로가 업데이트되었습니다.",
+            "saveError": "추가 폴다 경로 업데이트 실패: {message}",
+            "validation": {
+                "duplicatePath": "이 경로는 이미 구성되어 있습니다"
+            }
         }
     },
     "loras": {

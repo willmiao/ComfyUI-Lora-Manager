@@ -260,6 +260,7 @@
             "layoutSettings": "布局设置",
             "misc": "其他",
             "folderSettings": "默认根目录",
+            "extraFolderPaths": "额外文件夹路径",
             "downloadPathTemplates": "下载路径模板",
             "priorityTags": "优先标签",
             "updateFlags": "更新标记",
@@ -484,6 +485,23 @@
             "proxyPassword": "密码 (可选)",
             "proxyPasswordPlaceholder": "密码",
             "proxyPasswordHelp": "代理认证的密码 (如果需要)"
+        },
+        "extraFolderPaths": {
+            "title": "额外文件夹路径",
+            "help": "在 ComfyUI 的标准路径之外添加额外的模型文件夹。这些路径单独存储，并与默认文件夹一起扫描。",
+            "description": "配置额外的文件夹以扫描模型。这些路径是 LoRA Manager 特有的，将与 ComfyUI 的默认路径合并。",
+            "modelTypes": {
+                "lora": "LoRA 路径",
+                "checkpoint": "Checkpoint 路径",
+                "unet": "Diffusion 模型路径",
+                "embedding": "Embedding 路径"
+            },
+            "pathPlaceholder": "/额外/模型/路径",
+            "saveSuccess": "额外文件夹路径已更新。",
+            "saveError": "更新额外文件夹路径失败：{message}",
+            "validation": {
+                "duplicatePath": "此路径已配置"
+            }
         }
     },
     "loras": {
