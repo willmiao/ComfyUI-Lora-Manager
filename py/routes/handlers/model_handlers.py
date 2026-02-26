@@ -383,10 +383,28 @@ class ModelManagementHandler:
                 return web.json_response(
                     {"success": False, "error": "Model not found in cache"}, status=404
                 )
-            if not model_data.get("sha256"):
-                return web.json_response(
-                    {"success": False, "error": "No SHA256 hash found"}, status=400
-                )
+            
+            # Check if hash needs to be calculated (lazy hash for checkpoints)
+            sha256 = model_data.get("sha256")
+            hash_status = model_data.get("hash_status", "completed")
+            
+            if not sha256 or hash_status != "completed":
+                # For checkpoints, calculate hash on-demand
+                scanner = self._service.scanner
+                if hasattr(scanner, 'calculate_hash_for_model'):
+                    self._logger.info(f"Lazy hash calculation triggered for {file_path}")
+                    sha256 = await scanner.calculate_hash_for_model(file_path)
+                    if not sha256:
+                        return web.json_response(
+                            {"success": False, "error": "Failed to calculate SHA256 hash"}, status=500
+                        )
+                    # Update model_data with new hash
+                    model_data["sha256"] = sha256
+                    model_data["hash_status"] = "completed"
+                else:
+                    return web.json_response(
+                        {"success": False, "error": "No SHA256 hash found"}, status=400
+                    )
 
             await MetadataManager.hydrate_model_data(model_data)
 
