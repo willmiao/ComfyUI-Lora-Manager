@@ -125,16 +125,20 @@ class CacheEntryValidator:
             )
 
         # Special validation: sha256 must not be empty for required field
+        # BUT allow empty sha256 when hash_status is pending (lazy hash calculation)
         sha256 = working_entry.get('sha256', '')
+        hash_status = working_entry.get('hash_status', 'completed')
         if not sha256 or (isinstance(sha256, str) and not sha256.strip()):
-            errors.append("Required field 'sha256' is empty")
-            # Cannot repair empty sha256 - entry is invalid
-            return ValidationResult(
-                is_valid=False,
-                repaired=repaired,
-                errors=errors,
-                entry=working_entry if auto_repair else None
-            )
+            # Allow empty sha256 for lazy hash calculation (checkpoints)
+            if hash_status != 'pending':
+                errors.append("Required field 'sha256' is empty")
+                # Cannot repair empty sha256 - entry is invalid
+                return ValidationResult(
+                    is_valid=False,
+                    repaired=repaired,
+                    errors=errors,
+                    entry=working_entry if auto_repair else None
+                )
 
         # Normalize sha256 to lowercase if needed
         if isinstance(sha256, str):

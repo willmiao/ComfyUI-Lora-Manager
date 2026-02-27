@@ -47,8 +47,7 @@ class BulkMetadataRefreshUseCase:
         to_process: Sequence[Dict[str, Any]] = [
             model
             for model in cache.raw_data
-            if model.get("sha256")
-            and not model.get("skip_metadata_refresh", False)
+            if not model.get("skip_metadata_refresh", False)
             and not self._is_in_skip_path(model.get("folder", ""), skip_paths)
             and (not model.get("civitai") or not model["civitai"].get("id"))
             and not (
@@ -85,6 +84,36 @@ class BulkMetadataRefreshUseCase:
                 return {"success": False, "message": "Operation cancelled", "processed": processed, "updated": success, "total": total_models}
             try:
                 original_name = model.get("model_name")
+
+                # Handle lazy hash calculation for models with pending hash status
+                sha256 = model.get("sha256", "")
+                hash_status = model.get("hash_status", "completed")
+                file_path = model.get("file_path")
+
+                if not sha256 and hash_status == "pending" and file_path:
+                    self._logger.info(f"Calculating pending hash for {file_path}")
+                    # Check if scanner has calculate_hash_for_model method (CheckpointScanner)
+                    calculate_hash_method = getattr(self._service.scanner, "calculate_hash_for_model", None)
+                    if calculate_hash_method:
+                        sha256 = await calculate_hash_method(file_path)
+                        if sha256:
+                            model["sha256"] = sha256
+                            model["hash_status"] = "completed"
+                        else:
+                            self._logger.error(f"Failed to calculate hash for {file_path}")
+                            processed += 1
+                            continue
+                    else:
+                        self._logger.warning(f"Scanner does not support lazy hash calculation for {file_path}")
+                        processed += 1
+                        continue
+
+                # Skip models without valid hash
+                if not model.get("sha256"):
+                    self._logger.warning(f"Skipping model without hash: {file_path}")
+                    processed += 1
+                    continue
+
                 await MetadataManager.hydrate_model_data(model)
                 result, _ = await self._metadata_sync.fetch_and_update_model(
                     sha256=model["sha256"],

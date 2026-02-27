@@ -73,6 +73,46 @@ class TestCacheEntryValidator:
         assert result.repaired is False
         assert any('sha256' in error for error in result.errors)
 
+    def test_validate_empty_sha256_allowed_when_hash_status_pending(self):
+        """Test validation passes when sha256 is empty but hash_status is pending (lazy hash)"""
+        entry = {
+            'file_path': '/models/test.safetensors',
+            'sha256': '',  # Empty string
+            'hash_status': 'pending',  # Lazy hash calculation
+        }
+
+        result = CacheEntryValidator.validate(entry, auto_repair=False)
+
+        assert result.is_valid is True
+        assert result.entry['sha256'] == ''
+        assert result.entry['hash_status'] == 'pending'
+
+    def test_validate_empty_sha256_fails_when_hash_status_not_pending(self):
+        """Test validation fails when sha256 is empty and hash_status is not pending"""
+        entry = {
+            'file_path': '/models/test.safetensors',
+            'sha256': '',  # Empty string
+            'hash_status': 'completed',  # Not pending
+        }
+
+        result = CacheEntryValidator.validate(entry, auto_repair=False)
+
+        assert result.is_valid is False
+        assert any('sha256' in error for error in result.errors)
+
+    def test_validate_empty_sha256_fails_when_hash_status_missing(self):
+        """Test validation fails when sha256 is empty and hash_status is missing"""
+        entry = {
+            'file_path': '/models/test.safetensors',
+            'sha256': '',  # Empty string
+            # hash_status missing (defaults to 'completed')
+        }
+
+        result = CacheEntryValidator.validate(entry, auto_repair=False)
+
+        assert result.is_valid is False
+        assert any('sha256' in error for error in result.errors)
+
     def test_validate_empty_required_field_file_path(self):
         """Test validation fails when file_path is empty string"""
         entry = {
