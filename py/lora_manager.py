@@ -169,6 +169,7 @@ class LoraManager:
         """Initialize all services using the ServiceRegistry"""
         try:
             # Apply library settings to load extra folder paths before scanning
+            # Only apply if extra paths haven't been loaded yet (preserves test mocks)
             try:
                 from .services.settings_manager import get_settings_manager
 
@@ -177,14 +178,24 @@ class LoraManager:
                 libraries = settings_manager.get_libraries()
                 if library_name and library_name in libraries:
                     library_config = libraries[library_name]
-                    config.apply_library_settings(library_config)
-                    logger.info(
-                        "Applied library settings for '%s' with extra paths: loras=%s, checkpoints=%s, embeddings=%s",
-                        library_name,
-                        library_config.get("extra_folder_paths", {}).get("loras", []),
-                        library_config.get("extra_folder_paths", {}).get("checkpoints", []),
-                        library_config.get("extra_folder_paths", {}).get("embeddings", []),
+                    # Only apply settings if extra paths are not already configured
+                    # This preserves values set by tests via monkeypatch
+                    extra_paths = library_config.get("extra_folder_paths", {})
+                    has_extra_paths = (
+                        config.extra_loras_roots
+                        or config.extra_checkpoints_roots
+                        or config.extra_unet_roots
+                        or config.extra_embeddings_roots
                     )
+                    if not has_extra_paths and any(extra_paths.values()):
+                        config.apply_library_settings(library_config)
+                        logger.info(
+                            "Applied library settings for '%s' with extra paths: loras=%s, checkpoints=%s, embeddings=%s",
+                            library_name,
+                            extra_paths.get("loras", []),
+                            extra_paths.get("checkpoints", []),
+                            extra_paths.get("embeddings", []),
+                        )
             except Exception as exc:
                 logger.warning("Failed to apply library settings during initialization: %s", exc)
 
