@@ -168,6 +168,26 @@ class LoraManager:
     async def _initialize_services(cls):
         """Initialize all services using the ServiceRegistry"""
         try:
+            # Apply library settings to load extra folder paths before scanning
+            try:
+                from .services.settings_manager import get_settings_manager
+
+                settings_manager = get_settings_manager()
+                library_name = settings_manager.get_active_library_name()
+                libraries = settings_manager.get_libraries()
+                if library_name and library_name in libraries:
+                    library_config = libraries[library_name]
+                    config.apply_library_settings(library_config)
+                    logger.info(
+                        "Applied library settings for '%s' with extra paths: loras=%s, checkpoints=%s, embeddings=%s",
+                        library_name,
+                        library_config.get("extra_folder_paths", {}).get("loras", []),
+                        library_config.get("extra_folder_paths", {}).get("checkpoints", []),
+                        library_config.get("extra_folder_paths", {}).get("embeddings", []),
+                    )
+            except Exception as exc:
+                logger.warning("Failed to apply library settings during initialization: %s", exc)
+
             # Initialize CivitaiClient first to ensure it's ready for other services
             await ServiceRegistry.get_civitai_client()
 

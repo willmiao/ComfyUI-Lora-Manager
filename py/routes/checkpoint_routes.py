@@ -1,5 +1,5 @@
 import logging
-from typing import Dict
+from typing import Dict, List, Set
 from aiohttp import web
 
 from .base_model_routes import BaseModelRoutes
@@ -82,12 +82,22 @@ class CheckpointRoutes(BaseModelRoutes):
             return web.json_response({"error": str(e)}, status=500)
     
     async def get_checkpoints_roots(self, request: web.Request) -> web.Response:
-        """Return the list of checkpoint roots from config"""
+        """Return the list of checkpoint roots from config (including extra paths)"""
         try:
-            roots = config.checkpoints_roots
+            # Merge checkpoints_roots with extra_checkpoints_roots, preserving order and removing duplicates
+            roots: List[str] = []
+            roots.extend(config.checkpoints_roots or [])
+            roots.extend(config.extra_checkpoints_roots or [])
+            # Remove duplicates while preserving order
+            seen: set = set()
+            unique_roots: List[str] = []
+            for root in roots:
+                if root and root not in seen:
+                    seen.add(root)
+                    unique_roots.append(root)
             return web.json_response({
                 "success": True,
-                "roots": roots
+                "roots": unique_roots
             })
         except Exception as e:
             logger.error(f"Error getting checkpoint roots: {e}", exc_info=True)
@@ -97,12 +107,22 @@ class CheckpointRoutes(BaseModelRoutes):
             }, status=500)
 
     async def get_unet_roots(self, request: web.Request) -> web.Response:
-        """Return the list of unet roots from config"""
+        """Return the list of unet roots from config (including extra paths)"""
         try:
-            roots = config.unet_roots
+            # Merge unet_roots with extra_unet_roots, preserving order and removing duplicates
+            roots: List[str] = []
+            roots.extend(config.unet_roots or [])
+            roots.extend(config.extra_unet_roots or [])
+            # Remove duplicates while preserving order
+            seen: set = set()
+            unique_roots: List[str] = []
+            for root in roots:
+                if root and root not in seen:
+                    seen.add(root)
+                    unique_roots.append(root)
             return web.json_response({
                 "success": True,
-                "roots": roots
+                "roots": unique_roots
             })
         except Exception as e:
             logger.error(f"Error getting unet roots: {e}", exc_info=True)

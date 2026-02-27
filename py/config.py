@@ -736,11 +736,25 @@ class Config:
         extra_embedding_paths = extra_paths.get('embeddings', []) or []
 
         self.extra_loras_roots = self._prepare_lora_paths(extra_lora_paths)
+        # Save main paths before processing extra paths ( _prepare_checkpoint_paths overwrites them)
+        saved_checkpoints_roots = self.checkpoints_roots
+        saved_unet_roots = self.unet_roots
         self.extra_checkpoints_roots = self._prepare_checkpoint_paths(extra_checkpoint_paths, extra_unet_paths)
+        self.extra_unet_roots = self.unet_roots  # unet_roots was set by _prepare_checkpoint_paths
+        # Restore main paths
+        self.checkpoints_roots = saved_checkpoints_roots
+        self.unet_roots = saved_unet_roots
         self.extra_embeddings_roots = self._prepare_embedding_paths(extra_embedding_paths)
-        # extra_unet_roots is set by _prepare_checkpoint_paths (access unet_roots before it's reset)
-        unet_roots_value: List[str] = getattr(self, 'unet_roots', None) or []
-        self.extra_unet_roots = unet_roots_value
+
+        # Log extra folder paths
+        if self.extra_loras_roots:
+            logger.info("Found extra LoRA roots:" + "\n - " + "\n - ".join(self.extra_loras_roots))
+        if self.extra_checkpoints_roots:
+            logger.info("Found extra checkpoint roots:" + "\n - " + "\n - ".join(self.extra_checkpoints_roots))
+        if self.extra_unet_roots:
+            logger.info("Found extra diffusion model roots:" + "\n - " + "\n - ".join(self.extra_unet_roots))
+        if self.extra_embeddings_roots:
+            logger.info("Found extra embedding roots:" + "\n - " + "\n - ".join(self.extra_embeddings_roots))
 
         self._initialize_symlink_mappings()
 
