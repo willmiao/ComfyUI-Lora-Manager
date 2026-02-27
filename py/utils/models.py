@@ -28,6 +28,7 @@ class BaseModelMetadata:
     skip_metadata_refresh: bool = False  # Whether to skip this model during bulk metadata refresh
     metadata_source: Optional[str] = None  # Last provider that supplied metadata
     last_checked_at: float = 0  # Last checked timestamp
+    hash_status: str = "completed"  # Hash calculation status: pending | calculating | completed | failed
     _unknown_fields: Dict[str, Any] = field(default_factory=dict, repr=False, compare=False)  # Store unknown fields
 
     def __post_init__(self):

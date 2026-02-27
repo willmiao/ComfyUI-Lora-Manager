@@ -282,6 +282,11 @@ class ModelScanner:
         sub_type = get_value('sub_type', None)
         if sub_type:
             entry['sub_type'] = sub_type
+        
+        # Handle hash_status for lazy hash calculation (checkpoints)
+        hash_status = get_value('hash_status', 'completed')
+        if hash_status:
+            entry['hash_status'] = hash_status
 
         return entry
 
