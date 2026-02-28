@@ -250,12 +250,11 @@
 .changelog-content {
     max-height: 550px;
     overflow-y: auto;
-    padding-left: var(--space-3);
 }
 
 .changelog-item {
     margin-bottom: var(--space-2);
-    padding-bottom: var(--space-2);
+    padding: var(--space-2);
     border-bottom: 1px solid var(--lora-border);
 }
 
@@ -302,8 +301,7 @@
 
 .changelog-item.latest {
     background-color: rgba(66, 153, 225, 0.05);
-    border-radius: var(--border-radius-sm);
-    padding: var(--space-2);
+    border-radius: var(--border-radius-sm); 
     border: 1px solid rgba(66, 153, 225, 0.2);
 }
 
