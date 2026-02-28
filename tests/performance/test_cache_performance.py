@@ -14,12 +14,17 @@ from py.services.model_hash_index import ModelHashIndex
 from py.utils.utils import fuzzy_match, calculate_recipe_fingerprint
 
 
+pytestmark = pytest.mark.performance
+
+
 class TestHashIndexPerformance:
     """Performance benchmarks for hash index operations."""
 
     def test_hash_index_lookup_small(self, benchmark):
         """Benchmark hash index lookup with 100 models."""
-        index, target_hash = self._create_hash_index_with_n_models(100, return_target=True)
+        index, target_hash = self._create_hash_index_with_n_models(
+            100, return_target=True
+        )
 
         def lookup():
             return index.get_path(target_hash)
@@ -29,7 +34,9 @@ class TestHashIndexPerformance:
 
     def test_hash_index_lookup_medium(self, benchmark):
         """Benchmark hash index lookup with 1,000 models."""
-        index, target_hash = self._create_hash_index_with_n_models(1000, return_target=True)
+        index, target_hash = self._create_hash_index_with_n_models(
+            1000, return_target=True
+        )
 
         def lookup():
             return index.get_path(target_hash)
@@ -39,7 +46,9 @@ class TestHashIndexPerformance:
 
     def test_hash_index_lookup_large(self, benchmark):
         """Benchmark hash index lookup with 10,000 models."""
-        index, target_hash = self._create_hash_index_with_n_models(10000, return_target=True)
+        index, target_hash = self._create_hash_index_with_n_models(
+            10000, return_target=True
+        )
 
         def lookup():
             return index.get_path(target_hash)
@@ -71,11 +80,11 @@ class TestHashIndexPerformance:
 
     def _create_hash_index_with_n_models(self, n: int, return_target: bool = False):
         """Create a hash index with n mock models.
-        
+
         Args:
             n: Number of models to create
             return_target: If True, returns the hash of the middle model for lookup testing
-            
+
         Returns:
             ModelHashIndex or tuple of (ModelHashIndex, target_hash)
         """
@@ -94,7 +103,7 @@ class TestHashIndexPerformance:
 
     def _random_string(self, length: int) -> str:
         """Generate a random string of fixed length."""
-        return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
+        return "".join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 
 class TestFuzzyMatchPerformance:
