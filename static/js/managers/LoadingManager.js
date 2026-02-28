@@ -8,6 +8,22 @@ export class LoadingManager {
             return LoadingManager.instance;
         }
 
+        // Delay DOM creation until first use to ensure i18n is ready
+        this._initialized = false;
+        this.overlay = null;
+        this.loadingContent = null;
+        this.progressBar = null;
+        this.statusText = null;
+        this.cancelButton = null;
+        this.onCancelCallback = null;
+        this.detailsContainer = null;
+
+        LoadingManager.instance = this;
+    }
+
+    _ensureInitialized() {
+        if (this._initialized) return;
+
         this.overlay = document.getElementById('loading-overlay');
 
         if (!this.overlay) {
@@ -53,7 +69,6 @@ export class LoadingManager {
             this.loadingContent.appendChild(this.cancelButton);
         }
 
-        this.onCancelCallback = null;
         this.cancelButton.onclick = () => {
             if (this.onCancelCallback) {
                 this.onCancelCallback();
@@ -62,12 +77,11 @@ export class LoadingManager {
             }
         };
 
-        this.detailsContainer = null; // Will be created when needed
-
-        LoadingManager.instance = this;
+        this._initialized = true;
     }
 
     show(message = 'Loading...', progress = 0) {
+        this._ensureInitialized();
         this.overlay.style.display = 'flex';
         this.setProgress(progress);
         this.setStatus(message);
@@ -77,21 +91,25 @@ export class LoadingManager {
     }
 
     hide() {
+        if (!this._initialized) return;
         this.overlay.style.display = 'none';
         this.reset();
         this.removeDetailsContainer();
     }
 
     setProgress(percent) {
+        if (!this._initialized) return;
         this.progressBar.style.width = `${percent}%`;
         this.progressBar.setAttribute('aria-valuenow', percent);
     }
 
     setStatus(message) {
+        if (!this._initialized) return;
         this.statusText.textContent = message;
     }
 
     reset() {
+        if (!this._initialized) return;
         this.setProgress(0);
         this.setStatus('');
         this.removeDetailsContainer();
@@ -100,6 +118,7 @@ export class LoadingManager {
     }
 
     showCancelButton(onCancel) {
+        this._ensureInitialized();
         if (this.cancelButton) {
             this.onCancelCallback = onCancel;
             this.cancelButton.style.display = 'flex';
@@ -109,6 +128,7 @@ export class LoadingManager {
     }
 
     hideCancelButton() {
+        if (!this._initialized) return;
         if (this.cancelButton) {
             this.cancelButton.style.display = 'none';
             this.onCancelCallback = null;
@@ -117,6 +137,7 @@ export class LoadingManager {
 
     // Create a details container for enhanced progress display
     createDetailsContainer() {
+        this._ensureInitialized();
         // Remove existing container if any
         this.removeDetailsContainer();
 
@@ -332,12 +353,14 @@ export class LoadingManager {
     }
 
     showSimpleLoading(message = 'Loading...') {
+        this._ensureInitialized();
         this.overlay.style.display = 'flex';
         this.progressBar.style.display = 'none';
         this.setStatus(message);
     }
 
     restoreProgressBar() {
+        if (!this._initialized) return;
         this.progressBar.style.display = 'block';
     }
 }
