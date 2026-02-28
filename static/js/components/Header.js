@@ -5,6 +5,7 @@ import { FilterManager } from '../managers/FilterManager.js';
 import { initPageState } from '../state/index.js';
 import { getStorageItem } from '../utils/storageHelpers.js';
 import { updateElementAttribute } from '../utils/i18nHelpers.js';
+import { renderSupporters } from '../services/supportersService.js';
 
 /**
  * Header.js - Manages the application header behavior across different pages
@@ -85,9 +86,15 @@ export class HeaderManager {
       // Handle support toggle
       const supportToggle = document.getElementById('supportToggleBtn');
       if (supportToggle) {
-        supportToggle.addEventListener('click', () => {
+        supportToggle.addEventListener('click', async () => {
           if (window.modalManager) {
             window.modalManager.toggleModal('supportModal');
+            // Load supporters data when modal opens
+            try {
+              await renderSupporters();
+            } catch (error) {
+              console.error('Error loading supporters:', error);
+            }
           }
         });
       }

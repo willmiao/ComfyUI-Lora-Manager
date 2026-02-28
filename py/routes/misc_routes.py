@@ -29,6 +29,7 @@ from .handlers.misc_handlers import (
     NodeRegistry,
     NodeRegistryHandler,
     SettingsHandler,
+    SupportersHandler,
     TrainedWordsHandler,
     UsageStatsHandler,
     build_service_registry_adapter,
@@ -119,6 +120,7 @@ class MiscRoutes:
             metadata_provider_factory=self._metadata_provider_factory,
         )
         custom_words = CustomWordsHandler()
+        supporters = SupportersHandler()
 
         return self._handler_set_factory(
             health=health,
@@ -132,6 +134,7 @@ class MiscRoutes:
             metadata_archive=metadata_archive,
             filesystem=filesystem,
             custom_words=custom_words,
+            supporters=supporters,
         )
 
 

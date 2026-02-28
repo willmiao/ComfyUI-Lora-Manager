@@ -1342,7 +1342,14 @@
             "showWechatQR": "显示微信二维码",
             "hideWechatQR": "隐藏微信二维码"
         },
-        "footer": "感谢使用 LoRA 管理器！❤️"
+        "footer": "感谢使用 LoRA 管理器！❤️",
+        "supporters": {
+            "title": "感谢所有支持者",
+            "subtitle": "感谢 {count} 位支持者让这个项目成为可能",
+            "specialThanks": "特别感谢",
+            "allSupporters": "所有支持者",
+            "totalCount": "共 {count} 位支持者"
+        }
     },
     "toast": {
         "general": {

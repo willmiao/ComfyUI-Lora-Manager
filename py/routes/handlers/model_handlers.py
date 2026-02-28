@@ -66,6 +66,27 @@ class ModelPageView:
         self._logger = logger
         self._app_version = self._get_app_version()
 
+    def _load_supporters(self) -> dict:
+        """Load supporters data from JSON file."""
+        try:
+            current_file = os.path.abspath(__file__)
+            root_dir = os.path.dirname(
+                os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
+            )
+            supporters_path = os.path.join(root_dir, "data", "supporters.json")
+            
+            if os.path.exists(supporters_path):
+                with open(supporters_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+        except Exception as e:
+            self._logger.debug(f"Failed to load supporters data: {e}")
+        
+        return {
+            "specialThanks": [],
+            "allSupporters": [],
+            "totalCount": 0
+        }
+
     def _get_app_version(self) -> str:
         version = "1.0.0"
         short_hash = "stable"

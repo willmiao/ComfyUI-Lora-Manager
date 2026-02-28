@@ -2,89 +2,132 @@
 <div id="supportModal" class="modal">
     <div class="modal-content support-modal">
         <button class="close" onclick="modalManager.closeModal('supportModal')">&times;</button>
-        <div class="support-header">
-            <i class="fas fa-heart support-icon"></i>
-            <h2>{{ t('support.title') }}</h2>
-        </div>
-        <div class="support-content">
-            <p>{{ t('support.message') }}</p>
-            
-            <div class="support-section">
-                <h3><i class="fas fa-comment"></i> {{ t('support.feedback.title') }}</h3>
-                <p>{{ t('support.feedback.description') }}</p>
-                <div class="support-links">
-                    <a href="https://github.com/willmiao/ComfyUI-Lora-Manager/issues/new" class="social-link" target="_blank">
-                        <i class="fab fa-github"></i>
-                        <span>{{ t('support.links.submitGithubIssue') }}</span>
-                    </a>
-                    <a href="https://discord.gg/vcqNrWVFvM" class="social-link" target="_blank">
-                        <i class="fab fa-discord"></i>
-                        <span>{{ t('support.links.joinDiscord') }}</span>
-                    </a>
+        
+        <div class="support-container">
+            <!-- Left Side: Support Options -->
+            <div class="support-left">
+                <div class="support-header">
+                    <i class="fas fa-heart support-icon"></i>
+                    <h2>{{ t('support.title') }}</h2>
                 </div>
-            </div>
-            
-            <div class="support-section">
-                <h3><i class="fas fa-rss"></i> {{ t('support.sections.followUpdates') }}</h3>
-                <div class="support-links">
-                    <a href="https://www.youtube.com/@pixelpaws-ai" class="social-link" target="_blank">
-                        <i class="fab fa-youtube"></i>
-                        <span>{{ t('support.links.youtubeChannel') }}</span>
-                    </a>
-                    <a href="https://civitai.com/user/PixelPawsAI" class="social-link civitai-link" target="_blank">
-                        <svg class="civitai-icon" viewBox="0 0 225 225" width="20" height="20">
-                            <g transform="translate(0,225) scale(0.1,-0.1)" fill="currentColor">
-                                <path d="M950 1899 c-96 -55 -262 -150 -367 -210 -106 -61 -200 -117 -208
-                                -125 -13 -13 -15 -76 -15 -443 0 -395 1 -429 18 -443 9 -9 116 -73 237 -143
-                                121 -70 283 -163 359 -208 76 -45 146 -80 155 -80 9 1 183 98 386 215 l370
-                                215 2 444 3 444 -376 215 c-206 118 -378 216 -382 217 -4 1 -86 -43 -182 -98z
-                                m346 -481 l163 -93 1 -57 0 -58 -89 0 c-87 0 -91 1 -166 44 l-78 45 -51 -30
-                                c-28 -17 -61 -35 -73 -41 -21 -10 -23 -18 -23 -99 l0 -87 71 -41 c39 -23 73
-                                -41 76 -41 3 0 37 18 75 40 68 39 72 40 164 40 l94 0 0 -53 c0 -60 23 -41
-                                -198 -168 l-133 -77 -92 52 c-51 29 -126 73 -167 97 l-75 45 0 193 0 192 164
-                                95 c91 52 167 94 169 94 2 0 78 -42 168 -92z"/>
-                            </g>
-                        </svg>
-                        <span>{{ t('support.links.civitaiProfile') }}</span>
-                    </a>
+                <div class="support-content">
+                    <p>{{ t('support.message') }}</p>
+                    
+                    <div class="support-section">
+                        <h3><i class="fas fa-comment"></i> {{ t('support.feedback.title') }}</h3>
+                        <p>{{ t('support.feedback.description') }}</p>
+                        <div class="support-links">
+                            <a href="https://github.com/willmiao/ComfyUI-Lora-Manager/issues/new" class="social-link" target="_blank">
+                                <i class="fab fa-github"></i>
+                                <span>{{ t('support.links.submitGithubIssue') }}</span>
+                            </a>
+                            <a href="https://discord.gg/vcqNrWVFvM" class="social-link" target="_blank">
+                                <i class="fab fa-discord"></i>
+                                <span>{{ t('support.links.joinDiscord') }}</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="support-section">
+                        <h3><i class="fas fa-rss"></i> {{ t('support.sections.followUpdates') }}</h3>
+                        <div class="support-links">
+                            <a href="https://www.youtube.com/@pixelpaws-ai" class="social-link" target="_blank">
+                                <i class="fab fa-youtube"></i>
+                                <span>{{ t('support.links.youtubeChannel') }}</span>
+                            </a>
+                            <a href="https://civitai.com/user/PixelPawsAI" class="social-link civitai-link" target="_blank">
+                                <svg class="civitai-icon" viewBox="0 0 225 225" width="20" height="20">
+                                    <g transform="translate(0,225) scale(0.1,-0.1)" fill="currentColor">
+                                        <path d="M950 1899 c-96 -55 -262 -150 -367 -210 -106 -61 -200 -117 -208
+                                        -125 -13 -13 -15 -76 -15 -443 0 -395 1 -429 18 -443 9 -9 116 -73 237 -143
+                                        121 -70 283 -163 359 -208 76 -45 146 -80 155 -80 9 1 183 98 386 215 l370
+                                        215 2 444 3 444 -376 215 c-206 118 -378 216 -382 217 -4 1 -86 -43 -182 -98z
+                                        m346 -481 l163 -93 1 -57 0 -58 -89 0 c-87 0 -91 1 -166 44 l-78 45 -51 -30
+                                        c-28 -17 -61 -35 -73 -41 -21 -10 -23 -18 -23 -99 l0 -87 71 -41 c39 -23 73
+                                        -41 76 -41 3 0 37 18 75 40 68 39 72 40 164 40 l94 0 0 -53 c0 -60 23 -41
+                                        -198 -168 l-133 -77 -92 52 c-51 29 -126 73 -167 97 l-75 45 0 193 0 192 164
+                                        95 c91 52 167 94 169 94 2 0 78 -42 168 -92z"/>
+                                    </g>
+                                </svg>
+                                <span>{{ t('support.links.civitaiProfile') }}</span>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="support-section">
+                        <h3><i class="fas fa-coffee"></i> {{ t('support.sections.buyMeCoffee') }}</h3>
+                        <p>{{ t('support.sections.coffeeDescription') }}</p>
+                        <a href="https://ko-fi.com/pixelpawsai" class="kofi-button" target="_blank">
+                            <i class="fas fa-mug-hot"></i>
+                            <span>{{ t('support.links.supportKofi') }}</span>
+                        </a>
+                    </div>
+
+                    <!-- Patreon Support Section -->
+                    <div class="support-section">
+                        <h3><i class="fab fa-patreon"></i> {{ t('support.sections.becomePatron') }}</h3>
+                        <p>{{ t('support.sections.patronDescription') }}</p>
+                        <a href="https://patreon.com/PixelPawsAI" class="patreon-button" target="_blank">
+                            <i class="fab fa-patreon"></i>
+                            <span>{{ t('support.links.supportPatreon') }}</span>
+                        </a>
+                    </div>
+
+                    <!-- New section for Chinese payment methods -->
+                    <div class="support-section">
+                        <h3><i class="fas fa-qrcode"></i> {{ t('support.sections.wechatSupport') }}</h3>
+                        <p>{{ t('support.sections.wechatDescription') }}</p>
+                        <button class="secondary-btn qrcode-toggle" id="toggleQRCode">
+                            <i class="fas fa-qrcode"></i>
+                            <span class="toggle-text">{{ t('support.sections.showWechatQR') }}</span>
+                            <i class="fas fa-chevron-down toggle-icon"></i>
+                        </button>
+                        <div class="qrcode-container" id="qrCodeContainer">
+                            <img src="/loras_static/images/wechat-qr.webp" alt="WeChat Pay QR Code" class="qrcode-image">
+                        </div>
+                    </div>
+                    
+                    <div class="support-footer">
+                        <p>{{ t('support.footer') }}</p>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="support-section">
-                <h3><i class="fas fa-coffee"></i> {{ t('support.sections.buyMeCoffee') }}</h3>
-                <p>{{ t('support.sections.coffeeDescription') }}</p>
-                <a href="https://ko-fi.com/pixelpawsai" class="kofi-button" target="_blank">
-                    <i class="fas fa-mug-hot"></i>
-                    <span>{{ t('support.links.supportKofi') }}</span>
-                </a>
             </div>
 
-            <!-- Patreon Support Section -->
-            <div class="support-section">
-                <h3><i class="fab fa-patreon"></i> {{ t('support.sections.becomePatron') }}</h3>
-                <p>{{ t('support.sections.patronDescription') }}</p>
-                <a href="https://patreon.com/PixelPawsAI" class="patreon-button" target="_blank">
-                    <i class="fab fa-patreon"></i>
-                    <span>{{ t('support.links.supportPatreon') }}</span>
-                </a>
-            </div>
+            <!-- Right Side: Supporters -->
+            <div class="support-right">
+                <div class="supporters-section">
+                    <div class="supporters-header">
+                        <h2 class="supporters-title">
+                            <i class="fas fa-hands-helping"></i>
+                            {{ t('support.supporters.title') }}
+                        </h2>
+                        <p class="supporters-subtitle" id="supportersSubtitle">
+                            {{ t('support.supporters.subtitle', count=0) }}
+                        </p>
+                    </div>
+                    
+                    <!-- Special Thanks Section -->
+                    <div class="supporters-group special-thanks-group">
+                        <h3 class="supporters-group-title">
+                            <i class="fas fa-star"></i>
+                            {{ t('support.supporters.specialThanks') }}
+                        </h3>
+                        <div class="supporters-special-grid" id="specialThanksGrid">
+                            <!-- Supporters will be loaded dynamically -->
+                        </div>
+                    </div>
 
-            <!-- New section for Chinese payment methods -->
-            <div class="support-section">
-                <h3><i class="fas fa-qrcode"></i> {{ t('support.sections.wechatSupport') }}</h3>
-                <p>{{ t('support.sections.wechatDescription') }}</p>
-                <button class="secondary-btn qrcode-toggle" id="toggleQRCode">
-                    <i class="fas fa-qrcode"></i>
-                    <span class="toggle-text">{{ t('support.sections.showWechatQR') }}</span>
-                    <i class="fas fa-chevron-down toggle-icon"></i>
-                </button>
-                <div class="qrcode-container" id="qrCodeContainer">
-                    <img src="/loras_static/images/wechat-qr.webp" alt="WeChat Pay QR Code" class="qrcode-image">
+                    <!-- All Supporters Section -->
+                    <div class="supporters-group all-supporters-group">
+                        <h3 class="supporters-group-title">
+                            <i class="fas fa-heart"></i>
+                            {{ t('support.supporters.allSupporters') }}
+                        </h3>
+                        <div class="supporters-all-list" id="supportersGrid">
+                            <!-- Supporters will be loaded dynamically -->
+                        </div>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="support-footer">
-                <p>{{ t('support.footer') }}</p>
             </div>
         </div>
     </div>

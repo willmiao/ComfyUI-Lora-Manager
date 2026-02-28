@@ -9,6 +9,7 @@ objects that can be composed by the route controller.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import subprocess
@@ -216,6 +217,45 @@ class NodeRegistry:
 class HealthCheckHandler:
     async def health_check(self, request: web.Request) -> web.Response:
         return web.json_response({"status": "ok"})
+
+
+class SupportersHandler:
+    """Handler for supporters data."""
+
+    def __init__(self, logger: logging.Logger | None = None) -> None:
+        self._logger = logger or logging.getLogger(__name__)
+
+    def _load_supporters(self) -> dict:
+        """Load supporters data from JSON file."""
+        try:
+            current_file = os.path.abspath(__file__)
+            root_dir = os.path.dirname(
+                os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
+            )
+            supporters_path = os.path.join(root_dir, "data", "supporters.json")
+
+            if os.path.exists(supporters_path):
+                with open(supporters_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+        except Exception as e:
+            self._logger.debug(f"Failed to load supporters data: {e}")
+
+        return {
+            "specialThanks": [],
+            "allSupporters": [],
+            "totalCount": 0
+        }
+
+    async def get_supporters(self, request: web.Request) -> web.Response:
+        """Return supporters data as JSON."""
+        try:
+            supporters = self._load_supporters()
+            return web.json_response({"success": True, "supporters": supporters})
+        except Exception as exc:
+            self._logger.error("Error loading supporters: %s", exc, exc_info=True)
+            return web.json_response(
+                {"success": False, "error": str(exc)}, status=500
+            )
 
 
 class SettingsHandler:
@@ -1482,6 +1522,7 @@ class MiscHandlerSet:
         metadata_archive: MetadataArchiveHandler,
         filesystem: FileSystemHandler,
         custom_words: CustomWordsHandler,
+        supporters: SupportersHandler,
     ) -> None:
         self.health = health
         self.settings = settings
@@ -1494,6 +1535,7 @@ class MiscHandlerSet:
         self.metadata_archive = metadata_archive
         self.filesystem = filesystem
         self.custom_words = custom_words
+        self.supporters = supporters
 
     def to_route_mapping(
         self,
@@ -1522,6 +1564,7 @@ class MiscHandlerSet:
             "open_file_location": self.filesystem.open_file_location,
             "open_settings_location": self.filesystem.open_settings_location,
             "search_custom_words": self.custom_words.search_custom_words,
+            "get_supporters": self.supporters.get_supporters,
         }
 
 

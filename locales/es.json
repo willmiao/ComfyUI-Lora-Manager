@@ -1342,7 +1342,14 @@
             "showWechatQR": "Mostrar código QR de WeChat",
             "hideWechatQR": "Ocultar código QR de WeChat"
         },
-        "footer": "¡Gracias por usar el gestor de LoRA! ❤️"
+        "footer": "¡Gracias por usar el gestor de LoRA! ❤️",
+        "supporters": {
+            "title": "Gracias a todos los seguidores",
+            "subtitle": "Gracias a {count} seguidores que hicieron este proyecto posible",
+            "specialThanks": "Agradecimientos especiales",
+            "allSupporters": "Todos los seguidores",
+            "totalCount": "{count} seguidores en total"
+        }
     },
     "toast": {
         "general": {

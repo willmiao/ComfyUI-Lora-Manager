@@ -1342,7 +1342,14 @@
             "showWechatQR": "Show WeChat QR Code",
             "hideWechatQR": "Hide WeChat QR Code"
         },
-        "footer": "Thank you for using LoRA Manager! ❤️"
+        "footer": "Thank you for using LoRA Manager! ❤️",
+        "supporters": {
+            "title": "Thank You To Our Supporters",
+            "subtitle": "Thanks to {count} supporters who made this project possible",
+            "specialThanks": "Special Thanks",
+            "allSupporters": "All Supporters",
+            "totalCount": "{count} supporters in total"
+        }
     },
     "toast": {
         "general": {

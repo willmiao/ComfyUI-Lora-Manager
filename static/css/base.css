@@ -68,6 +68,7 @@ body {
     --space-1: calc(8px * 1);
     --space-2: calc(8px * 2);
     --space-3: calc(8px * 3);
+    --space-4: calc(8px * 4);
 
     /* Z-index Scale */
     --z-base: 10;
@@ -77,6 +78,7 @@ body {
 
     /* Border Radius */
     --border-radius-base: 12px;
+    --border-radius-md: 12px;
     --border-radius-sm: 8px;
     --border-radius-xs: 4px;
 

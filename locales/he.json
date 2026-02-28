@@ -1342,7 +1342,14 @@
             "showWechatQR": "הצג קוד QR של WeChat",
             "hideWechatQR": "הסתר קוד QR של WeChat"
         },
-        "footer": "תודה על השימוש במנהל LoRA! ❤️"
+        "footer": "תודה על השימוש במנהל LoRA! ❤️",
+        "supporters": {
+            "title": "תודה לכל התומכים",
+            "subtitle": "תודה ל־{count} תומכים שהפכו את הפרויקט הזה לאפשרי",
+            "specialThanks": "תודה מיוחדת",
+            "allSupporters": "כל התומכים",
+            "totalCount": "{count} תומכים בסך הכל"
+        }
     },
     "toast": {
         "general": {

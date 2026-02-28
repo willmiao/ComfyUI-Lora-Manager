@@ -1,6 +1,26 @@
 /* Support Modal Styles */
 .support-modal {
-    max-width: 570px;
+    max-width: 1000px;
+    width: 90vw;
+}
+
+/* Two-column layout */
+.support-container {
+    display: flex;
+    gap: var(--space-3);
+    min-height: 500px;
+}
+
+.support-left {
+    flex: 0 0 42%;
+    min-width: 0;
+}
+
+.support-right {
+    flex: 1;
+    min-width: 0;
+    border-left: 1px solid var(--lora-border);
+    padding-left: var(--space-4);
 }
 
 .support-header {
@@ -214,6 +234,11 @@
     .support-links {
         flex-direction: column;
     }
+    
+    .support-modal {
+        width: 95vw;
+        max-width: 95vw;
+    }
 }
 
 /* Civitai link styles */
@@ -239,4 +264,181 @@
 .folder-item:hover {
     border-color: var(--lora-accent);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Supporters Section Styles */
+.supporters-section {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.supporters-header {
+    margin-bottom: var(--space-4);
+}
+
+.supporters-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-1) 0;
+    font-size: 1.3em !important;
+    color: var(--lora-accent) !important;
+}
+
+.supporters-title i {
+    opacity: 0.9;
+}
+
+.supporters-subtitle {
+    margin: 0;
+    font-size: 0.95em;
+    color: var(--text-color);
+    opacity: 0.6;
+}
+
+.supporters-group {
+    margin-bottom: var(--space-3);
+}
+
+.supporters-group-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 var(--space-2) 0;
+    font-size: 1em;
+    color: var(--text-color);
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+.supporters-group-title i {
+    color: var(--lora-accent);
+    opacity: 0.7;
+}
+
+/* Special Thanks - Clean Card Style */
+.special-thanks-group {
+    margin-bottom: var(--space-4);
+}
+
+.special-thanks-group .supporters-group-title {
+    margin-bottom: var(--space-3);
+}
+
+.special-thanks-group .supporters-group-title i {
+    color: #fbbf24;
+}
+
+.all-supporters-group .supporters-group-title i {
+    color: var(--lora-error);
+    opacity: 0.9;
+}
+
+.supporters-special-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+}
+
+.supporter-special-card {
+    display: flex;
+    align-items: center;
+    padding: var(--space-2) var(--space-3);
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--lora-accent);
+    border-radius: var(--border-radius-sm);
+    transition: all 0.2s ease;
+    cursor: default;
+}
+
+.supporter-special-card:hover {
+    border-color: var(--lora-accent);
+    border-left-color: var(--lora-accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateX(4px);
+}
+
+.supporter-special-card .supporter-special-name {
+    font-size: 1em;
+    font-weight: 500;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.supporter-special-card:hover .supporter-special-name {
+    color: var(--lora-accent);
+}
+
+/* All Supporters - Elegant Text Flow */
+.all-supporters-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.all-supporters-group .supporters-group-title {
+    margin-bottom: var(--space-2);
+}
+
+.supporters-all-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    line-height: 2.2;
+    max-height: 550px;
+    overflow-y: auto;
+    padding: var(--space-2) 0;
+    color: var(--text-color);
+}
+
+.supporter-name-item {
+    font-size: 0.95em;
+    color: var(--text-color);
+    opacity: 0.85;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    cursor: default;
+}
+
+.supporter-name-item:hover {
+    opacity: 1;
+    color: var(--lora-accent);
+}
+
+.supporter-separator {
+    margin: 0 10px;
+    color: var(--text-color);
+    opacity: 0.25;
+    font-weight: 300;
+    user-select: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .support-container {
+        flex-direction: column;
+    }
+    
+    .support-left {
+        flex: 1;
+    }
+    
+    .support-right {
+        border-left: none;
+        border-top: 1px solid var(--lora-border);
+        padding-left: 0;
+        padding-top: var(--space-3);
+    }
+    
+    .supporters-all-list {
+        max-height: 200px;
+    }
+    
+    .supporters-special-grid {
+        grid-template-columns: 1fr;
+    }
 }
