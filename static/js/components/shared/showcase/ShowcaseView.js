@@ -61,8 +61,14 @@ export async function loadExampleImages(images, modelHash) {
         
         // Re-initialize the showcase event listeners
         const carousel = showcaseTab.querySelector('.carousel');
-        if (carousel && !carousel.classList.contains('collapsed')) {
-            initShowcaseContent(carousel);
+        if (carousel) {
+            // Always bind scroll-indicator click events (even when collapsed)
+            bindScrollIndicatorEvents(carousel);
+            
+            // Only initialize full showcase content when expanded
+            if (!carousel.classList.contains('collapsed')) {
+                initShowcaseContent(carousel);
+            }
         }
         
         // Initialize the example import functionality
@@ -577,6 +583,41 @@ export function toggleShowcase(element) {
 }
 
 /**
+ * Bind scroll-indicator click events (works even when carousel is collapsed)
+ * @param {HTMLElement} carousel - The carousel element
+ */
+function bindScrollIndicatorEvents(carousel) {
+    if (!carousel) return;
+
+    const scrollIndicator = carousel.previousElementSibling;
+    if (scrollIndicator && scrollIndicator.classList.contains('scroll-indicator')) {
+        // Remove previous listeners to avoid duplicates
+        scrollIndicator.onclick = null;
+        scrollIndicator.removeEventListener('click', scrollIndicator._leftClickHandler);
+        scrollIndicator.removeEventListener('mousedown', scrollIndicator._middleClickHandler);
+
+        // Handler for left-click (button 0) - uses 'click' event
+        scrollIndicator._leftClickHandler = (event) => {
+            if (event.button === 0) {
+                event.preventDefault();
+                toggleShowcase(scrollIndicator);
+            }
+        };
+
+        // Handler for middle-click (button 1) - uses 'mousedown' event
+        scrollIndicator._middleClickHandler = (event) => {
+            if (event.button === 1) {
+                event.preventDefault();
+                toggleShowcase(scrollIndicator);
+            }
+        };
+
+        scrollIndicator.addEventListener('click', scrollIndicator._leftClickHandler);
+        scrollIndicator.addEventListener('mousedown', scrollIndicator._middleClickHandler);
+    }
+}
+
+/**
  * Initialize all showcase content interactions
  * @param {HTMLElement} carousel - The carousel element
  */
@@ -589,15 +630,8 @@ export function initShowcaseContent(carousel) {
     initMediaControlHandlers(carousel);
     positionAllMediaControls(carousel);
 
-    // Bind scroll-indicator click to toggleShowcase
-    const scrollIndicator = carousel.previousElementSibling;
-    if (scrollIndicator && scrollIndicator.classList.contains('scroll-indicator')) {
-        // Remove previous click listeners to avoid duplicates
-        scrollIndicator.onclick = null;
-        scrollIndicator.removeEventListener('click', scrollIndicator._toggleShowcaseHandler);
-        scrollIndicator._toggleShowcaseHandler = () => toggleShowcase(scrollIndicator);
-        scrollIndicator.addEventListener('click', scrollIndicator._toggleShowcaseHandler);
-    }
+    // Bind scroll-indicator click events
+    bindScrollIndicatorEvents(carousel);
     
     // Add window resize handler
     const resizeHandler = () => positionAllMediaControls(carousel);
