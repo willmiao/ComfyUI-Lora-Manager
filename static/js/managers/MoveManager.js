@@ -88,6 +88,11 @@ class MoveManager {
             folderPathInput.value = '';
         }
 
+        // Reset folder tree selection
+        if (this.folderTreeManager) {
+            this.folderTreeManager.clearSelection();
+        }
+
         try {
             // Fetch model roots
             const modelRootSelect = document.getElementById('moveModelRoot');
@@ -308,7 +313,7 @@ class MoveManager {
         }
 
         // Get selected folder path from folder tree manager
-        const targetFolder = this.folderTreeManager.getSelectedPath();
+        const targetFolder = this.useDefaultPath ? '' : this.folderTreeManager.getSelectedPath();
 
         let targetPath = selectedRoot;
         if (targetFolder) {
