@@ -26,8 +26,7 @@ export function generateVideoWrapper(media, heightPercent, shouldBlur, nsfwText,
                 </button>
             ` : ''}
             ${mediaControlsHtml}
-            <video controls autoplay muted loop crossorigin="anonymous" 
-                referrerpolicy="no-referrer" 
+            <video controls autoplay muted loop
                 data-local-src="${localUrl || ''}"
                 data-remote-src="${remoteUrl}"
                 data-nsfw-level="${nsfwLevel}"

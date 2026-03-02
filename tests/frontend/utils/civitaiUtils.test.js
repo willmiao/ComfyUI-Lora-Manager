@@ -1,0 +1,172 @@
+import { describe, it, expect } from 'vitest';
+import {
+    rewriteCivitaiUrl,
+    getOptimizedUrl,
+    getShowcaseUrl,
+    getThumbnailUrl,
+    isCivitaiUrl,
+    OptimizationMode
+} from '../../../static/js/utils/civitaiUtils.js';
+
+describe('civitaiUtils', () => {
+    describe('OptimizationMode', () => {
+        it('should have correct mode values', () => {
+            expect(OptimizationMode.SHOWCASE).toBe('showcase');
+            expect(OptimizationMode.THUMBNAIL).toBe('thumbnail');
+        });
+    });
+
+    describe('rewriteCivitaiUrl', () => {
+        it('should rewrite image URLs with /original=true for thumbnail mode', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.jpeg';
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl(originalUrl, 'image', OptimizationMode.THUMBNAIL);
+
+            expect(wasRewritten).toBe(true);
+            expect(rewritten).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/width=450,optimized=true/12345.jpeg');
+        });
+
+        it('should rewrite image URLs with /original=true for showcase mode (no width)', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.jpeg';
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl(originalUrl, 'image', OptimizationMode.SHOWCASE);
+
+            expect(wasRewritten).toBe(true);
+            expect(rewritten).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/optimized=true/12345.jpeg');
+        });
+
+        it('should rewrite video URLs with /original=true for thumbnail mode', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.mp4';
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl(originalUrl, 'video', OptimizationMode.THUMBNAIL);
+
+            expect(wasRewritten).toBe(true);
+            expect(rewritten).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/transcode=true,width=450,optimized=true/12345.mp4');
+        });
+
+        it('should rewrite video URLs with /original=true for showcase mode (no width/transcode)', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.mp4';
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl(originalUrl, 'video', OptimizationMode.SHOWCASE);
+
+            expect(wasRewritten).toBe(true);
+            expect(rewritten).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/optimized=true/12345.mp4');
+        });
+
+        it('should default to thumbnail mode when mode is not specified', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.jpeg';
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl(originalUrl, 'image');
+
+            expect(wasRewritten).toBe(true);
+            expect(rewritten).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/width=450,optimized=true/12345.jpeg');
+        });
+
+        it('should not rewrite URLs without /original=true', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/width=450/12345.jpeg';
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl(originalUrl, 'image', OptimizationMode.THUMBNAIL);
+
+            expect(wasRewritten).toBe(false);
+            expect(rewritten).toBe(originalUrl);
+        });
+
+        it('should not rewrite non-CivitAI URLs', () => {
+            const originalUrl = 'https://example.com/image.jpg';
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl(originalUrl, 'image', OptimizationMode.SHOWCASE);
+
+            expect(wasRewritten).toBe(false);
+            expect(rewritten).toBe(originalUrl);
+        });
+
+        it('should handle null/undefined URLs', () => {
+            const [rewritten1, wasRewritten1] = rewriteCivitaiUrl(null, 'image');
+            expect(wasRewritten1).toBe(false);
+            expect(rewritten1).toBe(null);
+
+            const [rewritten2, wasRewritten2] = rewriteCivitaiUrl(undefined, 'image');
+            expect(wasRewritten2).toBe(false);
+            expect(rewritten2).toBe(undefined);
+        });
+
+        it('should handle empty strings', () => {
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl('', 'image');
+            expect(wasRewritten).toBe(false);
+            expect(rewritten).toBe('');
+        });
+
+        it('should handle invalid URLs gracefully', () => {
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl('not-a-valid-url', 'image');
+            expect(wasRewritten).toBe(false);
+            expect(rewritten).toBe('not-a-valid-url');
+        });
+    });
+
+    describe('getOptimizedUrl', () => {
+        it('should return optimized URL for CivitAI images in thumbnail mode', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.jpeg';
+            const optimized = getOptimizedUrl(originalUrl, 'image', OptimizationMode.THUMBNAIL);
+
+            expect(optimized).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/width=450,optimized=true/12345.jpeg');
+        });
+
+        it('should return optimized URL for CivitAI images in showcase mode', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.jpeg';
+            const optimized = getOptimizedUrl(originalUrl, 'image', OptimizationMode.SHOWCASE);
+
+            expect(optimized).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/optimized=true/12345.jpeg');
+        });
+
+        it('should return original URL for non-CivitAI URLs', () => {
+            const originalUrl = 'https://example.com/image.jpg';
+            const optimized = getOptimizedUrl(originalUrl, 'image');
+
+            expect(optimized).toBe(originalUrl);
+        });
+    });
+
+    describe('getShowcaseUrl', () => {
+        it('should return showcase-optimized URL (full quality)', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.jpeg';
+            const showcaseUrl = getShowcaseUrl(originalUrl, 'image');
+
+            expect(showcaseUrl).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/optimized=true/12345.jpeg');
+        });
+
+        it('should handle videos for showcase', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.mp4';
+            const showcaseUrl = getShowcaseUrl(originalUrl, 'video');
+
+            expect(showcaseUrl).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/optimized=true/12345.mp4');
+        });
+    });
+
+    describe('getThumbnailUrl', () => {
+        it('should return thumbnail-optimized URL (width=450)', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.jpeg';
+            const thumbnailUrl = getThumbnailUrl(originalUrl, 'image');
+
+            expect(thumbnailUrl).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/width=450,optimized=true/12345.jpeg');
+        });
+
+        it('should handle videos for thumbnails', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.mp4';
+            const thumbnailUrl = getThumbnailUrl(originalUrl, 'video');
+
+            expect(thumbnailUrl).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/transcode=true,width=450,optimized=true/12345.mp4');
+        });
+    });
+
+    describe('isCivitaiUrl', () => {
+        it('should return true for CivitAI URLs', () => {
+            expect(isCivitaiUrl('https://image.civitai.com/something')).toBe(true);
+            expect(isCivitaiUrl('https://image.civitai.com/')).toBe(true);
+        });
+
+        it('should return false for non-CivitAI URLs', () => {
+            expect(isCivitaiUrl('https://example.com/image.jpg')).toBe(false);
+            expect(isCivitaiUrl('https://civitai.com/image.jpg')).toBe(false);
+            expect(isCivitaiUrl('')).toBe(false);
+            expect(isCivitaiUrl(null)).toBe(false);
+            expect(isCivitaiUrl(undefined)).toBe(false);
+        });
+
+        it('should handle invalid URLs gracefully', () => {
+            expect(isCivitaiUrl('not-a-url')).toBe(false);
+        });
+    });
+});

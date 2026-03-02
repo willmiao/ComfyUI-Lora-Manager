@@ -16,6 +16,7 @@ import {
 } from './MediaUtils.js';
 import { generateMetadataPanel } from './MetadataPanel.js';
 import { generateImageWrapper, generateVideoWrapper } from './MediaRenderers.js';
+import { getShowcaseUrl } from '../../../utils/civitaiUtils.js';
 
 export const showcaseListenerMetrics = {
     wheelListeners: 0,
@@ -157,11 +158,19 @@ export function renderShowcaseContent(images, exampleFiles = [], startExpanded =
 function renderMediaItem(img, index, exampleFiles) {
     // Find matching file in our list of actual files
     let localFile = findLocalFile(img, index, exampleFiles);
-    
-    const remoteUrl = img.url || '';
+
+    // Get original remote URL
+    const originalRemoteUrl = img.url || '';
+
+    // Determine media type for optimization
+    const isVideo = localFile ? localFile.is_video :
+                  originalRemoteUrl.endsWith('.mp4') || originalRemoteUrl.endsWith('.webm');
+    const mediaType = isVideo ? 'video' : 'image';
+
+    // Optimize CivitAI URLs for showcase display (full quality)
+    const remoteUrl = getShowcaseUrl(originalRemoteUrl, mediaType);
+
     const localUrl = localFile ? localFile.path : '';
-    const isVideo = localFile ? localFile.is_video : 
-                  remoteUrl.endsWith('.mp4') || remoteUrl.endsWith('.webm');
     
     // Calculate appropriate aspect ratio
     const aspectRatio = (img.height / img.width) * 100;
