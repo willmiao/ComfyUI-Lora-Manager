@@ -1,8 +1,11 @@
 {
     "common": {
+        "cancel": "Abbrechen",
+        "confirm": "Bestätigen",
         "actions": {
             "save": "Speichern",
             "cancel": "Abbrechen",
+            "confirm": "Bestätigen",
             "delete": "Löschen",
             "move": "Verschieben",
             "refresh": "Aktualisieren",
@@ -361,6 +364,23 @@
             "defaultEmbeddingRootHelp": "Legen Sie den Standard-Embedding-Stammordner für Downloads, Importe und Verschiebungen fest",
             "noDefault": "Kein Standard"
         },
+        "extraFolderPaths": {
+            "title": "Zusätzliche Ordnerpfade",
+            "help": "Fügen Sie zusätzliche Modellordner außerhalb der Standardpfade von ComfyUI hinzu. Diese Pfade werden separat gespeichert und zusammen mit den Standardordnern gescannt.",
+            "description": "Konfigurieren Sie zusätzliche Ordner zum Scannen von Modellen. Diese Pfade sind spezifisch für LoRA Manager und werden mit den Standardpfaden von ComfyUI zusammengeführt.",
+            "modelTypes": {
+                "lora": "LoRA-Pfade",
+                "checkpoint": "Checkpoint-Pfade",
+                "unet": "Diffusionsmodell-Pfade",
+                "embedding": "Embedding-Pfade"
+            },
+            "pathPlaceholder": "/pfad/zu/extra/modellen",
+            "saveSuccess": "Zusätzliche Ordnerpfade aktualisiert.",
+            "saveError": "Fehler beim Aktualisieren der zusätzlichen Ordnerpfade: {message}",
+            "validation": {
+                "duplicatePath": "Dieser Pfad ist bereits konfiguriert"
+            }
+        },
         "priorityTags": {
             "title": "Prioritäts-Tags",
             "description": "Passen Sie die Tag-Prioritätsreihenfolge für jeden Modelltyp an (z. B. character, concept, style(toon|toon_style))",
@@ -485,23 +505,6 @@
             "proxyPassword": "Passwort (optional)",
             "proxyPasswordPlaceholder": "passwort",
             "proxyPasswordHelp": "Passwort für die Proxy-Authentifizierung (falls erforderlich)"
-        },
-        "extraFolderPaths": {
-            "title": "Zusätzliche Ordnerpfade",
-            "help": "Fügen Sie zusätzliche Modellordner außerhalb der Standardpfade von ComfyUI hinzu. Diese Pfade werden separat gespeichert und zusammen mit den Standardordnern gescannt.",
-            "description": "Konfigurieren Sie zusätzliche Ordner zum Scannen von Modellen. Diese Pfade sind spezifisch für LoRA Manager und werden mit den Standardpfaden von ComfyUI zusammengeführt.",
-            "modelTypes": {
-                "lora": "LoRA-Pfade",
-                "checkpoint": "Checkpoint-Pfade",
-                "unet": "Diffusionsmodell-Pfade",
-                "embedding": "Embedding-Pfade"
-            },
-            "pathPlaceholder": "/pfad/zu/extra/modellen",
-            "saveSuccess": "Zusätzliche Ordnerpfade aktualisiert.",
-            "saveError": "Fehler beim Aktualisieren der zusätzlichen Ordnerpfade: {message}",
-            "validation": {
-                "duplicatePath": "Dieser Pfad ist bereits konfiguriert"
-            }
         }
     },
     "loras": {
@@ -750,7 +753,17 @@
         "collapseAllDisabled": "Im Listenmodus nicht verfügbar",
         "dragDrop": {
             "unableToResolveRoot": "Zielpfad für das Verschieben konnte nicht ermittelt werden.",
-            "moveUnsupported": "Move is not supported for this item."
+            "moveUnsupported": "Verschieben wird für dieses Element nicht unterstützt.",
+            "createFolderHint": "Loslassen, um einen neuen Ordner zu erstellen",
+            "newFolderName": "Neuer Ordnername",
+            "folderNameHint": "Eingabetaste zum Bestätigen, Escape zum Abbrechen",
+            "emptyFolderName": "Bitte geben Sie einen Ordnernamen ein",
+            "invalidFolderName": "Ordnername enthält ungültige Zeichen",
+            "noDragState": "Kein ausstehender Ziehvorgang gefunden"
+        },
+        "empty": {
+            "noFolders": "Keine Ordner gefunden",
+            "dragHint": "Elemente hierher ziehen, um Ordner zu erstellen"
         }
     },
     "statistics": {

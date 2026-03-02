@@ -1,8 +1,11 @@
 {
     "common": {
+        "cancel": "取消",
+        "confirm": "確認",
         "actions": {
             "save": "儲存",
             "cancel": "取消",
+            "confirm": "確認",
             "delete": "刪除",
             "move": "移動",
             "refresh": "重新整理",
@@ -361,6 +364,23 @@
             "defaultEmbeddingRootHelp": "設定下載、匯入和移動時的預設 Embedding 根目錄",
             "noDefault": "未設定預設"
         },
+        "extraFolderPaths": {
+            "title": "額外資料夾路徑",
+            "help": "在 ComfyUI 的標準路徑之外新增額外的模型資料夾。這些路徑單獨儲存，並與預設資料夾一起掃描。",
+            "description": "設定額外的資料夾以掃描模型。這些路徑是 LoRA Manager 特有的，將與 ComfyUI 的預設路徑合併。",
+            "modelTypes": {
+                "lora": "LoRA 路徑",
+                "checkpoint": "Checkpoint 路徑",
+                "unet": "Diffusion 模型路徑",
+                "embedding": "Embedding 路徑"
+            },
+            "pathPlaceholder": "/額外/模型/路徑",
+            "saveSuccess": "額外資料夾路徑已更新。",
+            "saveError": "更新額外資料夾路徑失敗：{message}",
+            "validation": {
+                "duplicatePath": "此路徑已設定"
+            }
+        },
         "priorityTags": {
             "title": "優先標籤",
             "description": "為每種模型類型自訂標籤的優先順序 (例如: character, concept, style(toon|toon_style))",
@@ -485,23 +505,6 @@
             "proxyPassword": "密碼（選填）",
             "proxyPasswordPlaceholder": "password",
             "proxyPasswordHelp": "代理驗證所需的密碼（如有需要）"
-        },
-        "extraFolderPaths": {
-            "title": "額外資料夾路徑",
-            "help": "在 ComfyUI 的標準路徑之外新增額外的模型資料夾。這些路徑單獨儲存，並與預設資料夾一起掃描。",
-            "description": "設定額外的資料夾以掃描模型。這些路徑是 LoRA Manager 特有的，將與 ComfyUI 的預設路徑合併。",
-            "modelTypes": {
-                "lora": "LoRA 路徑",
-                "checkpoint": "Checkpoint 路徑",
-                "unet": "Diffusion 模型路徑",
-                "embedding": "Embedding 路徑"
-            },
-            "pathPlaceholder": "/額外/模型/路徑",
-            "saveSuccess": "額外資料夾路徑已更新。",
-            "saveError": "更新額外資料夾路徑失敗：{message}",
-            "validation": {
-                "duplicatePath": "此路徑已設定"
-            }
         }
     },
     "loras": {
@@ -750,7 +753,17 @@
         "collapseAllDisabled": "列表檢視下不可用",
         "dragDrop": {
             "unableToResolveRoot": "無法確定移動的目標路徑。",
-            "moveUnsupported": "Move is not supported for this item."
+            "moveUnsupported": "Move is not supported for this item.",
+            "createFolderHint": "放開以建立新資料夾",
+            "newFolderName": "新資料夾名稱",
+            "folderNameHint": "按 Enter 確認，Escape 取消",
+            "emptyFolderName": "請輸入資料夾名稱",
+            "invalidFolderName": "資料夾名稱包含無效字元",
+            "noDragState": "未找到待處理的拖放操作"
+        },
+        "empty": {
+            "noFolders": "未找到資料夾",
+            "dragHint": "將項目拖到此處以建立資料夾"
         }
     },
     "statistics": {

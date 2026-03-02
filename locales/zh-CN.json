@@ -1,8 +1,11 @@
 {
     "common": {
+        "cancel": "取消",
+        "confirm": "确认",
         "actions": {
             "save": "保存",
             "cancel": "取消",
+            "confirm": "确认",
             "delete": "删除",
             "move": "移动",
             "refresh": "刷新",
@@ -361,6 +364,23 @@
             "defaultEmbeddingRootHelp": "设置下载、导入和移动时的默认 Embedding 根目录",
             "noDefault": "无默认"
         },
+        "extraFolderPaths": {
+            "title": "额外文件夹路径",
+            "help": "在 ComfyUI 的标准路径之外添加额外的模型文件夹。这些路径单独存储，并与默认文件夹一起扫描。",
+            "description": "配置额外的文件夹以扫描模型。这些路径是 LoRA Manager 特有的，将与 ComfyUI 的默认路径合并。",
+            "modelTypes": {
+                "lora": "LoRA 路径",
+                "checkpoint": "Checkpoint 路径",
+                "unet": "Diffusion 模型路径",
+                "embedding": "Embedding 路径"
+            },
+            "pathPlaceholder": "/额外/模型/路径",
+            "saveSuccess": "额外文件夹路径已更新。",
+            "saveError": "更新额外文件夹路径失败：{message}",
+            "validation": {
+                "duplicatePath": "此路径已配置"
+            }
+        },
         "priorityTags": {
             "title": "优先标签",
             "description": "为每种模型类型自定义标签优先级顺序 (例如: character, concept, style(toon|toon_style))",
@@ -485,23 +505,6 @@
             "proxyPassword": "密码 (可选)",
             "proxyPasswordPlaceholder": "密码",
             "proxyPasswordHelp": "代理认证的密码 (如果需要)"
-        },
-        "extraFolderPaths": {
-            "title": "额外文件夹路径",
-            "help": "在 ComfyUI 的标准路径之外添加额外的模型文件夹。这些路径单独存储，并与默认文件夹一起扫描。",
-            "description": "配置额外的文件夹以扫描模型。这些路径是 LoRA Manager 特有的，将与 ComfyUI 的默认路径合并。",
-            "modelTypes": {
-                "lora": "LoRA 路径",
-                "checkpoint": "Checkpoint 路径",
-                "unet": "Diffusion 模型路径",
-                "embedding": "Embedding 路径"
-            },
-            "pathPlaceholder": "/额外/模型/路径",
-            "saveSuccess": "额外文件夹路径已更新。",
-            "saveError": "更新额外文件夹路径失败：{message}",
-            "validation": {
-                "duplicatePath": "此路径已配置"
-            }
         }
     },
     "loras": {
@@ -750,7 +753,17 @@
         "collapseAllDisabled": "列表视图下不可用",
         "dragDrop": {
             "unableToResolveRoot": "无法确定移动的目标路径。",
-            "moveUnsupported": "Move is not supported for this item."
+            "moveUnsupported": "Move is not supported for this item.",
+            "createFolderHint": "释放以创建新文件夹",
+            "newFolderName": "新文件夹名称",
+            "folderNameHint": "按 Enter 确认，Escape 取消",
+            "emptyFolderName": "请输入文件夹名称",
+            "invalidFolderName": "文件夹名称包含无效字符",
+            "noDragState": "未找到待处理的拖放操作"
+            },
+        "empty": {
+            "noFolders": "未找到文件夹",
+            "dragHint": "拖拽项目到此处以创建文件夹"
         }
     },
     "statistics": {

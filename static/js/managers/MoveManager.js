@@ -286,6 +286,9 @@ class MoveManager {
 
         if (recursive) {
             // Visible if it's in activeFolder or any subfolder
+            // Special case for root: if activeFolder is empty, everything is visible in recursive mode
+            if (normalizedActive === '') return true;
+            
             return normalizedRelative === normalizedActive ||
                 normalizedRelative.startsWith(normalizedActive + '/');
         } else {
@@ -315,80 +318,30 @@ class MoveManager {
         try {
             if (this.bulkFilePaths) {
                 // Bulk move mode
-                const results = await apiClient.moveBulkModels(this.bulkFilePaths, targetPath, this.useDefaultPath);
-
-                // Update virtual scroller visibility/metadata
-                const pageState = getCurrentPageState();
-                if (state.virtualScroller) {
-                    results.forEach(result => {
-                        if (result.success) {
-                            // Deselect moving item
-                            bulkManager.deselectItem(result.original_file_path);
-
-                            const newRelativeFolder = this._getRelativeFolder(result.new_file_path);
-                            const isVisible = this._isModelVisible(newRelativeFolder, pageState);
-
-                            if (!isVisible) {
-                                state.virtualScroller.removeItemByFilePath(result.original_file_path);
-                            } else {
-                                const newFileNameWithExt = result.new_file_path.substring(result.new_file_path.lastIndexOf('/') + 1);
-                                const baseFileName = newFileNameWithExt.substring(0, newFileNameWithExt.lastIndexOf('.'));
-
-                                const updateData = {
-                                    file_path: result.new_file_path,
-                                    file_name: baseFileName,
-                                    folder: newRelativeFolder
-                                };
-
-                                // Only update sub_type if it's present in the cache_entry
-                                if (result.cache_entry && result.cache_entry.sub_type) {
-                                    updateData.sub_type = result.cache_entry.sub_type;
-                                }
-
-                                state.virtualScroller.updateSingleItem(result.original_file_path, updateData);
-                            }
-                        }
-                    });
-                }
+                await apiClient.moveBulkModels(this.bulkFilePaths, targetPath, this.useDefaultPath);
+                
+                // Deselect moving items
+                this.bulkFilePaths.forEach(path => bulkManager.deselectItem(path));
             } else {
                 // Single move mode
-                const result = await apiClient.moveSingleModel(this.currentFilePath, targetPath, this.useDefaultPath);
-
-                const pageState = getCurrentPageState();
-                if (result && result.new_file_path && state.virtualScroller) {
-                    // Deselect moving item
-                    bulkManager.deselectItem(this.currentFilePath);
-
-                    const newRelativeFolder = this._getRelativeFolder(result.new_file_path);
-                    const isVisible = this._isModelVisible(newRelativeFolder, pageState);
-
-                    if (!isVisible) {
-                        state.virtualScroller.removeItemByFilePath(this.currentFilePath);
-                    } else {
-                        const newFileNameWithExt = result.new_file_path.substring(result.new_file_path.lastIndexOf('/') + 1);
-                        const baseFileName = newFileNameWithExt.substring(0, newFileNameWithExt.lastIndexOf('.'));
-
-                        const updateData = {
-                            file_path: result.new_file_path,
-                            file_name: baseFileName,
-                            folder: newRelativeFolder
-                        };
-
-                        // Only update sub_type if it's present in the cache_entry
-                        if (result.cache_entry && result.cache_entry.sub_type) {
-                            updateData.sub_type = result.cache_entry.sub_type;
-                        }
-
-                        state.virtualScroller.updateSingleItem(this.currentFilePath, updateData);
-                    }
-                }
+                await apiClient.moveSingleModel(this.currentFilePath, targetPath, this.useDefaultPath);
+                
+                // Deselect moving item
+                bulkManager.deselectItem(this.currentFilePath);
             }
 
-            // Refresh folder tags after successful move
-            sidebarManager.refresh();
+            // Refresh UI by reloading the current page, same as drag-and-drop behavior
+            // This ensures all metadata (like preview URLs) are correctly formatted by the backend
+            if (sidebarManager.pageControls && typeof sidebarManager.pageControls.resetAndReload === 'function') {
+                await sidebarManager.pageControls.resetAndReload(true);
+            } else if (sidebarManager.lastPageControls && typeof sidebarManager.lastPageControls.resetAndReload === 'function') {
+                await sidebarManager.lastPageControls.resetAndReload(true);
+            }
+
+            // Refresh folder tree in sidebar
+            await sidebarManager.refresh();
 
             modalManager.closeModal('moveModal');
-
 
         } catch (error) {
             console.error('Error moving model(s):', error);

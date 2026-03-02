@@ -1,8 +1,11 @@
 {
     "common": {
+        "cancel": "Cancelar",
+        "confirm": "Confirmar",
         "actions": {
             "save": "Guardar",
             "cancel": "Cancelar",
+            "confirm": "Confirmar",
             "delete": "Eliminar",
             "move": "Mover",
             "refresh": "Actualizar",
@@ -361,6 +364,23 @@
             "defaultEmbeddingRootHelp": "Establecer el directorio raíz predeterminado de embedding para descargas, importaciones y movimientos",
             "noDefault": "Sin predeterminado"
         },
+        "extraFolderPaths": {
+            "title": "Rutas de carpetas adicionales",
+            "help": "Agregue carpetas de modelos adicionales fuera de las rutas estándar de ComfyUI. Estas rutas se almacenan por separado y se escanean junto con las carpetas predeterminadas.",
+            "description": "Configure carpetas adicionales para escanear modelos. Estas rutas son específicas de LoRA Manager y se fusionarán con las rutas predeterminadas de ComfyUI.",
+            "modelTypes": {
+                "lora": "Rutas de LoRA",
+                "checkpoint": "Rutas de Checkpoint",
+                "unet": "Rutas de modelo de difusión",
+                "embedding": "Rutas de Embedding"
+            },
+            "pathPlaceholder": "/ruta/a/modelos/extra",
+            "saveSuccess": "Rutas de carpetas adicionales actualizadas.",
+            "saveError": "Error al actualizar las rutas de carpetas adicionales: {message}",
+            "validation": {
+                "duplicatePath": "Esta ruta ya está configurada"
+            }
+        },
         "priorityTags": {
             "title": "Etiquetas prioritarias",
             "description": "Personaliza el orden de prioridad de etiquetas para cada tipo de modelo (p. ej., character, concept, style(toon|toon_style))",
@@ -485,23 +505,6 @@
             "proxyPassword": "Contraseña (opcional)",
             "proxyPasswordPlaceholder": "contraseña",
             "proxyPasswordHelp": "Contraseña para autenticación de proxy (si es necesario)"
-        },
-        "extraFolderPaths": {
-            "title": "Rutas de carpetas adicionales",
-            "help": "Agregue carpetas de modelos adicionales fuera de las rutas estándar de ComfyUI. Estas rutas se almacenan por separado y se escanean junto con las carpetas predeterminadas.",
-            "description": "Configure carpetas adicionales para escanear modelos. Estas rutas son específicas de LoRA Manager y se fusionarán con las rutas predeterminadas de ComfyUI.",
-            "modelTypes": {
-                "lora": "Rutas de LoRA",
-                "checkpoint": "Rutas de Checkpoint",
-                "unet": "Rutas de modelo de difusión",
-                "embedding": "Rutas de Embedding"
-            },
-            "pathPlaceholder": "/ruta/a/modelos/extra",
-            "saveSuccess": "Rutas de carpetas adicionales actualizadas.",
-            "saveError": "Error al actualizar las rutas de carpetas adicionales: {message}",
-            "validation": {
-                "duplicatePath": "Esta ruta ya está configurada"
-            }
         }
     },
     "loras": {
@@ -750,7 +753,17 @@
         "collapseAllDisabled": "No disponible en vista de lista",
         "dragDrop": {
             "unableToResolveRoot": "No se puede determinar la ruta de destino para el movimiento.",
-            "moveUnsupported": "Move is not supported for this item."
+            "moveUnsupported": "El movimiento no es compatible con este elemento.",
+            "createFolderHint": "Suelta para crear una nueva carpeta",
+            "newFolderName": "Nombre de la nueva carpeta",
+            "folderNameHint": "Presiona Enter para confirmar, Escape para cancelar",
+            "emptyFolderName": "Por favor, introduce un nombre de carpeta",
+            "invalidFolderName": "El nombre de la carpeta contiene caracteres no válidos",
+            "noDragState": "No se encontró ninguna operación de arrastre pendiente"
+        },
+        "empty": {
+            "noFolders": "No se encontraron carpetas",
+            "dragHint": "Arrastra elementos aquí para crear carpetas"
         }
     },
     "statistics": {

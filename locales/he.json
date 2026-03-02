@@ -1,17 +1,20 @@
 {
     "common": {
+        "cancel": "ביטול",
+        "confirm": "אישור",
         "actions": {
-            "save": "שמור",
+            "save": "שמירה",
             "cancel": "ביטול",
-            "delete": "מחק",
-            "move": "העבר",
-            "refresh": "רענן",
-            "back": "חזור",
+            "confirm": "אישור",
+            "delete": "מחיקה",
+            "move": "העברה",
+            "refresh": "רענון",
+            "back": "חזרה",
             "next": "הבא",
-            "backToTop": "חזור למעלה",
+            "backToTop": "חזרה למעלה",
             "settings": "הגדרות",
             "help": "עזרה",
-            "add": "הוסף"
+            "add": "הוספה"
         },
         "status": {
             "loading": "טוען...",
@@ -361,6 +364,23 @@
             "defaultEmbeddingRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של embedding להורדות, ייבוא והעברות",
             "noDefault": "אין ברירת מחדל"
         },
+        "extraFolderPaths": {
+            "title": "נתיבי תיקיות נוספים",
+            "help": "הוסף תיקיות מודלים נוספות מחוץ לנתיבים הסטנדרטיים של ComfyUI. נתיבים אלה נשמרים בנפרד ונסרקים לצד תיקיות ברירת המחדל.",
+            "description": "הגדר תיקיות נוספות לסריקת מודלים. נתיבים אלה ספציפיים ל-LoRA Manager וימוזגו עם נתיבי ברירת המחדל של ComfyUI.",
+            "modelTypes": {
+                "lora": "נתיבי LoRA",
+                "checkpoint": "נתיבי Checkpoint",
+                "unet": "נתיבי מודל דיפוזיה",
+                "embedding": "נתיבי Embedding"
+            },
+            "pathPlaceholder": "/נתיב/למודלים/נוספים",
+            "saveSuccess": "נתיבי תיקיות נוספים עודכנו.",
+            "saveError": "נכשל בעדכון נתיבי תיקיות נוספים: {message}",
+            "validation": {
+                "duplicatePath": "נתיב זה כבר מוגדר"
+            }
+        },
         "priorityTags": {
             "title": "תגיות עדיפות",
             "description": "התאם את סדר העדיפות של התגיות עבור כל סוג מודל (לדוגמה: character, concept, style(toon|toon_style))",
@@ -485,23 +505,6 @@
             "proxyPassword": "סיסמה (אופציונלי)",
             "proxyPasswordPlaceholder": "password",
             "proxyPasswordHelp": "סיסמה לאימות מול הפרוקסי (אם נדרש)"
-        },
-        "extraFolderPaths": {
-            "title": "נתיבי תיקיות נוספים",
-            "help": "הוסף תיקיות מודלים נוספות מחוץ לנתיבים הסטנדרטיים של ComfyUI. נתיבים אלה נשמרים בנפרד ונסרקים לצד תיקיות ברירת המחדל.",
-            "description": "הגדר תיקיות נוספות לסריקת מודלים. נתיבים אלה ספציפיים ל-LoRA Manager וימוזגו עם נתיבי ברירת המחדל של ComfyUI.",
-            "modelTypes": {
-                "lora": "נתיבי LoRA",
-                "checkpoint": "נתיבי Checkpoint",
-                "unet": "נתיבי מודל דיפוזיה",
-                "embedding": "נתיבי Embedding"
-            },
-            "pathPlaceholder": "/נתיב/למודלים/נוספים",
-            "saveSuccess": "נתיבי תיקיות נוספים עודכנו.",
-            "saveError": "נכשל בעדכון נתיבי תיקיות נוספים: {message}",
-            "validation": {
-                "duplicatePath": "נתיב זה כבר מוגדר"
-            }
         }
     },
     "loras": {
@@ -750,7 +753,17 @@
         "collapseAllDisabled": "לא זמין בתצוגת רשימה",
         "dragDrop": {
             "unableToResolveRoot": "לא ניתן לקבוע את נתיב היעד להעברה.",
-            "moveUnsupported": "Move is not supported for this item."
+            "moveUnsupported": "העברה אינה נתמכת עבור פריט זה.",
+            "createFolderHint": "שחרר כדי ליצור תיקייה חדשה",
+            "newFolderName": "שם תיקייה חדשה",
+            "folderNameHint": "הקש Enter לאישור, Escape לביטול",
+            "emptyFolderName": "אנא הזן שם תיקייה",
+            "invalidFolderName": "שם התיקייה מכיל תווים לא חוקיים",
+            "noDragState": "לא נמצאה פעולת גרירה ממתינה"
+        },
+        "empty": {
+            "noFolders": "לא נמצאו תיקיות",
+            "dragHint": "גרור פריטים לכאן כדי ליצור תיקיות"
         }
     },
     "statistics": {

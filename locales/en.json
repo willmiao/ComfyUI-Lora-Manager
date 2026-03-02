@@ -1,8 +1,11 @@
 {
     "common": {
+        "cancel": "Cancel",
+        "confirm": "Confirm",
         "actions": {
             "save": "Save",
             "cancel": "Cancel",
+            "confirm": "Confirm",
             "delete": "Delete",
             "move": "Move",
             "refresh": "Refresh",
@@ -750,7 +753,17 @@
         "collapseAllDisabled": "Not available in list view",
         "dragDrop": {
             "unableToResolveRoot": "Unable to determine destination path for move.",
-            "moveUnsupported": "Move is not supported for this item."
+            "moveUnsupported": "Move is not supported for this item.",
+            "createFolderHint": "Release to create new folder",
+            "newFolderName": "New folder name",
+            "folderNameHint": "Press Enter to confirm, Escape to cancel",
+            "emptyFolderName": "Please enter a folder name",
+            "invalidFolderName": "Folder name contains invalid characters",
+            "noDragState": "No pending drag operation found"
+        },
+        "empty": {
+            "noFolders": "No folders found",
+            "dragHint": "Drag items here to create folders"
         }
     },
     "statistics": {

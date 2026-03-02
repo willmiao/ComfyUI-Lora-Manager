@@ -1,8 +1,11 @@
 {
     "common": {
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
         "actions": {
             "save": "Enregistrer",
             "cancel": "Annuler",
+            "confirm": "Confirmer",
             "delete": "Supprimer",
             "move": "Déplacer",
             "refresh": "Actualiser",
@@ -361,6 +364,23 @@
             "defaultEmbeddingRootHelp": "Définir le répertoire racine embedding par défaut pour les téléchargements, imports et déplacements",
             "noDefault": "Aucun par défaut"
         },
+        "extraFolderPaths": {
+            "title": "Chemins de dossiers supplémentaires",
+            "help": "Ajoutez des dossiers de modèles supplémentaires en dehors des chemins standard de ComfyUI. Ces chemins sont stockés séparément et analysés aux côtés des dossiers par défaut.",
+            "description": "Configurez des dossiers supplémentaires pour l'analyse de modèles. Ces chemins sont spécifiques à LoRA Manager et seront fusionnés avec les chemins par défaut de ComfyUI.",
+            "modelTypes": {
+                "lora": "Chemins LoRA",
+                "checkpoint": "Chemins Checkpoint",
+                "unet": "Chemins de modèle de diffusion",
+                "embedding": "Chemins Embedding"
+            },
+            "pathPlaceholder": "/chemin/vers/modèles/supplémentaires",
+            "saveSuccess": "Chemins de dossiers supplémentaires mis à jour.",
+            "saveError": "Échec de la mise à jour des chemins de dossiers supplémentaires: {message}",
+            "validation": {
+                "duplicatePath": "Ce chemin est déjà configuré"
+            }
+        },
         "priorityTags": {
             "title": "Étiquettes prioritaires",
             "description": "Personnalisez l'ordre de priorité des étiquettes pour chaque type de modèle (par ex. : character, concept, style(toon|toon_style))",
@@ -485,23 +505,6 @@
             "proxyPassword": "Mot de passe (optionnel)",
             "proxyPasswordPlaceholder": "mot_de_passe",
             "proxyPasswordHelp": "Mot de passe pour l'authentification proxy (si nécessaire)"
-        },
-        "extraFolderPaths": {
-            "title": "Chemins de dossiers supplémentaires",
-            "help": "Ajoutez des dossiers de modèles supplémentaires en dehors des chemins standard de ComfyUI. Ces chemins sont stockés séparément et analysés aux côtés des dossiers par défaut.",
-            "description": "Configurez des dossiers supplémentaires pour l'analyse de modèles. Ces chemins sont spécifiques à LoRA Manager et seront fusionnés avec les chemins par défaut de ComfyUI.",
-            "modelTypes": {
-                "lora": "Chemins LoRA",
-                "checkpoint": "Chemins Checkpoint",
-                "unet": "Chemins de modèle de diffusion",
-                "embedding": "Chemins Embedding"
-            },
-            "pathPlaceholder": "/chemin/vers/modèles/supplémentaires",
-            "saveSuccess": "Chemins de dossiers supplémentaires mis à jour.",
-            "saveError": "Échec de la mise à jour des chemins de dossiers supplémentaires: {message}",
-            "validation": {
-                "duplicatePath": "Ce chemin est déjà configuré"
-            }
         }
     },
     "loras": {
@@ -750,7 +753,17 @@
         "collapseAllDisabled": "Non disponible en vue liste",
         "dragDrop": {
             "unableToResolveRoot": "Impossible de déterminer le chemin de destination pour le déplacement.",
-            "moveUnsupported": "Move is not supported for this item."
+            "moveUnsupported": "Le déplacement n'est pas pris en charge pour cet élément.",
+            "createFolderHint": "Relâcher pour créer un nouveau dossier",
+            "newFolderName": "Nom du nouveau dossier",
+            "folderNameHint": "Appuyez sur Entrée pour confirmer, Échap pour annuler",
+            "emptyFolderName": "Veuillez saisir un nom de dossier",
+            "invalidFolderName": "Le nom du dossier contient des caractères invalides",
+            "noDragState": "Aucune opération de glissement en attente trouvée"
+        },
+        "empty": {
+            "noFolders": "Aucun dossier trouvé",
+            "dragHint": "Faites glisser des éléments ici pour créer des dossiers"
         }
     },
     "statistics": {

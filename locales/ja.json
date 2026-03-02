@@ -1,14 +1,17 @@
 {
     "common": {
+        "cancel": "キャンセル",
+        "confirm": "確認",
         "actions": {
             "save": "保存",
             "cancel": "キャンセル",
+            "confirm": "確認",
             "delete": "削除",
             "move": "移動",
             "refresh": "更新",
             "back": "戻る",
             "next": "次へ",
-            "backToTop": "トップに戻る",
+            "backToTop": "トップへ戻る",
             "settings": "設定",
             "help": "ヘルプ",
             "add": "追加"
@@ -361,6 +364,23 @@
             "defaultEmbeddingRootHelp": "ダウンロード、インポート、移動用のデフォルトembeddingルートディレクトリを設定",
             "noDefault": "デフォルトなし"
         },
+        "extraFolderPaths": {
+            "title": "追加フォルダーパス",
+            "help": "ComfyUIの標準パスの外部に追加のモデルフォルダを追加します。これらのパスは別々に保存され、デフォルトのフォルダと一緒にスキャンされます。",
+            "description": "モデルをスキャンするための追加フォルダを設定します。これらのパスはLoRA Manager固有であり、ComfyUIのデフォルトパスとマージされます。",
+            "modelTypes": {
+                "lora": "LoRAパス",
+                "checkpoint": "Checkpointパス",
+                "unet": "Diffusionモデルパス",
+                "embedding": "Embeddingパス"
+            },
+            "pathPlaceholder": "/追加モデルへのパス",
+            "saveSuccess": "追加フォルダーパスを更新しました。",
+            "saveError": "追加フォルダーパスの更新に失敗しました: {message}",
+            "validation": {
+                "duplicatePath": "このパスはすでに設定されています"
+            }
+        },
         "priorityTags": {
             "title": "優先タグ",
             "description": "各モデルタイプのタグ優先順位をカスタマイズします (例: character, concept, style(toon|toon_style))",
@@ -485,23 +505,6 @@
             "proxyPassword": "パスワード（任意）",
             "proxyPasswordPlaceholder": "パスワード",
             "proxyPasswordHelp": "プロキシ認証用のパスワード（必要な場合）"
-        },
-        "extraFolderPaths": {
-            "title": "追加フォルダーパス",
-            "help": "ComfyUIの標準パスの外部に追加のモデルフォルダを追加します。これらのパスは別々に保存され、デフォルトのフォルダと一緒にスキャンされます。",
-            "description": "モデルをスキャンするための追加フォルダを設定します。これらのパスはLoRA Manager固有であり、ComfyUIのデフォルトパスとマージされます。",
-            "modelTypes": {
-                "lora": "LoRAパス",
-                "checkpoint": "Checkpointパス",
-                "unet": "Diffusionモデルパス",
-                "embedding": "Embeddingパス"
-            },
-            "pathPlaceholder": "/追加モデルへのパス",
-            "saveSuccess": "追加フォルダーパスを更新しました。",
-            "saveError": "追加フォルダーパスの更新に失敗しました: {message}",
-            "validation": {
-                "duplicatePath": "このパスはすでに設定されています"
-            }
         }
     },
     "loras": {
@@ -750,7 +753,17 @@
         "collapseAllDisabled": "リストビューでは利用できません",
         "dragDrop": {
             "unableToResolveRoot": "移動先のパスを特定できません。",
-            "moveUnsupported": "Move is not supported for this item."
+            "moveUnsupported": "この項目の移動はサポートされていません。",
+            "createFolderHint": "放して新しいフォルダを作成",
+            "newFolderName": "新しいフォルダ名",
+            "folderNameHint": "Enterで確定、Escでキャンセル",
+            "emptyFolderName": "フォルダ名を入力してください",
+            "invalidFolderName": "フォルダ名に無効な文字が含まれています",
+            "noDragState": "保留中のドラッグ操作が見つかりません"
+        },
+        "empty": {
+            "noFolders": "フォルダが見つかりません",
+            "dragHint": "ここへアイテムをドラッグしてフォルダを作成します"
         }
     },
     "statistics": {

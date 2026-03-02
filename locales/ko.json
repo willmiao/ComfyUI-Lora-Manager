@@ -1,8 +1,11 @@
 {
     "common": {
+        "cancel": "취소",
+        "confirm": "확인",
         "actions": {
             "save": "저장",
             "cancel": "취소",
+            "confirm": "확인",
             "delete": "삭제",
             "move": "이동",
             "refresh": "새로고침",
@@ -361,6 +364,23 @@
             "defaultEmbeddingRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 Embedding 루트 디렉토리를 설정합니다",
             "noDefault": "기본값 없음"
         },
+        "extraFolderPaths": {
+            "title": "추가 폴다 경로",
+            "help": "ComfyUI의 표준 경로 외부에 추가 모델 폴드를 추가하세요. 이러한 경로는 별도로 저장되며 기본 폴와 함께 스캔됩니다.",
+            "description": "모델을 스캔하기 위한 추가 폴를 설정하세요. 이러한 경로는 LoRA Manager 특유의 것이며 ComfyUI의 기본 경로와 병합됩니다.",
+            "modelTypes": {
+                "lora": "LoRA 경로",
+                "checkpoint": "Checkpoint 경로",
+                "unet": "Diffusion 모델 경로",
+                "embedding": "Embedding 경로"
+            },
+            "pathPlaceholder": "/추가/모델/경로",
+            "saveSuccess": "추가 폴다 경로가 업데이트되었습니다.",
+            "saveError": "추가 폴다 경로 업데이트 실패: {message}",
+            "validation": {
+                "duplicatePath": "이 경로는 이미 구성되어 있습니다"
+            }
+        },
         "priorityTags": {
             "title": "우선순위 태그",
             "description": "모델 유형별 태그 우선순위를 사용자 지정합니다(예: character, concept, style(toon|toon_style)).",
@@ -485,23 +505,6 @@
             "proxyPassword": "비밀번호 (선택사항)",
             "proxyPasswordPlaceholder": "password",
             "proxyPasswordHelp": "프록시 인증에 필요한 비밀번호 (필요한 경우)"
-        },
-        "extraFolderPaths": {
-            "title": "추가 폴다 경로",
-            "help": "ComfyUI의 표준 경로 외부에 추가 모델 폴드를 추가하세요. 이러한 경로는 별도로 저장되며 기본 폴와 함께 스캔됩니다.",
-            "description": "모델을 스캔하기 위한 추가 폴를 설정하세요. 이러한 경로는 LoRA Manager 특유의 것이며 ComfyUI의 기본 경로와 병합됩니다.",
-            "modelTypes": {
-                "lora": "LoRA 경로",
-                "checkpoint": "Checkpoint 경로",
-                "unet": "Diffusion 모델 경로",
-                "embedding": "Embedding 경로"
-            },
-            "pathPlaceholder": "/추가/모델/경로",
-            "saveSuccess": "추가 폴다 경로가 업데이트되었습니다.",
-            "saveError": "추가 폴다 경로 업데이트 실패: {message}",
-            "validation": {
-                "duplicatePath": "이 경로는 이미 구성되어 있습니다"
-            }
         }
     },
     "loras": {
@@ -750,7 +753,17 @@
         "collapseAllDisabled": "목록 보기에서는 사용할 수 없습니다",
         "dragDrop": {
             "unableToResolveRoot": "이동할 대상 경로를 확인할 수 없습니다.",
-            "moveUnsupported": "Move is not supported for this item."
+            "moveUnsupported": "이 항목은 이동을 지원하지 않습니다.",
+            "createFolderHint": "놓아서 새 폴더 만들기",
+            "newFolderName": "새 폴더 이름",
+            "folderNameHint": "Enter를 눌러 확인, Escape를 눌러 취소",
+            "emptyFolderName": "폴더 이름을 입력하세요",
+            "invalidFolderName": "폴더 이름에 잘못된 문자가 포함되어 있습니다",
+            "noDragState": "보류 중인 드래그 작업을 찾을 수 없습니다"
+        },
+        "empty": {
+            "noFolders": "폴더를 찾을 수 없습니다",
+            "dragHint": "항목을 여기로 드래그하여 폴더를 만듭니다"
         }
     },
     "statistics": {

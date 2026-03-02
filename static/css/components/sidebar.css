@@ -573,3 +573,171 @@
 .sidebar-tree-container::-webkit-scrollbar-thumb:hover {
     background: var(--text-muted);
 }
+
+/* ===== Drag and Drop - Create Folder Zone ===== */
+
+/* Empty state drag hint */
+.sidebar-empty-hint {
+    margin-top: 12px;
+    font-size: 0.8em;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px;
+    border-radius: var(--border-radius-xs);
+    background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.05);
+    border: 1px dashed oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.2);
+}
+
+.sidebar-empty-hint i {
+    font-size: 0.9em;
+    opacity: 0.8;
+    margin: 0;
+    display: inline;
+}
+
+/* Create folder drop zone */
+.sidebar-create-folder-zone {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    padding: 16px;
+    border: 2px dashed oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.4);
+    border-radius: var(--border-radius-xs);
+    background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.08);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.2s ease;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.sidebar-create-folder-zone.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.sidebar-create-folder-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--lora-accent);
+    font-size: 0.85em;
+    text-align: center;
+}
+
+.sidebar-create-folder-content i {
+    font-size: 1.5em;
+    opacity: 0.8;
+}
+
+/* Create folder input container */
+.sidebar-create-folder-input-container {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    padding: 12px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xs);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    z-index: 20;
+    animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.sidebar-create-folder-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sidebar-create-folder-input-wrapper > i {
+    color: var(--lora-accent);
+    font-size: 1em;
+}
+
+.sidebar-create-folder-input {
+    flex: 1;
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xs);
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-size: 0.85em;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.sidebar-create-folder-input:focus {
+    border-color: var(--lora-accent);
+    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.15);
+}
+
+.sidebar-create-folder-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--border-radius-xs);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.sidebar-create-folder-btn:hover {
+    background: var(--lora-surface);
+    color: var(--text-color);
+}
+
+.sidebar-create-folder-confirm:hover {
+    background: oklch(from var(--success-color) l c h / 0.15);
+    color: var(--success-color);
+}
+
+.sidebar-create-folder-cancel:hover {
+    background: oklch(from var(--error-color) l c h / 0.15);
+    color: var(--error-color);
+}
+
+.sidebar-create-folder-hint {
+    margin-top: 6px;
+    font-size: 0.75em;
+    color: var(--text-muted);
+    text-align: center;
+    opacity: 0.8;
+}
+
+/* Dragging state for sidebar */
+.folder-sidebar.dragging-active {
+    border-color: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.5);
+    box-shadow: 0 0 0 3px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1),
+                0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.folder-sidebar.dragging-active .sidebar-tree-container {
+    background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.02);
+}
+
+/* Tree container positioning for create folder elements */
+.sidebar-tree-container {
+    position: relative;
+}
