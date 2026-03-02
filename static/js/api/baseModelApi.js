@@ -307,6 +307,56 @@ export class BaseModelApiClient {
         }
     }
 
+    /**
+     * Set a preview from a remote URL (e.g., CivitAI)
+     * @param {string} filePath - Path to the model file
+     * @param {string} imageUrl - Remote image URL
+     * @param {number} nsfwLevel - NSFW level for the preview
+     */
+    async setPreviewFromUrl(filePath, imageUrl, nsfwLevel = 0) {
+        try {
+            state.loadingManager.showSimpleLoading('Setting preview from URL...');
+
+            const response = await fetch(this.apiConfig.endpoints.setPreviewFromUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model_path: filePath,
+                    image_url: imageUrl,
+                    nsfw_level: nsfwLevel
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to set preview from URL');
+            }
+
+            const data = await response.json();
+            const pageState = this.getPageState();
+
+            const timestamp = Date.now();
+            if (pageState.previewVersions) {
+                pageState.previewVersions.set(filePath, timestamp);
+
+                const storageKey = `${this.modelType}_preview_versions`;
+                saveMapToStorage(storageKey, pageState.previewVersions);
+            }
+
+            const updateData = {
+                preview_url: data.preview_url,
+                preview_nsfw_level: data.preview_nsfw_level
+            };
+
+            state.virtualScroller.updateSingleItem(filePath, updateData);
+            showToast('toast.api.previewUpdated', {}, 'success');
+        } catch (error) {
+            console.error('Error setting preview from URL:', error);
+            showToast('toast.api.previewUploadFailed', {}, 'error');
+        } finally {
+            state.loadingManager.hide();
+        }
+    }
+
     async saveModelMetadata(filePath, data) {
         try {
             state.loadingManager.showSimpleLoading('Saving metadata...');

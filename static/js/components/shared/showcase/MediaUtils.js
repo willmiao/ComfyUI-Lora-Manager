@@ -527,17 +527,18 @@ function initSetPreviewHandlers(container) {
                     const response = await fetch(mediaElement.dataset.localSrc);
                     const blob = await response.blob();
                     const file = new File([blob], 'preview.jpg', { type: blob.type });
-                    
+
                     // Use the existing baseModelApi uploadPreview method with nsfw level
-                    await apiClient.uploadPreview(modelFilePath, file, modelType, nsfwLevel);
+                    await apiClient.uploadPreview(modelFilePath, file, nsfwLevel);
                 } else {
-                    // We need to download the remote file first
-                    const response = await fetch(mediaElement.src);
-                    const blob = await response.blob();
-                    const file = new File([blob], 'preview.jpg', { type: blob.type });
-                    
-                    // Use the existing baseModelApi uploadPreview method with nsfw level
-                    await apiClient.uploadPreview(modelFilePath, file, modelType, nsfwLevel);
+                    // Remote file - send URL to backend to download (avoids CORS issues)
+                    const imageUrl = mediaElement.src || mediaElement.dataset.remoteSrc;
+                    if (!imageUrl) {
+                        throw new Error('No image URL available');
+                    }
+
+                    // Use the new setPreviewFromUrl method
+                    await apiClient.setPreviewFromUrl(modelFilePath, imageUrl, nsfwLevel);
                 }
             } catch (error) {
                 console.error('Error setting preview:', error);

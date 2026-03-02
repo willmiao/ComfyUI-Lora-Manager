@@ -86,6 +86,7 @@ export function getApiEndpoints(modelType) {
 
         // Preview management
         replacePreview: `/api/lm/${modelType}/replace-preview`,
+        setPreviewFromUrl: `/api/lm/${modelType}/set-preview-from-url`,
 
         // Query operations
         scan: `/api/lm/${modelType}/scan`,
