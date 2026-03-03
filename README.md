@@ -34,6 +34,12 @@ Enhance your Civitai browsing experience with our companion browser extension! S
 
 ## Release Notes
 
+### v1.0.0
+* **Extra Folder Paths Support** - Added support for additional model root paths exclusive to LoRA Manager. This allows loading LoRAs from extra locations outside ComfyUI's standard folders, helping avoid performance issues when working with large model libraries.
+* **Settings UI Overhaul** - Redesigned the Settings interface with a more organized layout, making it easier to find and configure application settings.
+* **Milestone & Supporter Recognition** - Updated the Supporter window to show appreciation for all project supporters as this v1.0.0 milestone is reached. Great thanks to the community for the ongoing support!
+* **Bug Fixes & UX Enhancements** - Various bug fixes and user experience improvements for a smoother workflow.
+
 ### v0.9.16
 * **Duplicate Detection Enhancement** - The model duplicates mode now respects filter configurations, making it easier to find duplicate groups within specific filtered results.
 * **Tag Logic Toggle** - Added OR/AND toggle for include tags filtering in the filters panel, providing more flexible tag-based model searches.
