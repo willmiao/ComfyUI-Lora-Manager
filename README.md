@@ -59,6 +59,7 @@ Insomnia Art Designs, megakirbs, Brennok, wackop, 2018cfh, Takkan, stone9k, $Met
 ### v1.0.0
 * **Extra Folder Paths Support** - Added support for additional model root paths exclusive to LoRA Manager. This allows loading LoRAs from extra locations outside ComfyUI's standard folders, helping avoid performance issues when working with large model libraries.
 * **Settings UI Overhaul** - Redesigned the Settings interface with a more organized layout, making it easier to find and configure application settings.
+* **Lazy Hash Computation** - Implemented lazy hash calculation for large model files (checkpoints and diffusion models). Hashes are now computed only when strictly necessary, minimizing redundant disk I/O and significantly accelerating application initialization.
 * **Milestone & Supporter Recognition** - Updated the Supporter window to show appreciation for all project supporters as this v1.0.0 milestone is reached. Great thanks to the community for the ongoing support!
 * **Bug Fixes & UX Enhancements** - Various bug fixes and user experience improvements for a smoother workflow.
 
