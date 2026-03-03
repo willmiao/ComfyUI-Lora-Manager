@@ -60,6 +60,110 @@ export function clearSupportersCache() {
     supportersData = null;
 }
 
+let autoScrollRequest = null;
+let autoScrollTimeout = null;
+let isUserInteracting = false;
+let isHovering = false;
+let currentScrollPos = 0;
+
+/**
+ * Handle user interaction to stop auto-scroll
+ */
+function handleInteraction() {
+    isUserInteracting = true;
+}
+
+/**
+ * Handle mouse enter to pause auto-scroll
+ */
+function handleMouseEnter() {
+    isHovering = true;
+}
+
+/**
+ * Handle mouse leave to resume auto-scroll
+ */
+function handleMouseLeave() {
+    isHovering = false;
+}
+
+/**
+ * Initialize auto-scrolling for the supporters list like movie credits
+ * @param {HTMLElement} container The scrollable container
+ */
+function initAutoScroll(container) {
+    if (!container) return;
+    
+    // Stop any existing animation and clear any pending timeout
+    if (autoScrollRequest) {
+        cancelAnimationFrame(autoScrollRequest);
+        autoScrollRequest = null;
+    }
+    if (autoScrollTimeout) {
+        clearTimeout(autoScrollTimeout);
+        autoScrollTimeout = null;
+    }
+    
+    // Reset state for new scroll
+    isUserInteracting = false;
+    isHovering = false;
+    container.scrollTop = 0;
+    currentScrollPos = 0;
+
+    const scrollSpeed = 0.4; // Pixels per frame (~24px/sec at 60fps)
+    
+    const step = () => {
+        // Stop animation if container is hidden or no longer in DOM
+        if (!container.offsetParent) {
+            autoScrollRequest = null;
+            return;
+        }
+
+        if (!isHovering && !isUserInteracting) {
+            const prevScrollTop = container.scrollTop;
+            currentScrollPos += scrollSpeed;
+            container.scrollTop = currentScrollPos;
+            
+            // Check if we reached the bottom
+            if (container.scrollTop === prevScrollTop && currentScrollPos > 1) {
+                const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 1;
+                if (isAtBottom) {
+                    autoScrollRequest = null;
+                    return;
+                }
+            }
+        } else {
+            // Keep currentScrollPos in sync if user scrolls manually or pauses
+            currentScrollPos = container.scrollTop;
+        }
+        
+        autoScrollRequest = requestAnimationFrame(step);
+    };
+
+    // Remove existing listeners before adding to avoid duplicates
+    container.removeEventListener('mouseenter', handleMouseEnter);
+    container.removeEventListener('mouseleave', handleMouseLeave);
+    container.removeEventListener('wheel', handleInteraction);
+    container.removeEventListener('touchstart', handleInteraction);
+    container.removeEventListener('mousedown', handleInteraction);
+
+    // Event listeners to handle user control
+    container.addEventListener('mouseenter', handleMouseEnter);
+    container.addEventListener('mouseleave', handleMouseLeave);
+    
+    // Use { passive: true } for better scroll performance
+    container.addEventListener('wheel', handleInteraction, { passive: true });
+    container.addEventListener('touchstart', handleInteraction, { passive: true });
+    container.addEventListener('mousedown', handleInteraction);
+
+    // Initial delay before starting the credits-style scroll
+    autoScrollTimeout = setTimeout(() => {
+        if (container.scrollHeight > container.clientHeight) {
+            autoScrollRequest = requestAnimationFrame(step);
+        }
+    }, 1800);
+}
+
 /**
  * Render supporters in the support modal
  */
@@ -69,9 +173,7 @@ export async function renderSupporters() {
     // Update subtitle with total count
     const subtitleEl = document.getElementById('supportersSubtitle');
     if (subtitleEl) {
-        // Get the translation key and replace count
         const originalText = subtitleEl.textContent;
-        // Replace the count in the text (simple approach)
         subtitleEl.textContent = originalText.replace(/\d+/, supporters.totalCount);
     }
 
@@ -100,5 +202,8 @@ export async function renderSupporters() {
                 `;
             })
             .join('');
+            
+        // Initialize the auto-scroll effect
+        initAutoScroll(supportersGrid);
     }
 }

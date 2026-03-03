@@ -378,6 +378,29 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+    position: relative; /* Base for masks */
+}
+
+/* Optional: Fading effect for credits feel at top and bottom */
+.all-supporters-group::before,
+.all-supporters-group::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 40px;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.all-supporters-group::before {
+    top: 30px; /* Below the title */
+    background: linear-gradient(to bottom, var(--lora-surface), transparent);
+}
+
+.all-supporters-group::after {
+    bottom: 0;
+    background: linear-gradient(to top, var(--lora-surface), transparent);
 }
 
 .all-supporters-group .supporters-group-title {
@@ -391,8 +414,27 @@
     line-height: 2.2;
     max-height: 550px;
     overflow-y: auto;
-    padding: var(--space-2) 0;
+    padding: var(--space-2) 0 40px 0; /* Extra padding at bottom for final visibility */
     color: var(--text-color);
+    scroll-behavior: auto; /* Ensure manual scroll is immediate */
+}
+
+/* Subtle scrollbar for credits look */
+.supporters-all-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.supporters-all-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.supporters-all-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+.supporters-all-list:hover::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
 }
 
 .supporter-name-item {
