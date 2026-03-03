@@ -209,6 +209,80 @@ class StatsRoutes:
                 'error': str(e)
             }, status=500)
 
+    async def get_model_usage_list(self, request: web.Request) -> web.Response:
+        """Get paginated model usage list for infinite scrolling"""
+        try:
+            await self.init_services()
+            
+            model_type = request.query.get('type', 'lora')
+            sort_order = request.query.get('sort', 'desc')
+            
+            try:
+                limit = int(request.query.get('limit', '50'))
+                offset = int(request.query.get('offset', '0'))
+            except ValueError:
+                limit = 50
+                offset = 0
+
+            # Get usage statistics
+            usage_data = await self.usage_stats.get_stats()
+            
+            # Select proper cache and usage dict based on type
+            if model_type == 'lora':
+                cache = await self.lora_scanner.get_cached_data()
+                type_usage_data = usage_data.get('loras', {})
+            elif model_type == 'checkpoint':
+                cache = await self.checkpoint_scanner.get_cached_data()
+                type_usage_data = usage_data.get('checkpoints', {})
+            elif model_type == 'embedding':
+                cache = await self.embedding_scanner.get_cached_data()
+                type_usage_data = usage_data.get('embeddings', {})
+            else:
+                return web.json_response({'success': False, 'error': f"Invalid model type: {model_type}"}, status=400)
+
+            # Create list of all models
+            all_models = []
+            for item in cache.raw_data:
+                sha256 = item.get('sha256')
+                usage_info = type_usage_data.get(sha256, {}) if sha256 else {}
+                usage_count = usage_info.get('total', 0) if isinstance(usage_info, dict) else 0
+                
+                all_models.append({
+                    'name': item.get('model_name', 'Unknown'),
+                    'usage_count': usage_count,
+                    'base_model': item.get('base_model', 'Unknown'),
+                    'preview_url': config.get_preview_static_url(item.get('preview_url', '')),
+                    'folder': item.get('folder', '')
+                })
+
+            # Sort the models
+            reverse = (sort_order == 'desc')
+            all_models.sort(key=lambda x: (x['usage_count'], x['name'].lower()), reverse=reverse)
+            if not reverse:
+                # If asc, sort by usage_count ascending, but keep name ascending
+                all_models.sort(key=lambda x: (x['usage_count'], x['name'].lower()))
+            else:
+                all_models.sort(key=lambda x: (-x['usage_count'], x['name'].lower()))
+
+            # Slice for pagination
+            paginated_models = all_models[offset:offset + limit]
+
+            return web.json_response({
+                'success': True,
+                'data': {
+                    'items': paginated_models,
+                    'total': len(all_models),
+                    'type': model_type
+                }
+            })
+
+        except Exception as e:
+            logger.error(f"Error getting model usage list: {e}", exc_info=True)
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
     async def get_base_model_distribution(self, request: web.Request) -> web.Response:
         """Get base model distribution statistics"""
         try:
@@ -530,6 +604,7 @@ class StatsRoutes:
         # Register API routes
         app.router.add_get('/api/lm/stats/collection-overview', self.get_collection_overview)
         app.router.add_get('/api/lm/stats/usage-analytics', self.get_usage_analytics)
+        app.router.add_get('/api/lm/stats/model-usage-list', self.get_model_usage_list)
         app.router.add_get('/api/lm/stats/base-model-distribution', self.get_base_model_distribution)
         app.router.add_get('/api/lm/stats/tag-analytics', self.get_tag_analytics)
         app.router.add_get('/api/lm/stats/storage-analytics', self.get_storage_analytics)
