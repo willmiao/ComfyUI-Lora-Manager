@@ -29,7 +29,7 @@ export class StatisticsManager {
         await this.loadAllData();
         
         // Initialize charts and visualizations
-        this.initializeVisualizations();
+        await this.initializeVisualizations();
         
         this.initialized = true;
     }
@@ -102,7 +102,7 @@ export class StatisticsManager {
         return response.json();
     }
 
-    initializeVisualizations() {
+    async initializeVisualizations() {
         // Initialize metrics cards
         this.renderMetricsCards();
         
@@ -110,7 +110,7 @@ export class StatisticsManager {
         this.initializeCharts();
         
         // Initialize lists and other components
-        this.initializeLists();
+        await this.initializeLists();
         this.renderLargestModelsList();
         this.renderTagCloud();
         this.renderInsights();
@@ -554,14 +554,14 @@ export class StatisticsManager {
         });
     }
 
-    initializeLists() {
+    async initializeLists() {
         const listTypes = [
             { type: 'lora', containerId: 'topLorasList' },
             { type: 'checkpoint', containerId: 'topCheckpointsList' },
             { type: 'embedding', containerId: 'topEmbeddingsList' }
         ];
 
-        listTypes.forEach(({ type, containerId }) => {
+        const promises = listTypes.map(({ type, containerId }) => {
             const container = document.getElementById(containerId);
             
             if (container) {
@@ -573,9 +573,12 @@ export class StatisticsManager {
                 });
 
                 // Initial fetch
-                this.fetchAndRenderList(type, container);
+                return this.fetchAndRenderList(type, container);
             }
+            return Promise.resolve();
         });
+
+        await Promise.all(promises);
     }
 
     async fetchAndRenderList(type, container) {
@@ -591,10 +594,8 @@ export class StatisticsManager {
 
         try {
             const url = `/api/lm/stats/model-usage-list?type=${type}&sort=${state.sort}&offset=${state.offset}&limit=${state.limit}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('Network response was not ok');
+            const result = await this.fetchData(url);
             
-            const result = await response.json();
             if (result.success) {
                 const items = result.data.items;
                 

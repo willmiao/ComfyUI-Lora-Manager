@@ -107,6 +107,33 @@ describe('Statistics dashboard rendering', () => {
           ],
         },
       },
+      '/api/lm/stats/model-usage-list?type=lora&sort=desc&offset=0&limit=50': {
+        success: true,
+        data: {
+          items: [
+            { name: 'Lora A', base_model: 'SDXL', folder: 'loras', usage_count: 10, preview_url: '' },
+          ],
+          total: 1,
+        },
+      },
+      '/api/lm/stats/model-usage-list?type=checkpoint&sort=desc&offset=0&limit=50': {
+        success: true,
+        data: {
+          items: [
+            { name: 'Checkpoint A', base_model: 'SDXL', folder: 'checkpoints', usage_count: 5, preview_url: '' },
+          ],
+          total: 1,
+        },
+      },
+      '/api/lm/stats/model-usage-list?type=embedding&sort=desc&offset=0&limit=50': {
+        success: true,
+        data: {
+          items: [
+            { name: 'Embedding A', base_model: 'SDXL', folder: 'embeddings', usage_count: 7, preview_url: '' },
+          ],
+          total: 1,
+        },
+      },
     };
 
     const { StatisticsManager } = await import(STATISTICS_MODULE);
