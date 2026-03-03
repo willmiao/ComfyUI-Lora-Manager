@@ -193,7 +193,7 @@ Insomnia Art Designs, megakirbs, Brennok, wackop, 2018cfh, Takkan, stone9k, $Met
 
 ### Option 2: **Portable Standalone Edition** (No ComfyUI required)
 
-1. Download the [Portable Package](https://github.com/willmiao/ComfyUI-Lora-Manager/releases/download/v0.9.8/lora_manager_portable.7z)
+1. Download the [Portable Package](https://github.com/willmiao/ComfyUI-Lora-Manager/releases/download/v1.0.0/lora_manager_portable.7z)
 2. Copy the provided `settings.json.example` file to create a new file named `settings.json` in `comfyui-lora-manager` folder.
 3. Edit the new `settings.json` to include your correct model folder paths and CivitAI API key
    - Set `"use_portable_settings": true` if you want the configuration to remain inside the repository folder instead of your user settings directory.
