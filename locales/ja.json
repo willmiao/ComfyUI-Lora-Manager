@@ -222,7 +222,7 @@
             "presetNamePlaceholder": "プリセット名...",
             "baseModel": "ベースモデル",
             "modelTags": "タグ（上位20）",
-            "modelTypes": "Model Types",
+            "modelTypes": "モデルタイプ",
             "license": "ライセンス",
             "noCreditRequired": "クレジット不要",
             "allowSellingGeneratedContent": "販売許可",
@@ -685,7 +685,11 @@
                 "lorasCountAsc": "少ない順"
             },
             "refresh": {
-                "title": "レシピリストを更新"
+                "title": "レシピリストを更新",
+                "quick": "変更を同期",
+                "quickTooltip": "変更を同期 - キャッシュを再構築せずにクイック更新",
+                "full": "キャッシュを再構築",
+                "fullTooltip": "キャッシュを再構築 - すべてのレシピファイルを完全に再スキャン"
             },
             "filteredByLora": "LoRAでフィルタ済み",
             "favorites": {
@@ -1396,6 +1400,8 @@
             "loadFailed": "{modelType}の読み込みに失敗しました：{message}",
             "refreshComplete": "更新完了",
             "refreshFailed": "レシピの更新に失敗しました：{message}",
+            "syncComplete": "同期完了",
+            "syncFailed": "レシピの同期に失敗しました：{message}",
             "updateFailed": "レシピの更新に失敗しました：{error}",
             "updateError": "レシピ更新エラー：{message}",
             "nameSaved": "レシピ\"{name}\"が正常に保存されました",

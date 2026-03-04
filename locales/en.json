@@ -685,7 +685,11 @@
                 "lorasCountAsc": "Least"
             },
             "refresh": {
-                "title": "Refresh recipe list"
+                "title": "Refresh recipe list",
+                "quick": "Sync Changes",
+                "quickTooltip": "Sync changes - quick refresh without rebuilding cache",
+                "full": "Rebuild Cache",
+                "fullTooltip": "Rebuild cache - full rescan of all recipe files"
             },
             "filteredByLora": "Filtered by LoRA",
             "favorites": {
@@ -1396,6 +1400,8 @@
             "loadFailed": "Failed to load {modelType}s: {message}",
             "refreshComplete": "Refresh complete",
             "refreshFailed": "Failed to refresh recipes: {message}",
+            "syncComplete": "Sync complete",
+            "syncFailed": "Failed to sync recipes: {message}",
             "updateFailed": "Failed to update recipe: {error}",
             "updateError": "Error updating recipe: {message}",
             "nameSaved": "Recipe \"{name}\" saved successfully",

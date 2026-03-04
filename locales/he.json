@@ -222,7 +222,7 @@
             "presetNamePlaceholder": "שם קביעה מראש...",
             "baseModel": "מודל בסיס",
             "modelTags": "תגיות (20 המובילות)",
-            "modelTypes": "Model Types",
+            "modelTypes": "סוגי מודלים",
             "license": "רישיון",
             "noCreditRequired": "ללא קרדיט נדרש",
             "allowSellingGeneratedContent": "אפשר מכירה",
@@ -685,7 +685,11 @@
                 "lorasCountAsc": "הכי פחות"
             },
             "refresh": {
-                "title": "רענן רשימת מתכונים"
+                "title": "רענן רשימת מתכונים",
+                "quick": "סנכרן שינויים",
+                "quickTooltip": "סנכרן שינויים - רענון מהיר ללא בניית מטמון מחדש",
+                "full": "בנה מטמון מחדש",
+                "fullTooltip": "בנה מטמון מחדש - סריקה מחדש מלאה של כל קבצי המתכונים"
             },
             "filteredByLora": "מסונן לפי LoRA",
             "favorites": {
@@ -1396,6 +1400,8 @@
             "loadFailed": "טעינת {modelType}s נכשלה: {message}",
             "refreshComplete": "הרענון הושלם",
             "refreshFailed": "רענון המתכונים נכשל: {message}",
+            "syncComplete": "הסנכרון הושלם",
+            "syncFailed": "סנכרון המתכונים נכשל: {message}",
             "updateFailed": "עדכון המתכון נכשל: {error}",
             "updateError": "שגיאה בעדכון המתכון: {message}",
             "nameSaved": "המתכון \"{name}\" נשמר בהצלחה",

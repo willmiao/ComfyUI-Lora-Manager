@@ -162,11 +162,11 @@
             "error": "清理示例图片文件夹失败：{message}"
         },
         "fetchMissingLicenses": {
-            "label": "Refresh license metadata",
-            "loading": "Refreshing license metadata for {typePlural}...",
-            "success": "Updated license metadata for {count} {typePlural}",
-            "none": "All {typePlural} already have license metadata",
-            "error": "Failed to refresh license metadata for {typePlural}: {message}"
+            "label": "刷新许可证元数据",
+            "loading": "正在刷新 {typePlural} 的许可证元数据...",
+            "success": "已更新 {count} 个 {typePlural} 的许可证元数据",
+            "none": "所有 {typePlural} 都已具备许可证元数据",
+            "error": "刷新 {typePlural} 的许可证元数据失败：{message}"
         },
         "repairRecipes": {
             "label": "修复配方数据",
@@ -222,7 +222,7 @@
             "presetNamePlaceholder": "预设名称...",
             "baseModel": "基础模型",
             "modelTags": "标签（前20）",
-            "modelTypes": "Model Types",
+            "modelTypes": "模型类型",
             "license": "许可证",
             "noCreditRequired": "无需署名",
             "allowSellingGeneratedContent": "允许销售",
@@ -685,7 +685,11 @@
                 "lorasCountAsc": "最少"
             },
             "refresh": {
-                "title": "刷新配方列表"
+                "title": "刷新配方列表",
+                "quick": "同步变更",
+                "quickTooltip": "同步变更 - 快速刷新而不重建缓存",
+                "full": "重建缓存",
+                "fullTooltip": "重建缓存 - 重新扫描所有配方文件"
             },
             "filteredByLora": "按 LoRA 筛选",
             "favorites": {
@@ -1396,6 +1400,8 @@
             "loadFailed": "加载 {modelType} 失败：{message}",
             "refreshComplete": "刷新完成",
             "refreshFailed": "刷新配方失败：{message}",
+            "syncComplete": "同步完成",
+            "syncFailed": "同步配方失败：{message}",
             "updateFailed": "更新配方失败：{error}",
             "updateError": "更新配方出错：{message}",
             "nameSaved": "配方“{name}”保存成功",

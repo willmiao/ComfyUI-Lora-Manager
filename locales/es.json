@@ -222,7 +222,7 @@
             "presetNamePlaceholder": "Nombre del preajuste...",
             "baseModel": "Modelo base",
             "modelTags": "Etiquetas (Top 20)",
-            "modelTypes": "Model Types",
+            "modelTypes": "Tipos de modelos",
             "license": "Licencia",
             "noCreditRequired": "Sin crédito requerido",
             "allowSellingGeneratedContent": "Venta permitida",
@@ -685,7 +685,11 @@
                 "lorasCountAsc": "Menos"
             },
             "refresh": {
-                "title": "Actualizar lista de recetas"
+                "title": "Actualizar lista de recetas",
+                "quick": "Sincronizar cambios",
+                "quickTooltip": "Sincronizar cambios - actualización rápida sin reconstruir caché",
+                "full": "Reconstruir caché",
+                "fullTooltip": "Reconstruir caché - reescaneo completo de todos los archivos de recetas"
             },
             "filteredByLora": "Filtrado por LoRA",
             "favorites": {
@@ -1396,6 +1400,8 @@
             "loadFailed": "Error al cargar {modelType}s: {message}",
             "refreshComplete": "Actualización completa",
             "refreshFailed": "Error al actualizar recetas: {message}",
+            "syncComplete": "Sincronización completa",
+            "syncFailed": "Error al sincronizar recetas: {message}",
             "updateFailed": "Error al actualizar receta: {error}",
             "updateError": "Error actualizando receta: {message}",
             "nameSaved": "Receta \"{name}\" guardada exitosamente",

@@ -222,7 +222,7 @@
             "presetNamePlaceholder": "Имя пресета...",
             "baseModel": "Базовая модель",
             "modelTags": "Теги (Топ 20)",
-            "modelTypes": "Model Types",
+            "modelTypes": "Типы моделей",
             "license": "Лицензия",
             "noCreditRequired": "Без указания авторства",
             "allowSellingGeneratedContent": "Продажа разрешена",
@@ -685,7 +685,11 @@
                 "lorasCountAsc": "Меньше всего"
             },
             "refresh": {
-                "title": "Обновить список рецептов"
+                "title": "Обновить список рецептов",
+                "quick": "Синхронизировать изменения",
+                "quickTooltip": "Синхронизировать изменения - быстрое обновление без перестроения кэша",
+                "full": "Перестроить кэш",
+                "fullTooltip": "Перестроить кэш - полное повторное сканирование всех файлов рецептов"
             },
             "filteredByLora": "Фильтр по LoRA",
             "favorites": {
@@ -1396,6 +1400,8 @@
             "loadFailed": "Не удалось загрузить {modelType}s: {message}",
             "refreshComplete": "Обновление завершено",
             "refreshFailed": "Не удалось обновить рецепты: {message}",
+            "syncComplete": "Синхронизация завершена",
+            "syncFailed": "Не удалось синхронизировать рецепты: {message}",
             "updateFailed": "Не удалось обновить рецепт: {error}",
             "updateError": "Ошибка обновления рецепта: {message}",
             "nameSaved": "Рецепт \"{name}\" успешно сохранен",

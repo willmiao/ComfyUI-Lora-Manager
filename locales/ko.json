@@ -222,7 +222,7 @@
             "presetNamePlaceholder": "프리셋 이름...",
             "baseModel": "베이스 모델",
             "modelTags": "태그 (상위 20개)",
-            "modelTypes": "Model Types",
+            "modelTypes": "모델 유형",
             "license": "라이선스",
             "noCreditRequired": "크레딧 표기 없음",
             "allowSellingGeneratedContent": "판매 허용",
@@ -685,7 +685,11 @@
                 "lorasCountAsc": "적은순"
             },
             "refresh": {
-                "title": "레시피 목록 새로고침"
+                "title": "레시피 목록 새로고침",
+                "quick": "변경 사항 동기화",
+                "quickTooltip": "변경 사항 동기화 - 캐시를 재구성하지 않고 빠른 새로고침",
+                "full": "캐시 재구성",
+                "fullTooltip": "캐시 재구성 - 모든 레시피 파일을 완전히 다시 스캔"
             },
             "filteredByLora": "LoRA로 필터링됨",
             "favorites": {
@@ -1396,6 +1400,8 @@
             "loadFailed": "{modelType} 로딩 실패: {message}",
             "refreshComplete": "새로고침 완료",
             "refreshFailed": "레시피 새로고침 실패: {message}",
+            "syncComplete": "동기화 완료",
+            "syncFailed": "레시피 동기화 실패: {message}",
             "updateFailed": "레시피 업데이트 실패: {error}",
             "updateError": "레시피 업데이트 오류: {message}",
             "nameSaved": "레시피 \"{name}\"이 성공적으로 저장되었습니다",

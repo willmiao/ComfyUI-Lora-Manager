@@ -222,7 +222,7 @@
             "presetNamePlaceholder": "Nom du préréglage...",
             "baseModel": "Modèle de base",
             "modelTags": "Tags (Top 20)",
-            "modelTypes": "Model Types",
+            "modelTypes": "Types de modèles",
             "license": "Licence",
             "noCreditRequired": "Crédit non requis",
             "allowSellingGeneratedContent": "Vente autorisée",
@@ -685,7 +685,11 @@
                 "lorasCountAsc": "Moins"
             },
             "refresh": {
-                "title": "Actualiser la liste des recipes"
+                "title": "Actualiser la liste des recipes",
+                "quick": "Synchroniser les changements",
+                "quickTooltip": "Synchroniser les changements - actualisation rapide sans reconstruire le cache",
+                "full": "Reconstruire le cache",
+                "fullTooltip": "Reconstruire le cache - rescan complet de tous les fichiers de recipes"
             },
             "filteredByLora": "Filtré par LoRA",
             "favorites": {
@@ -1396,6 +1400,8 @@
             "loadFailed": "Échec du chargement des {modelType}s : {message}",
             "refreshComplete": "Actualisation terminée",
             "refreshFailed": "Échec de l'actualisation des recipes : {message}",
+            "syncComplete": "Synchronisation terminée",
+            "syncFailed": "Échec de la synchronisation des recipes : {message}",
             "updateFailed": "Échec de la mise à jour de la recipe : {error}",
             "updateError": "Erreur lors de la mise à jour de la recipe : {message}",
             "nameSaved": "Recipe \"{name}\" sauvegardée avec succès",

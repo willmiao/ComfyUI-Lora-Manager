@@ -222,7 +222,7 @@
             "presetNamePlaceholder": "預設名稱...",
             "baseModel": "基礎模型",
             "modelTags": "標籤（前 20）",
-            "modelTypes": "Model Types",
+            "modelTypes": "模型類型",
             "license": "授權",
             "noCreditRequired": "無需署名",
             "allowSellingGeneratedContent": "允許銷售",
@@ -685,7 +685,11 @@
                 "lorasCountAsc": "最少"
             },
             "refresh": {
-                "title": "重新整理配方列表"
+                "title": "重新整理配方列表",
+                "quick": "同步變更",
+                "quickTooltip": "同步變更 - 快速重新整理而不重建快取",
+                "full": "重建快取",
+                "fullTooltip": "重建快取 - 重新掃描所有配方檔案"
             },
             "filteredByLora": "已依 LoRA 篩選",
             "favorites": {
@@ -1396,6 +1400,8 @@
             "loadFailed": "載入 {modelType} 失敗：{message}",
             "refreshComplete": "刷新完成",
             "refreshFailed": "刷新配方失敗：{message}",
+            "syncComplete": "同步完成",
+            "syncFailed": "同步配方失敗：{message}",
             "updateFailed": "更新配方失敗：{error}",
             "updateError": "更新配方錯誤：{message}",
             "nameSaved": "配方「{name}」已成功儲存",

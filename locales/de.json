@@ -222,7 +222,7 @@
             "presetNamePlaceholder": "Voreinstellungsname...",
             "baseModel": "Basis-Modell",
             "modelTags": "Tags (Top 20)",
-            "modelTypes": "Model Types",
+            "modelTypes": "Modelltypen",
             "license": "Lizenz",
             "noCreditRequired": "Kein Credit erforderlich",
             "allowSellingGeneratedContent": "Verkauf erlaubt",
@@ -685,7 +685,11 @@
                 "lorasCountAsc": "Wenigste"
             },
             "refresh": {
-                "title": "Rezeptliste aktualisieren"
+                "title": "Rezeptliste aktualisieren",
+                "quick": "Änderungen synchronisieren",
+                "quickTooltip": "Änderungen synchronisieren - schnelle Aktualisierung ohne Cache-Neubau",
+                "full": "Cache neu aufbauen",
+                "fullTooltip": "Cache neu aufbauen - vollständiger Rescan aller Rezeptdateien"
             },
             "filteredByLora": "Gefiltert nach LoRA",
             "favorites": {
@@ -1396,6 +1400,8 @@
             "loadFailed": "Fehler beim Laden der {modelType}s: {message}",
             "refreshComplete": "Aktualisierung abgeschlossen",
             "refreshFailed": "Fehler beim Aktualisieren der Rezepte: {message}",
+            "syncComplete": "Synchronisation abgeschlossen",
+            "syncFailed": "Fehler beim Synchronisieren der Rezepte: {message}",
             "updateFailed": "Fehler beim Aktualisieren des Rezepts: {error}",
             "updateError": "Fehler beim Aktualisieren des Rezepts: {message}",
             "nameSaved": "Rezept \"{name}\" erfolgreich gespeichert",
