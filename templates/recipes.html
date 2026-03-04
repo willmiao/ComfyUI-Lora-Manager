@@ -66,10 +66,20 @@
                     </optgroup>
                 </select>
             </div>
-            <div title="{{ t('recipes.controls.refresh.title') }}" class="control-group">
-                <button onclick="recipeManager.refreshRecipes()"><i class="fas fa-sync"></i> {{
-                    t('common.actions.refresh')
-                    }}</button>
+            <div title="{{ t('recipes.controls.refresh.title') }}" class="control-group dropdown-group">
+                <button data-action="refresh" class="dropdown-main"><i class="fas fa-sync"></i> <span>{{
+                    t('common.actions.refresh') }}</span></button>
+                <button class="dropdown-toggle" aria-label="Show refresh options">
+                    <i class="fas fa-caret-down"></i>
+                </button>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" data-action="quick-refresh" title="{{ t('recipes.controls.refresh.quickTooltip', default='Sync changes - quick refresh without rebuilding cache') }}">
+                        <i class="fas fa-bolt"></i> <span>{{ t('loras.controls.refresh.quick', default='Sync Changes') }}</span>
+                    </div>
+                    <div class="dropdown-item" data-action="full-rebuild" title="{{ t('recipes.controls.refresh.fullTooltip', default='Rebuild cache - full rescan of all recipe files') }}">
+                        <i class="fas fa-tools"></i> <span>{{ t('loras.controls.refresh.full', default='Rebuild Cache') }}</span>
+                    </div>
+                </div>
             </div>
             <div title="{{ t('recipes.controls.import.title') }}" class="control-group">
                 <button onclick="importManager.showImportModal()"><i class="fas fa-file-import"></i> {{

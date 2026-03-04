@@ -135,7 +135,7 @@ npm run test:coverage       # Generate coverage report
 - ALWAYS use English for comments (per copilot-instructions.md)
 - Dual mode: ComfyUI plugin (folder_paths) vs standalone (settings.json)
 - Detection: `os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1"`
-- Run `python scripts/sync_translation_keys.py` after UI string updates
+- Run `python scripts/sync_translation_keys.py` after adding UI strings to `locales/en.json`
 - Symlinks require normalized paths
 
 ## Frontend UI Architecture

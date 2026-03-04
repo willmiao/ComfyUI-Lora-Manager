@@ -7,7 +7,7 @@ import { getSessionItem, removeSessionItem } from './utils/storageHelpers.js';
 import { RecipeContextMenu } from './components/ContextMenu/index.js';
 import { DuplicatesManager } from './components/DuplicatesManager.js';
 import { refreshVirtualScroll } from './utils/infiniteScroll.js';
-import { refreshRecipes, RecipeSidebarApiClient } from './api/recipeApi.js';
+import { refreshRecipes, syncChanges, RecipeSidebarApiClient } from './api/recipeApi.js';
 import { sidebarManager } from './components/SidebarManager.js';
 
 class RecipePageControls {
@@ -27,7 +27,7 @@ class RecipePageControls {
             return;
         }
 
-        refreshVirtualScroll();
+        await syncChanges();
     }
 
     getSidebarApiClient() {
@@ -236,6 +236,70 @@ class RecipeManager {
                 refreshVirtualScroll();
             });
         }
+
+        // Initialize dropdown functionality for refresh button
+        this.initDropdowns();
+    }
+
+    initDropdowns() {
+        // Handle dropdown toggles
+        const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+        dropdownToggles.forEach(toggle => {
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const dropdownGroup = toggle.closest('.dropdown-group');
+                
+                // Close all other open dropdowns first
+                document.querySelectorAll('.dropdown-group.active').forEach(group => {
+                    if (group !== dropdownGroup) {
+                        group.classList.remove('active');
+                    }
+                });
+                
+                dropdownGroup.classList.toggle('active');
+            });
+        });
+
+        // Handle quick refresh option (Sync Changes)
+        const quickRefreshOption = document.querySelector('[data-action="quick-refresh"]');
+        if (quickRefreshOption) {
+            quickRefreshOption.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.pageControls.refreshModels(false);
+                this.closeDropdowns();
+            });
+        }
+
+        // Handle full rebuild option (Rebuild Cache)
+        const fullRebuildOption = document.querySelector('[data-action="full-rebuild"]');
+        if (fullRebuildOption) {
+            fullRebuildOption.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.pageControls.refreshModels(true);
+                this.closeDropdowns();
+            });
+        }
+
+        // Handle main refresh button (default: sync changes)
+        const refreshBtn = document.querySelector('[data-action="refresh"]');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                this.pageControls.refreshModels(false);
+            });
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.dropdown-group')) {
+                this.closeDropdowns();
+            }
+        });
+    }
+
+    closeDropdowns() {
+        document.querySelectorAll('.dropdown-group.active').forEach(group => {
+            group.classList.remove('active');
+        });
     }
 
     // This method is kept for compatibility but now uses virtual scrolling

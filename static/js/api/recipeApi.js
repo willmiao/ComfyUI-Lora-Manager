@@ -260,6 +260,26 @@ export async function resetAndReload(updateFolders = false) {
 }
 
 /**
+ * Sync changes - quick refresh without rebuilding cache (similar to models page)
+ */
+export async function syncChanges() {
+    try {
+        state.loadingManager.showSimpleLoading('Syncing changes...');
+
+        // Simply reload the recipes without rebuilding cache
+        await resetAndReload();
+
+        showToast('toast.recipes.syncComplete', {}, 'success');
+    } catch (error) {
+        console.error('Error syncing recipes:', error);
+        showToast('toast.recipes.syncFailed', { message: error.message }, 'error');
+    } finally {
+        state.loadingManager.hide();
+        state.loadingManager.restoreProgressBar();
+    }
+}
+
+/**
  * Refreshes the recipe list by first rebuilding the cache and then loading recipes
  */
 export async function refreshRecipes() {
