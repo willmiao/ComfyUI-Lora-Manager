@@ -690,6 +690,22 @@ class AutoComplete {
     }
 
     /**
+     * Get display text for an item (without extension for models)
+     * @param {string|Object} item - Item to get display text from
+     * @returns {string} - Display text without extension
+     */
+    _getDisplayText(item) {
+        const itemText = typeof item === 'object' && item.tag_name ? item.tag_name : String(item);
+        // Remove extension for models to avoid matching/displaying .safetensors etc.
+        if (this.modelType === 'loras' || this.searchType === 'embeddings') {
+            return removeLoraExtension(itemText);
+        } else if (this.modelType === 'embeddings') {
+            return removeGeneralExtension(itemText);
+        }
+        return itemText;
+    }
+
+    /**
      * Check if an item matches a search term
      * Supports both string items and enriched items with tag_name property
      * @param {string|Object} item - Item to check
@@ -697,7 +713,7 @@ class AutoComplete {
      * @returns {Object} - { matched: boolean, isExactMatch: boolean }
      */
     _matchItem(item, searchTerm) {
-        const itemText = typeof item === 'object' && item.tag_name ? item.tag_name : String(item);
+        const itemText = this._getDisplayText(item);
         const itemTextLower = itemText.toLowerCase();
         const searchTermLower = searchTerm.toLowerCase();
 
@@ -1070,7 +1086,9 @@ class AutoComplete {
                     // to prevent flex layout from breaking up the text
                     const nameSpan = document.createElement('span');
                     nameSpan.className = 'lm-autocomplete-name';
-                    nameSpan.innerHTML = this.highlightMatch(displayText, this.currentSearchTerm);
+                    // Use display text without extension for cleaner UI
+                    const displayTextWithoutExt = this._getDisplayText(displayText);
+                    nameSpan.innerHTML = this.highlightMatch(displayTextWithoutExt, this.currentSearchTerm);
                     nameSpan.style.cssText = `
                         flex: 1;
                         min-width: 0;
@@ -1522,7 +1540,9 @@ class AutoComplete {
         } else {
             const nameSpan = document.createElement('span');
             nameSpan.className = 'lm-autocomplete-name';
-            nameSpan.innerHTML = this.highlightMatch(displayText, this.currentSearchTerm);
+            // Use display text without extension for cleaner UI
+            const displayTextWithoutExt = this._getDisplayText(displayText);
+            nameSpan.innerHTML = this.highlightMatch(displayTextWithoutExt, this.currentSearchTerm);
             nameSpan.style.cssText = `
                 flex: 1;
                 min-width: 0;

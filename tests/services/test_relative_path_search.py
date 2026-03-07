@@ -62,3 +62,42 @@ async def test_search_relative_paths_excludes_tokens():
     matching = await service.search_relative_paths("flux -detail")
 
     assert matching == [f"flux{os.sep}keep-me.safetensors"]
+
+
+@pytest.mark.asyncio
+async def test_search_does_not_match_extension():
+    """Searching for 's' or 'safe' should not match .safetensors extension."""
+    scanner = FakeScanner(
+        [
+            {"file_path": "/models/lora1.safetensors"},
+            {"file_path": "/models/lora2.safetensors"},
+            {"file_path": "/models/special-model.safetensors"},  # 's' in filename
+        ],
+        ["/models"],
+    )
+    service = DummyService("stub", scanner, BaseModelMetadata)
+
+    # Searching for 's' should only match 'special-model', not all .safetensors
+    matching = await service.search_relative_paths("s")
+
+    # Should only match 'special-model' because 's' is in the filename
+    assert len(matching) == 1
+    assert "special-model" in matching[0]
+
+
+@pytest.mark.asyncio
+async def test_search_safe_does_not_match_all_files():
+    """Searching for 'safe' should not match .safetensors extension."""
+    scanner = FakeScanner(
+        [
+            {"file_path": "/models/flux.safetensors"},
+            {"file_path": "/models/detail.safetensors"},
+        ],
+        ["/models"],
+    )
+    service = DummyService("stub", scanner, BaseModelMetadata)
+
+    # Searching for 'safe' should return nothing (no file has 'safe' in its name)
+    matching = await service.search_relative_paths("safe")
+
+    assert len(matching) == 0

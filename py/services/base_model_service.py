@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import asyncio
+import re
 from typing import Any, Dict, List, Optional, Type, TYPE_CHECKING
 import logging
 import os
@@ -822,34 +823,57 @@ class BaseModelService(ABC):
         return include_terms, exclude_terms
 
     @staticmethod
+    def _remove_model_extension(path: str) -> str:
+        """Remove model file extension (.safetensors, .ckpt, .pt, .bin) for cleaner matching."""
+        return re.sub(r"\.(safetensors|ckpt|pt|bin)$", "", path, flags=re.IGNORECASE)
+
+    @staticmethod
     def _relative_path_matches_tokens(
         path_lower: str, include_terms: List[str], exclude_terms: List[str]
     ) -> bool:
-        """Determine whether a relative path string satisfies include/exclude tokens."""
-        if any(term and term in path_lower for term in exclude_terms):
+        """Determine whether a relative path string satisfies include/exclude tokens.
+
+        Matches against the path without extension to avoid matching .safetensors
+        when searching for 's'.
+        """
+        # Use path without extension for matching
+        path_for_matching = BaseModelService._remove_model_extension(path_lower)
+
+        if any(term and term in path_for_matching for term in exclude_terms):
             return False
 
         for term in include_terms:
-            if term and term not in path_lower:
+            if term and term not in path_for_matching:
                 return False
 
         return True
 
     @staticmethod
     def _relative_path_sort_key(relative_path: str, include_terms: List[str]) -> tuple:
-        """Sort paths by how well they satisfy the include tokens."""
-        path_lower = relative_path.lower()
+        """Sort paths by how well they satisfy the include tokens.
+
+        Sorts based on path without extension for consistent ordering.
+        """
+        # Use path without extension for sorting
+        path_for_sorting = BaseModelService._remove_model_extension(
+            relative_path.lower()
+        )
         prefix_hits = sum(
-            1 for term in include_terms if term and path_lower.startswith(term)
+            1 for term in include_terms if term and path_for_sorting.startswith(term)
         )
         match_positions = [
-            path_lower.find(term)
+            path_for_sorting.find(term)
             for term in include_terms
-            if term and term in path_lower
+            if term and term in path_for_sorting
         ]
         first_match_index = min(match_positions) if match_positions else 0
 
-        return (-prefix_hits, first_match_index, len(relative_path), path_lower)
+        return (
+            -prefix_hits,
+            first_match_index,
+            len(path_for_sorting),
+            path_for_sorting,
+        )
 
     async def search_relative_paths(
         self, search_term: str, limit: int = 15, offset: int = 0
