@@ -1268,8 +1268,11 @@ class ModelQueryHandler:
     async def get_relative_paths(self, request: web.Request) -> web.Response:
         try:
             search = request.query.get("search", "").strip()
-            limit = min(int(request.query.get("limit", "15")), 50)
-            matching_paths = await self._service.search_relative_paths(search, limit)
+            limit = min(int(request.query.get("limit", "15")), 100)
+            offset = max(0, int(request.query.get("offset", "0")))
+            matching_paths = await self._service.search_relative_paths(
+                search, limit, offset
+            )
             return web.json_response(
                 {"success": True, "relative_paths": matching_paths}
             )

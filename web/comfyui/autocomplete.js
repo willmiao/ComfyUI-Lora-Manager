@@ -269,13 +269,17 @@ class AutoComplete {
         this.modelType = modelType;
         this.behavior = getModelBehavior(modelType);
         this.options = {
-            maxItems: 20,
+            maxItems: 100,
+            pageSize: 20,
+            visibleItems: 15,  // Fixed at 15 items for balanced UX
+            itemHeight: 40,
             minChars: 1,
             debounceDelay: 200,
             showPreview: this.behavior.enablePreview ?? false,
+            enableVirtualScroll: true,
             ...options
         };
-        
+
         this.dropdown = null;
         this.selectedIndex = -1;
         this.items = [];
@@ -285,6 +289,15 @@ class AutoComplete {
         this.previewTooltip = null;
         this.previewTooltipPromise = null;
         this.searchType = null;
+
+        // Virtual scrolling state
+        this.virtualScrollOffset = 0;
+        this.hasMoreItems = true;
+        this.isLoadingMore = false;
+        this.currentPage = 0;
+        this.scrollContainer = null;
+        this.contentContainer = null;
+        this.totalHeight = 0;
 
         // Command mode state
         this.activeCommand = null;  // Current active command (e.g., { categories: [4, 11], label: 'Character' })
@@ -297,6 +310,7 @@ class AutoComplete {
         this.onKeyDown = null;
         this.onBlur = null;
         this.onDocumentClick = null;
+        this.onScroll = null;
 
         this.init();
     }
@@ -309,12 +323,12 @@ class AutoComplete {
     createDropdown() {
         this.dropdown = document.createElement('div');
         this.dropdown.className = 'comfy-autocomplete-dropdown';
-        
+
         // Apply new color scheme
         this.dropdown.style.cssText = `
             position: absolute;
             z-index: 10000;
-            overflow-y: visible;
+            overflow: hidden;
             background-color: rgba(40, 44, 52, 0.95);
             border: 1px solid rgba(226, 232, 240, 0.2);
             border-radius: 8px;
@@ -325,7 +339,29 @@ class AutoComplete {
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
         `;
-        
+
+        if (this.options.enableVirtualScroll) {
+            // Create scroll container for virtual scrolling
+            this.scrollContainer = document.createElement('div');
+            this.scrollContainer.className = 'comfy-autocomplete-scroll-container';
+            this.scrollContainer.style.cssText = `
+                overflow-y: auto;
+                max-height: ${this.options.visibleItems * this.options.itemHeight}px;
+                position: relative;
+            `;
+
+            // Create content container for virtual items
+            this.contentContainer = document.createElement('div');
+            this.contentContainer.className = 'comfy-autocomplete-content';
+            this.contentContainer.style.cssText = `
+                position: relative;
+                width: 100%;
+            `;
+
+            this.scrollContainer.appendChild(this.contentContainer);
+            this.dropdown.appendChild(this.scrollContainer);
+        }
+
         // Custom scrollbar styles with new color scheme
         const style = document.createElement('style');
         style.textContent = `
@@ -343,9 +379,29 @@ class AutoComplete {
             .comfy-autocomplete-dropdown::-webkit-scrollbar-thumb:hover {
                 background: rgba(226, 232, 240, 0.4);
             }
+            .comfy-autocomplete-scroll-container::-webkit-scrollbar {
+                width: 8px;
+            }
+            .comfy-autocomplete-scroll-container::-webkit-scrollbar-track {
+                background: rgba(40, 44, 52, 0.3);
+                border-radius: 4px;
+            }
+            .comfy-autocomplete-scroll-container::-webkit-scrollbar-thumb {
+                background: rgba(226, 232, 240, 0.2);
+                border-radius: 4px;
+            }
+            .comfy-autocomplete-scroll-container::-webkit-scrollbar-thumb:hover {
+                background: rgba(226, 232, 240, 0.4);
+            }
+            .comfy-autocomplete-loading {
+                padding: 12px;
+                text-align: center;
+                color: rgba(226, 232, 240, 0.5);
+                font-size: 12px;
+            }
         `;
         document.head.appendChild(style);
-        
+
         // Append to body to avoid overflow issues
         document.body.appendChild(this.dropdown);
 
@@ -410,6 +466,14 @@ class AutoComplete {
 
         // Mark this element as having autocomplete events bound
         this.inputElement._autocompleteEventsBound = true;
+
+        // Bind scroll event for virtual scrolling
+        if (this.options.enableVirtualScroll && this.scrollContainer) {
+            this.onScroll = () => {
+                this.handleScroll();
+            };
+            this.scrollContainer.addEventListener('scroll', this.onScroll);
+        }
     }
 
     /**
@@ -958,80 +1022,102 @@ class AutoComplete {
     }
 
     render() {
-        this.dropdown.innerHTML = '';
         this.selectedIndex = -1;
+
+        // Reset virtual scroll state
+        this.virtualScrollOffset = 0;
+        this.currentPage = 0;
+        this.hasMoreItems = true;
+        this.isLoadingMore = false;
 
         // Early return if no items to prevent empty dropdown
         if (!this.items || this.items.length === 0) {
+            if (this.contentContainer) {
+                this.contentContainer.innerHTML = '';
+            } else {
+                this.dropdown.innerHTML = '';
+            }
             return;
         }
 
-        // Check if items are enriched (have tag_name, category, post_count)
-        const isEnriched = this.items[0] && typeof this.items[0] === 'object' && 'tag_name' in this.items[0];
+        if (this.options.enableVirtualScroll && this.contentContainer) {
+            // Use virtual scrolling - only update visible items if dropdown is already visible
+            // If not visible, updateVisibleItems() will be called from show() after display:block
+            this.updateVirtualScrollHeight();
+            if (this.isVisible && this.dropdown.style.display !== 'none') {
+                this.updateVisibleItems();
+            }
+        } else {
+            // Traditional rendering (fallback)
+            this.dropdown.innerHTML = '';
 
-        this.items.forEach((itemData, index) => {
-            const item = document.createElement('div');
-            item.className = 'comfy-autocomplete-item';
+            // Check if items are enriched (have tag_name, category, post_count)
+            const isEnriched = this.items[0] && typeof this.items[0] === 'object' && 'tag_name' in this.items[0];
 
-            // Get the display text and path for insertion
-            const displayText = isEnriched ? itemData.tag_name : itemData;
-            const insertPath = isEnriched ? itemData.tag_name : itemData;
+            this.items.forEach((itemData, index) => {
+                const item = document.createElement('div');
+                item.className = 'comfy-autocomplete-item';
 
-            if (isEnriched) {
-                // Render enriched item with category badge and post count
-                this._renderEnrichedItem(item, itemData, this.currentSearchTerm);
-            } else {
-                // Create highlighted content for simple items, wrapped in a span
-                // to prevent flex layout from breaking up the text
-                const nameSpan = document.createElement('span');
-                nameSpan.className = 'lm-autocomplete-name';
-                nameSpan.innerHTML = this.highlightMatch(displayText, this.currentSearchTerm);
-                nameSpan.style.cssText = `
-                    flex: 1;
-                    min-width: 0;
+                // Get the display text and path for insertion
+                const displayText = isEnriched ? itemData.tag_name : itemData;
+                const insertPath = isEnriched ? itemData.tag_name : itemData;
+
+                if (isEnriched) {
+                    // Render enriched item with category badge and post count
+                    this._renderEnrichedItem(item, itemData, this.currentSearchTerm);
+                } else {
+                    // Create highlighted content for simple items, wrapped in a span
+                    // to prevent flex layout from breaking up the text
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'lm-autocomplete-name';
+                    nameSpan.innerHTML = this.highlightMatch(displayText, this.currentSearchTerm);
+                    nameSpan.style.cssText = `
+                        flex: 1;
+                        min-width: 0;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    `;
+                    item.appendChild(nameSpan);
+                }
+
+                // Apply item styles with new color scheme
+                item.style.cssText = `
+                    padding: 8px 12px;
+                    cursor: pointer;
+                    color: rgba(226, 232, 240, 0.8);
+                    border-bottom: 1px solid rgba(226, 232, 240, 0.1);
+                    transition: all 0.2s ease;
+                    white-space: nowrap;
                     overflow: hidden;
                     text-overflow: ellipsis;
+                    position: relative;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 8px;
                 `;
-                item.appendChild(nameSpan);
+
+                // Hover and selection handlers
+                item.addEventListener('mouseenter', () => {
+                    this.selectItem(index);
+                });
+
+                item.addEventListener('mouseleave', () => {
+                    this.hidePreview();
+                });
+
+                // Click handler
+                item.addEventListener('click', () => {
+                    this.insertSelection(insertPath);
+                });
+
+                this.dropdown.appendChild(item);
+            });
+
+            // Remove border from last item
+            if (this.dropdown.lastChild) {
+                this.dropdown.lastChild.style.borderBottom = 'none';
             }
-
-            // Apply item styles with new color scheme
-            item.style.cssText = `
-                padding: 8px 12px;
-                cursor: pointer;
-                color: rgba(226, 232, 240, 0.8);
-                border-bottom: 1px solid rgba(226, 232, 240, 0.1);
-                transition: all 0.2s ease;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                position: relative;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 8px;
-            `;
-
-            // Hover and selection handlers
-            item.addEventListener('mouseenter', () => {
-                this.selectItem(index);
-            });
-
-            item.addEventListener('mouseleave', () => {
-                this.hidePreview();
-            });
-
-            // Click handler
-            item.addEventListener('click', () => {
-                this.insertSelection(insertPath);
-            });
-
-            this.dropdown.appendChild(item);
-        });
-
-        // Remove border from last item
-        if (this.dropdown.lastChild) {
-            this.dropdown.lastChild.style.borderBottom = 'none';
         }
 
         // Auto-select the first item with a small delay
@@ -1163,16 +1249,323 @@ class AutoComplete {
         }
     }
     
+    /**
+     * Handle scroll event for virtual scrolling and loading more items
+     */
+    handleScroll() {
+        if (!this.scrollContainer || this.isLoadingMore) {
+            return;
+        }
+
+        const { scrollTop, scrollHeight, clientHeight } = this.scrollContainer;
+        const scrollBottom = scrollTop + clientHeight;
+        const threshold = this.options.itemHeight * 2; // Load more when within 2 items of bottom
+
+        // Check if we need to load more items
+        if (scrollBottom >= scrollHeight - threshold && this.hasMoreItems) {
+            this.loadMoreItems();
+        }
+
+        // Update visible items for virtual scrolling
+        if (this.options.enableVirtualScroll) {
+            this.updateVisibleItems();
+        }
+    }
+
+    /**
+     * Load more items (pagination)
+     */
+    async loadMoreItems() {
+        if (this.isLoadingMore || !this.hasMoreItems || this.showingCommands) {
+            return;
+        }
+
+        this.isLoadingMore = true;
+        this.currentPage++;
+
+        try {
+            // Show loading indicator
+            this.showLoadingIndicator();
+
+            // Get the current endpoint
+            let endpoint = `/lm/${this.modelType}/relative-paths`;
+            if (this.modelType === 'prompt') {
+                if (this.searchType === 'embeddings') {
+                    endpoint = '/lm/embeddings/relative-paths';
+                } else if (this.searchType === 'custom_words') {
+                    if (this.activeCommand?.categories) {
+                        const categories = this.activeCommand.categories.join(',');
+                        endpoint = `/lm/custom-words/search?category=${categories}`;
+                    } else {
+                        endpoint = '/lm/custom-words/search?enriched=true';
+                    }
+                }
+            }
+
+            const queryVariations = this._generateQueryVariations(this.currentSearchTerm);
+            const queriesToExecute = queryVariations.slice(0, 4);
+            const offset = this.items.length;
+
+            // Execute all queries in parallel with offset
+            const searchPromises = queriesToExecute.map(async (query) => {
+                const url = endpoint.includes('?')
+                    ? `${endpoint}&search=${encodeURIComponent(query)}&limit=${this.options.pageSize}&offset=${offset}`
+                    : `${endpoint}?search=${encodeURIComponent(query)}&limit=${this.options.pageSize}&offset=${offset}`;
+
+                try {
+                    const response = await api.fetchApi(url);
+                    const data = await response.json();
+                    return data.success ? (data.relative_paths || data.words || []) : [];
+                } catch (error) {
+                    console.warn(`Search query failed for "${query}":`, error);
+                    return [];
+                }
+            });
+
+            const resultsArrays = await Promise.all(searchPromises);
+
+            // Merge and deduplicate results with existing items
+            const seen = new Set(this.items.map(item => {
+                const itemKey = typeof item === 'object' && item.tag_name
+                    ? item.tag_name.toLowerCase()
+                    : String(item).toLowerCase();
+                return itemKey;
+            }));
+            const newItems = [];
+
+            for (const resultArray of resultsArrays) {
+                for (const item of resultArray) {
+                    const itemKey = typeof item === 'object' && item.tag_name
+                        ? item.tag_name.toLowerCase()
+                        : String(item).toLowerCase();
+
+                    if (!seen.has(itemKey)) {
+                        seen.add(itemKey);
+                        newItems.push(item);
+                    }
+                }
+            }
+
+            // If we got fewer items than requested, we've reached the end
+            if (newItems.length < this.options.pageSize) {
+                this.hasMoreItems = false;
+            }
+
+            // If we got new items, add them and re-render
+            if (newItems.length > 0) {
+                const currentLength = this.items.length;
+                this.items.push(...newItems);
+
+                // Re-score and sort all items
+                const scoredItems = this.items.map(item => {
+                    let bestScore = -1;
+                    let isExact = false;
+
+                    for (const query of queriesToExecute) {
+                        const match = this._matchItem(item, query);
+                        if (match.matched) {
+                            const score = match.isExactMatch ? 1000 : 100;
+                            if (score > bestScore) {
+                                bestScore = score;
+                                isExact = match.isExactMatch;
+                            }
+                        }
+                    }
+
+                    return { item, score: bestScore, isExact };
+                });
+
+                scoredItems.sort((a, b) => {
+                    if (b.isExact !== a.isExact) {
+                        return b.isExact ? 1 : -1;
+                    }
+                    return b.score - a.score;
+                });
+
+                this.items = scoredItems.map(s => s.item);
+
+                // Update render
+                if (this.options.enableVirtualScroll) {
+                    this.updateVirtualScrollHeight();
+                    this.updateVisibleItems();
+                } else {
+                    this.render();
+                }
+            } else {
+                this.hasMoreItems = false;
+            }
+        } catch (error) {
+            console.error('Error loading more items:', error);
+            this.hasMoreItems = false;
+        } finally {
+            this.isLoadingMore = false;
+            this.hideLoadingIndicator();
+        }
+    }
+
+    /**
+     * Show loading indicator at the bottom of the list
+     */
+    showLoadingIndicator() {
+        if (!this.contentContainer) return;
+
+        let loadingEl = this.contentContainer.querySelector('.comfy-autocomplete-loading');
+        if (!loadingEl) {
+            loadingEl = document.createElement('div');
+            loadingEl.className = 'comfy-autocomplete-loading';
+            loadingEl.textContent = 'Loading more...';
+            loadingEl.style.cssText = `
+                padding: 12px;
+                text-align: center;
+                color: rgba(226, 232, 240, 0.5);
+                font-size: 12px;
+            `;
+            this.contentContainer.appendChild(loadingEl);
+        }
+    }
+
+    /**
+     * Hide loading indicator
+     */
+    hideLoadingIndicator() {
+        if (!this.contentContainer) return;
+
+        const loadingEl = this.contentContainer.querySelector('.comfy-autocomplete-loading');
+        if (loadingEl) {
+            loadingEl.remove();
+        }
+    }
+
+    /**
+     * Update the total height of the virtual scroll container
+     */
+    updateVirtualScrollHeight() {
+        if (!this.contentContainer) return;
+
+        this.totalHeight = this.items.length * this.options.itemHeight;
+        this.contentContainer.style.height = `${this.totalHeight}px`;
+    }
+
+    /**
+     * Update which items are visible based on scroll position
+     */
+    updateVisibleItems() {
+        if (!this.scrollContainer || !this.contentContainer) return;
+
+        const scrollTop = this.scrollContainer.scrollTop;
+        const containerHeight = this.scrollContainer.clientHeight;
+
+        // Calculate which items should be visible
+        const startIndex = Math.max(0, Math.floor(scrollTop / this.options.itemHeight) - 2);
+        const endIndex = Math.min(
+            this.items.length - 1,
+            Math.ceil((scrollTop + containerHeight) / this.options.itemHeight) + 2
+        );
+
+        // Clear current content
+        this.contentContainer.innerHTML = '';
+
+        // Create spacer for items before visible range
+        if (startIndex > 0) {
+            const topSpacer = document.createElement('div');
+            topSpacer.style.height = `${startIndex * this.options.itemHeight}px`;
+            this.contentContainer.appendChild(topSpacer);
+        }
+
+        // Render visible items
+        const isEnriched = this.items[0] && typeof this.items[0] === 'object' && 'tag_name' in this.items[0];
+
+        for (let i = startIndex; i <= endIndex; i++) {
+            const itemData = this.items[i];
+            const itemEl = this.createItemElement(itemData, i, isEnriched);
+            this.contentContainer.appendChild(itemEl);
+        }
+
+        // Create spacer for items after visible range
+        if (endIndex < this.items.length - 1) {
+            const bottomSpacer = document.createElement('div');
+            bottomSpacer.style.height = `${(this.items.length - 1 - endIndex) * this.options.itemHeight}px`;
+            this.contentContainer.appendChild(bottomSpacer);
+        }
+    }
+
+    /**
+     * Create a single item element
+     */
+    createItemElement(itemData, index, isEnriched) {
+        const item = document.createElement('div');
+        item.className = 'comfy-autocomplete-item';
+        item.dataset.index = index.toString();
+        item.style.cssText = `
+            height: ${this.options.itemHeight}px;
+            padding: 8px 12px;
+            cursor: pointer;
+            color: rgba(226, 232, 240, 0.8);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.1);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            box-sizing: border-box;
+        `;
+
+        const displayText = isEnriched ? itemData.tag_name : itemData;
+        const insertPath = isEnriched ? itemData.tag_name : itemData;
+
+        if (isEnriched) {
+            this._renderEnrichedItem(item, itemData, this.currentSearchTerm);
+        } else {
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'lm-autocomplete-name';
+            nameSpan.innerHTML = this.highlightMatch(displayText, this.currentSearchTerm);
+            nameSpan.style.cssText = `
+                flex: 1;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            `;
+            item.appendChild(nameSpan);
+        }
+
+        // Hover and selection handlers
+        item.addEventListener('mouseenter', () => {
+            this.selectItem(index);
+        });
+
+        item.addEventListener('mouseleave', () => {
+            this.hidePreview();
+        });
+
+        item.addEventListener('click', () => {
+            this.insertSelection(insertPath);
+        });
+
+        return item;
+    }
+
     show() {
         if (!this.items || this.items.length === 0) {
             this.hide();
             return;
         }
-        
-        // Position dropdown at cursor position using TextAreaCaretHelper
-        this.positionAtCursor();
-        this.dropdown.style.display = 'block';
-        this.isVisible = true;
+
+        // For virtual scrolling, render items first so positionAtCursor can measure width correctly
+        if (this.options.enableVirtualScroll && this.contentContainer) {
+            this.dropdown.style.display = 'block';
+            this.isVisible = true;
+            this.updateVisibleItems();
+            this.positionAtCursor();
+        } else {
+            // Position dropdown at cursor position using TextAreaCaretHelper
+            this.positionAtCursor();
+            this.dropdown.style.display = 'block';
+            this.isVisible = true;
+        }
     }
     
     positionAtCursor() {
@@ -1189,7 +1582,11 @@ class AutoComplete {
         
         // Measure the content width
         let maxWidth = 200; // minimum width
-        const items = this.dropdown.querySelectorAll('.comfy-autocomplete-item');
+        // For virtual scrolling, query items from contentContainer; otherwise from dropdown
+        const container = this.options.enableVirtualScroll && this.contentContainer
+            ? this.contentContainer
+            : this.dropdown;
+        const items = container.querySelectorAll('.comfy-autocomplete-item');
         items.forEach(item => {
             const itemWidth = item.scrollWidth + 24; // Add padding
             maxWidth = Math.max(maxWidth, itemWidth);
@@ -1215,6 +1612,18 @@ class AutoComplete {
         this.selectedIndex = -1;
         this.showingCommands = false;
 
+        // Reset virtual scrolling state
+        this.virtualScrollOffset = 0;
+        this.currentPage = 0;
+        this.hasMoreItems = true;
+        this.isLoadingMore = false;
+        this.totalHeight = 0;
+
+        // Reset scroll position
+        if (this.scrollContainer) {
+            this.scrollContainer.scrollTop = 0;
+        }
+
         // Hide preview tooltip
         this.hidePreview();
 
@@ -1228,28 +1637,69 @@ class AutoComplete {
     
     selectItem(index) {
         // Remove previous selection
-        const prevSelected = this.dropdown.querySelector('.comfy-autocomplete-item-selected');
+        const container = this.options.enableVirtualScroll && this.contentContainer
+            ? this.contentContainer
+            : this.dropdown;
+        const prevSelected = container.querySelector('.comfy-autocomplete-item-selected');
         if (prevSelected) {
             prevSelected.classList.remove('comfy-autocomplete-item-selected');
             prevSelected.style.backgroundColor = '';
         }
-        
+
         // Add new selection
         if (index >= 0 && index < this.items.length) {
             this.selectedIndex = index;
-            const item = this.dropdown.children[index];
-            item.classList.add('comfy-autocomplete-item-selected');
-            item.style.backgroundColor = 'rgba(66, 153, 225, 0.2)';
-            
-            // Scroll into view if needed
-            item.scrollIntoView({ block: 'nearest' });
-            
-            // Show preview for selected item
-            if (this.options.showPreview) {
-                if (typeof this.behavior.showPreview === 'function') {
-                    this.behavior.showPreview(this, this.items[index], item);
-                } else if (this.previewTooltip) {
-                    this.showPreviewForItem(this.items[index], item);
+
+            // For virtual scrolling, we need to ensure the item is rendered
+            if (this.options.enableVirtualScroll && this.scrollContainer) {
+                // Calculate if the item is currently visible
+                const itemTop = index * this.options.itemHeight;
+                const itemBottom = itemTop + this.options.itemHeight;
+                const scrollTop = this.scrollContainer.scrollTop;
+                const containerHeight = this.scrollContainer.clientHeight;
+                const scrollBottom = scrollTop + containerHeight;
+
+                // If item is not visible, scroll to make it visible
+                if (itemTop < scrollTop || itemBottom > scrollBottom) {
+                    this.scrollContainer.scrollTop = itemTop - containerHeight / 2;
+                    // Re-render visible items after scroll
+                    this.updateVisibleItems();
+                }
+
+                // Find the item element using data-index attribute
+                const selectedEl = container.querySelector(`.comfy-autocomplete-item[data-index="${index}"]`);
+
+                if (selectedEl) {
+                    selectedEl.classList.add('comfy-autocomplete-item-selected');
+                    selectedEl.style.backgroundColor = 'rgba(66, 153, 225, 0.2)';
+
+                    // Show preview for selected item
+                    if (this.options.showPreview) {
+                        if (typeof this.behavior.showPreview === 'function') {
+                            this.behavior.showPreview(this, this.items[index], selectedEl);
+                        } else if (this.previewTooltip) {
+                            this.showPreviewForItem(this.items[index], selectedEl);
+                        }
+                    }
+                }
+            } else {
+                // Traditional rendering
+                const item = container.children[index];
+                if (item) {
+                    item.classList.add('comfy-autocomplete-item-selected');
+                    item.style.backgroundColor = 'rgba(66, 153, 225, 0.2)';
+
+                    // Scroll into view if needed
+                    item.scrollIntoView({ block: 'nearest' });
+
+                    // Show preview for selected item
+                    if (this.options.showPreview) {
+                        if (typeof this.behavior.showPreview === 'function') {
+                            this.behavior.showPreview(this, this.items[index], item);
+                        } else if (this.previewTooltip) {
+                            this.showPreviewForItem(this.items[index], item);
+                        }
+                    }
                 }
             }
         }
@@ -1510,6 +1960,11 @@ class AutoComplete {
         if (this.onDocumentClick) {
             document.removeEventListener('click', this.onDocumentClick);
             this.onDocumentClick = null;
+        }
+
+        if (this.onScroll && this.scrollContainer) {
+            this.scrollContainer.removeEventListener('scroll', this.onScroll);
+            this.onScroll = null;
         }
 
         if (typeof this.behavior.destroy === 'function') {

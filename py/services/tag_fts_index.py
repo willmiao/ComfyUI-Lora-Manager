@@ -69,7 +69,9 @@ class TagFTSIndex:
     _DEFAULT_FILENAME = "tag_fts.sqlite"
     _CSV_FILENAME = "danbooru_e621_merged.csv"
 
-    def __init__(self, db_path: Optional[str] = None, csv_path: Optional[str] = None) -> None:
+    def __init__(
+        self, db_path: Optional[str] = None, csv_path: Optional[str] = None
+    ) -> None:
         """Initialize the FTS index.
 
         Args:
@@ -92,7 +94,9 @@ class TagFTSIndex:
             if directory:
                 os.makedirs(directory, exist_ok=True)
         except Exception as exc:
-            logger.warning("Could not create FTS index directory %s: %s", directory, exc)
+            logger.warning(
+                "Could not create FTS index directory %s: %s", directory, exc
+            )
 
     def _resolve_default_db_path(self) -> str:
         """Resolve the default database path."""
@@ -173,13 +177,15 @@ class TagFTSIndex:
                     # Set schema version
                     conn.execute(
                         "INSERT OR REPLACE INTO fts_metadata (key, value) VALUES (?, ?)",
-                        ("schema_version", str(SCHEMA_VERSION))
+                        ("schema_version", str(SCHEMA_VERSION)),
                     )
                     conn.commit()
 
                     self._schema_initialized = True
                     self._needs_rebuild = needs_rebuild
-                    logger.debug("Tag FTS index schema initialized at %s", self._db_path)
+                    logger.debug(
+                        "Tag FTS index schema initialized at %s", self._db_path
+                    )
                 finally:
                     conn.close()
             except Exception as exc:
@@ -206,13 +212,20 @@ class TagFTSIndex:
             row = cursor.fetchone()
             if not row:
                 # Old schema without version, needs rebuild
-                logger.info("Migrating tag FTS index to schema version %d (adding alias support)", SCHEMA_VERSION)
+                logger.info(
+                    "Migrating tag FTS index to schema version %d (adding alias support)",
+                    SCHEMA_VERSION,
+                )
                 self._drop_old_tables(conn)
                 return True
 
             current_version = int(row[0])
             if current_version < SCHEMA_VERSION:
-                logger.info("Migrating tag FTS index from version %d to %d", current_version, SCHEMA_VERSION)
+                logger.info(
+                    "Migrating tag FTS index from version %d to %d",
+                    current_version,
+                    SCHEMA_VERSION,
+                )
                 self._drop_old_tables(conn)
                 return True
 
@@ -246,7 +259,9 @@ class TagFTSIndex:
             return
 
         if not os.path.exists(self._csv_path):
-            logger.warning("CSV file not found at %s, cannot build tag index", self._csv_path)
+            logger.warning(
+                "CSV file not found at %s, cannot build tag index", self._csv_path
+            )
             return
 
         self._indexing_in_progress = True
@@ -314,22 +329,24 @@ class TagFTSIndex:
                     # Update metadata
                     conn.execute(
                         "INSERT OR REPLACE INTO fts_metadata (key, value) VALUES (?, ?)",
-                        ("last_build_time", str(time.time()))
+                        ("last_build_time", str(time.time())),
                     )
                     conn.execute(
                         "INSERT OR REPLACE INTO fts_metadata (key, value) VALUES (?, ?)",
-                        ("tag_count", str(total_inserted))
+                        ("tag_count", str(total_inserted)),
                     )
                     conn.execute(
                         "INSERT OR REPLACE INTO fts_metadata (key, value) VALUES (?, ?)",
-                        ("schema_version", str(SCHEMA_VERSION))
+                        ("schema_version", str(SCHEMA_VERSION)),
                     )
 
                     conn.commit()
                     elapsed = time.time() - start_time
                     logger.info(
                         "Tag FTS index built: %d tags indexed (%d with aliases) in %.2fs",
-                        total_inserted, tags_with_aliases, elapsed
+                        total_inserted,
+                        tags_with_aliases,
+                        elapsed,
                     )
                 finally:
                     conn.close()
@@ -350,7 +367,7 @@ class TagFTSIndex:
         # Insert into tags table (with aliases)
         conn.executemany(
             "INSERT OR IGNORE INTO tags (tag_name, category, post_count, aliases) VALUES (?, ?, ?, ?)",
-            rows
+            rows,
         )
 
         # Build a map of tag_name -> aliases for FTS insertion
@@ -362,7 +379,7 @@ class TagFTSIndex:
         placeholders = ",".join("?" * len(tag_names))
         cursor = conn.execute(
             f"SELECT rowid, tag_name FROM tags WHERE tag_name IN ({placeholders})",
-            tag_names
+            tag_names,
         )
 
         # Build FTS rows with (rowid, searchable_text) = (tags.rowid, "tag_name alias1 alias2 ...")
@@ -379,13 +396,17 @@ class TagFTSIndex:
                         alias = alias[1:]  # Remove leading slash
                     if alias:
                         alias_parts.append(alias)
-                searchable_text = f"{tag_name} {' '.join(alias_parts)}" if alias_parts else tag_name
+                searchable_text = (
+                    f"{tag_name} {' '.join(alias_parts)}" if alias_parts else tag_name
+                )
             else:
                 searchable_text = tag_name
             fts_rows.append((rowid, searchable_text))
 
         if fts_rows:
-            conn.executemany("INSERT INTO tag_fts (rowid, searchable_text) VALUES (?, ?)", fts_rows)
+            conn.executemany(
+                "INSERT INTO tag_fts (rowid, searchable_text) VALUES (?, ?)", fts_rows
+            )
 
     def ensure_ready(self) -> bool:
         """Ensure the index is ready, building if necessary.
@@ -420,7 +441,8 @@ class TagFTSIndex:
         self,
         query: str,
         categories: Optional[List[int]] = None,
-        limit: int = 20
+        limit: int = 20,
+        offset: int = 0,
     ) -> List[Dict]:
         """Search tags using FTS5 with prefix matching.
 
@@ -431,6 +453,7 @@ class TagFTSIndex:
             query: The search query string.
             categories: Optional list of category IDs to filter by.
             limit: Maximum number of results to return.
+            offset: Number of results to skip.
 
         Returns:
             List of dictionaries with tag_name, category, post_count,
@@ -466,9 +489,9 @@ class TagFTSIndex:
                             )
                             AND t.category IN ({placeholders})
                             ORDER BY t.post_count DESC
-                            LIMIT ?
+                            LIMIT ? OFFSET ?
                         """
-                        params = [fts_query] + categories + [limit]
+                        params = [fts_query] + categories + [limit, offset]
                     else:
                         sql = """
                             SELECT t.tag_name, t.category, t.post_count, t.aliases
@@ -476,9 +499,9 @@ class TagFTSIndex:
                             JOIN tags t ON f.rowid = t.rowid
                             WHERE f.searchable_text MATCH ?
                             ORDER BY t.post_count DESC
-                            LIMIT ?
+                            LIMIT ? OFFSET ?
                         """
-                        params = [fts_query, limit]
+                        params = [fts_query, limit, offset]
 
                     cursor = conn.execute(sql, params)
                     results = []
@@ -502,7 +525,9 @@ class TagFTSIndex:
             logger.debug("Tag FTS search error for query '%s': %s", query, exc)
             return []
 
-    def _find_matched_alias(self, query: str, tag_name: str, aliases_str: str) -> Optional[str]:
+    def _find_matched_alias(
+        self, query: str, tag_name: str, aliases_str: str
+    ) -> Optional[str]:
         """Find which alias matched the query, if any.
 
         Args:

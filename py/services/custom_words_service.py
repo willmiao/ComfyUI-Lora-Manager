@@ -49,6 +49,7 @@ class CustomWordsService:
         if self._tag_index is None:
             try:
                 from .tag_fts_index import get_tag_fts_index
+
                 self._tag_index = get_tag_fts_index()
             except Exception as e:
                 logger.warning(f"Failed to initialize TagFTSIndex: {e}")
@@ -59,14 +60,16 @@ class CustomWordsService:
         self,
         search_term: str,
         limit: int = 20,
+        offset: int = 0,
         categories: Optional[List[int]] = None,
-        enriched: bool = False
+        enriched: bool = False,
     ) -> List[Dict[str, Any]]:
         """Search tags using TagFTSIndex with category filtering.
 
         Args:
             search_term: The search term to match against.
             limit: Maximum number of results to return.
+            offset: Number of results to skip.
             categories: Optional list of category IDs to filter by.
             enriched: If True, always return enriched results with category
                        and post_count (default behavior now).
@@ -76,7 +79,9 @@ class CustomWordsService:
         """
         tag_index = self._get_tag_index()
         if tag_index is not None:
-            results = tag_index.search(search_term, categories=categories, limit=limit)
+            results = tag_index.search(
+                search_term, categories=categories, limit=limit, offset=offset
+            )
             return results
 
         logger.debug("TagFTSIndex not available, returning empty results")

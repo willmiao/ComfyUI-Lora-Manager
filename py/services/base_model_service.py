@@ -383,7 +383,9 @@ class BaseModelService(ABC):
         # Check user setting for hiding early access updates
         hide_early_access = False
         try:
-            hide_early_access = bool(self.settings.get("hide_early_access_updates", False))
+            hide_early_access = bool(
+                self.settings.get("hide_early_access_updates", False)
+            )
         except Exception:
             hide_early_access = False
 
@@ -413,7 +415,11 @@ class BaseModelService(ABC):
             bulk_method = getattr(self.update_service, "has_updates_bulk", None)
             if callable(bulk_method):
                 try:
-                    resolved = await bulk_method(self.model_type, ordered_ids, hide_early_access=hide_early_access)
+                    resolved = await bulk_method(
+                        self.model_type,
+                        ordered_ids,
+                        hide_early_access=hide_early_access,
+                    )
                 except Exception as exc:
                     logger.error(
                         "Failed to resolve update status in bulk for %s models (%s): %s",
@@ -426,7 +432,9 @@ class BaseModelService(ABC):
 
         if resolved is None:
             tasks = [
-                self.update_service.has_update(self.model_type, model_id, hide_early_access=hide_early_access)
+                self.update_service.has_update(
+                    self.model_type, model_id, hide_early_access=hide_early_access
+                )
                 for model_id in ordered_ids
             ]
             results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -588,13 +596,19 @@ class BaseModelService(ABC):
             normalized_type = normalize_sub_type(resolve_sub_type(entry))
             if not normalized_type:
                 continue
-            
+
             # Filter by valid sub-types based on scanner type
-            if self.model_type == "lora" and normalized_type not in VALID_LORA_SUB_TYPES:
+            if (
+                self.model_type == "lora"
+                and normalized_type not in VALID_LORA_SUB_TYPES
+            ):
                 continue
-            if self.model_type == "checkpoint" and normalized_type not in VALID_CHECKPOINT_SUB_TYPES:
+            if (
+                self.model_type == "checkpoint"
+                and normalized_type not in VALID_CHECKPOINT_SUB_TYPES
+            ):
                 continue
-            
+
             type_counts[normalized_type] = type_counts.get(normalized_type, 0) + 1
 
         sorted_types = sorted(
@@ -838,7 +852,7 @@ class BaseModelService(ABC):
         return (-prefix_hits, first_match_index, len(relative_path), path_lower)
 
     async def search_relative_paths(
-        self, search_term: str, limit: int = 15
+        self, search_term: str, limit: int = 15, offset: int = 0
     ) -> List[str]:
         """Search model relative file paths for autocomplete functionality"""
         cache = await self.scanner.get_cached_data()
@@ -849,6 +863,7 @@ class BaseModelService(ABC):
         # Get model roots for path calculation
         model_roots = self.scanner.get_model_roots()
 
+        # Collect all matching paths first (needed for proper sorting and offset)
         for model in cache.raw_data:
             file_path = model.get("file_path", "")
             if not file_path:
@@ -877,12 +892,12 @@ class BaseModelService(ABC):
             ):
                 matching_paths.append(relative_path)
 
-                if len(matching_paths) >= limit * 2:  # Get more for better sorting
-                    break
-
         # Sort by relevance (prefix and earliest hits first, then by length and alphabetically)
         matching_paths.sort(
             key=lambda relative: self._relative_path_sort_key(relative, include_terms)
         )
 
-        return matching_paths[:limit]
+        # Apply offset and limit
+        start = min(offset, len(matching_paths))
+        end = min(start + limit, len(matching_paths))
+        return matching_paths[start:end]

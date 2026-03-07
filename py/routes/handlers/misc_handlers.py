@@ -240,11 +240,7 @@ class SupportersHandler:
         except Exception as e:
             self._logger.debug(f"Failed to load supporters data: {e}")
 
-        return {
-            "specialThanks": [],
-            "allSupporters": [],
-            "totalCount": 0
-        }
+        return {"specialThanks": [], "allSupporters": [], "totalCount": 0}
 
     async def get_supporters(self, request: web.Request) -> web.Response:
         """Return supporters data as JSON."""
@@ -253,9 +249,7 @@ class SupportersHandler:
             return web.json_response({"success": True, "supporters": supporters})
         except Exception as exc:
             self._logger.error("Error loading supporters: %s", exc, exc_info=True)
-            return web.json_response(
-                {"success": False, "error": str(exc)}, status=500
-            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
 class SettingsHandler:
@@ -263,15 +257,17 @@ class SettingsHandler:
 
     # Settings keys that should NOT be synced to frontend.
     # All other settings are synced by default.
-    _NO_SYNC_KEYS = frozenset({
-        # Internal/performance settings (not used by frontend)
-        "hash_chunk_size_mb",
-        "download_stall_timeout_seconds",
-        # Complex internal structures retrieved via separate endpoints
-        "folder_paths",
-        "libraries",
-        "active_library",
-    })
+    _NO_SYNC_KEYS = frozenset(
+        {
+            # Internal/performance settings (not used by frontend)
+            "hash_chunk_size_mb",
+            "download_stall_timeout_seconds",
+            # Complex internal structures retrieved via separate endpoints
+            "folder_paths",
+            "libraries",
+            "active_library",
+        }
+    )
 
     _PROXY_KEYS = {
         "proxy_enabled",
@@ -1226,6 +1222,7 @@ class CustomWordsHandler:
 
     def __init__(self) -> None:
         from ...services.custom_words_service import get_custom_words_service
+
         self._service = get_custom_words_service()
 
     async def search_custom_words(self, request: web.Request) -> web.Response:
@@ -1234,6 +1231,7 @@ class CustomWordsHandler:
         Query parameters:
             search: The search term to match against.
             limit: Maximum number of results to return (default: 20).
+            offset: Number of results to skip (default: 0).
             category: Optional category filter. Can be:
                 - A category name (e.g., "character", "artist", "general")
                 - Comma-separated category IDs (e.g., "4,11" for character)
@@ -1243,6 +1241,7 @@ class CustomWordsHandler:
         try:
             search_term = request.query.get("search", "")
             limit = int(request.query.get("limit", "20"))
+            offset = max(0, int(request.query.get("offset", "0")))
             category_param = request.query.get("category", "")
             enriched_param = request.query.get("enriched", "").lower() == "true"
 
@@ -1252,13 +1251,14 @@ class CustomWordsHandler:
                 categories = self._parse_category_param(category_param)
 
             results = self._service.search_words(
-                search_term, limit, categories=categories, enriched=enriched_param
+                search_term,
+                limit,
+                offset=offset,
+                categories=categories,
+                enriched=enriched_param,
             )
 
-            return web.json_response({
-                "success": True,
-                "words": results
-            })
+            return web.json_response({"success": True, "words": results})
         except Exception as exc:
             logger.error("Error searching custom words: %s", exc, exc_info=True)
             return web.json_response({"error": str(exc)}, status=500)
