@@ -90,7 +90,7 @@ describe('AutoComplete widget interactions', () => {
     await vi.runAllTimersAsync();
     await Promise.resolve();
 
-    expect(fetchApiMock).toHaveBeenCalledWith('/lm/loras/relative-paths?search=example&limit=20');
+    expect(fetchApiMock).toHaveBeenCalledWith('/lm/loras/relative-paths?search=example&limit=100');
     const items = autoComplete.dropdown.querySelectorAll('.comfy-autocomplete-item');
     expect(items).toHaveLength(1);
     expect(autoComplete.dropdown.style.display).toBe('block');

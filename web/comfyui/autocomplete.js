@@ -1593,13 +1593,19 @@ class AutoComplete {
         this.dropdown.style.left = (position.left ?? 0) + "px";
         this.dropdown.style.top = (position.top ?? 0) + "px";
         this.dropdown.style.maxHeight = (window.innerHeight - position.top) + "px";
-        
+
         // Adjust width to fit content
         // Temporarily show the dropdown to measure content width
         const originalDisplay = this.dropdown.style.display;
         this.dropdown.style.display = 'block';
         this.dropdown.style.visibility = 'hidden';
-        
+
+        // Temporarily remove width constraints to allow content to expand naturally
+        // This prevents items.scrollWidth from being limited by a narrow container
+        const originalWidth = this.dropdown.style.width;
+        this.dropdown.style.width = 'auto';
+        this.dropdown.style.minWidth = '200px';
+
         // Measure the content width
         let maxWidth = 200; // minimum width
         // For virtual scrolling, query items from contentContainer; otherwise from dropdown
@@ -1611,9 +1617,10 @@ class AutoComplete {
             const itemWidth = item.scrollWidth + 24; // Add padding
             maxWidth = Math.max(maxWidth, itemWidth);
         });
-        
+
         // Set the width and restore visibility
         this.dropdown.style.width = Math.min(maxWidth, 400) + 'px'; // Cap at 400px
+        this.dropdown.style.minWidth = '';
         this.dropdown.style.visibility = 'visible';
         this.dropdown.style.display = originalDisplay;
     }
