@@ -1988,14 +1988,14 @@ to { transform: rotate(360deg);
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-653446fd] {
+.autocomplete-text-widget[data-v-7fb96eed] {
   background: transparent;
   height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
-.input-wrapper[data-v-653446fd] {
+.input-wrapper[data-v-7fb96eed] {
   position: relative;
   flex: 1;
   display: flex;
@@ -2003,14 +2003,14 @@ to { transform: rotate(360deg);
 }
 
 /* Canvas mode styles (default) - matches built-in comfy-multiline-input */
-.text-input[data-v-653446fd] {
+.text-input[data-v-7fb96eed] {
   flex: 1;
   width: 100%;
   background-color: var(--comfy-input-bg, #222);
   color: var(--input-text, #ddd);
   overflow: hidden;
   overflow-y: auto;
-  padding: 2px;
+  padding: 2px 2px 24px 2px;  /* Reserve bottom space for clear button */
   resize: none;
   border: none;
   border-radius: 0;
@@ -2020,24 +2020,24 @@ to { transform: rotate(360deg);
 }
 
 /* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
-.text-input.vue-dom-mode[data-v-653446fd] {
+.text-input.vue-dom-mode[data-v-7fb96eed] {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
-  padding: 8px 12px;
+  padding: 8px 12px 30px 12px;  /* Reserve bottom space for clear button */
   margin: 0 0 4px;
   border-radius: 8px;
   font-size: 12px;
   font-family: inherit;
 }
-.text-input[data-v-653446fd]:focus {
+.text-input[data-v-7fb96eed]:focus {
   outline: none;
 }
 
 /* Clear button styles */
-.clear-button[data-v-653446fd] {
+.clear-button[data-v-7fb96eed] {
   position: absolute;
-  right: 4px;
-  top: 4px;
+  right: 6px;
+  bottom: 6px;  /* Changed from top to bottom */
   width: 18px;
   height: 18px;
   padding: 0;
@@ -2050,31 +2050,38 @@ to { transform: rotate(360deg);
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.7;
+  opacity: 0;  /* Hidden by default */
+  pointer-events: none;  /* Not clickable when hidden */
   transition: opacity 0.2s ease, background-color 0.2s ease;
   z-index: 10;
 }
-.clear-button[data-v-653446fd]:hover {
+
+/* Show clear button when hovering over input wrapper */
+.input-wrapper:hover .clear-button[data-v-7fb96eed] {
+  opacity: 0.7;
+  pointer-events: auto;
+}
+.clear-button[data-v-7fb96eed]:hover {
   opacity: 1;
   background: rgba(255, 100, 100, 0.8);
 }
-.clear-button svg[data-v-653446fd] {
+.clear-button svg[data-v-7fb96eed] {
   width: 12px;
   height: 12px;
 }
 
 /* Vue DOM mode adjustments for clear button */
-.text-input.vue-dom-mode ~ .clear-button[data-v-653446fd] {
+.text-input.vue-dom-mode ~ .clear-button[data-v-7fb96eed] {
   right: 8px;
-  top: 8px;
+  bottom: 10px;  /* Changed from top to bottom, adjusted for Vue DOM padding */
   width: 20px;
   height: 20px;
   background: rgba(107, 114, 128, 0.6);
 }
-.text-input.vue-dom-mode ~ .clear-button[data-v-653446fd]:hover {
+.text-input.vue-dom-mode ~ .clear-button[data-v-7fb96eed]:hover {
   background: oklch(62% 0.18 25);
 }
-.text-input.vue-dom-mode ~ .clear-button svg[data-v-653446fd] {
+.text-input.vue-dom-mode ~ .clear-button svg[data-v-7fb96eed] {
   width: 14px;
   height: 14px;
 }`));
@@ -14324,7 +14331,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-653446fd"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-7fb96eed"]]);
 const LORA_PROVIDER_NODE_TYPES$1 = [
   "Lora Stacker (LoraManager)",
   "Lora Randomizer (LoraManager)",

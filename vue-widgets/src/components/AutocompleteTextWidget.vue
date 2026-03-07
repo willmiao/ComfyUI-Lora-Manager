@@ -191,7 +191,7 @@ onUnmounted(() => {
   color: var(--input-text, #ddd);
   overflow: hidden;
   overflow-y: auto;
-  padding: 2px;
+  padding: 2px 2px 24px 2px;  /* Reserve bottom space for clear button */
   resize: none;
   border: none;
   border-radius: 0;
@@ -204,7 +204,7 @@ onUnmounted(() => {
 .text-input.vue-dom-mode {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
-  padding: 8px 12px;
+  padding: 8px 12px 30px 12px;  /* Reserve bottom space for clear button */
   margin: 0 0 4px;
   border-radius: 8px;
   font-size: 12px;
@@ -218,8 +218,8 @@ onUnmounted(() => {
 /* Clear button styles */
 .clear-button {
   position: absolute;
-  right: 4px;
-  top: 4px;
+  right: 6px;
+  bottom: 6px;  /* Changed from top to bottom */
   width: 18px;
   height: 18px;
   padding: 0;
@@ -232,9 +232,16 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.7;
+  opacity: 0;  /* Hidden by default */
+  pointer-events: none;  /* Not clickable when hidden */
   transition: opacity 0.2s ease, background-color 0.2s ease;
   z-index: 10;
+}
+
+/* Show clear button when hovering over input wrapper */
+.input-wrapper:hover .clear-button {
+  opacity: 0.7;
+  pointer-events: auto;
 }
 
 .clear-button:hover {
@@ -250,7 +257,7 @@ onUnmounted(() => {
 /* Vue DOM mode adjustments for clear button */
 .text-input.vue-dom-mode ~ .clear-button {
   right: 8px;
-  top: 8px;
+  bottom: 10px;  /* Changed from top to bottom, adjusted for Vue DOM padding */
   width: 20px;
   height: 20px;
   background: rgba(107, 114, 128, 0.6);
