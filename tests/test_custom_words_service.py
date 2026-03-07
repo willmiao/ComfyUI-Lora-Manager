@@ -2,7 +2,10 @@
 
 import pytest
 
-from py.services.custom_words_service import CustomWordsService, get_custom_words_service
+from py.services.custom_words_service import (
+    CustomWordsService,
+    get_custom_words_service,
+)
 
 
 class TestCustomWordsService:
@@ -99,13 +102,19 @@ class MockTagFTSIndex:
         self.called = False
         self._results = [
             {"tag_name": "hatsune_miku", "category": 4, "post_count": 500000},
-            {"tag_name": "hatsune_miku_(vocaloid)", "category": 4, "post_count": 250000},
+            {
+                "tag_name": "hatsune_miku_(vocaloid)",
+                "category": 4,
+                "post_count": 250000,
+            },
         ]
 
-    def search(self, query, categories=None, limit=20):
+    def search(self, query, categories=None, limit=20, offset=0):
         self.called = True
         if not query:
             return []
         if categories:
-            return [r for r in self._results if r["category"] in categories][:limit]
-        return self._results[:limit]
+            results = [r for r in self._results if r["category"] in categories]
+        else:
+            results = self._results
+        return results[offset : offset + limit]
