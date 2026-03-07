@@ -529,10 +529,12 @@ class AutoComplete {
                     this.showingCommands = false;
                     this.activeCommand = null;
                     endpoint = '/lm/custom-words/search?enriched=true';
-                    // Extract last space-separated token for search
-                    // Tag names don't contain spaces, so we only need the last token
-                    // This allows "hello 1gi" to search for "1gi" and find "1girl"
-                    searchTerm = this._getLastSpaceToken(rawSearchTerm);
+                    // Use full search term for query variation generation
+                    // The search() method will generate multiple query variations including:
+                    // - Original query (for natural language matching)
+                    // - Underscore version (e.g., "looking_to_the_side" for "looking to the side")
+                    // - Last token (for backward compatibility with continuous typing)
+                    searchTerm = rawSearchTerm;
                     this.searchType = 'custom_words';
                 } else {
                     // No command and setting disabled - no autocomplete for direct typing
@@ -579,6 +581,83 @@ class AutoComplete {
         return tokens[tokens.length - 1] || term;
     }
 
+    /**
+     * Generate query variations for better autocomplete matching
+     * Includes original query and normalized versions (spaces to underscores, etc.)
+     * @param {string} term - Original search term
+     * @returns {string[]} - Array of query variations
+     */
+    _generateQueryVariations(term) {
+        if (!term || term.length < this.options.minChars) {
+            return [];
+        }
+
+        const variations = new Set();
+        const trimmed = term.trim();
+
+        // Always include original query
+        variations.add(trimmed);
+        variations.add(trimmed.toLowerCase());
+
+        // Add underscore version (Danbooru convention: spaces become underscores)
+        // e.g., "looking to the side" -> "looking_to_the_side"
+        if (trimmed.includes(' ')) {
+            const underscoreVersion = trimmed.replace(/ /g, '_');
+            variations.add(underscoreVersion);
+            variations.add(underscoreVersion.toLowerCase());
+        }
+
+        // Add no-space version for flexible matching
+        // e.g., "blue hair" -> "bluehair"
+        if (trimmed.includes(' ') || trimmed.includes('_')) {
+            const noSpaceVersion = trimmed.replace(/[ _]/g, '');
+            variations.add(noSpaceVersion);
+            variations.add(noSpaceVersion.toLowerCase());
+        }
+
+        // Add last token only (legacy behavior for continuous typing)
+        const lastToken = this._getLastSpaceToken(trimmed);
+        if (lastToken !== trimmed) {
+            variations.add(lastToken);
+            variations.add(lastToken.toLowerCase());
+        }
+
+        return Array.from(variations).filter(v => v.length >= this.options.minChars);
+    }
+
+    /**
+     * Check if an item matches a search term
+     * Supports both string items and enriched items with tag_name property
+     * @param {string|Object} item - Item to check
+     * @param {string} searchTerm - Search term to match against
+     * @returns {Object} - { matched: boolean, isExactMatch: boolean }
+     */
+    _matchItem(item, searchTerm) {
+        const itemText = typeof item === 'object' && item.tag_name ? item.tag_name : String(item);
+        const itemTextLower = itemText.toLowerCase();
+        const searchTermLower = searchTerm.toLowerCase();
+
+        // Exact match (case-insensitive)
+        if (itemTextLower === searchTermLower) {
+            return { matched: true, isExactMatch: true };
+        }
+
+        // Partial match (contains)
+        if (itemTextLower.includes(searchTermLower)) {
+            return { matched: true, isExactMatch: false };
+        }
+
+        // Symbol-insensitive match: remove common separators and retry
+        // e.g., "blue hair" can match "blue_hair" or "bluehair"
+        const normalizedItem = itemTextLower.replace(/[-_\s']/g, '');
+        const normalizedSearch = searchTermLower.replace(/[-_\s']/g, '');
+        if (normalizedItem.includes(normalizedSearch)) {
+            return { matched: true, isExactMatch: false };
+        }
+
+        return { matched: false, isExactMatch: false };
+    }
+
     async search(term = '', endpoint = null) {
         try {
             this.currentSearchTerm = term;
@@ -587,26 +666,88 @@ class AutoComplete {
                 endpoint = `/lm/${this.modelType}/relative-paths`;
             }
 
-            const url = endpoint.includes('?')
-                ? `${endpoint}&search=${encodeURIComponent(term)}&limit=${this.options.maxItems}`
-                : `${endpoint}?search=${encodeURIComponent(term)}&limit=${this.options.maxItems}`;
+            // Generate multiple query variations for better matching
+            const queryVariations = this._generateQueryVariations(term);
 
-            const response = await api.fetchApi(url);
-            const data = await response.json();
+            if (queryVariations.length === 0) {
+                this.items = [];
+                this.hide();
+                return;
+            }
 
-            // Support both response formats:
-            // 1. Model endpoint format: { success: true, relative_paths: [...] }
-            // 2. Custom words format: { success: true, words: [...] }
-            if (data.success) {
-                const items = data.relative_paths || data.words || [];
-                if (items.length > 0) {
-                    this.items = items;
-                    this.render();
-                    this.show();
-                } else {
-                    this.items = [];
-                    this.hide();
+            // Limit the number of parallel queries to avoid overwhelming the server
+            const queriesToExecute = queryVariations.slice(0, 4);
+
+            // Execute all queries in parallel
+            const searchPromises = queriesToExecute.map(async (query) => {
+                const url = endpoint.includes('?')
+                    ? `${endpoint}&search=${encodeURIComponent(query)}&limit=${this.options.maxItems}`
+                    : `${endpoint}?search=${encodeURIComponent(query)}&limit=${this.options.maxItems}`;
+
+                try {
+                    const response = await api.fetchApi(url);
+                    const data = await response.json();
+                    return data.success ? (data.relative_paths || data.words || []) : [];
+                } catch (error) {
+                    console.warn(`Search query failed for "${query}":`, error);
+                    return [];
                 }
+            });
+
+            const resultsArrays = await Promise.all(searchPromises);
+
+            // Merge and deduplicate results
+            const seen = new Set();
+            const mergedItems = [];
+
+            for (const resultArray of resultsArrays) {
+                for (const item of resultArray) {
+                    const itemKey = typeof item === 'object' && item.tag_name
+                        ? item.tag_name.toLowerCase()
+                        : String(item).toLowerCase();
+
+                    if (!seen.has(itemKey)) {
+                        seen.add(itemKey);
+                        mergedItems.push(item);
+                    }
+                }
+            }
+
+            // Score and sort results: exact matches first, then by match quality
+            const scoredItems = mergedItems.map(item => {
+                let bestScore = -1;
+                let isExact = false;
+
+                for (const query of queriesToExecute) {
+                    const match = this._matchItem(item, query);
+                    if (match.matched) {
+                        // Higher score for exact matches
+                        const score = match.isExactMatch ? 1000 : 100;
+                        if (score > bestScore) {
+                            bestScore = score;
+                            isExact = match.isExactMatch;
+                        }
+                    }
+                }
+
+                return { item, score: bestScore, isExact };
+            });
+
+            // Sort by score (descending), exact matches first
+            scoredItems.sort((a, b) => {
+                if (b.isExact !== a.isExact) {
+                    return b.isExact ? 1 : -1;
+                }
+                return b.score - a.score;
+            });
+
+            // Extract just the items
+            const sortedItems = scoredItems.map(s => s.item);
+
+            if (sortedItems.length > 0) {
+                this.items = sortedItems;
+                this.render();
+                this.show();
             } else {
                 this.items = [];
                 this.hide();
