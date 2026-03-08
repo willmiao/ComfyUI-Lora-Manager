@@ -19,9 +19,62 @@ const TAG_SPACE_REPLACEMENT_DEFAULT = false;
 const USAGE_STATISTICS_SETTING_ID = "loramanager.usage_statistics";
 const USAGE_STATISTICS_DEFAULT = true;
 
+const NEW_TAB_TEMPLATE_ID = "loramanager.new_tab_template";
+const NEW_TAB_TEMPLATE_DEFAULT = "Default";
+
+const NEW_TAB_ZOOM_LEVEL = 0.8;
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+let workflowOptions = [NEW_TAB_TEMPLATE_DEFAULT];
+let workflowOptionsFull = [{ value: "Default", label: "Default (Blank)", path: null }];
+let workflowOptionsLoaded = false;
+
+const loadWorkflowOptions = async () => {
+    if (workflowOptionsLoaded) {
+        return;
+    }
+    try {
+        const response = await fetch("/api/lm/example-workflows");
+        const data = await response.json();
+        if (data.success && data.workflows) {
+            workflowOptionsFull = data.workflows;
+            workflowOptions = data.workflows.map((w) => w.label);
+            workflowOptionsLoaded = true;
+        }
+    } catch (error) {
+        console.warn("LoRA Manager: Failed to fetch workflow options", error);
+    }
+};
+
+const getWorkflowOptions = () => {
+    // Function may be called with or without parameters
+    // Return the current workflow options array
+    return workflowOptions;
+};
+
+const loadTemplateWorkflow = async (templateName) => {
+    if (!templateName || templateName === NEW_TAB_TEMPLATE_DEFAULT) {
+        return null;
+    }
+    try {
+        const workflow = workflowOptionsFull.find((w) => w.label === templateName);
+        if (workflow && workflow.value) {
+            const workflowResponse = await fetch(
+                `/api/lm/example-workflows/${encodeURIComponent(workflow.value)}`
+            );
+            const workflowData = await workflowResponse.json();
+            if (workflowData.success && workflowData.workflow) {
+                return workflowData.workflow;
+            }
+        }
+    } catch (error) {
+        console.error("LoRA Manager: Failed to load template workflow", error);
+    }
+    return null;
+};
 
 const getWheelSensitivity = (() => {
     let settingsUnavailableLogged = false;
@@ -153,6 +206,32 @@ const getUsageStatisticsPreference = (() => {
     };
 })();
 
+const getNewTabTemplatePreference = (() => {
+    let settingsUnavailableLogged = false;
+
+    return () => {
+        const settingManager = app?.extensionManager?.setting;
+        if (!settingManager || typeof settingManager.get !== "function") {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: settings API unavailable, using default new tab template.");
+                settingsUnavailableLogged = true;
+            }
+            return NEW_TAB_TEMPLATE_DEFAULT;
+        }
+
+        try {
+            const value = settingManager.get(NEW_TAB_TEMPLATE_ID);
+            return value ?? NEW_TAB_TEMPLATE_DEFAULT;
+        } catch (error) {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: unable to read new tab template setting, using default.", error);
+                settingsUnavailableLogged = true;
+            }
+            return NEW_TAB_TEMPLATE_DEFAULT;
+        }
+    };
+})();
+
 // ============================================================================
 // Register Extension with All Settings
 // ============================================================================
@@ -205,11 +284,95 @@ app.registerExtension({
             tooltip: "When enabled, LoRA Manager will track model usage statistics during workflow execution. Disabling this will prevent unnecessary disk writes.",
             category: ["LoRA Manager", "Statistics", "Usage Tracking"],
         },
+        {
+            id: NEW_TAB_TEMPLATE_ID,
+            name: "New Tab Template Workflow",
+            type: "combo",
+            options: getWorkflowOptions,
+            defaultValue: NEW_TAB_TEMPLATE_DEFAULT,
+            tooltip: "Choose a template workflow to load when creating a new workflow tab. 'Default (Blank)' keeps ComfyUI's original blank workflow behavior.",
+            category: ["LoRA Manager", "Workflow", "New Tab Template"],
+        },
     ],
+    async setup() {
+        await loadWorkflowOptions();
+
+        const originalNewBlankWorkflow = async () => {
+            const blankGraph = {
+                last_node_id: 0,
+                last_link_id: 0,
+                nodes: [],
+                links: [],
+                groups: [],
+                config: {},
+                extra: {},
+                version: 0.4,
+            };
+            await app.loadGraphData(blankGraph);
+        };
+
+        const waitForCommandStore = async (maxWaitMs = 5000) => {
+            const startTime = Date.now();
+            while (Date.now() - startTime < maxWaitMs) {
+                if (app.extensionManager?.command?.commands) {
+                    return true;
+                }
+                await new Promise((resolve) => setTimeout(resolve, 100));
+            }
+            return false;
+        };
+
+        const patchCommand = async () => {
+            const storeReady = await waitForCommandStore();
+            if (!storeReady) {
+                console.warn("LoRA Manager: Could not access command store to patch NewBlankWorkflow");
+                return;
+            }
+
+            const commands = app.extensionManager.command.commands;
+            for (const cmd of commands) {
+                if (cmd.id === "Comfy.NewBlankWorkflow") {
+                    const originalFunc = cmd.function;
+                    cmd.function = async (metadata) => {
+                        const templateName = getNewTabTemplatePreference();
+                        
+                        if (templateName && templateName !== NEW_TAB_TEMPLATE_DEFAULT) {
+                            const workflowData = await loadTemplateWorkflow(templateName);
+                            if (workflowData) {
+                                // Override the workflow's saved view settings with our custom zoom
+                                if (!workflowData.extra) {
+                                    workflowData.extra = {};
+                                }
+                                if (!workflowData.extra.ds) {
+                                    workflowData.extra.ds = { offset: [0, 0], scale: 1 };
+                                }
+                                workflowData.extra.ds.scale = NEW_TAB_ZOOM_LEVEL;
+                                
+                                await app.loadGraphData(workflowData);
+                                return;
+                            }
+                        }
+                        
+                        await originalNewBlankWorkflow();
+                    };
+                    break;
+                }
+            }
+        };
+
+        patchCommand();
+    },
 });
 
 // ============================================================================
 // Exports
 // ============================================================================
 
-export { getWheelSensitivity, getAutoPathCorrectionPreference, getPromptTagAutocompletePreference, getTagSpaceReplacementPreference, getUsageStatisticsPreference };
+export {
+    getWheelSensitivity,
+    getAutoPathCorrectionPreference,
+    getPromptTagAutocompletePreference,
+    getTagSpaceReplacementPreference,
+    getUsageStatisticsPreference,
+    getNewTabTemplatePreference,
+};

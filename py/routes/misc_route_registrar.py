@@ -38,12 +38,24 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("GET", "/api/lm/get-registry", "get_registry"),
     RouteDefinition("GET", "/api/lm/check-model-exists", "check_model_exists"),
     RouteDefinition("GET", "/api/lm/civitai/user-models", "get_civitai_user_models"),
-    RouteDefinition("POST", "/api/lm/download-metadata-archive", "download_metadata_archive"),
-    RouteDefinition("POST", "/api/lm/remove-metadata-archive", "remove_metadata_archive"),
-    RouteDefinition("GET", "/api/lm/metadata-archive-status", "get_metadata_archive_status"),
-    RouteDefinition("GET", "/api/lm/model-versions-status", "get_model_versions_status"),
+    RouteDefinition(
+        "POST", "/api/lm/download-metadata-archive", "download_metadata_archive"
+    ),
+    RouteDefinition(
+        "POST", "/api/lm/remove-metadata-archive", "remove_metadata_archive"
+    ),
+    RouteDefinition(
+        "GET", "/api/lm/metadata-archive-status", "get_metadata_archive_status"
+    ),
+    RouteDefinition(
+        "GET", "/api/lm/model-versions-status", "get_model_versions_status"
+    ),
     RouteDefinition("POST", "/api/lm/settings/open-location", "open_settings_location"),
     RouteDefinition("GET", "/api/lm/custom-words/search", "search_custom_words"),
+    RouteDefinition("GET", "/api/lm/example-workflows", "get_example_workflows"),
+    RouteDefinition(
+        "GET", "/api/lm/example-workflows/{filename}", "get_example_workflow"
+    ),
 )
 
 
@@ -67,7 +79,11 @@ class MiscRouteRegistrar:
         definitions: Iterable[RouteDefinition] = MISC_ROUTE_DEFINITIONS,
     ) -> None:
         for definition in definitions:
-            self._bind(definition.method, definition.path, handler_lookup[definition.handler_name])
+            self._bind(
+                definition.method,
+                definition.path,
+                handler_lookup[definition.handler_name],
+            )
 
     def _bind(self, method: str, path: str, handler: Callable) -> None:
         add_method_name = self._METHOD_MAP[method.upper()]

@@ -252,6 +252,100 @@ class SupportersHandler:
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
+class ExampleWorkflowsHandler:
+    """Handler for example workflow templates."""
+
+    def __init__(self, logger: logging.Logger | None = None) -> None:
+        self._logger = logger or logging.getLogger(__name__)
+
+    def _get_workflows_dir(self) -> str:
+        """Get the example workflows directory path."""
+        current_file = os.path.abspath(__file__)
+        root_dir = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
+        )
+        return os.path.join(root_dir, "example_workflows")
+
+    def _format_workflow_name(self, filename: str) -> str:
+        """Convert filename to human-readable name."""
+        name = os.path.splitext(filename)[0]
+        name = name.replace("_", " ")
+        return name
+
+    async def get_example_workflows(self, request: web.Request) -> web.Response:
+        """Return list of available example workflows."""
+        try:
+            workflows_dir = self._get_workflows_dir()
+            workflows = [
+                {
+                    "value": "Default",
+                    "label": "Default (Blank)",
+                    "path": None,
+                }
+            ]
+
+            if os.path.exists(workflows_dir):
+                for filename in sorted(os.listdir(workflows_dir)):
+                    if filename.endswith(".json"):
+                        workflows.append(
+                            {
+                                "value": filename,
+                                "label": self._format_workflow_name(filename),
+                                "path": f"example_workflows/{filename}",
+                            }
+                        )
+
+            return web.json_response({"success": True, "workflows": workflows})
+        except Exception as exc:
+            self._logger.error(
+                "Error listing example workflows: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_example_workflow(self, request: web.Request) -> web.Response:
+        """Return a specific example workflow JSON content."""
+        try:
+            filename = request.match_info.get("filename")
+            if not filename:
+                return web.json_response(
+                    {"success": False, "error": "Filename not provided"}, status=400
+                )
+
+            if filename == "Default":
+                return web.json_response(
+                    {
+                        "success": True,
+                        "workflow": {
+                            "last_node_id": 0,
+                            "last_link_id": 0,
+                            "nodes": [],
+                            "links": [],
+                            "groups": [],
+                            "config": {},
+                            "extra": {},
+                            "version": 0.4,
+                        },
+                    }
+                )
+
+            workflows_dir = self._get_workflows_dir()
+            filepath = os.path.join(workflows_dir, filename)
+
+            if not os.path.exists(filepath):
+                return web.json_response(
+                    {"success": False, "error": f"Workflow not found: {filename}"},
+                    status=404,
+                )
+
+            with open(filepath, "r", encoding="utf-8") as f:
+                workflow = json.load(f)
+
+            return web.json_response({"success": True, "workflow": workflow})
+        except Exception as exc:
+            self._logger.error("Error loading example workflow: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+
 class SettingsHandler:
     """Sync settings between backend and frontend."""
 
@@ -1523,6 +1617,7 @@ class MiscHandlerSet:
         filesystem: FileSystemHandler,
         custom_words: CustomWordsHandler,
         supporters: SupportersHandler,
+        example_workflows: ExampleWorkflowsHandler,
     ) -> None:
         self.health = health
         self.settings = settings
@@ -1536,6 +1631,7 @@ class MiscHandlerSet:
         self.filesystem = filesystem
         self.custom_words = custom_words
         self.supporters = supporters
+        self.example_workflows = example_workflows
 
     def to_route_mapping(
         self,
@@ -1565,6 +1661,8 @@ class MiscHandlerSet:
             "open_settings_location": self.filesystem.open_settings_location,
             "search_custom_words": self.custom_words.search_custom_words,
             "get_supporters": self.supporters.get_supporters,
+            "get_example_workflows": self.example_workflows.get_example_workflows,
+            "get_example_workflow": self.example_workflows.get_example_workflow,
         }
 
 

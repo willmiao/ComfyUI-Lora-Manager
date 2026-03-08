@@ -19,6 +19,7 @@ from ..services.downloader import get_downloader
 from ..utils.usage_stats import UsageStats
 from .handlers.misc_handlers import (
     CustomWordsHandler,
+    ExampleWorkflowsHandler,
     FileSystemHandler,
     HealthCheckHandler,
     LoraCodeHandler,
@@ -38,9 +39,10 @@ from .misc_route_registrar import MiscRouteRegistrar
 
 logger = logging.getLogger(__name__)
 
-standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1" or os.environ.get(
-    "HF_HUB_DISABLE_TELEMETRY", "0"
-) == "0"
+standalone_mode = (
+    os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1"
+    or os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
+)
 
 
 class MiscRoutes:
@@ -75,7 +77,9 @@ class MiscRoutes:
         self._node_registry = node_registry or NodeRegistry()
         self._standalone_mode = standalone_mode_flag
 
-        self._handler_mapping: Mapping[str, Callable[[web.Request], Awaitable[web.StreamResponse]]] | None = None
+        self._handler_mapping: (
+            Mapping[str, Callable[[web.Request], Awaitable[web.StreamResponse]]] | None
+        ) = None
 
     @staticmethod
     def setup_routes(app: web.Application) -> None:
@@ -87,7 +91,9 @@ class MiscRoutes:
         registrar = self._registrar_factory(app)
         registrar.register_routes(self._ensure_handler_mapping())
 
-    def _ensure_handler_mapping(self) -> Mapping[str, Callable[[web.Request], Awaitable[web.StreamResponse]]]:
+    def _ensure_handler_mapping(
+        self,
+    ) -> Mapping[str, Callable[[web.Request], Awaitable[web.StreamResponse]]]:
         if self._handler_mapping is None:
             handler_set = self._create_handler_set()
             self._handler_mapping = handler_set.to_route_mapping()
@@ -121,6 +127,7 @@ class MiscRoutes:
         )
         custom_words = CustomWordsHandler()
         supporters = SupportersHandler()
+        example_workflows = ExampleWorkflowsHandler()
 
         return self._handler_set_factory(
             health=health,
@@ -135,6 +142,7 @@ class MiscRoutes:
             filesystem=filesystem,
             custom_words=custom_words,
             supporters=supporters,
+            example_workflows=example_workflows,
         )
 
 
