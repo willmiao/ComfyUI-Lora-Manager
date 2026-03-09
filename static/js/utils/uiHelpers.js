@@ -483,8 +483,12 @@ async function ensureRelativeModelPath(modelPath, collectionType) {
     return modelPath;
   }
 
+  // Remove model file extension (.safetensors, .ckpt, .pt, .bin) for cleaner matching
+  // Backend removes extensions from paths before matching, so search term should not include extension
+  const searchTerm = fileName.replace(/\.(safetensors|ckpt|pt|bin)$/i, '');
+
   try {
-    const response = await fetch(`/api/lm/${collectionType}/relative-paths?search=${encodeURIComponent(fileName)}&limit=10`);
+    const response = await fetch(`/api/lm/${collectionType}/relative-paths?search=${encodeURIComponent(searchTerm)}&limit=10`);
     if (!response.ok) {
       return modelPath;
     }
