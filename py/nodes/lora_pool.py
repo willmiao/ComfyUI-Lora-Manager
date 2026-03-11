@@ -82,6 +82,7 @@ class LoraPoolLM:
                 "folders": {"include": [], "exclude": []},
                 "favoritesOnly": False,
                 "license": {"noCreditRequired": False, "allowSelling": False},
+                "includeEmptyLora": False,
             },
             "preview": {"matchCount": 0, "lastUpdated": 0},
         }

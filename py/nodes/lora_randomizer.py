@@ -120,7 +120,7 @@ class LoraRandomizerLM:
         """
         lora_stack = []
         for lora in loras:
-            if not lora.get("active", False):
+            if not lora.get("active", False) or lora.get("name") == "None":
                 continue
 
             # Get file path

@@ -24,6 +24,7 @@ export function useLoraPoolState(widget: ComponentWidget<LoraPoolConfig>) {
   const excludeFolders = ref<string[]>([])
   const noCreditRequired = ref(false)
   const allowSelling = ref(false)
+  const includeEmptyLora = ref(false)
 
   // Available options from API
   const availableBaseModels = ref<BaseModelOption[]>([])
@@ -52,7 +53,8 @@ export function useLoraPoolState(widget: ComponentWidget<LoraPoolConfig>) {
         license: {
           noCreditRequired: noCreditRequired.value,
           allowSelling: allowSelling.value
-        }
+        },
+        includeEmptyLora: includeEmptyLora.value
       },
       preview: {
         matchCount: matchCount.value,
@@ -94,6 +96,7 @@ export function useLoraPoolState(widget: ComponentWidget<LoraPoolConfig>) {
       updateIfChanged(excludeFolders, filters.folders?.exclude || [])
       updateIfChanged(noCreditRequired, filters.license?.noCreditRequired ?? false)
       updateIfChanged(allowSelling, filters.license?.allowSelling ?? false)
+      updateIfChanged(includeEmptyLora, filters.includeEmptyLora ?? false)
 
       // matchCount doesn't trigger watchers, so direct assignment is fine
       matchCount.value = preview?.matchCount || 0
@@ -125,6 +128,7 @@ export function useLoraPoolState(widget: ComponentWidget<LoraPoolConfig>) {
       foldersExclude: excludeFolders.value,
       noCreditRequired: noCreditRequired.value || undefined,
       allowSelling: allowSelling.value || undefined,
+      includeEmptyLora: includeEmptyLora.value || undefined,
       pageSize: 6
     })
 
@@ -150,7 +154,8 @@ export function useLoraPoolState(widget: ComponentWidget<LoraPoolConfig>) {
     includeFolders,
     excludeFolders,
     noCreditRequired,
-    allowSelling
+    allowSelling,
+    includeEmptyLora
   ], onFilterChange, { deep: true })
 
   return {
@@ -162,6 +167,7 @@ export function useLoraPoolState(widget: ComponentWidget<LoraPoolConfig>) {
     excludeFolders,
     noCreditRequired,
     allowSelling,
+    includeEmptyLora,
 
     // Available options
     availableBaseModels,

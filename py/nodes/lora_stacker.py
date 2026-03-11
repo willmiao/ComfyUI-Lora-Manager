@@ -38,6 +38,8 @@ class LoraStackerLM:
             stack.extend(lora_stack)
             # Get trigger words from existing stack entries
             for lora_path, _, _ in lora_stack:
+                if lora_path == "None" or not lora_path:
+                    continue
                 lora_name = extract_lora_name(lora_path)
                 _, trigger_words = get_lora_info(lora_name)
                 all_trigger_words.extend(trigger_words)
@@ -45,7 +47,7 @@ class LoraStackerLM:
         # Process loras from kwargs with support for both old and new formats
         loras_list = get_loras_list(kwargs)
         for lora in loras_list:
-            if not lora.get('active', False):
+            if not lora.get('active', False) or lora.get('name') == "None":
                 continue
                 
             lora_name = lora['name']

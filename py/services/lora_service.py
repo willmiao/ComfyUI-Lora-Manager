@@ -62,6 +62,17 @@ class LoraService(BaseModelService):
         if first_letter:
             data = self._filter_by_first_letter(data, first_letter)
 
+        if kwargs.get("include_empty_lora"):
+            data.append({
+                "file_name": "None",
+                "model_name": "None",
+                "file_path": "",
+                "folder": "",
+                "base_model": "",
+                "tags": [],
+                "civitai": {},
+            })
+
         return data
 
     def _filter_by_first_letter(self, data: List[Dict], letter: str) -> List[Dict]:
@@ -403,7 +414,7 @@ class LoraService(BaseModelService):
         """
         from .model_query import FilterCriteria
 
-        filter_section = pool_config
+        filter_section = pool_config.get("filters", pool_config)
 
         # Extract filter parameters
         selected_base_models = filter_section.get("baseModels", [])
@@ -416,6 +427,7 @@ class LoraService(BaseModelService):
         license_dict = filter_section.get("license", {})
         no_credit_required = license_dict.get("noCreditRequired", False)
         allow_selling = license_dict.get("allowSelling", False)
+        include_empty_lora = filter_section.get("includeEmptyLora", False)
 
         # Build tag filters dict
         tag_filters = {}
@@ -484,6 +496,18 @@ class LoraService(BaseModelService):
                 for lora in available_loras
                 if bool(lora.get("license_flags", 127) & (1 << 1))
             ]
+
+        if include_empty_lora:
+            
+            available_loras.append({
+                "file_name": "None",
+                "model_name": "None",
+                "file_path": "",
+                "folder": "",
+                "base_model": "",
+                "tags": [],
+                "civitai": {},
+            })
 
         return available_loras
 

@@ -97,6 +97,10 @@ class LoraRoutes(BaseModelRoutes):
                 h.lower() for h in request.query["lora_hashes"].split(",")
             ]
 
+        include_empty_lora = request.query.get("include_empty_lora")
+        if include_empty_lora is not None:
+            params["include_empty_lora"] = include_empty_lora.lower() == "true"
+
         return params
 
     def _validate_civitai_model_type(self, model_type: str) -> bool:

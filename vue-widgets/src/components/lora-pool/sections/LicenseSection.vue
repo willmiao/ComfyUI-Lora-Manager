@@ -1,7 +1,7 @@
 <template>
   <div class="section">
     <div class="section__header">
-      <span class="section__title">LICENSE</span>
+      <span class="section__title">LICENSE & OPTIONS</span>
     </div>
     <div class="section__toggles">
       <label class="toggle-item">
@@ -33,6 +33,22 @@
           <span class="toggle-switch__thumb"></span>
         </button>
       </label>
+
+      <label class="toggle-item">
+        <span class="toggle-item__label">Include No LoRAs</span>
+        <button
+          type="button"
+          class="toggle-switch"
+          :class="{ 'toggle-switch--active': includeEmptyLora }"
+          @click="$emit('update:includeEmptyLora', !includeEmptyLora)"
+          role="switch"
+          :aria-checked="includeEmptyLora"
+          title="Include an empty/blank LoRA option in the pool results"
+        >
+          <span class="toggle-switch__track"></span>
+          <span class="toggle-switch__thumb"></span>
+        </button>
+      </label>
     </div>
   </div>
 </template>
@@ -41,11 +57,13 @@
 defineProps<{
   noCreditRequired: boolean
   allowSelling: boolean
+  includeEmptyLora: boolean
 }>()
 
 defineEmits<{
   'update:noCreditRequired': [value: boolean]
   'update:allowSelling': [value: boolean]
+  'update:includeEmptyLora': [value: boolean]
 }>()
 </script>
 
@@ -69,6 +87,7 @@ defineEmits<{
 
 .section__toggles {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
 }
 
