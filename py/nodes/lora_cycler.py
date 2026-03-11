@@ -100,11 +100,16 @@ class LoraCyclerLM:
         current_lora = lora_list[clamped_index - 1]
 
         # Build LORA_STACK with single LoRA
-        lora_path, _ = get_lora_info(current_lora["file_name"])
+        if current_lora["file_name"] == "None":
+            lora_path = None
+        else:
+            lora_path, _ = get_lora_info(current_lora["file_name"])
+
         if not lora_path:
-            logger.warning(
-                f"[LoraCyclerLM] Could not find path for LoRA: {current_lora['file_name']}"
-            )
+            if current_lora["file_name"] != "None":
+                logger.warning(
+                    f"[LoraCyclerLM] Could not find path for LoRA: {current_lora['file_name']}"
+                )
             lora_stack = []
         else:
             # Normalize path separators

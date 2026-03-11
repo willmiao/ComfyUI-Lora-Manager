@@ -10,6 +10,7 @@ export interface LoraPoolConfig {
       noCreditRequired: boolean
       allowSelling: boolean
     }
+    includeEmptyLora: boolean
   }
   preview: { matchCount: number; lastUpdated: number }
 }

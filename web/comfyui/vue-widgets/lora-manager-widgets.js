@@ -283,13 +283,13 @@
   align-items: center;
 }
 
-.section[data-v-dea4adf6] {
+.section[data-v-d10b2687] {
   margin-bottom: 16px;
 }
-.section__header[data-v-dea4adf6] {
+.section__header[data-v-d10b2687] {
   margin-bottom: 8px;
 }
-.section__title[data-v-dea4adf6] {
+.section__title[data-v-d10b2687] {
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
@@ -297,21 +297,22 @@
   color: var(--fg-color, #fff);
   opacity: 0.6;
 }
-.section__toggles[data-v-dea4adf6] {
+.section__toggles[data-v-d10b2687] {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
 }
-.toggle-item[data-v-dea4adf6] {
+.toggle-item[data-v-d10b2687] {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
 }
-.toggle-item__label[data-v-dea4adf6] {
+.toggle-item__label[data-v-d10b2687] {
   font-size: 12px;
   color: var(--fg-color, #fff);
 }
-.toggle-switch[data-v-dea4adf6] {
+.toggle-switch[data-v-d10b2687] {
   position: relative;
   width: 36px;
   height: 20px;
@@ -320,7 +321,7 @@
   border: none;
   cursor: pointer;
 }
-.toggle-switch__track[data-v-dea4adf6] {
+.toggle-switch__track[data-v-d10b2687] {
   position: absolute;
   inset: 0;
   background: var(--comfy-input-bg, #333);
@@ -328,11 +329,11 @@
   border-radius: 10px;
   transition: all 0.2s;
 }
-.toggle-switch--active .toggle-switch__track[data-v-dea4adf6] {
+.toggle-switch--active .toggle-switch__track[data-v-d10b2687] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.toggle-switch__thumb[data-v-dea4adf6] {
+.toggle-switch__thumb[data-v-d10b2687] {
   position: absolute;
   top: 3px;
   left: 2px;
@@ -343,12 +344,12 @@
   transition: all 0.2s;
   opacity: 0.6;
 }
-.toggle-switch--active .toggle-switch__thumb[data-v-dea4adf6] {
+.toggle-switch--active .toggle-switch__thumb[data-v-d10b2687] {
   transform: translateX(16px);
   background: #4299e1;
   opacity: 1;
 }
-.toggle-switch:hover .toggle-switch__thumb[data-v-dea4adf6] {
+.toggle-switch:hover .toggle-switch__thumb[data-v-d10b2687] {
   opacity: 1;
 }
 
@@ -483,12 +484,12 @@ to { transform: rotate(360deg);
   transform: translateY(4px);
 }
 
-.summary-view[data-v-328e7526] {
+.summary-view[data-v-0afcb63e] {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
-.summary-view__filters[data-v-328e7526] {
+.summary-view__filters[data-v-0afcb63e] {
   flex: 1;
   overflow-y: auto;
   padding-right: 4px;
@@ -979,7 +980,7 @@ to { transform: rotate(360deg);
   font-size: 13px;
 }
 
-.lora-pool-widget[data-v-4456abba] {
+.lora-pool-widget[data-v-2411875a] {
   padding: 12px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 4px;
@@ -10614,11 +10615,11 @@ const _hoisted_6$a = {
   key: 0,
   class: "section__empty"
 };
-const _hoisted_7$8 = {
+const _hoisted_7$9 = {
   key: 1,
   class: "section__chips"
 };
-const _hoisted_8$6 = { class: "section__column" };
+const _hoisted_8$7 = { class: "section__column" };
 const _hoisted_9$4 = { class: "section__column-header" };
 const _hoisted_10$4 = { class: "section__column-content" };
 const _hoisted_11$3 = {
@@ -10651,7 +10652,7 @@ const _sfc_main$k = /* @__PURE__ */ defineComponent({
               })
             ]),
             createBaseVNode("div", _hoisted_5$a, [
-              __props.includeTags.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_6$a, " None ")) : (openBlock(), createElementBlock("div", _hoisted_7$8, [
+              __props.includeTags.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_6$a, " None ")) : (openBlock(), createElementBlock("div", _hoisted_7$9, [
                 (openBlock(true), createElementBlock(Fragment, null, renderList(__props.includeTags, (tag) => {
                   return openBlock(), createBlock(FilterChip, {
                     key: tag,
@@ -10662,7 +10663,7 @@ const _sfc_main$k = /* @__PURE__ */ defineComponent({
               ]))
             ])
           ]),
-          createBaseVNode("div", _hoisted_8$6, [
+          createBaseVNode("div", _hoisted_8$7, [
             createBaseVNode("div", _hoisted_9$4, [
               _cache[3] || (_cache[3] = createBaseVNode("span", { class: "section__column-title section__column-title--exclude" }, "EXCLUDE", -1)),
               createVNode(EditButton, {
@@ -10696,11 +10697,11 @@ const _hoisted_6$9 = {
   key: 0,
   class: "section__paths"
 };
-const _hoisted_7$7 = {
+const _hoisted_7$8 = {
   key: 1,
   class: "section__empty"
 };
-const _hoisted_8$5 = { class: "section__column" };
+const _hoisted_8$6 = { class: "section__column" };
 const _hoisted_9$3 = { class: "section__column-header" };
 const _hoisted_10$3 = { class: "section__content" };
 const _hoisted_11$2 = {
@@ -10764,10 +10765,10 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
                     onRemove: ($event) => removeInclude(path)
                   }, null, 8, ["label", "onRemove"]);
                 }), 128))
-              ])) : (openBlock(), createElementBlock("div", _hoisted_7$7, " No folders selected "))
+              ])) : (openBlock(), createElementBlock("div", _hoisted_7$8, " No folders selected "))
             ])
           ]),
-          createBaseVNode("div", _hoisted_8$5, [
+          createBaseVNode("div", _hoisted_8$6, [
             createBaseVNode("div", _hoisted_9$3, [
               _cache[5] || (_cache[5] = createBaseVNode("span", { class: "section__column-title section__column-title--exclude" }, "EXCLUDE", -1)),
               createBaseVNode("button", {
@@ -10809,52 +10810,69 @@ const _hoisted_3$c = { class: "toggle-item" };
 const _hoisted_4$a = ["aria-checked"];
 const _hoisted_5$8 = { class: "toggle-item" };
 const _hoisted_6$8 = ["aria-checked"];
+const _hoisted_7$7 = { class: "toggle-item" };
+const _hoisted_8$5 = ["aria-checked"];
 const _sfc_main$i = /* @__PURE__ */ defineComponent({
   __name: "LicenseSection",
   props: {
     noCreditRequired: { type: Boolean },
-    allowSelling: { type: Boolean }
+    allowSelling: { type: Boolean },
+    includeEmptyLora: { type: Boolean }
   },
-  emits: ["update:noCreditRequired", "update:allowSelling"],
+  emits: ["update:noCreditRequired", "update:allowSelling", "update:includeEmptyLora"],
   setup(__props) {
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", _hoisted_1$i, [
-        _cache[6] || (_cache[6] = createBaseVNode("div", { class: "section__header" }, [
-          createBaseVNode("span", { class: "section__title" }, "LICENSE")
+        _cache[9] || (_cache[9] = createBaseVNode("div", { class: "section__header" }, [
+          createBaseVNode("span", { class: "section__title" }, "LICENSE & OPTIONS")
         ], -1)),
         createBaseVNode("div", _hoisted_2$e, [
           createBaseVNode("label", _hoisted_3$c, [
-            _cache[3] || (_cache[3] = createBaseVNode("span", { class: "toggle-item__label" }, "No Credit Required", -1)),
+            _cache[4] || (_cache[4] = createBaseVNode("span", { class: "toggle-item__label" }, "No Credit Required", -1)),
             createBaseVNode("button", {
               type: "button",
               class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.noCreditRequired }]),
               onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("update:noCreditRequired", !__props.noCreditRequired)),
               role: "switch",
               "aria-checked": __props.noCreditRequired
-            }, [..._cache[2] || (_cache[2] = [
+            }, [..._cache[3] || (_cache[3] = [
               createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
               createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
             ])], 10, _hoisted_4$a)
           ]),
           createBaseVNode("label", _hoisted_5$8, [
-            _cache[5] || (_cache[5] = createBaseVNode("span", { class: "toggle-item__label" }, "Allow Selling", -1)),
+            _cache[6] || (_cache[6] = createBaseVNode("span", { class: "toggle-item__label" }, "Allow Selling", -1)),
             createBaseVNode("button", {
               type: "button",
               class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.allowSelling }]),
               onClick: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("update:allowSelling", !__props.allowSelling)),
               role: "switch",
               "aria-checked": __props.allowSelling
-            }, [..._cache[4] || (_cache[4] = [
+            }, [..._cache[5] || (_cache[5] = [
               createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
               createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
             ])], 10, _hoisted_6$8)
+          ]),
+          createBaseVNode("label", _hoisted_7$7, [
+            _cache[8] || (_cache[8] = createBaseVNode("span", { class: "toggle-item__label" }, "Include No LoRAs", -1)),
+            createBaseVNode("button", {
+              type: "button",
+              class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.includeEmptyLora }]),
+              onClick: _cache[2] || (_cache[2] = ($event) => _ctx.$emit("update:includeEmptyLora", !__props.includeEmptyLora)),
+              role: "switch",
+              "aria-checked": __props.includeEmptyLora,
+              title: "Include an empty/blank LoRA option in the pool results"
+            }, [..._cache[7] || (_cache[7] = [
+              createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
+              createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
+            ])], 10, _hoisted_8$5)
           ])
         ])
       ]);
     };
   }
 });
-const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$i, [["__scopeId", "data-v-dea4adf6"]]);
+const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$i, [["__scopeId", "data-v-d10b2687"]]);
 const _hoisted_1$h = { class: "preview" };
 const _hoisted_2$d = { class: "preview__title" };
 const _hoisted_3$b = ["disabled"];
@@ -10969,11 +10987,12 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
     excludeFolders: {},
     noCreditRequired: { type: Boolean },
     allowSelling: { type: Boolean },
+    includeEmptyLora: { type: Boolean },
     previewItems: {},
     matchCount: {},
     isLoading: { type: Boolean }
   },
-  emits: ["open-modal", "update:includeFolders", "update:excludeFolders", "update:noCreditRequired", "update:allowSelling", "refresh"],
+  emits: ["open-modal", "update:includeFolders", "update:excludeFolders", "update:noCreditRequired", "update:allowSelling", "update:includeEmptyLora", "refresh"],
   setup(__props) {
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", _hoisted_1$g, [
@@ -11000,21 +11019,23 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
           createVNode(LicenseSection, {
             "no-credit-required": __props.noCreditRequired,
             "allow-selling": __props.allowSelling,
+            "include-empty-lora": __props.includeEmptyLora,
             "onUpdate:noCreditRequired": _cache[7] || (_cache[7] = ($event) => _ctx.$emit("update:noCreditRequired", $event)),
-            "onUpdate:allowSelling": _cache[8] || (_cache[8] = ($event) => _ctx.$emit("update:allowSelling", $event))
-          }, null, 8, ["no-credit-required", "allow-selling"])
+            "onUpdate:allowSelling": _cache[8] || (_cache[8] = ($event) => _ctx.$emit("update:allowSelling", $event)),
+            "onUpdate:includeEmptyLora": _cache[9] || (_cache[9] = ($event) => _ctx.$emit("update:includeEmptyLora", $event))
+          }, null, 8, ["no-credit-required", "allow-selling", "include-empty-lora"])
         ]),
         createVNode(LoraPoolPreview, {
           items: __props.previewItems,
           "match-count": __props.matchCount,
           "is-loading": __props.isLoading,
-          onRefresh: _cache[9] || (_cache[9] = ($event) => _ctx.$emit("refresh"))
+          onRefresh: _cache[10] || (_cache[10] = ($event) => _ctx.$emit("refresh"))
         }, null, 8, ["items", "match-count", "is-loading"])
       ]);
     };
   }
 });
-const LoraPoolSummaryView = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-328e7526"]]);
+const LoraPoolSummaryView = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-0afcb63e"]]);
 const _hoisted_1$f = { class: "lora-pool-modal__header" };
 const _hoisted_2$b = { class: "lora-pool-modal__title-container" };
 const _hoisted_3$a = { class: "lora-pool-modal__title" };
@@ -11677,6 +11698,9 @@ function useLoraPoolApi() {
       if (params.allowSelling !== void 0) {
         urlParams.set("allow_selling_generated_content", String(params.allowSelling));
       }
+      if (params.includeEmptyLora !== void 0) {
+        urlParams.set("include_empty_lora", String(params.includeEmptyLora));
+      }
       const response = await fetch(`/api/lm/loras/list?${urlParams}`);
       const data = await response.json();
       return {
@@ -11708,6 +11732,7 @@ function useLoraPoolState(widget) {
   const excludeFolders = ref([]);
   const noCreditRequired = ref(false);
   const allowSelling = ref(false);
+  const includeEmptyLora = ref(false);
   const availableBaseModels = ref([]);
   const availableTags = ref([]);
   const folderTree = ref([]);
@@ -11730,7 +11755,8 @@ function useLoraPoolState(widget) {
         license: {
           noCreditRequired: noCreditRequired.value,
           allowSelling: allowSelling.value
-        }
+        },
+        includeEmptyLora: includeEmptyLora.value
       },
       preview: {
         matchCount: matchCount.value,
@@ -11760,6 +11786,7 @@ function useLoraPoolState(widget) {
       updateIfChanged(excludeFolders, ((_d = filters.folders) == null ? void 0 : _d.exclude) || []);
       updateIfChanged(noCreditRequired, ((_e2 = filters.license) == null ? void 0 : _e2.noCreditRequired) ?? false);
       updateIfChanged(allowSelling, ((_f = filters.license) == null ? void 0 : _f.allowSelling) ?? false);
+      updateIfChanged(includeEmptyLora, filters.includeEmptyLora ?? false);
       matchCount.value = (preview == null ? void 0 : preview.matchCount) || 0;
     } finally {
       isRestoring = false;
@@ -11784,6 +11811,7 @@ function useLoraPoolState(widget) {
       foldersExclude: excludeFolders.value,
       noCreditRequired: noCreditRequired.value || void 0,
       allowSelling: allowSelling.value || void 0,
+      includeEmptyLora: includeEmptyLora.value || void 0,
       pageSize: 6
     });
     previewItems.value = result.items;
@@ -11804,7 +11832,8 @@ function useLoraPoolState(widget) {
     includeFolders,
     excludeFolders,
     noCreditRequired,
-    allowSelling
+    allowSelling,
+    includeEmptyLora
   ], onFilterChange, { deep: true });
   return {
     // Filter state
@@ -11815,6 +11844,7 @@ function useLoraPoolState(widget) {
     excludeFolders,
     noCreditRequired,
     allowSelling,
+    includeEmptyLora,
     // Available options
     availableBaseModels,
     availableTags,
@@ -11889,6 +11919,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
           "exclude-folders": unref(state).excludeFolders.value,
           "no-credit-required": unref(state).noCreditRequired.value,
           "allow-selling": unref(state).allowSelling.value,
+          "include-empty-lora": unref(state).includeEmptyLora.value,
           "preview-items": unref(state).previewItems.value,
           "match-count": unref(state).matchCount.value,
           "is-loading": unref(state).isLoading.value,
@@ -11897,14 +11928,15 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
           "onUpdate:excludeFolders": _cache[1] || (_cache[1] = ($event) => unref(state).excludeFolders.value = $event),
           "onUpdate:noCreditRequired": _cache[2] || (_cache[2] = ($event) => unref(state).noCreditRequired.value = $event),
           "onUpdate:allowSelling": _cache[3] || (_cache[3] = ($event) => unref(state).allowSelling.value = $event),
+          "onUpdate:includeEmptyLora": _cache[4] || (_cache[4] = ($event) => unref(state).includeEmptyLora.value = $event),
           onRefresh: unref(state).refreshPreview
-        }, null, 8, ["selected-base-models", "available-base-models", "include-tags", "exclude-tags", "include-folders", "exclude-folders", "no-credit-required", "allow-selling", "preview-items", "match-count", "is-loading", "onRefresh"]),
+        }, null, 8, ["selected-base-models", "available-base-models", "include-tags", "exclude-tags", "include-folders", "exclude-folders", "no-credit-required", "allow-selling", "include-empty-lora", "preview-items", "match-count", "is-loading", "onRefresh"]),
         createVNode(BaseModelModal, {
           visible: unref(modalState).isModalOpen("baseModels"),
           models: unref(state).availableBaseModels.value,
           selected: unref(state).selectedBaseModels.value,
           onClose: unref(modalState).closeModal,
-          "onUpdate:selected": _cache[4] || (_cache[4] = ($event) => unref(state).selectedBaseModels.value = $event)
+          "onUpdate:selected": _cache[5] || (_cache[5] = ($event) => unref(state).selectedBaseModels.value = $event)
         }, null, 8, ["visible", "models", "selected", "onClose"]),
         createVNode(TagsModal, {
           visible: unref(modalState).isModalOpen("includeTags"),
@@ -11912,7 +11944,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
           selected: unref(state).includeTags.value,
           variant: "include",
           onClose: unref(modalState).closeModal,
-          "onUpdate:selected": _cache[5] || (_cache[5] = ($event) => unref(state).includeTags.value = $event)
+          "onUpdate:selected": _cache[6] || (_cache[6] = ($event) => unref(state).includeTags.value = $event)
         }, null, 8, ["visible", "tags", "selected", "onClose"]),
         createVNode(TagsModal, {
           visible: unref(modalState).isModalOpen("excludeTags"),
@@ -11920,7 +11952,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
           selected: unref(state).excludeTags.value,
           variant: "exclude",
           onClose: unref(modalState).closeModal,
-          "onUpdate:selected": _cache[6] || (_cache[6] = ($event) => unref(state).excludeTags.value = $event)
+          "onUpdate:selected": _cache[7] || (_cache[7] = ($event) => unref(state).excludeTags.value = $event)
         }, null, 8, ["visible", "tags", "selected", "onClose"]),
         createVNode(FoldersModal, {
           visible: unref(modalState).isModalOpen("includeFolders"),
@@ -11928,7 +11960,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
           selected: unref(state).includeFolders.value,
           variant: "include",
           onClose: unref(modalState).closeModal,
-          "onUpdate:selected": _cache[7] || (_cache[7] = ($event) => unref(state).includeFolders.value = $event)
+          "onUpdate:selected": _cache[8] || (_cache[8] = ($event) => unref(state).includeFolders.value = $event)
         }, null, 8, ["visible", "folders", "selected", "onClose"]),
         createVNode(FoldersModal, {
           visible: unref(modalState).isModalOpen("excludeFolders"),
@@ -11936,13 +11968,13 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
           selected: unref(state).excludeFolders.value,
           variant: "exclude",
           onClose: unref(modalState).closeModal,
-          "onUpdate:selected": _cache[8] || (_cache[8] = ($event) => unref(state).excludeFolders.value = $event)
+          "onUpdate:selected": _cache[9] || (_cache[9] = ($event) => unref(state).excludeFolders.value = $event)
         }, null, 8, ["visible", "folders", "selected", "onClose"])
       ]);
     };
   }
 });
-const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-4456abba"]]);
+const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-2411875a"]]);
 const _hoisted_1$9 = { class: "last-used-preview" };
 const _hoisted_2$6 = { class: "last-used-preview__content" };
 const _hoisted_3$5 = ["src", "onError"];

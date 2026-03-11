@@ -53,6 +53,8 @@ class LoraLoaderLM:
         # First process lora_stack if available
         if lora_stack:
             for lora_path, model_strength, clip_strength in lora_stack:
+                if lora_path == "None" or not lora_path:
+                    continue
                 # Extract lora name and convert to absolute path
                 # lora_stack stores relative paths, but load_torch_file needs absolute paths
                 lora_name = extract_lora_name(lora_path)
@@ -78,7 +80,7 @@ class LoraLoaderLM:
         # Then process loras from kwargs with support for both old and new formats
         loras_list = get_loras_list(kwargs)
         for lora in loras_list:
-            if not lora.get('active', False):
+            if not lora.get('active', False) or lora.get('name') == "None":
                 continue
                 
             lora_name = lora['name']
@@ -197,6 +199,8 @@ class LoraTextLoaderLM:
         # First process lora_stack if available
         if lora_stack:
             for lora_path, model_strength, clip_strength in lora_stack:
+                if lora_path == "None" or not lora_path:
+                    continue
                 # Extract lora name and convert to absolute path
                 # lora_stack stores relative paths, but load_torch_file needs absolute paths
                 lora_name = extract_lora_name(lora_path)
@@ -223,6 +227,8 @@ class LoraTextLoaderLM:
         parsed_loras = self.parse_lora_syntax(lora_syntax)
         for lora in parsed_loras:
             lora_name = lora['name']
+            if lora_name == "None":
+                continue
             model_strength = lora['model_strength']
             clip_strength = lora['clip_strength']
             
