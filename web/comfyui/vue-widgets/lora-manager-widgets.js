@@ -1988,14 +1988,14 @@ to { transform: rotate(360deg);
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-7fb96eed] {
+.autocomplete-text-widget[data-v-b3b00fdd] {
   background: transparent;
   height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
-.input-wrapper[data-v-7fb96eed] {
+.input-wrapper[data-v-b3b00fdd] {
   position: relative;
   flex: 1;
   display: flex;
@@ -2003,7 +2003,7 @@ to { transform: rotate(360deg);
 }
 
 /* Canvas mode styles (default) - matches built-in comfy-multiline-input */
-.text-input[data-v-7fb96eed] {
+.text-input[data-v-b3b00fdd] {
   flex: 1;
   width: 100%;
   background-color: var(--comfy-input-bg, #222);
@@ -2020,7 +2020,7 @@ to { transform: rotate(360deg);
 }
 
 /* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
-.text-input.vue-dom-mode[data-v-7fb96eed] {
+.text-input.vue-dom-mode[data-v-b3b00fdd] {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
   padding: 8px 12px 30px 12px;  /* Reserve bottom space for clear button */
@@ -2029,12 +2029,12 @@ to { transform: rotate(360deg);
   font-size: 12px;
   font-family: inherit;
 }
-.text-input[data-v-7fb96eed]:focus {
+.text-input[data-v-b3b00fdd]:focus {
   outline: none;
 }
 
 /* Clear button styles */
-.clear-button[data-v-7fb96eed] {
+.clear-button[data-v-b3b00fdd] {
   position: absolute;
   right: 6px;
   bottom: 6px;  /* Changed from top to bottom */
@@ -2057,31 +2057,31 @@ to { transform: rotate(360deg);
 }
 
 /* Show clear button when hovering over input wrapper */
-.input-wrapper:hover .clear-button[data-v-7fb96eed] {
+.input-wrapper:hover .clear-button[data-v-b3b00fdd] {
   opacity: 0.7;
   pointer-events: auto;
 }
-.clear-button[data-v-7fb96eed]:hover {
+.clear-button[data-v-b3b00fdd]:hover {
   opacity: 1;
   background: rgba(255, 100, 100, 0.8);
 }
-.clear-button svg[data-v-7fb96eed] {
+.clear-button svg[data-v-b3b00fdd] {
   width: 12px;
   height: 12px;
 }
 
 /* Vue DOM mode adjustments for clear button */
-.text-input.vue-dom-mode ~ .clear-button[data-v-7fb96eed] {
+.text-input.vue-dom-mode ~ .clear-button[data-v-b3b00fdd] {
   right: 8px;
   bottom: 10px;  /* Changed from top to bottom, adjusted for Vue DOM padding */
   width: 20px;
   height: 20px;
   background: rgba(107, 114, 128, 0.6);
 }
-.text-input.vue-dom-mode ~ .clear-button[data-v-7fb96eed]:hover {
+.text-input.vue-dom-mode ~ .clear-button[data-v-b3b00fdd]:hover {
   background: oklch(62% 0.18 25);
 }
-.text-input.vue-dom-mode ~ .clear-button svg[data-v-7fb96eed] {
+.text-input.vue-dom-mode ~ .clear-button svg[data-v-b3b00fdd] {
   width: 14px;
   height: 14px;
 }`));
@@ -14239,6 +14239,36 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         props.widget.callback(textareaRef.value.value);
       }
     };
+    const onWheel = (event) => {
+      const textarea = textareaRef.value;
+      if (!textarea) return;
+      const canScrollY = textarea.scrollHeight > textarea.clientHeight;
+      const deltaX = event.deltaX;
+      const deltaY = event.deltaY;
+      const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
+      const app2 = window.app;
+      if (!app2 || !app2.canvas || typeof app2.canvas.processMouseWheel !== "function") {
+        return;
+      }
+      if (event.ctrlKey) {
+        event.preventDefault();
+        event.stopPropagation();
+        app2.canvas.processMouseWheel(event);
+        return;
+      }
+      if (isHorizontal) {
+        event.preventDefault();
+        event.stopPropagation();
+        app2.canvas.processMouseWheel(event);
+        return;
+      }
+      if (canScrollY) {
+        event.stopPropagation();
+      } else {
+        event.preventDefault();
+        app2.canvas.processMouseWheel(event);
+      }
+    };
     const onExternalValueChange = (event) => {
       updateHasTextState();
     };
@@ -14297,7 +14327,8 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
             placeholder: __props.placeholder,
             spellcheck: __props.spellcheck ?? false,
             class: normalizeClass(["text-input", { "vue-dom-mode": isVueDomMode.value }]),
-            onInput
+            onInput,
+            onWheel
           }, null, 42, _hoisted_3),
           showClearButton.value ? (openBlock(), createElementBlock("button", {
             key: 0,
@@ -14331,7 +14362,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-7fb96eed"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-b3b00fdd"]]);
 const LORA_PROVIDER_NODE_TYPES$1 = [
   "Lora Stacker (LoraManager)",
   "Lora Randomizer (LoraManager)",

@@ -7,6 +7,7 @@
         :spellcheck="spellcheck ?? false"
         :class="['text-input', { 'vue-dom-mode': isVueDomMode }]"
         @input="onInput"
+        @wheel="onWheel"
       />
       <button
         v-if="showClearButton"
@@ -79,6 +80,59 @@ const onInput = () => {
   // Call widget callback when text changes
   if (textareaRef.value && typeof props.widget.callback === 'function') {
     props.widget.callback(textareaRef.value.value)
+  }
+}
+
+/**
+ * Handle mouse wheel events on the textarea.
+ * Forwards the event to the ComfyUI canvas for zooming when the textarea has no scrollbar,
+ * or handles pinch-to-zoom gestures.
+ * 
+ * Logic aligns with ComfyUI's built-in multiline widget:
+ * src/renderer/extensions/vueNodes/widgets/composables/useStringWidget.ts
+ */
+const onWheel = (event: WheelEvent) => {
+  const textarea = textareaRef.value
+  if (!textarea) return
+
+  // Track if we have a vertical scrollbar
+  const canScrollY = textarea.scrollHeight > textarea.clientHeight
+  const deltaX = event.deltaX
+  const deltaY = event.deltaY
+  const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
+  
+  // Access ComfyUI app from global window
+  const app = (window as any).app
+  if (!app || !app.canvas || typeof app.canvas.processMouseWheel !== 'function') {
+    return
+  }
+
+  // 1. Handle pinch-to-zoom (ctrlKey is true for pinch-to-zoom on most browsers)
+  if (event.ctrlKey) {
+    event.preventDefault()
+    event.stopPropagation()
+    app.canvas.processMouseWheel(event)
+    return
+  }
+
+  // 2. Horizontal scroll: pass to canvas (textareas usually don't scroll horizontally)
+  if (isHorizontal) {
+    event.preventDefault()
+    event.stopPropagation()
+    app.canvas.processMouseWheel(event)
+    return
+  }
+
+  // 3. Vertical scrolling:
+  if (canScrollY) {
+    // If the textarea is scrollable, let it handle the wheel event but stop propagation
+    // to prevent the canvas from zooming while the user is trying to scroll the text
+    event.stopPropagation()
+  } else {
+    // If the textarea is NOT scrollable, forward the wheel event to the canvas
+    // so it can trigger zoom in/out
+    event.preventDefault()
+    app.canvas.processMouseWheel(event)
   }
 }
 
