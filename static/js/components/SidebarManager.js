@@ -7,6 +7,7 @@ import { translate } from '../utils/i18nHelpers.js';
 import { state } from '../state/index.js';
 import { bulkManager } from '../managers/BulkManager.js';
 import { showToast } from '../utils/uiHelpers.js';
+import { escapeHtml, escapeAttribute } from './shared/utils.js';
 
 export class SidebarManager {
     constructor() {
@@ -1294,15 +1295,19 @@ export class SidebarManager {
             const isExpanded = this.expandedNodes.has(currentPath);
             const isSelected = this.selectedPath === currentPath;
 
+            const escapedPath = escapeAttribute(currentPath);
+            const escapedFolderName = escapeHtml(folderName);
+            const escapedTitle = escapeAttribute(folderName);
+
             return `
-                <div class="sidebar-tree-node" data-path="${currentPath}">
-                    <div class="sidebar-tree-node-content ${isSelected ? 'selected' : ''}" data-path="${currentPath}">
+                <div class="sidebar-tree-node" data-path="${escapedPath}">
+                    <div class="sidebar-tree-node-content ${isSelected ? 'selected' : ''}" data-path="${escapedPath}">
                         <div class="sidebar-tree-expand-icon ${isExpanded ? 'expanded' : ''}" 
                              style="${hasChildren ? '' : 'opacity: 0; pointer-events: none;'}">
                             <i class="fas fa-chevron-right"></i>
                         </div>
                         <i class="fas fa-folder sidebar-tree-folder-icon"></i>
-                        <div class="sidebar-tree-folder-name" title="${folderName}">${folderName}</div>
+                        <div class="sidebar-tree-folder-name" title="${escapedTitle}">${escapedFolderName}</div>
                     </div>
                     ${hasChildren ? `
                         <div class="sidebar-tree-children ${isExpanded ? 'expanded' : ''}">
@@ -1342,12 +1347,15 @@ export class SidebarManager {
         const foldersHtml = this.foldersList.map(folder => {
             const displayName = folder === '' ? '/' : folder;
             const isSelected = this.selectedPath === folder;
+            const escapedPath = escapeAttribute(folder);
+            const escapedDisplayName = escapeHtml(displayName);
+            const escapedTitle = escapeAttribute(displayName);
 
             return `
-                <div class="sidebar-folder-item ${isSelected ? 'selected' : ''}" data-path="${folder}">
-                    <div class="sidebar-node-content" data-path="${folder}">
+                <div class="sidebar-folder-item ${isSelected ? 'selected' : ''}" data-path="${escapedPath}">
+                    <div class="sidebar-node-content" data-path="${escapedPath}">
                         <i class="fas fa-folder sidebar-folder-icon"></i>
-                        <div class="sidebar-folder-name" title="${displayName}">${displayName}</div>
+                        <div class="sidebar-folder-name" title="${escapedTitle}">${escapedDisplayName}</div>
                     </div>
                 </div>
             `;
@@ -1570,7 +1578,8 @@ export class SidebarManager {
 
             // Add selection to current path
             if (this.selectedPath !== null && this.selectedPath !== undefined) {
-                const selectedItem = folderTree.querySelector(`[data-path="${this.selectedPath}"]`);
+                const escapedPathSelector = CSS.escape(this.selectedPath);
+                const selectedItem = folderTree.querySelector(`[data-path="${escapedPathSelector}"]`);
                 if (selectedItem) {
                     selectedItem.classList.add('selected');
                 }
@@ -1581,7 +1590,8 @@ export class SidebarManager {
             });
 
             if (this.selectedPath !== null && this.selectedPath !== undefined) {
-                const selectedNode = folderTree.querySelector(`[data-path="${this.selectedPath}"] .sidebar-tree-node-content`);
+                const escapedPathSelector = CSS.escape(this.selectedPath);
+                const selectedNode = folderTree.querySelector(`[data-path="${escapedPathSelector}"] .sidebar-tree-node-content`);
                 if (selectedNode) {
                     selectedNode.classList.add('selected');
                     this.expandPathParents(this.selectedPath);
@@ -1655,7 +1665,7 @@ export class SidebarManager {
         const breadcrumbs = [`
             <div class="breadcrumb-dropdown">
                 <span class="sidebar-breadcrumb-item ${isRootSelected ? 'active' : ''}" data-path="">
-                    <i class="fas fa-home"></i> ${this.apiClient.apiConfig.config.displayName} root
+                    <i class="fas fa-home"></i> ${escapeHtml(this.apiClient.apiConfig.config.displayName)} root
                 </span>
             </div>
         `];
@@ -1675,8 +1685,8 @@ export class SidebarManager {
                         </span>
                         <div class="breadcrumb-dropdown-menu">
                             ${nextLevelFolders.map(folder => `
-                                <div class="breadcrumb-dropdown-item" data-path="${folder}">
-                                    ${folder}
+                                <div class="breadcrumb-dropdown-item" data-path="${escapeAttribute(folder)}">
+                                    ${escapeHtml(folder)}
                                 </div>`).join('')
                     }
                         </div>
@@ -1692,12 +1702,14 @@ export class SidebarManager {
 
             // Get siblings for this level
             const siblings = this.getSiblingFolders(parts, index);
+            const escapedCurrentPath = escapeAttribute(currentPath);
+            const escapedPart = escapeHtml(part);
 
             breadcrumbs.push(`<span class="sidebar-breadcrumb-separator">/</span>`);
             breadcrumbs.push(`
                 <div class="breadcrumb-dropdown">
-                    <span class="sidebar-breadcrumb-item ${isLast ? 'active' : ''}" data-path="${currentPath}">
-                        ${part}
+                    <span class="sidebar-breadcrumb-item ${isLast ? 'active' : ''}" data-path="${escapedCurrentPath}">
+                        ${escapedPart}
                         ${siblings.length > 1 ? `
                             <span class="breadcrumb-dropdown-indicator">
                                 <i class="fas fa-caret-down"></i>
@@ -1706,11 +1718,14 @@ export class SidebarManager {
                     </span>
                     ${siblings.length > 1 ? `
                         <div class="breadcrumb-dropdown-menu">
-                            ${siblings.map(folder => `
-                                <div class="breadcrumb-dropdown-item ${folder === part ? 'active' : ''}" 
-                                     data-path="${currentPath.replace(part, folder)}">
-                                    ${folder}
-                                </div>`).join('')
+                            ${siblings.map(folder => {
+                                const siblingPath = parts.slice(0, index).concat(folder).join('/');
+                                return `
+                                    <div class="breadcrumb-dropdown-item ${folder === part ? 'active' : ''}" 
+                                         data-path="${escapeAttribute(siblingPath)}">
+                                        ${escapeHtml(folder)}
+                                    </div>`;
+                            }).join('')
                     }
                         </div>
                     ` : ''}
@@ -1732,8 +1747,8 @@ export class SidebarManager {
                             </span>
                             <div class="breadcrumb-dropdown-menu">
                                 ${childFolders.map(folder => `
-                                    <div class="breadcrumb-dropdown-item" data-path="${currentPath}/${folder}">
-                                        ${folder}
+                                    <div class="breadcrumb-dropdown-item" data-path="${escapeAttribute(currentPath + '/' + folder)}">
+                                        ${escapeHtml(folder)}
                                     </div>`).join('')
                         }
                             </div>
