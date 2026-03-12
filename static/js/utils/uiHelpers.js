@@ -197,7 +197,10 @@ export function openCivitaiByMetadata(civitaiId, versionId, modelName = null) {
 }
 
 export function openCivitai(filePath) {
-  const loraCard = document.querySelector(`.model-card[data-filepath="${filePath}"]`);
+  const escapedPath = window.CSS && typeof window.CSS.escape === 'function'
+    ? window.CSS.escape(filePath)
+    : filePath.replace(/["\\]/g, '\\$&');
+  const loraCard = document.querySelector(`.model-card[data-filepath="${escapedPath}"]`);
   if (!loraCard) return;
 
   const metaData = JSON.parse(loraCard.dataset.meta);

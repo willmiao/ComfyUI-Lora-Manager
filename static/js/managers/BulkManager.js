@@ -568,7 +568,8 @@ export class BulkManager {
     }
 
     deselectItem(filepath) {
-        const card = document.querySelector(`.model-card[data-filepath="${filepath}"]`);
+        const escapedPath = this.escapeAttributeValue(filepath);
+        const card = document.querySelector(`.model-card[data-filepath="${escapedPath}"]`);
         if (card) {
             card.classList.remove('selected');
         }
@@ -632,7 +633,8 @@ export class BulkManager {
                 for (const filepath of state.selectedModels) {
                     const metadata = metadataCache.get(filepath);
                     if (metadata) {
-                        const card = document.querySelector(`.model-card[data-filepath="${filepath}"]`);
+                        const escapedPath = this.escapeAttributeValue(filepath);
+                        const card = document.querySelector(`.model-card[data-filepath="${escapedPath}"]`);
                         if (card) {
                             this.updateMetadataCacheFromCard(filepath, card);
                         }

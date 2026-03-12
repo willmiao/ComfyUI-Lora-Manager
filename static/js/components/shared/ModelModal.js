@@ -846,8 +846,14 @@ function setupLoraSpecificFields(filePath) {
 
         const currentPath = resolveFilePath();
         if (!currentPath) return;
-        const loraCard = document.querySelector(`.model-card[data-filepath="${currentPath}"]`) ||
-            document.querySelector(`.model-card[data-filepath="${filePath}"]`);
+        const escapedCurrentPath = window.CSS && typeof window.CSS.escape === 'function'
+            ? window.CSS.escape(currentPath)
+            : currentPath.replace(/["\\]/g, '\\$&');
+        const escapedFilePath = window.CSS && typeof window.CSS.escape === 'function'
+            ? window.CSS.escape(filePath)
+            : filePath.replace(/["\\]/g, '\\$&');
+        const loraCard = document.querySelector(`.model-card[data-filepath="${escapedCurrentPath}"]`) ||
+            document.querySelector(`.model-card[data-filepath="${escapedFilePath}"]`);
         const currentPresets = parsePresets(loraCard?.dataset.usage_tips);
 
         if (key === 'strength_range') {

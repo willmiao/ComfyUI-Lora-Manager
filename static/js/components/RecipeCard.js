@@ -201,8 +201,9 @@ class RecipeCard {
             this.recipe.favorite = isFavorite;
 
             // Re-find star icon in case of re-render during fault
+            const filePathForXpath = this.recipe.file_path.replace(/"/g, '&quot;');
             const currentCard = card.ownerDocument.evaluate(
-                `.//*[@data-filepath="${this.recipe.file_path}"]`,
+                `.//*[@data-filepath="${filePathForXpath}"]`,
                 card.ownerDocument, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null
             ).singleNodeValue || card;
 

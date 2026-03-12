@@ -117,7 +117,10 @@ export class BulkContextMenu extends BaseContextMenu {
     countSkipStatus(skipState) {
         let count = 0;
         for (const filePath of state.selectedModels) {
-            const card = document.querySelector(`.model-card[data-filepath="${filePath}"]`);
+            const escapedPath = window.CSS && typeof window.CSS.escape === 'function'
+                ? window.CSS.escape(filePath)
+                : filePath.replace(/["\\]/g, '\\$&');
+            const card = document.querySelector(`.model-card[data-filepath="${escapedPath}"]`);
             if (card) {
                 const isSkipped = card.dataset.skip_metadata_refresh === 'true';
                 if (isSkipped === skipState) {

@@ -49,7 +49,10 @@ function formatPresetKey(key) {
  */
 window.removePreset = async function(key) {
     const filePath = document.querySelector('#modelModal .modal-content .file-path').dataset.filepath;
-    const loraCard = document.querySelector(`.model-card[data-filepath="${filePath}"]`);
+    const escapedPath = window.CSS && typeof window.CSS.escape === 'function'
+        ? window.CSS.escape(filePath)
+        : filePath.replace(/["\\]/g, '\\$&');
+    const loraCard = document.querySelector(`.model-card[data-filepath="${escapedPath}"]`);
     const currentPresets = parsePresets(loraCard.dataset.usage_tips);
     
     delete currentPresets[key];
