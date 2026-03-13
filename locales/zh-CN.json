@@ -722,12 +722,48 @@
                 "getInfoFailed": "获取缺失 LoRA 信息失败",
                 "prepareError": "准备下载 LoRA 时出错：{message}"
             },
-            "repair": {
+"repair": {
                 "starting": "正在修复配方元数据...",
                 "success": "配方元数据修复成功",
                 "skipped": "配方已是最新版本，无需修复",
                 "failed": "修复配方失败：{message}",
                 "missingId": "无法修复配方：缺少配方 ID"
+            }
+        },
+        "batchImport": {
+            "title": "批量导入配方",
+            "action": "批量导入",
+            "urlsMode": "URL / 路径",
+            "directoryMode": "目录",
+            "urlsDescription": "输入图片 URL 或本地文件路径（每行一个）。每个将作为配方导入。",
+            "urlsLabel": "图片 URL 或本地路径",
+            "urlsPlaceholder": "https://civitai.com/images/...\nhttps://civitai.com/images/...\nC:/path/to/image.png\n...",
+            "directoryDescription": "输入目录路径以导入该文件夹中的所有图片。",
+            "directoryLabel": "目录路径",
+            "directoryPlaceholder": "/图片/文件夹/路径",
+            "tagsOptional": "标签（可选，应用于所有配方）",
+            "addTagPlaceholder": "添加标签",
+            "addTag": "添加",
+            "noTags": "未添加标签",
+            "skipNoMetadata": "跳过无元数据的图片",
+            "skipNoMetadataHelp": "没有 LoRA 元数据的图片将自动跳过。",
+            "startImport": "开始导入",
+            "importing": "正在导入配方...",
+            "progress": "进度",
+            "currentItem": "当前",
+            "preparing": "准备中...",
+            "cancelImport": "取消",
+            "cancelled": "批量导入已取消",
+            "completed": "导入完成",
+            "completedSuccess": "成功导入 {count} 个配方",
+            "successCount": "成功",
+            "failedCount": "失败",
+            "skippedCount": "跳过",
+            "totalProcessed": "总计处理",
+            "errors": {
+                "enterUrls": "请至少输入一个 URL 或路径",
+                "enterDirectory": "请输入目录路径",
+                "startFailed": "启动导入失败：{message}"
             }
         }
     },

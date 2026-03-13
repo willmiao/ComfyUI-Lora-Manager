@@ -1,4 +1,5 @@
 """Dedicated handler objects for recipe-related routes."""
+
 from __future__ import annotations
 
 import json
@@ -29,6 +30,7 @@ from ...utils.exif_utils import ExifUtils
 from ...recipes.merger import GenParamsMerger
 from ...recipes.enrichment import RecipeEnricher
 from ...services.websocket_manager import ws_manager as default_ws_manager
+from ...services.batch_import_service import BatchImportService
 
 Logger = logging.Logger
 EnsureDependenciesCallable = Callable[[], Awaitable[None]]
@@ -46,8 +48,11 @@ class RecipeHandlerSet:
     management: "RecipeManagementHandler"
     analysis: "RecipeAnalysisHandler"
     sharing: "RecipeSharingHandler"
+    batch_import: "BatchImportHandler"
 
-    def to_route_mapping(self) -> Mapping[str, Callable[[web.Request], Awaitable[web.StreamResponse]]]:
+    def to_route_mapping(
+        self,
+    ) -> Mapping[str, Callable[[web.Request], Awaitable[web.StreamResponse]]]:
         """Expose handler coroutines keyed by registrar handler names."""
 
         return {
@@ -81,6 +86,9 @@ class RecipeHandlerSet:
             "cancel_repair": self.management.cancel_repair,
             "repair_recipe": self.management.repair_recipe,
             "get_repair_progress": self.management.get_repair_progress,
+            "start_batch_import": self.batch_import.start_batch_import,
+            "get_batch_import_progress": self.batch_import.get_batch_import_progress,
+            "cancel_batch_import": self.batch_import.cancel_batch_import,
         }
 
 
@@ -170,8 +178,10 @@ class RecipeListingHandler:
             search_options = {
                 "title": request.query.get("search_title", "true").lower() == "true",
                 "tags": request.query.get("search_tags", "true").lower() == "true",
-                "lora_name": request.query.get("search_lora_name", "true").lower() == "true",
-                "lora_model": request.query.get("search_lora_model", "true").lower() == "true",
+                "lora_name": request.query.get("search_lora_name", "true").lower()
+                == "true",
+                "lora_model": request.query.get("search_lora_model", "true").lower()
+                == "true",
                 "prompt": request.query.get("search_prompt", "true").lower() == "true",
             }
 
@@ -246,7 +256,9 @@ class RecipeListingHandler:
                 return web.json_response({"error": "Recipe not found"}, status=404)
             return web.json_response(recipe)
         except Exception as exc:
-            self._logger.error("Error retrieving recipe details: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error retrieving recipe details: %s", exc, exc_info=True
+            )
             return web.json_response({"error": str(exc)}, status=500)
 
     def format_recipe_file_url(self, file_path: str) -> str:
@@ -256,7 +268,9 @@ class RecipeListingHandler:
             if static_url:
                 return static_url
         except Exception as exc:  # pragma: no cover - logging path
-            self._logger.error("Error formatting recipe file URL: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error formatting recipe file URL: %s", exc, exc_info=True
+            )
             return "/loras_static/images/no-preview.png"
 
         return "/loras_static/images/no-preview.png"
@@ -293,7 +307,9 @@ class RecipeQueryHandler:
                 for tag in recipe.get("tags", []) or []:
                     tag_counts[tag] = tag_counts.get(tag, 0) + 1
 
-            sorted_tags = [{"tag": tag, "count": count} for tag, count in tag_counts.items()]
+            sorted_tags = [
+                {"tag": tag, "count": count} for tag, count in tag_counts.items()
+            ]
             sorted_tags.sort(key=lambda entry: entry["count"], reverse=True)
             return web.json_response({"success": True, "tags": sorted_tags[:limit]})
         except Exception as exc:
@@ -313,9 +329,14 @@ class RecipeQueryHandler:
             for recipe in getattr(cache, "raw_data", []):
                 base_model = recipe.get("base_model")
                 if base_model:
-                    base_model_counts[base_model] = base_model_counts.get(base_model, 0) + 1
+                    base_model_counts[base_model] = (
+                        base_model_counts.get(base_model, 0) + 1
+                    )
 
-            sorted_models = [{"name": model, "count": count} for model, count in base_model_counts.items()]
+            sorted_models = [
+                {"name": model, "count": count}
+                for model, count in base_model_counts.items()
+            ]
             sorted_models.sort(key=lambda entry: entry["count"], reverse=True)
             return web.json_response({"success": True, "base_models": sorted_models})
         except Exception as exc:
@@ -345,7 +366,9 @@ class RecipeQueryHandler:
             folders = await recipe_scanner.get_folders()
             return web.json_response({"success": True, "folders": folders})
         except Exception as exc:
-            self._logger.error("Error retrieving recipe folders: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error retrieving recipe folders: %s", exc, exc_info=True
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_folder_tree(self, request: web.Request) -> web.Response:
@@ -358,7 +381,9 @@ class RecipeQueryHandler:
             folder_tree = await recipe_scanner.get_folder_tree()
             return web.json_response({"success": True, "tree": folder_tree})
         except Exception as exc:
-            self._logger.error("Error retrieving recipe folder tree: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error retrieving recipe folder tree: %s", exc, exc_info=True
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_unified_folder_tree(self, request: web.Request) -> web.Response:
@@ -371,7 +396,9 @@ class RecipeQueryHandler:
             folder_tree = await recipe_scanner.get_folder_tree()
             return web.json_response({"success": True, "tree": folder_tree})
         except Exception as exc:
-            self._logger.error("Error retrieving unified recipe folder tree: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error retrieving unified recipe folder tree: %s", exc, exc_info=True
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_recipes_for_lora(self, request: web.Request) -> web.Response:
@@ -383,7 +410,9 @@ class RecipeQueryHandler:
 
             lora_hash = request.query.get("hash")
             if not lora_hash:
-                return web.json_response({"success": False, "error": "Lora hash is required"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Lora hash is required"}, status=400
+                )
 
             matching_recipes = await recipe_scanner.get_recipes_for_lora(lora_hash)
             return web.json_response({"success": True, "recipes": matching_recipes})
@@ -400,7 +429,9 @@ class RecipeQueryHandler:
 
             self._logger.info("Manually triggering recipe cache rebuild")
             await recipe_scanner.get_cached_data(force_refresh=True)
-            return web.json_response({"success": True, "message": "Recipe cache refreshed successfully"})
+            return web.json_response(
+                {"success": True, "message": "Recipe cache refreshed successfully"}
+            )
         except Exception as exc:
             self._logger.error("Error refreshing recipe cache: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
@@ -429,7 +460,9 @@ class RecipeQueryHandler:
                                 "id": recipe.get("id"),
                                 "title": recipe.get("title"),
                                 "file_url": recipe.get("file_url")
-                                or self._format_recipe_file_url(recipe.get("file_path", "")),
+                                or self._format_recipe_file_url(
+                                    recipe.get("file_path", "")
+                                ),
                                 "modified": recipe.get("modified"),
                                 "created_date": recipe.get("created_date"),
                                 "lora_count": len(recipe.get("loras", [])),
@@ -437,7 +470,9 @@ class RecipeQueryHandler:
                         )
 
                 if len(recipes) >= 2:
-                    recipes.sort(key=lambda entry: entry.get("modified", 0), reverse=True)
+                    recipes.sort(
+                        key=lambda entry: entry.get("modified", 0), reverse=True
+                    )
                     response_data.append(
                         {
                             "type": "fingerprint",
@@ -460,7 +495,9 @@ class RecipeQueryHandler:
                                 "id": recipe.get("id"),
                                 "title": recipe.get("title"),
                                 "file_url": recipe.get("file_url")
-                                or self._format_recipe_file_url(recipe.get("file_path", "")),
+                                or self._format_recipe_file_url(
+                                    recipe.get("file_path", "")
+                                ),
                                 "modified": recipe.get("modified"),
                                 "created_date": recipe.get("created_date"),
                                 "lora_count": len(recipe.get("loras", [])),
@@ -468,7 +505,9 @@ class RecipeQueryHandler:
                         )
 
                 if len(recipes) >= 2:
-                    recipes.sort(key=lambda entry: entry.get("modified", 0), reverse=True)
+                    recipes.sort(
+                        key=lambda entry: entry.get("modified", 0), reverse=True
+                    )
                     response_data.append(
                         {
                             "type": "source_url",
@@ -479,9 +518,13 @@ class RecipeQueryHandler:
                     )
 
             response_data.sort(key=lambda entry: entry["count"], reverse=True)
-            return web.json_response({"success": True, "duplicate_groups": response_data})
+            return web.json_response(
+                {"success": True, "duplicate_groups": response_data}
+            )
         except Exception as exc:
-            self._logger.error("Error finding duplicate recipes: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error finding duplicate recipes: %s", exc, exc_info=True
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_recipe_syntax(self, request: web.Request) -> web.Response:
@@ -498,9 +541,13 @@ class RecipeQueryHandler:
                 return web.json_response({"error": "Recipe not found"}, status=404)
 
             if not syntax_parts:
-                return web.json_response({"error": "No LoRAs found in this recipe"}, status=400)
+                return web.json_response(
+                    {"error": "No LoRAs found in this recipe"}, status=400
+                )
 
-            return web.json_response({"success": True, "syntax": " ".join(syntax_parts)})
+            return web.json_response(
+                {"success": True, "syntax": " ".join(syntax_parts)}
+            )
         except Exception as exc:
             self._logger.error("Error generating recipe syntax: %s", exc, exc_info=True)
             return web.json_response({"error": str(exc)}, status=500)
@@ -561,11 +608,17 @@ class RecipeManagementHandler:
             await self._ensure_dependencies_ready()
             recipe_scanner = self._recipe_scanner_getter()
             if recipe_scanner is None:
-                return web.json_response({"success": False, "error": "Recipe scanner unavailable"}, status=503)
+                return web.json_response(
+                    {"success": False, "error": "Recipe scanner unavailable"},
+                    status=503,
+                )
 
             # Check if already running
             if self._ws_manager.is_recipe_repair_running():
-                return web.json_response({"success": False, "error": "Recipe repair already in progress"}, status=409)
+                return web.json_response(
+                    {"success": False, "error": "Recipe repair already in progress"},
+                    status=409,
+                )
 
             recipe_scanner.reset_cancellation()
 
@@ -579,11 +632,12 @@ class RecipeManagementHandler:
                         progress_callback=progress_callback
                     )
                 except Exception as e:
-                    self._logger.error(f"Error in recipe repair task: {e}", exc_info=True)
-                    await self._ws_manager.broadcast_recipe_repair_progress({
-                        "status": "error",
-                        "error": str(e)
-                    })
+                    self._logger.error(
+                        f"Error in recipe repair task: {e}", exc_info=True
+                    )
+                    await self._ws_manager.broadcast_recipe_repair_progress(
+                        {"status": "error", "error": str(e)}
+                    )
                 finally:
                     # Keep the final status for a while so the UI can see it
                     await asyncio.sleep(5)
@@ -593,7 +647,9 @@ class RecipeManagementHandler:
 
             asyncio.create_task(run_repair())
 
-            return web.json_response({"success": True, "message": "Recipe repair started"})
+            return web.json_response(
+                {"success": True, "message": "Recipe repair started"}
+            )
         except Exception as exc:
             self._logger.error("Error starting recipe repair: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
@@ -603,10 +659,15 @@ class RecipeManagementHandler:
             await self._ensure_dependencies_ready()
             recipe_scanner = self._recipe_scanner_getter()
             if recipe_scanner is None:
-                return web.json_response({"success": False, "error": "Recipe scanner unavailable"}, status=503)
+                return web.json_response(
+                    {"success": False, "error": "Recipe scanner unavailable"},
+                    status=503,
+                )
 
             recipe_scanner.cancel_task()
-            return web.json_response({"success": True, "message": "Cancellation requested"})
+            return web.json_response(
+                {"success": True, "message": "Cancellation requested"}
+            )
         except Exception as exc:
             self._logger.error("Error cancelling recipe repair: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
@@ -616,7 +677,10 @@ class RecipeManagementHandler:
             await self._ensure_dependencies_ready()
             recipe_scanner = self._recipe_scanner_getter()
             if recipe_scanner is None:
-                return web.json_response({"success": False, "error": "Recipe scanner unavailable"}, status=503)
+                return web.json_response(
+                    {"success": False, "error": "Recipe scanner unavailable"},
+                    status=503,
+                )
 
             recipe_id = request.match_info["recipe_id"]
             result = await recipe_scanner.repair_recipe_by_id(recipe_id)
@@ -632,11 +696,12 @@ class RecipeManagementHandler:
             progress = self._ws_manager.get_recipe_repair_progress()
             if progress:
                 return web.json_response({"success": True, "progress": progress})
-            return web.json_response({"success": False, "message": "No repair in progress"}, status=404)
+            return web.json_response(
+                {"success": False, "message": "No repair in progress"}, status=404
+            )
         except Exception as exc:
             self._logger.error("Error getting repair progress: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
-
 
     async def import_remote_recipe(self, request: web.Request) -> web.Response:
         try:
@@ -644,13 +709,13 @@ class RecipeManagementHandler:
             recipe_scanner = self._recipe_scanner_getter()
             if recipe_scanner is None:
                 raise RuntimeError("Recipe scanner unavailable")
-            
+
             # 1. Parse Parameters
             params = request.rel_url.query
             image_url = params.get("image_url")
             name = params.get("name")
             resources_raw = params.get("resources")
-            
+
             if not image_url:
                 raise RecipeValidationError("Missing required field: image_url")
             if not name:
@@ -658,64 +723,80 @@ class RecipeManagementHandler:
             if not resources_raw:
                 raise RecipeValidationError("Missing required field: resources")
 
-            checkpoint_entry, lora_entries = self._parse_resources_payload(resources_raw)
+            checkpoint_entry, lora_entries = self._parse_resources_payload(
+                resources_raw
+            )
             gen_params_request = self._parse_gen_params(params.get("gen_params"))
-            
+
             # 2. Initial Metadata Construction
             metadata: Dict[str, Any] = {
                 "base_model": params.get("base_model", "") or "",
                 "loras": lora_entries,
                 "gen_params": gen_params_request or {},
-                "source_url": image_url
+                "source_url": image_url,
             }
-            
+
             source_path = params.get("source_path")
             if source_path:
                 metadata["source_path"] = source_path
-                
+
             # Checkpoint handling
             if checkpoint_entry:
                 metadata["checkpoint"] = checkpoint_entry
                 # Ensure checkpoint is also in gen_params for consistency if needed by enricher?
                 # Actually enricher looks at metadata['checkpoint'], so this is fine.
-                
+
                 # Try to resolve base model from checkpoint if not explicitly provided
                 if not metadata["base_model"]:
-                    base_model_from_metadata = await self._resolve_base_model_from_checkpoint(checkpoint_entry)
+                    base_model_from_metadata = (
+                        await self._resolve_base_model_from_checkpoint(checkpoint_entry)
+                    )
                     if base_model_from_metadata:
                         metadata["base_model"] = base_model_from_metadata
 
             tags = self._parse_tags(params.get("tags"))
-            
+
             # 3. Download Image
-            image_bytes, extension, civitai_meta_from_download = await self._download_remote_media(image_url)
+            (
+                image_bytes,
+                extension,
+                civitai_meta_from_download,
+            ) = await self._download_remote_media(image_url)
 
             # 4. Extract Embedded Metadata
-            # Note: We still extract this here because Enricher currently expects 'gen_params' to already be populated 
-            # with embedded data if we want it to merge it. 
+            # Note: We still extract this here because Enricher currently expects 'gen_params' to already be populated
+            # with embedded data if we want it to merge it.
             # However, logic in Enricher merges: request > civitai > embedded.
-            # So we should gather embedded params and put them into the recipe's gen_params (as initial state) 
+            # So we should gather embedded params and put them into the recipe's gen_params (as initial state)
             # OR pass them to enricher to handle?
             # The interface of Enricher.enrich_recipe takes `recipe` (with gen_params) and `request_params`.
             # So let's extract embedded and put it into recipe['gen_params'] but careful not to overwrite request params.
             # Actually, `GenParamsMerger` which `Enricher` uses handles 3 layers.
             # But `Enricher` interface is: recipe['gen_params'] (as embedded) + request_params + civitai (fetched internally).
-            # Wait, `Enricher` fetches Civitai info internally based on URL. 
+            # Wait, `Enricher` fetches Civitai info internally based on URL.
             # `civitai_meta_from_download` is returned by `_download_remote_media` which might be useful if URL didn't have ID.
-            
+
             # Let's extract embedded metadata first
             embedded_gen_params = {}
             try:
-                with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as temp_img:
+                with tempfile.NamedTemporaryFile(
+                    suffix=extension, delete=False
+                ) as temp_img:
                     temp_img.write(image_bytes)
                     temp_img_path = temp_img.name
-                
+
                 try:
                     raw_embedded = ExifUtils.extract_image_metadata(temp_img_path)
                     if raw_embedded:
-                        parser = self._analysis_service._recipe_parser_factory.create_parser(raw_embedded)
+                        parser = (
+                            self._analysis_service._recipe_parser_factory.create_parser(
+                                raw_embedded
+                            )
+                        )
                         if parser:
-                            parsed_embedded = await parser.parse_metadata(raw_embedded, recipe_scanner=recipe_scanner)
+                            parsed_embedded = await parser.parse_metadata(
+                                raw_embedded, recipe_scanner=recipe_scanner
+                            )
                             if parsed_embedded and "gen_params" in parsed_embedded:
                                 embedded_gen_params = parsed_embedded["gen_params"]
                         else:
@@ -724,7 +805,9 @@ class RecipeManagementHandler:
                     if os.path.exists(temp_img_path):
                         os.unlink(temp_img_path)
             except Exception as exc:
-                self._logger.warning("Failed to extract embedded metadata during import: %s", exc)
+                self._logger.warning(
+                    "Failed to extract embedded metadata during import: %s", exc
+                )
 
             # Pre-populate gen_params with embedded data so Enricher treats it as the "base" layer
             if embedded_gen_params:
@@ -732,18 +815,18 @@ class RecipeManagementHandler:
                 # But wait, we want request params to override everything.
                 # So we should set recipe['gen_params'] = embedded, and pass request params to enricher.
                 metadata["gen_params"] = embedded_gen_params
-            
+
             # 5. Enrich with unified logic
             # This will fetch Civitai info (if URL matches) and merge: request > civitai > embedded
             civitai_client = self._civitai_client_getter()
             await RecipeEnricher.enrich_recipe(
-                recipe=metadata, 
+                recipe=metadata,
                 civitai_client=civitai_client,
-                request_params=gen_params_request # Pass explicit request params here to override
+                request_params=gen_params_request,  # Pass explicit request params here to override
             )
-            
+
             # If we got civitai_meta from download but Enricher didn't fetch it (e.g. not a civitai URL or failed),
-            # we might want to manually merge it? 
+            # we might want to manually merge it?
             # But usually `import_remote_recipe` is used with Civitai URLs.
             # For now, relying on Enricher's internal fetch is consistent with repair.
 
@@ -762,7 +845,9 @@ class RecipeManagementHandler:
         except RecipeDownloadError as exc:
             return web.json_response({"error": str(exc)}, status=400)
         except Exception as exc:
-            self._logger.error("Error importing recipe from remote source: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error importing recipe from remote source: %s", exc, exc_info=True
+            )
             return web.json_response({"error": str(exc)}, status=500)
 
     async def delete_recipe(self, request: web.Request) -> web.Response:
@@ -816,7 +901,11 @@ class RecipeManagementHandler:
             target_path = data.get("target_path")
             if not recipe_id or not target_path:
                 return web.json_response(
-                    {"success": False, "error": "recipe_id and target_path are required"}, status=400
+                    {
+                        "success": False,
+                        "error": "recipe_id and target_path are required",
+                    },
+                    status=400,
                 )
 
             result = await self._persistence_service.move_recipe(
@@ -845,7 +934,11 @@ class RecipeManagementHandler:
             target_path = data.get("target_path")
             if not recipe_ids or not target_path:
                 return web.json_response(
-                    {"success": False, "error": "recipe_ids and target_path are required"}, status=400
+                    {
+                        "success": False,
+                        "error": "recipe_ids and target_path are required",
+                    },
+                    status=400,
                 )
 
             result = await self._persistence_service.move_recipes_bulk(
@@ -934,7 +1027,9 @@ class RecipeManagementHandler:
         except RecipeValidationError as exc:
             return web.json_response({"error": str(exc)}, status=400)
         except Exception as exc:
-            self._logger.error("Error saving recipe from widget: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error saving recipe from widget: %s", exc, exc_info=True
+            )
             return web.json_response({"error": str(exc)}, status=500)
 
     async def _parse_save_payload(self, reader) -> dict[str, Any]:
@@ -1006,7 +1101,9 @@ class RecipeManagementHandler:
             raise RecipeValidationError("gen_params payload must be an object")
         return parsed
 
-    def _parse_resources_payload(self, payload_raw: str) -> tuple[Optional[Dict[str, Any]], List[Dict[str, Any]]]:
+    def _parse_resources_payload(
+        self, payload_raw: str
+    ) -> tuple[Optional[Dict[str, Any]], List[Dict[str, Any]]]:
         try:
             payload = json.loads(payload_raw)
         except json.JSONDecodeError as exc:
@@ -1066,15 +1163,19 @@ class RecipeManagementHandler:
             civitai_match = re.match(r"https://civitai\.com/images/(\d+)", image_url)
             if civitai_match:
                 if civitai_client is None:
-                    raise RecipeDownloadError("Civitai client unavailable for image download")
+                    raise RecipeDownloadError(
+                        "Civitai client unavailable for image download"
+                    )
                 image_info = await civitai_client.get_image_info(civitai_match.group(1))
                 if not image_info:
-                    raise RecipeDownloadError("Failed to fetch image information from Civitai")
-                
+                    raise RecipeDownloadError(
+                        "Failed to fetch image information from Civitai"
+                    )
+
                 media_url = image_info.get("url")
                 if not media_url:
                     raise RecipeDownloadError("No image URL found in Civitai response")
-                
+
                 # Use optimized preview URLs if possible
                 media_type = image_info.get("type")
                 rewritten_url, _ = rewrite_preview_url(media_url, media_type=media_type)
@@ -1083,18 +1184,24 @@ class RecipeManagementHandler:
                 else:
                     download_url = media_url
 
-            success, result = await downloader.download_file(download_url, temp_path, use_auth=False)
+            success, result = await downloader.download_file(
+                download_url, temp_path, use_auth=False
+            )
             if not success:
                 raise RecipeDownloadError(f"Failed to download image: {result}")
-            
+
             # Extract extension from URL
-            url_path = download_url.split('?')[0].split('#')[0]
+            url_path = download_url.split("?")[0].split("#")[0]
             extension = os.path.splitext(url_path)[1].lower()
             if not extension:
-                extension = ".webp" # Default to webp if unknown
+                extension = ".webp"  # Default to webp if unknown
 
             with open(temp_path, "rb") as file_obj:
-                return file_obj.read(), extension, image_info.get("meta") if civitai_match and image_info else None
+                return (
+                    file_obj.read(),
+                    extension,
+                    image_info.get("meta") if civitai_match and image_info else None,
+                )
         except RecipeDownloadError:
             raise
         except RecipeValidationError:
@@ -1108,14 +1215,15 @@ class RecipeManagementHandler:
                 except FileNotFoundError:
                     pass
 
-
     def _safe_int(self, value: Any) -> int:
         try:
             return int(value)
         except (TypeError, ValueError):
             return 0
 
-    async def _resolve_base_model_from_checkpoint(self, checkpoint_entry: Dict[str, Any]) -> str:
+    async def _resolve_base_model_from_checkpoint(
+        self, checkpoint_entry: Dict[str, Any]
+    ) -> str:
         version_id = self._safe_int(checkpoint_entry.get("modelVersionId"))
 
         if not version_id:
@@ -1134,7 +1242,9 @@ class RecipeManagementHandler:
                 base_model = version_info.get("baseModel") or ""
                 return str(base_model) if base_model is not None else ""
         except Exception as exc:  # pragma: no cover - defensive logging
-            self._logger.warning("Failed to resolve base model from checkpoint metadata: %s", exc)
+            self._logger.warning(
+                "Failed to resolve base model from checkpoint metadata: %s", exc
+            )
 
         return ""
 
@@ -1279,5 +1389,178 @@ class RecipeSharingHandler:
         except RecipeNotFoundError as exc:
             return web.json_response({"error": str(exc)}, status=404)
         except Exception as exc:
-            self._logger.error("Error downloading shared recipe: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error downloading shared recipe: %s", exc, exc_info=True
+            )
             return web.json_response({"error": str(exc)}, status=500)
+
+
+class BatchImportHandler:
+    """Handle batch import operations for recipes."""
+
+    def __init__(
+        self,
+        *,
+        ensure_dependencies_ready: EnsureDependenciesCallable,
+        recipe_scanner_getter: RecipeScannerGetter,
+        civitai_client_getter: CivitaiClientGetter,
+        logger: Logger,
+        batch_import_service: BatchImportService,
+    ) -> None:
+        self._ensure_dependencies_ready = ensure_dependencies_ready
+        self._recipe_scanner_getter = recipe_scanner_getter
+        self._civitai_client_getter = civitai_client_getter
+        self._logger = logger
+        self._batch_import_service = batch_import_service
+
+    async def start_batch_import(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+
+            if self._batch_import_service.is_import_running():
+                return web.json_response(
+                    {"success": False, "error": "Batch import already in progress"},
+                    status=409,
+                )
+
+            data = await request.json()
+            items = data.get("items", [])
+            tags = data.get("tags", [])
+            skip_no_metadata = data.get("skip_no_metadata", True)
+
+            if not items:
+                return web.json_response(
+                    {"success": False, "error": "No items provided"},
+                    status=400,
+                )
+
+            for item in items:
+                if not item.get("source"):
+                    return web.json_response(
+                        {
+                            "success": False,
+                            "error": "Each item must have a 'source' field",
+                        },
+                        status=400,
+                    )
+
+            operation_id = await self._batch_import_service.start_batch_import(
+                recipe_scanner_getter=self._recipe_scanner_getter,
+                civitai_client_getter=self._civitai_client_getter,
+                items=items,
+                tags=tags,
+                skip_no_metadata=skip_no_metadata,
+            )
+
+            return web.json_response(
+                {
+                    "success": True,
+                    "operation_id": operation_id,
+                }
+            )
+        except RecipeValidationError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except Exception as exc:
+            self._logger.error("Error starting batch import: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def start_directory_import(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+
+            if self._batch_import_service.is_import_running():
+                return web.json_response(
+                    {"success": False, "error": "Batch import already in progress"},
+                    status=409,
+                )
+
+            data = await request.json()
+            directory = data.get("directory")
+            recursive = data.get("recursive", True)
+            tags = data.get("tags", [])
+            skip_no_metadata = data.get("skip_no_metadata", True)
+
+            if not directory:
+                return web.json_response(
+                    {"success": False, "error": "Directory path is required"},
+                    status=400,
+                )
+
+            operation_id = await self._batch_import_service.start_directory_import(
+                recipe_scanner_getter=self._recipe_scanner_getter,
+                civitai_client_getter=self._civitai_client_getter,
+                directory=directory,
+                recursive=recursive,
+                tags=tags,
+                skip_no_metadata=skip_no_metadata,
+            )
+
+            return web.json_response(
+                {
+                    "success": True,
+                    "operation_id": operation_id,
+                }
+            )
+        except RecipeValidationError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except Exception as exc:
+            self._logger.error(
+                "Error starting directory import: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_batch_import_progress(self, request: web.Request) -> web.Response:
+        try:
+            operation_id = request.query.get("operation_id")
+            if not operation_id:
+                return web.json_response(
+                    {"success": False, "error": "operation_id is required"},
+                    status=400,
+                )
+
+            progress = self._batch_import_service.get_progress(operation_id)
+            if not progress:
+                return web.json_response(
+                    {"success": False, "error": "Operation not found"},
+                    status=404,
+                )
+
+            return web.json_response(
+                {
+                    "success": True,
+                    "progress": progress.to_dict(),
+                }
+            )
+        except Exception as exc:
+            self._logger.error(
+                "Error getting batch import progress: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def cancel_batch_import(self, request: web.Request) -> web.Response:
+        try:
+            data = await request.json()
+            operation_id = data.get("operation_id")
+
+            if not operation_id:
+                return web.json_response(
+                    {"success": False, "error": "operation_id is required"},
+                    status=400,
+                )
+
+            cancelled = self._batch_import_service.cancel_import(operation_id)
+            if not cancelled:
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": "Operation not found or already completed",
+                    },
+                    status=404,
+                )
+
+            return web.json_response(
+                {"success": True, "message": "Cancellation requested"}
+            )
+        except Exception as exc:
+            self._logger.error("Error cancelling batch import: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)

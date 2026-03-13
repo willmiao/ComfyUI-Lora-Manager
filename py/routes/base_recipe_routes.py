@@ -1,4 +1,5 @@
 """Base infrastructure shared across recipe routes."""
+
 from __future__ import annotations
 
 import logging
@@ -16,12 +17,14 @@ from ..services.recipes import (
     RecipePersistenceService,
     RecipeSharingService,
 )
+from ..services.batch_import_service import BatchImportService
 from ..services.server_i18n import server_i18n
 from ..services.service_registry import ServiceRegistry
 from ..services.settings_manager import get_settings_manager
 from ..utils.constants import CARD_PREVIEW_WIDTH
 from ..utils.exif_utils import ExifUtils
 from .handlers.recipe_handlers import (
+    BatchImportHandler,
     RecipeAnalysisHandler,
     RecipeHandlerSet,
     RecipeListingHandler,
@@ -116,7 +119,10 @@ class BaseRecipeRoutes:
         recipe_scanner_getter = lambda: self.recipe_scanner
         civitai_client_getter = lambda: self.civitai_client
 
-        standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1" or os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
+        standalone_mode = (
+            os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1"
+            or os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
+        )
         if not standalone_mode:
             from ..metadata_collector import get_metadata  # type: ignore[import-not-found]
             from ..metadata_collector.metadata_processor import (  # type: ignore[import-not-found]
@@ -190,6 +196,22 @@ class BaseRecipeRoutes:
             sharing_service=sharing_service,
         )
 
+        from ..services.websocket_manager import ws_manager
+
+        batch_import_service = BatchImportService(
+            analysis_service=analysis_service,
+            persistence_service=persistence_service,
+            ws_manager=ws_manager,
+            logger=logger,
+        )
+        batch_import = BatchImportHandler(
+            ensure_dependencies_ready=self.ensure_dependencies_ready,
+            recipe_scanner_getter=recipe_scanner_getter,
+            civitai_client_getter=civitai_client_getter,
+            logger=logger,
+            batch_import_service=batch_import_service,
+        )
+
         return RecipeHandlerSet(
             page_view=page_view,
             listing=listing,
@@ -197,4 +219,5 @@ class BaseRecipeRoutes:
             management=management,
             analysis=analysis,
             sharing=sharing,
+            batch_import=batch_import,
         )

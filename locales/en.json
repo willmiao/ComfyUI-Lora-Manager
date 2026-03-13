@@ -729,6 +729,42 @@
                 "failed": "Failed to repair recipe: {message}",
                 "missingId": "Cannot repair recipe: Missing recipe ID"
             }
+        },
+        "batchImport": {
+            "title": "Batch Import Recipes",
+            "action": "Batch Import",
+            "urlsMode": "URLs / Paths",
+            "directoryMode": "Directory",
+            "urlsDescription": "Enter image URLs or local file paths (one per line). Each will be imported as a recipe.",
+            "urlsLabel": "Image URLs or Local Paths",
+            "urlsPlaceholder": "https://civitai.com/images/...\nhttps://civitai.com/images/...\nC:/path/to/image.png\n...",
+            "directoryDescription": "Enter a directory path to import all images from that folder.",
+            "directoryLabel": "Directory Path",
+            "directoryPlaceholder": "/path/to/images/folder",
+            "tagsOptional": "Tags (optional, applied to all recipes)",
+            "addTagPlaceholder": "Add a tag",
+            "addTag": "Add",
+            "noTags": "No tags added",
+            "skipNoMetadata": "Skip images without metadata",
+            "skipNoMetadataHelp": "Images without LoRA metadata will be skipped automatically.",
+            "startImport": "Start Import",
+            "importing": "Importing Recipes...",
+            "progress": "Progress",
+            "currentItem": "Current",
+            "preparing": "Preparing...",
+            "cancelImport": "Cancel",
+            "cancelled": "Batch import cancelled",
+            "completed": "Import Completed",
+            "completedSuccess": "Successfully imported {count} recipe(s)",
+            "successCount": "Successful",
+            "failedCount": "Failed",
+            "skippedCount": "Skipped",
+            "totalProcessed": "Total processed",
+            "errors": {
+                "enterUrls": "Please enter at least one URL or path",
+                "enterDirectory": "Please enter a directory path",
+                "startFailed": "Failed to start import: {message}"
+            }
         }
     },
     "checkpoints": {

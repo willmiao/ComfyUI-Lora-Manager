@@ -1,4 +1,5 @@
 """Integration smoke tests for the recipe route stack."""
+
 from __future__ import annotations
 
 import json
@@ -94,19 +95,25 @@ class StubAnalysisService:
         self._recipe_parser_factory = None
         StubAnalysisService.instances.append(self)
 
-    async def analyze_uploaded_image(self, *, image_bytes: bytes | None, recipe_scanner) -> SimpleNamespace:  # noqa: D401 - mirrors real signature
+    async def analyze_uploaded_image(
+        self, *, image_bytes: bytes | None, recipe_scanner
+    ) -> SimpleNamespace:  # noqa: D401 - mirrors real signature
         if self.raise_for_uploaded:
             raise self.raise_for_uploaded
         self.upload_calls.append(image_bytes or b"")
         return self.result
 
-    async def analyze_remote_image(self, *, url: Optional[str], recipe_scanner, civitai_client) -> SimpleNamespace:  # noqa: D401
+    async def analyze_remote_image(
+        self, *, url: Optional[str], recipe_scanner, civitai_client
+    ) -> SimpleNamespace:  # noqa: D401
         if self.raise_for_remote:
             raise self.raise_for_remote
         self.remote_calls.append(url)
         return self.result
 
-    async def analyze_local_image(self, *, file_path: Optional[str], recipe_scanner) -> SimpleNamespace:  # noqa: D401
+    async def analyze_local_image(
+        self, *, file_path: Optional[str], recipe_scanner
+    ) -> SimpleNamespace:  # noqa: D401
         if self.raise_for_local:
             raise self.raise_for_local
         self.local_calls.append(file_path)
@@ -125,11 +132,23 @@ class StubPersistenceService:
         self.save_calls: List[Dict[str, Any]] = []
         self.delete_calls: List[str] = []
         self.move_calls: List[Dict[str, str]] = []
-        self.save_result = SimpleNamespace(payload={"success": True, "recipe_id": "stub-id"}, status=200)
+        self.save_result = SimpleNamespace(
+            payload={"success": True, "recipe_id": "stub-id"}, status=200
+        )
         self.delete_result = SimpleNamespace(payload={"success": True}, status=200)
         StubPersistenceService.instances.append(self)
 
-    async def save_recipe(self, *, recipe_scanner, image_bytes, image_base64, name, tags, metadata, extension=None) -> SimpleNamespace:  # noqa: D401
+    async def save_recipe(
+        self,
+        *,
+        recipe_scanner,
+        image_bytes,
+        image_base64,
+        name,
+        tags,
+        metadata,
+        extension=None,
+    ) -> SimpleNamespace:  # noqa: D401
         self.save_calls.append(
             {
                 "recipe_scanner": recipe_scanner,
@@ -148,22 +167,42 @@ class StubPersistenceService:
         await recipe_scanner.remove_recipe(recipe_id)
         return self.delete_result
 
-    async def move_recipe(self, *, recipe_scanner, recipe_id: str, target_path: str) -> SimpleNamespace:  # noqa: D401
+    async def move_recipe(
+        self, *, recipe_scanner, recipe_id: str, target_path: str
+    ) -> SimpleNamespace:  # noqa: D401
         self.move_calls.append({"recipe_id": recipe_id, "target_path": target_path})
         return SimpleNamespace(
-            payload={"success": True, "recipe_id": recipe_id, "new_file_path": target_path}, status=200
+            payload={
+                "success": True,
+                "recipe_id": recipe_id,
+                "new_file_path": target_path,
+            },
+            status=200,
         )
 
-    async def update_recipe(self, *, recipe_scanner, recipe_id: str, updates: Dict[str, Any]) -> SimpleNamespace:  # pragma: no cover - unused by smoke tests
-        return SimpleNamespace(payload={"success": True, "recipe_id": recipe_id, "updates": updates}, status=200)
+    async def update_recipe(
+        self, *, recipe_scanner, recipe_id: str, updates: Dict[str, Any]
+    ) -> SimpleNamespace:  # pragma: no cover - unused by smoke tests
+        return SimpleNamespace(
+            payload={"success": True, "recipe_id": recipe_id, "updates": updates},
+            status=200,
+        )
 
-    async def reconnect_lora(self, *, recipe_scanner, recipe_id: str, lora_index: int, target_name: str) -> SimpleNamespace:  # pragma: no cover
+    async def reconnect_lora(
+        self, *, recipe_scanner, recipe_id: str, lora_index: int, target_name: str
+    ) -> SimpleNamespace:  # pragma: no cover
         return SimpleNamespace(payload={"success": True}, status=200)
 
-    async def bulk_delete(self, *, recipe_scanner, recipe_ids: List[str]) -> SimpleNamespace:  # pragma: no cover
-        return SimpleNamespace(payload={"success": True, "deleted": recipe_ids}, status=200)
+    async def bulk_delete(
+        self, *, recipe_scanner, recipe_ids: List[str]
+    ) -> SimpleNamespace:  # pragma: no cover
+        return SimpleNamespace(
+            payload={"success": True, "deleted": recipe_ids}, status=200
+        )
 
-    async def save_recipe_from_widget(self, *, recipe_scanner, metadata: Dict[str, Any], image_bytes: bytes) -> SimpleNamespace:  # pragma: no cover
+    async def save_recipe_from_widget(
+        self, *, recipe_scanner, metadata: Dict[str, Any], image_bytes: bytes
+    ) -> SimpleNamespace:  # pragma: no cover
         return SimpleNamespace(payload={"success": True}, status=200)
 
 
@@ -176,7 +215,11 @@ class StubSharingService:
         self.share_calls: List[str] = []
         self.download_calls: List[str] = []
         self.share_result = SimpleNamespace(
-            payload={"success": True, "download_url": "/share/stub", "filename": "recipe.png"},
+            payload={
+                "success": True,
+                "download_url": "/share/stub",
+                "filename": "recipe.png",
+            },
             status=200,
         )
         self.download_info = SimpleNamespace(file_path="", download_filename="")
@@ -186,7 +229,9 @@ class StubSharingService:
         self.share_calls.append(recipe_id)
         return self.share_result
 
-    async def prepare_download(self, *, recipe_scanner, recipe_id: str) -> SimpleNamespace:
+    async def prepare_download(
+        self, *, recipe_scanner, recipe_id: str
+    ) -> SimpleNamespace:
         self.download_calls.append(recipe_id)
         return self.download_info
 
@@ -214,7 +259,9 @@ class StubCivitaiClient:
 
 
 @asynccontextmanager
-async def recipe_harness(monkeypatch, tmp_path: Path) -> AsyncIterator[RecipeRouteHarness]:
+async def recipe_harness(
+    monkeypatch, tmp_path: Path
+) -> AsyncIterator[RecipeRouteHarness]:
     """Context manager that yields a fully wired recipe route harness."""
 
     StubAnalysisService.instances.clear()
@@ -237,8 +284,12 @@ async def recipe_harness(monkeypatch, tmp_path: Path) -> AsyncIterator[RecipeRou
 
     monkeypatch.setattr(ServiceRegistry, "get_recipe_scanner", fake_get_recipe_scanner)
     monkeypatch.setattr(ServiceRegistry, "get_civitai_client", fake_get_civitai_client)
-    monkeypatch.setattr(base_recipe_routes, "RecipeAnalysisService", StubAnalysisService)
-    monkeypatch.setattr(base_recipe_routes, "RecipePersistenceService", StubPersistenceService)
+    monkeypatch.setattr(
+        base_recipe_routes, "RecipeAnalysisService", StubAnalysisService
+    )
+    monkeypatch.setattr(
+        base_recipe_routes, "RecipePersistenceService", StubPersistenceService
+    )
     monkeypatch.setattr(base_recipe_routes, "RecipeSharingService", StubSharingService)
     monkeypatch.setattr(base_recipe_routes, "get_downloader", fake_get_downloader)
     monkeypatch.setattr(config, "loras_roots", [str(tmp_path)], raising=False)
@@ -294,7 +345,9 @@ async def test_list_recipes_provides_file_urls(monkeypatch, tmp_path: Path) -> N
 async def test_save_and_delete_recipe_round_trip(monkeypatch, tmp_path: Path) -> None:
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         form = FormData()
-        form.add_field("image", b"stub", filename="sample.png", content_type="image/png")
+        form.add_field(
+            "image", b"stub", filename="sample.png", content_type="image/png"
+        )
         form.add_field("name", "Test Recipe")
         form.add_field("tags", json.dumps(["tag-a"]))
         form.add_field("metadata", json.dumps({"loras": []}))
@@ -312,7 +365,9 @@ async def test_save_and_delete_recipe_round_trip(monkeypatch, tmp_path: Path) ->
         assert save_payload["recipe_id"] == "saved-id"
         assert harness.persistence.save_calls[-1]["name"] == "Test Recipe"
 
-        harness.persistence.delete_result = SimpleNamespace(payload={"success": True}, status=200)
+        harness.persistence.delete_result = SimpleNamespace(
+            payload={"success": True}, status=200
+        )
 
         delete_response = await harness.client.delete("/api/lm/recipe/saved-id")
         delete_payload = await delete_response.json()
@@ -326,14 +381,20 @@ async def test_move_recipe_invokes_persistence(monkeypatch, tmp_path: Path) -> N
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         response = await harness.client.post(
             "/api/lm/recipe/move",
-            json={"recipe_id": "move-me", "target_path": str(tmp_path / "recipes" / "subdir")},
+            json={
+                "recipe_id": "move-me",
+                "target_path": str(tmp_path / "recipes" / "subdir"),
+            },
         )
 
         payload = await response.json()
         assert response.status == 200
         assert payload["recipe_id"] == "move-me"
         assert harness.persistence.move_calls == [
-            {"recipe_id": "move-me", "target_path": str(tmp_path / "recipes" / "subdir")}
+            {
+                "recipe_id": "move-me",
+                "target_path": str(tmp_path / "recipes" / "subdir"),
+            }
         ]
 
 
@@ -348,7 +409,10 @@ async def test_import_remote_recipe(monkeypatch, tmp_path: Path) -> None:
     async def fake_get_default_metadata_provider():
         return Provider()
 
-    monkeypatch.setattr("py.recipes.enrichment.get_default_metadata_provider", fake_get_default_metadata_provider)
+    monkeypatch.setattr(
+        "py.recipes.enrichment.get_default_metadata_provider",
+        fake_get_default_metadata_provider,
+    )
 
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         resources = [
@@ -397,7 +461,9 @@ async def test_import_remote_recipe(monkeypatch, tmp_path: Path) -> None:
         assert harness.downloader.urls == ["https://example.com/images/1"]
 
 
-async def test_import_remote_recipe_falls_back_to_request_base_model(monkeypatch, tmp_path: Path) -> None:
+async def test_import_remote_recipe_falls_back_to_request_base_model(
+    monkeypatch, tmp_path: Path
+) -> None:
     provider_calls: list[str | int] = []
 
     class Provider:
@@ -408,7 +474,10 @@ async def test_import_remote_recipe_falls_back_to_request_base_model(monkeypatch
     async def fake_get_default_metadata_provider():
         return Provider()
 
-    monkeypatch.setattr("py.recipes.enrichment.get_default_metadata_provider", fake_get_default_metadata_provider)
+    monkeypatch.setattr(
+        "py.recipes.enrichment.get_default_metadata_provider",
+        fake_get_default_metadata_provider,
+    )
 
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         resources = [
@@ -444,13 +513,16 @@ async def test_import_remote_video_recipe(monkeypatch, tmp_path: Path) -> None:
     async def fake_get_default_metadata_provider():
         return SimpleNamespace(get_model_version_info=lambda id: ({}, None))
 
-    monkeypatch.setattr("py.recipes.enrichment.get_default_metadata_provider", fake_get_default_metadata_provider)
+    monkeypatch.setattr(
+        "py.recipes.enrichment.get_default_metadata_provider",
+        fake_get_default_metadata_provider,
+    )
 
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         harness.civitai.image_info["12345"] = {
             "id": 12345,
             "url": "https://image.civitai.com/x/y/original=true/video.mp4",
-            "type": "video"
+            "type": "video",
         }
 
         response = await harness.client.get(
@@ -469,7 +541,7 @@ async def test_import_remote_video_recipe(monkeypatch, tmp_path: Path) -> None:
 
         # Verify downloader was called with rewritten URL
         assert "transcode=true" in harness.downloader.urls[0]
-        
+
         # Verify persistence was called with correct extension
         call = harness.persistence.save_calls[-1]
         assert call["extension"] == ".mp4"
@@ -477,7 +549,9 @@ async def test_import_remote_video_recipe(monkeypatch, tmp_path: Path) -> None:
 
 async def test_analyze_uploaded_image_error_path(monkeypatch, tmp_path: Path) -> None:
     async with recipe_harness(monkeypatch, tmp_path) as harness:
-        harness.analysis.raise_for_uploaded = RecipeValidationError("No image data provided")
+        harness.analysis.raise_for_uploaded = RecipeValidationError(
+            "No image data provided"
+        )
 
         form = FormData()
         form.add_field("image", b"", filename="empty.png", content_type="image/png")
@@ -504,7 +578,11 @@ async def test_share_and_download_recipe(monkeypatch, tmp_path: Path) -> None:
         }
 
         harness.sharing.share_result = SimpleNamespace(
-            payload={"success": True, "download_url": "/api/share", "filename": "share.png"},
+            payload={
+                "success": True,
+                "download_url": "/api/share",
+                "filename": "share.png",
+            },
             status=200,
         )
         harness.sharing.download_info = SimpleNamespace(
@@ -519,15 +597,24 @@ async def test_share_and_download_recipe(monkeypatch, tmp_path: Path) -> None:
         assert share_payload["filename"] == "share.png"
         assert harness.sharing.share_calls == [recipe_id]
 
-        download_response = await harness.client.get(f"/api/lm/recipe/{recipe_id}/share/download")
+        download_response = await harness.client.get(
+            f"/api/lm/recipe/{recipe_id}/share/download"
+        )
         body = await download_response.read()
 
         assert download_response.status == 200
-        assert download_response.headers["Content-Disposition"] == 'attachment; filename="share.png"'
+        assert (
+            download_response.headers["Content-Disposition"]
+            == 'attachment; filename="share.png"'
+        )
         assert body == b"stub"
 
         download_path.unlink(missing_ok=True)
-async def test_import_remote_recipe_merges_metadata(monkeypatch, tmp_path: Path) -> None:
+
+
+async def test_import_remote_recipe_merges_metadata(
+    monkeypatch, tmp_path: Path
+) -> None:
     # 1. Mock Metadata Provider
     class Provider:
         async def get_model_version_info(self, model_version_id):
@@ -536,22 +623,25 @@ async def test_import_remote_recipe_merges_metadata(monkeypatch, tmp_path: Path)
     async def fake_get_default_metadata_provider():
         return Provider()
 
-    monkeypatch.setattr("py.recipes.enrichment.get_default_metadata_provider", fake_get_default_metadata_provider)
+    monkeypatch.setattr(
+        "py.recipes.enrichment.get_default_metadata_provider",
+        fake_get_default_metadata_provider,
+    )
 
     # 2. Mock ExifUtils to return some embedded metadata
     class MockExifUtils:
         @staticmethod
         def extract_image_metadata(path):
-            return "Recipe metadata: " + json.dumps({
-                "gen_params": {"prompt": "from embedded", "seed": 123}
-            })
+            return "Recipe metadata: " + json.dumps(
+                {"gen_params": {"prompt": "from embedded", "seed": 123}}
+            )
 
     monkeypatch.setattr(recipe_handlers, "ExifUtils", MockExifUtils)
 
     # 3. Mock Parser Factory for StubAnalysisService
     class MockParser:
         async def parse_metadata(self, raw, recipe_scanner=None):
-            return json.loads(raw[len("Recipe metadata: "):])
+            return json.loads(raw[len("Recipe metadata: ") :])
 
     class MockFactory:
         def create_parser(self, raw):
@@ -562,12 +652,12 @@ async def test_import_remote_recipe_merges_metadata(monkeypatch, tmp_path: Path)
     # 4. Setup Harness and run test
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         harness.analysis._recipe_parser_factory = MockFactory()
-        
+
         # Civitai meta via image_info
         harness.civitai.image_info["1"] = {
             "id": 1,
             "url": "https://example.com/images/1.jpg",
-            "meta": {"prompt": "from civitai", "cfg": 7.0}
+            "meta": {"prompt": "from civitai", "cfg": 7.0},
         }
 
         resources = []
@@ -583,11 +673,11 @@ async def test_import_remote_recipe_merges_metadata(monkeypatch, tmp_path: Path)
 
         payload = await response.json()
         assert response.status == 200
-        
+
         call = harness.persistence.save_calls[-1]
         metadata = call["metadata"]
         gen_params = metadata["gen_params"]
-        
+
         assert gen_params["seed"] == 123
 
 
@@ -619,3 +709,142 @@ async def test_get_recipe_syntax(monkeypatch, tmp_path: Path) -> None:
         response_404 = await harness.client.get("/api/lm/recipe/non-existent/syntax")
         assert response_404.status == 404
 
+
+async def test_batch_import_start_success(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipes/batch-import/start",
+            json={
+                "items": [
+                    {"source": "https://example.com/image1.png"},
+                    {"source": "https://example.com/image2.png"},
+                ],
+                "tags": ["batch", "import"],
+                "skip_no_metadata": True,
+            },
+        )
+        payload = await response.json()
+        assert response.status == 200
+        assert payload["success"] is True
+        assert "operation_id" in payload
+
+
+async def test_batch_import_start_empty_items(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipes/batch-import/start",
+            json={"items": [], "tags": []},
+        )
+        payload = await response.json()
+        assert response.status == 400
+        assert payload["success"] is False
+        assert "No items provided" in payload["error"]
+
+
+async def test_batch_import_start_missing_source(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipes/batch-import/start",
+            json={"items": [{"source": ""}]},
+        )
+        payload = await response.json()
+        assert response.status == 400
+        assert payload["success"] is False
+        assert "source" in payload["error"].lower()
+
+
+async def test_batch_import_start_already_running(monkeypatch, tmp_path: Path) -> None:
+    import asyncio
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        original_analyze = harness.analysis.analyze_remote_image
+
+        async def slow_analyze(*, url, recipe_scanner, civitai_client):
+            await asyncio.sleep(0.5)
+            return await original_analyze(
+                url=url, recipe_scanner=recipe_scanner, civitai_client=civitai_client
+            )
+
+        harness.analysis.analyze_remote_image = slow_analyze
+
+        items = [{"source": f"https://example.com/image{i}.png"} for i in range(10)]
+
+        response1 = await harness.client.post(
+            "/api/lm/recipes/batch-import/start",
+            json={"items": items},
+        )
+        assert response1.status == 200
+
+        payload1 = await response1.json()
+        assert payload1["success"] is True
+
+        await asyncio.sleep(0.1)
+
+        response2 = await harness.client.post(
+            "/api/lm/recipes/batch-import/start",
+            json={"items": [{"source": "https://example.com/other.png"}]},
+        )
+        payload2 = await response2.json()
+        assert response2.status == 409
+        assert "already in progress" in payload2["error"].lower()
+
+
+async def test_batch_import_get_progress_not_found(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.get(
+            "/api/lm/recipes/batch-import/progress",
+            params={"operation_id": "nonexistent-id"},
+        )
+        payload = await response.json()
+        assert response.status == 404
+        assert payload["success"] is False
+
+
+async def test_batch_import_get_progress_missing_id(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.get("/api/lm/recipes/batch-import/progress")
+        payload = await response.json()
+        assert response.status == 400
+        assert payload["success"] is False
+
+
+async def test_batch_import_cancel_success(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        start_response = await harness.client.post(
+            "/api/lm/recipes/batch-import/start",
+            json={"items": [{"source": "https://example.com/image.png"}]},
+        )
+        start_payload = await start_response.json()
+        operation_id = start_payload["operation_id"]
+
+        cancel_response = await harness.client.post(
+            "/api/lm/recipes/batch-import/cancel",
+            json={"operation_id": operation_id},
+        )
+        cancel_payload = await cancel_response.json()
+        assert cancel_response.status == 200
+        assert cancel_payload["success"] is True
+
+
+async def test_batch_import_cancel_not_found(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipes/batch-import/cancel",
+            json={"operation_id": "nonexistent-id"},
+        )
+        payload = await response.json()
+        assert response.status == 404
+        assert payload["success"] is False
+
+
+async def test_batch_import_cancel_missing_id(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipes/batch-import/cancel",
+            json={},
+        )
+        payload = await response.json()
+        assert response.status == 400
+        assert payload["success"] is False

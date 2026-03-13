@@ -1,4 +1,5 @@
 """Route registrar for recipe endpoints."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -22,7 +23,9 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("GET", "/api/lm/recipe/{recipe_id}", "get_recipe"),
     RouteDefinition("GET", "/api/lm/recipes/import-remote", "import_remote_recipe"),
     RouteDefinition("POST", "/api/lm/recipes/analyze-image", "analyze_uploaded_image"),
-    RouteDefinition("POST", "/api/lm/recipes/analyze-local-image", "analyze_local_image"),
+    RouteDefinition(
+        "POST", "/api/lm/recipes/analyze-local-image", "analyze_local_image"
+    ),
     RouteDefinition("POST", "/api/lm/recipes/save", "save_recipe"),
     RouteDefinition("DELETE", "/api/lm/recipe/{recipe_id}", "delete_recipe"),
     RouteDefinition("GET", "/api/lm/recipes/top-tags", "get_top_tags"),
@@ -30,9 +33,13 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("GET", "/api/lm/recipes/roots", "get_roots"),
     RouteDefinition("GET", "/api/lm/recipes/folders", "get_folders"),
     RouteDefinition("GET", "/api/lm/recipes/folder-tree", "get_folder_tree"),
-    RouteDefinition("GET", "/api/lm/recipes/unified-folder-tree", "get_unified_folder_tree"),
+    RouteDefinition(
+        "GET", "/api/lm/recipes/unified-folder-tree", "get_unified_folder_tree"
+    ),
     RouteDefinition("GET", "/api/lm/recipe/{recipe_id}/share", "share_recipe"),
-    RouteDefinition("GET", "/api/lm/recipe/{recipe_id}/share/download", "download_shared_recipe"),
+    RouteDefinition(
+        "GET", "/api/lm/recipe/{recipe_id}/share/download", "download_shared_recipe"
+    ),
     RouteDefinition("GET", "/api/lm/recipe/{recipe_id}/syntax", "get_recipe_syntax"),
     RouteDefinition("PUT", "/api/lm/recipe/{recipe_id}/update", "update_recipe"),
     RouteDefinition("POST", "/api/lm/recipe/move", "move_recipe"),
@@ -40,13 +47,22 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/recipe/lora/reconnect", "reconnect_lora"),
     RouteDefinition("GET", "/api/lm/recipes/find-duplicates", "find_duplicates"),
     RouteDefinition("POST", "/api/lm/recipes/bulk-delete", "bulk_delete"),
-    RouteDefinition("POST", "/api/lm/recipes/save-from-widget", "save_recipe_from_widget"),
+    RouteDefinition(
+        "POST", "/api/lm/recipes/save-from-widget", "save_recipe_from_widget"
+    ),
     RouteDefinition("GET", "/api/lm/recipes/for-lora", "get_recipes_for_lora"),
     RouteDefinition("GET", "/api/lm/recipes/scan", "scan_recipes"),
     RouteDefinition("POST", "/api/lm/recipes/repair", "repair_recipes"),
     RouteDefinition("POST", "/api/lm/recipes/cancel-repair", "cancel_repair"),
     RouteDefinition("POST", "/api/lm/recipe/{recipe_id}/repair", "repair_recipe"),
     RouteDefinition("GET", "/api/lm/recipes/repair-progress", "get_repair_progress"),
+    RouteDefinition("POST", "/api/lm/recipes/batch-import/start", "start_batch_import"),
+    RouteDefinition(
+        "GET", "/api/lm/recipes/batch-import/progress", "get_batch_import_progress"
+    ),
+    RouteDefinition(
+        "POST", "/api/lm/recipes/batch-import/cancel", "cancel_batch_import"
+    ),
 )
 
 
@@ -63,7 +79,9 @@ class RecipeRouteRegistrar:
     def __init__(self, app: web.Application) -> None:
         self._app = app
 
-    def register_routes(self, handler_lookup: Mapping[str, Callable[[web.Request], object]]) -> None:
+    def register_routes(
+        self, handler_lookup: Mapping[str, Callable[[web.Request], object]]
+    ) -> None:
         for definition in ROUTE_DEFINITIONS:
             handler = handler_lookup[definition.handler_name]
             self._bind_route(definition.method, definition.path, handler)
