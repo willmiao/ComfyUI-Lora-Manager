@@ -1,6 +1,7 @@
 // Recipe manager module
 import { appCore } from './core.js';
 import { ImportManager } from './managers/ImportManager.js';
+import { BatchImportManager } from './managers/BatchImportManager.js';
 import { RecipeModal } from './components/RecipeModal.js';
 import { state, getCurrentPageState } from './state/index.js';
 import { getSessionItem, removeSessionItem } from './utils/storageHelpers.js';
@@ -45,6 +46,10 @@ class RecipeManager {
 
         // Initialize ImportManager
         this.importManager = new ImportManager();
+
+        // Initialize BatchImportManager and make it globally accessible
+        this.batchImportManager = new BatchImportManager();
+        window.batchImportManager = this.batchImportManager;
 
         // Initialize RecipeModal
         this.recipeModal = new RecipeModal();

@@ -345,6 +345,7 @@ class StandaloneLoraManager(LoraManager):
             "/ws/download-progress", ws_manager.handle_download_connection
         )
         app.router.add_get("/ws/init-progress", ws_manager.handle_init_connection)
+        app.router.add_get("/ws/batch-import-progress", ws_manager.handle_connection)
 
         # Schedule service initialization
         app.on_startup.append(lambda app: cls._initialize_services())

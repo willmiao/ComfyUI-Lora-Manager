@@ -1,0 +1,206 @@
+<div id="batchImportModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <button class="close" onclick="modalManager.closeModal('batchImportModal')">&times;</button>
+            <h2>{{ t('recipes.batchImport.title') }}</h2>
+        </div>
+        
+        <!-- Step 1: Input Selection -->
+        <div class="batch-import-step" id="batchInputStep">
+            <div class="import-mode-toggle">
+                <button class="toggle-btn active" data-mode="urls" onclick="batchImportManager.toggleInputMode('urls')">
+                    <i class="fas fa-link"></i> {{ t('recipes.batchImport.urlList') }}
+                </button>
+                <button class="toggle-btn" data-mode="directory" onclick="batchImportManager.toggleInputMode('directory')">
+                    <i class="fas fa-folder"></i> {{ t('recipes.batchImport.directory') }}
+                </button>
+            </div>
+            
+            <!-- URL List Section -->
+            <div class="import-section" id="urlListSection">
+                <p class="section-description">{{ t('recipes.batchImport.urlDescription') }}</p>
+                <div class="input-group">
+                    <label for="batchUrlInput">{{ t('recipes.batchImport.urlsLabel') }}</label>
+                    <textarea id="batchUrlInput" rows="8" placeholder="{{ t('recipes.batchImport.urlsPlaceholder') }}"></textarea>
+                    <div class="input-hint">
+                        <i class="fas fa-info-circle"></i>
+                        {{ t('recipes.batchImport.urlsHint') }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Directory Section -->
+            <div class="import-section" id="directorySection" style="display: none;">
+                <p class="section-description">{{ t('recipes.batchImport.directoryDescription') }}</p>
+                <div class="input-group">
+                    <label for="batchDirectoryInput">{{ t('recipes.batchImport.directoryPath') }}</label>
+                    <div class="input-with-button">
+                        <input type="text" id="batchDirectoryInput" placeholder="{{ t('recipes.batchImport.directoryPlaceholder') }}" autocomplete="off">
+                        <button class="secondary-btn" onclick="batchImportManager.toggleDirectoryBrowser()">
+                            <i class="fas fa-folder-open"></i> {{ t('recipes.batchImport.browse') }}
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Directory Browser -->
+                <div class="directory-browser" id="batchDirectoryBrowser" style="display: none;">
+                    <div class="browser-header">
+                        <button class="back-btn" onclick="batchImportManager.navigateToParentDirectory()" title="{{ t('recipes.batchImport.backToParent') }}">
+                            <i class="fas fa-arrow-up"></i>
+                        </button>
+                        <div class="current-path" id="batchCurrentPath"></div>
+                    </div>
+                    <div class="browser-content">
+                        <div class="browser-section">
+                            <div class="section-label"><i class="fas fa-folder"></i> {{ t('recipes.batchImport.folders') }}</div>
+                            <div class="folder-list" id="batchFolderList"></div>
+                        </div>
+                        <div class="browser-section">
+                            <div class="section-label"><i class="fas fa-image"></i> {{ t('recipes.batchImport.imageFiles') }}</div>
+                            <div class="file-list" id="batchFileList"></div>
+                        </div>
+                    </div>
+                    <div class="browser-footer">
+                        <div class="stats">
+                            <span id="batchDirectoryCount">0</span> {{ t('recipes.batchImport.folders') }}, 
+                            <span id="batchImageCount">0</span> {{ t('recipes.batchImport.images') }}
+                        </div>
+                        <button class="primary-btn" onclick="batchImportManager.selectCurrentDirectory()">
+                            <i class="fas fa-check"></i> {{ t('recipes.batchImport.selectFolder') }}
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="batchRecursiveCheck" checked>
+                        <span class="checkmark"></span>
+                        {{ t('recipes.batchImport.recursive') }}
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Common Options -->
+            <div class="batch-options">
+                <div class="input-group">
+                    <label for="batchTagsInput">{{ t('recipes.batchImport.tagsOptional') }}</label>
+                    <input type="text" id="batchTagsInput" placeholder="{{ t('recipes.batchImport.tagsPlaceholder') }}">
+                    <div class="input-hint">
+                        <i class="fas fa-info-circle"></i>
+                        {{ t('recipes.batchImport.tagsHint') }}
+                    </div>
+                </div>
+                
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="batchSkipNoMetadata">
+                        <span class="checkmark"></span>
+                        {{ t('recipes.batchImport.skipNoMetadata') }}
+                    </label>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="secondary-btn" onclick="modalManager.closeModal('batchImportModal')">{{ t('common.actions.cancel') }}</button>
+                <button class="primary-btn" id="batchImportStartBtn" onclick="batchImportManager.startImport()">
+                    <i class="fas fa-play"></i> {{ t('recipes.batchImport.start') }}
+                </button>
+            </div>
+        </div>
+        
+        <!-- Step 2: Progress -->
+        <div class="batch-import-step" id="batchProgressStep" style="display: none;">
+            <div class="batch-progress-container">
+                <div class="progress-header">
+                    <div class="progress-status">
+                        <span class="status-icon"><i class="fas fa-spinner fa-spin"></i></span>
+                        <span class="status-text" id="batchStatusText">{{ t('recipes.batchImport.importing') }}</span>
+                    </div>
+                    <div class="progress-percentage" id="batchProgressPercent">0%</div>
+                </div>
+                
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="batchProgressBar" style="width: 0%"></div>
+                </div>
+                
+                <div class="progress-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">{{ t('recipes.batchImport.total') }}</span>
+                        <span class="stat-value" id="batchTotalCount">0</span>
+                    </div>
+                    <div class="stat-item success">
+                        <span class="stat-label">{{ t('recipes.batchImport.success') }}</span>
+                        <span class="stat-value" id="batchSuccessCount">0</span>
+                    </div>
+                    <div class="stat-item failed">
+                        <span class="stat-label">{{ t('recipes.batchImport.failed') }}</span>
+                        <span class="stat-value" id="batchFailedCount">0</span>
+                    </div>
+                    <div class="stat-item skipped">
+                        <span class="stat-label">{{ t('recipes.batchImport.skipped') }}</span>
+                        <span class="stat-value" id="batchSkippedCount">0</span>
+                    </div>
+                </div>
+                
+                <div class="current-item" id="batchCurrentItemContainer">
+                    <span class="current-item-label">{{ t('recipes.batchImport.current') }}</span>
+                    <span class="current-item-name" id="batchCurrentItem">-</span>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="secondary-btn" id="batchCancelBtn" onclick="batchImportManager.cancelImport()">
+                    <i class="fas fa-stop"></i> {{ t('recipes.batchImport.cancel') }}
+                </button>
+            </div>
+        </div>
+        
+        <!-- Step 3: Results -->
+        <div class="batch-import-step" id="batchResultsStep" style="display: none;">
+            <div class="batch-results-container">
+                <div class="results-header" id="batchResultsHeader">
+                    <div class="results-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="results-title">{{ t('recipes.batchImport.completed') }}</div>
+                </div>
+                
+                <div class="results-summary">
+                    <div class="result-card total">
+                        <span class="result-label">{{ t('recipes.batchImport.total') }}</span>
+                        <span class="result-value" id="resultsTotal">0</span>
+                    </div>
+                    <div class="result-card success">
+                        <span class="result-label">{{ t('recipes.batchImport.success') }}</span>
+                        <span class="result-value" id="resultsSuccess">0</span>
+                    </div>
+                    <div class="result-card failed">
+                        <span class="result-label">{{ t('recipes.batchImport.failed') }}</span>
+                        <span class="result-value" id="resultsFailed">0</span>
+                    </div>
+                    <div class="result-card skipped">
+                        <span class="result-label">{{ t('recipes.batchImport.skipped') }}</span>
+                        <span class="result-value" id="resultsSkipped">0</span>
+                    </div>
+                </div>
+                
+                <div class="results-details" id="batchResultsDetails">
+                    <div class="details-toggle" onclick="batchImportManager.toggleResultsDetails()">
+                        <i class="fas fa-chevron-down" id="resultsToggleIcon"></i>
+                        <span>{{ t('recipes.batchImport.viewDetails') }}</span>
+                    </div>
+                    <div class="details-list" id="batchDetailsList" style="display: none;">
+                        <!-- Details will be populated dynamically -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="secondary-btn" onclick="batchImportManager.closeAndReset()">{{ t('common.actions.close') }}</button>
+                <button class="primary-btn" onclick="batchImportManager.startNewImport()">
+                    <i class="fas fa-plus"></i> {{ t('recipes.batchImport.newImport') }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

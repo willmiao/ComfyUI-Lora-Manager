@@ -10,7 +10,11 @@ import uuid
 from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlparse
 from ..utils.models import LoraMetadata, CheckpointMetadata, EmbeddingMetadata
-from ..utils.constants import CARD_PREVIEW_WIDTH, DIFFUSION_MODEL_BASE_MODELS, VALID_LORA_TYPES
+from ..utils.constants import (
+    CARD_PREVIEW_WIDTH,
+    DIFFUSION_MODEL_BASE_MODELS,
+    VALID_LORA_TYPES,
+)
 from ..utils.civitai_utils import rewrite_preview_url
 from ..utils.preview_selection import select_preview_media
 from ..utils.utils import sanitize_folder_name
@@ -352,10 +356,12 @@ class DownloadManager:
             # Check if this checkpoint should be treated as a diffusion model based on baseModel
             is_diffusion_model = False
             if model_type == "checkpoint":
-                base_model_value = version_info.get('baseModel', '')
+                base_model_value = version_info.get("baseModel", "")
                 if base_model_value in DIFFUSION_MODEL_BASE_MODELS:
                     is_diffusion_model = True
-                    logger.info(f"baseModel '{base_model_value}' is a known diffusion model, routing to unet folder")
+                    logger.info(
+                        f"baseModel '{base_model_value}' is a known diffusion model, routing to unet folder"
+                    )
 
             # Case 2: model_version_id was None, check after getting version_info
             if model_version_id is None:
@@ -464,7 +470,7 @@ class DownloadManager:
             # 2. Get file information
             files = version_info.get("files", [])
             file_info = None
-            
+
             # If file_params is provided, try to find matching file
             if file_params and model_version_id:
                 target_type = file_params.get("type", "Model")
@@ -472,23 +478,28 @@ class DownloadManager:
                 target_size = file_params.get("size", "full")
                 target_fp = file_params.get("fp")
                 is_primary = file_params.get("isPrimary", False)
-                
+
                 if is_primary:
                     # Find primary file
                     file_info = next(
-                        (f for f in files if f.get("primary") and f.get("type") in ("Model", "Negative")),
-                        None
+                        (
+                            f
+                            for f in files
+                            if f.get("primary")
+                            and f.get("type") in ("Model", "Negative")
+                        ),
+                        None,
                     )
                 else:
                     # Match by metadata
                     for f in files:
                         f_type = f.get("type", "")
                         f_meta = f.get("metadata", {})
-                        
+
                         # Check type match
                         if f_type != target_type:
                             continue
-                        
+
                         # Check metadata match
                         if f_meta.get("format") != target_format:
                             continue
@@ -496,10 +507,10 @@ class DownloadManager:
                             continue
                         if target_fp and f_meta.get("fp") != target_fp:
                             continue
-                        
+
                         file_info = f
                         break
-            
+
             # Fallback to primary file if no match found
             if not file_info:
                 file_info = next(
@@ -510,7 +521,7 @@ class DownloadManager:
                     ),
                     None,
                 )
-            
+
             if not file_info:
                 return {"success": False, "error": "No suitable file found in metadata"}
             mirrors = file_info.get("mirrors") or []
@@ -1220,7 +1231,13 @@ class DownloadManager:
         entries: List = []
         for index, file_path in enumerate(file_paths):
             entry = base_metadata if index == 0 else copy.deepcopy(base_metadata)
-            entry.update_file_info(file_path)
+            # Update file paths without modifying size and modified timestamps
+            # modified should remain as the download start time (import time)
+            # size will be updated below to reflect actual downloaded file size
+            entry.file_path = file_path.replace(os.sep, "/")
+            entry.file_name = os.path.splitext(os.path.basename(file_path))[0]
+            # Update size to actual downloaded file size
+            entry.size = os.path.getsize(file_path)
             entry.sha256 = await calculate_sha256(file_path)
             entries.append(entry)
 

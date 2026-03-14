@@ -321,6 +321,12 @@ npm run test:coverage
 
 ---
 
+## Documentation
+
+- **[metadata.json Schema Documentation](docs/metadata-json-schema.md)** — Complete reference for the `.metadata.json` sidecar file format, including all fields, types, and examples for LoRA, Checkpoint, and Embedding models.
+
+---
+
 ## Contributing
 
 Thank you for your interest in contributing to ComfyUI LoRA Manager! As this project is currently in its early stages and undergoing rapid development and refactoring, we are temporarily not accepting pull requests.

@@ -69,7 +69,7 @@ class BatchImportProgress:
     finished_at: Optional[float] = None
     items: List[BatchImportItem] = field(default_factory=list)
     tags: List[str] = field(default_factory=list)
-    skip_no_metadata: bool = True
+    skip_no_metadata: bool = False
     skip_duplicates: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
@@ -87,6 +87,19 @@ class BatchImportProgress:
             "progress_percent": round((self.completed / self.total) * 100, 1)
             if self.total > 0
             else 0,
+            "items": [
+                {
+                    "id": item.id,
+                    "source": item.source,
+                    "item_type": item.item_type.value,
+                    "status": item.status.value,
+                    "error_message": item.error_message,
+                    "recipe_name": item.recipe_name,
+                    "recipe_id": item.recipe_id,
+                    "duration": item.duration,
+                }
+                for item in self.items
+            ],
         }
 
 
@@ -226,7 +239,7 @@ class BatchImportService:
         civitai_client_getter: Callable[[], Any],
         items: List[Dict[str, str]],
         tags: Optional[List[str]] = None,
-        skip_no_metadata: bool = True,
+        skip_no_metadata: bool = False,
         skip_duplicates: bool = False,
     ) -> str:
         operation_id = str(uuid.uuid4())
@@ -278,7 +291,7 @@ class BatchImportService:
         directory: str,
         recursive: bool = True,
         tags: Optional[List[str]] = None,
-        skip_no_metadata: bool = True,
+        skip_no_metadata: bool = False,
         skip_duplicates: bool = False,
     ) -> str:
         image_paths = await self._discover_images(directory, recursive)
@@ -494,7 +507,8 @@ class BatchImportService:
                             "skipped": True,
                             "error": "No LoRAs found in image",
                         }
-                    return {"success": False, "error": "No LoRAs found in image"}
+                    # When skip_no_metadata is False, allow importing images without LoRAs
+                    # Continue with empty loras list
 
                 recipe_name = self._generate_recipe_name(item, payload)
                 all_tags = list(set(tags + (payload.get("tags", []) or [])))

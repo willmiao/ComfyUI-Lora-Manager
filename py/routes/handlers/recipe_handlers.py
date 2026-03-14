@@ -9,6 +9,7 @@ import re
 import asyncio
 import tempfile
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional
 
 from aiohttp import web
@@ -89,6 +90,8 @@ class RecipeHandlerSet:
             "start_batch_import": self.batch_import.start_batch_import,
             "get_batch_import_progress": self.batch_import.get_batch_import_progress,
             "cancel_batch_import": self.batch_import.cancel_batch_import,
+            "start_directory_import": self.batch_import.start_directory_import,
+            "browse_directory": self.batch_import.browse_directory,
         }
 
 
@@ -1426,7 +1429,7 @@ class BatchImportHandler:
             data = await request.json()
             items = data.get("items", [])
             tags = data.get("tags", [])
-            skip_no_metadata = data.get("skip_no_metadata", True)
+            skip_no_metadata = data.get("skip_no_metadata", False)
 
             if not items:
                 return web.json_response(
@@ -1563,4 +1566,137 @@ class BatchImportHandler:
             )
         except Exception as exc:
             self._logger.error("Error cancelling batch import: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def browse_directory(self, request: web.Request) -> web.Response:
+        """Browse a directory and return its contents (subdirectories and files)."""
+        try:
+            data = await request.json()
+            directory_path = data.get("path", "")
+
+            if not directory_path:
+                return web.json_response(
+                    {"success": False, "error": "Directory path is required"},
+                    status=400,
+                )
+
+            # Normalize the path
+            path = Path(directory_path).expanduser().resolve()
+
+            # Security check: ensure path is within allowed directories
+            # Allow common image/model directories
+            allowed_roots = [
+                Path.home(),
+                Path("/"),  # Allow browsing from root for flexibility
+            ]
+
+            # Check if path is within any allowed root
+            is_allowed = False
+            for root in allowed_roots:
+                try:
+                    path.relative_to(root)
+                    is_allowed = True
+                    break
+                except ValueError:
+                    continue
+
+            if not is_allowed:
+                return web.json_response(
+                    {"success": False, "error": "Access denied to this directory"},
+                    status=403,
+                )
+
+            if not path.exists():
+                return web.json_response(
+                    {"success": False, "error": "Directory does not exist"},
+                    status=404,
+                )
+
+            if not path.is_dir():
+                return web.json_response(
+                    {"success": False, "error": "Path is not a directory"},
+                    status=400,
+                )
+
+            # List directory contents
+            directories = []
+            image_files = []
+
+            image_extensions = {
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".gif",
+                ".webp",
+                ".bmp",
+                ".tiff",
+                ".tif",
+            }
+
+            try:
+                for item in path.iterdir():
+                    try:
+                        if item.is_dir():
+                            # Skip hidden directories and common system folders
+                            if not item.name.startswith(".") and item.name not in [
+                                "__pycache__",
+                                "node_modules",
+                            ]:
+                                directories.append(
+                                    {
+                                        "name": item.name,
+                                        "path": str(item),
+                                        "is_parent": False,
+                                    }
+                                )
+                        elif item.is_file() and item.suffix.lower() in image_extensions:
+                            image_files.append(
+                                {
+                                    "name": item.name,
+                                    "path": str(item),
+                                    "size": item.stat().st_size,
+                                }
+                            )
+                    except (PermissionError, OSError):
+                        # Skip files/directories we can't access
+                        continue
+
+                # Sort directories and files alphabetically
+                directories.sort(key=lambda x: x["name"].lower())
+                image_files.sort(key=lambda x: x["name"].lower())
+
+                # Add parent directory if not at root
+                parent_path = path.parent
+                show_parent = str(path) != str(path.root)
+
+                return web.json_response(
+                    {
+                        "success": True,
+                        "current_path": str(path),
+                        "parent_path": str(parent_path) if show_parent else None,
+                        "directories": directories,
+                        "image_files": image_files,
+                        "image_count": len(image_files),
+                        "directory_count": len(directories),
+                    }
+                )
+
+            except PermissionError:
+                return web.json_response(
+                    {"success": False, "error": "Permission denied"},
+                    status=403,
+                )
+            except OSError as exc:
+                return web.json_response(
+                    {"success": False, "error": f"Error reading directory: {str(exc)}"},
+                    status=500,
+                )
+
+        except json.JSONDecodeError:
+            return web.json_response(
+                {"success": False, "error": "Invalid JSON"},
+                status=400,
+            )
+        except Exception as exc:
+            self._logger.error("Error browsing directory: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)

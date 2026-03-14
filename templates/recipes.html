@@ -7,10 +7,12 @@
 <link rel="stylesheet" href="/loras_static/css/components/card.css?v={{ version }}">
 <link rel="stylesheet" href="/loras_static/css/components/recipe-modal.css?v={{ version }}">
 <link rel="stylesheet" href="/loras_static/css/components/import-modal.css?v={{ version }}">
+<link rel="stylesheet" href="/loras_static/css/components/batch-import-modal.css?v={{ version }}">
 {% endblock %}
 
 {% block additional_components %}
 {% include 'components/import_modal.html' %}
+{% include 'components/batch_import_modal.html' %}
 {% include 'components/recipe_modal.html' %}
 
 <div id="recipeContextMenu" class="context-menu" style="display: none;">
@@ -84,6 +86,10 @@
             <div title="{{ t('recipes.controls.import.title') }}" class="control-group">
                 <button onclick="importManager.showImportModal()"><i class="fas fa-file-import"></i> {{
                     t('recipes.controls.import.action') }}</button>
+            </div>
+            <div title="{{ t('recipes.batchImport.title') }}" class="control-group">
+                <button onclick="batchImportManager.showModal()"><i class="fas fa-layer-group"></i> {{
+                    t('recipes.batchImport.action') }}</button>
             </div>
             <div class="control-group" title="{{ t('loras.controls.bulk.title') }}">
                 <button id="bulkOperationsBtn" data-action="bulk" title="{{ t('loras.controls.bulk.title') }}">
