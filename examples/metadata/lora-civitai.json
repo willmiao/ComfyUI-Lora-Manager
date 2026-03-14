@@ -1,0 +1,57 @@
+{
+  "file_name": "anime_style_lora",
+  "model_name": "Anime Style LoRA",
+  "file_path": "/home/user/ComfyUI/models/loras/anime_style_lora.safetensors",
+  "size": 104857600,
+  "modified": 1710000000.0,
+  "sha256": "abc123def456789012345678901234567890123456789012345678901234abcd",
+  "base_model": "SDXL",
+  "preview_url": "/home/user/ComfyUI/models/loras/anime_style_lora.preview.png",
+  "preview_nsfw_level": 0,
+  "notes": "",
+  "from_civitai": true,
+  "civitai": {
+    "id": 12345,
+    "modelId": 67890,
+    "name": "v1.0",
+    "description": "Version 1.0 release",
+    "baseModel": "SDXL",
+    "trainedWords": ["anime style", "cel shading"],
+    "model": {
+      "name": "Anime Style LoRA",
+      "description": "A LoRA for creating anime-style images with cel shading effects",
+      "tags": ["anime", "style", "cel shading", "illustration"]
+    },
+    "files": [
+      {
+        "id": 11111,
+        "name": "anime_style_lora.safetensors",
+        "sizeKB": 102400,
+        "primary": true
+      }
+    ],
+    "images": [
+      {
+        "id": 22222,
+        "url": "https://example.com/preview.png",
+        "nsfwLevel": 0
+      }
+    ],
+    "creator": {
+      "id": 33333,
+      "name": "ModelCreator",
+      "image": "https://example.com/avatar.png"
+    }
+  },
+  "tags": ["anime", "style", "cel shading", "illustration"],
+  "modelDescription": "A LoRA for creating anime-style images with cel shading effects. Works best with SDXL models and anime checkpoints.",
+  "civitai_deleted": false,
+  "favorite": true,
+  "exclude": false,
+  "db_checked": true,
+  "skip_metadata_refresh": false,
+  "metadata_source": "civitai_api",
+  "last_checked_at": 1710100000.0,
+  "hash_status": "completed",
+  "usage_tips": "{\"strength_min\":0.3,\"strength_max\":0.8,\"strength\":0.6,\"clip_strength\":0.5}"
+}

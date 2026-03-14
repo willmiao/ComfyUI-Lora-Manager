@@ -1,0 +1,464 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/willmiao/ComfyUI-Lora-Manager/.specs/metadata.schema.json",
+  "title": "ComfyUI LoRa Manager Model Metadata",
+  "description": "Schema for .metadata.json sidecar files used by ComfyUI LoRa Manager",
+  "type": "object",
+  "oneOf": [
+    {
+      "title": "LoRA Model Metadata",
+      "properties": {
+        "file_name": {
+          "type": "string",
+          "description": "Filename without extension"
+        },
+        "model_name": {
+          "type": "string",
+          "description": "Display name of the model"
+        },
+        "file_path": {
+          "type": "string",
+          "description": "Full absolute path to the model file"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "File size in bytes at time of import/download"
+        },
+        "modified": {
+          "type": "number",
+          "description": "Unix timestamp when model was imported/added (Date Added)"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "SHA256 hash of the model file (lowercase)"
+        },
+        "base_model": {
+          "type": "string",
+          "description": "Base model type (SD1.5, SD2.1, SDXL, SD3, Flux, Unknown, etc.)"
+        },
+        "preview_url": {
+          "type": "string",
+          "description": "Path to preview image file"
+        },
+        "preview_nsfw_level": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "NSFW level using bitmask values: 0 (none), 1 (PG), 2 (PG13), 4 (R), 8 (X), 16 (XXX), 32 (Blocked)"
+        },
+        "notes": {
+          "type": "string",
+          "default": "",
+          "description": "User-defined notes"
+        },
+        "from_civitai": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the model originated from Civitai"
+        },
+        "civitai": {
+          "$ref": "#/definitions/civitaiObject"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Model tags"
+        },
+        "modelDescription": {
+          "type": "string",
+          "default": "",
+          "description": "Full model description"
+        },
+        "civitai_deleted": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the model was deleted from Civitai"
+        },
+        "favorite": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the model is marked as favorite"
+        },
+        "exclude": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to exclude from cache/scanning"
+        },
+        "db_checked": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether checked against archive database"
+        },
+        "skip_metadata_refresh": {
+          "type": "boolean",
+          "default": false,
+          "description": "Skip this model during bulk metadata refresh"
+        },
+        "metadata_source": {
+          "type": ["string", "null"],
+          "enum": ["civitai_api", "civarchive", "archive_db", null],
+          "default": null,
+          "description": "Last provider that supplied metadata"
+        },
+        "last_checked_at": {
+          "type": "number",
+          "default": 0,
+          "description": "Unix timestamp of last metadata check"
+        },
+        "hash_status": {
+          "type": "string",
+          "enum": ["pending", "calculating", "completed", "failed"],
+          "default": "completed",
+          "description": "Hash calculation status"
+        },
+        "usage_tips": {
+          "type": "string",
+          "default": "{}",
+          "description": "JSON string containing recommended usage parameters (LoRA only)"
+        }
+      },
+      "required": [
+        "file_name",
+        "model_name",
+        "file_path",
+        "size",
+        "modified",
+        "sha256",
+        "base_model"
+      ],
+      "additionalProperties": true
+    },
+    {
+      "title": "Checkpoint Model Metadata",
+      "properties": {
+        "file_name": {
+          "type": "string"
+        },
+        "model_name": {
+          "type": "string"
+        },
+        "file_path": {
+          "type": "string"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "modified": {
+          "type": "number"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "base_model": {
+          "type": "string"
+        },
+        "preview_url": {
+          "type": "string"
+        },
+        "preview_nsfw_level": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3,
+          "default": 0
+        },
+        "notes": {
+          "type": "string",
+          "default": ""
+        },
+        "from_civitai": {
+          "type": "boolean",
+          "default": true
+        },
+        "civitai": {
+          "$ref": "#/definitions/civitaiObject"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "modelDescription": {
+          "type": "string",
+          "default": ""
+        },
+        "civitai_deleted": {
+          "type": "boolean",
+          "default": false
+        },
+        "favorite": {
+          "type": "boolean",
+          "default": false
+        },
+        "exclude": {
+          "type": "boolean",
+          "default": false
+        },
+        "db_checked": {
+          "type": "boolean",
+          "default": false
+        },
+        "skip_metadata_refresh": {
+          "type": "boolean",
+          "default": false
+        },
+        "metadata_source": {
+          "type": ["string", "null"],
+          "enum": ["civitai_api", "civarchive", "archive_db", null],
+          "default": null
+        },
+        "last_checked_at": {
+          "type": "number",
+          "default": 0
+        },
+        "hash_status": {
+          "type": "string",
+          "enum": ["pending", "calculating", "completed", "failed"],
+          "default": "completed"
+        },
+        "sub_type": {
+          "type": "string",
+          "default": "checkpoint",
+          "description": "Model sub-type (checkpoint, diffusion_model, etc.)"
+        }
+      },
+      "required": [
+        "file_name",
+        "model_name",
+        "file_path",
+        "size",
+        "modified",
+        "sha256",
+        "base_model"
+      ],
+      "additionalProperties": true
+    },
+    {
+      "title": "Embedding Model Metadata",
+      "properties": {
+        "file_name": {
+          "type": "string"
+        },
+        "model_name": {
+          "type": "string"
+        },
+        "file_path": {
+          "type": "string"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "modified": {
+          "type": "number"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "base_model": {
+          "type": "string"
+        },
+        "preview_url": {
+          "type": "string"
+        },
+        "preview_nsfw_level": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3,
+          "default": 0
+        },
+        "notes": {
+          "type": "string",
+          "default": ""
+        },
+        "from_civitai": {
+          "type": "boolean",
+          "default": true
+        },
+        "civitai": {
+          "$ref": "#/definitions/civitaiObject"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "modelDescription": {
+          "type": "string",
+          "default": ""
+        },
+        "civitai_deleted": {
+          "type": "boolean",
+          "default": false
+        },
+        "favorite": {
+          "type": "boolean",
+          "default": false
+        },
+        "exclude": {
+          "type": "boolean",
+          "default": false
+        },
+        "db_checked": {
+          "type": "boolean",
+          "default": false
+        },
+        "skip_metadata_refresh": {
+          "type": "boolean",
+          "default": false
+        },
+        "metadata_source": {
+          "type": ["string", "null"],
+          "enum": ["civitai_api", "civarchive", "archive_db", null],
+          "default": null
+        },
+        "last_checked_at": {
+          "type": "number",
+          "default": 0
+        },
+        "hash_status": {
+          "type": "string",
+          "enum": ["pending", "calculating", "completed", "failed"],
+          "default": "completed"
+        },
+        "sub_type": {
+          "type": "string",
+          "default": "embedding",
+          "description": "Model sub-type"
+        }
+      },
+      "required": [
+        "file_name",
+        "model_name",
+        "file_path",
+        "size",
+        "modified",
+        "sha256",
+        "base_model"
+      ],
+      "additionalProperties": true
+    }
+  ],
+  "definitions": {
+    "civitaiObject": {
+      "type": "object",
+      "default": {},
+      "description": "Civitai/CivArchive API data and user-defined fields",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Version ID from Civitai"
+        },
+        "modelId": {
+          "type": "integer",
+          "description": "Model ID from Civitai"
+        },
+        "name": {
+          "type": "string",
+          "description": "Version name"
+        },
+        "description": {
+          "type": "string",
+          "description": "Version description"
+        },
+        "baseModel": {
+          "type": "string",
+          "description": "Base model type from Civitai"
+        },
+        "type": {
+          "type": "string",
+          "description": "Model type (checkpoint, embedding, etc.)"
+        },
+        "trainedWords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Trigger words for the model (from API or user-defined)"
+        },
+        "customImages": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Custom example images added by user"
+        },
+        "model": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "creator": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "usageTips": {
+      "type": "object",
+      "description": "Structure for usage_tips JSON string (LoRA models)",
+      "properties": {
+        "strength_min": {
+          "type": "number",
+          "description": "Minimum recommended model strength"
+        },
+        "strength_max": {
+          "type": "number",
+          "description": "Maximum recommended model strength"
+        },
+        "strength_range": {
+          "type": "string",
+          "description": "Human-readable strength range"
+        },
+        "strength": {
+          "type": "number",
+          "description": "Single recommended strength value"
+        },
+        "clip_strength": {
+          "type": "number",
+          "description": "Recommended CLIP/embedding strength"
+        },
+        "clip_skip": {
+          "type": "integer",
+          "description": "Recommended CLIP skip value"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "file_name": "custom_effect_lora",
+  "model_name": "My Custom Effect LoRA",
+  "file_path": "/home/user/ComfyUI/models/loras/custom_effect_lora.safetensors",
+  "size": 52428800,
+  "modified": 1710000000.0,
+  "sha256": "def789abc123456789012345678901234567890123456789012345678901efgh",
+  "base_model": "SD1.5",
+  "preview_url": "/home/user/ComfyUI/models/loras/custom_effect_lora.preview.png",
+  "preview_nsfw_level": 0,
+  "notes": "Custom trained LoRA for special effects",
+  "from_civitai": true,
+  "civitai": {
+    "trainedWords": ["custom_effect", "special_fx"],
+    "customImages": [
+      {
+        "url": "custom_example_1.png",
+        "seed": 12345,
+        "prompt": "example prompt 1"
+      }
+    ]
+  },
+  "tags": ["custom", "experimental", "effects"],
+  "modelDescription": "My custom trained LoRA for creating special visual effects",
+  "civitai_deleted": false,
+  "favorite": false,
+  "exclude": false,
+  "db_checked": false,
+  "skip_metadata_refresh": false,
+  "metadata_source": null,
+  "last_checked_at": 1710100000.0,
+  "hash_status": "completed",
+  "usage_tips": "{\"strength\":0.7}"
+}
