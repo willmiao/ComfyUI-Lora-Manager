@@ -2,6 +2,7 @@
  * MetadataPanel.js
  * Generates metadata panels for showcase media items
  */
+import { escapeHtml } from '../utils.js';
 
 /**
  * Generate metadata panel HTML
@@ -49,6 +50,7 @@ export function generateMetadataPanel(hasParams, hasPrompts, prompt, negativePro
     }
     
     if (prompt) {
+        prompt = escapeHtml(prompt);
         content += `
             <div class="metadata-row prompt-row">
                 <span class="metadata-label">Prompt:</span>
@@ -64,6 +66,7 @@ export function generateMetadataPanel(hasParams, hasPrompts, prompt, negativePro
     }
     
     if (negativePrompt) {
+        negativePrompt = escapeHtml(negativePrompt);
         content += `
             <div class="metadata-row prompt-row">
                 <span class="metadata-label">Negative Prompt:</span>
