@@ -1,6 +1,4 @@
 import { app } from "../../scripts/app.js";
-import { ComfyButtonGroup } from "../../scripts/ui/components/buttonGroup.js";
-import { ComfyButton } from "../../scripts/ui/components/button.js";
 
 const BUTTON_TOOLTIP = "Launch LoRA Manager (Shift+Click opens in new window)";
 const LORA_MANAGER_PATH = "/loras";
@@ -95,7 +93,9 @@ const fetchVersionInfo = async () => {
     return "";
 };
 
-const createTopMenuButton = () => {
+const createTopMenuButton = async () => {
+    const { ComfyButton } = await import("../../scripts/ui/components/button.js");
+    
     const button = new ComfyButton({
         icon: "loramanager",
         tooltip: BUTTON_TOOLTIP,
@@ -117,7 +117,7 @@ const createTopMenuButton = () => {
     return button;
 };
 
-const attachTopMenuButton = (attempt = 0) => {
+const attachTopMenuButton = async (attempt = 0) => {
     if (document.querySelector(`.${BUTTON_GROUP_CLASS}`)) {
         return;
     }
@@ -133,7 +133,9 @@ const attachTopMenuButton = (attempt = 0) => {
         return;
     }
 
-    const loraManagerButton = createTopMenuButton();
+    const loraManagerButton = await createTopMenuButton();
+    const { ComfyButtonGroup } = await import("../../scripts/ui/components/buttonGroup.js");
+    
     const buttonGroup = new ComfyButtonGroup(loraManagerButton);
     buttonGroup.element.classList.add(BUTTON_GROUP_CLASS);
 
@@ -158,7 +160,7 @@ const createExtensionObject = (useActionBar) => {
             
             if (!useActionBar) {
                 console.log("LoRA Manager: using legacy button attachment (frontend version < 1.33.9)");
-                attachTopMenuButton();
+                await attachTopMenuButton();
             } else {
                 console.log("LoRA Manager: using actionBarButtons API (frontend version >= 1.33.9)");
             }
