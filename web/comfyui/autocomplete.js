@@ -742,6 +742,14 @@ class AutoComplete {
         try {
             this.currentSearchTerm = term;
 
+            // Save current search type to detect mode changes during async search
+            const searchTypeAtStart = this.searchType;
+
+            // Clear items before starting new search to avoid stale data
+            // This is critical for preventing command suggestions from persisting
+            // when switching from command mode to regular tag search
+            this.items = [];
+
             if (!endpoint) {
                 endpoint = `/lm/${this.modelType}/relative-paths`;
             }
@@ -776,7 +784,15 @@ class AutoComplete {
 
             const resultsArrays = await Promise.all(searchPromises);
 
-            // Merge and deduplicate results
+            // Check if search type changed during async operation
+            // If so, skip updating items to prevent stale data from showing
+            if (this.searchType !== searchTypeAtStart) {
+                console.log('[Lora Manager] Search type changed during search, skipping update');
+                return;
+            }
+
+            // Merge and deduplicate results while preserving order from backend
+            // Backend returns results sorted by relevance, so we maintain that order
             const seen = new Set();
             const mergedItems = [];
 
@@ -793,39 +809,10 @@ class AutoComplete {
                 }
             }
 
-            // Score and sort results: exact matches first, then by match quality
-            const scoredItems = mergedItems.map(item => {
-                let bestScore = -1;
-                let isExact = false;
-
-                for (const query of queriesToExecute) {
-                    const match = this._matchItem(item, query);
-                    if (match.matched) {
-                        // Higher score for exact matches
-                        const score = match.isExactMatch ? 1000 : 100;
-                        if (score > bestScore) {
-                            bestScore = score;
-                            isExact = match.isExactMatch;
-                        }
-                    }
-                }
-
-                return { item, score: bestScore, isExact };
-            });
-
-            // Sort by score (descending), exact matches first
-            scoredItems.sort((a, b) => {
-                if (b.isExact !== a.isExact) {
-                    return b.isExact ? 1 : -1;
-                }
-                return b.score - a.score;
-            });
-
-            // Extract just the items
-            const sortedItems = scoredItems.map(s => s.item);
-
-            if (sortedItems.length > 0) {
-                this.items = sortedItems;
+            // Use backend-sorted results directly without re-scoring
+            // Backend already ranks by: FTS5 bm25 score + post count + exact prefix boost
+            if (mergedItems.length > 0) {
+                this.items = mergedItems;
                 this.render();
                 this.show();
             } else {
@@ -908,6 +895,12 @@ class AutoComplete {
      * @param {string} filter - Optional filter for commands
      */
     _showCommandList(filter = '') {
+        // Only show command list if we're in command mode
+        // This prevents stale command suggestions from appearing after switching to tag search
+        if (this.searchType !== 'commands' && this.showingCommands !== true) {
+            return;
+        }
+        
         const filterLower = filter.toLowerCase();
 
         // Get unique commands (avoid duplicates like /char and /character)
@@ -942,12 +935,20 @@ class AutoComplete {
      * Render the command list dropdown
      */
     _renderCommandList() {
-        this.dropdown.innerHTML = '';
+        // Clear command list items properly based on rendering mode
+        if (this.contentContainer) {
+            // Virtual scrolling mode - clear content container
+            this.contentContainer.innerHTML = '';
+        } else {
+            // Non-virtual scrolling mode - clear dropdown direct children
+            this.dropdown.innerHTML = '';
+        }
         this.selectedIndex = -1;
 
         this.items.forEach((item, index) => {
             const itemEl = document.createElement('div');
             itemEl.className = 'comfy-autocomplete-item comfy-autocomplete-command';
+            itemEl.dataset.index = index.toString();
 
             const cmdSpan = document.createElement('span');
             cmdSpan.className = 'lm-autocomplete-command-name';
@@ -973,6 +974,8 @@ class AutoComplete {
                 justify-content: space-between;
                 align-items: center;
                 gap: 12px;
+                height: ${this.options.itemHeight}px;
+                box-sizing: border-box;
             `;
 
             itemEl.addEventListener('mouseenter', () => {
@@ -983,17 +986,28 @@ class AutoComplete {
                 this._insertCommand(item.command);
             });
 
-            this.dropdown.appendChild(itemEl);
+            // Append to correct container based on rendering mode
+            if (this.contentContainer) {
+                this.contentContainer.appendChild(itemEl);
+            } else {
+                this.dropdown.appendChild(itemEl);
+            }
         });
 
         // Remove border from last item
-        if (this.dropdown.lastChild) {
-            this.dropdown.lastChild.style.borderBottom = 'none';
+        const lastChild = this.contentContainer ? this.contentContainer.lastChild : this.dropdown.lastChild;
+        if (lastChild) {
+            lastChild.style.borderBottom = 'none';
         }
 
         // Auto-select first item
         if (this.items.length > 0) {
             setTimeout(() => this.selectItem(0), 100);
+        }
+        
+        // Update virtual scroll height for virtual scrolling mode
+        if (this.contentContainer) {
+            this.updateVirtualScrollHeight();
         }
     }
 
@@ -1057,28 +1071,49 @@ class AutoComplete {
         }
 
         if (this.options.enableVirtualScroll && this.contentContainer) {
-            // Use virtual scrolling - only update visible items if dropdown is already visible
-            // If not visible, updateVisibleItems() will be called from show() after display:block
+            // Use virtual scrolling - always update visible items to ensure content is fresh
+            // The dropdown visibility is controlled by show()/hide()
             this.updateVirtualScrollHeight();
-            if (this.isVisible && this.dropdown.style.display !== 'none') {
-                this.updateVisibleItems();
-            }
+            this.updateVisibleItems();
         } else {
             // Traditional rendering (fallback)
             this.dropdown.innerHTML = '';
 
-            // Check if items are enriched (have tag_name, category, post_count)
+            // Check if items are enriched (have tag_name, category, post_count) or command objects
             const isEnriched = this.items[0] && typeof this.items[0] === 'object' && 'tag_name' in this.items[0];
+            const isCommand = this.items[0] && typeof this.items[0] === 'object' && 'command' in this.items[0];
 
             this.items.forEach((itemData, index) => {
                 const item = document.createElement('div');
                 item.className = 'comfy-autocomplete-item';
 
-                // Get the display text and path for insertion
-                const displayText = isEnriched ? itemData.tag_name : itemData;
-                const insertPath = isEnriched ? itemData.tag_name : itemData;
+                if (isCommand) {
+                    // Render command item
+                    const cmdSpan = document.createElement('span');
+                    cmdSpan.className = 'lm-autocomplete-command-name';
+                    cmdSpan.textContent = itemData.command;
 
-                if (isEnriched) {
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = 'lm-autocomplete-command-label';
+                    labelSpan.textContent = itemData.label;
+
+                    item.appendChild(cmdSpan);
+                    item.appendChild(labelSpan);
+                    item.style.cssText = `
+                        padding: 8px 12px;
+                        cursor: pointer;
+                        color: rgba(226, 232, 240, 0.8);
+                        border-bottom: 1px solid rgba(226, 232, 240, 0.1);
+                        transition: all 0.2s ease;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        gap: 12px;
+                    `;
+                } else if (isEnriched) {
                     // Render enriched item with category badge and post count
                     this._renderEnrichedItem(item, itemData, this.currentSearchTerm);
                 } else {
@@ -1087,7 +1122,7 @@ class AutoComplete {
                     const nameSpan = document.createElement('span');
                     nameSpan.className = 'lm-autocomplete-name';
                     // Use display text without extension for cleaner UI
-                    const displayTextWithoutExt = this._getDisplayText(displayText);
+                    const displayTextWithoutExt = this._getDisplayText(itemData);
                     nameSpan.innerHTML = this.highlightMatch(displayTextWithoutExt, this.currentSearchTerm);
                     nameSpan.style.cssText = `
                         flex: 1;
@@ -1096,24 +1131,24 @@ class AutoComplete {
                         text-overflow: ellipsis;
                     `;
                     item.appendChild(nameSpan);
+                    
+                    // Apply item styles with new color scheme
+                    item.style.cssText = `
+                        padding: 8px 12px;
+                        cursor: pointer;
+                        color: rgba(226, 232, 240, 0.8);
+                        border-bottom: 1px solid rgba(226, 232, 240, 0.1);
+                        transition: all 0.2s ease;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        position: relative;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        gap: 8px;
+                    `;
                 }
-
-                // Apply item styles with new color scheme
-                item.style.cssText = `
-                    padding: 8px 12px;
-                    cursor: pointer;
-                    color: rgba(226, 232, 240, 0.8);
-                    border-bottom: 1px solid rgba(226, 232, 240, 0.1);
-                    transition: all 0.2s ease;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    position: relative;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    gap: 8px;
-                `;
 
                 // Hover and selection handlers
                 item.addEventListener('mouseenter', () => {
@@ -1126,7 +1161,12 @@ class AutoComplete {
 
                 // Click handler
                 item.addEventListener('click', () => {
-                    this.insertSelection(insertPath);
+                    if (isCommand) {
+                        this._insertCommand(itemData.command);
+                    } else {
+                        const insertPath = isEnriched ? itemData.tag_name : itemData;
+                        this.insertSelection(insertPath);
+                    }
                 });
 
                 this.dropdown.appendChild(item);
@@ -1369,38 +1409,10 @@ class AutoComplete {
                 this.hasMoreItems = false;
             }
 
-            // If we got new items, add them and re-render
+            // If we got new items, append them and re-render
+            // IMPORTANT: Do NOT re-sort! Backend already returns results sorted by relevance
             if (newItems.length > 0) {
-                const currentLength = this.items.length;
                 this.items.push(...newItems);
-
-                // Re-score and sort all items
-                const scoredItems = this.items.map(item => {
-                    let bestScore = -1;
-                    let isExact = false;
-
-                    for (const query of queriesToExecute) {
-                        const match = this._matchItem(item, query);
-                        if (match.matched) {
-                            const score = match.isExactMatch ? 1000 : 100;
-                            if (score > bestScore) {
-                                bestScore = score;
-                                isExact = match.isExactMatch;
-                            }
-                        }
-                    }
-
-                    return { item, score: bestScore, isExact };
-                });
-
-                scoredItems.sort((a, b) => {
-                    if (b.isExact !== a.isExact) {
-                        return b.isExact ? 1 : -1;
-                    }
-                    return b.score - a.score;
-                });
-
-                this.items = scoredItems.map(s => s.item);
 
                 // Update render
                 if (this.options.enableVirtualScroll) {
@@ -1458,10 +1470,18 @@ class AutoComplete {
      * Update the total height of the virtual scroll container
      */
     updateVirtualScrollHeight() {
-        if (!this.contentContainer) return;
+        if (!this.contentContainer || !this.scrollContainer) return;
 
         this.totalHeight = this.items.length * this.options.itemHeight;
         this.contentContainer.style.height = `${this.totalHeight}px`;
+        
+        // Adjust scroll container max-height based on actual content
+        // Only show scrollbar when content exceeds visibleItems limit
+        const maxHeight = this.options.visibleItems * this.options.itemHeight;
+        const shouldShowScrollbar = this.totalHeight > maxHeight;
+        
+        this.scrollContainer.style.maxHeight = shouldShowScrollbar ? `${maxHeight}px` : `${this.totalHeight}px`;
+        this.scrollContainer.style.overflowY = shouldShowScrollbar ? 'auto' : 'hidden';
     }
 
     /**
@@ -1473,11 +1493,12 @@ class AutoComplete {
         const scrollTop = this.scrollContainer.scrollTop;
         const containerHeight = this.scrollContainer.clientHeight;
 
-        // Calculate which items should be visible
-        const startIndex = Math.max(0, Math.floor(scrollTop / this.options.itemHeight) - 2);
+        // Calculate which items should be visible with a larger buffer for smoother rendering
+        // Use a fixed buffer of 5 items to ensure selected item is always rendered
+        const startIndex = Math.max(0, Math.floor(scrollTop / this.options.itemHeight) - 5);
         const endIndex = Math.min(
             this.items.length - 1,
-            Math.ceil((scrollTop + containerHeight) / this.options.itemHeight) + 2
+            Math.ceil((scrollTop + containerHeight) / this.options.itemHeight) + 5
         );
 
         // Clear current content
@@ -1492,10 +1513,11 @@ class AutoComplete {
 
         // Render visible items
         const isEnriched = this.items[0] && typeof this.items[0] === 'object' && 'tag_name' in this.items[0];
+        const isCommand = this.items[0] && typeof this.items[0] === 'object' && 'command' in this.items[0];
 
         for (let i = startIndex; i <= endIndex; i++) {
             const itemData = this.items[i];
-            const itemEl = this.createItemElement(itemData, i, isEnriched);
+            const itemEl = this.createItemElement(itemData, i, isEnriched, isCommand);
             this.contentContainer.appendChild(itemEl);
         }
 
@@ -1505,12 +1527,22 @@ class AutoComplete {
             bottomSpacer.style.height = `${(this.items.length - 1 - endIndex) * this.options.itemHeight}px`;
             this.contentContainer.appendChild(bottomSpacer);
         }
+        
+        // Re-apply selection styling after re-rendering
+        // This ensures the selected item remains highlighted even after DOM updates
+        if (this.selectedIndex >= startIndex && this.selectedIndex <= endIndex) {
+            const selectedEl = this.contentContainer.querySelector(`.comfy-autocomplete-item[data-index="${this.selectedIndex}"]`);
+            if (selectedEl) {
+                selectedEl.classList.add('comfy-autocomplete-item-selected');
+                selectedEl.style.backgroundColor = 'rgba(66, 153, 225, 0.2)';
+            }
+        }
     }
 
     /**
      * Create a single item element
      */
-    createItemElement(itemData, index, isEnriched) {
+    createItemElement(itemData, index, isEnriched, isCommand = false) {
         const item = document.createElement('div');
         item.className = 'comfy-autocomplete-item';
         item.dataset.index = index.toString();
@@ -1532,16 +1564,31 @@ class AutoComplete {
             box-sizing: border-box;
         `;
 
-        const displayText = isEnriched ? itemData.tag_name : itemData;
-        const insertPath = isEnriched ? itemData.tag_name : itemData;
+        // Check if this is a command object (override parameter if needed)
+        if (!isCommand && itemData && typeof itemData === 'object' && 'command' in itemData) {
+            isCommand = true;
+        }
 
-        if (isEnriched) {
+        if (isCommand) {
+            // Render command item
+            const cmdSpan = document.createElement('span');
+            cmdSpan.className = 'lm-autocomplete-command-name';
+            cmdSpan.textContent = itemData.command;
+
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'lm-autocomplete-command-label';
+            labelSpan.textContent = itemData.label;
+
+            item.appendChild(cmdSpan);
+            item.appendChild(labelSpan);
+            item.style.gap = '12px';
+        } else if (isEnriched) {
             this._renderEnrichedItem(item, itemData, this.currentSearchTerm);
         } else {
             const nameSpan = document.createElement('span');
             nameSpan.className = 'lm-autocomplete-name';
             // Use display text without extension for cleaner UI
-            const displayTextWithoutExt = this._getDisplayText(displayText);
+            const displayTextWithoutExt = this._getDisplayText(itemData);
             nameSpan.innerHTML = this.highlightMatch(displayTextWithoutExt, this.currentSearchTerm);
             nameSpan.style.cssText = `
                 flex: 1;
@@ -1561,8 +1608,14 @@ class AutoComplete {
             this.hidePreview();
         });
 
+        // Click handler
         item.addEventListener('click', () => {
-            this.insertSelection(insertPath);
+            if (isCommand) {
+                this._insertCommand(itemData.command);
+            } else {
+                const insertPath = isEnriched ? itemData.tag_name : itemData;
+                this.insertSelection(insertPath);
+            }
         });
 
         return item;
@@ -1578,7 +1631,10 @@ class AutoComplete {
         if (this.options.enableVirtualScroll && this.contentContainer) {
             this.dropdown.style.display = 'block';
             this.isVisible = true;
-            this.updateVisibleItems();
+            // Skip updateVisibleItems if showing commands (already rendered by _renderCommandList)
+            if (!this.showingCommands) {
+                this.updateVisibleItems();
+            }
             this.positionAtCursor();
         } else {
             // Position dropdown at cursor position using TextAreaCaretHelper
@@ -1638,6 +1694,19 @@ class AutoComplete {
         this.isVisible = false;
         this.selectedIndex = -1;
         this.showingCommands = false;
+        
+        // Clear items to prevent stale data from being displayed
+        // when autocomplete is shown again
+        this.items = [];
+        
+        // Clear content container to prevent stale items from showing
+        if (this.contentContainer) {
+            // Virtual scrolling mode - clear content container
+            this.contentContainer.innerHTML = '';
+        } else {
+            // Non-virtual scrolling mode - clear dropdown direct children
+            this.dropdown.innerHTML = '';
+        }
 
         // Reset virtual scrolling state
         this.virtualScrollOffset = 0;
@@ -1688,26 +1757,22 @@ class AutoComplete {
 
                 // If item is not visible, scroll to make it visible
                 if (itemTop < scrollTop || itemBottom > scrollBottom) {
-                    this.scrollContainer.scrollTop = itemTop - containerHeight / 2;
+                    // Scroll to position the item in the visible area
+                    // Position item at 1/3 from top for better visibility
+                    const targetScrollTop = Math.max(0, itemTop - containerHeight / 3);
+                    this.scrollContainer.scrollTop = targetScrollTop;
+                    
                     // Re-render visible items after scroll
                     this.updateVisibleItems();
-                }
-
-                // Find the item element using data-index attribute
-                const selectedEl = container.querySelector(`.comfy-autocomplete-item[data-index="${index}"]`);
-
-                if (selectedEl) {
-                    selectedEl.classList.add('comfy-autocomplete-item-selected');
-                    selectedEl.style.backgroundColor = 'rgba(66, 153, 225, 0.2)';
-
-                    // Show preview for selected item
-                    if (this.options.showPreview) {
-                        if (typeof this.behavior.showPreview === 'function') {
-                            this.behavior.showPreview(this, this.items[index], selectedEl);
-                        } else if (this.previewTooltip) {
-                            this.showPreviewForItem(this.items[index], selectedEl);
-                        }
-                    }
+                    
+                    // Apply selection after DOM is updated
+                    // Use setTimeout to ensure DOM has been re-rendered
+                    setTimeout(() => {
+                        this._applyItemSelection(index);
+                    }, 0);
+                } else {
+                    // Item is already visible, apply selection immediately
+                    this._applyItemSelection(index);
                 }
             } else {
                 // Traditional rendering
@@ -1731,6 +1796,31 @@ class AutoComplete {
             }
         }
     }
+
+    /**
+     * Apply selection styling to an item (used after virtual scroll re-render)
+     * @param {number} index - Index of item to select
+     */
+    _applyItemSelection(index) {
+        if (!this.contentContainer) return;
+
+        // Find the item element using data-index attribute
+        const selectedEl = this.contentContainer.querySelector(`.comfy-autocomplete-item[data-index="${index}"]`);
+
+        if (selectedEl) {
+            selectedEl.classList.add('comfy-autocomplete-item-selected');
+            selectedEl.style.backgroundColor = 'rgba(66, 153, 225, 0.2)';
+
+            // Show preview for selected item
+            if (this.options.showPreview) {
+                if (typeof this.behavior.showPreview === 'function') {
+                    this.behavior.showPreview(this, this.items[index], selectedEl);
+                } else if (this.previewTooltip) {
+                    this.showPreviewForItem(this.items[index], selectedEl);
+                }
+            }
+        }
+    }
     
     handleKeyDown(e) {
         if (!this.isVisible) {
@@ -1740,12 +1830,39 @@ class AutoComplete {
         switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();
-                this.selectItem(Math.min(this.selectedIndex + 1, this.items.length - 1));
+                if (this.options.enableVirtualScroll && this.scrollContainer) {
+                    // For virtual scrolling, handle boundary cases
+                    if (this.selectedIndex >= this.items.length - 1) {
+                        // Already at last item, try to load more
+                        if (this.hasMoreItems && !this.isLoadingMore) {
+                            this.loadMoreItems().then(() => {
+                                // After loading more, select the next item
+                                if (this.selectedIndex < this.items.length - 1) {
+                                    this.selectItem(this.selectedIndex + 1);
+                                }
+                            });
+                        }
+                    } else {
+                        this.selectItem(this.selectedIndex + 1);
+                    }
+                } else {
+                    this.selectItem(Math.min(this.selectedIndex + 1, this.items.length - 1));
+                }
                 break;
                 
             case 'ArrowUp':
                 e.preventDefault();
-                this.selectItem(Math.max(this.selectedIndex - 1, 0));
+                if (this.options.enableVirtualScroll && this.scrollContainer) {
+                    // For virtual scrolling, handle top boundary
+                    if (this.selectedIndex <= 0) {
+                        // Already at first item, ensure it's selected
+                        this.selectItem(0);
+                    } else {
+                        this.selectItem(this.selectedIndex - 1);
+                    }
+                } else {
+                    this.selectItem(Math.max(this.selectedIndex - 1, 0));
+                }
                 break;
                 
             case 'Enter':

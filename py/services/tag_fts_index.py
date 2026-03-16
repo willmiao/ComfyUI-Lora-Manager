@@ -449,6 +449,11 @@ class TagFTSIndex:
         Supports alias search: if the query matches an alias rather than
         the tag_name, the result will include a "matched_alias" field.
 
+        Ranking is based on a combination of:
+        1. FTS5 bm25 relevance score (how well the text matches)
+        2. Post count (popularity)
+        3. Exact prefix match boost (tag_name starts with query)
+
         Args:
             query: The search query string.
             categories: Optional list of category IDs to filter by.
@@ -457,7 +462,7 @@ class TagFTSIndex:
 
         Returns:
             List of dictionaries with tag_name, category, post_count,
-            and optionally matched_alias.
+            rank_score, and optionally matched_alias.
         """
         # Ensure index is ready (lazy initialization)
         if not self.ensure_ready():
@@ -473,35 +478,67 @@ class TagFTSIndex:
         if not fts_query:
             return []
 
+        query_lower = query.lower().strip()
+
         try:
             with self._lock:
                 conn = self._connect(readonly=True)
                 try:
-                    # Build the SQL query - now also fetch aliases for matched_alias detection
-                    # Use subquery for category filter to ensure FTS is evaluated first
+                    # Build the SQL query with bm25 ranking
+                    # FTS5 bm25() returns negative scores, lower is better
+                    # We use -bm25() to get higher=better scores
+                    # Weights: -100.0 for exact matches, 1.0 for others
+                    # Add LOG10(post_count) weighting to boost popular tags
+                    # Use CASE to boost tag_name prefix matches above alias matches
                     if categories:
                         placeholders = ",".join("?" * len(categories))
                         sql = f"""
-                            SELECT t.tag_name, t.category, t.post_count, t.aliases
-                            FROM tags t
-                            WHERE t.rowid IN (
-                                SELECT rowid FROM tag_fts WHERE searchable_text MATCH ?
-                            )
+                            SELECT t.tag_name, t.category, t.post_count, t.aliases,
+                                   CASE 
+                                       WHEN t.tag_name LIKE ? ESCAPE '\\' THEN 1
+                                       ELSE 0
+                                   END AS is_tag_name_match,
+                                   bm25(tag_fts, -100.0, 1.0, 1.0) + LOG10(t.post_count + 1) * 10.0 AS rank_score
+                            FROM tag_fts
+                            JOIN tags t ON tag_fts.rowid = t.rowid
+                            WHERE tag_fts.searchable_text MATCH ?
                             AND t.category IN ({placeholders})
-                            ORDER BY t.post_count DESC
+                            ORDER BY is_tag_name_match DESC, rank_score DESC
                             LIMIT ? OFFSET ?
                         """
-                        params = [fts_query] + categories + [limit, offset]
+                        # Escape special LIKE characters and add wildcard
+                        query_escaped = (
+                            query_lower.lstrip("/")
+                            .replace("\\", "\\\\")
+                            .replace("%", "\\%")
+                            .replace("_", "\\_")
+                        )
+                        params = (
+                            [query_escaped + "%", fts_query]
+                            + categories
+                            + [limit, offset]
+                        )
                     else:
                         sql = """
-                            SELECT t.tag_name, t.category, t.post_count, t.aliases
-                            FROM tag_fts f
-                            JOIN tags t ON f.rowid = t.rowid
-                            WHERE f.searchable_text MATCH ?
-                            ORDER BY t.post_count DESC
+                            SELECT t.tag_name, t.category, t.post_count, t.aliases,
+                                   CASE 
+                                       WHEN t.tag_name LIKE ? ESCAPE '\\' THEN 1
+                                       ELSE 0
+                                   END AS is_tag_name_match,
+                                   bm25(tag_fts, -100.0, 1.0, 1.0) + LOG10(t.post_count + 1) * 10.0 AS rank_score
+                            FROM tag_fts
+                            JOIN tags t ON tag_fts.rowid = t.rowid
+                            WHERE tag_fts.searchable_text MATCH ?
+                            ORDER BY is_tag_name_match DESC, rank_score DESC
                             LIMIT ? OFFSET ?
                         """
-                        params = [fts_query, limit, offset]
+                        query_escaped = (
+                            query_lower.lstrip("/")
+                            .replace("\\", "\\\\")
+                            .replace("%", "\\%")
+                            .replace("_", "\\_")
+                        )
+                        params = [query_escaped + "%", fts_query, limit, offset]
 
                     cursor = conn.execute(sql, params)
                     results = []
@@ -510,7 +547,16 @@ class TagFTSIndex:
                             "tag_name": row[0],
                             "category": row[1],
                             "post_count": row[2],
+                            "is_tag_name_match": row[4] == 1,
+                            "rank_score": row[5],
                         }
+
+                        # Set is_exact_prefix based on tag_name match
+                        tag_name = row[0]
+                        if tag_name.lower().startswith(query_lower.lstrip("/")):
+                            result["is_exact_prefix"] = True
+                        else:
+                            result["is_exact_prefix"] = result["is_tag_name_match"]
 
                         # Check if search matched an alias rather than the tag_name
                         matched_alias = self._find_matched_alias(query, row[0], row[3])

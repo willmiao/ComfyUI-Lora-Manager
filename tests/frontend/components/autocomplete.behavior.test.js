@@ -156,4 +156,115 @@ describe('AutoComplete widget interactions', () => {
     expect(highlighted).toContain('detail');
     expect(highlighted).not.toMatch(/beta<\/span>/i);
   });
+
+  it('handles arrow key navigation with virtual scrolling', async () => {
+    vi.useFakeTimers();
+
+    const mockItems = Array.from({ length: 50 }, (_, i) => `model_${i.toString().padStart(2, '0')}.safetensors`);
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, relative_paths: mockItems }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('model');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'loras', {
+      debounceDelay: 0,
+      showPreview: false,
+      enableVirtualScroll: true,
+      itemHeight: 40,
+      visibleItems: 15,
+      pageSize: 20,
+    });
+
+    input.value = 'model';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    expect(autoComplete.items.length).toBeGreaterThan(0);
+    expect(autoComplete.selectedIndex).toBe(0);
+
+    const initialSelectedEl = autoComplete.contentContainer?.querySelector('.comfy-autocomplete-item-selected');
+    expect(initialSelectedEl).toBeDefined();
+
+    const arrowDownEvent = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true });
+    input.dispatchEvent(arrowDownEvent);
+
+    expect(autoComplete.selectedIndex).toBe(1);
+
+    const secondSelectedEl = autoComplete.contentContainer?.querySelector('.comfy-autocomplete-item-selected');
+    expect(secondSelectedEl).toBeDefined();
+    expect(secondSelectedEl?.dataset.index).toBe('1');
+
+    const arrowUpEvent = new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true });
+    input.dispatchEvent(arrowUpEvent);
+
+    expect(autoComplete.selectedIndex).toBe(0);
+
+    const firstSelectedElAgain = autoComplete.contentContainer?.querySelector('.comfy-autocomplete-item-selected');
+    expect(firstSelectedElAgain).toBeDefined();
+    expect(firstSelectedElAgain?.dataset.index).toBe('0');
+  });
+
+  it('maintains selection when scrolling to invisible items', async () => {
+    vi.useFakeTimers();
+
+    const mockItems = Array.from({ length: 100 }, (_, i) => `item_${i.toString().padStart(3, '0')}.safetensors`);
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, relative_paths: mockItems }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('item');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.style.width = '400px';
+    input.style.height = '200px';
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'loras', {
+      debounceDelay: 0,
+      showPreview: false,
+      enableVirtualScroll: true,
+      itemHeight: 40,
+      visibleItems: 15,
+      pageSize: 20,
+    });
+
+    input.value = 'item';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    expect(autoComplete.items.length).toBeGreaterThan(0);
+
+    autoComplete.selectedIndex = 14;
+
+    const scrollTopBefore = autoComplete.scrollContainer?.scrollTop || 0;
+
+    const arrowDownEvent = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true });
+    input.dispatchEvent(arrowDownEvent);
+
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    expect(autoComplete.selectedIndex).toBe(15);
+
+    const selectedEl = autoComplete.contentContainer?.querySelector('.comfy-autocomplete-item-selected');
+    expect(selectedEl).toBeDefined();
+    expect(selectedEl?.dataset.index).toBe('15');
+
+    const scrollTopAfter = autoComplete.scrollContainer?.scrollTop || 0;
+    expect(scrollTopAfter).toBeGreaterThanOrEqual(scrollTopBefore);
+  });
 });
