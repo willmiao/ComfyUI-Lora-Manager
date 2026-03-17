@@ -2,6 +2,7 @@ import { modalManager } from './ModalManager.js';
 import { showToast } from '../utils/uiHelpers.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { WS_ENDPOINTS } from '../api/apiConfig.js';
+import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 
 /**
  * Manager for batch importing recipes from multiple images
@@ -34,6 +35,14 @@ export class BatchImportManager {
      */
     initialize() {
         this.initialized = true;
+
+        // Add event listener for persisting "Skip images without metadata" choice
+        const skipNoMetadata = document.getElementById('batchSkipNoMetadata');
+        if (skipNoMetadata) {
+            skipNoMetadata.addEventListener('change', (e) => {
+                setStorageItem('batch_import_skip_no_metadata', e.target.checked);
+            });
+        }
     }
 
     /**
@@ -61,7 +70,10 @@ export class BatchImportManager {
         if (tagsInput) tagsInput.value = '';
         
         const skipNoMetadata = document.getElementById('batchSkipNoMetadata');
-        if (skipNoMetadata) skipNoMetadata.checked = true;
+        if (skipNoMetadata) {
+            // Load preference from storage, defaulting to true
+            skipNoMetadata.checked = getStorageItem('batch_import_skip_no_metadata', true);
+        }
         
         const recursiveCheck = document.getElementById('batchRecursiveCheck');
         if (recursiveCheck) recursiveCheck.checked = true;

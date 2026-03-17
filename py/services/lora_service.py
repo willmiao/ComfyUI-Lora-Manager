@@ -516,12 +516,18 @@ class LoraService(BaseModelService):
         if sort_by == "model_name":
             available_loras = sorted(
                 available_loras,
-                key=lambda x: (x.get("model_name") or x.get("file_name", "")).lower()
+                key=lambda x: (
+                    (x.get("model_name") or x.get("file_name", "")).lower(),
+                    x.get("file_path", "").lower()
+                )
             )
         else:  # Default to filename
             available_loras = sorted(
                 available_loras,
-                key=lambda x: x.get("file_name", "").lower()
+                key=lambda x: (
+                    x.get("file_name", "").lower(),
+                    x.get("file_path", "").lower()
+                )
             )
 
         # Return minimal data needed for cycling

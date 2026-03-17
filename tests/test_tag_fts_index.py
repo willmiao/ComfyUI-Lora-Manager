@@ -242,36 +242,70 @@ class TestTagFTSIndexSearch:
             )
 
     def test_search_pagination_ordering_consistency(self, populated_fts):
-        """Test that pagination maintains consistent ordering."""
+        """Test that pagination maintains consistent ordering by post_count."""
         page1 = populated_fts.search("1", limit=10, offset=0)
         page2 = populated_fts.search("1", limit=10, offset=10)
 
         assert len(page1) > 0, "Page 1 should have results"
         assert len(page2) > 0, "Page 2 should have results"
 
-        # Page 2 scores should all be <= Page 1 min score
-        page1_min_score = min(r["rank_score"] for r in page1)
-        page2_max_score = max(r["rank_score"] for r in page2)
+        # Page 2 max post_count should be <= Page 1 min post_count
+        page1_min_posts = min(r["post_count"] for r in page1)
+        page2_max_posts = max(r["post_count"] for r in page2)
 
-        assert page2_max_score <= page1_min_score, (
-            f"Page 2 max score ({page2_max_score}) should be <= Page 1 min score ({page1_min_score})"
+        assert page2_max_posts <= page1_min_posts, (
+            f"Page 2 max post_count ({page2_max_posts}) should be <= Page 1 min post_count ({page1_min_posts})"
         )
 
-    def test_search_rank_score_includes_popularity_weight(self, populated_fts):
-        """Test that rank_score includes post_count popularity weighting."""
+    def test_search_returns_popular_tags_higher(self, populated_fts):
+        """Test that search returns popular tags (higher post_count) first."""
         results = populated_fts.search("1", limit=5)
 
         assert len(results) >= 2, "Need at least 2 results to compare"
 
-        # 1girl has 6M posts, should have higher rank_score than tags with fewer posts
+        # 1girl has 6M posts, should be ranked first
         girl_result = next((r for r in results if r["tag_name"] == "1girl"), None)
         assert girl_result is not None, "1girl should be in results"
+        assert results[0]["tag_name"] == "1girl", (
+            "1girl should be first due to highest post_count"
+        )
 
         # Find a tag with significantly fewer posts
         low_post_result = next((r for r in results if r["post_count"] < 10000), None)
         if low_post_result:
-            assert girl_result["rank_score"] > low_post_result["rank_score"], (
-                f"1girl (6M posts) should have higher score than {low_post_result['tag_name']} ({low_post_result['post_count']} posts)"
+            assert girl_result["post_count"] > low_post_result["post_count"], (
+                f"1girl (6M posts) should have higher post_count than {low_post_result['tag_name']} ({low_post_result['post_count']} posts)"
+            )
+
+    def test_search_popularity_ordering(self, populated_fts):
+        """Test that results are ordered by post_count (popularity)."""
+        results = populated_fts.search("1", limit=20)
+
+        # Get 1girl and 1boy results for comparison
+        girl_result = next((r for r in results if r["tag_name"] == "1girl"), None)
+        boy_result = next((r for r in results if r["tag_name"] == "1boy"), None)
+
+        assert girl_result is not None, "1girl should be in results"
+        assert boy_result is not None, "1boy should be in results"
+
+        # 1girl: 6M posts, 1boy: 1.4M posts
+        assert girl_result["post_count"] == 6008644, "1girl should have 6M posts"
+        assert boy_result["post_count"] == 1405457, "1boy should have 1.4M posts"
+
+        # 1girl should rank higher due to higher post_count
+        girl_rank = results.index(girl_result)
+        boy_rank = results.index(boy_result)
+        assert girl_rank < boy_rank, (
+            f"1girl should rank higher than 1boy due to higher post_count "
+            f"(girl rank: {girl_rank}, boy rank: {boy_rank})"
+        )
+
+        # Verify results are sorted by post_count descending
+        for i in range(len(results) - 1):
+            assert results[i]["post_count"] >= results[i + 1]["post_count"], (
+                f"Results should be sorted by post_count descending: "
+                f"{results[i]['tag_name']} ({results[i]['post_count']}) >= "
+                f"{results[i + 1]['tag_name']} ({results[i + 1]['post_count']})"
             )
 
 

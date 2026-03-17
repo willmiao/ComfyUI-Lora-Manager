@@ -14,7 +14,8 @@
             "backToTop": "חזרה למעלה",
             "settings": "הגדרות",
             "help": "עזרה",
-            "add": "הוספה"
+            "add": "הוספה",
+            "close": "סגור"
         },
         "status": {
             "loading": "טוען...",
