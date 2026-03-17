@@ -14,7 +14,8 @@
             "backToTop": "맨 위로",
             "settings": "설정",
             "help": "도움말",
-            "add": "추가"
+            "add": "추가",
+            "close": "닫기"
         },
         "status": {
             "loading": "로딩 중...",

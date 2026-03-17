@@ -14,7 +14,8 @@
             "backToTop": "Back to top",
             "settings": "Settings",
             "help": "Help",
-            "add": "Add"
+            "add": "Add",
+            "close": "Close"
         },
         "status": {
             "loading": "Loading...",

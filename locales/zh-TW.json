@@ -14,7 +14,8 @@
             "backToTop": "回到頂部",
             "settings": "設定",
             "help": "說明",
-            "add": "新增"
+            "add": "新增",
+            "close": "關閉"
         },
         "status": {
             "loading": "載入中...",

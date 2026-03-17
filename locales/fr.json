@@ -14,7 +14,8 @@
             "backToTop": "Retour en haut",
             "settings": "Paramètres",
             "help": "Aide",
-            "add": "Ajouter"
+            "add": "Ajouter",
+            "close": "Fermer"
         },
         "status": {
             "loading": "Chargement...",
