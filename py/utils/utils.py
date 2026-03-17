@@ -173,10 +173,13 @@ def sanitize_folder_name(name: str, replacement: str = "_") -> str:
     # Collapse repeated replacement characters to a single instance
     if replacement:
         sanitized = re.sub(f"{re.escape(replacement)}+", replacement, sanitized)
-        sanitized = sanitized.strip(replacement)
-
-    # Remove trailing spaces or periods which are invalid on Windows
-    sanitized = sanitized.rstrip(" .")
+        # Combine stripping to be idempotent:
+        # Right side: strip replacement, space, and dot (Windows restriction)
+        # Left side: strip replacement and space (leading dots are allowed)
+        sanitized = sanitized.rstrip(" ." + replacement).lstrip(" " + replacement)
+    else:
+        # If no replacement, just strip spaces and dots from right, spaces from left
+        sanitized = sanitized.rstrip(" .").lstrip(" ")
 
     if not sanitized:
         return "unnamed"
