@@ -208,7 +208,11 @@ class BaseModelService(ABC):
 
         reverse = sort_params.order == "desc"
         annotated.sort(
-            key=lambda x: (x.get("usage_count", 0), x.get("model_name", "").lower()),
+            key=lambda x: (
+                x.get("usage_count", 0),
+                x.get("model_name", "").lower(),
+                x.get("file_path", "").lower()
+            ),
             reverse=reverse,
         )
         return annotated

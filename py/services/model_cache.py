@@ -221,33 +221,45 @@ class ModelCache:
         start_time = time.perf_counter()
         reverse = (order == 'desc')
         if sort_key == 'name':
-            # Natural sort by configured display name, case-insensitive
+            # Natural sort by configured display name, case-insensitive, with file_path as tie-breaker
             result = natsorted(
                 data,
-                key=lambda x: self._get_display_name(x).lower(),
+                key=lambda x: (
+                    self._get_display_name(x).lower(),
+                    x.get('file_path', '').lower()
+                ),
                 reverse=reverse
             )
         elif sort_key == 'date':
-            # Sort by modified timestamp (use .get() with default to handle missing fields)
+            # Sort by modified timestamp, fallback to name and path for stability
             result = sorted(
                 data,
-                key=lambda x: x.get('modified', 0.0),
+                key=lambda x: (
+                    x.get('modified', 0.0),
+                    self._get_display_name(x).lower(),
+                    x.get('file_path', '').lower()
+                ),
                 reverse=reverse
             )
         elif sort_key == 'size':
-            # Sort by file size (use .get() with default to handle missing fields)
+            # Sort by file size, fallback to name and path for stability
             result = sorted(
                 data,
-                key=lambda x: x.get('size', 0),
+                key=lambda x: (
+                    x.get('size', 0),
+                    self._get_display_name(x).lower(),
+                    x.get('file_path', '').lower()
+                ),
                 reverse=reverse
             )
         elif sort_key == 'usage':
-            # Sort by usage count, fallback to 0, then name for stability
+            # Sort by usage count, fallback to 0, then name and path for stability
             return sorted(
                 data,
                 key=lambda x: (
                     x.get('usage_count', 0),
-                    self._get_display_name(x).lower()
+                    self._get_display_name(x).lower(),
+                    x.get('file_path', '').lower()
                 ),
                 reverse=reverse
             )

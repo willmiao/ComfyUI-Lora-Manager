@@ -135,7 +135,8 @@ class RecipeCache:
         """Sort cached views. Caller must hold ``_lock``."""
 
         self.sorted_by_name = natsorted(
-            self.raw_data, key=lambda x: x.get("title", "").lower()
+            self.raw_data,
+            key=lambda x: (x.get("title", "").lower(), x.get("file_path", "").lower()),
         )
         if not name_only:
             self.sorted_by_date = sorted(
