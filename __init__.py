@@ -1,6 +1,8 @@
 try:  # pragma: no cover - import fallback for pytest collection
     from .py.lora_manager import LoraManager
     from .py.nodes.lora_loader import LoraLoaderLM, LoraTextLoaderLM
+    from .py.nodes.checkpoint_loader import CheckpointLoaderLM
+    from .py.nodes.unet_loader import UNETLoaderLM
     from .py.nodes.trigger_word_toggle import TriggerWordToggleLM
     from .py.nodes.prompt import PromptLM
     from .py.nodes.text import TextLM
@@ -27,12 +29,12 @@ except (
     PromptLM = importlib.import_module("py.nodes.prompt").PromptLM
     TextLM = importlib.import_module("py.nodes.text").TextLM
     LoraManager = importlib.import_module("py.lora_manager").LoraManager
-    LoraLoaderLM = importlib.import_module(
-        "py.nodes.lora_loader"
-    ).LoraLoaderLM
-    LoraTextLoaderLM = importlib.import_module(
-        "py.nodes.lora_loader"
-    ).LoraTextLoaderLM
+    LoraLoaderLM = importlib.import_module("py.nodes.lora_loader").LoraLoaderLM
+    LoraTextLoaderLM = importlib.import_module("py.nodes.lora_loader").LoraTextLoaderLM
+    CheckpointLoaderLM = importlib.import_module(
+        "py.nodes.checkpoint_loader"
+    ).CheckpointLoaderLM
+    UNETLoaderLM = importlib.import_module("py.nodes.unet_loader").UNETLoaderLM
     TriggerWordToggleLM = importlib.import_module(
         "py.nodes.trigger_word_toggle"
     ).TriggerWordToggleLM
@@ -49,9 +51,7 @@ except (
     LoraRandomizerLM = importlib.import_module(
         "py.nodes.lora_randomizer"
     ).LoraRandomizerLM
-    LoraCyclerLM = importlib.import_module(
-        "py.nodes.lora_cycler"
-    ).LoraCyclerLM
+    LoraCyclerLM = importlib.import_module("py.nodes.lora_cycler").LoraCyclerLM
     init_metadata_collector = importlib.import_module("py.metadata_collector").init
 
 NODE_CLASS_MAPPINGS = {
@@ -59,6 +59,8 @@ NODE_CLASS_MAPPINGS = {
     TextLM.NAME: TextLM,
     LoraLoaderLM.NAME: LoraLoaderLM,
     LoraTextLoaderLM.NAME: LoraTextLoaderLM,
+    CheckpointLoaderLM.NAME: CheckpointLoaderLM,
+    UNETLoaderLM.NAME: UNETLoaderLM,
     TriggerWordToggleLM.NAME: TriggerWordToggleLM,
     LoraStackerLM.NAME: LoraStackerLM,
     SaveImageLM.NAME: SaveImageLM,

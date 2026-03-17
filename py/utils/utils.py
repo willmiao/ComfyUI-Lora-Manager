@@ -112,6 +112,112 @@ def get_lora_info_absolute(lora_name):
         return asyncio.run(_get_lora_info_absolute_async())
 
 
+def get_checkpoint_info_absolute(checkpoint_name):
+    """Get the absolute checkpoint path and metadata from cache
+
+    Supports ComfyUI-style model names (e.g., "folder/model_name.ext")
+
+    Args:
+        checkpoint_name: The model name, can be:
+            - ComfyUI format: "folder/model_name.safetensors"
+            - Simple name: "model_name"
+
+    Returns:
+        tuple: (absolute_path, metadata) where absolute_path is the full
+               file system path to the checkpoint file, or original checkpoint_name if not found,
+               metadata is the full model metadata dict or None
+    """
+
+    async def _get_checkpoint_info_absolute_async():
+        from ..services.service_registry import ServiceRegistry
+
+        scanner = await ServiceRegistry.get_checkpoint_scanner()
+        cache = await scanner.get_cached_data()
+
+        # Get model roots for matching
+        model_roots = scanner.get_model_roots()
+
+        # Normalize the checkpoint name
+        normalized_name = checkpoint_name.replace(os.sep, "/")
+
+        for item in cache.raw_data:
+            file_path = item.get("file_path", "")
+            if not file_path:
+                continue
+
+            # Format the stored path as ComfyUI-style name
+            formatted_name = _format_model_name_for_comfyui(file_path, model_roots)
+
+            # Match by formatted name
+            if formatted_name == normalized_name or formatted_name == checkpoint_name:
+                return file_path, item
+
+            # Also try matching by basename only (for backward compatibility)
+            file_name = item.get("file_name", "")
+            if (
+                file_name == checkpoint_name
+                or file_name == os.path.splitext(normalized_name)[0]
+            ):
+                return file_path, item
+
+        return checkpoint_name, None
+
+    try:
+        # Check if we're already in an event loop
+        loop = asyncio.get_running_loop()
+        # If we're in a running loop, we need to use a different approach
+        # Create a new thread to run the async code
+        import concurrent.futures
+
+        def run_in_thread():
+            new_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(new_loop)
+            try:
+                return new_loop.run_until_complete(
+                    _get_checkpoint_info_absolute_async()
+                )
+            finally:
+                new_loop.close()
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(run_in_thread)
+            return future.result()
+
+    except RuntimeError:
+        # No event loop is running, we can use asyncio.run()
+        return asyncio.run(_get_checkpoint_info_absolute_async())
+
+
+def _format_model_name_for_comfyui(file_path: str, model_roots: list) -> str:
+    """Format file path to ComfyUI-style model name (relative path with extension)
+
+    Example: /path/to/checkpoints/Illustrious/model.safetensors -> Illustrious/model.safetensors
+
+    Args:
+        file_path: Absolute path to the model file
+        model_roots: List of model root directories
+
+    Returns:
+        ComfyUI-style model name with relative path and extension
+    """
+    # Normalize path separators
+    normalized_path = file_path.replace(os.sep, "/")
+
+    # Find the matching root and get relative path
+    for root in model_roots:
+        normalized_root = root.replace(os.sep, "/")
+        # Ensure root ends with / for proper matching
+        if not normalized_root.endswith("/"):
+            normalized_root += "/"
+
+        if normalized_path.startswith(normalized_root):
+            rel_path = normalized_path[len(normalized_root) :]
+            return rel_path
+
+    # If no root matches, just return the basename with extension
+    return os.path.basename(file_path)
+
+
 def fuzzy_match(text: str, pattern: str, threshold: float = 0.85) -> bool:
     """
     Check if text matches pattern using fuzzy matching.

@@ -707,7 +707,13 @@ class Config:
 
     def _prepare_checkpoint_paths(
         self, checkpoint_paths: Iterable[str], unet_paths: Iterable[str]
-    ) -> List[str]:
+    ) -> Tuple[List[str], List[str], List[str]]:
+        """Prepare checkpoint paths and return (all_roots, checkpoint_roots, unet_roots).
+
+        Returns:
+            Tuple of (all_unique_paths, checkpoint_only_paths, unet_only_paths)
+            This method does NOT modify instance variables - callers must set them.
+        """
         checkpoint_map = self._dedupe_existing_paths(checkpoint_paths)
         unet_map = self._dedupe_existing_paths(unet_paths)
 
@@ -737,8 +743,8 @@ class Config:
 
         checkpoint_values = set(checkpoint_map.values())
         unet_values = set(unet_map.values())
-        self.checkpoints_roots = [p for p in unique_paths if p in checkpoint_values]
-        self.unet_roots = [p for p in unique_paths if p in unet_values]
+        checkpoint_roots = [p for p in unique_paths if p in checkpoint_values]
+        unet_roots = [p for p in unique_paths if p in unet_values]
 
         for original_path in unique_paths:
             real_path = os.path.normpath(os.path.realpath(original_path)).replace(
@@ -747,7 +753,7 @@ class Config:
             if real_path != original_path:
                 self.add_path_mapping(original_path, real_path)
 
-        return unique_paths
+        return unique_paths, checkpoint_roots, unet_roots
 
     def _prepare_embedding_paths(self, raw_paths: Iterable[str]) -> List[str]:
         path_map = self._dedupe_existing_paths(raw_paths)
@@ -776,9 +782,11 @@ class Config:
         embedding_paths = folder_paths.get("embeddings", []) or []
 
         self.loras_roots = self._prepare_lora_paths(lora_paths)
-        self.base_models_roots = self._prepare_checkpoint_paths(
-            checkpoint_paths, unet_paths
-        )
+        (
+            self.base_models_roots,
+            self.checkpoints_roots,
+            self.unet_roots,
+        ) = self._prepare_checkpoint_paths(checkpoint_paths, unet_paths)
         self.embeddings_roots = self._prepare_embedding_paths(embedding_paths)
 
         # Process extra paths (only for LoRA Manager, not shared with ComfyUI)
@@ -789,18 +797,11 @@ class Config:
         extra_embedding_paths = extra_paths.get("embeddings", []) or []
 
         self.extra_loras_roots = self._prepare_lora_paths(extra_lora_paths)
-        # Save main paths before processing extra paths ( _prepare_checkpoint_paths overwrites them)
-        saved_checkpoints_roots = self.checkpoints_roots
-        saved_unet_roots = self.unet_roots
-        self.extra_checkpoints_roots = self._prepare_checkpoint_paths(
-            extra_checkpoint_paths, extra_unet_paths
-        )
-        self.extra_unet_roots = (
-            self.unet_roots if self.unet_roots is not None else []
-        )  # unet_roots was set by _prepare_checkpoint_paths
-        # Restore main paths
-        self.checkpoints_roots = saved_checkpoints_roots
-        self.unet_roots = saved_unet_roots
+        (
+            _,
+            self.extra_checkpoints_roots,
+            self.extra_unet_roots,
+        ) = self._prepare_checkpoint_paths(extra_checkpoint_paths, extra_unet_paths)
         self.extra_embeddings_roots = self._prepare_embedding_paths(
             extra_embedding_paths
         )
@@ -857,9 +858,11 @@ class Config:
         try:
             raw_checkpoint_paths = folder_paths.get_folder_paths("checkpoints")
             raw_unet_paths = folder_paths.get_folder_paths("unet")
-            unique_paths = self._prepare_checkpoint_paths(
-                raw_checkpoint_paths, raw_unet_paths
-            )
+            (
+                unique_paths,
+                self.checkpoints_roots,
+                self.unet_roots,
+            ) = self._prepare_checkpoint_paths(raw_checkpoint_paths, raw_unet_paths)
 
             logger.info(
                 "Found checkpoint roots:"
