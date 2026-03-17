@@ -267,4 +267,431 @@ describe('AutoComplete widget interactions', () => {
     const scrollTopAfter = autoComplete.scrollContainer?.scrollTop || 0;
     expect(scrollTopAfter).toBeGreaterThanOrEqual(scrollTopBefore);
   });
+
+  it('replaces entire multi-word phrase when it matches selected tag (Danbooru convention)', async () => {
+    const mockTags = [
+      { tag_name: 'looking_to_the_side', category: 0, post_count: 1234 },
+      { tag_name: 'looking_away', category: 0, post_count: 5678 },
+    ];
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, words: mockTags }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('looking to the side');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = 'looking to the side';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    autoComplete.searchType = 'custom_words';
+    autoComplete.activeCommand = null;
+    autoComplete.items = mockTags;
+    autoComplete.selectedIndex = 0;
+
+    await autoComplete.insertSelection('looking_to_the_side');
+
+    expect(input.value).toBe('looking_to_the_side, ');
+    expect(autoComplete.dropdown.style.display).toBe('none');
+    expect(input.focus).toHaveBeenCalled();
+  });
+
+  it('replaces only last token when typing partial match (e.g., "hello 1gi" -> "1girl")', async () => {
+    const mockTags = [
+      { tag_name: '1girl', category: 4, post_count: 500000 },
+      { tag_name: '1boy', category: 4, post_count: 300000 },
+    ];
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, words: mockTags }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('hello 1gi');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = 'hello 1gi';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    autoComplete.searchType = 'custom_words';
+    autoComplete.activeCommand = null;
+    autoComplete.items = mockTags;
+    autoComplete.selectedIndex = 0;
+    autoComplete.currentSearchTerm = 'hello 1gi';
+
+    await autoComplete.insertSelection('1girl');
+
+    expect(input.value).toBe('hello 1girl, ');
+  });
+
+  it('replaces entire phrase for underscore tag match (e.g., "blue hair" -> "blue_hair")', async () => {
+    const mockTags = [
+      { tag_name: 'blue_hair', category: 0, post_count: 45000 },
+      { tag_name: 'blue_eyes', category: 0, post_count: 80000 },
+    ];
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, words: mockTags }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('blue hair');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = 'blue hair';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    autoComplete.searchType = 'custom_words';
+    autoComplete.activeCommand = null;
+    autoComplete.items = mockTags;
+    autoComplete.selectedIndex = 0;
+    autoComplete.currentSearchTerm = 'blue hair';
+
+    await autoComplete.insertSelection('blue_hair');
+
+    expect(input.value).toBe('blue_hair, ');
+  });
+
+  it('handles multi-word phrase with preceding text correctly', async () => {
+    const mockTags = [
+      { tag_name: 'looking_to_the_side', category: 0, post_count: 1234 },
+    ];
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, words: mockTags }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('1girl, looking to the side');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = '1girl, looking to the side';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    autoComplete.searchType = 'custom_words';
+    autoComplete.activeCommand = null;
+    autoComplete.items = mockTags;
+    autoComplete.selectedIndex = 0;
+    autoComplete.currentSearchTerm = 'looking to the side';
+
+    await autoComplete.insertSelection('looking_to_the_side');
+
+    expect(input.value).toBe('1girl, looking_to_the_side, ');
+  });
+
+  it('replaces entire command and search term when using command mode with multi-word phrase', async () => {
+    const mockTags = [
+      { tag_name: 'looking_to_the_side', category: 4, post_count: 1234 },
+      { tag_name: 'looking_away', category: 4, post_count: 5678 },
+    ];
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, words: mockTags }),
+    });
+
+    // Simulate "/char looking to the side" input
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/char looking to the side');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = '/char looking to the side';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    // Set up command mode state
+    autoComplete.searchType = 'custom_words';
+    autoComplete.activeCommand = { categories: [4, 11], label: 'Character' };
+    autoComplete.items = mockTags;
+    autoComplete.selectedIndex = 0;
+    autoComplete.currentSearchTerm = '/char looking to the side';
+
+    await autoComplete.insertSelection('looking_to_the_side');
+
+    // Command part should be replaced along with search term
+    expect(input.value).toBe('looking_to_the_side, ');
+  });
+
+  it('replaces only last token when multi-word query does not exactly match selected tag', async () => {
+    const mockTags = [
+      { tag_name: 'blue_hair', category: 0, post_count: 45000 },
+      { tag_name: 'blue_eyes', category: 0, post_count: 80000 },
+    ];
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, words: mockTags }),
+    });
+
+    // User types "looking to the blue" but selects "blue_hair" (doesn't match entire phrase)
+    caretHelperInstance.getBeforeCursor.mockReturnValue('looking to the blue');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = 'looking to the blue';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    autoComplete.searchType = 'custom_words';
+    autoComplete.activeCommand = null;
+    autoComplete.items = mockTags;
+    autoComplete.selectedIndex = 0;
+    autoComplete.currentSearchTerm = 'looking to the blue';
+
+    await autoComplete.insertSelection('blue_hair');
+
+    // Only "blue" should be replaced, not the entire phrase
+    expect(input.value).toBe('looking to the blue_hair, ');
+  });
+
+  it('handles multiple consecutive spaces in multi-word phrase correctly', async () => {
+    const mockTags = [
+      { tag_name: 'looking_to_the_side', category: 0, post_count: 1234 },
+    ];
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, words: mockTags }),
+    });
+
+    // Input with multiple spaces between words
+    caretHelperInstance.getBeforeCursor.mockReturnValue('looking  to   the side');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = 'looking  to   the side';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    autoComplete.searchType = 'custom_words';
+    autoComplete.activeCommand = null;
+    autoComplete.items = mockTags;
+    autoComplete.selectedIndex = 0;
+    autoComplete.currentSearchTerm = 'looking  to   the side';
+
+    await autoComplete.insertSelection('looking_to_the_side');
+
+    // Multiple spaces should be normalized to single underscores for matching
+    expect(input.value).toBe('looking_to_the_side, ');
+  });
+
+  it('handles command mode with partial match replacing only last token', async () => {
+    const mockTags = [
+      { tag_name: 'blue_hair', category: 0, post_count: 45000 },
+    ];
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, words: mockTags }),
+    });
+
+    // Command mode but selected tag doesn't match entire search phrase
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/general looking to the blue');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = '/general looking to the blue';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    // Command mode with activeCommand
+    autoComplete.searchType = 'custom_words';
+    autoComplete.activeCommand = { categories: [0, 7], label: 'General' };
+    autoComplete.items = mockTags;
+    autoComplete.selectedIndex = 0;
+    autoComplete.currentSearchTerm = '/general looking to the blue';
+
+    await autoComplete.insertSelection('blue_hair');
+
+    // In command mode, the entire command + search term should be replaced
+    expect(input.value).toBe('blue_hair, ');
+  });
+
+  it('replaces entire phrase when selected tag starts with underscore version of search term (prefix match)', async () => {
+    const mockTags = [
+      { tag_name: 'looking_to_the_side', category: 0, post_count: 1234 },
+    ];
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, words: mockTags }),
+    });
+
+    // User types partial phrase "looking to the" and selects "looking_to_the_side"
+    caretHelperInstance.getBeforeCursor.mockReturnValue('looking to the');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = 'looking to the';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    autoComplete.searchType = 'custom_words';
+    autoComplete.activeCommand = null;
+    autoComplete.items = mockTags;
+    autoComplete.selectedIndex = 0;
+    autoComplete.currentSearchTerm = 'looking to the';
+
+    await autoComplete.insertSelection('looking_to_the_side');
+
+    // Entire phrase should be replaced with selected tag (with underscores)
+    expect(input.value).toBe('looking_to_the_side, ');
+  });
+
+  it('inserts tag with underscores regardless of space replacement setting', async () => {
+    const mockTags = [
+      { tag_name: 'blue_hair', category: 0, post_count: 45000 },
+    ];
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, words: mockTags }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('blue');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = 'blue';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    autoComplete.searchType = 'custom_words';
+    autoComplete.activeCommand = null;
+    autoComplete.items = mockTags;
+    autoComplete.selectedIndex = 0;
+
+    await autoComplete.insertSelection('blue_hair');
+
+    // Tag should be inserted with underscores, not spaces
+    expect(input.value).toBe('blue_hair, ');
+  });
+
+  it('replaces entire phrase when selected tag ends with underscore version of search term (suffix match)', async () => {
+    const mockTags = [
+      { tag_name: 'looking_to_the_side', category: 0, post_count: 1234 },
+    ];
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, words: mockTags }),
+    });
+
+    // User types suffix "to the side" and selects "looking_to_the_side"
+    caretHelperInstance.getBeforeCursor.mockReturnValue('to the side');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = 'to the side';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    autoComplete.searchType = 'custom_words';
+    autoComplete.activeCommand = null;
+    autoComplete.items = mockTags;
+    autoComplete.selectedIndex = 0;
+    autoComplete.currentSearchTerm = 'to the side';
+
+    await autoComplete.insertSelection('looking_to_the_side');
+
+    // Entire phrase should be replaced with selected tag
+    expect(input.value).toBe('looking_to_the_side, ');
+  });
 });

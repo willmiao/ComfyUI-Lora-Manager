@@ -1905,10 +1905,38 @@ class AutoComplete {
 
         // For regular tag autocomplete (no command), only replace the last space-separated token
         // This allows "hello 1gi" + selecting "1girl" to become "hello 1girl, "
+        // However, if the user typed a multi-word phrase that matches a tag (e.g., "looking to the side"
+        // matching "looking_to_the_side"), replace the entire phrase instead of just the last word.
         // Command mode (e.g., "/char miku") should replace the entire command+search
         let searchTerm = fullSearchTerm;
         if (this.modelType === 'prompt' && this.searchType === 'custom_words' && !this.activeCommand) {
-            searchTerm = this._getLastSpaceToken(fullSearchTerm);
+            // Check if the selectedItem exists and its tag_name matches the full search term
+            // when converted to underscore format (Danbooru convention)
+            const selectedItem = this.selectedIndex >= 0 ? this.items[this.selectedIndex] : null;
+            const selectedTagName = selectedItem && typeof selectedItem === 'object' && 'tag_name' 
+                ? selectedItem.tag_name 
+                : null;
+            
+            // Convert full search term to underscore format and check if it matches selected tag
+            // Normalize multiple spaces to single underscore for matching (e.g., "looking  to   the side" -> "looking_to_the_side")
+            const underscoreVersion = fullSearchTerm.replace(/ +/g, '_').toLowerCase();
+            const selectedTagLower = selectedTagName?.toLowerCase() ?? '';
+            
+            // If multi-word search term is a prefix or suffix of the selected tag,
+            // replace the entire phrase. This handles cases where user types partial tag name.
+            // Examples:
+            // - "looking to the" -> "looking_to_the_side" (prefix match)
+            // - "to the side" -> "looking_to_the_side" (suffix match)
+            // - "looking to the side" -> "looking_to_the_side" (exact match)
+            if (fullSearchTerm.includes(' ') && (
+                selectedTagLower.startsWith(underscoreVersion) ||
+                selectedTagLower.endsWith(underscoreVersion) ||
+                underscoreVersion === selectedTagLower
+            )) {
+                searchTerm = fullSearchTerm;
+            } else {
+                searchTerm = this._getLastSpaceToken(fullSearchTerm);
+            }
         }
 
         const searchStartPos = caretPos - searchTerm.length;
