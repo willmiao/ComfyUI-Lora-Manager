@@ -1,4 +1,5 @@
 """Services responsible for recipe metadata analysis."""
+
 from __future__ import annotations
 
 import base64
@@ -69,7 +70,9 @@ class RecipeAnalysisService:
         try:
             metadata = self._exif_utils.extract_image_metadata(temp_path)
             if not metadata:
-                return AnalysisResult({"error": "No metadata found in this image", "loras": []})
+                return AnalysisResult(
+                    {"error": "No metadata found in this image", "loras": []}
+                )
 
             return await self._parse_metadata(
                 metadata,
@@ -105,29 +108,33 @@ class RecipeAnalysisService:
             if civitai_match:
                 image_info = await civitai_client.get_image_info(civitai_match.group(1))
                 if not image_info:
-                    raise RecipeDownloadError("Failed to fetch image information from Civitai")
-                
+                    raise RecipeDownloadError(
+                        "Failed to fetch image information from Civitai"
+                    )
+
                 image_url = image_info.get("url")
                 if not image_url:
                     raise RecipeDownloadError("No image URL found in Civitai response")
-                
+
                 is_video = image_info.get("type") == "video"
-                
+
                 # Use optimized preview URLs if possible
-                rewritten_url, _ = rewrite_preview_url(image_url, media_type=image_info.get("type"))
+                rewritten_url, _ = rewrite_preview_url(
+                    image_url, media_type=image_info.get("type")
+                )
                 if rewritten_url:
                     image_url = rewritten_url
 
                 if is_video:
                     # Extract extension from URL
-                    url_path = image_url.split('?')[0].split('#')[0]
+                    url_path = image_url.split("?")[0].split("#")[0]
                     extension = os.path.splitext(url_path)[1].lower() or ".mp4"
                 else:
                     extension = ".jpg"
 
                 temp_path = self._create_temp_path(suffix=extension)
                 await self._download_image(image_url, temp_path)
-                
+
                 metadata = image_info.get("meta") if "meta" in image_info else None
                 if (
                     isinstance(metadata, dict)
@@ -135,15 +142,23 @@ class RecipeAnalysisService:
                     and isinstance(metadata["meta"], dict)
                 ):
                     metadata = metadata["meta"]
+
+                # Validate that metadata contains meaningful recipe fields
+                # If not, treat as None to trigger EXIF extraction from downloaded image
+                if isinstance(metadata, dict) and not self._has_recipe_fields(metadata):
+                    self._logger.debug(
+                        "Civitai API metadata lacks recipe fields, will extract from EXIF"
+                    )
+                    metadata = None
             else:
                 # Basic extension detection for non-Civitai URLs
-                url_path = url.split('?')[0].split('#')[0]
+                url_path = url.split("?")[0].split("#")[0]
                 extension = os.path.splitext(url_path)[1].lower()
                 if extension in [".mp4", ".webm"]:
                     is_video = True
                 else:
                     extension = ".jpg"
-                
+
                 temp_path = self._create_temp_path(suffix=extension)
                 await self._download_image(url, temp_path)
 
@@ -211,7 +226,9 @@ class RecipeAnalysisService:
 
         image_bytes = self._convert_tensor_to_png_bytes(latest_image)
         if image_bytes is None:
-            raise RecipeValidationError("Cannot handle this data shape from metadata registry")
+            raise RecipeValidationError(
+                "Cannot handle this data shape from metadata registry"
+            )
 
         return AnalysisResult(
             {
@@ -221,6 +238,22 @@ class RecipeAnalysisService:
         )
 
     # Internal helpers -------------------------------------------------
+
+    def _has_recipe_fields(self, metadata: dict[str, Any]) -> bool:
+        """Check if metadata contains meaningful recipe-related fields."""
+        recipe_fields = {
+            "prompt",
+            "negative_prompt",
+            "resources",
+            "hashes",
+            "params",
+            "generationData",
+            "Workflow",
+            "prompt_type",
+            "positive",
+            "negative",
+        }
+        return any(field in metadata for field in recipe_fields)
 
     async def _parse_metadata(
         self,
@@ -234,7 +267,12 @@ class RecipeAnalysisService:
     ) -> AnalysisResult:
         parser = self._recipe_parser_factory.create_parser(metadata)
         if parser is None:
-            payload = {"error": "No parser found for this image", "loras": []}
+            # Provide more specific error message based on metadata source
+            if not metadata:
+                error_msg = "This image does not contain any generation metadata (prompt, models, or parameters)"
+            else:
+                error_msg = "No parser found for this image"
+            payload = {"error": error_msg, "loras": []}
             if include_image_base64 and image_path:
                 payload["image_base64"] = self._encode_file(image_path)
             payload["is_video"] = is_video
@@ -257,7 +295,9 @@ class RecipeAnalysisService:
 
         matching_recipes: list[str] = []
         if fingerprint:
-            matching_recipes = await recipe_scanner.find_recipes_by_fingerprint(fingerprint)
+            matching_recipes = await recipe_scanner.find_recipes_by_fingerprint(
+                fingerprint
+            )
         result["matching_recipes"] = matching_recipes
 
         return AnalysisResult(result)
@@ -269,7 +309,10 @@ class RecipeAnalysisService:
             raise RecipeDownloadError(f"Failed to download image from URL: {result}")
 
     def _metadata_not_found_response(self, path: str) -> AnalysisResult:
-        payload: dict[str, Any] = {"error": "No metadata found in this image", "loras": []}
+        payload: dict[str, Any] = {
+            "error": "No metadata found in this image",
+            "loras": [],
+        }
         if os.path.exists(path):
             payload["image_base64"] = self._encode_file(path)
         return AnalysisResult(payload)
@@ -305,7 +348,9 @@ class RecipeAnalysisService:
 
             if hasattr(tensor_image, "shape"):
                 self._logger.debug(
-                    "Tensor shape: %s, dtype: %s", tensor_image.shape, getattr(tensor_image, "dtype", None)
+                    "Tensor shape: %s, dtype: %s",
+                    tensor_image.shape,
+                    getattr(tensor_image, "dtype", None),
                 )
 
             import torch  # type: ignore[import-not-found]
