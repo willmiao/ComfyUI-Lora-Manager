@@ -56,6 +56,7 @@ class PersistentModelCache:
         "exclude",
         "db_checked",
         "last_checked_at",
+        "hash_status",
     )
     _MODEL_UPDATE_COLUMNS: Tuple[str, ...] = _MODEL_COLUMNS[2:]
     _instances: Dict[str, "PersistentModelCache"] = {}
@@ -186,6 +187,7 @@ class PersistentModelCache:
                 "civitai_deleted": bool(row["civitai_deleted"]),
                 "skip_metadata_refresh": bool(row["skip_metadata_refresh"]),
                 "license_flags": int(license_value),
+                "hash_status": row["hash_status"] or "completed",
             }
             raw_data.append(item)
 
@@ -449,6 +451,7 @@ class PersistentModelCache:
                             exclude INTEGER,
                             db_checked INTEGER,
                             last_checked_at REAL,
+                            hash_status TEXT,
                             PRIMARY KEY (model_type, file_path)
                         );
 
@@ -496,6 +499,7 @@ class PersistentModelCache:
             "skip_metadata_refresh": "INTEGER DEFAULT 0",
             # Persisting without explicit flags should assume CivitAI's documented defaults (0b111001 == 57).
             "license_flags": f"INTEGER DEFAULT {DEFAULT_LICENSE_FLAGS}",
+            "hash_status": "TEXT DEFAULT 'completed'",
         }
 
         for column, definition in required_columns.items():
@@ -570,6 +574,7 @@ class PersistentModelCache:
             1 if item.get("exclude") else 0,
             1 if item.get("db_checked") else 0,
             float(item.get("last_checked_at") or 0.0),
+            item.get("hash_status", "completed"),
         )
 
     def _insert_model_sql(self) -> str:

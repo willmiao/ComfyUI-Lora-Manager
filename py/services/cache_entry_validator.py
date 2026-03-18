@@ -58,6 +58,7 @@ class CacheEntryValidator:
         'preview_nsfw_level': (0, False),
         'notes': ('', False),
         'usage_tips': ('', False),
+        'hash_status': ('completed', False),
     }
 
     @classmethod
@@ -92,11 +93,25 @@ class CacheEntryValidator:
         repaired = False
         working_entry = dict(entry) if auto_repair else entry
 
+        # First, ensure hash_status is present as it's used to validate sha256
+        hash_status = working_entry.get('hash_status')
+        if hash_status is None:
+            working_entry['hash_status'] = 'completed'
+            repaired = True
+            hash_status = 'completed'
+
         for field_name, (default_value, is_required) in cls.CORE_FIELDS.items():
             value = working_entry.get(field_name)
 
             # Check if field is missing or None
             if value is None:
+                # Special case: sha256 can be None/empty if hash_status is pending
+                if field_name == 'sha256' and hash_status == 'pending':
+                    if auto_repair:
+                        working_entry[field_name] = ''
+                        repaired = True
+                    continue
+
                 if is_required:
                     errors.append(f"Required field '{field_name}' is missing or None")
                 if auto_repair:
@@ -107,6 +122,10 @@ class CacheEntryValidator:
             # Validate field type and value
             field_error = cls._validate_field(field_name, value, default_value)
             if field_error:
+                # Special case: allow empty string for sha256 if pending
+                if field_name == 'sha256' and hash_status == 'pending' and value == '':
+                    continue
+
                 errors.append(field_error)
                 if auto_repair:
                     working_entry[field_name] = cls._get_default_copy(default_value)
@@ -127,10 +146,11 @@ class CacheEntryValidator:
         # Special validation: sha256 must not be empty for required field
         # BUT allow empty sha256 when hash_status is pending (lazy hash calculation)
         sha256 = working_entry.get('sha256', '')
-        hash_status = working_entry.get('hash_status', 'completed')
+        # Re-fetch hash_status in case it was changed during loop
+        current_hash_status = working_entry.get('hash_status', 'completed')
         if not sha256 or (isinstance(sha256, str) and not sha256.strip()):
             # Allow empty sha256 for lazy hash calculation (checkpoints)
-            if hash_status != 'pending':
+            if current_hash_status != 'pending':
                 errors.append("Required field 'sha256' is empty")
                 # Cannot repair empty sha256 - entry is invalid
                 return ValidationResult(
