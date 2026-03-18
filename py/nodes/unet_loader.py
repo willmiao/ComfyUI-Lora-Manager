@@ -143,18 +143,16 @@ class UNETLoaderLM:
         Returns:
             Tuple of (MODEL,)
         """
+        from .gguf_import_helper import get_gguf_modules
+
+        # Get ComfyUI-GGUF modules using helper (handles various import scenarios)
         try:
-            # Try to import ComfyUI-GGUF modules
-            from custom_nodes.ComfyUI_GGUF.loader import gguf_sd_loader
-            from custom_nodes.ComfyUI_GGUF.ops import GGMLOps
-            from custom_nodes.ComfyUI_GGUF.nodes import GGUFModelPatcher
-        except ImportError:
-            raise RuntimeError(
-                f"Cannot load GGUF model '{unet_name}'. "
-                "ComfyUI-GGUF is not installed. "
-                "Please install ComfyUI-GGUF from https://github.com/city96/ComfyUI-GGUF "
-                "to load GGUF format models."
-            )
+            loader_module, ops_module, nodes_module = get_gguf_modules()
+            gguf_sd_loader = getattr(loader_module, "gguf_sd_loader")
+            GGMLOps = getattr(ops_module, "GGMLOps")
+            GGUFModelPatcher = getattr(nodes_module, "GGUFModelPatcher")
+        except RuntimeError as e:
+            raise RuntimeError(f"Cannot load GGUF model '{unet_name}'. {str(e)}")
 
         logger.info(f"Loading GGUF diffusion model from: {unet_path}")
 
