@@ -108,10 +108,6 @@ class CheckpointLoaderLM:
                 "Make sure the checkpoint is indexed and try again."
             )
 
-        # Check if it's a GGUF model
-        if ckpt_path.endswith(".gguf"):
-            return self._load_gguf_checkpoint(ckpt_path, ckpt_name)
-
         # Load regular checkpoint using ComfyUI's API
         logger.info(f"Loading checkpoint from: {ckpt_path}")
         out = comfy.sd.load_checkpoint_guess_config(
@@ -121,62 +117,3 @@ class CheckpointLoaderLM:
             embedding_directory=folder_paths.get_folder_paths("embeddings"),
         )
         return out[:3]
-
-    def _load_gguf_checkpoint(self, ckpt_path: str, ckpt_name: str) -> Tuple:
-        """Load a GGUF format checkpoint
-
-        Args:
-            ckpt_path: Absolute path to the GGUF file
-            ckpt_name: Name of the checkpoint for error messages
-
-        Returns:
-            Tuple of (MODEL, CLIP, VAE) - CLIP and VAE may be None for GGUF
-        """
-        from .gguf_import_helper import get_gguf_modules
-
-        # Get ComfyUI-GGUF modules using helper (handles various import scenarios)
-        try:
-            loader_module, ops_module, nodes_module = get_gguf_modules()
-            gguf_sd_loader = getattr(loader_module, "gguf_sd_loader")
-            GGMLOps = getattr(ops_module, "GGMLOps")
-            GGUFModelPatcher = getattr(nodes_module, "GGUFModelPatcher")
-        except RuntimeError as e:
-            raise RuntimeError(f"Cannot load GGUF model '{ckpt_name}'. {str(e)}")
-
-        logger.info(f"Loading GGUF checkpoint from: {ckpt_path}")
-
-        try:
-            # Load GGUF state dict
-            sd, extra = gguf_sd_loader(ckpt_path)
-
-            # Prepare kwargs for metadata if supported
-            kwargs = {}
-            import inspect
-
-            valid_params = inspect.signature(
-                comfy.sd.load_diffusion_model_state_dict
-            ).parameters
-            if "metadata" in valid_params:
-                kwargs["metadata"] = extra.get("metadata", {})
-
-            # Load the model
-            model = comfy.sd.load_diffusion_model_state_dict(
-                sd, model_options={"custom_operations": GGMLOps()}, **kwargs
-            )
-
-            if model is None:
-                raise RuntimeError(
-                    f"Could not detect model type for GGUF checkpoint: {ckpt_path}"
-                )
-
-            # Wrap with GGUFModelPatcher
-            model = GGUFModelPatcher.clone(model)
-
-            # GGUF checkpoints typically don't include CLIP/VAE
-            return (model, None, None)
-
-        except Exception as e:
-            logger.error(f"Error loading GGUF checkpoint '{ckpt_name}': {e}")
-            raise RuntimeError(
-                f"Failed to load GGUF checkpoint '{ckpt_name}': {str(e)}"
-            )
