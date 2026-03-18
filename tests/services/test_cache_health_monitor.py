@@ -194,6 +194,7 @@ class TestCacheHealthMonitor:
             'preview_nsfw_level': 0,
             'notes': '',
             'usage_tips': '',
+            'hash_status': 'completed',
         }
         incomplete_entry = {
             'file_path': '/models/test2.safetensors',

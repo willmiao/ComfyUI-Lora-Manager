@@ -91,17 +91,21 @@ class CacheEntryValidator:
 
         errors: List[str] = []
         repaired = False
+        
+        # If auto_repair is on, we work on a copy. If not, we still need a safe way to check fields.
         working_entry = dict(entry) if auto_repair else entry
 
-        # First, ensure hash_status is present as it's used to validate sha256
-        hash_status = working_entry.get('hash_status')
+        # Determine effective hash_status for validation logic
+        hash_status = entry.get('hash_status')
         if hash_status is None:
-            working_entry['hash_status'] = 'completed'
-            repaired = True
+            if auto_repair:
+                working_entry['hash_status'] = 'completed'
+                repaired = True
             hash_status = 'completed'
 
         for field_name, (default_value, is_required) in cls.CORE_FIELDS.items():
-            value = working_entry.get(field_name)
+            # Get current value from the original entry to avoid side effects during validation
+            value = entry.get(field_name)
 
             # Check if field is missing or None
             if value is None:
@@ -146,11 +150,10 @@ class CacheEntryValidator:
         # Special validation: sha256 must not be empty for required field
         # BUT allow empty sha256 when hash_status is pending (lazy hash calculation)
         sha256 = working_entry.get('sha256', '')
-        # Re-fetch hash_status in case it was changed during loop
-        current_hash_status = working_entry.get('hash_status', 'completed')
+        # Use the effective hash_status we determined earlier
         if not sha256 or (isinstance(sha256, str) and not sha256.strip()):
             # Allow empty sha256 for lazy hash calculation (checkpoints)
-            if current_hash_status != 'pending':
+            if hash_status != 'pending':
                 errors.append("Required field 'sha256' is empty")
                 # Cannot repair empty sha256 - entry is invalid
                 return ValidationResult(
@@ -164,8 +167,13 @@ class CacheEntryValidator:
         if isinstance(sha256, str):
             normalized_sha = sha256.lower().strip()
             if normalized_sha != sha256:
-                working_entry['sha256'] = normalized_sha
-                repaired = True
+                if auto_repair:
+                    working_entry['sha256'] = normalized_sha
+                    repaired = True
+                else:
+                    # If not auto-repairing, we don't consider case difference as a "critical error" 
+                    # that invalidates the entry, but we also don't mark it repaired.
+                    pass
 
         # Determine if entry is valid
         # Entry is valid if no critical required field errors remain after repair
