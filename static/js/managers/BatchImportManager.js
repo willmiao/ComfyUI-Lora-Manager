@@ -104,6 +104,14 @@ export class BatchImportManager {
 
         // Clean up any existing connections
         this.cleanupConnections();
+
+        // Focus on the URL input field for better UX
+        setTimeout(() => {
+            const urlInput = document.getElementById('batchUrlInput');
+            if (urlInput) {
+                urlInput.focus();
+            }
+        }, 100);
     }
 
     /**
