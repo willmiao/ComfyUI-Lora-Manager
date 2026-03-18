@@ -16,7 +16,7 @@ class UNETLoaderLM:
     Supports both regular diffusion models and GGUF format models.
     """
 
-    NAME = "UNETLoaderLM"
+    NAME = "Unet Loader (LoraManager)"
     CATEGORY = "Lora Manager/loaders"
 
     @classmethod
@@ -61,7 +61,7 @@ class UNETLoaderLM:
                     if item.get("sub_type") == "diffusion_model":
                         file_path = item.get("file_path", "")
                         if file_path:
-                            # Format as ComfyUI-style: "folder/model_name.ext"
+                            # Format using relative path with OS-native separator
                             formatted_name = _format_model_name_for_comfyui(
                                 file_path, model_roots
                             )
@@ -95,7 +95,7 @@ class UNETLoaderLM:
         """Load a diffusion model by name, supporting extra folder paths
 
         Args:
-            unet_name: The name of the diffusion model to load (format: "folder/model_name.ext")
+            unet_name: The name of the diffusion model to load (relative path with extension)
             weight_dtype: The dtype to use for model weights
 
         Returns:

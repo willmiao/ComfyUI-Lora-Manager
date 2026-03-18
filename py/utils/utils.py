@@ -148,8 +148,8 @@ def get_checkpoint_info_absolute(checkpoint_name):
             # Format the stored path as ComfyUI-style name
             formatted_name = _format_model_name_for_comfyui(file_path, model_roots)
 
-            # Match by formatted name
-            if formatted_name == normalized_name or formatted_name == checkpoint_name:
+            # Match by formatted name (normalize separators for robust comparison)
+            if formatted_name.replace(os.sep, "/") == normalized_name or formatted_name == checkpoint_name:
                 return file_path, item
 
             # Also try matching by basename only (for backward compatibility)
@@ -200,19 +200,22 @@ def _format_model_name_for_comfyui(file_path: str, model_roots: list) -> str:
     Returns:
         ComfyUI-style model name with relative path and extension
     """
-    # Normalize path separators
-    normalized_path = file_path.replace(os.sep, "/")
-
     # Find the matching root and get relative path
     for root in model_roots:
-        normalized_root = root.replace(os.sep, "/")
-        # Ensure root ends with / for proper matching
-        if not normalized_root.endswith("/"):
-            normalized_root += "/"
+        try:
+            # Normalize paths for comparison
+            norm_file = os.path.normcase(os.path.abspath(file_path))
+            norm_root = os.path.normcase(os.path.abspath(root))
 
-        if normalized_path.startswith(normalized_root):
-            rel_path = normalized_path[len(normalized_root) :]
-            return rel_path
+            # Add trailing separator for prefix check
+            if not norm_root.endswith(os.sep):
+                norm_root += os.sep
+
+            if norm_file.startswith(norm_root):
+                # Use os.path.relpath to get relative path with OS-native separator
+                return os.path.relpath(file_path, root)
+        except (ValueError, TypeError):
+            continue
 
     # If no root matches, just return the basename with extension
     return os.path.basename(file_path)

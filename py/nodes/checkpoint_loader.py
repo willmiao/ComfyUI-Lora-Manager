@@ -15,7 +15,7 @@ class CheckpointLoaderLM:
     extra folder paths, providing a unified interface for checkpoint loading.
     """
 
-    NAME = "CheckpointLoaderLM"
+    NAME = "Checkpoint Loader (LoraManager)"
     CATEGORY = "Lora Manager/loaders"
 
     @classmethod
@@ -60,7 +60,7 @@ class CheckpointLoaderLM:
                     if item.get("sub_type") == "checkpoint":
                         file_path = item.get("file_path", "")
                         if file_path:
-                            # Format as ComfyUI-style: "folder/model_name.ext"
+                            # Format using relative path with OS-native separator
                             formatted_name = _format_model_name_for_comfyui(
                                 file_path, model_roots
                             )
@@ -94,7 +94,7 @@ class CheckpointLoaderLM:
         """Load a checkpoint by name, supporting extra folder paths
 
         Args:
-            ckpt_name: The name of the checkpoint to load (format: "folder/model_name.ext")
+            ckpt_name: The name of the checkpoint to load (relative path with extension)
 
         Returns:
             Tuple of (MODEL, CLIP, VAE)
