@@ -14,7 +14,6 @@ from ..utils.metadata_manager import MetadataManager
 from ..utils.civitai_utils import resolve_license_info
 from .model_cache import ModelCache
 from .model_hash_index import ModelHashIndex
-from ..utils.constants import PREVIEW_EXTENSIONS
 from .model_lifecycle_service import delete_model_artifacts
 from .service_registry import ServiceRegistry
 from .websocket_manager import ws_manager
@@ -1442,14 +1441,13 @@ class ModelScanner:
         file_path = self._hash_index.get_path(sha256.lower())
         if not file_path:
             return None
-            
-        base_name = os.path.splitext(file_path)[0]
-        
-        for ext in PREVIEW_EXTENSIONS:
-            preview_path = f"{base_name}{ext}"
-            if os.path.exists(preview_path):
-                return config.get_preview_static_url(preview_path)
-        
+
+        dir_path = os.path.dirname(file_path)
+        base_name = os.path.splitext(os.path.basename(file_path))[0]
+        preview_path = find_preview_file(base_name, dir_path)
+        if preview_path:
+            return config.get_preview_static_url(preview_path)
+
         return None
         
     async def get_top_tags(self, limit: int = 20) -> List[Dict[str, any]]:

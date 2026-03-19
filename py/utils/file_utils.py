@@ -40,49 +40,39 @@ async def calculate_sha256(file_path: str) -> str:
     return sha256_hash.hexdigest()
 
 def find_preview_file(base_name: str, dir_path: str) -> str:
-    """Find preview file for given base name in directory"""
-    
+    """Find preview file for given base name in directory.
+
+    Performs an exact-case check first (fast path), then falls back to a
+    case-insensitive scan so that files like ``model.WEBP`` or ``model.Png``
+    are discovered on case-sensitive filesystems.
+    """
+
     temp_extensions = PREVIEW_EXTENSIONS.copy()
     # Add example extension for compatibility
     # https://github.com/willmiao/ComfyUI-Lora-Manager/issues/225
     # The preview image will be optimized to lora-name.webp, so it won't affect other logic
     temp_extensions.append(".example.0.jpeg")
+
+    # Fast path: exact-case match
     for ext in temp_extensions:
         full_pattern = os.path.join(dir_path, f"{base_name}{ext}")
         if os.path.exists(full_pattern):
-            # Check if this is an image and not already webp
-            # TODO: disable the optimization for now, maybe add a config option later
-            # if ext.lower().endswith(('.jpg', '.jpeg', '.png')) and not ext.lower().endswith('.webp'):
-            #     try:
-            #         # Optimize the image to webp format
-            #         webp_path = os.path.join(dir_path, f"{base_name}.webp")
-                    
-            #         # Use ExifUtils to optimize the image
-            #         with open(full_pattern, 'rb') as f:
-            #             image_data = f.read()
-                    
-            #         optimized_data, _ = ExifUtils.optimize_image(
-            #             image_data=image_data,
-            #             target_width=CARD_PREVIEW_WIDTH,
-            #             format='webp',
-            #             quality=85,
-            #             preserve_metadata=False
-            #         )
-                    
-            #         # Save the optimized webp file
-            #         with open(webp_path, 'wb') as f:
-            #             f.write(optimized_data)
-                    
-            #         logger.debug(f"Optimized preview image from {full_pattern} to {webp_path}")
-            #         return webp_path.replace(os.sep, "/")
-            #     except Exception as e:
-            #         logger.error(f"Error optimizing preview image {full_pattern}: {e}")
-            #         # Fall back to original file if optimization fails
-            #         return full_pattern.replace(os.sep, "/")
-            
-            # Return the original path for webp images or non-image files
             return full_pattern.replace(os.sep, "/")
-    
+
+    # Slow path: case-insensitive match for systems with mixed-case extensions
+    # (e.g. .WEBP, .Png, .JPG placed manually or by external tools)
+    try:
+        dir_entries = os.listdir(dir_path)
+    except OSError:
+        return ""
+
+    base_lower = base_name.lower()
+    for ext in temp_extensions:
+        target = f"{base_lower}{ext}"  # ext is already lowercase
+        for entry in dir_entries:
+            if entry.lower() == target:
+                return os.path.join(dir_path, entry).replace(os.sep, "/")
+
     return ""
 
 def get_preview_extension(preview_path: str) -> str:
