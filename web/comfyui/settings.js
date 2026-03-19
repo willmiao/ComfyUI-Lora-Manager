@@ -24,6 +24,9 @@ const NEW_TAB_TEMPLATE_DEFAULT = "Default";
 
 const NEW_TAB_ZOOM_LEVEL = 0.8;
 
+const STRENGTH_STEP_SETTING_ID = "loramanager.strength_step";
+const STRENGTH_STEP_DEFAULT = 0.05;
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -232,6 +235,32 @@ const getNewTabTemplatePreference = (() => {
     };
 })();
 
+const getStrengthStepPreference = (() => {
+    let settingsUnavailableLogged = false;
+
+    return () => {
+        const settingManager = app?.extensionManager?.setting;
+        if (!settingManager || typeof settingManager.get !== "function") {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: settings API unavailable, using default strength step.");
+                settingsUnavailableLogged = true;
+            }
+            return STRENGTH_STEP_DEFAULT;
+        }
+
+        try {
+            const value = settingManager.get(STRENGTH_STEP_SETTING_ID);
+            return value ?? STRENGTH_STEP_DEFAULT;
+        } catch (error) {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: unable to read strength step setting, using default.", error);
+                settingsUnavailableLogged = true;
+            }
+            return STRENGTH_STEP_DEFAULT;
+        }
+    };
+})();
+
 // ============================================================================
 // Register Extension with All Settings
 // ============================================================================
@@ -292,6 +321,19 @@ app.registerExtension({
             defaultValue: NEW_TAB_TEMPLATE_DEFAULT,
             tooltip: "Choose a template workflow to load when creating a new workflow tab. 'Default (Blank)' keeps ComfyUI's original blank workflow behavior.",
             category: ["LoRA Manager", "Workflow", "New Tab Template"],
+        },
+        {
+            id: STRENGTH_STEP_SETTING_ID,
+            name: "Strength Adjustment Step",
+            type: "slider",
+            attrs: {
+                min: 0.01,
+                max: 0.1,
+                step: 0.01,
+            },
+            defaultValue: STRENGTH_STEP_DEFAULT,
+            tooltip: "Step size for adjusting LoRA strength via arrow buttons or keyboard (default: 0.05)",
+            category: ["LoRA Manager", "LoRA Widget", "Strength Step"],
         },
     ],
     async setup() {
@@ -375,4 +417,5 @@ export {
     getTagSpaceReplacementPreference,
     getUsageStatisticsPreference,
     getNewTabTemplatePreference,
+    getStrengthStepPreference,
 };
