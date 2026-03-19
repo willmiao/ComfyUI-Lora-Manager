@@ -62,7 +62,6 @@ export function useLoraPoolApi() {
     foldersExclude?: string[]
     noCreditRequired?: boolean
     allowSelling?: boolean
-    includeEmptyLora?: boolean
     page?: number
     pageSize?: number
   }
@@ -91,10 +90,6 @@ export function useLoraPoolApi() {
 
       if (params.allowSelling !== undefined) {
         urlParams.set('allow_selling_generated_content', String(params.allowSelling))
-      }
-
-      if (params.includeEmptyLora !== undefined) {
-        urlParams.set('include_empty_lora', String(params.includeEmptyLora))
       }
 
       const response = await fetch(`/api/lm/loras/list?${urlParams}`)

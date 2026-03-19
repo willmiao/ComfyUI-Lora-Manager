@@ -56,6 +56,9 @@ class LoraCyclerLM:
         clip_strength = float(cycler_config.get("clip_strength", 1.0))
         sort_by = "filename"
 
+        # Include "no lora" option
+        include_no_lora = cycler_config.get("include_no_lora", False)
+
         # Dual-index mechanism for batch queue synchronization
         execution_index = cycler_config.get("execution_index")  # Can be None
         # next_index_from_config = cycler_config.get("next_index")  # Not used on backend
@@ -71,7 +74,10 @@ class LoraCyclerLM:
 
         total_count = len(lora_list)
 
-        if total_count == 0:
+        # Calculate effective total count (includes no lora option if enabled)
+        effective_total_count = total_count + 1 if include_no_lora else total_count
+
+        if total_count == 0 and not include_no_lora:
             logger.warning("[LoraCyclerLM] No LoRAs available in pool")
             return {
                 "result": ([],),
@@ -93,47 +99,66 @@ class LoraCyclerLM:
         else:
             actual_index = current_index
 
-        # Clamp index to valid range (1-based)
-        clamped_index = max(1, min(actual_index, total_count))
+        # Clamp index to valid range (1-based, includes no lora if enabled)
+        clamped_index = max(1, min(actual_index, effective_total_count))
 
-        # Get LoRA at current index (convert to 0-based for list access)
-        current_lora = lora_list[clamped_index - 1]
+        # Check if current index is the "no lora" option (last position when include_no_lora is True)
+        is_no_lora = include_no_lora and clamped_index == effective_total_count
 
-        # Build LORA_STACK with single LoRA
-        if current_lora["file_name"] == "None":
-            lora_path = None
-        else:
-            lora_path, _ = get_lora_info(current_lora["file_name"])
-
-        if not lora_path:
-            if current_lora["file_name"] != "None":
-                logger.warning(
-                    f"[LoraCyclerLM] Could not find path for LoRA: {current_lora['file_name']}"
-                )
+        if is_no_lora:
+            # "No LoRA" option - return empty stack
             lora_stack = []
+            current_lora_name = "No LoRA"
+            current_lora_filename = "No LoRA"
         else:
-            # Normalize path separators
-            lora_path = lora_path.replace("/", os.sep)
-            lora_stack = [(lora_path, model_strength, clip_strength)]
+            # Get LoRA at current index (convert to 0-based for list access)
+            current_lora = lora_list[clamped_index - 1]
+            current_lora_name = current_lora["file_name"]
+            current_lora_filename = current_lora["file_name"]
+
+            # Build LORA_STACK with single LoRA
+            if current_lora["file_name"] == "None":
+                lora_path = None
+            else:
+                lora_path, _ = get_lora_info(current_lora["file_name"])
+
+            if not lora_path:
+                if current_lora["file_name"] != "None":
+                    logger.warning(
+                        f"[LoraCyclerLM] Could not find path for LoRA: {current_lora['file_name']}"
+                    )
+                lora_stack = []
+            else:
+                # Normalize path separators
+                lora_path = lora_path.replace("/", os.sep)
+                lora_stack = [(lora_path, model_strength, clip_strength)]
 
         # Calculate next index (wrap to 1 if at end)
         next_index = clamped_index + 1
-        if next_index > total_count:
+        if next_index > effective_total_count:
             next_index = 1
 
         # Get next LoRA for UI display (what will be used next generation)
-        next_lora = lora_list[next_index - 1]
-        next_display_name = next_lora["file_name"]
+        is_next_no_lora = include_no_lora and next_index == effective_total_count
+        if is_next_no_lora:
+            next_display_name = "No LoRA"
+            next_lora_filename = "No LoRA"
+        else:
+            next_lora = lora_list[next_index - 1]
+            next_display_name = next_lora["file_name"]
+            next_lora_filename = next_lora["file_name"]
 
         return {
             "result": (lora_stack,),
             "ui": {
                 "current_index": [clamped_index],
                 "next_index": [next_index],
-                "total_count": [total_count],
-                "current_lora_name": [current_lora["file_name"]],
-                "current_lora_filename": [current_lora["file_name"]],
+                "total_count": [
+                    total_count
+                ],  # Return actual LoRA count, not effective_total_count
+                "current_lora_name": [current_lora_name],
+                "current_lora_filename": [current_lora_filename],
                 "next_lora_name": [next_display_name],
-                "next_lora_filename": [next_lora["file_name"]],
+                "next_lora_filename": [next_lora_filename],
             },
         }

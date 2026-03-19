@@ -2,8 +2,8 @@
   <div class="lora-cycler-widget">
     <LoraCyclerSettingsView
       :current-index="state.currentIndex.value"
-      :total-count="state.totalCount.value"
-      :current-lora-name="state.currentLoraName.value"
+      :total-count="displayTotalCount"
+      :current-lora-name="displayLoraName"
       :current-lora-filename="state.currentLoraFilename.value"
       :model-strength="state.modelStrength.value"
       :clip-strength="state.clipStrength.value"
@@ -16,11 +16,14 @@
       :is-pause-disabled="hasQueuedPrompts"
       :is-workflow-executing="state.isWorkflowExecuting.value"
       :executing-repeat-step="state.executingRepeatStep.value"
+      :include-no-lora="state.includeNoLora.value"
+      :is-no-lora="isNoLora"
       @update:current-index="handleIndexUpdate"
       @update:model-strength="state.modelStrength.value = $event"
       @update:clip-strength="state.clipStrength.value = $event"
       @update:use-custom-clip-range="handleUseCustomClipRangeChange"
       @update:repeat-count="handleRepeatCountChange"
+      @update:include-no-lora="handleIncludeNoLoraChange"
       @toggle-pause="handleTogglePause"
       @reset-index="handleResetIndex"
       @open-lora-selector="isModalOpen = true"
@@ -30,6 +33,7 @@
       :visible="isModalOpen"
       :lora-list="cachedLoraList"
       :current-index="state.currentIndex.value"
+      :include-no-lora="state.includeNoLora.value"
       @close="isModalOpen = false"
       @select="handleModalSelect"
     />
@@ -37,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import LoraCyclerSettingsView from './lora-cycler/LoraCyclerSettingsView.vue'
 import LoraListModal from './lora-cycler/LoraListModal.vue'
 import { useLoraCyclerState } from '../composables/useLoraCyclerState'
@@ -102,6 +106,31 @@ const isModalOpen = ref(false)
 // Cache for LoRA list (used by modal)
 const cachedLoraList = ref<LoraItem[]>([])
 
+// Computed: display total count (includes no lora option if enabled)
+const displayTotalCount = computed(() => {
+  const baseCount = state.totalCount.value
+  return state.includeNoLora.value ? baseCount + 1 : baseCount
+})
+
+// Computed: display LoRA name (shows "No LoRA" if on the last index and includeNoLora is enabled)
+const displayLoraName = computed(() => {
+  const currentIndex = state.currentIndex.value
+  const totalCount = state.totalCount.value
+  
+  // If includeNoLora is enabled and we're on the last position (no lora slot)
+  if (state.includeNoLora.value && currentIndex === totalCount + 1) {
+    return 'No LoRA'
+  }
+  
+  // Otherwise show the normal LoRA name
+  return state.currentLoraName.value
+})
+
+// Computed: check if currently on "No LoRA" option
+const isNoLora = computed(() => {
+  return state.includeNoLora.value && state.currentIndex.value === state.totalCount.value + 1
+})
+
 // Get pool config from connected node
 const getPoolConfig = (): LoraPoolConfig | null => {
   // Check if getPoolConfig method exists on node (added by main.ts)
@@ -113,7 +142,17 @@ const getPoolConfig = (): LoraPoolConfig | null => {
 
 // Update display from LoRA list and index
 const updateDisplayFromLoraList = (loraList: LoraItem[], index: number) => {
-  if (loraList.length > 0 && index > 0 && index <= loraList.length) {
+  const actualLoraCount = loraList.length
+  
+  // If index is beyond actual LoRA count, it means we're on the "no lora" option
+  if (state.includeNoLora.value && index === actualLoraCount + 1) {
+    state.currentLoraName.value = 'No LoRA'
+    state.currentLoraFilename.value = 'No LoRA'
+    return
+  }
+  
+  // Otherwise, show normal LoRA info
+  if (actualLoraCount > 0 && index > 0 && index <= actualLoraCount) {
     const currentLora = loraList[index - 1]
     if (currentLora) {
       state.currentLoraName.value = currentLora.file_name
@@ -124,6 +163,14 @@ const updateDisplayFromLoraList = (loraList: LoraItem[], index: number) => {
 
 // Handle index update from user
 const handleIndexUpdate = async (newIndex: number) => {
+  // Calculate max valid index (includes no lora slot if enabled)
+  const maxIndex = state.includeNoLora.value 
+    ? state.totalCount.value + 1 
+    : state.totalCount.value
+  
+  // Clamp index to valid range
+  const clampedIndex = Math.max(1, Math.min(newIndex, maxIndex || 1))
+  
   // Reset execution state when user manually changes index
   // This ensures the next execution starts from the user-set index
   ;(props.widget as any)[HAS_EXECUTED] = false
@@ -134,14 +181,14 @@ const handleIndexUpdate = async (newIndex: number) => {
   executionQueue.length = 0
   hasQueuedPrompts.value = false
 
-  state.setIndex(newIndex)
+  state.setIndex(clampedIndex)
 
   // Refresh list to update current LoRA display
   try {
     const poolConfig = getPoolConfig()
     const loraList = await state.fetchCyclerList(poolConfig)
     cachedLoraList.value = loraList
-    updateDisplayFromLoraList(loraList, newIndex)
+    updateDisplayFromLoraList(loraList, clampedIndex)
   } catch (error) {
     console.error('[LoraCyclerWidget] Error updating index:', error)
   }
@@ -167,6 +214,17 @@ const handleRepeatCountChange = (newValue: number) => {
   // Reset repeatUsed when changing repeat count
   state.repeatUsed.value = 0
   state.displayRepeatUsed.value = 0
+}
+
+// Handle include no lora toggle
+const handleIncludeNoLoraChange = (newValue: boolean) => {
+  state.includeNoLora.value = newValue
+  
+  // If turning off and current index is beyond the actual LoRA count,
+  // clamp it to the last valid LoRA index
+  if (!newValue && state.currentIndex.value > state.totalCount.value) {
+    state.currentIndex.value = Math.max(1, state.totalCount.value)
+  }
 }
 
 // Handle pause toggle

@@ -24,6 +24,7 @@ export function createMockCyclerConfig(overrides: Partial<CyclerConfig> = {}): C
     repeat_count: 1,
     repeat_used: 0,
     is_paused: false,
+    include_no_lora: false,
     ...overrides
   }
 }
@@ -54,7 +55,8 @@ export function createMockPoolConfig(overrides: Partial<LoraPoolConfig> = {}): L
 export function createMockLoraList(count: number = 5): CyclerLoraItem[] {
   return Array.from({ length: count }, (_, i) => ({
     file_name: `lora${i + 1}.safetensors`,
-    model_name: `LoRA Model ${i + 1}`
+    model_name: `LoRA Model ${i + 1}`,
+    file_path: `/models/loras/lora${i + 1}.safetensors`
   }))
 }
 

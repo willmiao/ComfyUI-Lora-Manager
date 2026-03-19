@@ -10,7 +10,6 @@
       :exclude-folders="state.excludeFolders.value"
       :no-credit-required="state.noCreditRequired.value"
       :allow-selling="state.allowSelling.value"
-      :include-empty-lora="state.includeEmptyLora.value"
       :preview-items="state.previewItems.value"
       :match-count="state.matchCount.value"
       :is-loading="state.isLoading.value"
@@ -19,7 +18,6 @@
       @update:exclude-folders="state.excludeFolders.value = $event"
       @update:no-credit-required="state.noCreditRequired.value = $event"
       @update:allow-selling="state.allowSelling.value = $event"
-      @update:include-empty-lora="state.includeEmptyLora.value = $event"
       @refresh="state.refreshPreview"
     />
 

@@ -35,7 +35,10 @@
         v-for="item in filteredList"
         :key="item.index"
         class="lora-item"
-        :class="{ active: currentIndex === item.index }"
+        :class="{ 
+          active: currentIndex === item.index,
+          'no-lora-item': item.lora.file_name === 'No LoRA'
+        }"
         @mouseenter="showPreview(item.lora.file_name, $event)"
         @mouseleave="hidePreview"
         @click="selectLora(item.index)"
@@ -65,6 +68,7 @@ const props = defineProps<{
   visible: boolean
   loraList: LoraItem[]
   currentIndex: number
+  includeNoLora?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -79,7 +83,8 @@ const searchInputRef = ref<HTMLInputElement | null>(null)
 let previewTooltip: any = null
 
 const subtitleText = computed(() => {
-  const total = props.loraList.length
+  const baseTotal = props.loraList.length
+  const total = props.includeNoLora ? baseTotal + 1 : baseTotal
   const filtered = filteredList.value.length
   if (filtered === total) {
     return `Total: ${total} LoRA${total !== 1 ? 's' : ''}`
@@ -88,10 +93,18 @@ const subtitleText = computed(() => {
 })
 
 const filteredList = computed<LoraListItem[]>(() => {
-  const list = props.loraList.map((lora, idx) => ({
+  const list: LoraListItem[] = props.loraList.map((lora, idx) => ({
     index: idx + 1,
     lora
   }))
+
+  // Add "No LoRA" option at the end if includeNoLora is enabled
+  if (props.includeNoLora) {
+    list.push({
+      index: list.length + 1,
+      lora: { file_name: 'No LoRA' } as LoraItem
+    })
+  }
 
   if (!searchQuery.value.trim()) {
     return list
@@ -301,6 +314,15 @@ onUnmounted(() => {
   border-radius: 4px;
   color: rgba(191, 219, 254, 1);
   font-weight: 500;
+}
+
+.lora-item.no-lora-item .lora-name {
+  font-style: italic;
+  color: rgba(226, 232, 240, 0.6);
+}
+
+.lora-item.no-lora-item:hover .lora-name {
+  color: rgba(226, 232, 240, 0.8);
 }
 
 .no-results {

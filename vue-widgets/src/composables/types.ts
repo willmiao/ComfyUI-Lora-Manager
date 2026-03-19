@@ -10,7 +10,7 @@ export interface LoraPoolConfig {
       noCreditRequired: boolean
       allowSelling: boolean
     }
-    includeEmptyLora: boolean
+    includeEmptyLora?: boolean  // Optional, deprecated (moved to Cycler)
   }
   preview: { matchCount: number; lastUpdated: number }
 }
@@ -85,6 +85,8 @@ export interface CyclerConfig {
   repeat_count: number        // How many times each LoRA should repeat (default: 1)
   repeat_used: number         // How many times current index has been used
   is_paused: boolean          // Whether iteration is paused
+  // Include "no LoRA" option in cycle
+  include_no_lora: boolean    // Whether to include empty LoRA option
 }
 
 // Widget config union type

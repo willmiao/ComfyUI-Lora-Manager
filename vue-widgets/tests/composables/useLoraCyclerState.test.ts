@@ -84,7 +84,8 @@ describe('useLoraCyclerState', () => {
         current_lora_filename: '',
         repeat_count: 1,
         repeat_used: 0,
-        is_paused: false
+        is_paused: false,
+        include_no_lora: false
       })
 
       expect(state.currentIndex.value).toBe(5)
