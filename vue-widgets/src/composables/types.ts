@@ -10,6 +10,11 @@ export interface LoraPoolConfig {
       noCreditRequired: boolean
       allowSelling: boolean
     }
+    namePatterns: {
+      include: string[]
+      exclude: string[]
+      useRegex: boolean
+    }
     includeEmptyLora?: boolean  // Optional, deprecated (moved to Cycler)
   }
   preview: { matchCount: number; lastUpdated: number }

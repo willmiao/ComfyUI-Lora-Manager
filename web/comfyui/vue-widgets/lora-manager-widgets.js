@@ -283,6 +283,121 @@
   align-items: center;
 }
 
+.section[data-v-9995b5ed] {
+  margin-bottom: 16px;
+}
+.section__header[data-v-9995b5ed] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.section__title[data-v-9995b5ed] {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-color, #fff);
+  opacity: 0.6;
+}
+.section__toggle[data-v-9995b5ed] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--fg-color, #fff);
+  opacity: 0.7;
+}
+.section__toggle input[type="checkbox"][data-v-9995b5ed] {
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+.section__toggle-label[data-v-9995b5ed] {
+  font-weight: 500;
+}
+.section__columns[data-v-9995b5ed] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.section__column[data-v-9995b5ed] {
+  min-width: 0;
+}
+.section__column-header[data-v-9995b5ed] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.section__column-title[data-v-9995b5ed] {
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.section__column-title--include[data-v-9995b5ed] {
+  color: #4299e1;
+}
+.section__column-title--exclude[data-v-9995b5ed] {
+  color: #ef4444;
+}
+.section__input-wrapper[data-v-9995b5ed] {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.section__input[data-v-9995b5ed] {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--comfy-input-border, #444);
+  border-radius: 4px;
+  color: var(--fg-color, #fff);
+  font-size: 12px;
+  outline: none;
+}
+.section__input[data-v-9995b5ed]:focus {
+  border-color: #4299e1;
+}
+.section__add-btn[data-v-9995b5ed] {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--comfy-input-bg, #333);
+  border: 1px solid var(--comfy-input-border, #444);
+  border-radius: 4px;
+  color: var(--fg-color, #fff);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.section__add-btn[data-v-9995b5ed]:hover {
+  background: var(--comfy-input-bg-hover, #444);
+  border-color: #4299e1;
+}
+.section__patterns[data-v-9995b5ed] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 22px;
+}
+.section__empty[data-v-9995b5ed] {
+  font-size: 10px;
+  color: var(--fg-color, #fff);
+  opacity: 0.3;
+  font-style: italic;
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+}
+
 .section[data-v-dea4adf6] {
   margin-bottom: 16px;
 }
@@ -483,12 +598,12 @@ to { transform: rotate(360deg);
   transform: translateY(4px);
 }
 
-.summary-view[data-v-328e7526] {
+.summary-view[data-v-83235a00] {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
-.summary-view__filters[data-v-328e7526] {
+.summary-view__filters[data-v-83235a00] {
   flex: 1;
   overflow-y: auto;
   padding-right: 4px;
@@ -979,7 +1094,7 @@ to { transform: rotate(360deg);
   font-size: 13px;
 }
 
-.lora-pool-widget[data-v-4456abba] {
+.lora-pool-widget[data-v-0bbd50ea] {
   padding: 12px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 4px;
@@ -10505,12 +10620,12 @@ var PrimeVue = {
     setup(app2, configOptions);
   }
 };
-const _hoisted_1$m = { class: "filter-chip__text" };
-const _hoisted_2$i = {
+const _hoisted_1$n = { class: "filter-chip__text" };
+const _hoisted_2$j = {
   key: 0,
   class: "filter-chip__count"
 };
-const _sfc_main$n = /* @__PURE__ */ defineComponent({
+const _sfc_main$o = /* @__PURE__ */ defineComponent({
   __name: "FilterChip",
   props: {
     label: {},
@@ -10528,8 +10643,8 @@ const _sfc_main$n = /* @__PURE__ */ defineComponent({
       return openBlock(), createElementBlock("span", {
         class: normalizeClass(["filter-chip", variantClass.value])
       }, [
-        createBaseVNode("span", _hoisted_1$m, toDisplayString(__props.label), 1),
-        __props.count !== void 0 ? (openBlock(), createElementBlock("span", _hoisted_2$i, "(" + toDisplayString(__props.count) + ")", 1)) : createCommentVNode("", true),
+        createBaseVNode("span", _hoisted_1$n, toDisplayString(__props.label), 1),
+        __props.count !== void 0 ? (openBlock(), createElementBlock("span", _hoisted_2$j, "(" + toDisplayString(__props.count) + ")", 1)) : createCommentVNode("", true),
         __props.removable ? (openBlock(), createElementBlock("button", {
           key: 1,
           class: "filter-chip__remove",
@@ -10547,8 +10662,8 @@ const _export_sfc = (sfc, props) => {
   }
   return target;
 };
-const FilterChip = /* @__PURE__ */ _export_sfc(_sfc_main$n, [["__scopeId", "data-v-7e36267d"]]);
-const _sfc_main$m = /* @__PURE__ */ defineComponent({
+const FilterChip = /* @__PURE__ */ _export_sfc(_sfc_main$o, [["__scopeId", "data-v-7e36267d"]]);
+const _sfc_main$n = /* @__PURE__ */ defineComponent({
   __name: "EditButton",
   emits: ["click"],
   setup(__props) {
@@ -10570,19 +10685,19 @@ const _sfc_main$m = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const EditButton = /* @__PURE__ */ _export_sfc(_sfc_main$m, [["__scopeId", "data-v-8da8aa4b"]]);
-const _hoisted_1$l = { class: "section" };
-const _hoisted_2$h = { class: "section__header" };
-const _hoisted_3$f = { class: "section__content" };
-const _hoisted_4$d = {
+const EditButton = /* @__PURE__ */ _export_sfc(_sfc_main$n, [["__scopeId", "data-v-8da8aa4b"]]);
+const _hoisted_1$m = { class: "section" };
+const _hoisted_2$i = { class: "section__header" };
+const _hoisted_3$g = { class: "section__content" };
+const _hoisted_4$e = {
   key: 0,
   class: "section__placeholder"
 };
-const _hoisted_5$b = {
+const _hoisted_5$c = {
   key: 1,
   class: "section__chips"
 };
-const _sfc_main$l = /* @__PURE__ */ defineComponent({
+const _sfc_main$m = /* @__PURE__ */ defineComponent({
   __name: "BaseModelSection",
   props: {
     selected: {},
@@ -10596,15 +10711,15 @@ const _sfc_main$l = /* @__PURE__ */ defineComponent({
       return model == null ? void 0 : model.count;
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$l, [
-        createBaseVNode("div", _hoisted_2$h, [
+      return openBlock(), createElementBlock("div", _hoisted_1$m, [
+        createBaseVNode("div", _hoisted_2$i, [
           _cache[1] || (_cache[1] = createBaseVNode("span", { class: "section__title" }, "BASE MODEL", -1)),
           createVNode(EditButton, {
             onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("edit"))
           })
         ]),
-        createBaseVNode("div", _hoisted_3$f, [
-          __props.selected.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$d, " All models ")) : (openBlock(), createElementBlock("div", _hoisted_5$b, [
+        createBaseVNode("div", _hoisted_3$g, [
+          __props.selected.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_4$e, " All models ")) : (openBlock(), createElementBlock("div", _hoisted_5$c, [
             (openBlock(true), createElementBlock(Fragment, null, renderList(__props.selected, (name) => {
               return openBlock(), createBlock(FilterChip, {
                 key: name,
@@ -10619,32 +10734,32 @@ const _sfc_main$l = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const BaseModelSection = /* @__PURE__ */ _export_sfc(_sfc_main$l, [["__scopeId", "data-v-12f059e2"]]);
-const _hoisted_1$k = { class: "section" };
-const _hoisted_2$g = { class: "section__columns" };
-const _hoisted_3$e = { class: "section__column" };
-const _hoisted_4$c = { class: "section__column-header" };
-const _hoisted_5$a = { class: "section__column-content" };
-const _hoisted_6$a = {
+const BaseModelSection = /* @__PURE__ */ _export_sfc(_sfc_main$m, [["__scopeId", "data-v-12f059e2"]]);
+const _hoisted_1$l = { class: "section" };
+const _hoisted_2$h = { class: "section__columns" };
+const _hoisted_3$f = { class: "section__column" };
+const _hoisted_4$d = { class: "section__column-header" };
+const _hoisted_5$b = { class: "section__column-content" };
+const _hoisted_6$b = {
   key: 0,
   class: "section__empty"
 };
-const _hoisted_7$8 = {
+const _hoisted_7$9 = {
   key: 1,
   class: "section__chips"
 };
-const _hoisted_8$6 = { class: "section__column" };
-const _hoisted_9$4 = { class: "section__column-header" };
-const _hoisted_10$4 = { class: "section__column-content" };
-const _hoisted_11$3 = {
+const _hoisted_8$7 = { class: "section__column" };
+const _hoisted_9$5 = { class: "section__column-header" };
+const _hoisted_10$5 = { class: "section__column-content" };
+const _hoisted_11$4 = {
   key: 0,
   class: "section__empty"
 };
-const _hoisted_12$3 = {
+const _hoisted_12$4 = {
   key: 1,
   class: "section__chips"
 };
-const _sfc_main$k = /* @__PURE__ */ defineComponent({
+const _sfc_main$l = /* @__PURE__ */ defineComponent({
   __name: "TagsSection",
   props: {
     includeTags: {},
@@ -10653,20 +10768,20 @@ const _sfc_main$k = /* @__PURE__ */ defineComponent({
   emits: ["edit-include", "edit-exclude"],
   setup(__props) {
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$k, [
+      return openBlock(), createElementBlock("div", _hoisted_1$l, [
         _cache[4] || (_cache[4] = createBaseVNode("div", { class: "section__header" }, [
           createBaseVNode("span", { class: "section__title" }, "TAGS")
         ], -1)),
-        createBaseVNode("div", _hoisted_2$g, [
-          createBaseVNode("div", _hoisted_3$e, [
-            createBaseVNode("div", _hoisted_4$c, [
+        createBaseVNode("div", _hoisted_2$h, [
+          createBaseVNode("div", _hoisted_3$f, [
+            createBaseVNode("div", _hoisted_4$d, [
               _cache[2] || (_cache[2] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
               createVNode(EditButton, {
                 onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("edit-include"))
               })
             ]),
-            createBaseVNode("div", _hoisted_5$a, [
-              __props.includeTags.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_6$a, " None ")) : (openBlock(), createElementBlock("div", _hoisted_7$8, [
+            createBaseVNode("div", _hoisted_5$b, [
+              __props.includeTags.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_6$b, " None ")) : (openBlock(), createElementBlock("div", _hoisted_7$9, [
                 (openBlock(true), createElementBlock(Fragment, null, renderList(__props.includeTags, (tag) => {
                   return openBlock(), createBlock(FilterChip, {
                     key: tag,
@@ -10677,15 +10792,15 @@ const _sfc_main$k = /* @__PURE__ */ defineComponent({
               ]))
             ])
           ]),
-          createBaseVNode("div", _hoisted_8$6, [
-            createBaseVNode("div", _hoisted_9$4, [
+          createBaseVNode("div", _hoisted_8$7, [
+            createBaseVNode("div", _hoisted_9$5, [
               _cache[3] || (_cache[3] = createBaseVNode("span", { class: "section__column-title section__column-title--exclude" }, "EXCLUDE", -1)),
               createVNode(EditButton, {
                 onClick: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("edit-exclude"))
               })
             ]),
-            createBaseVNode("div", _hoisted_10$4, [
-              __props.excludeTags.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_11$3, " None ")) : (openBlock(), createElementBlock("div", _hoisted_12$3, [
+            createBaseVNode("div", _hoisted_10$5, [
+              __props.excludeTags.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_11$4, " None ")) : (openBlock(), createElementBlock("div", _hoisted_12$4, [
                 (openBlock(true), createElementBlock(Fragment, null, renderList(__props.excludeTags, (tag) => {
                   return openBlock(), createBlock(FilterChip, {
                     key: tag,
@@ -10701,32 +10816,32 @@ const _sfc_main$k = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const TagsSection = /* @__PURE__ */ _export_sfc(_sfc_main$k, [["__scopeId", "data-v-b869b780"]]);
-const _hoisted_1$j = { class: "section" };
-const _hoisted_2$f = { class: "section__columns" };
-const _hoisted_3$d = { class: "section__column" };
-const _hoisted_4$b = { class: "section__column-header" };
-const _hoisted_5$9 = { class: "section__content" };
-const _hoisted_6$9 = {
+const TagsSection = /* @__PURE__ */ _export_sfc(_sfc_main$l, [["__scopeId", "data-v-b869b780"]]);
+const _hoisted_1$k = { class: "section" };
+const _hoisted_2$g = { class: "section__columns" };
+const _hoisted_3$e = { class: "section__column" };
+const _hoisted_4$c = { class: "section__column-header" };
+const _hoisted_5$a = { class: "section__content" };
+const _hoisted_6$a = {
   key: 0,
   class: "section__paths"
 };
-const _hoisted_7$7 = {
+const _hoisted_7$8 = {
   key: 1,
   class: "section__empty"
 };
-const _hoisted_8$5 = { class: "section__column" };
-const _hoisted_9$3 = { class: "section__column-header" };
-const _hoisted_10$3 = { class: "section__content" };
-const _hoisted_11$2 = {
+const _hoisted_8$6 = { class: "section__column" };
+const _hoisted_9$4 = { class: "section__column-header" };
+const _hoisted_10$4 = { class: "section__content" };
+const _hoisted_11$3 = {
   key: 0,
   class: "section__paths"
 };
-const _hoisted_12$2 = {
+const _hoisted_12$3 = {
   key: 1,
   class: "section__empty"
 };
-const _sfc_main$j = /* @__PURE__ */ defineComponent({
+const _sfc_main$k = /* @__PURE__ */ defineComponent({
   __name: "FoldersSection",
   props: {
     includeFolders: {},
@@ -10747,13 +10862,13 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
       emit2("update:excludeFolders", props.excludeFolders.filter((p2) => p2 !== path));
     };
     return (_ctx, _cache) => {
-      return openBlock(), createElementBlock("div", _hoisted_1$j, [
+      return openBlock(), createElementBlock("div", _hoisted_1$k, [
         _cache[6] || (_cache[6] = createBaseVNode("div", { class: "section__header" }, [
           createBaseVNode("span", { class: "section__title" }, "FOLDERS")
         ], -1)),
-        createBaseVNode("div", _hoisted_2$f, [
-          createBaseVNode("div", _hoisted_3$d, [
-            createBaseVNode("div", _hoisted_4$b, [
+        createBaseVNode("div", _hoisted_2$g, [
+          createBaseVNode("div", _hoisted_3$e, [
+            createBaseVNode("div", _hoisted_4$c, [
               _cache[3] || (_cache[3] = createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE", -1)),
               createBaseVNode("button", {
                 type: "button",
@@ -10768,8 +10883,8 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
                 ], -1)
               ])])
             ]),
-            createBaseVNode("div", _hoisted_5$9, [
-              __props.includeFolders.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_6$9, [
+            createBaseVNode("div", _hoisted_5$a, [
+              __props.includeFolders.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_6$a, [
                 (openBlock(true), createElementBlock(Fragment, null, renderList(__props.includeFolders, (path) => {
                   return openBlock(), createBlock(FilterChip, {
                     key: path,
@@ -10779,11 +10894,11 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
                     onRemove: ($event) => removeInclude(path)
                   }, null, 8, ["label", "onRemove"]);
                 }), 128))
-              ])) : (openBlock(), createElementBlock("div", _hoisted_7$7, " No folders selected "))
+              ])) : (openBlock(), createElementBlock("div", _hoisted_7$8, " No folders selected "))
             ])
           ]),
-          createBaseVNode("div", _hoisted_8$5, [
-            createBaseVNode("div", _hoisted_9$3, [
+          createBaseVNode("div", _hoisted_8$6, [
+            createBaseVNode("div", _hoisted_9$4, [
               _cache[5] || (_cache[5] = createBaseVNode("span", { class: "section__column-title section__column-title--exclude" }, "EXCLUDE", -1)),
               createBaseVNode("button", {
                 type: "button",
@@ -10798,8 +10913,8 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
                 ], -1)
               ])])
             ]),
-            createBaseVNode("div", _hoisted_10$3, [
-              __props.excludeFolders.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_11$2, [
+            createBaseVNode("div", _hoisted_10$4, [
+              __props.excludeFolders.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_11$3, [
                 (openBlock(true), createElementBlock(Fragment, null, renderList(__props.excludeFolders, (path) => {
                   return openBlock(), createBlock(FilterChip, {
                     key: path,
@@ -10809,7 +10924,7 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
                     onRemove: ($event) => removeExclude(path)
                   }, null, 8, ["label", "onRemove"]);
                 }), 128))
-              ])) : (openBlock(), createElementBlock("div", _hoisted_12$2, " No folders selected "))
+              ])) : (openBlock(), createElementBlock("div", _hoisted_12$3, " No folders selected "))
             ])
           ])
         ])
@@ -10817,7 +10932,147 @@ const _sfc_main$j = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const FoldersSection = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["__scopeId", "data-v-af9caf84"]]);
+const FoldersSection = /* @__PURE__ */ _export_sfc(_sfc_main$k, [["__scopeId", "data-v-af9caf84"]]);
+const _hoisted_1$j = { class: "section" };
+const _hoisted_2$f = { class: "section__header" };
+const _hoisted_3$d = { class: "section__toggle" };
+const _hoisted_4$b = ["checked"];
+const _hoisted_5$9 = { class: "section__columns" };
+const _hoisted_6$9 = { class: "section__column" };
+const _hoisted_7$7 = { class: "section__input-wrapper" };
+const _hoisted_8$5 = ["placeholder"];
+const _hoisted_9$3 = { class: "section__patterns" };
+const _hoisted_10$3 = {
+  key: 0,
+  class: "section__empty"
+};
+const _hoisted_11$2 = { class: "section__column" };
+const _hoisted_12$2 = { class: "section__input-wrapper" };
+const _hoisted_13$2 = ["placeholder"];
+const _hoisted_14$2 = { class: "section__patterns" };
+const _hoisted_15$2 = {
+  key: 0,
+  class: "section__empty"
+};
+const _sfc_main$j = /* @__PURE__ */ defineComponent({
+  __name: "NamePatternsSection",
+  props: {
+    includePatterns: {},
+    excludePatterns: {},
+    useRegex: { type: Boolean }
+  },
+  emits: ["update:includePatterns", "update:excludePatterns", "update:useRegex"],
+  setup(__props, { emit: __emit }) {
+    const props = __props;
+    const emit2 = __emit;
+    const includeInput = ref("");
+    const excludeInput = ref("");
+    const addInclude = () => {
+      const pattern = includeInput.value.trim();
+      if (pattern && !props.includePatterns.includes(pattern)) {
+        emit2("update:includePatterns", [...props.includePatterns, pattern]);
+        includeInput.value = "";
+      }
+    };
+    const addExclude = () => {
+      const pattern = excludeInput.value.trim();
+      if (pattern && !props.excludePatterns.includes(pattern)) {
+        emit2("update:excludePatterns", [...props.excludePatterns, pattern]);
+        excludeInput.value = "";
+      }
+    };
+    const removeInclude = (pattern) => {
+      emit2("update:includePatterns", props.includePatterns.filter((p2) => p2 !== pattern));
+    };
+    const removeExclude = (pattern) => {
+      emit2("update:excludePatterns", props.excludePatterns.filter((p2) => p2 !== pattern));
+    };
+    return (_ctx, _cache) => {
+      return openBlock(), createElementBlock("div", _hoisted_1$j, [
+        createBaseVNode("div", _hoisted_2$f, [
+          _cache[4] || (_cache[4] = createBaseVNode("span", { class: "section__title" }, "NAME PATTERNS", -1)),
+          createBaseVNode("label", _hoisted_3$d, [
+            createBaseVNode("input", {
+              type: "checkbox",
+              checked: __props.useRegex,
+              onChange: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("update:useRegex", $event.target.checked))
+            }, null, 40, _hoisted_4$b),
+            _cache[3] || (_cache[3] = createBaseVNode("span", { class: "section__toggle-label" }, "Use Regex", -1))
+          ])
+        ]),
+        createBaseVNode("div", _hoisted_5$9, [
+          createBaseVNode("div", _hoisted_6$9, [
+            _cache[5] || (_cache[5] = createBaseVNode("div", { class: "section__column-header" }, [
+              createBaseVNode("span", { class: "section__column-title section__column-title--include" }, "INCLUDE")
+            ], -1)),
+            createBaseVNode("div", _hoisted_7$7, [
+              withDirectives(createBaseVNode("input", {
+                type: "text",
+                "onUpdate:modelValue": _cache[1] || (_cache[1] = ($event) => includeInput.value = $event),
+                placeholder: __props.useRegex ? "Add regex pattern..." : "Add text pattern...",
+                class: "section__input",
+                onKeydown: withKeys(addInclude, ["enter"])
+              }, null, 40, _hoisted_8$5), [
+                [vModelText, includeInput.value]
+              ]),
+              createBaseVNode("button", {
+                type: "button",
+                class: "section__add-btn",
+                onClick: addInclude
+              }, "+")
+            ]),
+            createBaseVNode("div", _hoisted_9$3, [
+              (openBlock(true), createElementBlock(Fragment, null, renderList(__props.includePatterns, (pattern) => {
+                return openBlock(), createBlock(FilterChip, {
+                  key: pattern,
+                  label: pattern,
+                  variant: "include",
+                  removable: "",
+                  onRemove: ($event) => removeInclude(pattern)
+                }, null, 8, ["label", "onRemove"]);
+              }), 128)),
+              __props.includePatterns.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_10$3, toDisplayString(__props.useRegex ? "No regex patterns" : "No text patterns"), 1)) : createCommentVNode("", true)
+            ])
+          ]),
+          createBaseVNode("div", _hoisted_11$2, [
+            _cache[6] || (_cache[6] = createBaseVNode("div", { class: "section__column-header" }, [
+              createBaseVNode("span", { class: "section__column-title section__column-title--exclude" }, "EXCLUDE")
+            ], -1)),
+            createBaseVNode("div", _hoisted_12$2, [
+              withDirectives(createBaseVNode("input", {
+                type: "text",
+                "onUpdate:modelValue": _cache[2] || (_cache[2] = ($event) => excludeInput.value = $event),
+                placeholder: __props.useRegex ? "Add regex pattern..." : "Add text pattern...",
+                class: "section__input",
+                onKeydown: withKeys(addExclude, ["enter"])
+              }, null, 40, _hoisted_13$2), [
+                [vModelText, excludeInput.value]
+              ]),
+              createBaseVNode("button", {
+                type: "button",
+                class: "section__add-btn",
+                onClick: addExclude
+              }, "+")
+            ]),
+            createBaseVNode("div", _hoisted_14$2, [
+              (openBlock(true), createElementBlock(Fragment, null, renderList(__props.excludePatterns, (pattern) => {
+                return openBlock(), createBlock(FilterChip, {
+                  key: pattern,
+                  label: pattern,
+                  variant: "exclude",
+                  removable: "",
+                  onRemove: ($event) => removeExclude(pattern)
+                }, null, 8, ["label", "onRemove"]);
+              }), 128)),
+              __props.excludePatterns.length === 0 ? (openBlock(), createElementBlock("div", _hoisted_15$2, toDisplayString(__props.useRegex ? "No regex patterns" : "No text patterns"), 1)) : createCommentVNode("", true)
+            ])
+          ])
+        ])
+      ]);
+    };
+  }
+});
+const NamePatternsSection = /* @__PURE__ */ _export_sfc(_sfc_main$j, [["__scopeId", "data-v-9995b5ed"]]);
 const _hoisted_1$i = { class: "section" };
 const _hoisted_2$e = { class: "section__toggles" };
 const _hoisted_3$c = { class: "toggle-item" };
@@ -10982,13 +11237,16 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
     excludeTags: {},
     includeFolders: {},
     excludeFolders: {},
+    includePatterns: {},
+    excludePatterns: {},
+    useRegex: { type: Boolean },
     noCreditRequired: { type: Boolean },
     allowSelling: { type: Boolean },
     previewItems: {},
     matchCount: {},
     isLoading: { type: Boolean }
   },
-  emits: ["open-modal", "update:includeFolders", "update:excludeFolders", "update:noCreditRequired", "update:allowSelling", "refresh"],
+  emits: ["open-modal", "update:includeFolders", "update:excludeFolders", "update:includePatterns", "update:excludePatterns", "update:useRegex", "update:noCreditRequired", "update:allowSelling", "refresh"],
   setup(__props) {
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", _hoisted_1$g, [
@@ -11012,24 +11270,32 @@ const _sfc_main$g = /* @__PURE__ */ defineComponent({
             onEditInclude: _cache[5] || (_cache[5] = ($event) => _ctx.$emit("open-modal", "includeFolders")),
             onEditExclude: _cache[6] || (_cache[6] = ($event) => _ctx.$emit("open-modal", "excludeFolders"))
           }, null, 8, ["include-folders", "exclude-folders"]),
+          createVNode(NamePatternsSection, {
+            "include-patterns": __props.includePatterns,
+            "exclude-patterns": __props.excludePatterns,
+            "use-regex": __props.useRegex,
+            "onUpdate:includePatterns": _cache[7] || (_cache[7] = ($event) => _ctx.$emit("update:includePatterns", $event)),
+            "onUpdate:excludePatterns": _cache[8] || (_cache[8] = ($event) => _ctx.$emit("update:excludePatterns", $event)),
+            "onUpdate:useRegex": _cache[9] || (_cache[9] = ($event) => _ctx.$emit("update:useRegex", $event))
+          }, null, 8, ["include-patterns", "exclude-patterns", "use-regex"]),
           createVNode(LicenseSection, {
             "no-credit-required": __props.noCreditRequired,
             "allow-selling": __props.allowSelling,
-            "onUpdate:noCreditRequired": _cache[7] || (_cache[7] = ($event) => _ctx.$emit("update:noCreditRequired", $event)),
-            "onUpdate:allowSelling": _cache[8] || (_cache[8] = ($event) => _ctx.$emit("update:allowSelling", $event))
+            "onUpdate:noCreditRequired": _cache[10] || (_cache[10] = ($event) => _ctx.$emit("update:noCreditRequired", $event)),
+            "onUpdate:allowSelling": _cache[11] || (_cache[11] = ($event) => _ctx.$emit("update:allowSelling", $event))
           }, null, 8, ["no-credit-required", "allow-selling"])
         ]),
         createVNode(LoraPoolPreview, {
           items: __props.previewItems,
           "match-count": __props.matchCount,
           "is-loading": __props.isLoading,
-          onRefresh: _cache[9] || (_cache[9] = ($event) => _ctx.$emit("refresh"))
+          onRefresh: _cache[12] || (_cache[12] = ($event) => _ctx.$emit("refresh"))
         }, null, 8, ["items", "match-count", "is-loading"])
       ]);
     };
   }
 });
-const LoraPoolSummaryView = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-328e7526"]]);
+const LoraPoolSummaryView = /* @__PURE__ */ _export_sfc(_sfc_main$g, [["__scopeId", "data-v-83235a00"]]);
 const _hoisted_1$f = { class: "lora-pool-modal__header" };
 const _hoisted_2$b = { class: "lora-pool-modal__title-container" };
 const _hoisted_3$a = { class: "lora-pool-modal__title" };
@@ -11672,7 +11938,7 @@ function useLoraPoolApi() {
     });
   };
   const fetchLoras = async (params) => {
-    var _a2, _b, _c, _d;
+    var _a2, _b, _c, _d, _e2, _f;
     isLoading.value = true;
     try {
       const urlParams = new URLSearchParams();
@@ -11691,6 +11957,11 @@ function useLoraPoolApi() {
       }
       if (params.allowSelling !== void 0) {
         urlParams.set("allow_selling_generated_content", String(params.allowSelling));
+      }
+      (_e2 = params.namePatternsInclude) == null ? void 0 : _e2.forEach((pattern) => urlParams.append("name_pattern_include", pattern));
+      (_f = params.namePatternsExclude) == null ? void 0 : _f.forEach((pattern) => urlParams.append("name_pattern_exclude", pattern));
+      if (params.namePatternsUseRegex !== void 0) {
+        urlParams.set("name_pattern_use_regex", String(params.namePatternsUseRegex));
       }
       const response = await fetch(`/api/lm/loras/list?${urlParams}`);
       const data = await response.json();
@@ -11723,6 +11994,9 @@ function useLoraPoolState(widget) {
   const excludeFolders = ref([]);
   const noCreditRequired = ref(false);
   const allowSelling = ref(false);
+  const includePatterns = ref([]);
+  const excludePatterns = ref([]);
+  const useRegex = ref(false);
   const availableBaseModels = ref([]);
   const availableTags = ref([]);
   const folderTree = ref([]);
@@ -11745,6 +12019,11 @@ function useLoraPoolState(widget) {
         license: {
           noCreditRequired: noCreditRequired.value,
           allowSelling: allowSelling.value
+        },
+        namePatterns: {
+          include: includePatterns.value,
+          exclude: excludePatterns.value,
+          useRegex: useRegex.value
         }
       },
       preview: {
@@ -11758,7 +12037,7 @@ function useLoraPoolState(widget) {
     return config;
   };
   const restoreFromConfig = (config) => {
-    var _a2, _b, _c, _d, _e2, _f;
+    var _a2, _b, _c, _d, _e2, _f, _g, _h, _i;
     isRestoring = true;
     try {
       if (!(config == null ? void 0 : config.filters)) return;
@@ -11775,6 +12054,9 @@ function useLoraPoolState(widget) {
       updateIfChanged(excludeFolders, ((_d = filters.folders) == null ? void 0 : _d.exclude) || []);
       updateIfChanged(noCreditRequired, ((_e2 = filters.license) == null ? void 0 : _e2.noCreditRequired) ?? false);
       updateIfChanged(allowSelling, ((_f = filters.license) == null ? void 0 : _f.allowSelling) ?? false);
+      updateIfChanged(includePatterns, ((_g = filters.namePatterns) == null ? void 0 : _g.include) || []);
+      updateIfChanged(excludePatterns, ((_h = filters.namePatterns) == null ? void 0 : _h.exclude) || []);
+      updateIfChanged(useRegex, ((_i = filters.namePatterns) == null ? void 0 : _i.useRegex) ?? false);
       matchCount.value = (preview == null ? void 0 : preview.matchCount) || 0;
     } finally {
       isRestoring = false;
@@ -11799,6 +12081,9 @@ function useLoraPoolState(widget) {
       foldersExclude: excludeFolders.value,
       noCreditRequired: noCreditRequired.value || void 0,
       allowSelling: allowSelling.value || void 0,
+      namePatternsInclude: includePatterns.value,
+      namePatternsExclude: excludePatterns.value,
+      namePatternsUseRegex: useRegex.value,
       pageSize: 6
     });
     previewItems.value = result.items;
@@ -11819,7 +12104,10 @@ function useLoraPoolState(widget) {
     includeFolders,
     excludeFolders,
     noCreditRequired,
-    allowSelling
+    allowSelling,
+    includePatterns,
+    excludePatterns,
+    useRegex
   ], onFilterChange, { deep: true });
   return {
     // Filter state
@@ -11830,6 +12118,9 @@ function useLoraPoolState(widget) {
     excludeFolders,
     noCreditRequired,
     allowSelling,
+    includePatterns,
+    excludePatterns,
+    useRegex,
     // Available options
     availableBaseModels,
     availableTags,
@@ -11902,6 +12193,9 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
           "exclude-tags": unref(state).excludeTags.value,
           "include-folders": unref(state).includeFolders.value,
           "exclude-folders": unref(state).excludeFolders.value,
+          "include-patterns": unref(state).includePatterns.value,
+          "exclude-patterns": unref(state).excludePatterns.value,
+          "use-regex": unref(state).useRegex.value,
           "no-credit-required": unref(state).noCreditRequired.value,
           "allow-selling": unref(state).allowSelling.value,
           "preview-items": unref(state).previewItems.value,
@@ -11910,16 +12204,19 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
           onOpenModal: openModal,
           "onUpdate:includeFolders": _cache[0] || (_cache[0] = ($event) => unref(state).includeFolders.value = $event),
           "onUpdate:excludeFolders": _cache[1] || (_cache[1] = ($event) => unref(state).excludeFolders.value = $event),
-          "onUpdate:noCreditRequired": _cache[2] || (_cache[2] = ($event) => unref(state).noCreditRequired.value = $event),
-          "onUpdate:allowSelling": _cache[3] || (_cache[3] = ($event) => unref(state).allowSelling.value = $event),
+          "onUpdate:includePatterns": _cache[2] || (_cache[2] = ($event) => unref(state).includePatterns.value = $event),
+          "onUpdate:excludePatterns": _cache[3] || (_cache[3] = ($event) => unref(state).excludePatterns.value = $event),
+          "onUpdate:useRegex": _cache[4] || (_cache[4] = ($event) => unref(state).useRegex.value = $event),
+          "onUpdate:noCreditRequired": _cache[5] || (_cache[5] = ($event) => unref(state).noCreditRequired.value = $event),
+          "onUpdate:allowSelling": _cache[6] || (_cache[6] = ($event) => unref(state).allowSelling.value = $event),
           onRefresh: unref(state).refreshPreview
-        }, null, 8, ["selected-base-models", "available-base-models", "include-tags", "exclude-tags", "include-folders", "exclude-folders", "no-credit-required", "allow-selling", "preview-items", "match-count", "is-loading", "onRefresh"]),
+        }, null, 8, ["selected-base-models", "available-base-models", "include-tags", "exclude-tags", "include-folders", "exclude-folders", "include-patterns", "exclude-patterns", "use-regex", "no-credit-required", "allow-selling", "preview-items", "match-count", "is-loading", "onRefresh"]),
         createVNode(BaseModelModal, {
           visible: unref(modalState).isModalOpen("baseModels"),
           models: unref(state).availableBaseModels.value,
           selected: unref(state).selectedBaseModels.value,
           onClose: unref(modalState).closeModal,
-          "onUpdate:selected": _cache[4] || (_cache[4] = ($event) => unref(state).selectedBaseModels.value = $event)
+          "onUpdate:selected": _cache[7] || (_cache[7] = ($event) => unref(state).selectedBaseModels.value = $event)
         }, null, 8, ["visible", "models", "selected", "onClose"]),
         createVNode(TagsModal, {
           visible: unref(modalState).isModalOpen("includeTags"),
@@ -11927,7 +12224,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
           selected: unref(state).includeTags.value,
           variant: "include",
           onClose: unref(modalState).closeModal,
-          "onUpdate:selected": _cache[5] || (_cache[5] = ($event) => unref(state).includeTags.value = $event)
+          "onUpdate:selected": _cache[8] || (_cache[8] = ($event) => unref(state).includeTags.value = $event)
         }, null, 8, ["visible", "tags", "selected", "onClose"]),
         createVNode(TagsModal, {
           visible: unref(modalState).isModalOpen("excludeTags"),
@@ -11935,7 +12232,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
           selected: unref(state).excludeTags.value,
           variant: "exclude",
           onClose: unref(modalState).closeModal,
-          "onUpdate:selected": _cache[6] || (_cache[6] = ($event) => unref(state).excludeTags.value = $event)
+          "onUpdate:selected": _cache[9] || (_cache[9] = ($event) => unref(state).excludeTags.value = $event)
         }, null, 8, ["visible", "tags", "selected", "onClose"]),
         createVNode(FoldersModal, {
           visible: unref(modalState).isModalOpen("includeFolders"),
@@ -11943,7 +12240,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
           selected: unref(state).includeFolders.value,
           variant: "include",
           onClose: unref(modalState).closeModal,
-          "onUpdate:selected": _cache[7] || (_cache[7] = ($event) => unref(state).includeFolders.value = $event)
+          "onUpdate:selected": _cache[10] || (_cache[10] = ($event) => unref(state).includeFolders.value = $event)
         }, null, 8, ["visible", "folders", "selected", "onClose"]),
         createVNode(FoldersModal, {
           visible: unref(modalState).isModalOpen("excludeFolders"),
@@ -11951,13 +12248,13 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
           selected: unref(state).excludeFolders.value,
           variant: "exclude",
           onClose: unref(modalState).closeModal,
-          "onUpdate:selected": _cache[8] || (_cache[8] = ($event) => unref(state).excludeFolders.value = $event)
+          "onUpdate:selected": _cache[11] || (_cache[11] = ($event) => unref(state).excludeFolders.value = $event)
         }, null, 8, ["visible", "folders", "selected", "onClose"])
       ]);
     };
   }
 });
-const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-4456abba"]]);
+const LoraPoolWidget = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-0bbd50ea"]]);
 const _hoisted_1$9 = { class: "last-used-preview" };
 const _hoisted_2$6 = { class: "last-used-preview__content" };
 const _hoisted_3$5 = ["src", "onError"];
@@ -14720,7 +15017,7 @@ function updateDownstreamLoaders(startNode, visited = /* @__PURE__ */ new Set())
   }
 }
 const LORA_POOL_WIDGET_MIN_WIDTH = 500;
-const LORA_POOL_WIDGET_MIN_HEIGHT = 400;
+const LORA_POOL_WIDGET_MIN_HEIGHT = 520;
 const LORA_RANDOMIZER_WIDGET_MIN_WIDTH = 500;
 const LORA_RANDOMIZER_WIDGET_MIN_HEIGHT = 448;
 const LORA_RANDOMIZER_WIDGET_MAX_HEIGHT = LORA_RANDOMIZER_WIDGET_MIN_HEIGHT;

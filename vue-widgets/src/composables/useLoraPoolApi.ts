@@ -62,6 +62,9 @@ export function useLoraPoolApi() {
     foldersExclude?: string[]
     noCreditRequired?: boolean
     allowSelling?: boolean
+    namePatternsInclude?: string[]
+    namePatternsExclude?: string[]
+    namePatternsUseRegex?: boolean
     page?: number
     pageSize?: number
   }
@@ -90,6 +93,13 @@ export function useLoraPoolApi() {
 
       if (params.allowSelling !== undefined) {
         urlParams.set('allow_selling_generated_content', String(params.allowSelling))
+      }
+
+      // Name pattern filters
+      params.namePatternsInclude?.forEach(pattern => urlParams.append('name_pattern_include', pattern))
+      params.namePatternsExclude?.forEach(pattern => urlParams.append('name_pattern_exclude', pattern))
+      if (params.namePatternsUseRegex !== undefined) {
+        urlParams.set('name_pattern_use_regex', String(params.namePatternsUseRegex))
       }
 
       const response = await fetch(`/api/lm/loras/list?${urlParams}`)

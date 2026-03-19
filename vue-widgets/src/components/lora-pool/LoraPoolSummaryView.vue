@@ -24,6 +24,15 @@
         @edit-exclude="$emit('open-modal', 'excludeFolders')"
       />
 
+      <NamePatternsSection
+        :include-patterns="includePatterns"
+        :exclude-patterns="excludePatterns"
+        :use-regex="useRegex"
+        @update:include-patterns="$emit('update:includePatterns', $event)"
+        @update:exclude-patterns="$emit('update:excludePatterns', $event)"
+        @update:use-regex="$emit('update:useRegex', $event)"
+      />
+
       <LicenseSection
         :no-credit-required="noCreditRequired"
         :allow-selling="allowSelling"
@@ -46,6 +55,7 @@
 import BaseModelSection from './sections/BaseModelSection.vue'
 import TagsSection from './sections/TagsSection.vue'
 import FoldersSection from './sections/FoldersSection.vue'
+import NamePatternsSection from './sections/NamePatternsSection.vue'
 import LicenseSection from './sections/LicenseSection.vue'
 import LoraPoolPreview from './LoraPoolPreview.vue'
 import type { BaseModelOption, LoraItem } from '../../composables/types'
@@ -61,6 +71,10 @@ defineProps<{
   // Folders
   includeFolders: string[]
   excludeFolders: string[]
+  // Name patterns
+  includePatterns: string[]
+  excludePatterns: string[]
+  useRegex: boolean
   // License
   noCreditRequired: boolean
   allowSelling: boolean
@@ -74,6 +88,9 @@ defineEmits<{
   'open-modal': [modal: ModalType]
   'update:includeFolders': [value: string[]]
   'update:excludeFolders': [value: string[]]
+  'update:includePatterns': [value: string[]]
+  'update:excludePatterns': [value: string[]]
+  'update:useRegex': [value: boolean]
   'update:noCreditRequired': [value: boolean]
   'update:allowSelling': [value: boolean]
   refresh: []

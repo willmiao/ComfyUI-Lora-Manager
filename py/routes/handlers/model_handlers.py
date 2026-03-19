@@ -309,6 +309,13 @@ class ModelListingHandler:
         else:
             allow_selling_generated_content = None  # None means no filter applied
 
+        # Name pattern filters for LoRA Pool
+        name_pattern_include = request.query.getall("name_pattern_include", [])
+        name_pattern_exclude = request.query.getall("name_pattern_exclude", [])
+        name_pattern_use_regex = (
+            request.query.get("name_pattern_use_regex", "false").lower() == "true"
+        )
+
         return {
             "page": page,
             "page_size": page_size,
@@ -328,6 +335,9 @@ class ModelListingHandler:
             "credit_required": credit_required,
             "allow_selling_generated_content": allow_selling_generated_content,
             "model_types": model_types,
+            "name_pattern_include": name_pattern_include,
+            "name_pattern_exclude": name_pattern_exclude,
+            "name_pattern_use_regex": name_pattern_use_regex,
             **self._parse_specific_params(request),
         }
 

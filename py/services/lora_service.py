@@ -27,7 +27,7 @@ class LoraService(BaseModelService):
         # Resolve sub_type using priority: sub_type > model_type > civitai.model.type > default
         # Normalize to lowercase for consistent API responses
         sub_type = resolve_sub_type(lora_data).lower()
-        
+
         return {
             "model_name": lora_data["model_name"],
             "file_name": lora_data["file_name"],
@@ -48,7 +48,9 @@ class LoraService(BaseModelService):
             "notes": lora_data.get("notes", ""),
             "favorite": lora_data.get("favorite", False),
             "update_available": bool(lora_data.get("update_available", False)),
-            "skip_metadata_refresh": bool(lora_data.get("skip_metadata_refresh", False)),
+            "skip_metadata_refresh": bool(
+                lora_data.get("skip_metadata_refresh", False)
+            ),
             "sub_type": sub_type,
             "civitai": self.filter_civitai_data(
                 lora_data.get("civitai", {}), minimal=True
@@ -61,6 +63,68 @@ class LoraService(BaseModelService):
         first_letter = kwargs.get("first_letter")
         if first_letter:
             data = self._filter_by_first_letter(data, first_letter)
+
+        # Handle name pattern filters
+        name_pattern_include = kwargs.get("name_pattern_include", [])
+        name_pattern_exclude = kwargs.get("name_pattern_exclude", [])
+        name_pattern_use_regex = kwargs.get("name_pattern_use_regex", False)
+
+        if name_pattern_include or name_pattern_exclude:
+            import re
+
+            def matches_pattern(name, pattern, use_regex):
+                """Check if name matches pattern (regex or substring)"""
+                if not name:
+                    return False
+                if use_regex:
+                    try:
+                        return bool(re.search(pattern, name, re.IGNORECASE))
+                    except re.error:
+                        # Invalid regex, fall back to substring match
+                        return pattern.lower() in name.lower()
+                else:
+                    return pattern.lower() in name.lower()
+
+            def matches_any_pattern(name, patterns, use_regex):
+                """Check if name matches any of the patterns"""
+                if not patterns:
+                    return True
+                return any(matches_pattern(name, p, use_regex) for p in patterns)
+
+            filtered = []
+            for lora in data:
+                model_name = lora.get("model_name", "")
+                file_name = lora.get("file_name", "")
+                names_to_check = [n for n in [model_name, file_name] if n]
+
+                # Check exclude patterns first
+                excluded = False
+                if name_pattern_exclude:
+                    for name in names_to_check:
+                        if matches_any_pattern(
+                            name, name_pattern_exclude, name_pattern_use_regex
+                        ):
+                            excluded = True
+                            break
+
+                if excluded:
+                    continue
+
+                # Check include patterns
+                if name_pattern_include:
+                    included = False
+                    for name in names_to_check:
+                        if matches_any_pattern(
+                            name, name_pattern_include, name_pattern_use_regex
+                        ):
+                            included = True
+                            break
+                    if not included:
+                        continue
+
+                filtered.append(lora)
+
+            data = filtered
 
         return data
 
@@ -368,9 +432,7 @@ class LoraService(BaseModelService):
                         rng.uniform(clip_strength_min, clip_strength_max), 2
                     )
             else:
-                clip_str = round(
-                    rng.uniform(clip_strength_min, clip_strength_max), 2
-                )
+                clip_str = round(rng.uniform(clip_strength_min, clip_strength_max), 2)
 
             result_loras.append(
                 {
@@ -485,12 +547,69 @@ class LoraService(BaseModelService):
                 if bool(lora.get("license_flags", 127) & (1 << 1))
             ]
 
+        # Apply name pattern filters
+        name_patterns = filter_section.get("namePatterns", {})
+        include_patterns = name_patterns.get("include", [])
+        exclude_patterns = name_patterns.get("exclude", [])
+        use_regex = name_patterns.get("useRegex", False)
+
+        if include_patterns or exclude_patterns:
+            import re
+
+            def matches_pattern(name, pattern, use_regex):
+                """Check if name matches pattern (regex or substring)"""
+                if not name:
+                    return False
+                if use_regex:
+                    try:
+                        return bool(re.search(pattern, name, re.IGNORECASE))
+                    except re.error:
+                        # Invalid regex, fall back to substring match
+                        return pattern.lower() in name.lower()
+                else:
+                    return pattern.lower() in name.lower()
+
+            def matches_any_pattern(name, patterns, use_regex):
+                """Check if name matches any of the patterns"""
+                if not patterns:
+                    return True
+                return any(matches_pattern(name, p, use_regex) for p in patterns)
+
+            filtered = []
+            for lora in available_loras:
+                model_name = lora.get("model_name", "")
+                file_name = lora.get("file_name", "")
+                names_to_check = [n for n in [model_name, file_name] if n]
+
+                # Check exclude patterns first
+                excluded = False
+                if exclude_patterns:
+                    for name in names_to_check:
+                        if matches_any_pattern(name, exclude_patterns, use_regex):
+                            excluded = True
+                            break
+
+                if excluded:
+                    continue
+
+                # Check include patterns
+                if include_patterns:
+                    included = False
+                    for name in names_to_check:
+                        if matches_any_pattern(name, include_patterns, use_regex):
+                            included = True
+                            break
+                    if not included:
+                        continue
+
+                filtered.append(lora)
+
+            available_loras = filtered
+
         return available_loras
 
     async def get_cycler_list(
-        self,
-        pool_config: Optional[Dict] = None,
-        sort_by: str = "filename"
+        self, pool_config: Optional[Dict] = None, sort_by: str = "filename"
     ) -> List[Dict]:
         """
         Get filtered and sorted LoRA list for cycling.
@@ -518,16 +637,16 @@ class LoraService(BaseModelService):
                 available_loras,
                 key=lambda x: (
                     (x.get("model_name") or x.get("file_name", "")).lower(),
-                    x.get("file_path", "").lower()
-                )
+                    x.get("file_path", "").lower(),
+                ),
             )
         else:  # Default to filename
             available_loras = sorted(
                 available_loras,
                 key=lambda x: (
                     x.get("file_name", "").lower(),
-                    x.get("file_path", "").lower()
-                )
+                    x.get("file_path", "").lower(),
+                ),
             )
 
         # Return minimal data needed for cycling

@@ -369,3 +369,289 @@ async def test_pool_filter_combined_all_filters(lora_service):
     # - tags: tag1 ✓
     assert len(filtered) == 1
     assert filtered[0]["file_name"] == "match_all.safetensors"
+
+
+@pytest.mark.asyncio
+async def test_pool_filter_name_patterns_include_text(lora_service):
+    """Test filtering by name patterns with text matching (useRegex=False)."""
+    sample_loras = [
+        {
+            "file_name": "character_anime_v1.safetensors",
+            "model_name": "Anime Character",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+        {
+            "file_name": "character_realistic_v1.safetensors",
+            "model_name": "Realistic Character",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+        {
+            "file_name": "style_watercolor_v1.safetensors",
+            "model_name": "Watercolor Style",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+    ]
+
+    # Test include patterns with text matching
+    pool_config = {
+        "baseModels": [],
+        "tags": {"include": [], "exclude": []},
+        "folders": {"include": [], "exclude": []},
+        "license": {"noCreditRequired": False, "allowSelling": False},
+        "namePatterns": {"include": ["character"], "exclude": [], "useRegex": False},
+    }
+
+    filtered = await lora_service._apply_pool_filters(sample_loras, pool_config)
+    assert len(filtered) == 2
+    file_names = {lora["file_name"] for lora in filtered}
+    assert file_names == {
+        "character_anime_v1.safetensors",
+        "character_realistic_v1.safetensors",
+    }
+
+
+@pytest.mark.asyncio
+async def test_pool_filter_name_patterns_exclude_text(lora_service):
+    """Test excluding by name patterns with text matching (useRegex=False)."""
+    sample_loras = [
+        {
+            "file_name": "character_anime_v1.safetensors",
+            "model_name": "Anime Character",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+        {
+            "file_name": "character_realistic_v1.safetensors",
+            "model_name": "Realistic Character",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+        {
+            "file_name": "style_watercolor_v1.safetensors",
+            "model_name": "Watercolor Style",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+    ]
+
+    # Test exclude patterns with text matching
+    pool_config = {
+        "baseModels": [],
+        "tags": {"include": [], "exclude": []},
+        "folders": {"include": [], "exclude": []},
+        "license": {"noCreditRequired": False, "allowSelling": False},
+        "namePatterns": {"include": [], "exclude": ["anime"], "useRegex": False},
+    }
+
+    filtered = await lora_service._apply_pool_filters(sample_loras, pool_config)
+    assert len(filtered) == 2
+    file_names = {lora["file_name"] for lora in filtered}
+    assert file_names == {
+        "character_realistic_v1.safetensors",
+        "style_watercolor_v1.safetensors",
+    }
+
+
+@pytest.mark.asyncio
+async def test_pool_filter_name_patterns_include_regex(lora_service):
+    """Test filtering by name patterns with regex matching (useRegex=True)."""
+    sample_loras = [
+        {
+            "file_name": "character_anime_v1.safetensors",
+            "model_name": "Anime Character",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+        {
+            "file_name": "character_realistic_v1.safetensors",
+            "model_name": "Realistic Character",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+        {
+            "file_name": "style_watercolor_v1.safetensors",
+            "model_name": "Watercolor Style",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+    ]
+
+    # Test include patterns with regex matching - match files starting with "character_"
+    pool_config = {
+        "baseModels": [],
+        "tags": {"include": [], "exclude": []},
+        "folders": {"include": [], "exclude": []},
+        "license": {"noCreditRequired": False, "allowSelling": False},
+        "namePatterns": {"include": ["^character_"], "exclude": [], "useRegex": True},
+    }
+
+    filtered = await lora_service._apply_pool_filters(sample_loras, pool_config)
+    assert len(filtered) == 2
+    file_names = {lora["file_name"] for lora in filtered}
+    assert file_names == {
+        "character_anime_v1.safetensors",
+        "character_realistic_v1.safetensors",
+    }
+
+
+@pytest.mark.asyncio
+async def test_pool_filter_name_patterns_exclude_regex(lora_service):
+    """Test excluding by name patterns with regex matching (useRegex=True)."""
+    sample_loras = [
+        {
+            "file_name": "character_anime_v1.safetensors",
+            "model_name": "Anime Character",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+        {
+            "file_name": "character_realistic_v1.safetensors",
+            "model_name": "Realistic Character",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+        {
+            "file_name": "style_watercolor_v1.safetensors",
+            "model_name": "Watercolor Style",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+    ]
+
+    # Test exclude patterns with regex matching - exclude files ending with "_v1.safetensors"
+    pool_config = {
+        "baseModels": [],
+        "tags": {"include": [], "exclude": []},
+        "folders": {"include": [], "exclude": []},
+        "license": {"noCreditRequired": False, "allowSelling": False},
+        "namePatterns": {
+            "include": [],
+            "exclude": ["_v1\\.safetensors$"],
+            "useRegex": True,
+        },
+    }
+
+    filtered = await lora_service._apply_pool_filters(sample_loras, pool_config)
+    assert len(filtered) == 0  # All files match the exclude pattern
+
+
+@pytest.mark.asyncio
+async def test_pool_filter_name_patterns_combined(lora_service):
+    """Test combining include and exclude name patterns."""
+    sample_loras = [
+        {
+            "file_name": "character_anime_v1.safetensors",
+            "model_name": "Anime Character",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+        {
+            "file_name": "character_realistic_v1.safetensors",
+            "model_name": "Realistic Character",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+        {
+            "file_name": "style_watercolor_v1.safetensors",
+            "model_name": "Watercolor Style",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+    ]
+
+    # Test include "character" but exclude "anime"
+    pool_config = {
+        "baseModels": [],
+        "tags": {"include": [], "exclude": []},
+        "folders": {"include": [], "exclude": []},
+        "license": {"noCreditRequired": False, "allowSelling": False},
+        "namePatterns": {
+            "include": ["character"],
+            "exclude": ["anime"],
+            "useRegex": False,
+        },
+    }
+
+    filtered = await lora_service._apply_pool_filters(sample_loras, pool_config)
+    assert len(filtered) == 1
+    assert filtered[0]["file_name"] == "character_realistic_v1.safetensors"
+
+
+@pytest.mark.asyncio
+async def test_pool_filter_name_patterns_model_name_fallback(lora_service):
+    """Test that name pattern filtering falls back to model_name when file_name doesn't match."""
+    sample_loras = [
+        {
+            "file_name": "abc123.safetensors",
+            "model_name": "Super Anime Character",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+        {
+            "file_name": "def456.safetensors",
+            "model_name": "Realistic Portrait",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+    ]
+
+    # Should match model_name even if file_name doesn't contain the pattern
+    pool_config = {
+        "baseModels": [],
+        "tags": {"include": [], "exclude": []},
+        "folders": {"include": [], "exclude": []},
+        "license": {"noCreditRequired": False, "allowSelling": False},
+        "namePatterns": {"include": ["anime"], "exclude": [], "useRegex": False},
+    }
+
+    filtered = await lora_service._apply_pool_filters(sample_loras, pool_config)
+    assert len(filtered) == 1
+    assert filtered[0]["file_name"] == "abc123.safetensors"
+
+
+@pytest.mark.asyncio
+async def test_pool_filter_name_patterns_invalid_regex(lora_service):
+    """Test that invalid regex falls back to substring matching."""
+    sample_loras = [
+        {
+            "file_name": "character_anime[test]_v1.safetensors",
+            "model_name": "Anime Character",
+            "base_model": "Illustrious",
+            "folder": "",
+            "license_flags": build_license_flags(None),
+        },
+    ]
+
+    # Invalid regex pattern (unclosed character class) should fall back to substring matching
+    # The pattern "anime[" is invalid regex but valid substring - it exists in the filename
+    pool_config = {
+        "baseModels": [],
+        "tags": {"include": [], "exclude": []},
+        "folders": {"include": [], "exclude": []},
+        "license": {"noCreditRequired": False, "allowSelling": False},
+        "namePatterns": {"include": ["anime["], "exclude": [], "useRegex": True},
+    }
+
+    # Should not crash and should match using substring fallback
+    filtered = await lora_service._apply_pool_filters(sample_loras, pool_config)
+    assert len(filtered) == 1  # Substring match works even with invalid regex

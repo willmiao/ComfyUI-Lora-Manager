@@ -24,6 +24,9 @@ export function useLoraPoolState(widget: ComponentWidget<LoraPoolConfig>) {
   const excludeFolders = ref<string[]>([])
   const noCreditRequired = ref(false)
   const allowSelling = ref(false)
+  const includePatterns = ref<string[]>([])
+  const excludePatterns = ref<string[]>([])
+  const useRegex = ref(false)
 
   // Available options from API
   const availableBaseModels = ref<BaseModelOption[]>([])
@@ -52,6 +55,11 @@ export function useLoraPoolState(widget: ComponentWidget<LoraPoolConfig>) {
         license: {
           noCreditRequired: noCreditRequired.value,
           allowSelling: allowSelling.value
+        },
+        namePatterns: {
+          include: includePatterns.value,
+          exclude: excludePatterns.value,
+          useRegex: useRegex.value
         }
       },
       preview: {
@@ -94,6 +102,9 @@ export function useLoraPoolState(widget: ComponentWidget<LoraPoolConfig>) {
       updateIfChanged(excludeFolders, filters.folders?.exclude || [])
       updateIfChanged(noCreditRequired, filters.license?.noCreditRequired ?? false)
       updateIfChanged(allowSelling, filters.license?.allowSelling ?? false)
+      updateIfChanged(includePatterns, filters.namePatterns?.include || [])
+      updateIfChanged(excludePatterns, filters.namePatterns?.exclude || [])
+      updateIfChanged(useRegex, filters.namePatterns?.useRegex ?? false)
 
       // matchCount doesn't trigger watchers, so direct assignment is fine
       matchCount.value = preview?.matchCount || 0
@@ -125,6 +136,9 @@ export function useLoraPoolState(widget: ComponentWidget<LoraPoolConfig>) {
       foldersExclude: excludeFolders.value,
       noCreditRequired: noCreditRequired.value || undefined,
       allowSelling: allowSelling.value || undefined,
+      namePatternsInclude: includePatterns.value,
+      namePatternsExclude: excludePatterns.value,
+      namePatternsUseRegex: useRegex.value,
       pageSize: 6
     })
 
@@ -150,7 +164,10 @@ export function useLoraPoolState(widget: ComponentWidget<LoraPoolConfig>) {
     includeFolders,
     excludeFolders,
     noCreditRequired,
-    allowSelling
+    allowSelling,
+    includePatterns,
+    excludePatterns,
+    useRegex
   ], onFilterChange, { deep: true })
 
   return {
@@ -162,6 +179,9 @@ export function useLoraPoolState(widget: ComponentWidget<LoraPoolConfig>) {
     excludeFolders,
     noCreditRequired,
     allowSelling,
+    includePatterns,
+    excludePatterns,
+    useRegex,
 
     // Available options
     availableBaseModels,
