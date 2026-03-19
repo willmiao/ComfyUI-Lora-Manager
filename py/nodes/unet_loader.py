@@ -1,7 +1,6 @@
 import logging
 import os
 from typing import List, Tuple
-import torch
 import comfy.sd
 from ..utils.utils import get_checkpoint_info_absolute, _format_model_name_for_comfyui
 
@@ -101,6 +100,8 @@ class UNETLoaderLM:
         Returns:
             Tuple of (MODEL,)
         """
+        import torch
+
         # Get absolute path from cache using ComfyUI-style name
         unet_path, metadata = get_checkpoint_info_absolute(unet_name)
 
@@ -143,6 +144,7 @@ class UNETLoaderLM:
         Returns:
             Tuple of (MODEL,)
         """
+        import torch
         from .gguf_import_helper import get_gguf_modules
 
         # Get ComfyUI-GGUF modules using helper (handles various import scenarios)
