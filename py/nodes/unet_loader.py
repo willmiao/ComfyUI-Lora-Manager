@@ -1,7 +1,7 @@
 import logging
 import os
 from typing import List, Tuple
-import comfy.sd
+import comfy.sd # type: ignore
 from ..utils.utils import get_checkpoint_info_absolute, _format_model_name_for_comfyui
 
 logger = logging.getLogger(__name__)

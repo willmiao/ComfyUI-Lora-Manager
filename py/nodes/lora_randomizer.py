@@ -7,10 +7,8 @@ and tracks the last used combination for reuse.
 """
 
 import logging
-import random
 import os
 from ..utils.utils import get_lora_info
-from .utils import extract_lora_name
 
 logger = logging.getLogger(__name__)
 

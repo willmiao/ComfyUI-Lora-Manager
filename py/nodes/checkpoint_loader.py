@@ -1,8 +1,7 @@
 import logging
-import os
 from typing import List, Tuple
-import comfy.sd
-import folder_paths
+import comfy.sd # type: ignore
+import folder_paths # type: ignore
 from ..utils.utils import get_checkpoint_info_absolute, _format_model_name_for_comfyui
 
 logger = logging.getLogger(__name__)
