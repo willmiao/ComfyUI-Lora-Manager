@@ -148,10 +148,13 @@ class MetadataHook:
         """Install hooks for asynchronous execution model"""
         # Store the original _async_map_node_over_list function
         original_map_node_over_list = getattr(execution, map_node_func_name)
-        
-        # Wrapped async function, compatible with both stable and nightly
-        async def async_map_node_over_list_with_metadata(prompt_id, unique_id, obj, input_data_all, func, allow_interrupt=False, execution_block_cb=None, pre_execute_cb=None, *args, **kwargs):
-            hidden_inputs = kwargs.get('hidden_inputs', None)
+
+        # Wrapped async function - signature must exactly match _async_map_node_over_list
+        async def async_map_node_over_list_with_metadata(
+            prompt_id, unique_id, obj, input_data_all, func,
+            allow_interrupt=False, execution_block_cb=None,
+            pre_execute_cb=None, v3_data=None
+        ):
             # Only collect metadata when calling the main function of nodes
             if func == obj.FUNCTION and hasattr(obj, '__class__'):
                 try:
@@ -163,13 +166,13 @@ class MetadataHook:
                             registry.record_node_execution(node_id, class_type, input_data_all, None)
                 except Exception as e:
                     logger.error(f"Error collecting metadata (pre-execution): {str(e)}")
-            
-            # Call original function with all args/kwargs
+
+            # Call original function with exact parameters
             results = await original_map_node_over_list(
                 prompt_id, unique_id, obj, input_data_all, func,
-                allow_interrupt, execution_block_cb, pre_execute_cb, *args, **kwargs
+                allow_interrupt, execution_block_cb, pre_execute_cb, v3_data=v3_data
             )
-            
+
             if func == obj.FUNCTION and hasattr(obj, '__class__'):
                 try:
                     registry = MetadataRegistry()
@@ -180,28 +183,28 @@ class MetadataHook:
                             registry.update_node_execution(node_id, class_type, results)
                 except Exception as e:
                     logger.error(f"Error collecting metadata (post-execution): {str(e)}")
-            
+
             return results
-        
+
         # Also hook the execute function to track the current prompt_id
         original_execute = execution.execute
-        
+
         async def async_execute_with_prompt_tracking(*args, **kwargs):
             if len(args) >= 7:  # Check if we have enough arguments
                 server, prompt, caches, node_id, extra_data, executed, prompt_id = args[:7]
                 registry = MetadataRegistry()
-                
+
                 # Start collection if this is a new prompt
                 if not registry.current_prompt_id or registry.current_prompt_id != prompt_id:
                     registry.start_collection(prompt_id)
-                    
+
                 # Store the dynprompt reference for node lookups
                 if hasattr(prompt, 'original_prompt'):
                     registry.set_current_prompt(prompt)
-            
+
             # Execute the original function
             return await original_execute(*args, **kwargs)
-            
+
         # Replace the functions with async versions
         setattr(execution, map_node_func_name, async_map_node_over_list_with_metadata)
         execution.execute = async_execute_with_prompt_tracking
