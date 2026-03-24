@@ -9,6 +9,7 @@ try:  # pragma: no cover - import fallback for pytest collection
     from .py.nodes.lora_stacker import LoraStackerLM
     from .py.nodes.save_image import SaveImageLM
     from .py.nodes.debug_metadata import DebugMetadataLM
+    from .py.nodes.recipe_browser import RecipeBrowserLM
     from .py.nodes.wanvideo_lora_select import WanVideoLoraSelectLM
     from .py.nodes.wanvideo_lora_select_from_text import WanVideoLoraTextSelectLM
     from .py.nodes.lora_pool import LoraPoolLM
@@ -65,6 +66,7 @@ NODE_CLASS_MAPPINGS = {
     LoraStackerLM.NAME: LoraStackerLM,
     SaveImageLM.NAME: SaveImageLM,
     DebugMetadataLM.NAME: DebugMetadataLM,
+    RecipeBrowserLM.NAME: RecipeBrowserLM,
     WanVideoLoraSelectLM.NAME: WanVideoLoraSelectLM,
     WanVideoLoraTextSelectLM.NAME: WanVideoLoraTextSelectLM,
     LoraPoolLM.NAME: LoraPoolLM,
