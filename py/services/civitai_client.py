@@ -490,14 +490,33 @@ class CivitaiClient:
         """
         try:
             url = f"{self.base_url}/images?imageId={image_id}&nsfw=X"
+            requested_id = int(image_id)
 
             logger.debug(f"Fetching image info for ID: {image_id}")
             success, result = await self._make_request("GET", url, use_auth=True)
 
             if success:
-                if result and "items" in result and len(result["items"]) > 0:
-                    logger.debug(f"Successfully fetched image info for ID: {image_id}")
-                    return result["items"][0]
+                if result and "items" in result and isinstance(result["items"], list):
+                    items = result["items"]
+
+                    # First, try to find the item with matching ID
+                    for item in items:
+                        if isinstance(item, dict) and item.get("id") == requested_id:
+                            logger.debug(f"Successfully fetched image info for ID: {image_id}")
+                            return item
+
+                    # No matching ID found - log warning with details about returned items
+                    returned_ids = [
+                        item.get("id") for item in items
+                        if isinstance(item, dict) and "id" in item
+                    ]
+                    logger.warning(
+                        f"CivitAI API returned no matching image for requested ID {image_id}. "
+                        f"Returned {len(items)} item(s) with IDs: {returned_ids}. "
+                        f"This may indicate the image was deleted, hidden, or there is a database lag."
+                    )
+                    return None
+
                 logger.warning(f"No image found with ID: {image_id}")
                 return None
 
@@ -505,6 +524,10 @@ class CivitaiClient:
             return None
         except RateLimitError:
             raise
+        except ValueError as e:
+            error_msg = f"Invalid image ID format: {image_id}"
+            logger.error(error_msg)
+            return None
         except Exception as e:
             error_msg = f"Error fetching image info: {e}"
             logger.error(error_msg)

@@ -484,9 +484,11 @@ async def test_get_model_version_info_success(monkeypatch, downloader):
     assert result["images"][0]["meta"]["other"] == "keep"
 
 
-async def test_get_image_info_returns_first_item(monkeypatch, downloader):
+async def test_get_image_info_returns_matching_item(monkeypatch, downloader):
+    """When API returns multiple items, return the one matching the requested ID."""
     async def fake_make_request(method, url, use_auth=True, **kwargs):
-        return True, {"items": [{"id": 1}, {"id": 2}]}
+        # Requested ID is 42, but it's the second item in the response
+        return True, {"items": [{"id": 41}, {"id": 42, "name": "target"}, {"id": 43}]}
 
     downloader.make_request = fake_make_request
 
@@ -494,7 +496,25 @@ async def test_get_image_info_returns_first_item(monkeypatch, downloader):
 
     result = await client.get_image_info("42")
 
-    assert result == {"id": 1}
+    assert result == {"id": 42, "name": "target"}
+
+
+async def test_get_image_info_returns_none_when_id_mismatch(monkeypatch, downloader, caplog):
+    """When API returns items but none match the requested ID, return None and log warning."""
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        # Requested ID is 999, but API returns different IDs (simulating deleted/hidden image)
+        return True, {"items": [{"id": 1}, {"id": 2}, {"id": 3}]}
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result = await client.get_image_info("999")
+
+    assert result is None
+    # Verify warning was logged
+    assert "CivitAI API returned no matching image for requested ID 999" in caplog.text
+    assert "Returned 3 item(s) with IDs: [1, 2, 3]" in caplog.text
 
 
 async def test_get_image_info_handles_missing(monkeypatch, downloader):
@@ -508,3 +528,13 @@ async def test_get_image_info_handles_missing(monkeypatch, downloader):
     result = await client.get_image_info("42")
 
     assert result is None
+
+
+async def test_get_image_info_handles_invalid_id(monkeypatch, downloader, caplog):
+    """When given a non-numeric image ID, return None and log error."""
+    client = await CivitaiClient.get_instance()
+
+    result = await client.get_image_info("not-a-number")
+
+    assert result is None
+    assert "Invalid image ID format" in caplog.text
