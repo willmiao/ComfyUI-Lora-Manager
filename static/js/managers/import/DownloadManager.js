@@ -9,7 +9,7 @@ export class DownloadManager {
         this.importManager = importManager;
     }
 
-    async saveRecipe() {
+    async saveRecipe(skipDownload = false) {
         // Check if we're in download-only mode (for existing recipe)
         const isDownloadOnly = !!this.importManager.recipeId;
 
@@ -20,7 +20,10 @@ export class DownloadManager {
 
         try {
             // Show progress indicator
-            this.importManager.loadingManager.showSimpleLoading(isDownloadOnly ? translate('recipes.controls.import.downloadingLoras', {}, 'Downloading LoRAs...') : translate('recipes.controls.import.savingRecipe', {}, 'Saving recipe...'));
+            const loadingMessage = skipDownload 
+                ? translate('recipes.controls.import.savingRecipe', {}, 'Saving recipe...')
+                : (isDownloadOnly ? translate('recipes.controls.import.downloadingLoras', {}, 'Downloading LoRAs...') : translate('recipes.controls.import.savingRecipe', {}, 'Saving recipe...'));
+            this.importManager.loadingManager.showSimpleLoading(loadingMessage);
 
             // Only send the complete recipe to save if not in download-only mode
             if (!isDownloadOnly) {
@@ -98,15 +101,17 @@ export class DownloadManager {
                 }
             }
 
-            // Check if we need to download LoRAs
+            // Check if we need to download LoRAs (skip if skipDownload is true)
             let failedDownloads = 0;
-            if (this.importManager.downloadableLoRAs && this.importManager.downloadableLoRAs.length > 0) {
+            if (!skipDownload && this.importManager.downloadableLoRAs && this.importManager.downloadableLoRAs.length > 0) {
                 await this.downloadMissingLoras();
             }
 
             // Show success message
             if (isDownloadOnly) {
-                if (failedDownloads === 0) {
+                if (skipDownload) {
+                    showToast('toast.recipes.recipeSaved', {}, 'success');
+                } else if (failedDownloads === 0) {
                     showToast('toast.loras.downloadSuccessful', {}, 'success');
                 }
             } else {

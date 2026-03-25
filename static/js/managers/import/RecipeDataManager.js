@@ -325,7 +325,8 @@ export class RecipeDataManager {
     }
 
     updateNextButtonState() {
-        const nextButton = document.querySelector('#detailsStep .primary-btn');
+        const nextButton = document.getElementById('nextBtn');
+        const importOnlyBtn = document.getElementById('importOnlyBtn');
         const actionsContainer = document.querySelector('#detailsStep .modal-actions');
         if (!nextButton || !actionsContainer) return;
 
@@ -365,7 +366,7 @@ export class RecipeDataManager {
             buttonsContainer.parentNode.insertBefore(warningContainer, buttonsContainer);
         }
 
-        // Check for duplicates but don't change button actions
+        // Check for downloadable missing LoRAs
         const missingNotDeleted = this.importManager.recipeData.loras.filter(
             lora => !lora.existsLocally && !lora.isDeleted
         ).length;
@@ -374,8 +375,16 @@ export class RecipeDataManager {
         nextButton.classList.remove('warning-btn');
 
         if (missingNotDeleted > 0) {
-            nextButton.textContent = translate('recipes.controls.import.downloadMissingLoras', {}, 'Download Missing LoRAs');
+            // Show import only button and update primary button
+            if (importOnlyBtn) {
+                importOnlyBtn.style.display = 'inline-block';
+            }
+            nextButton.textContent = translate('recipes.controls.import.importAndDownload', {}, 'Import & Download') + ` (${missingNotDeleted})`;
         } else {
+            // Hide import only button and show save recipe
+            if (importOnlyBtn) {
+                importOnlyBtn.style.display = 'none';
+            }
             nextButton.textContent = translate('recipes.controls.import.saveRecipe', {}, 'Save Recipe');
         }
     }
@@ -440,8 +449,11 @@ export class RecipeDataManager {
             // Store only downloadable LoRAs for the download step
             this.importManager.downloadableLoRAs = this.importManager.missingLoras;
             this.importManager.proceedToLocation();
+        } else if (this.importManager.missingLoras.length === 0 && this.importManager.recipeData.loras.some(l => !l.existsLocally)) {
+            // All missing LoRAs are deleted, save recipe without download
+            this.importManager.saveRecipe();
         } else {
-            // Otherwise, save the recipe directly
+            // No missing LoRAs at all, save the recipe directly
             this.importManager.saveRecipe();
         }
     }

@@ -142,6 +142,28 @@ export class ImportManager {
 
         // Reset duplicate related properties
         this.duplicateRecipes = [];
+
+        // Reset button visibility in location step
+        this.resetLocationStepButtons();
+    }
+
+    resetLocationStepButtons() {
+        // Reset buttons to default state
+        const locationStep = document.getElementById('locationStep');
+        if (!locationStep) return;
+        
+        const backBtn = locationStep.querySelector('.secondary-btn');
+        const primaryBtn = locationStep.querySelector('.primary-btn');
+        
+        // Back button - show
+        if (backBtn) {
+            backBtn.style.display = 'inline-block';
+        }
+        
+        // Primary button - reset text
+        if (primaryBtn) {
+            primaryBtn.textContent = translate('recipes.controls.import.downloadAndSaveRecipe', {}, 'Download & Save Recipe');
+        }
     }
 
     toggleImportMode(mode) {
@@ -261,8 +283,54 @@ export class ImportManager {
             this.loadDefaultPathSetting();
 
             this.updateTargetPath();
+
+            // Update download button with missing LoRA count (if any)
+            if (this.missingLoras && this.missingLoras.length > 0) {
+                this.updateDownloadButtonCount();
+                this.updateImportButtonsVisibility(true);
+            } else {
+                this.updateImportButtonsVisibility(false);
+            }
         } catch (error) {
             showToast('toast.recipes.importFailed', { message: error.message }, 'error');
+        }
+    }
+
+    updateImportButtonsVisibility(hasMissingLoras) {
+        // Update primary button text based on whether there are missing LoRAs
+        const locationStep = document.getElementById('locationStep');
+        if (!locationStep) return;
+        
+        const backBtn = locationStep.querySelector('.secondary-btn');
+        const primaryBtn = locationStep.querySelector('.primary-btn');
+        
+        // Back button - always show
+        if (backBtn) {
+            backBtn.style.display = 'inline-block';
+        }
+        
+        // Update primary button text
+        if (primaryBtn) {
+            const downloadCountSpan = locationStep.querySelector('#downloadLoraCount');
+            if (hasMissingLoras) {
+                // Rebuild button content to ensure proper structure
+                const buttonText = translate('recipes.controls.import.importAndDownload', {}, 'Import & Download');
+                primaryBtn.innerHTML = `${buttonText} <span id="downloadLoraCount"></span>`;
+            } else {
+                primaryBtn.textContent = translate('recipes.controls.import.downloadAndSaveRecipe', {}, 'Download & Save Recipe');
+            }
+        }
+    }
+
+    updateDownloadButtonCount() {
+        // Update the download count badge on the primary button
+        const locationStep = document.getElementById('locationStep');
+        if (!locationStep) return;
+        
+        const downloadCountSpan = locationStep.querySelector('#downloadLoraCount');
+        if (downloadCountSpan) {
+            const missingCount = this.missingLoras?.length || 0;
+            downloadCountSpan.textContent = missingCount > 0 ? `(${missingCount})` : '';
         }
     }
 
@@ -426,12 +494,54 @@ export class ImportManager {
         const modalTitle = document.querySelector('#importModal h2');
         if (modalTitle) modalTitle.textContent = translate('recipes.controls.import.downloadMissingLoras', {}, 'Download Missing LoRAs');
 
-        // Update the save button text
-        const saveButton = document.querySelector('#locationStep .primary-btn');
-        if (saveButton) saveButton.textContent = translate('recipes.controls.import.downloadMissingLoras', {}, 'Download Missing LoRAs');
+        // Update button texts and show download count
+        const locationStep = document.getElementById('locationStep');
+        if (!locationStep) return;
+        
+        const primaryBtn = locationStep.querySelector('.primary-btn');
+        const backBtn = locationStep.querySelector('.secondary-btn');
+        
+        // primaryBtn should be the "Import & Download" button
+        if (primaryBtn) {
+            const buttonText = translate('recipes.controls.import.importAndDownload', {}, 'Import & Download');
+            primaryBtn.innerHTML = `${buttonText} <span id="downloadLoraCount">(${recipeData.loras?.length || 0})</span>`;
+        }
+        
+        // Hide the "Back" button in download-only mode
+        if (backBtn) {
+            backBtn.style.display = 'none';
+        }
+    }
 
-        // Hide the back button
-        const backButton = document.querySelector('#locationStep .secondary-btn');
-        if (backButton) backButton.style.display = 'none';
+    saveRecipeWithoutDownload() {
+        // Call save recipe with skip download flag
+        return this.downloadManager.saveRecipe(true);
+    }
+
+    async saveRecipeOnlyFromDetails() {
+        // Validate recipe name first
+        if (!this.recipeName) {
+            showToast('toast.recipes.enterRecipeName', {}, 'error');
+            return;
+        }
+
+        // Mark deleted LoRAs as excluded
+        if (this.recipeData && this.recipeData.loras) {
+            this.recipeData.loras.forEach(lora => {
+                if (lora.isDeleted) {
+                    lora.exclude = true;
+                }
+            });
+        }
+
+        // Update missing LoRAs list
+        this.missingLoras = this.recipeData.loras.filter(lora =>
+            !lora.existsLocally && !lora.isDeleted);
+        
+        // For import only, we don't need downloadableLoRAs
+        this.downloadableLoRAs = [];
+
+        // Save recipe without downloading
+        await this.downloadManager.saveRecipe(true);
     }
 }

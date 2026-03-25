@@ -92,9 +92,10 @@
                 <!-- Duplicate recipes will be populated here -->
             </div>
             
-            <div class="modal-actions">
+            <div class="modal-actions" id="detailsStepActions">
                 <button class="secondary-btn" onclick="importManager.backToUpload()">{{ t('common.actions.back') }}</button>
-                <button class="primary-btn" onclick="importManager.proceedFromDetails()">{{ t('common.actions.next') }}</button>
+                <button class="secondary-btn" id="importOnlyBtn" onclick="importManager.saveRecipeOnlyFromDetails()" style="display: none;">{{ t('recipes.controls.import.importRecipeOnly') }}</button>
+                <button class="primary-btn" id="nextBtn" onclick="importManager.proceedFromDetails()">{{ t('common.actions.next') }}</button>
             </div>
         </div>
         
@@ -159,7 +160,7 @@
             
             <div class="modal-actions">
                 <button class="secondary-btn" onclick="importManager.backToDetails()">{{ t('common.actions.back') }}</button>
-                <button class="primary-btn" onclick="importManager.saveRecipe()">{{ t('recipes.controls.import.downloadAndSaveRecipe') }}</button>
+                <button class="primary-btn" onclick="importManager.saveRecipe()">{{ t('recipes.controls.import.importAndDownload') }} <span id="downloadLoraCount"></span></button>
             </div>
         </div>
     </div>
