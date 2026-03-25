@@ -19,7 +19,6 @@ from ..utils.civitai_utils import rewrite_preview_url
 from ..utils.preview_selection import select_preview_media
 from ..utils.utils import sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
-from ..utils.file_utils import calculate_sha256
 from ..utils.metadata_manager import MetadataManager
 from .service_registry import ServiceRegistry
 from .settings_manager import get_settings_manager
@@ -965,11 +964,12 @@ class DownloadManager:
             for download_url in download_urls:
                 use_auth = download_url.startswith("https://civitai.com/api/download/")
                 download_kwargs = {
-                    "progress_callback": lambda progress,
-                    snapshot=None: self._handle_download_progress(
-                        progress,
-                        progress_callback,
-                        snapshot,
+                    "progress_callback": lambda progress, snapshot=None: (
+                        self._handle_download_progress(
+                            progress,
+                            progress_callback,
+                            snapshot,
+                        )
                     ),
                     "use_auth": use_auth,  # Only use authentication for Civitai downloads
                 }
@@ -1238,7 +1238,8 @@ class DownloadManager:
             entry.file_name = os.path.splitext(os.path.basename(file_path))[0]
             # Update size to actual downloaded file size
             entry.size = os.path.getsize(file_path)
-            entry.sha256 = await calculate_sha256(file_path)
+            # Use SHA256 from API metadata (already set in from_civitai_info)
+            # Do not recalculate to avoid blocking during ComfyUI execution
             entries.append(entry)
 
         return entries
