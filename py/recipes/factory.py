@@ -7,6 +7,7 @@ from .parsers import (
     MetaFormatParser,
     AutomaticMetadataParser,
     CivitaiApiMetadataParser,
+    SuiImageParamsParser,
 )
 from .base import RecipeMetadataParser
 
@@ -53,6 +54,13 @@ class RecipeParserFactory:
                 return ComfyMetadataParser()
         except Exception:
             # If JSON parsing fails, move on to other parsers
+            pass
+
+        # Try SuiImageParamsParser for SuiImage metadata format
+        try:
+            if SuiImageParamsParser().is_metadata_matching(metadata_str):
+                return SuiImageParamsParser()
+        except Exception:
             pass
 
         # Check other parsers that expect string input

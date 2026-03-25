@@ -492,7 +492,7 @@ async def test_analyze_remote_video(tmp_path):
 
     class DummyFactory:
         def create_parser(self, metadata):
-            async def parse_metadata(m, recipe_scanner):
+            async def parse_metadata(m, recipe_scanner=None, civitai_client=None):
                 return {"loras": []}
             return SimpleNamespace(parse_metadata=parse_metadata)
 
