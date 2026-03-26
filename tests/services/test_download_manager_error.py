@@ -281,8 +281,6 @@ async def test_execute_download_extracts_zip_single_model(monkeypatch, tmp_path)
         DownloadManager, "_get_lora_scanner", AsyncMock(return_value=dummy_scanner)
     )
     monkeypatch.setattr(MetadataManager, "save_metadata", AsyncMock(return_value=True))
-    hash_calculator = AsyncMock(return_value="hash-single")
-    monkeypatch.setattr(download_manager, "calculate_sha256", hash_calculator)
 
     result = await manager._execute_download(
         download_urls=download_urls,
@@ -299,10 +297,10 @@ async def test_execute_download_extracts_zip_single_model(monkeypatch, tmp_path)
     assert not zip_path.exists()
     extracted = save_dir / "model.safetensors"
     assert extracted.exists()
-    assert hash_calculator.await_args.args[0] == str(extracted)
     saved_call = MetadataManager.save_metadata.await_args
     assert saved_call.args[0] == str(extracted)
-    assert saved_call.args[1].sha256 == "hash-single"
+    # SHA256 comes from metadata (API value), not recalculated
+    assert saved_call.args[1].sha256 == "sha256"
     assert dummy_scanner.add_model_to_cache.await_count == 1
 
 
@@ -351,8 +349,6 @@ async def test_execute_download_extracts_zip_multiple_models(monkeypatch, tmp_pa
         DownloadManager, "_get_lora_scanner", AsyncMock(return_value=dummy_scanner)
     )
     monkeypatch.setattr(MetadataManager, "save_metadata", AsyncMock(return_value=True))
-    hash_calculator = AsyncMock(side_effect=["hash-one", "hash-two"])
-    monkeypatch.setattr(download_manager, "calculate_sha256", hash_calculator)
 
     result = await manager._execute_download(
         download_urls=download_urls,
@@ -372,15 +368,15 @@ async def test_execute_download_extracts_zip_multiple_models(monkeypatch, tmp_pa
     assert extracted_one.exists()
     assert extracted_two.exists()
 
-    assert hash_calculator.await_count == 2
     assert MetadataManager.save_metadata.await_count == 2
     assert dummy_scanner.add_model_to_cache.await_count == 2
 
     metadata_calls = MetadataManager.save_metadata.await_args_list
     assert metadata_calls[0].args[0] == str(extracted_one)
-    assert metadata_calls[0].args[1].sha256 == "hash-one"
+    # SHA256 comes from metadata (API value), not recalculated
+    assert metadata_calls[0].args[1].sha256 == "sha256"
     assert metadata_calls[1].args[0] == str(extracted_two)
-    assert metadata_calls[1].args[1].sha256 == "hash-two"
+    assert metadata_calls[1].args[1].sha256 == "sha256"
 
 
 @pytest.mark.asyncio
@@ -427,8 +423,6 @@ async def test_execute_download_extracts_zip_pt_embedding(monkeypatch, tmp_path)
         ServiceRegistry, "get_embedding_scanner", AsyncMock(return_value=dummy_scanner)
     )
     monkeypatch.setattr(MetadataManager, "save_metadata", AsyncMock(return_value=True))
-    hash_calculator = AsyncMock(return_value="hash-pt")
-    monkeypatch.setattr(download_manager, "calculate_sha256", hash_calculator)
 
     result = await manager._execute_download(
         download_urls=download_urls,
@@ -445,10 +439,10 @@ async def test_execute_download_extracts_zip_pt_embedding(monkeypatch, tmp_path)
     assert not zip_path.exists()
     extracted = save_dir / "embedding.pt"
     assert extracted.exists()
-    assert hash_calculator.await_args.args[0] == str(extracted)
     saved_call = MetadataManager.save_metadata.await_args
     assert saved_call.args[0] == str(extracted)
-    assert saved_call.args[1].sha256 == "hash-pt"
+    # SHA256 comes from metadata (API value), not recalculated
+    assert saved_call.args[1].sha256 == "sha256"
     assert dummy_scanner.add_model_to_cache.await_count == 1
 
 
