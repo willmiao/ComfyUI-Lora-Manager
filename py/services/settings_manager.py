@@ -11,7 +11,11 @@ from typing import Any, Awaitable, Dict, Iterable, List, Mapping, Optional, Sequ
 
 from platformdirs import user_config_dir
 
-from ..utils.constants import DEFAULT_HASH_CHUNK_SIZE_MB, DEFAULT_PRIORITY_TAG_CONFIG
+from ..utils.constants import (
+    DEFAULT_HASH_CHUNK_SIZE_MB,
+    DEFAULT_PRIORITY_TAG_CONFIG,
+    SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS,
+)
 from ..utils.preview_selection import VALID_MATURE_BLUR_LEVELS
 from ..utils.settings_paths import APP_NAME, ensure_settings_file, get_legacy_settings_path
 from ..utils.tag_priorities import (
@@ -73,6 +77,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "update_flag_strategy": "same_base",
     "auto_organize_exclusions": [],
     "metadata_refresh_skip_paths": [],
+    "download_skip_base_models": [],
 }
 
 
@@ -274,6 +279,21 @@ class SettingsManager:
                 updated_existing = True
         else:
             self.settings["metadata_refresh_skip_paths"] = []
+            inserted_defaults = True
+
+        if "download_skip_base_models" in self.settings:
+            normalized_skip_base_models = self.normalize_download_skip_base_models(
+                self.settings.get("download_skip_base_models")
+            )
+            if normalized_skip_base_models != self.settings.get(
+                "download_skip_base_models"
+            ):
+                self.settings["download_skip_base_models"] = (
+                    normalized_skip_base_models
+                )
+                updated_existing = True
+        else:
+            self.settings["download_skip_base_models"] = []
             inserted_defaults = True
 
         had_mature_level = "mature_blur_level" in self.settings
@@ -964,6 +984,45 @@ class SettingsManager:
             self._save_settings()
         return skip_paths
 
+    def normalize_download_skip_base_models(self, value: Any) -> List[str]:
+        if value is None:
+            return []
+
+        if isinstance(value, str):
+            candidates: Iterable[str] = (
+                value.replace("\n", ",").replace(";", ",").split(",")
+            )
+        elif isinstance(value, Sequence) and not isinstance(
+            value, (bytes, bytearray, str)
+        ):
+            candidates = value
+        else:
+            return []
+
+        base_models: List[str] = []
+        seen = set()
+        for raw in candidates:
+            if not isinstance(raw, str):
+                continue
+            token = raw.strip()
+            if not token or token not in SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS:
+                continue
+            if token in seen:
+                continue
+            seen.add(token)
+            base_models.append(token)
+
+        return base_models
+
+    def get_download_skip_base_models(self) -> List[str]:
+        base_models = self.normalize_download_skip_base_models(
+            self.settings.get("download_skip_base_models")
+        )
+        if base_models != self.settings.get("download_skip_base_models"):
+            self.settings["download_skip_base_models"] = base_models
+            self._save_settings()
+        return base_models
+
     def get_extra_folder_paths(self) -> Dict[str, List[str]]:
         """Get extra folder paths for the active library.
 
@@ -1032,6 +1091,8 @@ class SettingsManager:
             value = self.normalize_auto_organize_exclusions(value)
         elif key == "metadata_refresh_skip_paths":
             value = self.normalize_metadata_refresh_skip_paths(value)
+        elif key == "download_skip_base_models":
+            value = self.normalize_download_skip_base_models(value)
         elif key == "mature_blur_level":
             value = self.normalize_mature_blur_level(value)
         self.settings[key] = value

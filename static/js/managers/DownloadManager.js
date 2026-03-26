@@ -492,7 +492,7 @@ export class DownloadManager {
                 console.error('WebSocket error:', error);
             };
 
-            await this.apiClient.downloadModel(
+            const response = await this.apiClient.downloadModel(
                 modelId,
                 versionId,
                 modelRoot,
@@ -501,6 +501,16 @@ export class DownloadManager {
                 downloadId,
                 source
             );
+
+            if (response?.skipped) {
+                this.loadingManager.setStatus(translate('modals.download.status.finalizing'));
+                updateProgress(100, 0, displayName);
+                showToast('toast.loras.downloadSkippedByBaseModel', { baseModel: response.base_model || 'Unknown' }, 'warning');
+                if (closeModal) {
+                    modalManager.closeModal('downloadModal');
+                }
+                return true;
+            }
 
             showToast('toast.loras.downloadCompleted', {}, 'success');
 

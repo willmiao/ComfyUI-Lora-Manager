@@ -605,3 +605,28 @@ def test_delete_library_switches_active(manager, tmp_path):
     manager.delete_library("other")
 
     assert manager.get_active_library_name() == "default"
+
+
+
+def test_download_skip_base_models_are_normalized(manager):
+    manager.settings["download_skip_base_models"] = [
+        "SDXL 1.0",
+        "Invalid",
+        "SDXL 1.0",
+        "Pony",
+        "Other",
+    ]
+
+    result = manager.get_download_skip_base_models()
+
+    assert result == ["SDXL 1.0", "Pony"]
+    assert manager.settings["download_skip_base_models"] == ["SDXL 1.0", "Pony"]
+
+
+def test_setting_download_skip_base_models_normalizes_string_input(manager):
+    manager.set(
+        "download_skip_base_models",
+        "SDXL 1.0, Pony; Invalid\nSDXL 1.0"
+    )
+
+    assert manager.get("download_skip_base_models") == ["SDXL 1.0", "Pony"]

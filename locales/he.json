@@ -323,6 +323,24 @@
                 "saveFailed": "לא ניתן לשמור נתיבי דילוג: {message}"
             }
         },
+        "downloadSkipBaseModels": {
+            "label": "דלג על הורדות עבור מודלי בסיס",
+            "help": "חל על כל תהליכי ההורדה. ניתן לבחור כאן רק מודלי בסיס נתמכים.",
+            "searchPlaceholder": "סנן מודלי בסיס...",
+            "empty": "אין מודלי בסיס התואמים לחיפוש הנוכחי.",
+            "summary": {
+                "none": "לא נבחר דבר",
+                "count": "{count} נבחרו"
+            },
+            "actions": {
+                "edit": "עריכה",
+                "collapse": "כווץ",
+                "clear": "נקה"
+            },
+            "validation": {
+                "saveFailed": "לא ניתן לשמור את מודלי הבסיס המוחרגים: {message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "צפיפות תצוגה",
             "displayDensityOptions": {
@@ -1467,6 +1485,7 @@
             "pleaseSelectVersion": "אנא בחר גרסה",
             "versionExists": "גרסה זו כבר קיימת בספרייה שלך",
             "downloadCompleted": "ההורדה הושלמה בהצלחה",
+            "downloadSkippedByBaseModel": "ההורדה דולגה כי מודל הבסיס {baseModel} מוחרג",
             "autoOrganizeSuccess": "הארגון האוטומטי הושלם בהצלחה עבור {count} {type}",
             "autoOrganizePartialSuccess": "הארגון האוטומטי הושלם עם {success} שהועברו, {failures} שנכשלו מתוך {total} מודלים",
             "autoOrganizeFailed": "הארגון האוטומטי נכשל: {error}",

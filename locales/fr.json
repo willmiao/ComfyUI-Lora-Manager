@@ -323,6 +323,24 @@
                 "saveFailed": "Impossible d'enregistrer les chemins à ignorer : {message}"
             }
         },
+        "downloadSkipBaseModels": {
+            "label": "Ignorer les téléchargements pour certains modèles de base",
+            "help": "S’applique à tous les flux de téléchargement. Seuls les modèles de base pris en charge peuvent être sélectionnés ici.",
+            "searchPlaceholder": "Filtrer les modèles de base...",
+            "empty": "Aucun modèle de base ne correspond à la recherche actuelle.",
+            "summary": {
+                "none": "Aucune sélection",
+                "count": "{count} sélectionnés"
+            },
+            "actions": {
+                "edit": "Modifier",
+                "collapse": "Réduire",
+                "clear": "Effacer"
+            },
+            "validation": {
+                "saveFailed": "Impossible d’enregistrer les modèles de base exclus : {message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "Densité d'affichage",
             "displayDensityOptions": {
@@ -1467,6 +1485,7 @@
             "pleaseSelectVersion": "Veuillez sélectionner une version",
             "versionExists": "Cette version existe déjà dans votre bibliothèque",
             "downloadCompleted": "Téléchargement terminé avec succès",
+            "downloadSkippedByBaseModel": "Téléchargement ignoré, car le modèle de base {baseModel} est exclu",
             "autoOrganizeSuccess": "Auto-organisation terminée avec succès pour {count} {type}",
             "autoOrganizePartialSuccess": "Auto-organisation terminée avec {success} déplacés, {failures} échecs sur {total} modèles",
             "autoOrganizeFailed": "Échec de l'auto-organisation : {error}",

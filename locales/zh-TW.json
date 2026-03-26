@@ -323,6 +323,24 @@
                 "saveFailed": "無法儲存跳過路徑：{message}"
             }
         },
+        "downloadSkipBaseModels": {
+            "label": "跳過這些基礎模型的下載",
+            "help": "適用於所有下載流程。這裡只能選擇受支援的基礎模型。",
+            "searchPlaceholder": "篩選基礎模型...",
+            "empty": "沒有符合目前搜尋條件的基礎模型。",
+            "summary": {
+                "none": "未選擇",
+                "count": "已選擇 {count} 項"
+            },
+            "actions": {
+                "edit": "編輯",
+                "collapse": "收起",
+                "clear": "清空"
+            },
+            "validation": {
+                "saveFailed": "無法儲存已排除的基礎模型：{message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "顯示密度",
             "displayDensityOptions": {
@@ -1467,6 +1485,7 @@
             "pleaseSelectVersion": "請選擇一個版本",
             "versionExists": "此版本已存在於您的庫中",
             "downloadCompleted": "下載成功完成",
+            "downloadSkippedByBaseModel": "由於基礎模型 {baseModel} 已被排除，已跳過下載",
             "autoOrganizeSuccess": "自動整理已成功完成，共 {count} 個 {type} 已整理",
             "autoOrganizePartialSuccess": "自動整理完成：已移動 {success} 個，{failures} 個失敗，共 {total} 個模型",
             "autoOrganizeFailed": "自動整理失敗：{error}",

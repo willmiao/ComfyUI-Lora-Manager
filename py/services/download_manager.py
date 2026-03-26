@@ -13,6 +13,7 @@ from ..utils.models import LoraMetadata, CheckpointMetadata, EmbeddingMetadata
 from ..utils.constants import (
     CARD_PREVIEW_WIDTH,
     DIFFUSION_MODEL_BASE_MODELS,
+    SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS,
     VALID_LORA_TYPES,
 )
 from ..utils.civitai_utils import rewrite_preview_url
@@ -228,7 +229,9 @@ class DownloadManager:
                     # Update status based on result
                     if task_id in self._active_downloads:
                         self._active_downloads[task_id]["status"] = (
-                            "completed" if result["success"] else "failed"
+                            result.get("status", "completed")
+                            if result["success"]
+                            else "failed"
                         )
                         if not result["success"]:
                             self._active_downloads[task_id]["error"] = result.get(
@@ -352,10 +355,54 @@ class DownloadManager:
                     "error": f'Model type "{model_type_from_info}" is not supported for download',
                 }
 
+            excluded_base_models = get_settings_manager().get_download_skip_base_models()
+            base_model_value = version_info.get("baseModel", "")
+            if (
+                isinstance(base_model_value, str)
+                and base_model_value in SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS
+                and base_model_value in excluded_base_models
+            ):
+                file_name = ""
+                files = version_info.get("files")
+                if isinstance(files, list):
+                    primary_file = next(
+                        (
+                            file_info
+                            for file_info in files
+                            if isinstance(file_info, dict) and file_info.get("primary")
+                        ),
+                        None,
+                    )
+                    selected_file = primary_file
+                    if selected_file is None:
+                        selected_file = next(
+                            (file_info for file_info in files if isinstance(file_info, dict)),
+                            None,
+                        )
+                    if isinstance(selected_file, dict):
+                        raw_file_name = selected_file.get("name", "")
+                        if isinstance(raw_file_name, str):
+                            file_name = raw_file_name.strip()
+
+                message = (
+                    f"Skipped download for '{file_name or version_info.get('name') or f'model_version:{model_version_id or model_id}'}' "
+                    f"because base model '{base_model_value}' is excluded in settings"
+                )
+                logger.info(message)
+                return {
+                    "success": True,
+                    "skipped": True,
+                    "status": "skipped",
+                    "reason": "base_model_excluded",
+                    "message": message,
+                    "base_model": base_model_value,
+                    "file_name": file_name,
+                    "download_id": download_id,
+                }
+
             # Check if this checkpoint should be treated as a diffusion model based on baseModel
             is_diffusion_model = False
             if model_type == "checkpoint":
-                base_model_value = version_info.get("baseModel", "")
                 if base_model_value in DIFFUSION_MODEL_BASE_MODELS:
                     is_diffusion_model = True
                     logger.info(

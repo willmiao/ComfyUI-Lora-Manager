@@ -139,6 +139,10 @@ export class SettingsManager {
             backendSettings?.metadata_refresh_skip_paths ?? defaults.metadata_refresh_skip_paths
         );
 
+        merged.download_skip_base_models = this.normalizeDownloadSkipBaseModels(
+            backendSettings?.download_skip_base_models ?? defaults.download_skip_base_models
+        );
+
         merged.mature_blur_level = this.normalizeMatureBlurLevel(
             backendSettings?.mature_blur_level ?? defaults.mature_blur_level
         );
@@ -177,6 +181,15 @@ export class SettingsManager {
         }
 
         return [];
+    }
+
+    getAvailableDownloadSkipBaseModels() {
+        return MAPPABLE_BASE_MODELS.filter(model => model !== 'Other');
+    }
+
+    normalizeDownloadSkipBaseModels(value) {
+        const allowed = new Set(this.getAvailableDownloadSkipBaseModels());
+        return this.normalizePatternList(value).filter(model => allowed.has(model));
     }
 
     registerStartupMessages(messages = []) {
@@ -376,6 +389,36 @@ export class SettingsManager {
                     event.preventDefault();
                     this.saveMetadataRefreshSkipPaths();
                 }
+            });
+        }
+
+        const downloadSkipBaseModelsContainer = document.getElementById('downloadSkipBaseModelsContainer');
+        if (downloadSkipBaseModelsContainer) {
+            downloadSkipBaseModelsContainer.addEventListener('change', (event) => {
+                if (event.target instanceof HTMLInputElement && event.target.name === 'downloadSkipBaseModel') {
+                    this.saveDownloadSkipBaseModels();
+                }
+            });
+        }
+
+        const downloadSkipBaseModelsToggle = document.getElementById('downloadSkipBaseModelsToggle');
+        if (downloadSkipBaseModelsToggle) {
+            downloadSkipBaseModelsToggle.addEventListener('click', () => {
+                this.toggleDownloadSkipBaseModelsPanel();
+            });
+        }
+
+        const downloadSkipBaseModelsSearch = document.getElementById('downloadSkipBaseModelsSearch');
+        if (downloadSkipBaseModelsSearch) {
+            downloadSkipBaseModelsSearch.addEventListener('input', () => {
+                this.renderDownloadSkipBaseModels();
+            });
+        }
+
+        const downloadSkipBaseModelsClear = document.getElementById('downloadSkipBaseModelsClear');
+        if (downloadSkipBaseModelsClear) {
+            downloadSkipBaseModelsClear.addEventListener('click', () => {
+                this.clearDownloadSkipBaseModels();
             });
         }
 
@@ -729,6 +772,13 @@ export class SettingsManager {
         if (metadataRefreshSkipPathsError) {
             metadataRefreshSkipPathsError.textContent = '';
         }
+
+        this.renderDownloadSkipBaseModels();
+        const downloadSkipBaseModelsError = document.getElementById('downloadSkipBaseModelsError');
+        if (downloadSkipBaseModelsError) {
+            downloadSkipBaseModelsError.textContent = '';
+        }
+        this.setDownloadSkipBaseModelsPanelOpen(false);
 
         // Set video autoplay on hover setting
         const autoplayOnHoverCheckbox = document.getElementById('autoplayOnHover');
@@ -2164,6 +2214,190 @@ export class SettingsManager {
                     'settings.autoOrganizeExclusions.validation.saveFailed',
                     { message: error.message },
                     `Unable to save exclusions: ${error.message}`
+                );
+            }
+            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
+        }
+    }
+
+    renderDownloadSkipBaseModels() {
+        const container = document.getElementById('downloadSkipBaseModelsContainer');
+        const searchInput = document.getElementById('downloadSkipBaseModelsSearch');
+        const emptyState = document.getElementById('downloadSkipBaseModelsEmpty');
+        if (!container) {
+            return;
+        }
+
+        const selectedValues = this.normalizeDownloadSkipBaseModels(
+            state.global.settings.download_skip_base_models
+        );
+        const selected = new Set(selectedValues);
+        const options = this.getAvailableDownloadSkipBaseModels();
+        const query = (searchInput?.value || '').trim().toLowerCase();
+        const filteredOptions = query
+            ? options.filter((baseModel) => baseModel.toLowerCase().includes(query))
+            : options;
+
+        container.innerHTML = filteredOptions.map((baseModel) => `
+            <label class="base-model-skip-option">
+                <input
+                    type="checkbox"
+                    name="downloadSkipBaseModel"
+                    value="${baseModel}"
+                    ${selected.has(baseModel) ? 'checked' : ''}
+                >
+                <span>${baseModel}</span>
+            </label>
+        `).join('');
+
+        if (emptyState) {
+            emptyState.hidden = filteredOptions.length > 0;
+        }
+
+        this.renderDownloadSkipBaseModelsSummary(selectedValues);
+    }
+
+    renderDownloadSkipBaseModelsSummary(selectedValues = null) {
+        const summaryElement = document.getElementById('downloadSkipBaseModelsSummary');
+        if (!summaryElement) {
+            return;
+        }
+
+        const values = Array.isArray(selectedValues)
+            ? selectedValues
+            : this.normalizeDownloadSkipBaseModels(state.global.settings.download_skip_base_models);
+
+        if (values.length === 0) {
+            summaryElement.textContent = translate(
+                'settings.downloadSkipBaseModels.summary.none',
+                {},
+                'None selected'
+            );
+            return;
+        }
+
+        if (values.length <= 2) {
+            summaryElement.textContent = values.join(', ');
+            return;
+        }
+
+        summaryElement.textContent = translate(
+            'settings.downloadSkipBaseModels.summary.count',
+            { count: values.length },
+            `${values.length} selected`
+        );
+    }
+
+    setDownloadSkipBaseModelsPanelOpen(isOpen) {
+        const panel = document.getElementById('downloadSkipBaseModelsPanel');
+        const toggle = document.getElementById('downloadSkipBaseModelsToggle');
+        const toggleLabel = toggle?.querySelector('.base-model-skip-toggle-label');
+        if (!panel || !toggle) {
+            return;
+        }
+
+        panel.hidden = !isOpen;
+        toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        if (toggleLabel) {
+            toggleLabel.textContent = isOpen
+                ? translate('settings.downloadSkipBaseModels.actions.collapse', {}, 'Collapse')
+                : translate('settings.downloadSkipBaseModels.actions.edit', {}, 'Edit');
+        }
+
+        if (isOpen) {
+            const searchInput = document.getElementById('downloadSkipBaseModelsSearch');
+            searchInput?.focus();
+        }
+    }
+
+    toggleDownloadSkipBaseModelsPanel() {
+        const panel = document.getElementById('downloadSkipBaseModelsPanel');
+        if (!panel) {
+            return;
+        }
+        this.setDownloadSkipBaseModelsPanelOpen(panel.hidden);
+    }
+
+    async saveDownloadSkipBaseModels() {
+        const container = document.getElementById('downloadSkipBaseModelsContainer');
+        const errorElement = document.getElementById('downloadSkipBaseModelsError');
+        if (!container) return;
+
+        const selected = Array.from(
+            container.querySelectorAll('input[name="downloadSkipBaseModel"]:checked')
+        ).map((input) => input.value);
+        const normalized = this.normalizeDownloadSkipBaseModels(selected);
+        const current = this.normalizeDownloadSkipBaseModels(state.global.settings.download_skip_base_models);
+
+        if (normalized.join('|') === current.join('|')) {
+            if (errorElement) {
+                errorElement.textContent = '';
+            }
+            return;
+        }
+
+        try {
+            if (errorElement) {
+                errorElement.textContent = '';
+            }
+
+            await this.saveSetting('download_skip_base_models', normalized);
+            this.renderDownloadSkipBaseModels();
+
+            showToast(
+                'toast.settings.settingsUpdated',
+                { setting: translate('settings.downloadSkipBaseModels.label') },
+                'success'
+            );
+        } catch (error) {
+            console.error('Failed to save download skip base models:', error);
+            if (errorElement) {
+                errorElement.textContent = translate(
+                    'settings.downloadSkipBaseModels.validation.saveFailed',
+                    { message: error.message },
+                    `Unable to save excluded base models: ${error.message}`
+                );
+            }
+            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
+        }
+    }
+
+    async clearDownloadSkipBaseModels() {
+        const searchInput = document.getElementById('downloadSkipBaseModelsSearch');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+
+        const current = this.normalizeDownloadSkipBaseModels(
+            state.global.settings.download_skip_base_models
+        );
+        if (current.length === 0) {
+            this.renderDownloadSkipBaseModels();
+            return;
+        }
+
+        try {
+            const errorElement = document.getElementById('downloadSkipBaseModelsError');
+            if (errorElement) {
+                errorElement.textContent = '';
+            }
+
+            await this.saveSetting('download_skip_base_models', []);
+            this.renderDownloadSkipBaseModels();
+
+            showToast(
+                'toast.settings.settingsUpdated',
+                { setting: translate('settings.downloadSkipBaseModels.label') },
+                'success'
+            );
+        } catch (error) {
+            const errorElement = document.getElementById('downloadSkipBaseModelsError');
+            console.error('Failed to clear download skip base models:', error);
+            if (errorElement) {
+                errorElement.textContent = translate(
+                    'settings.downloadSkipBaseModels.validation.saveFailed',
+                    { message: error.message },
+                    `Unable to save excluded base models: ${error.message}`
                 );
             }
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');

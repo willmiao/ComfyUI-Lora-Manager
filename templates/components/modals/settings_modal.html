@@ -743,6 +743,46 @@
                                 </div>
                             </div>
 
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="downloadSkipBaseModelsToggle">
+                                            {{ t('settings.downloadSkipBaseModels.label') }}
+                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.downloadSkipBaseModels.help') }}"></i>
+                                        </label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <button
+                                            type="button"
+                                            id="downloadSkipBaseModelsToggle"
+                                            class="secondary-btn base-model-skip-toggle"
+                                            aria-expanded="false"
+                                        >
+                                            <span id="downloadSkipBaseModelsSummary">{{ t('settings.downloadSkipBaseModels.summary.none') }}</span>
+                                            <span class="base-model-skip-toggle-label">{{ t('settings.downloadSkipBaseModels.actions.edit') }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="downloadSkipBaseModelsPanel" class="base-model-skip-panel" hidden>
+                                    <div class="base-model-skip-toolbar">
+                                        <input
+                                            type="text"
+                                            id="downloadSkipBaseModelsSearch"
+                                            class="base-model-skip-search"
+                                            placeholder="{{ t('settings.downloadSkipBaseModels.searchPlaceholder') }}"
+                                        />
+                                        <button type="button" class="text-btn base-model-skip-clear" id="downloadSkipBaseModelsClear">
+                                            {{ t('settings.downloadSkipBaseModels.actions.clear') }}
+                                        </button>
+                                    </div>
+                                    <div id="downloadSkipBaseModelsContainer" class="base-model-skip-list"></div>
+                                    <div id="downloadSkipBaseModelsEmpty" class="base-model-skip-empty" hidden>
+                                        {{ t('settings.downloadSkipBaseModels.empty') }}
+                                    </div>
+                                </div>
+                                <div class="settings-input-error-message" id="downloadSkipBaseModelsError"></div>
+                            </div>
+
                             <!-- Priority Tags -->
                             <div class="setting-item priority-tags-item">
                                 <div class="setting-row priority-tags-header-row">

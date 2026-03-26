@@ -323,6 +323,24 @@
                 "saveFailed": "건너뛰기 경로를 저장할 수 없습니다: {message}"
             }
         },
+        "downloadSkipBaseModels": {
+            "label": "기본 모델 다운로드 건너뛰기",
+            "help": "모든 다운로드 흐름에 적용됩니다. 여기서는 지원되는 기본 모델만 선택할 수 있습니다.",
+            "searchPlaceholder": "기본 모델 필터링...",
+            "empty": "현재 검색과 일치하는 기본 모델이 없습니다.",
+            "summary": {
+                "none": "선택 없음",
+                "count": "{count}개 선택됨"
+            },
+            "actions": {
+                "edit": "편집",
+                "collapse": "접기",
+                "clear": "지우기"
+            },
+            "validation": {
+                "saveFailed": "제외된 기본 모델을 저장할 수 없습니다: {message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "표시 밀도",
             "displayDensityOptions": {
@@ -1467,6 +1485,7 @@
             "pleaseSelectVersion": "버전을 선택해주세요",
             "versionExists": "이 버전은 이미 라이브러리에 있습니다",
             "downloadCompleted": "다운로드가 성공적으로 완료되었습니다",
+            "downloadSkippedByBaseModel": "기본 모델 {baseModel}이(가) 제외되어 다운로드를 건너뛰었습니다",
             "autoOrganizeSuccess": "{count}개의 {type}에 대해 자동 정리가 성공적으로 완료되었습니다",
             "autoOrganizePartialSuccess": "자동 정리 완료: 전체 {total}개 중 {success}개 이동, {failures}개 실패",
             "autoOrganizeFailed": "자동 정리 실패: {error}",

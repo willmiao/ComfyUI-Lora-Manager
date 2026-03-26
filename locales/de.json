@@ -323,6 +323,24 @@
                 "saveFailed": "Übersprungene Pfade konnten nicht gespeichert werden: {message}"
             }
         },
+        "downloadSkipBaseModels": {
+            "label": "Downloads für Basismodelle überspringen",
+            "help": "Gilt für alle Download-Abläufe. Hier können nur unterstützte Basismodelle ausgewählt werden.",
+            "searchPlaceholder": "Basismodelle filtern...",
+            "empty": "Keine Basismodelle entsprechen der aktuellen Suche.",
+            "summary": {
+                "none": "Nichts ausgewählt",
+                "count": "{count} ausgewählt"
+            },
+            "actions": {
+                "edit": "Bearbeiten",
+                "collapse": "Einklappen",
+                "clear": "Löschen"
+            },
+            "validation": {
+                "saveFailed": "Ausgeschlossene Basismodelle konnten nicht gespeichert werden: {message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "Anzeige-Dichte",
             "displayDensityOptions": {
@@ -1467,6 +1485,7 @@
             "pleaseSelectVersion": "Bitte wählen Sie eine Version aus",
             "versionExists": "Diese Version existiert bereits in Ihrer Bibliothek",
             "downloadCompleted": "Download erfolgreich abgeschlossen",
+            "downloadSkippedByBaseModel": "Download übersprungen, weil das Basismodell {baseModel} ausgeschlossen ist",
             "autoOrganizeSuccess": "Automatische Organisation für {count} {type} erfolgreich abgeschlossen",
             "autoOrganizePartialSuccess": "Automatische Organisation abgeschlossen: {success} verschoben, {failures} fehlgeschlagen von insgesamt {total} Modellen",
             "autoOrganizeFailed": "Automatische Organisation fehlgeschlagen: {error}",

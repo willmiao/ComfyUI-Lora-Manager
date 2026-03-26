@@ -323,6 +323,24 @@
                 "saveFailed": "スキップパスの保存に失敗しました：{message}"
             }
         },
+        "downloadSkipBaseModels": {
+            "label": "ベースモデルのダウンロードをスキップ",
+            "help": "すべてのダウンロードフローに適用されます。ここでは対応しているベースモデルのみ選択できます。",
+            "searchPlaceholder": "ベースモデルを絞り込む...",
+            "empty": "現在の検索に一致するベースモデルはありません。",
+            "summary": {
+                "none": "未選択",
+                "count": "{count} 件を選択"
+            },
+            "actions": {
+                "edit": "編集",
+                "collapse": "折りたたむ",
+                "clear": "クリア"
+            },
+            "validation": {
+                "saveFailed": "除外するベースモデルを保存できませんでした: {message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "表示密度",
             "displayDensityOptions": {
@@ -1467,6 +1485,7 @@
             "pleaseSelectVersion": "バージョンを選択してください",
             "versionExists": "このバージョンは既にライブラリに存在します",
             "downloadCompleted": "ダウンロードが正常に完了しました",
+            "downloadSkippedByBaseModel": "ベースモデル {baseModel} が除外されているため、ダウンロードをスキップしました",
             "autoOrganizeSuccess": "{count} {type} の自動整理が正常に完了しました",
             "autoOrganizePartialSuccess": "自動整理が完了しました：{total} モデル中 {success} 移動、{failures} 失敗",
             "autoOrganizeFailed": "自動整理に失敗しました：{error}",

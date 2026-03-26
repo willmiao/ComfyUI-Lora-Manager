@@ -323,6 +323,24 @@
                 "saveFailed": "无法保存跳过路径：{message}"
             }
         },
+        "downloadSkipBaseModels": {
+            "label": "跳过这些基础模型的下载",
+            "help": "适用于所有下载流程。这里只能选择受支持的基础模型。",
+            "searchPlaceholder": "筛选基础模型...",
+            "empty": "没有与当前搜索匹配的基础模型。",
+            "summary": {
+                "none": "未选择",
+                "count": "已选择 {count} 项"
+            },
+            "actions": {
+                "edit": "编辑",
+                "collapse": "收起",
+                "clear": "清空"
+            },
+            "validation": {
+                "saveFailed": "无法保存已排除的基础模型：{message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "显示密度",
             "displayDensityOptions": {
@@ -1467,6 +1485,7 @@
             "pleaseSelectVersion": "请选择版本",
             "versionExists": "该版本已存在于你的库中",
             "downloadCompleted": "下载成功完成",
+            "downloadSkippedByBaseModel": "由于基础模型 {baseModel} 已被排除，已跳过下载",
             "autoOrganizeSuccess": "自动整理已成功完成，共 {count} 个 {type}",
             "autoOrganizePartialSuccess": "自动整理完成：已移动 {success} 个，{failures} 个失败，共 {total} 个模型",
             "autoOrganizeFailed": "自动整理失败：{error}",

@@ -719,3 +719,42 @@ def test_auto_organize_conflict_when_running(mock_service):
             await client.close()
 
     asyncio.run(scenario())
+
+
+
+def test_download_model_returns_skipped_success(mock_service, download_manager_stub):
+    async def scenario():
+        download_manager_stub.last_progress_snapshot = None
+
+        async def fake_download(**kwargs):
+            download_manager_stub.calls.append(kwargs)
+            return {
+                "success": True,
+                "skipped": True,
+                "status": "skipped",
+                "reason": "base_model_excluded",
+                "message": "Skipped by settings",
+                "base_model": "SDXL 1.0",
+                "file_name": "demo.safetensors",
+            }
+
+        download_manager_stub.download_from_civitai = fake_download
+
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post(
+                "/api/lm/download-model",
+                json={"model_version_id": 123},
+            )
+            payload = await response.json()
+
+            assert response.status == 200
+            assert payload["success"] is True
+            assert payload["skipped"] is True
+            assert payload["reason"] == "base_model_excluded"
+            assert payload["base_model"] == "SDXL 1.0"
+            assert payload["file_name"] == "demo.safetensors"
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())

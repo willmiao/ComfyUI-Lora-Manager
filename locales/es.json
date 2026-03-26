@@ -323,6 +323,24 @@
                 "saveFailed": "No se pudieron guardar las rutas a omitir: {message}"
             }
         },
+        "downloadSkipBaseModels": {
+            "label": "Omitir descargas para modelos base",
+            "help": "Se aplica a todos los flujos de descarga. Aquí solo se pueden seleccionar modelos base compatibles.",
+            "searchPlaceholder": "Filtrar modelos base...",
+            "empty": "Ningún modelo base coincide con la búsqueda actual.",
+            "summary": {
+                "none": "Ninguno seleccionado",
+                "count": "{count} seleccionados"
+            },
+            "actions": {
+                "edit": "Editar",
+                "collapse": "Contraer",
+                "clear": "Limpiar"
+            },
+            "validation": {
+                "saveFailed": "No se pudieron guardar los modelos base excluidos: {message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "Densidad de visualización",
             "displayDensityOptions": {
@@ -1467,6 +1485,7 @@
             "pleaseSelectVersion": "Por favor selecciona una versión",
             "versionExists": "Esta versión ya existe en tu biblioteca",
             "downloadCompleted": "Descarga completada exitosamente",
+            "downloadSkippedByBaseModel": "Descarga omitida porque el modelo base {baseModel} está excluido",
             "autoOrganizeSuccess": "Auto-organización completada exitosamente para {count} {type}",
             "autoOrganizePartialSuccess": "Auto-organización completada con {success} movidos, {failures} fallidos de un total de {total} modelos",
             "autoOrganizeFailed": "Auto-organización fallida: {error}",

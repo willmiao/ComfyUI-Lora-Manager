@@ -323,6 +323,24 @@
                 "saveFailed": "Не удалось сохранить пути для пропуска: {message}"
             }
         },
+        "downloadSkipBaseModels": {
+            "label": "Пропускать загрузки для базовых моделей",
+            "help": "Применяется ко всем сценариям загрузки. Здесь можно выбрать только поддерживаемые базовые модели.",
+            "searchPlaceholder": "Фильтровать базовые модели...",
+            "empty": "Нет базовых моделей, соответствующих текущему поиску.",
+            "summary": {
+                "none": "Ничего не выбрано",
+                "count": "Выбрано: {count}"
+            },
+            "actions": {
+                "edit": "Изменить",
+                "collapse": "Свернуть",
+                "clear": "Очистить"
+            },
+            "validation": {
+                "saveFailed": "Не удалось сохранить исключённые базовые модели: {message}"
+            }
+        },
         "layoutSettings": {
             "displayDensity": "Плотность отображения",
             "displayDensityOptions": {
@@ -1467,6 +1485,7 @@
             "pleaseSelectVersion": "Пожалуйста, выберите версию",
             "versionExists": "Эта версия уже существует в вашей библиотеке",
             "downloadCompleted": "Загрузка успешно завершена",
+            "downloadSkippedByBaseModel": "Загрузка пропущена, потому что базовая модель {baseModel} исключена",
             "autoOrganizeSuccess": "Автоматическая организация успешно завершена для {count} {type}",
             "autoOrganizePartialSuccess": "Автоматическая организация завершена: перемещено {success}, не удалось {failures} из {total} моделей",
             "autoOrganizeFailed": "Ошибка автоматической организации: {error}",
