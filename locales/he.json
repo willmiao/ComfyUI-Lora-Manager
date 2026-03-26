@@ -575,6 +575,7 @@
             "skipMetadataRefresh": "דילוג על רענון מטא-נתונים לנבחרים",
             "resumeMetadataRefresh": "המשך רענון מטא-נתונים לנבחרים",
             "deleteAll": "מחק את כל המודלים",
+            "downloadMissingLoras": "הורדת LoRAs חסרים",
             "clear": "נקה בחירה",
             "skipMetadataRefreshCount": "דילוג（{count} מודלים）",
             "resumeMetadataRefreshCount": "המשך（{count} מודלים）",
@@ -982,6 +983,14 @@
             "selectBaseModel": "בחר מודל בסיס",
             "save": "עדכן מודל בסיס",
             "cancel": "ביטול"
+        },
+        "bulkDownloadMissingLoras": {
+            "title": "הורדת LoRAs חסרים",
+            "message": "נמצאו {uniqueCount} LoRAs חסרים ייחודיים (מתוך {totalCount} בסך הכל במתכונים שנבחרו).",
+            "previewTitle": "LoRAs להורדה:",
+            "moreItems": "...ועוד {count}",
+            "note": "הקבצים יורדו באמצעות תבניות נתיב ברירת מחדל. זה עשוי לקחת זמן בהתאם למספר ה-LoRAs.",
+            "downloadButton": "הורד {count} LoRA(s)"
         },
         "exampleAccess": {
             "title": "תמונות דוגמה מקומיות",
@@ -1507,7 +1516,10 @@
             "batchImportNoUrls": "Please enter at least one URL or file path",
             "batchImportNoDirectory": "Please enter a directory path",
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
-            "batchImportDirectorySelected": "Directory selected: {path}"
+            "batchImportDirectorySelected": "Directory selected: {path}",
+            "noRecipesSelected": "לא נבחרו מתכונים",
+            "noMissingLorasInSelection": "לא נמצאו LoRAs חסרים במתכונים שנבחרו",
+            "noLoraRootConfigured": "תיקיית השורש של LoRA לא מוגדרת. אנא הגדר תיקיית שורש LoRA ברירת מחדל בהגדרות."
         },
         "models": {
             "noModelsSelected": "לא נבחרו מודלים",

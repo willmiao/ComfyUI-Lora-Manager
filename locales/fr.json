@@ -575,6 +575,7 @@
             "skipMetadataRefresh": "Ignorer l'actualisation des métadonnées pour la sélection",
             "resumeMetadataRefresh": "Reprendre l'actualisation des métadonnées pour la sélection",
             "deleteAll": "Supprimer tous les modèles",
+            "downloadMissingLoras": "Télécharger les LoRAs manquants",
             "clear": "Effacer la sélection",
             "skipMetadataRefreshCount": "Ignorer（{count} modèles）",
             "resumeMetadataRefreshCount": "Reprendre（{count} modèles）",
@@ -982,6 +983,14 @@
             "selectBaseModel": "Sélectionner le modèle de base",
             "save": "Mettre à jour le modèle de base",
             "cancel": "Annuler"
+        },
+        "bulkDownloadMissingLoras": {
+            "title": "Télécharger les LoRAs manquants",
+            "message": "{uniqueCount} LoRAs manquants uniques trouvés (sur un total de {totalCount} dans les recettes sélectionnées).",
+            "previewTitle": "LoRAs à télécharger :",
+            "moreItems": "...et {count} de plus",
+            "note": "Les fichiers seront téléchargés en utilisant les modèles de chemins par défaut. Cela peut prendre un certain temps selon le nombre de LoRAs.",
+            "downloadButton": "Télécharger {count} LoRA(s)"
         },
         "exampleAccess": {
             "title": "Images d'exemple locales",
@@ -1507,7 +1516,10 @@
             "batchImportNoUrls": "Please enter at least one URL or file path",
             "batchImportNoDirectory": "Please enter a directory path",
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
-            "batchImportDirectorySelected": "Directory selected: {path}"
+            "batchImportDirectorySelected": "Directory selected: {path}",
+            "noRecipesSelected": "Aucune recette sélectionnée",
+            "noMissingLorasInSelection": "Aucun LoRA manquant trouvé dans les recettes sélectionnées",
+            "noLoraRootConfigured": "Aucun répertoire racine LoRA configuré. Veuillez définir un répertoire racine LoRA par défaut dans les paramètres."
         },
         "models": {
             "noModelsSelected": "Aucun modèle sélectionné",

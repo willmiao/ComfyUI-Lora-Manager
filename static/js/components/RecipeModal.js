@@ -1299,7 +1299,6 @@ class RecipeModal {
 
     // New method to navigate to the LoRAs page
     navigateToLorasPage(specificLoraIndex = null) {
-        debugger;
         // Close the current modal
         modalManager.closeModal('recipeModal');
 

@@ -291,6 +291,19 @@ export class ModalManager {
             });
         }
 
+        // Register bulkDownloadMissingLorasModal
+        const bulkDownloadMissingLorasModal = document.getElementById('bulkDownloadMissingLorasModal');
+        if (bulkDownloadMissingLorasModal) {
+            this.registerModal('bulkDownloadMissingLorasModal', {
+                element: bulkDownloadMissingLorasModal,
+                onClose: () => {
+                    this.getModal('bulkDownloadMissingLorasModal').element.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                },
+                closeOnOutsideClick: true
+            });
+        }
+
         document.addEventListener('keydown', this.boundHandleEscape);
         this.initialized = true;
     }

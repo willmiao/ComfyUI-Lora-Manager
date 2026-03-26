@@ -575,6 +575,7 @@
             "skipMetadataRefresh": "Пропустить обновление метаданных для выбранных",
             "resumeMetadataRefresh": "Возобновить обновление метаданных для выбранных",
             "deleteAll": "Удалить все модели",
+            "downloadMissingLoras": "Скачать отсутствующие LoRAs",
             "clear": "Очистить выбор",
             "skipMetadataRefreshCount": "Пропустить（{count} моделей）",
             "resumeMetadataRefreshCount": "Возобновить（{count} моделей）",
@@ -982,6 +983,14 @@
             "selectBaseModel": "Выбрать базовую модель",
             "save": "Обновить базовую модель",
             "cancel": "Отмена"
+        },
+        "bulkDownloadMissingLoras": {
+            "title": "Скачать отсутствующие LoRAs",
+            "message": "Найдено {uniqueCount} уникальных отсутствующих LoRAs (из {totalCount} всего в выбранных рецептах).",
+            "previewTitle": "LoRAs для скачивания:",
+            "moreItems": "...и еще {count}",
+            "note": "Файлы будут скачаны с использованием шаблонов путей по умолчанию. Это может занять некоторое время в зависимости от количества LoRAs.",
+            "downloadButton": "Скачать {count} LoRA(s)"
         },
         "exampleAccess": {
             "title": "Локальные примеры изображений",
@@ -1507,7 +1516,10 @@
             "batchImportNoUrls": "Please enter at least one URL or file path",
             "batchImportNoDirectory": "Please enter a directory path",
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
-            "batchImportDirectorySelected": "Directory selected: {path}"
+            "batchImportDirectorySelected": "Directory selected: {path}",
+            "noRecipesSelected": "Рецепты не выбраны",
+            "noMissingLorasInSelection": "В выбранных рецептах не найдены отсутствующие LoRAs",
+            "noLoraRootConfigured": "Корневой каталог LoRA не настроен. Пожалуйста, установите корневой каталог LoRA по умолчанию в настройках."
         },
         "models": {
             "noModelsSelected": "Модели не выбраны",

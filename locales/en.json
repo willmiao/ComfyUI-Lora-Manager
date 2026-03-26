@@ -575,6 +575,7 @@
             "skipMetadataRefresh": "Skip Metadata Refresh for Selected",
             "resumeMetadataRefresh": "Resume Metadata Refresh for Selected",
             "deleteAll": "Delete Selected Models",
+            "downloadMissingLoras": "Download Missing LoRAs",
             "clear": "Clear Selection",
             "skipMetadataRefreshCount": "Skip ({count} models)",
             "resumeMetadataRefreshCount": "Resume ({count} models)",
@@ -982,6 +983,14 @@
             "selectBaseModel": "Select Base Model",
             "save": "Update Base Model",
             "cancel": "Cancel"
+        },
+        "bulkDownloadMissingLoras": {
+            "title": "Download Missing LoRAs",
+            "message": "Found {uniqueCount} unique missing LoRAs (from {totalCount} total across selected recipes).",
+            "previewTitle": "LoRAs to download:",
+            "moreItems": "...and {count} more",
+            "note": "Files will be downloaded using default path templates. This may take a while depending on the number of LoRAs.",
+            "downloadButton": "Download {count} LoRA(s)"
         },
         "exampleAccess": {
             "title": "Local Example Images",
@@ -1507,7 +1516,10 @@
             "batchImportNoUrls": "Please enter at least one URL or file path",
             "batchImportNoDirectory": "Please enter a directory path",
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
-            "batchImportDirectorySelected": "Directory selected: {path}"
+            "batchImportDirectorySelected": "Directory selected: {path}",
+            "noRecipesSelected": "No recipes selected",
+            "noMissingLorasInSelection": "No missing LoRAs found in selected recipes",
+            "noLoraRootConfigured": "No LoRA root directory configured. Please set a default LoRA root in settings."
         },
         "models": {
             "noModelsSelected": "No models selected",

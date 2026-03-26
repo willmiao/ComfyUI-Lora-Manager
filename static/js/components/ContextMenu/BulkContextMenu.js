@@ -2,6 +2,8 @@ import { BaseContextMenu } from './BaseContextMenu.js';
 import { state } from '../../state/index.js';
 import { bulkManager } from '../../managers/BulkManager.js';
 import { updateElementText, translate } from '../../utils/i18nHelpers.js';
+import { bulkMissingLoraDownloadManager } from '../../managers/BulkMissingLoraDownloadManager.js';
+import { showToast } from '../../utils/uiHelpers.js';
 
 export class BulkContextMenu extends BaseContextMenu {
     constructor() {
@@ -37,6 +39,7 @@ export class BulkContextMenu extends BaseContextMenu {
         const moveAllItem = this.menu.querySelector('[data-action="move-all"]');
         const autoOrganizeItem = this.menu.querySelector('[data-action="auto-organize"]');
         const deleteAllItem = this.menu.querySelector('[data-action="delete-all"]');
+        const downloadMissingLorasItem = this.menu.querySelector('[data-action="download-missing-loras"]');
 
         if (sendToWorkflowAppendItem) {
             sendToWorkflowAppendItem.style.display = config.sendToWorkflow ? 'flex' : 'none';
@@ -70,6 +73,10 @@ export class BulkContextMenu extends BaseContextMenu {
         }
         if (setContentRatingItem) {
             setContentRatingItem.style.display = config.setContentRating ? 'flex' : 'none';
+        }
+        if (downloadMissingLorasItem) {
+            // Only show for recipes page
+            downloadMissingLorasItem.style.display = currentModelType === 'recipes' ? 'flex' : 'none';
         }
 
         const skipMetadataRefreshItem = this.menu.querySelector('[data-action="skip-metadata-refresh"]');
@@ -178,11 +185,49 @@ export class BulkContextMenu extends BaseContextMenu {
             case 'delete-all':
                 bulkManager.showBulkDeleteModal();
                 break;
+            case 'download-missing-loras':
+                this.handleDownloadMissingLoras();
+                break;
             case 'clear':
                 bulkManager.clearSelection();
                 break;
             default:
                 console.warn(`Unknown bulk action: ${action}`);
         }
+    }
+
+    /**
+     * Handle downloading missing LoRAs for selected recipes
+     */
+    async handleDownloadMissingLoras() {
+        if (state.selectedModels.size === 0) {
+            return;
+        }
+
+        // Get selected recipes from the virtual scroller
+        const selectedRecipes = [];
+        state.selectedModels.forEach(filePath => {
+            const card = document.querySelector(`.model-card[data-filepath="${CSS.escape(filePath)}"]`);
+            if (card && card.recipeData) {
+                selectedRecipes.push(card.recipeData);
+            }
+        });
+
+        if (selectedRecipes.length === 0) {
+            // Try to get recipes from virtual scroller state
+            const items = state.virtualScroller?.items || [];
+            items.forEach(recipe => {
+                if (recipe.file_path && state.selectedModels.has(recipe.file_path)) {
+                    selectedRecipes.push(recipe);
+                }
+            });
+        }
+
+        if (selectedRecipes.length === 0) {
+            showToast('toast.recipes.noRecipesSelected', {}, 'warning');
+            return;
+        }
+
+        await bulkMissingLoraDownloadManager.downloadMissingLoras(selectedRecipes);
     }
 }

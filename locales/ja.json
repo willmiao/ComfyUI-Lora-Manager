@@ -575,6 +575,7 @@
             "skipMetadataRefresh": "選択したモデルのメタデータ更新をスキップ",
             "resumeMetadataRefresh": "選択したモデルのメタデータ更新を再開",
             "deleteAll": "すべてのモデルを削除",
+            "downloadMissingLoras": "不足している LoRA をダウンロード",
             "clear": "選択をクリア",
             "skipMetadataRefreshCount": "スキップ（{count}モデル）",
             "resumeMetadataRefreshCount": "再開（{count}モデル）",
@@ -982,6 +983,14 @@
             "selectBaseModel": "ベースモデルを選択",
             "save": "ベースモデルを更新",
             "cancel": "キャンセル"
+        },
+        "bulkDownloadMissingLoras": {
+            "title": "不足している LoRA をダウンロード",
+            "message": "選択したレシピから合計 {totalCount} 個中 {uniqueCount} 個のユニークな不足している LoRA が見つかりました。",
+            "previewTitle": "ダウンロードする LoRA:",
+            "moreItems": "...あと {count} 個",
+            "note": "ファイルはデフォルトのパステンプレートを使用してダウンロードされます。LoRA の数によっては時間がかかる場合があります。",
+            "downloadButton": "{count} 個の LoRA をダウンロード"
         },
         "exampleAccess": {
             "title": "ローカル例画像",
@@ -1507,7 +1516,10 @@
             "batchImportNoUrls": "Please enter at least one URL or file path",
             "batchImportNoDirectory": "Please enter a directory path",
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
-            "batchImportDirectorySelected": "Directory selected: {path}"
+            "batchImportDirectorySelected": "Directory selected: {path}",
+            "noRecipesSelected": "レシピが選択されていません",
+            "noMissingLorasInSelection": "選択したレシピに不足している LoRA が見つかりませんでした",
+            "noLoraRootConfigured": "LoRA ルートディレクトリが設定されていません。設定でデフォルトの LoRA ルートを設定してください。"
         },
         "models": {
             "noModelsSelected": "モデルが選択されていません",

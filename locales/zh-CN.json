@@ -575,6 +575,7 @@
             "skipMetadataRefresh": "跳过所选模型的元数据刷新",
             "resumeMetadataRefresh": "恢复所选模型的元数据刷新",
             "deleteAll": "删除选中模型",
+            "downloadMissingLoras": "下载缺失的 LoRAs",
             "clear": "清除选择",
             "skipMetadataRefreshCount": "跳过（{count} 个模型）",
             "resumeMetadataRefreshCount": "恢复（{count} 个模型）",
@@ -982,6 +983,14 @@
             "selectBaseModel": "选择基础模型",
             "save": "更新基础模型",
             "cancel": "取消"
+        },
+        "bulkDownloadMissingLoras": {
+            "title": "下载缺失的 LoRAs",
+            "message": "发现 {uniqueCount} 个独特的缺失 LoRAs（从选定配方中的 {totalCount} 个总数）。",
+            "previewTitle": "要下载的 LoRAs：",
+            "moreItems": "...还有 {count} 个",
+            "note": "文件将使用默认路径模板下载。根据 LoRAs 的数量，这可能需要一些时间。",
+            "downloadButton": "下载 {count} 个 LoRA(s)"
         },
         "exampleAccess": {
             "title": "本地示例图片",
@@ -1507,7 +1516,10 @@
             "batchImportNoUrls": "请输入至少一个 URL 或文件路径",
             "batchImportNoDirectory": "请输入目录路径",
             "batchImportBrowseFailed": "浏览目录失败：{message}",
-            "batchImportDirectorySelected": "已选择目录：{path}"
+            "batchImportDirectorySelected": "已选择目录：{path}",
+            "noRecipesSelected": "未选择任何配方",
+            "noMissingLorasInSelection": "在选定的配方中未找到缺失的 LoRAs",
+            "noLoraRootConfigured": "未配置 LoRA 根目录。请在设置中设置默认的 LoRA 根目录。"
         },
         "models": {
             "noModelsSelected": "未选中模型",

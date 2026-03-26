@@ -575,6 +575,7 @@
             "skipMetadataRefresh": "선택한 모델의 메타데이터 새로고침 건너뛰기",
             "resumeMetadataRefresh": "선택한 모델의 메타데이터 새로고침 재개",
             "deleteAll": "모든 모델 삭제",
+            "downloadMissingLoras": "누락된 LoRA 다운로드",
             "clear": "선택 지우기",
             "skipMetadataRefreshCount": "건너뛰기（{count}개 모델）",
             "resumeMetadataRefreshCount": "재개（{count}개 모델）",
@@ -982,6 +983,14 @@
             "selectBaseModel": "베이스 모델 선택",
             "save": "베이스 모델 업데이트",
             "cancel": "취소"
+        },
+        "bulkDownloadMissingLoras": {
+            "title": "누락된 LoRA 다운로드",
+            "message": "선택한 레시피에서 총 {totalCount}개 중 {uniqueCount}개의 고유한 누락된 LoRA를 찾았습니다.",
+            "previewTitle": "다운로드할 LoRA:",
+            "moreItems": "...그리고 {count}개 더",
+            "note": "파일은 기본 경로 템플릿을 사용하여 다운로드됩니다. LoRA의 수에 따라 다소 시간이 걸릴 수 있습니다.",
+            "downloadButton": "{count}개 LoRA 다운로드"
         },
         "exampleAccess": {
             "title": "로컬 예시 이미지",
@@ -1507,7 +1516,10 @@
             "batchImportNoUrls": "Please enter at least one URL or file path",
             "batchImportNoDirectory": "Please enter a directory path",
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
-            "batchImportDirectorySelected": "Directory selected: {path}"
+            "batchImportDirectorySelected": "Directory selected: {path}",
+            "noRecipesSelected": "선택한 레시피가 없습니다",
+            "noMissingLorasInSelection": "선택한 레시피에서 누락된 LoRA를 찾을 수 없습니다",
+            "noLoraRootConfigured": "LoRA 루트 디렉토리가 구성되지 않았습니다. 설정에서 기본 LoRA 루트를 설정하세요."
         },
         "models": {
             "noModelsSelected": "선택된 모델이 없습니다",

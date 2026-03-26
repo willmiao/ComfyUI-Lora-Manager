@@ -575,6 +575,7 @@
             "skipMetadataRefresh": "Omitir actualización de metadatos para seleccionados",
             "resumeMetadataRefresh": "Reanudar actualización de metadatos para seleccionados",
             "deleteAll": "Eliminar todos los modelos",
+            "downloadMissingLoras": "Descargar LoRAs faltantes",
             "clear": "Limpiar selección",
             "skipMetadataRefreshCount": "Omitir（{count} modelos）",
             "resumeMetadataRefreshCount": "Reanudar（{count} modelos）",
@@ -982,6 +983,14 @@
             "selectBaseModel": "Seleccionar modelo base",
             "save": "Actualizar modelo base",
             "cancel": "Cancelar"
+        },
+        "bulkDownloadMissingLoras": {
+            "title": "Descargar LoRAs faltantes",
+            "message": "Se encontraron {uniqueCount} LoRAs faltantes únicos (de {totalCount} en total entre las recetas seleccionadas).",
+            "previewTitle": "LoRAs para descargar:",
+            "moreItems": "...y {count} más",
+            "note": "Los archivos se descargarán usando las plantillas de ruta predeterminadas. Esto puede tomar un tiempo dependiendo del número de LoRAs.",
+            "downloadButton": "Descargar {count} LoRA(s)"
         },
         "exampleAccess": {
             "title": "Imágenes de ejemplo locales",
@@ -1507,7 +1516,10 @@
             "batchImportNoUrls": "Please enter at least one URL or file path",
             "batchImportNoDirectory": "Please enter a directory path",
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
-            "batchImportDirectorySelected": "Directory selected: {path}"
+            "batchImportDirectorySelected": "Directory selected: {path}",
+            "noRecipesSelected": "No se han seleccionado recetas",
+            "noMissingLorasInSelection": "No se encontraron LoRAs faltantes en las recetas seleccionadas",
+            "noLoraRootConfigured": "No se ha configurado el directorio raíz de LoRA. Por favor, establezca un directorio raíz de LoRA predeterminado en la configuración."
         },
         "models": {
             "noModelsSelected": "No hay modelos seleccionados",

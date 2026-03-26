@@ -81,3 +81,31 @@
         </div>
     </div>
 </div>
+
+<!-- Bulk Download Missing LoRAs Confirmation Modal -->
+<div id="bulkDownloadMissingLorasModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>{{ t('modals.bulkDownloadMissingLoras.title') }}</h2>
+            <span class="close" onclick="modalManager.closeModal('bulkDownloadMissingLorasModal')">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p class="confirmation-message" id="bulkDownloadMissingLorasMessage"></p>
+            <div class="bulk-download-loras-preview" id="bulkDownloadMissingLorasPreview">
+                <p class="preview-title">{{ t('modals.bulkDownloadMissingLoras.previewTitle') }}</p>
+                <ul class="bulk-download-loras-list" id="bulkDownloadMissingLorasList"></ul>
+            </div>
+            <p class="confirmation-note">
+                <i class="fas fa-info-circle"></i>
+                {{ t('modals.bulkDownloadMissingLoras.note') }}
+            </p>
+        </div>
+        <div class="modal-actions">
+            <button class="secondary-btn" onclick="modalManager.closeModal('bulkDownloadMissingLorasModal')">{{ t('common.actions.cancel') }}</button>
+            <button class="primary-btn" id="bulkDownloadMissingLorasConfirmBtn" onclick="bulkMissingLoraDownloadManager.confirmDownload()">
+                <i class="fas fa-download"></i>
+                {{ t('modals.bulkDownloadMissingLoras.downloadButton') }}
+            </button>
+        </div>
+    </div>
+</div>

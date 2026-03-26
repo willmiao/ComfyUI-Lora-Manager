@@ -151,7 +151,8 @@ body.modal-open {
 [data-theme="dark"] .changelog-section,
 [data-theme="dark"] .update-info,
 [data-theme="dark"] .info-item,
-[data-theme="dark"] .path-preview {
+[data-theme="dark"] .path-preview,
+[data-theme="dark"] #bulkDownloadMissingLorasModal .bulk-download-loras-preview {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--lora-border);
 }
@@ -348,4 +349,88 @@ button:disabled,
     font-style: italic;
     margin-top: var(--space-1);
     text-align: center;
+}
+
+/* Bulk Download Missing LoRAs Modal */
+#bulkDownloadMissingLorasModal .modal-body {
+    padding: var(--space-3);
+}
+
+#bulkDownloadMissingLorasModal .confirmation-message {
+    color: var(--text-color);
+    margin-bottom: var(--space-3);
+    font-size: 1em;
+    line-height: 1.5;
+}
+
+#bulkDownloadMissingLorasModal .bulk-download-loras-preview {
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--border-radius-sm);
+    padding: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+#bulkDownloadMissingLorasModal .preview-title {
+    font-weight: 600;
+    margin-bottom: var(--space-2);
+    color: var(--text-color);
+    font-size: 0.95em;
+}
+
+#bulkDownloadMissingLorasModal .bulk-download-loras-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#bulkDownloadMissingLorasModal .bulk-download-loras-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-1) 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.9em;
+}
+
+#bulkDownloadMissingLorasModal .bulk-download-loras-list li:last-child {
+    border-bottom: none;
+}
+
+#bulkDownloadMissingLorasModal .bulk-download-loras-list li.more-items {
+    font-style: italic;
+    opacity: 0.7;
+    text-align: center;
+    justify-content: center;
+    padding: var(--space-2) 0;
+}
+
+#bulkDownloadMissingLorasModal .lora-name {
+    font-weight: 500;
+    color: var(--text-color);
+    flex: 1;
+}
+
+#bulkDownloadMissingLorasModal .lora-version {
+    font-size: 0.85em;
+    opacity: 0.7;
+    margin-left: var(--space-1);
+    color: var(--text-muted);
+}
+
+#bulkDownloadMissingLorasModal .confirmation-note {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.9em;
+    color: var(--text-color);
+}
+
+#bulkDownloadMissingLorasModal .confirmation-note i {
+    color: var(--lora-accent);
+    margin-top: 2px;
+    flex-shrink: 0;
 }

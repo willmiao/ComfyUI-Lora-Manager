@@ -575,6 +575,7 @@
             "skipMetadataRefresh": "Metadaten-Aktualisierung für ausgewählte Modelle überspringen",
             "resumeMetadataRefresh": "Metadaten-Aktualisierung für ausgewählte Modelle fortsetzen",
             "deleteAll": "Alle Modelle löschen",
+            "downloadMissingLoras": "Fehlende LoRAs herunterladen",
             "clear": "Auswahl löschen",
             "skipMetadataRefreshCount": "Überspringen（{count} Modelle）",
             "resumeMetadataRefreshCount": "Fortsetzen（{count} Modelle）",
@@ -982,6 +983,14 @@
             "selectBaseModel": "Basis-Modell auswählen",
             "save": "Basis-Modell aktualisieren",
             "cancel": "Abbrechen"
+        },
+        "bulkDownloadMissingLoras": {
+            "title": "Fehlende LoRAs herunterladen",
+            "message": "{uniqueCount} einzigartige fehlende LoRAs gefunden (von insgesamt {totalCount} in ausgewählten Rezepten).",
+            "previewTitle": "Zu herunterladende LoRAs:",
+            "moreItems": "...und {count} weitere",
+            "note": "Dateien werden mit Standard-Pfad-Vorlagen heruntergeladen. Dies kann je nach Anzahl der LoRAs eine Weile dauern.",
+            "downloadButton": "{count} LoRA(s) herunterladen"
         },
         "exampleAccess": {
             "title": "Lokale Beispielbilder",
@@ -1507,7 +1516,10 @@
             "batchImportNoUrls": "Please enter at least one URL or file path",
             "batchImportNoDirectory": "Please enter a directory path",
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
-            "batchImportDirectorySelected": "Directory selected: {path}"
+            "batchImportDirectorySelected": "Directory selected: {path}",
+            "noRecipesSelected": "Keine Rezepte ausgewählt",
+            "noMissingLorasInSelection": "Keine fehlenden LoRAs in ausgewählten Rezepten gefunden",
+            "noLoraRootConfigured": "Kein LoRA-Stammverzeichnis konfiguriert. Bitte legen Sie ein Standard-LoRA-Stammverzeichnis in den Einstellungen fest."
         },
         "models": {
             "noModelsSelected": "Keine Modelle ausgewählt",
