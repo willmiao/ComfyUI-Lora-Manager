@@ -292,13 +292,13 @@
             "blurNsfwContentHelp": "Difuminar imágenes de vista previa de contenido para adultos (NSFW)",
             "showOnlySfw": "Mostrar solo resultados SFW",
             "showOnlySfwHelp": "Filtrar todo el contenido NSFW al navegar y buscar",
-            "matureBlurThreshold": "[TODO: Translate] Mature Blur Threshold",
-            "matureBlurThresholdHelp": "[TODO: Translate] Set which rating level starts blur filtering when NSFW blur is enabled.",
+            "matureBlurThreshold": "Umbral de difuminado para contenido adulto",
+            "matureBlurThresholdHelp": "Establecer a partir de qué nivel de clasificación comienza el filtrado por difuminado cuando el difuminado NSFW está habilitado.",
             "matureBlurThresholdOptions": {
-                "pg13": "[TODO: Translate] PG13 and above",
-                "r": "[TODO: Translate] R and above (default)",
-                "x": "[TODO: Translate] X and above",
-                "xxx": "[TODO: Translate] XXX only"
+                "pg13": "PG13 y superior",
+                "r": "R y superior (predeterminado)",
+                "x": "X y superior",
+                "xxx": "Solo XXX"
             }
         },
         "videoSettings": {

@@ -292,13 +292,13 @@
             "blurNsfwContentHelp": "模糊成熟（NSFW）內容預覽圖片",
             "showOnlySfw": "僅顯示 SFW 結果",
             "showOnlySfwHelp": "瀏覽和搜尋時過濾所有 NSFW 內容",
-            "matureBlurThreshold": "[TODO: Translate] Mature Blur Threshold",
-            "matureBlurThresholdHelp": "[TODO: Translate] Set which rating level starts blur filtering when NSFW blur is enabled.",
+            "matureBlurThreshold": "成人內容模糊閾值",
+            "matureBlurThresholdHelp": "設定當啟用 NSFW 模糊時，從哪個評級級別開始模糊過濾。",
             "matureBlurThresholdOptions": {
-                "pg13": "[TODO: Translate] PG13 and above",
-                "r": "[TODO: Translate] R and above (default)",
-                "x": "[TODO: Translate] X and above",
-                "xxx": "[TODO: Translate] XXX only"
+                "pg13": "PG13 及以上",
+                "r": "R 及以上（預設）",
+                "x": "X 及以上",
+                "xxx": "僅 XXX"
             }
         },
         "videoSettings": {

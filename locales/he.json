@@ -292,13 +292,13 @@
             "blurNsfwContentHelp": "טשטש תמונות תצוגה מקדימה של תוכן למבוגרים (NSFW)",
             "showOnlySfw": "הצג רק תוצאות SFW",
             "showOnlySfwHelp": "סנן את כל התוכן ה-NSFW בעת גלישה וחיפוש",
-            "matureBlurThreshold": "[TODO: Translate] Mature Blur Threshold",
-            "matureBlurThresholdHelp": "[TODO: Translate] Set which rating level starts blur filtering when NSFW blur is enabled.",
+            "matureBlurThreshold": "סף טשטוש תוכן מבוגרים",
+            "matureBlurThresholdHelp": "הגדר מאיזו רמת דירוג מתחיל סינון הטשטוש כאשר טשטוש NSFW מופעל.",
             "matureBlurThresholdOptions": {
-                "pg13": "[TODO: Translate] PG13 and above",
-                "r": "[TODO: Translate] R and above (default)",
-                "x": "[TODO: Translate] X and above",
-                "xxx": "[TODO: Translate] XXX only"
+                "pg13": "PG13 ומעלה",
+                "r": "R ומעלה (ברירת מחדל)",
+                "x": "X ומעלה",
+                "xxx": "XXX בלבד"
             }
         },
         "videoSettings": {

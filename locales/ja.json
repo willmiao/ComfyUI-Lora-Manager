@@ -292,13 +292,13 @@
             "blurNsfwContentHelp": "成人向け（NSFW）コンテンツのプレビュー画像をぼかします",
             "showOnlySfw": "SFWコンテンツのみ表示",
             "showOnlySfwHelp": "閲覧と検索時にすべてのNSFWコンテンツを除外します",
-            "matureBlurThreshold": "[TODO: Translate] Mature Blur Threshold",
-            "matureBlurThresholdHelp": "[TODO: Translate] Set which rating level starts blur filtering when NSFW blur is enabled.",
+            "matureBlurThreshold": "成人コンテンツぼかし閾値",
+            "matureBlurThresholdHelp": "NSFWぼかしが有効な場合、どのレーティングレベルからぼかしフィルタリングを開始するかを設定します。",
             "matureBlurThresholdOptions": {
-                "pg13": "[TODO: Translate] PG13 and above",
-                "r": "[TODO: Translate] R and above (default)",
-                "x": "[TODO: Translate] X and above",
-                "xxx": "[TODO: Translate] XXX only"
+                "pg13": "PG13 以上",
+                "r": "R 以上（デフォルト）",
+                "x": "X 以上",
+                "xxx": "XXX のみ"
             }
         },
         "videoSettings": {

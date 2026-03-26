@@ -292,13 +292,13 @@
             "blurNsfwContentHelp": "Nicht jugendfreie (NSFW) Vorschaubilder unscharf stellen",
             "showOnlySfw": "Nur SFW-Ergebnisse anzeigen",
             "showOnlySfwHelp": "Alle NSFW-Inhalte beim Durchsuchen und Suchen herausfiltern",
-            "matureBlurThreshold": "[TODO: Translate] Mature Blur Threshold",
-            "matureBlurThresholdHelp": "[TODO: Translate] Set which rating level starts blur filtering when NSFW blur is enabled.",
+            "matureBlurThreshold": "Schwelle für Unschärfe bei jugendgefährdenden Inhalten",
+            "matureBlurThresholdHelp": "Legen Sie fest, ab welcher Altersfreigabe die Unschärfe beginnt, wenn NSFW-Unschärfe aktiviert ist.",
             "matureBlurThresholdOptions": {
-                "pg13": "[TODO: Translate] PG13 and above",
-                "r": "[TODO: Translate] R and above (default)",
-                "x": "[TODO: Translate] X and above",
-                "xxx": "[TODO: Translate] XXX only"
+                "pg13": "PG13 und höher",
+                "r": "R und höher (Standard)",
+                "x": "X und höher",
+                "xxx": "Nur XXX"
             }
         },
         "videoSettings": {

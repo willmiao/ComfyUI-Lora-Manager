@@ -292,13 +292,13 @@
             "blurNsfwContentHelp": "성인(NSFW) 콘텐츠 미리보기 이미지를 블러 처리합니다",
             "showOnlySfw": "SFW 결과만 표시",
             "showOnlySfwHelp": "탐색 및 검색 시 모든 NSFW 콘텐츠를 필터링합니다",
-            "matureBlurThreshold": "[TODO: Translate] Mature Blur Threshold",
-            "matureBlurThresholdHelp": "[TODO: Translate] Set which rating level starts blur filtering when NSFW blur is enabled.",
+            "matureBlurThreshold": "성인 콘텐츠 블러 임계값",
+            "matureBlurThresholdHelp": "NSFW 블러가 활성화될 때 어떤 등급 레벨부터 블러 필터링을 시작할지 설정합니다.",
             "matureBlurThresholdOptions": {
-                "pg13": "[TODO: Translate] PG13 and above",
-                "r": "[TODO: Translate] R and above (default)",
-                "x": "[TODO: Translate] X and above",
-                "xxx": "[TODO: Translate] XXX only"
+                "pg13": "PG13 이상",
+                "r": "R 이상（기본값）",
+                "x": "X 이상",
+                "xxx": "XXX만"
             }
         },
         "videoSettings": {
