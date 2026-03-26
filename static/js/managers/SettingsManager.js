@@ -10,6 +10,8 @@ import { validatePriorityTagString, getPriorityTagSuggestionsMap, invalidatePrio
 import { bannerService } from './BannerService.js';
 import { sidebarManager } from '../components/SidebarManager.js';
 
+const VALID_MATURE_BLUR_LEVELS = new Set(['PG13', 'R', 'X', 'XXX']);
+
 export class SettingsManager {
     constructor() {
         this.initialized = false;
@@ -137,9 +139,23 @@ export class SettingsManager {
             backendSettings?.metadata_refresh_skip_paths ?? defaults.metadata_refresh_skip_paths
         );
 
+        merged.mature_blur_level = this.normalizeMatureBlurLevel(
+            backendSettings?.mature_blur_level ?? defaults.mature_blur_level
+        );
+
         Object.keys(merged).forEach(key => this.backendSettingKeys.add(key));
 
         return merged;
+    }
+
+    normalizeMatureBlurLevel(value) {
+        if (typeof value === 'string') {
+            const normalized = value.trim().toUpperCase();
+            if (VALID_MATURE_BLUR_LEVELS.has(normalized)) {
+                return normalized;
+            }
+        }
+        return 'R';
     }
 
     normalizePatternList(value) {
@@ -680,6 +696,13 @@ export class SettingsManager {
         const showOnlySFWCheckbox = document.getElementById('showOnlySFW');
         if (showOnlySFWCheckbox) {
             showOnlySFWCheckbox.checked = state.global.settings.show_only_sfw ?? false;
+        }
+
+        const matureBlurLevelSelect = document.getElementById('matureBlurLevel');
+        if (matureBlurLevelSelect) {
+            matureBlurLevelSelect.value = this.normalizeMatureBlurLevel(
+                state.global.settings.mature_blur_level
+            );
         }
 
         const usePortableCheckbox = document.getElementById('usePortableSettings');
@@ -1811,7 +1834,9 @@ export class SettingsManager {
         const element = document.getElementById(elementId);
         if (!element) return;
 
-        const value = element.value;
+        const value = settingKey === 'mature_blur_level'
+            ? this.normalizeMatureBlurLevel(element.value)
+            : element.value;
 
         try {
             // Update frontend state with mapped keys
@@ -1834,7 +1859,12 @@ export class SettingsManager {
 
             showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
 
-            if (settingKey === 'model_name_display' || settingKey === 'model_card_footer_action' || settingKey === 'update_flag_strategy') {
+            if (
+                settingKey === 'model_name_display'
+                || settingKey === 'model_card_footer_action'
+                || settingKey === 'update_flag_strategy'
+                || settingKey === 'mature_blur_level'
+            ) {
                 this.reloadContent();
             }
         } catch (error) {

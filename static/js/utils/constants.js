@@ -309,6 +309,15 @@ export const NSFW_LEVELS = {
     BLOCKED: 32
 };
 
+export const VALID_MATURE_BLUR_LEVELS = ['PG13', 'R', 'X', 'XXX'];
+
+export function getMatureBlurThreshold(settings = {}) {
+    const rawValue = settings?.mature_blur_level;
+    const normalizedValue = typeof rawValue === 'string' ? rawValue.trim().toUpperCase() : '';
+    const levelName = VALID_MATURE_BLUR_LEVELS.includes(normalizedValue) ? normalizedValue : 'R';
+    return NSFW_LEVELS[levelName] ?? NSFW_LEVELS.R;
+}
+
 // Node type constants
 export const NODE_TYPES = {
     LORA_LOADER: 1,

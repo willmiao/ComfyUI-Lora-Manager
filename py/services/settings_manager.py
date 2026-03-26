@@ -12,6 +12,7 @@ from typing import Any, Awaitable, Dict, Iterable, List, Mapping, Optional, Sequ
 from platformdirs import user_config_dir
 
 from ..utils.constants import DEFAULT_HASH_CHUNK_SIZE_MB, DEFAULT_PRIORITY_TAG_CONFIG
+from ..utils.preview_selection import VALID_MATURE_BLUR_LEVELS
 from ..utils.settings_paths import APP_NAME, ensure_settings_file, get_legacy_settings_path
 from ..utils.tag_priorities import (
     PriorityTagEntry,
@@ -59,6 +60,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "optimize_example_images": True,
     "auto_download_example_images": False,
     "blur_mature_content": True,
+    "mature_blur_level": "R",
     "autoplay_on_hover": False,
     "display_density": "default",
     "card_info_display": "always",
@@ -273,6 +275,16 @@ class SettingsManager:
         else:
             self.settings["metadata_refresh_skip_paths"] = []
             inserted_defaults = True
+
+        had_mature_level = "mature_blur_level" in self.settings
+        raw_mature_level = self.settings.get("mature_blur_level")
+        normalized_mature_level = self.normalize_mature_blur_level(raw_mature_level)
+        if normalized_mature_level != raw_mature_level:
+            self.settings["mature_blur_level"] = normalized_mature_level
+            if had_mature_level:
+                updated_existing = True
+            else:
+                inserted_defaults = True
 
         for key, value in defaults.items():
             if key == "priority_tags":
@@ -608,6 +620,7 @@ class SettingsManager:
             'optimizeExampleImages': 'optimize_example_images',
             'autoDownloadExampleImages': 'auto_download_example_images',
             'blurMatureContent': 'blur_mature_content',
+            'matureBlurLevel': 'mature_blur_level',
             'autoplayOnHover': 'autoplay_on_hover',
             'displayDensity': 'display_density',
             'cardInfoDisplay': 'card_info_display',
@@ -860,6 +873,13 @@ class SettingsManager:
 
         return normalized
 
+    def normalize_mature_blur_level(self, value: Any) -> str:
+        if isinstance(value, str):
+            normalized = value.strip().upper()
+            if normalized in VALID_MATURE_BLUR_LEVELS:
+                return normalized
+        return "R"
+
     def normalize_auto_organize_exclusions(self, value: Any) -> List[str]:
         if value is None:
             return []
@@ -1012,6 +1032,8 @@ class SettingsManager:
             value = self.normalize_auto_organize_exclusions(value)
         elif key == "metadata_refresh_skip_paths":
             value = self.normalize_metadata_refresh_skip_paths(value)
+        elif key == "mature_blur_level":
+            value = self.normalize_mature_blur_level(value)
         self.settings[key] = value
         portable_switch_pending = False
         if key == "use_portable_settings" and isinstance(value, bool):

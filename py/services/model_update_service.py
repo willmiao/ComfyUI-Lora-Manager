@@ -13,7 +13,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 from .errors import RateLimitError, ResourceNotFoundError
 from .settings_manager import get_settings_manager
 from ..utils.civitai_utils import rewrite_preview_url
-from ..utils.preview_selection import select_preview_media
+from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
 
 logger = logging.getLogger(__name__)
 
@@ -1252,14 +1252,23 @@ class ModelUpdateService:
             return None
 
         blur_mature_content = True
+        mature_threshold = resolve_mature_threshold({"mature_blur_level": "R"})
         settings = getattr(self, "_settings", None)
         if settings is not None and hasattr(settings, "get"):
             try:
                 blur_mature_content = bool(settings.get("blur_mature_content", True))
+                mature_threshold = resolve_mature_threshold(
+                    {"mature_blur_level": settings.get("mature_blur_level", "R")}
+                )
             except Exception:  # pragma: no cover - defensive guard
                 blur_mature_content = True
+                mature_threshold = resolve_mature_threshold({"mature_blur_level": "R"})
 
-        selected, _ = select_preview_media(candidates, blur_mature_content=blur_mature_content)
+        selected, _ = select_preview_media(
+            candidates,
+            blur_mature_content=blur_mature_content,
+            mature_threshold=mature_threshold,
+        )
         if not selected:
             return None
 

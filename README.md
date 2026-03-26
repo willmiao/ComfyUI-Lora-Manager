@@ -179,6 +179,8 @@ Insomnia Art Designs, megakirbs, Brennok, wackop, 2018cfh, Takkan, stone9k, $Met
   - Context menu for quick actions
   - Custom notes and usage tips
   - Multi-folder support
+  - Configurable mature blur threshold (`PG13` / `R` / `X` / `XXX`, default `R+`)
+    - Example: setting threshold to `PG13` blurs `PG13`, `R`, `X`, and `XXX` previews when blur is enabled
   - Visual progress indicators during initialization
 
 ---

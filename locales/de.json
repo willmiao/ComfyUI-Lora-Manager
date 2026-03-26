@@ -291,7 +291,15 @@
             "blurNsfwContent": "NSFW-Inhalte unscharf stellen",
             "blurNsfwContentHelp": "Nicht jugendfreie (NSFW) Vorschaubilder unscharf stellen",
             "showOnlySfw": "Nur SFW-Ergebnisse anzeigen",
-            "showOnlySfwHelp": "Alle NSFW-Inhalte beim Durchsuchen und Suchen herausfiltern"
+            "showOnlySfwHelp": "Alle NSFW-Inhalte beim Durchsuchen und Suchen herausfiltern",
+            "matureBlurThreshold": "[TODO: Translate] Mature Blur Threshold",
+            "matureBlurThresholdHelp": "[TODO: Translate] Set which rating level starts blur filtering when NSFW blur is enabled.",
+            "matureBlurThresholdOptions": {
+                "pg13": "[TODO: Translate] PG13 and above",
+                "r": "[TODO: Translate] R and above (default)",
+                "x": "[TODO: Translate] X and above",
+                "xxx": "[TODO: Translate] XXX only"
+            }
         },
         "videoSettings": {
             "autoplayOnHover": "Videos bei Hover automatisch abspielen",

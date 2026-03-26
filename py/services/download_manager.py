@@ -16,7 +16,7 @@ from ..utils.constants import (
     VALID_LORA_TYPES,
 )
 from ..utils.civitai_utils import rewrite_preview_url
-from ..utils.preview_selection import select_preview_media
+from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
 from ..utils.utils import sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
@@ -846,9 +846,13 @@ class DownloadManager:
                 blur_mature_content = bool(
                     settings_manager.get("blur_mature_content", True)
                 )
+                mature_threshold = resolve_mature_threshold(
+                    {"mature_blur_level": settings_manager.get("mature_blur_level", "R")}
+                )
                 selected_image, nsfw_level = select_preview_media(
                     images,
                     blur_mature_content=blur_mature_content,
+                    mature_threshold=mature_threshold,
                 )
 
                 preview_url = selected_image.get("url") if selected_image else None

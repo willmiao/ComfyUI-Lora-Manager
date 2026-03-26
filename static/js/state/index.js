@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     optimize_example_images: true,
     auto_download_example_images: false,
     blur_mature_content: true,
+    mature_blur_level: 'R',
     autoplay_on_hover: false,
     display_density: 'default',
     card_info_display: 'always',

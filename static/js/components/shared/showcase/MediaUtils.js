@@ -6,7 +6,7 @@
 import { showToast, copyToClipboard, getNSFWLevelName } from '../../../utils/uiHelpers.js';
 import { state } from '../../../state/index.js';
 import { getModelApiClient } from '../../../api/modelApiFactory.js';
-import { NSFW_LEVELS } from '../../../utils/constants.js';
+import { NSFW_LEVELS, getMatureBlurThreshold } from '../../../utils/constants.js';
 import { getNsfwLevelSelector } from '../NsfwLevelSelector.js';
 
 /**
@@ -607,7 +607,8 @@ function applyNsfwLevelChange(mediaWrapper, nsfwLevel) {
     }
     mediaWrapper.dataset.nsfwLevel = String(nsfwLevel);
 
-    const shouldBlur = state.settings.blur_mature_content && nsfwLevel > NSFW_LEVELS.PG13;
+    const matureBlurThreshold = getMatureBlurThreshold(state.settings);
+    const shouldBlur = state.settings.blur_mature_content && nsfwLevel >= matureBlurThreshold;
     let overlay = mediaWrapper.querySelector('.nsfw-overlay');
     let toggleBtn = mediaWrapper.querySelector('.toggle-blur-btn');
 

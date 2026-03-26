@@ -6,7 +6,7 @@ import { showToast } from '../../../utils/uiHelpers.js';
 import { state } from '../../../state/index.js';
 import { modalManager } from '../../../managers/ModalManager.js';
 import { translate } from '../../../utils/i18nHelpers.js';
-import { NSFW_LEVELS } from '../../../utils/constants.js';
+import { NSFW_LEVELS, getMatureBlurThreshold } from '../../../utils/constants.js';
 import { 
     initLazyLoading,
     initNsfwBlurHandlers, 
@@ -184,7 +184,8 @@ function renderMediaItem(img, index, exampleFiles) {
     
     // Check if media should be blurred
     const nsfwLevel = img.nsfwLevel !== undefined ? img.nsfwLevel : 0;
-    const shouldBlur = state.settings.blur_mature_content && nsfwLevel > NSFW_LEVELS.PG13;
+    const matureBlurThreshold = getMatureBlurThreshold(state.settings);
+    const shouldBlur = state.settings.blur_mature_content && nsfwLevel >= matureBlurThreshold;
     
     // Determine NSFW warning text based on level
     let nsfwText = "Mature Content";

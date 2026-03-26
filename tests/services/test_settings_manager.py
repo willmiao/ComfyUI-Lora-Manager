@@ -265,6 +265,32 @@ def test_delete_setting(manager):
     assert manager.get("example") is None
 
 
+def test_missing_mature_blur_level_defaults_to_r(tmp_path, monkeypatch):
+    manager = _create_manager_with_settings(
+        tmp_path,
+        monkeypatch,
+        {
+            "blur_mature_content": True,
+            "folder_paths": {},
+        },
+    )
+
+    assert manager.get("mature_blur_level") == "R"
+
+
+def test_invalid_mature_blur_level_is_normalized_to_r(tmp_path, monkeypatch):
+    manager = _create_manager_with_settings(
+        tmp_path,
+        monkeypatch,
+        {
+            "mature_blur_level": "unsafe",
+            "folder_paths": {},
+        },
+    )
+
+    assert manager.get("mature_blur_level") == "R"
+
+
 def test_model_name_display_setting_notifies_scanners(tmp_path, monkeypatch):
     initial = {
         "libraries": {"default": {"folder_paths": {}, "default_lora_root": "", "default_checkpoint_root": "", "default_embedding_root": ""}},

@@ -15,7 +15,8 @@ describe('state module', () => {
     expect(defaultSettings).toMatchObject({
       civitai_api_key: '',
       language: 'en',
-      blur_mature_content: true
+      blur_mature_content: true,
+      mature_blur_level: 'R'
     });
 
     expect(defaultSettings.download_path_templates).toEqual(DEFAULT_PATH_TEMPLATES);

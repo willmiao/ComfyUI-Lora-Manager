@@ -6,7 +6,7 @@ import { modalManager } from '../managers/ModalManager.js';
 import { getCurrentPageState } from '../state/index.js';
 import { state } from '../state/index.js';
 import { bulkManager } from '../managers/BulkManager.js';
-import { NSFW_LEVELS, getBaseModelAbbreviation } from '../utils/constants.js';
+import { NSFW_LEVELS, getBaseModelAbbreviation, getMatureBlurThreshold } from '../utils/constants.js';
 
 class RecipeCard {
     constructor(recipe, clickHandler) {
@@ -74,7 +74,8 @@ class RecipeCard {
 
         // NSFW blur logic - similar to LoraCard
         const nsfwLevel = this.recipe.preview_nsfw_level !== undefined ? this.recipe.preview_nsfw_level : 0;
-        const shouldBlur = state.settings.blur_mature_content && nsfwLevel > NSFW_LEVELS.PG13;
+        const matureBlurThreshold = getMatureBlurThreshold(state.settings);
+        const shouldBlur = state.settings.blur_mature_content && nsfwLevel >= matureBlurThreshold;
 
         if (shouldBlur) {
             card.classList.add('nsfw-content');

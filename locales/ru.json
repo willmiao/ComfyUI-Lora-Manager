@@ -291,7 +291,15 @@
             "blurNsfwContent": "Размывать NSFW контент",
             "blurNsfwContentHelp": "Размывать превью изображений контента для взрослых (NSFW)",
             "showOnlySfw": "Показывать только SFW результаты",
-            "showOnlySfwHelp": "Фильтровать весь NSFW контент при просмотре и поиске"
+            "showOnlySfwHelp": "Фильтровать весь NSFW контент при просмотре и поиске",
+            "matureBlurThreshold": "[TODO: Translate] Mature Blur Threshold",
+            "matureBlurThresholdHelp": "[TODO: Translate] Set which rating level starts blur filtering when NSFW blur is enabled.",
+            "matureBlurThresholdOptions": {
+                "pg13": "[TODO: Translate] PG13 and above",
+                "r": "[TODO: Translate] R and above (default)",
+                "x": "[TODO: Translate] X and above",
+                "xxx": "[TODO: Translate] XXX only"
+            }
         },
         "videoSettings": {
             "autoplayOnHover": "Автовоспроизведение видео при наведении",

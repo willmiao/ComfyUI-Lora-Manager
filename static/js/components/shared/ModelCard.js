@@ -4,7 +4,7 @@ import { showModelModal } from './ModelModal.js';
 import { toggleShowcase } from './showcase/ShowcaseView.js';
 import { bulkManager } from '../../managers/BulkManager.js';
 import { modalManager } from '../../managers/ModalManager.js';
-import { NSFW_LEVELS, getBaseModelAbbreviation, getSubTypeAbbreviation, MODEL_SUBTYPE_DISPLAY_NAMES } from '../../utils/constants.js';
+import { NSFW_LEVELS, getBaseModelAbbreviation, getSubTypeAbbreviation, getMatureBlurThreshold, MODEL_SUBTYPE_DISPLAY_NAMES } from '../../utils/constants.js';
 import { MODEL_TYPES } from '../../api/apiConfig.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { showDeleteModal } from '../../utils/modalUtils.js';
@@ -478,7 +478,8 @@ export function createModelCard(model, modelType) {
     card.dataset.nsfwLevel = nsfwLevel;
 
     // Determine if the preview should be blurred based on NSFW level and user settings
-    const shouldBlur = state.settings.blur_mature_content && nsfwLevel > NSFW_LEVELS.PG13;
+    const matureBlurThreshold = getMatureBlurThreshold(state.settings);
+    const shouldBlur = state.settings.blur_mature_content && nsfwLevel >= matureBlurThreshold;
     if (shouldBlur) {
         card.classList.add('nsfw-content');
     }

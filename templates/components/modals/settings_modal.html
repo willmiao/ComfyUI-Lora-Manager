@@ -281,6 +281,26 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="matureBlurLevel">
+                                        {{ t('settings.contentFiltering.matureBlurThreshold') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.contentFiltering.matureBlurThresholdHelp') }}"></i>
+                                    </label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="matureBlurLevel"
+                                                onchange="settingsManager.saveSelectSetting('matureBlurLevel', 'mature_blur_level')">
+                                            <option value="PG13">{{ t('settings.contentFiltering.matureBlurThresholdOptions.pg13') }}</option>
+                                            <option value="R">{{ t('settings.contentFiltering.matureBlurThresholdOptions.r') }}</option>
+                                            <option value="X">{{ t('settings.contentFiltering.matureBlurThresholdOptions.x') }}</option>
+                                            <option value="XXX">{{ t('settings.contentFiltering.matureBlurThresholdOptions.xxx') }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- Video Settings -->

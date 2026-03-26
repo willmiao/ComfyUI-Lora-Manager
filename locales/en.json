@@ -291,7 +291,15 @@
             "blurNsfwContent": "Blur NSFW Content",
             "blurNsfwContentHelp": "Blur mature (NSFW) content preview images",
             "showOnlySfw": "Show Only SFW Results",
-            "showOnlySfwHelp": "Filter out all NSFW content when browsing and searching"
+            "showOnlySfwHelp": "Filter out all NSFW content when browsing and searching",
+            "matureBlurThreshold": "Mature Blur Threshold",
+            "matureBlurThresholdHelp": "Set which rating level starts blur filtering when NSFW blur is enabled.",
+            "matureBlurThresholdOptions": {
+                "pg13": "PG13 and above",
+                "r": "R and above (default)",
+                "x": "X and above",
+                "xxx": "XXX only"
+            }
         },
         "videoSettings": {
             "autoplayOnHover": "Autoplay Videos on Hover",
