@@ -6,8 +6,27 @@ export class RecipeDataManager {
         this.importManager = importManager;
     }
 
+    setupTagInputEnterHandler() {
+        const tagInput = document.getElementById('tagInput');
+        if (!tagInput || tagInput.hasEnterAddTagHandler) {
+            return;
+        }
+
+        tagInput.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') {
+                return;
+            }
+
+            event.preventDefault();
+            this.addTag();
+        });
+
+        tagInput.hasEnterAddTagHandler = true;
+    }
+
     showRecipeDetailsStep() {
         this.importManager.stepManager.showStep('detailsStep');
+        this.setupTagInputEnterHandler();
 
         // Set default recipe name from prompt or image filename
         const recipeName = document.getElementById('recipeName');
