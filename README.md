@@ -346,6 +346,7 @@ We appreciate your understanding and look forward to potentially accepting code 
 
 This project has been inspired by and benefited from other excellent ComfyUI extensions:
 
+- [ComfyUI-QwenImageLoraLoader](https://github.com/ussoewwin/ComfyUI-QwenImageLoraLoader) - For the experimental Nunchaku Qwen-Image LoRA support
 - [ComfyUI-SaveImageWithMetaData](https://github.com/nkchocoai/ComfyUI-SaveImageWithMetaData) - For the image metadata functionality
 - [rgthree-comfy](https://github.com/rgthree/rgthree-comfy) - For the lora loader functionality
 

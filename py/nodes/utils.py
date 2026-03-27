@@ -158,3 +158,24 @@ def nunchaku_load_lora(model, lora_name, lora_strength):
             ret_model.model.model_config.unet_config["in_channels"] = new_in_channels
 
     return ret_model
+
+
+def detect_nunchaku_model_kind(model):
+    """Return the supported Nunchaku model kind for a Comfy model, if any."""
+    try:
+        model_wrapper = model.model.diffusion_model
+    except (AttributeError, TypeError):
+        return None
+
+    wrapper_name = model_wrapper.__class__.__name__
+    if wrapper_name == "ComfyFluxWrapper":
+        return "flux"
+
+    inner_model = getattr(model_wrapper, "model", None)
+    inner_name = inner_model.__class__.__name__ if inner_model is not None else ""
+    if wrapper_name.endswith("NunchakuQwenImageTransformer2DModel"):
+        return "qwen_image"
+    if inner_name.endswith("NunchakuQwenImageTransformer2DModel"):
+        return "qwen_image"
+
+    return None
