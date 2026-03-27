@@ -1,5 +1,7 @@
 import types
 
+import pytest
+
 from py.nodes.lora_loader import LoraLoaderLM, LoraTextLoaderLM
 
 
@@ -128,7 +130,7 @@ def test_lora_loader_qwen_model_batches_loras(monkeypatch):
         batched_calls.append((model_arg, lora_configs))
         return model_arg
 
-    monkeypatch.setattr("py.nodes.lora_loader.nunchaku_load_qwen_loras", mock_nunchaku_load_qwen_loras)
+    monkeypatch.setattr("py.nodes.lora_loader._get_nunchaku_load_qwen_loras", lambda: mock_nunchaku_load_qwen_loras)
 
     _, result_clip, trigger_words, loaded_loras = loader.load_loras(
         qwen_model,
@@ -160,8 +162,8 @@ def test_lora_text_loader_qwen_batches_text_and_stack(monkeypatch):
 
     batched_calls = []
     monkeypatch.setattr(
-        "py.nodes.lora_loader.nunchaku_load_qwen_loras",
-        lambda model_arg, lora_configs: batched_calls.append(lora_configs) or model_arg,
+        "py.nodes.lora_loader._get_nunchaku_load_qwen_loras",
+        lambda: (lambda model_arg, lora_configs: batched_calls.append(lora_configs) or model_arg),
     )
 
     _, _, trigger_words, loaded_loras = loader.load_loras_from_text(
@@ -174,3 +176,26 @@ def test_lora_text_loader_qwen_batches_text_and_stack(monkeypatch):
     assert batched_calls == [[("/abs/stack_qwen.safetensors", 0.6), ("/abs/text_qwen.safetensors", 1.2)]]
     assert trigger_words == "stack_qwen_trigger,, text_qwen_trigger"
     assert loaded_loras == "<lora:stack_qwen:0.6> <lora:text_qwen:1.2>"
+
+
+def test_lora_loader_qwen_model_raises_clear_error_when_helper_import_fails(monkeypatch):
+    qwen_model = _Model(type("NunchakuQwenImageTransformer2DModel", (), {})())
+    loader = LoraLoaderLM()
+
+    monkeypatch.setattr(
+        "py.nodes.lora_loader.get_lora_info_absolute",
+        lambda name: (f"/abs/{name}.safetensors", [f"{name}_trigger"]),
+    )
+    monkeypatch.setattr(
+        "py.nodes.lora_loader._get_nunchaku_load_qwen_loras",
+        lambda: (_ for _ in ()).throw(  # pragma: no branch
+            RuntimeError("Qwen-Image LoRA loading requires the ComfyUI runtime with its torch dependency available.")
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="Qwen-Image LoRA loading requires the ComfyUI runtime"):
+        loader.load_loras(
+            qwen_model,
+            "",
+            lora_stack=[("stack_qwen.safetensors", 0.6, 0.1)],
+        )

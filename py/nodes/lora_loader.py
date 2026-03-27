@@ -1,3 +1,4 @@
+import importlib
 import logging
 import re
 
@@ -5,7 +6,6 @@ import comfy.sd  # type: ignore
 import comfy.utils  # type: ignore
 
 from ..utils.utils import get_lora_info_absolute
-from .nunchaku_qwen import nunchaku_load_qwen_loras
 from .utils import (
     FlexibleOptionalInputType,
     any_type,
@@ -16,6 +16,16 @@ from .utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _get_nunchaku_load_qwen_loras():
+    try:
+        module = importlib.import_module(".nunchaku_qwen", __package__)
+    except ImportError as exc:
+        raise RuntimeError(
+            "Qwen-Image LoRA loading requires the ComfyUI runtime with its torch dependency available."
+        ) from exc
+    return module.nunchaku_load_qwen_loras
 
 
 def _collect_stack_entries(lora_stack):
@@ -74,6 +84,7 @@ def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
     all_trigger_words = []
 
     if nunchaku_model_kind == "qwen_image":
+        nunchaku_load_qwen_loras = _get_nunchaku_load_qwen_loras()
         qwen_lora_configs = []
         for entry in lora_entries:
             qwen_lora_configs.append((entry["absolute_path"], entry["model_strength"]))
