@@ -732,18 +732,23 @@ class ModelScanner:
             # Get current cached file paths
             cached_paths = {item['file_path'] for item in self._cache.raw_data}
             path_to_item = {item['file_path']: item for item in self._cache.raw_data}
+            cached_real_paths = {}
+            for cached_path in cached_paths:
+                try:
+                    cached_real_paths.setdefault(os.path.realpath(cached_path), cached_path)
+                except Exception:
+                    continue
             
             # Track found files and new files
             found_paths = set()
             new_files = []
+            visited_real_paths = set()
+            discovered_real_files = set()
             
             # Scan all model roots
             for root_path in self.get_model_roots():
                 if not os.path.exists(root_path):
                     continue
-                    
-                # Track visited real paths to avoid symlink loops
-                visited_real_paths = set()
                 
                 # Recursively scan directory
                 for root, _, files in os.walk(root_path, followlinks=True):
@@ -757,10 +762,16 @@ class ModelScanner:
                         if ext in self.file_extensions:
                             # Construct paths exactly as they would be in cache
                             file_path = os.path.join(root, file).replace(os.sep, '/')
+                            real_file_path = os.path.realpath(os.path.join(root, file))
                             
                             # Check if this file is already in cache
                             if file_path in cached_paths:
                                 found_paths.add(file_path)
+                                continue
+
+                            cached_real_match = cached_real_paths.get(real_file_path)
+                            if cached_real_match:
+                                found_paths.add(cached_real_match)
                                 continue
 
                             if file_path in self._excluded_models:
@@ -778,6 +789,10 @@ class ModelScanner:
                                 if matched:
                                     continue
                                 
+                            if real_file_path in discovered_real_files:
+                                continue
+
+                            discovered_real_files.add(real_file_path)
                             # This is a new file to process
                             new_files.append(file_path)
                     
@@ -1099,6 +1114,8 @@ class ModelScanner:
         tags_count: Dict[str, int] = {}
         excluded_models: List[str] = []
         processed_files = 0
+        processed_real_files: Set[str] = set()
+        visited_real_dirs: Set[str] = set()
 
         async def handle_progress() -> None:
             if progress_callback is None:
@@ -1115,9 +1132,10 @@ class ModelScanner:
 
             try:
                 real_path = os.path.realpath(current_path)
-                if real_path in visited_paths:
+                if real_path in visited_paths or real_path in visited_real_dirs:
                     return
                 visited_paths.add(real_path)
+                visited_real_dirs.add(real_path)
 
                 with os.scandir(current_path) as iterator:
                     entries = list(iterator)
@@ -1130,6 +1148,11 @@ class ModelScanner:
                                 continue
 
                             file_path = entry.path.replace(os.sep, "/")
+                            real_file_path = os.path.realpath(entry.path)
+                            if real_file_path in processed_real_files:
+                                continue
+
+                            processed_real_files.add(real_file_path)
                             result = await self._process_model_file(
                                 file_path,
                                 root_path,

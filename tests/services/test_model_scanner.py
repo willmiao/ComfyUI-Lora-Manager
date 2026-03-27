@@ -73,6 +73,15 @@ class DummyScanner(ModelScanner):
         }
 
 
+class MultiRootDummyScanner(DummyScanner):
+    def __init__(self, roots: List[Path]):
+        self._roots = [str(root) for root in roots]
+        super().__init__(roots[0])
+
+    def get_model_roots(self) -> List[str]:
+        return list(self._roots)
+
+
 @pytest.fixture(autouse=True)
 def reset_model_scanner_singletons():
     ModelScanner._instances.clear()
@@ -559,3 +568,59 @@ async def test_count_model_files_handles_symlink_loops(tmp_path: Path):
     count = scanner._count_model_files()
 
     assert count == 2
+
+
+@pytest.mark.asyncio
+async def test_initialize_cache_dedupes_files_reachable_via_primary_symlink_and_extra_root(
+    tmp_path: Path,
+):
+    loras_root = tmp_path / "loras"
+    loras_root.mkdir()
+    extra_root = tmp_path / "extra"
+    extra_root.mkdir()
+    (extra_root / "one.txt").write_text("one", encoding="utf-8")
+    (loras_root / "link").symlink_to(extra_root, target_is_directory=True)
+
+    scanner = MultiRootDummyScanner([loras_root, extra_root])
+
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+
+    assert len(cache.raw_data) == 1
+    assert cache.raw_data[0]["file_path"] == _normalize_path(loras_root / "link" / "one.txt")
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_removes_duplicate_alias_when_same_real_file_seen_once(
+    tmp_path: Path,
+):
+    loras_root = tmp_path / "loras"
+    loras_root.mkdir()
+    extra_root = tmp_path / "extra"
+    extra_root.mkdir()
+    real_file = extra_root / "one.txt"
+    real_file.write_text("one", encoding="utf-8")
+    (loras_root / "link").symlink_to(extra_root, target_is_directory=True)
+
+    scanner = MultiRootDummyScanner([loras_root, extra_root])
+    await scanner._initialize_cache()
+
+    duplicate_entry = {
+        "file_path": _normalize_path(extra_root / "one.txt"),
+        "folder": "",
+        "sha256": "hash-one",
+        "tags": ["alpha"],
+        "model_name": "one",
+        "size": 1,
+        "modified": 1.0,
+        "license_flags": DEFAULT_LICENSE_FLAGS,
+    }
+    scanner._cache.raw_data.append(duplicate_entry)
+    scanner._cache.add_to_version_index(duplicate_entry)
+    scanner._hash_index.add_entry("hash-one", duplicate_entry["file_path"])
+
+    await scanner._reconcile_cache()
+
+    cache = await scanner.get_cached_data()
+    cached_paths = {item["file_path"] for item in cache.raw_data}
+    assert cached_paths == {_normalize_path(loras_root / "link" / "one.txt")}

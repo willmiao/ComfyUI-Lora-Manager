@@ -1046,6 +1046,67 @@ class SettingsManager:
         active_name = self.get_active_library_name()
         self._validate_folder_paths(active_name, extra_folder_paths)
 
+        active_library = self.get_active_library()
+        active_folder_paths = active_library.get("folder_paths", {})
+        active_lora_paths = active_folder_paths.get("loras", []) or []
+        requested_extra_lora_paths = extra_folder_paths.get("loras", []) or []
+
+        primary_real_paths = set()
+        for path in active_lora_paths:
+            if not isinstance(path, str):
+                continue
+            stripped = path.strip()
+            if not stripped:
+                continue
+            normalized = os.path.normcase(os.path.normpath(stripped))
+            if os.path.exists(stripped):
+                normalized = os.path.normcase(os.path.normpath(os.path.realpath(stripped)))
+            primary_real_paths.add(normalized)
+
+        primary_symlink_targets = set()
+        for path in active_lora_paths:
+            if not isinstance(path, str):
+                continue
+            stripped = path.strip()
+            if not stripped or not os.path.isdir(stripped):
+                continue
+            try:
+                with os.scandir(stripped) as iterator:
+                    for entry in iterator:
+                        try:
+                            if not entry.is_symlink():
+                                continue
+                            target_path = os.path.realpath(entry.path)
+                            if not os.path.isdir(target_path):
+                                continue
+                            primary_symlink_targets.add(
+                                os.path.normcase(os.path.normpath(target_path))
+                            )
+                        except Exception:
+                            continue
+            except Exception:
+                continue
+
+        overlapping_paths = []
+        for path in requested_extra_lora_paths:
+            if not isinstance(path, str):
+                continue
+            stripped = path.strip()
+            if not stripped:
+                continue
+            normalized = os.path.normcase(os.path.normpath(stripped))
+            if os.path.exists(stripped):
+                normalized = os.path.normcase(os.path.normpath(os.path.realpath(stripped)))
+            if normalized in primary_real_paths or normalized in primary_symlink_targets:
+                overlapping_paths.append(stripped)
+
+        if overlapping_paths:
+            collisions = ", ".join(sorted(set(overlapping_paths)))
+            # Settings writes should reject new conflicting configuration instead of tolerating it.
+            raise ValueError(
+                f"Extra LoRA path(s) {collisions} overlap with the active library's primary LoRA roots"
+            )
+
         normalized_paths = self._normalize_folder_paths(extra_folder_paths)
         self.settings["extra_folder_paths"] = normalized_paths
         self._update_active_library_entry(extra_folder_paths=normalized_paths)

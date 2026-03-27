@@ -590,6 +590,97 @@ def test_extra_paths_validation_no_overlap_with_other_libraries(manager, tmp_pat
         manager.update_extra_folder_paths({"loras": [str(lora_dir1)]})
 
 
+def test_extra_paths_validation_no_overlap_with_active_primary_lora_root(manager, tmp_path):
+    """Test that extra LoRA paths cannot overlap the active library primary LoRA roots."""
+    real_lora_dir = tmp_path / "loras_real"
+    real_lora_dir.mkdir()
+    lora_link = tmp_path / "loras_link"
+    lora_link.symlink_to(real_lora_dir, target_is_directory=True)
+
+    manager.create_library(
+        "library1",
+        folder_paths={"loras": [str(lora_link)]},
+        activate=True,
+    )
+
+    with pytest.raises(ValueError, match="overlap with the active library's primary LoRA roots"):
+        manager.update_extra_folder_paths({"loras": [str(real_lora_dir)]})
+
+
+def test_extra_paths_validation_no_overlap_with_active_primary_lora_root_case_insensitive(
+    manager, monkeypatch, tmp_path
+):
+    """Overlap validation should treat differently-cased Windows-like paths as the same path."""
+    real_lora_dir = tmp_path / "loras_real"
+    real_lora_dir.mkdir()
+    lora_link = tmp_path / "loras_link"
+    lora_link.symlink_to(real_lora_dir, target_is_directory=True)
+
+    manager.create_library(
+        "library1",
+        folder_paths={"loras": [str(lora_link)]},
+        activate=True,
+    )
+
+    original_exists = settings_manager_module.os.path.exists
+    original_realpath = settings_manager_module.os.path.realpath
+    original_normcase = settings_manager_module.os.path.normcase
+
+    def fake_exists(path):
+        if isinstance(path, str) and path.lower() in {str(lora_link).lower(), str(real_lora_dir).lower()}:
+            return True
+        return original_exists(path)
+
+    def fake_realpath(path):
+        if isinstance(path, str) and path.lower() == str(lora_link).lower():
+            return str(real_lora_dir)
+        return original_realpath(path)
+
+    monkeypatch.setattr(settings_manager_module.os.path, "exists", fake_exists)
+    monkeypatch.setattr(settings_manager_module.os.path, "realpath", fake_realpath)
+    monkeypatch.setattr(settings_manager_module.os.path, "normcase", lambda value: original_normcase(value).lower())
+
+    with pytest.raises(ValueError, match="overlap with the active library's primary LoRA roots"):
+        manager.update_extra_folder_paths({"loras": [str(real_lora_dir).upper()]})
+
+
+def test_extra_paths_validation_allows_missing_non_overlapping_lora_root(manager, tmp_path):
+    """Missing non-overlapping extra LoRA paths should not be rejected."""
+    lora_dir = tmp_path / "loras"
+    lora_dir.mkdir()
+    missing_extra = tmp_path / "missing_loras"
+
+    manager.create_library(
+        "library1",
+        folder_paths={"loras": [str(lora_dir)]},
+        activate=True,
+    )
+
+    manager.update_extra_folder_paths({"loras": [str(missing_extra)]})
+
+    extra_paths = manager.get_extra_folder_paths()
+    assert extra_paths["loras"] == [str(missing_extra)]
+
+
+def test_extra_paths_validation_rejects_primary_root_first_level_symlink_target(manager, tmp_path):
+    """Extra LoRA paths should be rejected when already reachable via a first-level symlink under the primary root."""
+    lora_dir = tmp_path / "loras"
+    lora_dir.mkdir()
+    external_dir = tmp_path / "external_loras"
+    external_dir.mkdir()
+    link_dir = lora_dir / "link"
+    link_dir.symlink_to(external_dir, target_is_directory=True)
+
+    manager.create_library(
+        "library1",
+        folder_paths={"loras": [str(lora_dir)]},
+        activate=True,
+    )
+
+    with pytest.raises(ValueError, match="overlap with the active library's primary LoRA roots"):
+        manager.update_extra_folder_paths({"loras": [str(external_dir)]})
+
+
 def test_delete_library_switches_active(manager, tmp_path):
     other_dir = tmp_path / "other"
     other_dir.mkdir()

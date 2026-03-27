@@ -705,6 +705,120 @@ class Config:
 
         return unique_paths
 
+    @staticmethod
+    def _normalize_path_for_comparison(path: str, *, resolve_realpath: bool = False) -> str:
+        """Normalize a path for equality checks across platforms."""
+        candidate = os.path.realpath(path) if resolve_realpath else path
+        return os.path.normcase(os.path.normpath(candidate)).replace(os.sep, "/")
+
+    def _filter_overlapping_extra_lora_paths(
+        self,
+        primary_paths: Iterable[str],
+        extra_paths: Iterable[str],
+    ) -> List[str]:
+        """Drop extra LoRA paths that resolve to the same physical location as primary roots."""
+
+        primary_map = {
+            self._normalize_path_for_comparison(path, resolve_realpath=True): path
+            for path in primary_paths
+            if isinstance(path, str) and path.strip() and os.path.exists(path)
+        }
+        primary_symlink_map = self._collect_first_level_symlink_targets(primary_paths)
+        filtered: List[str] = []
+
+        for original_path in extra_paths:
+            if not isinstance(original_path, str):
+                continue
+
+            stripped = original_path.strip()
+            if not stripped:
+                continue
+            if not os.path.exists(stripped):
+                continue
+
+            real_path = self._normalize_path_for_comparison(
+                stripped,
+                resolve_realpath=True,
+            )
+            normalized_path = os.path.normpath(stripped).replace(os.sep, "/")
+            primary_path = primary_map.get(real_path)
+            if primary_path:
+                # Config loading should stay tolerant of existing invalid state and warn.
+                logger.warning(
+                    "Detected the same LoRA folder in both ComfyUI model paths and "
+                    "LoRA Manager Extra Folder Paths. This can cause duplicate items or "
+                    "other unexpected behavior, and it usually means the path setup is "
+                    "not doing what you intended. LoRA Manager will keep the ComfyUI "
+                    "path and ignore this Extra Folder Paths entry: '%s'. Please review "
+                    "your path settings and remove the duplicate entry.",
+                    normalized_path,
+                )
+                continue
+
+            symlink_path = primary_symlink_map.get(real_path)
+            if symlink_path:
+                # Config loading should stay tolerant of existing invalid state and warn.
+                logger.warning(
+                    "Detected the same LoRA folder in both ComfyUI model paths and "
+                    "LoRA Manager Extra Folder Paths. This can cause duplicate items or "
+                    "other unexpected behavior, and it usually means the path setup is "
+                    "not doing what you intended. LoRA Manager will keep the ComfyUI "
+                    "path and ignore this Extra Folder Paths entry: '%s'. Please review "
+                    "your path settings and remove the duplicate entry.",
+                    normalized_path,
+                )
+                continue
+
+            filtered.append(stripped)
+
+        return filtered
+
+    def _collect_first_level_symlink_targets(
+        self, roots: Iterable[str]
+    ) -> Dict[str, str]:
+        """Return real-path -> link-path mappings for first-level symlinks under the given roots."""
+
+        targets: Dict[str, str] = {}
+        for root in roots:
+            if not isinstance(root, str):
+                continue
+            stripped_root = root.strip()
+            if not stripped_root or not os.path.isdir(stripped_root):
+                continue
+
+            try:
+                with os.scandir(stripped_root) as iterator:
+                    for entry in iterator:
+                        try:
+                            if not self._entry_is_symlink(entry):
+                                continue
+                            target_path = os.path.realpath(entry.path)
+                            if not os.path.isdir(target_path):
+                                continue
+
+                            normalized_target = self._normalize_path_for_comparison(
+                                target_path,
+                                resolve_realpath=True,
+                            )
+                            normalized_link = os.path.normpath(entry.path).replace(
+                                os.sep, "/"
+                            )
+                            targets.setdefault(normalized_target, normalized_link)
+                        except Exception as inner_exc:
+                            logger.debug(
+                                "Error collecting LoRA symlink target for %s: %s",
+                                entry.path,
+                                inner_exc,
+                            )
+            except Exception as exc:
+                logger.debug(
+                    "Error scanning first-level LoRA symlinks in %s: %s",
+                    stripped_root,
+                    exc,
+                )
+
+        return targets
+
     def _prepare_checkpoint_paths(
         self, checkpoint_paths: Iterable[str], unet_paths: Iterable[str]
     ) -> Tuple[List[str], List[str], List[str]]:
@@ -796,7 +910,11 @@ class Config:
         extra_unet_paths = extra_paths.get("unet", []) or []
         extra_embedding_paths = extra_paths.get("embeddings", []) or []
 
-        self.extra_loras_roots = self._prepare_lora_paths(extra_lora_paths)
+        filtered_extra_lora_paths = self._filter_overlapping_extra_lora_paths(
+            self.loras_roots,
+            extra_lora_paths,
+        )
+        self.extra_loras_roots = self._prepare_lora_paths(filtered_extra_lora_paths)
         (
             _,
             self.extra_checkpoints_roots,

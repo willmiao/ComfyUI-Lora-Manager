@@ -322,3 +322,182 @@ def test_extra_paths_deduplication(monkeypatch, tmp_path):
 
     assert config_instance.loras_roots == [str(loras_dir)]
     assert config_instance.extra_loras_roots == [str(extra_loras_dir)]
+
+
+def test_apply_library_settings_ignores_extra_lora_path_overlapping_primary_symlink(
+    monkeypatch, tmp_path, caplog
+):
+    """Extra LoRA paths should be ignored when they resolve to the same target as a primary root."""
+    real_loras_dir = tmp_path / "loras_real"
+    real_loras_dir.mkdir()
+    loras_link = tmp_path / "loras_link"
+    loras_link.symlink_to(real_loras_dir, target_is_directory=True)
+
+    config_instance = config_module.Config()
+
+    library_config = {
+        "folder_paths": {
+            "loras": [str(loras_link)],
+            "checkpoints": [],
+            "unet": [],
+            "embeddings": [],
+        },
+        "extra_folder_paths": {
+            "loras": [str(real_loras_dir)],
+            "checkpoints": [],
+            "unet": [],
+            "embeddings": [],
+        },
+    }
+
+    with caplog.at_level("WARNING", logger=config_module.logger.name):
+        config_instance.apply_library_settings(library_config)
+
+    assert config_instance.loras_roots == [str(loras_link)]
+    assert config_instance.extra_loras_roots == []
+
+    warning_messages = [
+        record.message
+        for record in caplog.records
+        if record.levelname == "WARNING"
+        and "same lora folder" in record.message.lower()
+    ]
+    assert len(warning_messages) == 1
+    assert "comfyui model paths" in warning_messages[0].lower()
+    assert "extra folder paths" in warning_messages[0].lower()
+    assert "duplicate items" in warning_messages[0].lower()
+
+
+def test_apply_library_settings_detects_overlap_case_insensitively(
+    monkeypatch, tmp_path, caplog
+):
+    """Overlap detection should use case-insensitive comparison on Windows-like paths."""
+    real_loras_dir = tmp_path / "loras_real"
+    real_loras_dir.mkdir()
+    loras_link = tmp_path / "loras_link"
+    loras_link.symlink_to(real_loras_dir, target_is_directory=True)
+
+    original_exists = config_module.os.path.exists
+    original_realpath = config_module.os.path.realpath
+    original_normcase = config_module.os.path.normcase
+
+    def fake_exists(path):
+        if isinstance(path, str) and path.lower() in {
+            str(loras_link).lower(),
+            str(real_loras_dir).lower(),
+            str(loras_link).upper().lower(),
+            str(real_loras_dir).upper().lower(),
+        }:
+            return True
+        return original_exists(path)
+
+    def fake_realpath(path, *args, **kwargs):
+        if isinstance(path, str):
+            lowered = path.lower()
+            if lowered == str(loras_link).lower():
+                return str(real_loras_dir)
+            if lowered == str(real_loras_dir).lower():
+                return str(real_loras_dir)
+        return original_realpath(path, *args, **kwargs)
+
+    monkeypatch.setattr(config_module.os.path, "exists", fake_exists)
+    monkeypatch.setattr(config_module.os.path, "realpath", fake_realpath)
+    monkeypatch.setattr(
+        config_module.os.path,
+        "normcase",
+        lambda value: original_normcase(value).lower(),
+    )
+
+    config_instance = config_module.Config()
+    primary_path = str(loras_link).replace("loras_link", "LORAS_LINK")
+    extra_path = str(real_loras_dir).replace("loras_real", "loras_real")
+
+    library_config = {
+        "folder_paths": {
+            "loras": [primary_path],
+            "checkpoints": [],
+            "unet": [],
+            "embeddings": [],
+        },
+        "extra_folder_paths": {
+            "loras": [extra_path.upper()],
+            "checkpoints": [],
+            "unet": [],
+            "embeddings": [],
+        },
+    }
+
+    with caplog.at_level("WARNING", logger=config_module.logger.name):
+        config_instance.apply_library_settings(library_config)
+
+    assert config_instance.loras_roots == [primary_path]
+    assert config_instance.extra_loras_roots == []
+    assert any("same lora folder" in record.message.lower() for record in caplog.records)
+
+
+def test_apply_library_settings_ignores_missing_extra_lora_paths(monkeypatch, tmp_path, caplog):
+    """Missing extra paths should be ignored without overlap warnings."""
+    loras_dir = tmp_path / "loras"
+    loras_dir.mkdir()
+    missing_extra = tmp_path / "missing_loras"
+
+    config_instance = config_module.Config()
+    library_config = {
+        "folder_paths": {
+            "loras": [str(loras_dir)],
+            "checkpoints": [],
+            "unet": [],
+            "embeddings": [],
+        },
+        "extra_folder_paths": {
+            "loras": [str(missing_extra)],
+            "checkpoints": [],
+            "unet": [],
+            "embeddings": [],
+        },
+    }
+
+    with caplog.at_level("WARNING", logger=config_module.logger.name):
+        config_instance.apply_library_settings(library_config)
+
+    assert config_instance.loras_roots == [str(loras_dir)]
+    assert config_instance.extra_loras_roots == []
+    assert not any("same lora folder" in record.message.lower() for record in caplog.records)
+
+
+def test_apply_library_settings_ignores_extra_lora_path_overlapping_primary_root_symlink(
+    tmp_path, caplog
+):
+    """Extra LoRA paths should be ignored when already reachable via a first-level symlink under the primary root."""
+    loras_dir = tmp_path / "loras"
+    loras_dir.mkdir()
+    external_dir = tmp_path / "external_loras"
+    external_dir.mkdir()
+    link_dir = loras_dir / "link"
+    link_dir.symlink_to(external_dir, target_is_directory=True)
+
+    config_instance = config_module.Config()
+    library_config = {
+        "folder_paths": {
+            "loras": [str(loras_dir)],
+            "checkpoints": [],
+            "unet": [],
+            "embeddings": [],
+        },
+        "extra_folder_paths": {
+            "loras": [str(external_dir)],
+            "checkpoints": [],
+            "unet": [],
+            "embeddings": [],
+        },
+    }
+
+    with caplog.at_level("WARNING", logger=config_module.logger.name):
+        config_instance.apply_library_settings(library_config)
+
+    assert config_instance.loras_roots == [str(loras_dir)]
+    assert config_instance.extra_loras_roots == []
+    assert any(
+        "same lora folder" in record.message.lower()
+        for record in caplog.records
+    )
