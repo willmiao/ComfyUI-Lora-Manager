@@ -53,4 +53,54 @@ describe('RecipeDataManager tag input Enter behavior', () => {
 
     expect(importManager.recipeTags).toEqual(['anime']);
   });
+
+  it('ignores Enter while IME composition is active', async () => {
+    const { RecipeDataManager } = await import('../../../static/js/managers/import/RecipeDataManager.js');
+    const importManager = {
+      recipeTags: [],
+      stepManager: { showStep: vi.fn() },
+    };
+    const manager = new RecipeDataManager(importManager);
+
+    manager.setupTagInputEnterHandler();
+
+    const tagInput = document.getElementById('tagInput');
+    tagInput.value = '未確定';
+    const event = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(event, 'isComposing', { value: true });
+    tagInput.dispatchEvent(event);
+
+    expect(importManager.recipeTags).toEqual([]);
+    expect(tagInput.value).toBe('未確定');
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it('ignores keyCode 229 fallback during composition', async () => {
+    const { RecipeDataManager } = await import('../../../static/js/managers/import/RecipeDataManager.js');
+    const importManager = {
+      recipeTags: [],
+      stepManager: { showStep: vi.fn() },
+    };
+    const manager = new RecipeDataManager(importManager);
+
+    manager.setupTagInputEnterHandler();
+
+    const tagInput = document.getElementById('tagInput');
+    tagInput.value = '候補';
+    const event = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(event, 'keyCode', { value: 229 });
+    tagInput.dispatchEvent(event);
+
+    expect(importManager.recipeTags).toEqual([]);
+    expect(tagInput.value).toBe('候補');
+    expect(event.defaultPrevented).toBe(false);
+  });
 });

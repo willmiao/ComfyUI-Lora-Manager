@@ -17,6 +17,10 @@ export class RecipeDataManager {
                 return;
             }
 
+            if (event.isComposing || event.keyCode === 229) {
+                return;
+            }
+
             event.preventDefault();
             this.addTag();
         });
