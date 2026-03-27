@@ -138,6 +138,13 @@ npm run test:coverage       # Generate coverage report
 - Run `python scripts/sync_translation_keys.py` after adding UI strings to `locales/en.json`
 - Symlinks require normalized paths
 
+## Git / Commit Messages
+
+- Follow the style of recent repository commits when writing commit messages
+- Prefer the repo's existing `feat(...)`, `fix(...)`, `chore:` style where applicable
+- If the user has provided a GitHub issue link or issue ID for the task, mention that issue in the commit message, for example `(#871)`
+- When unrelated local changes exist, stage and commit only the files relevant to the requested task
+
 ## Frontend UI Architecture
 
 ### 1. Standalone Web UI
