@@ -39,6 +39,7 @@ vi.mock('../../../static/js/utils/constants.js', () => ({
         checkpoint: 'base, guide',
         embedding: 'hint',
     },
+    getMappableBaseModelsDynamic: () => ['Flux.1 D', 'Pony', 'SDXL 1.0', 'Other'],
 }));
 
 vi.mock('../../../static/js/utils/i18nHelpers.js', () => ({
