@@ -676,7 +676,8 @@ class AutoComplete {
     _getHardBoundaryStart(beforeCursor = '') {
         const lastComma = beforeCursor.lastIndexOf(',');
         const lastAngle = beforeCursor.lastIndexOf('>');
-        return Math.max(lastComma, lastAngle) + 1;
+        const lastNewline = Math.max(beforeCursor.lastIndexOf('\n'), beforeCursor.lastIndexOf('\r'));
+        return Math.max(lastComma, lastAngle, lastNewline) + 1;
     }
 
     _getMetadataWidget() {

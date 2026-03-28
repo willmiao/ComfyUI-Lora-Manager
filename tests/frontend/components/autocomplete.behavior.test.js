@@ -947,6 +947,44 @@ describe('AutoComplete widget interactions', () => {
     expect(input.value).toBe('1girl ');
   });
 
+  it('treats a newline as a hard boundary after dismissing autocomplete', async () => {
+    vi.useFakeTimers();
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, words: [{ tag_name: '1girl', category: 4, post_count: 500000 }] }),
+    });
+
+    const input = document.createElement('textarea');
+    input.value = '1gi\n';
+    input.selectionStart = input.value.length;
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('1gi');
+    autoComplete.handleInput('1gi');
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+    expect(fetchApiMock).toHaveBeenCalled();
+
+    fetchApiMock.mockClear();
+    autoComplete.hide();
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('1gi\n');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    expect(autoComplete.getSearchTerm(input.value)).toBe('');
+    expect(fetchApiMock).not.toHaveBeenCalled();
+    expect(autoComplete.isVisible).toBe(false);
+  });
+
   it('omits the trailing comma for LoRA insertions when the setting is disabled', async () => {
     settingGetMock.mockImplementation((key) => {
       if (key === 'loramanager.autocomplete_append_comma') {
