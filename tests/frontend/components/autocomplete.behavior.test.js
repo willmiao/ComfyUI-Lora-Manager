@@ -15,6 +15,8 @@ const {
 }));
 
 const fetchApiMock = vi.fn();
+const settingGetMock = vi.fn();
+const settingSetMock = vi.fn();
 const caretHelperInstance = {
   getBeforeCursor: vi.fn(() => ''),
   getCursorOffset: vi.fn(() => ({ left: 0, top: 0 })),
@@ -37,6 +39,12 @@ vi.mock(APP_MODULE, () => ({
     canvas: {
       ds: { scale: 1 },
     },
+    extensionManager: {
+      setting: {
+        get: settingGetMock,
+        set: settingSetMock,
+      },
+    },
     registerExtension: vi.fn(),
   },
 }));
@@ -55,6 +63,20 @@ describe('AutoComplete widget interactions', () => {
     document.head.querySelectorAll('style').forEach((styleEl) => styleEl.remove());
     Element.prototype.scrollIntoView = vi.fn();
     fetchApiMock.mockReset();
+    settingGetMock.mockReset();
+    settingSetMock.mockReset();
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.autocomplete_append_comma') {
+        return true;
+      }
+      if (key === 'loramanager.prompt_tag_autocomplete') {
+        return true;
+      }
+      if (key === 'loramanager.tag_space_replacement') {
+        return false;
+      }
+      return undefined;
+    });
     caretHelperInstance.getBeforeCursor.mockReset();
     caretHelperInstance.getCursorOffset.mockReset();
     caretHelperInstance.getBeforeCursor.mockReturnValue('');
@@ -82,7 +104,7 @@ describe('AutoComplete widget interactions', () => {
     document.body.append(input);
 
     const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-    const autoComplete = new AutoComplete(input, 'loras', { debounceDelay: 0, showPreview: false });
+    const autoComplete = new AutoComplete(input,'loras', { debounceDelay: 0, showPreview: false });
 
     input.value = 'example';
     input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -125,17 +147,92 @@ describe('AutoComplete widget interactions', () => {
     document.body.append(input);
 
     const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-    const autoComplete = new AutoComplete(input, 'loras', { debounceDelay: 0, showPreview: false });
+    const autoComplete = new AutoComplete(input,'loras', { debounceDelay: 0, showPreview: false });
 
     await autoComplete.insertSelection('models/example.safetensors');
 
     expect(fetchApiMock).toHaveBeenCalledWith(
       '/lm/loras/usage-tips-by-path?relative_path=models%2Fexample.safetensors',
     );
-    expect(input.value).toContain('<lora:example:1.5:0.9>, ');
+    expect(input.value).toContain('<lora:example:1.5:0.9>,');
     expect(autoComplete.dropdown.style.display).toBe('none');
     expect(input.focus).toHaveBeenCalled();
     expect(input.setSelectionRange).toHaveBeenCalled();
+  });
+
+  it('accepts the selected suggestion with Tab', async () => {
+    caretHelperInstance.getBeforeCursor.mockReturnValue('example');
+
+    const input = document.createElement('textarea');
+    input.value = 'example';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'custom_words', { showPreview: false });
+
+    autoComplete.items = ['example_completion'];
+    autoComplete.selectedIndex = 0;
+    autoComplete.isVisible = true;
+    const insertSelectionSpy = vi.spyOn(autoComplete,'insertSelection').mockResolvedValue();
+
+    const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    input.dispatchEvent(tabEvent);
+
+    expect(tabEvent.defaultPrevented).toBe(true);
+    expect(insertSelectionSpy).toHaveBeenCalledWith('example_completion');
+  });
+
+  it('accepts the selected suggestion with Enter', async () => {
+    caretHelperInstance.getBeforeCursor.mockReturnValue('example');
+
+    const input = document.createElement('textarea');
+    input.value = 'example';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'custom_words', { showPreview: false });
+
+    autoComplete.items = ['example_completion'];
+    autoComplete.selectedIndex = 0;
+    autoComplete.isVisible = true;
+    const insertSelectionSpy = vi.spyOn(autoComplete,'insertSelection').mockResolvedValue();
+
+    const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    input.dispatchEvent(enterEvent);
+
+    expect(enterEvent.defaultPrevented).toBe(true);
+    expect(insertSelectionSpy).toHaveBeenCalledWith('example_completion');
+  });
+
+  it('does not intercept Tab when the dropdown is not visible', async () => {
+    caretHelperInstance.getBeforeCursor.mockReturnValue('example');
+
+    const input = document.createElement('textarea');
+    input.value = 'example';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'custom_words', { showPreview: false });
+
+    autoComplete.items = ['example_completion'];
+    autoComplete.selectedIndex = 0;
+    autoComplete.isVisible = false;
+    const insertSelectionSpy = vi.spyOn(autoComplete,'insertSelection').mockResolvedValue();
+
+    const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    input.dispatchEvent(tabEvent);
+
+    expect(tabEvent.defaultPrevented).toBe(false);
+    expect(insertSelectionSpy).not.toHaveBeenCalled();
   });
 
   it('highlights multiple include tokens while ignoring excluded ones', async () => {
@@ -143,7 +240,7 @@ describe('AutoComplete widget interactions', () => {
     document.body.append(input);
 
     const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-    const autoComplete = new AutoComplete(input, 'loras', { showPreview: false });
+    const autoComplete = new AutoComplete(input,'loras', { showPreview: false });
 
     const highlighted = autoComplete.highlightMatch(
       'models/flux/beta-detail.safetensors',
@@ -160,7 +257,7 @@ describe('AutoComplete widget interactions', () => {
   it('handles arrow key navigation with virtual scrolling', async () => {
     vi.useFakeTimers();
 
-    const mockItems = Array.from({ length: 50 }, (_, i) => `model_${i.toString().padStart(2, '0')}.safetensors`);
+    const mockItems = Array.from({ length: 50 }, (_, i) => `model_${i.toString().padStart(2,'0')}.safetensors`);
 
     fetchApiMock.mockResolvedValue({
       json: () => Promise.resolve({ success: true, relative_paths: mockItems }),
@@ -173,7 +270,7 @@ describe('AutoComplete widget interactions', () => {
     document.body.append(input);
 
     const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-    const autoComplete = new AutoComplete(input, 'loras', {
+    const autoComplete = new AutoComplete(input,'loras', {
       debounceDelay: 0,
       showPreview: false,
       enableVirtualScroll: true,
@@ -216,7 +313,7 @@ describe('AutoComplete widget interactions', () => {
   it('maintains selection when scrolling to invisible items', async () => {
     vi.useFakeTimers();
 
-    const mockItems = Array.from({ length: 100 }, (_, i) => `item_${i.toString().padStart(3, '0')}.safetensors`);
+    const mockItems = Array.from({ length: 100 }, (_, i) => `item_${i.toString().padStart(3,'0')}.safetensors`);
 
     fetchApiMock.mockResolvedValue({
       json: () => Promise.resolve({ success: true, relative_paths: mockItems }),
@@ -231,7 +328,7 @@ describe('AutoComplete widget interactions', () => {
     document.body.append(input);
 
     const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-    const autoComplete = new AutoComplete(input, 'loras', {
+    const autoComplete = new AutoComplete(input,'loras', {
       debounceDelay: 0,
       showPreview: false,
       enableVirtualScroll: true,
@@ -289,7 +386,7 @@ describe('AutoComplete widget interactions', () => {
     document.body.append(input);
 
     const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-    const autoComplete = new AutoComplete(input, 'prompt', {
+    const autoComplete = new AutoComplete(input,'prompt', {
       debounceDelay: 0,
       showPreview: false,
       minChars: 1,
@@ -302,7 +399,7 @@ describe('AutoComplete widget interactions', () => {
 
     await autoComplete.insertSelection('looking_to_the_side');
 
-    expect(input.value).toBe('looking_to_the_side, ');
+    expect(input.value).toBe('looking_to_the_side,');
     expect(autoComplete.dropdown.style.display).toBe('none');
     expect(input.focus).toHaveBeenCalled();
   });
@@ -328,7 +425,7 @@ describe('AutoComplete widget interactions', () => {
     document.body.append(input);
 
     const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-    const autoComplete = new AutoComplete(input, 'prompt', {
+    const autoComplete = new AutoComplete(input,'prompt', {
       debounceDelay: 0,
       showPreview: false,
       minChars: 1,
@@ -342,7 +439,7 @@ describe('AutoComplete widget interactions', () => {
 
     await autoComplete.insertSelection('1girl');
 
-    expect(input.value).toBe('hello 1girl, ');
+    expect(input.value).toBe('hello 1girl,');
   });
 
   it('replaces entire phrase for underscore tag match (e.g., "blue hair" -> "blue_hair")', async () => {
@@ -366,7 +463,7 @@ describe('AutoComplete widget interactions', () => {
     document.body.append(input);
 
     const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-    const autoComplete = new AutoComplete(input, 'prompt', {
+    const autoComplete = new AutoComplete(input,'prompt', {
       debounceDelay: 0,
       showPreview: false,
       minChars: 1,
@@ -380,7 +477,7 @@ describe('AutoComplete widget interactions', () => {
 
     await autoComplete.insertSelection('blue_hair');
 
-    expect(input.value).toBe('blue_hair, ');
+    expect(input.value).toBe('blue_hair,');
   });
 
   it('handles multi-word phrase with preceding text correctly', async () => {
@@ -403,7 +500,7 @@ describe('AutoComplete widget interactions', () => {
     document.body.append(input);
 
     const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-    const autoComplete = new AutoComplete(input, 'prompt', {
+    const autoComplete = new AutoComplete(input,'prompt', {
       debounceDelay: 0,
       showPreview: false,
       minChars: 1,
@@ -417,7 +514,7 @@ describe('AutoComplete widget interactions', () => {
 
     await autoComplete.insertSelection('looking_to_the_side');
 
-    expect(input.value).toBe('1girl, looking_to_the_side, ');
+    expect(input.value).toBe('1girl, looking_to_the_side,');
   });
 
   it('replaces entire command and search term when using command mode with multi-word phrase', async () => {
@@ -442,7 +539,7 @@ describe('AutoComplete widget interactions', () => {
     document.body.append(input);
 
     const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-    const autoComplete = new AutoComplete(input, 'prompt', {
+    const autoComplete = new AutoComplete(input,'prompt', {
       debounceDelay: 0,
       showPreview: false,
       minChars: 1,
@@ -458,7 +555,7 @@ describe('AutoComplete widget interactions', () => {
     await autoComplete.insertSelection('looking_to_the_side');
 
     // Command part should be replaced along with search term
-    expect(input.value).toBe('looking_to_the_side, ');
+    expect(input.value).toBe('looking_to_the_side,');
   });
 
   it('replaces only last token when multi-word query does not exactly match selected tag', async () => {
@@ -483,7 +580,7 @@ describe('AutoComplete widget interactions', () => {
     document.body.append(input);
 
     const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-    const autoComplete = new AutoComplete(input, 'prompt', {
+    const autoComplete = new AutoComplete(input,'prompt', {
       debounceDelay: 0,
       showPreview: false,
       minChars: 1,
@@ -498,7 +595,7 @@ describe('AutoComplete widget interactions', () => {
     await autoComplete.insertSelection('blue_hair');
 
     // Only "blue" should be replaced, not the entire phrase
-    expect(input.value).toBe('looking to the blue_hair, ');
+    expect(input.value).toBe('looking to the blue_hair,');
   });
 
   it('handles multiple consecutive spaces in multi-word phrase correctly', async () => {
@@ -522,7 +619,7 @@ describe('AutoComplete widget interactions', () => {
     document.body.append(input);
 
     const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-    const autoComplete = new AutoComplete(input, 'prompt', {
+    const autoComplete = new AutoComplete(input,'prompt', {
       debounceDelay: 0,
       showPreview: false,
       minChars: 1,
@@ -537,7 +634,7 @@ describe('AutoComplete widget interactions', () => {
     await autoComplete.insertSelection('looking_to_the_side');
 
     // Multiple spaces should be normalized to single underscores for matching
-    expect(input.value).toBe('looking_to_the_side, ');
+    expect(input.value).toBe('looking_to_the_side,');
   });
 
   it('handles command mode with partial match replacing only last token', async () => {
@@ -561,7 +658,7 @@ describe('AutoComplete widget interactions', () => {
     document.body.append(input);
 
     const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-    const autoComplete = new AutoComplete(input, 'prompt', {
+    const autoComplete = new AutoComplete(input,'prompt', {
       debounceDelay: 0,
       showPreview: false,
       minChars: 1,
@@ -577,7 +674,7 @@ describe('AutoComplete widget interactions', () => {
     await autoComplete.insertSelection('blue_hair');
 
     // In command mode, the entire command + search term should be replaced
-    expect(input.value).toBe('blue_hair, ');
+    expect(input.value).toBe('blue_hair,');
   });
 
   it('replaces entire phrase when selected tag starts with underscore version of search term (prefix match)', async () => {
@@ -601,7 +698,7 @@ describe('AutoComplete widget interactions', () => {
     document.body.append(input);
 
     const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-    const autoComplete = new AutoComplete(input, 'prompt', {
+    const autoComplete = new AutoComplete(input,'prompt', {
       debounceDelay: 0,
       showPreview: false,
       minChars: 1,
@@ -616,7 +713,7 @@ describe('AutoComplete widget interactions', () => {
     await autoComplete.insertSelection('looking_to_the_side');
 
     // Entire phrase should be replaced with selected tag (with underscores)
-    expect(input.value).toBe('looking_to_the_side, ');
+    expect(input.value).toBe('looking_to_the_side,');
   });
 
   it('inserts tag with underscores regardless of space replacement setting', async () => {
@@ -639,7 +736,7 @@ describe('AutoComplete widget interactions', () => {
     document.body.append(input);
 
     const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-    const autoComplete = new AutoComplete(input, 'prompt', {
+    const autoComplete = new AutoComplete(input,'prompt', {
       debounceDelay: 0,
       showPreview: false,
       minChars: 1,
@@ -653,7 +750,249 @@ describe('AutoComplete widget interactions', () => {
     await autoComplete.insertSelection('blue_hair');
 
     // Tag should be inserted with underscores, not spaces
-    expect(input.value).toBe('blue_hair, ');
+    expect(input.value).toBe('blue_hair,');
+  });
+
+  it('omits the trailing comma when the append comma setting is disabled', async () => {
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.autocomplete_append_comma') {
+        return false;
+      }
+      if (key === 'loramanager.prompt_tag_autocomplete') {
+        return true;
+      }
+      if (key === 'loramanager.tag_space_replacement') {
+        return false;
+      }
+      return undefined;
+    });
+
+    const mockTags = [
+      { tag_name: 'blue_hair', category: 0, post_count: 45000 },
+    ];
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('blue hair');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = 'blue hair';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    autoComplete.searchType = 'custom_words';
+    autoComplete.activeCommand = null;
+    autoComplete.items = mockTags;
+    autoComplete.selectedIndex = 0;
+    autoComplete.currentSearchTerm = 'blue hair';
+
+    await autoComplete.insertSelection('blue_hair');
+
+    expect(input.value).toBe('blue_hair ');
+  });
+
+  it('uses persisted autocomplete metadata as the next search start when comma append is disabled', async () => {
+    vi.useFakeTimers();
+
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.autocomplete_append_comma') {
+        return false;
+      }
+      if (key === 'loramanager.prompt_tag_autocomplete') {
+        return true;
+      }
+      if (key === 'loramanager.tag_space_replacement') {
+        return false;
+      }
+      return undefined;
+    });
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, words: [{ tag_name: 'cat_ears', category: 0, post_count: 1234 }] }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('1girl cat');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = '1girl cat';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    input._autocompleteMetadataWidget = {
+      value: {
+        version: 1,
+        textWidgetName: 'text',
+        lastAccepted: {
+          start: 0,
+          end: 6,
+          insertedText: '1girl ',
+          textSnapshot: '1girl ',
+        },
+      },
+    };
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    expect(autoComplete.getSearchTerm(input.value)).toBe('cat');
+
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    expect(fetchApiMock).toHaveBeenCalledWith('/lm/custom-words/search?enriched=true&search=cat&limit=100');
+  });
+
+  it('invalidates stale autocomplete metadata and falls back to delimiter-based matching', async () => {
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.autocomplete_append_comma') {
+        return false;
+      }
+      if (key === 'loramanager.prompt_tag_autocomplete') {
+        return true;
+      }
+      if (key === 'loramanager.tag_space_replacement') {
+        return false;
+      }
+      return undefined;
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('1boy cat');
+
+    const metadataWidget = {
+      value: {
+        version: 1,
+        textWidgetName: 'text',
+        lastAccepted: {
+          start: 0,
+          end: 6,
+          insertedText: '1girl ',
+          textSnapshot: '1girl ',
+        },
+      },
+    };
+
+    const input = document.createElement('textarea');
+    input.value = '1boy cat';
+    input.selectionStart = input.value.length;
+    input._autocompleteMetadataWidget = metadataWidget;
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    expect(autoComplete.getSearchTerm(input.value)).toBe('1boy cat');
+    expect(metadataWidget.value.lastAccepted).toBeUndefined();
+  });
+
+  it('does not duplicate the first character when accepting a suggestion after a trailing space', async () => {
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.autocomplete_append_comma') {
+        return false;
+      }
+      if (key === 'loramanager.prompt_tag_autocomplete') {
+        return true;
+      }
+      if (key === 'loramanager.tag_space_replacement') {
+        return false;
+      }
+      return undefined;
+    });
+
+    const mockTags = [
+      { tag_name: '1girl', category: 4, post_count: 500000 },
+    ];
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('1girl ');
+
+    const input = document.createElement('textarea');
+    input.value = '1girl ';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    autoComplete.searchType = 'custom_words';
+    autoComplete.activeCommand = null;
+    autoComplete.items = mockTags;
+    autoComplete.selectedIndex = 0;
+
+    await autoComplete.insertSelection('1girl');
+
+    expect(input.value).toBe('1girl ');
+  });
+
+  it('omits the trailing comma for LoRA insertions when the setting is disabled', async () => {
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.autocomplete_append_comma') {
+        return false;
+      }
+      if (key === 'loramanager.prompt_tag_autocomplete') {
+        return true;
+      }
+      if (key === 'loramanager.tag_space_replacement') {
+        return false;
+      }
+      return undefined;
+    });
+
+    fetchApiMock.mockImplementation((url) => {
+      if (url.includes('usage-tips-by-path')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            success: true,
+            usage_tips: JSON.stringify({ strength: '1.2' }),
+          }),
+        });
+      }
+
+      return Promise.resolve({
+        json: () => Promise.resolve({ success: true, relative_paths: ['models/example.safetensors'] }),
+      });
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('alpha, example');
+
+    const input = document.createElement('textarea');
+    input.value = 'alpha, example';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'loras', { debounceDelay: 0, showPreview: false });
+
+    await autoComplete.insertSelection('models/example.safetensors');
+
+    expect(input.value).toContain('<lora:example:1.2>');
+    expect(input.value).not.toContain('<lora:example:1.2>,');
   });
 
   it('replaces entire phrase when selected tag ends with underscore version of search term (suffix match)', async () => {
@@ -677,7 +1016,7 @@ describe('AutoComplete widget interactions', () => {
     document.body.append(input);
 
     const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-    const autoComplete = new AutoComplete(input, 'prompt', {
+    const autoComplete = new AutoComplete(input,'prompt', {
       debounceDelay: 0,
       showPreview: false,
       minChars: 1,
@@ -692,6 +1031,6 @@ describe('AutoComplete widget interactions', () => {
     await autoComplete.insertSelection('looking_to_the_side');
 
     // Entire phrase should be replaced with selected tag
-    expect(input.value).toBe('looking_to_the_side, ');
+    expect(input.value).toBe('looking_to_the_side,');
   });
 });

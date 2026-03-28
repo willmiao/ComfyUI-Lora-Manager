@@ -36,6 +36,8 @@ export interface AutocompleteTextWidgetInterface {
   inputEl?: HTMLTextAreaElement
   callback?: (v: string) => void
   onSetValue?: (v: string) => void
+  metadataWidget?: { value?: unknown }
+  name?: string
 }
 
 const props = defineProps<{
@@ -171,6 +173,9 @@ onMounted(() => {
   // Register textarea reference with widget
   if (textareaRef.value) {
     props.widget.inputEl = textareaRef.value
+    ;(textareaRef.value as any)._autocompleteHostWidget = props.widget
+    ;(textareaRef.value as any)._autocompleteMetadataWidget = props.widget.metadataWidget
+    ;(textareaRef.value as any)._autocompleteTextWidgetName = props.widget.name ?? 'text'
     
     // Also store on the container element for cloned widgets (subgraph promotion)
     // When widgets are promoted to subgraph nodes, the cloned widget shares the same
@@ -208,6 +213,9 @@ onUnmounted(() => {
   
   // Remove external value change event listener
   if (textareaRef.value) {
+    delete (textareaRef.value as any)._autocompleteHostWidget
+    delete (textareaRef.value as any)._autocompleteMetadataWidget
+    delete (textareaRef.value as any)._autocompleteTextWidgetName
     textareaRef.value.removeEventListener('lora-manager:autocomplete-value-changed', onExternalValueChange as EventListener)
   }
   

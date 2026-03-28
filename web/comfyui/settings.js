@@ -13,6 +13,9 @@ const AUTO_PATH_CORRECTION_DEFAULT = true;
 const PROMPT_TAG_AUTOCOMPLETE_SETTING_ID = "loramanager.prompt_tag_autocomplete";
 const PROMPT_TAG_AUTOCOMPLETE_DEFAULT = true;
 
+const AUTOCOMPLETE_APPEND_COMMA_SETTING_ID = "loramanager.autocomplete_append_comma";
+const AUTOCOMPLETE_APPEND_COMMA_DEFAULT = true;
+
 const TAG_SPACE_REPLACEMENT_SETTING_ID = "loramanager.tag_space_replacement";
 const TAG_SPACE_REPLACEMENT_DEFAULT = false;
 
@@ -153,6 +156,32 @@ const getPromptTagAutocompletePreference = (() => {
                 settingsUnavailableLogged = true;
             }
             return PROMPT_TAG_AUTOCOMPLETE_DEFAULT;
+        }
+    };
+})();
+
+const getAutocompleteAppendCommaPreference = (() => {
+    let settingsUnavailableLogged = false;
+
+    return () => {
+        const settingManager = app?.extensionManager?.setting;
+        if (!settingManager || typeof settingManager.get !== "function") {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: settings API unavailable, using default append comma setting.");
+                settingsUnavailableLogged = true;
+            }
+            return AUTOCOMPLETE_APPEND_COMMA_DEFAULT;
+        }
+
+        try {
+            const value = settingManager.get(AUTOCOMPLETE_APPEND_COMMA_SETTING_ID);
+            return value ?? AUTOCOMPLETE_APPEND_COMMA_DEFAULT;
+        } catch (error) {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: unable to read append comma setting, using default.", error);
+                settingsUnavailableLogged = true;
+            }
+            return AUTOCOMPLETE_APPEND_COMMA_DEFAULT;
         }
     };
 })();
@@ -298,6 +327,14 @@ app.registerExtension({
             category: ["LoRA Manager", "Autocomplete", "Prompt"],
         },
         {
+            id: AUTOCOMPLETE_APPEND_COMMA_SETTING_ID,
+            name: "Append comma after autocomplete",
+            type: "boolean",
+            defaultValue: AUTOCOMPLETE_APPEND_COMMA_DEFAULT,
+            tooltip: "When enabled, accepted autocomplete suggestions append ', ' to the inserted text.",
+            category: ["LoRA Manager", "Autocomplete", "Behavior"],
+        },
+        {
             id: TAG_SPACE_REPLACEMENT_SETTING_ID,
             name: "Replace underscores with spaces in tags",
             type: "boolean",
@@ -413,6 +450,7 @@ app.registerExtension({
 export {
     getWheelSensitivity,
     getAutoPathCorrectionPreference,
+    getAutocompleteAppendCommaPreference,
     getPromptTagAutocompletePreference,
     getTagSpaceReplacementPreference,
     getUsageStatisticsPreference,

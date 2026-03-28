@@ -411,6 +411,7 @@ function createAutocompleteTextWidgetFactory(
   modelType: 'loras' | 'embeddings' | 'prompt',
   inputOptions: { placeholder?: string } = {}
 ) {
+  const metadataWidgetName = `__lm_autocomplete_meta_${widgetName}`
   const container = document.createElement('div')
   container.id = `autocomplete-text-widget-${node.id}-${widgetName}`
   container.style.width = '100%'
@@ -426,6 +427,15 @@ function createAutocompleteTextWidgetFactory(
   // the cloned widget shares the same element but needs access to inputEl
   const widgetElementRef = { inputEl: undefined as HTMLTextAreaElement | undefined }
   ;(container as any).__widgetInputEl = widgetElementRef
+
+  const metadataWidget = node.addWidget('text', metadataWidgetName, {
+    version: 1,
+    textWidgetName: widgetName
+  })
+  metadataWidget.type = 'LORA_MANAGER_AUTOCOMPLETE_METADATA'
+  metadataWidget.hidden = true
+  metadataWidget.computeSize = () => [0, -4]
+  metadataWidget.serializeValue = () => metadataWidget.value
 
   const widget = node.addDOMWidget(
     widgetName,
@@ -463,6 +473,7 @@ function createAutocompleteTextWidgetFactory(
       })
     }
   )
+  widget.metadataWidget = metadataWidget
 
   // Get spellcheck setting from ComfyUI settings (default: false)
   const spellcheck = app.ui?.settings?.getSettingValue?.('Comfy.TextareaWidget.Spellcheck') ?? false

@@ -1,7 +1,11 @@
 import { api } from "../../scripts/api.js";
 import { app } from "../../scripts/app.js";
 import { TextAreaCaretHelper } from "./textarea_caret_helper.js";
-import { getPromptTagAutocompletePreference, getTagSpaceReplacementPreference } from "./settings.js";
+import {
+    getAutocompleteAppendCommaPreference,
+    getPromptTagAutocompletePreference,
+    getTagSpaceReplacementPreference,
+} from "./settings.js";
 import { showToast } from "./utils.js";
 
 // Command definitions for category filtering
@@ -108,6 +112,24 @@ function parseSearchTokens(term = '') {
     return { include, exclude };
 }
 
+function formatAutocompleteInsertion(text = '') {
+    const trimmed = typeof text === 'string' ? text.trim() : '';
+    if (!trimmed) {
+        return '';
+    }
+
+    return getAutocompleteAppendCommaPreference() ? `${trimmed},` : `${trimmed} `;
+}
+
+const AUTOCOMPLETE_METADATA_VERSION = 1;
+
+function createAutocompleteMetadataBase(textWidgetName = 'text') {
+    return {
+        version: AUTOCOMPLETE_METADATA_VERSION,
+        textWidgetName,
+    };
+}
+
 function createDefaultBehavior(modelType) {
     return {
         enablePreview: false,
@@ -116,7 +138,7 @@ function createDefaultBehavior(modelType) {
             if (!trimmed) {
                 return '';
             }
-            return `${trimmed}, `;
+            return formatAutocompleteInsertion(trimmed);
         },
     };
 }
@@ -185,9 +207,9 @@ const MODEL_BEHAVIORS = {
             }
 
             if (clipStrength !== null) {
-                return `<lora:${fileName}:${strength}:${clipStrength}>, `;
+                return formatAutocompleteInsertion(`<lora:${fileName}:${strength}:${clipStrength}>`);
             }
-            return `<lora:${fileName}:${strength}>, `;
+            return formatAutocompleteInsertion(`<lora:${fileName}:${strength}>`);
         }
     },
     embeddings: {
@@ -202,13 +224,13 @@ const MODEL_BEHAVIORS = {
             const { directories, fileName } = splitRelativePath(relativePath);
             const trimmedName = removeGeneralExtension(fileName);
             const folder = directories.length ? `${directories.join('/')}/` : '';
-            return `embedding:${folder}${trimmedName}, `;
+            return formatAutocompleteInsertion(`embedding:${folder}${trimmedName}`);
         },
     },
     custom_words: {
         enablePreview: false,
         async getInsertText(_instance, relativePath) {
-            return `${relativePath}, `;
+            return formatAutocompleteInsertion(relativePath);
         },
     },
     prompt: {
@@ -245,7 +267,7 @@ const MODEL_BEHAVIORS = {
                 const { directories, fileName } = splitRelativePath(relativePath);
                 const trimmedName = removeGeneralExtension(fileName);
                 const folder = directories.length ? `${directories.join('/')}/` : '';
-                return `embedding:${folder}${trimmedName}, `;
+                return formatAutocompleteInsertion(`embedding:${folder}${trimmedName}`);
             } else {
                 let tagText = relativePath;
 
@@ -253,7 +275,7 @@ const MODEL_BEHAVIORS = {
                     tagText = tagText.replace(/_/g, ' ');
                 }
 
-                return `${tagText}, `;
+                return formatAutocompleteInsertion(tagText);
             }
         },
     },
@@ -620,18 +642,130 @@ class AutoComplete {
     }
     
     getSearchTerm(value) {
-        // Use helper to get text before cursor for more accurate positioning
-        const beforeCursor = this.helper.getBeforeCursor();
-        if (!beforeCursor) {
-            return '';
+        return this.getActiveSearchRange(value).text;
+    }
+
+    getActiveSearchRange(value = null) {
+        const currentValue = typeof value === 'string' ? value : this.inputElement.value;
+        const caretPos = this.getCaretPosition();
+        const beforeCursor = this.helper.getBeforeCursor() ?? currentValue.substring(0, caretPos);
+        let start = this._getHardBoundaryStart(beforeCursor);
+
+        if (!getAutocompleteAppendCommaPreference()) {
+            const persistedBoundaryEnd = this._getPersistedBoundaryEnd(currentValue, caretPos);
+            if (persistedBoundaryEnd !== null && persistedBoundaryEnd > start) {
+                start = persistedBoundaryEnd;
+            }
         }
 
-        // Split on comma and '>' delimiters only (do not split on spaces)
-        const segments = beforeCursor.split(/[,\>]+/);
+        const rawText = beforeCursor.substring(start);
+        const text = rawText.trim();
+        const leadingWhitespaceLength = rawText.length - rawText.trimStart().length;
+        const trimmedStart = start + leadingWhitespaceLength;
 
-        // Return the last non-empty segment as search term
-        const lastSegment = segments[segments.length - 1] || '';
-        return lastSegment.trim();
+        return {
+            start,
+            trimmedStart,
+            end: caretPos,
+            beforeCursor,
+            rawText,
+            text,
+        };
+    }
+
+    _getHardBoundaryStart(beforeCursor = '') {
+        const lastComma = beforeCursor.lastIndexOf(',');
+        const lastAngle = beforeCursor.lastIndexOf('>');
+        return Math.max(lastComma, lastAngle) + 1;
+    }
+
+    _getMetadataWidget() {
+        return this.inputElement?._autocompleteMetadataWidget
+            ?? this.inputElement?._autocompleteHostWidget?.metadataWidget
+            ?? null;
+    }
+
+    _getMetadataBase() {
+        return createAutocompleteMetadataBase(this.inputElement?._autocompleteTextWidgetName ?? 'text');
+    }
+
+    _getAutocompleteMetadata() {
+        const metadataWidget = this._getMetadataWidget();
+        const value = metadataWidget?.value;
+
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+            return this._getMetadataBase();
+        }
+
+        return {
+            ...this._getMetadataBase(),
+            ...value,
+        };
+    }
+
+    _setAutocompleteMetadata(metadata = {}) {
+        const metadataWidget = this._getMetadataWidget();
+        if (!metadataWidget) {
+            return;
+        }
+
+        metadataWidget.value = {
+            ...this._getMetadataBase(),
+            ...metadata,
+        };
+    }
+
+    _clearLastAcceptedBoundary() {
+        const metadataWidget = this._getMetadataWidget();
+        if (!metadataWidget) {
+            return;
+        }
+
+        const metadata = this._getAutocompleteMetadata();
+        delete metadata.lastAccepted;
+        metadataWidget.value = metadata;
+    }
+
+    _storeLastAcceptedBoundary(boundary) {
+        this._setAutocompleteMetadata({ lastAccepted: boundary });
+    }
+
+    _getPersistedBoundaryEnd(currentValue, caretPos) {
+        const metadata = this._getAutocompleteMetadata();
+        const boundary = metadata?.lastAccepted;
+
+        if (!boundary || typeof boundary !== 'object') {
+            return null;
+        }
+
+        const { start, end, insertedText, textSnapshot } = boundary;
+
+        if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start) {
+            this._clearLastAcceptedBoundary();
+            return null;
+        }
+
+        if (end > currentValue.length || end > caretPos) {
+            this._clearLastAcceptedBoundary();
+            return null;
+        }
+
+        if (typeof insertedText !== 'string' || insertedText.length === 0) {
+            this._clearLastAcceptedBoundary();
+            return null;
+        }
+
+        if (currentValue.slice(start, end) !== insertedText) {
+            this._clearLastAcceptedBoundary();
+            return null;
+        }
+
+        if (typeof textSnapshot !== 'string' || currentValue.slice(0, end) !== textSnapshot) {
+            this._clearLastAcceptedBoundary();
+            return null;
+        }
+
+        return end;
     }
 
     /**
@@ -1017,25 +1151,12 @@ class AutoComplete {
      */
     _insertCommand(command) {
         const currentValue = this.inputElement.value;
-        const caretPos = this.getCaretPosition();
-
-        // Find the start of the current command being typed
-        const beforeCursor = currentValue.substring(0, caretPos);
-        const segments = beforeCursor.split(/[,\>]+/);
-        const lastSegment = segments[segments.length - 1] || '';
-        let commandStartPos = caretPos - lastSegment.length;
-
-        // Preserve leading space if the last segment starts with a space
-        // This handles cases like "1girl, /character" where we want to keep the space
-        // after the comma instead of replacing it
-        if (lastSegment.length > 0 && lastSegment[0] === ' ') {
-            // Move start position past the leading space to preserve it
-            commandStartPos = commandStartPos + 1;
-        }
+        const activeRange = this.getActiveSearchRange(currentValue);
+        const commandStartPos = activeRange.trimmedStart;
 
         // Insert command with trailing space
         const insertText = command + ' ';
-        const newValue = currentValue.substring(0, commandStartPos) + insertText + currentValue.substring(caretPos);
+        const newValue = currentValue.substring(0, commandStartPos) + insertText + currentValue.substring(activeRange.end);
         const newCaretPos = commandStartPos + insertText.length;
 
         this.inputElement.value = newValue;
@@ -1866,6 +1987,7 @@ class AutoComplete {
                 break;
                 
             case 'Enter':
+            case 'Tab':
                 e.preventDefault();
                 if (this.selectedIndex >= 0 && this.selectedIndex < this.items.length) {
                     if (this.showingCommands) {
@@ -1897,11 +2019,10 @@ class AutoComplete {
         }
 
         const currentValue = this.inputElement.value;
-        const caretPos = this.getCaretPosition();
-
-        // Use getSearchTerm to get the current search term before cursor
-        const beforeCursor = currentValue.substring(0, caretPos);
-        const fullSearchTerm = this.getSearchTerm(beforeCursor);
+        const activeRange = this.getActiveSearchRange(currentValue);
+        const caretPos = activeRange.end;
+        const fullSearchTerm = activeRange.text;
+        let replaceStartPos = activeRange.trimmedStart;
 
         // For regular tag autocomplete (no command), only replace the last space-separated token
         // This allows "hello 1gi" + selecting "1girl" to become "hello 1girl, "
@@ -1934,18 +2055,26 @@ class AutoComplete {
                 underscoreVersion === selectedTagLower
             )) {
                 searchTerm = fullSearchTerm;
+                replaceStartPos = activeRange.trimmedStart;
             } else {
                 searchTerm = this._getLastSpaceToken(fullSearchTerm);
+                replaceStartPos = searchTerm === fullSearchTerm
+                    ? activeRange.trimmedStart
+                    : caretPos - searchTerm.length;
             }
         }
 
-        const searchStartPos = caretPos - searchTerm.length;
-
         // Only replace the search term, not everything after the last comma
-        const newValue = currentValue.substring(0, searchStartPos) + insertText + currentValue.substring(caretPos);
-        const newCaretPos = searchStartPos + insertText.length;
+        const newValue = currentValue.substring(0, replaceStartPos) + insertText + currentValue.substring(caretPos);
+        const newCaretPos = replaceStartPos + insertText.length;
 
         this.inputElement.value = newValue;
+        this._storeLastAcceptedBoundary({
+            start: replaceStartPos,
+            end: newCaretPos,
+            insertedText: insertText,
+            textSnapshot: newValue.substring(0, newCaretPos),
+        });
 
         // Trigger input event to notify about the change
         const event = new Event('input', { bubbles: true });
@@ -1974,7 +2103,7 @@ class AutoComplete {
         if (!trimmed) {
             return '';
         }
-        return `${trimmed}, `;
+        return formatAutocompleteInsertion(trimmed);
     }
 
     /**
@@ -2053,12 +2182,9 @@ class AutoComplete {
      */
     _clearCurrentToken() {
         const currentValue = this.inputElement.value;
-        const caretPos = this.inputElement.selectionStart;
-
-        // Find the command text before cursor
-        const beforeCursor = currentValue.substring(0, caretPos);
-        const segments = beforeCursor.split(/[,\>]+/);
-        const lastSegment = segments[segments.length - 1] || '';
+        const activeRange = this.getActiveSearchRange(currentValue);
+        const caretPos = activeRange.end;
+        const lastSegment = activeRange.rawText;
         
         // Find the command start position, preserving leading spaces
         // lastSegment includes leading spaces (e.g., " /ac"), find where command actually starts
@@ -2067,7 +2193,7 @@ class AutoComplete {
             // commandMatch[1] is leading spaces, commandMatch[2] is the command
             const leadingSpaces = commandMatch[1].length;
             // Keep the spaces by starting after them
-            const commandStartPos = caretPos - lastSegment.length + leadingSpaces;
+            const commandStartPos = activeRange.start + leadingSpaces;
             
             // Skip trailing spaces when deleting
             let endPos = caretPos;
@@ -2089,7 +2215,7 @@ class AutoComplete {
             this.inputElement.setSelectionRange(newCaretPos, newCaretPos);
         } else {
             // Fallback: delete the whole last segment (original behavior)
-            const commandStartPos = caretPos - lastSegment.length;
+            const commandStartPos = activeRange.start;
             
             let endPos = caretPos;
             while (endPos < currentValue.length && currentValue[endPos] === ' ') {
