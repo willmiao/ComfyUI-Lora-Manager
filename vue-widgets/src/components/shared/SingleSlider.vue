@@ -131,11 +131,13 @@ const onWheel = (event: WheelEvent) => {
   if (event.clientX < rootRect.left || event.clientX > rootRect.right ||
       event.clientY < rootRect.top || event.clientY > rootRect.bottom) return
 
-  event.preventDefault()
-
+  // Adjust slider value when wheeling over the slider area
   const delta = event.deltaY > 0 ? -1 : 1
   const newValue = snapToStep(props.value + delta * props.step)
   emit('update:value', newValue)
+
+  // Stop propagation to prevent canvas zoom
+  event.stopPropagation()
 }
 
 const stopDrag = (event?: PointerEvent) => {

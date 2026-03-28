@@ -670,6 +670,69 @@ export function forwardMiddleMouseToCanvas(container) {
     });
 }
 
+/**
+ * Forward wheel events from a container to the ComfyUI canvas for zooming,
+ * unless the container has scrollable content.
+ * This allows canvas zoom to work when hovering over DOM widgets.
+ * @param {HTMLElement} container - The root DOM element of the widget
+ * @param {Object} options - Configuration options
+ * @param {boolean} options.captureWheel - If true, always capture wheel events (default: false)
+ */
+export function forwardWheelToCanvas(container, options = {}) {
+    if (!container) return;
+
+    const { captureWheel = false } = options;
+
+    container.addEventListener('wheel', (event) => {
+        // If explicitly capturing wheel (for internal scrolling), stop here
+        if (captureWheel) {
+            event.stopPropagation();
+            return;
+        }
+
+        // Access ComfyUI app from global window
+        const comfyApp = window.app;
+        if (!comfyApp || !comfyApp.canvas || typeof comfyApp.canvas.processMouseWheel !== 'function') {
+            return;
+        }
+
+        const deltaX = event.deltaX;
+        const deltaY = event.deltaY;
+        const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
+
+        // 1. Handle pinch-to-zoom (ctrlKey is true for pinch-to-zoom on most browsers)
+        if (event.ctrlKey) {
+            event.preventDefault();
+            event.stopPropagation();
+            comfyApp.canvas.processMouseWheel(event);
+            return;
+        }
+
+        // 2. Horizontal scroll: pass to canvas (widgets usually don't scroll horizontally)
+        if (isHorizontal) {
+            event.preventDefault();
+            event.stopPropagation();
+            comfyApp.canvas.processMouseWheel(event);
+            return;
+        }
+
+        // 3. Vertical scrolling: check if container is scrollable
+        const canScrollY = container.scrollHeight > container.clientHeight;
+
+        if (canScrollY) {
+            // Container is scrollable, let it handle the wheel event but stop propagation
+            // to prevent the canvas from zooming while the user is trying to scroll
+            event.stopPropagation();
+        } else {
+            // Container is NOT scrollable, forward the wheel event to the canvas
+            // so it can trigger zoom in/out
+            event.preventDefault();
+            event.stopPropagation();
+            comfyApp.canvas.processMouseWheel(event);
+        }
+    }, { passive: false });
+}
+
 // Get connected Lora Pool node from pool_config input
 export function getConnectedPoolConfigNode(node) {
     if (!node?.inputs) {

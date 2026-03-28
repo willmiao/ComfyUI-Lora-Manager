@@ -1,5 +1,5 @@
 <template>
-  <div class="lora-pool-widget">
+  <div class="lora-pool-widget" @wheel="onWheel">
     <!-- Summary View -->
     <LoraPoolSummaryView
       :selected-base-models="state.selectedBaseModels.value"
@@ -97,6 +97,53 @@ const modalState = useModalState()
 // Modal handling
 const openModal = (modal: ModalType) => {
   modalState.openModal(modal)
+}
+
+/**
+ * Handle mouse wheel events on the widget.
+ * Forwards the event to the ComfyUI canvas for zooming when appropriate.
+ */
+const onWheel = (event: WheelEvent) => {
+  // Check if the event originated from a slider component
+  // Sliders have data-capture-wheel="true" attribute
+  const target = event.target as HTMLElement
+  if (target?.closest('[data-capture-wheel="true"]')) {
+    // Event is from a slider, slider already handled it
+    // Just stop propagation to prevent canvas zoom
+    event.stopPropagation()
+    return
+  }
+
+  // Access ComfyUI app from global window
+  const app = (window as any).app
+  if (!app || !app.canvas || typeof app.canvas.processMouseWheel !== 'function') {
+    return
+  }
+
+  const deltaX = event.deltaX
+  const deltaY = event.deltaY
+  const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
+
+  // 1. Handle pinch-to-zoom (ctrlKey is true for pinch-to-zoom on most browsers)
+  if (event.ctrlKey) {
+    event.preventDefault()
+    event.stopPropagation()
+    app.canvas.processMouseWheel(event)
+    return
+  }
+
+  // 2. Horizontal scroll: pass to canvas (widgets usually don't scroll horizontally)
+  if (isHorizontal) {
+    event.preventDefault()
+    event.stopPropagation()
+    app.canvas.processMouseWheel(event)
+    return
+  }
+
+  // 3. Vertical scrolling: forward to canvas
+  event.preventDefault()
+  event.stopPropagation()
+  app.canvas.processMouseWheel(event)
 }
 
 // Lifecycle

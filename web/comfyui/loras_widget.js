@@ -11,7 +11,7 @@ import {
   EMPTY_CONTAINER_HEIGHT 
 } from "./loras_widget_utils.js";
 import { initDrag, createContextMenu, initHeaderDrag, initReorderDrag, handleKeyboardNavigation } from "./loras_widget_events.js";
-import { forwardMiddleMouseToCanvas } from "./utils.js";
+import { forwardMiddleMouseToCanvas, forwardWheelToCanvas } from "./utils.js";
 import { PreviewTooltip } from "./preview_tooltip.js";
 import { ensureLmStyles } from "./lm_styles_loader.js";
 import { getStrengthStepPreference } from "./settings.js";
@@ -24,6 +24,7 @@ export function addLorasWidget(node, name, opts, callback) {
   container.className = "lm-loras-container";
 
   forwardMiddleMouseToCanvas(container);
+  forwardWheelToCanvas(container);
 
   // Set initial height using CSS variables approach
   const defaultHeight = 200;

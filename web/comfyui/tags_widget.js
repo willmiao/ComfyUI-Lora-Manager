@@ -1,4 +1,4 @@
-import { forwardMiddleMouseToCanvas } from "./utils.js";
+import { forwardMiddleMouseToCanvas, forwardWheelToCanvas } from "./utils.js";
 
 const MIN_HEIGHT = 150;
 
@@ -10,6 +10,7 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
   const { allowStrengthAdjustment = true } = options;
 
   forwardMiddleMouseToCanvas(container);
+  forwardWheelToCanvas(container);
 
   Object.assign(container.style, {
     display: "flex",

@@ -1,5 +1,5 @@
 <template>
-  <div class="lora-cycler-widget">
+  <div class="lora-cycler-widget" @wheel="onWheel">
     <LoraCyclerSettingsView
       :current-index="state.currentIndex.value"
       :total-count="displayTotalCount"
@@ -255,6 +255,53 @@ const handleResetIndex = async () => {
   } catch (error) {
     console.error('[LoraCyclerWidget] Error resetting index:', error)
   }
+}
+
+/**
+ * Handle mouse wheel events on the widget.
+ * Forwards the event to the ComfyUI canvas for zooming when appropriate.
+ */
+const onWheel = (event: WheelEvent) => {
+  // Check if the event originated from a slider component
+  // Sliders have data-capture-wheel="true" attribute
+  const target = event.target as HTMLElement
+  if (target?.closest('[data-capture-wheel="true"]')) {
+    // Event is from a slider, slider already handled it
+    // Just stop propagation to prevent canvas zoom
+    event.stopPropagation()
+    return
+  }
+
+  // Access ComfyUI app from global window
+  const app = (window as any).app
+  if (!app || !app.canvas || typeof app.canvas.processMouseWheel !== 'function') {
+    return
+  }
+
+  const deltaX = event.deltaX
+  const deltaY = event.deltaY
+  const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
+
+  // 1. Handle pinch-to-zoom (ctrlKey is true for pinch-to-zoom on most browsers)
+  if (event.ctrlKey) {
+    event.preventDefault()
+    event.stopPropagation()
+    app.canvas.processMouseWheel(event)
+    return
+  }
+
+  // 2. Horizontal scroll: pass to canvas (widgets usually don't scroll horizontally)
+  if (isHorizontal) {
+    event.preventDefault()
+    event.stopPropagation()
+    app.canvas.processMouseWheel(event)
+    return
+  }
+
+  // 3. Vertical scrolling: forward to canvas
+  event.preventDefault()
+  event.stopPropagation()
+  app.canvas.processMouseWheel(event)
 }
 
 // Check for pool config changes
