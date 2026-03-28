@@ -69,6 +69,9 @@ describe('AutoComplete widget interactions', () => {
       if (key === 'loramanager.autocomplete_append_comma') {
         return true;
       }
+      if (key === 'loramanager.autocomplete_accept_key') {
+        return 'both';
+      }
       if (key === 'loramanager.prompt_tag_autocomplete') {
         return true;
       }
@@ -202,6 +205,157 @@ describe('AutoComplete widget interactions', () => {
     autoComplete.selectedIndex = 0;
     autoComplete.isVisible = true;
     const insertSelectionSpy = vi.spyOn(autoComplete,'insertSelection').mockResolvedValue();
+
+    const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    input.dispatchEvent(enterEvent);
+
+    expect(enterEvent.defaultPrevented).toBe(true);
+    expect(insertSelectionSpy).toHaveBeenCalledWith('example_completion');
+  });
+
+  it('prefers the latest best match when Tab is pressed before debounced suggestions fully refresh', async () => {
+    caretHelperInstance.getBeforeCursor.mockReturnValue('loop');
+
+    const input = document.createElement('textarea');
+    input.value = 'loop';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'prompt', { showPreview: false, minChars: 1 });
+
+    autoComplete.searchType = 'custom_words';
+    autoComplete.items = [
+      { tag_name: 'looking_to_the_side', category: 0, post_count: 1000 },
+      { tag_name: 'loop', category: 0, post_count: 500 },
+    ];
+    autoComplete.currentSearchTerm = 'loo';
+    autoComplete.selectedIndex = 0;
+    autoComplete.isVisible = true;
+    const insertSelectionSpy = vi.spyOn(autoComplete,'insertSelection').mockResolvedValue();
+
+    const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    input.dispatchEvent(tabEvent);
+
+    expect(tabEvent.defaultPrevented).toBe(true);
+    expect(autoComplete.selectedIndex).toBe(1);
+    expect(insertSelectionSpy).toHaveBeenCalledWith('loop');
+  });
+
+  it('accepts the first available suggestion with Tab even if delayed auto-selection has not happened yet', async () => {
+    caretHelperInstance.getBeforeCursor.mockReturnValue('loop');
+
+    const input = document.createElement('textarea');
+    input.value = 'loop';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'custom_words', { showPreview: false });
+
+    autoComplete.items = ['loop'];
+    autoComplete.selectedIndex = -1;
+    autoComplete.isVisible = true;
+    const insertSelectionSpy = vi.spyOn(autoComplete,'insertSelection').mockResolvedValue();
+
+    const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    input.dispatchEvent(tabEvent);
+
+    expect(tabEvent.defaultPrevented).toBe(true);
+    expect(autoComplete.selectedIndex).toBe(0);
+    expect(insertSelectionSpy).toHaveBeenCalledWith('loop');
+  });
+
+  it('only accepts with Tab when autocomplete accept key is set to tab_only', async () => {
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.autocomplete_append_comma') {
+        return true;
+      }
+      if (key === 'loramanager.autocomplete_accept_key') {
+        return 'tab_only';
+      }
+      if (key === 'loramanager.prompt_tag_autocomplete') {
+        return true;
+      }
+      if (key === 'loramanager.tag_space_replacement') {
+        return false;
+      }
+      return undefined;
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('example');
+
+    const input = document.createElement('textarea');
+    input.value = 'example';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'custom_words', { showPreview: false });
+
+    autoComplete.items = ['example_completion'];
+    autoComplete.selectedIndex = 0;
+    autoComplete.isVisible = true;
+    const insertSelectionSpy = vi.spyOn(autoComplete,'insertSelection').mockResolvedValue();
+
+    const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    input.dispatchEvent(enterEvent);
+
+    expect(enterEvent.defaultPrevented).toBe(false);
+    expect(insertSelectionSpy).not.toHaveBeenCalled();
+
+    const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    input.dispatchEvent(tabEvent);
+
+    expect(tabEvent.defaultPrevented).toBe(true);
+    expect(insertSelectionSpy).toHaveBeenCalledWith('example_completion');
+  });
+
+  it('only accepts with Enter when autocomplete accept key is set to enter_only', async () => {
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.autocomplete_append_comma') {
+        return true;
+      }
+      if (key === 'loramanager.autocomplete_accept_key') {
+        return 'enter_only';
+      }
+      if (key === 'loramanager.prompt_tag_autocomplete') {
+        return true;
+      }
+      if (key === 'loramanager.tag_space_replacement') {
+        return false;
+      }
+      return undefined;
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('example');
+
+    const input = document.createElement('textarea');
+    input.value = 'example';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'custom_words', { showPreview: false });
+
+    autoComplete.items = ['example_completion'];
+    autoComplete.selectedIndex = 0;
+    autoComplete.isVisible = true;
+    const insertSelectionSpy = vi.spyOn(autoComplete,'insertSelection').mockResolvedValue();
+
+    const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    input.dispatchEvent(tabEvent);
+
+    expect(tabEvent.defaultPrevented).toBe(false);
+    expect(insertSelectionSpy).not.toHaveBeenCalled();
 
     const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
     input.dispatchEvent(enterEvent);

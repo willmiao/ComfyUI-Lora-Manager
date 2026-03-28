@@ -3,6 +3,7 @@ import { app } from "../../scripts/app.js";
 import { TextAreaCaretHelper } from "./textarea_caret_helper.js";
 import {
     getAutocompleteAppendCommaPreference,
+    getAutocompleteAcceptKeyPreference,
     getPromptTagAutocompletePreference,
     getTagSpaceReplacementPreference,
 } from "./settings.js";
@@ -119,6 +120,24 @@ function formatAutocompleteInsertion(text = '') {
     }
 
     return getAutocompleteAppendCommaPreference() ? `${trimmed},` : `${trimmed} `;
+}
+
+function shouldAcceptAutocompleteKey(key) {
+    const mode = getAutocompleteAcceptKeyPreference();
+
+    if (mode === 'tab_only') {
+        return key === 'Tab';
+    }
+
+    if (mode === 'enter_only') {
+        return key === 'Enter';
+    }
+
+    return key === 'Tab' || key === 'Enter';
+}
+
+function normalizeAutocompleteMatchText(text = '') {
+    return text.toLowerCase().replace(/[-_\s']/g, '');
 }
 
 const AUTOCOMPLETE_METADATA_VERSION = 1;
@@ -873,6 +892,92 @@ class AutoComplete {
         return { matched: false, isExactMatch: false };
     }
 
+    _getLiveSearchTermForAcceptance() {
+        const rawSearchTerm = this.getSearchTerm(this.inputElement.value);
+
+        if (this.modelType === 'embeddings') {
+            const match = rawSearchTerm.match(/^emb:(.*)$/i);
+            return (match?.[1] || '').trim();
+        }
+
+        if (this.modelType === 'prompt') {
+            const embeddingMatch = rawSearchTerm.match(/^emb:(.*)$/i);
+            if (embeddingMatch) {
+                return (embeddingMatch[1] || '').trim();
+            }
+
+            const commandResult = this._parseCommandInput(rawSearchTerm);
+            return commandResult.searchTerm ?? rawSearchTerm;
+        }
+
+        return rawSearchTerm;
+    }
+
+    _getPreferredSelectedIndex(searchTerm = '') {
+        if (!this.items?.length) {
+            return -1;
+        }
+
+        if (this.showingCommands) {
+            if (this.selectedIndex >= 0 && this.selectedIndex < this.items.length) {
+                return this.selectedIndex;
+            }
+            return 0;
+        }
+
+        const trimmedSearchTerm = searchTerm.trim();
+        if (!trimmedSearchTerm) {
+            if (this.selectedIndex >= 0 && this.selectedIndex < this.items.length) {
+                return this.selectedIndex;
+            }
+            return 0;
+        }
+
+        const searchLower = trimmedSearchTerm.toLowerCase();
+        const normalizedSearch = normalizeAutocompleteMatchText(trimmedSearchTerm);
+        let bestIndex = -1;
+        let bestScore = -Infinity;
+
+        this.items.forEach((item, index) => {
+            const displayText = this._getDisplayText(item);
+            const textLower = displayText.toLowerCase();
+            const normalizedText = normalizeAutocompleteMatchText(displayText);
+            let score = -1;
+
+            if (textLower === searchLower) {
+                score = 5000;
+            } else if (normalizedText === normalizedSearch) {
+                score = 4500;
+            } else if (textLower.startsWith(searchLower)) {
+                score = 4000;
+            } else if (normalizedText.startsWith(normalizedSearch)) {
+                score = 3500;
+            } else if (textLower.includes(searchLower)) {
+                score = 3000;
+            } else if (normalizedText.includes(normalizedSearch)) {
+                score = 2500;
+            }
+
+            if (score > -1) {
+                score -= index;
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestIndex = index;
+                }
+            }
+        });
+
+        if (bestIndex !== -1) {
+            return bestIndex;
+        }
+
+        if (this.selectedIndex >= 0 && this.selectedIndex < this.items.length) {
+            return this.selectedIndex;
+        }
+
+        return 0;
+    }
+
     async search(term = '', endpoint = null) {
         try {
             this.currentSearchTerm = term;
@@ -1135,9 +1240,9 @@ class AutoComplete {
             lastChild.style.borderBottom = 'none';
         }
 
-        // Auto-select first item
+        // Auto-select immediately so accept keys remain stable.
         if (this.items.length > 0) {
-            setTimeout(() => this.selectItem(0), 100);
+            this.selectItem(0);
         }
         
         // Update virtual scroll height for virtual scrolling mode
@@ -1300,11 +1405,10 @@ class AutoComplete {
             }
         }
 
-        // Auto-select the first item with a small delay
+        // Auto-select immediately so accept keys do not fall through
+        // to native focus traversal while the dropdown is visible.
         if (this.items.length > 0) {
-            setTimeout(() => {
-                this.selectItem(0);
-            }, 100);
+            this.selectItem(0);
         }
     }
 
@@ -1989,8 +2093,20 @@ class AutoComplete {
                 
             case 'Enter':
             case 'Tab':
-                e.preventDefault();
+                if (!shouldAcceptAutocompleteKey(e.key)) {
+                    break;
+                }
+
+                {
+                    const liveSearchTerm = this._getLiveSearchTermForAcceptance();
+                    const preferredIndex = this._getPreferredSelectedIndex(liveSearchTerm);
+                    if (preferredIndex !== -1 && preferredIndex !== this.selectedIndex) {
+                        this.selectItem(preferredIndex);
+                    }
+                }
+
                 if (this.selectedIndex >= 0 && this.selectedIndex < this.items.length) {
+                    e.preventDefault();
                     if (this.showingCommands) {
                         // Insert command
                         this._insertCommand(this.items[this.selectedIndex].command);
