@@ -72,6 +72,13 @@ class SaveImageLM:
                         "tooltip": "Embeds the complete workflow data into the image metadata. Only works with PNG and WebP formats.",
                     },
                 ),
+                "save_with_metadata": (
+                    "BOOLEAN",
+                    {
+                        "default": True,
+                        "tooltip": "When enabled, embeds generation parameters into the saved image metadata. Disable to skip writing generation metadata.",
+                    },
+                ),
                 "add_counter_to_filename": (
                     "BOOLEAN",
                     {
@@ -350,6 +357,7 @@ class SaveImageLM:
         lossless_webp=True,
         quality=100,
         embed_workflow=False,
+        save_with_metadata=True,
         add_counter_to_filename=True,
     ):
         """Save images with metadata"""
@@ -421,7 +429,7 @@ class SaveImageLM:
             try:
                 if file_format == "png":
                     assert pnginfo is not None
-                    if metadata:
+                    if save_with_metadata and metadata:
                         pnginfo.add_text("parameters", metadata)
                     if embed_workflow and extra_pnginfo is not None:
                         workflow_json = json.dumps(extra_pnginfo["workflow"])
@@ -430,7 +438,7 @@ class SaveImageLM:
                     img.save(file_path, format="PNG", **save_kwargs)
                 elif file_format == "jpeg":
                     # For JPEG, use piexif
-                    if metadata:
+                    if save_with_metadata and metadata:
                         try:
                             exif_dict = {
                                 "Exif": {
@@ -448,7 +456,7 @@ class SaveImageLM:
                         # For WebP, use piexif for metadata
                         exif_dict = {}
 
-                        if metadata:
+                        if save_with_metadata and metadata:
                             exif_dict["Exif"] = {
                                 piexif.ExifIFD.UserComment: b"UNICODE\0"
                                 + metadata.encode("utf-16be")
@@ -489,6 +497,7 @@ class SaveImageLM:
         lossless_webp=True,
         quality=100,
         embed_workflow=False,
+        save_with_metadata=True,
         add_counter_to_filename=True,
     ):
         """Process and save image with metadata"""
@@ -516,6 +525,7 @@ class SaveImageLM:
             lossless_webp,
             quality,
             embed_workflow,
+            save_with_metadata,
             add_counter_to_filename,
         )
 
