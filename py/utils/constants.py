@@ -110,6 +110,8 @@ DIFFUSION_MODEL_BASE_MODELS = frozenset(
         "Wan Video 2.2 T2V-A14B",
         "Wan Video 2.5 T2V",
         "Wan Video 2.5 I2V",
+        "CogVideoX",
+        "Mochi",
         "Qwen",
     ]
 )
@@ -151,6 +153,7 @@ SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS = frozenset(
         "NoobAI",
         "Illustrious",
         "Pony",
+        "Pony V7",
         "HiDream",
         "Qwen",
         "ZImageTurbo",
@@ -158,6 +161,9 @@ SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS = frozenset(
         "SVD",
         "LTXV",
         "LTXV2",
+        "LTXV 2.3",
+        "CogVideoX",
+        "Mochi",
         "Wan Video",
         "Wan Video 1.3B t2v",
         "Wan Video 14B t2v",
@@ -166,6 +172,9 @@ SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS = frozenset(
         "Wan Video 2.2 TI2V-5B",
         "Wan Video 2.2 T2V-A14B",
         "Wan Video 2.2 I2V-A14B",
+        "Wan Video 2.5 T2V",
+        "Wan Video 2.5 I2V",
         "Hunyuan Video",
+        "Anima",
     ]
 )

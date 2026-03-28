@@ -40,6 +40,7 @@ from ...utils.civitai_utils import rewrite_preview_url
 from ...utils.example_images_paths import is_valid_example_images_root
 from ...utils.lora_metadata import extract_trained_words
 from ...utils.usage_stats import UsageStats
+from .base_model_handlers import BaseModelHandlerSet
 
 logger = logging.getLogger(__name__)
 
@@ -1618,6 +1619,7 @@ class MiscHandlerSet:
         custom_words: CustomWordsHandler,
         supporters: SupportersHandler,
         example_workflows: ExampleWorkflowsHandler,
+        base_model: BaseModelHandlerSet,
     ) -> None:
         self.health = health
         self.settings = settings
@@ -1632,6 +1634,7 @@ class MiscHandlerSet:
         self.custom_words = custom_words
         self.supporters = supporters
         self.example_workflows = example_workflows
+        self.base_model = base_model
 
     def to_route_mapping(
         self,
@@ -1663,6 +1666,11 @@ class MiscHandlerSet:
             "get_supporters": self.supporters.get_supporters,
             "get_example_workflows": self.example_workflows.get_example_workflows,
             "get_example_workflow": self.example_workflows.get_example_workflow,
+            # Base model handlers
+            "get_base_models": self.base_model.get_base_models,
+            "refresh_base_models": self.base_model.refresh_base_models,
+            "get_base_model_categories": self.base_model.get_base_model_categories,
+            "get_base_model_cache_status": self.base_model.get_base_model_cache_status,
         }
 
 

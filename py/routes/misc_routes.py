@@ -35,6 +35,7 @@ from .handlers.misc_handlers import (
     UsageStatsHandler,
     build_service_registry_adapter,
 )
+from .handlers.base_model_handlers import BaseModelHandlerSet
 from .misc_route_registrar import MiscRouteRegistrar
 
 logger = logging.getLogger(__name__)
@@ -128,6 +129,7 @@ class MiscRoutes:
         custom_words = CustomWordsHandler()
         supporters = SupportersHandler()
         example_workflows = ExampleWorkflowsHandler()
+        base_model = BaseModelHandlerSet()
 
         return self._handler_set_factory(
             health=health,
@@ -143,6 +145,7 @@ class MiscRoutes:
             custom_words=custom_words,
             supporters=supporters,
             example_workflows=example_workflows,
+            base_model=base_model,
         )
 
 

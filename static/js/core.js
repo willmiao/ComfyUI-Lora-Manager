@@ -17,6 +17,8 @@ import { onboardingManager } from './managers/OnboardingManager.js';
 import { BulkContextMenu } from './components/ContextMenu/BulkContextMenu.js';
 import { createPageContextMenu, createGlobalContextMenu } from './components/ContextMenu/index.js';
 import { initializeEventManagement } from './utils/eventManagementInit.js';
+import { civitaiBaseModelApi } from './api/civitaiBaseModelApi.js';
+import { setDynamicBaseModels } from './utils/constants.js';
 
 // Core application class
 export class AppCore {
@@ -41,6 +43,10 @@ export class AppCore {
         console.log('AppCore: Initializing settings...');
         await settingsManager.waitForInitialization();
         console.log('AppCore: Settings initialized');
+        
+        // Initialize dynamic base models (async, non-blocking)
+        console.log('AppCore: Initializing dynamic base models...');
+        this.initializeDynamicBaseModels();
         
         // Initialize managers
         state.loadingManager = new LoadingManager();
@@ -114,6 +120,21 @@ export class AppCore {
 
         if (!window.globalContextMenuInstance) {
             window.globalContextMenuInstance = createGlobalContextMenu();
+        }
+    }
+    
+    // Initialize dynamic base models from Civitai API
+    // This is non-blocking - runs in background
+    async initializeDynamicBaseModels() {
+        try {
+            const result = await civitaiBaseModelApi.getBaseModels();
+            if (result && result.models) {
+                setDynamicBaseModels(result.models, result.last_updated);
+                console.log(`AppCore: Loaded ${result.merged_count} base models (${result.hardcoded_count} hardcoded + ${result.remote_count} remote)`);
+            }
+        } catch (error) {
+            console.warn('AppCore: Failed to load dynamic base models:', error);
+            // Non-critical error - app continues with hardcoded models
         }
     }
 }

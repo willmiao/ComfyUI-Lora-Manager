@@ -50,6 +50,9 @@ export const BASE_MODELS = {
     SVD: "SVD",
     LTXV: "LTXV",
     LTXV2: "LTXV2",
+    LTXV_2_3: "LTXV 2.3",
+    COGVIDE_X: "CogVideoX",
+    MOCHI: "Mochi",
     WAN_VIDEO: "Wan Video",
     WAN_VIDEO_1_3B_T2V: "Wan Video 1.3B t2v",
     WAN_VIDEO_14B_T2V: "Wan Video 14B t2v",
@@ -58,7 +61,12 @@ export const BASE_MODELS = {
     WAN_VIDEO_2_2_TI2V_5B: "Wan Video 2.2 TI2V-5B",
     WAN_VIDEO_2_2_T2V_A14B: "Wan Video 2.2 T2V-A14B",
     WAN_VIDEO_2_2_I2V_A14B: "Wan Video 2.2 I2V-A14B",
+    WAN_VIDEO_2_5_T2V: "Wan Video 2.5 T2V",
+    WAN_VIDEO_2_5_I2V: "Wan Video 2.5 I2V",
     HUNYUAN_VIDEO: "Hunyuan Video",
+    // Other models
+    ANIMA: "Anima",
+    PONY_V7: "Pony V7",
     // Default
     UNKNOWN: "Other"
 };
@@ -151,6 +159,9 @@ export const BASE_MODEL_ABBREVIATIONS = {
     [BASE_MODELS.SVD]: 'SVD',
     [BASE_MODELS.LTXV]: 'LTXV',
     [BASE_MODELS.LTXV2]: 'LTV2',
+    [BASE_MODELS.LTXV_2_3]: 'LTX',
+    [BASE_MODELS.COGVIDE_X]: 'CVX',
+    [BASE_MODELS.MOCHI]: 'MCHI',
     [BASE_MODELS.WAN_VIDEO]: 'WAN',
     [BASE_MODELS.WAN_VIDEO_1_3B_T2V]: 'WAN',
     [BASE_MODELS.WAN_VIDEO_14B_T2V]: 'WAN',
@@ -159,7 +170,27 @@ export const BASE_MODEL_ABBREVIATIONS = {
     [BASE_MODELS.WAN_VIDEO_2_2_TI2V_5B]: 'WAN',
     [BASE_MODELS.WAN_VIDEO_2_2_T2V_A14B]: 'WAN',
     [BASE_MODELS.WAN_VIDEO_2_2_I2V_A14B]: 'WAN',
+    [BASE_MODELS.WAN_VIDEO_2_5_T2V]: 'WAN',
+    [BASE_MODELS.WAN_VIDEO_2_5_I2V]: 'WAN',
     [BASE_MODELS.HUNYUAN_VIDEO]: 'HYV',
+
+    // Other diffusion models
+    [BASE_MODELS.AURAFLOW]: 'AF',
+    [BASE_MODELS.CHROMA]: 'CHR',
+    [BASE_MODELS.PIXART_A]: 'PXA',
+    [BASE_MODELS.PIXART_E]: 'PXE',
+    [BASE_MODELS.HUNYUAN_1]: 'HY',
+    [BASE_MODELS.LUMINA]: 'L',
+    [BASE_MODELS.KOLORS]: 'KLR',
+    [BASE_MODELS.NOOBAI]: 'NAI',
+    [BASE_MODELS.ILLUSTRIOUS]: 'IL',
+    [BASE_MODELS.PONY]: 'PONY',
+    [BASE_MODELS.PONY_V7]: 'PNY7',
+    [BASE_MODELS.HIDREAM]: 'HID',
+    [BASE_MODELS.QWEN]: 'QWEN',
+    [BASE_MODELS.ZIMAGE_TURBO]: 'ZIT',
+    [BASE_MODELS.ZIMAGE_BASE]: 'ZIB',
+    [BASE_MODELS.ANIMA]: 'ANI',
 
     // Default
     [BASE_MODELS.UNKNOWN]: 'OTH'
@@ -349,18 +380,20 @@ export const BASE_MODEL_CATEGORIES = {
     'Stable Diffusion 3.x': [BASE_MODELS.SD_3, BASE_MODELS.SD_3_5, BASE_MODELS.SD_3_5_MEDIUM, BASE_MODELS.SD_3_5_LARGE, BASE_MODELS.SD_3_5_LARGE_TURBO],
     'SDXL': [BASE_MODELS.SDXL, BASE_MODELS.SDXL_LIGHTNING, BASE_MODELS.SDXL_HYPER],
     'Video Models': [
-        BASE_MODELS.SVD, BASE_MODELS.LTXV, BASE_MODELS.LTXV2, BASE_MODELS.HUNYUAN_VIDEO, BASE_MODELS.WAN_VIDEO, 
-        BASE_MODELS.WAN_VIDEO_1_3B_T2V, BASE_MODELS.WAN_VIDEO_14B_T2V,
+        BASE_MODELS.SVD, BASE_MODELS.LTXV, BASE_MODELS.LTXV2, BASE_MODELS.LTXV_2_3, 
+        BASE_MODELS.COGVIDE_X, BASE_MODELS.MOCHI, BASE_MODELS.HUNYUAN_VIDEO,
+        BASE_MODELS.WAN_VIDEO, BASE_MODELS.WAN_VIDEO_1_3B_T2V, BASE_MODELS.WAN_VIDEO_14B_T2V,
         BASE_MODELS.WAN_VIDEO_14B_I2V_480P, BASE_MODELS.WAN_VIDEO_14B_I2V_720P,
         BASE_MODELS.WAN_VIDEO_2_2_TI2V_5B, BASE_MODELS.WAN_VIDEO_2_2_T2V_A14B,
-        BASE_MODELS.WAN_VIDEO_2_2_I2V_A14B
+        BASE_MODELS.WAN_VIDEO_2_2_I2V_A14B, BASE_MODELS.WAN_VIDEO_2_5_T2V,
+        BASE_MODELS.WAN_VIDEO_2_5_I2V
     ],
     'Flux Models': [BASE_MODELS.FLUX_1_D, BASE_MODELS.FLUX_1_S, BASE_MODELS.FLUX_1_KONTEXT, BASE_MODELS.FLUX_1_KREA, BASE_MODELS.FLUX_2_D, BASE_MODELS.FLUX_2_KLEIN_9B, BASE_MODELS.FLUX_2_KLEIN_9B_BASE, BASE_MODELS.FLUX_2_KLEIN_4B, BASE_MODELS.FLUX_2_KLEIN_4B_BASE],
     'Other Models': [
-        BASE_MODELS.ILLUSTRIOUS, BASE_MODELS.PONY, BASE_MODELS.HIDREAM,
+        BASE_MODELS.ILLUSTRIOUS, BASE_MODELS.PONY, BASE_MODELS.PONY_V7, BASE_MODELS.HIDREAM,
         BASE_MODELS.QWEN, BASE_MODELS.AURAFLOW, BASE_MODELS.CHROMA, BASE_MODELS.ZIMAGE_TURBO, BASE_MODELS.ZIMAGE_BASE,
         BASE_MODELS.PIXART_A, BASE_MODELS.PIXART_E, BASE_MODELS.HUNYUAN_1,
-        BASE_MODELS.LUMINA, BASE_MODELS.KOLORS, BASE_MODELS.NOOBAI,
+        BASE_MODELS.LUMINA, BASE_MODELS.KOLORS, BASE_MODELS.NOOBAI, BASE_MODELS.ANIMA,
         BASE_MODELS.UNKNOWN
     ]
 };
@@ -378,3 +411,94 @@ export const DEFAULT_PRIORITY_TAG_CONFIG = {
     checkpoint: DEFAULT_PRIORITY_TAG_ENTRIES.join(', '),
     embedding: DEFAULT_PRIORITY_TAG_ENTRIES.join(', ')
 };
+
+// ============================================================================
+// Dynamic Base Model Support
+// ============================================================================
+
+/**
+ * Dynamic base model cache
+ * Stores models fetched from Civitai API
+ */
+let dynamicBaseModels = null;
+let dynamicBaseModelsTimestamp = null;
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+/**
+ * Set dynamic base models (called after fetching from API)
+ * @param {Array} models - Array of base model names
+ * @param {string} timestamp - ISO timestamp of fetch
+ */
+export function setDynamicBaseModels(models, timestamp) {
+    dynamicBaseModels = models;
+    dynamicBaseModelsTimestamp = timestamp;
+}
+
+/**
+ * Get dynamic base models
+ * @returns {Object|null} { models, timestamp } or null if not set
+ */
+export function getDynamicBaseModels() {
+    if (!dynamicBaseModels) return null;
+    
+    // Check if cache is expired
+    if (dynamicBaseModelsTimestamp) {
+        const age = Date.now() - new Date(dynamicBaseModelsTimestamp).getTime();
+        if (age > CACHE_TTL_MS) {
+            dynamicBaseModels = null;
+            dynamicBaseModelsTimestamp = null;
+            return null;
+        }
+    }
+    
+    return {
+        models: dynamicBaseModels,
+        timestamp: dynamicBaseModelsTimestamp
+    };
+}
+
+/**
+ * Get merged base models (hardcoded + dynamic)
+ * Returns unique sorted list of all available base models
+ * @returns {Array} Sorted array of base model names
+ */
+export function getMergedBaseModels() {
+    const hardcoded = Object.values(BASE_MODELS);
+    const dynamic = getDynamicBaseModels();
+    
+    if (!dynamic || !dynamic.models) {
+        return hardcoded.sort();
+    }
+    
+    // Merge and deduplicate
+    const merged = new Set([...hardcoded, ...dynamic.models]);
+    return Array.from(merged).sort();
+}
+
+/**
+ * Get mappable base models (for UI selection)
+ * Excludes 'Other' value
+ * @returns {Array} Sorted array of base model names (excluding 'Other')
+ */
+export function getMappableBaseModelsDynamic() {
+    const merged = getMergedBaseModels();
+    return merged.filter(model => model !== 'Other');
+}
+
+/**
+ * Clear dynamic base models cache
+ */
+export function clearDynamicBaseModels() {
+    dynamicBaseModels = null;
+    dynamicBaseModelsTimestamp = null;
+}
+
+/**
+ * Check if dynamic base models cache is valid
+ * @returns {boolean}
+ */
+export function isDynamicBaseModelsCacheValid() {
+    if (!dynamicBaseModels || !dynamicBaseModelsTimestamp) return false;
+    const age = Date.now() - new Date(dynamicBaseModelsTimestamp).getTime();
+    return age <= CACHE_TTL_MS;
+}

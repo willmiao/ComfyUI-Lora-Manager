@@ -56,6 +56,15 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition(
         "GET", "/api/lm/example-workflows/{filename}", "get_example_workflow"
     ),
+    # Base model management routes
+    RouteDefinition("GET", "/api/lm/base-models", "get_base_models"),
+    RouteDefinition("POST", "/api/lm/base-models/refresh", "refresh_base_models"),
+    RouteDefinition(
+        "GET", "/api/lm/base-models/categories", "get_base_model_categories"
+    ),
+    RouteDefinition(
+        "GET", "/api/lm/base-models/cache-status", "get_base_model_cache_status"
+    ),
 )
 
 

@@ -2,7 +2,14 @@ import { modalManager } from './ModalManager.js';
 import { showToast } from '../utils/uiHelpers.js';
 import { state, createDefaultSettings } from '../state/index.js';
 import { resetAndReload } from '../api/modelApiFactory.js';
-import { DOWNLOAD_PATH_TEMPLATES, MAPPABLE_BASE_MODELS, PATH_TEMPLATE_PLACEHOLDERS, DEFAULT_PATH_TEMPLATES, DEFAULT_PRIORITY_TAG_CONFIG } from '../utils/constants.js';
+import { 
+    DOWNLOAD_PATH_TEMPLATES, 
+    MAPPABLE_BASE_MODELS, 
+    PATH_TEMPLATE_PLACEHOLDERS, 
+    DEFAULT_PATH_TEMPLATES, 
+    DEFAULT_PRIORITY_TAG_CONFIG,
+    getMappableBaseModelsDynamic
+} from '../utils/constants.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { i18n } from '../i18n/index.js';
 import { configureModelCardVideo } from '../components/shared/ModelCard.js';
@@ -184,7 +191,9 @@ export class SettingsManager {
     }
 
     getAvailableDownloadSkipBaseModels() {
-        return MAPPABLE_BASE_MODELS.filter(model => model !== 'Other');
+        // Use dynamic base models if available, fallback to hardcoded
+        const models = getMappableBaseModelsDynamic();
+        return models.filter(model => model !== 'Other');
     }
 
     normalizeDownloadSkipBaseModels(value) {
@@ -1517,7 +1526,7 @@ export class SettingsManager {
         const row = document.createElement('div');
         row.className = 'mapping-row';
 
-        const availableModels = MAPPABLE_BASE_MODELS.filter(model => {
+        const availableModels = getMappableBaseModelsDynamic().filter(model => {
             const existingMappings = state.global.settings.base_model_path_mappings || {};
             return !existingMappings.hasOwnProperty(model) || model === baseModel;
         });
@@ -1619,7 +1628,7 @@ export class SettingsManager {
             const currentValue = select.value;
 
             // Get available models (not already mapped, except current)
-            const availableModels = MAPPABLE_BASE_MODELS.filter(model =>
+            const availableModels = getMappableBaseModelsDynamic().filter(model =>
                 !existingMappings.hasOwnProperty(model) || model === currentValue
             );
 
