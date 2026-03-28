@@ -118,3 +118,36 @@ def test_save_image_skips_webp_metadata_when_disabled(monkeypatch, tmp_path):
     image_path = tmp_path / "sample_00001_.webp"
     exif_dict = piexif.load(str(image_path))
     assert piexif.ExifIFD.UserComment not in exif_dict.get("Exif", {})
+
+
+def test_process_image_returns_passthrough_result_and_ui_images(monkeypatch, tmp_path):
+    _configure_save_paths(monkeypatch, tmp_path)
+    _configure_metadata(monkeypatch, {"prompt": "prompt text", "seed": 123})
+
+    images = [_make_image()]
+    node = SaveImageLM()
+
+    result = node.process_image(images, id="node-1")
+
+    assert result["result"] == (images,)
+    assert result["ui"] == {
+        "images": [{"filename": "sample_00001_.png", "subfolder": "", "type": "output"}]
+    }
+
+
+def test_process_image_returns_empty_ui_images_when_save_fails(monkeypatch, tmp_path):
+    _configure_save_paths(monkeypatch, tmp_path)
+    _configure_metadata(monkeypatch, {"prompt": "prompt text", "seed": 123})
+
+    def _raise_save_error(*args, **kwargs):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(Image.Image, "save", _raise_save_error)
+
+    images = [_make_image()]
+    node = SaveImageLM()
+
+    result = node.process_image(images, id="node-1")
+
+    assert result["result"] == (images,)
+    assert result["ui"] == {"images": []}

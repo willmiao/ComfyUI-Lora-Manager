@@ -529,4 +529,7 @@ class SaveImageLM:
             add_counter_to_filename,
         )
 
-        return (images,)
+        return {
+            "result": (images,),
+            "ui": {"images": results},
+        }
