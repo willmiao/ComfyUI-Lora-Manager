@@ -4,6 +4,8 @@ import {
   updateConnectedTriggerWords,
   chainCallback,
   mergeLoras,
+  getWidgetByName,
+  getWidgetSerializedValue,
 } from "./utils.js";
 import { addLorasWidget } from "./loras_widget.js";
 import { applyLoraValuesToText, debounce } from "./lora_syntax_utils.js";
@@ -31,7 +33,11 @@ app.registerExtension({
         let isSyncingInput = false;
 
         // Get the text input widget (AUTOCOMPLETE_TEXT_LORAS type, at index 2 after low_mem_load and merge_loras)
-        const inputWidget = this.widgets[2];
+        const inputWidget = getWidgetByName(this, "text");
+        if (!inputWidget) {
+          console.warn("LoRA Manager: text widget not found for WanVideo Lora Select");
+          return;
+        }
         this.inputWidget = inputWidget;
 
         const scheduleInputSync = debounce((lorasValue) => {
@@ -107,12 +113,15 @@ app.registerExtension({
       // Restore saved value if exists
       let existingLoras = [];
       if (node.widgets_values && node.widgets_values.length > 0) {
-        // 0 for low_mem_load, 1 for merge_loras, 2 for text widget, 3 for loras widget
-        const savedValue = node.widgets_values[3];
+        const savedValue = getWidgetSerializedValue(node, "loras");
         existingLoras = savedValue || [];
       }
       // Merge the loras data
-      const inputWidget = node.inputWidget || node.widgets[2];
+      const inputWidget = node.inputWidget || getWidgetByName(node, "text");
+      if (!inputWidget) {
+        console.warn("LoRA Manager: text widget not found while restoring WanVideo Lora Select");
+        return;
+      }
       const mergedLoras = mergeLoras(inputWidget.value, existingLoras);
       node.lorasWidget.value = mergedLoras;
     }

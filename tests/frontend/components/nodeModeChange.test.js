@@ -50,6 +50,13 @@ const getAllGraphNodes = vi.fn();
 const getNodeFromGraph = vi.fn();
 const getNodeKey = vi.fn();
 const getLinkFromGraph = vi.fn();
+const getWidgetByName = vi.fn((node, name) =>
+  node?.widgets?.find((widget) => widget?.name === name) ?? null
+);
+const getWidgetSerializedValue = vi.fn((node, name) => {
+  const index = node?.widgets?.findIndex((widget) => widget?.name === name) ?? -1;
+  return index >= 0 ? node.widgets_values?.[index] : undefined;
+});
 const chainCallback = vi.fn((proto, property, callback) => {
   proto[property] = callback;
 });
@@ -68,6 +75,8 @@ vi.mock(UTILS_MODULE, async (importOriginal) => {
     getNodeFromGraph,
     getNodeKey,
     getLinkFromGraph,
+    getWidgetByName,
+    getWidgetSerializedValue,
   };
 });
 
@@ -98,6 +107,9 @@ describe("Node mode change handling", () => {
     mergeLoras.mockClear();
     mergeLoras.mockImplementation(() => [{ name: "Alpha", active: true }]);
 
+    getWidgetByName.mockClear();
+    getWidgetSerializedValue.mockClear();
+
     addLorasWidget.mockClear();
     addLorasWidget.mockImplementation((_node, _name, _opts, callback) => ({
       widget: { value: [], callback },
@@ -119,8 +131,13 @@ describe("Node mode change handling", () => {
 
       await extension.beforeRegisterNodeDef(nodeType, nodeData, {});
 
-      // Create widgets with proper structure for lora_stacker.js
-      // Widget at index 0 is the AUTOCOMPLETE_TEXT_LORAS widget (created by Vue widgets)
+      // Include a hidden metadata widget ahead of the actual text widget to match runtime ordering.
+      const metadataWidget = {
+        name: "__autocomplete_metadata_text",
+        value: { version: 1, textWidgetName: "text" },
+        options: {},
+      };
+
       const inputWidget = {
         name: "text",
         value: "",
@@ -139,7 +156,7 @@ describe("Node mode change handling", () => {
 
       node = {
         comfyClass: "Lora Stacker (LoraManager)",
-        widgets: [inputWidget, lorasWidget],
+        widgets: [metadataWidget, inputWidget, lorasWidget],
         lorasWidget,
         addInput: vi.fn(),
         mode: 0, // Initial mode
@@ -189,11 +206,18 @@ describe("Node mode change handling", () => {
       const nodeType = { comfyClass: "Lora Loader (LoraManager)", prototype: {} };
       await extension.beforeRegisterNodeDef(nodeType, {}, {});
 
-      // Widget at index 0 is the AUTOCOMPLETE_TEXT_LORAS widget (created by Vue widgets)
+      const metadataWidget = {
+        name: "__autocomplete_metadata_text",
+        value: { version: 1, textWidgetName: "text" },
+        options: {},
+      };
+
       node = {
         comfyClass: "Lora Loader (LoraManager)",
         widgets: [
+          metadataWidget,
           {
+            name: "text",
             value: "",
             options: {},
             callback: null, // Will be set by onNodeCreated

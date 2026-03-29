@@ -114,6 +114,27 @@ export function getNodeKey(node) {
     return `${getNodeGraphId(node)}:${node.id}`;
 }
 
+export function getWidgetByName(node, widgetName) {
+    if (!node || !Array.isArray(node.widgets)) {
+        return null;
+    }
+
+    return node.widgets.find((widget) => widget?.name === widgetName) || null;
+}
+
+export function getWidgetSerializedValue(node, widgetName) {
+    if (!node || !Array.isArray(node.widgets) || !Array.isArray(node.widgets_values)) {
+        return undefined;
+    }
+
+    const widgetIndex = node.widgets.findIndex((widget) => widget?.name === widgetName);
+    if (widgetIndex === -1) {
+        return undefined;
+    }
+
+    return node.widgets_values[widgetIndex];
+}
+
 export function getLinkFromGraph(graph, linkId) {
     if (!graph || graph.links == null) {
         return null;

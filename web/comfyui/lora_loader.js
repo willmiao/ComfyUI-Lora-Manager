@@ -7,6 +7,8 @@ import {
   mergeLoras,
   getAllGraphNodes,
   getNodeFromGraph,
+  getWidgetByName,
+  getWidgetSerializedValue,
 } from "./utils.js";
 import { addLorasWidget } from "./loras_widget.js";
 import { applyLoraValuesToText, debounce } from "./lora_syntax_utils.js";
@@ -148,7 +150,11 @@ app.registerExtension({
         };
 
         // Get the text input widget (AUTOCOMPLETE_TEXT_LORAS type, created by Vue widgets)
-        const inputWidget = this.widgets[0];
+        const inputWidget = getWidgetByName(this, "text");
+        if (!inputWidget) {
+          console.warn("LoRA Manager: text widget not found for Lora Loader");
+          return;
+        }
         this.inputWidget = inputWidget;
 
         const scheduleInputSync = debounce((lorasValue) => {
@@ -227,12 +233,16 @@ app.registerExtension({
       // Restore saved value if exists
       let existingLoras = [];
       if (node.widgets_values && node.widgets_values.length > 0) {
-        // 0 for input widget, 1 for loras widget
-        const savedValue = node.widgets_values[1];
+        const savedValue = getWidgetSerializedValue(node, "loras");
         existingLoras = savedValue || [];
       }
       // Merge the loras data
-      const mergedLoras = mergeLoras(node.widgets[0].value, existingLoras);
+      const inputWidget = node.inputWidget || getWidgetByName(node, "text");
+      if (!inputWidget) {
+        console.warn("LoRA Manager: text widget not found while restoring Lora Loader");
+        return;
+      }
+      const mergedLoras = mergeLoras(inputWidget.value, existingLoras);
       node.lorasWidget.value = mergedLoras;
     }
   },
