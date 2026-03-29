@@ -7,6 +7,7 @@ try:  # pragma: no cover - import fallback for pytest collection
     from .py.nodes.prompt import PromptLM
     from .py.nodes.text import TextLM
     from .py.nodes.lora_stacker import LoraStackerLM
+    from .py.nodes.lora_stack_combiner import LoraStackCombinerLM
     from .py.nodes.save_image import SaveImageLM
     from .py.nodes.debug_metadata import DebugMetadataLM
     from .py.nodes.wanvideo_lora_select import WanVideoLoraSelectLM
@@ -39,6 +40,9 @@ except (
         "py.nodes.trigger_word_toggle"
     ).TriggerWordToggleLM
     LoraStackerLM = importlib.import_module("py.nodes.lora_stacker").LoraStackerLM
+    LoraStackCombinerLM = importlib.import_module(
+        "py.nodes.lora_stack_combiner"
+    ).LoraStackCombinerLM
     SaveImageLM = importlib.import_module("py.nodes.save_image").SaveImageLM
     DebugMetadataLM = importlib.import_module("py.nodes.debug_metadata").DebugMetadataLM
     WanVideoLoraSelectLM = importlib.import_module(
@@ -63,6 +67,7 @@ NODE_CLASS_MAPPINGS = {
     UNETLoaderLM.NAME: UNETLoaderLM,
     TriggerWordToggleLM.NAME: TriggerWordToggleLM,
     LoraStackerLM.NAME: LoraStackerLM,
+    LoraStackCombinerLM.NAME: LoraStackCombinerLM,
     SaveImageLM.NAME: SaveImageLM,
     DebugMetadataLM.NAME: DebugMetadataLM,
     WanVideoLoraSelectLM.NAME: WanVideoLoraSelectLM,
