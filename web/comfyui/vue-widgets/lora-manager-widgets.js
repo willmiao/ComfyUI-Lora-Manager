@@ -2118,14 +2118,14 @@ to { transform: rotate(360deg);
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-918e2bc5] {
+.autocomplete-text-widget[data-v-76ce0f19] {
   background: transparent;
   height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
-.input-wrapper[data-v-918e2bc5] {
+.input-wrapper[data-v-76ce0f19] {
   position: relative;
   flex: 1;
   display: flex;
@@ -2133,7 +2133,7 @@ to { transform: rotate(360deg);
 }
 
 /* Canvas mode styles (default) - matches built-in comfy-multiline-input */
-.text-input[data-v-918e2bc5] {
+.text-input[data-v-76ce0f19] {
   flex: 1;
   width: 100%;
   background-color: var(--comfy-input-bg, #222);
@@ -2150,7 +2150,7 @@ to { transform: rotate(360deg);
 }
 
 /* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
-.text-input.vue-dom-mode[data-v-918e2bc5] {
+.text-input.vue-dom-mode[data-v-76ce0f19] {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
   padding: 8px 12px 30px 12px;  /* Reserve bottom space for clear button */
@@ -2159,12 +2159,12 @@ to { transform: rotate(360deg);
   font-size: 12px;
   font-family: inherit;
 }
-.text-input[data-v-918e2bc5]:focus {
+.text-input[data-v-76ce0f19]:focus {
   outline: none;
 }
 
 /* Clear button styles */
-.clear-button[data-v-918e2bc5] {
+.clear-button[data-v-76ce0f19] {
   position: absolute;
   right: 6px;
   bottom: 6px;  /* Changed from top to bottom */
@@ -2187,31 +2187,31 @@ to { transform: rotate(360deg);
 }
 
 /* Show clear button when hovering over input wrapper */
-.input-wrapper:hover .clear-button[data-v-918e2bc5] {
+.input-wrapper:hover .clear-button[data-v-76ce0f19] {
   opacity: 0.7;
   pointer-events: auto;
 }
-.clear-button[data-v-918e2bc5]:hover {
+.clear-button[data-v-76ce0f19]:hover {
   opacity: 1;
   background: rgba(255, 100, 100, 0.8);
 }
-.clear-button svg[data-v-918e2bc5] {
+.clear-button svg[data-v-76ce0f19] {
   width: 12px;
   height: 12px;
 }
 
 /* Vue DOM mode adjustments for clear button */
-.text-input.vue-dom-mode ~ .clear-button[data-v-918e2bc5] {
+.text-input.vue-dom-mode ~ .clear-button[data-v-76ce0f19] {
   right: 8px;
   bottom: 10px;  /* Changed from top to bottom, adjusted for Vue DOM padding */
   width: 20px;
   height: 20px;
   background: rgba(107, 114, 128, 0.6);
 }
-.text-input.vue-dom-mode ~ .clear-button[data-v-918e2bc5]:hover {
+.text-input.vue-dom-mode ~ .clear-button[data-v-76ce0f19]:hover {
   background: oklch(62% 0.18 25);
 }
-.text-input.vue-dom-mode ~ .clear-button svg[data-v-918e2bc5] {
+.text-input.vue-dom-mode ~ .clear-button svg[data-v-76ce0f19] {
   width: 14px;
   height: 14px;
 }`));
@@ -14748,7 +14748,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         app2.canvas.processMouseWheel(event);
       }
     };
-    const onExternalValueChange = (event) => {
+    const onExternalValueChange = () => {
       updateHasTextState();
     };
     const setupWidgetOnSetValue = () => {
@@ -14847,7 +14847,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-918e2bc5"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-76ce0f19"]]);
 const LORA_PROVIDER_NODE_TYPES$1 = [
   "Lora Stacker (LoraManager)",
   "Lora Randomizer (LoraManager)",
@@ -15127,6 +15127,8 @@ const JSON_DISPLAY_WIDGET_MIN_WIDTH = 300;
 const JSON_DISPLAY_WIDGET_MIN_HEIGHT = 200;
 const AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT = 60;
 const AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT = 100;
+const AUTOCOMPLETE_METADATA_VERSION = 1;
+const LORA_MANAGER_WIDGET_IDS_PROPERTY = "__lm_widget_ids";
 function forwardMiddleMouseToCanvas(container) {
   if (!container) return;
   container.addEventListener("pointerdown", (event) => {
@@ -15397,6 +15399,97 @@ function createJsonDisplayWidget(node) {
   return { widget };
 }
 const widgetInputOptions = /* @__PURE__ */ new Map();
+function getSerializableWidgetNames(node) {
+  return (node.widgets || []).filter((widget) => widget && widget.serialize !== false).map((widget) => widget.name);
+}
+function createAutocompleteMetadataValue(textWidgetName = "text") {
+  return {
+    version: AUTOCOMPLETE_METADATA_VERSION,
+    textWidgetName
+  };
+}
+function shouldBypassAutocompleteWidgetMigration(node, widgetValues) {
+  var _a2, _b;
+  const inputDefs = (_b = (_a2 = node == null ? void 0 : node.constructor) == null ? void 0 : _a2.nodeData) == null ? void 0 : _b.inputs;
+  if (!inputDefs || !Array.isArray(widgetValues)) {
+    return false;
+  }
+  const widgetNames = new Set((node.widgets || []).map((widget) => widget == null ? void 0 : widget.name));
+  const hasAutocompleteMetadataWidget = Array.from(widgetNames).some(
+    (name) => typeof name === "string" && name.startsWith("__lm_autocomplete_meta_")
+  );
+  if (!hasAutocompleteMetadataWidget) {
+    return false;
+  }
+  const originalWidgetsInputs = Object.values(inputDefs).filter(
+    (input) => widgetNames.has(input.name) || input.forceInput
+  );
+  const widgetIndexHasForceInput = originalWidgetsInputs.flatMap(
+    (input) => input.control_after_generate ? [!!input.forceInput, false] : [!!input.forceInput]
+  );
+  return widgetIndexHasForceInput.some(Boolean) && widgetIndexHasForceInput.length === widgetValues.length;
+}
+function remapWidgetValuesByName(widgetValues, savedWidgetNames, currentWidgetNames) {
+  const valueByName = /* @__PURE__ */ new Map();
+  savedWidgetNames.forEach((name, index) => {
+    if (index < widgetValues.length) {
+      valueByName.set(name, widgetValues[index]);
+    }
+  });
+  const remappedValues = [];
+  for (const name of currentWidgetNames) {
+    if (valueByName.has(name)) {
+      remappedValues.push(valueByName.get(name));
+    }
+  }
+  return remappedValues;
+}
+function injectDefaultAutocompleteMetadataValues(widgetValues, currentWidgetNames) {
+  const repairedValues = [];
+  let legacyValueIndex = 0;
+  for (const widgetName of currentWidgetNames) {
+    if (widgetName.startsWith("__lm_autocomplete_meta_")) {
+      const textWidgetName = widgetName.replace("__lm_autocomplete_meta_", "") || "text";
+      repairedValues.push(createAutocompleteMetadataValue(textWidgetName));
+      continue;
+    }
+    if (legacyValueIndex < widgetValues.length) {
+      repairedValues.push(widgetValues[legacyValueIndex]);
+      legacyValueIndex++;
+    }
+  }
+  return repairedValues;
+}
+function normalizeAutocompleteWidgetValues(node, info) {
+  var _a2;
+  if (!info || !Array.isArray(info.widgets_values)) {
+    return;
+  }
+  const currentWidgetNames = getSerializableWidgetNames(node);
+  if (currentWidgetNames.length === 0) {
+    return;
+  }
+  const savedWidgetNames = (_a2 = info.properties) == null ? void 0 : _a2[LORA_MANAGER_WIDGET_IDS_PROPERTY];
+  if (Array.isArray(savedWidgetNames) && savedWidgetNames.length > 0) {
+    const remappedValues = remapWidgetValuesByName(
+      info.widgets_values,
+      savedWidgetNames,
+      currentWidgetNames
+    );
+    info.widgets_values = remappedValues;
+    return;
+  }
+  const metadataWidgetCount = currentWidgetNames.filter(
+    (name) => name.startsWith("__lm_autocomplete_meta_")
+  ).length;
+  if (metadataWidgetCount > 0 && info.widgets_values.length === currentWidgetNames.length - metadataWidgetCount) {
+    const repairedValues = injectDefaultAutocompleteMetadataValues(
+      info.widgets_values,
+      currentWidgetNames
+    );
+    info.widgets_values = repairedValues;
+  }
+}
 const initVueDomModeListener = () => {
   var _a2, _b;
   if ((_b = (_a2 = app$1.ui) == null ? void 0 : _a2.settings) == null ? void 0 : _b.addEventListener) {
@@ -15436,9 +15529,10 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
   const widgetElementRef = { inputEl: void 0 };
   container.__widgetInputEl = widgetElementRef;
   const metadataWidget = node.addWidget("text", metadataWidgetName, {
-    version: 1,
+    version: AUTOCOMPLETE_METADATA_VERSION,
     textWidgetName: widgetName
   });
+  metadataWidget.value = createAutocompleteMetadataValue(widgetName);
   metadataWidget.type = "LORA_MANAGER_AUTOCOMPLETE_METADATA";
   metadataWidget.hidden = true;
   metadataWidget.computeSize = () => [0, -4];
@@ -15562,11 +15656,30 @@ app$1.registerExtension({
     var _a2, _b;
     const comfyClass = nodeType.comfyClass;
     const inputs = { ...(_a2 = nodeData.input) == null ? void 0 : _a2.required, ...(_b = nodeData.input) == null ? void 0 : _b.optional };
+    let hasAutocompleteWidget = false;
     for (const [inputName, inputDef] of Object.entries(inputs)) {
       if (Array.isArray(inputDef) && typeof inputDef[0] === "string" && inputDef[0].startsWith("AUTOCOMPLETE_TEXT_")) {
         const options = inputDef[1] || {};
         widgetInputOptions.set(`${nodeData.name}:${inputName}`, options);
+        hasAutocompleteWidget = true;
       }
+    }
+    if (hasAutocompleteWidget) {
+      const originalOnSerialize = nodeType.prototype.onSerialize;
+      const originalConfigure = nodeType.prototype.configure;
+      nodeType.prototype.onSerialize = function(serialized) {
+        originalOnSerialize == null ? void 0 : originalOnSerialize.apply(this, arguments);
+        serialized.properties = serialized.properties || {};
+        const widgetIds = getSerializableWidgetNames(this);
+        serialized.properties[LORA_MANAGER_WIDGET_IDS_PROPERTY] = widgetIds;
+      };
+      nodeType.prototype.configure = function(info) {
+        normalizeAutocompleteWidgetValues(this, info);
+        if (shouldBypassAutocompleteWidgetMigration(this, (info == null ? void 0 : info.widgets_values) ?? [])) {
+          info.widgets_values = [...info.widgets_values ?? [], null];
+        }
+        return originalConfigure == null ? void 0 : originalConfigure.apply(this, arguments);
+      };
     }
     if (LORA_PROVIDER_NODE_TYPES$1.includes(comfyClass)) {
       const originalOnNodeCreated = nodeType.prototype.onNodeCreated;

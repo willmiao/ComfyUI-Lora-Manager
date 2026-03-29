@@ -139,7 +139,7 @@ const onWheel = (event: WheelEvent) => {
 }
 
 // Handle external value changes (e.g., from "send lora to workflow")
-const onExternalValueChange = (event: CustomEvent<{ value: string }>) => {
+const onExternalValueChange = () => {
   updateHasTextState()
 }
 
