@@ -565,6 +565,26 @@
     color: var(--lora-accent);
 }
 
+.send-recipe-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    opacity: 0.7;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--border-radius-xs);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.send-recipe-btn:hover {
+    opacity: 1;
+    background: var(--lora-surface);
+    color: var(--lora-accent);
+}
+
 #recipeLorasCount {
     font-size: 0.9em;
     color: var(--text-color);

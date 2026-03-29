@@ -1069,13 +1069,18 @@
                 "viewOnCivitai": "Civitaiで表示",
                 "viewOnCivitaiText": "Civitaiで表示",
                 "viewCreatorProfile": "作成者プロフィールを表示",
-                "openFileLocation": "ファイルの場所を開く"
+                "openFileLocation": "ファイルの場所を開く",
+                "sendToWorkflow": "ComfyUI に送信",
+                "sendToWorkflowText": "ComfyUI に送信"
             },
             "openFileLocation": {
                 "success": "ファイルの場所を正常に開きました",
                 "failed": "ファイルの場所を開くのに失敗しました",
                 "copied": "パスをクリップボードにコピーしました: {{path}}",
                 "clipboardFallback": "パス: {{path}}"
+            },
+            "sendToWorkflow": {
+                "noFilePath": "ComfyUI に送信できません：ファイルパスがありません"
             },
             "metadata": {
                 "version": "バージョン",
@@ -1506,6 +1511,7 @@
             "tagsUpdated": "レシピタグが正常に更新されました",
             "sourceUrlUpdated": "ソースURLが正常に更新されました",
             "noRecipeId": "レシピIDが利用できません",
+            "sendToWorkflowFailed": "ワークフローへのレシピ送信に失敗しました：{message}",
             "copyFailed": "レシピ構文のコピーエラー：{message}",
             "noMissingLoras": "ダウンロードする不足LoRAがありません",
             "missingLorasInfoFailed": "不足LoRAの情報取得に失敗しました",

@@ -835,7 +835,8 @@
 }
 
 [data-theme="dark"] .creator-info,
-[data-theme="dark"] .civitai-view {
+[data-theme="dark"] .civitai-view,
+[data-theme="dark"] .modal-send-btn {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--lora-border);
 }
@@ -875,7 +876,8 @@
 
 /* Add hover effect for creator info */
 .creator-info:hover,
-.civitai-view:hover {
+.civitai-view:hover,
+.modal-send-btn:hover {
     background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
     border-color: var(--lora-accent);
     transform: translateY(-1px);
@@ -909,4 +911,43 @@
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+/* Send to ComfyUI Button */
+.modal-send-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--border-radius-sm);
+    color: var(--text-color);
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9em;
+    transition: all 0.2s;
+}
+
+[data-theme="dark"] .modal-send-btn {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--lora-border);
+}
+
+.modal-send-btn:hover {
+    background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
+    border-color: var(--lora-accent);
+    transform: translateY(-1px);
+}
+
+.modal-send-btn:active {
+    transform: translateY(0);
+}
+
+.modal-send-btn i {
+    font-size: 14px;
+}
+
+.modal-send-btn span {
+    white-space: nowrap;
 }

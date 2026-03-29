@@ -1069,13 +1069,18 @@
                 "viewOnCivitai": "在 Civitai 查看",
                 "viewOnCivitaiText": "在 Civitai 查看",
                 "viewCreatorProfile": "查看创作者主页",
-                "openFileLocation": "打开文件位置"
+                "openFileLocation": "打开文件位置",
+                "sendToWorkflow": "发送到 ComfyUI",
+                "sendToWorkflowText": "发送到 ComfyUI"
             },
             "openFileLocation": {
                 "success": "文件位置已成功打开",
                 "failed": "打开文件位置失败",
                 "copied": "路径已复制到剪贴板：{{path}}",
                 "clipboardFallback": "路径：{{path}}"
+            },
+            "sendToWorkflow": {
+                "noFilePath": "无法发送到 ComfyUI：没有可用的文件路径"
             },
             "metadata": {
                 "version": "版本",
@@ -1506,6 +1511,7 @@
             "tagsUpdated": "配方标签更新成功",
             "sourceUrlUpdated": "来源 URL 更新成功",
             "noRecipeId": "无配方 ID",
+            "sendToWorkflowFailed": "发送配方到工作流失败：{message}",
             "copyFailed": "复制配方语法出错：{message}",
             "noMissingLoras": "没有缺失的 LoRA 可下载",
             "missingLorasInfoFailed": "获取缺失 LoRA 信息失败",

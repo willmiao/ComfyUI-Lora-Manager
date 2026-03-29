@@ -1069,13 +1069,18 @@
                 "viewOnCivitai": "Ver en Civitai",
                 "viewOnCivitaiText": "Ver en Civitai",
                 "viewCreatorProfile": "Ver perfil del creador",
-                "openFileLocation": "Abrir ubicación del archivo"
+                "openFileLocation": "Abrir ubicación del archivo",
+                "sendToWorkflow": "Enviar a ComfyUI",
+                "sendToWorkflowText": "Enviar a ComfyUI"
             },
             "openFileLocation": {
                 "success": "Ubicación del archivo abierta exitosamente",
                 "failed": "Error al abrir la ubicación del archivo",
                 "copied": "Ruta copiada al portapapeles: {{path}}",
                 "clipboardFallback": "Ruta: {{path}}"
+            },
+            "sendToWorkflow": {
+                "noFilePath": "No se puede enviar a ComfyUI: no hay ruta de archivo disponible"
             },
             "metadata": {
                 "version": "Versión",
@@ -1506,6 +1511,7 @@
             "tagsUpdated": "Etiquetas de receta actualizadas exitosamente",
             "sourceUrlUpdated": "URL de origen actualizada exitosamente",
             "noRecipeId": "No hay ID de receta disponible",
+            "sendToWorkflowFailed": "Error al enviar la receta al flujo de trabajo: {message}",
             "copyFailed": "Error copiando sintaxis de receta: {message}",
             "noMissingLoras": "No hay LoRAs faltantes para descargar",
             "missingLorasInfoFailed": "Error al obtener información de LoRAs faltantes",

@@ -1069,13 +1069,18 @@
                 "viewOnCivitai": "Auf Civitai anzeigen",
                 "viewOnCivitaiText": "Auf Civitai anzeigen",
                 "viewCreatorProfile": "Ersteller-Profil anzeigen",
-                "openFileLocation": "Dateispeicherort öffnen"
+                "openFileLocation": "Dateispeicherort öffnen",
+                "sendToWorkflow": "An ComfyUI senden",
+                "sendToWorkflowText": "An ComfyUI senden"
             },
             "openFileLocation": {
                 "success": "Dateispeicherort erfolgreich geöffnet",
                 "failed": "Fehler beim Öffnen des Dateispeicherorts",
                 "copied": "Pfad in die Zwischenablage kopiert: {{path}}",
                 "clipboardFallback": "Pfad: {{path}}"
+            },
+            "sendToWorkflow": {
+                "noFilePath": "Kann nicht an ComfyUI senden: Kein Dateipfad verfügbar"
             },
             "metadata": {
                 "version": "Version",
@@ -1506,6 +1511,7 @@
             "tagsUpdated": "Rezept-Tags erfolgreich aktualisiert",
             "sourceUrlUpdated": "Quell-URL erfolgreich aktualisiert",
             "noRecipeId": "Keine Rezept-ID verfügbar",
+            "sendToWorkflowFailed": "Fehler beim Senden des Rezepts an den Workflow: {message}",
             "copyFailed": "Fehler beim Kopieren der Rezept-Syntax: {message}",
             "noMissingLoras": "Keine fehlenden LoRAs zum Herunterladen",
             "missingLorasInfoFailed": "Fehler beim Abrufen der Informationen für fehlende LoRAs",

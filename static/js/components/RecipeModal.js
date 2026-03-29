@@ -1,5 +1,5 @@
 // Recipe Modal Component
-import { showToast, copyToClipboard, sendModelPathToWorkflow, openCivitaiByMetadata } from '../utils/uiHelpers.js';
+import { showToast, copyToClipboard, sendLoraToWorkflow, sendModelPathToWorkflow, openCivitaiByMetadata } from '../utils/uiHelpers.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { state } from '../state/index.js';
 import { setSessionItem, removeSessionItem } from '../utils/storageHelpers.js';
@@ -778,6 +778,7 @@ class RecipeModal {
         const copyPromptBtn = document.getElementById('copyPromptBtn');
         const copyNegativePromptBtn = document.getElementById('copyNegativePromptBtn');
         const copyRecipeSyntaxBtn = document.getElementById('copyRecipeSyntaxBtn');
+        const sendRecipeBtn = document.getElementById('sendRecipeBtn');
 
         if (copyPromptBtn) {
             copyPromptBtn.addEventListener('click', () => {
@@ -797,6 +798,13 @@ class RecipeModal {
             copyRecipeSyntaxBtn.addEventListener('click', () => {
                 // Use backend API to get recipe syntax
                 this.fetchAndCopyRecipeSyntax();
+            });
+        }
+
+        if (sendRecipeBtn) {
+            sendRecipeBtn.addEventListener('click', () => {
+                // Send recipe to ComfyUI workflow
+                this.sendRecipeToWorkflow();
             });
         }
     }
@@ -833,6 +841,35 @@ class RecipeModal {
     // Helper method to copy text to clipboard
     copyToClipboard(text, successMessage) {
         copyToClipboard(text, successMessage);
+    }
+
+    // Send recipe to ComfyUI workflow
+    async sendRecipeToWorkflow() {
+        if (!this.recipeId) {
+            showToast('toast.recipes.noRecipeId', {}, 'error');
+            return;
+        }
+
+        try {
+            // Fetch recipe syntax from backend
+            const response = await fetch(`/api/lm/recipe/${this.recipeId}/syntax`);
+
+            if (!response.ok) {
+                throw new Error(`Failed to get recipe syntax: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success && data.syntax) {
+                // Send the recipe syntax to ComfyUI workflow
+                await sendLoraToWorkflow(data.syntax, false, 'recipe');
+            } else {
+                throw new Error(data.error || 'No syntax returned from server');
+            }
+        } catch (error) {
+            console.error('Error sending recipe to workflow:', error);
+            showToast('toast.recipes.sendToWorkflowFailed', { message: error.message }, 'error');
+        }
     }
 
     // Add new method to handle downloading missing LoRAs

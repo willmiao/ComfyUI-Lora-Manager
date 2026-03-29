@@ -1069,13 +1069,18 @@
                 "viewOnCivitai": "View on Civitai",
                 "viewOnCivitaiText": "View on Civitai",
                 "viewCreatorProfile": "View Creator Profile",
-                "openFileLocation": "Open File Location"
+                "openFileLocation": "Open File Location",
+                "sendToWorkflow": "Send to ComfyUI",
+                "sendToWorkflowText": "Send to ComfyUI"
             },
             "openFileLocation": {
                 "success": "File location opened successfully",
                 "failed": "Failed to open file location",
                 "copied": "Path copied to clipboard: {{path}}",
                 "clipboardFallback": "Path: {{path}}"
+            },
+            "sendToWorkflow": {
+                "noFilePath": "Unable to send to ComfyUI: No file path available"
             },
             "metadata": {
                 "version": "Version",
@@ -1506,6 +1511,7 @@
             "tagsUpdated": "Recipe tags updated successfully",
             "sourceUrlUpdated": "Source URL updated successfully",
             "noRecipeId": "No recipe ID available",
+            "sendToWorkflowFailed": "Failed to send recipe to workflow: {message}",
             "copyFailed": "Error copying recipe syntax: {message}",
             "noMissingLoras": "No missing LoRAs to download",
             "missingLorasInfoFailed": "Failed to get information for missing LoRAs",

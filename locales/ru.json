@@ -1069,13 +1069,18 @@
                 "viewOnCivitai": "Посмотреть на Civitai",
                 "viewOnCivitaiText": "Посмотреть на Civitai",
                 "viewCreatorProfile": "Посмотреть профиль создателя",
-                "openFileLocation": "Открыть расположение файла"
+                "openFileLocation": "Открыть расположение файла",
+                "sendToWorkflow": "Отправить в ComfyUI",
+                "sendToWorkflowText": "Отправить в ComfyUI"
             },
             "openFileLocation": {
                 "success": "Расположение файла успешно открыто",
                 "failed": "Не удалось открыть расположение файла",
                 "copied": "Путь скопирован в буфер обмена: {{path}}",
                 "clipboardFallback": "Путь: {{path}}"
+            },
+            "sendToWorkflow": {
+                "noFilePath": "Невозможно отправить в ComfyUI: путь к файлу недоступен"
             },
             "metadata": {
                 "version": "Версия",
@@ -1506,6 +1511,7 @@
             "tagsUpdated": "Теги рецепта успешно обновлены",
             "sourceUrlUpdated": "Исходный URL успешно обновлен",
             "noRecipeId": "ID рецепта недоступен",
+            "sendToWorkflowFailed": "Не удалось отправить рецепт в рабочий процесс: {message}",
             "copyFailed": "Ошибка копирования синтаксиса рецепта: {message}",
             "noMissingLoras": "Нет отсутствующих LoRAs для загрузки",
             "missingLorasInfoFailed": "Не удалось получить информацию для отсутствующих LoRAs",

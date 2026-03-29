@@ -1069,13 +1069,18 @@
                 "viewOnCivitai": "Voir sur Civitai",
                 "viewOnCivitaiText": "Voir sur Civitai",
                 "viewCreatorProfile": "Voir le profil du créateur",
-                "openFileLocation": "Ouvrir l'emplacement du fichier"
+                "openFileLocation": "Ouvrir l'emplacement du fichier",
+                "sendToWorkflow": "Envoyer vers ComfyUI",
+                "sendToWorkflowText": "Envoyer vers ComfyUI"
             },
             "openFileLocation": {
                 "success": "Emplacement du fichier ouvert avec succès",
                 "failed": "Échec de l'ouverture de l'emplacement du fichier",
                 "copied": "Chemin copié dans le presse-papiers: {{path}}",
                 "clipboardFallback": "Chemin: {{path}}"
+            },
+            "sendToWorkflow": {
+                "noFilePath": "Impossible d'envoyer vers ComfyUI : aucun chemin de fichier disponible"
             },
             "metadata": {
                 "version": "Version",
@@ -1506,6 +1511,7 @@
             "tagsUpdated": "Tags de la recipe mis à jour avec succès",
             "sourceUrlUpdated": "URL source mise à jour avec succès",
             "noRecipeId": "Aucun ID de recipe disponible",
+            "sendToWorkflowFailed": "Échec de l'envoi de la recette vers le workflow : {message}",
             "copyFailed": "Erreur lors de la copie de la syntaxe de la recipe : {message}",
             "noMissingLoras": "Aucun LoRA manquant à télécharger",
             "missingLorasInfoFailed": "Échec de l'obtention des informations pour les LoRAs manquants",

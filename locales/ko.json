@@ -1069,13 +1069,18 @@
                 "viewOnCivitai": "Civitai에서 보기",
                 "viewOnCivitaiText": "Civitai에서 보기",
                 "viewCreatorProfile": "제작자 프로필 보기",
-                "openFileLocation": "파일 위치 열기"
+                "openFileLocation": "파일 위치 열기",
+                "sendToWorkflow": "ComfyUI로 보내기",
+                "sendToWorkflowText": "ComfyUI로 보내기"
             },
             "openFileLocation": {
                 "success": "파일 위치가 성공적으로 열렸습니다",
                 "failed": "파일 위치 열기에 실패했습니다",
                 "copied": "경로가 클립보드에 복사되었습니다: {{path}}",
                 "clipboardFallback": "경로: {{path}}"
+            },
+            "sendToWorkflow": {
+                "noFilePath": "ComfyUI로 보낼 수 없습니다: 파일 경로가 없습니다"
             },
             "metadata": {
                 "version": "버전",
@@ -1506,6 +1511,7 @@
             "tagsUpdated": "레시피 태그가 성공적으로 업데이트되었습니다",
             "sourceUrlUpdated": "소스 URL이 성공적으로 업데이트되었습니다",
             "noRecipeId": "사용 가능한 레시피 ID가 없습니다",
+            "sendToWorkflowFailed": "워크플로우에 레시피 보내기 실패: {message}",
             "copyFailed": "레시피 문법 복사 오류: {message}",
             "noMissingLoras": "다운로드할 누락된 LoRA가 없습니다",
             "missingLorasInfoFailed": "누락된 LoRA 정보를 가져오는데 실패했습니다",

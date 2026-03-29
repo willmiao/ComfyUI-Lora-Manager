@@ -1069,13 +1069,18 @@
                 "viewOnCivitai": "הצג ב-Civitai",
                 "viewOnCivitaiText": "הצג ב-Civitai",
                 "viewCreatorProfile": "הצג פרופיל יוצר",
-                "openFileLocation": "פתח מיקום קובץ"
+                "openFileLocation": "פתח מיקום קובץ",
+                "sendToWorkflow": "שלח ל-ComfyUI",
+                "sendToWorkflowText": "שלח ל-ComfyUI"
             },
             "openFileLocation": {
                 "success": "מיקום הקובץ נפתח בהצלחה",
                 "failed": "פתיחת מיקום הקובץ נכשלה",
                 "copied": "הנתיב הועתק ללוח העריכה: {{path}}",
                 "clipboardFallback": "נתיב: {{path}}"
+            },
+            "sendToWorkflow": {
+                "noFilePath": "לא ניתן לשלוח ל-ComfyUI: אין נתיב קובץ זמין"
             },
             "metadata": {
                 "version": "גרסה",
@@ -1506,6 +1511,7 @@
             "tagsUpdated": "תגיות המתכון עודכנו בהצלחה",
             "sourceUrlUpdated": "כתובת ה-URL המקורית עודכנה בהצלחה",
             "noRecipeId": "אין מזהה מתכון זמין",
+            "sendToWorkflowFailed": "נכשל שליחת המתכון ל-workflow: {message}",
             "copyFailed": "שגיאה בהעתקת תחביר המתכון: {message}",
             "noMissingLoras": "אין LoRAs חסרים להורדה",
             "missingLorasInfoFailed": "קבלת מידע עבור LoRAs חסרים נכשלה",

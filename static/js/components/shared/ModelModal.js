@@ -1,5 +1,6 @@
-import { showToast, openCivitai } from '../../utils/uiHelpers.js';
+import { showToast, openCivitai, sendLoraToWorkflow, sendModelPathToWorkflow, buildLoraSyntax } from '../../utils/uiHelpers.js';
 import { modalManager } from '../../managers/ModalManager.js';
+import { MODEL_TYPES } from '../../api/apiConfig.js';
 import {
     toggleShowcase,
     setupShowcaseScroll,
@@ -294,6 +295,17 @@ export async function showModelModal(model, modelType) {
         ].join('\n')
         : '';
     const headerActionItems = [];
+    
+    // Add send to ComfyUI button for all model types
+    const sendToWorkflowTitle = translate('modals.model.actions.sendToWorkflow', {}, 'Send to ComfyUI');
+    const sendToWorkflowButton = `
+        <button class="modal-send-btn" data-action="send-to-workflow" data-model-type="${modelType}" title="${sendToWorkflowTitle}">
+            <i class="fas fa-paper-plane"></i>
+            <span>${translate('modals.model.actions.sendToWorkflowText', {}, 'Send to ComfyUI')}</span>
+        </button>
+    `.trim();
+    headerActionItems.push(indentMarkup(sendToWorkflowButton, 20));
+    
     if (creatorActionsMarkup) {
         headerActionItems.push(creatorActionsMarkup);
     }
@@ -615,6 +627,14 @@ export async function showModelModal(model, modelType) {
     const activeModalElement = document.getElementById(modalId);
     if (activeModalElement) {
         activeModalElement.dataset.filePath = modelWithFullData.file_path || '';
+        // Store usage_tips for LoRA models
+        if (modelType === 'loras' && modelWithFullData.usage_tips) {
+            activeModalElement.dataset.usageTips = modelWithFullData.usage_tips;
+        }
+        // Store sub_type for checkpoint models
+        if (modelType === 'checkpoints' && modelWithFullData.sub_type) {
+            activeModalElement.dataset.subType = modelWithFullData.sub_type;
+        }
     }
     updateVersionsTabBadge(updateAvailabilityState.hasUpdateAvailable);
     const versionsTabController = initVersionsTab({
@@ -746,6 +766,9 @@ function setupEventHandlers(filePath, modelType) {
                 break;
             case 'nav-next':
                 handleDirectionalNavigation('next', modelType);
+                break;
+            case 'send-to-workflow':
+                handleSendToWorkflow(target, modelType);
                 break;
         }
     }
@@ -1023,6 +1046,70 @@ async function openFileLocation(filePath) {
         }
     } catch (err) {
         showToast('modals.model.openFileLocation.failed', {}, 'error');
+    }
+}
+
+async function handleSendToWorkflow(target, modelType) {
+    const filePath = getModalFilePath();
+    if (!filePath) {
+        showToast('modals.model.sendToWorkflow.noFilePath', {}, 'error');
+        return;
+    }
+
+    // Get the current model data from the modal
+    const modalElement = document.getElementById('modelModal');
+    const currentFileName = modalElement?.querySelector('#file-name')?.textContent || '';
+    
+    if (modelType === 'loras') {
+        // For LoRA: Build syntax from usage tips and send
+        const usageTipsData = modalElement?.dataset?.usageTips;
+        const usageTips = usageTipsData ? JSON.parse(usageTipsData) : {};
+        const loraSyntax = buildLoraSyntax(currentFileName, usageTips);
+        await sendLoraToWorkflow(loraSyntax, false, 'lora');
+    } else if (modelType === 'checkpoints') {
+        // For Checkpoint: Send model path
+        const subtype = (modalElement?.dataset?.subType || 'checkpoint').toLowerCase();
+        const isDiffusionModel = subtype === 'diffusion_model';
+        const widgetName = isDiffusionModel ? 'unet_name' : 'ckpt_name';
+        const actionTypeText = translate(
+            isDiffusionModel ? 'uiHelpers.nodeSelector.diffusionModel' : 'uiHelpers.nodeSelector.checkpoint',
+            {},
+            isDiffusionModel ? 'Diffusion Model' : 'Checkpoint'
+        );
+        const successMessage = translate(
+            isDiffusionModel ? 'uiHelpers.workflow.diffusionModelUpdated' : 'uiHelpers.workflow.checkpointUpdated',
+            {},
+            isDiffusionModel ? 'Diffusion model updated in workflow' : 'Checkpoint updated in workflow'
+        );
+        const failureMessage = translate(
+            isDiffusionModel ? 'uiHelpers.workflow.diffusionModelFailed' : 'uiHelpers.workflow.checkpointFailed',
+            {},
+            isDiffusionModel ? 'Failed to update diffusion model node' : 'Failed to update checkpoint node'
+        );
+        const missingNodesMessage = translate(
+            'uiHelpers.workflow.noMatchingNodes',
+            {},
+            'No compatible nodes available in the current workflow'
+        );
+        const missingTargetMessage = translate(
+            'uiHelpers.workflow.noTargetNodeSelected',
+            {},
+            'No target node selected'
+        );
+
+        await sendModelPathToWorkflow(filePath, {
+            widgetName,
+            collectionType: MODEL_TYPES.CHECKPOINT,
+            actionTypeText,
+            successMessage,
+            failureMessage,
+            missingNodesMessage,
+            missingTargetMessage,
+        });
+    } else if (modelType === 'embeddings') {
+        // For Embedding: Send as LoRA syntax (embedding name only)
+        const embeddingSyntax = `<embed:${currentFileName}:1>`;
+        await sendLoraToWorkflow(embeddingSyntax, false, 'embedding');
     }
 }
 
