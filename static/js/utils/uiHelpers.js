@@ -184,14 +184,13 @@ function filterByFolder(folderPath) {
 }
 
 export function openCivitaiByMetadata(civitaiId, versionId, modelName = null) {
-  if (civitaiId) {
-    let url = `https://civitai.com/models/${civitaiId}`;
-    if (versionId) {
-      url += `?modelVersionId=${versionId}`;
-    }
-    window.open(url, '_blank');
+  if (versionId) {
+    // Use model-versions endpoint which auto-redirects to correct model page
+    window.open(`https://civitai.com/model-versions/${versionId}`, '_blank');
+  } else if (civitaiId) {
+    window.open(`https://civitai.com/models/${civitaiId}`, '_blank');
   } else if (modelName) {
-    // 如果没有ID，尝试使用名称搜索
+    // Fallback: search by name
     window.open(`https://civitai.com/models?query=${encodeURIComponent(modelName)}`, '_blank');
   }
 }

@@ -1259,7 +1259,7 @@ class RecipeModal {
             const versionId = checkpoint.id || checkpoint.modelVersionId;
             const modelName = checkpoint.name || checkpoint.modelName || checkpoint.file_name;
 
-            if (modelId || modelName) {
+            if (modelId || versionId || modelName) {
                 openCivitaiByMetadata(modelId, versionId, modelName);
                 return;
             }
@@ -1317,7 +1317,7 @@ class RecipeModal {
                 const versionId = lora.id || lora.modelVersionId;
                 const modelName = lora.modelName || lora.name || lora.file_name;
 
-                if (modelId || modelName) {
+                if (modelId || versionId || modelName) {
                     openCivitaiByMetadata(modelId, versionId, modelName);
                     return;
                 }
