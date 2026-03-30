@@ -87,6 +87,14 @@ vi.mock(I18N_HELPERS_MODULE, () => ({
   translate: vi.fn((_, __, fallback) => fallback || ''),
 }));
 
+vi.mock('../../../static/js/api/apiConfig.js', () => ({
+  MODEL_TYPES: {
+    LORA: 'loras',
+    CHECKPOINT: 'checkpoints',
+    EMBEDDING: 'embeddings'
+  }
+}));
+
 vi.mock(API_FACTORY, () => ({
   getModelApiClient: vi.fn(),
 }));
