@@ -839,8 +839,8 @@
         "unpinSidebar": "Sidebar lösen",
         "switchToListView": "Zur Listenansicht wechseln",
         "switchToTreeView": "Zur Baumansicht wechseln",
-        "recursiveOn": "Unterordner durchsuchen",
-        "recursiveOff": "Nur aktuellen Ordner durchsuchen",
+        "recursiveOn": "Unterordner einbeziehen",
+        "recursiveOff": "Nur aktueller Ordner",
         "recursiveUnavailable": "Rekursive Suche ist nur in der Baumansicht verfügbar",
         "collapseAllDisabled": "Im Listenmodus nicht verfügbar",
         "dragDrop": {

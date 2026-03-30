@@ -839,8 +839,8 @@
         "unpinSidebar": "שחרר סרגל צד",
         "switchToListView": "עבור לתצוגת רשימה",
         "switchToTreeView": "תצוגת עץ",
-        "recursiveOn": "חיפוש בתיקיות משנה",
-        "recursiveOff": "חיפוש רק בתיקייה הנוכחית",
+        "recursiveOn": "כלול תיקיות משנה",
+        "recursiveOff": "רק התיקייה הנוכחית",
         "recursiveUnavailable": "חיפוש רקורסיבי זמין רק בתצוגת עץ",
         "collapseAllDisabled": "לא זמין בתצוגת רשימה",
         "dragDrop": {

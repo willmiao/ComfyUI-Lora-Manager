@@ -839,8 +839,8 @@
         "unpinSidebar": "Открепить боковую панель",
         "switchToListView": "Переключить на вид списка",
         "switchToTreeView": "Переключить на древовидный вид",
-        "recursiveOn": "Искать во вложенных папках",
-        "recursiveOff": "Искать только в текущей папке",
+        "recursiveOn": "Включать вложенные папки",
+        "recursiveOff": "Только текущая папка",
         "recursiveUnavailable": "Рекурсивный поиск доступен только в режиме дерева",
         "collapseAllDisabled": "Недоступно в виде списка",
         "dragDrop": {

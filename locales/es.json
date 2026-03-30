@@ -839,8 +839,8 @@
         "unpinSidebar": "Desfijar barra lateral",
         "switchToListView": "Cambiar a vista de lista",
         "switchToTreeView": "Cambiar a vista de árbol",
-        "recursiveOn": "Buscar en subcarpetas",
-        "recursiveOff": "Buscar solo en la carpeta actual",
+        "recursiveOn": "Incluir subcarpetas",
+        "recursiveOff": "Solo carpeta actual",
         "recursiveUnavailable": "La búsqueda recursiva solo está disponible en la vista en árbol",
         "collapseAllDisabled": "No disponible en vista de lista",
         "dragDrop": {
