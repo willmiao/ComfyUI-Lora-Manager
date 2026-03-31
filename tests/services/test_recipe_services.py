@@ -7,7 +7,11 @@ from types import SimpleNamespace
 import pytest
 
 from py.services.recipes.analysis_service import RecipeAnalysisService
-from py.services.recipes.errors import RecipeDownloadError, RecipeNotFoundError
+from py.services.recipes.errors import (
+    RecipeDownloadError,
+    RecipeNotFoundError,
+    RecipeValidationError,
+)
 from py.services.recipes.persistence_service import RecipePersistenceService
 
 
@@ -484,6 +488,50 @@ async def test_move_recipe_updates_paths(tmp_path):
     stored = json.loads(Path(result.payload["json_path"]).read_text())
     assert stored["folder"] == "nested"
     assert stored["file_path"] == result.payload["new_file_path"]
+
+
+@pytest.mark.asyncio
+async def test_update_recipe_accepts_gen_params() -> None:
+    class DummyScanner:
+        def __init__(self):
+            self.calls = []
+
+        async def update_recipe_metadata(self, recipe_id: str, updates: dict[str, object]):
+            self.calls.append((recipe_id, updates))
+            return True
+
+    scanner = DummyScanner()
+    service = RecipePersistenceService(
+        exif_utils=DummyExifUtils(),
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    updates = {"gen_params": {"prompt": "updated prompt", "steps": 28}}
+    result = await service.update_recipe(
+        recipe_scanner=scanner,
+        recipe_id="recipe-1",
+        updates=updates,
+    )
+
+    assert result.payload["success"] is True
+    assert scanner.calls == [("recipe-1", updates)]
+
+
+@pytest.mark.asyncio
+async def test_update_recipe_rejects_non_object_gen_params() -> None:
+    service = RecipePersistenceService(
+        exif_utils=DummyExifUtils(),
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    with pytest.raises(RecipeValidationError, match="gen_params must be an object"):
+        await service.update_recipe(
+            recipe_scanner=SimpleNamespace(),
+            recipe_id="recipe-1",
+            updates={"gen_params": "invalid"},
+        )
 
 
 @pytest.mark.asyncio

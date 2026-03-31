@@ -424,6 +424,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
 }
 
 .param-header label {
@@ -431,7 +432,14 @@
     color: var(--text-color);
 }
 
-.copy-btn {
+.param-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.copy-btn,
+.edit-btn {
     background: none;
     border: none;
     color: var(--text-color);
@@ -442,7 +450,8 @@
     transition: all 0.2s;
 }
 
-.copy-btn:hover {
+.copy-btn:hover,
+.edit-btn:hover {
     opacity: 1;
     background: var(--lora-surface);
 }
@@ -459,6 +468,48 @@
     overflow-y: auto;
     white-space: pre-wrap;
     word-break: break-word;
+}
+
+.param-content.hide {
+    display: none;
+}
+
+.param-content.is-placeholder {
+    color: color-mix(in oklch, var(--text-color), transparent 35%);
+    font-style: italic;
+}
+
+.param-editor {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.param-editor.active {
+    display: flex;
+}
+
+.param-textarea {
+    width: 100%;
+    max-width: 100%;
+    min-height: 140px;
+    resize: vertical;
+    background: var(--bg-color);
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-xs);
+    padding: 10px 12px;
+    font-size: 0.9em;
+    line-height: 1.5;
+    color: var(--text-color);
+    font-family: inherit;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+.param-editor-hint {
+    font-size: 0.78em;
+    line-height: 1.4;
+    color: color-mix(in oklch, var(--text-color), transparent 35%);
 }
 
 /* Other Parameters */

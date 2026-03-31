@@ -132,6 +132,7 @@ class StubPersistenceService:
         self.save_calls: List[Dict[str, Any]] = []
         self.delete_calls: List[str] = []
         self.move_calls: List[Dict[str, str]] = []
+        self.update_calls: List[Dict[str, Any]] = []
         self.save_result = SimpleNamespace(
             payload={"success": True, "recipe_id": "stub-id"}, status=200
         )
@@ -182,7 +183,14 @@ class StubPersistenceService:
 
     async def update_recipe(
         self, *, recipe_scanner, recipe_id: str, updates: Dict[str, Any]
-    ) -> SimpleNamespace:  # pragma: no cover - unused by smoke tests
+    ) -> SimpleNamespace:
+        self.update_calls.append(
+            {
+                "recipe_scanner": recipe_scanner,
+                "recipe_id": recipe_id,
+                "updates": updates,
+            }
+        )
         return SimpleNamespace(
             payload={"success": True, "recipe_id": recipe_id, "updates": updates},
             status=200,
@@ -507,6 +515,33 @@ async def test_import_remote_recipe_falls_back_to_request_base_model(
         metadata = harness.persistence.save_calls[-1]["metadata"]
         assert metadata["base_model"] == "Flux"
         assert provider_calls == ["77"]
+
+
+async def test_update_recipe_accepts_gen_params(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        payload = {
+            "gen_params": {
+                "prompt": "updated prompt",
+                "negative_prompt": "updated negative",
+                "steps": 30,
+            }
+        }
+
+        response = await harness.client.put(
+            "/api/lm/recipe/recipe-42/update",
+            json=payload,
+        )
+        data = await response.json()
+
+        assert response.status == 200
+        assert data["success"] is True
+        assert harness.persistence.update_calls == [
+            {
+                "recipe_scanner": harness.scanner,
+                "recipe_id": "recipe-42",
+                "updates": payload,
+            }
+        ]
 
 
 async def test_import_remote_video_recipe(monkeypatch, tmp_path: Path) -> None:

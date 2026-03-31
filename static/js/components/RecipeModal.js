@@ -9,11 +9,13 @@ import { MODEL_TYPES } from '../api/apiConfig.js';
 
 class RecipeModal {
     constructor() {
+        this.promptEditorState = {};
         this.init();
     }
 
     init() {
         this.setupCopyButtons();
+        this.setupPromptEditors();
         // Set up tooltip positioning handlers after DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
             this.setupTooltipPositioning();
@@ -87,6 +89,7 @@ class RecipeModal {
     showRecipeDetails(recipe) {
         // Store the full recipe for editing
         this.currentRecipe = recipe;
+        this.resetPromptEditors();
 
         // Set modal title with edit icon
         const modalTitle = document.getElementById('recipeModalTitle');
@@ -300,20 +303,19 @@ class RecipeModal {
         const promptElement = document.getElementById('recipePrompt');
         const negativePromptElement = document.getElementById('recipeNegativePrompt');
         const otherParamsElement = document.getElementById('recipeOtherParams');
+        const promptInput = document.getElementById('recipePromptInput');
+        const negativePromptInput = document.getElementById('recipeNegativePromptInput');
 
         if (recipe.gen_params) {
-            // Set prompt
-            if (promptElement && recipe.gen_params.prompt) {
-                promptElement.textContent = recipe.gen_params.prompt;
-            } else if (promptElement) {
-                promptElement.textContent = 'No prompt information available';
+            this.renderPromptContent(promptElement, recipe.gen_params.prompt, 'No prompt information available');
+            this.renderPromptContent(negativePromptElement, recipe.gen_params.negative_prompt, 'No negative prompt information available');
+
+            if (promptInput) {
+                promptInput.value = recipe.gen_params.prompt || '';
             }
 
-            // Set negative prompt
-            if (negativePromptElement && recipe.gen_params.negative_prompt) {
-                negativePromptElement.textContent = recipe.gen_params.negative_prompt;
-            } else if (negativePromptElement) {
-                negativePromptElement.textContent = 'No negative prompt information available';
+            if (negativePromptInput) {
+                negativePromptInput.value = recipe.gen_params.negative_prompt || '';
             }
 
             // Set other parameters
@@ -343,8 +345,10 @@ class RecipeModal {
             }
         } else {
             // No generation parameters available
-            if (promptElement) promptElement.textContent = 'No prompt information available';
-            if (negativePromptElement) promptElement.textContent = 'No negative prompt information available';
+            this.renderPromptContent(promptElement, '', 'No prompt information available');
+            this.renderPromptContent(negativePromptElement, '', 'No negative prompt information available');
+            if (promptInput) promptInput.value = '';
+            if (negativePromptInput) negativePromptInput.value = '';
             if (otherParamsElement) otherParamsElement.innerHTML = '<div class="no-params">No parameters available</div>';
         }
 
@@ -711,15 +715,201 @@ class RecipeModal {
         }
     }
 
+    setupPromptEditors() {
+        const promptConfigs = [
+            {
+                editButtonId: 'editPromptBtn',
+                contentId: 'recipePrompt',
+                editorId: 'recipePromptEditor',
+                inputId: 'recipePromptInput',
+                field: 'prompt',
+                placeholder: 'No prompt information available',
+                successKey: 'toast.recipes.promptUpdated',
+                successFallback: 'Prompt updated successfully',
+            },
+            {
+                editButtonId: 'editNegativePromptBtn',
+                contentId: 'recipeNegativePrompt',
+                editorId: 'recipeNegativePromptEditor',
+                inputId: 'recipeNegativePromptInput',
+                field: 'negative_prompt',
+                placeholder: 'No negative prompt information available',
+                successKey: 'toast.recipes.negativePromptUpdated',
+                successFallback: 'Negative prompt updated successfully',
+            }
+        ];
+
+        promptConfigs.forEach((config) => {
+            const editButton = document.getElementById(config.editButtonId);
+            const input = document.getElementById(config.inputId);
+
+            if (editButton) {
+                editButton.addEventListener('click', () => this.showPromptEditor(config));
+            }
+
+            if (input) {
+                input.addEventListener('keydown', (event) => {
+                    if (event.key === 'Escape') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        this.cancelPromptEdit(config);
+                        return;
+                    }
+
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        this.promptEditorState[config.field] = {
+                            ...(this.promptEditorState[config.field] || {}),
+                            skipBlurSave: true,
+                        };
+                        this.savePromptEdit(config);
+                    }
+                });
+                input.addEventListener('blur', () => {
+                    const promptState = this.promptEditorState[config.field] || {};
+                    if (promptState.skipBlurSave) {
+                        this.promptEditorState[config.field] = {
+                            ...promptState,
+                            skipBlurSave: false,
+                        };
+                        return;
+                    }
+
+                    this.savePromptEdit(config);
+                });
+            }
+        });
+    }
+
+    renderPromptContent(element, value, placeholder) {
+        if (!element) {
+            return;
+        }
+
+        const text = value || '';
+        if (text) {
+            element.textContent = text;
+            element.classList.remove('is-placeholder');
+        } else {
+            element.textContent = placeholder;
+            element.classList.add('is-placeholder');
+        }
+    }
+
+    resetPromptEditors() {
+        this.hidePromptEditor({ contentId: 'recipePrompt', editorId: 'recipePromptEditor' });
+        this.hidePromptEditor({ contentId: 'recipeNegativePrompt', editorId: 'recipeNegativePromptEditor' });
+    }
+
+    showPromptEditor(config) {
+        const content = document.getElementById(config.contentId);
+        const editor = document.getElementById(config.editorId);
+        const input = document.getElementById(config.inputId);
+
+        if (!content || !editor || !input) {
+            return;
+        }
+
+        const currentValue = this.currentRecipe?.gen_params?.[config.field] || '';
+        input.value = currentValue;
+        this.promptEditorState[config.field] = {
+            initialValue: currentValue,
+            skipBlurSave: false,
+            isSaving: false,
+        };
+        content.classList.add('hide');
+        editor.classList.add('active');
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+    }
+
+    async savePromptEdit(config) {
+        const content = document.getElementById(config.contentId);
+        const editor = document.getElementById(config.editorId);
+        const input = document.getElementById(config.inputId);
+
+        if (!content || !editor || !input || !this.currentRecipe) {
+            return;
+        }
+
+        const promptState = this.promptEditorState[config.field] || {};
+        if (promptState.isSaving) {
+            return;
+        }
+
+        const currentGenParams = this.currentRecipe.gen_params || {};
+        const nextValue = input.value.trim() === '' ? '' : input.value;
+        const currentValue = currentGenParams[config.field] || '';
+
+        if (nextValue === currentValue) {
+            this.hidePromptEditor(config);
+            return;
+        }
+
+        const nextGenParams = {
+            ...currentGenParams,
+            [config.field]: nextValue,
+        };
+
+        try {
+            this.promptEditorState[config.field] = {
+                ...promptState,
+                isSaving: true,
+            };
+            await updateRecipeMetadata(this.filePath, { gen_params: nextGenParams });
+            this.currentRecipe.gen_params = nextGenParams;
+            this.renderPromptContent(content, nextValue, config.placeholder);
+            showToast(config.successKey, {}, 'success', config.successFallback);
+        } catch (error) {
+            this.renderPromptContent(content, currentValue, config.placeholder);
+            input.value = currentValue;
+        } finally {
+            this.hidePromptEditor(config);
+        }
+    }
+
+    cancelPromptEdit(config) {
+        const input = document.getElementById(config.inputId);
+        if (input) {
+            const initialValue = this.promptEditorState[config.field]?.initialValue;
+            input.value = initialValue ?? (this.currentRecipe?.gen_params?.[config.field] || '');
+        }
+
+        this.hidePromptEditor(config);
+    }
+
+    hidePromptEditor(config) {
+        const content = document.getElementById(config.contentId);
+        const editor = document.getElementById(config.editorId);
+
+        if (content) {
+            content.classList.remove('hide');
+        }
+
+        if (editor) {
+            editor.classList.remove('active');
+        }
+
+        delete this.promptEditorState[config.field];
+    }
+
     // Setup source URL handlers
     setupSourceUrlHandlers() {
         const sourceUrlContainer = document.querySelector('.source-url-container');
         const sourceUrlEditor = document.querySelector('.source-url-editor');
+        if (!sourceUrlContainer || !sourceUrlEditor) {
+            return;
+        }
         const sourceUrlText = sourceUrlContainer.querySelector('.source-url-text');
         const sourceUrlEditBtn = sourceUrlContainer.querySelector('.source-url-edit-btn');
         const sourceUrlCancelBtn = sourceUrlEditor.querySelector('.source-url-cancel-btn');
         const sourceUrlSaveBtn = sourceUrlEditor.querySelector('.source-url-save-btn');
         const sourceUrlInput = sourceUrlEditor.querySelector('.source-url-input');
+
+        if (!sourceUrlText || !sourceUrlEditBtn || !sourceUrlCancelBtn || !sourceUrlSaveBtn || !sourceUrlInput) {
+            return;
+        }
 
         // Show editor on edit button click
         sourceUrlEditBtn.addEventListener('click', () => {
@@ -782,14 +972,14 @@ class RecipeModal {
 
         if (copyPromptBtn) {
             copyPromptBtn.addEventListener('click', () => {
-                const promptText = document.getElementById('recipePrompt').textContent;
+                const promptText = this.currentRecipe?.gen_params?.prompt || '';
                 this.copyToClipboard(promptText, 'Prompt copied to clipboard');
             });
         }
 
         if (copyNegativePromptBtn) {
             copyNegativePromptBtn.addEventListener('click', () => {
-                const negativePromptText = document.getElementById('recipeNegativePrompt').textContent;
+                const negativePromptText = this.currentRecipe?.gen_params?.negative_prompt || '';
                 this.copyToClipboard(negativePromptText, 'Negative prompt copied to clipboard');
             });
         }

@@ -245,16 +245,28 @@ describe('Interaction-level regression coverage', () => {
                   <div class="param-group info-item">
                     <div class="param-header">
                       <label>Prompt</label>
-                      <button class="copy-btn" id="copyPromptBtn" title="Copy Prompt"><i class="fas fa-copy"></i></button>
+                      <div class="param-actions">
+                        <button class="copy-btn" id="copyPromptBtn" title="Copy Prompt"><i class="fas fa-copy"></i></button>
+                        <button class="edit-btn" id="editPromptBtn" title="Edit Prompt"><i class="fas fa-pencil-alt"></i></button>
+                      </div>
                     </div>
                     <div class="param-content" id="recipePrompt"></div>
+                    <div class="param-editor" id="recipePromptEditor">
+                      <textarea class="param-textarea" id="recipePromptInput"></textarea>
+                    </div>
                   </div>
                   <div class="param-group info-item">
                     <div class="param-header">
                       <label>Negative Prompt</label>
-                      <button class="copy-btn" id="copyNegativePromptBtn" title="Copy Negative Prompt"><i class="fas fa-copy"></i></button>
+                      <div class="param-actions">
+                        <button class="copy-btn" id="copyNegativePromptBtn" title="Copy Negative Prompt"><i class="fas fa-copy"></i></button>
+                        <button class="edit-btn" id="editNegativePromptBtn" title="Edit Negative Prompt"><i class="fas fa-pencil-alt"></i></button>
+                      </div>
                     </div>
                     <div class="param-content" id="recipeNegativePrompt"></div>
+                    <div class="param-editor" id="recipeNegativePromptEditor">
+                      <textarea class="param-textarea" id="recipeNegativePromptInput"></textarea>
+                    </div>
                   </div>
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
@@ -322,6 +334,208 @@ describe('Interaction-level regression coverage', () => {
     expect(titleContainer.querySelector('.content-text').textContent).toBe('Updated Title');
     expect(titleContainer.querySelector('#recipeTitleEditor').classList.contains('active')).toBe(false);
     expect(recipeModal.currentRecipe.title).toBe('Updated Title');
+  });
+
+  it('saves prompt edits on Enter while preserving Shift+Enter for new lines', async () => {
+    document.body.innerHTML = `
+      <div id="recipeModal" class="modal">
+        <div class="modal-content">
+          <header class="recipe-modal-header">
+            <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-tags-container">
+              <div class="recipe-tags-compact" id="recipeTagsCompact"></div>
+              <div class="recipe-tags-tooltip" id="recipeTagsTooltip">
+                <div class="tooltip-content" id="recipeTagsTooltipContent"></div>
+              </div>
+            </div>
+          </header>
+          <div class="modal-body">
+            <div class="recipe-top-section">
+              <div class="recipe-preview-container" id="recipePreviewContainer">
+                <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
+              </div>
+              <div class="info-section recipe-gen-params">
+                <div class="gen-params-container">
+                  <div class="param-group info-item">
+                    <div class="param-header">
+                      <label>Prompt</label>
+                      <div class="param-actions">
+                        <button class="copy-btn" id="copyPromptBtn" title="Copy Prompt"><i class="fas fa-copy"></i></button>
+                        <button class="edit-btn" id="editPromptBtn" title="Edit Prompt"><i class="fas fa-pencil-alt"></i></button>
+                      </div>
+                    </div>
+                    <div class="param-content" id="recipePrompt"></div>
+                    <div class="param-editor" id="recipePromptEditor">
+                      <textarea class="param-textarea" id="recipePromptInput"></textarea>
+                    </div>
+                  </div>
+                  <div class="param-group info-item">
+                    <div class="param-header">
+                      <label>Negative Prompt</label>
+                      <div class="param-actions">
+                        <button class="copy-btn" id="copyNegativePromptBtn" title="Copy Negative Prompt"><i class="fas fa-copy"></i></button>
+                        <button class="edit-btn" id="editNegativePromptBtn" title="Edit Negative Prompt"><i class="fas fa-pencil-alt"></i></button>
+                      </div>
+                    </div>
+                    <div class="param-content" id="recipeNegativePrompt"></div>
+                    <div class="param-editor" id="recipeNegativePromptEditor">
+                      <textarea class="param-textarea" id="recipeNegativePromptInput"></textarea>
+                    </div>
+                  </div>
+                  <div class="other-params" id="recipeOtherParams"></div>
+                </div>
+              </div>
+            </div>
+            <div class="info-section recipe-bottom-section">
+              <div class="recipe-section-header">
+                <h3>Resources</h3>
+                <div class="recipe-section-actions">
+                  <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
+                </div>
+              </div>
+              <div class="recipe-loras-list" id="recipeLorasList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const { RecipeModal } = await import('../../../static/js/components/RecipeModal.js');
+    const recipeModal = new RecipeModal();
+
+    recipeModal.showRecipeDetails({
+      id: 'recipe-2',
+      file_path: '/recipes/prompt.json',
+      title: 'Prompt Recipe',
+      tags: [],
+      file_url: '',
+      preview_url: '',
+      source_path: '',
+      gen_params: {
+        prompt: 'old prompt',
+        negative_prompt: 'keep negative',
+        steps: 30,
+        cfg_scale: 7,
+      },
+      loras: [],
+    });
+
+    document.getElementById('editPromptBtn').click();
+    const textarea = document.getElementById('recipePromptInput');
+    textarea.value = 'new prompt text';
+    textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true }));
+    await flushAsyncTasks();
+
+    expect(updateRecipeMetadataMock).not.toHaveBeenCalled();
+
+    textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await updateRecipeMetadataMock.mock.results[0].value;
+    await flushAsyncTasks();
+
+    expect(updateRecipeMetadataMock).toHaveBeenCalledWith('/recipes/prompt.json', {
+      gen_params: {
+        prompt: 'new prompt text',
+        negative_prompt: 'keep negative',
+        steps: 30,
+        cfg_scale: 7,
+      },
+    });
+    expect(document.getElementById('recipePrompt').textContent).toBe('new prompt text');
+    expect(recipeModal.currentRecipe.gen_params.prompt).toBe('new prompt text');
+  });
+
+  it('cancels negative prompt edits on Escape without saving', async () => {
+    document.body.innerHTML = `
+      <div id="recipeModal" class="modal">
+        <div class="modal-content">
+          <header class="recipe-modal-header">
+            <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-tags-container">
+              <div class="recipe-tags-compact" id="recipeTagsCompact"></div>
+              <div class="recipe-tags-tooltip" id="recipeTagsTooltip">
+                <div class="tooltip-content" id="recipeTagsTooltipContent"></div>
+              </div>
+            </div>
+          </header>
+          <div class="modal-body">
+            <div class="recipe-top-section">
+              <div class="recipe-preview-container" id="recipePreviewContainer">
+                <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
+              </div>
+              <div class="info-section recipe-gen-params">
+                <div class="gen-params-container">
+                  <div class="param-group info-item">
+                    <div class="param-header">
+                      <label>Prompt</label>
+                      <div class="param-actions">
+                        <button class="copy-btn" id="copyPromptBtn" title="Copy Prompt"><i class="fas fa-copy"></i></button>
+                        <button class="edit-btn" id="editPromptBtn" title="Edit Prompt"><i class="fas fa-pencil-alt"></i></button>
+                      </div>
+                    </div>
+                    <div class="param-content" id="recipePrompt"></div>
+                    <div class="param-editor" id="recipePromptEditor">
+                      <textarea class="param-textarea" id="recipePromptInput"></textarea>
+                    </div>
+                  </div>
+                  <div class="param-group info-item">
+                    <div class="param-header">
+                      <label>Negative Prompt</label>
+                      <div class="param-actions">
+                        <button class="copy-btn" id="copyNegativePromptBtn" title="Copy Negative Prompt"><i class="fas fa-copy"></i></button>
+                        <button class="edit-btn" id="editNegativePromptBtn" title="Edit Negative Prompt"><i class="fas fa-pencil-alt"></i></button>
+                      </div>
+                    </div>
+                    <div class="param-content" id="recipeNegativePrompt"></div>
+                    <div class="param-editor" id="recipeNegativePromptEditor">
+                      <textarea class="param-textarea" id="recipeNegativePromptInput"></textarea>
+                    </div>
+                  </div>
+                  <div class="other-params" id="recipeOtherParams"></div>
+                </div>
+              </div>
+            </div>
+            <div class="info-section recipe-bottom-section">
+              <div class="recipe-section-header">
+                <h3>Resources</h3>
+                <div class="recipe-section-actions">
+                  <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
+                </div>
+              </div>
+              <div class="recipe-loras-list" id="recipeLorasList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const { RecipeModal } = await import('../../../static/js/components/RecipeModal.js');
+    const recipeModal = new RecipeModal();
+
+    recipeModal.showRecipeDetails({
+      id: 'recipe-3',
+      file_path: '/recipes/negative.json',
+      title: 'Negative Recipe',
+      tags: [],
+      file_url: '',
+      preview_url: '',
+      source_path: '',
+      gen_params: {
+        prompt: '',
+        negative_prompt: 'existing negative',
+        steps: 20,
+      },
+      loras: [],
+    });
+
+    document.getElementById('editNegativePromptBtn').click();
+    const textarea = document.getElementById('recipeNegativePromptInput');
+    textarea.value = 'changed negative';
+    textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    expect(updateRecipeMetadataMock).not.toHaveBeenCalled();
+    expect(modalManagerMock.closeModal).not.toHaveBeenCalled();
+    expect(document.getElementById('recipeNegativePrompt').textContent).toBe('existing negative');
+    expect(document.getElementById('recipeNegativePromptEditor').classList.contains('active')).toBe(false);
   });
 
   it('processes global context menu actions for downloads and cleanup', async () => {

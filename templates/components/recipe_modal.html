@@ -29,22 +29,52 @@
                         <div class="param-group info-item">
                             <div class="param-header">
                                 <label>Prompt</label>
-                                <button class="copy-btn" id="copyPromptBtn" title="Copy Prompt">
-                                    <i class="fas fa-copy"></i>
-                                </button>
+                                <div class="param-actions">
+                                    <button class="copy-btn" id="copyPromptBtn" title="Copy Prompt">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                    <button class="edit-btn" id="editPromptBtn" title="Edit Prompt">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="param-content" id="recipePrompt"></div>
+                            <div class="param-editor" id="recipePromptEditor">
+                                <textarea
+                                    class="param-textarea"
+                                    id="recipePromptInput"
+                                    placeholder="Enter prompt"
+                                ></textarea>
+                                <div class="param-editor-hint">
+                                    {{ t('toast.recipes.promptEditorHint') }}
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- Negative Prompt -->
                         <div class="param-group info-item">
                             <div class="param-header">
                                 <label>Negative Prompt</label>
-                                <button class="copy-btn" id="copyNegativePromptBtn" title="Copy Negative Prompt">
-                                    <i class="fas fa-copy"></i>
-                                </button>
+                                <div class="param-actions">
+                                    <button class="copy-btn" id="copyNegativePromptBtn" title="Copy Negative Prompt">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                    <button class="edit-btn" id="editNegativePromptBtn" title="Edit Negative Prompt">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="param-content" id="recipeNegativePrompt"></div>
+                            <div class="param-editor" id="recipeNegativePromptEditor">
+                                <textarea
+                                    class="param-textarea"
+                                    id="recipeNegativePromptInput"
+                                    placeholder="Enter negative prompt"
+                                ></textarea>
+                                <div class="param-editor-hint">
+                                    {{ t('toast.recipes.promptEditorHint') }}
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- Other Parameters -->
