@@ -826,7 +826,8 @@
             "diffusion_model": "Diffusion Model"
         },
         "contextMenu": {
-            "moveToOtherTypeFolder": "Переместить в папку {otherType}"
+            "moveToOtherTypeFolder": "Переместить в папку {otherType}",
+            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
         }
     },
     "embeddings": {
@@ -1339,7 +1340,9 @@
             "recipeReplaced": "Рецепт заменён в workflow",
             "recipeFailedToSend": "Не удалось отправить рецепт в workflow",
             "noMatchingNodes": "В текущем workflow нет совместимых узлов",
-            "noTargetNodeSelected": "Целевой узел не выбран"
+            "noTargetNodeSelected": "Целевой узел не выбран",
+            "modelUpdated": "Модель обновлена в workflow",
+            "modelFailed": "Не удалось обновить узел модели"
         },
         "nodeSelector": {
             "recipe": "Рецепт",

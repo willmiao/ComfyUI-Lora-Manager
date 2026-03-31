@@ -1415,14 +1415,14 @@ class RecipeModal {
             isDiffusionModel ? 'Diffusion Model' : 'Checkpoint'
         );
         const successMessage = translate(
-            isDiffusionModel ? 'uiHelpers.workflow.diffusionModelUpdated' : 'uiHelpers.workflow.checkpointUpdated',
+            'uiHelpers.workflow.modelUpdated',
             {},
-            isDiffusionModel ? 'Diffusion model updated in workflow' : 'Checkpoint updated in workflow'
+            'Model updated in workflow'
         );
         const failureMessage = translate(
-            isDiffusionModel ? 'uiHelpers.workflow.diffusionModelFailed' : 'uiHelpers.workflow.checkpointFailed',
+            'uiHelpers.workflow.modelFailed',
             {},
-            isDiffusionModel ? 'Failed to update diffusion model node' : 'Failed to update checkpoint node'
+            'Failed to update model node'
         );
         const missingNodesMessage = translate(
             'uiHelpers.workflow.noMatchingNodes',

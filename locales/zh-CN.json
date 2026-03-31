@@ -826,7 +826,8 @@
             "diffusion_model": "Diffusion Model"
         },
         "contextMenu": {
-            "moveToOtherTypeFolder": "移动到 {otherType} 文件夹"
+            "moveToOtherTypeFolder": "移动到 {otherType} 文件夹",
+            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
         }
     },
     "embeddings": {
@@ -1339,7 +1340,9 @@
             "recipeReplaced": "配方已替换到工作流",
             "recipeFailedToSend": "发送配方到工作流失败",
             "noMatchingNodes": "当前工作流中没有兼容的节点",
-            "noTargetNodeSelected": "未选择目标节点"
+            "noTargetNodeSelected": "未选择目标节点",
+            "modelUpdated": "模型已更新到工作流",
+            "modelFailed": "更新模型节点失败"
         },
         "nodeSelector": {
             "recipe": "配方",

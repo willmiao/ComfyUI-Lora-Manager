@@ -826,7 +826,8 @@
             "diffusion_model": "Diffusion Model"
         },
         "contextMenu": {
-            "moveToOtherTypeFolder": "העבר לתיקיית {otherType}"
+            "moveToOtherTypeFolder": "העבר לתיקיית {otherType}",
+            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
         }
     },
     "embeddings": {
@@ -1339,7 +1340,9 @@
             "recipeReplaced": "מתכון הוחלף ב-workflow",
             "recipeFailedToSend": "שליחת מתכון ל-workflow נכשלה",
             "noMatchingNodes": "אין צמתים תואמים זמינים ב-workflow הנוכחי",
-            "noTargetNodeSelected": "לא נבחר צומת יעד"
+            "noTargetNodeSelected": "לא נבחר צומת יעד",
+            "modelUpdated": "מודל עודכן ב-workflow",
+            "modelFailed": "עדכון צומת המודל נכשל"
         },
         "nodeSelector": {
             "recipe": "מתכון",

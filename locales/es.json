@@ -826,7 +826,8 @@
             "diffusion_model": "Diffusion Model"
         },
         "contextMenu": {
-            "moveToOtherTypeFolder": "Mover a la carpeta {otherType}"
+            "moveToOtherTypeFolder": "Mover a la carpeta {otherType}",
+            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
         }
     },
     "embeddings": {
@@ -1339,7 +1340,9 @@
             "recipeReplaced": "Receta reemplazada en el flujo de trabajo",
             "recipeFailedToSend": "Error al enviar receta al flujo de trabajo",
             "noMatchingNodes": "No hay nodos compatibles disponibles en el flujo de trabajo actual",
-            "noTargetNodeSelected": "No se ha seleccionado ningún nodo de destino"
+            "noTargetNodeSelected": "No se ha seleccionado ningún nodo de destino",
+            "modelUpdated": "Modelo actualizado en el flujo de trabajo",
+            "modelFailed": "Error al actualizar nodo de modelo"
         },
         "nodeSelector": {
             "recipe": "Receta",

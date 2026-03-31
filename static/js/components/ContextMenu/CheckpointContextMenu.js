@@ -4,6 +4,8 @@ import { getModelApiClient, resetAndReload } from '../../api/modelApiFactory.js'
 import { showDeleteModal, showExcludeModal } from '../../utils/modalUtils.js';
 import { moveManager } from '../../managers/MoveManager.js';
 import { i18n } from '../../i18n/index.js';
+import { sendModelPathToWorkflow } from '../../utils/uiHelpers.js';
+import { MODEL_TYPES } from '../../api/apiConfig.js';
 
 export class CheckpointContextMenu extends BaseContextMenu {
     constructor() {
@@ -60,6 +62,10 @@ export class CheckpointContextMenu extends BaseContextMenu {
                     this.currentCard.querySelector('.fa-copy').click();
                 }
                 break;
+            case 'sendworkflow':
+                // Send checkpoint to workflow (always replace mode)
+                this.sendCheckpointToWorkflow();
+                break;
             case 'refresh-metadata':
                 // Refresh metadata from CivitAI
                 apiClient.refreshSingleModelMetadata(this.currentCard.dataset.filepath);
@@ -78,6 +84,52 @@ export class CheckpointContextMenu extends BaseContextMenu {
                 showExcludeModal(this.currentCard.dataset.filepath);
                 break;
         }
+    }
+
+    async sendCheckpointToWorkflow() {
+        const modelPath = this.currentCard.dataset.filepath;
+        if (!modelPath) {
+            return;
+        }
+
+        const subtype = (this.currentCard.dataset.sub_type || 'checkpoint').toLowerCase();
+        const isDiffusionModel = subtype === 'diffusion_model';
+        const widgetName = isDiffusionModel ? 'unet_name' : 'ckpt_name';
+        const actionTypeText = i18n.t(
+            isDiffusionModel ? 'uiHelpers.nodeSelector.diffusionModel' : 'uiHelpers.nodeSelector.checkpoint',
+            {},
+            isDiffusionModel ? 'Diffusion Model' : 'Checkpoint'
+        );
+        const successMessage = i18n.t(
+            'uiHelpers.workflow.modelUpdated',
+            {},
+            'Model updated in workflow'
+        );
+        const failureMessage = i18n.t(
+            'uiHelpers.workflow.modelFailed',
+            {},
+            'Failed to update model node'
+        );
+        const missingNodesMessage = i18n.t(
+            'uiHelpers.workflow.noMatchingNodes',
+            {},
+            'No compatible nodes available in the current workflow'
+        );
+        const missingTargetMessage = i18n.t(
+            'uiHelpers.workflow.noTargetNodeSelected',
+            {},
+            'No target node selected'
+        );
+
+        await sendModelPathToWorkflow(modelPath, {
+            widgetName,
+            collectionType: MODEL_TYPES.CHECKPOINT,
+            actionTypeText,
+            successMessage,
+            failureMessage,
+            missingNodesMessage,
+            missingTargetMessage,
+        });
     }
 }
 

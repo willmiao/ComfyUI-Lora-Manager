@@ -826,7 +826,8 @@
             "diffusion_model": "Diffusion Model"
         },
         "contextMenu": {
-            "moveToOtherTypeFolder": "{otherType} 폴더로 이동"
+            "moveToOtherTypeFolder": "{otherType} 폴더로 이동",
+            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
         }
     },
     "embeddings": {
@@ -1339,7 +1340,9 @@
             "recipeReplaced": "레시피가 워크플로에서 교체되었습니다",
             "recipeFailedToSend": "레시피를 워크플로로 전송하지 못했습니다",
             "noMatchingNodes": "현재 워크플로에서 호환되는 노드가 없습니다",
-            "noTargetNodeSelected": "대상 노드가 선택되지 않았습니다"
+            "noTargetNodeSelected": "대상 노드가 선택되지 않았습니다",
+            "modelUpdated": "모델이 워크플로에서 업데이트되었습니다",
+            "modelFailed": "모델 노드 업데이트 실패"
         },
         "nodeSelector": {
             "recipe": "레시피",

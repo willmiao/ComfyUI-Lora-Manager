@@ -826,7 +826,8 @@
             "diffusion_model": "Diffusion Model"
         },
         "contextMenu": {
-            "moveToOtherTypeFolder": "In {otherType}-Ordner verschieben"
+            "moveToOtherTypeFolder": "In {otherType}-Ordner verschieben",
+            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
         }
     },
     "embeddings": {
@@ -1339,7 +1340,9 @@
             "recipeReplaced": "Rezept im Workflow ersetzt",
             "recipeFailedToSend": "Fehler beim Senden des Rezepts an den Workflow",
             "noMatchingNodes": "Keine kompatiblen Knoten im aktuellen Workflow verfügbar",
-            "noTargetNodeSelected": "Kein Zielknoten ausgewählt"
+            "noTargetNodeSelected": "Kein Zielknoten ausgewählt",
+            "modelUpdated": "Modell im Workflow aktualisiert",
+            "modelFailed": "Fehler beim Aktualisieren des Modellknotens"
         },
         "nodeSelector": {
             "recipe": "Rezept",
