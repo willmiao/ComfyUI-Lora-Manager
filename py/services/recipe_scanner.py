@@ -1615,6 +1615,9 @@ class RecipeScanner:
     ) -> Optional[Dict[str, Any]]:
         """Coerce legacy or malformed checkpoint entries into a dict."""
 
+        if checkpoint_raw is None:
+            return None
+
         if isinstance(checkpoint_raw, dict):
             return dict(checkpoint_raw)
 
@@ -1632,9 +1635,6 @@ class RecipeScanner:
                 "file_name": file_name,
             }
 
-        logger.warning(
-            "Unexpected checkpoint payload type %s", type(checkpoint_raw).__name__
-        )
         return None
 
     def _enrich_checkpoint_entry(self, checkpoint: Dict[str, Any]) -> Dict[str, Any]:
@@ -1790,6 +1790,7 @@ class RecipeScanner:
         filters: dict = None,
         search_options: dict = None,
         lora_hash: str = None,
+        checkpoint_hash: str = None,
         bypass_filters: bool = True,
         folder: str | None = None,
         recursive: bool = True,
@@ -1804,7 +1805,8 @@ class RecipeScanner:
             filters: Dictionary of filters to apply
             search_options: Dictionary of search options to apply
             lora_hash: Optional SHA256 hash of a LoRA to filter recipes by
-            bypass_filters: If True, ignore other filters when a lora_hash is provided
+            checkpoint_hash: Optional SHA256 hash of a checkpoint to filter recipes by
+            bypass_filters: If True, ignore other filters when a hash filter is provided
             folder: Optional folder filter relative to recipes directory
             recursive: Whether to include recipes in subfolders of the selected folder
         """
@@ -1852,9 +1854,23 @@ class RecipeScanner:
                 # Skip other filters if bypass_filters is True
                 pass
             # Otherwise continue with normal filtering after applying LoRA hash filter
+        elif checkpoint_hash:
+            normalized_checkpoint_hash = checkpoint_hash.lower()
+            filtered_data = [
+                item
+                for item in filtered_data
+                if isinstance(item.get("checkpoint"), dict)
+                and (item["checkpoint"].get("hash", "") or "").lower()
+                == normalized_checkpoint_hash
+            ]
 
-        # Skip further filtering if we're only filtering by LoRA hash with bypass enabled
-        if not (lora_hash and bypass_filters):
+            if bypass_filters:
+                pass
+
+        has_hash_filter = bool(lora_hash or checkpoint_hash)
+
+        # Skip further filtering if we're only filtering by model hash with bypass enabled
+        if not (has_hash_filter and bypass_filters):
             # Apply folder filter before other criteria
             if folder is not None:
                 normalized_folder = folder.strip("/")
@@ -2331,6 +2347,38 @@ class RecipeScanner:
                 ]
                 recipe_copy["file_url"] = self._format_file_url(recipe.get("file_path"))
                 matching_recipes.append(recipe_copy)
+
+        return matching_recipes
+
+    async def get_recipes_for_checkpoint(
+        self, checkpoint_hash: str
+    ) -> List[Dict[str, Any]]:
+        """Return recipes that reference a given checkpoint hash."""
+
+        if not checkpoint_hash:
+            return []
+
+        normalized_hash = checkpoint_hash.lower()
+        cache = await self.get_cached_data()
+        matching_recipes: List[Dict[str, Any]] = []
+
+        for recipe in cache.raw_data:
+            checkpoint = self._normalize_checkpoint_entry(recipe.get("checkpoint"))
+            if not checkpoint:
+                continue
+
+            enriched_checkpoint = self._enrich_checkpoint_entry(dict(checkpoint))
+            if (enriched_checkpoint.get("hash") or "").lower() != normalized_hash:
+                continue
+
+            recipe_copy = {**recipe}
+            recipe_copy["checkpoint"] = enriched_checkpoint
+            recipe_copy["loras"] = [
+                self._enrich_lora_entry(dict(entry))
+                for entry in recipe.get("loras", [])
+            ]
+            recipe_copy["file_url"] = self._format_file_url(recipe.get("file_path"))
+            matching_recipes.append(recipe_copy)
 
         return matching_recipes
 

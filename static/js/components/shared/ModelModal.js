@@ -19,7 +19,7 @@ import { renderCompactTags, setupTagTooltip, formatFileSize, escapeAttribute, es
 import { renderTriggerWords, setupTriggerWordsEditMode } from './TriggerWords.js';
 import { parsePresets, renderPresetTags } from './PresetTags.js';
 import { initVersionsTab } from './ModelVersionsTab.js';
-import { loadRecipesForLora } from './RecipeTab.js';
+import { loadRecipesForModel } from './RecipeTab.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { state } from '../../state/index.js';
 
@@ -355,7 +355,9 @@ export async function showModelModal(model, modelType) {
                 ${versionsTabBadge}
             </button>`.trim();
 
-    const tabsContent = modelType === 'loras' ?
+    const supportsRecipesTab = modelType === 'loras' || modelType === 'checkpoints';
+
+    const tabsContent = supportsRecipesTab ?
         `<button class="tab-btn active" data-tab="showcase">${examplesText}</button>
             <button class="tab-btn" data-tab="description">${descriptionText}</button>
             ${versionsTabButton}
@@ -385,7 +387,7 @@ export async function showModelModal(model, modelType) {
                     </button>
                 </div>`.trim();
 
-    const tabPanesContent = modelType === 'loras' ?
+    const tabPanesContent = supportsRecipesTab ?
         `<div id="showcase-tab" class="tab-pane active">
             <div class="example-images-loading">
                 <i class="fas fa-spinner fa-spin"></i> ${loadingExampleImagesText}
@@ -664,14 +666,23 @@ export async function showModelModal(model, modelType) {
     setupNavigationShortcuts(modelType);
     updateNavigationControls();
 
-    // LoRA specific setup
+    // Model-specific setup
     if (modelType === 'loras' || modelType === 'embeddings') {
         setupTriggerWordsEditMode();
+    }
 
-        if (modelType == 'loras') {
-            // Load recipes for this LoRA
-            loadRecipesForLora(modelWithFullData.model_name, modelWithFullData.sha256);
-        }
+    if (modelType === 'loras') {
+        loadRecipesForModel({
+            modelKind: 'lora',
+            displayName: modelWithFullData.model_name,
+            sha256: modelWithFullData.sha256,
+        });
+    } else if (modelType === 'checkpoints') {
+        loadRecipesForModel({
+            modelKind: 'checkpoint',
+            displayName: modelWithFullData.model_name,
+            sha256: modelWithFullData.sha256,
+        });
     }
 
     // Load example images asynchronously - merge regular and custom images

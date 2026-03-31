@@ -81,6 +81,7 @@ class RecipeHandlerSet:
             "bulk_delete": self.management.bulk_delete,
             "save_recipe_from_widget": self.management.save_recipe_from_widget,
             "get_recipes_for_lora": self.query.get_recipes_for_lora,
+            "get_recipes_for_checkpoint": self.query.get_recipes_for_checkpoint,
             "scan_recipes": self.query.scan_recipes,
             "move_recipe": self.management.move_recipe,
             "repair_recipes": self.management.repair_recipes,
@@ -218,6 +219,7 @@ class RecipeListingHandler:
                 filters["tags"] = tag_filters
 
             lora_hash = request.query.get("lora_hash")
+            checkpoint_hash = request.query.get("checkpoint_hash")
 
             result = await recipe_scanner.get_paginated_data(
                 page=page,
@@ -227,6 +229,7 @@ class RecipeListingHandler:
                 filters=filters,
                 search_options=search_options,
                 lora_hash=lora_hash,
+                checkpoint_hash=checkpoint_hash,
                 folder=folder,
                 recursive=recursive,
             )
@@ -421,6 +424,28 @@ class RecipeQueryHandler:
             return web.json_response({"success": True, "recipes": matching_recipes})
         except Exception as exc:
             self._logger.error("Error getting recipes for Lora: %s", exc)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_recipes_for_checkpoint(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            checkpoint_hash = request.query.get("hash")
+            if not checkpoint_hash:
+                return web.json_response(
+                    {"success": False, "error": "Checkpoint hash is required"},
+                    status=400,
+                )
+
+            matching_recipes = await recipe_scanner.get_recipes_for_checkpoint(
+                checkpoint_hash
+            )
+            return web.json_response({"success": True, "recipes": matching_recipes})
+        except Exception as exc:
+            self._logger.error("Error getting recipes for checkpoint: %s", exc)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def scan_recipes(self, request: web.Request) -> web.Response:

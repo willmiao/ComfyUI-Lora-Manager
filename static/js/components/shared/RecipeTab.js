@@ -1,38 +1,47 @@
 /**
- * RecipeTab - Handles the recipes tab in model modals (LoRA specific functionality)
- * Moved to shared directory for consistency
+ * RecipeTab - Handles the recipes tab in model modals.
  */
 import { showToast, copyToClipboard } from '../../utils/uiHelpers.js';
 import { setSessionItem, removeSessionItem } from '../../utils/storageHelpers.js';
 
 /**
- * Loads recipes that use the specified Lora and renders them in the tab
- * @param {string} loraName - The display name of the Lora
- * @param {string} sha256 - The SHA256 hash of the Lora
+ * Loads recipes that use the specified model and renders them in the tab.
+ * @param {Object} options
+ * @param {'lora'|'checkpoint'} options.modelKind - Model kind for copy and endpoint selection
+ * @param {string} options.displayName - The display name of the model
+ * @param {string} options.sha256 - The SHA256 hash of the model
  */
-export function loadRecipesForLora(loraName, sha256) {
+export function loadRecipesForModel({ modelKind, displayName, sha256 }) {
     const recipeTab = document.getElementById('recipes-tab');
     if (!recipeTab) return;
-    
+
+    const normalizedHash = sha256?.toLowerCase?.() || '';
+    const modelLabel = getModelLabel(modelKind);
+
     // Show loading state
     recipeTab.innerHTML = `
         <div class="recipes-loading">
             <i class="fas fa-spinner fa-spin"></i> Loading recipes...
         </div>
     `;
-    
-    // Fetch recipes that use this Lora by hash
-    fetch(`/api/lm/recipes/for-lora?hash=${encodeURIComponent(sha256.toLowerCase())}`)
+
+    // Fetch recipes that use this model by hash
+    fetch(`${getRecipesEndpoint(modelKind)}?hash=${encodeURIComponent(normalizedHash)}`)
         .then(response => response.json())
         .then(data => {
             if (!data.success) {
                 throw new Error(data.error || 'Failed to load recipes');
             }
-            
-            renderRecipes(recipeTab, data.recipes, loraName, sha256);
+
+            renderRecipes(recipeTab, data.recipes, {
+                modelKind,
+                displayName,
+                modelHash: normalizedHash,
+                modelLabel,
+            });
         })
         .catch(error => {
-            console.error('Error loading recipes for Lora:', error);
+            console.error(`Error loading recipes for ${modelLabel}:`, error);
             recipeTab.innerHTML = `
                 <div class="recipes-error">
                     <i class="fas fa-exclamation-circle"></i>
@@ -46,18 +55,24 @@ export function loadRecipesForLora(loraName, sha256) {
  * Renders the recipe cards in the tab
  * @param {HTMLElement} tabElement - The tab element to render into
  * @param {Array} recipes - Array of recipe objects
- * @param {string} loraName - The display name of the Lora
- * @param {string} loraHash - The hash of the Lora
+ * @param {Object} options - Render options
  */
-function renderRecipes(tabElement, recipes, loraName, loraHash) {
+function renderRecipes(tabElement, recipes, options) {
+    const {
+        modelKind,
+        displayName,
+        modelHash,
+        modelLabel,
+    } = options;
+
     if (!recipes || recipes.length === 0) {
         tabElement.innerHTML = `
             <div class="recipes-empty">
                 <i class="fas fa-book-open"></i>
-                <p>No recipes found that use this Lora.</p>
+                <p>No recipes found that use this ${modelLabel}.</p>
             </div>
         `;
-        
+
         return;
     }
 
@@ -73,13 +88,13 @@ function renderRecipes(tabElement, recipes, loraName, loraHash) {
     headerText.appendChild(eyebrow);
 
     const title = document.createElement('h3');
-    title.textContent = `${recipes.length} recipe${recipes.length > 1 ? 's' : ''} using this Lora`;
+    title.textContent = `${recipes.length} recipe${recipes.length > 1 ? 's' : ''} using this ${modelLabel}`;
     headerText.appendChild(title);
 
     const description = document.createElement('p');
     description.className = 'recipes-header__description';
-    description.textContent = loraName ?
-        `Discover workflows crafted for ${loraName}.` :
+    description.textContent = displayName ?
+        `Discover workflows crafted for ${displayName}.` :
         'Discover workflows crafted for this model.';
     headerText.appendChild(description);
 
@@ -101,7 +116,11 @@ function renderRecipes(tabElement, recipes, loraName, loraHash) {
     headerElement.appendChild(viewAllButton);
 
     viewAllButton.addEventListener('click', () => {
-        navigateToRecipesPage(loraName, loraHash);
+        navigateToRecipesPage({
+            modelKind,
+            displayName,
+            modelHash,
+        });
     });
 
     const cardGrid = document.createElement('div');
@@ -280,26 +299,32 @@ function copyRecipeSyntax(recipeId) {
 }
 
 /**
- * Navigates to the recipes page with filter for the current Lora
- * @param {string} loraName - The Lora display name to filter by
- * @param {string} loraHash - The hash of the Lora to filter by
- * @param {boolean} createNew - Whether to open the create recipe dialog
+ * Navigates to the recipes page with filter for the current model
+ * @param {Object} options - Navigation options
  */
-function navigateToRecipesPage(loraName, loraHash) {
+function navigateToRecipesPage({ modelKind, displayName, modelHash }) {
     // Close the current modal
     if (window.modalManager) {
         modalManager.closeModal('modelModal');
     }
-    
+
     // Clear any previous filters first
     removeSessionItem('lora_to_recipe_filterLoraName');
     removeSessionItem('lora_to_recipe_filterLoraHash');
+    removeSessionItem('checkpoint_to_recipe_filterCheckpointName');
+    removeSessionItem('checkpoint_to_recipe_filterCheckpointHash');
     removeSessionItem('viewRecipeId');
-    
-    // Store the LoRA name and hash filter in sessionStorage
-    setSessionItem('lora_to_recipe_filterLoraName', loraName);
-    setSessionItem('lora_to_recipe_filterLoraHash', loraHash);
-    
+
+    if (modelKind === 'checkpoint') {
+        // Store the checkpoint name and hash filter in sessionStorage
+        setSessionItem('checkpoint_to_recipe_filterCheckpointName', displayName);
+        setSessionItem('checkpoint_to_recipe_filterCheckpointHash', modelHash);
+    } else {
+        // Store the LoRA name and hash filter in sessionStorage
+        setSessionItem('lora_to_recipe_filterLoraName', displayName);
+        setSessionItem('lora_to_recipe_filterLoraHash', modelHash);
+    }
+
     // Directly navigate to recipes page
     window.location.href = '/loras/recipes';
 }
@@ -321,7 +346,18 @@ function navigateToRecipeDetails(recipeId) {
     
     // Store the recipe ID in sessionStorage to load on recipes page
     setSessionItem('viewRecipeId', recipeId);
-    
+
     // Directly navigate to recipes page
     window.location.href = '/loras/recipes';
+}
+
+function getRecipesEndpoint(modelKind) {
+    if (modelKind === 'checkpoint') {
+        return '/api/lm/recipes/for-checkpoint';
+    }
+    return '/api/lm/recipes/for-lora';
+}
+
+function getModelLabel(modelKind) {
+    return modelKind === 'checkpoint' ? 'checkpoint' : 'LoRA';
 }

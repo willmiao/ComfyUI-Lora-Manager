@@ -43,6 +43,9 @@ class StubRecipeScanner:
         self.cached_raw: List[Dict[str, Any]] = []
         self.recipes: Dict[str, Dict[str, Any]] = {}
         self.removed: List[str] = []
+        self.last_paginated_params: Dict[str, Any] | None = None
+        self.lora_lookup: Dict[str, List[Dict[str, Any]]] = {}
+        self.checkpoint_lookup: Dict[str, List[Dict[str, Any]]] = {}
 
         async def _noop_get_cached_data(force_refresh: bool = False) -> None:  # noqa: ARG001 - signature mirrors real scanner
             return None
@@ -56,6 +59,7 @@ class StubRecipeScanner:
         return SimpleNamespace(raw_data=list(self.cached_raw))
 
     async def get_paginated_data(self, **params: Any) -> Dict[str, Any]:
+        self.last_paginated_params = params
         items = [dict(item) for item in self.listing_items]
         page = int(params.get("page", 1))
         page_size = int(params.get("page_size", 20))
@@ -69,6 +73,14 @@ class StubRecipeScanner:
 
     async def get_recipe_by_id(self, recipe_id: str) -> Optional[Dict[str, Any]]:
         return self.recipes.get(recipe_id)
+
+    async def get_recipes_for_lora(self, lora_hash: str) -> List[Dict[str, Any]]:
+        return list(self.lora_lookup.get(lora_hash.lower(), []))
+
+    async def get_recipes_for_checkpoint(
+        self, checkpoint_hash: str
+    ) -> List[Dict[str, Any]]:
+        return list(self.checkpoint_lookup.get(checkpoint_hash.lower(), []))
 
     async def get_recipe_json_path(self, recipe_id: str) -> Optional[str]:
         candidate = Path(self.recipes_dir) / f"{recipe_id}.recipe.json"
@@ -348,6 +360,47 @@ async def test_list_recipes_provides_file_urls(monkeypatch, tmp_path: Path) -> N
         assert response.status == 200
         assert payload["items"][0]["file_url"].endswith("demo.png")
         assert payload["items"][0]["loras"] == []
+
+
+async def test_list_recipes_passes_checkpoint_hash_filter(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.get("/api/lm/recipes?checkpoint_hash=ckpt123")
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["items"] == []
+        assert harness.scanner.last_paginated_params["checkpoint_hash"] == "ckpt123"
+
+
+async def test_get_recipes_for_checkpoint(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.scanner.checkpoint_lookup["abc123"] = [
+            {"id": "recipe-1", "title": "Linked recipe"}
+        ]
+
+        response = await harness.client.get(
+            "/api/lm/recipes/for-checkpoint?hash=ABC123"
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload == {
+            "success": True,
+            "recipes": [{"id": "recipe-1", "title": "Linked recipe"}],
+        }
+
+
+async def test_get_recipes_for_checkpoint_requires_hash(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.get("/api/lm/recipes/for-checkpoint")
+        payload = await response.json()
+
+        assert response.status == 400
+        assert payload["success"] is False
 
 
 async def test_save_and_delete_recipe_round_trip(monkeypatch, tmp_path: Path) -> None:

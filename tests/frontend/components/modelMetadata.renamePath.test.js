@@ -82,7 +82,7 @@ vi.mock(MODEL_VERSIONS_MODULE, () => ({
 }));
 
 vi.mock(RECIPE_TAB_MODULE, () => ({
-  loadRecipesForLora: vi.fn(),
+  loadRecipesForModel: vi.fn(),
 }));
 
 vi.mock(I18N_HELPERS_MODULE, () => ({
@@ -103,11 +103,14 @@ vi.mock(API_FACTORY, () => ({
 
 describe('Model metadata interactions keep file path in sync', () => {
   let getModelApiClient;
+  let loadRecipesForModel;
 
   beforeEach(async () => {
     document.body.innerHTML = '';
     ({ getModelApiClient } = await import(API_FACTORY));
+    ({ loadRecipesForModel } = await import(RECIPE_TAB_MODULE));
     getModelApiClient.mockReset();
+    loadRecipesForModel.mockReset();
   });
 
   afterEach(() => {
@@ -204,6 +207,35 @@ describe('Model metadata interactions keep file path in sync', () => {
 
     await vi.waitFor(() => {
       expect(saveModelMetadata).toHaveBeenCalledWith('models/Qwen.testing.safetensors', { notes: 'Updated notes' });
+    });
+  });
+
+  it('shows recipes tab for checkpoint modals and loads linked recipes by hash', async () => {
+    const fetchModelMetadata = vi.fn().mockResolvedValue(null);
+
+    getModelApiClient.mockReturnValue({
+      fetchModelMetadata,
+      saveModelMetadata: vi.fn(),
+    });
+
+    const { showModelModal } = await import(MODAL_MODULE);
+
+    await showModelModal(
+      {
+        model_name: 'Flux Base',
+        file_path: 'models/checkpoints/flux-base.safetensors',
+        file_name: 'flux-base.safetensors',
+        sha256: 'ABC123',
+        civitai: {},
+      },
+      'checkpoints',
+    );
+
+    expect(document.querySelector('.tab-btn[data-tab="recipes"]')).not.toBeNull();
+    expect(loadRecipesForModel).toHaveBeenCalledWith({
+      modelKind: 'checkpoint',
+      displayName: 'Flux Base',
+      sha256: 'ABC123',
     });
   });
 });

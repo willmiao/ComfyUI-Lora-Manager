@@ -313,6 +313,75 @@ async def test_get_recipe_by_id_handles_non_dict_checkpoint(recipe_scanner):
     assert recipe["checkpoint"]["file_name"] == "by-id"
 
 
+@pytest.mark.asyncio
+async def test_get_paginated_data_filters_by_checkpoint_hash(recipe_scanner):
+    scanner, _ = recipe_scanner
+    image_path = Path(config.loras_roots[0]) / "checkpoint-filter.webp"
+    await scanner.add_recipe(
+        {
+            "id": "checkpoint-match",
+            "file_path": str(image_path),
+            "title": "Checkpoint Match",
+            "modified": 0.0,
+            "created_date": 0.0,
+            "loras": [],
+            "checkpoint": {
+                "name": "flux-base.safetensors",
+                "hash": "ABC123",
+            },
+        }
+    )
+    await scanner.add_recipe(
+        {
+            "id": "checkpoint-miss",
+            "file_path": str(Path(config.loras_roots[0]) / "checkpoint-miss.webp"),
+            "title": "Checkpoint Miss",
+            "modified": 1.0,
+            "created_date": 1.0,
+            "loras": [],
+            "checkpoint": {
+                "name": "other.safetensors",
+                "hash": "zzz999",
+            },
+        }
+    )
+    await asyncio.sleep(0)
+
+    result = await scanner.get_paginated_data(
+        page=1,
+        page_size=10,
+        checkpoint_hash="abc123",
+    )
+
+    assert [item["id"] for item in result["items"]] == ["checkpoint-match"]
+
+
+@pytest.mark.asyncio
+async def test_get_recipes_for_checkpoint_matches_hash_case_insensitively(recipe_scanner):
+    scanner, _ = recipe_scanner
+    image_path = Path(config.loras_roots[0]) / "checkpoint-linked.webp"
+    await scanner.add_recipe(
+        {
+            "id": "checkpoint-linked",
+            "file_path": str(image_path),
+            "title": "Checkpoint Linked",
+            "modified": 0.0,
+            "created_date": 0.0,
+            "loras": [],
+            "checkpoint": {
+                "name": "flux-base.safetensors",
+                "hash": "ABC123",
+            },
+        }
+    )
+
+    recipes = await scanner.get_recipes_for_checkpoint("abc123")
+
+    assert len(recipes) == 1
+    assert recipes[0]["id"] == "checkpoint-linked"
+    assert recipes[0]["checkpoint"]["hash"] == "ABC123"
+
+
 def test_enrich_uses_version_index_when_hash_missing(recipe_scanner):
     scanner, stub = recipe_scanner
     version_id = 77

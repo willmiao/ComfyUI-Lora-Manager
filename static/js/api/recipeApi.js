@@ -83,6 +83,9 @@ export async function fetchRecipesPage(page = 1, pageSize = 100) {
         if (pageState.customFilter?.active && pageState.customFilter?.loraHash) {
             params.append('lora_hash', pageState.customFilter.loraHash);
             params.append('bypass_filters', 'true');
+        } else if (pageState.customFilter?.active && pageState.customFilter?.checkpointHash) {
+            params.append('checkpoint_hash', pageState.customFilter.checkpointHash);
+            params.append('bypass_filters', 'true');
         } else {
             // Normal filtering logic
 

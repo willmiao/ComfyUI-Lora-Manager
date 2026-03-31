@@ -66,6 +66,8 @@ class RecipeManager {
             active: false,
             loraName: null,
             loraHash: null,
+            checkpointName: null,
+            checkpointHash: null,
             recipeId: null
         };
     }
@@ -127,16 +129,20 @@ class RecipeManager {
         // Check for Lora filter
         const filterLoraName = getSessionItem('lora_to_recipe_filterLoraName');
         const filterLoraHash = getSessionItem('lora_to_recipe_filterLoraHash');
+        const filterCheckpointName = getSessionItem('checkpoint_to_recipe_filterCheckpointName');
+        const filterCheckpointHash = getSessionItem('checkpoint_to_recipe_filterCheckpointHash');
 
         // Check for specific recipe ID
         const viewRecipeId = getSessionItem('viewRecipeId');
 
         // Set custom filter if any parameter is present
-        if (filterLoraName || filterLoraHash || viewRecipeId) {
+        if (filterLoraName || filterLoraHash || filterCheckpointName || filterCheckpointHash || viewRecipeId) {
             this.pageState.customFilter = {
                 active: true,
                 loraName: filterLoraName,
                 loraHash: filterLoraHash,
+                checkpointName: filterCheckpointName,
+                checkpointHash: filterCheckpointHash,
                 recipeId: viewRecipeId
             };
 
@@ -164,6 +170,13 @@ class RecipeManager {
                 loraName;
 
             filterText = `<span>Recipes using: <span class="lora-name">${displayName}</span></span>`;
+        } else if (this.pageState.customFilter.checkpointName) {
+            const checkpointName = this.pageState.customFilter.checkpointName;
+            const displayName = checkpointName.length > 25 ?
+                checkpointName.substring(0, 22) + '...' :
+                checkpointName;
+
+            filterText = `<span>Recipes using checkpoint: <span class="lora-name">${displayName}</span></span>`;
         } else {
             filterText = 'Filtered recipes';
         }
@@ -173,6 +186,10 @@ class RecipeManager {
         // Add title attribute to show the lora name as a tooltip
         if (this.pageState.customFilter.loraName) {
             textElement.setAttribute('title', this.pageState.customFilter.loraName);
+        } else if (this.pageState.customFilter.checkpointName) {
+            textElement.setAttribute('title', this.pageState.customFilter.checkpointName);
+        } else {
+            textElement.removeAttribute('title');
         }
         indicator.classList.remove('hidden');
 
@@ -199,6 +216,8 @@ class RecipeManager {
             active: false,
             loraName: null,
             loraHash: null,
+            checkpointName: null,
+            checkpointHash: null,
             recipeId: null
         };
 
@@ -211,6 +230,8 @@ class RecipeManager {
         // Clear any session storage items
         removeSessionItem('lora_to_recipe_filterLoraName');
         removeSessionItem('lora_to_recipe_filterLoraHash');
+        removeSessionItem('checkpoint_to_recipe_filterCheckpointName');
+        removeSessionItem('checkpoint_to_recipe_filterCheckpointHash');
         removeSessionItem('viewRecipeId');
 
         // Reset and refresh the virtual scroller

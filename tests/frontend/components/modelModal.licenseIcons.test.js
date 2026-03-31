@@ -80,7 +80,7 @@ vi.mock(MODEL_VERSIONS_MODULE, () => ({
 }));
 
 vi.mock(RECIPE_TAB_MODULE, () => ({
-  loadRecipesForLora: vi.fn(),
+  loadRecipesForModel: vi.fn(),
 }));
 
 vi.mock(I18N_HELPERS_MODULE, () => ({
