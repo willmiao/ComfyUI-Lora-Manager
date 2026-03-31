@@ -42,6 +42,7 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                 "height",
                 "Model",
                 "Model hash",
+                "modelVersionIds",
             )
             return any(key in payload for key in civitai_image_fields)
 
@@ -428,6 +429,65 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                             )
 
                         result["loras"].append(lora_entry)
+
+            # Process modelVersionIds from Civitai image API
+            # These are model version IDs returned at root level when meta doesn't contain resources
+            if "modelVersionIds" in metadata and isinstance(
+                metadata["modelVersionIds"], list
+            ):
+                for version_id in metadata["modelVersionIds"]:
+                    version_id_str = str(version_id)
+
+                    # Skip if we've already added this LoRA by version ID
+                    if version_id_str in added_loras:
+                        continue
+
+                    # Initialize lora entry with version ID
+                    lora_entry = {
+                        "id": version_id,
+                        "modelId": 0,
+                        "name": "Unknown LoRA",
+                        "version": "",
+                        "type": "lora",
+                        "weight": 1.0,
+                        "existsLocally": False,
+                        "thumbnailUrl": "/loras_static/images/no-preview.png",
+                        "baseModel": "",
+                        "size": 0,
+                        "downloadUrl": "",
+                        "isDeleted": False,
+                    }
+
+                    # Fetch model info from Civitai
+                    if metadata_provider and version_id_str:
+                        try:
+                            civitai_info = (
+                                await metadata_provider.get_model_version_info(
+                                    version_id_str
+                                )
+                            )
+
+                            populated_entry = await self.populate_lora_from_civitai(
+                                lora_entry,
+                                civitai_info,
+                                recipe_scanner,
+                                base_model_counts,
+                            )
+
+                            if populated_entry is None:
+                                continue  # Skip invalid LoRA types
+
+                            lora_entry = populated_entry
+                        except Exception as e:
+                            logger.error(
+                                f"Error fetching Civitai info for model version {version_id}: {e}"
+                            )
+
+                    # Track this LoRA for deduplication
+                    if version_id_str:
+                        added_loras[version_id_str] = len(result["loras"])
+
+                    result["loras"].append(lora_entry)
 
             # If we found LoRA hashes in the metadata but haven't already
             # populated entries for them, fall back to creating LoRAs from

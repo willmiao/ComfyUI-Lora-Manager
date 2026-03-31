@@ -143,6 +143,12 @@ class RecipeAnalysisService:
                 ):
                     metadata = metadata["meta"]
 
+                # Include modelVersionIds from root level if available
+                # Civitai API returns modelVersionIds at root level, not in meta
+                model_version_ids = image_info.get("modelVersionIds")
+                if model_version_ids and isinstance(metadata, dict):
+                    metadata["modelVersionIds"] = model_version_ids
+
                 # Validate that metadata contains meaningful recipe fields
                 # If not, treat as None to trigger EXIF extraction from downloaded image
                 if isinstance(metadata, dict) and not self._has_recipe_fields(metadata):
