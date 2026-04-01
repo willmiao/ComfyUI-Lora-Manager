@@ -19,6 +19,8 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
   const modelStrength = ref(1.0)
   const clipStrength = ref(1.0)
   const useCustomClipRange = ref(false)
+  const usePresetStrength = ref(false)
+  const presetStrengthScale = ref(1.0)
   const sortBy = ref<'filename' | 'model_name'>('filename')
   const currentLoraName = ref('')
   const currentLoraFilename = ref('')
@@ -52,6 +54,8 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
         model_strength: modelStrength.value,
         clip_strength: clipStrength.value,
         use_same_clip_strength: !useCustomClipRange.value,
+        use_preset_strength: usePresetStrength.value,
+        preset_strength_scale: presetStrengthScale.value,
         sort_by: sortBy.value,
         current_lora_name: currentLoraName.value,
         current_lora_filename: currentLoraFilename.value,
@@ -70,6 +74,8 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
       model_strength: modelStrength.value,
       clip_strength: clipStrength.value,
       use_same_clip_strength: !useCustomClipRange.value,
+      use_preset_strength: usePresetStrength.value,
+      preset_strength_scale: presetStrengthScale.value,
       sort_by: sortBy.value,
       current_lora_name: currentLoraName.value,
       current_lora_filename: currentLoraFilename.value,
@@ -94,6 +100,8 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
       modelStrength.value = config.model_strength ?? 1.0
       clipStrength.value = config.clip_strength ?? 1.0
       useCustomClipRange.value = !(config.use_same_clip_strength ?? true)
+      usePresetStrength.value = config.use_preset_strength ?? false
+      presetStrengthScale.value = config.preset_strength_scale ?? 1.0
       sortBy.value = config.sort_by || 'filename'
       currentLoraName.value = config.current_lora_name || ''
       currentLoraFilename.value = config.current_lora_filename || ''
@@ -277,6 +285,8 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
     modelStrength,
     clipStrength,
     useCustomClipRange,
+    usePresetStrength,
+    presetStrengthScale,
     sortBy,
     currentLoraName,
     currentLoraFilename,
@@ -296,6 +306,8 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
     modelStrength,
     clipStrength,
     useCustomClipRange,
+    usePresetStrength,
+    presetStrengthScale,
     sortBy,
     currentLoraName,
     currentLoraFilename,

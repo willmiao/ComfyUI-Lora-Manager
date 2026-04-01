@@ -18,7 +18,7 @@ const LORA_RANDOMIZER_WIDGET_MIN_WIDTH = 500
 const LORA_RANDOMIZER_WIDGET_MIN_HEIGHT = 448
 const LORA_RANDOMIZER_WIDGET_MAX_HEIGHT = LORA_RANDOMIZER_WIDGET_MIN_HEIGHT
 const LORA_CYCLER_WIDGET_MIN_WIDTH = 380
-const LORA_CYCLER_WIDGET_MIN_HEIGHT = 344
+const LORA_CYCLER_WIDGET_MIN_HEIGHT = 408
 const LORA_CYCLER_WIDGET_MAX_HEIGHT = LORA_CYCLER_WIDGET_MIN_HEIGHT
 const JSON_DISPLAY_WIDGET_MIN_WIDTH = 300
 const JSON_DISPLAY_WIDGET_MIN_HEIGHT = 200
@@ -244,7 +244,24 @@ function createLoraCyclerWidget(node) {
 
   forwardMiddleMouseToCanvas(container)
 
-  let internalValue: CyclerConfig | undefined
+  const defaultConfig: CyclerConfig = {
+    current_index: 1,
+    total_count: 0,
+    pool_config_hash: '',
+    model_strength: 1.0,
+    clip_strength: 1.0,
+    use_same_clip_strength: true,
+    use_preset_strength: false,
+    preset_strength_scale: 1.0,
+    sort_by: 'filename',
+    current_lora_name: '',
+    current_lora_filename: '',
+    repeat_count: 1,
+    repeat_used: 0,
+    is_paused: false,
+    include_no_lora: false,
+  }
+  let internalValue: CyclerConfig | undefined = defaultConfig
 
   const widget = node.addDOMWidget(
     'cycler_config',

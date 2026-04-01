@@ -4,17 +4,13 @@
  * These tests simulate ComfyUI's execution modes to verify correct LoRA cycling behavior.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { useLoraCyclerState } from '@/composables/useLoraCyclerState'
-import type { CyclerConfig } from '@/composables/types'
 import {
   createMockWidget,
-  createMockCyclerConfig,
-  createMockLoraList,
-  createMockPoolConfig
 } from '../fixtures/mockConfigs'
-import { setupFetchMock, resetFetchMock } from '../setup'
-import { BatchQueueSimulator, IndexTracker } from '../utils/BatchQueueSimulator'
+import { resetFetchMock } from '../setup'
+import { BatchQueueSimulator } from '../utils/BatchQueueSimulator'
 
 /**
  * Creates a test harness that mimics the LoraCyclerWidget's behavior

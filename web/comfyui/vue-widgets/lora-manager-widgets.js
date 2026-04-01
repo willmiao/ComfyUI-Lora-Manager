@@ -1588,16 +1588,16 @@ to { transform: rotate(360deg);
   box-sizing: border-box;
 }
 
-.cycler-settings[data-v-f65566fd] {
+.cycler-settings[data-v-f0663be4] {
   display: flex;
   flex-direction: column;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: #e4e4e7;
 }
-.settings-header[data-v-f65566fd] {
+.settings-header[data-v-f0663be4] {
   margin-bottom: 8px;
 }
-.settings-title[data-v-f65566fd] {
+.settings-title[data-v-f0663be4] {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -1606,10 +1606,10 @@ to { transform: rotate(360deg);
   margin: 0;
   text-transform: uppercase;
 }
-.setting-section[data-v-f65566fd] {
+.setting-section[data-v-f0663be4] {
   margin-bottom: 8px;
 }
-.setting-label[data-v-f65566fd] {
+.setting-label[data-v-f0663be4] {
   font-size: 13px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.8);
@@ -1618,10 +1618,10 @@ to { transform: rotate(360deg);
 }
 
 /* Progress Display */
-.progress-section[data-v-f65566fd] {
+.progress-section[data-v-f0663be4] {
   margin-bottom: 12px;
 }
-.progress-display[data-v-f65566fd] {
+.progress-display[data-v-f0663be4] {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
@@ -1631,31 +1631,31 @@ to { transform: rotate(360deg);
   align-items: center;
   transition: border-color 0.3s ease;
 }
-.progress-display.executing[data-v-f65566fd] {
+.progress-display.executing[data-v-f0663be4] {
   border-color: rgba(66, 153, 225, 0.5);
-  animation: pulse-f65566fd 2s ease-in-out infinite;
+  animation: pulse-f0663be4 2s ease-in-out infinite;
 }
-@keyframes pulse-f65566fd {
+@keyframes pulse-f0663be4 {
 0%, 100% { border-color: rgba(66, 153, 225, 0.3);
 }
 50% { border-color: rgba(66, 153, 225, 0.7);
 }
 }
-.progress-info[data-v-f65566fd] {
+.progress-info[data-v-f0663be4] {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
   flex: 1;
 }
-.progress-label[data-v-f65566fd] {
+.progress-label[data-v-f0663be4] {
   font-size: 10px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.5);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-.progress-name[data-v-f65566fd] {
+.progress-name[data-v-f0663be4] {
   font-size: 13px;
   font-weight: 500;
   color: rgba(191, 219, 254, 1);
@@ -1663,7 +1663,7 @@ to { transform: rotate(360deg);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.progress-name.clickable[data-v-f65566fd] {
+.progress-name.clickable[data-v-f0663be4] {
   cursor: pointer;
   padding: 2px 6px;
   margin: -2px -6px;
@@ -1673,42 +1673,42 @@ to { transform: rotate(360deg);
   align-items: center;
   gap: 4px;
 }
-.progress-name.clickable[data-v-f65566fd]:hover:not(.disabled) {
+.progress-name.clickable[data-v-f0663be4]:hover:not(.disabled) {
   background: rgba(66, 153, 225, 0.2);
   color: rgba(191, 219, 254, 1);
 }
-.progress-name.no-lora[data-v-f65566fd] {
+.progress-name.no-lora[data-v-f0663be4] {
   font-style: italic;
   color: rgba(226, 232, 240, 0.6);
 }
-.progress-name.clickable.no-lora[data-v-f65566fd]:hover:not(.disabled) {
+.progress-name.clickable.no-lora[data-v-f0663be4]:hover:not(.disabled) {
   background: rgba(160, 174, 192, 0.2);
   color: rgba(226, 232, 240, 0.8);
 }
-.progress-name.clickable.disabled[data-v-f65566fd] {
+.progress-name.clickable.disabled[data-v-f0663be4] {
   cursor: not-allowed;
   opacity: 0.5;
 }
-.progress-info.disabled[data-v-f65566fd] {
+.progress-info.disabled[data-v-f0663be4] {
   cursor: not-allowed;
 }
-.selector-icon[data-v-f65566fd] {
+.selector-icon[data-v-f0663be4] {
   width: 16px;
   height: 16px;
   opacity: 0.5;
   flex-shrink: 0;
 }
-.progress-name.clickable:hover .selector-icon[data-v-f65566fd] {
+.progress-name.clickable:hover .selector-icon[data-v-f0663be4] {
   opacity: 0.8;
 }
-.progress-counter[data-v-f65566fd] {
+.progress-counter[data-v-f0663be4] {
   display: flex;
   align-items: center;
   gap: 4px;
   padding-left: 12px;
   flex-shrink: 0;
 }
-.progress-index[data-v-f65566fd] {
+.progress-index[data-v-f0663be4] {
   font-size: 18px;
   font-weight: 600;
   color: rgba(66, 153, 225, 1);
@@ -1717,12 +1717,12 @@ to { transform: rotate(360deg);
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.progress-separator[data-v-f65566fd] {
+.progress-separator[data-v-f0663be4] {
   font-size: 14px;
   color: rgba(226, 232, 240, 0.4);
   margin: 0 2px;
 }
-.progress-total[data-v-f65566fd] {
+.progress-total[data-v-f0663be4] {
   font-size: 14px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.6);
@@ -1733,7 +1733,7 @@ to { transform: rotate(360deg);
 }
 
 /* Repeat Progress */
-.repeat-progress[data-v-f65566fd] {
+.repeat-progress[data-v-f0663be4] {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1743,23 +1743,23 @@ to { transform: rotate(360deg);
   border: 1px solid rgba(226, 232, 240, 0.1);
   border-radius: 4px;
 }
-.repeat-progress-track[data-v-f65566fd] {
+.repeat-progress-track[data-v-f0663be4] {
   width: 32px;
   height: 4px;
   background: rgba(226, 232, 240, 0.15);
   border-radius: 2px;
   overflow: hidden;
 }
-.repeat-progress-fill[data-v-f65566fd] {
+.repeat-progress-fill[data-v-f0663be4] {
   height: 100%;
   background: linear-gradient(90deg, #f59e0b, #fbbf24);
   border-radius: 2px;
   transition: width 0.3s ease;
 }
-.repeat-progress-fill.is-complete[data-v-f65566fd] {
+.repeat-progress-fill.is-complete[data-v-f0663be4] {
   background: linear-gradient(90deg, #10b981, #34d399);
 }
-.repeat-progress-text[data-v-f65566fd] {
+.repeat-progress-text[data-v-f0663be4] {
   font-size: 10px;
   font-family: 'SF Mono', 'Roboto Mono', monospace;
   color: rgba(253, 230, 138, 0.9);
@@ -1768,19 +1768,19 @@ to { transform: rotate(360deg);
 }
 
 /* Index Controls Row - Grouped Layout */
-.index-controls-row[data-v-f65566fd] {
+.index-controls-row[data-v-f0663be4] {
   display: flex;
   align-items: flex-end;
   gap: 16px;
 }
 
 /* Control Group */
-.control-group[data-v-f65566fd] {
+.control-group[data-v-f0663be4] {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
-.control-group-label[data-v-f65566fd] {
+.control-group-label[data-v-f0663be4] {
   font-size: 11px;
   font-weight: 500;
   color: rgba(226, 232, 240, 0.5);
@@ -1788,13 +1788,13 @@ to { transform: rotate(360deg);
   letter-spacing: 0.03em;
   line-height: 1;
 }
-.control-group-content[data-v-f65566fd] {
+.control-group-content[data-v-f0663be4] {
   display: flex;
   align-items: baseline;
   gap: 4px;
   height: 32px;
 }
-.index-input[data-v-f65566fd] {
+.index-input[data-v-f0663be4] {
   width: 50px;
   height: 32px;
   padding: 0 8px;
@@ -1807,15 +1807,15 @@ to { transform: rotate(360deg);
   line-height: 32px;
   box-sizing: border-box;
 }
-.index-input[data-v-f65566fd]:focus {
+.index-input[data-v-f0663be4]:focus {
   outline: none;
   border-color: rgba(66, 153, 225, 0.6);
 }
-.index-input[data-v-f65566fd]:disabled {
+.index-input[data-v-f0663be4]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.index-hint[data-v-f65566fd] {
+.index-hint[data-v-f0663be4] {
   font-size: 12px;
   color: rgba(226, 232, 240, 0.4);
   font-variant-numeric: tabular-nums;
@@ -1823,7 +1823,7 @@ to { transform: rotate(360deg);
 }
 
 /* Repeat Controls */
-.repeat-input[data-v-f65566fd] {
+.repeat-input[data-v-f0663be4] {
   width: 50px;
   height: 32px;
   padding: 0 6px;
@@ -1837,11 +1837,11 @@ to { transform: rotate(360deg);
   line-height: 32px;
   box-sizing: border-box;
 }
-.repeat-input[data-v-f65566fd]:focus {
+.repeat-input[data-v-f0663be4]:focus {
   outline: none;
   border-color: rgba(66, 153, 225, 0.6);
 }
-.repeat-suffix[data-v-f65566fd] {
+.repeat-suffix[data-v-f0663be4] {
   font-size: 13px;
   color: rgba(226, 232, 240, 0.4);
   font-weight: 500;
@@ -1849,7 +1849,7 @@ to { transform: rotate(360deg);
 }
 
 /* Action Buttons */
-.action-buttons[data-v-f65566fd] {
+.action-buttons[data-v-f0663be4] {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1857,7 +1857,7 @@ to { transform: rotate(360deg);
 }
 
 /* Control Buttons */
-.control-btn[data-v-f65566fd] {
+.control-btn[data-v-f0663be4] {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1871,52 +1871,52 @@ to { transform: rotate(360deg);
   cursor: pointer;
   transition: all 0.2s;
 }
-.control-btn[data-v-f65566fd]:hover:not(:disabled) {
+.control-btn[data-v-f0663be4]:hover:not(:disabled) {
   background: rgba(66, 153, 225, 0.2);
   border-color: rgba(66, 153, 225, 0.4);
   color: rgba(191, 219, 254, 1);
 }
-.control-btn[data-v-f65566fd]:disabled {
+.control-btn[data-v-f0663be4]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.control-btn.active[data-v-f65566fd] {
+.control-btn.active[data-v-f0663be4] {
   background: rgba(245, 158, 11, 0.2);
   border-color: rgba(245, 158, 11, 0.5);
   color: rgba(253, 230, 138, 1);
 }
-.control-btn.active[data-v-f65566fd]:hover {
+.control-btn.active[data-v-f0663be4]:hover {
   background: rgba(245, 158, 11, 0.3);
   border-color: rgba(245, 158, 11, 0.6);
 }
-.control-icon[data-v-f65566fd] {
+.control-icon[data-v-f0663be4] {
   width: 14px;
   height: 14px;
 }
 
 /* Slider Container */
-.slider-container[data-v-f65566fd] {
+.slider-container[data-v-f0663be4] {
   background: rgba(26, 32, 44, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.2);
   border-radius: 6px;
   padding: 6px;
 }
-.slider-container--disabled[data-v-f65566fd] {
+.slider-container--disabled[data-v-f0663be4] {
   opacity: 0.5;
   pointer-events: none;
 }
-.section-header-with-toggle[data-v-f65566fd] {
+.section-header-with-toggle[data-v-f0663be4] {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
 }
-.section-header-with-toggle .setting-label[data-v-f65566fd] {
+.section-header-with-toggle .setting-label[data-v-f0663be4] {
   margin-bottom: 4px;
 }
 
 /* Toggle Switch */
-.toggle-switch[data-v-f65566fd] {
+.toggle-switch[data-v-f0663be4] {
   position: relative;
   width: 36px;
   height: 20px;
@@ -1925,7 +1925,7 @@ to { transform: rotate(360deg);
   border: none;
   cursor: pointer;
 }
-.toggle-switch__track[data-v-f65566fd] {
+.toggle-switch__track[data-v-f0663be4] {
   position: absolute;
   inset: 0;
   background: var(--comfy-input-bg, #333);
@@ -1933,11 +1933,11 @@ to { transform: rotate(360deg);
   border-radius: 10px;
   transition: all 0.2s;
 }
-.toggle-switch--active .toggle-switch__track[data-v-f65566fd] {
+.toggle-switch--active .toggle-switch__track[data-v-f0663be4] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.toggle-switch__thumb[data-v-f65566fd] {
+.toggle-switch__thumb[data-v-f0663be4] {
   position: absolute;
   top: 3px;
   left: 2px;
@@ -1948,12 +1948,12 @@ to { transform: rotate(360deg);
   transition: all 0.2s;
   opacity: 0.6;
 }
-.toggle-switch--active .toggle-switch__thumb[data-v-f65566fd] {
+.toggle-switch--active .toggle-switch__thumb[data-v-f0663be4] {
   transform: translateX(16px);
   background: #4299e1;
   opacity: 1;
 }
-.toggle-switch:hover .toggle-switch__thumb[data-v-f65566fd] {
+.toggle-switch:hover .toggle-switch__thumb[data-v-f0663be4] {
   opacity: 1;
 }
 
@@ -2077,7 +2077,7 @@ to { transform: rotate(360deg);
   font-size: 13px;
 }
 
-.lora-cycler-widget[data-v-b97187b9] {
+.lora-cycler-widget[data-v-3f46897a] {
   padding: 6px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 6px;
@@ -13515,11 +13515,14 @@ const _hoisted_24 = { class: "setting-section" };
 const _hoisted_25 = { class: "slider-container" };
 const _hoisted_26 = { class: "setting-section" };
 const _hoisted_27 = { class: "section-header-with-toggle" };
-const _hoisted_28 = { class: "setting-label" };
-const _hoisted_29 = ["aria-checked"];
-const _hoisted_30 = { class: "setting-section" };
-const _hoisted_31 = { class: "section-header-with-toggle" };
+const _hoisted_28 = ["aria-checked"];
+const _hoisted_29 = { class: "setting-section" };
+const _hoisted_30 = { class: "section-header-with-toggle" };
+const _hoisted_31 = { class: "setting-label" };
 const _hoisted_32 = ["aria-checked"];
+const _hoisted_33 = { class: "setting-section" };
+const _hoisted_34 = { class: "section-header-with-toggle" };
+const _hoisted_35 = ["aria-checked"];
 const _sfc_main$4 = /* @__PURE__ */ defineComponent({
   __name: "LoraCyclerSettingsView",
   props: {
@@ -13530,6 +13533,8 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
     modelStrength: {},
     clipStrength: {},
     useCustomClipRange: { type: Boolean },
+    usePresetStrength: { type: Boolean },
+    presetStrengthScale: {},
     isClipStrengthDisabled: { type: Boolean },
     repeatCount: {},
     repeatUsed: {},
@@ -13540,7 +13545,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
     includeNoLora: { type: Boolean },
     isNoLora: { type: Boolean }
   },
-  emits: ["update:currentIndex", "update:modelStrength", "update:clipStrength", "update:useCustomClipRange", "update:repeatCount", "update:includeNoLora", "toggle-pause", "reset-index", "open-lora-selector"],
+  emits: ["update:currentIndex", "update:modelStrength", "update:clipStrength", "update:useCustomClipRange", "update:usePresetStrength", "update:presetStrengthScale", "update:repeatCount", "update:includeNoLora", "toggle-pause", "reset-index", "open-lora-selector"],
   setup(__props, { emit: __emit }) {
     const props = __props;
     const emit2 = __emit;
@@ -13586,7 +13591,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
     };
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", _hoisted_1$3, [
-        _cache[24] || (_cache[24] = createBaseVNode("div", { class: "settings-header" }, [
+        _cache[28] || (_cache[28] = createBaseVNode("div", { class: "settings-header" }, [
           createBaseVNode("h3", { class: "settings-title" }, "CYCLER SETTINGS")
         ], -1)),
         createBaseVNode("div", _hoisted_2$3, [
@@ -13603,7 +13608,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                 title: __props.currentLoraFilename
               }, [
                 createTextVNode(toDisplayString(__props.currentLoraName || "None") + " ", 1),
-                _cache[12] || (_cache[12] = createBaseVNode("svg", {
+                _cache[14] || (_cache[14] = createBaseVNode("svg", {
                   class: "selector-icon",
                   viewBox: "0 0 24 24",
                   fill: "currentColor"
@@ -13614,7 +13619,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
             ], 2),
             createBaseVNode("div", _hoisted_5$1, [
               createBaseVNode("span", _hoisted_6$1, toDisplayString(__props.currentIndex), 1),
-              _cache[13] || (_cache[13] = createBaseVNode("span", { class: "progress-separator" }, "/", -1)),
+              _cache[15] || (_cache[15] = createBaseVNode("span", { class: "progress-separator" }, "/", -1)),
               createBaseVNode("span", _hoisted_7$1, toDisplayString(__props.totalCount), 1),
               __props.repeatCount > 1 ? (openBlock(), createElementBlock("div", _hoisted_8, [
                 createBaseVNode("div", _hoisted_9, [
@@ -13631,7 +13636,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
         createBaseVNode("div", _hoisted_11, [
           createBaseVNode("div", _hoisted_12, [
             createBaseVNode("div", _hoisted_13, [
-              _cache[14] || (_cache[14] = createBaseVNode("label", { class: "control-group-label" }, "Starting Index", -1)),
+              _cache[16] || (_cache[16] = createBaseVNode("label", { class: "control-group-label" }, "Starting Index", -1)),
               createBaseVNode("div", _hoisted_14, [
                 createBaseVNode("input", {
                   type: "number",
@@ -13653,7 +13658,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
               ])
             ]),
             createBaseVNode("div", _hoisted_17, [
-              _cache[16] || (_cache[16] = createBaseVNode("label", { class: "control-group-label" }, "Repeat", -1)),
+              _cache[18] || (_cache[18] = createBaseVNode("label", { class: "control-group-label" }, "Repeat", -1)),
               createBaseVNode("div", _hoisted_18, [
                 createBaseVNode("input", {
                   type: "number",
@@ -13671,7 +13676,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                   }, ["stop"])),
                   title: "Each LoRA will be used this many times before moving to the next"
                 }, null, 40, _hoisted_19),
-                _cache[15] || (_cache[15] = createBaseVNode("span", { class: "repeat-suffix" }, "×", -1))
+                _cache[17] || (_cache[17] = createBaseVNode("span", { class: "repeat-suffix" }, "×", -1))
               ])
             ]),
             createBaseVNode("div", _hoisted_20, [
@@ -13681,9 +13686,9 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                 onClick: _cache[6] || (_cache[6] = ($event) => _ctx.$emit("toggle-pause")),
                 title: __props.isPauseDisabled ? "Cannot pause while prompts are queued" : __props.isPaused ? "Continue iteration" : "Pause iteration"
               }, [
-                __props.isPaused ? (openBlock(), createElementBlock("svg", _hoisted_22, [..._cache[17] || (_cache[17] = [
+                __props.isPaused ? (openBlock(), createElementBlock("svg", _hoisted_22, [..._cache[19] || (_cache[19] = [
                   createBaseVNode("path", { d: "M8 5v14l11-7z" }, null, -1)
-                ])])) : (openBlock(), createElementBlock("svg", _hoisted_23, [..._cache[18] || (_cache[18] = [
+                ])])) : (openBlock(), createElementBlock("svg", _hoisted_23, [..._cache[20] || (_cache[20] = [
                   createBaseVNode("path", { d: "M6 4h4v16H6zm8 0h4v16h-4z" }, null, -1)
                 ])]))
               ], 10, _hoisted_21),
@@ -13691,7 +13696,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
                 class: "control-btn",
                 onClick: _cache[7] || (_cache[7] = ($event) => _ctx.$emit("reset-index")),
                 title: "Reset to index 1"
-              }, [..._cache[19] || (_cache[19] = [
+              }, [..._cache[21] || (_cache[21] = [
                 createBaseVNode("svg", {
                   viewBox: "0 0 24 24",
                   fill: "currentColor",
@@ -13704,7 +13709,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
           ])
         ]),
         createBaseVNode("div", _hoisted_24, [
-          _cache[20] || (_cache[20] = createBaseVNode("label", { class: "setting-label" }, "Model Strength", -1)),
+          _cache[22] || (_cache[22] = createBaseVNode("label", { class: "setting-label" }, "Model Strength", -1)),
           createBaseVNode("div", _hoisted_25, [
             createVNode(SingleSlider, {
               min: -10,
@@ -13718,18 +13723,47 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
         ]),
         createBaseVNode("div", _hoisted_26, [
           createBaseVNode("div", _hoisted_27, [
-            createBaseVNode("label", _hoisted_28, " Clip Strength - " + toDisplayString(__props.useCustomClipRange ? "Custom Value" : "Use Model Strength"), 1),
+            _cache[24] || (_cache[24] = createBaseVNode("label", { class: "setting-label" }, " Preset Strength Scale ", -1)),
+            createBaseVNode("button", {
+              type: "button",
+              class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.usePresetStrength }]),
+              onClick: _cache[9] || (_cache[9] = ($event) => _ctx.$emit("update:usePresetStrength", !__props.usePresetStrength)),
+              role: "switch",
+              "aria-checked": __props.usePresetStrength,
+              title: "Use scaled preset strength when enabled"
+            }, [..._cache[23] || (_cache[23] = [
+              createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
+              createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
+            ])], 10, _hoisted_28)
+          ]),
+          createBaseVNode("div", {
+            class: normalizeClass(["slider-container", { "slider-container--disabled": !__props.usePresetStrength }])
+          }, [
+            createVNode(SingleSlider, {
+              min: 0,
+              max: 2,
+              value: __props.presetStrengthScale,
+              step: 0.1,
+              "default-range": { min: 0.5, max: 1 },
+              disabled: !__props.usePresetStrength,
+              "onUpdate:value": _cache[10] || (_cache[10] = ($event) => _ctx.$emit("update:presetStrengthScale", $event))
+            }, null, 8, ["value", "disabled"])
+          ], 2)
+        ]),
+        createBaseVNode("div", _hoisted_29, [
+          createBaseVNode("div", _hoisted_30, [
+            createBaseVNode("label", _hoisted_31, " Clip Strength - " + toDisplayString(__props.useCustomClipRange ? "Custom Value" : "Use Model Strength"), 1),
             createBaseVNode("button", {
               type: "button",
               class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.useCustomClipRange }]),
-              onClick: _cache[9] || (_cache[9] = ($event) => _ctx.$emit("update:useCustomClipRange", !__props.useCustomClipRange)),
+              onClick: _cache[11] || (_cache[11] = ($event) => _ctx.$emit("update:useCustomClipRange", !__props.useCustomClipRange)),
               role: "switch",
               "aria-checked": __props.useCustomClipRange,
               title: "Use custom clip strength when enabled, otherwise use model strength"
-            }, [..._cache[21] || (_cache[21] = [
+            }, [..._cache[25] || (_cache[25] = [
               createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
               createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
-            ])], 10, _hoisted_29)
+            ])], 10, _hoisted_32)
           ]),
           createBaseVNode("div", {
             class: normalizeClass(["slider-container", { "slider-container--disabled": __props.isClipStrengthDisabled }])
@@ -13741,31 +13775,31 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
               step: 0.1,
               "default-range": { min: 0.5, max: 1.5 },
               disabled: __props.isClipStrengthDisabled,
-              "onUpdate:value": _cache[10] || (_cache[10] = ($event) => _ctx.$emit("update:clipStrength", $event))
+              "onUpdate:value": _cache[12] || (_cache[12] = ($event) => _ctx.$emit("update:clipStrength", $event))
             }, null, 8, ["value", "disabled"])
           ], 2)
         ]),
-        createBaseVNode("div", _hoisted_30, [
-          createBaseVNode("div", _hoisted_31, [
-            _cache[23] || (_cache[23] = createBaseVNode("label", { class: "setting-label" }, ' Add "No LoRA" step ', -1)),
+        createBaseVNode("div", _hoisted_33, [
+          createBaseVNode("div", _hoisted_34, [
+            _cache[27] || (_cache[27] = createBaseVNode("label", { class: "setting-label" }, ' Add "No LoRA" step ', -1)),
             createBaseVNode("button", {
               type: "button",
               class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.includeNoLora }]),
-              onClick: _cache[11] || (_cache[11] = ($event) => _ctx.$emit("update:includeNoLora", !__props.includeNoLora)),
+              onClick: _cache[13] || (_cache[13] = ($event) => _ctx.$emit("update:includeNoLora", !__props.includeNoLora)),
               role: "switch",
               "aria-checked": __props.includeNoLora,
               title: "Add an iteration without LoRA for comparison"
-            }, [..._cache[22] || (_cache[22] = [
+            }, [..._cache[26] || (_cache[26] = [
               createBaseVNode("span", { class: "toggle-switch__track" }, null, -1),
               createBaseVNode("span", { class: "toggle-switch__thumb" }, null, -1)
-            ])], 10, _hoisted_32)
+            ])], 10, _hoisted_35)
           ])
         ])
       ]);
     };
   }
 });
-const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-f65566fd"]]);
+const LoraCyclerSettingsView = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-f0663be4"]]);
 const _hoisted_1$2 = { class: "search-container" };
 const _hoisted_2$2 = { class: "lora-list" };
 const _hoisted_3$2 = ["onMouseenter", "onClick"];
@@ -13968,6 +14002,8 @@ function useLoraCyclerState(widget) {
   const modelStrength = ref(1);
   const clipStrength = ref(1);
   const useCustomClipRange = ref(false);
+  const usePresetStrength = ref(false);
+  const presetStrengthScale = ref(1);
   const sortBy = ref("filename");
   const currentLoraName = ref("");
   const currentLoraFilename = ref("");
@@ -13990,6 +14026,8 @@ function useLoraCyclerState(widget) {
         model_strength: modelStrength.value,
         clip_strength: clipStrength.value,
         use_same_clip_strength: !useCustomClipRange.value,
+        use_preset_strength: usePresetStrength.value,
+        preset_strength_scale: presetStrengthScale.value,
         sort_by: sortBy.value,
         current_lora_name: currentLoraName.value,
         current_lora_filename: currentLoraFilename.value,
@@ -14008,6 +14046,8 @@ function useLoraCyclerState(widget) {
       model_strength: modelStrength.value,
       clip_strength: clipStrength.value,
       use_same_clip_strength: !useCustomClipRange.value,
+      use_preset_strength: usePresetStrength.value,
+      preset_strength_scale: presetStrengthScale.value,
       sort_by: sortBy.value,
       current_lora_name: currentLoraName.value,
       current_lora_filename: currentLoraFilename.value,
@@ -14028,6 +14068,8 @@ function useLoraCyclerState(widget) {
       modelStrength.value = config.model_strength ?? 1;
       clipStrength.value = config.clip_strength ?? 1;
       useCustomClipRange.value = !(config.use_same_clip_strength ?? true);
+      usePresetStrength.value = config.use_preset_strength ?? false;
+      presetStrengthScale.value = config.preset_strength_scale ?? 1;
       sortBy.value = config.sort_by || "filename";
       currentLoraName.value = config.current_lora_name || "";
       currentLoraFilename.value = config.current_lora_filename || "";
@@ -14157,6 +14199,8 @@ function useLoraCyclerState(widget) {
     modelStrength,
     clipStrength,
     useCustomClipRange,
+    usePresetStrength,
+    presetStrengthScale,
     sortBy,
     currentLoraName,
     currentLoraFilename,
@@ -14175,6 +14219,8 @@ function useLoraCyclerState(widget) {
     modelStrength,
     clipStrength,
     useCustomClipRange,
+    usePresetStrength,
+    presetStrengthScale,
     sortBy,
     currentLoraName,
     currentLoraFilename,
@@ -14511,6 +14557,8 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           "model-strength": unref(state).modelStrength.value,
           "clip-strength": unref(state).clipStrength.value,
           "use-custom-clip-range": unref(state).useCustomClipRange.value,
+          "use-preset-strength": unref(state).usePresetStrength.value,
+          "preset-strength-scale": unref(state).presetStrengthScale.value,
           "is-clip-strength-disabled": unref(state).isClipStrengthDisabled.value,
           "is-loading": unref(state).isLoading.value,
           "repeat-count": unref(state).repeatCount.value,
@@ -14525,25 +14573,27 @@ const _sfc_main$2 = /* @__PURE__ */ defineComponent({
           "onUpdate:modelStrength": _cache[0] || (_cache[0] = ($event) => unref(state).modelStrength.value = $event),
           "onUpdate:clipStrength": _cache[1] || (_cache[1] = ($event) => unref(state).clipStrength.value = $event),
           "onUpdate:useCustomClipRange": handleUseCustomClipRangeChange,
+          "onUpdate:usePresetStrength": _cache[2] || (_cache[2] = ($event) => unref(state).usePresetStrength.value = $event),
+          "onUpdate:presetStrengthScale": _cache[3] || (_cache[3] = ($event) => unref(state).presetStrengthScale.value = $event),
           "onUpdate:repeatCount": handleRepeatCountChange,
           "onUpdate:includeNoLora": handleIncludeNoLoraChange,
           onTogglePause: handleTogglePause,
           onResetIndex: handleResetIndex,
-          onOpenLoraSelector: _cache[2] || (_cache[2] = ($event) => isModalOpen.value = true)
-        }, null, 8, ["current-index", "total-count", "current-lora-name", "current-lora-filename", "model-strength", "clip-strength", "use-custom-clip-range", "is-clip-strength-disabled", "is-loading", "repeat-count", "repeat-used", "is-paused", "is-pause-disabled", "is-workflow-executing", "executing-repeat-step", "include-no-lora", "is-no-lora"]),
+          onOpenLoraSelector: _cache[4] || (_cache[4] = ($event) => isModalOpen.value = true)
+        }, null, 8, ["current-index", "total-count", "current-lora-name", "current-lora-filename", "model-strength", "clip-strength", "use-custom-clip-range", "use-preset-strength", "preset-strength-scale", "is-clip-strength-disabled", "is-loading", "repeat-count", "repeat-used", "is-paused", "is-pause-disabled", "is-workflow-executing", "executing-repeat-step", "include-no-lora", "is-no-lora"]),
         createVNode(LoraListModal, {
           visible: isModalOpen.value,
           "lora-list": cachedLoraList.value,
           "current-index": unref(state).currentIndex.value,
           "include-no-lora": unref(state).includeNoLora.value,
-          onClose: _cache[3] || (_cache[3] = ($event) => isModalOpen.value = false),
+          onClose: _cache[5] || (_cache[5] = ($event) => isModalOpen.value = false),
           onSelect: handleModalSelect
         }, null, 8, ["visible", "lora-list", "current-index", "include-no-lora"])
       ], 32);
     };
   }
 });
-const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-b97187b9"]]);
+const LoraCyclerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-3f46897a"]]);
 const _hoisted_1$1 = { class: "json-display-widget" };
 const _hoisted_2$1 = {
   class: "json-content",
@@ -15156,7 +15206,7 @@ const LORA_RANDOMIZER_WIDGET_MIN_WIDTH = 500;
 const LORA_RANDOMIZER_WIDGET_MIN_HEIGHT = 448;
 const LORA_RANDOMIZER_WIDGET_MAX_HEIGHT = LORA_RANDOMIZER_WIDGET_MIN_HEIGHT;
 const LORA_CYCLER_WIDGET_MIN_WIDTH = 380;
-const LORA_CYCLER_WIDGET_MIN_HEIGHT = 344;
+const LORA_CYCLER_WIDGET_MIN_HEIGHT = 408;
 const LORA_CYCLER_WIDGET_MAX_HEIGHT = LORA_CYCLER_WIDGET_MIN_HEIGHT;
 const JSON_DISPLAY_WIDGET_MIN_WIDTH = 300;
 const JSON_DISPLAY_WIDGET_MIN_HEIGHT = 200;
@@ -15330,7 +15380,24 @@ function createLoraCyclerWidget(node) {
   container.style.flexDirection = "column";
   container.style.overflow = "hidden";
   forwardMiddleMouseToCanvas(container);
-  let internalValue;
+  const defaultConfig = {
+    current_index: 1,
+    total_count: 0,
+    pool_config_hash: "",
+    model_strength: 1,
+    clip_strength: 1,
+    use_same_clip_strength: true,
+    use_preset_strength: false,
+    preset_strength_scale: 1,
+    sort_by: "filename",
+    current_lora_name: "",
+    current_lora_filename: "",
+    repeat_count: 1,
+    repeat_used: 0,
+    is_paused: false,
+    include_no_lora: false
+  };
+  let internalValue = defaultConfig;
   const widget = node.addDOMWidget(
     "cycler_config",
     "CYCLER_CONFIG",

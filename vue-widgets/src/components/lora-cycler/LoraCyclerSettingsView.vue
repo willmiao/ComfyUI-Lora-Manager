@@ -131,6 +131,38 @@
       </div>
     </div>
 
+    <!-- Preset Strength Scale -->
+    <div class="setting-section">
+      <div class="section-header-with-toggle">
+        <label class="setting-label">
+          Preset Strength Scale
+        </label>
+        <button
+          type="button"
+          class="toggle-switch"
+          :class="{ 'toggle-switch--active': usePresetStrength }"
+          @click="$emit('update:usePresetStrength', !usePresetStrength)"
+          role="switch"
+          :aria-checked="usePresetStrength"
+          title="Use scaled preset strength when enabled"
+        >
+          <span class="toggle-switch__track"></span>
+          <span class="toggle-switch__thumb"></span>
+        </button>
+      </div>
+      <div class="slider-container" :class="{ 'slider-container--disabled': !usePresetStrength }">
+        <SingleSlider
+          :min="0"
+          :max="2"
+          :value="presetStrengthScale"
+          :step="0.1"
+          :default-range="{ min: 0.5, max: 1.0 }"
+          :disabled="!usePresetStrength"
+          @update:value="$emit('update:presetStrengthScale', $event)"
+        />
+      </div>
+    </div>
+
     <!-- Clip Strength -->
     <div class="setting-section">
       <div class="section-header-with-toggle">
@@ -198,6 +230,8 @@ const props = defineProps<{
   modelStrength: number
   clipStrength: number
   useCustomClipRange: boolean
+  usePresetStrength: boolean
+  presetStrengthScale: number
   isClipStrengthDisabled: boolean
   repeatCount: number
   repeatUsed: number
@@ -214,6 +248,8 @@ const emit = defineEmits<{
   'update:modelStrength': [value: number]
   'update:clipStrength': [value: number]
   'update:useCustomClipRange': [value: boolean]
+  'update:usePresetStrength': [value: boolean]
+  'update:presetStrengthScale': [value: number]
   'update:repeatCount': [value: number]
   'update:includeNoLora': [value: boolean]
   'toggle-pause': []

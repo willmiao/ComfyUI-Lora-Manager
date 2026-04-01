@@ -8,6 +8,7 @@ and tracks the cycle progress which persists across workflow save/load.
 
 import logging
 import os
+
 from ..utils.utils import get_lora_info
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,9 @@ class LoraCyclerLM:
         current_index = cycler_config.get("current_index", 1)  # 1-based
         model_strength = float(cycler_config.get("model_strength", 1.0))
         clip_strength = float(cycler_config.get("clip_strength", 1.0))
+        use_same_clip_strength = cycler_config.get("use_same_clip_strength", True)
+        use_preset_strength = cycler_config.get("use_preset_strength", False)
+        preset_strength_scale = float(cycler_config.get("preset_strength_scale", 1.0))
         sort_by = "filename"
 
         # Include "no lora" option
@@ -131,6 +135,39 @@ class LoraCyclerLM:
             else:
                 # Normalize path separators
                 lora_path = lora_path.replace("/", os.sep)
+
+                if use_preset_strength:
+                    lora_metadata = await lora_service.get_lora_metadata_by_filename(
+                        current_lora["file_name"]
+                    )
+                    if lora_metadata:
+                        recommended_strength = (
+                            lora_service.get_recommended_strength_from_lora_data(
+                                lora_metadata
+                            )
+                        )
+                        if recommended_strength is not None:
+                            model_strength = round(
+                                recommended_strength * preset_strength_scale, 2
+                            )
+
+                        if use_same_clip_strength:
+                            clip_strength = model_strength
+                        else:
+                            recommended_clip_strength = (
+                                lora_service.get_recommended_clip_strength_from_lora_data(
+                                    lora_metadata
+                                )
+                            )
+                            if recommended_clip_strength is not None:
+                                clip_strength = round(
+                                    recommended_clip_strength * preset_strength_scale, 2
+                                )
+                    elif use_same_clip_strength:
+                        clip_strength = model_strength
+                elif use_same_clip_strength:
+                    clip_strength = model_strength
+
                 lora_stack = [(lora_path, model_strength, clip_strength)]
 
         # Calculate next index (wrap to 1 if at end)

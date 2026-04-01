@@ -27,7 +27,7 @@ export interface SimulatorOptions {
 /**
  * Creates execution output based on the current state
  */
-function defaultGenerateOutput(executionIndex: number, config: CyclerConfig) {
+function defaultGenerateOutput(_executionIndex: number, config: CyclerConfig) {
   // Calculate what the next index would be after this execution
   let nextIdx = (config.execution_index ?? config.current_index) + 1
   if (nextIdx > config.total_count) {

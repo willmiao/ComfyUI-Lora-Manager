@@ -1,5 +1,6 @@
-import os
 import logging
+import json
+import os
 from typing import Dict, List, Optional
 
 from .base_model_service import BaseModelService
@@ -278,6 +279,42 @@ class LoraService(BaseModelService):
 
         return None
 
+    @staticmethod
+    def get_recommended_strength_from_lora_data(lora_data: Dict) -> Optional[float]:
+        """Parse usage_tips JSON and extract recommended model strength."""
+        try:
+            usage_tips = lora_data.get("usage_tips", "")
+            if not usage_tips:
+                return None
+            tips_data = json.loads(usage_tips)
+            return tips_data.get("strength")
+        except (json.JSONDecodeError, TypeError, AttributeError):
+            return None
+
+    @staticmethod
+    def get_recommended_clip_strength_from_lora_data(
+        lora_data: Dict,
+    ) -> Optional[float]:
+        """Parse usage_tips JSON and extract recommended clip strength."""
+        try:
+            usage_tips = lora_data.get("usage_tips", "")
+            if not usage_tips:
+                return None
+            tips_data = json.loads(usage_tips)
+            return tips_data.get("clipStrength")
+        except (json.JSONDecodeError, TypeError, AttributeError):
+            return None
+
+    async def get_lora_metadata_by_filename(self, filename: str) -> Optional[Dict]:
+        """Return cached raw metadata for a LoRA matching the given filename."""
+        cache = await self.scanner.get_cached_data(force_refresh=False)
+
+        for lora in cache.raw_data if cache else []:
+            if lora.get("file_name") == filename:
+                return lora
+
+        return None
+
     def find_duplicate_hashes(self) -> Dict:
         """Find LoRAs with duplicate SHA256 hashes"""
         return self.scanner._hash_index.get_duplicate_hashes()
@@ -328,33 +365,9 @@ class LoraService(BaseModelService):
             List of LoRA dicts with randomized strengths
         """
         import random
-        import json
-
         # Use a local Random instance to avoid affecting global random state
         # This ensures each execution with a different seed produces different results
         rng = random.Random(seed)
-
-        def get_recommended_strength(lora_data: Dict) -> Optional[float]:
-            """Parse usage_tips JSON and extract recommended strength"""
-            try:
-                usage_tips = lora_data.get("usage_tips", "")
-                if not usage_tips:
-                    return None
-                tips_data = json.loads(usage_tips)
-                return tips_data.get("strength")
-            except (json.JSONDecodeError, TypeError, AttributeError):
-                return None
-
-        def get_recommended_clip_strength(lora_data: Dict) -> Optional[float]:
-            """Parse usage_tips JSON and extract recommended clip strength"""
-            try:
-                usage_tips = lora_data.get("usage_tips", "")
-                if not usage_tips:
-                    return None
-                tips_data = json.loads(usage_tips)
-                return tips_data.get("clipStrength")
-            except (json.JSONDecodeError, TypeError, AttributeError):
-                return None
 
         if locked_loras is None:
             locked_loras = []
@@ -403,7 +416,9 @@ class LoraService(BaseModelService):
         result_loras = []
         for lora in selected:
             if use_recommended_strength:
-                recommended_strength = get_recommended_strength(lora)
+                recommended_strength = self.get_recommended_strength_from_lora_data(
+                    lora
+                )
                 if recommended_strength is not None:
                     scale = rng.uniform(
                         recommended_strength_scale_min, recommended_strength_scale_max
@@ -421,7 +436,9 @@ class LoraService(BaseModelService):
             if use_same_clip_strength:
                 clip_str = model_str
             elif use_recommended_strength:
-                recommended_clip_strength = get_recommended_clip_strength(lora)
+                recommended_clip_strength = (
+                    self.get_recommended_clip_strength_from_lora_data(lora)
+                )
                 if recommended_clip_strength is not None:
                     scale = rng.uniform(
                         recommended_strength_scale_min, recommended_strength_scale_max

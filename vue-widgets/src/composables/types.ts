@@ -80,6 +80,8 @@ export interface CyclerConfig {
   model_strength: number
   clip_strength: number
   use_same_clip_strength: boolean
+  use_preset_strength: boolean
+  preset_strength_scale: number
   sort_by: 'filename' | 'model_name'
   current_lora_name: string   // For display
   current_lora_filename: string

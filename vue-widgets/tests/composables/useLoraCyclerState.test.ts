@@ -79,6 +79,8 @@ describe('useLoraCyclerState', () => {
         model_strength: 1.0,
         clip_strength: 1.0,
         use_same_clip_strength: true,
+        use_preset_strength: false,
+        preset_strength_scale: 1.0,
         sort_by: 'filename',
         current_lora_name: '',
         current_lora_filename: '',
@@ -340,7 +342,8 @@ describe('useLoraCyclerState', () => {
           baseModels: ['SD 1.5'],
           tags: { include: [], exclude: [] },
           folders: { include: [], exclude: [] },
-          license: { noCreditRequired: false, allowSelling: false }
+          license: { noCreditRequired: false, allowSelling: false },
+          namePatterns: { include: [], exclude: [], useRegex: false }
         }
       })
 
@@ -349,7 +352,8 @@ describe('useLoraCyclerState', () => {
           baseModels: ['SDXL'],
           tags: { include: [], exclude: [] },
           folders: { include: [], exclude: [] },
-          license: { noCreditRequired: false, allowSelling: false }
+          license: { noCreditRequired: false, allowSelling: false },
+          namePatterns: { include: [], exclude: [], useRegex: false }
         }
       })
 
@@ -540,7 +544,8 @@ describe('useLoraCyclerState', () => {
           baseModels: ['SDXL'],
           tags: { include: [], exclude: [] },
           folders: { include: [], exclude: [] },
-          license: { noCreditRequired: false, allowSelling: false }
+          license: { noCreditRequired: false, allowSelling: false },
+          namePatterns: { include: [], exclude: [], useRegex: false }
         }
       })
 
