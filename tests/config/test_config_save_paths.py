@@ -131,6 +131,102 @@ def test_save_paths_logs_warning_when_upsert_fails(
     assert "Failed to save folder paths: boom" in caplog.text
 
 
+def test_save_paths_repairs_empty_default_roots(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+
+    class FakeSettingsService:
+        def get_libraries(self):
+            return {
+                "comfyui": {
+                    "folder_paths": {key: list(value) for key, value in folder_paths.items()},
+                    "default_lora_root": "",
+                    "default_checkpoint_root": "",
+                    "default_embedding_root": "",
+                }
+            }
+
+        def rename_library(self, *_):
+            raise AssertionError("rename_library should not be invoked")
+
+        def upsert_library(self, name: str, **payload):
+            self.name = name
+            self.payload = payload
+
+    fake_settings = FakeSettingsService()
+    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+
+    config_module.Config()
+
+    assert fake_settings.name == "comfyui"
+    assert fake_settings.payload["default_lora_root"] == folder_paths["loras"][0].replace("\\", "/")
+    assert fake_settings.payload["default_checkpoint_root"] == folder_paths["checkpoints"][0].replace("\\", "/")
+    assert fake_settings.payload["default_embedding_root"] == folder_paths["embeddings"][0].replace("\\", "/")
+
+
+def test_save_paths_repairs_stale_default_roots(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+
+    class FakeSettingsService:
+        def get_libraries(self):
+            return {
+                "comfyui": {
+                    "folder_paths": {key: list(value) for key, value in folder_paths.items()},
+                    "default_lora_root": "/stale/loras",
+                    "default_checkpoint_root": "/stale/checkpoints",
+                    "default_embedding_root": "/stale/embeddings",
+                }
+            }
+
+        def rename_library(self, *_):
+            raise AssertionError("rename_library should not be invoked")
+
+        def upsert_library(self, name: str, **payload):
+            self.name = name
+            self.payload = payload
+
+    fake_settings = FakeSettingsService()
+    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+
+    config_module.Config()
+
+    assert fake_settings.name == "comfyui"
+    assert fake_settings.payload["default_lora_root"] == folder_paths["loras"][0].replace("\\", "/")
+    assert fake_settings.payload["default_checkpoint_root"] == folder_paths["checkpoints"][0].replace("\\", "/")
+    assert fake_settings.payload["default_embedding_root"] == folder_paths["embeddings"][0].replace("\\", "/")
+
+
+def test_save_paths_keeps_valid_default_roots(monkeypatch: pytest.MonkeyPatch, tmp_path):
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+
+    class FakeSettingsService:
+        def get_libraries(self):
+            return {
+                "comfyui": {
+                    "folder_paths": {key: list(value) for key, value in folder_paths.items()},
+                    "default_lora_root": folder_paths["loras"][0],
+                    "default_checkpoint_root": folder_paths["checkpoints"][0],
+                    "default_embedding_root": folder_paths["embeddings"][0],
+                }
+            }
+
+        def rename_library(self, *_):
+            raise AssertionError("rename_library should not be invoked")
+
+        def upsert_library(self, name: str, **payload):
+            self.name = name
+            self.payload = payload
+
+    fake_settings = FakeSettingsService()
+    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+
+    config_module.Config()
+
+    assert fake_settings.name == "comfyui"
+    assert fake_settings.payload["default_lora_root"] == folder_paths["loras"][0].replace("\\", "/")
+    assert fake_settings.payload["default_checkpoint_root"] == folder_paths["checkpoints"][0].replace("\\", "/")
+    assert fake_settings.payload["default_embedding_root"] == folder_paths["embeddings"][0].replace("\\", "/")
+
+
 def test_save_paths_removes_template_default_library(monkeypatch, tmp_path):
     folder_paths = _setup_config_environment(monkeypatch, tmp_path)
 

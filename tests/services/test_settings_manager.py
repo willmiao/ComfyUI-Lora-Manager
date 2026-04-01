@@ -17,7 +17,9 @@ def test_portable_settings_use_project_root(tmp_path, monkeypatch):
     from importlib import reload
 
     settings_paths_module = reload(settings_paths)
-    monkeypatch.setattr(settings_paths_module, "get_project_root", lambda: str(tmp_path))
+    monkeypatch.setattr(
+        settings_paths_module, "get_project_root", lambda: str(tmp_path)
+    )
     monkeypatch.setattr(
         settings_paths_module,
         "user_config_dir",
@@ -25,7 +27,9 @@ def test_portable_settings_use_project_root(tmp_path, monkeypatch):
     )
 
     portable_settings = {"use_portable_settings": True}
-    (tmp_path / "settings.json").write_text(json.dumps(portable_settings), encoding="utf-8")
+    (tmp_path / "settings.json").write_text(
+        json.dumps(portable_settings), encoding="utf-8"
+    )
 
     config_dir = settings_paths_module.get_settings_dir(create=True)
     assert config_dir == str(tmp_path)
@@ -74,7 +78,9 @@ def test_initial_save_persists_minimal_template(tmp_path, monkeypatch):
         self._seed_template = copy.deepcopy(template)
         return copy.deepcopy(template)
 
-    monkeypatch.setattr(SettingsManager, "_load_settings_template", fake_template_loader)
+    monkeypatch.setattr(
+        SettingsManager, "_load_settings_template", fake_template_loader
+    )
 
     manager = SettingsManager()
 
@@ -118,7 +124,10 @@ def test_existing_folder_paths_seed_default_library(tmp_path, monkeypatch):
     assert "default" in libraries
     assert libraries["default"]["folder_paths"]["loras"] == [str(lora_dir)]
     assert libraries["default"]["folder_paths"]["checkpoints"] == [str(checkpoint_dir)]
-    assert libraries["default"]["folder_paths"]["unet"] == [str(diffusion_dir), str(unet_dir)]
+    assert libraries["default"]["folder_paths"]["unet"] == [
+        str(diffusion_dir),
+        str(unet_dir),
+    ]
     assert libraries["default"]["folder_paths"]["embeddings"] == [str(embedding_dir)]
 
     assert manager.get_startup_messages() == []
@@ -138,7 +147,9 @@ def test_environment_variable_overrides_settings(tmp_path, monkeypatch):
     assert mgr.get("civitai_api_key") == "secret"
 
 
-def _create_manager_with_settings(tmp_path, monkeypatch, initial_settings, *, save_spy=None):
+def _create_manager_with_settings(
+    tmp_path, monkeypatch, initial_settings, *, save_spy=None
+):
     """Helper to instantiate SettingsManager with predefined settings."""
 
     fake_settings_path = tmp_path / "settings.json"
@@ -203,7 +214,9 @@ def test_switch_to_portable_mode_copies_cache(tmp_path, monkeypatch):
     assert manager.settings_file == str(project_root / "settings.json")
     marker_copy = project_root / "model_cache" / "user_marker.txt"
     assert marker_copy.read_text(encoding="utf-8") == "user_marker.txt"
-    assert (project_root / "model_cache.sqlite").read_text(encoding="utf-8") == "user_db"
+    assert (project_root / "model_cache.sqlite").read_text(
+        encoding="utf-8"
+    ) == "user_db"
     assert user_settings.exists()
 
 
@@ -216,13 +229,17 @@ def test_switching_back_to_user_config_moves_cache(tmp_path, monkeypatch):
 
     project_cache_dir = project_root / "model_cache"
     project_cache_dir.mkdir(exist_ok=True)
-    (project_cache_dir / "project_marker.txt").write_text("project_marker", encoding="utf-8")
+    (project_cache_dir / "project_marker.txt").write_text(
+        "project_marker", encoding="utf-8"
+    )
     (project_root / "model_cache.sqlite").write_text("project_db", encoding="utf-8")
 
     manager.set("use_portable_settings", False)
 
     assert manager.settings_file == str(user_settings)
-    assert (user_dir / "model_cache" / "project_marker.txt").read_text(encoding="utf-8") == "project_marker"
+    assert (user_dir / "model_cache" / "project_marker.txt").read_text(
+        encoding="utf-8"
+    ) == "project_marker"
     assert (user_dir / "model_cache.sqlite").read_text(encoding="utf-8") == "project_db"
 
 
@@ -242,10 +259,19 @@ def test_download_path_template_invalid_json(manager):
     template = manager.get_download_path_template("checkpoint")
 
     assert template == "{base_model}/{first_tag}"
-    assert manager.settings["download_path_templates"]["lora"] == "{base_model}/{first_tag}"
+    assert (
+        manager.settings["download_path_templates"]["lora"]
+        == "{base_model}/{first_tag}"
+    )
 
 
 def test_auto_set_default_roots(manager):
+    # Clear any previously auto-set values to test fresh behavior
+    manager.settings["default_lora_root"] = ""
+    manager.settings["default_checkpoint_root"] = ""
+    manager.settings["default_embedding_root"] = ""
+    manager.settings["default_unet_root"] = ""
+
     manager.settings["folder_paths"] = {
         "loras": ["/loras"],
         "checkpoints": ["/checkpoints"],
@@ -256,6 +282,48 @@ def test_auto_set_default_roots(manager):
 
     assert manager.get("default_lora_root") == "/loras"
     assert manager.get("default_checkpoint_root") == "/checkpoints"
+    assert manager.get("default_embedding_root") == "/embeddings"
+
+
+def test_auto_set_default_roots_repairs_stale_values(manager):
+    manager.settings["default_lora_root"] = "/stale-lora"
+    manager.settings["default_checkpoint_root"] = "/stale-checkpoint"
+    manager.settings["default_embedding_root"] = "/stale-embedding"
+    manager.settings["default_unet_root"] = "/stale-unet"
+
+    manager.settings["folder_paths"] = {
+        "loras": ["/loras"],
+        "checkpoints": ["/checkpoints"],
+        "unet": ["/unet"],
+        "embeddings": ["/embeddings"],
+    }
+
+    manager._auto_set_default_roots()
+
+    assert manager.get("default_lora_root") == "/loras"
+    assert manager.get("default_checkpoint_root") == "/checkpoints"
+    assert manager.get("default_unet_root") == "/unet"
+    assert manager.get("default_embedding_root") == "/embeddings"
+
+
+def test_auto_set_default_roots_keeps_valid_values(manager):
+    manager.settings["default_lora_root"] = "/loras"
+    manager.settings["default_checkpoint_root"] = "/checkpoints"
+    manager.settings["default_embedding_root"] = "/embeddings"
+    manager.settings["default_unet_root"] = "/unet"
+
+    manager.settings["folder_paths"] = {
+        "loras": ["/loras", "/other-loras"],
+        "checkpoints": ["/checkpoints"],
+        "unet": ["/unet", "/other-unet"],
+        "embeddings": ["/embeddings"],
+    }
+
+    manager._auto_set_default_roots()
+
+    assert manager.get("default_lora_root") == "/loras"
+    assert manager.get("default_checkpoint_root") == "/checkpoints"
+    assert manager.get("default_unet_root") == "/unet"
     assert manager.get("default_embedding_root") == "/embeddings"
 
 
@@ -293,7 +361,14 @@ def test_invalid_mature_blur_level_is_normalized_to_r(tmp_path, monkeypatch):
 
 def test_model_name_display_setting_notifies_scanners(tmp_path, monkeypatch):
     initial = {
-        "libraries": {"default": {"folder_paths": {}, "default_lora_root": "", "default_checkpoint_root": "", "default_embedding_root": ""}},
+        "libraries": {
+            "default": {
+                "folder_paths": {},
+                "default_lora_root": "",
+                "default_checkpoint_root": "",
+                "default_embedding_root": "",
+            }
+        },
         "active_library": "default",
         "model_name_display": "model_name",
     }
@@ -315,6 +390,7 @@ def test_model_name_display_setting_notifies_scanners(tmp_path, monkeypatch):
 
     dispatched_loops = []
     futures = []
+
     def tracking_run_coroutine_threadsafe(coro, target_loop):
         dispatched_loops.append(target_loop)
         future = Future()
@@ -335,7 +411,9 @@ def test_model_name_display_setting_notifies_scanners(tmp_path, monkeypatch):
         "get_service_sync",
         classmethod(fake_get_service_sync),
     )
-    monkeypatch.setattr(asyncio, "run_coroutine_threadsafe", tracking_run_coroutine_threadsafe)
+    monkeypatch.setattr(
+        asyncio, "run_coroutine_threadsafe", tracking_run_coroutine_threadsafe
+    )
 
     try:
         manager.set("model_name_display", "file_name")
@@ -354,12 +432,14 @@ def test_migrates_legacy_settings_file(tmp_path, monkeypatch):
     legacy_root = tmp_path / "legacy"
     legacy_root.mkdir()
     legacy_file = legacy_root / "settings.json"
-    legacy_file.write_text("{\"value\": 1}", encoding="utf-8")
+    legacy_file.write_text('{"value": 1}', encoding="utf-8")
 
     target_dir = tmp_path / "config"
 
     monkeypatch.setattr(settings_paths, "get_project_root", lambda: str(legacy_root))
-    monkeypatch.setattr(settings_paths, "user_config_dir", lambda *_, **__: str(target_dir))
+    monkeypatch.setattr(
+        settings_paths, "user_config_dir", lambda *_, **__: str(target_dir)
+    )
 
     migrated_path = settings_paths.ensure_settings_file()
 
@@ -380,7 +460,9 @@ def test_uses_portable_settings_file_when_enabled(tmp_path, monkeypatch):
     user_dir = tmp_path / "user"
 
     monkeypatch.setattr(settings_paths, "get_project_root", lambda: str(repo_root))
-    monkeypatch.setattr(settings_paths, "user_config_dir", lambda *_, **__: str(user_dir))
+    monkeypatch.setattr(
+        settings_paths, "user_config_dir", lambda *_, **__: str(user_dir)
+    )
 
     resolved = settings_paths.ensure_settings_file()
 
@@ -393,7 +475,9 @@ def test_migrate_creates_default_library(manager):
     libraries = manager.get_libraries()
     assert "default" in libraries
     assert manager.get_active_library_name() == "default"
-    assert libraries["default"].get("folder_paths", {}) == manager.settings.get("folder_paths", {})
+    assert libraries["default"].get("folder_paths", {}) == manager.settings.get(
+        "folder_paths", {}
+    )
 
 
 def test_migrate_sanitizes_legacy_libraries(tmp_path, monkeypatch):
@@ -464,12 +548,21 @@ def test_refresh_environment_variables_updates_stored_value(tmp_path, monkeypatc
 
     initial = {
         "civitai_api_key": "stale",
-        "libraries": {"default": {"folder_paths": {}, "default_lora_root": "", "default_checkpoint_root": "", "default_embedding_root": ""}},
+        "libraries": {
+            "default": {
+                "folder_paths": {},
+                "default_lora_root": "",
+                "default_checkpoint_root": "",
+                "default_embedding_root": "",
+            }
+        },
         "active_library": "default",
     }
 
     monkeypatch.setenv("CIVITAI_API_KEY", "from-init")
-    manager = _create_manager_with_settings(tmp_path, monkeypatch, initial, save_spy=save_spy)
+    manager = _create_manager_with_settings(
+        tmp_path, monkeypatch, initial, save_spy=save_spy
+    )
 
     assert calls[-1] == "from-init"
 
@@ -590,7 +683,9 @@ def test_extra_paths_validation_no_overlap_with_other_libraries(manager, tmp_pat
         manager.update_extra_folder_paths({"loras": [str(lora_dir1)]})
 
 
-def test_extra_paths_validation_no_overlap_with_active_primary_lora_root(manager, tmp_path):
+def test_extra_paths_validation_no_overlap_with_active_primary_lora_root(
+    manager, tmp_path
+):
     """Test that extra LoRA paths cannot overlap the active library primary LoRA roots."""
     real_lora_dir = tmp_path / "loras_real"
     real_lora_dir.mkdir()
@@ -603,7 +698,9 @@ def test_extra_paths_validation_no_overlap_with_active_primary_lora_root(manager
         activate=True,
     )
 
-    with pytest.raises(ValueError, match="overlap with the active library's primary LoRA roots"):
+    with pytest.raises(
+        ValueError, match="overlap with the active library's primary LoRA roots"
+    ):
         manager.update_extra_folder_paths({"loras": [str(real_lora_dir)]})
 
 
@@ -627,7 +724,10 @@ def test_extra_paths_validation_no_overlap_with_active_primary_lora_root_case_in
     original_normcase = settings_manager_module.os.path.normcase
 
     def fake_exists(path):
-        if isinstance(path, str) and path.lower() in {str(lora_link).lower(), str(real_lora_dir).lower()}:
+        if isinstance(path, str) and path.lower() in {
+            str(lora_link).lower(),
+            str(real_lora_dir).lower(),
+        }:
             return True
         return original_exists(path)
 
@@ -638,13 +738,21 @@ def test_extra_paths_validation_no_overlap_with_active_primary_lora_root_case_in
 
     monkeypatch.setattr(settings_manager_module.os.path, "exists", fake_exists)
     monkeypatch.setattr(settings_manager_module.os.path, "realpath", fake_realpath)
-    monkeypatch.setattr(settings_manager_module.os.path, "normcase", lambda value: original_normcase(value).lower())
+    monkeypatch.setattr(
+        settings_manager_module.os.path,
+        "normcase",
+        lambda value: original_normcase(value).lower(),
+    )
 
-    with pytest.raises(ValueError, match="overlap with the active library's primary LoRA roots"):
+    with pytest.raises(
+        ValueError, match="overlap with the active library's primary LoRA roots"
+    ):
         manager.update_extra_folder_paths({"loras": [str(real_lora_dir).upper()]})
 
 
-def test_extra_paths_validation_allows_missing_non_overlapping_lora_root(manager, tmp_path):
+def test_extra_paths_validation_allows_missing_non_overlapping_lora_root(
+    manager, tmp_path
+):
     """Missing non-overlapping extra LoRA paths should not be rejected."""
     lora_dir = tmp_path / "loras"
     lora_dir.mkdir()
@@ -662,7 +770,9 @@ def test_extra_paths_validation_allows_missing_non_overlapping_lora_root(manager
     assert extra_paths["loras"] == [str(missing_extra)]
 
 
-def test_extra_paths_validation_rejects_primary_root_first_level_symlink_target(manager, tmp_path):
+def test_extra_paths_validation_rejects_primary_root_first_level_symlink_target(
+    manager, tmp_path
+):
     """Extra LoRA paths should be rejected when already reachable via a first-level symlink under the primary root."""
     lora_dir = tmp_path / "loras"
     lora_dir.mkdir()
@@ -677,7 +787,9 @@ def test_extra_paths_validation_rejects_primary_root_first_level_symlink_target(
         activate=True,
     )
 
-    with pytest.raises(ValueError, match="overlap with the active library's primary LoRA roots"):
+    with pytest.raises(
+        ValueError, match="overlap with the active library's primary LoRA roots"
+    ):
         manager.update_extra_folder_paths({"loras": [str(external_dir)]})
 
 
@@ -698,7 +810,6 @@ def test_delete_library_switches_active(manager, tmp_path):
     assert manager.get_active_library_name() == "default"
 
 
-
 def test_download_skip_base_models_are_normalized(manager):
     manager.settings["download_skip_base_models"] = [
         "SDXL 1.0",
@@ -715,9 +826,6 @@ def test_download_skip_base_models_are_normalized(manager):
 
 
 def test_setting_download_skip_base_models_normalizes_string_input(manager):
-    manager.set(
-        "download_skip_base_models",
-        "SDXL 1.0, Pony; Invalid\nSDXL 1.0"
-    )
+    manager.set("download_skip_base_models", "SDXL 1.0, Pony; Invalid\nSDXL 1.0")
 
     assert manager.get("download_skip_base_models") == ["SDXL 1.0", "Pony"]

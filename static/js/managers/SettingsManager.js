@@ -1246,10 +1246,7 @@ export class SettingsManager {
                 throw new Error('No LoRA roots found');
             }
 
-            // Clear existing options except the first one (No Default)
-            const noDefaultOption = defaultLoraRootSelect.querySelector('option[value=""]');
             defaultLoraRootSelect.innerHTML = '';
-            defaultLoraRootSelect.appendChild(noDefaultOption);
 
             // Add options for each root
             data.roots.forEach(root => {
@@ -1259,9 +1256,8 @@ export class SettingsManager {
                 defaultLoraRootSelect.appendChild(option);
             });
 
-            // Set selected value from settings
             const defaultRoot = state.global.settings.default_lora_root || '';
-            defaultLoraRootSelect.value = defaultRoot;
+            defaultLoraRootSelect.value = data.roots.includes(defaultRoot) ? defaultRoot : data.roots[0];
 
         } catch (error) {
             console.error('Error loading LoRA roots:', error);
@@ -1285,10 +1281,7 @@ export class SettingsManager {
                 throw new Error('No checkpoint roots found');
             }
 
-            // Clear existing options except first one (No Default)
-            const noDefaultOption = defaultCheckpointRootSelect.querySelector('option[value=""]');
             defaultCheckpointRootSelect.innerHTML = '';
-            defaultCheckpointRootSelect.appendChild(noDefaultOption);
 
             // Add options for each root
             data.roots.forEach(root => {
@@ -1298,9 +1291,8 @@ export class SettingsManager {
                 defaultCheckpointRootSelect.appendChild(option);
             });
 
-            // Set selected value from settings
             const defaultRoot = state.global.settings.default_checkpoint_root || '';
-            defaultCheckpointRootSelect.value = defaultRoot;
+            defaultCheckpointRootSelect.value = data.roots.includes(defaultRoot) ? defaultRoot : data.roots[0];
 
         } catch (error) {
             console.error('Error loading checkpoint roots:', error);
@@ -1324,10 +1316,7 @@ export class SettingsManager {
                 throw new Error('No diffusion model roots found');
             }
 
-            // Clear existing options except first one (No Default)
-            const noDefaultOption = defaultUnetRootSelect.querySelector('option[value=""]');
             defaultUnetRootSelect.innerHTML = '';
-            defaultUnetRootSelect.appendChild(noDefaultOption);
 
             // Add options for each root
             data.roots.forEach(root => {
@@ -1337,9 +1326,8 @@ export class SettingsManager {
                 defaultUnetRootSelect.appendChild(option);
             });
 
-            // Set selected value from settings
             const defaultRoot = state.global.settings.default_unet_root || '';
-            defaultUnetRootSelect.value = defaultRoot;
+            defaultUnetRootSelect.value = data.roots.includes(defaultRoot) ? defaultRoot : data.roots[0];
 
         } catch (error) {
             console.error('Error loading diffusion model roots:', error);
@@ -1363,10 +1351,7 @@ export class SettingsManager {
                 throw new Error('No embedding roots found');
             }
 
-            // Clear existing options except first one (No Default)
-            const noDefaultOption = defaultEmbeddingRootSelect.querySelector('option[value=""]');
             defaultEmbeddingRootSelect.innerHTML = '';
-            defaultEmbeddingRootSelect.appendChild(noDefaultOption);
 
             // Add options for each root
             data.roots.forEach(root => {
@@ -1376,9 +1361,8 @@ export class SettingsManager {
                 defaultEmbeddingRootSelect.appendChild(option);
             });
 
-            // Set selected value from settings
             const defaultRoot = state.global.settings.default_embedding_root || '';
-            defaultEmbeddingRootSelect.value = defaultRoot;
+            defaultEmbeddingRootSelect.value = data.roots.includes(defaultRoot) ? defaultRoot : data.roots[0];
 
         } catch (error) {
             console.error('Error loading embedding roots:', error);

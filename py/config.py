@@ -25,6 +25,31 @@ standalone_mode = (
 logger = logging.getLogger(__name__)
 
 
+def _resolve_valid_default_root(
+    current: str, primary_paths: List[str], name: str
+) -> str:
+    """Return a valid default root from the current primary path set."""
+
+    valid_paths = [path for path in primary_paths if isinstance(path, str) and path.strip()]
+    if not valid_paths:
+        return ""
+
+    if current in valid_paths:
+        return current
+
+    if current:
+        logger.info(
+            "Repaired stale %s from '%s' to '%s'",
+            name,
+            current,
+            valid_paths[0],
+        )
+    else:
+        logger.info("Auto-setting %s to '%s'", name, valid_paths[0])
+
+    return valid_paths[0]
+
+
 def _normalize_folder_paths_for_comparison(
     folder_paths: Mapping[str, Iterable[str]],
 ) -> Dict[str, Set[str]]:
@@ -197,25 +222,23 @@ class Config:
                         "Failed to rename legacy 'default' library: %s", rename_error
                     )
 
-            default_lora_root = comfy_library.get("default_lora_root", "")
-            if not default_lora_root and len(self.loras_roots) == 1:
-                default_lora_root = self.loras_roots[0]
+            default_lora_root = _resolve_valid_default_root(
+                comfy_library.get("default_lora_root", ""),
+                list(self.loras_roots or []),
+                "default_lora_root",
+            )
 
-            default_checkpoint_root = comfy_library.get("default_checkpoint_root", "")
-            if (
-                not default_checkpoint_root
-                and self.checkpoints_roots
-                and len(self.checkpoints_roots) == 1
-            ):
-                default_checkpoint_root = self.checkpoints_roots[0]
+            default_checkpoint_root = _resolve_valid_default_root(
+                comfy_library.get("default_checkpoint_root", ""),
+                list(self.checkpoints_roots or []),
+                "default_checkpoint_root",
+            )
 
-            default_embedding_root = comfy_library.get("default_embedding_root", "")
-            if (
-                not default_embedding_root
-                and self.embeddings_roots
-                and len(self.embeddings_roots) == 1
-            ):
-                default_embedding_root = self.embeddings_roots[0]
+            default_embedding_root = _resolve_valid_default_root(
+                comfy_library.get("default_embedding_root", ""),
+                list(self.embeddings_roots or []),
+                "default_embedding_root",
+            )
 
             metadata = dict(comfy_library.get("metadata", {}))
             metadata.setdefault("display_name", "ComfyUI")
@@ -706,7 +729,9 @@ class Config:
         return unique_paths
 
     @staticmethod
-    def _normalize_path_for_comparison(path: str, *, resolve_realpath: bool = False) -> str:
+    def _normalize_path_for_comparison(
+        path: str, *, resolve_realpath: bool = False
+    ) -> str:
         """Normalize a path for equality checks across platforms."""
         candidate = os.path.realpath(path) if resolve_realpath else path
         return os.path.normcase(os.path.normpath(candidate)).replace(os.sep, "/")
