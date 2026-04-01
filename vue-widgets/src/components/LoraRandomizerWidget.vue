@@ -51,6 +51,7 @@ type RandomizerWidget = ComponentWidget<RandomizerConfig>
 const props = defineProps<{
   widget: RandomizerWidget
   node: { id: number; inputs?: any[]; widgets?: any[]; graph?: any }
+  api?: any
 }>()
 
 // State management
@@ -64,6 +65,13 @@ const currentLoras = ref<LoraEntry[]>([])
 
 // Track if component is mounted to avoid early watch triggers
 const isMounted = ref(false)
+
+interface PendingExecution {
+  loras?: LoraEntry[]
+  lastUsed?: LoraEntry[] | null
+}
+
+const pendingExecutions: PendingExecution[] = []
 
 // Computed property to check if we can reuse last
 const canReuseLast = computed(() => {
@@ -265,23 +273,63 @@ onMounted(async () => {
   ;(props.node as any).onExecuted = function(output: any) {
     console.log("[LoraRandomizerWidget] Node executed with output:", output)
 
-    // Update last_used from backend
+    const pendingUpdate: PendingExecution = {}
+
     if (output?.last_used !== undefined) {
-      state.lastUsed.value = output.last_used
-      console.log(`[LoraRandomizerWidget] Updated last_used: ${output.last_used ? output.last_used.length : 0} LoRAs`)
+      pendingUpdate.lastUsed = output.last_used
+      console.log(`[LoraRandomizerWidget] Queued last_used update: ${output.last_used ? output.last_used.length : 0} LoRAs`)
     }
 
-    // Update loras widget if backend provided new loras
-    const lorasWidget = props.node.widgets?.find((w: any) => w.name === 'loras')
-    if (lorasWidget && output?.loras && Array.isArray(output.loras)) {
-      console.log("[LoraRandomizerWidget] Received loras data from backend:", output.loras)
-      lorasWidget.value = output.loras
-      currentLoras.value = output.loras
+    if (output?.loras && Array.isArray(output.loras)) {
+      pendingUpdate.loras = output.loras
+      console.log("[LoraRandomizerWidget] Queued loras data from backend:", output.loras)
+    }
+
+    if (pendingUpdate.lastUsed !== undefined || pendingUpdate.loras !== undefined) {
+      pendingExecutions.push(pendingUpdate)
     }
 
     // Call original onExecuted if it exists
     if (originalOnExecuted) {
       return originalOnExecuted(output)
+    }
+  }
+
+  if (props.api) {
+    const handleExecutionComplete = () => {
+      if (pendingExecutions.length === 0) {
+        return
+      }
+
+      const pending = pendingExecutions.shift()!
+
+      if (pending.lastUsed !== undefined) {
+        state.lastUsed.value = pending.lastUsed
+      }
+
+      if (pending.loras !== undefined) {
+        const lorasWidget = props.node.widgets?.find((w: any) => w.name === 'loras')
+        if (lorasWidget) {
+          lorasWidget.value = pending.loras
+        }
+        currentLoras.value = pending.loras
+      }
+    }
+
+    props.api.addEventListener('execution_success', handleExecutionComplete)
+    props.api.addEventListener('execution_error', handleExecutionComplete)
+    props.api.addEventListener('execution_interrupted', handleExecutionComplete)
+
+    const apiCleanup = () => {
+      props.api.removeEventListener('execution_success', handleExecutionComplete)
+      props.api.removeEventListener('execution_error', handleExecutionComplete)
+      props.api.removeEventListener('execution_interrupted', handleExecutionComplete)
+    }
+
+    const existingCleanup = (props.widget as any).onRemoveCleanup
+    ;(props.widget as any).onRemoveCleanup = () => {
+      existingCleanup?.()
+      apiCleanup()
     }
   }
 })

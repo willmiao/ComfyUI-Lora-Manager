@@ -201,7 +201,8 @@ function createLoraRandomizerWidget(node) {
 
   const vueApp = createApp(LoraRandomizerWidget, {
     widget,
-    node
+    node,
+    api
   })
 
   vueApp.use(PrimeVue, {

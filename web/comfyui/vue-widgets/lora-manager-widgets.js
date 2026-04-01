@@ -1577,7 +1577,7 @@ to { transform: rotate(360deg);
   transform: translateY(4px);
 }
 
-.lora-randomizer-widget[data-v-94d3fca2] {
+.lora-randomizer-widget[data-v-ca6e8cec] {
   padding: 6px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 6px;
@@ -13240,7 +13240,8 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
   __name: "LoraRandomizerWidget",
   props: {
     widget: {},
-    node: {}
+    node: {},
+    api: {}
   },
   setup(__props) {
     const props = __props;
@@ -13248,6 +13249,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
     const HAS_EXECUTED = Symbol("HAS_EXECUTED");
     const currentLoras = ref([]);
     const isMounted = ref(false);
+    const pendingExecutions = [];
     const canReuseLast = computed(() => {
       const lastUsed = state.lastUsed.value;
       if (!lastUsed || lastUsed.length === 0) return false;
@@ -13377,22 +13379,55 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
       };
       const originalOnExecuted = (_b = props.node.onExecuted) == null ? void 0 : _b.bind(props.node);
       props.node.onExecuted = function(output) {
-        var _a3;
         console.log("[LoraRandomizerWidget] Node executed with output:", output);
+        const pendingUpdate = {};
         if ((output == null ? void 0 : output.last_used) !== void 0) {
-          state.lastUsed.value = output.last_used;
-          console.log(`[LoraRandomizerWidget] Updated last_used: ${output.last_used ? output.last_used.length : 0} LoRAs`);
+          pendingUpdate.lastUsed = output.last_used;
+          console.log(`[LoraRandomizerWidget] Queued last_used update: ${output.last_used ? output.last_used.length : 0} LoRAs`);
         }
-        const lorasWidget2 = (_a3 = props.node.widgets) == null ? void 0 : _a3.find((w2) => w2.name === "loras");
-        if (lorasWidget2 && (output == null ? void 0 : output.loras) && Array.isArray(output.loras)) {
-          console.log("[LoraRandomizerWidget] Received loras data from backend:", output.loras);
-          lorasWidget2.value = output.loras;
-          currentLoras.value = output.loras;
+        if ((output == null ? void 0 : output.loras) && Array.isArray(output.loras)) {
+          pendingUpdate.loras = output.loras;
+          console.log("[LoraRandomizerWidget] Queued loras data from backend:", output.loras);
+        }
+        if (pendingUpdate.lastUsed !== void 0 || pendingUpdate.loras !== void 0) {
+          pendingExecutions.push(pendingUpdate);
         }
         if (originalOnExecuted) {
           return originalOnExecuted(output);
         }
       };
+      if (props.api) {
+        const handleExecutionComplete = () => {
+          var _a3;
+          if (pendingExecutions.length === 0) {
+            return;
+          }
+          const pending = pendingExecutions.shift();
+          if (pending.lastUsed !== void 0) {
+            state.lastUsed.value = pending.lastUsed;
+          }
+          if (pending.loras !== void 0) {
+            const lorasWidget2 = (_a3 = props.node.widgets) == null ? void 0 : _a3.find((w2) => w2.name === "loras");
+            if (lorasWidget2) {
+              lorasWidget2.value = pending.loras;
+            }
+            currentLoras.value = pending.loras;
+          }
+        };
+        props.api.addEventListener("execution_success", handleExecutionComplete);
+        props.api.addEventListener("execution_error", handleExecutionComplete);
+        props.api.addEventListener("execution_interrupted", handleExecutionComplete);
+        const apiCleanup = () => {
+          props.api.removeEventListener("execution_success", handleExecutionComplete);
+          props.api.removeEventListener("execution_error", handleExecutionComplete);
+          props.api.removeEventListener("execution_interrupted", handleExecutionComplete);
+        };
+        const existingCleanup = props.widget.onRemoveCleanup;
+        props.widget.onRemoveCleanup = () => {
+          existingCleanup == null ? void 0 : existingCleanup();
+          apiCleanup();
+        };
+      }
     });
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", {
@@ -13439,7 +13474,7 @@ const _sfc_main$5 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-94d3fca2"]]);
+const LoraRandomizerWidget = /* @__PURE__ */ _export_sfc(_sfc_main$5, [["__scopeId", "data-v-ca6e8cec"]]);
 const _hoisted_1$3 = { class: "cycler-settings" };
 const _hoisted_2$3 = { class: "setting-section progress-section" };
 const _hoisted_3$3 = { class: "progress-label" };
@@ -15262,7 +15297,8 @@ function createLoraRandomizerWidget(node) {
   };
   const vueApp = createApp(LoraRandomizerWidget, {
     widget,
-    node
+    node,
+    api
   });
   vueApp.use(PrimeVue, {
     unstyled: true,
