@@ -56,6 +56,36 @@ Insomnia Art Designs, megakirbs, Brennok, 2018cfh, W+K+White, wackop, Takkan, Ca
 
 ## Release Notes
 
+### v1.0.1
+
+* **Batch Recipe Import** - Import recipes from multiple URLs or directories simultaneously with optimized concurrency.
+
+* **Bulk Download Missing LoRAs** - New bulk action for recipes: select multiple recipes and download all missing LoRAs for the selected recipes in one operation.
+
+* **Import-Only Recipe Option** - Save recipe metadata without downloading missing LoRAs, allowing you to save interesting recipes for later and download dependencies when needed.
+
+* **Editable Recipe Prompts** - Edit recipe prompts directly in the recipe detail modal.
+
+* **Checkpoint Loader LM Node** - Behaves like ComfyUI's built-in Load Checkpoint node, with the added ability to load checkpoints from Extra Folder Paths.
+
+* **UNET Loader LM Node** - Behaves like ComfyUI's built-in Load Diffusion Model node, with support for loading from Extra Folder Paths and GGUF format (requires ComfyUI-GGUF custom node).
+
+* **LoRA Stack Combiner Node** - Merge two LoRA stacks into one. For example: use separate Randomizers for character and style LoRAs, then combine before applying.
+
+* **LoRA Pool Regex Filtering** - Filter which LoRAs enter the pool using custom regex patterns for include/exclude rules.
+
+* **Dynamic Base Model Types** - Base model types are now fetched dynamically from Civitai API, keeping them synchronized with the latest available models.
+
+* **Prompt Autocomplete Enhancements** - Tab key acceptance, configurable behavior, and improved multi-word tag matching.
+
+* **Download Base Model Exclusions** - Exclude specific base models from download operations when you only want certain model types.
+
+* **Mature Blur Threshold Setting** - Configure blur levels (`PG13` / `R` / `X` / `XXX`, default `R+`) for mature content previews.
+
+* **Experimental: Nunchaku Qwen LoRA Support** - Experimental support for loading and applying LoRAs to Nunchaku quantized Qwen-Image models.
+
+* **Bug Fixes & UX Improvements** - Various fixes for a smoother workflow.
+
 ### v1.0.0
 * **Extra Folder Paths Support** - Added support for additional model root paths exclusive to LoRA Manager. This allows loading LoRAs from extra locations outside ComfyUI's standard folders, helping avoid performance issues when working with large model libraries.
 * **Settings UI Overhaul** - Redesigned the Settings interface with a more organized layout, making it easier to find and configure application settings.
