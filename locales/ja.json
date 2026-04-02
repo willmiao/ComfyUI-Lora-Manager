@@ -393,8 +393,8 @@
         },
         "extraFolderPaths": {
             "title": "追加フォルダーパス",
-            "help": "ComfyUIの標準パスの外部に追加のモデルフォルダを追加します。これらのパスは別々に保存され、デフォルトのフォルダと一緒にスキャンされます。",
-            "description": "モデルをスキャンするための追加フォルダを設定します。これらのパスはLoRA Manager固有であり、ComfyUIのデフォルトパスとマージされます。",
+            "description": "LoRA Manager専用の追加モデルルートパス。ComfyUIの標準フォルダー外の場所からモデルを読み込みます。ComfyUIの動作を低下させる可能性のある大規模ライブラリに最適です。",
+            "restartRequired": "Requires restart to take effect",
             "modelTypes": {
                 "lora": "LoRAパス",
                 "checkpoint": "Checkpointパス",
@@ -402,7 +402,7 @@
                 "embedding": "Embeddingパス"
             },
             "pathPlaceholder": "/追加モデルへのパス",
-            "saveSuccess": "追加フォルダーパスを更新しました。",
+            "saveSuccess": "追加フォルダーパスを更新しました。変更を適用するには再起動が必要です。",
             "saveError": "追加フォルダーパスの更新に失敗しました: {message}",
             "validation": {
                 "duplicatePath": "このパスはすでに設定されています"

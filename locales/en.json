@@ -393,8 +393,8 @@
         },
         "extraFolderPaths": {
             "title": "Extra Folder Paths",
-            "help": "Add additional model folders outside of ComfyUI's standard paths. These paths are stored separately and scanned alongside the default folders.",
-            "description": "Configure additional folders to scan for models. These paths are specific to LoRA Manager and will be merged with ComfyUI's default paths.",
+            "description": "Additional model root paths exclusive to LoRA Manager. Load models from locations outside ComfyUI's standard folders—ideal for large libraries that would otherwise slow down ComfyUI.",
+            "restartRequired": "Requires restart to take effect",
             "modelTypes": {
                 "lora": "LoRA Paths",
                 "checkpoint": "Checkpoint Paths",
@@ -402,7 +402,7 @@
                 "embedding": "Embedding Paths"
             },
             "pathPlaceholder": "/path/to/extra/models",
-            "saveSuccess": "Extra folder paths updated.",
+            "saveSuccess": "Extra folder paths updated. Restart required to apply changes.",
             "saveError": "Failed to update extra folder paths: {message}",
             "validation": {
                 "duplicatePath": "This path is already configured"

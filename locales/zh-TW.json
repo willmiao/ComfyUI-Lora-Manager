@@ -393,8 +393,8 @@
         },
         "extraFolderPaths": {
             "title": "額外資料夾路徑",
-            "help": "在 ComfyUI 的標準路徑之外新增額外的模型資料夾。這些路徑單獨儲存，並與預設資料夾一起掃描。",
-            "description": "設定額外的資料夾以掃描模型。這些路徑是 LoRA Manager 特有的，將與 ComfyUI 的預設路徑合併。",
+            "description": "LoRA Manager 專屬的額外模型根目錄。從 ComfyUI 標準資料夾之外的位置載入模型，特別適合管理大型模型庫，避免影響 ComfyUI 效能。",
+            "restartRequired": "Requires restart to take effect",
             "modelTypes": {
                 "lora": "LoRA 路徑",
                 "checkpoint": "Checkpoint 路徑",
@@ -402,7 +402,7 @@
                 "embedding": "Embedding 路徑"
             },
             "pathPlaceholder": "/額外/模型/路徑",
-            "saveSuccess": "額外資料夾路徑已更新。",
+            "saveSuccess": "額外資料夾路徑已更新，需要重啟才能生效。",
             "saveError": "更新額外資料夾路徑失敗：{message}",
             "validation": {
                 "duplicatePath": "此路徑已設定"

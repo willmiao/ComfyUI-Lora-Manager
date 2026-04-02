@@ -393,8 +393,8 @@
         },
         "extraFolderPaths": {
             "title": "נתיבי תיקיות נוספים",
-            "help": "הוסף תיקיות מודלים נוספות מחוץ לנתיבים הסטנדרטיים של ComfyUI. נתיבים אלה נשמרים בנפרד ונסרקים לצד תיקיות ברירת המחדל.",
-            "description": "הגדר תיקיות נוספות לסריקת מודלים. נתיבים אלה ספציפיים ל-LoRA Manager וימוזגו עם נתיבי ברירת המחדל של ComfyUI.",
+            "description": "נתיבי שורש מודלים נוספים בלעדיים ל-LoRA Manager. טען מודלים ממיקומים מחוץ לתיקיות הסטנדרטיות של ComfyUI - אידיאלי לספריות גדולות שאחרת יאטו את ComfyUI.",
+            "restartRequired": "Requires restart to take effect",
             "modelTypes": {
                 "lora": "נתיבי LoRA",
                 "checkpoint": "נתיבי Checkpoint",
@@ -402,7 +402,7 @@
                 "embedding": "נתיבי Embedding"
             },
             "pathPlaceholder": "/נתיב/למודלים/נוספים",
-            "saveSuccess": "נתיבי תיקיות נוספים עודכנו.",
+            "saveSuccess": "נתיבי תיקיות נוספים עודכנו. נדרשת הפעלה מחדש כדי להחיל את השינויים.",
             "saveError": "נכשל בעדכון נתיבי תיקיות נוספים: {message}",
             "validation": {
                 "duplicatePath": "נתיב זה כבר מוגדר"

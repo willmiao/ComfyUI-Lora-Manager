@@ -393,8 +393,8 @@
         },
         "extraFolderPaths": {
             "title": "Chemins de dossiers supplémentaires",
-            "help": "Ajoutez des dossiers de modèles supplémentaires en dehors des chemins standard de ComfyUI. Ces chemins sont stockés séparément et analysés aux côtés des dossiers par défaut.",
-            "description": "Configurez des dossiers supplémentaires pour l'analyse de modèles. Ces chemins sont spécifiques à LoRA Manager et seront fusionnés avec les chemins par défaut de ComfyUI.",
+            "description": "Chemins racine de modèles supplémentaires exclusifs à LoRA Manager. Chargez des modèles depuis des emplacements en dehors des dossiers standard de ComfyUI, idéal pour les grandes bibliothèques qui ralentiraient autrement ComfyUI.",
+            "restartRequired": "Requires restart to take effect",
             "modelTypes": {
                 "lora": "Chemins LoRA",
                 "checkpoint": "Chemins Checkpoint",
@@ -402,7 +402,7 @@
                 "embedding": "Chemins Embedding"
             },
             "pathPlaceholder": "/chemin/vers/modèles/supplémentaires",
-            "saveSuccess": "Chemins de dossiers supplémentaires mis à jour.",
+            "saveSuccess": "Chemins de dossiers supplémentaires mis à jour. Redémarrage requis pour appliquer les changements.",
             "saveError": "Échec de la mise à jour des chemins de dossiers supplémentaires: {message}",
             "validation": {
                 "duplicatePath": "Ce chemin est déjà configuré"

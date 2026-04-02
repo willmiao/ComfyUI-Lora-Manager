@@ -15,6 +15,7 @@ model_cache/
 # agent
 .opencode/
 .claude/
+.codex
 
 # Vue widgets development cache (but keep build output)
 vue-widgets/node_modules/

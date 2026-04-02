@@ -1461,7 +1461,7 @@ export class SettingsManager {
         try {
             // Save to backend - this triggers path validation
             await this.saveSetting('extra_folder_paths', extraFolderPaths);
-            showToast('toast.settings.settingsUpdated', { setting: 'Extra Folder Paths' }, 'success');
+            showToast('settings.extraFolderPaths.saveSuccess', {}, 'success');
 
             // Add empty row if no valid paths exist for the changed type
             const container = document.getElementById(`extraFolderPaths-${changedModelType}`);

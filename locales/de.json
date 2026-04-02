@@ -393,8 +393,8 @@
         },
         "extraFolderPaths": {
             "title": "Zusätzliche Ordnerpfade",
-            "help": "Fügen Sie zusätzliche Modellordner außerhalb der Standardpfade von ComfyUI hinzu. Diese Pfade werden separat gespeichert und zusammen mit den Standardordnern gescannt.",
-            "description": "Konfigurieren Sie zusätzliche Ordner zum Scannen von Modellen. Diese Pfade sind spezifisch für LoRA Manager und werden mit den Standardpfaden von ComfyUI zusammengeführt.",
+            "description": "Zusätzliche Modellstammverzeichnisse, die ausschließlich für LoRA Manager gelten. Laden Sie Modelle von Speicherorten außerhalb der Standardordner von ComfyUI – ideal für große Bibliotheken, die ComfyUI sonst verlangsamen würden.",
+            "restartRequired": "Requires restart to take effect",
             "modelTypes": {
                 "lora": "LoRA-Pfade",
                 "checkpoint": "Checkpoint-Pfade",
@@ -402,7 +402,7 @@
                 "embedding": "Embedding-Pfade"
             },
             "pathPlaceholder": "/pfad/zu/extra/modellen",
-            "saveSuccess": "Zusätzliche Ordnerpfade aktualisiert.",
+            "saveSuccess": "Zusätzliche Ordnerpfade aktualisiert. Neustart erforderlich, um Änderungen anzuwenden.",
             "saveError": "Fehler beim Aktualisieren der zusätzlichen Ordnerpfade: {message}",
             "validation": {
                 "duplicatePath": "Dieser Pfad ist bereits konfiguriert"

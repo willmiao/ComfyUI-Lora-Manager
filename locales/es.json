@@ -393,8 +393,8 @@
         },
         "extraFolderPaths": {
             "title": "Rutas de carpetas adicionales",
-            "help": "Agregue carpetas de modelos adicionales fuera de las rutas estándar de ComfyUI. Estas rutas se almacenan por separado y se escanean junto con las carpetas predeterminadas.",
-            "description": "Configure carpetas adicionales para escanear modelos. Estas rutas son específicas de LoRA Manager y se fusionarán con las rutas predeterminadas de ComfyUI.",
+            "description": "Rutas raíz de modelos adicionales exclusivas para LoRA Manager. Cargue modelos desde ubicaciones fuera de las carpetas estándar de ComfyUI, ideal para bibliotecas grandes que de otro modo ralentizarían ComfyUI.",
+            "restartRequired": "Requires restart to take effect",
             "modelTypes": {
                 "lora": "Rutas de LoRA",
                 "checkpoint": "Rutas de Checkpoint",
@@ -402,7 +402,7 @@
                 "embedding": "Rutas de Embedding"
             },
             "pathPlaceholder": "/ruta/a/modelos/extra",
-            "saveSuccess": "Rutas de carpetas adicionales actualizadas.",
+            "saveSuccess": "Rutas de carpetas adicionales actualizadas. Se requiere reinicio para aplicar los cambios.",
             "saveError": "Error al actualizar las rutas de carpetas adicionales: {message}",
             "validation": {
                 "duplicatePath": "Esta ruta ya está configurada"
