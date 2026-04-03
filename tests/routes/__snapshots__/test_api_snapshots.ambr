@@ -1,6 +1,8 @@
 # serializer version: 1
 # name: TestModelLibraryHandlerSnapshots.test_check_model_exists_empty_response
   dict({
+    'downloadedVersionIds': list([
+    ]),
     'modelType': None,
     'success': True,
     'versions': list([
