@@ -341,6 +341,10 @@
                 "saveFailed": "제외된 기본 모델을 저장할 수 없습니다: {message}"
             }
         },
+        "skipPreviouslyDownloadedModelVersions": {
+            "label": "이전에 다운로드한 모델 버전 건너뛰기",
+            "help": "활성화하면 다운로드 기록 서비스가 해당 버전이 이미 다운로드되었음을 기록한 경우 LoRA Manager는 해당 모델 버전 다운로드를 건너뜁니다. 모든 다운로드 플로우에 적용됩니다."
+        },
         "layoutSettings": {
             "displayDensity": "표시 밀도",
             "displayDensityOptions": {
@@ -827,7 +831,7 @@
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "{otherType} 폴더로 이동",
-            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
+            "sendToWorkflow": "워크플로우로 전송"
         }
     },
     "embeddings": {

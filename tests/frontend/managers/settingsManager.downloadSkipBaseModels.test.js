@@ -20,6 +20,7 @@ vi.mock('../../../static/js/state/index.js', () => {
         },
         createDefaultSettings: () => ({
             language: 'en',
+            skip_previously_downloaded_model_versions: false,
             download_skip_base_models: [],
         }),
     };
@@ -117,6 +118,7 @@ describe('SettingsManager download skip base models UI', () => {
         document.body.innerHTML = '';
         vi.clearAllMocks();
         state.global.settings = {
+            skip_previously_downloaded_model_versions: false,
             download_skip_base_models: [],
         };
     });
@@ -149,5 +151,32 @@ describe('SettingsManager download skip base models UI', () => {
 
         expect(document.querySelectorAll('#downloadSkipBaseModelsContainer input')).toHaveLength(0);
         expect(document.getElementById('downloadSkipBaseModelsEmpty').hidden).toBe(false);
+    });
+
+    it('initializes the previously-downloaded-version toggle from settings', () => {
+        document.body.innerHTML = '<input id="skipPreviouslyDownloadedModelVersions" type="checkbox" />';
+        state.global.settings.skip_previously_downloaded_model_versions = true;
+        const manager = createManager();
+
+        manager.loadSettingsToUI();
+
+        expect(document.getElementById('skipPreviouslyDownloadedModelVersions').checked).toBe(true);
+    });
+
+    it('saves the previously-downloaded-version toggle with the expected setting key', async () => {
+        document.body.innerHTML = '<input id="skipPreviouslyDownloadedModelVersions" type="checkbox" checked />';
+        const manager = createManager();
+        manager.saveSetting = vi.fn().mockResolvedValue();
+        manager.applyFrontendSettings = vi.fn();
+
+        await manager.saveToggleSetting(
+            'skipPreviouslyDownloadedModelVersions',
+            'skip_previously_downloaded_model_versions',
+        );
+
+        expect(manager.saveSetting).toHaveBeenCalledWith(
+            'skip_previously_downloaded_model_versions',
+            true,
+        );
     });
 });

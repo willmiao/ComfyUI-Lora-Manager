@@ -91,6 +91,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "update_flag_strategy": "same_base",
     "auto_organize_exclusions": [],
     "metadata_refresh_skip_paths": [],
+    "skip_previously_downloaded_model_versions": False,
     "download_skip_base_models": [],
 }
 
@@ -312,6 +313,10 @@ class SettingsManager:
                 updated_existing = True
         else:
             self.settings["download_skip_base_models"] = []
+            inserted_defaults = True
+
+        if "skip_previously_downloaded_model_versions" not in self.settings:
+            self.settings["skip_previously_downloaded_model_versions"] = False
             inserted_defaults = True
 
         had_mature_level = "mature_blur_level" in self.settings
@@ -1089,6 +1094,17 @@ class SettingsManager:
             self.settings["download_skip_base_models"] = base_models
             self._save_settings()
         return base_models
+
+    def get_skip_previously_downloaded_model_versions(self) -> bool:
+        value = self.settings.get("skip_previously_downloaded_model_versions", False)
+        if isinstance(value, bool):
+            return value
+        normalized = False
+        if isinstance(value, str):
+            normalized = value.strip().lower() in {"1", "true", "yes", "on"}
+        self.settings["skip_previously_downloaded_model_versions"] = normalized
+        self._save_settings()
+        return normalized
 
     def get_extra_folder_paths(self) -> Dict[str, List[str]]:
         """Get extra folder paths for the active library.

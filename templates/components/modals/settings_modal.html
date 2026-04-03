@@ -738,6 +738,24 @@
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
+                                        <label for="skipPreviouslyDownloadedModelVersions">
+                                            {{ t('settings.skipPreviouslyDownloadedModelVersions.label') }}
+                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.skipPreviouslyDownloadedModelVersions.help') }}"></i>
+                                        </label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="skipPreviouslyDownloadedModelVersions"
+                                                   onchange="settingsManager.saveToggleSetting('skipPreviouslyDownloadedModelVersions', 'skip_previously_downloaded_model_versions')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
                                         <label for="downloadSkipBaseModelsToggle">
                                             {{ t('settings.downloadSkipBaseModels.label') }}
                                             <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.downloadSkipBaseModels.help') }}"></i>

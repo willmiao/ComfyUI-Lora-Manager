@@ -64,6 +64,19 @@ class DownloadManager:
         """Get the checkpoint scanner from registry"""
         return await ServiceRegistry.get_checkpoint_scanner()
 
+    async def _has_been_downloaded(self, model_type: str, model_version_id: int) -> bool:
+        try:
+            history_service = await ServiceRegistry.get_downloaded_version_history_service()
+            return await history_service.has_been_downloaded(model_type, model_version_id)
+        except Exception as exc:
+            logger.debug(
+                "Failed to read download history for %s version %s: %s",
+                model_type,
+                model_version_id,
+                exc,
+            )
+            return False
+
     async def download_from_civitai(
         self,
         model_id: int = None,
@@ -353,6 +366,57 @@ class DownloadManager:
                 return {
                     "success": False,
                     "error": f'Model type "{model_type_from_info}" is not supported for download',
+                }
+
+            resolved_version_id = model_version_id
+            raw_version_id = version_info.get("id")
+            if resolved_version_id is None and raw_version_id is not None:
+                try:
+                    resolved_version_id = int(raw_version_id)
+                except (TypeError, ValueError):
+                    resolved_version_id = None
+
+            if (
+                get_settings_manager().get_skip_previously_downloaded_model_versions()
+                and resolved_version_id is not None
+                and await self._has_been_downloaded(model_type, resolved_version_id)
+            ):
+                file_name = ""
+                files = version_info.get("files")
+                if isinstance(files, list):
+                    primary_file = next(
+                        (
+                            file_info
+                            for file_info in files
+                            if isinstance(file_info, dict) and file_info.get("primary")
+                        ),
+                        None,
+                    )
+                    selected_file = primary_file
+                    if selected_file is None:
+                        selected_file = next(
+                            (file_info for file_info in files if isinstance(file_info, dict)),
+                            None,
+                        )
+                    if isinstance(selected_file, dict):
+                        raw_file_name = selected_file.get("name", "")
+                        if isinstance(raw_file_name, str):
+                            file_name = raw_file_name.strip()
+
+                message = (
+                    f"Skipped download for '{file_name or version_info.get('name') or f'model_version:{resolved_version_id}'}' "
+                    f"because version {resolved_version_id} was already downloaded before"
+                )
+                logger.info(message)
+                return {
+                    "success": True,
+                    "skipped": True,
+                    "status": "skipped",
+                    "reason": "previously_downloaded_version",
+                    "message": message,
+                    "model_version_id": resolved_version_id,
+                    "file_name": file_name,
+                    "download_id": download_id,
                 }
 
             excluded_base_models = get_settings_manager().get_download_skip_base_models()

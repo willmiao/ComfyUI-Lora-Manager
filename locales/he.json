@@ -341,6 +341,10 @@
                 "saveFailed": "לא ניתן לשמור את מודלי הבסיס המוחרגים: {message}"
             }
         },
+        "skipPreviouslyDownloadedModelVersions": {
+            "label": "דלג על גרסאות מודלים שהורדו בעבר",
+            "help": "כאשר מופעל, LoRA Manager ידלג על הורדת גרסת מודל אם שירות היסטוריית ההורדות רושם את הגרסה המדויקת הזו ככבר שהורדה. חל על כל תהליכי ההורדה."
+        },
         "layoutSettings": {
             "displayDensity": "צפיפות תצוגה",
             "displayDensityOptions": {
@@ -827,7 +831,7 @@
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "העבר לתיקיית {otherType}",
-            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
+            "sendToWorkflow": "שלח ל-workflow"
         }
     },
     "embeddings": {

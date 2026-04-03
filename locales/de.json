@@ -341,6 +341,10 @@
                 "saveFailed": "Ausgeschlossene Basismodelle konnten nicht gespeichert werden: {message}"
             }
         },
+        "skipPreviouslyDownloadedModelVersions": {
+            "label": "Bereits heruntergeladene Modellversionen überspringen",
+            "help": "Wenn aktiviert, überspringt LoRA Manager den Download einer Modellversion, wenn der Download-Verlaufsdienst diese spezifische Version als bereits heruntergeladen erfasst hat. Gilt für alle Download-Abläufe."
+        },
         "layoutSettings": {
             "displayDensity": "Anzeige-Dichte",
             "displayDensityOptions": {
@@ -827,7 +831,7 @@
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "In {otherType}-Ordner verschieben",
-            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
+            "sendToWorkflow": "An Workflow senden"
         }
     },
     "embeddings": {

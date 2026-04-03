@@ -341,6 +341,10 @@
                 "saveFailed": "无法保存已排除的基础模型：{message}"
             }
         },
+        "skipPreviouslyDownloadedModelVersions": {
+            "label": "跳过已下载的模型版本",
+            "help": "启用后，如果下载历史服务记录显示该版本已下载，LoRA Manager 将跳过下载该模型版本。适用于所有下载流程。"
+        },
         "layoutSettings": {
             "displayDensity": "显示密度",
             "displayDensityOptions": {
@@ -827,7 +831,7 @@
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "移动到 {otherType} 文件夹",
-            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
+            "sendToWorkflow": "发送到工作流"
         }
     },
     "embeddings": {

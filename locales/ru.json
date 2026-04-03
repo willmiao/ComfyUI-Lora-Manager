@@ -341,6 +341,10 @@
                 "saveFailed": "Не удалось сохранить исключённые базовые модели: {message}"
             }
         },
+        "skipPreviouslyDownloadedModelVersions": {
+            "label": "Пропускать ранее загруженные версии моделей",
+            "help": "Если включено, LoRA Manager будет пропускать загрузку версии модели, если сервис истории загрузок записал, что эта конкретная версия уже загружена. Применяется ко всем потокам загрузки."
+        },
         "layoutSettings": {
             "displayDensity": "Плотность отображения",
             "displayDensityOptions": {
@@ -827,7 +831,7 @@
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "Переместить в папку {otherType}",
-            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
+            "sendToWorkflow": "Отправить в workflow"
         }
     },
     "embeddings": {

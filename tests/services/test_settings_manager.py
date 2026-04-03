@@ -829,3 +829,14 @@ def test_setting_download_skip_base_models_normalizes_string_input(manager):
     manager.set("download_skip_base_models", "SDXL 1.0, Pony; Invalid\nSDXL 1.0")
 
     assert manager.get("download_skip_base_models") == ["SDXL 1.0", "Pony"]
+
+
+def test_skip_previously_downloaded_model_versions_defaults_false(manager):
+    assert manager.get_skip_previously_downloaded_model_versions() is False
+
+
+def test_skip_previously_downloaded_model_versions_coerces_string_input(manager):
+    manager.settings["skip_previously_downloaded_model_versions"] = "true"
+
+    assert manager.get_skip_previously_downloaded_model_versions() is True
+    assert manager.settings["skip_previously_downloaded_model_versions"] is True

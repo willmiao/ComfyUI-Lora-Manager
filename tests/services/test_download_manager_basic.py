@@ -38,6 +38,7 @@ def isolate_settings(monkeypatch, tmp_path):
                 "embedding": "{base_model}/{first_tag}",
             },
             "base_model_path_mappings": {"BaseModel": "MappedModel"},
+            "skip_previously_downloaded_model_versions": False,
             "download_skip_base_models": [],
         }
     )
@@ -454,7 +455,7 @@ async def test_download_skips_excluded_base_model(monkeypatch, scanners, metadat
 
     metadata_provider.get_model_version = AsyncMock(
         return_value={
-            "id": 42,
+            "id": 99,
             "model": {"type": "LoRA", "tags": ["fantasy"]},
             "baseModel": "SDXL 1.0",
             "creator": {"username": "Author"},
@@ -490,3 +491,104 @@ async def test_download_skips_excluded_base_model(monkeypatch, scanners, metadat
     assert "file.safetensors" in result["message"]
     execute_download.assert_not_called()
     assert manager._active_downloads[result["download_id"]]["status"] == "skipped"
+
+
+@pytest.mark.asyncio
+async def test_download_skips_previously_downloaded_version(monkeypatch, scanners, metadata_provider):
+    manager = DownloadManager()
+    get_settings_manager().settings["skip_previously_downloaded_model_versions"] = True
+
+    metadata_provider.get_model_version = AsyncMock(
+        return_value={
+            "id": 42,
+            "model": {"type": "LoRA", "tags": ["fantasy"]},
+            "baseModel": "SDXL 1.0",
+            "creator": {"username": "Author"},
+            "files": [
+                {
+                    "type": "Model",
+                    "primary": True,
+                    "downloadUrl": "https://example.invalid/file.safetensors",
+                    "name": "file.safetensors",
+                }
+            ],
+        }
+    )
+
+    history_service = AsyncMock()
+    history_service.has_been_downloaded = AsyncMock(return_value=True)
+    monkeypatch.setattr(
+        ServiceRegistry,
+        "get_downloaded_version_history_service",
+        AsyncMock(return_value=history_service),
+    )
+
+    execute_download = AsyncMock()
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", execute_download, raising=False
+    )
+
+    result = await manager.download_from_civitai(
+        model_version_id=99,
+        use_default_paths=True,
+        progress_callback=None,
+        source=None,
+    )
+
+    assert result["success"] is True
+    assert result["skipped"] is True
+    assert result["status"] == "skipped"
+    assert result["reason"] == "previously_downloaded_version"
+    assert result["model_version_id"] == 99
+    assert result["file_name"] == "file.safetensors"
+    history_service.has_been_downloaded.assert_awaited_once_with("lora", 99)
+    execute_download.assert_not_called()
+    assert manager._active_downloads[result["download_id"]]["status"] == "skipped"
+
+
+@pytest.mark.asyncio
+async def test_download_proceeds_when_history_skip_disabled(monkeypatch, scanners, metadata_provider):
+    manager = DownloadManager()
+    get_settings_manager().settings["skip_previously_downloaded_model_versions"] = False
+
+    metadata_provider.get_model_version = AsyncMock(
+        return_value={
+            "id": 42,
+            "model": {"type": "LoRA", "tags": ["fantasy"]},
+            "baseModel": "SDXL 1.0",
+            "creator": {"username": "Author"},
+            "files": [
+                {
+                    "type": "Model",
+                    "primary": True,
+                    "downloadUrl": "https://example.invalid/file.safetensors",
+                    "name": "file.safetensors",
+                }
+            ],
+        }
+    )
+
+    history_service = AsyncMock()
+    history_service.has_been_downloaded = AsyncMock(return_value=True)
+    monkeypatch.setattr(
+        ServiceRegistry,
+        "get_downloaded_version_history_service",
+        AsyncMock(return_value=history_service),
+    )
+
+    execute_download = AsyncMock(return_value={"success": True, "download_id": "done"})
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", execute_download, raising=False
+    )
+
+    result = await manager.download_from_civitai(
+        model_version_id=99,
+        use_default_paths=True,
+        progress_callback=None,
+        source=None,
+    )
+
+    assert result["success"] is True
+    assert result.get("skipped") is not True
+    history_service.has_been_downloaded.assert_not_called()
+    execute_download.assert_awaited_once()

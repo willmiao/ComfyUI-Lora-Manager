@@ -146,6 +146,10 @@ export class SettingsManager {
             backendSettings?.metadata_refresh_skip_paths ?? defaults.metadata_refresh_skip_paths
         );
 
+        merged.skip_previously_downloaded_model_versions =
+            backendSettings?.skip_previously_downloaded_model_versions
+            ?? defaults.skip_previously_downloaded_model_versions;
+
         merged.download_skip_base_models = this.normalizeDownloadSkipBaseModels(
             backendSettings?.download_skip_base_models ?? defaults.download_skip_base_models
         );
@@ -834,6 +838,12 @@ export class SettingsManager {
         const hideEarlyAccessUpdatesCheckbox = document.getElementById('hideEarlyAccessUpdates');
         if (hideEarlyAccessUpdatesCheckbox) {
             hideEarlyAccessUpdatesCheckbox.checked = state.global.settings.hide_early_access_updates || false;
+        }
+
+        const skipPreviouslyDownloadedModelVersionsCheckbox = document.getElementById('skipPreviouslyDownloadedModelVersions');
+        if (skipPreviouslyDownloadedModelVersionsCheckbox) {
+            skipPreviouslyDownloadedModelVersionsCheckbox.checked =
+                state.global.settings.skip_previously_downloaded_model_versions || false;
         }
 
         // Set optimize example images setting

@@ -325,7 +325,7 @@
         },
         "downloadSkipBaseModels": {
             "label": "Skip downloads for base models",
-            "help": "When a model version uses one of these base models, LoRA Manager will skip the download before any file transfer starts. Applies to all download flows. Only supported base models can be selected here.",
+            "help": "When enabled, versions using the selected base models will be skipped.",
             "searchPlaceholder": "Filter base models...",
             "empty": "No base models match the current search.",
             "summary": {
@@ -340,6 +340,10 @@
             "validation": {
                 "saveFailed": "Unable to save excluded base models: {message}"
             }
+        },
+        "skipPreviouslyDownloadedModelVersions": {
+            "label": "Skip previously downloaded model versions",
+            "help": "When enabled, versions downloaded before will be skipped."
         },
         "layoutSettings": {
             "displayDensity": "Display Density",

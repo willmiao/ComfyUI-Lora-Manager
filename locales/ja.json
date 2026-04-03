@@ -341,6 +341,10 @@
                 "saveFailed": "除外するベースモデルを保存できませんでした: {message}"
             }
         },
+        "skipPreviouslyDownloadedModelVersions": {
+            "label": "以前にダウンロードしたモデルバージョンをスキップ",
+            "help": "有効にすると、ダウンロード履歴サービスがそのバージョンが既にダウンロード済みと記録している場合、LoRA Managerはそのモデルバージョンのダウンロードをスキップします。すべてのダウンロードフローに適用されます。"
+        },
         "layoutSettings": {
             "displayDensity": "表示密度",
             "displayDensityOptions": {
@@ -827,7 +831,7 @@
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "{otherType} フォルダに移動",
-            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
+            "sendToWorkflow": "ワークフローに送信"
         }
     },
     "embeddings": {

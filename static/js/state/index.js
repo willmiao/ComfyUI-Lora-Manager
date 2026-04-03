@@ -38,6 +38,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     hide_early_access_updates: false,
     auto_organize_exclusions: [],
     metadata_refresh_skip_paths: [],
+    skip_previously_downloaded_model_versions: false,
     download_skip_base_models: [],
 });
 

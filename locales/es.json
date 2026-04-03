@@ -341,6 +341,10 @@
                 "saveFailed": "No se pudieron guardar los modelos base excluidos: {message}"
             }
         },
+        "skipPreviouslyDownloadedModelVersions": {
+            "label": "Omitir versiones de modelos previamente descargadas",
+            "help": "Cuando está habilitado, LoRA Manager omitirá la descarga de una versión de modelo si el servicio de historial de descargas registra esa versión exacta como ya descargada. Aplica a todos los flujos de descarga."
+        },
         "layoutSettings": {
             "displayDensity": "Densidad de visualización",
             "displayDensityOptions": {
@@ -827,7 +831,7 @@
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "Mover a la carpeta {otherType}",
-            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
+            "sendToWorkflow": "Enviar al flujo de trabajo"
         }
     },
     "embeddings": {

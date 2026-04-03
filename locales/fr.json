@@ -341,6 +341,10 @@
                 "saveFailed": "Impossible d’enregistrer les modèles de base exclus : {message}"
             }
         },
+        "skipPreviouslyDownloadedModelVersions": {
+            "label": "Ignorer les versions de modèles précédemment téléchargées",
+            "help": "Lorsque activé, LoRA Manager ignorera le téléchargement d'une version de modèle si le service d'historique des téléchargements enregistre cette version exacte comme déjà téléchargée. S'applique à tous les flux de téléchargement."
+        },
         "layoutSettings": {
             "displayDensity": "Densité d'affichage",
             "displayDensityOptions": {
@@ -827,7 +831,7 @@
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "Déplacer vers le dossier {otherType}",
-            "sendToWorkflow": "[TODO: Translate] Send to Workflow"
+            "sendToWorkflow": "Envoyer vers le workflow"
         }
     },
     "embeddings": {
