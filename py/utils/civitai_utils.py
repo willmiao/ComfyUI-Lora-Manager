@@ -22,7 +22,9 @@ def _normalize_commercial_values(value: Any) -> Sequence[str]:
 
     def _split_aggregate(value_str: str) -> list[str]:
         stripped = value_str.strip()
-        looks_aggregate = "," in stripped or (stripped.startswith("{") and stripped.endswith("}"))
+        looks_aggregate = "," in stripped or (
+            stripped.startswith("{") and stripped.endswith("}")
+        )
         if not looks_aggregate:
             return [value_str]
 
@@ -141,14 +143,18 @@ def build_license_flags(payload: Mapping[str, Any] | None) -> int:
     return flags
 
 
-def resolve_license_info(model_data: Mapping[str, Any] | None) -> tuple[Dict[str, Any], int]:
+def resolve_license_info(
+    model_data: Mapping[str, Any] | None,
+) -> tuple[Dict[str, Any], int]:
     """Return normalized license payload and its encoded bitset."""
 
     payload = resolve_license_payload(model_data)
     return payload, build_license_flags(payload)
 
 
-def rewrite_preview_url(source_url: str | None, media_type: str | None = None) -> tuple[str | None, bool]:
+def rewrite_preview_url(
+    source_url: str | None, media_type: str | None = None
+) -> tuple[str | None, bool]:
     """Rewrite Civitai preview URLs to use optimized renditions.
 
     Args:
@@ -168,7 +174,12 @@ def rewrite_preview_url(source_url: str | None, media_type: str | None = None) -
     except ValueError:
         return source_url, False
 
-    if parsed.netloc.lower() != "image.civitai.com":
+    hostname = parsed.hostname
+    if hostname is None:
+        return source_url, False
+
+    hostname = hostname.lower()
+    if hostname == "civitai.com" or not hostname.endswith(".civitai.com"):
         return source_url, False
 
     replacement = "/width=450,optimized=true"

@@ -4,15 +4,21 @@ from typing import Awaitable, Callable, Dict, List
 
 from aiohttp import web
 
+# Use wildcard for CivitAI to support their CDN subdomains (e.g., image-b2.civitai.com)
+# Security note: This is acceptable because:
+# 1. CSP img-src only controls image/video loading, not script execution
+# 2. All *.civitai.com subdomains are controlled by Civitai
+# 3. Explicit domain list would require constant updates as Civitai adds CDN nodes
 REMOTE_MEDIA_SOURCES = (
-    "https://image.civitai.com",
+    "https://*.civitai.com",
     "https://img.genur.art",
 )
 
 
 @web.middleware
 async def relax_csp_for_remote_media(
-    request: web.Request, handler: Callable[[web.Request], Awaitable[web.StreamResponse]]
+    request: web.Request,
+    handler: Callable[[web.Request], Awaitable[web.StreamResponse]],
 ) -> web.StreamResponse:
     """Allow LoRA Manager media previews to load from trusted remote domains.
 
@@ -43,7 +49,9 @@ async def relax_csp_for_remote_media(
             directive_order.append(name)
         directives[name] = values
 
-    def merge_sources(name: str, sources: List[str], defaults: List[str] | None = None) -> None:
+    def merge_sources(
+        name: str, sources: List[str], defaults: List[str] | None = None
+    ) -> None:
         existing = directives.get(name, list(defaults or []))
 
         for source in sources:

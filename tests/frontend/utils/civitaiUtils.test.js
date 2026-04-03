@@ -94,6 +94,37 @@ describe('civitaiUtils', () => {
             expect(wasRewritten).toBe(false);
             expect(rewritten).toBe('not-a-valid-url');
         });
+
+        it('should rewrite URLs from CivitAI CDN subdomains', () => {
+            const originalUrl = 'https://image-b2.civitai.com/file/civitai-media-cache/original=true/sample.png';
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl(originalUrl, 'image', OptimizationMode.THUMBNAIL);
+
+            expect(wasRewritten).toBe(true);
+            expect(rewritten).toBe('https://image-b2.civitai.com/file/civitai-media-cache/width=450,optimized=true/sample.png');
+        });
+
+        it('should handle URLs with explicit port numbers', () => {
+            const originalUrl = 'https://image.civitai.com:443/checkpoints/original=true/test.png';
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl(originalUrl, 'image', OptimizationMode.THUMBNAIL);
+
+            expect(wasRewritten).toBe(true);
+            // JavaScript URL.toString() removes default HTTPS port (443)
+            expect(rewritten).toBe('https://image.civitai.com/checkpoints/width=450,optimized=true/test.png');
+        });
+
+        it('should handle case-insensitive hostnames', () => {
+            const testCases = [
+                'https://IMAGE.CIVITAI.COM/original=true/test.png',
+                'https://Image.Civitai.Com/original=true/test.png',
+                'https://image-b2.CIVITAI.com/original=true/test.png',
+            ];
+
+            for (const url of testCases) {
+                const [rewritten, wasRewritten] = rewriteCivitaiUrl(url, 'image', OptimizationMode.THUMBNAIL);
+                expect(wasRewritten).toBe(true);
+                expect(rewritten).toContain('width=450,optimized=true');
+            }
+        });
     });
 
     describe('getOptimizedUrl', () => {
@@ -155,6 +186,23 @@ describe('civitaiUtils', () => {
         it('should return true for CivitAI URLs', () => {
             expect(isCivitaiUrl('https://image.civitai.com/something')).toBe(true);
             expect(isCivitaiUrl('https://image.civitai.com/')).toBe(true);
+        });
+
+        it('should return true for CivitAI CDN subdomains', () => {
+            expect(isCivitaiUrl('https://image-b2.civitai.com/file/test.png')).toBe(true);
+            expect(isCivitaiUrl('https://image-b3.civitai.com/test.jpg')).toBe(true);
+            expect(isCivitaiUrl('https://cdn.civitai.com/test.png')).toBe(true);
+        });
+
+        it('should return true for CivitAI URLs with explicit ports', () => {
+            expect(isCivitaiUrl('https://image.civitai.com:443/test.png')).toBe(true);
+            expect(isCivitaiUrl('https://image-b2.civitai.com:443/file/test.jpg')).toBe(true);
+        });
+
+        it('should handle case-insensitive hostnames', () => {
+            expect(isCivitaiUrl('https://IMAGE.CIVITAI.COM/test.png')).toBe(true);
+            expect(isCivitaiUrl('https://Image.Civitai.Com/test.png')).toBe(true);
+            expect(isCivitaiUrl('https://image-b2.CIVITAI.com/test.png')).toBe(true);
         });
 
         it('should return false for non-CivitAI URLs', () => {

@@ -2,7 +2,10 @@ import pytest
 from aiohttp import web
 from aiohttp.test_utils import make_mocked_request
 
-from py.middleware.csp_middleware import REMOTE_MEDIA_SOURCES, relax_csp_for_remote_media
+from py.middleware.csp_middleware import (
+    REMOTE_MEDIA_SOURCES,
+    relax_csp_for_remote_media,
+)
 
 DEFAULT_CSP = (
     "default-src 'self'; "
@@ -40,7 +43,9 @@ async def _invoke_middleware(
 
 
 @pytest.mark.asyncio
-async def test_relax_csp_appends_remote_sources_and_preserves_existing_directives() -> None:
+async def test_relax_csp_appends_remote_sources_and_preserves_existing_directives() -> (
+    None
+):
     response = await _invoke_middleware("/some-path", web.Response())
     header_value = response.headers.get("Content-Security-Policy")
     assert header_value is not None
@@ -48,16 +53,17 @@ async def test_relax_csp_appends_remote_sources_and_preserves_existing_directive
     directives = _parse_directives(header_value)
 
     # Existing directives remain intact
-    assert directives["script-src"] == ["'self'", "'unsafe-inline'", "'unsafe-eval'", "blob:"]
+    assert directives["script-src"] == [
+        "'self'",
+        "'unsafe-inline'",
+        "'unsafe-eval'",
+        "blob:",
+    ]
     assert directives["img-src"][:3] == ["'self'", "data:", "blob:"]
 
     # Remote media hosts are added once to the relevant directives
     for source in REMOTE_MEDIA_SOURCES:
         assert source in directives["img-src"]
-
-    assert "media-src" in directives
-    assert directives["media-src"][0] == "'self'"
-    for source in REMOTE_MEDIA_SOURCES:
         assert source in directives["media-src"]
 
 

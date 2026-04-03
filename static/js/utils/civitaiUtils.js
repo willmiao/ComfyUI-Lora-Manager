@@ -30,8 +30,9 @@ export function rewriteCivitaiUrl(sourceUrl, mediaType = null, mode = Optimizati
     try {
         const url = new URL(sourceUrl);
         
-        // Check if it's a CivitAI image domain
-        if (url.hostname.toLowerCase() !== 'image.civitai.com') {
+        // Check if it's a CivitAI CDN domain (supports all subdomains like image-b2.civitai.com)
+        const hostname = url.hostname.toLowerCase();
+        if (hostname === 'civitai.com' || !hostname.endsWith('.civitai.com')) {
             return [sourceUrl, false];
         }
 
@@ -112,7 +113,8 @@ export function isCivitaiUrl(url) {
     if (!url) return false;
     try {
         const parsed = new URL(url);
-        return parsed.hostname.toLowerCase() === 'image.civitai.com';
+        const hostname = parsed.hostname.toLowerCase();
+        return hostname.endsWith('.civitai.com') && hostname !== 'civitai.com';
     } catch (e) {
         return false;
     }
