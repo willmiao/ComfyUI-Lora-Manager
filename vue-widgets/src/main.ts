@@ -9,7 +9,7 @@ import type { LoraPoolConfig, RandomizerConfig, CyclerConfig } from './composabl
 import {
   setupModeChangeHandler,
   createModeChangeCallback,
-  LORA_PROVIDER_NODE_TYPES
+  LORA_CHAIN_NODE_TYPES
 } from './mode-change-handler'
 
 const LORA_POOL_WIDGET_MIN_WIDTH = 500
@@ -755,8 +755,8 @@ app.registerExtension({
       }
     }
 
-    // Register mode change handlers for LoRA provider nodes
-    if (LORA_PROVIDER_NODE_TYPES.includes(comfyClass)) {
+    // Register mode change handlers for LORA_STACK chain nodes
+    if (LORA_CHAIN_NODE_TYPES.includes(comfyClass)) {
       const originalOnNodeCreated = nodeType.prototype.onNodeCreated
 
       nodeType.prototype.onNodeCreated = function () {

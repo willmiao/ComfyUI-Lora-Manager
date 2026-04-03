@@ -18,13 +18,38 @@ export const LORA_PROVIDER_NODE_TYPES = [
   "Lora Cycler (LoraManager)",
 ] as const;
 
+/**
+ * Nodes that do not own LoRA state themselves, but merge or forward LORA_STACK
+ * inputs so downstream trigger-word updates must traverse through them.
+ */
+export const LORA_STACK_AGGREGATOR_NODE_TYPES = [
+  "Lora Stack Combiner (LoraManager)",
+] as const;
+
+export const LORA_CHAIN_NODE_TYPES = [
+  ...LORA_PROVIDER_NODE_TYPES,
+  ...LORA_STACK_AGGREGATOR_NODE_TYPES,
+] as const;
+
 export type LoraProviderNodeType = typeof LORA_PROVIDER_NODE_TYPES[number];
+export type LoraStackAggregatorNodeType = typeof LORA_STACK_AGGREGATOR_NODE_TYPES[number];
+export type LoraChainNodeType = typeof LORA_CHAIN_NODE_TYPES[number];
 
 /**
  * Check if a node class is a LoRA provider node.
  */
 export function isLoraProviderNode(comfyClass: string): comfyClass is LoraProviderNodeType {
   return LORA_PROVIDER_NODE_TYPES.includes(comfyClass as LoraProviderNodeType);
+}
+
+export function isLoraStackAggregatorNode(
+  comfyClass: string
+): comfyClass is LoraStackAggregatorNodeType {
+  return LORA_STACK_AGGREGATOR_NODE_TYPES.includes(comfyClass as LoraStackAggregatorNodeType);
+}
+
+export function isLoraChainNode(comfyClass: string): comfyClass is LoraChainNodeType {
+  return LORA_CHAIN_NODE_TYPES.includes(comfyClass as LoraChainNodeType);
 }
 
 /**
@@ -38,6 +63,10 @@ export function getActiveLorasFromNodeByType(node: any): Set<string> {
 
   if (comfyClass === "Lora Cycler (LoraManager)") {
     return extractFromCyclerConfig(node);
+  }
+
+  if (isLoraStackAggregatorNode(comfyClass)) {
+    return new Set<string>();
   }
 
   // Default: use lorasWidget (works for Stacker and Randomizer)

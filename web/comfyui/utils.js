@@ -10,8 +10,25 @@ export const LORA_PROVIDER_NODE_TYPES = [
   "Lora Cycler (LoraManager)",
 ];
 
+export const LORA_STACK_AGGREGATOR_NODE_TYPES = [
+  "Lora Stack Combiner (LoraManager)",
+];
+
+export const LORA_CHAIN_NODE_TYPES = [
+  ...LORA_PROVIDER_NODE_TYPES,
+  ...LORA_STACK_AGGREGATOR_NODE_TYPES,
+];
+
 export function isLoraProviderNode(comfyClass) {
   return LORA_PROVIDER_NODE_TYPES.includes(comfyClass);
+}
+
+export function isLoraStackAggregatorNode(comfyClass) {
+    return LORA_STACK_AGGREGATOR_NODE_TYPES.includes(comfyClass);
+}
+
+export function isLoraChainNode(comfyClass) {
+    return LORA_CHAIN_NODE_TYPES.includes(comfyClass);
 }
 
 function isMapLike(collection) {
@@ -245,16 +262,20 @@ export function hideWidgetForGood(node, widget, suffix = "") {
 // Update pattern to match both formats: <lora:name:model_strength> or <lora:name:model_strength:clip_strength>
 export const LORA_PATTERN = /<lora:([^:]+):([-\d\.]+)(?::([-\d\.]+))?>/g;
 
-// Get connected Lora Stacker nodes that feed into the current node
-export function getConnectedInputStackers(node) {
-    const connectedStackers = [];
+function isLoraStackInput(input) {
+    return input?.type === "LORA_STACK";
+}
+
+// Get connected LORA_STACK chain nodes that feed into the current node
+export function getConnectedInputLoraChainNodes(node) {
+    const connectedNodes = [];
 
     if (!node?.inputs) {
-        return connectedStackers;
+        return connectedNodes;
     }
 
     for (const input of node.inputs) {
-        if (input.name !== "lora_stack" || !input.link) {
+        if (!isLoraStackInput(input) || !input.link) {
             continue;
         }
 
@@ -264,12 +285,12 @@ export function getConnectedInputStackers(node) {
         }
 
         const sourceNode = node.graph?.getNodeById?.(link.origin_id);
-        if (sourceNode && isLoraProviderNode(sourceNode.comfyClass)) {
-            connectedStackers.push(sourceNode);
+        if (sourceNode && isLoraChainNode(sourceNode.comfyClass)) {
+            connectedNodes.push(sourceNode);
         }
     }
 
-    return connectedStackers;
+    return connectedNodes;
 }
 
 // Get connected TriggerWord Toggle nodes that receive output from the current node
@@ -314,6 +335,11 @@ export function getActiveLorasFromNode(node) {
         return activeLoraNames;
     }
 
+    // Aggregator nodes do not own LoRA state directly; they only forward upstream stacks.
+    if (isLoraStackAggregatorNode(node.comfyClass)) {
+        return activeLoraNames;
+    }
+
     // Handle Lora Stacker and Lora Randomizer (lorasWidget)
     let lorasWidget = node.lorasWidget;
     if (!lorasWidget && node.widgets) {
@@ -348,14 +374,18 @@ export function collectActiveLorasFromChain(node, visited = new Set()) {
     // Mode 2 is Never, Mode 4 is Bypass
     const isNodeActive = node.mode === undefined || node.mode === 0 || node.mode === 3;
     
+    if (!isNodeActive) {
+        return new Set();
+    }
+
     // Get active loras from current node only if node is active
-    const allActiveLoraNames = isNodeActive ? getActiveLorasFromNode(node) : new Set();
+    const allActiveLoraNames = getActiveLorasFromNode(node);
     
-    // Get connected input stackers and collect their active loras
-    const inputStackers = getConnectedInputStackers(node);
-    for (const stacker of inputStackers) {
-        const stackerLoras = collectActiveLorasFromChain(stacker, visited);
-        stackerLoras.forEach(name => allActiveLoraNames.add(name));
+    // Get connected input LORA_STACK chain nodes and collect their active loras
+    const inputChainNodes = getConnectedInputLoraChainNodes(node);
+    for (const chainNode of inputChainNodes) {
+        const upstreamLoras = collectActiveLorasFromChain(chainNode, visited);
+        upstreamLoras.forEach(name => allActiveLoraNames.add(name));
     }
     
     return allActiveLoraNames;
@@ -819,8 +849,8 @@ export function updateDownstreamLoaders(startNode, visited = new Set()) {
                 collectActiveLorasFromChain(targetNode);
               updateConnectedTriggerWords(targetNode, allActiveLoraNames);
             }
-            // If target is another LoRA provider node, recursively check its outputs
-            else if (targetNode && isLoraProviderNode(targetNode.comfyClass)) {
+            // If target is another LORA_STACK chain node, recursively check its outputs
+            else if (targetNode && isLoraChainNode(targetNode.comfyClass)) {
               updateDownstreamLoaders(targetNode, visited);
             }
           }

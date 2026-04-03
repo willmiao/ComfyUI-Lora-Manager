@@ -14938,10 +14938,23 @@ const LORA_PROVIDER_NODE_TYPES$1 = [
   "Lora Randomizer (LoraManager)",
   "Lora Cycler (LoraManager)"
 ];
+const LORA_STACK_AGGREGATOR_NODE_TYPES$1 = [
+  "Lora Stack Combiner (LoraManager)"
+];
+const LORA_CHAIN_NODE_TYPES$1 = [
+  ...LORA_PROVIDER_NODE_TYPES$1,
+  ...LORA_STACK_AGGREGATOR_NODE_TYPES$1
+];
+function isLoraStackAggregatorNode$1(comfyClass) {
+  return LORA_STACK_AGGREGATOR_NODE_TYPES$1.includes(comfyClass);
+}
 function getActiveLorasFromNodeByType(node) {
   const comfyClass = node == null ? void 0 : node.comfyClass;
   if (comfyClass === "Lora Cycler (LoraManager)") {
     return extractFromCyclerConfig(node);
+  }
+  if (isLoraStackAggregatorNode$1(comfyClass)) {
+    return /* @__PURE__ */ new Set();
   }
   return extractFromLorasWidget(node);
 }
@@ -15002,8 +15015,18 @@ const LORA_PROVIDER_NODE_TYPES = [
   "Lora Randomizer (LoraManager)",
   "Lora Cycler (LoraManager)"
 ];
-function isLoraProviderNode(comfyClass) {
-  return LORA_PROVIDER_NODE_TYPES.includes(comfyClass);
+const LORA_STACK_AGGREGATOR_NODE_TYPES = [
+  "Lora Stack Combiner (LoraManager)"
+];
+const LORA_CHAIN_NODE_TYPES = [
+  ...LORA_PROVIDER_NODE_TYPES,
+  ...LORA_STACK_AGGREGATOR_NODE_TYPES
+];
+function isLoraStackAggregatorNode(comfyClass) {
+  return LORA_STACK_AGGREGATOR_NODE_TYPES.includes(comfyClass);
+}
+function isLoraChainNode(comfyClass) {
+  return LORA_CHAIN_NODE_TYPES.includes(comfyClass);
 }
 function isMapLike(collection) {
   return collection && typeof collection.entries === "function" && typeof collection.values === "function";
@@ -15041,14 +15064,17 @@ function getLinkFromGraph(graph, linkId) {
   }
   return graph.links[linkId] || null;
 }
-function getConnectedInputStackers(node) {
+function isLoraStackInput(input) {
+  return (input == null ? void 0 : input.type) === "LORA_STACK";
+}
+function getConnectedInputLoraChainNodes(node) {
   var _a2, _b;
-  const connectedStackers = [];
+  const connectedNodes = [];
   if (!(node == null ? void 0 : node.inputs)) {
-    return connectedStackers;
+    return connectedNodes;
   }
   for (const input of node.inputs) {
-    if (input.name !== "lora_stack" || !input.link) {
+    if (!isLoraStackInput(input) || !input.link) {
       continue;
     }
     const link = getLinkFromGraph(node.graph, input.link);
@@ -15056,11 +15082,11 @@ function getConnectedInputStackers(node) {
       continue;
     }
     const sourceNode = (_b = (_a2 = node.graph) == null ? void 0 : _a2.getNodeById) == null ? void 0 : _b.call(_a2, link.origin_id);
-    if (sourceNode && isLoraProviderNode(sourceNode.comfyClass)) {
-      connectedStackers.push(sourceNode);
+    if (sourceNode && isLoraChainNode(sourceNode.comfyClass)) {
+      connectedNodes.push(sourceNode);
     }
   }
-  return connectedStackers;
+  return connectedNodes;
 }
 function getConnectedTriggerToggleNodes(node) {
   var _a2, _b, _c;
@@ -15095,6 +15121,9 @@ function getActiveLorasFromNode(node) {
     }
     return activeLoraNames;
   }
+  if (isLoraStackAggregatorNode(node.comfyClass)) {
+    return activeLoraNames;
+  }
   let lorasWidget = node.lorasWidget;
   if (!lorasWidget && node.widgets) {
     lorasWidget = node.widgets.find((w2) => w2.name === "loras");
@@ -15118,11 +15147,14 @@ function collectActiveLorasFromChain(node, visited = /* @__PURE__ */ new Set()) 
   }
   visited.add(nodeKey);
   const isNodeActive2 = node.mode === void 0 || node.mode === 0 || node.mode === 3;
-  const allActiveLoraNames = isNodeActive2 ? getActiveLorasFromNode(node) : /* @__PURE__ */ new Set();
-  const inputStackers = getConnectedInputStackers(node);
-  for (const stacker of inputStackers) {
-    const stackerLoras = collectActiveLorasFromChain(stacker, visited);
-    stackerLoras.forEach((name) => allActiveLoraNames.add(name));
+  if (!isNodeActive2) {
+    return /* @__PURE__ */ new Set();
+  }
+  const allActiveLoraNames = getActiveLorasFromNode(node);
+  const inputChainNodes = getConnectedInputLoraChainNodes(node);
+  for (const chainNode of inputChainNodes) {
+    const upstreamLoras = collectActiveLorasFromChain(chainNode, visited);
+    upstreamLoras.forEach((name) => allActiveLoraNames.add(name));
   }
   return allActiveLoraNames;
 }
@@ -15191,7 +15223,7 @@ function updateDownstreamLoaders(startNode, visited = /* @__PURE__ */ new Set())
             if (targetNode && targetNode.comfyClass === "Lora Loader (LoraManager)") {
               const allActiveLoraNames = collectActiveLorasFromChain(targetNode);
               updateConnectedTriggerWords(targetNode, allActiveLoraNames);
-            } else if (targetNode && isLoraProviderNode(targetNode.comfyClass)) {
+            } else if (targetNode && isLoraChainNode(targetNode.comfyClass)) {
               updateDownstreamLoaders(targetNode, visited);
             }
           }
@@ -15784,7 +15816,7 @@ app$1.registerExtension({
         return originalConfigure == null ? void 0 : originalConfigure.apply(this, arguments);
       };
     }
-    if (LORA_PROVIDER_NODE_TYPES$1.includes(comfyClass)) {
+    if (LORA_CHAIN_NODE_TYPES$1.includes(comfyClass)) {
       const originalOnNodeCreated = nodeType.prototype.onNodeCreated;
       nodeType.prototype.onNodeCreated = function() {
         originalOnNodeCreated == null ? void 0 : originalOnNodeCreated.apply(this, arguments);
