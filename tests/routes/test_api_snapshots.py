@@ -66,6 +66,27 @@ class FakePromptServer:
     instance = Instance()
 
 
+class FakeDownloadHistoryService:
+    async def has_been_downloaded(self, _model_type, _version_id):
+        return False
+
+    async def get_downloaded_version_ids(self, _model_type, _model_id):
+        return []
+
+    async def get_downloaded_version_ids_bulk(self, _model_type, _model_ids):
+        return {}
+
+    async def mark_downloaded(self, *_args, **_kwargs):
+        return None
+
+    async def mark_not_downloaded(self, *_args, **_kwargs):
+        return None
+
+
+async def fake_download_history_service_factory():
+    return FakeDownloadHistoryService()
+
+
 class TestSettingsHandlerSnapshots:
     """Snapshot tests for SettingsHandler responses."""
 
@@ -223,6 +244,7 @@ class TestModelLibraryHandlerSnapshots:
                 get_lora_scanner=scanner_factory,
                 get_checkpoint_scanner=scanner_factory,
                 get_embedding_scanner=scanner_factory,
+                get_downloaded_version_history_service=fake_download_history_service_factory,
             ),
             metadata_provider_factory=lambda: None,
         )

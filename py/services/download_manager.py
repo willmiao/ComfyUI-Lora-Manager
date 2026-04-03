@@ -640,6 +640,13 @@ class DownloadManager:
                     or version_info.get("modelId")
                     or (version_info.get("model") or {}).get("id")
                 )
+                await self._record_downloaded_version_history(
+                    model_type,
+                    resolved_model_id,
+                    version_info,
+                    model_version_id,
+                    save_path,
+                )
                 await self._sync_downloaded_version(
                     model_type,
                     resolved_model_id,
@@ -668,6 +675,55 @@ class DownloadManager:
                     "error": f"Early access restriction: {str(e)}. Please ensure you have purchased early access and are logged in to Civitai.",
                 }
             return {"success": False, "error": str(e)}
+
+    async def _record_downloaded_version_history(
+        self,
+        model_type: str,
+        model_id_value,
+        version_info: Dict,
+        fallback_version_id=None,
+        file_path: str | None = None,
+    ) -> None:
+        try:
+            history_service = await ServiceRegistry.get_downloaded_version_history_service()
+        except Exception as exc:
+            logger.debug(
+                "Skipping download history sync; failed to acquire history service: %s",
+                exc,
+            )
+            return
+
+        if history_service is None:
+            return
+
+        resolved_model_id = model_id_value
+        if resolved_model_id is None:
+            resolved_model_id = version_info.get("modelId")
+        if resolved_model_id is None:
+            model_info = version_info.get("model")
+            if isinstance(model_info, dict):
+                resolved_model_id = model_info.get("id")
+
+        version_id = version_info.get("id")
+        if version_id is None:
+            version_id = fallback_version_id
+
+        try:
+            await history_service.mark_downloaded(
+                model_type,
+                int(version_id),
+                model_id=int(resolved_model_id) if resolved_model_id is not None else None,
+                source="download",
+                file_path=file_path,
+            )
+        except (TypeError, ValueError):
+            logger.debug(
+                "Skipping download history sync; invalid identifiers model=%s version=%s",
+                resolved_model_id,
+                version_id,
+            )
+        except Exception as exc:
+            logger.debug("Failed to sync download history for %s: %s", model_type, exc)
 
     async def _sync_downloaded_version(
         self,

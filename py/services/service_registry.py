@@ -168,6 +168,28 @@ class ServiceRegistry:
             return service
 
     @classmethod
+    async def get_downloaded_version_history_service(cls):
+        """Get or create the downloaded-version history service."""
+
+        service_name = "downloaded_version_history_service"
+
+        if service_name in cls._services:
+            return cls._services[service_name]
+
+        async with cls._get_lock(service_name):
+            if service_name in cls._services:
+                return cls._services[service_name]
+
+            from .downloaded_version_history_service import (
+                DownloadedVersionHistoryService,
+            )
+
+            service = DownloadedVersionHistoryService()
+            cls._services[service_name] = service
+            logger.debug(f"Created and registered {service_name}")
+            return service
+
+    @classmethod
     async def get_civarchive_client(cls):
         """Get or create CivArchive client instance"""
         service_name = "civarchive_client"

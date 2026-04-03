@@ -411,6 +411,7 @@ class ModelScanner:
             if scan_result:
                 await self._apply_scan_result(scan_result)
                 await self._save_persistent_cache(scan_result)
+                await self._sync_download_history(scan_result.raw_data, source='scan')
 
             # Send final progress update
             await ws_manager.broadcast_init_progress({
@@ -516,6 +517,7 @@ class ModelScanner:
         )
 
         await self._apply_scan_result(scan_result)
+        await self._sync_download_history(adjusted_raw_data, source='scan')
 
         await ws_manager.broadcast_init_progress({
             'stage': 'loading_cache',
@@ -576,6 +578,7 @@ class ModelScanner:
             excluded_models=list(self._excluded_models)
         )
         await self._save_persistent_cache(snapshot)
+        await self._sync_download_history(snapshot.raw_data, source='scan')
     def _count_model_files(self) -> int:
         """Count all model files with supported extensions in all roots
         
@@ -704,6 +707,7 @@ class ModelScanner:
             scan_result = await self._gather_model_data()
             await self._apply_scan_result(scan_result)
             await self._save_persistent_cache(scan_result)
+            await self._sync_download_history(scan_result.raw_data, source='scan')
 
             logger.info(
                 f"{self.model_type.capitalize()} Scanner: Cache initialization completed in {time.time() - start_time:.2f} seconds, "
@@ -1100,6 +1104,49 @@ class ModelScanner:
         self._cache.rebuild_version_index()
 
         await self._cache.resort()
+
+    async def _sync_download_history(
+        self,
+        raw_data: List[Mapping[str, Any]],
+        *,
+        source: str,
+    ) -> None:
+        records: List[Dict[str, Any]] = []
+        for item in raw_data or []:
+            if not isinstance(item, Mapping):
+                continue
+            civitai = item.get('civitai')
+            if not isinstance(civitai, Mapping):
+                continue
+
+            version_id = civitai.get('id')
+            if version_id in (None, ''):
+                continue
+
+            records.append(
+                {
+                    'version_id': version_id,
+                    'model_id': civitai.get('modelId'),
+                    'file_path': item.get('file_path'),
+                }
+            )
+
+        if not records:
+            return
+
+        try:
+            history_service = await ServiceRegistry.get_downloaded_version_history_service()
+            await history_service.mark_downloaded_bulk(
+                self.model_type,
+                records,
+                source=source,
+            )
+        except Exception as exc:
+            logger.debug(
+                "%s Scanner: Failed to sync download history: %s",
+                self.model_type.capitalize(),
+                exc,
+            )
 
     async def _gather_model_data(
         self,
