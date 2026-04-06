@@ -56,6 +56,13 @@ Insomnia Art Designs, megakirbs, Brennok, 2018cfh, W+K+White, wackop, Takkan, Ca
 
 ## Release Notes
 
+### v1.0.2
+
+* **Model Download History Tracking** - LoRA Manager now keeps a history of downloaded model versions, allowing it to recognize whether a version has been downloaded before, even if it is no longer currently present in your library.
+* **Skip Previously Downloaded Model Versions** - Added a new setting, `Skip previously downloaded model versions`, to help avoid downloading model versions you have already downloaded in the past.
+* **LoRA Stack Combiner Trigger Words Fix** - Fixed an issue where trigger word updates from `LORA_STACK` inputs were not propagated correctly through the LoRA Stack Combiner node.
+* **CivitAI Example Image Compatibility** - Improved support for CivitAI CDN subdomains so example images load more reliably.
+
 ### v1.0.1
 
 * **Batch Recipe Import** - Import recipes from multiple URLs or directories simultaneously with optimized concurrency.
