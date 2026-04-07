@@ -69,6 +69,9 @@ describe('AutoComplete widget interactions', () => {
       if (key === 'loramanager.autocomplete_append_comma') {
         return true;
       }
+      if (key === 'loramanager.autocomplete_auto_format') {
+        return true;
+      }
       if (key === 'loramanager.autocomplete_accept_key') {
         return 'both';
       }
@@ -188,6 +191,59 @@ describe('AutoComplete widget interactions', () => {
     expect(insertSelectionSpy).toHaveBeenCalledWith('example_completion');
   });
 
+  it('formats duplicate commas and extra spaces when the textarea loses focus', async () => {
+    const input = document.createElement('textarea');
+    input.value = 'foo   bar, , baz  ,,   qux';
+    document.body.append(input);
+
+    const inputListener = vi.fn();
+    input.addEventListener('input', inputListener);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    new AutoComplete(input,'prompt', { showPreview: false });
+
+    input.dispatchEvent(new Event('blur', { bubbles: true }));
+
+    expect(input.value).toBe('foo bar, baz, qux');
+    expect(inputListener).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips blur formatting when autocomplete auto format is disabled', async () => {
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.autocomplete_append_comma') {
+        return true;
+      }
+      if (key === 'loramanager.autocomplete_auto_format') {
+        return false;
+      }
+      if (key === 'loramanager.autocomplete_accept_key') {
+        return 'both';
+      }
+      if (key === 'loramanager.prompt_tag_autocomplete') {
+        return true;
+      }
+      if (key === 'loramanager.tag_space_replacement') {
+        return false;
+      }
+      return undefined;
+    });
+
+    const input = document.createElement('textarea');
+    input.value = 'foo   bar, , baz  ,,   qux';
+    document.body.append(input);
+
+    const inputListener = vi.fn();
+    input.addEventListener('input', inputListener);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    new AutoComplete(input,'prompt', { showPreview: false });
+
+    input.dispatchEvent(new Event('blur', { bubbles: true }));
+
+    expect(input.value).toBe('foo   bar, , baz  ,,   qux');
+    expect(inputListener).not.toHaveBeenCalled();
+  });
+
   it('accepts the selected suggestion with Enter', async () => {
     caretHelperInstance.getBeforeCursor.mockReturnValue('example');
 
@@ -275,6 +331,9 @@ describe('AutoComplete widget interactions', () => {
       if (key === 'loramanager.autocomplete_append_comma') {
         return true;
       }
+      if (key === 'loramanager.autocomplete_auto_format') {
+        return true;
+      }
       if (key === 'loramanager.autocomplete_accept_key') {
         return 'tab_only';
       }
@@ -320,6 +379,9 @@ describe('AutoComplete widget interactions', () => {
   it('only accepts with Enter when autocomplete accept key is set to enter_only', async () => {
     settingGetMock.mockImplementation((key) => {
       if (key === 'loramanager.autocomplete_append_comma') {
+        return true;
+      }
+      if (key === 'loramanager.autocomplete_auto_format') {
         return true;
       }
       if (key === 'loramanager.autocomplete_accept_key') {

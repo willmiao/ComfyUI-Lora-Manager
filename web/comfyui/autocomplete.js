@@ -3,6 +3,7 @@ import { app } from "../../scripts/app.js";
 import { TextAreaCaretHelper } from "./textarea_caret_helper.js";
 import {
     getAutocompleteAppendCommaPreference,
+    getAutocompleteAutoFormatPreference,
     getAutocompleteAcceptKeyPreference,
     getPromptTagAutocompletePreference,
     getTagSpaceReplacementPreference,
@@ -120,6 +121,32 @@ function formatAutocompleteInsertion(text = '') {
     }
 
     return getAutocompleteAppendCommaPreference() ? `${trimmed},` : `${trimmed} `;
+}
+
+function normalizeAutocompleteSegment(segment = '') {
+    return segment.replace(/\s+/g, ' ').trim();
+}
+
+export function formatAutocompleteTextOnBlur(text = '') {
+    if (typeof text !== 'string') {
+        return '';
+    }
+
+    return text
+        .split('\n')
+        .map((line) => {
+            if (!line.trim()) {
+                return '';
+            }
+
+            const cleanedSegments = line
+                .split(',')
+                .map(normalizeAutocompleteSegment)
+                .filter(Boolean);
+
+            return cleanedSegments.join(', ');
+        })
+        .join('\n');
 }
 
 function shouldAcceptAutocompleteKey(key) {
@@ -481,6 +508,14 @@ class AutoComplete {
 
         // Handle focus out to hide dropdown
         this.onBlur = () => {
+            if (getAutocompleteAutoFormatPreference()) {
+                const formattedValue = formatAutocompleteTextOnBlur(this.inputElement.value);
+                if (formattedValue !== this.inputElement.value) {
+                    this.inputElement.value = formattedValue;
+                    this.inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+
             // Delay hiding to allow for clicks on dropdown items
             setTimeout(() => {
                 this.hide();

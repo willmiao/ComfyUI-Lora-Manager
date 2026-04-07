@@ -16,6 +16,9 @@ const PROMPT_TAG_AUTOCOMPLETE_DEFAULT = true;
 const AUTOCOMPLETE_APPEND_COMMA_SETTING_ID = "loramanager.autocomplete_append_comma";
 const AUTOCOMPLETE_APPEND_COMMA_DEFAULT = true;
 
+const AUTOCOMPLETE_AUTO_FORMAT_SETTING_ID = "loramanager.autocomplete_auto_format";
+const AUTOCOMPLETE_AUTO_FORMAT_DEFAULT = true;
+
 const AUTOCOMPLETE_ACCEPT_KEY_SETTING_ID = "loramanager.autocomplete_accept_key";
 const AUTOCOMPLETE_ACCEPT_KEY_DEFAULT = "both";
 const AUTOCOMPLETE_ACCEPT_KEY_OPTION_BOTH = "Tab or Enter";
@@ -188,6 +191,32 @@ const getAutocompleteAppendCommaPreference = (() => {
                 settingsUnavailableLogged = true;
             }
             return AUTOCOMPLETE_APPEND_COMMA_DEFAULT;
+        }
+    };
+})();
+
+const getAutocompleteAutoFormatPreference = (() => {
+    let settingsUnavailableLogged = false;
+
+    return () => {
+        const settingManager = app?.extensionManager?.setting;
+        if (!settingManager || typeof settingManager.get !== "function") {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: settings API unavailable, using default autocomplete auto format setting.");
+                settingsUnavailableLogged = true;
+            }
+            return AUTOCOMPLETE_AUTO_FORMAT_DEFAULT;
+        }
+
+        try {
+            const value = settingManager.get(AUTOCOMPLETE_AUTO_FORMAT_SETTING_ID);
+            return value ?? AUTOCOMPLETE_AUTO_FORMAT_DEFAULT;
+        } catch (error) {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: unable to read autocomplete auto format setting, using default.", error);
+                settingsUnavailableLogged = true;
+            }
+            return AUTOCOMPLETE_AUTO_FORMAT_DEFAULT;
         }
     };
 })();
@@ -376,6 +405,14 @@ app.registerExtension({
             category: ["LoRA Manager", "Autocomplete", "Append comma"],
         },
         {
+            id: AUTOCOMPLETE_AUTO_FORMAT_SETTING_ID,
+            name: "Auto format autocomplete text on blur",
+            type: "boolean",
+            defaultValue: AUTOCOMPLETE_AUTO_FORMAT_DEFAULT,
+            tooltip: "When enabled, leaving an autocomplete textarea removes duplicate commas and collapses unnecessary spaces.",
+            category: ["LoRA Manager", "Autocomplete", "Auto Format"],
+        },
+        {
             id: AUTOCOMPLETE_ACCEPT_KEY_SETTING_ID,
             name: "Autocomplete accept key",
             type: "combo",
@@ -505,6 +542,7 @@ export {
     getWheelSensitivity,
     getAutoPathCorrectionPreference,
     getAutocompleteAppendCommaPreference,
+    getAutocompleteAutoFormatPreference,
     getAutocompleteAcceptKeyPreference,
     getPromptTagAutocompletePreference,
     getTagSpaceReplacementPreference,
