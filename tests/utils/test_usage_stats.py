@@ -152,3 +152,67 @@ async def test_usage_stats_background_processor_handles_pending_prompts(tmp_path
     assert stats.stats["loras"]["lora-hash"]["history"][today] == 1
 
     await _finalize_usage_stats(tasks)
+
+
+async def test_usage_stats_calculates_pending_checkpoint_hash_on_demand(tmp_path, monkeypatch):
+    stats, tasks, _ = _prepare_usage_stats(tmp_path, monkeypatch)
+
+    metadata_payload = {
+        "models": {
+            "1": {"type": "checkpoint", "name": "pending_model.safetensors"},
+        },
+        "loras": {},
+    }
+
+    checkpoint_cache = SimpleNamespace(
+        raw_data=[
+            {
+                "file_name": "pending_model",
+                "model_name": "pending_model",
+                "file_path": "/models/pending_model.safetensors",
+                "sha256": "",
+                "hash_status": "pending",
+            }
+        ]
+    )
+    checkpoint_scanner = SimpleNamespace(
+        get_hash_by_filename=lambda name: None,
+        get_cached_data=AsyncMock(return_value=checkpoint_cache),
+        calculate_hash_for_model=AsyncMock(return_value="resolved-hash"),
+    )
+    lora_scanner = SimpleNamespace(get_hash_by_filename=lambda name: None)
+
+    monkeypatch.setattr(ServiceRegistry, "get_checkpoint_scanner", AsyncMock(return_value=checkpoint_scanner))
+    monkeypatch.setattr(ServiceRegistry, "get_lora_scanner", AsyncMock(return_value=lora_scanner))
+
+    await stats._process_metadata(metadata_payload)
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    checkpoint_scanner.calculate_hash_for_model.assert_awaited_once_with("/models/pending_model.safetensors")
+    assert stats.stats["checkpoints"]["resolved-hash"]["history"][today] == 1
+
+    await _finalize_usage_stats(tasks)
+
+
+async def test_usage_stats_skips_name_fallback_for_missing_lora_hash(tmp_path, monkeypatch):
+    stats, tasks, _ = _prepare_usage_stats(tmp_path, monkeypatch)
+
+    metadata_payload = {
+        "models": {},
+        "loras": {
+            "2": {"lora_list": [{"name": "missing_lora"}]},
+        },
+    }
+
+    checkpoint_scanner = SimpleNamespace(get_hash_by_filename=lambda name: None)
+    lora_scanner = SimpleNamespace(get_hash_by_filename=lambda name: None)
+
+    monkeypatch.setattr(ServiceRegistry, "get_checkpoint_scanner", AsyncMock(return_value=checkpoint_scanner))
+    monkeypatch.setattr(ServiceRegistry, "get_lora_scanner", AsyncMock(return_value=lora_scanner))
+
+    await stats._process_metadata(metadata_payload)
+
+    assert stats.stats["loras"] == {}
+    assert not any(key.startswith("name:") for key in stats.stats["loras"])
+
+    await _finalize_usage_stats(tasks)
