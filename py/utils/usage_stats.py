@@ -317,21 +317,23 @@ class UsageStats:
                     
                     # Get hash for this checkpoint
                     model_hash = checkpoint_scanner.get_hash_by_filename(model_filename)
-                    if model_hash:
-                        # Update stats for this checkpoint with date tracking
-                        if model_hash not in self.stats["checkpoints"]:
-                            self.stats["checkpoints"][model_hash] = {
-                                "total": 0,
-                                "history": {}
-                            }
-                        
-                        # Increment total count
-                        self.stats["checkpoints"][model_hash]["total"] += 1
-                        
-                        # Increment today's count
-                        if today_date not in self.stats["checkpoints"][model_hash]["history"]:
-                            self.stats["checkpoints"][model_hash]["history"][today_date] = 0
-                        self.stats["checkpoints"][model_hash]["history"][today_date] += 1
+                    if not model_hash:
+                        logger.warning(f"No hash found for checkpoint '{model_filename}', tracking by name")
+                    stat_key = model_hash or f"name:{model_filename}"
+                    # Update stats for this checkpoint with date tracking
+                    if stat_key not in self.stats["checkpoints"]:
+                        self.stats["checkpoints"][stat_key] = {
+                            "total": 0,
+                            "history": {}
+                        }
+
+                    # Increment total count
+                    self.stats["checkpoints"][stat_key]["total"] += 1
+
+                    # Increment today's count
+                    if today_date not in self.stats["checkpoints"][stat_key]["history"]:
+                        self.stats["checkpoints"][stat_key]["history"][today_date] = 0
+                    self.stats["checkpoints"][stat_key]["history"][today_date] += 1
         except Exception as e:
             logger.error(f"Error processing checkpoint usage: {e}", exc_info=True)
     
@@ -360,21 +362,23 @@ class UsageStats:
                     
                     # Get hash for this LoRA
                     lora_hash = lora_scanner.get_hash_by_filename(lora_name)
-                    if lora_hash:
-                        # Update stats for this LoRA with date tracking
-                        if lora_hash not in self.stats["loras"]:
-                            self.stats["loras"][lora_hash] = {
-                                "total": 0,
-                                "history": {}
-                            }
-                        
-                        # Increment total count
-                        self.stats["loras"][lora_hash]["total"] += 1
-                        
-                        # Increment today's count
-                        if today_date not in self.stats["loras"][lora_hash]["history"]:
-                            self.stats["loras"][lora_hash]["history"][today_date] = 0
-                        self.stats["loras"][lora_hash]["history"][today_date] += 1
+                    if not lora_hash:
+                        logger.warning(f"No hash found for LoRA '{lora_name}', tracking by name")
+                    stat_key = lora_hash or f"name:{lora_name}"
+                    # Update stats for this LoRA with date tracking
+                    if stat_key not in self.stats["loras"]:
+                        self.stats["loras"][stat_key] = {
+                            "total": 0,
+                            "history": {}
+                        }
+
+                    # Increment total count
+                    self.stats["loras"][stat_key]["total"] += 1
+
+                    # Increment today's count
+                    if today_date not in self.stats["loras"][stat_key]["history"]:
+                        self.stats["loras"][stat_key]["history"][today_date] = 0
+                    self.stats["loras"][stat_key]["history"][today_date] += 1
         except Exception as e:
             logger.error(f"Error processing LoRA usage: {e}", exc_info=True)
     

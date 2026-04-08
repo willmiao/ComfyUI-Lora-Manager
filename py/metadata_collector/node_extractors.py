@@ -1,4 +1,6 @@
+import json
 import os
+import re
 
 from .constants import MODELS, PROMPTS, SAMPLING, LORAS, SIZE, IMAGES, IS_SAMPLER
 
@@ -427,6 +429,75 @@ class ImageSizeExtractor(NodeMetadataExtractor):
             "node_id": node_id
         }
 
+class RgthreePowerLoraLoaderExtractor(NodeMetadataExtractor):
+    """Extract LoRA metadata from rgthree Power Lora Loader.
+
+    The node passes LoRAs as dynamic kwargs: LORA_1, LORA_2, ... each containing
+    {'on': bool, 'lora': filename, 'strength': float, 'strengthTwo': float}.
+    """
+    @staticmethod
+    def extract(node_id, inputs, outputs, metadata):
+        if not inputs:
+            return
+
+        active_loras = []
+        for key, value in inputs.items():
+            if not key.upper().startswith('LORA_'):
+                continue
+            if not isinstance(value, dict):
+                continue
+            if not value.get('on') or not value.get('lora'):
+                continue
+            lora_name = os.path.splitext(os.path.basename(value['lora']))[0]
+            active_loras.append({
+                "name": lora_name,
+                "strength": round(float(value.get('strength', 1.0)), 2)
+            })
+
+        if active_loras:
+            metadata[LORAS][node_id] = {
+                "lora_list": active_loras,
+                "node_id": node_id
+            }
+
+
+class TensorRTLoaderExtractor(NodeMetadataExtractor):
+    """Extract checkpoint metadata from TensorRT Loader.
+
+    extract() parses the engine filename from 'unet_name' as a best-effort
+    fallback (strips profile suffix after '_$' and counter suffix).
+
+    update() checks if the output MODEL has attachments["source_model"]
+    set by the node (NubeBuster fork) and overrides with the real name.
+    Vanilla TRT doesn't set this — the filename parse stands.
+    """
+    @staticmethod
+    def extract(node_id, inputs, outputs, metadata):
+        if not inputs or "unet_name" not in inputs:
+            return
+        unet_name = inputs.get("unet_name")
+        # Strip path and extension, then drop the $_profile suffix
+        model_name = os.path.splitext(os.path.basename(unet_name))[0]
+        if "_$" in model_name:
+            model_name = model_name[:model_name.index("_$")]
+        # Strip counter suffix (e.g. _00001_) left by ComfyUI's save path
+        model_name = re.sub(r'_\d+_?$', '', model_name)
+        _store_checkpoint_metadata(metadata, node_id, model_name)
+
+    @staticmethod
+    def update(node_id, outputs, metadata):
+        if not outputs or not isinstance(outputs, list) or len(outputs) == 0:
+            return
+        first_output = outputs[0]
+        if not isinstance(first_output, tuple) or len(first_output) < 1:
+            return
+        model = first_output[0]
+        # NubeBuster fork sets attachments["source_model"] on the ModelPatcher
+        source_model = getattr(model, 'attachments', {}).get("source_model")
+        if source_model:
+            _store_checkpoint_metadata(metadata, node_id, source_model)
+
+
 class LoraLoaderManagerExtractor(NodeMetadataExtractor):
     @staticmethod
     def extract(node_id, inputs, outputs, metadata):
@@ -577,8 +648,6 @@ class SamplerCustomAdvancedExtractor(BaseSamplerExtractor):
         # Extract latent dimensions
         BaseSamplerExtractor.extract_latent_dimensions(node_id, inputs, metadata)
 
-import json
-
 class CLIPTextEncodeFluxExtractor(NodeMetadataExtractor):
     @staticmethod
     def extract(node_id, inputs, outputs, metadata):
@@ -715,6 +784,8 @@ NODE_EXTRACTORS = {
     "UnetLoaderGGUF": UNETLoaderExtractor,  # Updated to use dedicated extractor
     "LoraLoader": LoraLoaderExtractor,
     "LoraLoaderLM": LoraLoaderManagerExtractor,
+    "RgthreePowerLoraLoader": RgthreePowerLoraLoaderExtractor,
+    "TensorRTLoader": TensorRTLoaderExtractor,
     # Conditioning
     "CLIPTextEncode": CLIPTextEncodeExtractor,
     "PromptLM": CLIPTextEncodeExtractor,
