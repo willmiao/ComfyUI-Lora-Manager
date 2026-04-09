@@ -264,6 +264,7 @@
             "layoutSettings": "版面設定",
             "misc": "其他",
             "folderSettings": "預設根目錄",
+            "recipeSettings": "配方",
             "extraFolderPaths": "額外資料夾路徑",
             "downloadPathTemplates": "下載路徑範本",
             "priorityTags": "優先標籤",
@@ -393,6 +394,10 @@
             "defaultUnetRootHelp": "設定下載、匯入和移動時的預設 Diffusion Model (UNET) 根目錄",
             "defaultEmbeddingRoot": "Embedding 根目錄",
             "defaultEmbeddingRootHelp": "設定下載、匯入和移動時的預設 Embedding 根目錄",
+            "recipesPath": "配方儲存路徑",
+            "recipesPathHelp": "已儲存配方的可選自訂目錄。留空則使用第一個 LoRA 根目錄下的 recipes 資料夾。",
+            "recipesPathPlaceholder": "/path/to/recipes",
+            "recipesPathMigrating": "正在遷移配方儲存...",
             "noDefault": "未設定預設"
         },
         "extraFolderPaths": {
@@ -1629,6 +1634,8 @@
             "mappingSaveFailed": "儲存基礎模型對應失敗：{message}",
             "downloadTemplatesUpdated": "下載路徑範本已更新",
             "downloadTemplatesFailed": "儲存下載路徑範本失敗：{message}",
+            "recipesPathUpdated": "配方儲存路徑已更新",
+            "recipesPathSaveFailed": "更新配方儲存路徑失敗：{message}",
             "settingsUpdated": "設定已更新：{setting}",
             "compactModeToggled": "緊湊模式已{state}",
             "settingSaveFailed": "儲存設定失敗：{message}",

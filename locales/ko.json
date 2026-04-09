@@ -264,6 +264,7 @@
             "layoutSettings": "레이아웃 설정",
             "misc": "기타",
             "folderSettings": "기본 루트",
+            "recipeSettings": "레시피",
             "extraFolderPaths": "추가 폴다 경로",
             "downloadPathTemplates": "다운로드 경로 템플릿",
             "priorityTags": "우선순위 태그",
@@ -393,6 +394,10 @@
             "defaultUnetRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 Diffusion Model (UNET) 루트 디렉토리를 설정합니다",
             "defaultEmbeddingRoot": "Embedding 루트",
             "defaultEmbeddingRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 Embedding 루트 디렉토리를 설정합니다",
+            "recipesPath": "레시피 저장 경로",
+            "recipesPathHelp": "저장된 레시피를 위한 선택적 사용자 지정 디렉터리입니다. 비워 두면 첫 번째 LoRA 루트의 recipes 폴더를 사용합니다.",
+            "recipesPathPlaceholder": "/path/to/recipes",
+            "recipesPathMigrating": "레시피 저장 경로를 이동 중...",
             "noDefault": "기본값 없음"
         },
         "extraFolderPaths": {
@@ -1629,6 +1634,8 @@
             "mappingSaveFailed": "베이스 모델 매핑 저장 실패: {message}",
             "downloadTemplatesUpdated": "다운로드 경로 템플릿이 업데이트되었습니다",
             "downloadTemplatesFailed": "다운로드 경로 템플릿 저장 실패: {message}",
+            "recipesPathUpdated": "레시피 저장 경로가 업데이트되었습니다",
+            "recipesPathSaveFailed": "레시피 저장 경로 업데이트 실패: {message}",
             "settingsUpdated": "설정 업데이트됨: {setting}",
             "compactModeToggled": "컴팩트 모드 {state}",
             "settingSaveFailed": "설정 저장 실패: {message}",

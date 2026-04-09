@@ -264,6 +264,7 @@
             "layoutSettings": "הגדרות פריסה",
             "misc": "שונות",
             "folderSettings": "תיקיות ברירת מחדל",
+            "recipeSettings": "מתכונים",
             "extraFolderPaths": "נתיבי תיקיות נוספים",
             "downloadPathTemplates": "תבניות נתיב הורדה",
             "priorityTags": "תגיות עדיפות",
@@ -393,6 +394,10 @@
             "defaultUnetRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של Diffusion Model (UNET) להורדות, ייבוא והעברות",
             "defaultEmbeddingRoot": "תיקיית שורש Embedding",
             "defaultEmbeddingRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של embedding להורדות, ייבוא והעברות",
+            "recipesPath": "נתיב אחסון מתכונים",
+            "recipesPathHelp": "ספרייה מותאמת אישית אופציונלית למתכונים שנשמרו. השאר ריק כדי להשתמש בתיקיית recipes של שורש LoRA הראשון.",
+            "recipesPathPlaceholder": "/path/to/recipes",
+            "recipesPathMigrating": "מעביר את אחסון המתכונים...",
             "noDefault": "אין ברירת מחדל"
         },
         "extraFolderPaths": {
@@ -1629,6 +1634,8 @@
             "mappingSaveFailed": "שמירת מיפויי מודל בסיס נכשלה: {message}",
             "downloadTemplatesUpdated": "תבניות נתיב הורדה עודכנו",
             "downloadTemplatesFailed": "שמירת תבניות נתיב הורדה נכשלה: {message}",
+            "recipesPathUpdated": "נתיב אחסון המתכונים עודכן",
+            "recipesPathSaveFailed": "עדכון נתיב אחסון המתכונים נכשל: {message}",
             "settingsUpdated": "הגדרות עודכנו: {setting}",
             "compactModeToggled": "מצב קומפקטי {state}",
             "settingSaveFailed": "שמירת ההגדרה נכשלה: {message}",

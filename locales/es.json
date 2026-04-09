@@ -264,6 +264,7 @@
             "layoutSettings": "Configuración de diseño",
             "misc": "Varios",
             "folderSettings": "Raíces predeterminadas",
+            "recipeSettings": "Recetas",
             "extraFolderPaths": "Rutas de carpetas adicionales",
             "downloadPathTemplates": "Plantillas de rutas de descarga",
             "priorityTags": "Etiquetas prioritarias",
@@ -393,6 +394,10 @@
             "defaultUnetRootHelp": "Establecer el directorio raíz predeterminado de Diffusion Model (UNET) para descargas, importaciones y movimientos",
             "defaultEmbeddingRoot": "Raíz de embedding",
             "defaultEmbeddingRootHelp": "Establecer el directorio raíz predeterminado de embedding para descargas, importaciones y movimientos",
+            "recipesPath": "Ruta de almacenamiento de recetas",
+            "recipesPathHelp": "Directorio personalizado opcional para las recetas guardadas. Déjalo vacío para usar la carpeta recipes del primer directorio raíz de LoRA.",
+            "recipesPathPlaceholder": "/path/to/recipes",
+            "recipesPathMigrating": "Migrando el almacenamiento de recetas...",
             "noDefault": "Sin predeterminado"
         },
         "extraFolderPaths": {
@@ -1629,6 +1634,8 @@
             "mappingSaveFailed": "Error al guardar mapeos de modelo base: {message}",
             "downloadTemplatesUpdated": "Plantillas de rutas de descarga actualizadas",
             "downloadTemplatesFailed": "Error al guardar plantillas de rutas de descarga: {message}",
+            "recipesPathUpdated": "Ruta de almacenamiento de recetas actualizada",
+            "recipesPathSaveFailed": "Error al actualizar la ruta de almacenamiento de recetas: {message}",
             "settingsUpdated": "Configuración actualizada: {setting}",
             "compactModeToggled": "Modo compacto {state}",
             "settingSaveFailed": "Error al guardar configuración: {message}",

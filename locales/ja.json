@@ -264,6 +264,7 @@
             "layoutSettings": "レイアウト設定",
             "misc": "その他",
             "folderSettings": "デフォルトルート",
+            "recipeSettings": "レシピ",
             "extraFolderPaths": "追加フォルダーパス",
             "downloadPathTemplates": "ダウンロードパステンプレート",
             "priorityTags": "優先タグ",
@@ -393,6 +394,10 @@
             "defaultUnetRootHelp": "ダウンロード、インポート、移動用のデフォルトDiffusion Model (UNET)ルートディレクトリを設定",
             "defaultEmbeddingRoot": "Embeddingルート",
             "defaultEmbeddingRootHelp": "ダウンロード、インポート、移動用のデフォルトembeddingルートディレクトリを設定",
+            "recipesPath": "レシピ保存先",
+            "recipesPathHelp": "保存済みレシピ用の任意のカスタムディレクトリです。空欄にすると最初のLoRAルートのrecipesフォルダーを使用します。",
+            "recipesPathPlaceholder": "/path/to/recipes",
+            "recipesPathMigrating": "レシピ保存先を移動中...",
             "noDefault": "デフォルトなし"
         },
         "extraFolderPaths": {
@@ -1629,6 +1634,8 @@
             "mappingSaveFailed": "ベースモデルマッピングの保存に失敗しました：{message}",
             "downloadTemplatesUpdated": "ダウンロードパステンプレートが更新されました",
             "downloadTemplatesFailed": "ダウンロードパステンプレートの保存に失敗しました：{message}",
+            "recipesPathUpdated": "レシピ保存先を更新しました",
+            "recipesPathSaveFailed": "レシピ保存先の更新に失敗しました: {message}",
             "settingsUpdated": "設定が更新されました：{setting}",
             "compactModeToggled": "コンパクトモード {state}",
             "settingSaveFailed": "設定の保存に失敗しました：{message}",

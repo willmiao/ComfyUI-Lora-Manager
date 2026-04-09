@@ -766,6 +766,11 @@ export class SettingsManager {
             usePortableCheckbox.checked = !!state.global.settings.use_portable_settings;
         }
 
+        const recipesPathInput = document.getElementById('recipesPath');
+        if (recipesPathInput) {
+            recipesPathInput.value = state.global.settings.recipes_path || '';
+        }
+
         const autoOrganizeExclusionsInput = document.getElementById('autoOrganizeExclusions');
         if (autoOrganizeExclusionsInput) {
             const patterns = this.normalizePatternList(state.global.settings.auto_organize_exclusions);
@@ -2464,12 +2469,19 @@ export class SettingsManager {
         if (!element) return;
 
         const value = element.value.trim(); // Trim whitespace
+        const shouldShowLoading = settingKey === 'recipes_path';
 
         try {
             // Check if value has changed from existing value
             const currentValue = state.global.settings[settingKey] || '';
             if (value === currentValue) {
                 return; // No change, exit early
+            }
+
+            if (shouldShowLoading) {
+                state.loadingManager?.showSimpleLoading(
+                    translate('settings.folderSettings.recipesPathMigrating', {}, 'Migrating recipes...')
+                );
             }
 
             // For username and password, handle empty values specially
@@ -2497,10 +2509,25 @@ export class SettingsManager {
                 await this.saveSetting(settingKey, value);
             }
 
-            showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
+            if (shouldShowLoading) {
+                state.loadingManager?.hide();
+            }
+
+            if (settingKey === 'recipes_path') {
+                showToast('toast.settings.recipesPathUpdated', {}, 'success');
+            } else {
+                showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
+            }
 
         } catch (error) {
-            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
+            if (shouldShowLoading) {
+                state.loadingManager?.hide();
+            }
+            if (settingKey === 'recipes_path') {
+                showToast('toast.settings.recipesPathSaveFailed', { message: error.message }, 'error');
+            } else {
+                showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
+            }
         }
     }
 

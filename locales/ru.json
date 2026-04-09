@@ -264,6 +264,7 @@
             "layoutSettings": "Настройки макета",
             "misc": "Разное",
             "folderSettings": "Корневые папки",
+            "recipeSettings": "Рецепты",
             "extraFolderPaths": "Дополнительные пути к папкам",
             "downloadPathTemplates": "Шаблоны путей загрузки",
             "priorityTags": "Приоритетные теги",
@@ -393,6 +394,10 @@
             "defaultUnetRootHelp": "Установить корневую папку Diffusion Model (UNET) по умолчанию для загрузок, импорта и перемещений",
             "defaultEmbeddingRoot": "Корневая папка Embedding",
             "defaultEmbeddingRootHelp": "Установить корневую папку embedding по умолчанию для загрузок, импорта и перемещений",
+            "recipesPath": "Путь хранения рецептов",
+            "recipesPathHelp": "Дополнительный пользовательский каталог для сохранённых рецептов. Оставьте пустым, чтобы использовать папку recipes в первом корне LoRA.",
+            "recipesPathPlaceholder": "/path/to/recipes",
+            "recipesPathMigrating": "Перенос хранилища рецептов...",
             "noDefault": "Не задано"
         },
         "extraFolderPaths": {
@@ -1629,6 +1634,8 @@
             "mappingSaveFailed": "Не удалось сохранить сопоставления базовых моделей: {message}",
             "downloadTemplatesUpdated": "Шаблоны путей загрузки обновлены",
             "downloadTemplatesFailed": "Не удалось сохранить шаблоны путей загрузки: {message}",
+            "recipesPathUpdated": "Путь хранения рецептов обновлён",
+            "recipesPathSaveFailed": "Не удалось обновить путь хранения рецептов: {message}",
             "settingsUpdated": "Настройки обновлены: {setting}",
             "compactModeToggled": "Компактный режим {state}",
             "settingSaveFailed": "Не удалось сохранить настройку: {message}",

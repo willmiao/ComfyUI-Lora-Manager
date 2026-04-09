@@ -113,6 +113,78 @@ async def test_config_updates_preview_roots_after_switch(tmp_path):
     assert decoded.replace("\\", "/").endswith("model.webp")
 
 
+async def test_preview_handler_allows_custom_recipes_path(tmp_path):
+    lora_root = tmp_path / "library"
+    lora_root.mkdir()
+    recipes_root = tmp_path / "recipes_storage"
+    recipes_root.mkdir()
+    preview_file = recipes_root / "recipe.webp"
+    preview_file.write_bytes(b"preview")
+
+    config = Config()
+    config.apply_library_settings(
+        {
+            "folder_paths": {
+                "loras": [str(lora_root)],
+                "checkpoints": [],
+                "unet": [],
+                "embeddings": [],
+            },
+            "recipes_path": str(recipes_root),
+        }
+    )
+
+    assert config.is_preview_path_allowed(str(preview_file))
+
+    handler = PreviewHandler(config=config)
+    encoded_path = urllib.parse.quote(str(preview_file), safe="")
+    request = make_mocked_request("GET", f"/api/lm/previews?path={encoded_path}")
+
+    response = await handler.serve_preview(request)
+
+    assert isinstance(response, web.FileResponse)
+    assert response.status == 200
+    assert Path(response._path) == preview_file
+
+
+async def test_preview_handler_allows_symlinked_recipes_path(tmp_path):
+    lora_root = tmp_path / "library"
+    lora_root.mkdir()
+    real_recipes_root = tmp_path / "real_recipes"
+    real_recipes_root.mkdir()
+    symlink_recipes_root = tmp_path / "linked_recipes"
+    symlink_recipes_root.symlink_to(real_recipes_root, target_is_directory=True)
+
+    preview_file = real_recipes_root / "recipe.webp"
+    preview_file.write_bytes(b"preview")
+
+    config = Config()
+    config.apply_library_settings(
+        {
+            "folder_paths": {
+                "loras": [str(lora_root)],
+                "checkpoints": [],
+                "unet": [],
+                "embeddings": [],
+            },
+            "recipes_path": str(symlink_recipes_root),
+        }
+    )
+
+    symlink_preview_path = symlink_recipes_root / "recipe.webp"
+    assert config.is_preview_path_allowed(str(symlink_preview_path))
+
+    handler = PreviewHandler(config=config)
+    encoded_path = urllib.parse.quote(str(symlink_preview_path), safe="")
+    request = make_mocked_request("GET", f"/api/lm/previews?path={encoded_path}")
+
+    response = await handler.serve_preview(request)
+
+    assert isinstance(response, web.FileResponse)
+    assert response.status == 200
+    assert Path(response._path) == preview_file.resolve()
+
+
 def test_is_preview_path_allowed_case_insensitive_on_windows(tmp_path):
     """Test that preview path validation is case-insensitive on Windows.
 

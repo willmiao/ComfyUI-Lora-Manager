@@ -530,6 +530,32 @@
                                     </div>
                                 </div>
                             </div>
+
+                        </div>
+
+                        <!-- Recipe Settings -->
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.recipeSettings') }}</h4>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="recipesPath">
+                                        {{ t('settings.folderSettings.recipesPath') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.folderSettings.recipesPathHelp') }}"></i>
+                                    </label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <div class="text-input-wrapper">
+                                            <input type="text" id="recipesPath"
+                                                   placeholder="{{ t('settings.folderSettings.recipesPathPlaceholder') }}"
+                                                   onblur="settingsManager.saveInputSetting('recipesPath', 'recipes_path')"
+                                                   onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Extra Folder Paths -->

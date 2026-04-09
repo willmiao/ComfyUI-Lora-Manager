@@ -264,6 +264,7 @@
             "layoutSettings": "Layout Settings",
             "misc": "Miscellaneous",
             "folderSettings": "Default Roots",
+            "recipeSettings": "Recipes",
             "extraFolderPaths": "Extra Folder Paths",
             "downloadPathTemplates": "Download Path Templates",
             "priorityTags": "Priority Tags",
@@ -393,6 +394,10 @@
             "defaultUnetRootHelp": "Set default diffusion model (UNET) root directory for downloads, imports and moves",
             "defaultEmbeddingRoot": "Embedding Root",
             "defaultEmbeddingRootHelp": "Set default embedding root directory for downloads, imports and moves",
+            "recipesPath": "Recipes Storage Path",
+            "recipesPathHelp": "Optional custom directory for stored recipes. Leave empty to use the first LoRA root's recipes folder.",
+            "recipesPathPlaceholder": "/path/to/recipes",
+            "recipesPathMigrating": "Migrating recipes storage...",
             "noDefault": "No Default"
         },
         "extraFolderPaths": {
@@ -1629,6 +1634,8 @@
             "mappingSaveFailed": "Failed to save base model mappings: {message}",
             "downloadTemplatesUpdated": "Download path templates updated",
             "downloadTemplatesFailed": "Failed to save download path templates: {message}",
+            "recipesPathUpdated": "Recipes storage path updated",
+            "recipesPathSaveFailed": "Failed to update recipes storage path: {message}",
             "settingsUpdated": "Settings updated: {setting}",
             "compactModeToggled": "Compact Mode {state}",
             "settingSaveFailed": "Failed to save setting: {message}",

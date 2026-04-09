@@ -264,6 +264,7 @@
             "layoutSettings": "布局设置",
             "misc": "其他",
             "folderSettings": "默认根目录",
+            "recipeSettings": "配方",
             "extraFolderPaths": "额外文件夹路径",
             "downloadPathTemplates": "下载路径模板",
             "priorityTags": "优先标签",
@@ -393,6 +394,10 @@
             "defaultUnetRootHelp": "设置下载、导入和移动时的默认 Diffusion Model (UNET) 根目录",
             "defaultEmbeddingRoot": "Embedding 根目录",
             "defaultEmbeddingRootHelp": "设置下载、导入和移动时的默认 Embedding 根目录",
+            "recipesPath": "配方存储路径",
+            "recipesPathHelp": "已保存配方的可选自定义目录。留空则使用第一个 LoRA 根目录下的 recipes 文件夹。",
+            "recipesPathPlaceholder": "/path/to/recipes",
+            "recipesPathMigrating": "正在迁移配方存储...",
             "noDefault": "无默认"
         },
         "extraFolderPaths": {
@@ -1629,6 +1634,8 @@
             "mappingSaveFailed": "保存基础模型映射失败：{message}",
             "downloadTemplatesUpdated": "下载路径模板已更新",
             "downloadTemplatesFailed": "保存下载路径模板失败：{message}",
+            "recipesPathUpdated": "配方存储路径已更新",
+            "recipesPathSaveFailed": "更新配方存储路径失败：{message}",
             "settingsUpdated": "设置已更新：{setting}",
             "compactModeToggled": "紧凑模式 {state}",
             "settingSaveFailed": "保存设置失败：{message}",

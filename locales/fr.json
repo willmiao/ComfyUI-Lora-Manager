@@ -264,6 +264,7 @@
             "layoutSettings": "Paramètres d'affichage",
             "misc": "Divers",
             "folderSettings": "Racines par défaut",
+            "recipeSettings": "Recipes",
             "extraFolderPaths": "Chemins de dossiers supplémentaires",
             "downloadPathTemplates": "Modèles de chemin de téléchargement",
             "priorityTags": "Étiquettes prioritaires",
@@ -393,6 +394,10 @@
             "defaultUnetRootHelp": "Définir le répertoire racine Diffusion Model (UNET) par défaut pour les téléchargements, imports et déplacements",
             "defaultEmbeddingRoot": "Racine Embedding",
             "defaultEmbeddingRootHelp": "Définir le répertoire racine embedding par défaut pour les téléchargements, imports et déplacements",
+            "recipesPath": "Recipes Storage Path",
+            "recipesPathHelp": "Optional custom directory for stored recipes. Leave empty to use the first LoRA root's recipes folder.",
+            "recipesPathPlaceholder": "/path/to/recipes",
+            "recipesPathMigrating": "Migrating recipes storage...",
             "noDefault": "Aucun par défaut"
         },
         "extraFolderPaths": {
@@ -1629,6 +1634,8 @@
             "mappingSaveFailed": "Échec de la sauvegarde des mappages de modèle de base : {message}",
             "downloadTemplatesUpdated": "Modèles de chemin de téléchargement mis à jour",
             "downloadTemplatesFailed": "Échec de la sauvegarde des modèles de chemin de téléchargement : {message}",
+            "recipesPathUpdated": "Recipes storage path updated",
+            "recipesPathSaveFailed": "Failed to update recipes storage path: {message}",
             "settingsUpdated": "Paramètres mis à jour : {setting}",
             "compactModeToggled": "Mode compact {state}",
             "settingSaveFailed": "Échec de la sauvegarde du paramètre : {message}",

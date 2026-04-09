@@ -496,6 +496,7 @@ def test_migrate_sanitizes_legacy_libraries(tmp_path, monkeypatch):
     assert payload["default_lora_root"] == ""
     assert payload["default_checkpoint_root"] == ""
     assert payload["default_embedding_root"] == ""
+    assert payload["recipes_path"] == ""
     assert manager.get_active_library_name() == "legacy"
 
 
@@ -507,12 +508,14 @@ def test_active_library_syncs_top_level_settings(tmp_path, monkeypatch):
                 "default_lora_root": "/loras",
                 "default_checkpoint_root": "/ckpt",
                 "default_embedding_root": "/embed",
+                "recipes_path": "/loras/recipes",
             },
             "studio": {
                 "folder_paths": {"loras": ["/studio"]},
                 "default_lora_root": "/studio",
                 "default_checkpoint_root": "/studio_ckpt",
                 "default_embedding_root": "/studio_embed",
+                "recipes_path": "/studio/custom-recipes",
             },
         },
         "active_library": "studio",
@@ -521,6 +524,7 @@ def test_active_library_syncs_top_level_settings(tmp_path, monkeypatch):
         "default_lora_root": "/loras",
         "default_checkpoint_root": "/ckpt",
         "default_embedding_root": "/embed",
+        "recipes_path": "/loras/recipes",
     }
 
     manager = _create_manager_with_settings(tmp_path, monkeypatch, initial)
@@ -530,14 +534,17 @@ def test_active_library_syncs_top_level_settings(tmp_path, monkeypatch):
     assert manager.get("default_lora_root") == "/studio"
     assert manager.get("default_checkpoint_root") == "/studio_ckpt"
     assert manager.get("default_embedding_root") == "/studio_embed"
+    assert manager.get("recipes_path") == "/studio/custom-recipes"
 
     # Drift the top-level values again and ensure activate_library repairs them
     manager.settings["folder_paths"] = {"loras": ["/loras"]}
     manager.settings["default_lora_root"] = "/loras"
+    manager.settings["recipes_path"] = "/loras/recipes"
     manager.activate_library("studio")
 
     assert manager.get("folder_paths")["loras"] == ["/studio"]
     assert manager.get("default_lora_root") == "/studio"
+    assert manager.get("recipes_path") == "/studio/custom-recipes"
 
 
 def test_refresh_environment_variables_updates_stored_value(tmp_path, monkeypatch):
@@ -554,6 +561,7 @@ def test_refresh_environment_variables_updates_stored_value(tmp_path, monkeypatc
                 "default_lora_root": "",
                 "default_checkpoint_root": "",
                 "default_embedding_root": "",
+                "recipes_path": "",
             }
         },
         "active_library": "default",
@@ -587,6 +595,177 @@ def test_upsert_library_creates_entry_and_activates(manager, tmp_path):
     stored_paths = libraries["studio"]["folder_paths"]["loras"]
     normalized_stored_paths = [p.replace(os.sep, "/") for p in stored_paths]
     assert str(lora_dir).replace(os.sep, "/") in normalized_stored_paths
+
+
+def test_set_recipes_path_updates_active_library_entry(manager, tmp_path):
+    recipes_dir = tmp_path / "custom" / "recipes"
+
+    manager.set("recipes_path", str(recipes_dir))
+
+    assert manager.get("recipes_path") == str(recipes_dir.resolve())
+    assert (
+        manager.get_libraries()["default"]["recipes_path"]
+        == str(recipes_dir.resolve())
+    )
+
+
+def test_set_recipes_path_migrates_existing_recipe_files(manager, tmp_path):
+    lora_root = tmp_path / "loras"
+    old_recipes_dir = lora_root / "recipes" / "nested"
+    old_recipes_dir.mkdir(parents=True)
+    manager.set("folder_paths", {"loras": [str(lora_root)]})
+
+    recipe_id = "recipe-1"
+    old_image_path = old_recipes_dir / f"{recipe_id}.webp"
+    old_json_path = old_recipes_dir / f"{recipe_id}.recipe.json"
+    old_image_path.write_bytes(b"image-bytes")
+    old_json_path.write_text(
+        json.dumps(
+            {
+                "id": recipe_id,
+                "file_path": str(old_image_path),
+                "title": "Recipe 1",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    new_recipes_dir = tmp_path / "custom_recipes"
+    manager.set("recipes_path", str(new_recipes_dir))
+
+    migrated_image_path = new_recipes_dir / "nested" / f"{recipe_id}.webp"
+    migrated_json_path = new_recipes_dir / "nested" / f"{recipe_id}.recipe.json"
+
+    assert manager.get("recipes_path") == str(new_recipes_dir.resolve())
+    assert migrated_image_path.read_bytes() == b"image-bytes"
+    migrated_payload = json.loads(migrated_json_path.read_text(encoding="utf-8"))
+    assert migrated_payload["file_path"] == str(migrated_image_path)
+    assert not old_image_path.exists()
+    assert not old_json_path.exists()
+
+
+def test_clearing_recipes_path_migrates_files_to_default_location(manager, tmp_path):
+    lora_root = tmp_path / "loras"
+    custom_recipes_dir = tmp_path / "custom_recipes"
+    old_recipes_dir = custom_recipes_dir / "nested"
+    old_recipes_dir.mkdir(parents=True)
+    manager.set("folder_paths", {"loras": [str(lora_root)]})
+    manager.settings["recipes_path"] = str(custom_recipes_dir)
+
+    recipe_id = "recipe-2"
+    old_image_path = old_recipes_dir / f"{recipe_id}.webp"
+    old_json_path = old_recipes_dir / f"{recipe_id}.recipe.json"
+    old_image_path.write_bytes(b"image-bytes")
+    old_json_path.write_text(
+        json.dumps(
+            {
+                "id": recipe_id,
+                "file_path": str(old_image_path),
+                "title": "Recipe 2",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    manager.set("recipes_path", "")
+
+    fallback_recipes_dir = lora_root / "recipes"
+    migrated_image_path = fallback_recipes_dir / "nested" / f"{recipe_id}.webp"
+    migrated_json_path = fallback_recipes_dir / "nested" / f"{recipe_id}.recipe.json"
+
+    assert manager.get("recipes_path") == ""
+    assert migrated_image_path.read_bytes() == b"image-bytes"
+    migrated_payload = json.loads(migrated_json_path.read_text(encoding="utf-8"))
+    assert migrated_payload["file_path"] == str(migrated_image_path)
+    assert not old_image_path.exists()
+    assert not old_json_path.exists()
+
+
+def test_moving_recipes_path_back_to_parent_directory_is_allowed(manager, tmp_path):
+    lora_root = tmp_path / "loras"
+    manager.set("folder_paths", {"loras": [str(lora_root)]})
+
+    source_recipes_dir = lora_root / "recipes" / "custom"
+    source_recipes_dir.mkdir(parents=True)
+
+    recipe_id = "recipe-parent"
+    old_image_path = source_recipes_dir / f"{recipe_id}.webp"
+    old_json_path = source_recipes_dir / f"{recipe_id}.recipe.json"
+    old_image_path.write_bytes(b"parent-bytes")
+    old_json_path.write_text(
+        json.dumps(
+            {
+                "id": recipe_id,
+                "file_path": str(old_image_path),
+                "title": "Recipe Parent",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    manager.settings["recipes_path"] = str(source_recipes_dir)
+    manager.set("recipes_path", str(lora_root / "recipes"))
+
+    migrated_image_path = lora_root / "recipes" / f"{recipe_id}.webp"
+    migrated_json_path = lora_root / "recipes" / f"{recipe_id}.recipe.json"
+
+    assert manager.get("recipes_path") == str((lora_root / "recipes").resolve())
+    assert migrated_image_path.read_bytes() == b"parent-bytes"
+    migrated_payload = json.loads(migrated_json_path.read_text(encoding="utf-8"))
+    assert migrated_payload["file_path"] == str(migrated_image_path)
+    assert not old_image_path.exists()
+    assert not old_json_path.exists()
+
+
+def test_set_recipes_path_rewrites_symlinked_recipe_metadata(manager, tmp_path):
+    real_recipes_dir = tmp_path / "real_recipes"
+    real_recipes_dir.mkdir()
+    symlink_recipes_dir = tmp_path / "linked_recipes"
+    symlink_recipes_dir.symlink_to(real_recipes_dir, target_is_directory=True)
+
+    manager.settings["recipes_path"] = str(symlink_recipes_dir)
+    manager.set("folder_paths", {"loras": [str(tmp_path / "loras")]})
+
+    recipe_id = "recipe-symlink"
+    old_image_path = real_recipes_dir / f"{recipe_id}.webp"
+    old_json_path = real_recipes_dir / f"{recipe_id}.recipe.json"
+    old_image_path.write_bytes(b"symlink-bytes")
+    old_json_path.write_text(
+        json.dumps(
+            {
+                "id": recipe_id,
+                "file_path": str(old_image_path),
+                "title": "Recipe Symlink",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    new_recipes_dir = tmp_path / "migrated_recipes"
+    manager.set("recipes_path", str(new_recipes_dir))
+
+    migrated_image_path = new_recipes_dir / f"{recipe_id}.webp"
+    migrated_json_path = new_recipes_dir / f"{recipe_id}.recipe.json"
+
+    assert migrated_image_path.read_bytes() == b"symlink-bytes"
+    migrated_payload = json.loads(migrated_json_path.read_text(encoding="utf-8"))
+    assert migrated_payload["file_path"] == str(migrated_image_path)
+    assert not old_image_path.exists()
+    assert not old_json_path.exists()
+
+
+def test_set_recipes_path_rejects_file_target(manager, tmp_path):
+    lora_root = tmp_path / "loras"
+    lora_root.mkdir()
+    manager.set("folder_paths", {"loras": [str(lora_root)]})
+
+    target_file = tmp_path / "not_a_directory"
+    target_file.write_text("blocked", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="directory"):
+        manager.set("recipes_path", str(target_file))
+
+    assert manager.get("recipes_path") == ""
 
 
 def test_extra_folder_paths_stored_separately(manager, tmp_path):

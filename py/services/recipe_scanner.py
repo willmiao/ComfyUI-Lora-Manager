@@ -18,6 +18,7 @@ from .service_registry import ServiceRegistry
 from .lora_scanner import LoraScanner
 from .metadata_service import get_default_metadata_provider
 from .checkpoint_scanner import CheckpointScanner
+from .settings_manager import get_settings_manager
 from .recipes.errors import RecipeNotFoundError
 from ..utils.utils import calculate_recipe_fingerprint, fuzzy_match
 from natsort import natsorted
@@ -1090,6 +1091,14 @@ class RecipeScanner:
     @property
     def recipes_dir(self) -> str:
         """Get path to recipes directory"""
+        custom_recipes_dir = get_settings_manager().get("recipes_path", "")
+        if isinstance(custom_recipes_dir, str) and custom_recipes_dir.strip():
+            recipes_dir = os.path.abspath(
+                os.path.normpath(os.path.expanduser(custom_recipes_dir.strip()))
+            )
+            os.makedirs(recipes_dir, exist_ok=True)
+            return recipes_dir
+
         if not config.loras_roots:
             return ""
 

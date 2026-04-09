@@ -8,6 +8,7 @@ import pytest
 
 from py.config import config
 from py.services.recipe_scanner import RecipeScanner
+from py.services import settings_manager as settings_manager_module
 from py.utils.utils import calculate_recipe_fingerprint
 
 
@@ -72,12 +73,56 @@ class StubLoraScanner:
 @pytest.fixture
 def recipe_scanner(tmp_path: Path, monkeypatch):
     RecipeScanner._instance = None
+    settings_manager_module.reset_settings_manager()
     monkeypatch.setattr(config, "loras_roots", [str(tmp_path)])
     stub = StubLoraScanner()
     scanner = RecipeScanner(lora_scanner=stub)
     asyncio.run(scanner.refresh_cache(force=True))
     yield scanner, stub
     RecipeScanner._instance = None
+    settings_manager_module.reset_settings_manager()
+
+
+def test_recipes_dir_uses_custom_settings_path(tmp_path: Path, monkeypatch):
+    RecipeScanner._instance = None
+    settings_manager_module.reset_settings_manager()
+
+    settings_path = tmp_path / "settings.json"
+    custom_recipes = tmp_path / "custom" / ".." / "custom_recipes"
+
+    monkeypatch.setattr(
+        "py.services.settings_manager.ensure_settings_file",
+        lambda logger=None: str(settings_path),
+    )
+    monkeypatch.setattr(config, "loras_roots", [str(tmp_path / "loras-root")])
+
+    manager = settings_manager_module.get_settings_manager()
+    manager.set("recipes_path", str(custom_recipes))
+
+    scanner = RecipeScanner(lora_scanner=StubLoraScanner())
+    resolved = scanner.recipes_dir
+
+    assert resolved == str((tmp_path / "custom_recipes").resolve())
+    assert Path(resolved).is_dir()
+
+    RecipeScanner._instance = None
+    settings_manager_module.reset_settings_manager()
+
+
+def test_recipes_dir_falls_back_to_first_lora_root(tmp_path: Path, monkeypatch):
+    RecipeScanner._instance = None
+    settings_manager_module.reset_settings_manager()
+
+    monkeypatch.setattr(config, "loras_roots", [str(tmp_path / "alpha")])
+
+    scanner = RecipeScanner(lora_scanner=StubLoraScanner())
+    resolved = scanner.recipes_dir
+
+    assert resolved == str(tmp_path / "alpha" / "recipes")
+    assert Path(resolved).is_dir()
+
+    RecipeScanner._instance = None
+    settings_manager_module.reset_settings_manager()
 
 
 async def test_add_recipe_during_concurrent_reads(recipe_scanner):

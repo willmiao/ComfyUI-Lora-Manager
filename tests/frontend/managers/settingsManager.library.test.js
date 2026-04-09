@@ -205,4 +205,58 @@ describe('SettingsManager library controls', () => {
         expect(select.value).toBe('alpha');
         expect(activateSpy).not.toHaveBeenCalled();
     });
+
+    it('loads recipes_path into the settings input', async () => {
+        const manager = createManager();
+        const input = document.createElement('input');
+        input.id = 'recipesPath';
+        document.body.appendChild(input);
+
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                success: true,
+                isAvailable: false,
+                isEnabled: false,
+                databaseSize: 0,
+            }),
+        });
+
+        state.global.settings = {
+            recipes_path: '/custom/recipes',
+        };
+
+        await manager.loadSettingsToUI();
+
+        expect(input.value).toBe('/custom/recipes');
+    });
+
+    it('shows loading while saving recipes_path', async () => {
+        const manager = createManager();
+        const input = document.createElement('input');
+        input.id = 'recipesPath';
+        input.value = '/custom/recipes';
+        document.body.appendChild(input);
+
+        state.global.settings = {
+            recipes_path: '',
+        };
+
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ success: true }),
+        });
+
+        await manager.saveInputSetting('recipesPath', 'recipes_path');
+
+        expect(state.loadingManager.showSimpleLoading).toHaveBeenCalledWith(
+            'Migrating recipes...'
+        );
+        expect(state.loadingManager.hide).toHaveBeenCalledTimes(1);
+        expect(showToast).toHaveBeenCalledWith(
+            'toast.settings.recipesPathUpdated',
+            {},
+            'success',
+        );
+    });
 });

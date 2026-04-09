@@ -18,6 +18,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     default_lora_root: '',
     default_checkpoint_root: '',
     default_embedding_root: '',
+    recipes_path: '',
     base_model_path_mappings: {},
     download_path_templates: {},
     example_images_path: '',

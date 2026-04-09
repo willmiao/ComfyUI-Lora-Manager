@@ -3,6 +3,7 @@ import copy
 import json
 import os
 import shutil
+import tempfile
 import logging
 from pathlib import Path
 from datetime import datetime, timezone
@@ -70,6 +71,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "default_checkpoint_root": "",
     "default_unet_root": "",
     "default_embedding_root": "",
+    "recipes_path": "",
     "base_model_path_mappings": {},
     "download_path_templates": {},
     "folder_paths": {},
@@ -254,6 +256,7 @@ class SettingsManager:
                 default_checkpoint_root=merged.get("default_checkpoint_root"),
                 default_unet_root=merged.get("default_unet_root"),
                 default_embedding_root=merged.get("default_embedding_root"),
+                recipes_path=merged.get("recipes_path"),
             )
         }
         merged["active_library"] = library_name
@@ -382,6 +385,7 @@ class SettingsManager:
                 ),
                 default_unet_root=self.settings.get("default_unet_root", ""),
                 default_embedding_root=self.settings.get("default_embedding_root", ""),
+                recipes_path=self.settings.get("recipes_path", ""),
             )
             libraries = {library_name: library_payload}
             self.settings["libraries"] = libraries
@@ -429,6 +433,7 @@ class SettingsManager:
                 default_checkpoint_root=data.get("default_checkpoint_root"),
                 default_unet_root=data.get("default_unet_root"),
                 default_embedding_root=data.get("default_embedding_root"),
+                recipes_path=data.get("recipes_path"),
                 metadata=data.get("metadata"),
                 base=data,
             )
@@ -475,6 +480,7 @@ class SettingsManager:
         self.settings["default_embedding_root"] = active_library.get(
             "default_embedding_root", ""
         )
+        self.settings["recipes_path"] = active_library.get("recipes_path", "")
 
         if save:
             self._save_settings()
@@ -491,6 +497,7 @@ class SettingsManager:
         default_checkpoint_root: Optional[str] = None,
         default_unet_root: Optional[str] = None,
         default_embedding_root: Optional[str] = None,
+        recipes_path: Optional[str] = None,
         metadata: Optional[Mapping[str, Any]] = None,
         base: Optional[Mapping[str, Any]] = None,
     ) -> Dict[str, Any]:
@@ -528,6 +535,11 @@ class SettingsManager:
             payload["default_embedding_root"] = default_embedding_root
         else:
             payload.setdefault("default_embedding_root", "")
+
+        if recipes_path is not None:
+            payload["recipes_path"] = recipes_path
+        else:
+            payload.setdefault("recipes_path", "")
 
         if metadata:
             merged_meta = dict(payload.get("metadata", {}))
@@ -630,6 +642,7 @@ class SettingsManager:
         default_checkpoint_root: Optional[str] = None,
         default_unet_root: Optional[str] = None,
         default_embedding_root: Optional[str] = None,
+        recipes_path: Optional[str] = None,
     ) -> bool:
         libraries = self.settings.get("libraries", {})
         active_name = self.settings.get("active_library")
@@ -677,6 +690,10 @@ class SettingsManager:
             and library.get("default_embedding_root") != default_embedding_root
         ):
             library["default_embedding_root"] = default_embedding_root
+            changed = True
+
+        if recipes_path is not None and library.get("recipes_path") != recipes_path:
+            library["recipes_path"] = recipes_path
             changed = True
 
         if changed:
@@ -942,7 +959,9 @@ class SettingsManager:
             extra_folder_paths=defaults.get("extra_folder_paths", {}),
             default_lora_root=defaults.get("default_lora_root"),
             default_checkpoint_root=defaults.get("default_checkpoint_root"),
+            default_unet_root=defaults.get("default_unet_root"),
             default_embedding_root=defaults.get("default_embedding_root"),
+            recipes_path=defaults.get("recipes_path"),
         )
         defaults["libraries"] = {library_name: default_library}
         defaults["active_library"] = library_name
@@ -1236,6 +1255,193 @@ class SettingsManager:
         """Get setting value"""
         return self.settings.get(key, default)
 
+    def _normalize_recipes_path_value(self, value: Any) -> str:
+        """Return a normalized absolute recipes path or an empty string."""
+
+        if not isinstance(value, str):
+            value = "" if value is None else str(value)
+
+        stripped = value.strip()
+        if not stripped:
+            return ""
+
+        return os.path.abspath(os.path.normpath(os.path.expanduser(stripped)))
+
+    def _get_effective_recipes_dir(self, recipes_path: Optional[str] = None) -> str:
+        """Resolve the effective recipes directory for the active library."""
+
+        normalized_custom = self._normalize_recipes_path_value(
+            self.settings.get("recipes_path", "")
+            if recipes_path is None
+            else recipes_path
+        )
+        if normalized_custom:
+            return normalized_custom
+
+        folder_paths = self.settings.get("folder_paths", {})
+        configured_lora_roots = []
+        if isinstance(folder_paths, Mapping):
+            raw_lora_roots = folder_paths.get("loras", [])
+            if isinstance(raw_lora_roots, Sequence) and not isinstance(
+                raw_lora_roots, (str, bytes)
+            ):
+                configured_lora_roots = [
+                    path
+                    for path in raw_lora_roots
+                    if isinstance(path, str) and path.strip()
+                ]
+
+        if configured_lora_roots:
+            lora_root = sorted(configured_lora_roots, key=str.casefold)[0]
+            return os.path.abspath(os.path.join(lora_root, "recipes"))
+
+        config_lora_roots = [
+            path
+            for path in getattr(config, "loras_roots", []) or []
+            if isinstance(path, str) and path.strip()
+        ]
+        if not config_lora_roots:
+            return ""
+
+        return os.path.abspath(
+            os.path.join(sorted(config_lora_roots, key=str.casefold)[0], "recipes")
+        )
+
+    def _validate_recipes_storage_path(self, normalized_path: str) -> None:
+        """Ensure the recipes storage target is usable before saving it."""
+
+        if not normalized_path:
+            return
+
+        if os.path.exists(normalized_path) and not os.path.isdir(normalized_path):
+            raise ValueError("Recipes path must point to a directory")
+
+        try:
+            os.makedirs(normalized_path, exist_ok=True)
+        except Exception as exc:
+            raise ValueError(f"Unable to create recipes directory: {exc}") from exc
+
+        try:
+            fd, probe_path = tempfile.mkstemp(
+                prefix=".lora-manager-recipes-", dir=normalized_path
+            )
+            os.close(fd)
+            os.remove(probe_path)
+        except Exception as exc:
+            raise ValueError(f"Recipes path is not writable: {exc}") from exc
+
+    def _migrate_recipes_directory(self, source_dir: str, target_dir: str) -> None:
+        """Move existing recipe files to a new recipes root and rewrite JSON paths."""
+
+        source = os.path.abspath(os.path.normpath(source_dir)) if source_dir else ""
+        target = os.path.abspath(os.path.normpath(target_dir)) if target_dir else ""
+        if not source or not target or source == target:
+            return
+
+        if not os.path.exists(source):
+            os.makedirs(target, exist_ok=True)
+            return
+
+        if os.path.exists(target) and not os.path.isdir(target):
+            raise ValueError("Recipes path must point to a directory")
+
+        try:
+            common_root = os.path.commonpath([source, target])
+        except ValueError as exc:
+            raise ValueError("Invalid recipes path change") from exc
+
+        if common_root == source:
+            raise ValueError("Recipes path cannot be moved into a nested directory")
+
+        planned_recipe_updates: Dict[str, Dict[str, Any]] = {}
+        file_pairs: List[Tuple[str, str]] = []
+
+        for root, _, files in os.walk(source):
+            for filename in files:
+                source_path = os.path.normpath(os.path.join(root, filename))
+                relative_path = os.path.relpath(source_path, source)
+                target_path = os.path.normpath(os.path.join(target, relative_path))
+                file_pairs.append((source_path, target_path))
+
+                if not filename.endswith(".recipe.json"):
+                    continue
+
+                try:
+                    with open(source_path, "r", encoding="utf-8") as handle:
+                        payload = json.load(handle)
+                except Exception as exc:
+                    raise ValueError(
+                        f"Unable to read recipe metadata during migration: {source_path}: {exc}"
+                    ) from exc
+
+                if not isinstance(payload, dict):
+                    continue
+
+                file_path = payload.get("file_path")
+                if isinstance(file_path, str) and file_path.strip():
+                    normalized_file_path = os.path.abspath(
+                        os.path.normpath(os.path.expanduser(file_path))
+                    )
+                    source_candidates = [source]
+                    real_source = os.path.abspath(
+                        os.path.normpath(os.path.realpath(source_dir))
+                    )
+                    if real_source not in source_candidates:
+                        source_candidates.append(real_source)
+
+                    rewritten = False
+                    for source_candidate in source_candidates:
+                        try:
+                            file_common_root = os.path.commonpath(
+                                [normalized_file_path, source_candidate]
+                            )
+                        except ValueError:
+                            continue
+
+                        if file_common_root != source_candidate:
+                            continue
+
+                        image_relative_path = os.path.relpath(
+                            normalized_file_path, source_candidate
+                        )
+                        payload["file_path"] = os.path.normpath(
+                            os.path.join(target, image_relative_path)
+                        )
+                        rewritten = True
+                        break
+
+                    if not rewritten and source_candidates:
+                        logger.debug(
+                            "Skipping recipe file_path rewrite during migration for %s",
+                            normalized_file_path,
+                        )
+
+                planned_recipe_updates[target_path] = payload
+
+        for _, target_path in file_pairs:
+            if os.path.exists(target_path):
+                raise ValueError(
+                    f"Recipes path already contains conflicting file: {target_path}"
+                )
+
+        os.makedirs(target, exist_ok=True)
+
+        for source_path, target_path in file_pairs:
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
+            shutil.move(source_path, target_path)
+
+        for target_path, payload in planned_recipe_updates.items():
+            with open(target_path, "w", encoding="utf-8") as handle:
+                json.dump(payload, handle, indent=4, ensure_ascii=False)
+
+        for root, dirs, files in os.walk(source, topdown=False):
+            if dirs or files:
+                continue
+            try:
+                os.rmdir(root)
+            except OSError:
+                pass
+
     def set(self, key: str, value: Any) -> None:
         """Set setting value and save"""
         if key == "auto_organize_exclusions":
@@ -1246,6 +1452,12 @@ class SettingsManager:
             value = self.normalize_download_skip_base_models(value)
         elif key == "mature_blur_level":
             value = self.normalize_mature_blur_level(value)
+        elif key == "recipes_path":
+            current_recipes_dir = self._get_effective_recipes_dir()
+            value = self._normalize_recipes_path_value(value)
+            target_recipes_dir = self._get_effective_recipes_dir(value)
+            self._validate_recipes_storage_path(target_recipes_dir)
+            self._migrate_recipes_directory(current_recipes_dir, target_recipes_dir)
         self.settings[key] = value
         portable_switch_pending = False
         if key == "use_portable_settings" and isinstance(value, bool):
@@ -1263,9 +1475,13 @@ class SettingsManager:
             self._update_active_library_entry(default_unet_root=str(value))
         elif key == "default_embedding_root":
             self._update_active_library_entry(default_embedding_root=str(value))
+        elif key == "recipes_path":
+            self._update_active_library_entry(recipes_path=str(value))
         elif key == "model_name_display":
             self._notify_model_name_display_change(value)
         self._save_settings()
+        if key == "recipes_path":
+            self._notify_library_change(self.get_active_library_name())
         if portable_switch_pending:
             self._finalize_portable_switch()
 
@@ -1575,6 +1791,7 @@ class SettingsManager:
         default_checkpoint_root: Optional[str] = None,
         default_unet_root: Optional[str] = None,
         default_embedding_root: Optional[str] = None,
+        recipes_path: Optional[str] = None,
         metadata: Optional[Mapping[str, Any]] = None,
         activate: bool = False,
     ) -> Dict[str, Any]:
@@ -1618,6 +1835,11 @@ class SettingsManager:
                 if default_embedding_root is not None
                 else existing.get("default_embedding_root")
             ),
+            recipes_path=(
+                recipes_path
+                if recipes_path is not None
+                else existing.get("recipes_path")
+            ),
             metadata=metadata if metadata is not None else existing.get("metadata"),
             base=existing,
         )
@@ -1645,6 +1867,7 @@ class SettingsManager:
         default_checkpoint_root: str = "",
         default_unet_root: str = "",
         default_embedding_root: str = "",
+        recipes_path: str = "",
         metadata: Optional[Mapping[str, Any]] = None,
         activate: bool = False,
     ) -> Dict[str, Any]:
@@ -1662,6 +1885,7 @@ class SettingsManager:
             default_checkpoint_root=default_checkpoint_root,
             default_unet_root=default_unet_root,
             default_embedding_root=default_embedding_root,
+            recipes_path=recipes_path,
             metadata=metadata,
             activate=activate,
         )
@@ -1721,6 +1945,7 @@ class SettingsManager:
         default_checkpoint_root: Optional[str] = None,
         default_unet_root: Optional[str] = None,
         default_embedding_root: Optional[str] = None,
+        recipes_path: Optional[str] = None,
     ) -> None:
         """Update folder paths for the active library."""
 
@@ -1733,6 +1958,7 @@ class SettingsManager:
             default_checkpoint_root=default_checkpoint_root,
             default_unet_root=default_unet_root,
             default_embedding_root=default_embedding_root,
+            recipes_path=recipes_path,
             activate=True,
         )
 

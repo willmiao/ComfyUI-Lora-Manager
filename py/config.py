@@ -134,6 +134,7 @@ class Config:
         self.extra_checkpoints_roots: List[str] = []
         self.extra_unet_roots: List[str] = []
         self.extra_embeddings_roots: List[str] = []
+        self.recipes_path: str = ""
         # Scan symbolic links during initialization
         self._initialize_symlink_mappings()
 
@@ -652,6 +653,8 @@ class Config:
             preview_roots.update(self._expand_preview_root(root))
         for root in self.extra_embeddings_roots or []:
             preview_roots.update(self._expand_preview_root(root))
+        if self.recipes_path:
+            preview_roots.update(self._expand_preview_root(self.recipes_path))
 
         for target, link in self._path_mappings.items():
             preview_roots.update(self._expand_preview_root(target))
@@ -911,9 +914,11 @@ class Config:
         self,
         folder_paths: Mapping[str, Iterable[str]],
         extra_folder_paths: Optional[Mapping[str, Iterable[str]]] = None,
+        recipes_path: str = "",
     ) -> None:
         self._path_mappings.clear()
         self._preview_root_paths = set()
+        self.recipes_path = recipes_path if isinstance(recipes_path, str) else ""
 
         lora_paths = folder_paths.get("loras", []) or []
         checkpoint_paths = folder_paths.get("checkpoints", []) or []
@@ -1169,7 +1174,12 @@ class Config:
         if not isinstance(extra_folder_paths, Mapping):
             extra_folder_paths = None
 
-        self._apply_library_paths(folder_paths, extra_folder_paths)
+        recipes_path = (
+            str(library_config.get("recipes_path", ""))
+            if isinstance(library_config, Mapping)
+            else ""
+        )
+        self._apply_library_paths(folder_paths, extra_folder_paths, recipes_path)
 
         logger.info(
             "Applied library settings with %d lora roots (%d extra), %d checkpoint roots (%d extra), and %d embedding roots (%d extra)",

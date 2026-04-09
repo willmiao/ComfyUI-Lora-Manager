@@ -264,6 +264,7 @@
             "layoutSettings": "Layout-Einstellungen",
             "misc": "Verschiedenes",
             "folderSettings": "Standard-Roots",
+            "recipeSettings": "Rezepte",
             "extraFolderPaths": "Zusätzliche Ordnerpfade",
             "downloadPathTemplates": "Download-Pfad-Vorlagen",
             "priorityTags": "Prioritäts-Tags",
@@ -393,6 +394,10 @@
             "defaultUnetRootHelp": "Legen Sie den Standard-Diffusion-Modell-(UNET)-Stammordner für Downloads, Importe und Verschiebungen fest",
             "defaultEmbeddingRoot": "Embedding-Stammordner",
             "defaultEmbeddingRootHelp": "Legen Sie den Standard-Embedding-Stammordner für Downloads, Importe und Verschiebungen fest",
+            "recipesPath": "Rezepte-Speicherpfad",
+            "recipesPathHelp": "Optionales benutzerdefiniertes Verzeichnis für gespeicherte Rezepte. Leer lassen, um den recipes-Ordner im ersten LoRA-Stammverzeichnis zu verwenden.",
+            "recipesPathPlaceholder": "/path/to/recipes",
+            "recipesPathMigrating": "Rezepte-Speicher wird verschoben...",
             "noDefault": "Kein Standard"
         },
         "extraFolderPaths": {
@@ -1629,6 +1634,8 @@
             "mappingSaveFailed": "Fehler beim Speichern der Basis-Modell-Zuordnungen: {message}",
             "downloadTemplatesUpdated": "Download-Pfad-Vorlagen aktualisiert",
             "downloadTemplatesFailed": "Fehler beim Speichern der Download-Pfad-Vorlagen: {message}",
+            "recipesPathUpdated": "Rezepte-Speicherpfad aktualisiert",
+            "recipesPathSaveFailed": "Fehler beim Aktualisieren des Rezepte-Speicherpfads: {message}",
             "settingsUpdated": "Einstellungen aktualisiert: {setting}",
             "compactModeToggled": "Kompakt-Modus {state}",
             "settingSaveFailed": "Fehler beim Speichern der Einstellung: {message}",
