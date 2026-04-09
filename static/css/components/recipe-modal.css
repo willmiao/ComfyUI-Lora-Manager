@@ -1036,6 +1036,73 @@
     }
 }
 
+@media (max-height: 860px) {
+    #recipeModal .modal-content {
+        padding-top: var(--space-2);
+        padding-bottom: var(--space-2);
+    }
+
+    .recipe-modal-header {
+        padding-bottom: 6px;
+        margin-bottom: 8px;
+    }
+
+    .recipe-modal-header h2 {
+        font-size: 1.25em;
+        max-height: 2.5em;
+    }
+
+    .recipe-tags-container {
+        margin-bottom: 6px;
+    }
+
+    .recipe-top-section {
+        grid-template-columns: 1fr;
+        gap: var(--space-1);
+        margin-bottom: var(--space-1);
+    }
+
+    .recipe-preview-container {
+        display: none;
+    }
+
+    .recipe-gen-params {
+        height: auto;
+        max-height: 210px;
+    }
+
+    .recipe-gen-params h3 {
+        margin-bottom: var(--space-1);
+        font-size: 1.05em;
+    }
+
+    .gen-params-container {
+        gap: var(--space-1);
+    }
+
+    .param-content {
+        max-height: 90px;
+        padding: 10px;
+    }
+
+    .param-textarea {
+        min-height: 100px;
+    }
+
+    .other-params {
+        margin-top: 0;
+        gap: 6px;
+    }
+
+    .recipe-bottom-section {
+        padding-top: var(--space-1);
+    }
+
+    .recipe-section-header {
+        margin-bottom: var(--space-1);
+    }
+}
+
 .badge-container {
     position: relative;
     display: flex;
