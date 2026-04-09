@@ -788,6 +788,7 @@ NODE_EXTRACTORS = {
     "TensorRTLoader": TensorRTLoaderExtractor,
     # Conditioning
     "CLIPTextEncode": CLIPTextEncodeExtractor,
+    "CLIPTextEncodeAttentionBias": CLIPTextEncodeExtractor,  # From https://github.com/silveroxides/ComfyUI_PromptAttention
     "PromptLM": CLIPTextEncodeExtractor,
     "CLIPTextEncodeFlux": CLIPTextEncodeFluxExtractor,  # Add CLIPTextEncodeFlux
     "WAS_Text_to_Conditioning": CLIPTextEncodeExtractor,
