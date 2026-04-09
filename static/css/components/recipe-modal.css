@@ -214,15 +214,11 @@
 #recipeModal .modal-content {
     display: flex;
     flex-direction: column;
-    max-width: 960px;
-    width: min(960px, calc(100vw - 2rem));
-    max-height: calc(100vh - var(--header-height, 48px) - 2rem);
-    max-height: calc(100dvh - var(--header-height, 48px) - 2rem);
 }
 
 #recipeModal .modal-body {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: var(--space-2);
     flex: 1 1 auto;
     min-height: 0;
@@ -236,14 +232,12 @@
     gap: var(--space-2);
     flex-shrink: 0;
     margin-bottom: var(--space-2);
-    align-items: start;
 }
 
 /* Recipe Preview */
 .recipe-preview-container {
     width: 100%;
-    height: clamp(220px, 32vh, 360px);
-    height: clamp(220px, 32dvh, 360px);
+    height: 360px;
     border-radius: var(--border-radius-sm);
     overflow: hidden;
     background: var(--lora-surface);
@@ -397,8 +391,7 @@
 
 /* Generation Parameters */
 .recipe-gen-params {
-    height: clamp(220px, 32vh, 360px);
-    height: clamp(220px, 32dvh, 360px);
+    height: 360px;
     display: flex;
     flex-direction: column;
 }
@@ -672,7 +665,6 @@
     gap: 10px;
     flex: 1;
     min-height: 0;
-    overflow: hidden;
 }
 
 .recipe-checkpoint-container {
@@ -1041,60 +1033,6 @@
     .recipe-gen-params {
         height: auto;
         max-height: 300px;
-    }
-}
-
-@media (max-height: 960px) {
-    #recipeModal .modal-content {
-        max-height: calc(100vh - var(--header-height, 48px) - 1rem);
-        max-height: calc(100dvh - var(--header-height, 48px) - 1rem);
-        padding: var(--space-2);
-    }
-
-    .recipe-modal-header {
-        padding-bottom: 8px;
-        margin-bottom: 8px;
-    }
-
-    .recipe-modal-header h2 {
-        max-height: 1.3em;
-        -webkit-line-clamp: 1;
-    }
-
-    .recipe-top-section {
-        grid-template-columns: 1fr;
-        gap: var(--space-1);
-    }
-
-    .recipe-preview-container,
-    .recipe-gen-params {
-        height: clamp(180px, 28vh, 300px);
-        height: clamp(180px, 28dvh, 300px);
-    }
-
-    .recipe-gen-params h3 {
-        margin-bottom: var(--space-1);
-    }
-
-    .recipe-bottom-section {
-        padding-top: var(--space-1);
-    }
-
-    .recipe-section-header {
-        margin-bottom: var(--space-1);
-    }
-}
-
-@media (max-height: 780px) {
-    .recipe-preview-container,
-    .recipe-gen-params {
-        height: clamp(160px, 24vh, 260px);
-        height: clamp(160px, 24dvh, 260px);
-    }
-
-    .recipe-modal-header {
-        margin-bottom: 6px;
-        padding-bottom: 6px;
     }
 }
 
