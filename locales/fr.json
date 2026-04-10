@@ -332,6 +332,7 @@
             "retentionHelp": "Combien d'instantanés automatiques conserver avant de supprimer les plus anciens.",
             "management": "Gestion des sauvegardes",
             "managementHelp": "Exporte l'état actuel de l'utilisateur ou restaure-le depuis une archive de sauvegarde.",
+            "scopeHelp": "Inclut vos paramètres, l'historique des téléchargements et l'état des mises à jour des modèles. Les fichiers de modèle et les caches régénérables ne sont pas inclus.",
             "locationSummary": "Emplacement actuel des sauvegardes",
             "openFolderButton": "Ouvrir le dossier de sauvegarde",
             "openFolderSuccess": "Dossier de sauvegarde ouvert",

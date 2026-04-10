@@ -332,6 +332,7 @@
             "retentionHelp": "오래된 자동 스냅샷을 삭제하기 전에 몇 개를 유지할지 지정합니다.",
             "management": "백업 관리",
             "managementHelp": "현재 사용자 상태를 내보내거나 백업 아카이브에서 복원합니다.",
+            "scopeHelp": "설정, 다운로드 기록, 모델 업데이트 상태를 백업합니다. 모델 파일과 다시 생성할 수 있는 캐시는 포함되지 않습니다.",
             "locationSummary": "현재 백업 위치",
             "openFolderButton": "백업 폴더 열기",
             "openFolderSuccess": "백업 폴더를 열었습니다",

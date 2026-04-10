@@ -332,6 +332,7 @@
             "retentionHelp": "Wie viele automatische Schnappschüsse behalten werden, bevor ältere entfernt werden.",
             "management": "Backup-Verwaltung",
             "managementHelp": "Exportiere deinen aktuellen Benutzerstatus oder stelle ihn aus einem Backup-Archiv wieder her.",
+            "scopeHelp": "Sichert deine Einstellungen, den Downloadverlauf und den Status der Modellaktualisierung. Modelldateien und neu erzeugbare Caches sind nicht enthalten.",
             "locationSummary": "Aktueller Backup-Speicherort",
             "openFolderButton": "Backup-Ordner öffnen",
             "openFolderSuccess": "Backup-Ordner geöffnet",

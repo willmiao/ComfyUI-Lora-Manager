@@ -332,6 +332,7 @@
             "retentionHelp": "Cuántas instantáneas automáticas conservar antes de eliminar las antiguas.",
             "management": "Gestión de copias",
             "managementHelp": "Exporta tu estado de usuario actual o restáuralo desde un archivo de copia de seguridad.",
+            "scopeHelp": "Incluye tu configuración, el historial de descargas y el estado de actualización de los modelos. No incluye los archivos de modelo ni las cachés que se pueden regenerar.",
             "locationSummary": "Ubicación actual de la copia",
             "openFolderButton": "Abrir carpeta de copias",
             "openFolderSuccess": "Carpeta de copias abierta",

@@ -332,6 +332,7 @@
             "retentionHelp": "How many automatic snapshots to keep before older ones are pruned.",
             "management": "Backup management",
             "managementHelp": "Export your current user state or restore it from a backup archive.",
+            "scopeHelp": "Backs up your settings, download history, and model update state. It does not include model files or rebuildable caches.",
             "locationSummary": "Current backup location",
             "openFolderButton": "Open backup folder",
             "openFolderSuccess": "Opened backup folder",

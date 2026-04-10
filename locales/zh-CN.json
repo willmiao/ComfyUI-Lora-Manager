@@ -332,6 +332,7 @@
             "retentionHelp": "在删除旧快照之前，要保留多少个自动快照。",
             "management": "备份管理",
             "managementHelp": "导出当前用户状态，或从备份归档中恢复。",
+            "scopeHelp": "备份你的设置、下载历史和模型更新状态。不包含模型文件或可重建的缓存。",
             "locationSummary": "当前备份位置",
             "openFolderButton": "打开备份文件夹",
             "openFolderSuccess": "已打开备份文件夹",
