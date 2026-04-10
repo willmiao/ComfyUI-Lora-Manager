@@ -101,6 +101,7 @@ DEFAULT_PRIORITY_TAG_CONFIG = {
 DIFFUSION_MODEL_BASE_MODELS = frozenset(
     [
         "ZImageTurbo",
+        "ZImageBase",
         "Wan Video 1.3B t2v",
         "Wan Video 14B t2v",
         "Wan Video 14B i2v 480p",
