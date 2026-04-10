@@ -102,6 +102,13 @@
     overflow-y: auto;
     padding: var(--space-3);
     scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+}
+
+@supports not (scrollbar-gutter: stable) {
+    .settings-content {
+        overflow-y: scroll;
+    }
 }
 
 .settings-content .settings-form {
