@@ -177,6 +177,120 @@ def test_attention_bias_clip_text_encode_prompts_are_collected(metadata_registry
     assert prompt_results["negative_prompt"] == "low quality"
 
 
+def test_sampler_custom_advanced_recovers_prompt_text_through_guidance_nodes(metadata_registry, monkeypatch):
+    import types
+
+    prompt_graph = {
+        "encode_pos": {
+            "class_type": "CLIPTextEncodeAttentionBias",
+            "inputs": {
+                "text": "A low-angle, medium close-up portrait of her.",
+                "clip": ["clip", 0],
+            },
+        },
+        "encode_neg": {
+            "class_type": "CLIPTextEncodeAttentionBias",
+            "inputs": {
+                "text": " This low quality greyscale unfinished sketch is inaccurate and flawed. The image is very blurred and lacks detail with excessive chromatic aberrations and artifacts. The image is overly saturated with excessive bloom. It has a toony aesthetic with bold outlines and flat colors. ",
+                "clip": ["clip", 0],
+            },
+        },
+        "scheduled_cfg_guidance": {
+            "class_type": "ScheduledCFGGuidance",
+            "inputs": {
+                "model": ["model", 0],
+                "positive": ["encode_pos", 0],
+                "negative": ["encode_neg", 0],
+                "cfg": 2.6,
+                "start_percent": 0.0,
+                "end_percent": 0.62,
+            },
+        },
+        "sampler": {
+            "class_type": "SamplerCustomAdvanced",
+            "inputs": {
+                "noise": types.SimpleNamespace(seed=174),
+                "guider": ["scheduled_cfg_guidance", 0],
+                "sampler": ["sampler_select", 0],
+                "sigmas": ["scheduler", 0],
+                "latent_image": {"samples": types.SimpleNamespace(shape=(1, 4, 128, 128))},
+            },
+        },
+        "sampler_select": {
+            "class_type": "KSamplerSelect",
+            "inputs": {"sampler_name": "multistep/deis_2m"},
+        },
+        "scheduler": {
+            "class_type": "BasicScheduler",
+            "inputs": {"steps": 20, "scheduler": "power_shift", "denoise": 1.0},
+        },
+    }
+    prompt = SimpleNamespace(original_prompt=prompt_graph)
+
+    pos_conditioning = object()
+    neg_conditioning = object()
+
+    monkeypatch.setattr(metadata_processor, "standalone_mode", False)
+
+    metadata_registry.start_collection("prompt-guidance")
+    metadata_registry.set_current_prompt(prompt)
+
+    metadata_registry.record_node_execution(
+        "encode_pos",
+        "CLIPTextEncodeAttentionBias",
+        {"text": "A low-angle, medium close-up portrait of her."},
+        None,
+    )
+    metadata_registry.update_node_execution(
+        "encode_pos", "CLIPTextEncodeAttentionBias", [(pos_conditioning,)]
+    )
+    metadata_registry.record_node_execution(
+        "encode_neg",
+        "CLIPTextEncodeAttentionBias",
+        {
+            "text": " This low quality greyscale unfinished sketch is inaccurate and flawed. The image is very blurred and lacks detail with excessive chromatic aberrations and artifacts. The image is overly saturated with excessive bloom. It has a toony aesthetic with bold outlines and flat colors. ",
+        },
+        None,
+    )
+    metadata_registry.update_node_execution(
+        "encode_neg", "CLIPTextEncodeAttentionBias", [(neg_conditioning,)]
+    )
+    metadata_registry.record_node_execution(
+        "scheduled_cfg_guidance",
+        "ScheduledCFGGuidance",
+        {
+            "positive": pos_conditioning,
+            "negative": neg_conditioning,
+            "cfg": 2.6,
+        },
+        None,
+    )
+    metadata_registry.record_node_execution(
+        "sampler",
+        "SamplerCustomAdvanced",
+        {
+            "noise": types.SimpleNamespace(seed=174),
+            "guider": {
+                "positive": pos_conditioning,
+                "negative": neg_conditioning,
+            },
+            "sampler": ["sampler_select", 0],
+            "sigmas": ["scheduler", 0],
+            "latent_image": {"samples": types.SimpleNamespace(shape=(1, 4, 128, 128))},
+        },
+        None,
+    )
+
+    metadata = metadata_registry.get_metadata("prompt-guidance")
+    params = MetadataProcessor.extract_generation_params(metadata)
+
+    assert params["prompt"] == "A low-angle, medium close-up portrait of her."
+    assert (
+        params["negative_prompt"]
+        == " This low quality greyscale unfinished sketch is inaccurate and flawed. The image is very blurred and lacks detail with excessive chromatic aberrations and artifacts. The image is overly saturated with excessive bloom. It has a toony aesthetic with bold outlines and flat colors. "
+    )
+
+
 def test_metadata_registry_caches_and_rehydrates(populated_registry):
     registry = populated_registry["registry"]
     prompt = populated_registry["prompt"]

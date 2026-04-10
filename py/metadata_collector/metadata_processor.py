@@ -595,6 +595,15 @@ class MetadataProcessor:
                     if negative_node_id and negative_node_id in metadata.get(PROMPTS, {}):
                         params["negative_prompt"] = metadata[PROMPTS][negative_node_id].get("text", "")
                 else:
-                    positive_node_id = MetadataProcessor.trace_node_input(prompt, guider_node_id, "conditioning", max_depth=10)
+                    # Generic guider nodes often expose separate positive/negative inputs.
+                    positive_node_id = MetadataProcessor.trace_node_input(prompt, guider_node_id, "positive", max_depth=10)
+                    if not positive_node_id:
+                        positive_node_id = MetadataProcessor.trace_node_input(prompt, guider_node_id, "conditioning", max_depth=10)
                     if positive_node_id and positive_node_id in metadata.get(PROMPTS, {}):
                         params["prompt"] = metadata[PROMPTS][positive_node_id].get("text", "")
+
+                    negative_node_id = MetadataProcessor.trace_node_input(prompt, guider_node_id, "negative", max_depth=10)
+                    if not negative_node_id:
+                        negative_node_id = MetadataProcessor.trace_node_input(prompt, guider_node_id, "conditioning", max_depth=10)
+                    if negative_node_id and negative_node_id in metadata.get(PROMPTS, {}):
+                        params["negative_prompt"] = metadata[PROMPTS][negative_node_id].get("text", "")
