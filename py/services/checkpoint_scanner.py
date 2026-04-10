@@ -105,12 +105,18 @@ class CheckpointScanner(ModelScanner):
                 return None
 
             # Load current metadata
-            metadata, _ = await MetadataManager.load_metadata(
+            metadata, should_skip = await MetadataManager.load_metadata(
                 file_path, self.model_class
             )
             if metadata is None:
-                logger.error(f"No metadata found for {file_path}")
-                return None
+                if should_skip:
+                    logger.error(f"Invalid metadata found for {file_path}")
+                    return None
+                created_metadata = await self._create_default_metadata(file_path)
+                if created_metadata is None:
+                    logger.error(f"No metadata found for {file_path}")
+                    return None
+                metadata = created_metadata
 
             # Check if hash is already calculated
             if metadata.hash_status == "completed" and metadata.sha256:

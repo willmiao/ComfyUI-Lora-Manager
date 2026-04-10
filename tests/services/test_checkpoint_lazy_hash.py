@@ -200,6 +200,47 @@ async def test_calculate_hash_skips_if_already_completed(tmp_path: Path, monkeyp
 
 
 @pytest.mark.asyncio
+async def test_calculate_hash_for_model_bootstraps_missing_metadata(tmp_path: Path, monkeypatch):
+    """Test that calculate_hash_for_model creates pending metadata when it is missing."""
+    checkpoints_root = tmp_path / "checkpoints"
+    checkpoints_root.mkdir()
+
+    checkpoint_file = checkpoints_root / "bootstrap_model.gguf"
+    checkpoint_file.write_text("fake content for hashing", encoding="utf-8")
+
+    normalized_root = _normalize(checkpoints_root)
+    normalized_file = _normalize(checkpoint_file)
+
+    monkeypatch.setattr(
+        model_scanner.config,
+        "base_models_roots",
+        [normalized_root],
+        raising=False,
+    )
+    monkeypatch.setattr(
+        model_scanner.config,
+        "checkpoints_roots",
+        [normalized_root],
+        raising=False,
+    )
+
+    scanner = CheckpointScanner()
+
+    hash_result = await scanner.calculate_hash_for_model(normalized_file)
+
+    assert hash_result is not None, "Hash calculation should succeed without existing metadata"
+    assert len(hash_result) == 64, "SHA256 should be 64 hex characters"
+    assert scanner.get_hash_by_filename("bootstrap_model") == hash_result
+
+    metadata_file = checkpoints_root / "bootstrap_model.metadata.json"
+    with open(metadata_file, "r", encoding="utf-8") as f:
+        saved_data = json.load(f)
+
+    assert saved_data.get("sha256") == hash_result, "sha256 should be updated"
+    assert saved_data.get("hash_status") == "completed", "hash_status should be 'completed'"
+
+
+@pytest.mark.asyncio
 async def test_calculate_all_pending_hashes(tmp_path: Path, monkeypatch):
     """Test bulk hash calculation for all pending checkpoints."""
     checkpoints_root = tmp_path / "checkpoints"
